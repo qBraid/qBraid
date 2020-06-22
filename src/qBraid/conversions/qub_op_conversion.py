@@ -9,13 +9,13 @@ from qiskit.aqua.operators import WeightedPauliOperator
 
 def convert(qubit_operator, output_qo_type='QISKIT'):
     """Convert the qubit_operator between the various types available
-    The definitions used here are consistent with arXiv:quant-ph/0003137
+    in 
     Args:
-        edge_list (numpy.ndarray): a 2xE matrix, where E is total number of edge
-                                    and each pair denotes (from, to)
-        i (int): index for specifying the edge operator B.
+        qubit_operator class: in either qiskit-aqua or openfermion   
+        output_qo_type (string): string for specifying the return package type for
+                                qubit_operator 
     Returns:
-        WeightedPauliOperator: qubit operator
+        qubit_operator class in the requested package 
     """
     if isinstance(qubit_operator, QubitOperator):
         if output_qo_type == 'QISKIT':
