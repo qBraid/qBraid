@@ -43,13 +43,16 @@ def initialize_qiskit_circuit(num_qubits, c_regs=None,input_circ_type='PYQUIL'):
     if input_circ_type=='PYQUIL':
         qr = QuantumRegister(num_qubits)
         qiskit_c_regs = []
+        qiskit_c_regs_dict = {}
         if c_regs:
             for c_reg in c_regs:
                 exec('qiskit_'+str(c_reg)+' = ClassicalRegister('+str(len(c_regs[c_reg]))+','+'"'+str(c_reg)+'"'+')')
                 qiskit_c_regs.append(eval('qiskit_'+str(c_reg)))
+                qiskit_c_regs_dict[str(c_reg)]=eval('qiskit_'+str(c_reg))
+
         # print(eval('qiskit_'+str(c_reg)))
         qc = QuantumCircuit(qr,*qiskit_c_regs)
-        return [qr,qiskit_c_regs,qc]
+        return [qr,qiskit_c_regs_dict,qc]
             # cr = ClassicalRegister()
     elif input_circ_type=='Cirq':
         pass
@@ -61,8 +64,8 @@ def pyquil_circ_conversion(q_circ, output_circ_type='QISKIT'):
     inst_list = q_circ.instructions
 
     if output_circ_type=='QISKIT':
-        [qr, cr_list, qiskit_circ] = initialize_qiskit_circuit(num_qubits, classical_regs,'PYQUIL')
-        print(cr_list)
+        [qr, qiskit_c_regs_dict, qiskit_circ] = initialize_qiskit_circuit(num_qubits, classical_regs,'PYQUIL')
+        print(qiskit_c_regs_dict)
         for operation in inst_list:
             if isinstance(operation, Gate):
                 if operation.name == 'H':
@@ -89,8 +92,9 @@ def pyquil_circ_conversion(q_circ, output_circ_type='QISKIT'):
                 
             elif isinstance(operation, Measurement):
                 c_reg_str = operation.classical_reg.name
-                classical_reg = eval('qiskit_'+c_reg_str)
-                qiskit_circ=measure(qiskit_circ,operation.qubit.index, )
+                qiskit_cr = qiskit_c_regs_dict[c_reg_str]
+                cr_index = classical_regs[c_reg_str].index(operation.classical_reg.offset)
+                qiskit_circ=measure(qiskit_circ,operation.qubit.index, cr_index, output_circ_type, None, qiskit_cr)
         return qiskit_circ
 def qiskit_circ_conversion(q_circ,output_circ_type):
     num_qubits = len(q_circ.qubits)
@@ -202,9 +206,12 @@ def cnot_gate(q_circ, qubit_index_control, qubit_index_target, output_circ_type)
     elif output_circ_type=="CIRQ":
         pass #(for now)
 
-def measure(q_circ, qubit_index, classical_reg, cbit_index, output_circ_type):
+def measure(q_circ, qubit_index, cbit_index, output_circ_type, qubit_reg=None, classical_reg=None):
     if output_circ_type=='QISKIT':
-        q_circ.measure(qubit_index,classical_reg[cbit_index])
+        if qubit_reg:
+            q_circ.measure(qubit_reg[qubit_index],classical_reg[cbit_index])
+        else:
+            q_circ.measure(qubit_index,classical_reg[cbit_index])
         return q_circ
     elif output_circ_type=='PYQUIL':
         q_circ.inst(gates.MEASURE(qubit_index,classical_reg(cbit_index)))
