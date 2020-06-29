@@ -6,6 +6,7 @@ from pyquil import quil, Program, gates
 from pyquil.quilbase import Gate, Measurement
 from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister, execute
 from qiskit.circuit.library.standard_gates import *
+from qiskit.circuit import Gate, Measure
 from qiskit.circuit.measure import Measure
 from cirq import Circuit
 
@@ -57,6 +58,15 @@ def initialize_qiskit_circuit(num_qubits, c_regs=None,input_circ_type='PYQUIL'):
     elif input_circ_type=='Cirq':
         pass
 
+def initialize_pyquil_circuit(c_regs=None,input_circ_type='QISKIT'):
+    if input_circ_type=='QISKIT':
+        p = Program()
+        if c_regs:
+            for c_reg in c_regs:
+                name = c_reg.name
+                size = c_reg.size
+                p.declare(name, 'BIT', size)
+        return p
 
 def pyquil_circ_conversion(q_circ, output_circ_type='QISKIT'):
     num_qubits = len(q_circ.get_qubits())
@@ -96,15 +106,101 @@ def pyquil_circ_conversion(q_circ, output_circ_type='QISKIT'):
                 cr_index = classical_regs[c_reg_str].index(operation.classical_reg.offset)
                 qiskit_circ=measure(qiskit_circ,operation.qubit.index, cr_index, output_circ_type, None, qiskit_cr)
         return qiskit_circ
-def qiskit_circ_conversion(q_circ,output_circ_type):
+
+def qiskit_circ_conversion(q_circ,output_circ_type='PYQUIL'):
     num_qubits = len(q_circ.qubits)
+    q_regs = q_circ.qregs
+    print(q_regs)
+    q_reg_name_list = []
+    q_reg_size_list = []
+    for qreg in q_regs:
+        q_reg_name_list.append(qreg.name)
+        q_reg_size_list.append(qreg.size)
+    
+    c_regs = q_circ.cregs
     inst_list = q_circ._data
     
+    if output_circ_type=='PYQUIL':
+        pyquil_circ = initialize_pyquil_circuit(c_regs=c_regs)
+        for instruction in inst_list:
+            if isinstance(instruction[0],Gate):
+                if isinstance(instruction[0],HGate):
+                    pyquil_circ=h_gate(pyquil_circ, qiskit_multi_to_single_qreg(
+                        q_reg_name_list,q_reg_size_list,instruction[1][0].register.name, instruction[1][0].index),
+                        output_circ_type)
+                elif isinstance(instruction[0], XGate):
+                    pyquil_circ=x_gate(pyquil_circ, qiskit_multi_to_single_qreg(
+                        q_reg_name_list,q_reg_size_list,instruction[1][0].register.name, instruction[1][0].index),
+                        output_circ_type)
+                elif isinstance(instruction[0], YGate):
+                    pyquil_circ=y_gate(pyquil_circ, qiskit_multi_to_single_qreg(
+                        q_reg_name_list,q_reg_size_list,instruction[1][0].register.name, instruction[1][0].index),
+                        output_circ_type)
+                elif isinstance(instruction[0], ZGate):
+                    pyquil_circ=z_gate(pyquil_circ, qiskit_multi_to_single_qreg(
+                        q_reg_name_list,q_reg_size_list,instruction[1][0].register.name, instruction[1][0].index),
+                        output_circ_type)
+                elif isinstance(instruction[0], SGate):
+                    pyquil_circ=s_gate(pyquil_circ, qiskit_multi_to_single_qreg(
+                        q_reg_name_list,q_reg_size_list,instruction[1][0].register.name, instruction[1][0].index),
+                        output_circ_type)
+                elif isinstance(instruction[0], TGate):
+                    pyquil_circ=t_gate(pyquil_circ, qiskit_multi_to_single_qreg(
+                        q_reg_name_list,q_reg_size_list,instruction[1][0].register.name, instruction[1][0].index),
+                        output_circ_type)
+                elif isinstance(instruction[0], RXGate):
+                    theta = instruction[0].params[0]
+                    qubit_index = qiskit_multi_to_single_qreg(q_reg_name_list,
+                                    q_reg_size_list,instruction[1][0].register.name,
+                                     instruction[1][0].index)
+                    pyquil_circ=rx_gate(pyquil_circ, theta, qubit_index,
+                        output_circ_type)
+                elif isinstance(instruction[0], RYGate):
+                    theta = instruction[0].params[0]
+                    qubit_index = qiskit_multi_to_single_qreg(q_reg_name_list,
+                                    q_reg_size_list,instruction[1][0].register.name,
+                                     instruction[1][0].index)
+                    pyquil_circ=ry_gate(pyquil_circ, theta, qubit_index,
+                        output_circ_type)
+                elif isinstance(instruction[0], RZGate):
+                    theta = instruction[0].params[0]
+                    qubit_index = qiskit_multi_to_single_qreg(q_reg_name_list,
+                                    q_reg_size_list,instruction[1][0].register.name,
+                                     instruction[1][0].index)
+                    pyquil_circ=rz_gate(pyquil_circ, theta, qubit_index,
+                        output_circ_type)
+                elif isinstance(instruction[0], CXGate):
+                    # theta = instruction[0].params[0]
+                    print('I am in CNOT')
+                    print(instruction[1][0].register.name)
+                    print(instruction[1][0].index)
+                    print(instruction[1][1].register.name)
+                    print(instruction[1][1].index)
+                    qubit_index_ctrl = qiskit_multi_to_single_qreg(q_reg_name_list,
+                                    q_reg_size_list,instruction[1][0].register.name,
+                                     instruction[1][0].index)
+                    qubit_index_target = qiskit_multi_to_single_qreg(q_reg_name_list,
+                                    q_reg_size_list,instruction[1][1].register.name,
+                                     instruction[1][1].index)
+                    
+                    pyquil_circ=cnot_gate(pyquil_circ, qubit_index_ctrl, qubit_index_target,
+                        output_circ_type)
+
+            elif isinstance(instruction[0], Measure):
+                pass
+        return pyquil_circ
+
+def qiskit_multi_to_single_qreg(q_reg_name_list, q_reg_size_list, name, index):
+    name_index=q_reg_name_list.index(name)
+    qub_in = 0
+    for i in q_reg_size_list[0:name_index]:
+        qub_in+=i
+    
+    qub_in+=index
+    return qub_in
 
 
 # def cirq_circ_conversion(q_circ,output_circ_type):
-
-
 
 def h_gate(q_circ, qubit_index, output_circ_type):
     if output_circ_type=='QISKIT':

@@ -60,10 +60,45 @@ class convert_q_circ__test(unittest.TestCase):
         p += MEASURE(2, ro[2])
         ret_circ=pyquil_circ_conversion(p)
         print('\n')
-        print(ret_circ)
+        # print(ret_circ)
 
 
+    def test_qiskit_circ_conversion(self):
+        # qr = QuantumRegister(2,'qr')
+        # cr = ClassicalRegister(4)
+        # qr1 = QuantumRegister(2,'qr1')
+        # cr1 = ClassicalRegister(4,'c123')
+        # qr2 = QuantumRegister(2,'qr2')
+        # cr2 = ClassicalRegister(4)
+        # qr3 = QuantumRegister(2,'qr3')
+        # cr3 = ClassicalRegister(4,)
 
+        # qc1 = QuantumCircuit(qr1,qr,qr2,qr3,*[cr,cr1,cr2,cr3])
+        qc1 = QuantumCircuit(3)
+
+        # qc1.rx(np.pi,qr2[0])
+        # qc1.ry(np.pi,qr2[1])
+        # qc1.h([qr[0],qr[1]])
+        # qc1.x(qr1[1])
+        # qc1.cx(qr1[0],qr[1])
+        # qc1.measure([0],[1])
+        # qc1.measure(qr[0],cr1[1])
+
+
+        qc1.rx(np.pi,0)
+        qc1.ry(np.pi,1)
+        qc1.h(1)
+        qc1.h(1)
+        qc1.h(2)
+        qc1.x(1)
+        qc1.cx(0,1)
+        # qc1.measure(1,[1])
+        # qc1.measure(qr[0],cr1[1])
+
+        # qc.h(0)
+        print(qc1)
+        print(qiskit_circ_conversion(qc1))
+        
 
 
 if __name__=='__main__':
