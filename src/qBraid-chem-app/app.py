@@ -51,6 +51,20 @@ qubit_op = fer_op.mapping('jordan_wigner')
 
 
 
+ferOp = FermionicOperator(h1=molecule.one_body_integrals, h2=molecule.two_body_integrals)
+qubitOp = ferOp.mapping(map_type='JORDAN_WIGNER', threshold=0.00000001)
+qubitOp.chop(10**-10)
+
+# Using exact eigensolver to get the smallest eigenvalue
+exact_eigensolver = NumPyMinimumEigensolver(qubitOp)
+ret = exact_eigensolver.run()
+print('The exact ground state energy is: {}'.format(ret.eigenvalue.real))
+
+
+
+
+
+
 # 3. exact diagonalize the matrix form of the qubit operator
 result = EE(qubit_op).run()
 lines, result = operator.process_algorithm_result(result)
@@ -85,7 +99,7 @@ description = str(diatomic_bond_length)
 # Initialize the molecule
 molecule = MolecularData(geometry, basis, multiplicity,
                          charge, description)
-# Just like qiskit-chemistry openfermion uses pyscf, but the calculation is done using
+# Just like qiskit-chemistry openfermion uses pyscf, but    the calculation is done using
 # a plugin and the results are stored and can be used later. The results for H2 are
 # already present, so we can just use them.
 molecule.load()
