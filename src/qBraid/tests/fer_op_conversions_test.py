@@ -3,39 +3,78 @@
 import unittest
 import numpy as np
 from openfermion.ops import FermionOperator, InteractionOperator
-from openfermion.utils import count_qubits
-from qiskit.quantum_info import Pauli
-from qiskit.aqua.operators import WeightedPauliOperator
-from qBraid.conversions.qub_op_conversion import convert
-from openfermion.chem import MolecularData
-from openfermion.transforms import get_fermion_operator, jordan_wigner
-from openfermion.linalg import get_ground_state, get_sparse_operator
+from openfermion.utils import count_qubits, get_ground_state
+from qBraid.conversions.fer_op_conversion import convert
+
+from openfermion.hamiltonians import MolecularData
+from openfermion.transforms import get_fermion_operator,
+         get_sparse_operator, jordan_wigner, get_interaction_operator
+from openfermion.utils import get_ground_state
+
+from qiskit.chemistry.drivers import PySCFDriver
+from qiskit.aqua.algorithms import NumPyEigensolver as EE
+from qiskit.chemistry import FermionicOperator
+
 import numpy
 import scipy
 import scipy.linalg
 
 
 class convert_fer_op_test(unittest.TestCase):
+    def test_fer_op_H2_of_qk(self):
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    #        Using H2 Hamiltonian to get Fermion operator in Openfermion
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        diatomic_bond_length = .7414
+        geometry = [('H', (0., 0., 0.)), ('H', (0., 0., diatomic_bond_length))]
+        basis = 'sto-3g'
+        multiplicity = 1
+        charge = 0
+        description = str(diatomic_bond_length)
+        molecule = MolecularData(geometry, basis, multiplicity,
+                                charge, description)
+        molecule.load()
+        molecular_hamiltonian = molecule.get_molecular_hamiltonian()
+        fermion_hamiltonian = get_fermion_operator(molecular_hamiltonian)
+        mol_int_op = get_interaction_operator(fermion_hamiltonian)
+        print(type(mol_int_op))
+        print(type(molecular_hamiltonian))
+        convert(molecular_hamiltonian)
+        # Remove the following lines later.
+        # print(mol_i/nt_op.one_body_tensor==molecular_hamiltonian.one_body_tensor)
+        # print(mol_int_op.two_body_tensor==molecular_hamiltonian.two_body_tensor)
+        # print(molecular_hamiltonian.two_body_tensor-mol_int_op.two_body_tensor)
+        # print(mol_int_op==molecular_hamiltonian)
+        qubit_hamiltonian = jordan_wigner(fermion_hamiltonian)
+        qubit_hamiltonian.compress()
+        # exit()
+        # print('The Jordan-Wigner Hamiltonian in canonical basis follows:\n{}'.format(qubit_hamiltonian))
+        sparse_hamiltonian = get_sparse_operator(qubit_hamiltonian)
+        energy, state = get_ground_state(sparse_hamiltonian)
+        # print('Ground state energy before rotation is {} Hartree.\n'.format(energy))
 
-    def test_of_qk(self):
-        of_test_op_1 = QubitOperator(((0, 'Z'),(1, 'Z'),(2, 'Z'),(3, 'Z')), 1.0)
-        correct_u_1 = np.array([1, 1, 1, 1])
-        correct_v_1 = np.array([0, 0, 0, 0])
-        correct_pauli_1 = Pauli(correct_u_1,correct_v_1)
-        
-        correct_op_1 = WeightedPauliOperator(paulis=[[1., correct_pauli_1]])
-        x=convert(of_test_op_1)
-        
+
+    def test_fer_op_H2_qk_of(self):
+        molecule = 'H .0 .0 0.0;H .0 .0 0.7414'
+        driver = PySCFDriver(atom=molecule, basis='sto3g')
+        qmolecule = driver.run()
+        one_b = qmolecule.one_body_integrals
+        two_b = qmolecule.two_body_integrals
+
+
+        fer_op = FermionicOperator(h1=one_b, h2=two_b)
+        convert(fer_op)
+    
+
+    def test_fer_op_LiH_of_qk(self):
         # Load saved file for LiH.
         diatomic_bond_length = 1.45
         geometry = [('Li', (0., 0., 0.)), ('H', (0., 0., diatomic_bond_length))]
         basis = 'sto-3g'
         multiplicity = 1
-
         # Set Hamiltonian parameters.
         active_space_start = 1
         active_space_stop = 3
-
         # Generate and populate instance of MolecularData.
         molecule = MolecularData(geometry, basis, multiplicity, description="1.45")
         molecule.load()
@@ -49,7 +88,7 @@ class convert_fer_op_test(unittest.TestCase):
         fermion_hamiltonian = get_fermion_operator(molecular_hamiltonian)
         qubit_hamiltonian = jordan_wigner(fermion_hamiltonian)
         qubit_hamiltonian.compress()
-        print('The Jordan-Wigner Hamiltonian in canonical basis follows:\n{}'.format(qubit_hamiltonian))
+        # print('The Jordan-Wigner Hamiltonian in canonical basis follows:\n{}'.format(qubit_hamiltonian))
 
         # Get sparse operator and ground state energy.
         sparse_hamiltonian = get_sparse_operator(qubit_hamiltonian)
@@ -86,50 +125,15 @@ class convert_fer_op_test(unittest.TestCase):
         energy, state = get_ground_state(sparse_hamiltonian)
         print('Ground state energy after rotation is {} Hartree.'.format(energy))
         
-        self.assertTrue(correct_op_1 == convert(of_test_op_1))
-        self.assertTrue(correct_op_3 == convert(of_test_op_3))
-        self.assertTrue(correct_op_4 == convert(of_test_op_4))
-        self.assertTrue(correct_op_5 == convert(of_test_op_5))    
-        self.assertTrue(correct_op_6 == convert(of_test_op_6))
-        self.assertTrue(correct_op_7 == convert(of_test_op_7))
+        # self.assertTrue(correct_op_1 == convert(of_test_op_1))
+        
+    def test_fer_op_LiH_qk_of(self):
+        molecule = 'Li .0 .0 0.0;H .0 .0 1.45'
+        driver = PySCFDriver(atom=molecule, basis='sto3g')
+        qmolecule = driver.run()
+        one_b = qmolecule.one_body_integrals
+        two_b = qmolecule.two_body_integrals
 
-    def test_qis_of(self):
-        qis_u_1 = np.array([1, 1, 1, 1, 0])
-        qis_v_1 = np.array([0, 0, 0, 0, 0])
-        qis_u_2 = np.zeros(5)
-        qis_v_2 = np.zeros(5)
-        qis_u_3 = np.array([0, 1, 1, 0, 0])
-        qis_v_3 = np.array([1, 1, 0, 0, 0])
-        qis_u_4 = np.zeros(4)
-        qis_v_4 = np.ones(4)
-        qis_u_5 = np.ones(4)
-        qis_v_5 = np.ones(4)
-        
-        qis_pauli_1 = Pauli(qis_u_1,qis_v_1)
-        qis_pauli_2 = Pauli(qis_u_2,qis_v_2)
-        qis_pauli_3 = Pauli(qis_u_3,qis_v_3)
-        qis_pauli_4 = Pauli(qis_u_4,qis_v_4)
-        qis_pauli_5 = Pauli(qis_u_5,qis_v_5)
-        
-        qis_test_op_1 = WeightedPauliOperator(paulis=[[1., qis_pauli_1]])
-        qis_test_op_2 = WeightedPauliOperator(paulis=[[1., qis_pauli_2]])
-        qis_test_op_3 = WeightedPauliOperator(paulis=[[1., qis_pauli_3]])
-        qis_test_op_4 = WeightedPauliOperator(paulis=[[1., qis_pauli_4]])
-        qis_test_op_5 = WeightedPauliOperator(paulis=[[1., qis_pauli_5]])
-        qis_test_op_6 = qis_test_op_1 + qis_test_op_3
-        qis_test_op_7 = qis_test_op_2 + qis_test_op_3
-        correct_op_1 = QubitOperator(((0, 'Z'),(1, 'Z'),(2, 'Z'),(3, 'Z')),1.0)
-        correct_op_3 = QubitOperator(((0, 'X'),(1, 'Y'),(2, 'Z')),1.0)
-        correct_op_4 = QubitOperator(((0, 'X'),(1, 'X'),(2, 'X'),(3, 'X')),1.0)
-        correct_op_5 = QubitOperator(((0, 'Y'),(1, 'Y'),(2, 'Y'),(3, 'Y')),1.0)
-        correct_op_6 = correct_op_1 + correct_op_3
-        correct_op_7 = QubitOperator.identity() + correct_op_3
-        self.assertTrue(correct_op_1 == convert(qis_test_op_1,'OPENFERMION'))
-        self.assertTrue(correct_op_3 == convert(qis_test_op_3,'OPENFERMION'))
-        self.assertTrue(correct_op_4 == convert(qis_test_op_4,'OPENFERMION'))
-        self.assertTrue(correct_op_5 == convert(qis_test_op_5,'OPENFERMION'))
-        self.assertTrue(correct_op_6 == convert(qis_test_op_6,'OPENFERMION'))
-        self.assertTrue(correct_op_7 == convert(qis_test_op_7,'OPENFERMION'))
 
 if __name__=='__main__':
     unittest.main()
