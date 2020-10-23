@@ -2,8 +2,9 @@
 # All rights reserved-2020©. 
 
 import numpy as np
+import numpy
 from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister, execute
-from pyscf import gto
+from pyscf import gto, ao2mo
 
 class classical_calc_output():
     def __init__(self,molecule_name, geometry, basis, library):
@@ -15,6 +16,7 @@ class classical_calc_output():
         self.two_body_integrals = None
         self.pyscf_result_object = None
         self.qiskit_hamiltonian_object = None
+        self.hf_energy = None
 
 
 class quantum_calc_output():
@@ -23,16 +25,30 @@ class quantum_calc_output():
         self.geometry = geometry
         self.basis = basis
         self.library = library
+        self.quantum_circ = None
+        self.algo_name = None
+        self.one_body_integrals = None
+        self.two_body_integrals = None
+        self.qubit_operator = None
+        self.fermionic_operator = None
+        
 
 
-def classical_cal(library='pyscf', molecule_name='', geometry='H 0 0 0; H 0 0 1',
-                    basis = 'sto-3g', method='HF'):
+
+def classical_cal(library='pyscf', molecule_name='', geometry='H 0 0 0; H 0 0 .7414',
+                    basis = 'sto-3g', method='HF', print_code=False):
     
     # Inputs for pyscf that we may want to include
     if library=='pyscf':
-        pyscf_code_run(molecule_name, geometry,basis,method):
+        if print_code:
+            pyscf_code_print(molecule_name, geometry,basis,method)
+        else:
+            pyscf_code_run(molecule_name, geometry,basis,method)
     elif library=='qiskit':
-        pass
+        if print_code:
+            qiskit_classical_code_print(molecule_name, geometry,basis,method)
+        else:
+            qiskit_classical_code_run(molecule_name, geometry,basis,method)
     elif library=='psi4':
         pass
     elif library=='openfermion':
@@ -42,21 +58,22 @@ def classical_cal(library='pyscf', molecule_name='', geometry='H 0 0 0; H 0 0 1'
     else:
         raise
     
-    # mol = gto.Mole()
-    # mol.verbose = 5
-    # mol.output = 'h2.log'
-    # mol.atom = 'H 0 0 0; H 0 0 1'
-    # mol.basis = 'sto-3g'
-
 
 
 def quantum_calc(library='qiskit', mapping='jordan_wigner', 
                 qubit_tapering=False,algorithm='EE',
-                output='ground_state_energy'):
+                output='ground_state_energy', print_code=False):
     
     # Inputs for pyscf that we may want to include
     if library=='qiskit':
-        qiskit_quantum_code_run()
+        if print_code:
+            qiskit_quantum_code_print(mapping='jordan_wigner', 
+                qubit_tapering=False,algorithm='EE',
+                output='ground_state_energy')
+        else:
+            qiskit_quantum_code_run(mapping='jordan_wigner', 
+                qubit_tapering=False,algorithm='EE',
+                output='ground_state_energy')
     elif library=='openfermion':
         pass
     elif gaussian:
@@ -82,12 +99,12 @@ def pyscf_code_run(molecule_name,geometry,basis,method):
     # mol.mass = {'O1': 18, 'H': 2}
 
 
-    classical_output = classical_calc_output(molecule_name, geometry, basis, library)
-    
+    classical_output = classical_calc_output(molecule_name, geometry, basis, library='pyscf')
+    mol.build()
     if method == 'RHF':
         scf_setup = scf.RHF(mol)
     elif method=='UHF':
-        scf_setup = scf.UHF(mol):
+        scf_setup = scf.UHF(mol)
     elif method=='ROHF':
         scf_setup = scf.ROHF(mol)
     else:
@@ -99,7 +116,7 @@ def pyscf_code_run(molecule_name,geometry,basis,method):
     # scf_setup.init_guess = init_guess
     
     ehf = scf_setup.kernel()
-    if len(m_f.mo_coeff.shape) > 2:
+    if len(scf_setup.mo_coeff.shape) > 2:
         mo_coeff = scf_setup.mo_coeff[0]
         mo_coeff_b = scf_setup.mo_coeff[1]
     else:
@@ -127,9 +144,9 @@ def pyscf_code_run(molecule_name,geometry,basis,method):
     mohijkl_bb = None
     mohijkl_ba = None
     if mo_coeff_b is not None:
-        mo_eri_b = ao2mo.incore.full(m_f._eri, mo_coeff_b, compact=False)
+        mo_eri_b = ao2mo.incore.full(scf_setup._eri, mo_coeff_b, compact=False)
         mohijkl_bb = mo_eri_b.reshape(norbs, norbs, norbs, norbs)
-        mo_eri_ba = ao2mo.incore.general(m_f._eri,
+        mo_eri_ba = ao2mo.incore.general(scf_setup._eri,
                                          (mo_coeff_b, mo_coeff_b, mo_coeff, mo_coeff),
                                          compact=False)
         mohijkl_ba = mo_eri_ba.reshape(norbs, norbs, norbs, norbs)
@@ -248,7 +265,7 @@ def pyscf_code_print(molecule_name,geometry,basis,method):
     # scf_setup.init_guess = init_guess
     
     ehf = scf_setup.kernel()
-    if len(m_f.mo_coeff.shape) > 2:
+    if len(scf_setup.mo_coeff.shape) > 2:
         mo_coeff = scf_setup.mo_coeff[0]
         mo_coeff_b = scf_setup.mo_coeff[1]
     else:
@@ -276,9 +293,9 @@ def pyscf_code_print(molecule_name,geometry,basis,method):
     mohijkl_bb = None
     mohijkl_ba = None
     if mo_coeff_b is not None:
-        mo_eri_b = ao2mo.incore.full(m_f._eri, mo_coeff_b, compact=False)
+        mo_eri_b = ao2mo.incore.full(scf_setup._eri, mo_coeff_b, compact=False)
         mohijkl_bb = mo_eri_b.reshape(norbs, norbs, norbs, norbs)
-        mo_eri_ba = ao2mo.incore.general(m_f._eri,
+        mo_eri_ba = ao2mo.incore.general(scf_setup._eri,
                                          (mo_coeff_b, mo_coeff_b, mo_coeff, mo_coeff),
                                          compact=False)
         mohijkl_ba = mo_eri_ba.reshape(norbs, norbs, norbs, norbs)
@@ -351,19 +368,19 @@ def pyscf_code_print(molecule_name,geometry,basis,method):
 def qiskit_classical_code_run(molecule_name,geometry,basis,method):
     import numpy as np
     from qiskit.chemistry.drivers import PySCFDriver, HFMethodType
-    driver = PySCFDriver(atom=molecule, basis='sto3g',hf_method=HFMethodType.RHF,)
+    driver = PySCFDriver(atom=geometry, basis='sto3g',hf_method=HFMethodType.RHF,)
     qmolecule = driver.run()
-    classical_output = classical_calc_output(molecule_name,geometry,basis,library)
+    classical_output = classical_calc_output(molecule_name,geometry,basis,library='qiskit')
     classical_output.one_body_integrals = qmolecule.one_body_integrals
     classical_output.two_body_integrals = qmolecule.two_body_integrals
     return classical_output
     
 
 def qiskit_classical_code_print(molecule_name,geometry,basis,method):
-    pyscfdriver_code_string = 'PySCFDriver(atom='+molecule+', basis='+basis+',hf_method=HFMethodType.'+method)
+    pyscfdriver_code_string = 'PySCFDriver(atom='+molecule+', basis='+basis+',hf_method=HFMethodType.'+method+')'
     code_string = '''import numpy as np
     from qiskit.chemistry.drivers import PySCFDriver, HFMethodType
-    driver ='''+pyscfdriver_code_string'''
+    driver ='''+pyscfdriver_code_string+'''
     qmolecule = driver.run()
     classical_output = classical_calc_output(molecule_name,geometry,basis,library)
     classical_output.one_body_integrals = qmolecule.one_body_integrals
@@ -373,12 +390,20 @@ def qiskit_classical_code_print(molecule_name,geometry,basis,method):
 
 
 def qiskit_quantum_code_run(classical_output, mapping='jordan_wigner',
-                            qubit_tapering=False):
+                            qubit_tapering=False,run_vqe=True, vqe_config=None):
     one_b = classical_output.one_body_integrals
     two_b = classical_output.two_body_integrals
     fer_op = FermionicOperator(h1=one_b, h2=two_b)
     # transform the fermionic operator to qubit operator
     qubit_op = fer_op.mapping('jordan_wigner')
+    if qubit_tapering:
+        pass
+    output = quantum_calc_output(classical_output.molecule_name,
+                                 classical_output.geometry,
+                                  classical_output.basis,library='qiskit')
+    output.fermionic_operator = fer_op
+    output.qubit_operator = qubit_op
+
 
 
 
@@ -392,117 +417,26 @@ def openfermion_quantum_code_run():
 def openfermion_quantum_code_print():
     pass
 
-mol.symmetry = 1
-mol.charge = 1
-mol.spin = 1
-mol.nucmod = {'O1': 1}
-mol.mass = {'O1': 18, 'H': 2}
+def run_cofiguration(quantum_calc_output, run_on_hardware=False, hardware_cofig=Nonce,
+                    simulation_config=None):
+    if run_on_hardware:
+        pass
+    else:
+        if simulation_config is None:
+            print('Please pass valid simulation configuration')
+        else:
+            if simulation_config['software_platform']=='IBM':
+                if simulation_config['Noisy']:
+                    pass
+                else:
+                    if simulation_config['simulator']=='statevector_simulator':
+                        pass
+                    elif simulation_config['simulator']=='qasm_simulator':
+                        pass
+                    elif simulation_config['simulator']=='unitary_simulator':
+                        pass
+            
 
-
-# finally building the molecule after
-
-
-
-from pyscf import scf
-m = scf.RHF(mol)
-print('E(HF) = %g' % m.kernel())
-
-
-# ++++++++++++++++++++++++++++++
-# Running using qiskit and its drivers
-# +++++++++++++++++++++++++++++++++++
-
-# Importing the packages
-import numpy as np
-# Importing the driver that lets us access pyscf from qiskit
-from qiskit.chemistry.drivers import PySCFDriver
-# Importing the function for exact diagonalization
-from qiskit.aqua.algorithms import ExactEigensolver as EE
-# Import the class fermionicoperator
-from qiskit.chemistry import FermionicOperator
-
-# 1. Setting up the system in pyscf and running Hartree-Fock calculation.
-# Define the molecule
-molecule = 'H .0 .0 0.0;H .0 .0 0.7414'
-# Setup the pyscf driver in qiskit
-driver = PySCFDriver(atom=molecule, basis='sto3g')
-# Run the pyscf driver
-qmolecule = driver.run()
-# get the one-body and two-body integrals
-one_b = qmolecule.one_body_integrals
-two_b = qmolecule.two_body_integrals
-
-
-# 2.Using the integrals obtained from pyscf, to transform
-# the Hamiltonian from second quantization formalism to qubit operators.
-fer_op = FermionicOperator(h1=one_b, h2=two_b)
-# transform the fermionic operator to qubit operator
-qubit_op = fer_op.mapping('jordan_wigner')
-
-
-
-ferOp = FermionicOperator(h1=molecule.one_body_integrals, h2=molecule.two_body_integrals)
-qubitOp = ferOp.mapping(map_type='JORDAN_WIGNER', threshold=0.00000001)
-qubitOp.chop(10**-10)
-
-# Using exact eigensolver to get the smallest eigenvalue
-exact_eigensolver = NumPyMinimumEigensolver(qubitOp)
-ret = exact_eigensolver.run()
-print('The exact ground state energy is: {}'.format(ret.eigenvalue.real))
-
-
-
-# 3. exact diagonalize the matrix form of the qubit operator
-result = EE(qubit_op).run()
-lines, result = operator.process_algorithm_result(result)
-energies = result['energy']
-hf_energies = result['hf_energy']  # Independent of algorithm & mapping
-
-# print('One body integrals:', one_b)
-# print('Two body integrals:', two_b)
-print(qubit_op.print_operators())
-print('Distance: ', 0.7414)
-print('Energy:', energies)
-print('Hartree-Fock energy', hf_energies)
-
-
-# ++++++++++++++++++++++++++++++
-# Running using openfermion and openfermion-pyscf-plugin
-# +++++++++++++++++++++++++++++++++++
-# Importing the relavant classes and functions
-from openfermion.hamiltonians import MolecularData
-from openfermion.transforms import get_fermion_operator, get_sparse_operator, jordan_wigner
-from openfermion.utils import get_ground_state
-
-# 1. Setting up the system in pyscf and running Hartree-Fock calculation.
-# Define the molecule
-diatomic_bond_length = .7414
-geometry = [('H', (0., 0., 0.)), ('H', (0., 0., diatomic_bond_length))]
-basis = 'sto-3g'
-multiplicity = 1
-charge = 0
-description = str(diatomic_bond_length)
-
-# Initialize the molecule
-molecule = MolecularData(geometry, basis, multiplicity,
-                         charge, description)
-# Just like qiskit-chemistry openfermion uses pyscf, but    the calculation is done using
-# a plugin and the results are stored and can be used later. The results for H2 are
-# already present, so we can just use them.
-molecule.load()
-
-
-# Get the Hamiltonian in an active space.
-molecular_hamiltonian = molecule.get_molecular_hamiltonian()
-
-# 2.Using the integrals obtained from pyscf, to transform
-# the Hamiltonian from second quantization formalism to qubit operators.
-fermion_hamiltonian = get_fermion_operator(molecular_hamiltonian)
-qubit_hamiltonian = jordan_wigner(fermion_hamiltonian)
-qubit_hamiltonian.compress()
-print('The Jordan-Wigner Hamiltonian in canonical basis follows:\n{}'.format(qubit_hamiltonian))
-
-# 3. exact diagonalize the matrix form of the qubit operator
-sparse_hamiltonian = get_sparse_operator(qubit_hamiltonian)
-energy, state = get_ground_state(sparse_hamiltonian)
-print('Ground state energy before rotation is {} Hartree.\n'.format(energy))
+if __name__ == "__main__":
+    classical_cal()
+    classical_cal(library='qiskit')
