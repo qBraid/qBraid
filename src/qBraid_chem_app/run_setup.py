@@ -39,7 +39,6 @@ def run_config_qiskit_run(quantum_calc_output,
                     print("VQE Result:", vqe_result)
 
                 
-
 def get_ibm_device_quantum_instance(device_name):
     if device_name=='vigo':
         from qiskit.test.mock import FakeVigo
@@ -69,5 +68,4 @@ def get_ibm_device_quantum_instance(device_name):
                                     coupling_map=coupling_map,
                                     measurement_error_mitigation_cls=CompleteMeasFitter,
                                     cals_matrix_refresh_period=30)
-
     return quantum_instance

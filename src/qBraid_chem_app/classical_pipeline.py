@@ -5,6 +5,12 @@ from qiskit.aqua.operators import Z2Symmetries
 from pyscf import gto, ao2mo
 import numpy
 
+import os
+
+from openfermion.hamiltonians import MolecularData
+
+import openfermionpyscf
+
 def pyscf_code_run(molecule_name,geometry,basis,method):
     from pyscf import gto, scf
     threshold =1e-12
@@ -283,9 +289,28 @@ def qiskit_classical_code_print(molecule_name,geometry,basis,method):
     return code_string
 
 def openfermion_classical_code_run(molecule_name,geometry,basis,method):
+    
+    if isinstance(geometry,str):
+        geo_list = 'H 0 0 0; H 0 0 .7414'.replace(';',' ').split()
+        geometry = []
+        for i in range(int(len(geo_list)/4)):
+            atom = [geo_list[4*i]]
+            coord = [float(geo_list[4*i+1]),float(geo_list[4*i+2]),float(geo_list[4*i+3])]
+            atom.append(coord)
+            geometry.append(atom)
+    charge = 0
+    multiplicity = 1
+    of_molecule = openfermionpyscf.generate_molecular_hamiltonian(
+            geometry, 'sto-3g', multiplicity)
+    classical_output = classical_calc_output(molecule_name,geometry,basis,library='qiskit')
+    classical_output.calculations_ran = True
+    classical_output.one_body_integrals = of_molecule.one_body_tensor
+    classical_output.two_body_integrals = of_molecule.two_body_tensor
+    code_str = openfermion_classical_code_print(molecule_name,geometry,basis,method)
+    return code_str, classical_output
+
+def openfermion_classical_code_print(molecule_name,geometry,basis,method):
     pass
-
-
 
 class classical_calc_output():
     def __init__(self,molecule_name: str, geometry: str, basis: str, library: str):

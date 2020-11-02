@@ -7,7 +7,6 @@ from qiskit.aqua.components.optimizers import COBYLA, SPSA, SLSQP
 from qiskit.aqua.algorithms import VQE, NumPyEigensolver
 from qiskit.circuit.library import EfficientSU2
 from qiskit.chemistry.components.variational_forms import UCCSD
-
 from qiskit.chemistry import FermionicOperator
 
 def store_intermediate_result(eval_count, parameters, mean, std):
