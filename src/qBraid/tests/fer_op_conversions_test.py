@@ -2,14 +2,16 @@
 # All rights reserved-2019©. 
 import unittest
 import numpy as np
-from openfermion.ops import FermionOperator, InteractionOperator
-from openfermion.utils import count_qubits, get_ground_state
 from qBraid.conversions.fer_op_conversion import convert
 
 from openfermion.hamiltonians import MolecularData
-from openfermion.transforms import get_fermion_operator,
-         get_sparse_operator, jordan_wigner, get_interaction_operator
-from openfermion.utils import get_ground_state
+from openfermion.ops import FermionOperator, InteractionOperator
+from openfermion.transforms import (get_fermion_operator,
+                                    get_sparse_operator, jordan_wigner,
+                                     get_interaction_operator)
+from openfermion.utils import (normal_ordered, eigenspectrum,
+                                get_ground_state,count_qubits)
+
 
 from qiskit.chemistry.drivers import PySCFDriver
 from qiskit.aqua.algorithms import NumPyEigensolver as EE
@@ -22,9 +24,7 @@ import scipy.linalg
 
 class convert_fer_op_test(unittest.TestCase):
     def test_fer_op_H2_of_qk(self):
-    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
-    #        Using H2 Hamiltonian to get Fermion operator in Openfermion
-    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+        # Initializing fermionic Hamiltonian in openfermion
         diatomic_bond_length = .7414
         geometry = [('H', (0., 0., 0.)), ('H', (0., 0., diatomic_bond_length))]
         basis = 'sto-3g'
@@ -34,24 +34,29 @@ class convert_fer_op_test(unittest.TestCase):
         molecule = MolecularData(geometry, basis, multiplicity,
                                 charge, description)
         molecule.load()
+        
         molecular_hamiltonian = molecule.get_molecular_hamiltonian()
         fermion_hamiltonian = get_fermion_operator(molecular_hamiltonian)
-        mol_int_op = get_interaction_operator(fermion_hamiltonian)
-        print(type(mol_int_op))
-        print(type(molecular_hamiltonian))
-        convert(molecular_hamiltonian)
-        # Remove the following lines later.
-        # print(mol_i/nt_op.one_body_tensor==molecular_hamiltonian.one_body_tensor)
-        # print(mol_int_op.two_body_tensor==molecular_hamiltonian.two_body_tensor)
-        # print(molecular_hamiltonian.two_body_tensor-mol_int_op.two_body_tensor)
-        # print(mol_int_op==molecular_hamiltonian)
-        qubit_hamiltonian = jordan_wigner(fermion_hamiltonian)
-        qubit_hamiltonian.compress()
-        # exit()
-        # print('The Jordan-Wigner Hamiltonian in canonical basis follows:\n{}'.format(qubit_hamiltonian))
-        sparse_hamiltonian = get_sparse_operator(qubit_hamiltonian)
-        energy, state = get_ground_state(sparse_hamiltonian)
-        # print('Ground state energy before rotation is {} Hartree.\n'.format(energy))
+        int_op = InteractionOperator(constant=molecular_hamiltonian.constant ,one_body_tensor=molecular_hamiltonian.one_body_tensor,two_body_tensor=molecular_hamiltonian.two_body_tensor)
+        # Using qBraid convert function
+        qiskit_fer_op = convert(fermion_hamiltonian)
+        qiskit_fer_op1 = convert(int_op)
+        qiskit_qub_op = qiskit_fer_op.mapping('jordan_wigner')
+        qiskit_qub_op1 = qiskit_fer_op1.mapping('jordan_wigner')
+        evals = EE(qiskit_qub_op,k=16).run()
+        evals1 = EE(qiskit_qub_op,k=16).run()
+        
+
+        molecule = 'H .0 .0 0.0;H .0 .0 .7414'
+        driver = PySCFDriver(atom=molecule, basis='sto3g')
+        qmolecule = driver.run()
+        one_b = qmolecule.one_body_integrals
+        two_b = qmolecule.two_body_integrals
+        fer_op = FermionicOperator(one_b,two_b)
+        qiskit_qub_op_ref = fer_op.mapping('jordan_wigner')
+        evals_correct = EE(qiskit_qub_op,k=16).run()        
+        self.assertTrue(np.all(np.real(evals_correct.eigenvalues)==np.real(evals.eigenvalues)))
+        self.assertTrue(np.all(np.real(evals_correct.eigenvalues)==np.real(evals1.eigenvalues)))
 
 
     def test_fer_op_H2_qk_of(self):
@@ -60,79 +65,127 @@ class convert_fer_op_test(unittest.TestCase):
         qmolecule = driver.run()
         one_b = qmolecule.one_body_integrals
         two_b = qmolecule.two_body_integrals
-
-
         fer_op = FermionicOperator(h1=one_b, h2=two_b)
-        convert(fer_op)
-    
-
-    def test_fer_op_LiH_of_qk(self):
-        # Load saved file for LiH.
-        diatomic_bond_length = 1.45
-        geometry = [('Li', (0., 0., 0.)), ('H', (0., 0., diatomic_bond_length))]
+        fer_op_of = convert(fer_op, 'OPENFERMION')
+        qub_op_of = jordan_wigner(fer_op_of)
+        es_of = eigenspectrum(qub_op_of)
+        
+        diatomic_bond_length = .7414
+        geometry = [('H', (0., 0., 0.)), ('H', (0., 0., diatomic_bond_length))]
         basis = 'sto-3g'
         multiplicity = 1
-        # Set Hamiltonian parameters.
-        active_space_start = 1
-        active_space_stop = 3
-        # Generate and populate instance of MolecularData.
-        molecule = MolecularData(geometry, basis, multiplicity, description="1.45")
+        charge = 0
+        description = str(diatomic_bond_length)
+        molecule = MolecularData(geometry, basis, multiplicity,
+                                charge, description)
         molecule.load()
-
-        # Get the Hamiltonian in an active space.
-        molecular_hamiltonian = molecule.get_molecular_hamiltonian(
-            occupied_indices=range(active_space_start),
-            active_indices=range(active_space_start, active_space_stop))
-
-        # Map operator to fermions and qubits.
-        fermion_hamiltonian = get_fermion_operator(molecular_hamiltonian)
-        qubit_hamiltonian = jordan_wigner(fermion_hamiltonian)
-        qubit_hamiltonian.compress()
-        # print('The Jordan-Wigner Hamiltonian in canonical basis follows:\n{}'.format(qubit_hamiltonian))
-
-        # Get sparse operator and ground state energy.
-        sparse_hamiltonian = get_sparse_operator(qubit_hamiltonian)
-        energy, state = get_ground_state(sparse_hamiltonian)
-        print('Ground state energy before rotation is {} Hartree.\n'.format(energy))
-
-        # Randomly rotate.
-        n_orbitals = molecular_hamiltonian.n_qubits // 2
-        n_variables = int(n_orbitals * (n_orbitals - 1) / 2)
-        numpy.random.seed(1)
-        random_angles = numpy.pi * (1. - 2. * numpy.random.rand(n_variables))
-        kappa = numpy.zeros((n_orbitals, n_orbitals))
-        index = 0
-        for p in range(n_orbitals):
-            for q in range(p + 1, n_orbitals):
-                kappa[p, q] = random_angles[index]
-                kappa[q, p] = -numpy.conjugate(random_angles[index])
-                index += 1
-
-            # Build the unitary rotation matrix.
-            difference_matrix = kappa + kappa.transpose()
-            rotation_matrix = scipy.linalg.expm(kappa)
-
-            # Apply the unitary.
-            molecular_hamiltonian.rotate_basis(rotation_matrix)
-
-        # Get qubit Hamiltonian in rotated basis.
-        qubit_hamiltonian = jordan_wigner(molecular_hamiltonian)
-        qubit_hamiltonian.compress()
-        print('The Jordan-Wigner Hamiltonian in rotated basis follows:\n{}'.format(qubit_hamiltonian))
-
-        # Get sparse Hamiltonian and energy in rotated basis.
-        sparse_hamiltonian = get_sparse_operator(qubit_hamiltonian)
-        energy, state = get_ground_state(sparse_hamiltonian)
-        print('Ground state energy after rotation is {} Hartree.'.format(energy))
         
-        # self.assertTrue(correct_op_1 == convert(of_test_op_1))
+        molecular_hamiltonian = molecule.get_molecular_hamiltonian()
+        fermion_hamiltonian = get_fermion_operator(molecular_hamiltonian)
+        fermion_hamiltonian = fermion_hamiltonian
+        qub_op = jordan_wigner(fermion_hamiltonian)
+        es_correct = eigenspectrum(qub_op)
+        self.assertTrue(np.all(np.round(es_correct,7)==np.round(es_of+np.ones(np.shape(es_of))*0.71375399,7)))
+
+    def random_hams_of_qiskit(self):
+        one_b_list = self.get_rand_one_b_tensors()
+        two_b_list = self.get_rand_two_b_tensors()
+
+
+
+    def get_rand_one_b_tensors(self):
+        one_body_0 = np.zeros([4,4])
+        one_body_1 = np.array( [[0.4, 0, 0, 0],
+                                [0, .5, 0, 0],
+                                [0, 0, .6, 0],
+                                [0, 0, 0, .7]])
+        one_body_2 = np.array( [[1, 2, 0, 3],
+                                [2, 1, 2, 0],
+                                [0, 2, 1, 2.5],
+                                [3, 0, 2.5, 1]])
+        one_body_3 = np.array( [[1, 2, 0, 3],
+                                [2, 1, 2, 0],
+                                [0, 2, 1, 2.5],
+                                [3, 0, 2.5, 1]])
+        one_body_4 = np.array( [[1.1, 2, 1.5, 3],
+                                [2, 1.2, 2, 1.3],
+                                [1.5, 2, 1.3, 2.5], 
+                                [3, 1.3, 2.5, 1.4]])
+        one_body_5 = np.random.rand(4,4)
+        one_body_5 = one_body_5+one_body_5.T
+        one_body_6 = np.random.rand(4,4)
+        one_body_6 = one_body_6+one_body_6.T
+        one_body_7 = np.random.rand(4,4)
+        one_body_7 = one_body_7+one_body_7.T
+        one_body_8 = np.random.rand(4,4)
+        one_body_8 = one_body_8+one_body_8.T
+        one_body_tensor_list = []
+        for i in range(8):
+            one_body_tensor_list.append(eval('one_body_'+str(i)))
+        return one_body_tensor_list
+
+    def get_rand_two_b_tensors(self):
+            
+        two_body_0 = np.zeros([4,4,4,4])
+        # initiating number operator terms for all the possible cases
+        two_body_1 = copy.deepcopy(two_body_0)
+        two_body_1[(1, 2, 3, 1)] = 0.3
+        two_body_1[(1, 3, 2, 1)] = 0.3
+        two_body_2 = copy.deepcopy(two_body_1)
+        two_body_2[(1, 2, 1, 3)] = 0.25
+        two_body_2[(3, 1, 2, 1)] = 0.25
+        two_body_3 = copy.deepcopy(two_body_2)
+        two_body_3[(0, 2, 2, 1)] = 0.69
+        two_body_3[(1, 2, 2, 0)] = 0.69
+        two_body_4 = copy.deepcopy(two_body_3)
+        two_body_4[(1, 2, 3, 2)] = 1.1
+        two_body_4[(2, 3, 2, 1)] = 1.1
+        two_body_5 = copy.deepcopy(two_body_4)
+        two_body_5[(2, 2, 2, 2)] = 0.3
+        two_body_6 = copy.deepcopy(two_body_5)
+        two_body_6[(1, 2, 1, 2)] = 0.3
+        two_body_6[(2, 1, 2, 1)] = 0.3
+        two_body_7 = copy.deepcopy(two_body_6)
+        two_body_7[(0, 1, 2, 3)] = 1.39
+        two_body_7[(3, 2, 1, 0)] = 1.39
+        two_body_8 = copy.deepcopy(two_body_7)
+        two_body_8[(0, 1, 1, 3)] = 0.59
+        two_body_8[(3, 1, 1, 0)] = 0.59
+        two_body_tensor_list = []
+        for i in range(8):
+            two_body_tensor_list.append(eval('two_body_'+str(i)))
+        return two_body_tensor_list    
+        
+
         
     def test_fer_op_LiH_qk_of(self):
+        bond_length = 1.45
+        geometry = [('Li', (0., 0., 0.)), ('H', (0., 0., bond_length))]
+        basis = 'sto-3g'
+        multiplicity = 1
+        charge = 0
+        description = str(bond_length)
+        molecule = MolecularData(geometry, basis, multiplicity,
+                                charge, description)
+        molecule.load()
+        molecular_ham = molecule.get_molecular_hamiltonian()
+        fermion_hamiltonian = get_fermion_operator(molecular_ham)
+        fer_op_qiskit = convert(fermion_hamiltonian)
+        qub_op_qiskit = fer_op_qiskit.mapping('jordan_wigner')
+        evals = EE(qub_op_qiskit,k=8).run()
+
         molecule = 'Li .0 .0 0.0;H .0 .0 1.45'
+        # molecule = 'H .0 .0 0.0;H .0 .0 .7414'
         driver = PySCFDriver(atom=molecule, basis='sto3g')
         qmolecule = driver.run()
         one_b = qmolecule.one_body_integrals
         two_b = qmolecule.two_body_integrals
+        fer_op = FermionicOperator(one_b,two_b)
+        fer_op._convert_to_interleaved_spins()
+        qub_op = fer_op.mapping('jordan_wigner')
+        evals_correct = EE(qub_op,k=8).run()
+        self.assertTrue(np.all(np.round(np.real(evals.eigenvalues),7)==np.round(np.real(evals_correct.eigenvalues),7)))
+        
 
 
 if __name__=='__main__':
