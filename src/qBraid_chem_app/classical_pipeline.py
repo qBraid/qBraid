@@ -149,22 +149,18 @@ def pyscf_code_print(molecule_name: str,geometry: str ,basis: str,method: str):
     mol.atom = '''+str(geometry)+'''
     mol.basis = '''+basis
 
-    code_string=code_string+'''\n classical_output = classical_calc_output(molecule_name, geometry, basis, library)
+    code_string=code_string+'''\n classical_output = classical_calc_output(molecule_name, geometry, basis, library)'''
     
     if method == 'RHF':
-        scf_setup = scf.RHF(mol)
+        code_string=code_string+'''scf_setup = scf.RHF(mol)'''
     elif method=='UHF':
-        scf_setup = scf.UHF(mol):
+        code_string=code_string+'''scf_setup = scf.UHF(mol)'''
     elif method=='ROHF':
-        scf_setup = scf.ROHF(mol)
+        code_string=code_string+'''scf_setup = scf.ROHF(mol)'''
     else:
-        scf_setup = scf.RHF(mol)
+        code_string=code_string+'''scf_setup = scf.RHF(mol)'''
     
-    # part of future release
-    # scf_setup.conv_tol = conv_tol
-    # scf_setup.max_cycle = max_cycle
-    # scf_setup.init_guess = init_guess
-    
+    code_string=code_string+'''
     ehf = scf_setup.kernel()
     if len(scf_setup.mo_coeff.shape) > 2:
         mo_coeff = scf_setup.mo_coeff[0]
@@ -288,16 +284,10 @@ def qiskit_classical_code_print(molecule_name,geometry,basis,method):
     '''
     return code_string
 
-def openfermion_classical_code_run(molecule_name,geometry,basis,method):
-    
+def openfermion_classical_code_run(molecule_name,geometry,basis,method):   
     if isinstance(geometry,str):
-        geo_list = 'H 0 0 0; H 0 0 .7414'.replace(';',' ').split()
-        geometry = []
-        for i in range(int(len(geo_list)/4)):
-            atom = [geo_list[4*i]]
-            coord = [float(geo_list[4*i+1]),float(geo_list[4*i+2]),float(geo_list[4*i+3])]
-            atom.append(coord)
-            geometry.append(atom)
+        geometry=get_openfermion_geometry(geometry)
+    
     charge = 0
     multiplicity = 1
     of_molecule = openfermionpyscf.generate_molecular_hamiltonian(
@@ -309,8 +299,31 @@ def openfermion_classical_code_run(molecule_name,geometry,basis,method):
     code_str = openfermion_classical_code_print(molecule_name,geometry,basis,method)
     return code_str, classical_output
 
+def get_openfermion_geometry(geometry_str):
+    geo_list = geometry_str.replace(';',' ').split()
+    geometry = []
+    for i in range(int(len(geo_list)/4)):
+        atom = [geo_list[4*i]]
+        coord = [float(geo_list[4*i+1]),float(geo_list[4*i+2]),float(geo_list[4*i+3])]
+        atom.append(coord)
+        geometry.append(atom)
+    return geometry
+
 def openfermion_classical_code_print(molecule_name,geometry,basis,method):
-    pass
+    code_string ='''import openfermionpyscf
+    from qBraid_chem_app.classical_pipeline import get_openfermion_geometry,classical_calc_output'''
+    if isinstance(geometry,str):
+        code_string+='''get_openfermion_geometry(geometry)'''
+
+    code_string+='''charge = 0
+    multiplicity = 1
+    of_molecule = openfermionpyscf.generate_molecular_hamiltonian('''+
+            geometry+','+basis+','+ '''multiplicity)
+    classical_output = classical_calc_output('''+molecule_name','+str(geometry)+','+basis','+'''library=openfermion)
+    classical_output.calculations_ran = True
+    classical_output.one_body_integrals = of_molecule.one_body_tensor
+    classical_output.two_body_integrals = of_molecule.two_body_tensor'''
+    return code_string
 
 class classical_calc_output():
     def __init__(self,molecule_name: str, geometry: str, basis: str, library: str):

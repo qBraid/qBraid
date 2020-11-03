@@ -158,6 +158,8 @@ if __name__ == "__main__":
     code_str,classical_output=classical_cal()
     code_str,classical_output=classical_cal(classical_library)
     print(classical_output.one_body_integrals)
+    
+    
     classical_library = 'openfermionpyscf'
     code_str,classical_output=classical_cal(classical_library)
     #quantum checks
@@ -165,9 +167,6 @@ if __name__ == "__main__":
     # run configuration check
     run_library = 'qiskit'
     print(classical_output.one_body_integrals)
-
-
-
     
     
     # # Custom configuration runs
