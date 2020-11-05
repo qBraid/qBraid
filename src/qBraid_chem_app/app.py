@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # All rights reserved-2020©. 
-from classical_pipeline import (pyscf_code_print,pyscf_code_run,
+from .classical_pipeline import (pyscf_code_print,pyscf_code_run,
                             qiskit_classical_code_print,qiskit_classical_code_run,
                             classical_calc_output,openfermion_classical_code_run,
                             openfermion_classical_code_print)
-from quantum_pipeline import (qiskit_quantum_code_print, qiskit_quantum_code_run,
+from .quantum_pipeline import (qiskit_quantum_code_print, qiskit_quantum_code_run,
                                 openfermion_quantum_code_print, openfermion_quantum_code_run,
                                 quantum_calc_output)
-from run_setup import (run_config_qiskit_run)
+from .run_setup import (run_config_qiskit_run)
 import numpy as np
 import numpy
 from pyscf import gto, ao2mo
@@ -26,8 +26,8 @@ class chem_app_results():
         self.ground_state_energy = None
         self.run_config = None
         
-def classical_cal(library:str='pyscf', molecule_name='',
-                  geometry='H 0 0 0; H 0 0 .7414',basis = 'sto-3g',
+def classical_cal(molecule_name,
+                  geometry,library:str='pyscf',basis = 'sto-3g',
                   method='HF', print_code=False):
     """
         Args:
@@ -79,7 +79,7 @@ def classical_cal(library:str='pyscf', molecule_name='',
 def quantum_calc(library:str,classical_output:classical_calc_output,
                  mapping:str='jordan_wigner', 
                 qubit_tapering=False,algorithm:str='exact_diag',  
-                algo_config:dict=None,print_code:bool=False):
+                algo_config:dict={'num_of_evs':2},print_code:bool=False):
     """
         Args:
             library (str): string specifying the library. Valid inputs:'qiskit','openfermion'
@@ -113,8 +113,11 @@ def quantum_calc(library:str,classical_output:classical_calc_output,
                 qubit_tapering,algorithm,algo_config)
     elif library=='openfermion':
         if print_code:
-            openfermion_quantum_code_print(classical_output, mapping,
-                            qubit_tapering,algo,algo_config)
+            code_str, quantum_output = openfermion_quantum_code_print(classical_output, mapping,
+                            qubit_tapering,algorithm,algo_config)
+        else:
+            code_str, quantum_output = openfermion_quantum_code_run(classical_output, mapping,
+                                                qubit_tapering,algorithm,algo_config)
     else:
         pass
     return code_str, quantum_output

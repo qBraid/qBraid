@@ -1,4 +1,4 @@
-from classical_pipeline import classical_calc_output
+from .classical_pipeline import classical_calc_output
 from qiskit.chemistry.drivers import PySCFDriver, HFMethodType
 from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister, execute
 from qiskit.aqua.operators import Z2Symmetries
@@ -9,6 +9,14 @@ from qiskit.circuit.library import EfficientSU2
 from qiskit.chemistry.components.variational_forms import UCCSD
 from qiskit.chemistry import FermionicOperator
 
+from openfermion.hamiltonians import MolecularData
+from openfermion.transforms import (get_fermion_operator,
+                                get_sparse_operator, jordan_wigner,
+                                bravyi_kitaev, parity_code, bravyi_kitaev_fast)
+from openfermion.utils import get_ground_state
+from openfermion.ops import FermionOperator, InteractionOperator
+
+history = {'eval_count': [], 'parameters': [], 'mean': [], 'std': []}
 def store_intermediate_result(eval_count, parameters, mean, std):
     history['eval_count'].append(eval_count)
     history['parameters'].append(parameters)
@@ -41,22 +49,24 @@ def qiskit_quantum_code_run(classical_output: classical_calc_output, mapping='jo
     output.qubit_operator = qubit_op
     code_str = qiskit_quantum_code_print(classical_output, mapping,
                             qubit_tapering)
-    if algo=='Exact_diag':
+    if algo=='exact_diag':
+        output.algo_name=algo
         k = algo_config['num_of_evs']
-        energies = qiskit_exact_diag(qub_op,k)
+        energies = qiskit_exact_diag(qubit_op,k)
         output.qubit_op_evs = energies
-    elif algo=='VQE':
-        vqe_obj = qiskit_vqe(qub_op,algo_config)
+    elif algo=='vqe':
+        output.algo_name=algo
+        vqe_obj = qiskit_vqe(qubit_op,algo_config)
         output.vqe_qiskit_obj = vqe_obj
     return code_str, output
 
-def qiskit_exact_diag(qub_op,k):
+def qiskit_exact_diag(qubit_op,k):
     from qiskit.aqua.algorithms import NumPyEigensolver as EE
-    result = EE(qub_op,k).run()
+    result = EE(qubit_op,k).run()
     energies = result['eigenvalues']
     return energies
 
-def qiskit_vqe(qub_op,algo_cofig):
+def qiskit_vqe(qubit_op,algo_config):
     if algo_config['optimizer']=='SPSA':
         optimizer = SPSA(maxiter=algo_config['classical_algo_max_iter'])
     elif algo_config['optimizer']=='COBYLA':
@@ -66,12 +76,12 @@ def qiskit_vqe(qub_op,algo_cofig):
 
     if algo_config['var_form']=='EfficientSU2':
         if algo_config['entanglement']=='linear':
-            var_form = EfficientSU2(qubitOp.num_qubits, entanglement="linear")
+            var_form = EfficientSU2(qubit_op.num_qubits, entanglement="linear")
         elif algo_config['entanglement']=='full':
-            var_form = EfficientSU2(qubitOp.num_qubits,entanglement='full')
+            var_form = EfficientSU2(qubit_op.num_qubits,entanglement='full')
     elif algo_config['var_form']=='UCCSD':
         pass
-    vqe = VQE(qubitOp, var_form, optimizer=optimizer, callback=store_intermediate_result)
+    vqe = VQE(qubit_op, var_form, optimizer=optimizer, callback=store_intermediate_result)
     return vqe
 
 
@@ -97,7 +107,7 @@ def qiskit_quantum_code_print(classical_output: classical_calc_output, mapping='
     if algo=='Exact_diag':
         code_str+='''from qiskit.aqua.algorithms import NumPyEigensolver as EE
         k = algo_config['num_of_evs']
-        result = EE(qub_op,k).run()
+        result = EE(qubit_op,k).run()
         # lines, result = operator.process_algorithm_result(result)
         energies = result['eigenvalues']
         output.qubit_op_evs = energies'''
@@ -123,12 +133,6 @@ def qiskit_quantum_code_print(classical_output: classical_calc_output, mapping='
 
 def openfermion_quantum_code_run(classical_output: classical_calc_output, mapping='jordan_wigner',
                             qubit_tapering=False,algo='VQE', algo_config=None):
-    from openfermion.hamiltonians import MolecularData
-    from openfermion.transforms import (get_fermion_operator,
-                                    get_sparse_operator, jordan_wigner,
-                                    bravyi_kitaev, parity_code, bravyi_kitaev_fast)
-    from openfermion.utils import get_ground_state
-
     int_op = InteractionOperator(0, one_body_tensor=classical_output.one_body_integrals,
                                 two_body_tensor=classical_output.two_body_integrals)
     fer_op = get_fermion_operator(int_op)
@@ -144,6 +148,25 @@ def openfermion_quantum_code_run(classical_output: classical_calc_output, mappin
                                   classical_output.basis,library='openfermion')
     output.fermionic_operator = fer_op
     output.qubit_operator = qubit_op
+
+    if qubit_tapering:
+        raise Exception('This method is currently not available in openfermion')
+        
+    
+    if algo=='exact_diag':
+        output.algo_name=algo
+        from openfermion.utils import eigenspectrum
+        k = algo_config['num_of_evs']
+        energies = eigenspectrum(qubit_op)
+        output.qubit_op_evs = energies
+
+    elif algo=='vqe':
+        output.algo_name=algo
+        from qBraid.conversions import qub_op_conversion
+        qiskit_qub_op = qub_op_conversion.convert(qubit_op)
+        vqe_obj = qiskit_vqe(qiskit_qub_op,algo_config)
+        output.vqe_qiskit_obj = vqe_obj
+
     code_str = openfermion_quantum_code_print(classical_output, mapping,
                             qubit_tapering)
     return code_str, output

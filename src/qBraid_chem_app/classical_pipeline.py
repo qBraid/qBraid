@@ -269,6 +269,7 @@ def qiskit_classical_code_run(molecule_name,geometry,basis,method):
     classical_output.one_body_integrals = qmolecule.one_body_integrals
     classical_output.two_body_integrals = qmolecule.two_body_integrals
     classical_output.calculations_ran = True
+    classical_output.num_particles = qmolecule.num_alpha+qmolecule.num_beta
     code_str = qiskit_classical_code_print(molecule_name,geometry,basis,method)
     return code_str, classical_output
     
@@ -317,9 +318,12 @@ def openfermion_classical_code_print(molecule_name,geometry,basis,method):
 
     code_string+='''charge = 0
     multiplicity = 1
-    of_molecule = openfermionpyscf.generate_molecular_hamiltonian('''+
-            geometry+','+basis+','+ '''multiplicity)
-    classical_output = classical_calc_output('''+molecule_name','+str(geometry)+','+basis','+'''library=openfermion)
+    of_molecule = openfermionpyscf.generate_molecular_hamiltonian('''
+    code_string+=+geometry+','+basis+','
+    code_string+='''multiplicity)
+    classical_output = classical_calc_output('''
+    code_string+=molecule_name+','+str(geometry)+','+basis+','
+    code_string+='''library=openfermion)
     classical_output.calculations_ran = True
     classical_output.one_body_integrals = of_molecule.one_body_tensor
     classical_output.two_body_integrals = of_molecule.two_body_tensor'''
@@ -339,3 +343,13 @@ class classical_calc_output():
         self.qiskit_hamiltonian_object = None
         self.hf_energy = None
         self.code_str = None
+    
+    def __str__(self):
+        if self.molecule_name:
+            ret_str='\nFollowing are the details contained in qBraid classical output object:'
+            ret_str+='\n=======================================================================\n'
+            ret_str+='Molecule name:\t\t'+self.molecule_name+'\n'
+            ret_str+='library:\t\t'+self.library+'\n'
+            ret_str+='geometry:\t\t'+self.geometry+'\n'
+            ret_str+='basis:\t\t\t'+self.basis+'\n'
+        return ret_str

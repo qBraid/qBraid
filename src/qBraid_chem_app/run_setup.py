@@ -2,7 +2,7 @@ from qiskit import IBMQ, BasicAer, Aer
 from qiskit.ignis.mitigation.measurement import CompleteMeasFitter
 from qiskit.providers.aer.noise import NoiseModel
 from qiskit.aqua import QuantumInstance
-
+import numpy as np
 
 def run_config_qiskit_run(quantum_calc_output,
                     run_on_hardware=False, hardware_cofig=None,
@@ -16,10 +16,11 @@ def run_config_qiskit_run(quantum_calc_output,
             if simulation_config['Noisy']:
                 if simulation_config['simulator']=='qasm_simulator':
                     quantum_instance = get_ibm_device_quantum_instance(simulation_config['device_name'])
-                    if quantum_calc_output.algo_name=='VQE':
+                    if quantum_calc_output.algo_name=='vqe':
                         vqe = quantum_calc_output.vqe_qiskit_obj
                         ret = vqe.run(quantum_instance)
                         vqe_result = np.real(ret['eigenvalue'])
+                        
                         print("VQE Result:", vqe_result)    
                 else:
                     raise TypeError('Noisy simulation is only supported in qasm simulator')
@@ -32,7 +33,7 @@ def run_config_qiskit_run(quantum_calc_output,
                 else:
                     quantum_instance = backend
                 
-                if quantum_calc_output.algo_name=='VQE':
+                if quantum_calc_output.algo_name=='vqe':
                     vqe = quantum_calc_output.vqe_qiskit_obj
                     ret = vqe.run(quantum_instance)
                     vqe_result = np.real(ret['eigenvalue'])
