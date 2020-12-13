@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 # All rights reserved-2020©. 
-from .classical_pipeline import (pyscf_code_print,pyscf_code_run,
+from classical_pipeline import (pyscf_code_print,pyscf_code_run,
                             qiskit_classical_code_print,qiskit_classical_code_run,
                             classical_calc_output,openfermion_classical_code_run,
                             openfermion_classical_code_print)
-from .quantum_pipeline import (qiskit_quantum_code_print, qiskit_quantum_code_run,
+from quantum_pipeline import (qiskit_quantum_code_print, qiskit_quantum_code_run,
                                 openfermion_quantum_code_print, openfermion_quantum_code_run,
                                 quantum_calc_output)
-from .run_setup import (run_config_qiskit_run)
+from run_setup import (run_config_qiskit_run)
 import numpy as np
 import numpy
 from pyscf import gto, ao2mo
@@ -90,8 +90,10 @@ def quantum_calc(library:str,classical_output:classical_calc_output,
             algorithm (str): valid inputs: 'exact_diag', 'vqe', 'ipea' 
             algo_config (dict): exact_diag_dict: {'num_of_evs': int}
                                 vqe_dict: {'optimizer': 'COBYLA'|'SPSA'|'SLSQP',
-                                            'var_form': 'EfficientSU2'|UCCSD
-                                            'entanglement': 'full'|'linear'
+                                            'var_form': 'EfficientSU2'|'UCCSD',
+                                            'entanglement': 'full'|'linear',
+                                            'classical_algo_max_iter':10,
+                                            'initial_state':'HF'
                                             }
             print_code (bool): 
 
@@ -156,42 +158,45 @@ def run(library, quantum_calc_output, run_on_hardware=False,
 if __name__ == "__main__":
     # Checking everything with default parameters
     # classical checks 
-    classical_library='qiskit'
-    quantum_library='qiskit'
-    code_str,classical_output=classical_cal()
-    code_str,classical_output=classical_cal(classical_library)
-    print(classical_output.one_body_integrals)
-    
-    
-    classical_library = 'openfermionpyscf'
-    code_str,classical_output=classical_cal(classical_library)
-    #quantum checks
-    code_str,quantum_output = quantum_calc(quantum_library,classical_output)
-    # run configuration check
-    run_library = 'qiskit'
-    print(classical_output.one_body_integrals)
-    
-    
-    # # Custom configuration runs
     # classical_library='qiskit'
     # quantum_library='qiskit'
-    # molecule = 'H2'
-    # geometry = 'H 0 0 0; H 0 0 .7414'
-    # basis = 'sto-3g'
-    # method='HF'
-    # code_str,classical_output=classical_cal(quantum_library,molecule,
-    #                             geometry,basis,method)
-    # # Running quantum pipeline for VQE
-    # algorithm = 'vqe'
-    # vqe_config = {'optimizer': 'COBYLA',
-    #              'var_form': 'EfficientSU2',
-    #              'entanglement': 'linear'}
-    # q_code_str, q_output = quantum_calc(quantum_library,classical_output,
-    #                                     algorithm=algorithm,algo_config=vqe_config)
-    # simulation_config = {'Noisy': False,
-    #                     'simulator': 'statevector_simulator',
-    #                     'device_name': 'vigo'}
-    # run(quantum_library,q_output, simulation_config=simulation_config)
+    # code_str,classical_output=classical_cal()
+    # code_str,classical_output=classical_cal(classical_library)
+    # print(classical_output.one_body_integrals)
+    
+    
+    # classical_library = 'openfermionpyscf'
+    # code_str,classical_output=classical_cal(classical_library)
+    # #quantum checks
+    # code_str,quantum_output = quantum_calc(quantum_library,classical_output)
+    # # run configuration check
+    # run_library = 'qiskit'
+    # print(classical_output.one_body_integrals)
+    
+    
+    # Custom configuration runs
+    classical_library='qiskit'
+    quantum_library='qiskit'
+    molecule = 'H2'
+    geometry = 'H 0 0 0; H 0 0 .7414'
+    basis = 'sto-3g'
+    method='HF'
+    code_str,classical_output=classical_cal(molecule,
+                                geometry,classical_library,basis,method)
+    print(classical_output.num_particles)
+    # Running quantum pipeline for VQE
+    algorithm = 'vqe'
+    vqe_config = {'optimizer': 'COBYLA',
+                 'var_form': 'UCCSD',
+                 'entanglement': 'linear',
+                 'classical_algo_max_iter':10,
+                 'initial_state':'HF'}
+    q_code_str, q_output = quantum_calc(quantum_library,classical_output,
+                                        algorithm=algorithm,algo_config=vqe_config)
+    simulation_config = {'Noisy': True,
+                        'simulator': 'qasm_simulator',
+                        'device_name': 'vigo'}
+    run(quantum_library,q_output, simulation_config=simulation_config)
 
 
 #  Noisy VQE runs

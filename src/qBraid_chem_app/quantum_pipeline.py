@@ -1,7 +1,8 @@
-from .classical_pipeline import classical_calc_output
+from classical_pipeline import classical_calc_output
 from qiskit.chemistry.drivers import PySCFDriver, HFMethodType
 from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister, execute
 from qiskit.aqua.operators import Z2Symmetries
+from qiskit.chemistry.components.initial_states import HartreeFock
 
 from qiskit.aqua.components.optimizers import COBYLA, SPSA, SLSQP
 from qiskit.aqua.algorithms import VQE, NumPyEigensolver
@@ -31,6 +32,7 @@ def qiskit_quantum_code_run(classical_output: classical_calc_output, mapping='jo
     one_b = classical_output.one_body_integrals
     two_b = classical_output.two_body_integrals
     fer_op = FermionicOperator(h1=one_b, h2=two_b)
+    num_particles=classical_output.num_particles
     # transform the fermionic operator to qubit operator
     if mapping=='jordan_wigner':
         qubit_op = fer_op.mapping('jordan_wigner')
@@ -56,7 +58,7 @@ def qiskit_quantum_code_run(classical_output: classical_calc_output, mapping='jo
         output.qubit_op_evs = energies
     elif algo=='vqe':
         output.algo_name=algo
-        vqe_obj = qiskit_vqe(qubit_op,algo_config)
+        vqe_obj = qiskit_vqe(qubit_op,algo_config,mapping,num_particles)
         output.vqe_qiskit_obj = vqe_obj
     return code_str, output
 
@@ -66,7 +68,7 @@ def qiskit_exact_diag(qubit_op,k):
     energies = result['eigenvalues']
     return energies
 
-def qiskit_vqe(qubit_op,algo_config):
+def qiskit_vqe(qubit_op,algo_config,mapping='parity',particle_num=None):
     if algo_config['optimizer']=='SPSA':
         optimizer = SPSA(maxiter=algo_config['classical_algo_max_iter'])
     elif algo_config['optimizer']=='COBYLA':
@@ -80,6 +82,17 @@ def qiskit_vqe(qubit_op,algo_config):
         elif algo_config['entanglement']=='full':
             var_form = EfficientSU2(qubit_op.num_qubits,entanglement='full')
     elif algo_config['var_form']=='UCCSD':
+        if particle_num:
+            init_state = HartreeFock(num_orbitals=4,
+                        qubit_mapping=mapping,
+                        num_particles=2)
+            var_form = UCCSD(num_orbitals=qubit_op.num_qubits, num_particles=particle_num,
+                 two_qubit_reduction=False, shallow_circuit_concat=False,
+                 initial_state=init_state)
+            
+            
+        else:
+            raise('number of particles not provided for uccsd')
         pass
     vqe = VQE(qubit_op, var_form, optimizer=optimizer, callback=store_intermediate_result)
     return vqe
