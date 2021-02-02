@@ -3,12 +3,12 @@ from typing import Any, Sequence, Dict, Iterable, Union
 #############################
 
 from braket.circuits.qubit import Qubit as aws_Qubit
-
+from qiskit.circuit.quantumregister import Qubit as qiskit_Qubit
 from cirq.ops.named_qubit import NamedQubit as cirq_NamedQubit
 
 #############################
 
-qB_QubitInput = Union["aws_Qubit", "cirq_NamedQubit", int, str]  
+qB_QubitInput = Union["aws_Qubit", "cirq_NamedQubit","qiskit_Qubit", int, str]  
 
 class qB_Qubit():
     
@@ -37,11 +37,11 @@ class qB_Qubit():
     def __str__(self):
         if self._holding:
             return str(self._qubit)
-        return 'qB_Qubit('+str(self.name)+')'
+        return 'qB_Qubit({})'.format(self.name)
     
     def __int__(self):
         if self._holding:
-            return int(self._qubit)
+            return int(self._qubit) #are we sure this works for all types of qubits?
         return int(self.name)
     
     #################################################

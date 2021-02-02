@@ -5,7 +5,6 @@ from typing import Any, Sequence, Dict, Iterable, Union
 from circuits.instruction import qB_Instruction
 
 from braket.circuits.moments import Moments as aws_Moments
-
 from cirq.ops.moment import Moment as cirq_Moment
 
 ###################################

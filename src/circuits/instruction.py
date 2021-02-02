@@ -7,14 +7,35 @@ from circuits.gate import qB_Gate
 from circuits.qubitset import qB_QubitSet
 
 from braket.circuits.instruction import Instruction as aws_Instruction
-
+from qiskit.circuit import Instruction as qiskit_Instruction
 from cirq.ops.gate_operation import GateOperation as cirq_GateInstruction
 
 ##################################
 
-qB_InstructionInput = Union["aws_Instruction", "cirq_GateInstruction", qB_Gate, np.array]
+qB_InstructionInput = Union["aws_Instruction", 
+                            "cirq_GateInstruction",
+                            "qiskit_Instruction", 
+                            qB_Gate, 
+                            np.array]
 
 class qB_Instruction():
+    
+    """
+    qBraid Instruction class
+    
+    Arguments:
+        instruction:
+    
+    Attributes:
+        gate: action to perform on qubits
+        target: qubit(s) to perform operation on
+        _holding: ____
+        
+    Methods:
+        
+         
+    """
+    
     def __init__(self, instruction: qB_InstructionInput = None, qubits: qB_QubitSet = None):
         
         self._holding = True
