@@ -1,19 +1,26 @@
 from typing import Any, Sequence, Dict, Iterable, Union
 
-###################################
 
-from circuits.instruction import qB_Instruction
+from instruction import Instruction
 
-from braket.circuits.moments import Moments as aws_Moments
-from cirq.ops.moment import Moment as cirq_Moment
+from braket.circuits.moments import Moments as BraketMoments
+from cirq.ops.moment import Moment as CirqMoment
 
-###################################
+qB_MomentInput = Union["BraketMoments", "CirqMoment", Iterable[Instruction]]
 
-qB_MomentInput = Union["aws_Moments", "cirq_Moment", Iterable[qB_Instruction]]
-
-class qB_Moment():
+class Moment():
+    
     def __init__(self, moment: qB_MomentInput = None, time_slice: int = None):
         
+        self.moment = moment
+        
+        if isinstance(moment,BraketMoments):
+            pass
+        elif isinstance(moment,CirqMoment):
+            self.instructions = [Instruction(i) for i in moment.operations]
+            self.qubits = moment.qubits
+        
+        """
         self._holding = True
         if type(moment) == Iterable[qB_Instruction]:
             self._holding = False
@@ -29,7 +36,8 @@ class qB_Moment():
          
         if self._holding:
             self._moment = moment
-            
+       """
+    
     def __str__(self):
         if self._holding:
             return str(self._moment)
