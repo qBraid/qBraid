@@ -1,59 +1,88 @@
 from typing import Any, Sequence, Dict, Iterable, Union
 
-######################
+from qubit import Qubit
 
-from circuits.qubit import qB_Qubit
+from braket.circuits.qubit_set import QubitSet as BraketQubitSet
+from qiskit.circuit.quantumregister import QuantumRegister as QiskitQuantumRegister
+from cirq.ops.qubit_order import QubitOrder as CirqQubitOrder
 
-from braket.circuits.qubit_set import QubitSet as aws_QubitSet
 
-from cirq.ops.qubit_order import QubitOrder as cirq_QubitOrder
+QubitSetInput = Union["BraketQubitSet", "CirqQubitOrder","QiskitQuantumRegister", Iterable[Qubit], Iterable[str], Iterable[int]]  
+QubitGetterInput = Union[QubitSetInput,int,str,Iterable]
+QubitInput = Union["BraketQubit", "CirqNamedQubit","QiskitQubit", int, str]  
 
-#######################
 
-qB_QubitSetInput = Union["aws_QubitSet", "cirq_QubitOrder", Iterable[qB_Qubit], Iterable[str], Iterable[int]]  
-
-class qB_QubitSet():
+class QubitSet():
     
     """
-    A holder instance of qB_QubitSet has one property: self._qubitset, which returns the original aws_QubitSet, etc. object passed for it to hold.
+    A holder instance of QubitSet
     
-    A definitive instance of qB_QubitSet is made from passing an iterable of the int or str names to define the qubits. In this case self._qubitset is the identity.
-    
-    To get from a holder instance to definitive instance, the to_qB() method grabs the necessary data that defines the definitive instance
-        from the held aws_QubitSet, etc. object and modifies the instance in place by redefinition.
+    Arguments:
+        A definitive instance of QubitSet is made from passing an iterable
+        of the int or str names to define the qubits. 
+        In this case self._qubitset is the identity.
+        
+    Attributes:
+        qubits (list[Qubit]): list of qBraid Qubit objects
+        outputs (dict): output objects generated for any or all other packages
+        get_qubits(list[QubitInput]): 
+    Methods:
+
     """
     
-    def __init__(self, qubitset: qB_QubitSetInput = None):
+    def __init__(self, qubits: QubitSetInput = None):
         
-        self._holding = True
-            
-        if type(qubitset) == Iterable[str] or type(qubitset) == Iterable[int]:
-            self._holding = False
-            qubitset = [qB_Qubit(qubit) for qubit in qubitset]
-            
-        if type(qubitset) == Iterable[qB_Qubit]:
-            self._holding = False
-            self.qubits = qubitset
-            
-            self._qubitset = self
-            
-        if self._holding:
-            self._qubitset = qubitset
+        self.qubits = [Qubit(qubit) for qubit in qubits]
+
+    def __len__(self):
+        return len(self.qubits)
+
+    def get_qubit_by_id(self, indentifier: Union[str,int]):
         
-    def __str__(self):
-        if self._holding:
-            return str(self._qubitset)
-        return 'qB_QubitSet('+str([str(qubit) for qubit in self._qubitset])+')'
+        for qubit in self.qubits:
+            if qubit.id == identifier:
+                return qubit
+        return "Could not find qubit with id: {}".format(identifier)
     
-    #####################################
+    def get_qubits(self, targetqubits: Iterable):
+        
+        """
+        search for the qBraid Qubit object in the QubitSet that corresponds to
+        each qubit object in the input list
+        """
+        
+        return [self.get_qubit(qubit) for qubit in targetqubits]
     
-    def to_qB(self):
-        if type(self._qubitset) != qB_QubitSet:
-            try:
-                qubitset = [int(qubit) for qubit in self._qubitset]
-            except:
-                qubitset = [str(qubit) for qubit in self._qubitset]
+    def get_qubit(self, targetqubit: QubitInput):
+        
+        """
+        search for the qBraid Qubit object in the QubitSet that corresponds to
+        to the passed qubit
+        """
+        
+        for qbraid_qubit in self.qubits:
+            if qbraid_qubit.qubit == targetqubit:
+                assert type(qbraid_qubit) == Qubit
+                return qbraid_qubit
+            
+    def output(self, output_type: str):
+        
+        outputs = ['qiskit','cirq','braket']
+        if output_type not in outputs:
+            print("Cannot output to {}. Possible types include {}".format(output_type,outputs))
+        
+        if output_type == 'qiskit':
+            
+            for index, qubit in enumerate(self.qubits):
+                qubit.outputs['qiskit'] = index
                 
-            return qB_QubitSet(qubitset)
+            return self.to_qiskit()
+                
+    def to_qiskit(self):
+        return QiskitQuantumRegister(len(self.qubits))
             
-    #######################################
+        
+            
+        
+        
+    
