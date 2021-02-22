@@ -12,10 +12,8 @@ from qiskit.circuit.gate import Gate as QiskitGate
 from cirq.ops.gate_operation import GateOperation as CirqGateInstruction
 
 InstructionInput = Union["BraketInstruction", 
-                            "CirqGateInstruction",
-                            "QiskitInstruction", 
-                            Gate, 
-                            np.array]
+                         "CirqGateInstruction",
+                         "QiskitInstruction"]
 
 class Instruction():
     
@@ -26,9 +24,6 @@ class Instruction():
         instruction:
     
     Attributes:
-        gate: action to perform on qubits
-        target: qubit(s) to perform operation on
-        _holding: ____
         
     Methods:
         
@@ -42,7 +37,7 @@ class Instruction():
         self.clbits = clbits
         
         if isinstance(instruction,BraketInstruction):
-            pass
+            self.gate = Gate(instruction.operator)
         
         elif isinstance(instruction,QiskitInstruction):
             self.gate = Gate(instruction)    
@@ -66,3 +61,11 @@ class Instruction():
         clbits = []
         
         return gate,qubits,clbits
+    
+    def to_braket(self):
+        
+        gate = self.gate.to_braket()
+        qubits = [qubit.to_braket() for qubit in self.qubits]
+        clbits = []
+        
+        return BraketInstruction(gate,qubits)

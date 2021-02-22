@@ -99,6 +99,8 @@ from cirq.ops.three_qubit_gates import (
     CSwapGate as CirqCSwapGate,
 )
 
+#braket standard gates
+
 class Gate():
     
     """
@@ -140,7 +142,10 @@ class Gate():
             return 'qiskit'
         elif isinstance(self.gate, CirqGateTypes):
             return 'cirq'
-        else: return 'package not initialized'
+        elif isinstance(self.gate, BraketGate):
+            return 'braket'
+        else:
+            print('package not initialized')
     
     def gate_type(self):
     
@@ -300,6 +305,26 @@ class Gate():
             if isinstance(self.gate, CirqCSwapGate):
                 return 'CSwap'
             
+        elif self.package == 'braket':
+            
+            #single qubit gates
+            if isinstance(self.gate, BraketGate.H):
+                return 'H'
+            elif isinstance(self.gate, BraketGate.X):
+                return 'X'
+            elif isinstance(self.gate, BraketGate.Y):
+                return 'Y'
+            elif isinstance(self.gate, BraketGate.Z):
+                return 'Z'
+            elif isinstance(self.gate, BraketGate.S):
+                return 'S'
+            elif isinstance(self.gate, BraketGate.T):
+                return 'T'
+
+            #multi-qubit gates
+            elif isinstance(self.gate,BraketGate.CNot):
+                return 'CX'
+            
     def _create_cirq_object(self):
         
         gate_type = self.gate_type()
@@ -341,6 +366,52 @@ class Gate():
         elif gate_type =='CX':
             self._outputs['qiskit'] = QiskitCXGate()
     
+    def _create_braket_object(self):
+        
+        gate_type = self.gate_type()
+        
+        #single qubit 
+        if gate_type == 'H':
+            self._outputs['braket'] = BraketGate.H()
+        elif gate_type == 'I':
+            self._outputs['braket'] = BraketGate.I()
+        elif gate_type == 'S':
+            self._outputs['braket'] = BraketGate.S()
+        elif gate_type == 'T':
+            self._outputs['braket'] = BraketGate.T()
+        elif gate_type == 'V':
+            self._outputs['braket'] = BraketGate.V()
+        elif gate_type == 'X':
+            self._outputs['braket'] = BraketGate.X()
+        elif gate_type == 'Y':
+            self._outputs['braket'] = BraketGate.Y()
+        elif gate_type == 'Z':
+            self._outputs['braket'] = BraketGate.Z()
+        
+        #multi qubit gates
+        elif gate_type == 'CX':
+            self._outputs['braket'] = BraketGate.CNot()
+        elif gate_type == 'CCX':
+            self._outputs['braket'] = BraketGate.CCNot()
+        elif gate_type == 'CPhase':
+            pass
+            #choice of CPhaseShift, CPhaseShift00, CPhaseShift01, CPhaseShift10
+            #self._oututs['braket'] = BraketGate.CPhaseShift()
+        elif gate_type == 'Swap':
+            self._outputs['braket'] = BraketGate.Swap()
+        elif gate_type == 'iSwap':
+            self._outputs['braket'] = BraketGate.ISwap()
+        elif gate_type == 'PSwap':
+            pass
+        elif gate_type == 'XX':
+            self._outputs['braket'] = BraketGate.XX()
+        elif gate_type == 'XY':
+            self._outputs['braket'] = BraketGate.XY()
+        elif gate_type == 'YY':
+            self._outputs['braket'] = BraketGate.YY()
+        elif gate_type =='ZZ':
+            self._outputs['braket'] = BraketGate.ZZ()
+        
     def to_cirq(self):
         
         if 'cirq' not in self._outputs.keys():
@@ -354,6 +425,13 @@ class Gate():
             self._create_qiskit_object()
             
         return self._outputs['qiskit']
+    
+    def to_braket(self):
+        
+        if 'braket' not in self._outputs.keys():
+            self._create_braket_object()
+            
+        return self._outputs['braket']
 
 
     

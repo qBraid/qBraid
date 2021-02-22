@@ -64,7 +64,16 @@ class Circuit():
         self.clbitset = ClbitSet()
         
         if isinstance(circuit, BraketCircuit):
-            pass
+            
+            self.qubitset = QubitSet([q for q in circuit.qubits])
+        
+            self.instructions = []
+            for instruction in circuit.instructions:
+                
+                qubits = self.qubitset.get_qubits([q for q in instruction.target])
+                clbits = []
+                
+                self.instructions.append(Instruction(instruction,qubits,clbits))
         
         elif isinstance(circuit,QiskitCircuit):
             
@@ -117,6 +126,8 @@ class Circuit():
             return self.to_cirq()
         elif output_package == 'qiskit':
             return self.to_qiskit()
+        elif output_package == 'braket':
+            return self.to_braket()
     
     def to_cirq(self):
         
@@ -140,4 +151,15 @@ class Circuit():
         for instruction in self.instructions:
             output_circ.append(*instruction.to_qiskit())
         
+        return output_circ
+    
+    def to_braket(self):
+        
+        print('hello')
+        
+        output_circ = BraketCircuit()
+        
+        for instruction in self.instructions:
+            output_circ.add_instruction(instruction.to_braket())
+            
         return output_circ

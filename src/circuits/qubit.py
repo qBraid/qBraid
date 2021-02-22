@@ -30,19 +30,22 @@ class Qubit():
             self.index = qubit.index
         elif isinstance(qubit,CirqLineQubit):
             self.index = qubit.x
-        elif isinstance(qubit,CirqNamedQubit):
-            self.name = qubit.name
+        elif isinstance(qubit,BraketQubit):
+            self.index = int(qubit)
         
         self.outputs = {}
         
     def _create_cirq_object(self):
         
-        if isinstance(self.qubit,QiskitQubit):
-            self.outputs['cirq'] = CirqLineQubit(self.index)
+        self.outputs['cirq'] = CirqLineQubit(self.index)
         
     def _create_qiskit_object(self,register: QiskitQuantumRegister, index: int):
         
         self.outputs['qiskit'] = QiskitQubit(register, index)
+        
+    def _create_braket_object(self):
+        
+        self.outputs['braket'] = BraketQubit(self.index)
         
     def to_cirq(self):
         
@@ -57,6 +60,13 @@ class Qubit():
             return self.outputs['qiskit']
         except:
             print("qiskit output not initialized in qubit {}".format(self.id))
+            
+    def to_braket(self):
+        
+        if 'braket' not in self.outputs.keys() or not self.outputs['braket']:
+            self._create_braket_object()
+        
+        return self.outputs['braket']
             
             
         
