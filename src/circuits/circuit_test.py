@@ -97,11 +97,17 @@ def cirq_to_qiskit():
     #define operations
     op_h = cirq.H(q0)
     op_cnot = cirq.CNOT(q0,q1)
+    op_z = cirq.Z(q1)
+    op_t = cirq.T(q0)
+    op_s = cirq.S(q1)
 
     #create circuit
     circuit = cirq.Circuit()
     circuit.append(op_h)
     circuit.append(op_cnot)
+    circuit.append(op_z)
+    circuit.append(op_s)
+    circuit.append(op_t)
     
     #transpile
     qiskit_circuit = Circuit(circuit).output('qiskit')
@@ -118,6 +124,11 @@ def qiskit_to_cirq():
     circuit.h(2)
     circuit.h(0)
     circuit.cnot(1,2)
+    circuit.z(1)
+    circuit.s(2)
+    circuit.h(0)
+    circuit.t(1)
+    circuit.t(2)
     
     #transpile
     cirq_circuit = Circuit(circuit).output('cirq')
