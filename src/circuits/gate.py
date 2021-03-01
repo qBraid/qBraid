@@ -181,18 +181,21 @@ class Gate():
             elif isinstance(self.gate,QiskitRC3XGate):
                 return 'RC3X'
             elif isinstance(self.gate,QiskitRXGate):
+                self.params = self.gate.params
                 return 'RX'
             elif isinstance(self.gate,QiskitCRXGate):
                 return 'CRX'
             elif isinstance(self.gate,QiskitRXXGate):
                 return 'RXX'
             elif isinstance(self.gate,QiskitRYGate):
+                self.params = self.gate.params
                 return 'RY'
             elif isinstance(self.gate,QiskitCRYGate):
                 return 'CRY'
             elif isinstance(self.gate,QiskitRYYGate):
                 return 'RYY'
             elif isinstance(self.gate,QiskitRZGate):
+                self.params = self.gate.params
                 return 'RZ'
             elif isinstance(self.gate,QiskitCRZGate):
                 return 'CRZ'
@@ -264,6 +267,9 @@ class Gate():
             if isinstance(self.gate, CirqXPowGate):
                 if self.gate.exponent ==1:
                     return 'X'
+                elif self.gate.global_shift== -0.5:
+                    self.params = [self.gate.exponent*np.pi]
+                    return 'RX'
                 else:
                     pass
             if isinstance(self.gate, CirqYPowGate):
@@ -341,6 +347,10 @@ class Gate():
             self._outputs['cirq'] = CirqZPowGate(exponent=0.5)
         elif gate_type == 'T':
             self._outputs['cirq'] = CirqZPowGate(exponent=0.25)
+        elif gate_type == 'RX':
+            self._outputs['cirq'] = cirq_rx(self.params[0])
+            
+            
         elif gate_type =='CX':
             self._outputs['cirq'] = CirqCXPowGate() #default exponent = 1 
         
@@ -362,6 +372,9 @@ class Gate():
             self._outputs['qiskit'] = QiskitSGate()
         elif gate_type == 'T':
             self._outputs['qiskit'] = QiskitTGate()
+        elif gate_type =='RX':
+            self._outputs['qiskit'] = QiskitRXGate(self.params)
+            
         #two qubit gates
         elif gate_type =='CX':
             self._outputs['qiskit'] = QiskitCXGate()
@@ -387,6 +400,8 @@ class Gate():
             self._outputs['braket'] = BraketGate.Y()
         elif gate_type == 'Z':
             self._outputs['braket'] = BraketGate.Z()
+        elif gate_type =='RX':
+            self._outputs['braket'] = BraketGate.Rx(self.params[0])
         
         #multi qubit gates
         elif gate_type == 'CX':

@@ -1,6 +1,8 @@
 from typing import Union
 from circuit import Circuit
 
+import numpy as np
+
 from qubit import Qubit
 
 import cirq
@@ -87,6 +89,7 @@ def qiskit_to_all():
     circuit.h(0)
     circuit.t(1)
     circuit.t(2)
+    circuit.rx(np.pi/3,0)
     
     #transpile
     
@@ -96,10 +99,60 @@ def qiskit_to_all():
     braket_circuit = qbraid_circuit.output('braket')
     print(braket_circuit)
     
+
+def cirq_test():
+    
+    #cirq
+    #define qubits
+    q0 = cirq.LineQubit(0)
+    q1 = cirq.LineQubit(1)
+    
+    circuit = CirqCircuit()
+    theta=np.pi/2
+    rz_gate = cirq.rz(theta)
+    circuit.append(rz_gate(q0))
+    circuit.append(rz_gate(q1))
+    
+    print(dir(rz_gate))
+    print(rz_gate.exponent)
+    print(rz_gate.global_shift)
+    print(rz_gate.with_canonical_global_phase().global_shift)
     
     
+def qiskit_test():
+    
+    #circuit = QiskitQuantumCircuit(2,2)
+    
+    #circuit.rz(0,)
+    
+    from qiskit.circuit.library.standard_gates.x import CXGate as QiskitCXGate
+    from qiskit.circuit import ControlledGate as QiskitControlledGate
+    from qiskit.circuit.library.standard_gates.rx import CRXGate as QiskitCRXGate
+    from qiskit.circuit.library.standard_gates.u3 import U3Gate
+    cx = QiskitCXGate()
+    print(isinstance(cx,QiskitControlledGate))
+    print(cx.num_ctrl_qubits)
+    print(cx.num_clbits)
+    
+    cx2 = cx.control(2)
+    print(cx2.num_ctrl_qubits)    
+    
+    crx = QiskitCRXGate(np.pi/2)
+    print(crx.name)
+    print(crx.params)
+    print(crx.num_qubits)
+    
+    u3 = U3Gate(np.pi/2,np.pi,np.pi/4)
+    print(u3.params)
+    print(u3.name)
+    
+
 if __name__ == "__main__":
     
-    braket_to_all()
+    #cirq_test()
+    qiskit_test()
+    
+    
+    #braket_to_all()
     #cirq_to_all()
-    #qiskit_to_all()
+    qiskit_to_all()
