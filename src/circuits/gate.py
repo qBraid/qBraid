@@ -17,17 +17,6 @@ from cirq.ops.gate_features import SingleQubitGate as CirqSingleQubitGate
 from cirq.ops.gate_features import TwoQubitGate as CirqTwoQubitGate
 from cirq.ops.gate_features import ThreeQubitGate as CirqThreeQubitGate
 
-#types
-CirqGate = Union[CirqSingleQubitGate,CirqTwoQubitGate,CirqThreeQubitGate]
-CirqGateTypes = (CirqSingleQubitGate,CirqTwoQubitGate,CirqThreeQubitGate)
-GateInputType = Union["BraketGate", 
-                     "CirqSingleQubitGate", 
-                     "CirqTwoQubitGate", 
-                     "CirqThreeQubitGate",
-                     "QiskitGate",
-                     "QiskitControlledGate",
-                     np.array]
-
 #qiskit standard gates
 from qiskit.circuit.library.standard_gates.h import HGate as QiskitHGate
 from qiskit.circuit.library.standard_gates.h import CHGate as QiskitCHGate
@@ -101,6 +90,26 @@ from cirq.ops.three_qubit_gates import (
 
 #braket standard gates
 
+
+#measurement gates
+from cirq.ops.measurement_gate import MeasurementGate as CirqMeasure
+from qiskit.circuit.measure import Measure as QiskitMeasurementGate
+
+#types
+CirqGate = Union[CirqSingleQubitGate,CirqTwoQubitGate,CirqThreeQubitGate,CirqMeasure]
+CirqGateTypes = (CirqSingleQubitGate,CirqTwoQubitGate,CirqThreeQubitGate,CirqMeasure)
+QiskitGateTypes = (QiskitGate,QiskitControlledGate,QiskitMeasurementGate)
+BraketGateTypes = ()
+
+GateInputType = Union["BraketGate", 
+                     "CirqSingleQubitGate", 
+                     "CirqTwoQubitGate", 
+                     "CirqThreeQubitGate",
+                     "QiskitGate",
+                     "QiskitControlledGate",
+                     np.array]
+
+
 class Gate():
     
     """
@@ -138,14 +147,15 @@ class Gate():
         
         assert self.gate
         
-        if isinstance(self.gate, QiskitGate):
+        if isinstance(self.gate, QiskitGateTypes):
             return 'qiskit'
         elif isinstance(self.gate, CirqGateTypes):
             return 'cirq'
-        elif isinstance(self.gate, BraketGate):
+        elif isinstance(self.gate, BraketGateTypes):
             return 'braket'
         else:
-            print('package not initialized')
+            print('could not detect the package for this gate')
+            print(type(self.gate))
     
     def gate_type(self):
     
@@ -158,7 +168,12 @@ class Gate():
         
         if self.package =='qiskit':
         
-            if isinstance(self.gate,QiskitHGate):
+            #measurement
+            if isinstance(self.gate,QiskitMeasurementGate):
+                return 'MEASURE'
+            
+            #single-qubit gates
+            elif isinstance(self.gate,QiskitHGate):
                 return 'H'
             elif isinstance(self.gate,QiskitCHGate):
                 return 'CH'
@@ -255,8 +270,15 @@ class Gate():
                 return 'Z'
             elif isinstance(self.gate,QiskitCZGate):
                 return 'CZ'
+            else:
+                print("Type Not Handled")
                 
         elif self.package =='cirq':
+            
+            # measurement gate
+            if isinstance(self.gate,CirqMeasure):
+                #add info self.measurement_map
+                return 'MEASURE'
             
             # single qubit gates
             if isinstance(self.gate, CirqHPowGate):
@@ -310,6 +332,8 @@ class Gate():
                     pass
             if isinstance(self.gate, CirqCSwapGate):
                 return 'CSwap'
+            else:
+                print("Type Not Handled")
             
         elif self.package == 'braket':
             
@@ -330,6 +354,8 @@ class Gate():
             #multi-qubit gates
             elif isinstance(self.gate,BraketGate.CNot):
                 return 'CX'
+            else:
+                print("Type Not Handled")
             
     def _create_cirq_object(self):
         
@@ -353,14 +379,19 @@ class Gate():
             
         elif gate_type =='CX':
             self._outputs['cirq'] = CirqCXPowGate() #default exponent = 1 
-        
+            
+        elif gate_type == 'MEASURE':
+            self._outputs['cirq'] = 'CirqMeasure'
     
     def _create_qiskit_object(self):
         
         gate_type = self.gate_type()
         
+        #measure
+        if gate_type == 'MEASURE':
+            self._outputs['qiskit'] = QiskitMeasurementGate()
         #single qubit gates
-        if gate_type == 'H':
+        elif gate_type == 'H':
             self._outputs['qiskit'] = QiskitHGate()
         elif gate_type == 'X':
             self._outputs['qiskit'] = QiskitXGate()
@@ -373,11 +404,14 @@ class Gate():
         elif gate_type == 'T':
             self._outputs['qiskit'] = QiskitTGate()
         elif gate_type =='RX':
-            self._outputs['qiskit'] = QiskitRXGate(self.params)
-            
+            self._outputs['qiskit'] = QiskitRXGate(self.params) 
         #two qubit gates
         elif gate_type =='CX':
             self._outputs['qiskit'] = QiskitCXGate()
+        #error
+        else:
+            print(gate_type)
+            raise TypeError()
     
     def _create_braket_object(self):
         

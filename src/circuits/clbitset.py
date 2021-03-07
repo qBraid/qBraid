@@ -14,7 +14,8 @@ from qiskit.circuit.classicalregister import ClassicalRegister as QiskitClassica
 #from cirq.ops.qubit_order import QubitOrder as cirq_QubitOrder
 
 
-ClbitSetInput = Union["aws_QubitSet", "cirq_QubitOrder","qiskit_QuantumRegister", Iterable[Clbit], Iterable[str], Iterable[int]]  
+ClbitSetInput = Union['QiskitClassicalRegister', Iterable[Clbit], Iterable[str], Iterable[int]]  
+AppendInput = Union[Clbit,Iterable[Clbit]]
 
 class ClbitSet():
     
@@ -40,8 +41,40 @@ class ClbitSet():
             self.clbits = []
         
     def __len__(self):
+        
         return len(self.clbits)
         
-    def get_qubit_by_id(self, id):
-        pass
+    def get_clbit_by_index(self, index: int):
+        
+        """
+        search for the qBraid Clbit object in the ClbitSet that corresponds to
+        to the passed qubit
+        """
+        
+        for qbraid_clbit in self.clbits:
+            if qbraid_clbit.index == index:
+                assert type(qbraid_clbit) == Clbit
+                return qbraid_clbit
+            
+            
+    def get_clbit(self, target_clbit: ClbitSetInput):
+        
+        for qbraid_clbit in self.clbits:
+            if qbraid_clbit.clbit == target_clbit:
+                assert type(qbraid_clbit) == Clbit
+                return qbraid_clbit
+            
+            
+    def get_clbits(self, targets: Iterable[ClbitSetInput]):
+        return [self.get_clbit(clb) for clb in targets]
     
+    
+    def _append(self, clbit: Clbit ):
+        self.clbits.append(clbit)
+        
+        
+    def append(self, clbits: AppendInput):
+        if isinstance(clbits,Iterable):
+            [self._append(clb) for clb in clbits]
+        else:
+            self._append(clbits)

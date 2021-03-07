@@ -10,6 +10,11 @@ from braket.circuits.instruction import Instruction as BraketInstruction
 from qiskit.circuit import Instruction as QiskitInstruction
 from qiskit.circuit.gate import Gate as QiskitGate
 from cirq.ops.gate_operation import GateOperation as CirqGateInstruction
+from cirq.ops.measure_util import measure as cirq_measure
+
+#measurement gates
+from cirq.ops.measurement_gate import MeasurementGate as CirqMeasure
+from qiskit.circuit.measure import Measure as QiskitMeasurementGate
 
 InstructionInput = Union["BraketInstruction", 
                          "CirqGateInstruction",
@@ -30,7 +35,7 @@ class Instruction():
          
     """
     
-    def __init__(self, instruction: InstructionInput = None, qubits: QubitSet = None, clbits: ClbitSet =None):
+    def __init__(self, instruction: InstructionInput = None, qubits: Iterable = None, clbits: Iterable =None):
         
         self.instruction = instruction
         self.qubits = qubits
@@ -40,7 +45,8 @@ class Instruction():
             self.gate = Gate(instruction.operator)
         
         elif isinstance(instruction,QiskitInstruction):
-            self.gate = Gate(instruction)    
+            #dispense with classical bit functionality
+            self.gate = Gate(instruction)
             
         elif isinstance(instruction,CirqGateInstruction):
             #instruction is a cirq operation object
@@ -52,15 +58,21 @@ class Instruction():
         qubits = [qubit.to_cirq() for qubit in self.qubits]
         gate = self.gate.to_cirq()
         
-        return gate(*qubits)
+        if gate == 'CirqMeasure':
+            return cirq_measure(qubits[0],key=self.clbits[0].index)
+        else:
+            return gate(*qubits)
         
     def to_qiskit(self):
         
         gate = self.gate.to_qiskit()
         qubits = [qubit.to_qiskit() for qubit in self.qubits]
-        clbits = []
+        clbits = [clbit.output['qiskit'] for clbit in self.clbits]
         
-        return gate,qubits,clbits
+        if isinstance(gate, QiskitMeasurementGate):
+            return gate, qubits, clbits
+        else:
+            return gate,qubits,clbits
     
     def to_braket(self):
         

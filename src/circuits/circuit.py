@@ -1,18 +1,21 @@
 from typing import Any, Sequence, Dict, Iterable, Union
 
 
-#qbraid imports
-from qubit import Qubit
+from qbraid.circuit.qubit import qubit
+from .qubit import Qubit
 from instruction import Instruction
 from moment import Moment
 from qubitset import QubitSet
 from clbitset import ClbitSet
+from clbit import Clbit
 
 from braket.circuits.circuit import Circuit as BraketCircuit
 from qiskit.circuit import QuantumCircuit as QiskitCircuit
 from cirq.circuits import Circuit as CirqCircuit
 
+from cirq.ops.measurement_gate import MeasurementGate as CirqMeasure
 
+from qiskit.circuit.classicalregister import ClassicalRegister as QiskitClassicalRegister
 
 #types 
 CircuitInput = Union["BraketCircuit", "CirqCircuit", "QiskitCircuit", 
@@ -39,7 +42,7 @@ class Circuit():
             moments: a list of Moment objects (optional)
         
         Methods:
-            num_qubits:
+            num_qubits:mnm   
             num_clbits:
             output: returns a circuit object of a different type
         
@@ -66,19 +69,20 @@ class Circuit():
         if isinstance(circuit, BraketCircuit):
             
             self.qubitset = QubitSet([q for q in circuit.qubits])
+            self.clbitset = None
         
             self.instructions = []
             for instruction in circuit.instructions:
                 
                 qubits = self.qubitset.get_qubits([q for q in instruction.target])
-                clbits = []
+                clbits = [] #self.clbitset.get_clbits([q fo])
                 
                 self.instructions.append(Instruction(instruction,qubits,clbits))
         
         elif isinstance(circuit,QiskitCircuit):
             
             self.qubitset = QubitSet(circuit.qubits)
-
+            self.clbitset = ClbitSet(circuit.clbits)
             
             self.instructions = []
             
@@ -86,13 +90,14 @@ class Circuit():
             for instruction, qubit_list, clbit_list in circuit.data:
                 
                 qubits = self.qubitset.get_qubits(qubit_list)
-                clbits = []
+                clbits = self.clbitset.get_clbits(clbit_list)
 
                 self.instructions.append(Instruction(instruction,qubits,clbits))
             
         elif isinstance(circuit, CirqCircuit):
             
             self.qubitset = QubitSet(circuit.all_qubits())
+            self.clbitset = ClbitSet()
             
             if exact_time:
                 self.moments = [Moment(moment) for moment in circuit.moments]
@@ -102,10 +107,22 @@ class Circuit():
                 self.instructions = []
                 for op in circuit.all_operations():
                     
+                    #identify the qBraid Qubit objects associated with the operation
                     qubits = self.qubitset.get_qubits(op.qubits)
-                    clbits = []
                     
+                    #create classical bit objects for all measure operations
+                    if isinstance(op.gate, CirqMeasure):
+                        output_index = op.gate.key
+                        assert isinstance(output_index, int)
+                        clbits = [output_index]
+                        self.clbitset.append(output_index)
+                    else:
+                        clbits = []
+                    
+                    #create an instruction object and add it to the list
                     self.instructions.append(Instruction(op,qubits,clbits))
+    
+    
     
     def num_qubits(self):
         return len(self.qubitset)
@@ -117,6 +134,8 @@ class Circuit():
 
         """
         Returns a circuit object of a different type
+        
+        #change to get_circuit()
         
         Args:
             output_class: options are cirq, qiskit, etc.
@@ -143,7 +162,7 @@ class Circuit():
         qreg = self.qubitset.output('qiskit')
         
         if self.num_clbits():
-            creg = ClassicalRegister(self.num_clbits())
+            creg = QiskitClassicalRegister(self.num_clbits())
             output_circ = QiskitCircuit(qreg,creg,name='qBraid_transpiler_output')
         else: 
             output_circ = QiskitCircuit(qreg)    
@@ -163,3 +182,4 @@ class Circuit():
             output_circ.add_instruction(instruction.to_braket())
             
         return output_circ
+    

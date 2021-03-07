@@ -18,6 +18,7 @@ import qiskit
 from qiskit.circuit import QuantumCircuit as QiskitCircuit
 from qiskit.circuit import Instruction as QiskitInstruction
 from qiskit.circuit import QuantumRegister as QiskitQuantumRegister
+from qiskit.circuit.classicalregister import ClassicalRegister as QiskitClassicalRegister
 from qiskit.circuit import Gate as QiskitGate
 
 from braket.circuits import Circuit as BraketCircuit
@@ -77,9 +78,10 @@ def qiskit_to_all():
     
     #define quantumregister
     qubits = QiskitQuantumRegister(3)
+    clbits = QiskitClassicalRegister(3)
     
     #create circuit
-    circuit = QiskitCircuit(qubits)
+    circuit = QiskitCircuit(qubits,clbits)
     circuit.cnot(0,1)
     circuit.h(2)
     circuit.h(0)
@@ -89,15 +91,24 @@ def qiskit_to_all():
     circuit.h(0)
     circuit.t(1)
     circuit.t(2)
-    circuit.rx(np.pi/3,0)
+    #circuit.rx(np.pi/3,0)
+    circuit.measure([0,1,2],[2,1,0])
+    print(circuit)
     
     #transpile
-    
     qbraid_circuit = Circuit(circuit)
     cirq_circuit = qbraid_circuit.output('cirq')
+    qiskit_circuit = Circuit(cirq_circuit).output('qiskit')
     print(cirq_circuit)
-    braket_circuit = qbraid_circuit.output('braket')
-    print(braket_circuit)
+    print(qiskit_circuit)
+    
+    #simulate cirq circuit
+    from cirq import Simulator
+    simulator = Simulator()
+    result = simulator.run(cirq_circuit)
+    print(result)
+    #braket_circuit = qbraid_circuit.output('braket')
+    #print(braket_circuit)
     
 
 def cirq_test():
@@ -116,8 +127,26 @@ def cirq_test():
     print(dir(rz_gate))
     print(rz_gate.exponent)
     print(rz_gate.global_shift)
-    print(rz_gate.with_canonical_global_phase().global_shift)
     
+    circuit.append(cirq.H(q0))
+    circuit.append(cirq.CNOT(q0,q1))
+    
+    
+    m0 = cirq.measure(q0, key=0)
+    m1 = cirq.measure(q1, key=1)
+    
+    
+    
+    circuit.append([m0,m1])
+    
+    print(circuit)
+    
+    from cirq import Simulator
+    simulator = Simulator()
+    result = simulator.run(circuit)
+    print(result)
+    
+    Circuit(circuit)
     
 def qiskit_test():
     
@@ -129,6 +158,8 @@ def qiskit_test():
     from qiskit.circuit import ControlledGate as QiskitControlledGate
     from qiskit.circuit.library.standard_gates.rx import CRXGate as QiskitCRXGate
     from qiskit.circuit.library.standard_gates.u3 import U3Gate
+    from qiskit.circuit.measure import Measure as QiskitMeasure
+    
     cx = QiskitCXGate()
     print(isinstance(cx,QiskitControlledGate))
     print(cx.num_ctrl_qubits)
@@ -146,11 +177,53 @@ def qiskit_test():
     print(u3.params)
     print(u3.name)
     
+    measure = QiskitMeasure()
+    
+    circuit = QiskitCircuit(2,4)
+    circuit.h(0)
+    circuit.cnot(0,1)
+    circuit.measure([0],[0])
+    circuit.measure([1],[1])
+    #circuit.measure([0,1],[3,2])
+    
+    Circuit(circuit)
+    
+    
+    for instruction, qubit_list, clbit_list in circuit.data:
+
+        if isinstance(instruction,QiskitMeasure):
+            print(instruction, qubit_list, clbit_list)
+            print(clbit_list[0].index)
+            print(dir(clbit_list[0]))
+            break
+    
+    #Circuit(circuit)
+    #define quantumregister
+    qubits = QiskitQuantumRegister(3)
+    clbits = QiskitClassicalRegister(3)
+    
+    #create circuit
+    circuit = QiskitCircuit(qubits,clbits)
+    circuit.cnot(0,1)
+    circuit.h(2)
+    circuit.h(0)
+    circuit.cnot(1,2)
+    circuit.z(1)
+    circuit.s(2)
+    circuit.h(0)
+    circuit.t(1)
+    circuit.t(2)
+    circuit.rx(np.pi/3,0)
+    circuit.measure([0,1,2],[2,1,0])
+    
+    for instruction, qubit_list, clbit_list in circuit.data:
+        if isinstance(instruction,QiskitMeasure):
+            print(dir(instruction))
 
 if __name__ == "__main__":
     
     #cirq_test()
-    qiskit_test()
+    #qiskit_test()
     
     
     #braket_to_all()
