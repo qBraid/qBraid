@@ -47,26 +47,36 @@ class Qubit():
         
         self.outputs['braket'] = BraketQubit(self.index)
         
-    def to_cirq(self):
+    def _to_cirq(self):
         
         if 'cirq' not in self.outputs.keys() or not self.outputs['cirq']:
             self._create_cirq_object()
         
         return self.outputs['cirq']
         
-    def to_qiskit(self):
+    def _to_qiskit(self):
         
         try:
             return self.outputs['qiskit']
         except:
             print("qiskit output not initialized in qubit {}".format(self.id))
             
-    def to_braket(self):
+    def _to_braket(self):
         
         if 'braket' not in self.outputs.keys() or not self.outputs['braket']:
             self._create_braket_object()
         
         return self.outputs['braket']
+    
+    def output(self, package: str):
+        
+        if package == 'qiskit':
+            return self._to_qiskit()
+        elif package == 'cirq':
+            return self._to_cirq()
+        elif package == 'braket':
+            return self._to_braket()
+        
             
             
         

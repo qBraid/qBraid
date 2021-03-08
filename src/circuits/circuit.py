@@ -1,13 +1,14 @@
 from typing import Any, Sequence, Dict, Iterable, Union
 
-
-from qbraid.circuit.qubit import qubit
-from .qubit import Qubit
+#import qBraid
+from qubit import Qubit
+#from .qubit import Qubit
 from instruction import Instruction
 from moment import Moment
 from qubitset import QubitSet
 from clbitset import ClbitSet
 from clbit import Clbit
+from gate import Gate
 
 from braket.circuits.circuit import Circuit as BraketCircuit
 from qiskit.circuit import QuantumCircuit as QiskitCircuit
@@ -53,7 +54,11 @@ class Circuit():
             
      """       
     
-    def __init__(self, circuit: CircuitInput = None, exact_time: str = False):
+    def __init__(self, 
+                 circuit: CircuitInput = None, 
+                 exact_time: str = False,
+                 auto_measure: bool = False
+                 ):
         
         """
         Create a new Circuit object
@@ -64,12 +69,14 @@ class Circuit():
         """
         
         self.circuit = circuit
-        self.clbitset = ClbitSet()
+        
+        #other properties
+        self.auto_measure = auto_measure
         
         if isinstance(circuit, BraketCircuit):
             
             self.qubitset = QubitSet([q for q in circuit.qubits])
-            self.clbitset = None
+            self.clbitset = ClbitSet()
         
             self.instructions = []
             for instruction in circuit.instructions:
@@ -91,6 +98,8 @@ class Circuit():
                 
                 qubits = self.qubitset.get_qubits(qubit_list)
                 clbits = self.clbitset.get_clbits(clbit_list)
+                if len(clbits)>0:
+                    assert(isinstance(clbits[0], Clbit))
 
                 self.instructions.append(Instruction(instruction,qubits,clbits))
             
@@ -110,12 +119,19 @@ class Circuit():
                     #identify the qBraid Qubit objects associated with the operation
                     qubits = self.qubitset.get_qubits(op.qubits)
                     
-                    #create classical bit objects for all measure operations
+                    #handle measurement operations and gate operations seperately
                     if isinstance(op.gate, CirqMeasure):
+                        
+                        # create Clbit object based on the info from the measurement operation
                         output_index = op.gate.key
                         assert isinstance(output_index, int)
-                        clbits = [output_index]
-                        self.clbitset.append(output_index)
+                        new_clbit = Clbit(output_index)
+                        
+                        #create the list of clbits for the operation (in this case just the one)
+                        clbits = [new_clbit]
+                        #add to the ClbitSet associated with the whole circuit
+                        self.clbitset.append(new_clbit)
+                    
                     else:
                         clbits = []
                     
@@ -130,7 +146,7 @@ class Circuit():
     def num_clbits(self):
         return len(self.clbitset)
     
-    def output(self, output_package = None):
+    def output(self, output_package: str = None):
 
         """
         Returns a circuit object of a different type
@@ -142,44 +158,61 @@ class Circuit():
         """
         
         if output_package == 'cirq':
-            return self.to_cirq()
+            return self._to_cirq()
         elif output_package == 'qiskit':
-            return self.to_qiskit()
+            return self._to_qiskit()
         elif output_package == 'braket':
-            return self.to_braket()
+            return self._to_braket()
     
-    def to_cirq(self):
+    def _to_cirq(self):
         
         output_circ = CirqCircuit()
         
         for instruction in self.instructions:
-            output_circ.append(instruction.to_cirq())
+            output_circ.append(instruction.output('cirq'))
+        
+        #auto measure
+        if self.auto_measure:
+            for index, qubit in enumerate(self.qubitset.qubits):
+                clbit = Clbit(index)
+                instruction = Instruction(Gate(gate_type='MEASURE'),[qubit],[clbit])
+                output_circ.append(instruction.output('cirq'))
         
         return output_circ
         
-    def to_qiskit(self):
+    def _to_qiskit(self):
         
         qreg = self.qubitset.output('qiskit')
         
         if self.num_clbits():
             creg = QiskitClassicalRegister(self.num_clbits())
             output_circ = QiskitCircuit(qreg,creg,name='qBraid_transpiler_output')
+        elif self.auto_measure:
+            creg = QiskitClassicalRegister(self.num_qubits())
+            output_circ = QiskitCircuit(qreg,creg,name='qBraid_transpiler_output')
         else: 
-            output_circ = QiskitCircuit(qreg)    
+            output_circ = QiskitCircuit(qreg, name='qBraid_transpiler_output')    
         
+        # add instructions
         for instruction in self.instructions:
-            output_circ.append(*instruction.to_qiskit())
+            output_circ.append(*instruction.output('qiskit'))
+        
+        #auto measure
+        if self.auto_measure:
+            pass
         
         return output_circ
     
-    def to_braket(self):
-        
-        print('hello')
+    def _to_braket(self):
         
         output_circ = BraketCircuit()
         
+        #some instructions may be null (i.e. classically controlled gates, measurement)
+        #these will return None, which should not be added to the circuit
         for instruction in self.instructions:
-            output_circ.add_instruction(instruction.to_braket())
+            instr = instruction.output('braket')
+            if instr:
+                output_circ.add_instruction(instr)
             
         return output_circ
     

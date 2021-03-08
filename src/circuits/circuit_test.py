@@ -39,7 +39,7 @@ def braket_to_all():
     
     circuit = BraketCircuit().h(range(4)).cnot(control=0, target=2).cnot(control=1, target=3)
     
-    qbraid_circuit = Circuit(circuit)
+    qbraid_circuit = Circuit(circuit, auto_measure = True)
     cirq_circuit = qbraid_circuit.output('cirq')
     print(cirq_circuit)
     qiskit_circuit = qbraid_circuit.output('qiskit')
@@ -59,7 +59,7 @@ def cirq_to_all():
     op_t = cirq.T(q0)
     op_s = cirq.S(q1)
 
-    #create circuit
+    # add operations to circuit
     circuit = cirq.Circuit()
     circuit.append(op_h)
     circuit.append(op_cnot)
@@ -67,12 +67,19 @@ def cirq_to_all():
     circuit.append(op_s)
     circuit.append(op_t)
     
-    #transpile
+    # measure both qubits
+    m0 = cirq.measure(q0, key=0)
+    m1 = cirq.measure(q1, key=1)
+    circuit.append([m0,m1])
+    
+    # transpile
     qbraid_circuit = Circuit(circuit)
+    
+    print("cirq circuit\n\n", circuit)
     qiskit_circuit = qbraid_circuit.output('qiskit')
-    print(qiskit_circuit)
+    print("qiskit circuit\n\n", qiskit_circuit)
     braket_circuit = qbraid_circuit.output('braket')
-    print(braket_circuit)
+    print("braket circuit\n\n", braket_circuit)
     
 def qiskit_to_all():
     
@@ -98,17 +105,17 @@ def qiskit_to_all():
     #transpile
     qbraid_circuit = Circuit(circuit)
     cirq_circuit = qbraid_circuit.output('cirq')
-    qiskit_circuit = Circuit(cirq_circuit).output('qiskit')
+    print("cirq ciruit")
     print(cirq_circuit)
-    print(qiskit_circuit)
     
     #simulate cirq circuit
-    from cirq import Simulator
-    simulator = Simulator()
-    result = simulator.run(cirq_circuit)
-    print(result)
-    #braket_circuit = qbraid_circuit.output('braket')
-    #print(braket_circuit)
+    #from cirq import Simulator
+    #simulator = Simulator()
+    #result = simulator.run(cirq_circuit)
+    #print(result)
+    
+    braket_circuit = qbraid_circuit.output('braket')
+    print(braket_circuit)
     
 
 def cirq_test():
@@ -186,8 +193,8 @@ def qiskit_test():
     circuit.measure([1],[1])
     #circuit.measure([0,1],[3,2])
     
-    Circuit(circuit)
-    
+    #Circuit(circuit)
+    print(circuit.clbits)
     
     for instruction, qubit_list, clbit_list in circuit.data:
 
@@ -220,12 +227,19 @@ def qiskit_test():
         if isinstance(instruction,QiskitMeasure):
             print(dir(instruction))
 
+def braket_test():
+    
+    circuit = BraketCircuit().h(range(4)).cnot(control=0, target=2).cnot(control=1, target=3)
+    
+    for instruction in circuit.instructions:
+        print(instruction)
+
 if __name__ == "__main__":
     
     #cirq_test()
     #qiskit_test()
+    #braket_test()
     
-    
-    #braket_to_all()
+    braket_to_all()
     #cirq_to_all()
-    qiskit_to_all()
+    #qiskit_to_all()

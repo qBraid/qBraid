@@ -99,7 +99,7 @@ from qiskit.circuit.measure import Measure as QiskitMeasurementGate
 CirqGate = Union[CirqSingleQubitGate,CirqTwoQubitGate,CirqThreeQubitGate,CirqMeasure]
 CirqGateTypes = (CirqSingleQubitGate,CirqTwoQubitGate,CirqThreeQubitGate,CirqMeasure)
 QiskitGateTypes = (QiskitGate,QiskitControlledGate,QiskitMeasurementGate)
-BraketGateTypes = ()
+BraketGateTypes = (BraketGate)
 
 GateInputType = Union["BraketGate", 
                      "CirqSingleQubitGate", 
@@ -113,7 +113,7 @@ GateInputType = Union["BraketGate",
 class Gate():
     
     """
-    qBraid Gate class
+    qBraid Gate Wrapper class
     
     Args:
         gate: input object
@@ -143,19 +143,20 @@ class Gate():
         
         self._outputs = {}
     
-    def _get_package_type(self,):
+    def _get_package_type(self):
         
-        assert self.gate
-        
-        if isinstance(self.gate, QiskitGateTypes):
-            return 'qiskit'
-        elif isinstance(self.gate, CirqGateTypes):
-            return 'cirq'
-        elif isinstance(self.gate, BraketGateTypes):
-            return 'braket'
-        else:
-            print('could not detect the package for this gate')
-            print(type(self.gate))
+        if self.gate:
+            if isinstance(self.gate, QiskitGateTypes):
+                return 'qiskit'
+            elif isinstance(self.gate, CirqGateTypes):
+                return 'cirq'
+            elif isinstance(self.gate, BraketGateTypes):
+                return 'braket'
+            else:
+                print('could not detect the package for this gate')
+                print(type(self.gate))
+        else: 
+            return None
     
     def gate_type(self):
     
@@ -333,7 +334,7 @@ class Gate():
             if isinstance(self.gate, CirqCSwapGate):
                 return 'CSwap'
             else:
-                print("Type Not Handled")
+                raise TypeError("Could not determined gate type.")
             
         elif self.package == 'braket':
             
@@ -354,8 +355,11 @@ class Gate():
             #multi-qubit gates
             elif isinstance(self.gate,BraketGate.CNot):
                 return 'CX'
+            #error
             else:
-                print("Type Not Handled")
+                print(self.package)
+                print(self.gate)
+                raise TypeError("Could not determine gate type.")
             
     def _create_cirq_object(self):
         
@@ -382,6 +386,10 @@ class Gate():
             
         elif gate_type == 'MEASURE':
             self._outputs['cirq'] = 'CirqMeasure'
+        #error
+        else:
+            print(gate_type)
+            raise TypeError("Gate type not handled")
     
     def _create_qiskit_object(self):
         
@@ -411,7 +419,7 @@ class Gate():
         #error
         else:
             print(gate_type)
-            raise TypeError()
+            raise TypeError("Gate type not handled")
     
     def _create_braket_object(self):
         
@@ -460,27 +468,44 @@ class Gate():
             self._outputs['braket'] = BraketGate.YY()
         elif gate_type =='ZZ':
             self._outputs['braket'] = BraketGate.ZZ()
+            
+        # measure
+        elif gate_type == 'MEASURE':
+            self._outputs['braket'] = 'BraketMeasure'
+        # error
+        else:
+            print(gate_type)
+            raise TypeError("Gate type not handled")
         
-    def to_cirq(self):
+    def _to_cirq(self):
         
         if 'cirq' not in self._outputs.keys():
             self._create_cirq_object()
         
         return self._outputs['cirq']
     
-    def to_qiskit(self):
+    def _to_qiskit(self):
         
         if 'qiskit' not in self._outputs.keys():
             self._create_qiskit_object()
             
         return self._outputs['qiskit']
     
-    def to_braket(self):
+    def _to_braket(self):
         
         if 'braket' not in self._outputs.keys():
             self._create_braket_object()
             
         return self._outputs['braket']
+    
+    def output(self, package: str):
+        
+        if package == 'qiskit':
+            return self._to_qiskit()
+        elif package == 'cirq':
+            return self._to_cirq()
+        elif package == 'braket':
+            return self._to_braket()
 
 
     

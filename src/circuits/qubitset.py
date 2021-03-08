@@ -6,8 +6,7 @@ from braket.circuits.qubit_set import QubitSet as BraketQubitSet
 from qiskit.circuit.quantumregister import QuantumRegister as QiskitQuantumRegister
 from cirq.ops.qubit_order import QubitOrder as CirqQubitOrder
 
-
-QubitSetInput = Union["BraketQubitSet", "CirqQubitOrder","QiskitQuantumRegister", Iterable[Qubit], Iterable[str], Iterable[int]]  
+QubitSetInput = Union [BraketQubitSet, QiskitQuantumRegister, CirqQubitOrder]
 QubitGetterInput = Union[QubitSetInput,int,str,Iterable]
 QubitInput = Union["BraketQubit", "CirqNamedQubit","QiskitQubit", int, str]  
 
@@ -15,22 +14,25 @@ QubitInput = Union["BraketQubit", "CirqNamedQubit","QiskitQubit", int, str]
 class QubitSet():
     
     """
-    A holder instance of QubitSet
+    A wrapper class for a collection of qBraid Qubit objects.
     
     Arguments:
-        A definitive instance of QubitSet is made from passing an iterable
-        of the int or str names to define the qubits. 
-        In this case self._qubitset is the identity.
+        qubits: A wrapper class for a list of qubits. 
         
     Attributes:
         qubits (list[Qubit]): list of qBraid Qubit objects
         outputs (dict): output objects generated for any or all other packages
         get_qubits(list[QubitInput]): 
     Methods:
+        get_qubit: searches the list of qubits for the qBraid Qubit object 
+            which corresponds to the qubit object from any package
+        get_qubits: same as get_qubit but for a list of qubits to find
+        output: transpile the set of qubits to a corresponding package.
+            currently only implemented for qiskit
 
     """
     
-    def __init__(self, qubits: QubitSetInput = None):
+    def __init__(self, qubits: Iterable[Qubit] = None):
         
         self.qubits = [Qubit(qubit) for qubit in qubits]
 
@@ -67,18 +69,17 @@ class QubitSet():
             
     def output(self, output_type: str):
         
-        outputs = ['qiskit','cirq','braket']
-        if output_type not in outputs:
-            print("Cannot output to {}. Possible types include {}".format(output_type,outputs))
-        
         if output_type == 'qiskit':
             
             for index, qubit in enumerate(self.qubits):
                 qubit.outputs['qiskit'] = index
                 
-            return self.to_qiskit()
+            return self._to_qiskit()
+        
+        else:
+            pass
                 
-    def to_qiskit(self):
+    def _to_qiskit(self):
         return QiskitQuantumRegister(len(self.qubits))
             
         

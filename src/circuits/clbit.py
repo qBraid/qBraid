@@ -21,7 +21,7 @@ class Clbit():
         
         if isinstance(clbit, QiskitClbit):
             self.index = clbit.index
-        elif isinstance(clbit, [int]):
+        elif isinstance(clbit, (int,)):
             self.index = clbit
         else:
             print("{} not implemented for Clbit".format(type(clbit)))
@@ -31,37 +31,37 @@ class Clbit():
         
     def _create_cirq_object(self):
         
-        self.outputs['cirq'] = self.index
+        self._outputs['cirq'] = self.index
         
         
     def _create_qiskit_object(self, register: QiskitClassicalRegister, index: int):
         
-        self.outputs['qiskit'] = QiskitClbit(register, index)
+        self._outputs['qiskit'] = QiskitClbit(register, index)
         
     def _create_braket_object(self):
         
-        self.outputs['braket'] = self.index
+        self._outputs['braket'] = self.index
         
     def _output_to_cirq(self):
         
-        if 'cirq' not in self.outputs.keys() or not self.outputs['cirq']:
+        if 'cirq' not in self._outputs.keys() or not self._outputs['cirq']:
             self._create_cirq_object()
         
-        return self.outputs['cirq']
+        return self._outputs['cirq']
         
     def _output_to_qiskit(self):
         
         try:
-            return self.outputs['qiskit']
+            return self._outputs['qiskit']
         except:
             print("qiskit output not initialized in clbit {}".format(self.index))
             
     def _output_to_braket(self):
         
-        if 'braket' not in self.outputs.keys() or not self.outputs['braket']:
+        if 'braket' not in self.outputs.keys() or not self._outputs['braket']:
             self._create_braket_object()
         
-        return self.outputs['braket']
+        return self._outputs['braket']
     
     def output(self, package: str):
         
