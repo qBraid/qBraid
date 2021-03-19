@@ -1,14 +1,13 @@
 from typing import Any, Sequence, Dict, Iterable, Union
 
 #import qBraid
-from qubit import Qubit
-#from .qubit import Qubit
-from instruction import Instruction
-from moment import Moment
-from qubitset import QubitSet
-from clbitset import ClbitSet
-from clbit import Clbit
-from gate import Gate
+from .qubit import Qubit
+from .instruction import Instruction
+from .moment import Moment
+from .qubitset import QubitSet
+from .clbitset import ClbitSet
+from .clbit import Clbit
+from .gate import Gate
 
 from braket.circuits.circuit import Circuit as BraketCircuit
 from qiskit.circuit import QuantumCircuit as QiskitCircuit

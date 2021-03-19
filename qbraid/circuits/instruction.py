@@ -2,9 +2,9 @@ from typing import Any, Sequence, Dict, Iterable, Union
 import numpy as np
 
 
-from gate import Gate
-from qubitset import QubitSet
-from clbitset import ClbitSet
+from .gate import Gate
+from .qubitset import QubitSet
+from .clbitset import ClbitSet
 
 from braket.circuits.instruction import Instruction as BraketInstruction
 from qiskit.circuit import Instruction as QiskitInstruction

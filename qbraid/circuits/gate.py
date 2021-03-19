@@ -117,16 +117,16 @@ class Gate():
     
     Args:
         gate: input object
+        name (optional): name of the gate
+        gate_type: a string demonstrating the gate type according to qBraid
+            documentation. (eg. 'H', 'CX', 'MEASURE')
         
     Attributes:
-        name:
-        num_qubits:
-        matrix:
-        _gate:
-        _holding:
+        package: the name of the pacakge to which the original gate object
+            belongs (eg. 'qiskit')
     
     Methods:
-        to_qB:
+        
     """
     
     def __init__(self, 
@@ -363,8 +363,18 @@ class Gate():
             
     def _create_cirq_object(self):
         
+        """
+        Creates a cirq gate object of the corresponding gate_type, 
+        eg. HPowGate(), or CirqCXPowGate(), and stores it in the _outputs
+        attribute.
+        
+        If the gate type is 'MEASURE', returns the string 'CirqMeasure',
+            because the CirqMeasure gate cannot be instantiated as a gate.
+        """
+        
         gate_type = self.gate_type()
         
+        #single-qubit, no parameters
         if gate_type == 'H':
             self._outputs['cirq'] = CirqHPowGate() #default exponent =1 
         elif gate_type == 'X':
@@ -377,10 +387,12 @@ class Gate():
             self._outputs['cirq'] = CirqZPowGate(exponent=0.5)
         elif gate_type == 'T':
             self._outputs['cirq'] = CirqZPowGate(exponent=0.25)
+        
+        # single-qubit, one-parameter gates
         elif gate_type == 'RX':
             self._outputs['cirq'] = cirq_rx(self.params[0])
             
-            
+        #two-qubit, no parameters
         elif gate_type =='CX':
             self._outputs['cirq'] = CirqCXPowGate() #default exponent = 1 
             
@@ -392,6 +404,11 @@ class Gate():
             raise TypeError("Gate type not handled")
     
     def _create_qiskit_object(self):
+        
+        """
+        Creates a qiskit gate object of the corresponding `gate_type`, and
+        stores it in the `_outputs` attribute.
+        """
         
         gate_type = self.gate_type()
         
@@ -422,6 +439,16 @@ class Gate():
             raise TypeError("Gate type not handled")
     
     def _create_braket_object(self):
+        
+        
+        """
+        Creates a braket gate object of the corresponding gate_type, 
+        eg. Gate.H(), or Gate.T(), and stores it in the _outputs
+        attribute.
+        
+        If the gate type is 'MEASURE', returns the string 'BraketMeasure',
+            because the BraketMeasure gate cannot be instantiated as a gate.
+        """
         
         gate_type = self.gate_type()
         
@@ -479,12 +506,22 @@ class Gate():
         
     def _to_cirq(self):
         
+        """
+        If the object has not already been transpiled to its cirq equivalent,
+        do so, store it under the _objects attribute, and return the object.
+        """
+        
         if 'cirq' not in self._outputs.keys():
             self._create_cirq_object()
         
         return self._outputs['cirq']
     
     def _to_qiskit(self):
+        
+        """
+        If the object has not already been transpiled to its qiskit equivalent,
+        do so, store it under the _objects attribute, and return the object.
+        """
         
         if 'qiskit' not in self._outputs.keys():
             self._create_qiskit_object()
@@ -493,12 +530,24 @@ class Gate():
     
     def _to_braket(self):
         
+        """
+        If the object has not already been transpiled to its braket equivalent,
+        do so, store it under the _objects attribute, and return the object.
+        """
+        
         if 'braket' not in self._outputs.keys():
             self._create_braket_object()
             
         return self._outputs['braket']
     
     def output(self, package: str):
+        
+        """
+        Transpiles the object to its equivalent in another package.
+        
+        Args:
+            package: the package of the desired output object.
+        """
         
         if package == 'qiskit':
             return self._to_qiskit()

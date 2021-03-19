@@ -1,6 +1,6 @@
 from typing import Any, Sequence, Dict, Iterable, Union
 
-from qubit import Qubit
+from .qubit import Qubit
 
 from braket.circuits.qubit_set import QubitSet as BraketQubitSet
 from qiskit.circuit.quantumregister import QuantumRegister as QiskitQuantumRegister
@@ -8,7 +8,7 @@ from cirq.ops.qubit_order import QubitOrder as CirqQubitOrder
 
 QubitSetInput = Union [BraketQubitSet, QiskitQuantumRegister, CirqQubitOrder]
 QubitGetterInput = Union[QubitSetInput,int,str,Iterable]
-QubitInput = Union["BraketQubit", "CirqNamedQubit","QiskitQubit", int, str]  
+QubitInput = None #Union["BraketQubit", "CirqNamedQubit","QiskitQubit", int, str]  
 
 
 class QubitSet():

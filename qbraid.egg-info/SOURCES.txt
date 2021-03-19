@@ -1,0 +1,7 @@
+README.md
+setup.py
+qbraid.egg-info/PKG-INFO
+qbraid.egg-info/SOURCES.txt
+qbraid.egg-info/dependency_links.txt
+qbraid.egg-info/not-zip-safe
+qbraid.egg-info/top_level.txt

@@ -7,7 +7,7 @@ Created on Wed Feb 17 16:14:04 2021
 
 from typing import Any, Sequence, Dict, Iterable, Union
 
-from clbit import Clbit
+from .clbit import Clbit
 
 #from braket.circuits.qubit_set import QubitSet as aws_QubitSet
 from qiskit.circuit.classicalregister import ClassicalRegister as QiskitClassicalRegister

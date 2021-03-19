@@ -1,7 +1,6 @@
 from typing import Any, Sequence, Dict, Iterable, Union
 
-
-from instruction import Instruction
+from .instruction import Instruction
 
 from braket.circuits.moments import Moments as BraketMoments
 from cirq.ops.moment import Moment as CirqMoment

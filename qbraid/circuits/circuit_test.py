@@ -1,9 +1,8 @@
 from typing import Union
-from circuit import Circuit
-
 import numpy as np
 
-from qubit import Qubit
+from qbraid.circuits.circuit import Circuit
+from qbraid.circuits.qubit import Qubit
 
 import cirq
 from cirq.circuits import Circuit as CirqCircuit
@@ -240,6 +239,6 @@ if __name__ == "__main__":
     #qiskit_test()
     #braket_test()
     
-    braket_to_all()
+    #braket_to_all()
     #cirq_to_all()
-    #qiskit_to_all()
+    qiskit_to_all()
