@@ -1,6 +1,7 @@
-from typing import Any, Sequence, Dict, Iterable, Union
+from typing import Iterable, Union
+from abc import ABC
 
-from .qubit import Qubit
+from .qubit import QiskitQubitWrapper, CirqQubitWrapper, BraketQubitWrapper
 
 from braket.circuits.qubit_set import QubitSet as BraketQubitSet
 from qiskit.circuit.quantumregister import QuantumRegister as QiskitQuantumRegister
@@ -11,76 +12,71 @@ QubitGetterInput = Union[QubitSetInput,int,str,Iterable]
 QubitInput = None #Union["BraketQubit", "CirqNamedQubit","QiskitQubit", int, str]  
 
 
-class QubitSet():
-    
-    """
-    A wrapper class for a collection of qBraid Qubit objects.
-    
-    Arguments:
-        qubits: A wrapper class for a list of qubits. 
-        
-    Attributes:
-        qubits (list[Qubit]): list of qBraid Qubit objects
-        outputs (dict): output objects generated for any or all other packages
-        get_qubits(list[QubitInput]): 
-    Methods:
-        get_qubit: searches the list of qubits for the qBraid Qubit object 
-            which corresponds to the qubit object from any package
-        get_qubits: same as get_qubit but for a list of qubits to find
-        output: transpile the set of qubits to a corresponding package.
-            currently only implemented for qiskit
+class AbstractQubitSet(ABC):
 
-    """
+    def __init__(self):
+        
+        self.qubits = []
+        self._outputs = {}
     
-    def __init__(self, qubits: Iterable[Qubit] = None):
+    def get_qubit(self, search_target_qubit):
         
-        self.qubits = [Qubit(qubit) for qubit in qubits]
-
-    def __len__(self):
-        return len(self.qubits)
-
-    def get_qubit_by_id(self, indentifier: Union[str,int]):
+        for qb in self.qubits:
+            if qb.qubit == search_target_qubit:
+                return qb
         
-        for qubit in self.qubits:
-            if qubit.id == identifier:
-                return qubit
-        return "Could not find qubit with id: {}".format(identifier)
+    def get_qubits(self, search_target_qubits: Iterable):
+        
+        return [self.get_qubit(target) for target in search_target_qubits]
     
-    def get_qubits(self, targetqubits: Iterable):
+    def _create_qiskit(self):
         
-        """
-        search for the qBraid Qubit object in the QubitSet that corresponds to
-        each qubit object in the input list
-        """
-        
-        return [self.get_qubit(qubit) for qubit in targetqubits]
+        qreg = QiskitQuantumRegister(len(self.qubits))
+        for index, qubit in enumerate(self.qubits):
+            qubit._create_qiskit(qreg, index)
     
-    def get_qubit(self, targetqubit: QubitInput):
+        self._outputs['qiskit'] = qreg
+    
+    def _create_braket(self):
+    
+        self._outputs['braket'] = [qb.transpile['braket'] for qb in self.qubits]
+    
+    def _create_cirq(self):
         
-        """
-        search for the qBraid Qubit object in the QubitSet that corresponds to
-        to the passed qubit
-        """
+        self._outputs['cirq'] = [qb.transpile['cirq'] for qb in self.qubits]
+    
+    def transpile(self, package: str):
         
-        for qbraid_qubit in self.qubits:
-            if qbraid_qubit.qubit == targetqubit:
-                assert type(qbraid_qubit) == Qubit
-                return qbraid_qubit
+        if package == 'qiskit':
             
-    def output(self, output_type: str):
-        
-        if output_type == 'qiskit':
-            
-            for index, qubit in enumerate(self.qubits):
-                qubit.outputs['qiskit'] = index
+            self._create_qiskit()
                 
-            return self._to_qiskit()
+        return self._outputs['qiskit']
+                  
         
-        else:
-            pass
-                
-    def _to_qiskit(self):
-        return QiskitQuantumRegister(len(self.qubits))
+class QiskitQubitSet(AbstractQubitSet):
+    
+    def __init__(self, qubits: Iterable[QiskitQubitWrapper]):
+        
+        super().__init__()
+        self.qubits = [QiskitQubitWrapper(qb) for qb in qubits]
+             
+        
+class CirqQubitSet(AbstractQubitSet):
+    
+    def __init__(self, qubits: Iterable[CirqQubitWrapper]):
+        
+        super().__init__()
+        self.qubits = [CirqQubitWrapper(qb) for qb in qubits]
+        
+class BraketQubitSet(AbstractQubitSet):
+    
+    def __init__(self, qubits: Iterable[BraketQubitWrapper]):
+        
+        super().__init__()
+        self.qubits = [BraketQubitWrapper(qb) for qb in qubits]
+    
+
             
         
             

@@ -1,8 +1,12 @@
 from typing import Union
 import numpy as np
+from numpy import pi
+from sympy import Symbol
 
-from qbraid.circuits.circuit import Circuit
-from qbraid.circuits.qubit import Qubit
+from qbraid.circuits.transpiler import qbraid_wrapper
+
+from qiskit.circuit import Parameter
+
 
 import cirq
 from cirq.circuits import Circuit as CirqCircuit
@@ -11,7 +15,8 @@ from cirq.ops.gate_features import TwoQubitGate as CirqTwoQubitGate
 from cirq.ops.gate_features import ThreeQubitGate as CirqThreeQubitGate
 from cirq.ops.moment import Moment as CirqMoment
 from cirq.ops.gate_operation import GateOperation as CirqGateInstruction
-
+from cirq.ops.controlled_gate import ControlledGate
+from cirq import ControlledGate
 
 import qiskit
 from qiskit.circuit import QuantumCircuit as QiskitCircuit
@@ -19,6 +24,7 @@ from qiskit.circuit import Instruction as QiskitInstruction
 from qiskit.circuit import QuantumRegister as QiskitQuantumRegister
 from qiskit.circuit.classicalregister import ClassicalRegister as QiskitClassicalRegister
 from qiskit.circuit import Gate as QiskitGate
+from qiskit.circuit import Parameter as QiskitParameter
 
 from braket.circuits import Circuit as BraketCircuit
 from braket.circuits.qubit import Qubit as BraketQubit
@@ -34,14 +40,46 @@ cirq_gate_types = (CirqSingleQubitGate,CirqTwoQubitGate,CirqThreeQubitGate)
 def braket_to_all():
     
     circuit = BraketCircuit()
-    bell = circuit.h(0).cnot(control=0,target=1)
+    #bell = circuit.h(0).cnot(control=0,target=1)
     
-    circuit = BraketCircuit().h(range(4)).cnot(control=0, target=2).cnot(control=1, target=3)
+    instructions = []
+    instructions.append(BraketInstruction(BraketGate.H() ,0 ))
+    instructions.append(BraketInstruction(BraketGate.X() , 1))
+    instructions.append(BraketInstruction(BraketGate.Y() , 2))
+    instructions.append(BraketInstruction(BraketGate.Z() , 1))
+    instructions.append(BraketInstruction(BraketGate.S() , 0))
+    instructions.append(BraketInstruction(BraketGate.Si() ,1 ))
+    instructions.append(BraketInstruction(BraketGate.T() , 2))
+    instructions.append(BraketInstruction(BraketGate.Ti() ,1 ))
+    instructions.append(BraketInstruction(BraketGate.I() , 0))
+    instructions.append(BraketInstruction(BraketGate.V() , 0))
+    instructions.append(BraketInstruction(BraketGate.Vi() ,2 ))
+    instructions.append(BraketInstruction(BraketGate.PhaseShift(pi),2 ))
+    instructions.append(BraketInstruction(BraketGate.Rx(pi) ,0 ))
+    instructions.append(BraketInstruction(BraketGate.Ry(pi) ,1 ))
+    instructions.append(BraketInstruction(BraketGate.Rz(pi/2) ,2 ))
+    instructions.append(BraketInstruction(BraketGate.CNot() ,[1,0] ))
+    instructions.append(BraketInstruction(BraketGate.Swap() ,[1,2] ))
+    instructions.append(BraketInstruction(BraketGate.ISwap() ,[1,2] ))
+    instructions.append(BraketInstruction(BraketGate.PSwap(pi) ,[0,1] ))
+    instructions.append(BraketInstruction(BraketGate.CY() , [0,1]))
+    instructions.append(BraketInstruction(BraketGate.CZ() , [1,0]))
+    instructions.append(BraketInstruction(BraketGate.CPhaseShift(pi/4) ,[2,0] ))
+    instructions.append(BraketInstruction(BraketGate.XX(pi) ,[0,1] ))
+    instructions.append(BraketInstruction(BraketGate.XY(pi) ,[0,1] ))
+    instructions.append(BraketInstruction(BraketGate.YY(pi) ,[0,1] ))
+    instructions.append(BraketInstruction(BraketGate.ZZ(pi) ,[0,1] ))
+    instructions.append(BraketInstruction(BraketGate.CCNot() ,[0,1,2] ))
     
-    qbraid_circuit = Circuit(circuit, auto_measure = True)
-    cirq_circuit = qbraid_circuit.output('cirq')
+    for inst in instructions:
+        circuit.add_instruction(inst)    
+    
+    print(circuit)
+    qbraid_circuit = qbraid_wrapper(circuit)
+    
+    cirq_circuit = qbraid_circuit.transpile(package = 'cirq')
     print(cirq_circuit)
-    qiskit_circuit = qbraid_circuit.output('qiskit')
+    qiskit_circuit = qbraid_circuit.transpile('qiskit') #, auto_measure = True)
     print(qiskit_circuit)
     
     
@@ -72,12 +110,12 @@ def cirq_to_all():
     circuit.append([m0,m1])
     
     # transpile
-    qbraid_circuit = Circuit(circuit)
+    qbraid_circuit = qbraid_wrapper(circuit)
     
     print("cirq circuit\n\n", circuit)
-    qiskit_circuit = qbraid_circuit.output('qiskit')
+    qiskit_circuit = qbraid_circuit.transpile('qiskit')
     print("qiskit circuit\n\n", qiskit_circuit)
-    braket_circuit = qbraid_circuit.output('braket')
+    braket_circuit = qbraid_circuit.transpile('braket')
     print("braket circuit\n\n", braket_circuit)
     
 def qiskit_to_all():
@@ -102,8 +140,8 @@ def qiskit_to_all():
     print(circuit)
     
     #transpile
-    qbraid_circuit = Circuit(circuit)
-    cirq_circuit = qbraid_circuit.output('cirq')
+    qbraid_circuit = qbraid_wrapper(circuit)
+    cirq_circuit = qbraid_circuit.transpile('cirq')
     print("cirq ciruit")
     print(cirq_circuit)
     
@@ -113,7 +151,7 @@ def qiskit_to_all():
     #result = simulator.run(cirq_circuit)
     #print(result)
     
-    braket_circuit = qbraid_circuit.output('braket')
+    braket_circuit = qbraid_circuit.transpile('braket')
     print(braket_circuit)
     
 
@@ -152,7 +190,7 @@ def cirq_test():
     result = simulator.run(circuit)
     print(result)
     
-    Circuit(circuit)
+    #Circuit(circuit)
     
 def qiskit_test():
     
@@ -233,7 +271,133 @@ def braket_test():
     for instruction in circuit.instructions:
         print(instruction)
 
+def test_function():
+    
+    #define qubits
+    q0 = cirq.LineQubit(0)
+    q1 = cirq.LineQubit(1)
+    
+    #define operations
+    op_h = cirq.H(q0)**1.8
+    op_cnot = cirq.CNOT(q0,q1)
+    op_z = cirq.Z(q1)
+    op_t = cirq.T(q0)
+    op_s = cirq.S(q1)
+
+    h = cirq.H.controlled(1)
+    op_controlled_h = h(q0,q1)
+
+    # add operations to circuit
+    circuit = cirq.Circuit()
+    circuit.append(op_h)
+    circuit.append(cirq.H(q0))
+    circuit.append(cirq.X(q1))
+    circuit.append(op_cnot)
+    circuit.append(op_z)
+    circuit.append(op_s)
+    circuit.append(op_t)
+    circuit.append(op_controlled_h)
+    
+    # measure both qubits
+    m0 = cirq.measure(q0, key=0)
+    m1 = cirq.measure(q1, key=1)
+    circuit.append([m0,m1])
+    
+    # transpile
+    qbraid_circuit = qbraid_wrapper(circuit)
+    
+    print("cirq circuit\n")
+    print(circuit)
+    qiskit_circuit = qbraid_circuit.transpile('qiskit')
+    print("qiskit circuit\n")
+    print(qiskit_circuit)
+    
+    cirq_circuit_2 = qbraid_wrapper(qiskit_circuit).transpile('cirq')
+    print("cirq circuit 2")
+    print(cirq_circuit_2)
+    
+    print(circuit == cirq_circuit_2)
+
+
+def test_qiskit_parameters():
+    
+    #from qiskit.circuit import Parameter
+
+    theta = Parameter('θ')
+    
+    n = 5
+    
+    qc = QiskitCircuit(5, 1)
+    
+    qc.rz(pi/4, range(5))
+    
+    qc.h(0)
+    for i in range(n-1):
+        qc.cx(i, i+1)
+    
+    qc.barrier()
+    qc.rz(theta, range(2,5))
+    qc.barrier()
+    
+    for i in reversed(range(n-1)):
+        qc.cx(i, i+1)
+    qc.h(0)
+    qc.measure(0, 0)
+    
+    print(qc)
+    #print(dir(qc.parameters))
+    #print(list(qc.parameters))
+    
+    for instruction, qubit_list, clbit_list in qc.data:
+        print(instruction.params)
+
+def test_parametrized_circuit():
+    
+    #qc = QiskitCircuit(1,1)
+    #qc.rz(QiskitParameter('x'),0)
+    #qc.rz(QiskitParameter('y'),0)
+    
+    theta = Parameter('θ')
+    
+    n = 5
+    
+    qc = QiskitCircuit(5, 1)
+    
+    #qc.rz(pi/4, [0,1,2])
+    
+    qc.h(0)
+    for i in range(n-1):
+        qc.cx(i, i+1)
+    
+    #qc.barrier()
+    qc.rz(theta, range(5))
+    #qc.barrier()
+    
+    for i in reversed(range(n-1)):
+        qc.cx(i, i+1)
+    qc.h(0)
+    qc.measure(0, 0)
+    
+    #qc.draw('mpl')
+    print(qc)
+    qbraid_circuit = qbraid_wrapper(qc)
+    cqc = qbraid_circuit.transpile('cirq')
+    #for op in cqc.all_operations():
+    #    print(type(op.gate.exponent))
+    print(cqc)
+    
+
 if __name__ == "__main__":
+    
+    #test_qiskit_parameters()
+    test_parametrized_circuit()
+    
+
+    #from qbraid.circuits.cirq_gates import cirq_gates
+    #print(cirq_gates)
+
+    #test_function()
+    
     
     #cirq_test()
     #qiskit_test()
@@ -241,4 +405,4 @@ if __name__ == "__main__":
     
     #braket_to_all()
     #cirq_to_all()
-    qiskit_to_all()
+    #qiskit_to_all()

@@ -1,9 +1,13 @@
 from typing import Any, Sequence, Dict, Iterable, Union
 import numpy as np
+from abc import ABC, abstractmethod
+import abc
 
-# TODO: include option to pass as scipy matrix
-# import scipy as sp
-import cirq
+
+from .qiskit_gates import get_qiskit_gate_data, create_qiskit_gate, qiskit_gates
+from .cirq_gates import get_cirq_gate_data, create_cirq_gate, cirq_gates
+from .braket_gates import get_braket_gate_data, create_braket_gate
+from .parameter import AbstractParameterWrapper
 
 #aws imports
 from braket.circuits.gate import Gate as BraketGate
@@ -11,85 +15,12 @@ from braket.circuits.gate import Gate as BraketGate
 #qiskit imports
 from qiskit.circuit.gate import Gate as QiskitGate
 from qiskit.circuit.controlledgate import ControlledGate as QiskitControlledGate
+from qiskit.circuit import Parameter as QiskitParameter
 
 #cirq imports
 from cirq.ops.gate_features import SingleQubitGate as CirqSingleQubitGate
 from cirq.ops.gate_features import TwoQubitGate as CirqTwoQubitGate
 from cirq.ops.gate_features import ThreeQubitGate as CirqThreeQubitGate
-
-#qiskit standard gates
-from qiskit.circuit.library.standard_gates.h import HGate as QiskitHGate
-from qiskit.circuit.library.standard_gates.h import CHGate as QiskitCHGate
-from qiskit.circuit.library.standard_gates.x import CXGate as QiskitCXGate
-from qiskit.circuit.library.standard_gates.i import IGate as QiskitIGate
-from qiskit.circuit.library.generalized_gates.gms import MSGate as QiskitMSGate
-from qiskit.circuit.library.standard_gates.p import PhaseGate as QiskitPhaseGate
-from qiskit.circuit.library.standard_gates.p import CPhaseGate as QiskitCPhaseGate
-from qiskit.circuit.library.standard_gates.p import MCPhaseGate as QiskitMCPhaseGate
-from qiskit.circuit.library.standard_gates.r import RGate as QiskitRGate
-from qiskit.circuit.library.standard_gates.x import RCCXGate as QiskitRCCXGate
-from qiskit.circuit.library.standard_gates.x import RC3XGate as QiskitRC3XGate
-from qiskit.circuit.library.standard_gates.rx import RXGate as QiskitRXGate
-from qiskit.circuit.library.standard_gates.rx import CRXGate as QiskitCRXGate
-from qiskit.circuit.library.standard_gates.rxx import RXXGate as QiskitRXXGate
-from qiskit.circuit.library.standard_gates.ry import RYGate as QiskitRYGate
-from qiskit.circuit.library.standard_gates.ry import CRYGate as QiskitCRYGate
-from qiskit.circuit.library.standard_gates.ryy import RYYGate as QiskitRYYGate
-from qiskit.circuit.library.standard_gates.rz import RZGate as QiskitRZGate
-from qiskit.circuit.library.standard_gates.rz import CRZGate as QiskitCRZGate
-from qiskit.circuit.library.standard_gates.rzx import RZXGate as QiskitRZXGate
-from qiskit.circuit.library.standard_gates.rzz import RZZGate as QiskitRZZGate
-from qiskit.circuit.library.standard_gates.s import SGate as QiskitSGate
-from qiskit.circuit.library.standard_gates.s import SdgGate as QiskitSdgGate
-from qiskit.circuit.library.standard_gates.swap import SwapGate as QiskitSwapGate
-from qiskit.circuit.library.standard_gates.iswap import iSwapGate as QiskitiSwapGate
-from qiskit.circuit.library.standard_gates.swap import CSwapGate as QiskitCSwapGate
-from qiskit.circuit.library.standard_gates.sx import SXGate as QiskitSXGate
-from qiskit.circuit.library.standard_gates.sx import SXdgGate as QiskitSXdgGate
-from qiskit.circuit.library.standard_gates.sx import CSXGate as QiskitCSXGate
-from qiskit.circuit.library.standard_gates.t import TGate as QiskitTGate
-from qiskit.circuit.library.standard_gates.t import TdgGate as QiskitTdgGate
-from qiskit.circuit.library.standard_gates.u import UGate as QiskitUGate
-from qiskit.circuit.library.standard_gates.u import CUGate as QiskitCUGate
-from qiskit.circuit.library.standard_gates.u1 import U1Gate as QiskitU1Gate
-from qiskit.circuit.library.standard_gates.u1 import CU1Gate as QiskitCU1Gate
-from qiskit.circuit.library.standard_gates.u1 import MCU1Gate as QiskitMCU1Gate
-from qiskit.circuit.library.standard_gates.u2 import U2Gate as QiskitU2Gate
-from qiskit.circuit.library.standard_gates.u3 import U3Gate as QiskitU3Gate
-from qiskit.circuit.library.standard_gates.u3 import CU3Gate as QiskitCU3Gate
-from qiskit.circuit.library.standard_gates.x import XGate as QiskitXGate
-from qiskit.circuit.library.standard_gates.x import CXGate as QiskitCXGate
-from qiskit.circuit.library.standard_gates.dcx import DCXGate as QiskitDCXGate
-from qiskit.circuit.library.standard_gates.x import CCXGate as QiskitCCXGate
-from qiskit.circuit.library.standard_gates.x import MCXGrayCode, MCXRecursive, MCXVChain
-from qiskit.circuit.library.standard_gates.y import YGate as QiskitYGate
-from qiskit.circuit.library.standard_gates.y import CYGate as QiskitCYGate
-from qiskit.circuit.library.standard_gates.z import ZGate as QiskitZGate
-from qiskit.circuit.library.standard_gates.z import CZGate as QiskitCZGate
-
-#cirq standard gates
-from cirq.ops.common_gates import (
-    XPowGate as CirqXPowGate, 
-    YPowGate as CirqYPowGate,
-    ZPowGate as CirqZPowGate,
-    HPowGate as CirqHPowGate,
-    CZPowGate as CirqCZPowGate,
-    CXPowGate as CirqCXPowGate
-)
-from cirq.ops.common_gates import (
-    rx as cirq_rx,
-    ry as cirq_ry,
-    rz as cirq_rz,
-    cphase as cirq_cphase
-)
-from cirq.ops.three_qubit_gates import (
-    CCZPowGate as CirqCCZPowGate,
-    CCXPowGate as CirqCCXPowGate,
-    CSwapGate as CirqCSwapGate,
-)
-
-#braket standard gates
-
 
 #measurement gates
 from cirq.ops.measurement_gate import MeasurementGate as CirqMeasure
@@ -109,8 +40,178 @@ GateInputType = Union["BraketGate",
                      "QiskitControlledGate",
                      np.array]
 
+class AbstractGate(ABC):
+    
+    def __init__(self):
+        
+        self.gate = None
+        self.name = None
+        self.package = None
+        
+        self.params = None
+        self.matrix = None
+        
+        self.num_controls = 0
+        self.base_gate = None
+        
+        self._gate_type = None
+        self._outputs = {}
+    
+# =============================================================================
+#     def get_data(self):
+#         
+#         data = {'name':self.name,
+#                 'type': self._gate_type,
+#                 'package': self.package,
+#                 'params': self.params,
+#                 'matrix': self.matrix,
+#                 }
+#         if self.base_gate:
+#             data['num_controls'] = self.num_controls
+#             data['base_gate'] = self.base_gate
+# =============================================================================
+    
+    def transpile(self, package: str):
+        
+        if not package in self._outputs.keys():
+            self._create_output(package)
+        return self._outputs[package]
 
-class Gate():
+    def _create_output(self, package: str):
+        
+        if package == 'qiskit':
+            self._create_qiskit()
+        elif package == 'braket':
+            self._create_braket()
+        elif package == 'cirq':
+            self._create_cirq()
+        else:
+            print("package not yet handled")
+            
+    def _create_qiskit(self):    
+        
+        qiskit_params = self.params.copy()
+        for i, param in enumerate(qiskit_params):
+            if isinstance(param,AbstractParameterWrapper):
+                qiskit_params[i] = param.transpile('cirq')
+        
+        
+        data = {'type': self._gate_type,
+                    'matrix': self.matrix,
+                    'name':self.name,
+                    'params':qiskit_params}
+        
+        if self._gate_type in qiskit_gates.keys():
+            
+            self._outputs['qiskit'] = create_qiskit_gate(data)
+        
+        elif self.base_gate:
+            self._outputs['qiskit'] = self.base_gate.transpile('qiskit').control(self.num_controls)
+        
+        elif not (self.matrix is None):
+            data['type'] = 'Unitary'
+            self._outputs['qiskit'] = create_qiskit_gate(data)
+        
+    def _create_cirq(self):
+        
+        cirq_params = self.params.copy()
+        for i, param in enumerate(cirq_params):
+            if isinstance(param,AbstractParameterWrapper):
+                cirq_params[i] = param.transpile('cirq')
+        
+        data = {'type': self._gate_type,
+                    'matrix': self.matrix,
+                    'name':self.name,
+                    'params':cirq_params}
+        
+        if self._gate_type in cirq_gates.keys():
+            self._outputs['cirq'] = create_cirq_gate(data)
+        
+        elif self.base_gate:
+            self._outputs['cirq'] = self.base_gate.transpile('cirq').controlled(self.num_controls)
+
+        elif not (self.matrix is None):
+            data['name'] = data['type']
+            data['type'] = 'Unitary'
+            self._outputs['cirq'] = create_cirq_gate(data)
+    
+    def _create_braket(self):
+        
+        self._outputs['braket'] = create_braket_gate(self._gate_type, self.params)
+    
+        
+class QiskitGateWrapper(AbstractGate):
+    
+    def __init__(self, gate: QiskitGate, params: QiskitParameter = None):
+        
+        super().__init__()
+        
+        self.gate = gate
+        self.params = params
+        self.name = gate.name
+        
+        data = get_qiskit_gate_data(gate)
+        
+        self.matrix = data['matrix']
+        #self.params = data['params']
+        self.num_controls = data['num_controls']
+        
+        self._gate_type = data['type']
+        self._outputs['qiskit'] = gate
+        self.package = 'qiskit'
+
+
+class BraketGateWrapper(AbstractGate):
+    
+    def __init__(self, gate: BraketGate):
+        
+        super().__init__()
+        
+        self.gate = gate
+        self.name = None
+        
+        data = get_braket_gate_data(gate)
+        
+        self.matrix = data['matrix']
+        self.params = data['params']
+        
+        if 'base_gate' in data.keys():
+            self.base_gate = BraketGateWrapper(data['base_gate'])
+            #self.base_gate = data['base_gate']
+            self.num_controls = data['num_controls']
+        
+        self._gate_type = data['type']
+        self._outputs['braket'] = gate
+        self.package = 'braket'
+        
+    
+class CirqGateWrapper(AbstractGate):
+    
+    def __init__(self, gate: CirqGate):
+        
+        super().__init__()
+        
+        self.gate = gate
+        self.name = None
+        
+        data = get_cirq_gate_data(gate)
+        
+        self.matrix = data['matrix']
+        self.params = data['params']
+        self.num_controls = data['num_controls']
+        
+        self._gate_type = data['type']
+        self._outputs['cirq'] = gate
+        self.package = 'cirq'
+    
+class QbraidGateWrapper(AbstractGate):
+    
+    def __init__(self, gate_type: str):
+        
+        super().__init__()
+        
+        self._gate_type = gate_type
+        self.package = 'qbraid'
     
     """
     qBraid Gate Wrapper class
@@ -555,6 +656,3 @@ class Gate():
             return self._to_cirq()
         elif package == 'braket':
             return self._to_braket()
-
-
-    
