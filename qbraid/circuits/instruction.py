@@ -54,7 +54,7 @@ class AbstractInstructionWrapper(ABC):
         qubits = [qubit.transpile('qiskit') for qubit in self.qubits]
         clbits = [clbit.output('qiskit') for clbit in self.clbits]
         
-        assert np.log2(len(self.gate.matrix)) == len(qubits)
+        #assert np.log2(len(self.gate.matrix)) == len(qubits)
 
         
         #if isinstance(gate, (QiskitCXGate, QiskitCCXGate)):

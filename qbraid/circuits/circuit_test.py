@@ -387,11 +387,86 @@ def test_parametrized_circuit():
     print(cqc)
     
 
+from qbraid.devices.execute import execute
+
+def qiskit_execute():
+    
+    from qiskit import QuantumCircuit
+    qc = QuantumCircuit(2,2)
+    qc.h(0)
+    qc.h(1)
+    qc.cx(0,1)
+    qc.measure([0,1],[1,0])
+    
+    qbraid_result = execute(qc,'IBM_qasm_simulator', shots = 100)
+    print(qbraid_result.get_counts()) 
+
+
+def cirq_execute():
+    
+    import cirq
+    #import qsimcirq
+    
+    # Pick up to ~25 qubits to simulate (requires ~256MB of RAM)
+    qubits = [cirq.GridQubit(i,j) for i in range(2) for j in range(2)]
+    
+    # Define a circuit to run
+    # (Example is from the 2019 "Quantum Supremacy" experiement)
+    circuit = cirq.experiments.random_rotations_between_grid_interaction_layers_circuit(
+        qubits=qubits, depth=16)
+    
+    # Measure qubits at the end of the circuit
+    circuit.append(cirq.measure(*qubits, key='all_qubits'))
+    
+    
+    
+    
+    #cirq
+    #define qubits
+    q0 = cirq.LineQubit(0)
+    q1 = cirq.LineQubit(1)
+    
+    circuit = CirqCircuit()
+    theta=np.pi/2
+    rz_gate = cirq.rz(theta)
+    circuit.append(rz_gate(q0))
+    circuit.append(rz_gate(q1))
+    
+    circuit.append(cirq.H(q0))
+    circuit.append(cirq.CNOT(q0,q1))
+    
+    
+    m0 = cirq.measure(q0, key=0)
+    m1 = cirq.measure(q1, key=1)
+    
+    
+    
+    circuit.append([m0,m1])
+    
+    
+
+    simulator = cirq.Simulator()
+    #qsim_results = qsim_simulator.run(circuit, repetitions=10)
+    
+    results = execute(circuit, simulator, shots = 100)
+    print(results.get_counts())
+    
+    
+    #print('qsim results:')
+    #print(dir(qsim_results))
+    #print(qsim_results.histograzm())
+    #print(qsim_results.repetitions)
+    #print(qsim_results.measurements)
+    
+    
+
 if __name__ == "__main__":
     
     #test_qiskit_parameters()
-    test_parametrized_circuit()
+    #test_parametrized_circuit()
     
+    qiskit_execute()
+    #cirq_execute()
 
     #from qbraid.circuits.cirq_gates import cirq_gates
     #print(cirq_gates)

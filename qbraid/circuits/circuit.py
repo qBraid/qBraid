@@ -75,7 +75,7 @@ class AbstractCircuitWrapper(ABC):
         
         # add instructions
         for instruction in self.instructions:
-            assert np.log2(len(instruction.gate.matrix)) == len(instruction.qubits)
+            #assert np.log2(len(instruction.gate.matrix)) == len(instruction.qubits)
             output_circ.append(*instruction.transpile('qiskit'))
         
         #auto measure

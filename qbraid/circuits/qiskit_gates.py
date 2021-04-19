@@ -288,6 +288,7 @@ qiskit_gates = {
     'RCCX': QiskitRCCXGate,
     'RC3X': QiskitRC3XGate,
     'CCX': QiskitCCXGate,
+    'MEASURE': QiskitMeasurementGate,
 }
 
 def create_qiskit_gate(data):
@@ -298,7 +299,7 @@ def create_qiskit_gate(data):
     
     #measure
     if gate_type == 'MEASURE':
-        return QiskitMeasurementGate()
+        return qiskit_gates[gate_type]()
     #single qubit gates
     elif gate_type in ('H','X','Y','Z','S','Sdg','T','Tdg','I','SX','SXdg'):
         return qiskit_gates[gate_type]()

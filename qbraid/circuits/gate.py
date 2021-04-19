@@ -102,7 +102,6 @@ class AbstractGate(ABC):
                     'params':qiskit_params}
         
         if self._gate_type in qiskit_gates.keys():
-            
             self._outputs['qiskit'] = create_qiskit_gate(data)
         
         elif self.base_gate:

@@ -9,4 +9,3 @@ def get_package_name(obj):
         return package_name
     else:
         print("Could not determine package for obj of type {}".format(type(obj)))
-
