@@ -1,12 +1,7 @@
 from typing import Any, Sequence, Dict, Iterable, Union
-import numpy as np
 from abc import ABC
-import abc
 
-from .gate import (QiskitGateWrapper, CirqGateWrapper, 
-                   BraketGateWrapper, QbraidGateWrapper)
 from .clbitset import ClbitSet
-from .utils import get_package_name
 
 from braket.circuits.instruction import Instruction as BraketInstruction
 from qiskit.circuit import Instruction as QiskitInstruction
@@ -88,72 +83,10 @@ class AbstractInstructionWrapper(ABC):
         else:
             print("Unable to transpile from {} to {}".format(self.package, package))
 
-class QiskitInstructionWrapper(AbstractInstructionWrapper):
+
     
-    def __init__(self, instruction: QiskitInstruction,
-                 qubits,
-                 clbits = None,
-                 params = None):
-        
-        super().__init__()
-        
-        self.instruction = instruction
-        self.qubits = qubits
-        self.clbits = clbits
-        self.package = 'qiskit'
-        
-        self.gate = QiskitGateWrapper(instruction, params)
-    
-    
-class CirqInstructionWrapper(AbstractInstructionWrapper):
-    
-    def __init__(self, instruction: QiskitInstruction,
-                 qubits,
-                 clbits = None):
-        
-        super().__init__()
-        
-        self.instruction = instruction
-        self.qubits = qubits
-        self.clbits = clbits
-        self.package = 'cirq'
-        self.gate = CirqGateWrapper(instruction.gate)
-        
-class BraketInstructionWrapper(AbstractInstructionWrapper):
-    
-    def __init__(self, instruction: BraketInstruction,
-                 qubits,
-                 clbits = None):
-        
-        super().__init__()
-        
-        self.instruction = instruction
-        self.qubits = qubits
-        self.clbits = clbits
-        self.package = 'braket'
-        self.gate = BraketGateWrapper(instruction.operator)
+
         
 
     
-class QbraidInstructionWrapper(AbstractInstructionWrapper):
-    
-    def __init__(self, qbraid_gate: QbraidGateWrapper,
-                 qubits,
-                 clbits = None):
-        
-        super().__init__()
-        
-        self.instruction = qbraid_gate
-        self.qubits = qubits
-        self.clbits = clbits
-        self.package = 'qbraid'
-        
-        """
-        self.instruction = instruction
-        self.qubits = qubits
-        self.clbits = clbits
-        self.package = 'braket'
-        self.gate = Gate(instruction.operator)
-        """
-
 

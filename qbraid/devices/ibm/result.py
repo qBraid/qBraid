@@ -1,6 +1,19 @@
+import matplotlib.pyplot as plt
+
 from ..result import Result
 from ..visualization import plot_histogram as visualize_histogram
-import matplotlib.pyplot as plt
+
+
+from .devices import IBMAerDevice, IBMQDevice
+
+
+def get_ibm_result(device, job):
+    
+    if isinstance(device, IBMAerDevice):
+        return IBMAerResult(job)
+    
+    elif isinstance(device, IBMQDevice):
+        pass
 
 class IBMAerResult(Result):
     

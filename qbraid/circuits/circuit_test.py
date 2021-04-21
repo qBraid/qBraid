@@ -465,7 +465,7 @@ if __name__ == "__main__":
     #test_qiskit_parameters()
     #test_parametrized_circuit()
     
-    qiskit_execute()
+    #qiskit_execute()
     #cirq_execute()
 
     #from qbraid.circuits.cirq_gates import cirq_gates
@@ -478,6 +478,6 @@ if __name__ == "__main__":
     #qiskit_test()
     #braket_test()
     
-    #braket_to_all()
-    #cirq_to_all()
-    #qiskit_to_all()
+    braket_to_all()
+    cirq_to_all()
+    qiskit_to_all()

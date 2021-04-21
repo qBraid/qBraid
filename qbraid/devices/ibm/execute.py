@@ -1,8 +1,6 @@
-from .result import IBMAerResult
-from .devices import IBMAerDevice, IBMQDevice
-
 from qiskit import execute as qiskit_execute
 
+from .result import get_ibm_result
 
 def _execute_ibm(qiskit_circuit, 
                  device,
@@ -11,10 +9,7 @@ def _execute_ibm(qiskit_circuit,
     
     job = qiskit_execute(qiskit_circuit, device.backend, **kwargs )
     
-    if isinstance(device, IBMAerDevice):
-        return IBMAerResult(job)
+    return get_ibm_result(device,job)
     
-    elif isinstance(device, IBMQDevice):
-        pass
     
 

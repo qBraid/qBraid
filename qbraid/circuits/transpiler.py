@@ -1,5 +1,8 @@
 from .utils import get_package_name
-from .circuit import QiskitCircuitWrapper, CirqCircuitWrapper, BraketCircuitWrapper
+
+from .qiskit.circuit import QiskitCircuitWrapper
+from .cirq.circuit import CirqCircuitWrapper
+from .braket.circuit import BraketCircuitWrapper
 
 def qbraid_wrapper(circuit):
     
