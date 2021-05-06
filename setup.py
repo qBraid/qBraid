@@ -7,6 +7,9 @@ setup(name='qbraid',
       author='qbraid developers',
       author_email='noreply@qBraid.com',
       license='Restricted',
-      packages=find_packages(where='src'),
-      package_dir={'':'src'},
       zip_safe=False)
+
+"""
+packages=find_packages(where=''),
+      package_dir={'':''},
+"""
