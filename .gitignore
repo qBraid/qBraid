@@ -23,9 +23,10 @@ var/
 wheels/
 pip-wheel-metadata/
 share/python-wheels/
-src/qbraid.egg-info/
+qbraid/qbraid.egg-info/
 .installed.cfg
 *.egg
+*.egg-info
 MANIFEST
 
 # PyInstaller
@@ -124,3 +125,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 qbraid/.DS_Store
+.DS_Store
