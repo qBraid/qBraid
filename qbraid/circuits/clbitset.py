@@ -59,6 +59,8 @@ class ClbitSet():
             
     def get_clbit(self, target_clbit: ClbitSetInput):
         
+        """same as get_qubit but for clbit"""
+        
         for qbraid_clbit in self.clbits:
             if qbraid_clbit.clbit == target_clbit:
                 assert type(qbraid_clbit) == Clbit

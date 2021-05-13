@@ -14,6 +14,9 @@ QubitInput = None #Union["BraketQubit", "CirqNamedQubit","QiskitQubit", int, str
 
 class AbstractQubitSet(ABC):
 
+    """Not a qubit set in the sense of qiskit 'QuantumRegister', but rather a 
+    list of qbraid-wrapped qubit objects. """    
+
     def __init__(self):
         
         self.qubits = []
@@ -21,11 +24,17 @@ class AbstractQubitSet(ABC):
     
     def get_qubit(self, search_target_qubit):
         
+        """ Find the qbraid qubit object that has wrapped the object of whatever package. 
+        Used by instruction object to find the qubit relavent to that instruction. 
+        This is somewhat inefficient, and we may want to change this over time."""
+        
         for qb in self.qubits:
             if qb.qubit == search_target_qubit:
                 return qb
         
     def get_qubits(self, search_target_qubits: Iterable):
+        
+        """Run get_qubit on a list of package-level qubit objects"""
         
         return [self.get_qubit(target) for target in search_target_qubits]
     
@@ -46,6 +55,9 @@ class AbstractQubitSet(ABC):
         self._outputs['cirq'] = [qb.transpile['cirq'] for qb in self.qubits]
     
     def transpile(self, package: str):
+        
+        """Should check if the transpiled object has already been created.
+        If not, create it. Then return that object."""
         
         if package == 'qiskit':
             

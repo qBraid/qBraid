@@ -6,6 +6,9 @@ ParameterInput = Union[float,int]
 
 class AbstractParameterWrapper():
     
+    """Wrap a'parameter' for parametrized circuits """
+    
+    
     def __init__(self):
     
         self.name = None
@@ -26,6 +29,8 @@ class AbstractParameterWrapper():
     
 class CirqParameterWrapper(AbstractParameterWrapper):
     
+    """qBraid wrapper of cirq paramter object."""
+    
     def __init__(self, parameter: Symbol):
         
         super().__init__()
@@ -45,6 +50,8 @@ class CirqParameterWrapper(AbstractParameterWrapper):
             print("Package not supported.")
         
 class QiskitParameterWrapper(AbstractParameterWrapper):
+    
+    """qbraid wrapper of qiskit parameter object."""
     
     def __init__(self, parameter: QiskitParameter):
         

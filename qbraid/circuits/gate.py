@@ -42,6 +42,8 @@ GateInputType = Union["BraketGate",
 
 class AbstractGate(ABC):
     
+    """Abstract Gate wrapper object. Extended by 'QiskitGateWrapper', etc."""
+    
     def __init__(self):
         
         self.gate = None
@@ -73,6 +75,8 @@ class AbstractGate(ABC):
     
     def transpile(self, package: str):
         
+        """If transpiled object not created, create it. Then return."""
+        
         if not package in self._outputs.keys():
             self._create_output(package)
         return self._outputs[package]
@@ -89,6 +93,8 @@ class AbstractGate(ABC):
             print("package not yet handled")
             
     def _create_qiskit(self):    
+        
+        """Create qiskit gate from a qbraid gate wrapper object."""
         
         qiskit_params = self.params.copy()
         for i, param in enumerate(qiskit_params):
@@ -113,6 +119,9 @@ class AbstractGate(ABC):
         
     def _create_cirq(self):
         
+        """Create cirq gate from a qbraid gate wrapper object."""
+        
+        
         cirq_params = self.params.copy()
         for i, param in enumerate(cirq_params):
             if isinstance(param,AbstractParameterWrapper):
@@ -136,6 +145,9 @@ class AbstractGate(ABC):
     
     def _create_braket(self):
         
+        """Create braket gate from a qbraid gate wrapper object."""
+        
+    
         self._outputs['braket'] = create_braket_gate(self._gate_type, self.params)
     
         

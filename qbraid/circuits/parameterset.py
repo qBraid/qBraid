@@ -15,6 +15,8 @@ class AbstractParameterSet(ABC):
     
     def get_parameter(self, search_target_parameter):
         
+        """ Same as get_qubit but for parameters."""
+        
         for param in self.parameters:
             if param.parameter == search_target_parameter:
                 return param
@@ -32,6 +34,8 @@ class AbstractParameterSet(ABC):
         self._outputs['cirq'] = [p.transpile['cirq'] for p in self.parameters]
     
     def transpile(self, package: str):
+        
+        """ Create transpiled object if it has not been created altready. Return"""
         
         if not package in self._outputs.keys():
             self._create_output(package)

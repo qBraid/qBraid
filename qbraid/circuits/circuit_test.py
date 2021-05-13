@@ -3,7 +3,7 @@ import numpy as np
 from numpy import pi
 from sympy import Symbol
 
-from qbraid.circuits.transpiler import qbraid_wrapper
+from qbraid.qbraid.circuits.transpiler import qbraid_wrapper
 
 from qiskit.circuit import Parameter
 

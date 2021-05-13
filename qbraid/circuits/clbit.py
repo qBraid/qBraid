@@ -10,9 +10,7 @@ class Clbit():
     """
     Clbit Class: hold clbit objects
     
-    Args:
-        clbit: input object, acceptable objects include:
-            Braket, qiskit, cirq
+    pretty much only for qiskit.
     """
     
     def __init__(self, clbit: clbitInput = None):
