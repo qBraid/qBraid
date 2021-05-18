@@ -1,6 +1,3 @@
-from typing import Iterable
-
-
 def get_package_name(obj):
 
     """Determine package of an object using the .__module__ method"""

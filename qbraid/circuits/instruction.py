@@ -1,16 +1,8 @@
-from typing import Any, Sequence, Dict, Iterable, Union
 from abc import ABC
-
-from .clbitset import ClbitSet
+from typing import Union
 
 from braket.circuits.instruction import Instruction as BraketInstruction
-from qiskit.circuit import Instruction as QiskitInstruction
-from qiskit.circuit.gate import Gate as QiskitGate
-from cirq.ops.gate_operation import GateOperation as CirqGateInstruction
 from cirq.ops.measure_util import measure as cirq_measure
-
-# measurement gates
-from cirq.ops.measurement_gate import MeasurementGate as CirqMeasure
 from qiskit.circuit.measure import Measure as QiskitMeasurementGate
 
 InstructionInput = Union["BraketInstruction", "CirqGateInstruction", "QiskitInstruction"]

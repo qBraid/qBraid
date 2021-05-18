@@ -1,6 +1,7 @@
 from typing import Union
-from sympy import Symbol
+
 from qiskit.circuit import Parameter as QiskitParameter
+from sympy import Symbol
 
 ParameterInput = Union[float, int]
 

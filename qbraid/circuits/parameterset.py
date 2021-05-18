@@ -1,10 +1,10 @@
-from typing import Iterable, Union
 from abc import ABC
-
-from .parameter import QiskitParameterWrapper, CirqParameterWrapper, AbstractParameterWrapper
+from typing import Iterable
 
 from qiskit.circuit.parameter import Parameter as QiskitParameter
 from sympy import Symbol
+
+from .parameter import QiskitParameterWrapper, CirqParameterWrapper, AbstractParameterWrapper
 
 
 class AbstractParameterSet(ABC):

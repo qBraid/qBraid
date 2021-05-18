@@ -1,5 +1,5 @@
-from .ibm.devices import _get_ibm_device
 from .google.devices import _get_google_device
+from .ibm.devices import _get_ibm_device
 from .utils import get_vendor_name
 
 

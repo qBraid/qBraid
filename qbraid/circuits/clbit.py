@@ -1,7 +1,7 @@
-from typing import Any, Sequence, Dict, Iterable, Union
+from typing import Union
 
-from qiskit.circuit.classicalregister import Clbit as QiskitClbit
 from qiskit.circuit.classicalregister import ClassicalRegister as QiskitClassicalRegister
+from qiskit.circuit.classicalregister import Clbit as QiskitClbit
 
 clbitInput = Union["QiskitClbit", int, str]
 

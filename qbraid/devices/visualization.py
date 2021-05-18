@@ -1,7 +1,7 @@
 from collections import Counter, OrderedDict
 import functools
-import numpy as np
 
+import numpy as np
 
 VisualizationError = None
 

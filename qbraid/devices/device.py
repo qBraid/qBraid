@@ -1,5 +1,5 @@
-from abc import ABC
 import abc
+from abc import ABC
 
 
 class Device(ABC):

@@ -10,7 +10,7 @@ from cirq.ops.gate_features import TwoQubitGate as CirqTwoQubitGate
 
 import numpy as np
 
-from qbraid.qbraid.circuits.transpiler import qbraid_wrapper
+from qbraid.circuits.transpiler import qbraid_wrapper
 from qiskit.circuit import Parameter
 from qiskit.circuit import QuantumCircuit as QiskitCircuit
 from qiskit.circuit import QuantumRegister as QiskitQuantumRegister

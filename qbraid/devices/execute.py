@@ -1,12 +1,7 @@
-from ..circuits.transpiler import qbraid_wrapper
-from ..circuits.circuit import AbstractCircuitWrapper
-
-
-from .ibm.execute import _execute_ibm
-
-
 from .google.execute import _execute_google
-
+from .ibm.execute import _execute_ibm
+from ..circuits.circuit import AbstractCircuitWrapper
+from ..circuits.transpiler import qbraid_wrapper
 
 google_devices = ["device_a", "device_b"]
 ibm_devices = ["qasm_simulator", "statevector_simulator"]

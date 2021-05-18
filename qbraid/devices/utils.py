@@ -1,6 +1,3 @@
-from typing import Iterable
-
-
 def get_vendor_name(device):
 
     name = device.__module__.split(".")[0]

@@ -1,30 +1,23 @@
-from typing import Any, Sequence, Dict, Iterable, Union
-import numpy as np
-from abc import ABC, abstractmethod
-import abc
+from abc import ABC
+from typing import Union
 
-
-from .qiskit.utils import get_qiskit_gate_data, create_qiskit_gate, qiskit_gates
-from .cirq.utils import get_cirq_gate_data, create_cirq_gate, cirq_gates
-from .braket.utils import get_braket_gate_data, create_braket_gate
-from .parameter import AbstractParameterWrapper
-
-# braket imports
 from braket.circuits.gate import Gate as BraketGate
 
-# qiskit imports
-from qiskit.circuit.gate import Gate as QiskitGate
-from qiskit.circuit.controlledgate import ControlledGate as QiskitControlledGate
-from qiskit.circuit import Parameter as QiskitParameter
-
-# cirq imports
 from cirq.ops.gate_features import SingleQubitGate as CirqSingleQubitGate
-from cirq.ops.gate_features import TwoQubitGate as CirqTwoQubitGate
 from cirq.ops.gate_features import ThreeQubitGate as CirqThreeQubitGate
-
-# measurement gates
+from cirq.ops.gate_features import TwoQubitGate as CirqTwoQubitGate
 from cirq.ops.measurement_gate import MeasurementGate as CirqMeasure
+
+import numpy as np
+
+from qiskit.circuit.controlledgate import ControlledGate as QiskitControlledGate
+from qiskit.circuit.gate import Gate as QiskitGate
 from qiskit.circuit.measure import Measure as QiskitMeasurementGate
+
+from .braket.utils import create_braket_gate
+from .cirq.utils import create_cirq_gate, cirq_gates
+from .parameter import AbstractParameterWrapper
+from .qiskit.utils import create_qiskit_gate, qiskit_gates
 
 # types
 CirqGate = Union[CirqSingleQubitGate, CirqTwoQubitGate, CirqThreeQubitGate, CirqMeasure]

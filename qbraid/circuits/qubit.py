@@ -1,13 +1,10 @@
-from typing import Any, Sequence, Dict, Iterable, Union
 from abc import ABC
-
+from typing import Union
 
 from braket.circuits.qubit import Qubit as BraketQubit
-from qiskit.circuit.quantumregister import Qubit as QiskitQubit
-from cirq.ops.named_qubit import NamedQubit as CirqNamedQubit
 from cirq.devices.line_qubit import LineQubit as CirqLineQubit
-
 from qiskit.circuit.quantumregister import QuantumRegister as QiskitQuantumRegister
+from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 
 QubitInput = Union["BraketQubit", "CirqNamedQubit", "QiskitQubit", int, str]
 

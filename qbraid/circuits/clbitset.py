@@ -5,13 +5,11 @@ Created on Wed Feb 17 16:14:04 2021
 @author: Erik
 """
 
-from typing import Any, Sequence, Dict, Iterable, Union
+from typing import Iterable, Union
 
 from .clbit import Clbit
 
 # from braket.circuits.qubit_set import QubitSet as aws_QubitSet
-from qiskit.circuit.classicalregister import ClassicalRegister as QiskitClassicalRegister
-
 # from cirq.ops.qubit_order import QubitOrder as cirq_QubitOrder
 
 
