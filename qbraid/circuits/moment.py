@@ -1,6 +1,6 @@
 from typing import Any, Sequence, Dict, Iterable, Union
 
-#from .instruction import Instruction
+# from .instruction import Instruction
 
 Instruction = None
 
@@ -9,18 +9,18 @@ from cirq.ops.moment import Moment as CirqMoment
 
 qB_MomentInput = Union["BraketMoments", "CirqMoment", Iterable[Instruction]]
 
-class Moment():
-    
+
+class Moment:
     def __init__(self, moment: qB_MomentInput = None, time_slice: int = None):
-        
+
         self.moment = moment
-        
-        if isinstance(moment,BraketMoments):
+
+        if isinstance(moment, BraketMoments):
             pass
-        elif isinstance(moment,CirqMoment):
+        elif isinstance(moment, CirqMoment):
             self.instructions = [Instruction(i) for i in moment.operations]
             self.qubits = moment.qubits
-        
+
         """
         self._holding = True
         if type(moment) == Iterable[qB_Instruction]:
@@ -38,8 +38,8 @@ class Moment():
         if self._holding:
             self._moment = moment
        """
-    
+
     def __str__(self):
         if self._holding:
             return str(self._moment)
-        return 'At time step = '+ str(self.time_slice) + ': ' + str(self.instruction_set)
+        return "At time step = " + str(self.time_slice) + ": " + str(self.instruction_set)

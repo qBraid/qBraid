@@ -3,71 +3,70 @@ from typing import Any, Sequence, Dict, Iterable, Union
 from qiskit.circuit.classicalregister import Clbit as QiskitClbit
 from qiskit.circuit.classicalregister import ClassicalRegister as QiskitClassicalRegister
 
-clbitInput = Union["QiskitClbit", int, str]  
+clbitInput = Union["QiskitClbit", int, str]
 
-class Clbit():
-    
+
+class Clbit:
+
     """
     Clbit Class: hold clbit objects
-    
+
     pretty much only for qiskit.
     """
-    
+
     def __init__(self, clbit: clbitInput = None):
-        
+
         self.clbit = clbit
-        
+
         if isinstance(clbit, QiskitClbit):
             self.index = clbit.index
         elif isinstance(clbit, (int,)):
             self.index = clbit
         else:
             print("{} not implemented for Clbit".format(type(clbit)))
-        
+
         self._outputs = {}
-        
-        
+
     def _create_cirq_object(self):
-        
-        self._outputs['cirq'] = self.index
-        
-        
+
+        self._outputs["cirq"] = self.index
+
     def _create_qiskit_object(self, register: QiskitClassicalRegister, index: int):
-        
-        self._outputs['qiskit'] = QiskitClbit(register, index)
-        
+
+        self._outputs["qiskit"] = QiskitClbit(register, index)
+
     def _create_braket_object(self):
-        
-        self._outputs['braket'] = self.index
-        
+
+        self._outputs["braket"] = self.index
+
     def _output_to_cirq(self):
-        
-        if 'cirq' not in self._outputs.keys() or not self._outputs['cirq']:
+
+        if "cirq" not in self._outputs.keys() or not self._outputs["cirq"]:
             self._create_cirq_object()
-        
-        return self._outputs['cirq']
-        
+
+        return self._outputs["cirq"]
+
     def _output_to_qiskit(self):
-        
+
         try:
-            return self._outputs['qiskit']
+            return self._outputs["qiskit"]
         except:
             print("qiskit output not initialized in clbit {}".format(self.index))
-            
+
     def _output_to_braket(self):
-        
-        if 'braket' not in self.outputs.keys() or not self._outputs['braket']:
+
+        if "braket" not in self.outputs.keys() or not self._outputs["braket"]:
             self._create_braket_object()
-        
-        return self._outputs['braket']
-    
+
+        return self._outputs["braket"]
+
     def output(self, package: str):
-        
-        if package == 'qiskit':
+
+        if package == "qiskit":
             return self._output_to_cirq()
-        elif package == 'cirq':
+        elif package == "cirq":
             return self._output_to_cirq()
-        elif package == 'braket':
+        elif package == "braket":
             return self._output_to_braket()
         else:
             print("Output of clbit not implemented for this package: {}".format(package))
