@@ -7,7 +7,7 @@ __pycache__/
 *.so
 
 # Distribution / packaging
-*.vscode/
+*.vscode/*
 .Python
 build/
 develop-eggs/
@@ -15,6 +15,7 @@ dist/
 downloads/
 eggs/
 .eggs/
+.idea
 lib/
 lib64/
 parts/
@@ -23,15 +24,12 @@ var/
 wheels/
 pip-wheel-metadata/
 share/python-wheels/
-qbraid/qbraid.egg-info/
 .installed.cfg
 *.egg
-*.egg-info
+*.egg-info*
 MANIFEST
 
 # PyInstaller
-#  Usually these files are written by a python script from a template
-#  before PyInstaller builds the exe, so as to inject date/other infos into it.
 *.manifest
 *.spec
 
@@ -52,6 +50,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+
 # Translations
 *.mo
 *.pot
@@ -124,6 +123,4 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-qbraid/.DS_Store
-.DS_Store
-.DS_Store
+*.DS_Store
