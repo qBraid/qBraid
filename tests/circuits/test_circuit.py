@@ -1,37 +1,20 @@
-from typing import Union
-import numpy as np
-from numpy import pi
-from sympy import Symbol
-
-from qbraid.qbraid.circuits.transpiler import qbraid_wrapper
-
-from qiskit.circuit import Parameter
-
+from braket.circuits import Circuit as BraketCircuit
+from braket.circuits.gate import Gate as BraketGate
+from braket.circuits.instruction import Instruction as BraketInstruction
 
 import cirq
 from cirq.circuits import Circuit as CirqCircuit
 from cirq.ops.gate_features import SingleQubitGate as CirqSingleQubitGate
-from cirq.ops.gate_features import TwoQubitGate as CirqTwoQubitGate
 from cirq.ops.gate_features import ThreeQubitGate as CirqThreeQubitGate
-from cirq.ops.moment import Moment as CirqMoment
-from cirq.ops.gate_operation import GateOperation as CirqGateInstruction
-from cirq.ops.controlled_gate import ControlledGate
-from cirq import ControlledGate
+from cirq.ops.gate_features import TwoQubitGate as CirqTwoQubitGate
 
-import qiskit
+import numpy as np
+
+from qbraid.qbraid.circuits.transpiler import qbraid_wrapper
+from qiskit.circuit import Parameter
 from qiskit.circuit import QuantumCircuit as QiskitCircuit
-from qiskit.circuit import Instruction as QiskitInstruction
 from qiskit.circuit import QuantumRegister as QiskitQuantumRegister
 from qiskit.circuit.classicalregister import ClassicalRegister as QiskitClassicalRegister
-from qiskit.circuit import Gate as QiskitGate
-from qiskit.circuit import Parameter as QiskitParameter
-
-from braket.circuits import Circuit as BraketCircuit
-from braket.circuits.qubit import Qubit as BraketQubit
-from braket.circuits.qubit_set import QubitSet as BraketQubitSet
-from braket.circuits.gate import Gate as BraketGate
-from braket.circuits.instruction import Instruction as BraketInstruction
-
 
 # cirq_gate_types = Union[CirqSingleQubitGate,CirqTwoQubitGate,CirqThreeQubitGate]
 cirq_gate_types = (CirqSingleQubitGate, CirqTwoQubitGate, CirqThreeQubitGate)
@@ -54,21 +37,21 @@ def braket_to_all():
         BraketInstruction(BraketGate.I(), 0),
         BraketInstruction(BraketGate.V(), 0),
         BraketInstruction(BraketGate.Vi(), 2),
-        BraketInstruction(BraketGate.PhaseShift(pi), 2),
-        BraketInstruction(BraketGate.Rx(pi), 0),
-        BraketInstruction(BraketGate.Ry(pi), 1),
-        BraketInstruction(BraketGate.Rz(pi / 2), 2),
+        BraketInstruction(BraketGate.PhaseShift(np.pi), 2),
+        BraketInstruction(BraketGate.Rx(np.pi), 0),
+        BraketInstruction(BraketGate.Ry(np.pi), 1),
+        BraketInstruction(BraketGate.Rz(np.pi / 2), 2),
         BraketInstruction(BraketGate.CNot(), [1, 0]),
         BraketInstruction(BraketGate.Swap(), [1, 2]),
         BraketInstruction(BraketGate.ISwap(), [1, 2]),
-        BraketInstruction(BraketGate.PSwap(pi), [0, 1]),
+        BraketInstruction(BraketGate.PSwap(np.pi), [0, 1]),
         BraketInstruction(BraketGate.CY(), [0, 1]),
         BraketInstruction(BraketGate.CZ(), [1, 0]),
-        BraketInstruction(BraketGate.CPhaseShift(pi / 4), [2, 0]),
-        BraketInstruction(BraketGate.XX(pi), [0, 1]),
-        BraketInstruction(BraketGate.XY(pi), [0, 1]),
-        BraketInstruction(BraketGate.YY(pi), [0, 1]),
-        BraketInstruction(BraketGate.ZZ(pi), [0, 1]),
+        BraketInstruction(BraketGate.CPhaseShift(np.pi / 4), [2, 0]),
+        BraketInstruction(BraketGate.XX(np.pi), [0, 1]),
+        BraketInstruction(BraketGate.XY(np.pi), [0, 1]),
+        BraketInstruction(BraketGate.YY(np.pi), [0, 1]),
+        BraketInstruction(BraketGate.ZZ(np.pi), [0, 1]),
         BraketInstruction(BraketGate.CCNot(), [0, 1, 2]),
     ]
 
@@ -332,7 +315,7 @@ def test_qiskit_parameters():
 
     qc = QiskitCircuit(5, 1)
 
-    qc.rz(pi / 4, range(5))
+    qc.rz(np.pi / 4, range(5))
 
     qc.h(0)
     for i in range(n - 1):
@@ -367,7 +350,7 @@ def test_parametrized_circuit():
 
     qc = QiskitCircuit(5, 1)
 
-    # qc.rz(pi/4, [0,1,2])
+    # qc.rz(np.pi/4, [0,1,2])
 
     qc.h(0)
     for i in range(n - 1):
