@@ -1,9 +1,8 @@
-# execute google
 from .result import GoogleResult
 
 
-def _execute_google(circuit, device, shots=1):
+def _execute_google(circuit, simulator, **kwargs):
 
-    results = device.device.run(circuit, repetitions=shots)
+    result = simulator.run(circuit, **kwargs)
 
-    return GoogleResult(results)
+    return GoogleResult(result)

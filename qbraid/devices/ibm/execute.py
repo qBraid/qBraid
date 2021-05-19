@@ -1,10 +1,16 @@
 from qiskit import execute as qiskit_execute
+from .devices import IBMAerDevice, IBMQDevice
+from .result import IBMAerResult
 
-from .result import get_ibm_result
 
+def _execute_ibm(circuit, device, **kwargs):
 
-def _execute_ibm(qiskit_circuit, device, shots=1, **kwargs):
+    job = qiskit_execute(circuit, device.backend, **kwargs)
+    result = job.result()
 
-    job = qiskit_execute(qiskit_circuit, device.backend, **kwargs)
-
-    return get_ibm_result(device, job)
+    if isinstance(device, IBMAerDevice):
+        return IBMAerResult(result)
+    elif isinstance(device, IBMQDevice):
+        raise NotImplementedError
+    else:
+        raise NotImplementedError

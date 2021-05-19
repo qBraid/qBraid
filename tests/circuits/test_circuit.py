@@ -102,8 +102,8 @@ def test_cirq_to_all():
     circuit.append(op_t)
 
     # measure both qubits
-    m0 = cirq.measure(q0, key=0)
-    m1 = cirq.measure(q1, key=1)
+    m0 = cirq.measure(q0, key="0")
+    m1 = cirq.measure(q1, key="1")
     circuit.append([m0, m1])
 
     # transpile
@@ -175,8 +175,8 @@ def test_cirq():
     circuit.append(cirq.H(q0))
     circuit.append(cirq.CNOT(q0, q1))
 
-    m0 = cirq.measure(q0, key=0)
-    m1 = cirq.measure(q1, key=1)
+    m0 = cirq.measure(q0, key="0")
+    m1 = cirq.measure(q1, key="1")
 
     circuit.append([m0, m1])
     print("cirq circuit")
@@ -295,8 +295,8 @@ def test_cirq_qiskit_two_way():
     circuit.append(op_controlled_h)
 
     # measure both qubits
-    m0 = cirq.measure(q0, key=0)
-    m1 = cirq.measure(q1, key=1)
+    m0 = cirq.measure(q0, key="0")
+    m1 = cirq.measure(q1, key="1")
     circuit.append([m0, m1])
 
     # transpile
@@ -382,7 +382,7 @@ def test_qiskit_to_cirq_prmtrzd():
     print(cqc)
 
 
-def qiskit_execute():
+def test_qiskit_execute():
     """Testing qbraid.devices.execute function on qiskit circuit"""
 
     qc = QuantumCircuit(2, 2)
@@ -391,7 +391,7 @@ def qiskit_execute():
     qc.cx(0, 1)
     qc.measure([0, 1], [1, 0])
 
-    qbraid_result = execute(qc, "IBM_qasm_simulator", shots=100)
+    qbraid_result = execute(qc, "IBM_qasm_simulator")
     print(qbraid_result.get_counts())
 
 
@@ -424,15 +424,15 @@ def test_cirq_execute():
     circuit.append(cirq.H(q0))
     circuit.append(cirq.CNOT(q0, q1))
 
-    m0 = cirq.measure(q0, key=0)
-    m1 = cirq.measure(q1, key=1)
+    m0 = cirq.measure(q0, key="0")
+    m1 = cirq.measure(q1, key="1")
 
     circuit.append([m0, m1])
 
     simulator = cirq.Simulator()
     # qsim_results = qsim_simulator.run(circuit, repetitions=10)
 
-    results = execute(circuit, simulator, shots=100)
+    results = execute(circuit, simulator)
     print(results.get_counts())
 
     # print('qsim results:')
@@ -454,19 +454,19 @@ if __name__ == "__main__":
     print("QISKIT TESTS")
     print("------------------------------")
     test_qiskit_prmtrzd()          # passes
-    qiskit_execute()               # fails points back to test function??
+    test_qiskit_execute()          # passes
     test_qiskit()                  # passes
-    test_qiskit_to_cirq_prmtrzd()  # fails printing cirq circuit
-    test_qiskit_to_all()           # fails converting to cirq, works converting to braket
+    test_qiskit_to_cirq_prmtrzd()  # fails
+    test_qiskit_to_all()           # fails
     print("------------------------------")
     print()
 
     print("CIRQ TESTS")
     print("------------------------------")
-    test_cirq()                 # fails printing cirq circuit
-    test_cirq_execute()         # fails in CirqCircuitWrapper
-    test_cirq_qiskit_two_way()  # fails in CirqCircuitWrapper
-    test_cirq_to_all()          # fails in CirqCircuitWrapper
+    test_cirq()                 # passes
+    test_cirq_execute()         # passes
+    test_cirq_qiskit_two_way()  # fails
+    test_cirq_to_all()          # passes
     print("------------------------------")
     print()
 

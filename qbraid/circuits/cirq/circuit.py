@@ -31,7 +31,7 @@ class CirqCircuitWrapper(AbstractCircuitWrapper):
                 if isinstance(op.gate, CirqMeasure):
 
                     # create Clbit object based on the info from the measurement operation
-                    output_index = op.gate.key
+                    output_index = int(op.gate.key)
                     assert isinstance(output_index, int)
                     new_clbit = Clbit(output_index)
 

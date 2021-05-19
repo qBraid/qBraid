@@ -21,7 +21,7 @@ class AbstractQubit(ABC):
         """If transpile object not already created, create it an dreturn the
         object, which is stored for future used."""
 
-        if not package in self._outputs.keys():
+        if package not in self._outputs.keys():
             self._create_output(package)
         return self._outputs[package]
 
@@ -30,13 +30,13 @@ class AbstractQubit(ABC):
         """Create the transpiledobject for a specific package"""
 
         if package == "qiskit":
-            print("ERROR: Qiskit output object must be created from circuit object.")
+            raise ValueError("Qiskit output object must be created from circuit object")
         elif package == "braket":
             self._create_braket()
         elif package == "cirq":
             self._create_cirq()
         else:
-            print("package not yet handled")
+            raise ValueError("Package not supported")
 
     def _create_qiskit(self, register: QiskitQuantumRegister, index: int):
         self._outputs["qiskit"] = QiskitQubit(register, index)
@@ -50,7 +50,6 @@ class AbstractQubit(ABC):
 
 class QiskitQubitWrapper(AbstractQubit):
     def __init__(self, qubit: QiskitQubit):
-
         super().__init__()
         self.qubit = qubit
         self.index = qubit.index
@@ -58,7 +57,6 @@ class QiskitQubitWrapper(AbstractQubit):
 
 class CirqQubitWrapper(AbstractQubit):
     def __init__(self, qubit: CirqLineQubit):
-
         super().__init__()
         self.qubit = qubit
         self.index = qubit.x
@@ -66,11 +64,9 @@ class CirqQubitWrapper(AbstractQubit):
 
 class BraketQubitWrapper(AbstractQubit):
     def __init__(self, qubit: BraketQubit):
-
         super().__init__()
         self.qubit = qubit
         self.index = int(qubit)
-
 
 # =============================================================================
 # class Qubit():

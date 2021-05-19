@@ -1,5 +1,4 @@
 from typing import Union
-
 from qiskit.circuit import Parameter as QiskitParameter
 from sympy import Symbol
 
@@ -25,8 +24,8 @@ class AbstractParameterWrapper:
 
         self._outputs["qiskit"] = QiskitParameter(self.name)
 
-    def transpile():
-        pass
+    def transpile(self, package: str):
+        raise NotImplementedError
 
 
 class CirqParameterWrapper(AbstractParameterWrapper):
@@ -36,7 +35,6 @@ class CirqParameterWrapper(AbstractParameterWrapper):
     def __init__(self, parameter: Symbol):
 
         super().__init__()
-
         self.name = parameter.name
         self.parameter = parameter
 
@@ -49,7 +47,7 @@ class CirqParameterWrapper(AbstractParameterWrapper):
                 self._create_qiskit()
             return self._outputs["qiskit"]
         else:
-            print("Package not supported.")
+            raise ValueError("Package not supported")
 
 
 class QiskitParameterWrapper(AbstractParameterWrapper):
@@ -59,7 +57,6 @@ class QiskitParameterWrapper(AbstractParameterWrapper):
     def __init__(self, parameter: QiskitParameter):
 
         super().__init__()
-
         self.name = parameter.name
         self.parameter = parameter
 
@@ -68,8 +65,8 @@ class QiskitParameterWrapper(AbstractParameterWrapper):
         if package == "qiskit":
             return self.parameter
         elif package == "cirq":
-            if not "cirq" in self._outputs.keys():
+            if "cirq" not in self._outputs.keys():
                 self._create_cirq()
             return self._outputs["cirq"]
         else:
-            print("Package not supported")
+            raise ValueError("Package not supported")

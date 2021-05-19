@@ -65,4 +65,4 @@ class AbstractInstructionWrapper(ABC):
         elif package == "cirq":
             return self._to_cirq()
         else:
-            print("Unable to transpile from {} to {}".format(self.package, package))
+            raise ValueError("Transpile from {} to {} is not supported".format(self.package, package))

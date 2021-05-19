@@ -232,7 +232,7 @@ def get_qiskit_gate_data(gate: QiskitGate):
 
     # error
     else:
-        print("Cannot get gate data for the following gat type:", type(gate))
+        raise ValueError("Cannot get gate data for gate type: ", type(gate))
 
     return data
 
@@ -357,8 +357,7 @@ def create_qiskit_gate(data):
     elif not (matrix is None):
         return QiskitUnitaryGate(matrix, label=gate_type)
 
-    # error
     else:
-        print(matrix)
-        print(gate_type)
-        raise TypeError("Gate type not handled")
+        # print(matrix)
+        # print(gate_type)
+        raise ValueError("Gate type not handled")

@@ -48,9 +48,9 @@ class AbstractParameterSet(ABC):
         elif package == "cirq":
             self._create_cirq()
         elif package == "braket":
-            print("Braket not yet supported for parametrized circuits.")
+            raise ValueError("Braket not yet supported for parametrized circuits.")
         else:
-            print("package not yet handled")
+            raise ValueError("Package not supported")
 
 
 class QiskitParameterSet(AbstractParameterSet):

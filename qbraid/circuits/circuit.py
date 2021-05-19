@@ -16,20 +16,23 @@ class AbstractCircuitWrapper(ABC):
 
         self.instructions = []
 
-    @abc.abstractproperty
-    def num_qubits():
-        pass
+    @property
+    @abc.abstractmethod
+    def num_qubits(self):
+        raise NotImplementedError
 
-    @abc.abstractproperty
-    def num_clbits():
-        pass
+    @property
+    @abc.abstractmethod
+    def num_clbits(self):
+        raise NotImplementedError
 
-    @abc.abstractproperty
-    def supported_packages():
-        pass
+    @property
+    @abc.abstractmethod
+    def supported_packages(self):
+        raise NotImplementedError
 
-    def transpile(self):
-        pass
+    def transpile(self, package: str):
+        raise NotImplementedError
 
     def _to_cirq(self, auto_measure=False):
 

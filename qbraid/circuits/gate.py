@@ -86,7 +86,7 @@ class AbstractGate(ABC):
         elif package == "cirq":
             self._create_cirq()
         else:
-            print("package not yet handled")
+            raise ValueError("Package not supported")
 
     def _create_qiskit(self):
 

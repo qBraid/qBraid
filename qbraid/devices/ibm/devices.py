@@ -1,5 +1,6 @@
-from ..device import Device
+from abc import ABC
 
+from ..device import Device
 
 from qiskit import Aer
 from qiskit.providers import BaseBackend as QiskitBaseBackend
@@ -19,18 +20,19 @@ def _get_ibm_device(device: IBMDeviceInput):
         if device in AerDevices:
             return IBMAerDevice(Aer.get_backend(device))
         elif device in IBMQDevices:
-            pass
+            raise NotImplementedError
         else:
             raise TypeError("This IBM device type is not supported.")
     else:
         raise TypeError("This IBM device type is not supported.")
 
 
-class IBMDevice(Device):
+class IBMDevice(Device, ABC):
     def __init__(self, backend):
 
+        super().__init__()
         self._name = backend.name()
-        self._vendor_name = "IBM"
+        self._vendor = "IBM"
 
     @property
     def backend(self):
@@ -38,11 +40,10 @@ class IBMDevice(Device):
         return self.device
 
 
-class IBMAerDevice(IBMDevice):
+class IBMAerDevice(IBMDevice, ABC):
     def __init__(self, backend):
 
         super().__init__(backend)
-
         self._device = backend
 
     @property
@@ -50,9 +51,11 @@ class IBMAerDevice(IBMDevice):
         return self._device
 
     def validate_circuit(self):
-        pass
+        raise NotImplementedError
 
 
-class IBMQDevice(IBMDevice):
+class IBMQDevice(IBMDevice, ABC):
+    def __init__(self, backend):
 
-    pass
+        super().__init__(backend)
+        raise NotImplementedError

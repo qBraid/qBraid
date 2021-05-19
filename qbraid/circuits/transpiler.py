@@ -19,4 +19,4 @@ def qbraid_wrapper(circuit):
     elif package == "braket":
         return BraketCircuitWrapper(circuit)
     else:
-        print("Error: pacakge type not supported")
+        raise ValueError("Package not supported")

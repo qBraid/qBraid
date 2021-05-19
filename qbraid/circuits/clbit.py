@@ -7,7 +7,6 @@ clbitInput = Union["QiskitClbit", int, str]
 
 
 class Clbit:
-
     """
     Clbit Class: hold clbit objects
 
@@ -23,7 +22,7 @@ class Clbit:
         elif isinstance(clbit, (int,)):
             self.index = clbit
         else:
-            print("{} not implemented for Clbit".format(type(clbit)))
+            raise ValueError("{} not implemented for Clbit".format(type(clbit)))
 
         self._outputs = {}
 
@@ -50,7 +49,7 @@ class Clbit:
 
         try:
             return self._outputs["qiskit"]
-        except:
+        except (TypeError, ValueError):
             print("qiskit output not initialized in clbit {}".format(self.index))
 
     def _output_to_braket(self):
@@ -69,4 +68,4 @@ class Clbit:
         elif package == "braket":
             return self._output_to_braket()
         else:
-            print("Output of clbit not implemented for this package: {}".format(package))
+            raise ValueError("Output of clbit not implemented for this package: {}".format(package))

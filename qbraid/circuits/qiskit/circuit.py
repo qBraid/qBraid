@@ -19,7 +19,7 @@ class QiskitCircuitWrapper(AbstractCircuitWrapper):
         self.qubitset = QiskitQubitSet(circuit.qubits)
         self.clbitset = ClbitSet(circuit.clbits)
         self.parameterset = QiskitParameterSet(circuit.parameters)
-        print(list(type(i) for i in self.parameterset.parameters))
+        # print(list(type(i) for i in self.parameterset.parameters))
 
         self.instructions = []
 
@@ -58,4 +58,4 @@ class QiskitCircuitWrapper(AbstractCircuitWrapper):
                 return self.circuit
 
         else:
-            print("The transpiler does not support conversion from qiskit to {}.".format(package))
+            raise ValueError("The transpiler does not support conversion from qiskit to {}.".format(package))
