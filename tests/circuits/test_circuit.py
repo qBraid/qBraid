@@ -3,24 +3,34 @@ from braket.circuits.gate import Gate as BraketGate
 from braket.circuits.instruction import Instruction as BraketInstruction
 
 import cirq
+from cirq import Simulator
 from cirq.circuits import Circuit as CirqCircuit
 from cirq.ops.gate_features import SingleQubitGate as CirqSingleQubitGate
 from cirq.ops.gate_features import ThreeQubitGate as CirqThreeQubitGate
 from cirq.ops.gate_features import TwoQubitGate as CirqTwoQubitGate
-
 import numpy as np
 
-from qbraid.circuits.transpiler import qbraid_wrapper
+from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter
 from qiskit.circuit import QuantumCircuit as QiskitCircuit
 from qiskit.circuit import QuantumRegister as QiskitQuantumRegister
 from qiskit.circuit.classicalregister import ClassicalRegister as QiskitClassicalRegister
+from qiskit.circuit.library.standard_gates.rx import CRXGate as QiskitCRXGate
+from qiskit.circuit.library.standard_gates.u3 import U3Gate
+from qiskit.circuit.library.standard_gates.x import CXGate as QiskitCXGate
+from qiskit.circuit.measure import Measure as QiskitMeasure
+
+from qbraid.circuits.transpiler import qbraid_wrapper
+from qbraid.devices.execute import execute
+
+# import qsimcirq
 
 # cirq_gate_types = Union[CirqSingleQubitGate,CirqTwoQubitGate,CirqThreeQubitGate]
 cirq_gate_types = (CirqSingleQubitGate, CirqTwoQubitGate, CirqThreeQubitGate)
 
 
-def braket_to_all():
+def test_braket_to_all():
+    """Testing converting braket circuit to cirq and qiskit circuit via qbraid wrapper."""
 
     circuit = BraketCircuit()
     # bell = circuit.h(0).cnot(control=0,target=1)
@@ -58,16 +68,19 @@ def braket_to_all():
     for inst in instructions:
         circuit.add_instruction(inst)
 
+    print("braket circuit")
     print(circuit)
     qbraid_circuit = qbraid_wrapper(circuit)
-
     cirq_circuit = qbraid_circuit.transpile(package="cirq")
+    print("cirq circuit")
     print(cirq_circuit)
     qiskit_circuit = qbraid_circuit.transpile("qiskit")  # , auto_measure = True)
+    print("qiskit circuit")
     print(qiskit_circuit)
 
 
-def cirq_to_all():
+def test_cirq_to_all():
+    """Testing converting cirq circuit to braket and qiskit circuit via qbraid wrapper."""
 
     # define qubits
     q0 = cirq.LineQubit(0)
@@ -103,7 +116,8 @@ def cirq_to_all():
     print("braket circuit\n\n", braket_circuit)
 
 
-def qiskit_to_all():
+def test_qiskit_to_all():
+    """Testing converting qiskit circuit to cirq and braket circuit via qbraid wrapper."""
 
     # define quantumregister
     qubits = QiskitQuantumRegister(3)
@@ -122,6 +136,7 @@ def qiskit_to_all():
     circuit.t(2)
     # circuit.rx(np.pi/3,0)
     circuit.measure([0, 1, 2], [2, 1, 0])
+    print("qiskit circuit")
     print(circuit)
 
     # transpile
@@ -130,19 +145,19 @@ def qiskit_to_all():
     print("cirq ciruit")
     print(cirq_circuit)
 
-    # simulate cirq circuit
-    # from cirq import Simulator
+    # # simulate cirq circuit
     # simulator = Simulator()
     # result = simulator.run(cirq_circuit)
     # print(result)
 
     braket_circuit = qbraid_circuit.transpile("braket")
+    print("braket circuit")
     print(braket_circuit)
 
 
-def cirq_test():
+def test_cirq():
+    """Testing building cirq circuit, no qbraid wrapper."""
 
-    # cirq
     # define qubits
     q0 = cirq.LineQubit(0)
     q1 = cirq.LineQubit(1)
@@ -164,48 +179,40 @@ def cirq_test():
     m1 = cirq.measure(q1, key=1)
 
     circuit.append([m0, m1])
-
+    print("cirq circuit")
     print(circuit)
-
-    from cirq import Simulator
 
     simulator = Simulator()
     result = simulator.run(circuit)
+    print("simulator result")
     print(result)
 
     # Circuit(circuit)
 
 
-def qiskit_test():
+def test_qiskit():
+    """Testing building a non-paramterized qiskit circuit, no qbraid wrapper."""
 
     # circuit = QiskitQuantumCircuit(2,2)
-
     # circuit.rz(0,)
+    # cx = QiskitCXGate()
+    # print(isinstance(cx, QiskitControlledGate))
+    # print(cx.num_ctrl_qubits)
+    # print(cx.num_clbits)
 
-    from qiskit.circuit.library.standard_gates.x import CXGate as QiskitCXGate
-    from qiskit.circuit import ControlledGate as QiskitControlledGate
-    from qiskit.circuit.library.standard_gates.rx import CRXGate as QiskitCRXGate
-    from qiskit.circuit.library.standard_gates.u3 import U3Gate
-    from qiskit.circuit.measure import Measure as QiskitMeasure
+    # cx2 = cx.control(2)
+    # print(cx2.num_ctrl_qubits)
 
-    cx = QiskitCXGate()
-    print(isinstance(cx, QiskitControlledGate))
-    print(cx.num_ctrl_qubits)
-    print(cx.num_clbits)
+    # crx = QiskitCRXGate(np.pi / 2)
+    # print(crx.name)
+    # print(crx.params)
+    # print(crx.num_qubits)
 
-    cx2 = cx.control(2)
-    print(cx2.num_ctrl_qubits)
+    # u3 = U3Gate(np.pi / 2, np.pi, np.pi / 4)
+    # print(u3.params)
+    # print(u3.name)
 
-    crx = QiskitCRXGate(np.pi / 2)
-    print(crx.name)
-    print(crx.params)
-    print(crx.num_qubits)
-
-    u3 = U3Gate(np.pi / 2, np.pi, np.pi / 4)
-    print(u3.params)
-    print(u3.name)
-
-    measure = QiskitMeasure()
+    # measure = QiskitMeasure()
 
     circuit = QiskitCircuit(2, 4)
     circuit.h(0)
@@ -221,7 +228,7 @@ def qiskit_test():
 
         if isinstance(instruction, QiskitMeasure):
             print(instruction, qubit_list, clbit_list)
-            print(clbit_list[0].index)
+            # print(clbit_list[0].index) # this line is deprecated
             print(dir(clbit_list[0]))
             break
 
@@ -249,15 +256,18 @@ def qiskit_test():
             print(dir(instruction))
 
 
-def braket_test():
+def test_braket():
+    """Testing building a braket circuit, no qbraid wrapper."""
 
     circuit = BraketCircuit().h(range(4)).cnot(control=0, target=2).cnot(control=1, target=3)
+    print(circuit)
 
     for instruction in circuit.instructions:
         print(instruction)
 
 
-def test_function():
+def test_cirq_qiskit_two_way():
+    """Testing converting cirq circuit to qiskit and back to cirq and evaluating equivalence."""
 
     # define qubits
     q0 = cirq.LineQubit(0)
@@ -305,19 +315,16 @@ def test_function():
     print(circuit == cirq_circuit_2)
 
 
-def test_qiskit_parameters():
-
-    # from qiskit.circuit import Parameter
-
-    theta = Parameter("θ")
+def test_qiskit_prmtrzd():
+    """Testing building a paramterized qiskit circuit, no qbraid wrapper."""
 
     n = 5
+    theta = Parameter("θ")
 
     qc = QiskitCircuit(5, 1)
-
     qc.rz(np.pi / 4, range(5))
-
     qc.h(0)
+
     for i in range(n - 1):
         qc.cx(i, i + 1)
 
@@ -334,25 +341,24 @@ def test_qiskit_parameters():
     # print(dir(qc.parameters))
     # print(list(qc.parameters))
 
-    for instruction, qubit_list, clbit_list in qc.data:
-        print(instruction.params)
+    # for instruction, qubit_list, clbit_list in qc.data:
+    #     print(instruction.params)
 
 
-def test_parametrized_circuit():
+def test_qiskit_to_cirq_prmtrzd():
+    """Testing converting parameterized qiskit circuit to cirq circuit via qbraid wrapper."""
 
     # qc = QiskitCircuit(1,1)
     # qc.rz(QiskitParameter('x'),0)
     # qc.rz(QiskitParameter('y'),0)
 
+    n = 5
     theta = Parameter("θ")
 
-    n = 5
-
     qc = QiskitCircuit(5, 1)
-
     # qc.rz(np.pi/4, [0,1,2])
-
     qc.h(0)
+
     for i in range(n - 1):
         qc.cx(i, i + 1)
 
@@ -366,20 +372,18 @@ def test_parametrized_circuit():
     qc.measure(0, 0)
 
     # qc.draw('mpl')
+    print("qiskit circuit")
     print(qc)
     qbraid_circuit = qbraid_wrapper(qc)
     cqc = qbraid_circuit.transpile("cirq")
     # for op in cqc.all_operations():
     #    print(type(op.gate.exponent))
+    print("cirq circuit")
     print(cqc)
 
 
-from qbraid.devices.execute import execute
-
-
 def qiskit_execute():
-
-    from qiskit import QuantumCircuit
+    """Testing qbraid.devices.execute function on qiskit circuit"""
 
     qc = QuantumCircuit(2, 2)
     qc.h(0)
@@ -391,11 +395,8 @@ def qiskit_execute():
     print(qbraid_result.get_counts())
 
 
-def cirq_execute():
-
-    import cirq
-
-    # import qsimcirq
+def test_cirq_execute():
+    """Testing qbraid.devices.execute function on cirq circuit"""
 
     # Pick up to ~25 qubits to simulate (requires ~256MB of RAM)
     qubits = [cirq.GridQubit(i, j) for i in range(2) for j in range(2)]
@@ -443,21 +444,30 @@ def cirq_execute():
 
 if __name__ == "__main__":
 
-    # test_qiskit_parameters()
-    # test_parametrized_circuit()
+    print("BRAKET TESTS")
+    print("------------------------------")
+    test_braket()         # passes
+    test_braket_to_all()  # passes
+    print("------------------------------")
+    print()
 
-    # qiskit_execute()
-    # cirq_execute()
+    print("QISKIT TESTS")
+    print("------------------------------")
+    test_qiskit_prmtrzd()          # passes
+    qiskit_execute()               # fails points back to test function??
+    test_qiskit()                  # passes
+    test_qiskit_to_cirq_prmtrzd()  # fails printing cirq circuit
+    test_qiskit_to_all()           # fails converting to cirq, works converting to braket
+    print("------------------------------")
+    print()
 
-    # from qbraid.circuits.cirq_gates import cirq_gates
-    # print(cirq_gates)
+    print("CIRQ TESTS")
+    print("------------------------------")
+    test_cirq()                 # fails printing cirq circuit
+    test_cirq_execute()         # fails in CirqCircuitWrapper
+    test_cirq_qiskit_two_way()  # fails in CirqCircuitWrapper
+    test_cirq_to_all()          # fails in CirqCircuitWrapper
+    print("------------------------------")
+    print()
 
-    # test_function()
-
-    # cirq_test()
-    # qiskit_test()
-    # braket_test()
-
-    braket_to_all()
-    cirq_to_all()
-    qiskit_to_all()
+    print("ALL TESTS PASSED")
