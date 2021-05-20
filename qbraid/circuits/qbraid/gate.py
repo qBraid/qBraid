@@ -1,22 +1,9 @@
 from typing import Union
-
-from ..gate import AbstractGate
-
-# braket imports
 from braket.circuits.gate import Gate as BraketGate
-
-# qiskit imports
-from qiskit.circuit.gate import Gate as QiskitGate
-from qiskit.circuit.controlledgate import ControlledGate as QiskitControlledGate
-
-# cirq imports
-from cirq.ops.gate_features import SingleQubitGate as CirqSingleQubitGate
-from cirq.ops.gate_features import TwoQubitGate as CirqTwoQubitGate
-from cirq.ops.gate_features import ThreeQubitGate as CirqThreeQubitGate
-
-# measurement gates
 from cirq.ops.measurement_gate import MeasurementGate as CirqMeasure
 from qiskit.circuit.measure import Measure as QiskitMeasurementGate
+from ..gate import AbstractGate
+
 
 GateInputType = Union[
     "BraketGate",
@@ -57,11 +44,8 @@ class QbraidGateWrapper(AbstractGate):
 
         self.gate = gate
         self.name = name
-
         self._gate_type = gate_type
-
         self.package = self._get_package_type()
-
         self._outputs = {}
 
     def _get_package_type(self):

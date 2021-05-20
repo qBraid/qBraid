@@ -37,7 +37,7 @@ class AbstractParameterSet(ABC):
 
         """Create transpiled object if it has not been created altready. Return"""
 
-        if not package in self._outputs.keys():
+        if package not in self._outputs.keys():
             self._create_output(package)
         return self._outputs[package]
 

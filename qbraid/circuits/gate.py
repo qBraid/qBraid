@@ -73,7 +73,7 @@ class AbstractGate(ABC):
 
         """If transpiled object not created, create it. Then return."""
 
-        if not package in self._outputs.keys():
+        if package not in self._outputs.keys():
             self._create_output(package)
         return self._outputs[package]
 

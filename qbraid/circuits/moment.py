@@ -1,11 +1,10 @@
 from typing import Iterable, Union
+from braket.circuits.moments import Moments as BraketMoments
+from cirq.ops.moment import Moment as CirqMoment
 
 # from .instruction import Instruction
 
 Instruction = None
-
-from braket.circuits.moments import Moments as BraketMoments
-from cirq.ops.moment import Moment as CirqMoment
 
 qB_MomentInput = Union["BraketMoments", "CirqMoment", Iterable[Instruction]]
 
@@ -27,7 +26,8 @@ class Moment:
             self._holding = False
             
             if time_slice == None:
-                print("Error: pass time_slice integer when attempting to define new moment with Instruction set")
+                print("Error: pass time_slice integer when attempting to define new moment with 
+                Instruction set")
                 raise # TODO: implement exceptions
                 
             self.instruction_set = moment

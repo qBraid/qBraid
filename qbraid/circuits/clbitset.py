@@ -1,12 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Feb 17 16:14:04 2021
-
-@author: Erik
-"""
-
 from typing import Iterable, Union
-
 from .clbit import Clbit
 
 # from braket.circuits.qubit_set import QubitSet as aws_QubitSet
