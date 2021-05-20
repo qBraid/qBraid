@@ -2,25 +2,21 @@
 # All rights reserved-2020©.
 
 import numpy as np
-from openfermion.ops import QubitOperator, FermionOperator, InteractionOperator
+from openfermion.ops import FermionOperator, InteractionOperator
 
 # from openfermion
 from openfermion.transforms import get_interaction_operator, get_fermion_operator
-from openfermion.utils import count_qubits
 from openfermion.utils import normal_ordered
 
-
-from qiskit.quantum_info import Pauli
-from qiskit.aqua.operators import WeightedPauliOperator
 from qiskit.chemistry import FermionicOperator
-from qiskit.chemistry.core import Hamiltonian
 
 
 def convert(fer_int_op, output_type="QISKIT"):
     """Convert the fermion_operator between the various types available
     in
     Args:
-        fer_int_op: FermionicOperator class in qiskit-aqua or interactionoperator class in openfermion
+        fer_int_op: FermionicOperator class in qiskit-aqua or interactionoperator class in
+        openfermion
         output_fo_type (string): string for specifying the return package type for
                                 qubit_operator
     Returns:

@@ -1,14 +1,12 @@
 # -*- coding: utf-8 -*-
 # All rights reserved-2019©.
 
-import numpy as np
 from pyquil import quil, Program, gates
 from pyquil.quilbase import Gate, Measurement
-from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister, execute
+from qiskit import QuantumCircuit, QuantumRegister
+from qiskit.circuit import Gate
 from qiskit.circuit.library.standard_gates import *
-from qiskit.circuit import Gate, Measure
 from qiskit.circuit.measure import Measure
-from cirq import Circuit
 
 
 # Things to do: Make a class with a variable: circ

@@ -1,4 +1,4 @@
-def quantum_hello_bye_world(qbit_state):
+def quantum_hello_bye_world():
     circ.measure([0], [0])
     backend_sim = Aer.get_backend("qasm_simulator")
     sim = execute(circ, backend_sim, shots=1)
