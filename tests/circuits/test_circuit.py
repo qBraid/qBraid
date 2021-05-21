@@ -15,9 +15,6 @@ from qiskit.circuit import Parameter
 from qiskit.circuit import QuantumCircuit as QiskitCircuit
 from qiskit.circuit import QuantumRegister as QiskitQuantumRegister
 from qiskit.circuit.classicalregister import ClassicalRegister as QiskitClassicalRegister
-from qiskit.circuit.library.standard_gates.rx import CRXGate as QiskitCRXGate
-from qiskit.circuit.library.standard_gates.u3 import U3Gate
-from qiskit.circuit.library.standard_gates.x import CXGate as QiskitCXGate
 from qiskit.circuit.measure import Measure as QiskitMeasure
 
 from qbraid.circuits.transpiler import qbraid_wrapper
@@ -444,30 +441,30 @@ def test_cirq_execute():
 
 if __name__ == "__main__":
 
-    print("BRAKET TESTS")
-    print("------------------------------")
-    test_braket()         # passes
-    test_braket_to_all()  # passes
-    print("------------------------------")
-    print()
+    # print("BRAKET TESTS")
+    # print("------------------------------")
+    # test_braket()         # passes
+    # test_braket_to_all()  # passes
+    # print("------------------------------")
+    # print()
 
-    print("QISKIT TESTS")
-    print("------------------------------")
-    test_qiskit_prmtrzd()          # passes
-    test_qiskit_execute()          # passes
-    test_qiskit()                  # passes
+    # print("QISKIT TESTS")
+    # print("------------------------------")
+    # test_qiskit_prmtrzd()          # passes
+    # test_qiskit_execute()          # passes
+    # test_qiskit()                  # passes
     test_qiskit_to_cirq_prmtrzd()  # fails
-    test_qiskit_to_all()           # fails
-    print("------------------------------")
-    print()
+    # test_qiskit_to_all()           # fails
+    # print("------------------------------")
+    # print()
 
-    print("CIRQ TESTS")
-    print("------------------------------")
-    test_cirq()                 # passes
-    test_cirq_execute()         # passes
-    test_cirq_qiskit_two_way()  # fails
-    test_cirq_to_all()          # passes
-    print("------------------------------")
-    print()
+    # print("CIRQ TESTS")
+    # print("------------------------------")
+    # test_cirq()                 # passes
+    # test_cirq_execute()         # passes
+    # test_cirq_qiskit_two_way()  # fails
+    # test_cirq_to_all()          # passes
+    # print("------------------------------")
+    # print()
 
     print("ALL TESTS PASSED")

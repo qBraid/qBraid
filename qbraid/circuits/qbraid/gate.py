@@ -2,8 +2,10 @@ from typing import Union
 from braket.circuits.gate import Gate as BraketGate
 from cirq.ops.measurement_gate import MeasurementGate as CirqMeasure
 from qiskit.circuit.measure import Measure as QiskitMeasurementGate
-from ..gate import AbstractGate
+from qiskit.circuit.gate import Gate as QiskitGate
+from ..gate import AbstractGate, QiskitGateTypes, CirqGateTypes, BraketGateTypes
 
+from ..utils import
 
 GateInputType = Union[
     "BraketGate",
@@ -16,6 +18,22 @@ GateInputType = Union[
 
 
 class QbraidGateWrapper(AbstractGate):
+    """
+    qBraid Gate Wrapper class
+
+    Args:
+        gate: input object
+        name (optional): name of the gate
+        gate_type: a string demonstrating the gate type according to qBraid
+            documentation. (eg. 'H', 'CX', 'MEASURE')
+
+    Attributes:
+        package: the name of the pacakge to which the original gate object
+            belongs (eg. 'qiskit')
+
+    Methods:
+
+    """
     def __init__(self, gate_type: str):
 
         super().__init__()
@@ -23,30 +41,13 @@ class QbraidGateWrapper(AbstractGate):
         self._gate_type = gate_type
         self.package = "qbraid"
 
-    """
-    qBraid Gate Wrapper class
-    
-    Args:
-        gate: input object
-        name (optional): name of the gate
-        gate_type: a string demonstrating the gate type according to qBraid
-            documentation. (eg. 'H', 'CX', 'MEASURE')
-        
-    Attributes:
-        package: the name of the pacakge to which the original gate object
-            belongs (eg. 'qiskit')
-    
-    Methods:
-        
-    """
-
-    def __init__(self, gate: GateInputType = None, name: str = None, gate_type: str = None):
-
-        self.gate = gate
-        self.name = name
-        self._gate_type = gate_type
-        self.package = self._get_package_type()
-        self._outputs = {}
+    # def __init__(self, gate: GateInputType = None, name: str = None, gate_type: str = None):
+    #
+    #     self.gate = gate
+    #     self.name = name
+    #     self._gate_type = gate_type
+    #     self.package = self._get_package_type()
+    #     self._outputs = {}
 
     def _get_package_type(self):
 
