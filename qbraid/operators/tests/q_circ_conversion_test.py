@@ -2,17 +2,16 @@
 # All rights reserved-2019©.
 import unittest
 import numpy as np
-from pyquil import quil, Program, gates
-from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister, execute
+from pyquil import Program
+from qiskit import QuantumCircuit
 from qiskit.circuit.library.standard_gates import *
-from qiskit.circuit.measure import Measure
-from cirq import Circuit
-from qBraid.conversions.q_circ_conversion import *
 
-from pyquil import quil
+from qbraid.operators.conversions.q_circ_conversion import *
+
+
 from pyquil import Program
 from pyquil.gates import *
-from pyquil import gates
+
 
 
 class convert_q_circ__test(unittest.TestCase):

@@ -6,7 +6,7 @@ from openfermion.ops import QubitOperator
 from openfermion.utils import count_qubits
 from qiskit.quantum_info import Pauli
 from qiskit.aqua.operators import WeightedPauliOperator
-from qBraid.conversions.qub_op_conversion import convert
+from qbraid.operators.conversions.qub_op_conversion import convert
 
 
 class convert_qub_op_test(unittest.TestCase):

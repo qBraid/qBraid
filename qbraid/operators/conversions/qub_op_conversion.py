@@ -45,8 +45,11 @@ def convert(qubit_operator, output_qo_type="QISKIT"):
             for term in qubit_operator._paulis:
                 coeff = term[0]
                 wpo_pauli = term[1]
-                z = wpo_pauli._z
-                x = wpo_pauli._x
+
+                # the _z and _x properties return a list of list [[True,False..]]
+                # changed to get actual list using [0]
+                z = wpo_pauli._z[0]
+                x = wpo_pauli._x[0]
                 of_term = []
                 for i in range(num_qubits):
                     if x[i] and z[i]:
