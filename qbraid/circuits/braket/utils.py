@@ -4,7 +4,6 @@ from braket.circuits.gate import Gate as BraketGate
 
 
 def get_braket_gate_data(gate: BraketGate):
-
     data = {
         "type": None,
         "params": [],
@@ -130,13 +129,13 @@ braket_gates = {
     "RZ": BraketGate.Rz,
     "U1": BraketGate.PhaseShift,
     # two-qubit, zero parameter
-    #'CH':BraketGate.,
+    # 'CH':BraketGate.,
     "CX": BraketGate.CNot,
     "Swap": BraketGate.Swap,
     "iSwap": BraketGate.ISwap,
     "pSwap": BraketGate.PSwap,
-    #'CSX':BraketGate.,
-    #'DCX': BraketGate.,
+    # 'CSX':BraketGate.,
+    # 'DCX': BraketGate.,
     "CY": BraketGate.CY,
     "CZ": BraketGate.CZ,
     # two-qubit, one parameter
@@ -153,7 +152,6 @@ braket_gates = {
 
 
 def create_braket_gate(gate_type: str, params: Iterable = None, matrix=None):
-
     # single qubit
     if gate_type in ("H", "X", "Y", "Z", "S", "Sdg", "T", "Tdg", "I", "SX", "SXdg"):
         return braket_gates[gate_type]()
