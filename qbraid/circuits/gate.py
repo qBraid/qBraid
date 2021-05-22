@@ -36,8 +36,12 @@ GateInputType = Union[
 ]
 
 
-class AbstractGate(ABC):
+class GateError(Exception):
+    """Exception raised by a :class:`~.qbraid.circuits.gate.AbstractGate` object when it is
+    unable to process a gate."""
 
+
+class AbstractGate(ABC):
     """Abstract Gate wrapper object. Extended by 'QiskitGateWrapper', etc."""
 
     def __init__(self):

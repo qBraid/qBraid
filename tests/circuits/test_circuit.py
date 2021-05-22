@@ -190,26 +190,26 @@ def test_cirq():
 def test_qiskit():
     """Testing building a non-paramterized qiskit circuit, no qbraid wrapper."""
 
-    # circuit = QiskitQuantumCircuit(2,2)
-    # circuit.rz(0,)
-    # cx = QiskitCXGate()
-    # print(isinstance(cx, QiskitControlledGate))
-    # print(cx.num_ctrl_qubits)
-    # print(cx.num_clbits)
+    circuit = QiskitQuantumCircuit(2, 2)
+    circuit.rz(0,)
+    cx = QiskitCXGate()
+    print(isinstance(cx, QiskitControlledGate))
+    print(cx.num_ctrl_qubits)
+    print(cx.num_clbits)
 
-    # cx2 = cx.control(2)
-    # print(cx2.num_ctrl_qubits)
+    cx2 = cx.control(2)
+    print(cx2.num_ctrl_qubits)
 
-    # crx = QiskitCRXGate(np.pi / 2)
-    # print(crx.name)
-    # print(crx.params)
-    # print(crx.num_qubits)
+    crx = QiskitCRXGate(np.pi / 2)
+    print(crx.name)
+    print(crx.params)
+    print(crx.num_qubits)
 
-    # u3 = U3Gate(np.pi / 2, np.pi, np.pi / 4)
-    # print(u3.params)
-    # print(u3.name)
+    u3 = U3Gate(np.pi / 2, np.pi, np.pi / 4)
+    print(u3.params)
+    print(u3.name)
 
-    # measure = QiskitMeasure()
+    measure = QiskitMeasure()
 
     circuit = QiskitCircuit(2, 4)
     circuit.h(0)
@@ -453,7 +453,7 @@ if __name__ == "__main__":
     # test_qiskit_prmtrzd()          # passes
     # test_qiskit_execute()          # passes
     # test_qiskit()                  # passes
-    test_qiskit_to_cirq_prmtrzd()  # fails
+    # test_qiskit_to_cirq_prmtrzd()  # fails
     # test_qiskit_to_all()           # fails
     # print("------------------------------")
     # print()
@@ -467,4 +467,20 @@ if __name__ == "__main__":
     # print("------------------------------")
     # print()
 
-    print("ALL TESTS PASSED")
+    # print("ALL TESTS PASSED")
+
+    test_qiskit()
+
+
+
+
+
+
+
+
+
+
+
+
+
+

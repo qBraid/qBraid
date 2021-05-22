@@ -169,7 +169,7 @@ def create_braket_gate(gate_type: str, params: Iterable = None, matrix=None):
         return braket_gates[gate_type](params[0])
 
     # multi-qubit gates
-    elif gate_type in ("CCX"):
+    elif gate_type in "CCX":
         return braket_gates[gate_type]()
 
     # measure

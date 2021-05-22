@@ -2,10 +2,7 @@ from typing import Union
 from braket.circuits.gate import Gate as BraketGate
 from cirq.ops.measurement_gate import MeasurementGate as CirqMeasure
 from qiskit.circuit.measure import Measure as QiskitMeasurementGate
-from qiskit.circuit.gate import Gate as QiskitGate
 from ..gate import AbstractGate, QiskitGateTypes, CirqGateTypes, BraketGateTypes
-
-from ..utils import
 
 GateInputType = Union[
     "BraketGate",
@@ -71,201 +68,201 @@ class QbraidGateWrapper(AbstractGate):
 
         return self._gate_type
 
-    def _get_gate_type(self):
-
-        if self.package == "qiskit":
-
-            # measurement
-            if isinstance(self.gate, QiskitMeasurementGate):
-                return "MEASURE"
-
-            # single-qubit gates
-            elif isinstance(self.gate, QiskitHGate):
-                return "H"
-            elif isinstance(self.gate, QiskitCHGate):
-                return "CH"
-            elif isinstance(self.gate, QiskitCXGate):
-                return "CX"
-            elif isinstance(self.gate, QiskitIGate):
-                return "I"
-            elif isinstance(self.gate, QiskitMSGate):
-                return "MS"
-            elif isinstance(self.gate, QiskitPhaseGate):
-                return "Phase"
-            elif isinstance(self.gate, QiskitCPhaseGate):
-                return "CPhase"
-            elif isinstance(self.gate, QiskitMCPhaseGate):
-                return "MCPhase"
-            elif isinstance(self.gate, QiskitRGate):
-                return "RGate"
-            elif isinstance(self.gate, QiskitRCCXGate):
-                return "RCCX"
-            elif isinstance(self.gate, QiskitRC3XGate):
-                return "RC3X"
-            elif isinstance(self.gate, QiskitRXGate):
-                self.params = self.gate.params
-                return "RX"
-            elif isinstance(self.gate, QiskitCRXGate):
-                return "CRX"
-            elif isinstance(self.gate, QiskitRXXGate):
-                return "RXX"
-            elif isinstance(self.gate, QiskitRYGate):
-                self.params = self.gate.params
-                return "RY"
-            elif isinstance(self.gate, QiskitCRYGate):
-                return "CRY"
-            elif isinstance(self.gate, QiskitRYYGate):
-                return "RYY"
-            elif isinstance(self.gate, QiskitRZGate):
-                self.params = self.gate.params
-                return "RZ"
-            elif isinstance(self.gate, QiskitCRZGate):
-                return "CRZ"
-            elif isinstance(self.gate, QiskitRZXGate):
-                return "RZX"
-            elif isinstance(self.gate, QiskitRZZGate):
-                return "RZZ"
-            elif isinstance(self.gate, QiskitSGate):
-                return "S"
-            elif isinstance(self.gate, QiskitSdgGate):
-                return "Sdg"
-            elif isinstance(self.gate, QiskitSwapGate):
-                return "Swap"
-            elif isinstance(self.gate, QiskitiSwapGate):
-                return "iSwap"
-            elif isinstance(self.gate, QiskitCSwapGate):
-                return "CSwap"
-            elif isinstance(self.gate, QiskitSXGate):
-                return "SX"
-            elif isinstance(self.gate, QiskitSXdgGate):
-                return "SXdg"
-            elif isinstance(self.gate, QiskitCSXGate):
-                return "CSX"
-            elif isinstance(self.gate, QiskitTGate):
-                return "T"
-            elif isinstance(self.gate, QiskitTdgGate):
-                return "Tdg"
-            elif isinstance(self.gate, QiskitUGate):
-                return "U"
-            elif isinstance(self.gate, QiskitCUGate):
-                return "CU"
-            elif isinstance(self.gate, QiskitU1Gate):
-                return "U1"
-            elif isinstance(self.gate, QiskitCU1Gate):
-                return "CU1"
-            elif isinstance(self.gate, QiskitMCU1Gate):
-                return "MCU1"
-            elif isinstance(self.gate, QiskitU2Gate):
-                return "U2"
-            elif isinstance(self.gate, QiskitU3Gate):
-                return "U3"
-            elif isinstance(self.gate, QiskitCU3Gate):
-                return "CU3"
-            elif isinstance(self.gate, QiskitXGate):
-                return "X"
-            elif isinstance(self.gate, QiskitCXGate):
-                return "CX"
-            elif isinstance(self.gate, QiskitDCXGate):
-                return "DCX"
-            elif isinstance(self.gate, QiskitCCXGate):
-                return "CCX"
-            elif isinstance(self.gate, QiskitYGate):
-                return "Y"
-            elif isinstance(self.gate, QiskitCYGate):
-                return "CY"
-            elif isinstance(self.gate, QiskitZGate):
-                return "Z"
-            elif isinstance(self.gate, QiskitCZGate):
-                return "CZ"
-            else:
-                print("Type Not Handled")
-
-        elif self.package == "cirq":
-
-            # measurement gate
-            if isinstance(self.gate, CirqMeasure):
-                # add info self.measurement_map
-                return "MEASURE"
-
-            # single qubit gates
-            if isinstance(self.gate, CirqHPowGate):
-                if self.gate.exponent == 1:
-                    return "H"
-                else:
-                    pass
-            if isinstance(self.gate, CirqXPowGate):
-                if self.gate.exponent == 1:
-                    return "X"
-                elif self.gate.global_shift == -0.5:
-                    self.params = [self.gate.exponent * np.pi]
-                    return "RX"
-                else:
-                    pass
-            if isinstance(self.gate, CirqYPowGate):
-                if self.gate.exponent == 1:
-                    return "Y"
-                else:
-                    pass
-            if isinstance(self.gate, CirqZPowGate):
-                if self.gate.exponent == 1:
-                    return "Z"
-                elif self.gate.exponent == 0.5:
-                    return "S"
-                elif self.gate.exponent == 0.25:
-                    return "T"
-                else:
-                    pass
-            # two qubit gates
-            if isinstance(self.gate, CirqCXPowGate):
-                if self.gate.exponent == 1:
-                    return "CX"
-                else:
-                    pass
-            if isinstance(self.gate, CirqCZPowGate):
-                if self.gate.exponent == 1:
-                    return "CZ"
-                else:
-                    pass
-            # three qubit gates
-            if isinstance(self.gate, CirqCCZPowGate):
-                if self.gate.exponent == 1:
-                    return "CCZ"
-                else:
-                    pass
-            if isinstance(self.gate, CirqCCXPowGate):
-                if self.gate.exponent == 1:
-                    return "CCX"
-                else:
-                    pass
-            if isinstance(self.gate, CirqCSwapGate):
-                return "CSwap"
-            else:
-                raise TypeError("Could not determined gate type.")
-
-        elif self.package == "braket":
-
-            # single qubit gates
-            if isinstance(self.gate, BraketGate.H):
-                return "H"
-            elif isinstance(self.gate, BraketGate.X):
-                return "X"
-            elif isinstance(self.gate, BraketGate.Y):
-                return "Y"
-            elif isinstance(self.gate, BraketGate.Z):
-                return "Z"
-            elif isinstance(self.gate, BraketGate.S):
-                return "S"
-            elif isinstance(self.gate, BraketGate.T):
-                return "T"
-
-            # multi-qubit gates
-            elif isinstance(self.gate, BraketGate.CNot):
-                return "CX"
-            # error
-            else:
-                print(self.package)
-                print(self.gate)
-                raise TypeError("Could not determine gate type.")
+    # def _get_gate_type(self):
+    #
+    #     if self.package == "qiskit":
+    #
+    #         # measurement
+    #         if isinstance(self.gate, QiskitMeasurementGate):
+    #             return "MEASURE"
+    #
+    #         # single-qubit gates
+    #         elif isinstance(self.gate, QiskitHGate):
+    #             return "H"
+    #         elif isinstance(self.gate, QiskitCHGate):
+    #             return "CH"
+    #         elif isinstance(self.gate, QiskitCXGate):
+    #             return "CX"
+    #         elif isinstance(self.gate, QiskitIGate):
+    #             return "I"
+    #         elif isinstance(self.gate, QiskitMSGate):
+    #             return "MS"
+    #         elif isinstance(self.gate, QiskitPhaseGate):
+    #             return "Phase"
+    #         elif isinstance(self.gate, QiskitCPhaseGate):
+    #             return "CPhase"
+    #         elif isinstance(self.gate, QiskitMCPhaseGate):
+    #             return "MCPhase"
+    #         elif isinstance(self.gate, QiskitRGate):
+    #             return "RGate"
+    #         elif isinstance(self.gate, QiskitRCCXGate):
+    #             return "RCCX"
+    #         elif isinstance(self.gate, QiskitRC3XGate):
+    #             return "RC3X"
+    #         elif isinstance(self.gate, QiskitRXGate):
+    #             self.params = self.gate.params
+    #             return "RX"
+    #         elif isinstance(self.gate, QiskitCRXGate):
+    #             return "CRX"
+    #         elif isinstance(self.gate, QiskitRXXGate):
+    #             return "RXX"
+    #         elif isinstance(self.gate, QiskitRYGate):
+    #             self.params = self.gate.params
+    #             return "RY"
+    #         elif isinstance(self.gate, QiskitCRYGate):
+    #             return "CRY"
+    #         elif isinstance(self.gate, QiskitRYYGate):
+    #             return "RYY"
+    #         elif isinstance(self.gate, QiskitRZGate):
+    #             self.params = self.gate.params
+    #             return "RZ"
+    #         elif isinstance(self.gate, QiskitCRZGate):
+    #             return "CRZ"
+    #         elif isinstance(self.gate, QiskitRZXGate):
+    #             return "RZX"
+    #         elif isinstance(self.gate, QiskitRZZGate):
+    #             return "RZZ"
+    #         elif isinstance(self.gate, QiskitSGate):
+    #             return "S"
+    #         elif isinstance(self.gate, QiskitSdgGate):
+    #             return "Sdg"
+    #         elif isinstance(self.gate, QiskitSwapGate):
+    #             return "Swap"
+    #         elif isinstance(self.gate, QiskitiSwapGate):
+    #             return "iSwap"
+    #         elif isinstance(self.gate, QiskitCSwapGate):
+    #             return "CSwap"
+    #         elif isinstance(self.gate, QiskitSXGate):
+    #             return "SX"
+    #         elif isinstance(self.gate, QiskitSXdgGate):
+    #             return "SXdg"
+    #         elif isinstance(self.gate, QiskitCSXGate):
+    #             return "CSX"
+    #         elif isinstance(self.gate, QiskitTGate):
+    #             return "T"
+    #         elif isinstance(self.gate, QiskitTdgGate):
+    #             return "Tdg"
+    #         elif isinstance(self.gate, QiskitUGate):
+    #             return "U"
+    #         elif isinstance(self.gate, QiskitCUGate):
+    #             return "CU"
+    #         elif isinstance(self.gate, QiskitU1Gate):
+    #             return "U1"
+    #         elif isinstance(self.gate, QiskitCU1Gate):
+    #             return "CU1"
+    #         elif isinstance(self.gate, QiskitMCU1Gate):
+    #             return "MCU1"
+    #         elif isinstance(self.gate, QiskitU2Gate):
+    #             return "U2"
+    #         elif isinstance(self.gate, QiskitU3Gate):
+    #             return "U3"
+    #         elif isinstance(self.gate, QiskitCU3Gate):
+    #             return "CU3"
+    #         elif isinstance(self.gate, QiskitXGate):
+    #             return "X"
+    #         elif isinstance(self.gate, QiskitCXGate):
+    #             return "CX"
+    #         elif isinstance(self.gate, QiskitDCXGate):
+    #             return "DCX"
+    #         elif isinstance(self.gate, QiskitCCXGate):
+    #             return "CCX"
+    #         elif isinstance(self.gate, QiskitYGate):
+    #             return "Y"
+    #         elif isinstance(self.gate, QiskitCYGate):
+    #             return "CY"
+    #         elif isinstance(self.gate, QiskitZGate):
+    #             return "Z"
+    #         elif isinstance(self.gate, QiskitCZGate):
+    #             return "CZ"
+    #         else:
+    #             print("Type Not Handled")
+    #
+    #     elif self.package == "cirq":
+    #
+    #         # measurement gate
+    #         if isinstance(self.gate, CirqMeasure):
+    #             # add info self.measurement_map
+    #             return "MEASURE"
+    #
+    #         # single qubit gates
+    #         if isinstance(self.gate, CirqHPowGate):
+    #             if self.gate.exponent == 1:
+    #                 return "H"
+    #             else:
+    #                 pass
+    #         if isinstance(self.gate, CirqXPowGate):
+    #             if self.gate.exponent == 1:
+    #                 return "X"
+    #             elif self.gate.global_shift == -0.5:
+    #                 self.params = [self.gate.exponent * np.pi]
+    #                 return "RX"
+    #             else:
+    #                 pass
+    #         if isinstance(self.gate, CirqYPowGate):
+    #             if self.gate.exponent == 1:
+    #                 return "Y"
+    #             else:
+    #                 pass
+    #         if isinstance(self.gate, CirqZPowGate):
+    #             if self.gate.exponent == 1:
+    #                 return "Z"
+    #             elif self.gate.exponent == 0.5:
+    #                 return "S"
+    #             elif self.gate.exponent == 0.25:
+    #                 return "T"
+    #             else:
+    #                 pass
+    #         # two qubit gates
+    #         if isinstance(self.gate, CirqCXPowGate):
+    #             if self.gate.exponent == 1:
+    #                 return "CX"
+    #             else:
+    #                 pass
+    #         if isinstance(self.gate, CirqCZPowGate):
+    #             if self.gate.exponent == 1:
+    #                 return "CZ"
+    #             else:
+    #                 pass
+    #         # three qubit gates
+    #         if isinstance(self.gate, CirqCCZPowGate):
+    #             if self.gate.exponent == 1:
+    #                 return "CCZ"
+    #             else:
+    #                 pass
+    #         if isinstance(self.gate, CirqCCXPowGate):
+    #             if self.gate.exponent == 1:
+    #                 return "CCX"
+    #             else:
+    #                 pass
+    #         if isinstance(self.gate, CirqCSwapGate):
+    #             return "CSwap"
+    #         else:
+    #             raise TypeError("Could not determined gate type.")
+    #
+    #     elif self.package == "braket":
+    #
+    #         # single qubit gates
+    #         if isinstance(self.gate, BraketGate.H):
+    #             return "H"
+    #         elif isinstance(self.gate, BraketGate.X):
+    #             return "X"
+    #         elif isinstance(self.gate, BraketGate.Y):
+    #             return "Y"
+    #         elif isinstance(self.gate, BraketGate.Z):
+    #             return "Z"
+    #         elif isinstance(self.gate, BraketGate.S):
+    #             return "S"
+    #         elif isinstance(self.gate, BraketGate.T):
+    #             return "T"
+    #
+    #         # multi-qubit gates
+    #         elif isinstance(self.gate, BraketGate.CNot):
+    #             return "CX"
+    #         # error
+    #         else:
+    #             print(self.package)
+    #             print(self.gate)
+    #             raise TypeError("Could not determine gate type.")
 
     def _create_cirq_object(self):
 
