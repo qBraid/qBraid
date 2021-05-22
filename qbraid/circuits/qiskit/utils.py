@@ -1,278 +1,235 @@
-from qiskit.circuit.controlledgate import ControlledGate as QiskitControlledGate
-from qiskit.circuit.gate import Gate as QiskitGate
-from qiskit.circuit.library.generalized_gates.gms import MSGate as QiskitMSGate
-from qiskit.circuit.library.standard_gates.dcx import DCXGate as QiskitDCXGate
-from qiskit.circuit.library.standard_gates.h import HGate as QiskitHGate, CHGate as QiskitCHGate
-from qiskit.circuit.library.standard_gates.i import IGate as QiskitIGate
-from qiskit.circuit.library.standard_gates.iswap import iSwapGate as QiskitiSwapGate
-from qiskit.circuit.library.standard_gates.p import (
-    PhaseGate as QiskitPhaseGate,
-    CPhaseGate as QiskitCPhaseGate,
-    MCPhaseGate as QiskitMCPhaseGate,
-)
-from qiskit.circuit.library.standard_gates.r import RGate as QiskitRGate
-from qiskit.circuit.library.standard_gates.rx import (
-    RXGate as QiskitRXGate,
-    CRXGate as QiskitCRXGate,
-)
-from qiskit.circuit.library.standard_gates.rxx import RXXGate as QiskitRXXGate
-from qiskit.circuit.library.standard_gates.ry import (
-    RYGate as QiskitRYGate,
-    CRYGate as QiskitCRYGate,
-)
-from qiskit.circuit.library.standard_gates.ryy import RYYGate as QiskitRYYGate
-from qiskit.circuit.library.standard_gates.rz import (
-    RZGate as QiskitRZGate,
-    CRZGate as QiskitCRZGate,
-)
-from qiskit.circuit.library.standard_gates.rzx import RZXGate as QiskitRZXGate
-from qiskit.circuit.library.standard_gates.rzz import RZZGate as QiskitRZZGate
-from qiskit.circuit.library.standard_gates.s import SGate as QiskitSGate, SdgGate as QiskitSdgGate
-from qiskit.circuit.library.standard_gates.swap import (
-    SwapGate as QiskitSwapGate,
-    CSwapGate as QiskitCSwapGate,
-)
-from qiskit.circuit.library.standard_gates.sx import (
-    SXGate as QiskitSXGate,
-    SXdgGate as QiskitSXdgGate,
-    CSXGate as QiskitCSXGate,
-)
-from qiskit.circuit.library.standard_gates.t import TGate as QiskitTGate, TdgGate as QiskitTdgGate
-from qiskit.circuit.library.standard_gates.u import UGate as QiskitUGate, CUGate as QiskitCUGate
-from qiskit.circuit.library.standard_gates.u1 import (
-    U1Gate as QiskitU1Gate,
-    CU1Gate as QiskitCU1Gate,
-    MCU1Gate as QiskitMCU1Gate,
-)
-from qiskit.circuit.library.standard_gates.u2 import U2Gate as QiskitU2Gate
-from qiskit.circuit.library.standard_gates.u3 import (
-    U3Gate as QiskitU3Gate,
-    CU3Gate as QiskitCU3Gate,
-)
-from qiskit.circuit.library.standard_gates.x import (
-    XGate as QiskitXGate,
-    CXGate as QiskitCXGate,
-    RCCXGate as QiskitRCCXGate,
-    RC3XGate as QiskitRC3XGate,
-    CCXGate as QiskitCCXGate,
-    MCXGrayCode as QiskitMCXGrayCodeGate,
-    MCXRecursive as QiskitMCXRecursiveGate,
-    MCXVChain as QiskitMCXVChainGate,
-)
-from qiskit.circuit.library.standard_gates.y import YGate as QiskitYGate, CYGate as QiskitCYGate
-from qiskit.circuit.library.standard_gates.z import ZGate as QiskitZGate, CZGate as QiskitCZGate
-from qiskit.circuit.measure import Measure as QiskitMeasurementGate
-from qiskit.extensions.unitary import UnitaryGate as QiskitUnitaryGate
+from qiskit.circuit.gate import Gate
+from qiskit.circuit.measure import Measure
+from qiskit.extensions.unitary import UnitaryGate
+from qiskit.circuit.exceptions import CircuitError
+from qbraid.circuits.gate import GateError
+from typing import Union
+
+QiskitGate = Union[Measure, Gate]
 
 
-def get_qiskit_gate_data(gate: QiskitGate):
+def get_qiskit_gate_data(gate: QiskitGate) -> dict:
+    """
+
+    :param gate:
+    :return:
+    """
 
     data = {"type": None, "params": gate.params, "matrix": None, "num_controls": 0}
     try:
         data["matrix"] = gate.to_matrix()
-    except:
-        raise NotImplementedError
+    except CircuitError as e:
+        raise GateError("Unable to extract matrix represention from {}".format(type(gate))) from e
 
     # measurement
-    if isinstance(gate, QiskitMeasurementGate):
+    if isinstance(gate, Measure):
         data["type"] = "MEASURE"
 
-    # single-qubit gates, no parameters
-    elif isinstance(gate, QiskitHGate):
+    # single-qubit, zero-parameter
+    elif isinstance(gate, Gate.HGate):
         data["type"] = "H"
-    elif isinstance(gate, QiskitXGate):
+    elif isinstance(gate, Gate.XGate):
         data["type"] = "X"
-    elif isinstance(gate, QiskitYGate):
+    elif isinstance(gate, Gate.YGate):
         data["type"] = "Y"
-    elif isinstance(gate, QiskitZGate):
+    elif isinstance(gate, Gate.ZGate):
         data["type"] = "Z"
-    elif isinstance(gate, QiskitSGate):
+    elif isinstance(gate, Gate.SGate):
         data["type"] = "S"
-    elif isinstance(gate, QiskitSdgGate):
+    elif isinstance(gate, Gate.SdgGate):
         data["type"] = "Sdg"
-    elif isinstance(gate, QiskitTGate):
+    elif isinstance(gate, Gate.TGate):
         data["type"] = "T"
-    elif isinstance(gate, QiskitTdgGate):
+    elif isinstance(gate, Gate.TdgGate):
         data["type"] = "Tdg"
-    elif isinstance(gate, QiskitIGate):
+    elif isinstance(gate, Gate.IGate):
         data["type"] = "I"
-    elif isinstance(gate, QiskitSXGate):
+    elif isinstance(gate, Gate.SXGate):
         data["type"] = "SX"
-    elif isinstance(gate, QiskitSXdgGate):
+    elif isinstance(gate, Gate.SXdgGate):
         data["type"] = "SXdg"
 
-    # single-qubit, one parameter
-    elif isinstance(gate, QiskitPhaseGate):
+    # single-qubit, one-parameter
+    elif isinstance(gate, Gate.PhaseGate):
         data["type"] = "Phase"
         data["params"] = gate.params
-    elif isinstance(gate, QiskitRXGate):
+    elif isinstance(gate, Gate.RXGate):
         data["type"] = "RX"
         data["params"] = gate.params
-    elif isinstance(gate, QiskitRYGate):
+    elif isinstance(gate, Gate.RYGate):
         data["type"] = "RY"
         data["params"] = gate.params
-    elif isinstance(gate, QiskitRZGate):
+    elif isinstance(gate, Gate.RZGate):
         data["type"] = "RZ"
         data["params"] = gate.params
-    elif isinstance(gate, QiskitU1Gate):
+    elif isinstance(gate, Gate.U1Gate):
         data["type"] = "U1"
         data["params"] = gate.params
 
-    # single-qubit, two- parameter
-    elif isinstance(gate, QiskitRGate):
+    # single-qubit, two-parameter
+    elif isinstance(gate, Gate.RGate):
         data["type"] = "R"
         data["params"] = gate.params
-    elif isinstance(gate, QiskitU2Gate):
+    elif isinstance(gate, Gate.U2Gate):
         data["type"] = "U2"
         data["params"] = gate.params
 
-    # single-qubit, three parameters
-    elif isinstance(gate, QiskitUGate):
+    # single-qubit, three-parameter
+    elif isinstance(gate, Gate.UGate):
         data["type"] = "U"
         data["params"] = gate.params
-    elif isinstance(gate, QiskitU3Gate):
+    elif isinstance(gate, Gate.U3Gate):
         data["type"] = "U3"
         data["params"] = gate.params
 
-    # two-qubit, no parameters
-    elif isinstance(gate, QiskitCHGate):
+    # two-qubit, zero-parameters
+    elif isinstance(gate, Gate.CHGate):
         data["type"] = "CH"
-    elif isinstance(gate, QiskitCXGate):
+        data["num_controls"] = gate.num_ctrl_qubits
+    elif isinstance(gate, Gate.CXGate):
         data["type"] = "CX"
-    elif isinstance(gate, QiskitSwapGate):
+        data["num_controls"] = gate.num_ctrl_qubits
+    elif isinstance(gate, Gate.SwapGate):
         data["type"] = "Swap"
-    elif isinstance(gate, QiskitiSwapGate):
+    elif isinstance(gate, Gate.iSwapGate):
         data["type"] = "iSwap"
-    elif isinstance(gate, QiskitCSXGate):
+    elif isinstance(gate, Gate.CSXGate):
         data["type"] = "CSX"
-    elif isinstance(gate, QiskitDCXGate):
+        data["num_controls"] = gate.num_ctrl_qubits
+    elif isinstance(gate, Gate.DCXGate):
         data["type"] = "DCX"
-    elif isinstance(gate, QiskitCYGate):
+    elif isinstance(gate, Gate.CYGate):
         data["type"] = "CY"
-    elif isinstance(gate, QiskitCZGate):
+        data["num_controls"] = gate.num_ctrl_qubits
+    elif isinstance(gate, Gate.CZGate):
         data["type"] = "CZ"
-
-    # two-qubit, one parameter
-    elif isinstance(gate, QiskitCPhaseGate):
-        data["type"] = "CPhase"
-        data["params"] = gate.params
-    elif isinstance(gate, QiskitCRXGate):
-        data["type"] = "CRX"
-        data["params"] = gate.params
-    elif isinstance(gate, QiskitRXXGate):
-        data["type"] = "RXX"
-        data["params"] = gate.params
-    elif isinstance(gate, QiskitCRYGate):
-        data["type"] = "CRY"
-        data["params"] = gate.params
-    elif isinstance(gate, QiskitRYYGate):
-        data["type"] = "RYY"
-        data["params"] = gate.params
-    elif isinstance(gate, QiskitCRZGate):
-        data["type"] = "CRZ"
-        data["params"] = gate.params
-    elif isinstance(gate, QiskitRZXGate):
-        data["type"] = "RZX"
-        data["params"] = gate.params
-    elif isinstance(gate, QiskitRZZGate):
-        data["type"] = "RZZ"
-        data["params"] = gate.params
-    elif isinstance(gate, QiskitCU1Gate):
-        data["type"] = "CU1"
-        data["params"] = gate.params
-
-    # two-qubit, two parameter
-
-    # two-qubit, three parameter
-    elif isinstance(gate, QiskitCU3Gate):
-        data["type"] = "CU3"
-        data["params"] = gate.params
-
-    # two-qubit, four parameter
-    elif isinstance(gate, QiskitCUGate):
-        data["type"] = "CU"
-        data["params"] = gate.params
-
-    # multi-qubit gates
-    elif isinstance(gate, QiskitCCXGate):
-        data["type"] = "CCX"
-    elif isinstance(gate, QiskitRCCXGate):
-        data["type"] = "RCCX"
-    elif isinstance(gate, QiskitRC3XGate):
-        data["type"] = "RC3X"
-    elif isinstance(gate, QiskitCSwapGate):
-        data["type"] = "CSwap"
-    elif isinstance(gate, QiskitMCPhaseGate):
-        data["type"] = "MCPhase"
-    elif isinstance(gate, QiskitMCU1Gate):
-        data["type"] = "MCU1"
-
-    # other
-    elif isinstance(gate, QiskitMSGate):
-        data["type"] = "MS"
-
-    # controlled
-    elif isinstance(gate, QiskitControlledGate):
-        data = get_qiskit_gate_data(gate.base_gate)
         data["num_controls"] = gate.num_ctrl_qubits
 
+    # two-qubit, one-parameter
+    elif isinstance(gate, Gate.CPhaseGate):
+        data["type"] = "CPhase"
+        data["params"] = gate.params
+        data["num_controls"] = gate.num_ctrl_qubits
+    elif isinstance(gate, Gate.CRXGate):
+        data["type"] = "CRX"
+        data["params"] = gate.params
+        data["num_controls"] = gate.num_ctrl_qubits
+    elif isinstance(gate, Gate.RXXGate):
+        data["type"] = "RXX"
+        data["params"] = gate.params
+    elif isinstance(gate, Gate.CRYGate):
+        data["type"] = "CRY"
+        data["params"] = gate.params
+        data["num_controls"] = gate.num_ctrl_qubits
+    elif isinstance(gate, Gate.RYYGate):
+        data["type"] = "RYY"
+        data["params"] = gate.params
+    elif isinstance(gate, Gate.CRZGate):
+        data["type"] = "CRZ"
+        data["params"] = gate.params
+        data["num_controls"] = gate.num_ctrl_qubits
+    elif isinstance(gate, Gate.RZXGate):
+        data["type"] = "RZX"
+        data["params"] = gate.params
+    elif isinstance(gate, Gate.RZZGate):
+        data["type"] = "RZZ"
+        data["params"] = gate.params
+    elif isinstance(gate, Gate.CU1Gate):
+        data["type"] = "CU1"
+        data["params"] = gate.params
+        data["num_controls"] = gate.num_ctrl_qubits
+
+    # two-qubit, three-parameter
+    elif isinstance(gate, Gate.CU3Gate):
+        data["type"] = "CU3"
+        data["params"] = gate.params
+        data["num_controls"] = gate.num_ctrl_qubits
+
+    # two-qubit, four-parameter
+    elif isinstance(gate, Gate.CUGate):
+        data["type"] = "CU"
+        data["params"] = gate.params
+        data["num_controls"] = gate.num_ctrl_qubits
+
+    # multi-qubit
+    elif isinstance(gate, Gate.CCXGate):
+        data["type"] = "CCX"
+        data["num_controls"] = gate.num_ctrl_qubits
+    elif isinstance(gate, Gate.RCCXGate):
+        data["type"] = "RCCX"
+    elif isinstance(gate, Gate.RC3XGate):
+        data["type"] = "RC3X"
+    elif isinstance(gate, Gate.CSwapGate):
+        data["type"] = "CSwap"
+        data["num_controls"] = gate.num_ctrl_qubits
+    elif isinstance(gate, Gate.MCPhaseGate):
+        data["type"] = "MCPhase"
+    elif isinstance(gate, Gate.MCU1Gate):
+        data["type"] = "MCU1"
+
     # general unitary
-    elif isinstance(gate, QiskitUnitaryGate):
+    elif isinstance(gate, UnitaryGate):
         data["type"] = "Unitary"
 
     # error
     else:
-        raise ValueError("Cannot get gate data for gate type: ", type(gate))
+        raise GateError("Gate of type {} not supported".format(type(gate)))
 
     return data
 
 
 qiskit_gates = {
-    "H": QiskitHGate,
-    "X": QiskitXGate,
-    "Y": QiskitYGate,
-    "Z": QiskitZGate,
-    "S": QiskitSGate,
-    "Sdg": QiskitSdgGate,
-    "T": QiskitTGate,
-    "Tdg": QiskitTdgGate,
-    "I": QiskitIGate,
-    "SX": QiskitSXGate,
-    "SXdg": QiskitSXdgGate,
-    "Phase": QiskitPhaseGate,
-    "RX": QiskitRXGate,
-    "RY": QiskitRYGate,
-    "RZ": QiskitRZGate,
-    "U1": QiskitU1Gate,
-    "R": QiskitRGate,
-    "U2": QiskitU2Gate,
-    "U": QiskitUGate,
-    "U3": QiskitU3Gate,
-    "CH": QiskitCHGate,
-    "CX": QiskitCXGate,
-    "Swap": QiskitSwapGate,
-    "iSwap": QiskitiSwapGate,
-    "CSX": QiskitCSXGate,
-    "DCX": QiskitDCXGate,
-    "CY": QiskitCYGate,
-    "CZ": QiskitCZGate,
-    "CPhase": QiskitCPhaseGate,
-    "CRX": QiskitCRXGate,
-    "RXX": QiskitRXXGate,
-    "CRY": QiskitCRYGate,
-    "RYY": QiskitRYYGate,
-    "CRZ": QiskitCRZGate,
-    "RZX": QiskitRZXGate,
-    "RZZ": QiskitRZZGate,
-    "CU1": QiskitCU1Gate,
-    "RCCX": QiskitRCCXGate,
-    "RC3X": QiskitRC3XGate,
-    "CCX": QiskitCCXGate,
-    "MEASURE": QiskitMeasurementGate,
+    "H": Gate.HGate,
+    "X": Gate.XGate,
+    "Y": Gate.YGate,
+    "Z": Gate.ZGate,
+    "S": Gate.SGate,
+    "Sdg": Gate.SdgGate,
+    "T": Gate.TGate,
+    "Tdg": Gate.TdgGate,
+    "I": Gate.IGate,
+    "SX": Gate.SXGate,
+    "SXdg": Gate.SXdgGate,
+    "Phase": Gate.PhaseGate,
+    "RX": Gate.RXGate,
+    "RY": Gate.RYGate,
+    "RZ": Gate.RZGate,
+    "U1": Gate.U1Gate,
+    "R": Gate.RGate,
+    "U2": Gate.U2Gate,
+    "U": Gate.UGate,
+    "U3": Gate.U3Gate,
+    "CH": Gate.CHGate,
+    "CX": Gate.CXGate,
+    "Swap": Gate.SwapGate,
+    "iSwap": Gate.iSwapGate,
+    "CSX": Gate.CSXGate,
+    "DCX": Gate.DCXGate,
+    "CY": Gate.CYGate,
+    "CZ": Gate.CZGate,
+    "CPhase": Gate.CPhaseGate,
+    "CRX": Gate.CRXGate,
+    "RXX": Gate.RXXGate,
+    "CRY": Gate.CRYGate,
+    "RYY": Gate.RYYGate,
+    "CRZ": Gate.CRZGate,
+    "RZX": Gate.RZXGate,
+    "RZZ": Gate.RZZGate,
+    "CU1": Gate.CU1Gate,
+    "RCCX": Gate.RCCXGate,
+    "RC3X": Gate.RC3XGate,
+    "CCX": Gate.CCXGate,
+    "MEASURE": Measure,
+    "Unitary": UnitaryGate,
 }
 
 
-def create_qiskit_gate(data):
+def create_qiskit_gate(data: dict) -> QiskitGate:
+    """
+
+    :param data:
+    :return:
+    """
 
     gate_type = data["type"]
     params = data["params"]
@@ -281,23 +238,22 @@ def create_qiskit_gate(data):
     # measure
     if gate_type == "MEASURE":
         return qiskit_gates[gate_type]()
-    # single qubit gates
+
+    # single-qubit, zero-parameter
     elif gate_type in ("H", "X", "Y", "Z", "S", "Sdg", "T", "Tdg", "I", "SX", "SXdg"):
         return qiskit_gates[gate_type]()
 
-    # single-qubit, one parameter
+    # single-qubit, one-parameter
     elif gate_type in ("Phase", "RX", "RY", "RZ", "U1"):
         return qiskit_gates[gate_type](params[0])
 
-    # single-qubit, two parameter
+    # single-qubit, two-parameter
     if gate_type in ("R", "U2"):
         return qiskit_gates[gate_type](params[0], params[1])
 
-    # single-qubit, three parameter
-    elif gate_type == "U":
-        return QiskitUGate()
-    elif gate_type == "U3":
-        return QiskitU3Gate()
+    # single-qubit, three-parameter
+    elif gate_type in ("U", "U3"):
+        return qiskit_gates[gate_type]()
 
     # two-qubit, zero-parameter
     elif gate_type in ("CH", "CX", "Swap", "iSwap", "CSX", "DCX", "CY", "CZ"):
@@ -307,47 +263,39 @@ def create_qiskit_gate(data):
     elif gate_type in ("CPhase", "CRX", "RXX", "CRY", "RYY", "CRZ", "RZX", "RZZ", "CU1"):
         return qiskit_gates[gate_type](params[0])
 
-    # two-qubit, two parameters
-
-    # two-qubit, three parameters
+    # two-qubit, three-parameter
     elif gate_type == "CU3":
-        return QiskitCU3Gate()
+        return qiskit_gates[gate_type]()
 
-    # four parameters
+    # four-parameter
     elif gate_type == "CU":
-        return QiskitCUGate()
+        return qiskit_gates[gate_type]()
 
-    # multi-qubit gates
+    # multi-qubit, zero-parameter
     elif gate_type == "RCCX":
-        return QiskitRCCXGate()
+        return Gate.RCCXGate()
     elif gate_type == "RC3X":
-        return QiskitRC3XGate()
+        return Gate.RC3XGate()
     elif gate_type == "CCX":
-        return QiskitCCXGate()
+        return Gate.CCXGate()
     elif gate_type == "MCXGrayCode":
-        return QiskitMCXGrayCodeGate()
+        return Gate.MCXGrayCodeGate()
     elif gate_type == "MCXRecursive":
-        return QiskitMCXRecursiveGate()
+        return Gate.MCXRecursiveGate()
     elif gate_type == "MCXVChain":
-        return QiskitMCXVChainGate()
+        return Gate.MCXVChainGate()
     elif gate_type == "CSwap":
-        return QiskitCSwapGate()
+        return Gate.CSwapGate()
 
-    # multi-qubit one-parameter
+    # multi-qubit, one-parameter
     elif gate_type == "MCU1":
-        return QiskitMCU1Gate()
+        return Gate.MCU1Gate()
     elif gate_type == "MCPhase":
-        return QiskitMCPhaseGate()
-
-    # other
-    elif gate_type == "GMS":
-        return QiskitMSGate()
+        return Gate.MCPhaseGate()
 
     # non-compatible types, go from matrix
     elif not (matrix is None):
-        return QiskitUnitaryGate(matrix, label=gate_type)
+        return UnitaryGate(matrix, label=gate_type)
 
     else:
-        # print(matrix)
-        # print(gate_type)
-        raise ValueError("Gate type not handled")
+        raise GateError("{} gate not supported".format(gate_type))
