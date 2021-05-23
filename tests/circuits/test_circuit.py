@@ -1,3 +1,4 @@
+
 from braket.circuits import Circuit as BraketCircuit
 from braket.circuits.gate import Gate as BraketGate
 from braket.circuits.instruction import Instruction as BraketInstruction
@@ -316,7 +317,7 @@ def test_qiskit_prmtrzd():
     """Testing building a paramterized qiskit circuit, no qbraid wrapper."""
 
     n = 5
-    theta = Parameter("θ")
+    theta = Parameter(r"$\theta$")
 
     qc = QiskitCircuit(5, 1)
     qc.rz(np.pi / 4, range(5))
@@ -350,7 +351,7 @@ def test_qiskit_to_cirq_prmtrzd():
     # qc.rz(QiskitParameter('y'),0)
 
     n = 5
-    theta = Parameter("θ")
+    theta = Parameter(r"$\theta$")
 
     qc = QiskitCircuit(5, 1)
     # qc.rz(np.pi/4, [0,1,2])
