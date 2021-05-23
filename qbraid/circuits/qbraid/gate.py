@@ -5,7 +5,6 @@ from qiskit.circuit.measure import Measure as QiskitMeasurementGate
 from qiskit.circuit.gate import Gate as QiskitGate
 from ..gate import AbstractGate, QiskitGateTypes, CirqGateTypes, BraketGateTypes
 
-from ..utils import
 
 GateInputType = Union[
     "BraketGate",
