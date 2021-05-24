@@ -7,12 +7,8 @@ def get_braket_gate_data(gate: BraketGate):
     data = {
         "type": None,
         "params": [],
-        "matrix": None,
+        "matrix": gate.to_matrix(),
     }
-    try:
-        data["matrix"] = gate.to_matrix()
-    except:
-        pass
 
     # single qubit , no parameters
     if isinstance(gate, BraketGate.H):

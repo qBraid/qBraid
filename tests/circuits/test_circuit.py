@@ -468,9 +468,7 @@ if __name__ == "__main__":
     # print("------------------------------")
     # print()
 
-    # print("ALL TESTS PASSED")
-
-    test_qiskit()
+    print("ALL TESTS PASSED")
 
 
 

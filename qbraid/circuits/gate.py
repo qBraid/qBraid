@@ -19,6 +19,9 @@ from .cirq.utils import create_cirq_gate, cirq_gates
 from .parameter import AbstractParameterWrapper
 from .qiskit.utils import create_qiskit_gate, qiskit_gates
 
+from qbraid.exceptions import PackageError
+from .exceptions import CircuitError
+
 # types
 CirqGate = Union[CirqSingleQubitGate, CirqTwoQubitGate, CirqThreeQubitGate, CirqMeasure]
 CirqGateTypes = (CirqSingleQubitGate, CirqTwoQubitGate, CirqThreeQubitGate, CirqMeasure)
@@ -36,7 +39,7 @@ GateInputType = Union[
 ]
 
 
-class GateError(Exception):
+class GateError(CircuitError):
     """Exception raised by a :class:`~.qbraid.circuits.gate.AbstractGate` object when it is
     unable to process a gate."""
 
@@ -59,22 +62,7 @@ class AbstractGate(ABC):
         self._gate_type = None
         self._outputs = {}
 
-    # =============================================================================
-    #     def get_data(self):
-    #
-    #         data = {'name':self.name,
-    #                 'type': self._gate_type,
-    #                 'package': self.package,
-    #                 'params': self.params,
-    #                 'matrix': self.matrix,
-    #                 }
-    #         if self.base_gate:
-    #             data['num_controls'] = self.num_controls
-    #             data['base_gate'] = self.base_gate
-    # =============================================================================
-
     def transpile(self, package: str):
-
         """If transpiled object not created, create it. Then return."""
 
         if package not in self._outputs.keys():
@@ -90,11 +78,13 @@ class AbstractGate(ABC):
         elif package == "cirq":
             self._create_cirq()
         else:
-            raise ValueError("Package not supported")
+            raise PackageError(package)
 
     def _create_qiskit(self):
-
         """Create qiskit gate from a qbraid gate wrapper object."""
+
+        # except CircuitError as e:
+        # raise GateError("Unable to extract matrix represention from {}".format(type(gate))) from e
 
         qiskit_params = self.params.copy()
         for i, param in enumerate(qiskit_params):
@@ -119,7 +109,6 @@ class AbstractGate(ABC):
             self._outputs["qiskit"] = create_qiskit_gate(data)
 
     def _create_cirq(self):
-
         """Create cirq gate from a qbraid gate wrapper object."""
 
         cirq_params = self.params.copy()
