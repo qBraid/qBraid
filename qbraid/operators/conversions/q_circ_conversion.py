@@ -3,7 +3,7 @@
 
 from pyquil import quil, Program, gates
 from pyquil.quilbase import Gate, Measurement
-from qiskit import QuantumCircuit, QuantumRegister
+from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit.circuit import Gate
 from qiskit.circuit.library.standard_gates import *
 from qiskit.circuit.measure import Measure

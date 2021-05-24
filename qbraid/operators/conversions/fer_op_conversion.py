@@ -5,8 +5,7 @@ import numpy as np
 from openfermion.ops import FermionOperator, InteractionOperator
 
 # from openfermion
-from openfermion.transforms import get_interaction_operator, get_fermion_operator
-from openfermion.utils import normal_ordered
+from openfermion.transforms import get_interaction_operator, get_fermion_operator, normal_ordered
 
 from qiskit.chemistry import FermionicOperator
 

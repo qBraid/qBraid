@@ -2,26 +2,25 @@
 # All rights reserved-2019©.
 import unittest
 import numpy as np
-from qBraid.conversions.fer_op_conversion import convert
+from qbraid.operators.conversions.fer_op_conversion import convert
+## SET BACKEND
+import matplotlib as mpl
+mpl.use('TkAgg')
 
-from openfermion.hamiltonians import MolecularData
-from openfermion.ops import FermionOperator, InteractionOperator
+from openfermion.chem import MolecularData
+from openfermion.ops import  InteractionOperator
 from openfermion.transforms import (
     get_fermion_operator,
-    get_sparse_operator,
     jordan_wigner,
-    get_interaction_operator,
 )
-from openfermion.utils import normal_ordered, eigenspectrum, get_ground_state, count_qubits
+from openfermion.linalg import eigenspectrum
 
 
 from qiskit.chemistry.drivers import PySCFDriver
 from qiskit.aqua.algorithms import NumPyEigensolver as EE
 from qiskit.chemistry import FermionicOperator
 
-import numpy
-import scipy
-import scipy.linalg
+
 
 
 class convert_fer_op_test(unittest.TestCase):
