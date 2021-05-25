@@ -221,8 +221,6 @@ def create_cirq_gate(data):
         return CirqU3Gate(*params)
 
     elif gate_type == "Unitary":
-        print(type(matrix))
-        print(matrix)
         n_qubits = int(np.log2(len(matrix)))
         unitary = cirq_gates[gate_type](matrix)
         give_cirq_gate_name(unitary, "U", n_qubits)
