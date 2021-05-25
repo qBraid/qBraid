@@ -1,13 +1,12 @@
 from ..gate import AbstractGate
 from .utils import get_qiskit_gate_data
 
-from qiskit.circuit.gate import Gate as QiskitGate
-from qiskit.circuit.controlledgate import ControlledGate as QiskitControlledGate
-from qiskit.circuit import Parameter as QiskitParameter
+from qiskit.circuit.gate import Gate
+from qiskit.circuit import Parameter
 
 
 class QiskitGateWrapper(AbstractGate):
-    def __init__(self, gate: QiskitGate, params: QiskitParameter = None):
+    def __init__(self, gate: Gate, params: Parameter = None):
 
         super().__init__()
 

@@ -1,10 +1,5 @@
 from ..gate import AbstractGate
-
-# from cirq.ops.gate_features import SingleQubitGate as CirqSingleQubitGate
-# from cirq.ops.gate_features import TwoQubitGate as CirqTwoQubitGate
-# from cirq.ops.gate_features import ThreeQubitGate as CirqThreeQubitGate
 from cirq import Gate as CirqGate
-
 from .utils import get_cirq_gate_data
 
 

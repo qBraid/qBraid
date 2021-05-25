@@ -11,7 +11,7 @@ from qiskit.circuit import QuantumCircuit as QiskitCircuit
 class QiskitCircuitWrapper(AbstractCircuitWrapper):
     def __init__(self, circuit: QiskitCircuit):
 
-        super().__init__
+        super().__init__()
 
         self.circuit = circuit
         self._outputs = {}
@@ -33,7 +33,8 @@ class QiskitCircuitWrapper(AbstractCircuitWrapper):
             if len(clbits) > 0:
                 assert isinstance(clbits[0], Clbit)
 
-            self.instructions.append(QiskitInstructionWrapper(instruction, qubits, clbits, params))
+            next_instruction = QiskitInstructionWrapper(instruction, qubits, clbits, params)
+            self.instructions.append(next_instruction)
 
     @property
     def num_qubits(self):

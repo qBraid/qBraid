@@ -1,8 +1,6 @@
 from ..instruction import AbstractInstructionWrapper
 from .gate import CirqGateWrapper
-
 from cirq.ops.gate_operation import GateOperation as CirqInstruction
-from cirq.ops.measure_util import measure as cirq_measure
 
 
 class CirqInstructionWrapper(AbstractInstructionWrapper):

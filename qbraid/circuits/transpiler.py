@@ -2,6 +2,7 @@ from .braket.circuit import BraketCircuitWrapper
 from .cirq.circuit import CirqCircuitWrapper
 from .qiskit.circuit import QiskitCircuitWrapper
 from .utils import get_package_name
+from qbraid.exceptions import PackageError
 
 
 def qbraid_wrapper(circuit):
@@ -19,4 +20,4 @@ def qbraid_wrapper(circuit):
     elif package == "braket":
         return BraketCircuitWrapper(circuit)
     else:
-        raise ValueError("Package not supported")
+        raise PackageError(package)
