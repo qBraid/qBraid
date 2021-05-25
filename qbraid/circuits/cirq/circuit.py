@@ -2,10 +2,7 @@ from ..circuit import AbstractCircuitWrapper
 from ..qubitset import CirqQubitSet
 from ..clbitset import ClbitSet
 from ..clbit import Clbit
-
-# from ..parameterset import CirqParameterSet
 from .instruction import CirqInstructionWrapper
-
 from cirq.circuits import Circuit as CirqCircuit
 from cirq.ops.measurement_gate import MeasurementGate as CirqMeasure
 

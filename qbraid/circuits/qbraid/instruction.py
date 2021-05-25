@@ -11,11 +11,3 @@ class QbraidInstructionWrapper(AbstractInstructionWrapper):
         self.qubits = qubits
         self.clbits = clbits
         self.package = "qbraid"
-
-        """
-        self.instruction = instruction
-        self.qubits = qubits
-        self.clbits = clbits
-        self.package = 'braket'
-        self.gate = Gate(instruction.operator)
-        """

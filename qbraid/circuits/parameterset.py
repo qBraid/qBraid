@@ -1,6 +1,7 @@
 from abc import ABC
 from typing import Iterable
 
+import numpy as np
 from qiskit.circuit.parameter import Parameter as QiskitParameter
 from sympy import Symbol
 
@@ -69,7 +70,10 @@ class QiskitParameterSet(AbstractParameterSet):
                 output.append(param)
 
         for p in output:
-            assert isinstance(p, (float, int, AbstractParameterWrapper))
+            if isinstance(p, np.ndarray):
+                pass  # TO DO
+            else:
+                assert isinstance(p, (float, int, AbstractParameterWrapper))
 
         return output
 

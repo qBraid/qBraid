@@ -4,6 +4,7 @@ from typing import Union
 from braket.circuits.instruction import Instruction as BraketInstruction
 from cirq.ops.measure_util import measure as cirq_measure
 from qiskit.circuit.measure import Measure as QiskitMeasurementGate
+from qbraid.exceptions import PackageError
 
 InstructionInput = Union["BraketInstruction", "CirqGateInstruction", "QiskitInstruction"]
 
@@ -26,7 +27,7 @@ class AbstractInstructionWrapper(ABC):
         gate = self.gate.transpile("cirq")
 
         if gate == "CirqMeasure":
-            return cirq_measure(qubits[0], key=self.clbits[0].index)
+            return cirq_measure(*qubits, key=str(self.clbits[0].index))
         else:
             return gate(*qubits)
 
@@ -65,4 +66,4 @@ class AbstractInstructionWrapper(ABC):
         elif package == "cirq":
             return self._to_cirq()
         else:
-            raise ValueError("Transpile from {} to {} is not supported".format(self.package, package))
+            raise PackageError(package)

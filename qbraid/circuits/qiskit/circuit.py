@@ -6,6 +6,7 @@ from ..parameterset import QiskitParameterSet
 from .instruction import QiskitInstructionWrapper
 
 from qiskit.circuit import QuantumCircuit as QiskitCircuit
+from qbraid.exceptions import PackageError
 
 
 class QiskitCircuitWrapper(AbstractCircuitWrapper):
@@ -15,12 +16,9 @@ class QiskitCircuitWrapper(AbstractCircuitWrapper):
 
         self.circuit = circuit
         self._outputs = {}
-
         self.qubitset = QiskitQubitSet(circuit.qubits)
         self.clbitset = ClbitSet(circuit.clbits)
         self.parameterset = QiskitParameterSet(circuit.parameters)
-        # print(list(type(i) for i in self.parameterset.parameters))
-
         self.instructions = []
 
         # create an Instruction object for each instruction in the circuit
@@ -59,4 +57,4 @@ class QiskitCircuitWrapper(AbstractCircuitWrapper):
                 return self.circuit
 
         else:
-            raise ValueError("The transpiler does not support conversion from qiskit to {}.".format(package))
+            raise PackageError(package)

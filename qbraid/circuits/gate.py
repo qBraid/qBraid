@@ -8,11 +8,8 @@ from cirq.ops.gate_features import ThreeQubitGate as CirqThreeQubitGate
 from cirq.ops.gate_features import TwoQubitGate as CirqTwoQubitGate
 from cirq.ops.measurement_gate import MeasurementGate as CirqMeasure
 
-import numpy as np
-
-from qiskit.circuit.controlledgate import ControlledGate as QiskitControlledGate
 from qiskit.circuit.gate import Gate as QiskitGate
-from qiskit.circuit.measure import Measure as QiskitMeasurementGate
+from qiskit.circuit.measure import Measure as QiskitMeasure
 
 from .braket.utils import create_braket_gate
 from .cirq.utils import create_cirq_gate, cirq_gates
@@ -20,23 +17,11 @@ from .parameter import AbstractParameterWrapper
 from .qiskit.utils import create_qiskit_gate, qiskit_gates
 
 from qbraid.exceptions import PackageError
-from .exceptions import CircuitError
 
-# types
-CirqGate = Union[CirqSingleQubitGate, CirqTwoQubitGate, CirqThreeQubitGate, CirqMeasure]
-CirqGateTypes = (CirqSingleQubitGate, CirqTwoQubitGate, CirqThreeQubitGate, CirqMeasure)
-QiskitGateTypes = (QiskitGate, QiskitControlledGate, QiskitMeasurementGate)
+# Gate input types
 BraketGateTypes = BraketGate
-
-GateInputType = Union[
-    "BraketGate",
-    "CirqSingleQubitGate",
-    "CirqTwoQubitGate",
-    "CirqThreeQubitGate",
-    "QiskitGate",
-    "QiskitControlledGate",
-    np.array,
-]
+CirqGateTypes = Union[CirqSingleQubitGate, CirqTwoQubitGate, CirqThreeQubitGate, CirqMeasure]
+QiskitGateTypes = Union[QiskitGate, QiskitMeasure]
 
 
 class AbstractGate(ABC):
@@ -77,9 +62,6 @@ class AbstractGate(ABC):
 
     def _create_qiskit(self):
         """Create qiskit gate from a qbraid gate wrapper object."""
-
-        # except CircuitError as e:
-        # raise GateError("Unable to extract matrix represention from {}".format(type(gate))) from e
 
         qiskit_params = self.params.copy()
         for i, param in enumerate(qiskit_params):

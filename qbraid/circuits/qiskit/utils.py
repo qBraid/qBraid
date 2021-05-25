@@ -6,6 +6,51 @@ from typing import Union
 from qbraid.circuits.exceptions import CircuitError
 
 
+qiskit_gates = {
+    "H": HGate,
+    "X": XGate,
+    "Y": YGate,
+    "Z": ZGate,
+    "S": SGate,
+    "Sdg": SdgGate,
+    "T": TGate,
+    "Tdg": TdgGate,
+    "I": IGate,
+    "SX": SXGate,
+    "SXdg": SXdgGate,
+    "Phase": PhaseGate,
+    "RX": RXGate,
+    "RY": RYGate,
+    "RZ": RZGate,
+    "U1": U1Gate,
+    "R": RGate,
+    "U2": U2Gate,
+    "U": UGate,
+    "U3": U3Gate,
+    "CH": CHGate,
+    "CX": CXGate,
+    "Swap": SwapGate,
+    "iSwap": iSwapGate,
+    "CSX": CSXGate,
+    "DCX": DCXGate,
+    "CY": CYGate,
+    "CZ": CZGate,
+    "CPhase": CPhaseGate,
+    "CRX": CRXGate,
+    "RXX": RXXGate,
+    "CRY": CRYGate,
+    "RYY": RYYGate,
+    "CRZ": CRZGate,
+    "RZX": RZXGate,
+    "RZZ": RZZGate,
+    "CU1": CU1Gate,
+    "RCCX": RCCXGate,
+    "RC3X": RC3XGate,
+    "CCX": CCXGate,
+    "Unitary": UnitaryGate,
+    "MEASURE": Measure,
+}
+
 QiskitGate = Union[Measure, Gate]
 
 
@@ -22,17 +67,17 @@ def get_qiskit_gate_data(gate: QiskitGate) -> dict:
         "num_controls": 0
     }
 
-    try:
-        data["matrix"] = gate.to_matrix()
-    except (AttributeError, TypeError):  # raised for measurement gate
-        pass
-
     # measurement
     if isinstance(gate, Measure):
         data["type"] = "MEASURE"
+    else:
+        try:
+            data["matrix"] = gate.to_matrix()
+        except TypeError:
+            pass  # parameterized circuit
 
     # single-qubit, zero-parameter
-    elif isinstance(gate, HGate):
+    if isinstance(gate, HGate):
         data["type"] = "H"
     elif isinstance(gate, XGate):
         data["type"] = "X"
@@ -159,55 +204,10 @@ def get_qiskit_gate_data(gate: QiskitGate) -> dict:
 
     # error
     else:
-        raise CircuitError("Gate of type {} not supported".format(type(gate)))
+        if data["type"] != "MEASURE":
+            raise CircuitError("Gate of type {} not supported".format(type(gate)))
 
     return data
-
-
-qiskit_gates = {
-    "H": HGate,
-    "X": XGate,
-    "Y": YGate,
-    "Z": ZGate,
-    "S": SGate,
-    "Sdg": SdgGate,
-    "T": TGate,
-    "Tdg": TdgGate,
-    "I": IGate,
-    "SX": SXGate,
-    "SXdg": SXdgGate,
-    "Phase": PhaseGate,
-    "RX": RXGate,
-    "RY": RYGate,
-    "RZ": RZGate,
-    "U1": U1Gate,
-    "R": RGate,
-    "U2": U2Gate,
-    "U": UGate,
-    "U3": U3Gate,
-    "CH": CHGate,
-    "CX": CXGate,
-    "Swap": SwapGate,
-    "iSwap": iSwapGate,
-    "CSX": CSXGate,
-    "DCX": DCXGate,
-    "CY": CYGate,
-    "CZ": CZGate,
-    "CPhase": CPhaseGate,
-    "CRX": CRXGate,
-    "RXX": RXXGate,
-    "CRY": CRYGate,
-    "RYY": RYYGate,
-    "CRZ": CRZGate,
-    "RZX": RZXGate,
-    "RZZ": RZZGate,
-    "CU1": CU1Gate,
-    "RCCX": RCCXGate,
-    "RC3X": RC3XGate,
-    "CCX": CCXGate,
-    "MEASURE": Measure,
-    "Unitary": UnitaryGate,
-}
 
 
 def create_qiskit_gate(data: dict) -> QiskitGate:

@@ -1,9 +1,11 @@
-from cirq import Gate
 from cirq.ops.common_gates import *
+from cirq.ops.controlled_gate import ControlledGate
+from cirq.ops.gate_features import SingleQubitGate, TwoQubitGate, ThreeQubitGate
+from cirq.ops.matrix_gates import MatrixGate
 from cirq.ops.swap_gates import *
 from cirq.ops.three_qubit_gates import *
-from cirq.ops.gate_features import SingleQubitGate, TwoQubitGate, ThreeQubitGate
 import numpy as np
+
 from ..exceptions import CircuitError
 
 
@@ -29,26 +31,8 @@ class CirqU3Gate(SingleQubitGate):
         )
 
     @staticmethod
-    def _circuit_diagram_info_():
+    def _circuit_diagram_info_(args):
         return "U3"
-
-
-class CirqUnitaryGate(Gate):
-    def __init__(self, matrix: np.ndarray, name: str = "U"):
-        self._name = name
-        self._matrix = matrix
-        super(CirqUnitaryGate, self)
-
-    def _num_qubits_(self):
-        return int(np.log2(len(self._matrix)))
-
-    def _unitary_(self):
-        return self._matrix
-
-    def _circuit_diagram_info_(self):
-        n = self._num_qubits_()
-        symbols = [self._name for _ in range(n)]
-        return symbols
 
 
 cirq_gates = {
@@ -76,7 +60,7 @@ cirq_gates = {
     "CCX": CCXPowGate,
     "MEASURE": MeasurementGate,
     "U3": CirqU3Gate,
-    "Unitary": CirqUnitaryGate,
+    "Unitary": MatrixGate,
 }
 
 CirqGate = Union[SingleQubitGate, TwoQubitGate, ThreeQubitGate, MeasurementGate]
@@ -95,17 +79,14 @@ def get_cirq_gate_data(gate: CirqGate) -> dict:
         "num_controls": 0
     }
 
-    try:
-        data["matrix"] = cirq.unitary(gate)
-    except AttributeError:
-        pass
-
     # measurement gate
     if isinstance(gate, MeasurementGate):
         data["type"] = "MEASURE"
+    else:
+        data["matrix"] = cirq.unitary(gate)
 
     # single qubit gates
-    elif isinstance(gate, HPowGate):
+    if isinstance(gate, HPowGate):
         if gate.exponent == 1:
             data["type"] = "H"
         else:
@@ -181,14 +162,23 @@ def get_cirq_gate_data(gate: CirqGate) -> dict:
         data["num_controls"] = gate.num_controls()
 
     else:
-        raise CircuitError("Gate of type {} not supported".format(type(gate)))
+        if data["type"] != "MEASURE":
+            raise CircuitError("Gate of type {} not supported".format(type(gate)))
 
     return data
 
 
+def give_cirq_gate_name(cirq_gate, name, n_qubits):
+    def _circuit_diagram_info_(args):
+        return name, *(name,)*(n_qubits - 1)
+    cirq_gate._circuit_diagram_info_ = _circuit_diagram_info_
+
+
 def create_cirq_gate(data):
+
     gate_type = data["type"]
     params = data["params"]
+    matrix = data["matrix"]
 
     # single-qubit, no parameters
     if gate_type in ("H", "X", "Y", "Z"):
@@ -224,16 +214,19 @@ def create_cirq_gate(data):
 
     # measure
     elif gate_type == "MEASURE":
-        return cirq_gates[gate_type]()
+        return "CirqMeasure"
 
     # custom gates
     elif gate_type == "U3":
         return CirqU3Gate(*params)
 
     elif gate_type == "Unitary":
-        if data["name"] == "Unitary":
-            data["name"] = "U"
-        return cirq_gates["Unitary"](data["matrix"], name=data["name"])
+        print(type(matrix))
+        print(matrix)
+        n_qubits = int(np.log2(len(matrix)))
+        unitary = cirq_gates[gate_type](matrix)
+        give_cirq_gate_name(unitary, "U", n_qubits)
+        return unitary
 
     # error
     else:
