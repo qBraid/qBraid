@@ -60,12 +60,7 @@ def get_qiskit_gate_data(gate: QiskitGate) -> dict:
     :param gate:
     :return:
     """
-    data = {
-        "type": None,
-        "params": gate.params,
-        "matrix": None,
-        "num_controls": 0
-    }
+    data = {"type": None, "params": gate.params, "matrix": None, "num_controls": 0}
 
     # measurement
     if isinstance(gate, Measure):

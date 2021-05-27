@@ -188,7 +188,7 @@ def test_qiskit():
     circ.cx(0, 2)
 
     # test Aer backend
-    backend = qiskit.Aer.get_backend('statevector_simulator')
+    backend = qiskit.Aer.get_backend("statevector_simulator")
     job = qiskit.execute(circ, backend)
     result = job.result()
     outputstate = result.get_statevector(circ, decimals=3)
@@ -199,7 +199,7 @@ def test_qiskit():
     circ.measure(range(3), range(3))
     print(circ.draw())
 
-    backend_sim = qiskit.Aer.get_backend('qasm_simulator')
+    backend_sim = qiskit.Aer.get_backend("qasm_simulator")
     job_sim = qiskit.execute(circ, backend_sim, shots=1024)
     result_sim = job_sim.result()
     counts = result_sim.get_counts(circ)
@@ -294,7 +294,7 @@ def test_qiskit_to_cirq_prmtrzd():
     """Testing converting parameterized qiskit circuit to cirq circuit via qbraid wrapper."""
 
     n = 5
-    theta = Parameter('\u03B8')
+    theta = Parameter("\u03B8")
 
     qc = qiskit.QuantumCircuit(5, 1)
     qc.rz(np.pi / 4, range(5))
@@ -402,17 +402,3 @@ if __name__ == "__main__":
     print()
 
     print("ALL TESTS PASSED")
-
-
-
-
-
-
-
-
-
-
-
-
-
-

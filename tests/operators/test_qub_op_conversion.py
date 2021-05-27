@@ -8,7 +8,6 @@ from qiskit.aqua.operators import WeightedPauliOperator
 from qbraid.operators.conversions.qub_op_conversion import convert
 
 
-
 def test_of_qk():
     of_test_op_1 = QubitOperator(((0, "Z"), (1, "Z"), (2, "Z"), (3, "Z")), 1.0)
     # of_test_op_2 = QubitOperator(((0, 'I'),(1, 'I'),(2, 'I'),(3, 'I'),(4, 'I')),1.0)
@@ -47,12 +46,13 @@ def test_of_qk():
     # op = convert(of_test_op_7)
     x = convert(of_test_op_1)
 
-    assert (correct_op_1 == convert(of_test_op_1))
-    assert (correct_op_3 == convert(of_test_op_3))
-    assert (correct_op_4 == convert(of_test_op_4))
-    assert (correct_op_5 == convert(of_test_op_5))
-    assert (correct_op_6 == convert(of_test_op_6))
-    assert (correct_op_7 == convert(of_test_op_7))
+    assert correct_op_1 == convert(of_test_op_1)
+    assert correct_op_3 == convert(of_test_op_3)
+    assert correct_op_4 == convert(of_test_op_4)
+    assert correct_op_5 == convert(of_test_op_5)
+    assert correct_op_6 == convert(of_test_op_6)
+    assert correct_op_7 == convert(of_test_op_7)
+
 
 def test_qis_of():
     qis_u_1 = np.array([1, 1, 1, 1, 0])
@@ -85,21 +85,21 @@ def test_qis_of():
     correct_op_5 = QubitOperator(((0, "Y"), (1, "Y"), (2, "Y"), (3, "Y")), 1.0)
     correct_op_6 = correct_op_1 + correct_op_3
     correct_op_7 = QubitOperator.identity() + correct_op_3
-    assert (correct_op_1 == convert(qis_test_op_1, "OPENFERMION"))
-    assert (correct_op_3 == convert(qis_test_op_3, "OPENFERMION"))
-    assert (correct_op_4 == convert(qis_test_op_4, "OPENFERMION"))
-    assert (correct_op_5 == convert(qis_test_op_5, "OPENFERMION"))
-    assert (correct_op_6 == convert(qis_test_op_6, "OPENFERMION"))
-    assert (correct_op_7 == convert(qis_test_op_7, "OPENFERMION"))
+    assert correct_op_1 == convert(qis_test_op_1, "OPENFERMION")
+    assert correct_op_3 == convert(qis_test_op_3, "OPENFERMION")
+    assert correct_op_4 == convert(qis_test_op_4, "OPENFERMION")
+    assert correct_op_5 == convert(qis_test_op_5, "OPENFERMION")
+    assert correct_op_6 == convert(qis_test_op_6, "OPENFERMION")
+    assert correct_op_7 == convert(qis_test_op_7, "OPENFERMION")
 
 
 if __name__ == "__main__":
     print("QUB OP OPERATOR TESTS")
-    print("-"*100)
+    print("-" * 100)
     print()
     test_of_qk()  # passes
-    test_qis_of() # passes
-    print("-"*100)
+    test_qis_of()  # passes
+    print("-" * 100)
     print()
 
     print("ALL TESTS PASSED")

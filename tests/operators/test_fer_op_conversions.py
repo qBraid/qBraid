@@ -3,12 +3,14 @@
 import numpy as np
 from numpy.testing._private.utils import assert_equal
 from qbraid.operators.conversions.fer_op_conversion import convert
+
 ## SET BACKEND
 import matplotlib as mpl
-mpl.use('TkAgg')
+
+mpl.use("TkAgg")
 
 from openfermion.chem import MolecularData
-from openfermion.ops import  InteractionOperator
+from openfermion.ops import InteractionOperator
 from openfermion.transforms import (
     get_fermion_operator,
     jordan_wigner,
@@ -55,8 +57,9 @@ def test_fer_op_H2_of_qk():
     fer_op = FermionicOperator(one_b, two_b)
     qiskit_qub_op_ref = fer_op.mapping("jordan_wigner")
     evals_correct = EE(qiskit_qub_op, k=16).run()
-    assert (np.all(np.real(evals_correct.eigenvalues) == np.real(evals.eigenvalues)))
-    assert (np.all(np.real(evals_correct.eigenvalues) == np.real(evals1.eigenvalues)))
+    assert np.all(np.real(evals_correct.eigenvalues) == np.real(evals.eigenvalues))
+    assert np.all(np.real(evals_correct.eigenvalues) == np.real(evals1.eigenvalues))
+
 
 def test_fer_op_H2_qk_of():
     molecule = "H .0 .0 0.0;H .0 .0 0.7414"
@@ -83,18 +86,16 @@ def test_fer_op_H2_qk_of():
     fermion_hamiltonian = fermion_hamiltonian
     qub_op = jordan_wigner(fermion_hamiltonian)
     es_correct = eigenspectrum(qub_op)
-    assert (
-        np.all(
-            np.round(es_correct, 7)
-            == np.round(es_of + np.ones(np.shape(es_of)) * 0.71375399, 7)
-        )
+    assert np.all(
+        np.round(es_correct, 7) == np.round(es_of + np.ones(np.shape(es_of)) * 0.71375399, 7)
     )
 
 
-# is this random_hams_of_qiskit necessary? 
+# is this random_hams_of_qiskit necessary?
 def random_hams_of_qiskit(self):
     one_b_list = self.get_rand_one_b_tensors()
     two_b_list = self.get_rand_two_b_tensors()
+
 
 def get_rand_one_b_tensors():
     one_body_0 = np.zeros([4, 4])
@@ -116,6 +117,7 @@ def get_rand_one_b_tensors():
     for i in range(8):
         one_body_tensor_list.append(eval("one_body_" + str(i)))
     return one_body_tensor_list
+
 
 def get_rand_two_b_tensors():
 
@@ -149,6 +151,7 @@ def get_rand_two_b_tensors():
         two_body_tensor_list.append(eval("two_body_" + str(i)))
     return two_body_tensor_list
 
+
 def test_fer_op_LiH_qk_of():
     bond_length = 1.45
     geometry = [("Li", (0.0, 0.0, 0.0)), ("H", (0.0, 0.0, bond_length))]
@@ -174,21 +177,18 @@ def test_fer_op_LiH_qk_of():
     fer_op._convert_to_interleaved_spins()
     qub_op = fer_op.mapping("jordan_wigner")
     evals_correct = EE(qub_op, k=8).run()
-    assert(
-        np.all(
-            np.round(np.real(evals.eigenvalues), 7)
-            == np.round(np.real(evals_correct.eigenvalues), 7)
-        )
+    assert np.all(
+        np.round(np.real(evals.eigenvalues), 7) == np.round(np.real(evals_correct.eigenvalues), 7)
     )
 
 
 if __name__ == "__main__":
     print("FERMION OPERATOR TESTS")
-    print("-"*100)
+    print("-" * 100)
     print()
-    test_fer_op_H2_of_qk()         # passes
+    test_fer_op_H2_of_qk()  # passes
     test_fer_op_LiH_qk_of()
-    print("-"*100)
+    print("-" * 100)
     print()
 
     print("ALL TESTS PASSED")

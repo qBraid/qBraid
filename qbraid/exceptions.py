@@ -18,6 +18,7 @@ class QBraidError(Exception):
 
 class PackageError(QBraidError):
     """Raised when trying to use an unsuported package."""
+
     def __init__(self, package: Optional[str] = None, msg: Optional[str] = None) -> None:
         """Set the error message.
         Args:
@@ -39,4 +40,3 @@ class PackageError(QBraidError):
     def __str__(self) -> str:
         """Return the message."""
         return repr(self.message)
-

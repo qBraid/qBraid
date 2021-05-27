@@ -68,6 +68,7 @@ class BraketQubitWrapper(AbstractQubit):
         self.qubit = qubit
         self.index = int(qubit)
 
+
 # =============================================================================
 # class Qubit():
 #

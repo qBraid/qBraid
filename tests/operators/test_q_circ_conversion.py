@@ -12,14 +12,16 @@ from qbraid.operators.conversions.q_circ_conversion import *
 from pyquil import Program
 from pyquil.gates import *
 
+
 def test_initialize_qiskit_circuit():
-    """ testing initializiation of qiskit no qbraid wrapper """
+    """testing initializiation of qiskit no qbraid wrapper"""
     cr = {"ro": [0, 1, 2], "ro3": [0, 1], "ro1": [0, 1, 2], "ro2": [0]}
     [qr, cr_list, qiskit_circ] = initialize_qiskit_circuit(4, cr)
     assert 1 == 1
 
+
 def test_pyquil_circ_conversion():
-    """ Testing converting from pyquil to circ """
+    """Testing converting from pyquil to circ"""
     p = Program()
     p.inst(H(0))  # A single instruction
     # p += CNOT(0, 1)
@@ -55,6 +57,7 @@ def test_pyquil_circ_conversion():
     ret_circ = pyquil_circ_conversion(p)
     print("\n")
     # print(ret_circ)
+
 
 def test_qiskit_circ_conversion():
     # qr = QuantumRegister(2,'qr')
@@ -94,12 +97,12 @@ def test_qiskit_circ_conversion():
 
 if __name__ == "__main__":
     print("CIRC OPERATOR TESTS")
-    print("-"*100)
+    print("-" * 100)
     print()
-    test_initialize_qiskit_circuit()          # passes
+    test_initialize_qiskit_circuit()  # passes
     test_pyquil_circ_conversion()
     test_qiskit_circ_conversion()
-    print("-"*100)
+    print("-" * 100)
     print()
 
     print("ALL TESTS PASSED")

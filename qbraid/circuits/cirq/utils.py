@@ -72,12 +72,7 @@ def get_cirq_gate_data(gate: CirqGate) -> dict:
     :param gate:
     :return:
     """
-    data = {
-        "type": None,
-        "params": [],
-        "matrix": None,
-        "num_controls": 0
-    }
+    data = {"type": None, "params": [], "matrix": None, "num_controls": 0}
 
     # measurement gate
     if isinstance(gate, MeasurementGate):
@@ -170,7 +165,8 @@ def get_cirq_gate_data(gate: CirqGate) -> dict:
 
 def give_cirq_gate_name(cirq_gate, name, n_qubits):
     def _circuit_diagram_info_(args):
-        return name, *(name,)*(n_qubits - 1)
+        return name, *(name,) * (n_qubits - 1)
+
     cirq_gate._circuit_diagram_info_ = _circuit_diagram_info_
 
 
