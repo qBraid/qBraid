@@ -91,19 +91,27 @@ def pyquil_circ_conversion(q_circ, output_circ_type="QISKIT"):
             if isinstance(operation, Gate):
                 if operation.name == "H":
                     qiskit_circ = h_gate(
-                        qiskit_circ, int(operation.qubits[0].__str__()), output_circ_type
+                        qiskit_circ,
+                        int(operation.qubits[0].__str__()),
+                        output_circ_type,
                     )
                 elif operation.name == "X":
                     qiskit_circ = x_gate(
-                        qiskit_circ, int(operation.qubits[0].__str__()), output_circ_type
+                        qiskit_circ,
+                        int(operation.qubits[0].__str__()),
+                        output_circ_type,
                     )
                 elif operation.name == "Y":
                     qiskit_circ = y_gate(
-                        qiskit_circ, int(operation.qubits[0].__str__()), output_circ_type
+                        qiskit_circ,
+                        int(operation.qubits[0].__str__()),
+                        output_circ_type,
                     )
                 elif operation.name == "Z":
                     qiskit_circ = z_gate(
-                        qiskit_circ, int(operation.qubits[0].__str__()), output_circ_type
+                        qiskit_circ,
+                        int(operation.qubits[0].__str__()),
+                        output_circ_type,
                     )
                 elif operation.name == "CNOT":
                     qiskit_circ = cnot_gate(
@@ -114,11 +122,15 @@ def pyquil_circ_conversion(q_circ, output_circ_type="QISKIT"):
                     )
                 elif operation.name == "T":
                     qiskit_circ = t_gate(
-                        qiskit_circ, int(operation.qubits[0].__str__()), output_circ_type
+                        qiskit_circ,
+                        int(operation.qubits[0].__str__()),
+                        output_circ_type,
                     )
                 elif operation.name == "S":
                     qiskit_circ = s_gate(
-                        qiskit_circ, int(operation.qubits[0].__str__()), output_circ_type
+                        qiskit_circ,
+                        int(operation.qubits[0].__str__()),
+                        output_circ_type,
                     )
                 elif operation.name == "RX":
                     qiskit_circ = rx_gate(
@@ -145,9 +157,16 @@ def pyquil_circ_conversion(q_circ, output_circ_type="QISKIT"):
             elif isinstance(operation, Measurement):
                 c_reg_str = operation.classical_reg.name
                 qiskit_cr = qiskit_c_regs_dict[c_reg_str]
-                cr_index = classical_regs[c_reg_str].index(operation.classical_reg.offset)
+                cr_index = classical_regs[c_reg_str].index(
+                    operation.classical_reg.offset
+                )
                 qiskit_circ = measure(
-                    qiskit_circ, operation.qubit.index, cr_index, output_circ_type, None, qiskit_cr
+                    qiskit_circ,
+                    operation.qubit.index,
+                    cr_index,
+                    output_circ_type,
+                    None,
+                    qiskit_cr,
                 )
         return qiskit_circ
 
@@ -243,7 +262,9 @@ def qiskit_circ_conversion(q_circ, output_circ_type="PYQUIL"):
                         instruction[1][0].register.name,
                         instruction[1][0].index,
                     )
-                    pyquil_circ = rx_gate(pyquil_circ, theta, qubit_index, output_circ_type)
+                    pyquil_circ = rx_gate(
+                        pyquil_circ, theta, qubit_index, output_circ_type
+                    )
                 elif isinstance(instruction[0], RYGate):
                     theta = instruction[0].params[0]
                     qubit_index = qiskit_multi_to_single_qreg(
@@ -252,7 +273,9 @@ def qiskit_circ_conversion(q_circ, output_circ_type="PYQUIL"):
                         instruction[1][0].register.name,
                         instruction[1][0].index,
                     )
-                    pyquil_circ = ry_gate(pyquil_circ, theta, qubit_index, output_circ_type)
+                    pyquil_circ = ry_gate(
+                        pyquil_circ, theta, qubit_index, output_circ_type
+                    )
                 elif isinstance(instruction[0], RZGate):
                     theta = instruction[0].params[0]
                     qubit_index = qiskit_multi_to_single_qreg(
@@ -261,7 +284,9 @@ def qiskit_circ_conversion(q_circ, output_circ_type="PYQUIL"):
                         instruction[1][0].register.name,
                         instruction[1][0].index,
                     )
-                    pyquil_circ = rz_gate(pyquil_circ, theta, qubit_index, output_circ_type)
+                    pyquil_circ = rz_gate(
+                        pyquil_circ, theta, qubit_index, output_circ_type
+                    )
                 elif isinstance(instruction[0], CXGate):
                     # theta = instruction[0].params[0]
                     print("I am in CNOT")
@@ -283,7 +308,10 @@ def qiskit_circ_conversion(q_circ, output_circ_type="PYQUIL"):
                     )
 
                     pyquil_circ = cnot_gate(
-                        pyquil_circ, qubit_index_ctrl, qubit_index_target, output_circ_type
+                        pyquil_circ,
+                        qubit_index_ctrl,
+                        qubit_index_target,
+                        output_circ_type,
                     )
 
             elif isinstance(instruction[0], Measure):
@@ -414,7 +442,14 @@ def cnot_gate(q_circ, qubit_index_control, qubit_index_target, output_circ_type)
         pass  # (for now)
 
 
-def measure(q_circ, qubit_index, cbit_index, output_circ_type, qubit_reg=None, classical_reg=None):
+def measure(
+    q_circ,
+    qubit_index,
+    cbit_index,
+    output_circ_type,
+    qubit_reg=None,
+    classical_reg=None,
+):
     if output_circ_type == "QISKIT":
         if qubit_reg:
             q_circ.measure(qubit_reg[qubit_index], classical_reg[cbit_index])

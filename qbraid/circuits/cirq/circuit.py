@@ -72,4 +72,8 @@ class CirqCircuitWrapper(AbstractCircuitWrapper):
                 return self.circuit
 
         else:
-            print("The transpiler does not support conversion from cirq to {}.".format(package))
+            print(
+                "The transpiler does not support conversion from cirq to {}.".format(
+                    package
+                )
+            )

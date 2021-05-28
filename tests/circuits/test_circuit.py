@@ -1,4 +1,3 @@
-
 from braket.circuits import Circuit as BraketCircuit
 from braket.circuits.gate import Gate as BraketGate
 from braket.circuits.instruction import Instruction as BraketInstruction
@@ -15,7 +14,9 @@ from qiskit import QuantumCircuit
 from qiskit.circuit import Parameter
 from qiskit.circuit import QuantumCircuit as QiskitCircuit
 from qiskit.circuit import QuantumRegister as QiskitQuantumRegister
-from qiskit.circuit.classicalregister import ClassicalRegister as QiskitClassicalRegister
+from qiskit.circuit.classicalregister import (
+    ClassicalRegister as QiskitClassicalRegister,
+)
 from qiskit.circuit.measure import Measure as QiskitMeasure
 
 from qbraid.circuits.transpiler import qbraid_wrapper
@@ -257,7 +258,9 @@ def test_qiskit():
 def test_braket():
     """Testing building a braket circuit, no qbraid wrapper."""
 
-    circuit = BraketCircuit().h(range(4)).cnot(control=0, target=2).cnot(control=1, target=3)
+    circuit = (
+        BraketCircuit().h(range(4)).cnot(control=0, target=2).cnot(control=1, target=3)
+    )
     print(circuit)
 
     for instruction in circuit.instructions:

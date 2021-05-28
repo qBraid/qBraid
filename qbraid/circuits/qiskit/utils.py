@@ -2,7 +2,10 @@ from qiskit.circuit.controlledgate import ControlledGate as QiskitControlledGate
 from qiskit.circuit.gate import Gate as QiskitGate
 from qiskit.circuit.library.generalized_gates.gms import MSGate as QiskitMSGate
 from qiskit.circuit.library.standard_gates.dcx import DCXGate as QiskitDCXGate
-from qiskit.circuit.library.standard_gates.h import HGate as QiskitHGate, CHGate as QiskitCHGate
+from qiskit.circuit.library.standard_gates.h import (
+    HGate as QiskitHGate,
+    CHGate as QiskitCHGate,
+)
 from qiskit.circuit.library.standard_gates.i import IGate as QiskitIGate
 from qiskit.circuit.library.standard_gates.iswap import iSwapGate as QiskitiSwapGate
 from qiskit.circuit.library.standard_gates.p import (
@@ -27,7 +30,10 @@ from qiskit.circuit.library.standard_gates.rz import (
 )
 from qiskit.circuit.library.standard_gates.rzx import RZXGate as QiskitRZXGate
 from qiskit.circuit.library.standard_gates.rzz import RZZGate as QiskitRZZGate
-from qiskit.circuit.library.standard_gates.s import SGate as QiskitSGate, SdgGate as QiskitSdgGate
+from qiskit.circuit.library.standard_gates.s import (
+    SGate as QiskitSGate,
+    SdgGate as QiskitSdgGate,
+)
 from qiskit.circuit.library.standard_gates.swap import (
     SwapGate as QiskitSwapGate,
     CSwapGate as QiskitCSwapGate,
@@ -37,8 +43,14 @@ from qiskit.circuit.library.standard_gates.sx import (
     SXdgGate as QiskitSXdgGate,
     CSXGate as QiskitCSXGate,
 )
-from qiskit.circuit.library.standard_gates.t import TGate as QiskitTGate, TdgGate as QiskitTdgGate
-from qiskit.circuit.library.standard_gates.u import UGate as QiskitUGate, CUGate as QiskitCUGate
+from qiskit.circuit.library.standard_gates.t import (
+    TGate as QiskitTGate,
+    TdgGate as QiskitTdgGate,
+)
+from qiskit.circuit.library.standard_gates.u import (
+    UGate as QiskitUGate,
+    CUGate as QiskitCUGate,
+)
 from qiskit.circuit.library.standard_gates.u1 import (
     U1Gate as QiskitU1Gate,
     CU1Gate as QiskitCU1Gate,
@@ -59,8 +71,14 @@ from qiskit.circuit.library.standard_gates.x import (
     MCXRecursive as QiskitMCXRecursiveGate,
     MCXVChain as QiskitMCXVChainGate,
 )
-from qiskit.circuit.library.standard_gates.y import YGate as QiskitYGate, CYGate as QiskitCYGate
-from qiskit.circuit.library.standard_gates.z import ZGate as QiskitZGate, CZGate as QiskitCZGate
+from qiskit.circuit.library.standard_gates.y import (
+    YGate as QiskitYGate,
+    CYGate as QiskitCYGate,
+)
+from qiskit.circuit.library.standard_gates.z import (
+    ZGate as QiskitZGate,
+    CZGate as QiskitCZGate,
+)
 from qiskit.circuit.measure import Measure as QiskitMeasurementGate
 from qiskit.extensions.unitary import UnitaryGate as QiskitUnitaryGate
 
@@ -304,7 +322,17 @@ def create_qiskit_gate(data):
         return qiskit_gates[gate_type]()
 
     # two-qubit, one-parameter
-    elif gate_type in ("CPhase", "CRX", "RXX", "CRY", "RYY", "CRZ", "RZX", "RZZ", "CU1"):
+    elif gate_type in (
+        "CPhase",
+        "CRX",
+        "RXX",
+        "CRY",
+        "RYY",
+        "CRZ",
+        "RZX",
+        "RZZ",
+        "CU1",
+    ):
         return qiskit_gates[gate_type](params[0])
 
     # two-qubit, two parameters

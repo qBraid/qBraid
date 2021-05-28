@@ -4,7 +4,11 @@ from typing import Iterable
 from qiskit.circuit.parameter import Parameter as QiskitParameter
 from sympy import Symbol
 
-from .parameter import QiskitParameterWrapper, CirqParameterWrapper, AbstractParameterWrapper
+from .parameter import (
+    QiskitParameterWrapper,
+    CirqParameterWrapper,
+    AbstractParameterWrapper,
+)
 
 
 class AbstractParameterSet(ABC):

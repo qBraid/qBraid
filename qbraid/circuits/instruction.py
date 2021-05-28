@@ -5,7 +5,9 @@ from braket.circuits.instruction import Instruction as BraketInstruction
 from cirq.ops.measure_util import measure as cirq_measure
 from qiskit.circuit.measure import Measure as QiskitMeasurementGate
 
-InstructionInput = Union["BraketInstruction", "CirqGateInstruction", "QiskitInstruction"]
+InstructionInput = Union[
+    "BraketInstruction", "CirqGateInstruction", "QiskitInstruction"
+]
 
 
 class AbstractInstructionWrapper(ABC):
@@ -65,4 +67,6 @@ class AbstractInstructionWrapper(ABC):
         elif package == "cirq":
             return self._to_cirq()
         else:
-            raise ValueError("Transpile from {} to {} is not supported".format(self.package, package))
+            raise ValueError(
+                "Transpile from {} to {} is not supported".format(self.package, package)
+            )

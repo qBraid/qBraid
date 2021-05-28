@@ -6,7 +6,9 @@ from qiskit.circuit.gate import Gate as QiskitGate
 
 
 class QiskitInstructionWrapper(AbstractInstructionWrapper):
-    def __init__(self, instruction: QiskitInstruction, qubits, clbits=None, params=None):
+    def __init__(
+        self, instruction: QiskitInstruction, qubits, clbits=None, params=None
+    ):
 
         super().__init__()
 

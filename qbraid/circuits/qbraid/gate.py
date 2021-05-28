@@ -33,6 +33,7 @@ class QbraidGateWrapper(AbstractGate):
     Methods:
 
     """
+
     def __init__(self, gate_type: str):
 
         super().__init__()

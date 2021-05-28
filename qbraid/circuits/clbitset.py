@@ -5,7 +5,9 @@ from .clbit import Clbit
 # from cirq.ops.qubit_order import QubitOrder as cirq_QubitOrder
 
 
-ClbitSetInput = Union["QiskitClassicalRegister", Iterable[Clbit], Iterable[str], Iterable[int]]
+ClbitSetInput = Union[
+    "QiskitClassicalRegister", Iterable[Clbit], Iterable[str], Iterable[int]
+]
 AppendInput = Union[Clbit, Iterable[Clbit]]
 
 

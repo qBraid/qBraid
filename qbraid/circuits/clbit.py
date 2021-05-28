@@ -1,6 +1,8 @@
 from typing import Union
 
-from qiskit.circuit.classicalregister import ClassicalRegister as QiskitClassicalRegister
+from qiskit.circuit.classicalregister import (
+    ClassicalRegister as QiskitClassicalRegister,
+)
 from qiskit.circuit.classicalregister import Clbit as QiskitClbit
 
 clbitInput = Union["QiskitClbit", int, str]
@@ -68,4 +70,6 @@ class Clbit:
         elif package == "braket":
             return self._output_to_braket()
         else:
-            raise ValueError("Output of clbit not implemented for this package: {}".format(package))
+            raise ValueError(
+                "Output of clbit not implemented for this package: {}".format(package)
+            )

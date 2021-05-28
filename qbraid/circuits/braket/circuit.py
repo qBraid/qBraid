@@ -22,7 +22,9 @@ class BraketCircuitWrapper(AbstractCircuitWrapper):
             qubits = self.qubitset.get_qubits([q for q in instruction.target])
             clbits = []  # self.clbitset.get_clbits([q fo])
 
-            self.instructions.append(BraketInstructionWrapper(instruction, qubits, clbits))
+            self.instructions.append(
+                BraketInstructionWrapper(instruction, qubits, clbits)
+            )
 
     @property
     def num_qubits(self):
@@ -47,4 +49,8 @@ class BraketCircuitWrapper(AbstractCircuitWrapper):
                 return self.circuit
 
         else:
-            print("The transpiler does not support conversion from cirq to {}.".format(package))
+            print(
+                "The transpiler does not support conversion from cirq to {}.".format(
+                    package
+                )
+            )

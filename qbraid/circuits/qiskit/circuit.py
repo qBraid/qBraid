@@ -33,7 +33,9 @@ class QiskitCircuitWrapper(AbstractCircuitWrapper):
             if len(clbits) > 0:
                 assert isinstance(clbits[0], Clbit)
 
-            self.instructions.append(QiskitInstructionWrapper(instruction, qubits, clbits, params))
+            self.instructions.append(
+                QiskitInstructionWrapper(instruction, qubits, clbits, params)
+            )
 
     @property
     def num_qubits(self):
@@ -58,4 +60,8 @@ class QiskitCircuitWrapper(AbstractCircuitWrapper):
                 return self.circuit
 
         else:
-            raise ValueError("The transpiler does not support conversion from qiskit to {}.".format(package))
+            raise ValueError(
+                "The transpiler does not support conversion from qiskit to {}.".format(
+                    package
+                )
+            )
