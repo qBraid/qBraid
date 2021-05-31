@@ -1,6 +1,10 @@
 from ..gate import AbstractGate
-from cirq import Gate as CirqGate
+from cirq import Gate
+from cirq.ops.measurement_gate import MeasurementGate
 from .utils import get_cirq_gate_data
+from typing import Union
+
+CirqGate = Union[Gate, MeasurementGate]
 
 
 class CirqGateWrapper(AbstractGate):

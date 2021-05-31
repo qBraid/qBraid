@@ -1,10 +1,6 @@
 from typing import Iterable, Union
 from .clbit import Clbit
 
-# from braket.circuits.qubit_set import QubitSet as aws_QubitSet
-# from cirq.ops.qubit_order import QubitOrder as cirq_QubitOrder
-
-
 ClbitSetInput = Union["QiskitClassicalRegister", Iterable[Clbit], Iterable[str], Iterable[int]]
 AppendInput = Union[Clbit, Iterable[Clbit]]
 

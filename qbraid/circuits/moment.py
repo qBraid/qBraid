@@ -3,7 +3,6 @@ from braket.circuits.moments import Moments as BraketMoments
 from cirq.ops.moment import Moment as CirqMoment
 
 # from .instruction import Instruction
-
 Instruction = None
 
 qB_MomentInput = Union["BraketMoments", "CirqMoment", Iterable[Instruction]]

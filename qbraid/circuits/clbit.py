@@ -2,6 +2,7 @@ from typing import Union
 
 from qiskit.circuit.classicalregister import ClassicalRegister as QiskitClassicalRegister
 from qiskit.circuit.classicalregister import Clbit as QiskitClbit
+from qbraid.exceptions import PackageError
 
 clbitInput = Union["QiskitClbit", int, str]
 
@@ -22,7 +23,7 @@ class Clbit:
         elif isinstance(clbit, (int,)):
             self.index = clbit
         else:
-            raise ValueError("{} not implemented for Clbit".format(type(clbit)))
+            raise TypeError("{} is not a supported Clbit type".format(type(clbit)))
 
         self._outputs = {}
 
@@ -54,18 +55,18 @@ class Clbit:
 
     def _output_to_braket(self):
 
-        if "braket" not in self.outputs.keys() or not self._outputs["braket"]:
+        if "braket" not in self._outputs.keys() or not self._outputs["braket"]:
             self._create_braket_object()
 
         return self._outputs["braket"]
 
     def output(self, package: str):
 
-        if package == "qiskit":
-            return self._output_to_cirq()
+        if package == "braket":
+            return self._output_to_braket()
         elif package == "cirq":
             return self._output_to_cirq()
-        elif package == "braket":
-            return self._output_to_braket()
+        elif package == "qiskit":
+            return self._output_to_qiskit()
         else:
-            raise ValueError("Output of clbit not implemented for this package: {}".format(package))
+            raise PackageError(package)

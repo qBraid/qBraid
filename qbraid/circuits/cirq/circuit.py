@@ -3,17 +3,20 @@ from ..qubitset import CirqQubitSet
 from ..clbitset import ClbitSet
 from ..clbit import Clbit
 from .instruction import CirqInstructionWrapper
-from cirq.circuits import Circuit as CirqCircuit
-from cirq.ops.measurement_gate import MeasurementGate as CirqMeasure
+from ..qbraid.gate import QbraidGateWrapper
+from ..qbraid.instruction import QbraidInstructionWrapper
+from qbraid.exceptions import PackageError
+
+from cirq.circuits import Circuit
+from cirq.ops.measurement_gate import MeasurementGate
 
 
 class CirqCircuitWrapper(AbstractCircuitWrapper):
-    def __init__(self, circuit: CirqCircuit, exact_time: bool = False):
+    def __init__(self, circuit: Circuit, exact_time: bool = False):
 
         super().__init__()
 
         self.circuit = circuit
-
         self.qubitset = CirqQubitSet(circuit.all_qubits())
         self.clbitset = ClbitSet()
 
@@ -25,7 +28,7 @@ class CirqCircuitWrapper(AbstractCircuitWrapper):
                 qubits = self.qubitset.get_qubits(op.qubits)
 
                 # handle measurement operations and gate operations seperately
-                if isinstance(op.gate, CirqMeasure):
+                if isinstance(op.gate, MeasurementGate):
 
                     # create Clbit object based on the info from the measurement operation
                     output_index = int(op.gate.key)
@@ -41,9 +44,10 @@ class CirqCircuitWrapper(AbstractCircuitWrapper):
                     clbits = []
 
                 # create an instruction object and add it to the list
-                self.instructions.append(CirqInstructionWrapper(op, qubits, clbits))
+                next_instruction = CirqInstructionWrapper(op, qubits, clbits)
+                self.instructions.append(next_instruction)
         else:
-            pass
+            raise NotImplementedError
             # self.moments = [Moment(moment) for moment in circuit.moments]
 
     @property
@@ -58,15 +62,38 @@ class CirqCircuitWrapper(AbstractCircuitWrapper):
     def supported_packages(self):
         return ["cirq", "qiskit", "braket"]
 
+    @property
+    def _to_circuit(self, auto_measure=False):
+
+        output_circ = Circuit()
+
+        for instruction in self.instructions:
+            transp_instr = instruction.transpile("cirq")
+            output_circ.append(transp_instr)
+
+        # auto measure
+        if auto_measure:
+            for index, qubit in enumerate(self.qubitset.qubits):
+                clbit = Clbit(index)
+                instruction = QbraidInstructionWrapper(
+                    QbraidGateWrapper(gate_type="MEASURE"), [qubit], [clbit]
+                )
+                transp_instr = instruction.transpile("cirq")
+                output_circ.append(transp_instr)
+
+        return output_circ
+
     def transpile(self, package: str):
 
         if package in self.supported_packages:
-            if package == "qiskit":
-                return self._to_qiskit()
-            elif package == "braket":
+            if package == "braket":
                 return self._to_braket()
             elif package == "cirq":
                 return self.circuit
+            elif package == "qiskit":
+                return self._to_qiskit()
+            else:
+                raise SystemError("transpile function does not reflect supported_packages")
 
         else:
-            print("The transpiler does not support conversion from cirq to {}.".format(package))
+            raise PackageError(package)

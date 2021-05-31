@@ -6,6 +6,8 @@ from cirq.devices.line_qubit import LineQubit as CirqLineQubit
 from qiskit.circuit.quantumregister import QuantumRegister as QiskitQuantumRegister
 from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 
+from qbraid.exceptions import PackageError
+
 QubitInput = Union["BraketQubit", "CirqNamedQubit", "QiskitQubit", int, str]
 
 
@@ -27,16 +29,16 @@ class AbstractQubit(ABC):
 
     def _create_output(self, package: str):
 
-        """Create the transpiledobject for a specific package"""
+        """Create the transpiled object for a specific package"""
 
-        if package == "qiskit":
-            raise ValueError("Qiskit output object must be created from circuit object")
-        elif package == "braket":
+        if package == "braket":
             self._create_braket()
         elif package == "cirq":
             self._create_cirq()
+        elif package == "qiskit":
+            raise ValueError("Qiskit output object must be created from circuit object")
         else:
-            raise ValueError("Package not supported")
+            raise PackageError(package)
 
     def _create_qiskit(self, register: QiskitQuantumRegister, index: int):
         self._outputs["qiskit"] = QiskitQubit(register, index)

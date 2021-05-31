@@ -1,16 +1,15 @@
 from ..circuit import AbstractCircuitWrapper
-from ..qubitset import QiskitQubitSet
 from ..clbitset import ClbitSet
 from ..clbit import Clbit
 from ..parameterset import QiskitParameterSet
+from ..qubitset import QiskitQubitSet
 from .instruction import QiskitInstructionWrapper
-
-from qiskit.circuit import QuantumCircuit as QiskitCircuit
+from qiskit.circuit import QuantumCircuit
 from qbraid.exceptions import PackageError
 
 
 class QiskitCircuitWrapper(AbstractCircuitWrapper):
-    def __init__(self, circuit: QiskitCircuit):
+    def __init__(self, circuit: QuantumCircuit):
 
         super().__init__()
 
@@ -49,12 +48,14 @@ class QiskitCircuitWrapper(AbstractCircuitWrapper):
     def transpile(self, package: str):
 
         if package in self.supported_packages:
-            if package == "cirq":
-                return self._to_cirq()
-            elif package == "braket":
+            if package == "braket":
                 return self._to_braket()
+            elif package == "cirq":
+                return self._to_cirq()
             elif package == "qiskit":
                 return self.circuit
+            else:
+                raise SystemError("transpile function does not reflect supported_packages")
 
         else:
             raise PackageError(package)

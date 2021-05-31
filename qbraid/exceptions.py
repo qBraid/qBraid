@@ -3,7 +3,7 @@
 from typing import Optional
 
 
-class QBraidError(Exception):
+class QbraidError(Exception):
     """Base class for errors raised by qBraid."""
 
     def __init__(self, *message):
@@ -16,7 +16,7 @@ class QBraidError(Exception):
         return repr(self.message)
 
 
-class PackageError(QBraidError):
+class PackageError(QbraidError):
     """Raised when trying to use an unsuported package."""
 
     def __init__(self, package: Optional[str] = None, msg: Optional[str] = None) -> None:
@@ -28,9 +28,9 @@ class PackageError(QBraidError):
 
         message = []
         if package:
-            message.append("{} is not a supported package.".format(package))
+            message.append("{} is not a supported package".format(package))
         else:
-            message.append("Package not supported.")
+            message.append("Package not supported")
         if msg:
             message.append(" {}.".format(msg))
 

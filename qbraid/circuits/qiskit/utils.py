@@ -55,11 +55,7 @@ QiskitGate = Union[Measure, Gate]
 
 
 def get_qiskit_gate_data(gate: QiskitGate) -> dict:
-    """
 
-    :param gate:
-    :return:
-    """
     data = {"type": None, "params": gate.params, "matrix": None, "num_controls": 0}
 
     # measurement

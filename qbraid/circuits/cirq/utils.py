@@ -1,6 +1,7 @@
+from cirq import Gate
 from cirq.ops.common_gates import *
 from cirq.ops.controlled_gate import ControlledGate
-from cirq.ops.gate_features import SingleQubitGate, TwoQubitGate, ThreeQubitGate
+from cirq.ops.gate_features import SingleQubitGate
 from cirq.ops.matrix_gates import MatrixGate
 from cirq.ops.swap_gates import *
 from cirq.ops.three_qubit_gates import *
@@ -63,7 +64,7 @@ cirq_gates = {
     "Unitary": MatrixGate,
 }
 
-CirqGate = Union[SingleQubitGate, TwoQubitGate, ThreeQubitGate, MeasurementGate]
+CirqGate = Union[Gate, MeasurementGate]
 
 
 def get_cirq_gate_data(gate: CirqGate) -> dict:

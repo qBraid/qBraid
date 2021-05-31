@@ -1,42 +1,57 @@
 import abc
 from abc import ABC
-
-from braket.circuits.circuit import Circuit as BraketCircuit
-from cirq.circuits import Circuit as CirqCircuit
-from cirq.ops.common_gates import MeasurementGate as CirqMeasure
-from qiskit.circuit import QuantumCircuit as QiskitCircuit
-from qiskit.circuit.classicalregister import ClassicalRegister as QiskitClassicalRegister
-from qiskit.circuit.measure import Measure as QiskitMeasure
-
 from .clbit import Clbit
 from .qbraid.gate import QbraidGateWrapper
 from .qbraid.instruction import QbraidInstructionWrapper
+from typing import Union
+
+from braket.circuits.circuit import Circuit as BraketCircuit
+from cirq.circuits import Circuit as CirqCircuit
+from qiskit.circuit import QuantumCircuit as QiskitCircuit
+from qiskit.circuit.classicalregister import ClassicalRegister as QiskitClassicalRegister
+
+SupportedCircuit = Union[BraketCircuit, CirqCircuit, QiskitCircuit]
 
 
 class AbstractCircuitWrapper(ABC):
     def __init__(self):
 
+        self.qubitset = None
         self.instructions = []
 
     @property
     @abc.abstractmethod
-    def num_qubits(self):
-        raise NotImplementedError
+    def num_qubits(self) -> int:
+        pass
 
     @property
     @abc.abstractmethod
-    def num_clbits(self):
-        raise NotImplementedError
+    def num_clbits(self) -> int:
+        pass
 
     @property
     @abc.abstractmethod
-    def supported_packages(self):
-        raise NotImplementedError
+    def supported_packages(self) -> list:
+        pass
 
-    def transpile(self, package: str):
-        raise NotImplementedError
+    @abc.abstractmethod
+    def transpile(self, package: str) -> SupportedCircuit:
+        pass
 
-    def _to_cirq(self, auto_measure=False):
+    def _to_braket(self) -> BraketCircuit:
+
+        output_circ = BraketCircuit()
+
+        # some instructions may be null (i.e. classically controlled gates, measurement)
+        # these will return None, which should not be added to the circuit
+        for instruction in self.instructions:
+            instr = instruction.transpile("braket")
+            if instr:
+                output_circ.add_instruction(instr)
+
+        return output_circ
+
+    def _to_cirq(self, auto_measure=False) -> CirqCircuit:
 
         output_circ = CirqCircuit()
 
@@ -54,7 +69,7 @@ class AbstractCircuitWrapper(ABC):
 
         return output_circ
 
-    def _to_qiskit(self, auto_measure=False):
+    def _to_qiskit(self, auto_measure=False) -> QiskitCircuit:
 
         qreg = self.qubitset.transpile("qiskit")
 
@@ -74,19 +89,6 @@ class AbstractCircuitWrapper(ABC):
 
         # auto measure
         if auto_measure:
-            pass
-
-        return output_circ
-
-    def _to_braket(self):
-
-        output_circ = BraketCircuit()
-
-        # some instructions may be null (i.e. classically controlled gates, measurement)
-        # these will return None, which should not be added to the circuit
-        for instruction in self.instructions:
-            instr = instruction.transpile("braket")
-            if instr:
-                output_circ.add_instruction(instr)
+            raise NotImplementedError
 
         return output_circ

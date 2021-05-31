@@ -1,9 +1,9 @@
 """Exceptions for errors raised while handling circuits."""
 
-from qbraid.exceptions import QBraidError
+from qbraid.exceptions import QbraidError
 
 
-class CircuitError(QBraidError):
+class CircuitError(QbraidError):
     """Base class for errors raised while processing a circuit."""
 
     pass
