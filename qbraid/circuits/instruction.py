@@ -32,10 +32,18 @@ class AbstractInstructionWrapper(ABC):
         qubits = [qubit.transpile("cirq") for qubit in self.qubits]
         gate = self.gate.transpile("cirq")
 
-        if gate == "CirqMeasure":
-            return CirqMeasure(*qubits, key=str(self.clbits[0].index))
-        else:
-            return gate(*qubits)
+        print(type(gate))
+
+        if isinstance(gate, CirqMeasure):
+            print("True")
+            print(gate)
+
+        return gate(*qubits)
+
+        # if gate == "CirqMeasure":
+        #     return CirqMeasure(len(qubits), key=str(self.clbits[0].index))
+        # else:
+        #     return gate(*qubits)
 
     def _to_qiskit(self):
 
