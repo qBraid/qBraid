@@ -79,9 +79,7 @@ class AbstractGate(ABC):
             self._outputs["qiskit"] = create_qiskit_gate(data)
 
         elif self.base_gate:
-            self._outputs["qiskit"] = self.base_gate.transpile("qiskit").control(
-                self.num_controls
-            )
+            self._outputs["qiskit"] = self.base_gate.transpile("qiskit").control(self.num_controls)
 
         elif not (self.matrix is None):
             data["type"] = "Unitary"
@@ -106,9 +104,7 @@ class AbstractGate(ABC):
             self._outputs["cirq"] = create_cirq_gate(data)
 
         elif self.base_gate:
-            self._outputs["cirq"] = self.base_gate.transpile("cirq").controlled(
-                self.num_controls
-            )
+            self._outputs["cirq"] = self.base_gate.transpile("cirq").controlled(self.num_controls)
 
         elif not (self.matrix is None):
             data["name"] = data["type"]

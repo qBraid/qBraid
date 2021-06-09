@@ -157,9 +157,7 @@ def pyquil_circ_conversion(q_circ, output_circ_type="QISKIT"):
             elif isinstance(operation, Measurement):
                 c_reg_str = operation.classical_reg.name
                 qiskit_cr = qiskit_c_regs_dict[c_reg_str]
-                cr_index = classical_regs[c_reg_str].index(
-                    operation.classical_reg.offset
-                )
+                cr_index = classical_regs[c_reg_str].index(operation.classical_reg.offset)
                 qiskit_circ = measure(
                     qiskit_circ,
                     operation.qubit.index,
@@ -262,9 +260,7 @@ def qiskit_circ_conversion(q_circ, output_circ_type="PYQUIL"):
                         instruction[1][0].register.name,
                         instruction[1][0].index,
                     )
-                    pyquil_circ = rx_gate(
-                        pyquil_circ, theta, qubit_index, output_circ_type
-                    )
+                    pyquil_circ = rx_gate(pyquil_circ, theta, qubit_index, output_circ_type)
                 elif isinstance(instruction[0], RYGate):
                     theta = instruction[0].params[0]
                     qubit_index = qiskit_multi_to_single_qreg(
@@ -273,9 +269,7 @@ def qiskit_circ_conversion(q_circ, output_circ_type="PYQUIL"):
                         instruction[1][0].register.name,
                         instruction[1][0].index,
                     )
-                    pyquil_circ = ry_gate(
-                        pyquil_circ, theta, qubit_index, output_circ_type
-                    )
+                    pyquil_circ = ry_gate(pyquil_circ, theta, qubit_index, output_circ_type)
                 elif isinstance(instruction[0], RZGate):
                     theta = instruction[0].params[0]
                     qubit_index = qiskit_multi_to_single_qreg(
@@ -284,9 +278,7 @@ def qiskit_circ_conversion(q_circ, output_circ_type="PYQUIL"):
                         instruction[1][0].register.name,
                         instruction[1][0].index,
                     )
-                    pyquil_circ = rz_gate(
-                        pyquil_circ, theta, qubit_index, output_circ_type
-                    )
+                    pyquil_circ = rz_gate(pyquil_circ, theta, qubit_index, output_circ_type)
                 elif isinstance(instruction[0], CXGate):
                     # theta = instruction[0].params[0]
                     print("I am in CNOT")

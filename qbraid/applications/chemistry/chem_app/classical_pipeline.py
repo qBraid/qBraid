@@ -22,9 +22,7 @@ def pyscf_code_run(molecule_name, geometry, basis, method):
     mol.atom = geometry
     mol.basis = basis
 
-    classical_output = classical_calc_output(
-        molecule_name, geometry, basis, library="pyscf"
-    )
+    classical_output = classical_calc_output(molecule_name, geometry, basis, library="pyscf")
     mol.build()
     if method == "RHF":
         scf_setup = scf.RHF(mol)
@@ -281,11 +279,13 @@ def pyscf_code_print(molecule_name: str, geometry: str, basis: str, method: str)
 
 
 def qiskit_classical_code_run(molecule_name, geometry, basis, method):
-    driver = PySCFDriver(atom=geometry, basis="sto3g", hf_method=HFMethodType.RHF,)
-    qmolecule = driver.run()
-    classical_output = classical_calc_output(
-        molecule_name, geometry, basis, library="qiskit"
+    driver = PySCFDriver(
+        atom=geometry,
+        basis="sto3g",
+        hf_method=HFMethodType.RHF,
     )
+    qmolecule = driver.run()
+    classical_output = classical_calc_output(molecule_name, geometry, basis, library="qiskit")
     classical_output.one_body_integrals = qmolecule.one_body_integrals
     classical_output.two_body_integrals = qmolecule.two_body_integrals
     classical_output.calculations_ran = True
@@ -325,12 +325,8 @@ def openfermion_classical_code_run(molecule_name, geometry, basis, method):
 
     charge = 0
     multiplicity = 1
-    of_molecule = openfermionpyscf.generate_molecular_hamiltonian(
-        geometry, "sto-3g", multiplicity
-    )
-    classical_output = classical_calc_output(
-        molecule_name, geometry, basis, library="qiskit"
-    )
+    of_molecule = openfermionpyscf.generate_molecular_hamiltonian(geometry, "sto-3g", multiplicity)
+    classical_output = classical_calc_output(molecule_name, geometry, basis, library="qiskit")
     classical_output.calculations_ran = True
     classical_output.one_body_integrals = of_molecule.one_body_tensor
     classical_output.two_body_integrals = of_molecule.two_body_tensor

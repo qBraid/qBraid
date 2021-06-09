@@ -21,9 +21,7 @@ def convert(qubit_operator, output_qo_type="QISKIT"):
     if isinstance(qubit_operator, QubitOperator):
         if output_qo_type == "QISKIT":
             num_qubits = count_qubits(qubit_operator)
-            output_qub_op = WeightedPauliOperator(
-                paulis=[[0, Pauli.from_label("I" * num_qubits)]]
-            )
+            output_qub_op = WeightedPauliOperator(paulis=[[0, Pauli.from_label("I" * num_qubits)]])
             for term, coeff in qubit_operator.terms.items():
                 z = np.zeros(num_qubits)
                 x = np.zeros(num_qubits)
@@ -35,9 +33,7 @@ def convert(qubit_operator, output_qo_type="QISKIT"):
                     elif gate[1] == "Y":
                         x[gate[0]] = 1
                         z[gate[0]] = 1
-                output_qub_op += WeightedPauliOperator(
-                    paulis=[[coeff, Pauli(z=z, x=x)]]
-                )
+                output_qub_op += WeightedPauliOperator(paulis=[[coeff, Pauli(z=z, x=x)]])
             return output_qub_op
         elif output_qo_type == "OPENFERMION":
             pass

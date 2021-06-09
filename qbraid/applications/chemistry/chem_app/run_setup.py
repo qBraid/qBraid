@@ -29,9 +29,7 @@ def run_config_qiskit_run(
 
                         print("VQE Result:", vqe_result)
                 else:
-                    raise TypeError(
-                        "Noisy simulation is only supported in qasm simulator"
-                    )
+                    raise TypeError("Noisy simulation is only supported in qasm simulator")
             else:
                 simulator = simulation_config["simulator"]
                 backend = BasicAer.get_backend(simulator)

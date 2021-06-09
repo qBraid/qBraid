@@ -101,9 +101,7 @@ def qiskit_vqe(qubit_op, algo_config, mapping="parity", particle_num=None):
             var_form = EfficientSU2(qubit_op.num_qubits, entanglement="full")
     elif algo_config["var_form"] == "UCCSD":
         if particle_num:
-            init_state = HartreeFock(
-                num_orbitals=4, qubit_mapping=mapping, num_particles=2
-            )
+            init_state = HartreeFock(num_orbitals=4, qubit_mapping=mapping, num_particles=2)
             var_form = UCCSD(
                 num_orbitals=qubit_op.num_qubits,
                 num_particles=particle_num,
@@ -115,9 +113,7 @@ def qiskit_vqe(qubit_op, algo_config, mapping="parity", particle_num=None):
         else:
             raise ("number of particles not provided for uccsd")
         pass
-    vqe = VQE(
-        qubit_op, var_form, optimizer=optimizer, callback=store_intermediate_result
-    )
+    vqe = VQE(qubit_op, var_form, optimizer=optimizer, callback=store_intermediate_result)
     return vqe
 
 
@@ -144,9 +140,7 @@ def qiskit_quantum_code_print(
         code_str += """qubit_op = fer_op.mapping('parity')
         """
     if qubit_tapering:
-        code_str += (
-            """qubit_op = Z2Symmetries.two_qubit_reduction(qubitOp, num_particles)"""
-        )
+        code_str += """qubit_op = Z2Symmetries.two_qubit_reduction(qubitOp, num_particles)"""
     if algo == "Exact_diag":
         code_str += """from qiskit.aqua.algorithms import NumPyEigensolver as EE
         k = algo_config['num_of_evs']
@@ -262,9 +256,7 @@ def openfermion_quantum_code_print(
 
 
 class quantum_calc_output:
-    def __init__(
-        self, classical_output: classical_calc_output, geometry, basis, library
-    ):
+    def __init__(self, classical_output: classical_calc_output, geometry, basis, library):
         self.classical_output = classical_output
         self.library = library
         self.mapping = None

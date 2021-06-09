@@ -67,13 +67,9 @@ def classical_cal(
     # Inputs for pyscf that we may want to include
     if library == "pyscf":
         if print_code:
-            code_str, classical_output = pyscf_code_print(
-                molecule_name, geometry, basis, method
-            )
+            code_str, classical_output = pyscf_code_print(molecule_name, geometry, basis, method)
         else:
-            code_str, classical_output = pyscf_code_run(
-                molecule_name, geometry, basis, method
-            )
+            code_str, classical_output = pyscf_code_run(molecule_name, geometry, basis, method)
     elif library == "qiskit":
         if print_code:
             code_str, classical_output = qiskit_classical_code_print(
@@ -216,9 +212,7 @@ if __name__ == "__main__":
     geometry = "H 0 0 0; H 0 0 .7414"
     basis = "sto-3g"
     method = "HF"
-    code_str, classical_output = classical_cal(
-        molecule, geometry, classical_library, basis, method
-    )
+    code_str, classical_output = classical_cal(molecule, geometry, classical_library, basis, method)
     print(classical_output.num_particles)
     # Running quantum pipeline for VQE
     algorithm = "vqe"
