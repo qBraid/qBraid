@@ -38,7 +38,12 @@ class chem_app_results:
 
 
 def classical_cal(
-    molecule_name, geometry, library: str = "pyscf", basis="sto-3g", method="HF", print_code=False
+    molecule_name,
+    geometry,
+    library: str = "pyscf",
+    basis="sto-3g",
+    method="HF",
+    print_code=False,
 ):
     """
     Args:
@@ -62,9 +67,13 @@ def classical_cal(
     # Inputs for pyscf that we may want to include
     if library == "pyscf":
         if print_code:
-            code_str, classical_output = pyscf_code_print(molecule_name, geometry, basis, method)
+            code_str, classical_output = pyscf_code_print(
+                molecule_name, geometry, basis, method
+            )
         else:
-            code_str, classical_output = pyscf_code_run(molecule_name, geometry, basis, method)
+            code_str, classical_output = pyscf_code_run(
+                molecule_name, geometry, basis, method
+            )
     elif library == "qiskit":
         if print_code:
             code_str, classical_output = qiskit_classical_code_print(
@@ -150,7 +159,11 @@ def quantum_calc(
 
 
 def run(
-    library, quantum_calc_output, run_on_hardware=False, hardware_cofig=None, simulation_config=None
+    library,
+    quantum_calc_output,
+    run_on_hardware=False,
+    hardware_cofig=None,
+    simulation_config=None,
 ):
     """
     Args:
@@ -203,7 +216,9 @@ if __name__ == "__main__":
     geometry = "H 0 0 0; H 0 0 .7414"
     basis = "sto-3g"
     method = "HF"
-    code_str, classical_output = classical_cal(molecule, geometry, classical_library, basis, method)
+    code_str, classical_output = classical_cal(
+        molecule, geometry, classical_library, basis, method
+    )
     print(classical_output.num_particles)
     # Running quantum pipeline for VQE
     algorithm = "vqe"
@@ -217,7 +232,11 @@ if __name__ == "__main__":
     q_code_str, q_output = quantum_calc(
         quantum_library, classical_output, algorithm=algorithm, algo_config=vqe_config
     )
-    simulation_config = {"Noisy": True, "simulator": "qasm_simulator", "device_name": "vigo"}
+    simulation_config = {
+        "Noisy": True,
+        "simulator": "qasm_simulator",
+        "device_name": "vigo",
+    }
     run(quantum_library, q_output, simulation_config=simulation_config)
 
 

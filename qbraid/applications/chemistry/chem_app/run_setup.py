@@ -6,7 +6,10 @@ import numpy as np
 
 
 def run_config_qiskit_run(
-    quantum_calc_output, run_on_hardware=False, hardware_cofig=None, simulation_config=None
+    quantum_calc_output,
+    run_on_hardware=False,
+    hardware_cofig=None,
+    simulation_config=None,
 ):
     if run_on_hardware:
         pass
@@ -26,7 +29,9 @@ def run_config_qiskit_run(
 
                         print("VQE Result:", vqe_result)
                 else:
-                    raise TypeError("Noisy simulation is only supported in qasm simulator")
+                    raise TypeError(
+                        "Noisy simulation is only supported in qasm simulator"
+                    )
             else:
                 simulator = simulation_config["simulator"]
                 backend = BasicAer.get_backend(simulator)

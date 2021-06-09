@@ -41,4 +41,6 @@ class Moment:
     def __str__(self):
         if self._holding:
             return str(self._moment)
-        return "At time step = " + str(self.time_slice) + ": " + str(self.instruction_set)
+        return (
+            "At time step = " + str(self.time_slice) + ": " + str(self.instruction_set)
+        )
