@@ -3,7 +3,7 @@ from qiskit.circuit.measure import Measure
 from qiskit.extensions.unitary import UnitaryGate
 from qiskit.circuit.library.standard_gates import *
 from typing import Union
-from qbraid.circuits.exceptions import CircuitError
+from qbraid.transpiler.exceptions import CircuitError
 
 
 qiskit_gates = {
