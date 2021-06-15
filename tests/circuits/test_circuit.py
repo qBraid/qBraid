@@ -11,7 +11,7 @@ from cirq.ops.gate_features import TwoQubitGate as CirqTwoQubitGate
 import numpy as np
 import qiskit
 from qiskit.circuit import Parameter
-from qbraid.circuits.transpiler import qbraid_wrapper
+from qbraid.transpiler.transpiler import qbraid_wrapper
 from qbraid.devices.execute import execute
 from typing import Union
 
@@ -115,17 +115,17 @@ def test_qiskit_to_all():
     # create circuit
     circuit = qiskit.QuantumCircuit(qubits, clbits)
     circuit.cnot(0, 1)
-    # circuit.swap(0, 1)
-    circuit.h(2)
-    circuit.h(0)
-    circuit.cnot(1, 2)
-    circuit.z(1)
-    circuit.s(2)
-    circuit.h(0)
-    circuit.t(1)
-    circuit.t(2)
-    circuit.rx(np.pi/3, 0)
-    circuit.measure([0, 1, 2], [2, 1, 0])
+    circuit.swap(0, 1)
+    # circuit.h(2)
+    # circuit.h(0)
+    # circuit.cnot(1, 2)
+    # circuit.z(1)
+    # circuit.s(2)
+    # circuit.h(0)
+    # circuit.t(1)
+    # circuit.t(2)
+    # circuit.rx(np.pi/3, 0)
+    # circuit.measure([0, 1, 2], [2, 1, 0])
     print("qiskit circuit")
     print(circuit)
 

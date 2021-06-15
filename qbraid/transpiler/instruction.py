@@ -32,8 +32,6 @@ class AbstractInstructionWrapper(ABC):
         qubits = [qubit.transpile("cirq") for qubit in self.qubits]
         gate = self.gate.transpile("cirq")
 
-        print(type(gate))
-
         if isinstance(gate, CirqMeasure):
             print("True")
             print(gate)
