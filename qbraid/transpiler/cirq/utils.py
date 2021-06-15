@@ -53,8 +53,8 @@ cirq_gates = {
     "Phase": ZPowGate,
     "U1": ZPowGate,
     "CX": CXPowGate,
-    "Swap": SWAP,
-    "iSwap": ISWAP,
+    "Swap": SwapPowGate,
+    "iSwap": ISwapPowGate,
     "CZ": CZPowGate,
     "CPhase": cphase,
     "CCZ": CCZPowGate,
@@ -148,7 +148,17 @@ def get_cirq_gate_data(gate: CirqGate) -> dict:
         if gate.exponent == 1:
             data["type"] = "CCX"
         else:
-            pass
+            raise NotImplementedError
+    elif isinstance(gate, SwapPowGate):
+        if gate.exponent == 1:
+            data["type"] = "Swap"
+        else:
+            raise NotImplementedError
+    elif isinstance(gate, ISwapPowGate):
+        if gate.exponent == 1:
+            data["type"] = "iSwap"
+        else:
+            raise NotImplementedError
     elif isinstance(gate, CSwapGate):
         data["type"] = "CSwap"
 
@@ -203,7 +213,7 @@ def create_cirq_gate(data):
         return cirq_gates[gate_type](data["params"][0])
 
     elif gate_type in ("Swap", "iSwap"):
-        return cirq_gates[gate_type]()
+        return cirq_gates[gate_type](exponent=1.0)
 
     # multi-qubit
     elif gate_type in "CCX":
