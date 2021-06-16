@@ -63,9 +63,9 @@ def test_braket_to_all():
     cirq_circuit = qbraid_circuit.transpile(package="cirq")
     print("cirq circuit")
     print(cirq_circuit)
-    # qiskit_circuit = qbraid_circuit.transpile("qiskit")  # , auto_measure = True)
-    # print("qiskit circuit")
-    # print(qiskit_circuit)
+    qiskit_circuit = qbraid_circuit.transpile("qiskit")  # , auto_measure = True)
+    print("qiskit circuit")
+    print(qiskit_circuit)
 
 
 def test_cirq_to_all():
@@ -101,8 +101,8 @@ def test_cirq_to_all():
     print("cirq circuit\n\n", circuit)
     qiskit_circuit = qbraid_circuit.transpile("qiskit")
     print("qiskit circuit\n\n", qiskit_circuit)
-    braket_circuit = qbraid_circuit.transpile("braket")
-    print("braket circuit\n\n", braket_circuit)
+    # braket_circuit = qbraid_circuit.transpile("braket")
+    # print("braket circuit\n\n", braket_circuit)
 
 
 def test_qiskit_to_all():
@@ -116,16 +116,16 @@ def test_qiskit_to_all():
     circuit = qiskit.QuantumCircuit(qubits, clbits)
     circuit.cnot(0, 1)
     circuit.swap(0, 1)
-    # circuit.h(2)
-    # circuit.h(0)
-    # circuit.cnot(1, 2)
-    # circuit.z(1)
-    # circuit.s(2)
-    # circuit.h(0)
-    # circuit.t(1)
-    # circuit.t(2)
-    # circuit.rx(np.pi/3, 0)
-    # circuit.measure([0, 1, 2], [2, 1, 0])
+    circuit.h(2)
+    circuit.h(0)
+    circuit.cnot(1, 2)
+    circuit.z(1)
+    circuit.s(2)
+    circuit.h(0)
+    circuit.t(1)
+    circuit.t(2)
+    circuit.rx(np.pi/3, 0)
+    circuit.measure([0, 1, 2], [2, 1, 0])
     print("qiskit circuit")
     print(circuit)
 
@@ -389,7 +389,7 @@ if __name__ == "__main__":
     # test_qiskit_execute()
     # test_qiskit()
     # test_qiskit_to_cirq_prmtrzd()
-    test_qiskit_to_all()
+    # test_qiskit_to_all()
     # print("------------------------------")
     # print()
     #
@@ -398,8 +398,8 @@ if __name__ == "__main__":
     # test_cirq()
     # test_cirq_execute()
     # test_cirq_qiskit_two_way()
-    # test_cirq_to_all()
+    test_cirq_to_all()
     # print("------------------------------")
     # print()
-    #
-    # print("ALL TESTS PASSED")
+
+    print("ALL TESTS PASSED")

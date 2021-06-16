@@ -75,7 +75,7 @@ class AbstractCircuitWrapper(ABC):
 
         qreg = self.qubitset.transpile("qiskit")
 
-        if self.num_clbits:
+        if self.num_clbits > 0:
             creg = QiskitClassicalRegister(self.num_clbits)
             output_circ = QiskitCircuit(qreg, creg, name="qBraid_transpiler_output")
         elif auto_measure:

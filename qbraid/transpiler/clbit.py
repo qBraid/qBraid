@@ -48,6 +48,9 @@ class Clbit:
 
     def _output_to_qiskit(self):
 
+        if "qiskit" not in self._outputs.keys() or not self._outputs["qiskit"]:
+            self._create_qiskit_object(QiskitClassicalRegister(1), 0)
+
         try:
             return self._outputs["qiskit"]
         except (TypeError, ValueError):

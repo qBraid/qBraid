@@ -1,7 +1,6 @@
 from abc import ABC
 from braket.circuits.instruction import Instruction as BraketInstruction
-from cirq.ops.measurement_gate import MeasurementGate as CirqMeasure
-from cirq.ops.measure_util import measure as cirq_measure
+from cirq.ops.measure_util import measure as CirqMeasure
 from qiskit.circuit.measure import Measure as QiskitMeasure
 
 from qbraid.exceptions import PackageError
@@ -34,15 +33,8 @@ class AbstractInstructionWrapper(ABC):
         qubits = [qubit.transpile("cirq") for qubit in self.qubits]
         gate = self.gate.transpile("cirq")
 
-        print(type(gate))
-
-        #if isinstance(gate, CirqMeasure):
-        #    print("True")
-        #    print(gate)
-        #return gate(*qubits)
-
         if gate == "CirqMeasure":
-            return [cirq_measure(q, key=q.x) for q in qubits]
+            return [CirqMeasure(q, key=str(q.x)) for q in qubits]
         else:
             return gate(*qubits)
 
