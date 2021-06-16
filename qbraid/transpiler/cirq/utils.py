@@ -211,7 +211,7 @@ def create_cirq_gate(data):
 
     # measure
     elif gate_type == "MEASURE":
-        return cirq_gates[gate_type](data["params"][0])
+        return "CirqMeasure" #cirq_gates[gate_type](data["params"][0])
 
     # custom gates
     elif gate_type == "U3":

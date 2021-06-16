@@ -11,7 +11,7 @@ from cirq.ops.gate_features import TwoQubitGate as CirqTwoQubitGate
 import numpy as np
 import qiskit
 from qiskit.circuit import Parameter
-from qbraid.circuits.transpiler import qbraid_wrapper
+from qbraid.transpiler.transpiler import qbraid_wrapper
 from qbraid.devices.execute import execute
 from typing import Union
 
