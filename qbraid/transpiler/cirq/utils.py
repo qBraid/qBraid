@@ -198,7 +198,8 @@ def create_cirq_gate(data):
 
     # single-qubit, one-parameter gates
     elif gate_type in ("RX", "RY", "RZ"):
-        theta = data["params"][0] / np.pi
+        theta = data["params"][0]
+        # theta = data["params"][0] / np.pi
         return cirq_gates[gate_type](theta)
 
     elif gate_type == "Phase":
@@ -221,7 +222,7 @@ def create_cirq_gate(data):
 
     # measure
     elif gate_type == "MEASURE":
-        return "CirqMeasure" #cirq_gates[gate_type](data["params"][0])
+        return "CirqMeasure"  # cirq_gates[gate_type](data["params"][0])
 
     # custom gates
     elif gate_type == "U3":

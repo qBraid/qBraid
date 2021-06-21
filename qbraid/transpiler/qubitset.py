@@ -40,9 +40,11 @@ class AbstractQubitSet(ABC):
         pass
 
     def _create_braket(self):
+
         self._outputs["braket"] = [qb.transpile("braket") for qb in self.qubits]
 
     def _create_cirq(self):
+
         self._outputs["cirq"] = [qb.transpile("cirq") for qb in self.qubits]
 
     def _create_qiskit(self):

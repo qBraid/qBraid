@@ -64,20 +64,20 @@ class QiskitParameterSet(AbstractParameterSet):
             else:
                 output.append(param)
 
-        for p in output:
-            assert isinstance(
-                p,
-                (
-                    float,
-                    int,
-                    QiskitParameter,
-                    AbstractParameterWrapper,
-                    Iterable[float],
-                    Iterable[int],
-                    Iterable[QiskitParameter],
-                    Iterable[AbstractParameterWrapper],
-                ),
-            )
+        # for p in output:
+        #     assert isinstance(
+        #         p,
+        #         (
+        #             float,
+        #             int,
+        #             QiskitParameter,
+        #             AbstractParameterWrapper,
+        #             Iterable[float],
+        #             Iterable[int],
+        #             Iterable[QiskitParameter],
+        #             Iterable[AbstractParameterWrapper],
+        #         ),
+        #     )
 
         return output
 

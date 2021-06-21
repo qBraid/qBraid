@@ -47,7 +47,10 @@ class AbstractInstructionWrapper(ABC):
         if isinstance(gate, QiskitMeasure):
             return gate, qubits, clbits
         else:
-            return gate, qubits, clbits
+            if len(clbits) == 0:
+                return gate, qubits
+            else:
+                return gate, qubits, clbits
 
     def transpile(self, package: str):
 

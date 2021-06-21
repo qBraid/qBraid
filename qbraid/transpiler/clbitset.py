@@ -1,4 +1,6 @@
 from typing import Iterable, Union
+from qiskit.circuit.classicalregister import ClassicalRegister as QiskitClassicalRegister
+from qiskit.circuit.classicalregister import Clbit as QiskitClbit
 from .clbit import Clbit
 
 ClbitSetInput = Union["QiskitClassicalRegister", Iterable[Clbit], Iterable[str], Iterable[int]]
@@ -27,6 +29,8 @@ class ClbitSet:
             self.clbits = [Clbit(clbit) for clbit in clbitset]
         else:
             self.clbits = []
+
+        self._outputs = {}
 
     def __len__(self):
 
@@ -64,3 +68,20 @@ class ClbitSet:
             [self._append(clb) for clb in clbits]
         else:
             self._append(clbits)
+
+    def _create_qiskit(self):
+
+        creg = QiskitClassicalRegister(len(self.clbits))
+        for index, clbit in enumerate(self.clbits):
+            clbit._create_qiskit_object(creg, index)
+
+        self._outputs["qiskit"] = creg
+
+    def transpile(self, package: str):
+        """Should check if the transpiled object has already been created.
+        If not, create it. Then return that object."""
+
+        if package == "qiskit":
+            self._create_qiskit()
+
+        return self._outputs["qiskit"]

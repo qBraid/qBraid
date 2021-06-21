@@ -15,7 +15,6 @@ from qbraid.transpiler.transpiler import qbraid_wrapper
 from qbraid.devices.execute import execute
 from typing import Union
 
-
 cirq_gate_types = Union[CirqSingleQubitGate, CirqTwoQubitGate, CirqThreeQubitGate]
 
 
@@ -101,8 +100,8 @@ def test_cirq_to_all():
     print("cirq circuit\n\n", circuit)
     qiskit_circuit = qbraid_circuit.transpile("qiskit")
     print("qiskit circuit\n\n", qiskit_circuit)
-    # braket_circuit = qbraid_circuit.transpile("braket")
-    # print("braket circuit\n\n", braket_circuit)
+    braket_circuit = qbraid_circuit.transpile("braket")
+    print("braket circuit\n\n", braket_circuit)
 
 
 def test_qiskit_to_all():
@@ -124,7 +123,7 @@ def test_qiskit_to_all():
     circuit.h(0)
     circuit.t(1)
     circuit.t(2)
-    circuit.rx(np.pi/3, 0)
+    circuit.rx(np.pi / 3, 0)
     circuit.measure([0, 1, 2], [2, 1, 0])
     print("qiskit circuit")
     print(circuit)
@@ -137,13 +136,13 @@ def test_qiskit_to_all():
     print(cirq_circuit)
 
     # simulate cirq circuit
-    # simulator = Simulator()
-    # result = simulator.run(cirq_circuit)
-    # print(result)
+    simulator = Simulator()
+    result = simulator.run(cirq_circuit)
+    print(result)
 
-    # braket_circuit = qbraid_circuit.transpile("braket")
-    # print("braket circuit")
-    # print(braket_circuit)
+    braket_circuit = qbraid_circuit.transpile("braket")
+    print("braket circuit")
+    print(braket_circuit)
 
 
 def test_cirq():
@@ -376,30 +375,30 @@ def test_cirq_execute():
 
 if __name__ == "__main__":
 
-    # print("BRAKET TESTS")
-    # print("------------------------------")
-    # test_braket()
-    # test_braket_to_all()
-    # print("------------------------------")
-    # print()
-    #
-    # print("QISKIT TESTS")
-    # print("------------------------------")
-    # test_qiskit_prmtrzd()
-    # test_qiskit_execute()
-    # test_qiskit()
-    # test_qiskit_to_cirq_prmtrzd()
-    # test_qiskit_to_all()
-    # print("------------------------------")
-    # print()
-    #
-    # print("CIRQ TESTS")
-    # print("------------------------------")
-    # test_cirq()
-    # test_cirq_execute()
-    # test_cirq_qiskit_two_way()
+    print("BRAKET TESTS")
+    print("------------------------------")
+    test_braket()
+    test_braket_to_all()
+    print("------------------------------")
+    print()
+
+    print("QISKIT TESTS")
+    print("------------------------------")
+    test_qiskit_prmtrzd()
+    test_qiskit_execute()
+    test_qiskit()
+    test_qiskit_to_cirq_prmtrzd()
+    test_qiskit_to_all()
+    print("------------------------------")
+    print()
+
+    print("CIRQ TESTS")
+    print("------------------------------")
+    test_cirq()
+    test_cirq_execute()
+    test_cirq_qiskit_two_way()
     test_cirq_to_all()
-    # print("------------------------------")
-    # print()
+    print("------------------------------")
+    print()
 
     print("ALL TESTS PASSED")
