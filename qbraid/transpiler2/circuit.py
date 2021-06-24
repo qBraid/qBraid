@@ -1,6 +1,5 @@
 import abc
 from abc import ABC
-from .clbit import Clbit
 from .qbraid.gate import QbraidGateWrapper
 from .qbraid.instruction import QbraidInstructionWrapper
 from typing import Union

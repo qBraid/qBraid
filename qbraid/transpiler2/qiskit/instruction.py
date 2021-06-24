@@ -16,3 +16,16 @@ class QiskitInstructionWrapper(AbstractInstructionWrapper):
         self.package = "qiskit"
 
         self.gate = QiskitGateWrapper(instruction, params)
+
+    def transpile(self, package: str, output_mapping: dict = None):        
+
+        if package == "braket":
+            from ..braket.outputs import instruction_to_braket
+            return instruction_to_braket(self, output_mapping)
+        elif package == "cirq":
+            from ..cirq.outputs import instruction_to_cirq
+            return instruction_to_cirq(self, output_mapping)
+        elif package == "qiskit":
+            raise NotImplementedError
+        else:
+            raise TypeError #PackageError(package)

@@ -1,14 +1,10 @@
 from ..circuit import AbstractCircuitWrapper
-from ..qubitset import CirqQubitSet
-from ..clbitset import ClbitSet
-from ..clbit import Clbit
 from .instruction import CirqInstructionWrapper
-from ..qbraid.gate import QbraidGateWrapper
-from ..qbraid.instruction import QbraidInstructionWrapper
+
 from qbraid.exceptions import PackageError
 
 from cirq.circuits import Circuit
-from cirq.ops.measurement_gate import MeasurementGate
+
 
 
 class CirqCircuitWrapper(AbstractCircuitWrapper):
@@ -33,27 +29,6 @@ class CirqCircuitWrapper(AbstractCircuitWrapper):
     @property
     def supported_packages(self):
         return ["cirq", "qiskit", "braket"]
-
-    @property
-    def _to_circuit(self, auto_measure=False):
-
-        output_circ = Circuit()
-
-        for instruction in self.instructions:
-            transp_instr = instruction.transpile("cirq")
-            output_circ.append(transp_instr)
-
-        # auto measure
-        if auto_measure:
-            for index, qubit in enumerate(self.qubitset.qubits):
-                clbit = Clbit(index)
-                instruction = QbraidInstructionWrapper(
-                    QbraidGateWrapper(gate_type="MEASURE"), [qubit], [clbit]
-                )
-                transp_instr = instruction.transpile("cirq")
-                output_circ.append(transp_instr)
-
-        return output_circ
 
     def transpile(self, package: str):
 
