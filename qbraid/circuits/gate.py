@@ -1,14 +1,18 @@
 from abc import ABC
 
-#from .utils import create_instruction
-
 class Gate(ABC):
     
-    def __init__(self):
+    def on(self, qubits):
         
-        raise NotImplementedError
-        
+        #avoid circular import
+        from qbraid.circuits.instruction import Instruction
+        return Instruction(self,qubits)
     
     def __call__(self, qubits):
+        return self.on(qubits)
+    
+class TestGate(Gate):
+    
+    def __init__(self):
+        self.name = 'Test'
         
-        return create_instruction(self,qubits)

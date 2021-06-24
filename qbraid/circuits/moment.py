@@ -18,20 +18,27 @@ class Moment:
         return list[out]
     
     
+    def appendable(self, instruction):
+        return set(instruction.qubits).isdisjoint(self.qubits)
+    
     def append(self, instruction: Union[Instruction, Iterable[Instruction]]) -> None:
         
         #TO DO validate args from user
         
+        
         if isinstance(instruction, Iterable):
             for i in instruction:
-                self._append(i)
+                self.append(i)
             else:
-                self._append(instruction)
+                self._append(i)
    
     def _append(self, instruction: Instruction) -> None:
        
-       self._instructions.append(instruction)
-   
+        if self.appendable(instruction):
+            self._instructions.append(instruction)
+        else:
+            raise TypeError #should be CircuitError
+            
     @property
     def instructions(self):
         return self._instructions

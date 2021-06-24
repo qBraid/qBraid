@@ -8,7 +8,7 @@ from cirq.circuits import Circuit as CirqCircuit
 import numpy as np
 import qiskit
 from qiskit.circuit import Parameter
-from qbraid.transpiler.transpiler import qbraid_wrapper
+from qbraid.transpiler2.transpiler import qbraid_wrapper
 from qbraid.devices.execute import execute
 from typing import Union
 

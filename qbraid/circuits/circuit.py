@@ -44,19 +44,20 @@ class Circuit:
             if qubit not in self._qubits:
                 self._qubits.append(qubit)
     
-    def _append(self, operation: Union[Moment, Instruction]):
+    def _append(self, moments: Union[Moment,Iterable[Moment]]):
         
-        #update qubit list
-        self._update_qubit_list(operation)    
+        if isinstance(moments, Moment):
+            moments = [moments]
         
-        #TO DO how should we add operations to circuit (whether moments or instructions, or combinations of both)
-        #one possible issue occurs if we follow the rule: if it can be added to the most recent moment, do that
-        #otherwise create a new moment. then if we have say h(0), then cnot(0,1) creates a new moment.
-        #but h(2) would then be added to the first moment not the second. is this bad? does this matter?
-        #more research needed
+        #validate moment
+        for moment in moments:
+            if max(moment.qubits)>self.num_qubits:
+                raise TypeError #should be CircuitError('Index exceeds number of qubits in circuit')
+        self._moments.extend(moments)
+        
     
     def _append_circuit(self, 
-                        operation: Circuit, 
+                        operation, 
                         mapping: Union[list,dict]) -> None:
         
         """this is for adding subroutines to circuits. so if we have a 3-qubit subroutine,
@@ -73,7 +74,7 @@ class Circuit:
         raise NotImplementedError
         
     
-    def append(self, operation: Union[Instruction, Moment, Circuit, Iterable[Instruction, Moment]],
+    def append(self, operation: Union[Instruction, Moment, Iterable[Instruction], Iterable[Moment]],
                mapping: Union[list,dict] = None) -> None:
         
         """
@@ -82,7 +83,11 @@ class Circuit:
         TO DO: rules
         """
         
-        #TO DO validate instruction given from user
+        #TO DO validate instruction given from user (check if qubits)
+        
+        #TO DO define various update rules, for now, go with NEW_then_earliest
+        
+        
         if isinstance(operation, Circuit):
             self._append_circuit(operation, mapping)
         if isinstance(operation, Iterable):
