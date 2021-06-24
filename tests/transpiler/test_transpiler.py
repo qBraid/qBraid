@@ -5,17 +5,12 @@ from braket.circuits.instruction import Instruction as BraketInstruction
 import cirq
 from cirq import Simulator
 from cirq.circuits import Circuit as CirqCircuit
-from cirq.ops.gate_features import SingleQubitGate as CirqSingleQubitGate
-from cirq.ops.gate_features import ThreeQubitGate as CirqThreeQubitGate
-from cirq.ops.gate_features import TwoQubitGate as CirqTwoQubitGate
 import numpy as np
 import qiskit
 from qiskit.circuit import Parameter
 from qbraid.transpiler.transpiler import qbraid_wrapper
 from qbraid.devices.execute import execute
 from typing import Union
-
-cirq_gate_types = Union[CirqSingleQubitGate, CirqTwoQubitGate, CirqThreeQubitGate]
 
 
 def test_braket_to_all():
@@ -379,26 +374,26 @@ if __name__ == "__main__":
     print("------------------------------")
     test_braket()
     test_braket_to_all()
-    print("------------------------------")
-    print()
-
-    print("QISKIT TESTS")
-    print("------------------------------")
-    test_qiskit_prmtrzd()
-    test_qiskit_execute()
-    test_qiskit()
-    test_qiskit_to_cirq_prmtrzd()
-    test_qiskit_to_all()
-    print("------------------------------")
-    print()
-
-    print("CIRQ TESTS")
-    print("------------------------------")
-    test_cirq()
-    test_cirq_execute()
-    test_cirq_qiskit_two_way()
-    test_cirq_to_all()
-    print("------------------------------")
-    print()
+    # print("------------------------------")
+    # print()
+    #
+    # print("QISKIT TESTS")
+    # print("------------------------------")
+    # test_qiskit_prmtrzd()
+    # test_qiskit_execute()
+    # test_qiskit()
+    # test_qiskit_to_cirq_prmtrzd()
+    # test_qiskit_to_all()
+    # print("------------------------------")
+    # print()
+    #
+    # print("CIRQ TESTS")
+    # print("------------------------------")
+    # test_cirq()
+    # test_cirq_execute()
+    # test_cirq_qiskit_two_way()
+    # test_cirq_to_all()
+    # print("------------------------------")
+    # print()
 
     print("ALL TESTS PASSED")
