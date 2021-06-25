@@ -3,6 +3,7 @@ from typing import Union, Iterable
 from .instruction import Instruction
 from .moment import Moment
 from .qubit import Qubit
+from .utils import validate_operation
 
 class Circuit:
     
@@ -10,7 +11,10 @@ class Circuit:
     Circuit class for qBraid quantum circuit objects.
     """
     
-    def __init__(self, num_qubits, name: str = None):
+    def __init__(self, 
+        num_qubits, 
+        name: str = None,
+        update_rule = None):
 
         self._qubits = [Qubit(i) for i in range(num_qubits)]
         self._moments = []
@@ -37,13 +41,6 @@ class Circuit:
             
         return instructions_list     
     
-    def _update_qubit_list(self, qubit_list: Iterable[Qubit]):
-        
-        #check if qubits are in global circuit list, add them if not
-        for qubit in qubit_list:
-            if qubit not in self._qubits:
-                self._qubits.append(qubit)
-    
     def _append(self, moments: Union[Moment,Iterable[Moment]]):
         
         if isinstance(moments, Moment):
@@ -68,14 +65,14 @@ class Circuit:
             {0:2,1:4,5:5}
             
         """
-        
+
         # TO DO validate mapping
-        
         raise NotImplementedError
         
     
     def append(self, operation: Union[Instruction, Moment, Iterable[Instruction], Iterable[Moment]],
-               mapping: Union[list,dict] = None) -> None:
+               mapping: Union[list,dict] = None,
+               update_rule = None) -> None:
         
         """
         Add an operation (moment or instruction) to the circuit.
@@ -83,7 +80,7 @@ class Circuit:
         TO DO: rules
         """
         
-        #TO DO validate instruction given from user (check if qubits)
+        #TO DO validate instruction given from user (check if qubit indices exceed highest qubit circuit)
         
         #TO DO define various update rules, for now, go with NEW_then_earliest
         
@@ -98,8 +95,7 @@ class Circuit:
                 self._append(op)
         else:
             self._append(operation)
-        
-        
+
     def __len__(self):
         raise NotImplementedError
         

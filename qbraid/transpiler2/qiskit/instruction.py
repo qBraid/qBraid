@@ -6,7 +6,7 @@ from qiskit.circuit.gate import Gate
 
 
 class QiskitInstructionWrapper(AbstractInstructionWrapper):
-    def __init__(self, instruction: Instruction, qubits, params=None):
+    def __init__(self, instruction: Instruction, qubits, params=[]):
 
         super().__init__()
 
@@ -14,7 +14,7 @@ class QiskitInstructionWrapper(AbstractInstructionWrapper):
         self.qubits = qubits
 
         self.gate = QiskitGateWrapper(instruction, params)
-        self.params = self.gate.get_abstract_params()
+        self.params = params
 
     @property
     def package(self):

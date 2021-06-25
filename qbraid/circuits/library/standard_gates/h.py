@@ -1,4 +1,9 @@
 from ...gate import Gate
 
 class H(Gate):
-    raise NotImplementedError
+    
+    def __init__(self):
+        pass
+
+    def name(self):
+        return "H"
