@@ -1,18 +1,22 @@
 from cirq import Circuit, LineQubit
-from ..qbraid.instruction import QbraidInstructionWrapper
-from ..qbraid.gate import QbraidGateWrapper
 from cirq.ops.measure_util import measure as CirqMeasure
 
 
-def circuit_to_cirq(cw, auto_measure =False, output_mapping = None):
+def circuit_to_cirq(cw, 
+    auto_measure =False, 
+    output_qubit_mapping = None,
+    output_param_mapping = None):
     
     output_circ = Circuit()
 
-    if not output_mapping:
-        output_mapping = {x:LineQubit(x) for x in range(len(cw.qubits))}
+    if not output_qubit_mapping:
+        output_qubit_mapping = {x:LineQubit(x) for x in range(len(cw.qubits))}
 
     for instruction in cw.instructions:
-        output_circ.append(instruction.transpile("cirq", output_mapping=output_mapping))
+        output_circ.append(instruction.transpile(
+            "cirq", 
+            output_qubit_mapping=output_qubit_mapping)
+        )
 
     # auto measure
     if auto_measure:

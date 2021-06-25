@@ -1,12 +1,13 @@
+from typing import Union, Iterable
+
 from ..gate import AbstractGate
 from .utils import get_qiskit_gate_data
 
 from qiskit.circuit.gate import Gate
 from qiskit.circuit import Parameter
 
-
 class QiskitGateWrapper(AbstractGate):
-    def __init__(self, gate: Gate, params: Parameter = None):
+    def __init__(self, gate: Gate, params: Union[int,Iterable[int]] = None):
 
         super().__init__()
 
@@ -23,3 +24,6 @@ class QiskitGateWrapper(AbstractGate):
         self._gate_type = data["type"]
         self._outputs["qiskit"] = gate
         self.package = "qiskit"
+
+    def get_abstract_params(self):
+        return [p for p in self.params if isinstance(p,Parameter)]

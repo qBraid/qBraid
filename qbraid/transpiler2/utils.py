@@ -1,5 +1,10 @@
 from qbraid.exceptions import PackageError
 
+supported_packages = {
+    'cirq': ['braket', 'qiskit'],
+    'qiskit': ['braket', 'cirq'],
+    'braket': ['qiskit', 'cirq']
+}
 
 def get_package_name(obj):
 

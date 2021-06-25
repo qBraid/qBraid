@@ -167,10 +167,14 @@ def test_cirq():
     print("cirq circuit")
     print(circuit)
 
-    simulator = Simulator()
-    result = simulator.run(circuit)
-    print("simulator result")
-    print(result)
+    print(dir(circuit))
+
+    #simulator = Simulator()
+    #result = simulator.run(circuit)
+    #print("simulator result")
+    #print(result)
+
+    
 
 
 def test_qiskit():
@@ -282,6 +286,9 @@ def test_qiskit_prmtrzd():
     qc.h(0)
     qc.measure(0, 0)
 
+    for instruction, qubits, clbits in qc.data:
+        print(instruction.params)
+
     print(qc)
 
 
@@ -372,27 +379,27 @@ if __name__ == "__main__":
 
     print("BRAKET TESTS")
     print("------------------------------")
-    test_braket()
-    test_braket_to_all()
+    #test_braket()
+    #test_braket_to_all()
     # print("------------------------------")
     # print()
     #
-    # print("QISKIT TESTS")
-    # print("------------------------------")
-    # test_qiskit_prmtrzd()
+    print("QISKIT TESTS")
+    #print("------------------------------")
+    test_qiskit_prmtrzd()
     # test_qiskit_execute()
     # test_qiskit()
-    # test_qiskit_to_cirq_prmtrzd()
-    # test_qiskit_to_all()
+    #test_qiskit_to_cirq_prmtrzd()
+    #test_qiskit_to_all()
     # print("------------------------------")
     # print()
     #
-    # print("CIRQ TESTS")
-    # print("------------------------------")
-    # test_cirq()
+    print("CIRQ TESTS")
+    print("------------------------------")
+    #test_cirq()
     # test_cirq_execute()
     # test_cirq_qiskit_two_way()
-    # test_cirq_to_all()
+    #test_cirq_to_all()
     # print("------------------------------")
     # print()
 

@@ -1,14 +1,20 @@
-from braket import Circuit
-from braket import Instruction
+from braket.circuits import Circuit
+from braket.circuits import Instruction
+from braket.circuits import Qubit
 
-def circuit_to_braket(circuitwrapper):
+def circuit_to_braket(cw, output_mapping = None):
 
     output_circ = Circuit()
 
     # some instructions may be null (i.e. classically controlled gates, measurement)
     # these will return None, which should not be added to the circuit
-    for instruction in circuitwrapper.instructions:
-        instr = instruction.transpile("braket")
+
+    if not output_mapping:
+        output_mapping = {x:Qubit(x) for x in range(len(cw.qubits))}
+
+
+    for instruction in cw.instructions:
+        instr = instruction.transpile("braket", output_mapping)
         if instr:
             output_circ.add_instruction(instr)
 

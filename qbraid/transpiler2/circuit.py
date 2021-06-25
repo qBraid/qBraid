@@ -2,14 +2,14 @@ import abc
 from abc import ABC
 from .qbraid.gate import QbraidGateWrapper
 from .qbraid.instruction import QbraidInstructionWrapper
+from .outputs import circuit_outputs
+from .utils import supported_packages
+from qbraid.exceptions import PackageError
 from typing import Union
 
 from braket.circuits.circuit import Circuit as BraketCircuit
 from cirq.circuits import Circuit as CirqCircuit
 from qiskit.circuit import QuantumCircuit as QiskitCircuit
-from qiskit.circuit.classicalregister import (
-    ClassicalRegister as QiskitClassicalRegister,
-)
 
 SupportedCircuit = Union[BraketCircuit, CirqCircuit, QiskitCircuit]
 
@@ -17,6 +17,7 @@ SupportedCircuit = Union[BraketCircuit, CirqCircuit, QiskitCircuit]
 class AbstractCircuitWrapper(ABC):
     def __init__(self):
         self.instructions = []
+        self.circuit = None
 
     @property
     @abc.abstractmethod
@@ -25,15 +26,21 @@ class AbstractCircuitWrapper(ABC):
 
     @property
     @abc.abstractmethod
-    def num_clbits(self) -> int:
-        pass
+    def package(self):
+        raise NotImplementedError
 
     @property
-    @abc.abstractmethod
     def supported_packages(self) -> list:
-        pass
+        return supported_packages[self.package]
 
-    @abc.abstractmethod
     def transpile(self, package: str) -> SupportedCircuit:
-        pass
+        
+        if package == self.package:
+            return self.circuit
+        elif package in self.supported_packages:
+            return circuit_outputs[package](self)
+        else:
+            raise PackageError(f"Transpiling a circuit from {self.package} to {package} is not supported.")
+
+    
 

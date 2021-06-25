@@ -25,27 +25,6 @@ class BraketCircuitWrapper(AbstractCircuitWrapper):
         return len(self.qubits)
 
     @property
-    def num_clbits(self):
-        return len(self.clbitset)
+    def package(self):
+        return 'braket'
 
-    @property
-    def supported_packages(self):
-        return ["cirq", "qiskit", "braket"]
-
-
-    def transpile(self, package: str):
-
-        if package in self.supported_packages:
-            if package == "braket":
-                return self.circuit
-            elif package == "cirq":
-                from qbraid.transpiler2.cirq.outputs import circuit_to_cirq
-                return circuit_to_cirq(self)
-            elif package == "qiskit":
-                from qbraid.transpiler2.qiskit.outputs import circuit_to_qiskit
-                return circuit_to_qiskit(self)
-            else:
-                raise SystemError("transpile function does not reflect supported_packages")
-
-        else:
-            raise PackageError(package)
