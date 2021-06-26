@@ -17,4 +17,8 @@ class Gate(ABC):
         return self.on(qubits)
 
 
+class ControlledGate(Gate):
+    pass
+
+
         
