@@ -1,4 +1,4 @@
-from ...gate import Gate
+from ...gate import ControlledGate, Gate
 
 class Z(Gate):
 
@@ -7,3 +7,11 @@ class Z(Gate):
 
     def name(self):
         return "Z"
+
+class ControlledZ(ControlledGate):
+
+    def __init__(self):
+        pass
+
+    def name(self):
+        return "CZ"
