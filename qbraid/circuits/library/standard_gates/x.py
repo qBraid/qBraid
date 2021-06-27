@@ -15,3 +15,11 @@ class ControlledX(ControlledGate):
 
     def name(self):
         return "CX"
+
+class Toffoli(ControlledGate):
+
+    def __init__(self):
+        pass
+
+    def name(self):
+        return "CCX"
