@@ -1,4 +1,5 @@
 from abc import ABC
+from typing import Optional
 
 class Gate(ABC):
     
@@ -16,9 +17,5 @@ class Gate(ABC):
     def __call__(self, qubits):
         return self.on(qubits)
 
-
-class ControlledGate(Gate):
-    pass
-
-
-        
+    def control(self, num_ctrls: Optional[int]=1):
+        pass  
