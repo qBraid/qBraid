@@ -1,8 +1,9 @@
 import abc
-from abc import ABC
+from abc import ABC, abstractmethod
 from .qbraid.gate import QbraidGateWrapper
 from .qbraid.instruction import QbraidInstructionWrapper
 from .outputs import circuit_outputs
+from .wrapper import QbraidWrapper
 from .utils import supported_packages
 from qbraid.exceptions import PackageError
 from typing import Union
@@ -14,24 +15,17 @@ from qiskit.circuit import QuantumCircuit as QiskitCircuit
 SupportedCircuit = Union[BraketCircuit, CirqCircuit, QiskitCircuit]
 
 
-class AbstractCircuitWrapper(ABC):
+class CircuitWrapper(QbraidWrapper):
+    
     def __init__(self):
         self.instructions = []
+        self.params = []
         self.circuit = None
 
     @property
-    @abc.abstractmethod
+    @abstractmethod
     def num_qubits(self) -> int:
         pass
-
-    @property
-    @abc.abstractmethod
-    def package(self):
-        raise NotImplementedError
-
-    @property
-    def supported_packages(self) -> list:
-        return supported_packages[self.package]
 
     def transpile(self, package: str) -> SupportedCircuit:
         

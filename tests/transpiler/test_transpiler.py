@@ -286,9 +286,6 @@ def test_qiskit_prmtrzd():
     qc.h(0)
     qc.measure(0, 0)
 
-    for instruction, qubits, clbits in qc.data:
-        print(instruction.params)
-
     print(qc)
 
 
@@ -386,11 +383,11 @@ if __name__ == "__main__":
     #
     print("QISKIT TESTS")
     #print("------------------------------")
-    test_qiskit_prmtrzd()
+    #test_qiskit_prmtrzd()
     # test_qiskit_execute()
     # test_qiskit()
     #test_qiskit_to_cirq_prmtrzd()
-    #test_qiskit_to_all()
+    test_qiskit_to_all()
     # print("------------------------------")
     # print()
     #
@@ -399,7 +396,7 @@ if __name__ == "__main__":
     #test_cirq()
     # test_cirq_execute()
     # test_cirq_qiskit_two_way()
-    #test_cirq_to_all()
+    test_cirq_to_all()
     # print("------------------------------")
     # print()
 

@@ -1,8 +1,8 @@
-from ..instruction import AbstractInstructionWrapper
+from ..instruction import InstructionWrapper
 from .gate import CirqGateWrapper
 from cirq.ops.gate_operation import GateOperation as CirqInstruction
 
-class CirqInstructionWrapper(AbstractInstructionWrapper):
+class CirqInstructionWrapper(InstructionWrapper):
     def __init__(self, instruction: CirqInstruction, qubits):
 
         super().__init__()

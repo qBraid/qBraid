@@ -1,11 +1,11 @@
-from ..instruction import AbstractInstructionWrapper
+from ..instruction import InstructionWrapper
 from .gate import QiskitGateWrapper
 
 from qiskit.circuit import Instruction
 from qiskit.circuit.gate import Gate
 
 
-class QiskitInstructionWrapper(AbstractInstructionWrapper):
+class QiskitInstructionWrapper(InstructionWrapper):
     def __init__(self, instruction: Instruction, qubits, params=[]):
 
         super().__init__()

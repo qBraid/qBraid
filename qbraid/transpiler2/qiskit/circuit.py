@@ -1,24 +1,23 @@
-from ..circuit import AbstractCircuitWrapper
+from ..circuit import CircuitWrapper
 from ..utils import supported_packages
-from ..parameterset import QiskitParameterSet
+from ..parameter import ParamID
 from .instruction import QiskitInstructionWrapper
 from qiskit.circuit import QuantumCircuit, Parameter
 from qbraid.exceptions import PackageError
 
 
-class QiskitCircuitWrapper(AbstractCircuitWrapper):
+class QiskitCircuitWrapper(CircuitWrapper):
     def __init__(self, circuit: QuantumCircuit):
 
         super().__init__()
 
         self.circuit = circuit
-        self._outputs = {}
         self.qubits = circuit.qubits
         self.input_qubit_mapping = {qubit:index for index, qubit in enumerate(self.qubits)}
         
         #self.parameterset = QiskitParameterSet(circuit.parameters)
-        self.params = circuit.parameters
-        self.input_param_mapping = {param:index for index, param in enumerate(self.params)}
+        self.input_param_mapping = {param:ParamID(index, param.name) for index, param in enumerate(circuit.parameters)}
+        self.params = self.input_param_mapping.values()
         
         self.instructions = []
 
@@ -26,9 +25,9 @@ class QiskitCircuitWrapper(AbstractCircuitWrapper):
         for instruction, qubit_list, clbit_list in circuit.data:
 
             qubits = [self.input_qubit_mapping[qubit] for qubit in qubit_list]
-            
+
             param_list = instruction.params
-            params = [self.input_param_mapping[param] for param in param_list if isinstance(param,Parameter)]
+            params = [self.input_param_mapping[p] if isinstance(p,Parameter) else p for p in param_list]
 
             next_instruction = QiskitInstructionWrapper(instruction, qubits, params=params)
             self.instructions.append(next_instruction)
