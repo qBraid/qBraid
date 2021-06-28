@@ -2,6 +2,11 @@ from abc import ABC
 
 class Gate(ABC):
     
+    @property
+    @abc.abstractmethod
+    def name(self):
+        pass
+
     def on(self, qubits):
         
         #avoid circular import
@@ -10,9 +15,6 @@ class Gate(ABC):
     
     def __call__(self, qubits):
         return self.on(qubits)
-    
-class TestGate(Gate):
-    
-    def __init__(self):
-        self.name = 'Test'
+
+
         

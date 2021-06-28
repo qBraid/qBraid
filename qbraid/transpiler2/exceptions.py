@@ -3,7 +3,7 @@
 from qbraid.exceptions import QbraidError
 
 
-class CircuitError(QbraidError):
+class ParsingError(QbraidError):
     """Base class for errors raised while processing a circuit."""
 
     pass
