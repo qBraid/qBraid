@@ -1,14 +1,21 @@
-from typing import Union, Iterable
+import logging
+from typing import Type, Union, Iterable
 
+from .exceptions import CircuitError
 from .instruction import Instruction
 from .qubit import Qubit
 
+log = logging.getLogger(__name__)
+
+
 class Moment:
     
-    def __init__(self, instructions: Union[Instruction, Iterable[Instruction]] = []):
-        
-        self._instructions = instructions
-    
+    def __init__(self, instructions: Union[Instruction, Iterable[Instruction]] = None,index:int = 0):
+        if instructions is None:
+            self._instructions = []
+        else:
+            self._instructions = instructions
+        self._index = index
     @property
     def qubits(self) -> Iterable[Qubit]:
         
@@ -22,22 +29,27 @@ class Moment:
         return set(instruction.qubits).isdisjoint(self.qubits)
     
     def append(self, instruction: Union[Instruction, Iterable[Instruction]]) -> None:
-        
-        #TO DO validate args from user
-        
-        
-        if isinstance(instruction, Iterable):
+        """
+        Appends instructions onto the end of the moment.
+        Args:
+            instruction: The instruction or iterable of instructions to append.
+        """
+        #TODO: add generator appending functionality.
+        if isinstance(instruction, Instruction):
+            self._append(instruction)
+        elif isinstance(instruction, Iterable):
             for i in instruction:
                 self.append(i)
-            else:
-                self._append(i)
+        # error
+        else:
+            raise TypeError("Instructions of type {} not appendable".format(type(instruction)))
    
     def _append(self, instruction: Instruction) -> None:
        
         if self.appendable(instruction):
             self._instructions.append(instruction)
         else:
-            raise TypeError #should be CircuitError
+            raise CircuitError("Instructions of type {} not appendable".format(type(instruction)))
             
     @property
     def instructions(self):
