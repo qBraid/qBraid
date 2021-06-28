@@ -8,7 +8,12 @@ from qbraid.exceptions import PackageError
 ParameterInput = Union[float, int, str]
 
 
-class AbstractParameterWrapper(ABC):
+class ParamID:
+    def __init__(self, index: int, name: str):
+        self.index = index
+        self.name = name
+
+class ParameterWrapper(ABC):
     """Wrap a 'parameter' for parametrized circuits"""
 
     def __init__(self):
@@ -27,45 +32,46 @@ class AbstractParameterWrapper(ABC):
         pass
 
 
-class CirqParameterWrapper(AbstractParameterWrapper):
-    """qBraid wrapper of cirq paramter object."""
+# class CirqParameterWrapper(AbstractParameterWrapper):
+#     """qBraid wrapper of cirq paramter object."""
 
-    def __init__(self, parameter: CirqParameter):
+#     def __init__(self, parameter: CirqParameter):
 
-        super().__init__()
-        self.name = parameter.name
-        self.parameter = parameter
+#         super().__init__()
+#         self.name = parameter.name
+#         self.parameter = parameter
 
-    def transpile(self, package: str):
+#     def transpile(self, package: str):
 
-        if package == "cirq":
-            return self.parameter
-        elif package == "qiskit":
-            if "qiskit" not in self._outputs.keys():
-                self._create_qiskit()
-            return self._outputs["qiskit"]
-        else:
-            raise PackageError(package)
+#         if package == "cirq":
+#             return self.parameter
+#         elif package == "qiskit":
+#             if "qiskit" not in self._outputs.keys():
+#                 self._create_qiskit()
+#             return self._outputs["qiskit"]
+#         else:
+#             raise PackageError(package)
 
 
-class QiskitParameterWrapper(AbstractParameterWrapper):
-    """qbraid wrapper of qiskit parameter object."""
+# class QiskitParameterWrapper(AbstractParameterWrapper):
+#     """qbraid wrapper of qiskit parameter object."""
 
-    def __init__(self, parameter: QiskitParameter):
+#     def __init__(self, parameter: QiskitParameter):
 
-        super().__init__()
-        self.name = parameter.name
-        self.parameter = parameter
+#         super().__init__()
+#         self.name = parameter.name
+#         self.parameter = parameter
 
-    def transpile(self, package: str):
+#     def transpile(self, package: str):
 
-        if package == "cirq":
-            if "cirq" not in self._outputs.keys():
-                self._create_cirq()
-            return self._outputs["cirq"]
-        elif package == "qiskit":
-            return self.parameter
-        elif package == "braket":
-            raise PackageError(package, "for transpiling parameterized circuits")
-        else:
-            raise PackageError(package)
+#         if package == "cirq":
+#             if "cirq" not in self._outputs.keys():
+#                 self._create_cirq()
+#             return self._outputs["cirq"]
+#         elif package == "qiskit":
+#             return self.parameter
+#         elif package == "braket":
+#             raise PackageError(package, "for transpiling parameterized circuits")
+#         else:
+#             raise PackageError(package)
+

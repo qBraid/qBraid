@@ -1,10 +1,10 @@
-from ..circuit import AbstractCircuitWrapper
+from ..circuit import CircuitWrapper
 from .instruction import BraketInstructionWrapper
 from qbraid.exceptions import PackageError
 from braket.circuits.circuit import Circuit
 
 
-class BraketCircuitWrapper(AbstractCircuitWrapper):
+class BraketCircuitWrapper(CircuitWrapper):
     def __init__(self, circuit: Circuit):
 
         super().__init__()
