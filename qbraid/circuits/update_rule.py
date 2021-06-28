@@ -15,13 +15,13 @@
 """Hard-coded options for adding multiple operations to a circuit."""
 
 
-class InsertStrategy:
+class UpdateRule:
     """Indicates preferences on how to add multiple operations to a circuit."""
 
-    NEW = None  # type: InsertStrategy
-    NEW_THEN_INLINE = None  # type: InsertStrategy
-    INLINE = None  # type: InsertStrategy 
-    #TODO: EARLIEST = None  # type: InsertStrategy 
+    NEW = None  # type: UpdateRule
+    NEW_THEN_INLINE = None  # type: UpdateRule
+    INLINE = None  # type: UpdateRule 
+    #TODO: EARLIEST = None  # type: UpdateRule 
 
     def __init__(self, name: str, doc: str):
         self.name = name
@@ -31,10 +31,10 @@ class InsertStrategy:
         return self.name
 
     def __repr__(self) -> str:
-        return f'cirq.InsertStrategy.{self.name}'
+        return f'cirq.UpdateRule.{self.name}'
 
 
-InsertStrategy.NEW = InsertStrategy(
+UpdateRule.NEW = UpdateRule(
     'NEW',
     """
     Always creates a new moment at the desired insert location, and adds the
@@ -42,7 +42,7 @@ InsertStrategy.NEW = InsertStrategy(
     """,
 )
 
-InsertStrategy.NEW_THEN_INLINE = InsertStrategy(
+UpdateRule.NEW_THEN_INLINE = UpdateRule(
     'NEW_THEN_INLINE',
     """
     Creates a new moment at the desired insert location for the first
@@ -51,7 +51,7 @@ InsertStrategy.NEW_THEN_INLINE = InsertStrategy(
 )
 
 
-InsertStrategy.INLINE = InsertStrategy(
+UpdateRule.INLINE = UpdateRule(
     'INLINE',
     """
     Attempts to add the operation to insert into the moment just before the
@@ -67,7 +67,7 @@ InsertStrategy.INLINE = InsertStrategy(
 )
 
 #TODO: EARLIEST insert strategy
-#InsertStrategy.EARLIEST = InsertStrategy(
+#UpdateRule.EARLIEST = UpdateRule(
     'EARLIEST',
     """
     Scans backward from the insert location until a moment with operations
