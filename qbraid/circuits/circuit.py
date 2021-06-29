@@ -72,53 +72,70 @@ class Circuit:
         the user should also be able to specify directly as a dict:
             {0:2,1:4,5:5}
             
+            qiskit has two gate operation that, 
+            circuit can just append moments (still need moments)
+            extend(**unzipped moments)
         """
 
-        # TO DO validate mapping
+        # TODO: validate mapping
+        # TODO: develop appending strategy for an entire circuit.
         raise NotImplementedError
 
-    def update(self, operation, update_rule, index=0) -> int:
-        # takes in both moment and instructions
-        # index used for moments
-        # recursively call update after changing new_then_inline to in_line
-        # single instructions, flesh it out here, then move to update_rule function
-        if isinstance(operation, Instruction):
-            if update_rule is UpdateRule.NEW_THEN_INLINE:
-                if self._moments[-1].instructions is None:
-                    self._moments[-1].append(operation)
-                # create a new moment for first operation
-                new_moment = Moment(
-                    index=len(self._moments) + 1, instructions=[operation]
-                )
-                self._moments.append(new_moment)
-                # update_rule changes to INLINE
-                update_rule = UpdateRule.INLINE
-                # call update function with updated rule.
-                self.update(
-                    operation, update_rule=update_rule,
-                )
-            elif update_rule is UpdateRule.INLINE:
-                curr_moment = self._moments[-1]
-                if curr_moment.appendable(operation):
-                    curr_moment.append(operation)
-                else:
-                    # create a new moment
-                    new_moment = Moment(
-                        index=len(self._moments) + 1, instructions=[operation]
-                    )
-                    self._moments.append(new_moment)
-                    # call update rule again
+    def _earliest_appended(self, op) -> bool:
+        appended = False
+        # scan through the moments beginning with the first moment
+        for moment in self._moments:
+            if moment.appendable(op):
+                moment.append(op)
+                appended = True
+        return appended
 
-            elif update_rule is UpdateRule.NEW:
-                # create a new moment every time append is called
-                new_moment = Moment(
-                    index=len(self._moments) + 1, instructions=[operation]
-                )
-                self._moments.append(new_moment)
+    def _create_new_moment(
+        self, op=None,
+    ):
+        """"create a new moment every time append is called and append the operation."""
+        new_moment = Moment()
+        if op:
+            new_moment.instructions.append(op)
+        self._moments.append(new_moment)
+
+    def _update(self, operation, update_rule, index=0) -> None:
+        """ Cycles through all the operations and appends to circuit according to update rule."""
+        # takes in both moment and instructions
+        if isinstance(operation, Instruction):
+            for op in operation:
+                if validate_operation(op):
+                    if update_rule is UpdateRule.NEW_THEN_INLINE:
+                        # add new
+                        self._create_new_moment(op)
+                        # update_rule changes to INLINE
+                        update_rule = UpdateRule.INLINE
+                    elif update_rule is UpdateRule.INLINE:
+                        # the last moment in the circuit
+                        curr_moment = self._moments[-1]
+                        if curr_moment.appendable(op):
+                            curr_moment.append(op)
+                        else:
+                            # create a new moment
+                            self._create_new_moment(op)
+                    elif update_rule is UpdateRule.NEW:
+                        # create a new moment every time append is called
+                        self._create_new_moment(op)
+                    elif update_rule is UpdateRule.EARLIEST:
+                        if not self._earliest_appended(op):
+                            self._create_new_moment(op)
         elif isinstance(operation, Moment):
-            # moments don't need a strategy. Need to be added at the desired index.
-            self.moments.insert(operation._index, operation)
-        return NotImplementedError
+            # limit index to 0..len(self._moments), also deal with indices smaller 0
+            k = max(
+                min(
+                    index if index >= 0 else len(self._moments) + index,
+                    len(self._moments),
+                ),
+                0,
+            )
+            # moments don't need a strategy.
+            self.moments.insert(k, operation)
+            k += 1
 
     def append(
         self,
@@ -130,13 +147,9 @@ class Circuit:
         Appends an operation (moment or instruction) to the circuit.
         Args:
             operation: The moment/instruction or iterable of moment/instructions to append.
-            strategy: How to pick/create the moment to put operations into.
-        TODO: rules
+            mapping: An iterable with the qubits which the operation acts upon.
+            update_rule: How to pick/create the moment to put operations into.
         """
-
-        # TODO: validate instruction given from user (check if qubit indices exceed highest qubit circuit)
-
-        # TODO: define various update rules, for now, go with NEW_then_inline
         if operation is None:
             raise TypeError(
                 "Operation of type {} not appendable".format(type(operation))
@@ -145,27 +158,15 @@ class Circuit:
             update_rule = self.update_rule
         if not self._moments:
             # initialize a new moment
-            new_moment = Moment(index=len(self._moments))
-            self._moments.append(new_moment)
-
+            self._create_new_moment()
         # iterable
         if isinstance(operation, Iterable):
-            for op in operation:
-                # use utils validate ope
-                if isinstance(op, Instruction):
-                    # porbably best to make a function
-                    self._append(op)
-                elif isinstance(op, Moment):
-                    self._append(op)
-                elif isinstance(op, Circuit):
-                    self._append(op)
-                else:
-                    raise TypeError(
-                        "Operation of type {} not appendable".format(type(operation))
-                    )
+            self._update(operation, update_rule=update_rule, index=len(self._moments))
         elif isinstance(operation, Circuit):
-            # develop appending strategy for an entire circuit.
-            self._append_circuit(operation, mapping)
+            # not implemented
+            self._append_circuit(
+                operation, mapping,
+            )
         else:
             # make operation into interable and attempt to append.
             self.append(operation=[operation], mapping=mapping, update_rule=update_rule)

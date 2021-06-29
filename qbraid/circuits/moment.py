@@ -35,6 +35,7 @@ class Moment:
         # TODO: add generator appending functionality.
         if isinstance(instruction, Instruction):
             self._append(instruction)
+        # might be redundant to have iterable here since circuit only appends Instructions or Moments.
         elif isinstance(instruction, Iterable):
             for i in instruction:
                 self.append(i)

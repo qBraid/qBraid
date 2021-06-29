@@ -20,8 +20,8 @@ class UpdateRule:
 
     NEW = None  # type: UpdateRule
     NEW_THEN_INLINE = None  # type: UpdateRule
-    INLINE = None  # type: UpdateRule 
-    #TODO: EARLIEST = None  # type: UpdateRule 
+    INLINE = None  # type: UpdateRule
+    EARLIEST = None  # type: UpdateRule
 
     def __init__(self, name: str, doc: str):
         self.name = name
@@ -31,11 +31,11 @@ class UpdateRule:
         return self.name
 
     def __repr__(self) -> str:
-        return f'cirq.UpdateRule.{self.name}'
+        return f"cirq.UpdateRule.{self.name}"
 
 
 UpdateRule.NEW = UpdateRule(
-    'NEW',
+    "NEW",
     """
     Always creates a new moment at the desired insert location, and adds the
     operation to insert into that moment.
@@ -43,7 +43,7 @@ UpdateRule.NEW = UpdateRule(
 )
 
 UpdateRule.NEW_THEN_INLINE = UpdateRule(
-    'NEW_THEN_INLINE',
+    "NEW_THEN_INLINE",
     """
     Creates a new moment at the desired insert location for the first
     operation, but then switches to inserting operations inline.
@@ -52,7 +52,7 @@ UpdateRule.NEW_THEN_INLINE = UpdateRule(
 
 
 UpdateRule.INLINE = UpdateRule(
-    'INLINE',
+    "INLINE",
     """
     Attempts to add the operation to insert into the moment just before the
     desired insert location. But, if there's already an existing operation
@@ -66,9 +66,9 @@ UpdateRule.INLINE = UpdateRule(
     """,
 )
 
-#TODO: EARLIEST insert strategy
-#UpdateRule.EARLIEST = UpdateRule(
-    'EARLIEST',
+
+UpdateRule.EARLIEST = UpdateRule(
+    "EARLIEST",
     """
     Scans backward from the insert location until a moment with operations
     touching qubits affected by the operation to insert is found. The operation
@@ -80,4 +80,4 @@ UpdateRule.INLINE = UpdateRule(
     or the insert index is 0, then the operation is inserted into a new moment
     at the desired location.
     """,
-#)
+)
