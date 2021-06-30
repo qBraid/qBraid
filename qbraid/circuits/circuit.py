@@ -28,8 +28,7 @@ class Circuit:
         self._moments: Iterable[Moment] = []  # list of moments
         self.name = name
         self.update_rule = update_rule
-    def __str__(self):
-        return f'Circuit ("{self.name}", "{self.num_qubits}" qubits,{self.num_gates} gates)'
+
     @property
     def num_qubits(self):
         return len(self._qubits)
@@ -51,6 +50,12 @@ class Circuit:
 
         return instructions_list
 
+    def __str__(self):
+        return f'Circuit ("{self.name}", "{self.num_qubits}" qubits,{self.num_gates} gates)'
+
+    def __len__(self):
+        return len(self._moments)
+        
     def _append(self, moments: Union[Moment, Iterable[Moment]]):
 
         if isinstance(moments, Moment):
@@ -70,11 +75,11 @@ class Circuit:
         """this is for adding subroutines to circuits. so if we have a 3-qubit subroutine,
         the user should specify [2,4,5], implying that qubit 0 on the subroutine is mapped
         to qubit 2 on the circuit, qubit 1 on the subroutine maps to qubit 4 on the circuit, etc.
-        
+
         the user should also be able to specify directly as a dict:
             {0:2,1:4,5:5}
-            
-            qiskit has two gate operation that, 
+
+            qiskit has two gate operation that,
             circuit can just append moments (still need moments)
             extend(**unzipped moments)
         """
@@ -93,7 +98,7 @@ class Circuit:
         return appended
 
     def _create_new_moment(self, op=None):
-        """"create a new moment every time append is called and append the operation."""
+        """"helper function that makes a new moment and appends the operation."""
         new_moment = Moment()
         if op:
             new_moment.instructions.append(op)
@@ -167,14 +172,9 @@ class Circuit:
         elif isinstance(operation, Circuit):
             # not implemented
             self._append_circuit(
-                operation, mapping,
+                operation,
+                mapping,
             )
         else:
             # make operation into interable and attempt to append.
             self.append(operation=[operation], mapping=mapping, update_rule=update_rule)
-
-    def __len__(self):
-        return len(self._moments)
-
-    def __str__(self):
-        print(f"Circuit with {self.num_qubits} and {self.num_gates}")

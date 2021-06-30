@@ -14,8 +14,7 @@ class Moment:
             self._instructions = []
         else:
             self._instructions = instructions
-    def __repr__(self):
-        return f'Moment("{self.instructions}")'
+
     @property
     def instructions(self):
         return self._instructions
@@ -26,6 +25,9 @@ class Moment:
         for instruction in self._instructions:
             out.add(instruction.qubits)
         return [out]
+
+    def __repr__(self):
+        return f'Moment("{self.instructions}")'
 
     def appendable(self, instruction):
         return set(instruction.qubits).isdisjoint(self.qubits)
