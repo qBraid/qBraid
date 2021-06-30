@@ -16,7 +16,6 @@ SupportedCircuit = Union[BraketCircuit, CirqCircuit, QiskitCircuit]
 
 
 class CircuitWrapper(QbraidWrapper):
-    
     def __init__(self):
         self.instructions = []
         self.params = []
@@ -28,13 +27,12 @@ class CircuitWrapper(QbraidWrapper):
         pass
 
     def transpile(self, package: str) -> SupportedCircuit:
-        
+
         if package == self.package:
             return self.circuit
         elif package in self.supported_packages:
             return circuit_outputs[package](self)
         else:
-            raise PackageError(f"Transpiling a circuit from {self.package} to {package} is not supported.")
-
-    
-
+            raise PackageError(
+                f"Transpiling a circuit from {self.package} to {package} is not supported."
+            )

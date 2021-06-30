@@ -11,7 +11,7 @@ class BraketCircuitWrapper(CircuitWrapper):
 
         self.circuit = circuit
         self.qubits = circuit.qubits
-        self.input_mapping = {q:i for i, q in enumerate(self.qubits)}
+        self.input_mapping = {q: i for i, q in enumerate(self.qubits)}
         self.instructions = []
 
         for instruction in circuit.instructions:
@@ -26,5 +26,4 @@ class BraketCircuitWrapper(CircuitWrapper):
 
     @property
     def package(self):
-        return 'braket'
-
+        return "braket"

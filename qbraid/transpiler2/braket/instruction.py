@@ -15,4 +15,4 @@ class BraketInstructionWrapper(InstructionWrapper):
 
     @property
     def package(self):
-        return 'braket'
+        return "braket"

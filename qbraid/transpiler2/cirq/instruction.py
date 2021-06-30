@@ -2,6 +2,7 @@ from ..instruction import InstructionWrapper
 from .gate import CirqGateWrapper
 from cirq.ops.gate_operation import GateOperation as CirqInstruction
 
+
 class CirqInstructionWrapper(InstructionWrapper):
     def __init__(self, instruction: CirqInstruction, qubits):
 
@@ -14,4 +15,4 @@ class CirqInstructionWrapper(InstructionWrapper):
 
     @property
     def package(self):
-        return 'cirq'
+        return "cirq"
