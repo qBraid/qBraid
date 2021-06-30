@@ -1,9 +1,26 @@
 from ...gate import Gate
 
-class SWAP(Gate):
+class Swap(Gate):
 
     def __init__(self):
-        pass
+        super().__init__("Swap", 2, [], 0.0, 1.0)
 
+    @property
     def name(self):
-        return "SWAP"
+        return self._name
+
+    @property
+    def num_qubits(self):
+        return self._num_qubits
+
+    @property
+    def params(self):
+        return self._params
+
+    @property
+    def global_phase(self):
+        return self._global_phase
+
+    @property
+    def exponent(self):
+        return self._exponent

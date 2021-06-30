@@ -1,9 +1,10 @@
 from ...gate import Gate
+from typing import Optional
 
-class U2(Gate):
+class XPow(Gate):
 
-    def __init__(self, phi, lam):
-        super().__init__("R", 1, [phi, lam], 0.0, 1.0)
+    def __init__(self, exponent: Optional[float]=1.0):
+        super().__init__("XPow", 1, [], 0.0, exponent=exponent)
 
     @property
     def name(self):
@@ -17,10 +18,6 @@ class U2(Gate):
     def params(self):
         return self._params
 
-    @params.setter
-    def params(self, phi, lam):
-        self._params=[phi, lam]
-
     @property
     def global_phase(self):
         return self._global_phase
@@ -28,3 +25,7 @@ class U2(Gate):
     @property
     def exponent(self):
         return self._exponent
+
+    @exponent.setter
+    def exponent(self, value):
+        self._exponent=value
