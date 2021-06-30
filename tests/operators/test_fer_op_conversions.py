@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # All rights reserved-2019©.
 import numpy as np
+from numpy.testing._private.utils import assert_equal
 from qbraid.operators.conversions.fer_op_conversion import convert
 
 ## SET BACKEND
