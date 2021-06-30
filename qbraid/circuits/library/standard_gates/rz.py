@@ -1,10 +1,13 @@
-from ...gate import Gate, ControlledGate
+from ...gate import Gate, 
+from ...controlledgate import ControlledGate
 from typing import Optional
 
 class RZ(Gate):
 
     def __init__(self, phi: float, exponent: Optional[float]=1.0):
-        super().__init__("RZ", 1, [phi], -0.5, exponent=exponent)
+        super().__init__("RZ", 
+            num_qubits = 1,
+            params = [phi])
 
     @property
     def name(self):
@@ -33,11 +36,19 @@ class RZ(Gate):
     @exponent.setter
     def exponent(self, exp):
         self._exponent=exp
+
+    def control(self, num_ctrls: int = 1):
+        if num_ctrls ==1:
+            return CRZ(self.params[0])
+        else:
+            from ...controlledgate import ControlledGate
+            return ControlledGate(base_gate = self, num_ctrls = num_ctrls)
         
 
 class CRZ(ControlledGate):
-    def __init__(self, phi, exponent: Optional[float]=1.0):
-        super().__init__("CRZ", 2, [phi], 0.0, exponent=exponent, num_ctrls=1, base_gate=RZ)
+    def __init__(self, phi):
+
+        super().__init__("CRZ", 2, [phi], 0.0, num_ctrls=1, base_gate=RZ)
 
     @property
     def name(self):
