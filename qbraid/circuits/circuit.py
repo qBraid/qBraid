@@ -13,7 +13,9 @@ class Circuit:
     """
     Circuit class for qBraid quantum circuit objects.
     Args:
-    TODO
+        num_qubits: The total number of qubits
+        name: The name of the circuit
+        update_rule: How to pick/create the moment to put operations into.
     """
 
     def __init__(
@@ -52,7 +54,6 @@ class Circuit:
 
         if isinstance(moments, Moment):
             moments = [moments]
-
         # validate moment
         for moment in moments:
             if max(moment.qubits) > self.num_qubits:
@@ -79,31 +80,31 @@ class Circuit:
 
         # TODO: validate mapping
         # TODO: develop appending strategy for an entire circuit.
+
         raise NotImplementedError
 
     def _earliest_appended(self, op) -> bool:
         appended = False
         # scan through the moments beginning with the first moment
         for moment in self._moments:
-            if moment.appendable(op):
-                moment.append(op)
-                appended = True
+            moment.append(op)
+            appended = True
         return appended
 
-    def _create_new_moment(
-        self, op=None,
-    ):
+    def _create_new_moment(self, op=None):
         """"create a new moment every time append is called and append the operation."""
         new_moment = Moment()
         if op:
             new_moment.instructions.append(op)
         self._moments.append(new_moment)
 
-    def _update(self, operation, update_rule, index=0) -> None:
+    def _update(
+        self, operation: Union[Moment, Iterable[Instruction]], update_rule, index=0
+    ) -> None:
         """ Cycles through all the operations and appends to circuit according to update rule."""
         # takes in both moment and instructions
-        if isinstance(operation, Instruction):
-            for op in operation:
+        for op in operation:
+            if isinstance(op, Instruction):
                 if validate_operation(op):
                     if update_rule is UpdateRule.NEW_THEN_INLINE:
                         # add new
@@ -124,18 +125,18 @@ class Circuit:
                     elif update_rule is UpdateRule.EARLIEST:
                         if not self._earliest_appended(op):
                             self._create_new_moment(op)
-        elif isinstance(operation, Moment):
-            # limit index to 0..len(self._moments), also deal with indices smaller 0
-            k = max(
-                min(
-                    index if index >= 0 else len(self._moments) + index,
-                    len(self._moments),
-                ),
-                0,
-            )
-            # moments don't need a strategy.
-            self.moments.insert(k, operation)
-            k += 1
+            elif isinstance(op, Moment):
+                # limit index to 0..len(self._moments), also deal with indices smaller 0
+                k = max(
+                    min(
+                        index if index >= 0 else len(self._moments) + index,
+                        len(self._moments),
+                    ),
+                    0,
+                )
+                # moments don't need a strategy.
+                self.moments.insert(k, operation)
+                k += 1
 
     def append(
         self,
