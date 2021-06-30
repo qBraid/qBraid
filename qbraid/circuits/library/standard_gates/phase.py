@@ -1,9 +1,10 @@
 from ...gate import Gate, ControlledGate
+from typing import Optional
 
-class U(Gate):
+class Phase(Gate):
 
-    def __init__(self, theta, phi, lam):
-        super().__init__("U", 1, [theta, phi, lam], 0.0, 1.0)
+    def __init__(self, theta: float, exponent: Optional[float]=1.0):
+        super().__init__("Phase", 1, [theta], 0.0, exponent=exponent)
 
     @property
     def name(self):
@@ -18,8 +19,8 @@ class U(Gate):
         return self._params
 
     @params.setter
-    def params(self, theta, phi, lam):
-        self._params=[theta, phi, lam]
+    def params(self, theta):
+        self._params=[theta]
 
     @property
     def global_phase(self):
@@ -29,11 +30,15 @@ class U(Gate):
     def exponent(self):
         return self._exponent
 
+    @exponent.setter
+    def exponent(self, exp):
+        self._exponent=exp
 
-class CU(ControlledGate):
 
-    def __init__(self, theta, phi, lam):
-        super().__init__("CU", 2, [theta, phi, lam], 0.0, 1.0, num_ctrls=1, base_gate=U)
+class CPhase(ControlledGate):
+
+    def __init__(self, theta, exponent: Optional[float]=1.0):
+        super().__init__("CPhase", 2, [theta], 0.0, exponent=exponent, num_ctrls=1, base_gate=Phase)
 
     @property
     def name(self):
@@ -47,8 +52,8 @@ class CU(ControlledGate):
         return self._params
 
     @params.setter
-    def params(self, theta, phi, lam):
-        self._params=[theta, phi, lam]
+    def params(self, theta):
+        self._params=[theta]
 
     @property
     def global_phase(self):
@@ -57,6 +62,10 @@ class CU(ControlledGate):
     @property
     def exponent(self):
         return self._exponent
+
+    @exponent.setter
+    def exponent(self, exp):
+        self._exponent=exp
 
     @property
     def num_ctrls(self):

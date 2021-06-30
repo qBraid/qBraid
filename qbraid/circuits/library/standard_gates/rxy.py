@@ -1,9 +1,10 @@
 from ...gate import Gate
+from typing import Optional
 
-class U2(Gate):
+class RXY(Gate):
 
-    def __init__(self, phi, lam):
-        super().__init__("R", 1, [phi, lam], 0.0, 1.0)
+    def __init__(self, theta: float, exponent: Optional[float]=1.0):
+        super().__init__("RXY", 2, [theta], 0.0, exponent=exponent)
 
     @property
     def name(self):
@@ -18,8 +19,8 @@ class U2(Gate):
         return self._params
 
     @params.setter
-    def params(self, phi, lam):
-        self._params=[phi, lam]
+    def params(self, theta):
+        self._params=[theta]
 
     @property
     def global_phase(self):
@@ -28,3 +29,7 @@ class U2(Gate):
     @property
     def exponent(self):
         return self._exponent
+
+    @exponent.setter
+    def exponent(self, exp):
+        self._exponent=exp
