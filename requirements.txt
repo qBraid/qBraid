@@ -9,3 +9,4 @@ scipy>=1.6.1
 setuptools>=49.6.0
 pyquil>=1.9.0
 pytest>=6.2.4
+pandas>=1.2.3
