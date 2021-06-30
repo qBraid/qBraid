@@ -4,9 +4,6 @@ import numpy as np
 import pytest
 
 
-import qiskit
-qiskit.qiskit.circuit.measure.CircuitError
-
 ## SET BACKEND
 import matplotlib as mpl
 mpl.use("TkAgg")

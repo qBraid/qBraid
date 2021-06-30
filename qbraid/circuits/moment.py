@@ -14,7 +14,8 @@ class Moment:
             self._instructions = []
         else:
             self._instructions = instructions
-
+    def __repr__(self):
+        return f'Moment("{self.instructions}")'
     @property
     def instructions(self):
         return self._instructions

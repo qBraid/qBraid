@@ -28,7 +28,8 @@ class Circuit:
         self._moments: Iterable[Moment] = []  # list of moments
         self.name = name
         self.update_rule = update_rule
-
+    def __str__(self):
+        return f'Circuit ("{self.name}", "{self.num_qubits}" qubits,{self.num_gates} gates)'
     @property
     def num_qubits(self):
         return len(self._qubits)
