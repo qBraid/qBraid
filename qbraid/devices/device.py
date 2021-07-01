@@ -1,10 +1,10 @@
 """Device abstract interface."""
 
-from abc import ABC
 from abc import abstractmethod
+from .wrapper import QbraidDeviceWrapper
 
 
-class AbstractDevice(ABC):
+class DeviceWrapper(QbraidDeviceWrapper):
 
     def __init__(self, name, provider, **fields):
         """Initialize a device class
@@ -19,6 +19,7 @@ class AbstractDevice(ABC):
         self._provider = provider
         self._options = self._default_options()
         self._configuration = None
+        self._device_obj = None
         if fields:
             for field in fields:
                 if field not in self._options.data:

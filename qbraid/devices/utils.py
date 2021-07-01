@@ -28,4 +28,4 @@ def get_devices(provider: str = None) -> Union[dict, list]:
     elif provider in get_providers():
         raise NotImplementedError
     else:
-        raise DeviceError("{} is not a supported provider.".format(provider))
+        raise DeviceError("{} is not a supported device provider.".format(provider))

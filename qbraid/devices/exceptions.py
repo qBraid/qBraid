@@ -1,7 +1,9 @@
 """Exceptions for errors raised while processing a device."""
 
+from qbraid.exceptions import QbraidError
 
-class DeviceError(Exception):
+
+class DeviceError(QbraidError):
     """Base class for errors raised while processing a device."""
 
     def __init__(self, *message):
