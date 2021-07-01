@@ -18,7 +18,6 @@ from qbraid.circuits.circuit import Circuit
 from qbraid.circuits.moment import Moment
 from qbraid.circuits.instruction import Instruction
 import qbraid.circuits.library.standard_gates.dcx as dcx
-from circuits import 
 
 #ideal from qbraid.circuits.standard_gates  import h, dcx
 
@@ -33,9 +32,6 @@ def get_qubit_idx_dict(dict:dict = None)->None:
 def circuit():
     return Circuit(num_qubits=3,name="test_circuit")
    
-@pytest.fixture()
-def gate():
-    return Gate(name="H",num_qubits=1)
 
 @pytest.fixture()
 def instruction(gate):
@@ -80,5 +76,3 @@ def test_add_moment(moment,circuit_param, expected):
     get_qubit_idx_dict(dict)
     assert dict == expected
 
-circuitt  =Circuit()
-circuit.

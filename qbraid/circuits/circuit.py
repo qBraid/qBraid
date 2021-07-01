@@ -178,3 +178,5 @@ class Circuit:
         else:
             # make operation into interable and attempt to append.
             self.append(operation=[operation], mapping=mapping, update_rule=update_rule)
+
+    

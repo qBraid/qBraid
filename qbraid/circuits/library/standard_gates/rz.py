@@ -1,4 +1,4 @@
-from ...gate import Gate, 
+from ...gate import Gate
 from ...controlledgate import ControlledGate
 from typing import Optional
 
