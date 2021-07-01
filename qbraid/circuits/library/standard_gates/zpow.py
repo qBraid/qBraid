@@ -1,31 +1,12 @@
-from ...gate import Gate
+from ...powgate import PowGate
 from typing import Optional
 
-class ZPow(Gate):
+class ZPow(PowGate):
 
-    def __init__(self, exponent: Optional[float]=1.0):
-        super().__init__("ZPow", 1, [], 0.0, exponent=exponent)
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def num_qubits(self):
-        return self._num_qubits
-
-    @property
-    def params(self):
-        return self._params
-
-    @property
-    def global_phase(self):
-        return self._global_phase
-
-    @property
-    def exponent(self):
-        return self._exponent
-
-    @exponent.setter
-    def exponent(self, value):
-        self._exponent=value
+    def __init__(self, exponent: float=1.0, global_phase: Optional[float]=0.0):
+        super().__init__(
+            "ZPow", 
+            num_qubits=1, 
+            params=[], 
+            global_phase=global_phase, 
+            exponent=exponent)

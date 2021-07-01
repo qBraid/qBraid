@@ -3,33 +3,9 @@ from typing import Optional
 
 class RYY(Gate):
 
-    def __init__(self, theta: float, exponent: Optional[float]=1.0):
-        super().__init__("RYY", 2, [theta], 0.0, exponent=exponent)
-
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def num_qubits(self):
-        return self._num_qubits
-
-    @property
-    def params(self):
-        return self._params
-
-    @params.setter
-    def params(self, theta):
-        self._params=[theta]
-
-    @property
-    def global_phase(self):
-        return self._global_phase
-
-    @property
-    def exponent(self):
-        return self._exponent
-
-    @exponent.setter
-    def exponent(self, exp):
-        self._exponent=exp
+    def __init__(self, theta: float, global_phase: Optional[float]=0.0):
+        super().__init__(
+            "RYY", 
+            num_qubits=2, 
+            params=[theta], 
+            global_phase=global_phase)

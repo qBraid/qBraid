@@ -1,75 +1,30 @@
-from ...gate import Gate, ControlledGate
+from ...gate import Gate
+from ...controlledgate import ControlledGate
 from typing import Optional
 
 class RY(Gate):
 
-    def __init__(self, theta: float, exponent: Optional[float]=1.0):
-        super().__init__("RY", 1, [theta], -0.5, exponent=exponent)
+    def __init__(self, theta: float, global_phase: Optional[float]=0.0):
+        super().__init__(
+            "RY", 
+            num_qubits=1, 
+            params=[theta], 
+            global_phase=global_phase)
 
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def num_qubits(self):
-        return self._num_qubits
-
-    @property
-    def params(self):
-        return self._params
-
-    @params.setter
-    def params(self, theta):
-        self._params=[theta]
-
-    @property
-    def global_phase(self):
-        return self._global_phase
-
-    @property
-    def exponent(self):
-        return self._exponent
-
-    @exponent.setter
-    def exponent(self, exp):
-        self._exponent=exp
+    def control(self, num_ctrls: int = 1):
+        if num_ctrls ==1:
+            return CRY(self._params[0], self._global_phase)
+        else:
+            from ...controlledgate import ControlledGate
+            return ControlledGate(base_gate = self, num_ctrls = num_ctrls)
 
 class CRY(ControlledGate):
 
-    def __init__(self, theta, exponent: Optional[float]=1.0):
-        super().__init__("CRY", 2, [theta], 0.0, exponent=exponent, num_ctrls=1, base_gate=RY)
-
-    @property
-    def name(self):
-        return self._name
-    @property
-    def num_qubits(self):
-        return self._num_qubits
-
-    @property
-    def params(self):
-        return self._params
-
-    @params.setter
-    def params(self, theta):
-        self._params=[theta]
-
-    @property
-    def global_phase(self):
-        return self._global_phase
-
-    @property
-    def exponent(self):
-        return self._exponent
-
-    @exponent.setter
-    def exponent(self, exp):
-        self._exponent=exp
-
-    @property
-    def num_ctrls(self):
-        return self._num_ctrls
-
-    @property
-    def base_gate(self):
-        return self._base_gate
+    def __init__(self, theta: float, global_phase: Optional[float]=0.0):
+        super().__init__(
+            "CRY", 
+            num_qubits=2, 
+            params=[theta], 
+            global_phase=global_phase,
+            num_ctrls=1,
+            base_gate=RY)
