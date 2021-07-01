@@ -11,22 +11,20 @@ class ControlledGate(Gate):
         self._base_gate=base_gate
     
     @property
-    @abstractmethod
     def num_ctrls(self):
-        pass
+        return self._num_ctrls
 
     @num_ctrls.setter
-    @abstractmethod
     def num_ctrls(self, value):
         self._num_ctrls=value
 
     @property
     def base_gate(self):
-        raise NotImplementedError
+        return self._base_gate
 
     @base_gate.setter
-    def base_gate(self, value):
-        raise NotImplementedError
+    def base_gate(self, gate):
+        self._base_gate=gate
 
     @property
     def name(self):

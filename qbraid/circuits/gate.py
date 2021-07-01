@@ -4,12 +4,11 @@ from typing import Optional, List
 class Gate(ABC):
 
     @abstractmethod
-    def __init__(self, name: str, num_qubits: int, params: List = None, global_phase: Optional[float]=0.0, exponent: Optional[float]=1):
+    def __init__(self, name: str, num_qubits: int, params: List = None, global_phase: Optional[float]=0.0):
         self._name=name
         self._num_qubits=num_qubits
         self._params= [] if params == None else params 
         self._global_phase=global_phase
-        self._exponent=exponent
     
     @property
     def name(self):

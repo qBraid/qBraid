@@ -1,67 +1,31 @@
-from ...gate import Gate, ControlledGate
+from ...gate import Gate
+from ...controlledgate import ControlledGate
+from typing import Optional
 
 class U(Gate):
 
-    def __init__(self, theta, phi, lam):
-        super().__init__("U", 1, [theta, phi, lam], 0.0, 1.0)
+    def __init__(self, theta: float, phi: float, lam: float, global_phase: Optional[float]=0.0):
+        super().__init__(
+            "U", 
+            num_qubits=1, 
+            params=[theta, phi, lam], 
+            global_phase=global_phase)
 
-    @property
-    def name(self):
-        return self._name
-
-    @property
-    def num_qubits(self):
-        return self._num_qubits
-
-    @property
-    def params(self):
-        return self._params
-
-    @params.setter
-    def params(self, theta, phi, lam):
-        self._params=[theta, phi, lam]
-
-    @property
-    def global_phase(self):
-        return self._global_phase
-
-    @property
-    def exponent(self):
-        return self._exponent
+    def control(self, num_ctrls: int = 1):
+        if num_ctrls ==1:
+            return CU(self._params[0], self._params[1], self._params[2], self._global_phase)
+        else:
+            from ...controlledgate import ControlledGate
+            return ControlledGate(base_gate = self, num_ctrls = num_ctrls)
 
 
 class CU(ControlledGate):
 
-    def __init__(self, theta, phi, lam):
-        super().__init__("CU", 2, [theta, phi, lam], 0.0, 1.0, num_ctrls=1, base_gate=U)
-
-    @property
-    def name(self):
-        return self._name
-    @property
-    def num_qubits(self):
-        return self._num_qubits
-
-    @property
-    def params(self):
-        return self._params
-
-    @params.setter
-    def params(self, theta, phi, lam):
-        self._params=[theta, phi, lam]
-
-    @property
-    def global_phase(self):
-        return self._global_phase
-
-    @property
-    def exponent(self):
-        return self._exponent
-
-    @property
-    def num_ctrls(self):
-        return self._num_ctrls
-
-    @property
-    def base_gate(self):
-        return self._base_gate
+    def __init__(self, theta: float, phi: float, lam: float, global_phase: Optional[float]=0.0):
+        super().__init__(
+            "CRU", 
+            num_qubits=2, 
+            params=[theta, phi, lam], 
+            global_phase=global_phase,
+            num_ctrls=1,
+            base_gate=U)
