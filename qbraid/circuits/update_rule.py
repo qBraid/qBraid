@@ -31,7 +31,7 @@ class UpdateRule:
         return self.name
 
     def __repr__(self) -> str:
-        return f"cirq.UpdateRule.{self.name}"
+        return f"qbraid.circuits.update_rule.UpdateRule.{self.name}"
 
 
 UpdateRule.NEW = UpdateRule(

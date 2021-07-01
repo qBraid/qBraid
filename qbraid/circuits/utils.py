@@ -1,13 +1,11 @@
 from typing import Iterable, Union
 
-from .moment import Moment
-from .circuit import Circuit
-from .qubit import Qubit
 from .instruction import Instruction
-from .gate import Gate
+from .moment import Moment
 
 
-def validate_operation(op: Union[Instruction, Moment, Circuit,]) -> bool:
+def validate_operation(op: Union[Instruction, Moment,]) -> bool:
+    from .circuit import Circuit
     if isinstance(op, Instruction) or isinstance(op, Moment) or isinstance(op, Circuit):
         return True
     else:
