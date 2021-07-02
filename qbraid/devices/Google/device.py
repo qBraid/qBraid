@@ -1,5 +1,5 @@
 from ..device import DeviceWrapper
-from .utils import SUPPORTED_DEVICES
+from .utils import GOOGLE_PROVIDERS
 
 
 class GoogleDeviceWrapper(DeviceWrapper):
@@ -14,7 +14,7 @@ class GoogleDeviceWrapper(DeviceWrapper):
             AttributeError: if input field not a valid options
         """
         super().__init__(name, provider, **fields)
-        self._device_obj = self._get_device_obj(SUPPORTED_DEVICES)
+        self._device_obj = self._get_device_obj(SUPPORTED_DEVICE_OBJS)
 
     @classmethod
     def _default_options(cls):
@@ -29,4 +29,7 @@ class GoogleDeviceWrapper(DeviceWrapper):
         pass
 
     def run(self, run_input, **options):
+        pass
+
+    def simulate(self, simulate_input, **options):
         pass

@@ -1,2 +1,1 @@
-from .utils import get_providers, get_devices
-from .exceptions import DeviceError
+from .utils import device_wrapper, get_devices

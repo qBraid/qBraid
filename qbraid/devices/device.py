@@ -19,7 +19,7 @@ class DeviceWrapper(QbraidDeviceWrapper):
         self._provider = provider
         self._options = self._default_options()
         self._configuration = None
-        self._device_obj = None
+        self.root_device_obj = None
         if fields:
             for field in fields:
                 if field not in self._options.data:
@@ -86,6 +86,18 @@ class DeviceWrapper(QbraidDeviceWrapper):
         method.
         """
         return self._options
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        """Official string representation of a Backend.
+        Note that, by Qiskit convention, it is consciously *not* a fully valid
+        Python expression. Subclasses should provide 'a string of the form
+        <...some useful description...>'. [0]
+        [0] https://docs.python.org/3/reference/datamodel.html#object.__repr__
+        """
+        return f"<{self.__class__.__name__}('{self.name}')>"
 
     @abstractmethod
     def run(self, run_input, **options):

@@ -1,5 +1,5 @@
 from ..device import DeviceWrapper
-from .utils import SUPPORTED_DEVICES
+from .utils import AWS_PROVIDERS
 
 
 class AWSDeviceWrapper(DeviceWrapper):
@@ -14,7 +14,7 @@ class AWSDeviceWrapper(DeviceWrapper):
             AttributeError: if input field not a valid options
         """
         super().__init__(name, provider, **fields)
-        self._device_obj = self._get_device_obj(SUPPORTED_DEVICES)
+        self.root_device_obj = self._get_device_obj(SUPPORTED_DEVICE_OBJS)
 
     @classmethod
     def _default_options(cls):

@@ -1,31 +1,49 @@
-from typing import Union
+from .aws.device import AWSDeviceWrapper
+from .google.device import GoogleDeviceWrapper
+from .ibm.device import IBMDeviceWrapper
+from .device import DeviceWrapper
 from .exceptions import DeviceError
+from tabulate import tabulate
+
+from .aws import AWS_PROVIDERS
+from .google import GOOGLE_PROVIDERS
+from .ibm import IBM_PROVIDERS
+
+SUPPORTED_VENDORS = {
+    'AWS': AWS_PROVIDERS,
+    'Google': GOOGLE_PROVIDERS,
+    'IBM': IBM_PROVIDERS,
+}
 
 
-def get_providers():
-    return ["AWS", "Google", "IBM", "IonQ", "Rigetti", "D-Wave"]
-
-
-def get_devices(provider: str = None) -> Union[dict, list]:
-    """Get all available devices from given `provider` or from all providers.
+def device_wrapper(vendor: str, provider: str, device: str, **fields) -> DeviceWrapper:
+    """Apply qbraid device wrapper to device from a supported device provider.
 
     Args:
-        provider (str): a quantum device provider, see :func:`~qbraid.get_providers`
-
+        vendor (str): a quantum software vendor
+        provider (str): a quantum hardware device/simulator provider available through `vendor`
+        device (str): a quantum hardware device/simulator available through given `provider`
     Returns:
-        list[str]
-            If `provider` is not None: a list of available devices from given `provider`
-        dict[str, list[str]]:
-            If `provider` is None: a dictionary where each key is a provider from
-            :func:`~qbraid.get_providers`, and each value is a list containing the corresponding
-            available devices
-
+        :class:`~qbraid.devices.device.DeviceWrapper`: a qbraid device wrapper object
     Raises:
-        :class:`~qbraid.DeviceError`: If `provider` not in :func:`~qbraid.get_providers`
+        :class:`~qbraid.DeviceError`: If `vendor` is not a supported vendor.
     """
-    if provider is None:
-        raise NotImplementedError
-    elif provider in get_providers():
-        raise NotImplementedError
+
+    if vendor == "AWS":
+        return AWSDeviceWrapper(device, provider, **fields)
+    elif vendor == "Google":
+        return GoogleDeviceWrapper(device, provider, **fields)
+    elif vendor == "IBM":
+        return IBMDeviceWrapper(device, provider, **fields)
     else:
-        raise DeviceError("{} is not a supported device provider.".format(provider))
+        raise DeviceError("{} is not a supported quantum software vendor.".format(vendor))
+
+
+def get_devices():
+    """Prints all available devices, tabulated by provider and vendor."""
+    device_list = []
+    for vendor_key in SUPPORTED_VENDORS:
+        for provider_key in SUPPORTED_VENDORS[vendor_key]:
+            for device_key in SUPPORTED_VENDORS[vendor_key][provider_key]:
+                device_list.append([vendor_key, provider_key, device_key])
+    print(tabulate(device_list, headers=['Software Vendor', 'Device Provider', 'Device Name']))
