@@ -47,4 +47,4 @@ class Gate(ABC):
         
         from .controlledgate import ControlledGate
         new_name = 'C'+self._name
-        return ControlledGate(new_name, self._num_qubits+1, self._params, self._global_phase, self._exponent, num_ctrls)
+        return ControlledGate(new_name, self._num_qubits+1, self._params, self._global_phase, num_ctrls)
