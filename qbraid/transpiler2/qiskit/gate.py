@@ -6,8 +6,9 @@ from .utils import get_qiskit_gate_data
 from qiskit.circuit.gate import Gate
 from qiskit.circuit import Parameter
 
+
 class QiskitGateWrapper(GateWrapper):
-    def __init__(self, gate: Gate, params: Union[int,Iterable[int]] = None):
+    def __init__(self, gate: Gate, params: Union[int, Iterable[int]] = None):
 
         super().__init__()
 
@@ -25,7 +26,7 @@ class QiskitGateWrapper(GateWrapper):
 
     @property
     def package(self):
-        return 'qiskit'
+        return "qiskit"
 
     def get_abstract_params(self):
-        return [p for p in self.params if isinstance(p,Parameter)]
+        return [p for p in self.params if isinstance(p, Parameter)]

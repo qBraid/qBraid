@@ -9,6 +9,7 @@ import numpy as np
 
 from qbraid.exceptions import PackageError
 
+
 class CirqU3Gate(SingleQubitGate):
     def __init__(self, theta, phi, lam):
         self._theta = theta

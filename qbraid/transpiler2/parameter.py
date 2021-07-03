@@ -13,6 +13,7 @@ class ParamID:
         self.index = index
         self.name = name
 
+
 class ParameterWrapper(ABC):
     """Wrap a 'parameter' for parametrized circuits"""
 
@@ -74,4 +75,3 @@ class ParameterWrapper(ABC):
 #             raise PackageError(package, "for transpiling parameterized circuits")
 #         else:
 #             raise PackageError(package)
-

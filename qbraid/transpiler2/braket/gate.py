@@ -27,4 +27,4 @@ class BraketGateWrapper(GateWrapper):
 
     @property
     def package(self):
-        return 'braket'
+        return "braket"

@@ -20,7 +20,7 @@ class CirqGateWrapper(GateWrapper):
         data = get_cirq_gate_data(gate)
 
         self.matrix = data["matrix"]
-        
+
         self.num_controls = data["num_controls"]
 
         self._gate_type = data["type"]
@@ -28,10 +28,10 @@ class CirqGateWrapper(GateWrapper):
 
     def get_abstract_params(self):
         if not (self.params == None):
-            return [p for p in self.params if isinstance(p,CirqParameter)]
-        else: 
+            return [p for p in self.params if isinstance(p, CirqParameter)]
+        else:
             return []
 
     @property
     def package(self):
-        return 'cirq'
+        return "cirq"

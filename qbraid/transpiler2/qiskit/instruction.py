@@ -18,4 +18,4 @@ class QiskitInstructionWrapper(InstructionWrapper):
 
     @property
     def package(self):
-        return 'qiskit'
+        return "qiskit"

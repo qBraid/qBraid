@@ -6,13 +6,13 @@ from qbraid.transpiler2.cirq.circuit import CirqCircuitWrapper
 from qbraid.transpiler2.qiskit.circuit import QiskitCircuitWrapper
 
 circuit_wrappers = {
-    'qiskit': QiskitCircuitWrapper,
-    'cirq': CirqCircuitWrapper,
-    'braket': BraketCircuitWrapper,
+    "qiskit": QiskitCircuitWrapper,
+    "cirq": CirqCircuitWrapper,
+    "braket": BraketCircuitWrapper,
 }
 
 instruction_wrappers = {
-    'qiskit': QiskitInstructionWrapper,
-    'cirq': CirqInstructionWrapper,
-    'braklet': BraketInstructionWrapper
+    "qiskit": QiskitInstructionWrapper,
+    "cirq": CirqInstructionWrapper,
+    "braklet": BraketInstructionWrapper,
 }
