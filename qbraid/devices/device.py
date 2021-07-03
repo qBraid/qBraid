@@ -17,9 +17,10 @@ class DeviceWrapper(QbraidDeviceWrapper):
         """
         self._name = name
         self._provider = provider
+        self._vendor = None
         self._options = self._default_options()
         self._configuration = None
-        self.root_device_obj = None
+        self.vendor_device_obj = None
         if fields:
             for field in fields:
                 if field not in self._options.data:
@@ -77,6 +78,14 @@ class DeviceWrapper(QbraidDeviceWrapper):
             str: the provider responsible for the device.
         """
         return self._provider
+
+    @property
+    def vendor(self):
+        """Return the software vendor name.
+        Returns:
+            str: the name of the software vendor.
+        """
+        return self._vendor
 
     @property
     def options(self):

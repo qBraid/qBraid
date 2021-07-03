@@ -9,9 +9,28 @@ class QbraidDeviceWrapper(ABC):
     def name(self):
         pass
 
-    def _get_device_obj(self, supported_devices: dict):
+    @property
+    @abstractmethod
+    def provider(self):
+        pass
+
+    @property
+    @abstractmethod
+    def vendor(self):
+        pass
+
+    def _get_device_obj(self, supported_providers: dict):
         try:
-            device_obj = supported_devices[self.name]
+            supported_devices = supported_providers[self.provider]
         except KeyError:
-            raise DeviceError("{} is not a supported device".format(self.name))
-        return device_obj
+            raise DeviceError(
+                "Provider \"{}\" not supported by vendor \"{}\".".format(self.provider, self.vendor)
+            )
+        try:
+            device_object = supported_devices[self.name]
+        except KeyError:
+            msg = "Device \"{}\" not supported by provider \"{}\"".format(self.name, self.provider)
+            if self.provider != self.vendor:
+                msg += " from vendor \"{}\"".format(self.vendor)
+            raise DeviceError(msg + ".")
+        return device_object

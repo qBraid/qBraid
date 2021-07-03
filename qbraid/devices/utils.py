@@ -1,42 +1,49 @@
-from .aws.device import AWSDeviceWrapper
-from .google.device import GoogleDeviceWrapper
-from .ibm.device import IBMDeviceWrapper
+from .aws.device import BraketDeviceWrapper
+from .google.device import CirqDeviceWrapper
+from .ibm.device import QiskitDeviceWrapper
 from .device import DeviceWrapper
 from .exceptions import DeviceError
 from tabulate import tabulate
+from typing import Optional
 
-from .aws import AWS_PROVIDERS
-from .google import GOOGLE_PROVIDERS
-from .ibm import IBM_PROVIDERS
+from .aws.utils import BRAKET_PROVIDERS
+from .google.utils import CIRQ_PROVIDERS
+from .ibm.utils import QISKIT_PROVIDERS
 
 SUPPORTED_VENDORS = {
-    'AWS': AWS_PROVIDERS,
-    'Google': GOOGLE_PROVIDERS,
-    'IBM': IBM_PROVIDERS,
+    'AWS': BRAKET_PROVIDERS,
+    'Google': CIRQ_PROVIDERS,
+    'IBM': QISKIT_PROVIDERS,
 }
 
 
-def device_wrapper(vendor: str, provider: str, device: str, **fields) -> DeviceWrapper:
-    """Apply qbraid device wrapper to device from a supported device provider.
+def device_wrapper(name: str, provider: str, vendor: Optional[str] = None, **fields) \
+        -> DeviceWrapper:
+    """Apply qbraid device wrapper to device from a supported device provider. If vendor is None,
+    it is assumed that the vendor is the same as the provider. If the vendor is not the same as the
+    provider, the vendor must be specified.
 
     Args:
-        vendor (str): a quantum software vendor
+        name (str): a quantum hardware device/simulator available through given `provider`
         provider (str): a quantum hardware device/simulator provider available through `vendor`
-        device (str): a quantum hardware device/simulator available through given `provider`
+        vendor (Optional[str]): a quantum software vendor
+
     Returns:
         :class:`~qbraid.devices.device.DeviceWrapper`: a qbraid device wrapper object
     Raises:
         :class:`~qbraid.DeviceError`: If `vendor` is not a supported vendor.
     """
+    if vendor is None:
+        vendor = provider
 
     if vendor == "AWS":
-        return AWSDeviceWrapper(device, provider, **fields)
+        return BraketDeviceWrapper(name, provider, **fields)
     elif vendor == "Google":
-        return GoogleDeviceWrapper(device, provider, **fields)
+        return CirqDeviceWrapper(name, provider, **fields)
     elif vendor == "IBM":
-        return IBMDeviceWrapper(device, provider, **fields)
+        return QiskitDeviceWrapper(name, provider, **fields)
     else:
-        raise DeviceError("{} is not a supported quantum software vendor.".format(vendor))
+        raise DeviceError("\"{}\" is not a supported vendor.".format(vendor))
 
 
 def get_devices():
