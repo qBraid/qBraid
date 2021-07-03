@@ -5,7 +5,7 @@ IBM_DEVICES = {
     'PulseSimulator': PulseSimulator
 }
 
-IBM_PROVIDERS = {
+QISKIT_PROVIDERS = {
     'IBM': IBM_DEVICES,
 }
 

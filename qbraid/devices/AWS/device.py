@@ -1,8 +1,8 @@
 from ..device import DeviceWrapper
-from .utils import AWS_PROVIDERS
+from .utils import BRAKET_PROVIDERS
 
 
-class AWSDeviceWrapper(DeviceWrapper):
+class BraketDeviceWrapper(DeviceWrapper):
 
     def __init__(self, name, provider, **fields):
         """AWS device wrapper class
@@ -14,7 +14,8 @@ class AWSDeviceWrapper(DeviceWrapper):
             AttributeError: if input field not a valid options
         """
         super().__init__(name, provider, **fields)
-        self.root_device_obj = self._get_device_obj(SUPPORTED_DEVICE_OBJS)
+        self._vendor = "AWS"
+        self.vendor_device_obj = self._get_device_obj(BRAKET_PROVIDERS)
 
     @classmethod
     def _default_options(cls):

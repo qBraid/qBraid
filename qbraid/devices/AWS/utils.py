@@ -37,7 +37,7 @@ RIGETTI_DEVICES = {
     'Aspen-9': None,  # AwsDevice('arn:aws:braket:::device/qpu/rigetti/Aspen-9'),
 }
 
-AWS_PROVIDERS = {
+BRAKET_PROVIDERS = {
     'AWS': AWS_DEVICES,
     'D-Wave': DWAVE_DEVICES,
     'IonQ': IONQ_DEVICES,

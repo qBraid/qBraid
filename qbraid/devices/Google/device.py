@@ -1,8 +1,8 @@
 from ..device import DeviceWrapper
-from .utils import GOOGLE_PROVIDERS
+from .utils import CIRQ_PROVIDERS
 
 
-class GoogleDeviceWrapper(DeviceWrapper):
+class CirqDeviceWrapper(DeviceWrapper):
 
     def __init__(self, name, provider, **fields):
         """AWS device wrapper class
@@ -14,7 +14,8 @@ class GoogleDeviceWrapper(DeviceWrapper):
             AttributeError: if input field not a valid options
         """
         super().__init__(name, provider, **fields)
-        self._device_obj = self._get_device_obj(SUPPORTED_DEVICE_OBJS)
+        self._vendor = "Google"
+        self.vendor_device_obj = self._get_device_obj(CIRQ_PROVIDERS)
 
     @classmethod
     def _default_options(cls):

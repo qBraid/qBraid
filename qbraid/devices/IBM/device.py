@@ -1,8 +1,8 @@
 from ..device import DeviceWrapper
-from .utils import IBM_PROVIDERS
+from .utils import QISKIT_PROVIDERS
 
 
-class IBMDeviceWrapper(DeviceWrapper):
+class QiskitDeviceWrapper(DeviceWrapper):
 
     def __init__(self, name, provider, **fields):
         """AWS device wrapper class
@@ -14,7 +14,8 @@ class IBMDeviceWrapper(DeviceWrapper):
             AttributeError: if input field not a valid options
         """
         super().__init__(name, provider, **fields)
-        self._device_obj = self._get_device_obj(SUPPORTED_DEVICE_OBJS)
+        self._vendor = "IBM"
+        self.vendor_device_obj = self._get_device_obj(QISKIT_PROVIDERS)
 
     @classmethod
     def _default_options(cls):
