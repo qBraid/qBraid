@@ -25,7 +25,7 @@ class ControlledGate(Gate):
     @base_gate.setter
     def base_gate(self, gate):
         self._base_gate=gate
-
+"""
     @property
     def name(self):
         if self._num_ctrls > 2:
@@ -33,6 +33,8 @@ class ControlledGate(Gate):
         else:
             c_s = 'C'*self._num_ctrls
             return c_s + self._base_gate.name
+            
 
     def control(self, num_ctrls:int = 1):
         self._num_ctrls += num_ctrls
+        """

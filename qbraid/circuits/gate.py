@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List
+from typing_extensions import ParamSpec
 
 class Gate(ABC):
 
@@ -42,9 +43,12 @@ class Gate(ABC):
 
     def __call__(self, qubits):
         return self.on(qubits)
-
+"""
     def control(self, num_ctrls: Optional[int]=1):
-        
+
         from .controlledgate import ControlledGate
         new_name = 'C'+self._name
-        return ControlledGate(new_name, self._num_qubits+1, self._params, self._global_phase, num_ctrls)
+        self._name=new_name
+        self._params=ParamSpec
+        return ControlledGate(new_name, self._num_qubits+1, self._params, self._global_phase, num_ctrls, self)
+        """
