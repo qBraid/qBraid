@@ -1,14 +1,29 @@
 # -*- coding: utf-8 -*-
+# All rights reserved-2021©.
+
+
+import numpy as np
+import pytest
+
+from qbraid import circuits
+from qbraid.circuits.library.standard_gates.h import CH
+
+
 """
-Spyder Editor
-
-This is a temporary script file.
+GATE TESTS
 """
+def test_single_qubit():
+    h  = circuits.H(global_phase=10)
+    assert h.global_phase == 10
 
-from qbraid.circuits.circuit import Circuit
-from qbraid.circuits.moment import Moment
-from qbraid.circuits.instruction import Instruction
-from qbraid.circuits.gate import TestGate
+def test_h_control():
+    h  = circuits.H(global_phase=10)
+    assert type(h.control()) == CH
 
-circ = Circuit(3)
-circ.append(Moment(TestGate()([0,1])))
+def test_two_qubit():
+    ch  = circuits.CH(global_phase=10)
+    assert ch.num_qubits == 2
+
+def test_u3():
+    u3 = circuits.U3(theta=0.3,phi=3,lam=10.0)
+    assert u3.params == [0.3,3,10.0]

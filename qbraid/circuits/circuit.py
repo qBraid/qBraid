@@ -1,4 +1,5 @@
 from typing import Union, Iterable
+import itertools
 
 from .update_rule import UpdateRule
 from .instruction import Instruction
@@ -34,28 +35,27 @@ class Circuit:
         return len(self._qubits)
 
     @property
-    def num_gates(self):
-        raise NotImplementedError
-
-    @property
     def moments(self):
         return self._moments
 
     @property
     def instructions(self):
-
         instructions_list = []
         for moment in self._moments:
-            instructions_list.append(moment.instructions)
-
+            instructions_list.extend(moment.instructions)
         return instructions_list
 
+    def num_gates(self):
+        return len(list(itertools.chain(*self.instructions)))
+
     def __str__(self):
-        return f'Circuit ("{self.name}", "{self.num_qubits}" qubits,{self.num_gates} gates)'
+        return (
+            f"Circuit ({self.name}, {self.num_qubits} qubits, {self.num_gates()} gates)"
+        )
 
     def __len__(self):
         return len(self._moments)
-        
+
     def _append(self, moments: Union[Moment, Iterable[Moment]]):
 
         if isinstance(moments, Moment):
@@ -93,8 +93,9 @@ class Circuit:
         appended = False
         # scan through the moments beginning with the first moment
         for moment in self._moments:
-            moment.append(op)
-            appended = True
+            if moment.appendable(op):
+                moment.append(op)
+                appended = True
         return appended
 
     def _create_new_moment(self, op=None):
@@ -113,8 +114,11 @@ class Circuit:
             if isinstance(op, Instruction):
                 if validate_operation(op):
                     if update_rule is UpdateRule.NEW_THEN_INLINE:
+                        if not self.moments[0].instructions:
+                            self.moments[0].append(op)
                         # add new
-                        self._create_new_moment(op)
+                        else:
+                            self._create_new_moment(op)
                         # update_rule changes to INLINE
                         update_rule = UpdateRule.INLINE
                     elif update_rule is UpdateRule.INLINE:
@@ -126,11 +130,19 @@ class Circuit:
                             # create a new moment
                             self._create_new_moment(op)
                     elif update_rule is UpdateRule.NEW:
-                        # create a new moment every time append is called
-                        self._create_new_moment(op)
+                        if not self.moments[0].instructions:
+                            self.moments[0].append(op)
+                        # add new
+                        else:
+                            # create a new moment every time append is called
+                            self._create_new_moment(op)
                     elif update_rule is UpdateRule.EARLIEST:
                         if not self._earliest_appended(op):
                             self._create_new_moment(op)
+                    else:
+                        raise CircuitError(
+                            f"The {update_rule} update rule is not implemented."
+                        )
             elif isinstance(op, Moment):
                 # limit index to 0..len(self._moments), also deal with indices smaller 0
                 k = max(
@@ -141,7 +153,7 @@ class Circuit:
                     0,
                 )
                 # moments don't need a strategy.
-                self.moments.insert(k, operation)
+                self._moments.insert(k, op)
                 k += 1
 
     def append(
@@ -172,11 +184,8 @@ class Circuit:
         elif isinstance(operation, Circuit):
             # not implemented
             self._append_circuit(
-                operation,
-                mapping,
+                operation, mapping,
             )
         else:
             # make operation into interable and attempt to append.
             self.append(operation=[operation], mapping=mapping, update_rule=update_rule)
-
-    

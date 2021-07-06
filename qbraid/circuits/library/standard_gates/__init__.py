@@ -1,10 +1,10 @@
 """
 =============================================================
-Standard gates (:mod:`qiskit.circuit.library.standard_gates`)
+Standard gates (:mod:`qbraid.circuit.library.standard_gates`)
 =============================================================
 
-.. autosummary::
-   :toctree: ../stubs/
+. autosummary::
+   :toctree: ./stubs/
 
    DCXGate
    HGate
@@ -38,11 +38,11 @@ Standard gates (:mod:`qiskit.circuit.library.standard_gates`)
    ZPOWGate
 """
 from .dcx import DCX
-from .h import H
+from .h import H, CH
 from .hpow import HPow
 from .i import I
 from .iswap import iSwap
-from .phase import Phase
+from .phase import Phase, CPhase
 from .pswap import pSwap
 from .r import R
 from .rx import RX
@@ -70,8 +70,6 @@ from .y import Y
 from .ypow import YPow
 from .z import Z
 from .zpow import ZPow
-
-
 
 
 

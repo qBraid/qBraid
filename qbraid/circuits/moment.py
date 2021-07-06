@@ -1,5 +1,5 @@
 import logging
-from typing import Type, Union, Iterable
+from typing import Set, Type, Union, Iterable
 
 from .exceptions import CircuitError
 from .instruction import Instruction
@@ -12,9 +12,11 @@ class Moment:
     def __init__(self, instructions: Union[Instruction, Iterable[Instruction]] = None):
         if instructions is None:
             self._instructions = []
-        else:
+        elif isinstance(instructions,Iterable):
             self._instructions = instructions
-
+        else:
+            self._instructions = [instructions]
+        
     @property
     def instructions(self):
         return self._instructions
@@ -23,8 +25,9 @@ class Moment:
     def qubits(self) -> Iterable[Qubit]:
         out = set()
         for instruction in self._instructions:
-            out.add(instruction.qubits)
-        return [out]
+            print(instruction)
+            out.update(instruction.qubits)
+        return list(out)
 
     def __repr__(self):
         return f'Moment("{self.instructions}")'
@@ -32,7 +35,7 @@ class Moment:
     def appendable(self, instruction):
         return set(instruction.qubits).isdisjoint(self.qubits)
 
-    def append(self, instruction: Union[Instruction, Iterable[Instruction]]) -> None:
+    def append(self, instruction: Union[Instruction, Iterable[Instruction],Set]) -> None:
         """
         Wrapper which preps instructions to be appended, throws error if not appendable.
         Args:
