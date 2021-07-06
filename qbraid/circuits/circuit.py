@@ -184,7 +184,8 @@ class Circuit:
         elif isinstance(operation, Circuit):
             # not implemented
             self._append_circuit(
-                operation, mapping,
+                operation,
+                mapping,
             )
         else:
             # make operation into interable and attempt to append.

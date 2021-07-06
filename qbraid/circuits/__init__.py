@@ -4,7 +4,7 @@ from .update_rule import (
 )
 
 from .instruction import (
-   Instruction,
+    Instruction,
 )
 
 """" Standard Gates """

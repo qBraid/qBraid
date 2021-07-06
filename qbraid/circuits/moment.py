@@ -12,11 +12,11 @@ class Moment:
     def __init__(self, instructions: Union[Instruction, Iterable[Instruction]] = None):
         if instructions is None:
             self._instructions = []
-        elif isinstance(instructions,Iterable):
+        elif isinstance(instructions, Iterable):
             self._instructions = instructions
         else:
             self._instructions = [instructions]
-        
+
     @property
     def instructions(self):
         return self._instructions
@@ -34,7 +34,9 @@ class Moment:
     def appendable(self, instruction):
         return set(instruction.qubits).isdisjoint(self.qubits)
 
-    def append(self, instruction: Union[Instruction, Iterable[Instruction],Set]) -> None:
+    def append(
+        self, instruction: Union[Instruction, Iterable[Instruction], Set]
+    ) -> None:
         """
         Wrapper which preps instructions to be appended, throws error if not appendable.
         Args:

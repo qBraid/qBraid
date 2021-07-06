@@ -2,21 +2,28 @@ from typing import Optional, List
 from abc import abstractmethod
 from .gate import Gate
 
-class ControlledGate(Gate):
 
-    def __init__(self, name, num_qubits: int, params: List, global_phase: Optional[float]=0.0, 
-    num_ctrls: Optional[int]=1, base_gate: Optional[Gate]=None):
+class ControlledGate(Gate):
+    def __init__(
+        self,
+        name,
+        num_qubits: int,
+        params: List,
+        global_phase: Optional[float] = 0.0,
+        num_ctrls: Optional[int] = 1,
+        base_gate: Optional[Gate] = None,
+    ):
         super().__init__(name, num_qubits, params, global_phase=global_phase)
-        self._num_ctrls=num_ctrls
-        self._base_gate=base_gate
-    
+        self._num_ctrls = num_ctrls
+        self._base_gate = base_gate
+
     @property
     def num_ctrls(self):
         return self._num_ctrls
 
     @num_ctrls.setter
     def num_ctrls(self, value):
-        self._num_ctrls=value
+        self._num_ctrls = value
 
     @property
     def base_gate(self):
@@ -24,7 +31,9 @@ class ControlledGate(Gate):
 
     @base_gate.setter
     def base_gate(self, gate):
-        self._base_gate=gate
+        self._base_gate = gate
+
+
 """
     @property
     def name(self):

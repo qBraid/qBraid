@@ -2,30 +2,35 @@ from ...gate import Gate
 from ...controlledgate import ControlledGate
 from typing import Optional
 
-class U(Gate):
 
-    def __init__(self, theta: float, phi: float, lam: float, global_phase: Optional[float]=0.0):
+class U(Gate):
+    def __init__(
+        self, theta: float, phi: float, lam: float, global_phase: Optional[float] = 0.0
+    ):
         super().__init__(
-            "U", 
-            num_qubits=1, 
-            params=[theta, phi, lam], 
-            global_phase=global_phase)
+            "U", num_qubits=1, params=[theta, phi, lam], global_phase=global_phase
+        )
 
     def control(self, num_ctrls: int = 1):
-        if num_ctrls ==1:
-            return CU(self._params[0], self._params[1], self._params[2], self._global_phase)
+        if num_ctrls == 1:
+            return CU(
+                self._params[0], self._params[1], self._params[2], self._global_phase
+            )
         else:
             from ...controlledgate import ControlledGate
-            return ControlledGate(base_gate = self, num_ctrls = num_ctrls)
+
+            return ControlledGate(base_gate=self, num_ctrls=num_ctrls)
 
 
 class CU(ControlledGate):
-
-    def __init__(self, theta: float, phi: float, lam: float, global_phase: Optional[float]=0.0):
+    def __init__(
+        self, theta: float, phi: float, lam: float, global_phase: Optional[float] = 0.0
+    ):
         super().__init__(
-            "CRU", 
-            num_qubits=2, 
-            params=[theta, phi, lam], 
+            "CRU",
+            num_qubits=2,
+            params=[theta, phi, lam],
             global_phase=global_phase,
             num_ctrls=1,
-            base_gate=U)
+            base_gate=U,
+        )
