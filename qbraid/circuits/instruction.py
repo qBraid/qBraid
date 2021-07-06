@@ -12,10 +12,9 @@ class Instruction:
             self._qubits = [qubits]
         elif isinstance(qubits, Iterable):
             if len(qubits) == gate.num_qubits:
-                print(gate.num_qubits)
                 self._qubits = qubits
             else:
-                raise AttributeError(f"The input {qubits} is the incorrect number of qubits for .")
+                raise AttributeError(f"The input {qubits} is the incorrect number of qubits for {gate}.")
         else:
             raise AttributeError(f"The input type {type(qubits)} is invalid.")
         

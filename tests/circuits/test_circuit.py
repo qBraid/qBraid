@@ -169,7 +169,7 @@ CIRCUITS
 def test_circuit_str():
     """Test str result"""
     circuit = Circuit(num_qubits=3, name="test_circuit")
-    assert circuit.__str__() == "Circuit (test_circuit, 3 qubits, 0 gates)"
+    assert circuit.__str__() == "Circuit(test_circuit, 3 qubits, 0 gates)"
 
 def test_unrecognized_update_rule(gate):
     """Test fake update rule."""
@@ -184,6 +184,34 @@ def test_unrecognized_update_rule(gate):
     print(circuit.instructions)
     print(circuit.moments)
     
+def test_negative_circuit_qubit(gate):
+    """Test circuit specified to negative number of qubits.
+        Takes absolute value and returns circuit.
+    """
+    h3 = Instruction(gate,1)
+    circuit = Circuit(num_qubits=-3, name="test_circuit")
+    circuit.append(h3)
+    print(circuit.instructions)
+    print(circuit.moments)
+    assert circuit.num_qubits == 3
+    
+def test_negative_qubit(gate):
+    """Test qubit specified to negative qubit."""
+    h3 = Instruction(gate,-10)
+    circuit = Circuit(num_qubits=3, name="test_circuit")
+    with pytest.raises(CircuitError):
+        circuit.append(h3)
+    print(circuit.instructions)
+    print(circuit.moments)
+
+def test_qubit_not_in_channel(gate):
+    """Test qubit specified to too high of a qubit."""
+    h3 = Instruction(gate,10)
+    circuit = Circuit(num_qubits=3, name="test_circuit")
+    with pytest.raises(CircuitError):
+        circuit.append(h3)
+    print(circuit.instructions)
+    print(circuit.moments)
 
 def test_inline_update_rule(gate):
     """Test inline update rule indivdually"""

@@ -25,7 +25,7 @@ class Circuit:
         name: str = None,
         update_rule: UpdateRule = UpdateRule.NEW_THEN_INLINE,
     ):
-        self._qubits = [Qubit(i) for i in range(num_qubits)]
+        self._qubits = [Qubit(i) for i in range(abs(num_qubits))]
         self._moments: Iterable[Moment] = []  # list of moments
         self.name = name
         self.update_rule = update_rule
@@ -50,7 +50,7 @@ class Circuit:
 
     def __str__(self):
         return (
-            f"Circuit ({self.name}, {self.num_qubits} qubits, {self.num_gates()} gates)"
+            f"Circuit({self.name}, {self.num_qubits} qubits, {self.num_gates()} gates)"
         )
 
     def __len__(self):
@@ -112,7 +112,7 @@ class Circuit:
         # takes in both moment and instructions
         for op in operation:
             if isinstance(op, Instruction):
-                if validate_operation(op):
+                if validate_operation(op, self.num_qubits):
                     if update_rule is UpdateRule.NEW_THEN_INLINE:
                         if not self.moments[0].instructions:
                             self.moments[0].append(op)

@@ -25,7 +25,6 @@ class Moment:
     def qubits(self) -> Iterable[Qubit]:
         out = set()
         for instruction in self._instructions:
-            print(instruction)
             out.update(instruction.qubits)
         return list(out)
 

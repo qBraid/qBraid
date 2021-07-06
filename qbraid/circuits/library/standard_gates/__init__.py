@@ -64,11 +64,11 @@ from .u import U
 from .u1 import U1
 from .u2 import U2
 from .u3 import U3
-from .x import X
+from .x import X,CX
 from .xpow import XPow
-from .y import Y
+from .y import Y, CY
 from .ypow import YPow
-from .z import Z
+from .z import Z,CZ
 from .zpow import ZPow
 
 
