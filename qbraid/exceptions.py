@@ -35,8 +35,3 @@ class PackageError(QbraidError):
             message.append(" {}.".format(msg))
 
         super().__init__(" ".join(message))
-        self.message = " ".join(message)
-
-    def __str__(self) -> str:
-        """Return the message."""
-        return repr(self.message)

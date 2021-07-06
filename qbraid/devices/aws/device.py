@@ -15,7 +15,7 @@ class BraketDeviceWrapper(DeviceWrapper):
         """
         super().__init__(name, provider, **fields)
         self._vendor = "AWS"
-        self.vendor_device_obj = self._get_device_obj(BRAKET_PROVIDERS)
+        self.vendor_dlo = self._get_device_obj(BRAKET_PROVIDERS)
 
     @classmethod
     def _default_options(cls):

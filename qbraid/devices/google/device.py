@@ -15,7 +15,7 @@ class CirqDeviceWrapper(DeviceWrapper):
         """
         super().__init__(name, provider, **fields)
         self._vendor = "Google"
-        self.vendor_device_obj = self._get_device_obj(CIRQ_PROVIDERS)
+        self.vendor_dlo = self._get_device_obj(CIRQ_PROVIDERS)
 
     @classmethod
     def _default_options(cls):

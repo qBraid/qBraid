@@ -4,7 +4,7 @@ from .ibm.device import QiskitDeviceWrapper
 from .device import DeviceWrapper
 from .exceptions import DeviceError
 from tabulate import tabulate
-from typing import Optional
+from typing import Optional, Union
 
 from .aws.utils import BRAKET_PROVIDERS
 from .google.utils import CIRQ_PROVIDERS

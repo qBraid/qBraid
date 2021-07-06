@@ -10,70 +10,55 @@
 # NOTICE: This file has been modified from the original:
 # https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/providers/job.py
 
-"""Job abstract interface."""
-
-from abc import abstractmethod
+from qiskit.providers.job import Job as QiskitJob
+from ..job import JobWrapper
 from typing import Callable, Optional
-from .device import DeviceWrapper
-from .wrapper import QbraidJobWrapper
+from qiskit.providers.exceptions import JobTimeoutError
+from qiskit.providers.exceptions import JobError as QiskitJobError
+from ..exceptions import JobError
 
 
-class JobWrapper(QbraidJobWrapper):
-    """Class to handle jobs."""
+class QiskitJobWrapper(JobWrapper):
+    """Qiskit ``Job`` wrapper class."""
 
     _async = True
 
-    def __init__(self, vendor_jlo) -> None:
+    def __init__(self, job: QiskitJob):
         """Initializes the asynchronous job.
         Args:
-            vendor_jlo: a job-like object used to run circuits.
+            job (QiskitJob): a qiskit job object used to run circuits.
         """
-        self.vendor_jlo = vendor_jlo  # vendor job-like object
-        self._device = None  # to be set after instantiation
+        super().__init__(job)
 
     @property
-    def device(self) -> DeviceWrapper:
-        """Return the :class:`~qbraid.devices.device.DeviceWrapper` where this job was executed."""
-        if self._device is None:
-            raise SystemError("device property of JobWrapper object is None")
-        return self._device
-
-    @property
-    @abstractmethod
-    def job_id(self) -> str:
+    def job_id(self):
         """Return a unique id identifying the job."""
-        pass
+        return self.vendor_jlo.job_id()
 
     @property
-    @abstractmethod
-    def metadata(self) -> dict:
-        pass
+    def metadata(self):
+        return self.vendor_jlo.metadata
 
-    @abstractmethod
-    def done(self) -> bool:
+    def done(self):
         """Return whether the job has successfully run."""
-        pass
+        return self.vendor_jlo.done()
 
-    @abstractmethod
-    def running(self) -> bool:
+    def running(self):
         """Return whether the job is actively running."""
-        pass
+        return self.vendor_jlo.running()
 
-    @abstractmethod
-    def cancelled(self) -> bool:
+    def cancelled(self):
         """Return whether the job has been cancelled."""
-        pass
+        return self.vendor_jlo.cancelled()
 
-    @abstractmethod
-    def in_final_state(self) -> bool:
+    def in_final_state(self):
         """Return whether the job is in a final job state such as ``DONE`` or ``ERROR``."""
-        pass
+        return self.vendor_jlo.in_final_state()
 
-    @abstractmethod
     def wait_for_final_state(
             self, timeout: Optional[float] = None, wait: float = 5,
             callback: Optional[Callable] = None
-    ) -> None:
+    ):
         """Poll the job status until it progresses to a final state such as ``DONE`` or ``ERROR``.
         Args:
             timeout: Seconds to wait for the job. If ``None``, wait indefinitely.
@@ -87,23 +72,26 @@ class JobWrapper(QbraidJobWrapper):
         Raises:
             JobError: If the job does not reach a final state before the specified timeout.
         """
-        pass
+        try:
+            self.vendor_jlo.wait_for_final_state(timeout, wait, callback)
+        except JobTimeoutError as e:
+            raise JobError('qBraid JobError raised from {}'.format(type(e))) from e
 
-    @abstractmethod
     def submit(self):
-        """Submit the job to the device for execution."""
-        pass
+        """Submit the job to the backend for execution."""
+        try:
+            return self.vendor_jlo.submit()
+        except QiskitJobError as e:
+            raise JobError('qBraid JobError raised from {}'.format(type(e))) from e
 
-    @abstractmethod
     def result(self):
         """Return the results of the job."""
-        pass
+        return self.vendor_jlo.result()
 
     def cancel(self):
         """Attempt to cancel the job."""
-        raise NotImplementedError
+        return self.vendor_jlo.cancel()
 
-    @abstractmethod
     def status(self):
-        """Return the status of the job, among the values of ``JobStatus``."""
-        pass
+        """Return the status of the job."""
+        return self.vendor_jlo.status()

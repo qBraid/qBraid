@@ -34,3 +34,10 @@ class QbraidDeviceWrapper(ABC):
                 msg += " from vendor \"{}\"".format(self.vendor)
             raise DeviceError(msg + ".")
         return device_object
+
+
+class QbraidJobWrapper(ABC):
+
+    def _set_device(self, dev):
+        """Internally, we set the device property after creating the JobWrapper object."""
+        self._device = dev

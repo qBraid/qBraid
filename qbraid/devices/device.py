@@ -1,3 +1,15 @@
+# This code is part of Qiskit.
+#
+# (C) Copyright IBM 2017.
+#
+# This code is licensed under the Apache License, Version 2.0. You may
+# obtain a copy of this license in the LICENSE.txt file in the root directory
+# of the source tree https://github.com/Qiskit/qiskit-terra/blob/main/LICENSE.txt
+# or at http://www.apache.org/licenses/LICENSE-2.0.
+#
+# NOTICE: This file has been modified from the original:
+# https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/providers/backend.py
+
 """Device abstract interface."""
 
 from abc import abstractmethod
@@ -20,7 +32,7 @@ class DeviceWrapper(QbraidDeviceWrapper):
         self._vendor = None
         self._options = self._default_options()
         self._configuration = None
-        self.vendor_device_obj = None
+        self.vendor_dlo = None  # vendor device-like object
         if fields:
             for field in fields:
                 if field not in self._options.data:
