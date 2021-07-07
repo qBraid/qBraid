@@ -1,4 +1,5 @@
 from ..instruction import InstructionWrapper
+from ..parameter import ParamID
 from .gate import CirqGateWrapper
 from cirq.ops.gate_operation import GateOperation as CirqInstruction
 
@@ -11,7 +12,10 @@ class CirqInstructionWrapper(InstructionWrapper):
         self.instruction = instruction
         self.qubits = qubits
         self.gate = CirqGateWrapper(instruction.gate)
-        self.params = self.gate.get_abstract_params()
+
+    @property
+    def params(self):
+        return [p for p in self.gate.params if isinstance(p,ParamID)]
 
     @property
     def package(self):

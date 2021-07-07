@@ -11,9 +11,13 @@ class InstructionWrapper(QbraidWrapper):
         self.qubits = []
 
         self.gate = None
-        self.params = None
+        self._params = None
 
         self._outputs = {}
+
+    @property
+    def params(self):
+        return self._params
 
     def transpile(
         self, package: str, output_qubit_mapping: dict = None, output_param_mapping: dict = None
