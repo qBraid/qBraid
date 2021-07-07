@@ -20,11 +20,5 @@ class Phase(Gate):
 
 class CPhase(ControlledGate):
     def __init__(self, theta: float, global_phase: Optional[float] = 0.0):
-        super().__init__(
-            "CPhase",
-            num_qubits=2,
-            params=[theta],
-            global_phase=global_phase,
-            num_ctrls=1,
-            base_gate=Phase,
-        )
+        super().__init__(Phase(theta),num_ctrls = 1, global_phase=global_phase)
+ 

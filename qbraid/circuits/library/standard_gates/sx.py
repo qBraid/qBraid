@@ -9,7 +9,7 @@ class SX(Gate):
 
     def control(self, num_ctrls: int = 1):
         if num_ctrls == 1:
-            return CSX(self._global_phase)
+            return CSX(base_gate = self)
         else:
             from ...controlledgate import ControlledGate
 
@@ -17,12 +17,7 @@ class SX(Gate):
 
 
 class CSX(ControlledGate):
-    def __init__(self, global_phase: Optional[float] = 0.0):
-        super().__init__(
-            "CSX",
-            num_qubits=2,
-            params=[],
-            global_phase=global_phase,
-            num_ctrls=1,
-            base_gate=SX,
-        )
+    def __init__(self, base_gate = None, global_phase: Optional[float] = 0.0):
+        if not base_gate:
+            base_gate = SX()
+        super().__init__(SX(),global_phase=global_phase)

@@ -14,11 +14,10 @@ class U(Gate):
     def control(self, num_ctrls: int = 1):
         if num_ctrls == 1:
             return CU(
-                self._params[0], self._params[1], self._params[2], self._global_phase
+                self._params[0], self._params[1], self._params[2], global_phase = self._global_phase
             )
         else:
             from ...controlledgate import ControlledGate
-
             return ControlledGate(base_gate=self, num_ctrls=num_ctrls)
 
 
@@ -26,11 +25,4 @@ class CU(ControlledGate):
     def __init__(
         self, theta: float, phi: float, lam: float, global_phase: Optional[float] = 0.0
     ):
-        super().__init__(
-            "CRU",
-            num_qubits=2,
-            params=[theta, phi, lam],
-            global_phase=global_phase,
-            num_ctrls=1,
-            base_gate=U,
-        )
+        super().__init__(U(theta,phi,lam, global_phase = global_phase)) 

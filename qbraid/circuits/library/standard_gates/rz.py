@@ -18,11 +18,4 @@ class RZ(Gate):
 
 class CRZ(ControlledGate):
     def __init__(self, phi: float, global_phase: Optional[float] = 0.0):
-        super().__init__(
-            "CRZ",
-            num_qubits=2,
-            params=[phi],
-            global_phase=global_phase,
-            num_ctrls=1,
-            base_gate=RZ,
-        )
+        super().__init__(RZ(phi), global_phase=global_phase)

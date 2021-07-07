@@ -18,11 +18,4 @@ class X(Gate):
 
 class CX(ControlledGate):
     def __init__(self, global_phase: Optional[float] = 0.0):
-        super().__init__(
-            "CX",
-            num_qubits=2,
-            params=[],
-            global_phase=global_phase,
-            num_ctrls=1,
-            base_gate=X,
-        )
+        super().__init__(X(), global_phase = global_phase)

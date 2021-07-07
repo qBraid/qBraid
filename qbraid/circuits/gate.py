@@ -51,13 +51,7 @@ class Gate(ABC):
     def __call__(self, qubits):
         return self.on(qubits)
 
-
-"""
     def control(self, num_ctrls: Optional[int]=1):
 
         from .controlledgate import ControlledGate
-        new_name = 'C'+self._name
-        self._name=new_name
-        self._params=ParamSpec
-        return ControlledGate(new_name, self._num_qubits+1, self._params, self._global_phase, num_ctrls, self)
-        """
+        return ControlledGate(self, num_ctrls, self)

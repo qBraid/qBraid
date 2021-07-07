@@ -7,6 +7,9 @@ from .instruction import (
     Instruction,
 )
 
+
+from .circuit import Circuit
+
 """" Standard Gates """
 from .library.standard_gates import (
     DCX,

@@ -18,11 +18,4 @@ class RY(Gate):
 
 class CRY(ControlledGate):
     def __init__(self, theta: float, global_phase: Optional[float] = 0.0):
-        super().__init__(
-            "CRY",
-            num_qubits=2,
-            params=[theta],
-            global_phase=global_phase,
-            num_ctrls=1,
-            base_gate=RY,
-        )
+        super().__init__(RY(theta), global_phase=global_phase)

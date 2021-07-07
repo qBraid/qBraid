@@ -6,16 +6,17 @@ from .gate import Gate
 class ControlledGate(Gate):
     def __init__(
         self,
-        name,
-        num_qubits: int,
-        params: List,
-        global_phase: Optional[float] = 0.0,
+        base_gate,
         num_ctrls: Optional[int] = 1,
-        base_gate: Optional[Gate] = None,
+        global_phase: Optional[float] = 0.0,
     ):
-        super().__init__(name, num_qubits, params, global_phase=global_phase)
+        self._global_phase = global_phase
         self._num_ctrls = num_ctrls
         self._base_gate = base_gate
+
+    @property
+    def num_qubits(self):
+        return self.num_ctrls + self.base_gate.num_ctrls
 
     @property
     def num_ctrls(self):
@@ -33,8 +34,6 @@ class ControlledGate(Gate):
     def base_gate(self, gate):
         self._base_gate = gate
 
-
-"""
     @property
     def name(self):
         if self._num_ctrls > 2:
@@ -46,4 +45,4 @@ class ControlledGate(Gate):
 
     def control(self, num_ctrls:int = 1):
         self._num_ctrls += num_ctrls
-        """
+
