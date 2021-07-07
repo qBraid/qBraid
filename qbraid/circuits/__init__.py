@@ -47,4 +47,5 @@ from .library.standard_gates import (
     CZ,
     Z,
     ZPow,
+    Measure,
 )

@@ -70,3 +70,4 @@ from .y import Y, CY
 from .ypow import YPow
 from .z import Z, CZ
 from .zpow import ZPow
+from .measure import Measure

@@ -11,6 +11,7 @@ from qbraid.circuits.moment import Moment
 from qbraid.circuits.instruction import Instruction
 from qbraid.circuits.update_rule import UpdateRule
 
+
 def get_qubit_idx_dict(dict: dict = None) -> None:
     # get index of qubits
     check_qubit = []
@@ -31,6 +32,7 @@ def gate():
 @pytest.fixture()
 def instruction(gate):
     return Instruction(gate=gate, qubits=[0])
+
 
 @pytest.fixture()
 def two_same_instructions():
@@ -117,7 +119,7 @@ def test_not_instruction(moment):
         moment.append(5)
 
 
-def test_append_set(moment,two_diff_instructions):
+def test_append_set(moment, two_diff_instructions):
     """Test moment with nested list, works since recursively unpacks instructions."""
     moment.append([{*two_diff_instructions}])
     print(f"The instructions in the moment: {moment.instructions}")
@@ -171,78 +173,85 @@ def test_circuit_str():
     circuit = Circuit(num_qubits=3, name="test_circuit")
     assert circuit.__str__() == "Circuit(test_circuit, 3 qubits, 0 gates)"
 
+
 def test_unrecognized_update_rule(gate):
     """Test fake update rule."""
-    h1 = Instruction(gate,0)
-    h2 = Instruction(gate,1)
-    h3 = Instruction(gate,2)
-    circuit = Circuit(num_qubits=3, name="test_circuit",update_rule="Not Updating")
+    h1 = Instruction(gate, 0)
+    h2 = Instruction(gate, 1)
+    h3 = Instruction(gate, 2)
+    circuit = Circuit(num_qubits=3, name="test_circuit", update_rule="Not Updating")
     with pytest.raises(CircuitError):
         circuit.append(h1)
         circuit.append(h2)
         circuit.append(h3)
     print(circuit.instructions)
     print(circuit.moments)
-    
+
+
 def test_negative_circuit_qubit(gate):
     """Test circuit specified to negative number of qubits.
-        Takes absolute value and returns circuit.
+    Takes absolute value and returns circuit.
     """
-    h3 = Instruction(gate,1)
+    h3 = Instruction(gate, 1)
     circuit = Circuit(num_qubits=-3, name="test_circuit")
     circuit.append(h3)
     print(circuit.instructions)
     print(circuit.moments)
     assert circuit.num_qubits == 3
-    
+
+
 def test_negative_qubit(gate):
     """Test qubit specified to negative qubit."""
-    h3 = Instruction(gate,-10)
+    h3 = Instruction(gate, -10)
     circuit = Circuit(num_qubits=3, name="test_circuit")
     with pytest.raises(CircuitError):
         circuit.append(h3)
     print(circuit.instructions)
     print(circuit.moments)
+
 
 def test_qubit_not_in_channel(gate):
     """Test qubit specified to too high of a qubit."""
-    h3 = Instruction(gate,10)
+    h3 = Instruction(gate, 10)
     circuit = Circuit(num_qubits=3, name="test_circuit")
     with pytest.raises(CircuitError):
         circuit.append(h3)
     print(circuit.instructions)
     print(circuit.moments)
 
+
 def test_inline_update_rule(gate):
     """Test inline update rule indivdually"""
-    h1 = Instruction(gate,0)
-    h2 = Instruction(gate,1)
-    h3 = Instruction(gate,2)
-    circuit = Circuit(num_qubits=3, name="test_circuit",update_rule=UpdateRule.INLINE)
+    h1 = Instruction(gate, 0)
+    h2 = Instruction(gate, 1)
+    h3 = Instruction(gate, 2)
+    circuit = Circuit(num_qubits=3, name="test_circuit", update_rule=UpdateRule.INLINE)
     circuit.append(h1)
     circuit.append(h2)
     circuit.append(h3)
     print(circuit.instructions)
     print(circuit.moments)
     assert len(circuit.instructions) == 3
+
 
 def test_inline_update_rule_together(gate):
     """Test inline update rule as list"""
-    h1 = Instruction(gate,0)
-    h2 = Instruction(gate,1)
-    h3 = Instruction(gate,2)
-    circuit = Circuit(num_qubits=3, name="test_circuit",update_rule=UpdateRule.INLINE)
-    circuit.append([h1,h2,h3])
+    h1 = Instruction(gate, 0)
+    h2 = Instruction(gate, 1)
+    h3 = Instruction(gate, 2)
+    circuit = Circuit(num_qubits=3, name="test_circuit", update_rule=UpdateRule.INLINE)
+    circuit.append([h1, h2, h3])
     print(circuit.instructions)
     print(circuit.moments)
     assert len(circuit.instructions) == 3
 
+
 def test_new_update_rule(gate):
     """Test new update rule as list"""
-    h1 = Instruction(gate,0)
-    h2 = Instruction(gate,1)
-    h3 = Instruction(gate,2)
-    circuit = Circuit(num_qubits=3, name="test_circuit",update_rule=UpdateRule.NEW)
+    h1 = Instruction(gate, 0)
+    h2 = Instruction(gate, 1)
+    h3 = Instruction(gate, 2)
+    circuit = Circuit(num_qubits=3, name="test_circuit", update_rule=UpdateRule.NEW)
     circuit.append(h1)
     circuit.append(h2)
     circuit.append(h3)
@@ -250,23 +259,27 @@ def test_new_update_rule(gate):
     print(circuit.moments)
     assert len(circuit.moments) == 3
 
+
 def test_new_update_rule_together(gate):
     """Test new update rule as list"""
-    h1 = Instruction(gate,0)
-    h2 = Instruction(gate,1)
-    h3 = Instruction(gate,2)
-    circuit = Circuit(num_qubits=3, name="test_circuit",update_rule=UpdateRule.NEW)
-    circuit.append([h1,h2,h3])
+    h1 = Instruction(gate, 0)
+    h2 = Instruction(gate, 1)
+    h3 = Instruction(gate, 2)
+    circuit = Circuit(num_qubits=3, name="test_circuit", update_rule=UpdateRule.NEW)
+    circuit.append([h1, h2, h3])
     print(circuit.instructions)
     print(circuit.moments)
     assert len(circuit.moments) == 3
 
+
 def test_earliest_update_rule(gate):
     """Test earliest update rule as list"""
-    h1 = Instruction(gate,0)
-    h2 = Instruction(gate,1)
-    h3 = Instruction(gate,2)
-    circuit = Circuit(num_qubits=3, name="test_circuit",update_rule=UpdateRule.EARLIEST)
+    h1 = Instruction(gate, 0)
+    h2 = Instruction(gate, 1)
+    h3 = Instruction(gate, 2)
+    circuit = Circuit(
+        num_qubits=3, name="test_circuit", update_rule=UpdateRule.EARLIEST
+    )
     circuit.append(h1)
     circuit.append(h2)
     circuit.append(h3)
@@ -274,28 +287,33 @@ def test_earliest_update_rule(gate):
     print(circuit.moments)
     assert len(circuit.moments) == 1
 
+
 def test_earliest_update_rule_together(gate):
     """Test earliest update rule as list"""
-    h1 = Instruction(gate,0)
-    h2 = Instruction(gate,1)
-    h3 = Instruction(gate,1)
-    circuit = Circuit(num_qubits=3, name="test_circuit",update_rule=UpdateRule.EARLIEST)
-    circuit.append([h1,h2,h3])
+    h1 = Instruction(gate, 0)
+    h2 = Instruction(gate, 1)
+    h3 = Instruction(gate, 1)
+    circuit = Circuit(
+        num_qubits=3, name="test_circuit", update_rule=UpdateRule.EARLIEST
+    )
+    circuit.append([h1, h2, h3])
     print(circuit.instructions)
     print(circuit.moments)
     assert len(circuit.moments) == 2
 
 
 def test_new_then_inline_rule(gate):
-    """Test new then inline update rule. 
-        There is a distinction here between the below test_new_then_inline_rule_together()
-        because this will create a new moment every time append is called.
+    """Test new then inline update rule.
+    There is a distinction here between the below test_new_then_inline_rule_together()
+    because this will create a new moment every time append is called.
     """
-    h1 = Instruction(gate,1)
-    h2 = Instruction(gate,1)
-    h3 = Instruction(gate,2)
-    h4 = Instruction(gate,2)
-    circuit = Circuit(num_qubits=3, name="test_circuit",update_rule=UpdateRule.NEW_THEN_INLINE)
+    h1 = Instruction(gate, 1)
+    h2 = Instruction(gate, 1)
+    h3 = Instruction(gate, 2)
+    h4 = Instruction(gate, 2)
+    circuit = Circuit(
+        num_qubits=3, name="test_circuit", update_rule=UpdateRule.NEW_THEN_INLINE
+    )
     circuit.append(h1)
     circuit.append(h2)
     circuit.append(h3)
@@ -304,17 +322,21 @@ def test_new_then_inline_rule(gate):
     print(circuit.moments)
     assert len(circuit.moments) == 4
 
+
 def test_new_then_inline_rule_together(gate):
     """Test new then inline update rule """
-    h1 = Instruction(gate,1)
-    h2 = Instruction(gate,1)
-    h3 = Instruction(gate,2)
-    h4 = Instruction(gate,2)
-    circuit = Circuit(num_qubits=3, name="test_circuit",update_rule=UpdateRule.NEW_THEN_INLINE)
-    circuit.append([h1,h2,h3,h4])
+    h1 = Instruction(gate, 1)
+    h2 = Instruction(gate, 1)
+    h3 = Instruction(gate, 2)
+    h4 = Instruction(gate, 2)
+    circuit = Circuit(
+        num_qubits=3, name="test_circuit", update_rule=UpdateRule.NEW_THEN_INLINE
+    )
+    circuit.append([h1, h2, h3, h4])
     print(circuit.instructions)
     print(circuit.moments)
     assert len(circuit.moments) == 3
+
 
 @pytest.mark.parametrize(
     "circuit_param, expected",
@@ -358,5 +380,3 @@ def test_add_moment(circuit_param, expected):
     circuit_param.append(moment)
     dict = circuit_param.__dict__.copy()
     assert len(dict["_moments"]) == len(expected["_moments"])
-
-
