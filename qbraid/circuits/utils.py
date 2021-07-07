@@ -8,7 +8,7 @@ from .moment import Moment
 
 def validate_qubit(op, num_qubits):
     if isinstance(op, Instruction):
-        if max(op.qubits) <= num_qubits and np.all(np.array(op.qubits) >= 0):
+        if max(op.qubits) <= num_qubits-1 and np.all(np.array(op.qubits) >= 0):
             return True
         else:
             return False
@@ -24,10 +24,9 @@ def validate_operation(
     num_qubits,
 ) -> bool:
     from .circuit import Circuit
-
-    if (
+    if validate_qubit(op, num_qubits) and (
         isinstance(op, Instruction) or isinstance(op, Moment) or isinstance(op, Circuit)
-    ) and validate_qubit(op, num_qubits):
+    ) :
         return True
     else:
         raise CircuitError(
