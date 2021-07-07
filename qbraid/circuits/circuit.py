@@ -5,7 +5,7 @@ from .update_rule import UpdateRule
 from .instruction import Instruction
 from .moment import Moment
 from .qubit import Qubit
-from .utils import validate_operation
+from .utils import validate_operation, validate_qubit
 from .exceptions import CircuitError
 
 
