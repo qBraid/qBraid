@@ -10,33 +10,30 @@
 # NOTICE: This file has been modified from the original:
 # https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/providers/job.py
 
-from qiskit.providers.job import Job as QiskitJob
-from ..job import JobWrapper
+from qiskit.providers.job import Job
+from ..job import JobLikeWrapper
 from typing import Callable, Optional
 from qiskit.providers.exceptions import JobTimeoutError
 from qiskit.providers.exceptions import JobError as QiskitJobError
 from ..exceptions import JobError
 
 
-class QiskitJobWrapper(JobWrapper):
-    """Qiskit ``Job`` wrapper class."""
+class QiskitJobWrapper(JobLikeWrapper):
 
-    _async = True
-
-    def __init__(self, job: QiskitJob):
-        """Initializes the asynchronous job.
+    def __init__(self, qiskit_job: Job):
+        """Qiskit ``Job`` wrapper class.
         Args:
-            job (QiskitJob): a qiskit job object used to run circuits.
+            qiskit_job (Job): a Qiskit ``Job`` object used to run circuits.
         """
-        super().__init__(job)
+        super().__init__(qiskit_job)
 
     @property
-    def job_id(self):
+    def id(self):
         """Return a unique id identifying the job."""
-        return self.vendor_jlo.job_id()
+        return self.vendor_jlo.job_id
 
-    @property
     def metadata(self):
+        """Return the metadata regarding the job."""
         return self.vendor_jlo.metadata
 
     def done(self):
@@ -88,10 +85,10 @@ class QiskitJobWrapper(JobWrapper):
         """Return the results of the job."""
         return self.vendor_jlo.result()
 
-    def cancel(self):
-        """Attempt to cancel the job."""
-        return self.vendor_jlo.cancel()
-
     def status(self):
         """Return the status of the job."""
         return self.vendor_jlo.status()
+
+    def cancel(self):
+        """Attempt to cancel the job."""
+        return self.vendor_jlo.cancel()

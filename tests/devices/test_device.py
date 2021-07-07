@@ -7,12 +7,12 @@ from braket.devices import LocalSimulator as BraketSimulator
 from qbraid.devices.aws.device import BraketDeviceWrapper
 
 from cirq.devices.device import Device as CirqDevice
-from qbraid.devices.google.device import CirqDeviceWrapper
+from qbraid.devices.google.device import CirqSamplerWrapper
 
 import qiskit
 from qiskit.providers.aer.aerjob import AerJob
 from abc import ABCMeta as QiskitDeviceType
-from qbraid.devices.ibm.device import QiskitDeviceWrapper
+from qbraid.devices.ibm.device import QiskitBackendWrapper
 from qbraid.devices.ibm.job import QiskitJobWrapper
 
 from qbraid.devices.utils import SUPPORTED_VENDORS
@@ -45,7 +45,7 @@ def test_init_braket_device_wrapper(device, provider, vendor):
 def test_init_cirq_device_wrapper(device, provider, vendor):
     qbraid_device = device_wrapper(device, provider, vendor=vendor)
     vendor_device = qbraid_device.vendor_dlo
-    assert isinstance(qbraid_device, CirqDeviceWrapper)
+    assert isinstance(qbraid_device, CirqSamplerWrapper)
     assert isinstance(vendor_device, CirqDevice)
 
 
@@ -53,7 +53,7 @@ def test_init_cirq_device_wrapper(device, provider, vendor):
 def test_init_qiskit_device_wrapper(device, provider, vendor):
     qbraid_device = device_wrapper(device, provider, vendor=vendor)
     vendor_device = qbraid_device.vendor_dlo
-    assert isinstance(qbraid_device, QiskitDeviceWrapper)
+    assert isinstance(qbraid_device, QiskitBackendWrapper)
     assert isinstance(vendor_device, QiskitDeviceType)
 
 

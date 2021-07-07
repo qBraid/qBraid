@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from qbraid.devices.exceptions import DeviceError
 
 
-class QbraidDeviceWrapper(ABC):
+class QbraidDeviceLikeWrapper(ABC):
 
     @property
     @abstractmethod
@@ -36,7 +36,7 @@ class QbraidDeviceWrapper(ABC):
         return device_object
 
 
-class QbraidJobWrapper(ABC):
+class QbraidJobLikeWrapper(ABC):
 
     def _set_device(self, dev):
         """Internally, we set the device property after creating the JobWrapper object."""

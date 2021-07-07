@@ -11,16 +11,16 @@
 # https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/providers/backend.py
 
 from .utils import QISKIT_PROVIDERS, QiskitRunInput
-from ..device import DeviceWrapper
+from ..device import DeviceLikeWrapper
 from .job import QiskitJobWrapper
 
 
-class QiskitDeviceWrapper(DeviceWrapper):
+class QiskitBackendWrapper(DeviceLikeWrapper):
 
     def __init__(self, name, provider, **fields):
-        """AWS device wrapper class
+        """Qiskit ``Backend`` wrapper class
         Args:
-            name (str): a qBraid supported device
+            name (str): a Qiskit supported device
             provider (str): the provider that this device comes from
             fields: kwargs for the values to use to override the default options.
         Raises:

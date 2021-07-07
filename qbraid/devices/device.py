@@ -10,16 +10,14 @@
 # NOTICE: This file has been modified from the original:
 # https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/providers/backend.py
 
-"""Device abstract interface."""
-
 from abc import abstractmethod
-from .wrapper import QbraidDeviceWrapper
+from .wrapper import QbraidDeviceLikeWrapper
 
 
-class DeviceWrapper(QbraidDeviceWrapper):
+class DeviceLikeWrapper(QbraidDeviceLikeWrapper):
 
     def __init__(self, name, provider, **fields):
-        """Initialize a device class
+        """Abstract interface for device-like classes.
         Args:
             name (str): a qBraid supported device
             provider (str): the provider that this device comes from
@@ -42,21 +40,13 @@ class DeviceWrapper(QbraidDeviceWrapper):
     @classmethod
     @abstractmethod
     def _default_options(cls):
-        """Return the default options
-        This method will return a :class:`qiskit.providers.Options`
-        subclass object that will be used for the default options. These
-        should be the default parameters to use for the options of the
-        backend.
-        Returns:
-            qiskit.providers.Options: A options object with default values set
-        """
+        """Return the default options for running this device."""
         pass
 
     def set_options(self, **fields):
         """Set the options fields for the device.
-        This method is used to update the options of a device. If
-        you need to change any of the options prior to running just
-        pass in the kwarg with the new value for the options.
+        This method is used to update the options of a device. If you need to change any of the
+        options prior to running just pass in the kwarg with the new value for the options.
         Args:
             fields: The fields to update the options
         Raises:
@@ -112,13 +102,8 @@ class DeviceWrapper(QbraidDeviceWrapper):
         return self.name
 
     def __repr__(self):
-        """Official string representation of a Backend.
-        Note that, by Qiskit convention, it is consciously *not* a fully valid
-        Python expression. Subclasses should provide 'a string of the form
-        <...some useful description...>'. [0]
-        [0] https://docs.python.org/3/reference/datamodel.html#object.__repr__
-        """
-        return f"<{self.__class__.__name__}('{self.name}')>"
+        """String representation of a DeviceWrapper object."""
+        return f"<{self.__class__.__name__}({self.provider}:'{self.name}')>"
 
     @abstractmethod
     def run(self, run_input, **options):

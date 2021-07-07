@@ -1,13 +1,31 @@
-from ..device import DeviceWrapper
+# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License"). You
+# may not use this file except in compliance with the License. A copy of
+# the License is located at
+#
+#     http://aws.amazon.com/apache2.0/
+#
+# or at https://github.com/aws/amazon-braket-sdk-python/blob/main/LICENSE.
+# This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+# CONDITIONS OF ANY KIND, either express or implied. See the License for
+# the specific language governing permissions and limitations under the License.
+#
+# NOTICE: This file has been modified from the original:
+# https://github.com/aws/amazon-braket-sdk-python/blob/main/src/braket/devices/device.py
+
+from ..device import DeviceLikeWrapper
+from .job import BraketQuantumTaskWrapper
 from .utils import BRAKET_PROVIDERS
+from typing import Optional
 
 
-class BraketDeviceWrapper(DeviceWrapper):
+class BraketDeviceWrapper(DeviceLikeWrapper):
 
     def __init__(self, name, provider, **fields):
-        """AWS device wrapper class
+        """Braket ``Device`` wrapper class
         Args:
-            name (str): a qBraid supported device
+            name (str): a Braket supported device
             provider (str): the provider that this device comes from
             fields: kwargs for the values to use to override the default options.
         Raises:
@@ -19,15 +37,22 @@ class BraketDeviceWrapper(DeviceWrapper):
 
     @classmethod
     def _default_options(cls):
-        """Return the default options
-        This method will return a :class:`qiskit.providers.Options`
-        subclass object that will be used for the default options. These
-        should be the default parameters to use for the options of the
-        backend.
-        Returns:
-            qiskit.providers.Options: A options object with default values set
-        """
+        """Return the default options for running this device."""
         pass
 
-    def run(self, run_input, **options):
-        pass
+    def run(self, task_specification, shots=Optional[int], *args, **kwargs):
+        """Run a quantum task specification on this quantum device. A task can be a circuit or an
+        annealing problem.
+        Args:
+            task_specification (Union[Circuit, Problem]):  Specification of a task to run on device.
+            shots (int): The number of times to run the task on the device. Default is `None`.
+        Returns:
+            BraketJobWrapper: The :class:`~qbraid.devices.braket.job.BraketJobWrapper` job object
+            for the run.
+            QuantumTask: The QuantumTask tracking task execution on this device
+        """
+        braket_device = self.vendor_dlo
+        braket_quantum_task = braket_device.run(task_specification, shots=shots, *args, **kwargs)
+        qbraid_job = BraketQuantumTaskWrapper(braket_quantum_task)
+        qbraid_job._set_device(self)
+        return qbraid_job

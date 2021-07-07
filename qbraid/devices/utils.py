@@ -1,10 +1,10 @@
 from .aws.device import BraketDeviceWrapper
-from .google.device import CirqDeviceWrapper
-from .ibm.device import QiskitDeviceWrapper
-from .device import DeviceWrapper
+from .google.device import CirqSamplerWrapper
+from .ibm.device import QiskitBackendWrapper
+from .device import DeviceLikeWrapper
 from .exceptions import DeviceError
 from tabulate import tabulate
-from typing import Optional, Union
+from typing import Optional
 
 from .aws.utils import BRAKET_PROVIDERS
 from .google.utils import CIRQ_PROVIDERS
@@ -18,14 +18,14 @@ SUPPORTED_VENDORS = {
 
 
 def device_wrapper(name: str, provider: str, vendor: Optional[str] = None, **fields) \
-        -> DeviceWrapper:
+        -> DeviceLikeWrapper:
     """Apply qbraid device wrapper to device from a supported device provider. If vendor is None,
     it is assumed that the vendor is the same as the provider. If the vendor is not the same as the
     provider, the vendor must be specified.
 
     Args:
-        name (str): a quantum hardware device/simulator available through given `provider`
-        provider (str): a quantum hardware device/simulator provider available through `vendor`
+        name (str): a quantum hardware device/simulator available through given ``provider``
+        provider (str): a quantum hardware device/simulator provider available through ``vendor``
         vendor (Optional[str]): a quantum software vendor
 
     Returns:
@@ -39,9 +39,9 @@ def device_wrapper(name: str, provider: str, vendor: Optional[str] = None, **fie
     if vendor == "AWS":
         return BraketDeviceWrapper(name, provider, **fields)
     elif vendor == "Google":
-        return CirqDeviceWrapper(name, provider, **fields)
+        return CirqSamplerWrapper(name, provider, **fields)
     elif vendor == "IBM":
-        return QiskitDeviceWrapper(name, provider, **fields)
+        return QiskitBackendWrapper(name, provider, **fields)
     else:
         raise DeviceError("\"{}\" is not a supported vendor.".format(vendor))
 

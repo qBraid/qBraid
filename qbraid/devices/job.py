@@ -10,21 +10,16 @@
 # NOTICE: This file has been modified from the original:
 # https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/providers/job.py
 
-"""Job abstract interface."""
-
 from abc import abstractmethod
-from typing import Callable, Optional
-from .device import DeviceWrapper
-from .wrapper import QbraidJobWrapper
+from .device import DeviceLikeWrapper
+from .wrapper import QbraidJobLikeWrapper
+from typing import Dict, Any
 
 
-class JobWrapper(QbraidJobWrapper):
-    """Class to handle jobs."""
+class JobLikeWrapper(QbraidJobLikeWrapper):
 
-    _async = True
-
-    def __init__(self, vendor_jlo) -> None:
-        """Initializes the asynchronous job.
+    def __init__(self, vendor_jlo):
+        """Abstract interface for job-like classes.
         Args:
             vendor_jlo: a job-like object used to run circuits.
         """
@@ -32,7 +27,7 @@ class JobWrapper(QbraidJobWrapper):
         self._device = None  # to be set after instantiation
 
     @property
-    def device(self) -> DeviceWrapper:
+    def device(self) -> DeviceLikeWrapper:
         """Return the :class:`~qbraid.devices.device.DeviceWrapper` where this job was executed."""
         if self._device is None:
             raise SystemError("device property of JobWrapper object is None")
@@ -40,58 +35,13 @@ class JobWrapper(QbraidJobWrapper):
 
     @property
     @abstractmethod
-    def job_id(self) -> str:
+    def id(self) -> str:
         """Return a unique id identifying the job."""
         pass
 
-    @property
     @abstractmethod
-    def metadata(self) -> dict:
-        pass
-
-    @abstractmethod
-    def done(self) -> bool:
-        """Return whether the job has successfully run."""
-        pass
-
-    @abstractmethod
-    def running(self) -> bool:
-        """Return whether the job is actively running."""
-        pass
-
-    @abstractmethod
-    def cancelled(self) -> bool:
-        """Return whether the job has been cancelled."""
-        pass
-
-    @abstractmethod
-    def in_final_state(self) -> bool:
-        """Return whether the job is in a final job state such as ``DONE`` or ``ERROR``."""
-        pass
-
-    @abstractmethod
-    def wait_for_final_state(
-            self, timeout: Optional[float] = None, wait: float = 5,
-            callback: Optional[Callable] = None
-    ) -> None:
-        """Poll the job status until it progresses to a final state such as ``DONE`` or ``ERROR``.
-        Args:
-            timeout: Seconds to wait for the job. If ``None``, wait indefinitely.
-            wait: Seconds between queries.
-            callback: Callback function invoked after each query.
-                The following positional arguments are provided to the callback function:
-                * job_id: Job ID
-                * job_status: Status of the job from the last query
-                * job: This BaseJob instance
-                Note: different subclass might provide different arguments to the callback function.
-        Raises:
-            JobError: If the job does not reach a final state before the specified timeout.
-        """
-        pass
-
-    @abstractmethod
-    def submit(self):
-        """Submit the job to the device for execution."""
+    def metadata(self) -> Dict[str, Any]:
+        """Return the metadata regarding the job."""
         pass
 
     @abstractmethod
@@ -99,11 +49,17 @@ class JobWrapper(QbraidJobWrapper):
         """Return the results of the job."""
         pass
 
-    def cancel(self):
+    @abstractmethod
+    def status(self):
+        """Return the status of the job."""
+        pass
+
+    def cancel(self) -> None:
         """Attempt to cancel the job."""
         raise NotImplementedError
 
-    @abstractmethod
-    def status(self):
-        """Return the status of the job, among the values of ``JobStatus``."""
-        pass
+    def __repr__(self) -> str:
+        """String representation of a JobLikeWrapper object."""
+        return f"<{self.__class__.__name__}(id:'{self.id}')>"
+
+
