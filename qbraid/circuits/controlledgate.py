@@ -16,7 +16,7 @@ class ControlledGate(Gate):
 
     @property
     def num_qubits(self):
-        return self.num_ctrls + self.base_gate.num_ctrls
+        return self.num_ctrls + self.base_gate.num_qubits
 
     @property
     def num_ctrls(self):
