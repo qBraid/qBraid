@@ -4,7 +4,10 @@ Unit tests for the qbraid transpiler.
 import pytest
 import qiskit
 import cirq
-import braket
+from braket.circuits import Circuit as BraketCircuit
+from braket.circuits.gate import Gate as BraketGate
+from braket.circuits.instruction import Instruction as BraketInstruction
+from braket.circuits.unitary_calculation import calculate_unitary
 import numpy as np
 from qbraid.transpiler.transpiler import qbraid_wrapper
 
@@ -15,38 +18,39 @@ class TestSharedGates:
     """
 
     # Create braket test circuit
-    braket_circuit = braket.circuits.Circuit()
+    braket_circuit = BraketCircuit()
 
-    braket_circuit.h(0)
-    braket_circuit.h(1)
-    braket_circuit.h(2)
-    braket_circuit.h(3)
-    braket_circuit.x(0)
-    braket_circuit.x(1)
-    braket_circuit.y(2)
-    braket_circuit.z(3)
-    braket_circuit.s(0)
-    braket_circuit.si(1)
-    braket_circuit.t(2)
-    braket_circuit.ti(3)
-    braket_circuit.x(0)
-    braket_circuit.x(1)
-    braket_circuit.y(2)
-    braket_circuit.z(3)
-    braket_circuit.rx(0, np.pi / 4)
-    braket_circuit.ry(1, np.pi / 2)
-    braket_circuit.rz(2, 3 * np.pi / 4)
-    braket_circuit.phaseshift(3, np.pi / 8)
-    braket_circuit.v(0)
-    braket_circuit.vi(1)
-    braket_circuit.iswap(2, 3)
-    braket_circuit.swap(0, 2)
-    braket_circuit.swap(1, 3)
-    braket_circuit.cnot(0, 1)
-    braket_circuit.cphaseshift(2, 3, np.pi / 4)
+    instructions = [
+        BraketInstruction(BraketGate.H(), 0),
+        BraketInstruction(BraketGate.H(), 1),
+        BraketInstruction(BraketGate.H(), 2),
+        BraketInstruction(BraketGate.H(), 3),
+        BraketInstruction(BraketGate.X(), 0),
+        BraketInstruction(BraketGate.X(), 1),
+        BraketInstruction(BraketGate.Y(), 2),
+        BraketInstruction(BraketGate.Z(), 3),
+        BraketInstruction(BraketGate.S(), 0),
+        BraketInstruction(BraketGate.Si(), 1),
+        BraketInstruction(BraketGate.T(), 2),
+        BraketInstruction(BraketGate.Ti(), 3),
+        BraketInstruction(BraketGate.Rx(np.pi / 4), 0),
+        BraketInstruction(BraketGate.Ry(np.pi / 2), 1),
+        BraketInstruction(BraketGate.Rz(3 * np.pi / 4), 2),
+        BraketInstruction(BraketGate.PhaseShift(np.pi / 8), 3),
+        BraketInstruction(BraketGate.V(), 0),
+        BraketInstruction(BraketGate.Vi(), 1),
+        BraketInstruction(BraketGate.ISwap(), [2, 3]),
+        BraketInstruction(BraketGate.Swap(), [0, 2]),
+        BraketInstruction(BraketGate.Swap(), [1, 3]),
+        BraketInstruction(BraketGate.CNot(), [0, 1]),
+        BraketInstruction(BraketGate.CPhaseShift(np.pi / 4), [2, 3]),
+    ]
+
+    for inst in instructions:
+        braket_circuit.add_instruction(inst)
 
     # Get matrix representations
-    braket_unitary = None  # braket QuantumOperator.to_matrix function NotImplemented
+    braket_unitary = calculate_unitary(4, instructions)
 
     # test_data_qiskit_to_cirq = [qiskit_circuit, cirq_unitary]
     # test_data_cirq_to_qiskit = [cirq_circuit, qiskit_unitary]
