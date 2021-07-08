@@ -6,7 +6,7 @@ from braket.circuits.circuit import Circuit
 
 
 class BraketCircuitWrapper(CircuitWrapper):
-    def __init__(self, circuit: Circuit, input_qubit_mapping = None):
+    def __init__(self, circuit: Circuit, input_qubit_mapping=None):
 
         super().__init__()
 
@@ -18,7 +18,7 @@ class BraketCircuitWrapper(CircuitWrapper):
 
         for instruction in circuit.instructions:
 
-            qubits = [self.input_mapping[q] for q in instruction.target]
+            qubits = [self.input_qubit_mapping[q] for q in instruction.target]
             next_instruction = BraketInstructionWrapper(instruction, qubits)
             self.instructions.append(next_instruction)
 

@@ -1,19 +1,20 @@
 from ..circuit import CircuitWrapper
 from .instruction import CirqInstructionWrapper
-from qbraid.exceptions import PackageError
+# from qbraid.exceptions import PackageError
 
 from cirq.circuits import Circuit
 
 
 class CirqCircuitWrapper(CircuitWrapper):
-    def __init__(self, circuit: Circuit, input_qubit_mapping = None):
+    def __init__(self, circuit: Circuit, input_qubit_mapping=None):
 
         super().__init__()
 
         self.circuit = circuit
 
         self.qubits = circuit.all_qubits()
-        self.input_qubit_mapping = {qubit: index for index, qubit in enumerate(self.qubits)}
+        self.input_qubit_mapping = {qubit: index for index, qubit in enumerate(self.qubits)} if \
+            input_qubit_mapping is None else input_qubit_mapping
 
         self.params = set()
 

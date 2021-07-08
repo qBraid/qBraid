@@ -1,10 +1,10 @@
-from qbraid.exceptions import PackageError
+from ..exceptions import ParsingError
 from braket.circuits import Circuit
 from braket.circuits import Instruction
 from braket.circuits import Qubit
 from braket.circuits import Gate as BraketGate
-
 from .utils import create_braket_gate, braket_gates
+from typing import Union
 
 
 def circuit_to_braket(cw, output_mapping=None):
@@ -36,15 +36,30 @@ def instruction_to_braket(iw, output_qubit_mapping, output_param_mapping):
         return Instruction(gate, qubits)
 
 
-def gate_to_braket(gw, output_param_mapping) -> BraketGate:
+def gate_to_braket(gw, output_param_mapping) -> Union[BraketGate, str]:
 
     """Create braket gate from a qbraid gate wrapper object."""
 
     # braket_params = [output_param_mapping[p] if isinstance(p,ParamID) else p for p in gw.params]
+    braket_params = gw.params
+
+    data = {
+        "type": gw._gate_type,
+        "matrix": gw.matrix,
+        "name": gw.name,
+        "params": braket_params,
+    }
 
     if gw._gate_type in braket_gates.keys():
-        return create_braket_gate(gw._gate_type, gw.params)
+        return create_braket_gate(data)
+
     elif gw._gate_type == "MEASURE":
         return "BraketMeasure"
+
+    elif gw.matrix is not None:
+        data["name"] = data["type"]
+        data["type"] = "Unitary"
+        return create_braket_gate(data)
+
     else:
-        raise PackageError("Gate type not supported.")
+        raise TypeError(f"Gate type {gw._gate_type} not supported.")

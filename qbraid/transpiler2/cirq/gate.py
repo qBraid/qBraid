@@ -26,7 +26,7 @@ class CirqGateWrapper(GateWrapper):
         self._outputs["cirq"] = gate
 
     def get_abstract_params(self):
-        if not (self.params == None):
+        if not (self.params is None):
             return [p for p in self.params if isinstance(p, CirqParameter)]
         else:
             return []
