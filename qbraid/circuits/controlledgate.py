@@ -1,5 +1,6 @@
 from typing import Optional, List
 from abc import abstractmethod
+
 from .gate import Gate
 
 

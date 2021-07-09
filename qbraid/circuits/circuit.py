@@ -1,6 +1,8 @@
+from tests.circuits.test_circuit import instruction
 from typing import Union, Iterable
 import itertools
 
+from .circuit import Circuit
 from .update_rule import UpdateRule
 from .instruction import Instruction
 from .moment import Moment
@@ -10,7 +12,6 @@ from .exceptions import CircuitError
 
 
 class Circuit:
-
     """
     Circuit class for qBraid quantum circuit objects.
     Args:
@@ -18,7 +19,6 @@ class Circuit:
         name: The name of the circuit
         update_rule: How to pick/create the moment to put operations into.
     """
-
     def __init__(
         self,
         num_qubits,
@@ -45,7 +45,7 @@ class Circuit:
             instructions_list.extend(moment.instructions)
         return instructions_list
 
-    def num_gates(self):
+    def num_gates(self) -> int:
         return len(list(itertools.chain(*self.instructions)))
 
     def __str__(self):
@@ -56,21 +56,7 @@ class Circuit:
     def __len__(self):
         return len(self._moments)
 
-    def _append(self, moments: Union[Moment, Iterable[Moment]]):
-
-        if isinstance(moments, Moment):
-            moments = [moments]
-        # validate moment
-        for moment in moments:
-            if max(moment.qubits) > self.num_qubits:
-                raise CircuitError(
-                    "Index {} exceeds number of qubits {} in circuit".format(
-                        moment.qubits, self.num_qubits
-                    )
-                )
-        self._moments.extend(moments)
-
-    def _append_circuit(self, operation, mapping: Union[list, dict]) -> None:
+    def _append_circuit(self, circuit:Circuit, mapping: Union[list, dict]=None) -> None:
 
         """this is for adding subroutines to circuits. so if we have a 3-qubit subroutine,
         the user should specify [2,4,5], implying that qubit 0 on the subroutine is mapped
@@ -83,13 +69,20 @@ class Circuit:
             circuit can just append moments (still need moments)
             extend(**unzipped moments)
         """
+        moments = circuit.moments
+        for moment in moments:
+            if validate_operation(moment) and isinstance(moment , Moment):
+                self._moments.extend(moment)
 
-        # TODO: validate mapping
-        # TODO: develop appending strategy for an entire circuit.
+    def _earliest_appended(self, op:Instruction) -> bool:
+        """Helper function that scans through all the moments and appends the operation
+        in the earliest moment.
+        Args:
+            op (Instruction): Instruction to be appended to the earliest moment.
 
-        raise NotImplementedError
-
-    def _earliest_appended(self, op) -> bool:
+        Returns:
+            bool: True if appended, False otherwise.
+        """
         appended = False
         # scan through the moments beginning with the first moment
         for moment in self._moments:
@@ -106,9 +99,18 @@ class Circuit:
         self._moments.append(new_moment)
 
     def _update(
-        self, operation: Union[Moment, Iterable[Instruction]], update_rule, index=0
+        self, operation: Union[Moment, Iterable[Instruction]], update_rule:UpdateRule, index:int=0
     ) -> None:
-        """ Cycles through all the operations and appends to circuit according to update rule."""
+        """Cycles through all the operations and appends to circuit according to update rule.
+
+        Args:
+            operation (Union[Moment, Iterable[Instruction]]): [description]
+            update_rule ([type]): [description]
+            index (int, optional): [description]. Defaults to 0.
+
+        Raises:
+            CircuitError: [description]
+        """
         # takes in both moment and instructions
         for op in operation:
             if isinstance(op, Instruction):
@@ -162,12 +164,13 @@ class Circuit:
         mapping: Union[list, dict] = None,
         update_rule: UpdateRule = None,
     ) -> None:
-        """
-        Appends an operation (moment or instruction) to the circuit.
+        """ Appends an operation (circuit, moment or instruction) to the circuit.
+
         Args:
-            operation: The moment/instruction or iterable of moment/instructions to append.
-            mapping: An iterable with the qubits which the operation acts upon.
-            update_rule: How to pick/create the moment to put operations into.
+            operation (Union[Instruction, Moment, Iterable[Instruction], Iterable[Moment]]): The moment/instruction or iterable of moment/instructions to append.
+            mapping (Union[list, dict], optional): An iterable with the qubits which the operation acts upon. Defaults to None.
+            update_rule (UpdateRule, optional): ow to pick/create the moment to put operations into. Defaults to None.
+
         """
         if operation is None:
             raise TypeError(
@@ -182,7 +185,6 @@ class Circuit:
         if isinstance(operation, Iterable):
             self._update(operation, update_rule=update_rule, index=len(self._moments))
         elif isinstance(operation, Circuit):
-            # not implemented
             self._append_circuit(
                 operation,
                 mapping,

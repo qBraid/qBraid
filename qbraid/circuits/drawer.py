@@ -1,10 +1,10 @@
 from typing import Iterable, Union
 
 
-from qbraid.circuits.circuit import Circuit
-from qbraid.circuits.instruction import Instruction
-from qbraid.circuits.update_rule import UpdateRule
-from qbraid.circuits.moment import Moment
+from .circuit import Circuit
+from .instruction import Instruction
+from .update_rule import UpdateRule
+from .moment import Moment
 
 """
 A rudimentary module for drawing circuits.

@@ -4,6 +4,8 @@ from .gate import Gate
 
 
 class Instruction:
+    """[summary]
+    """
     def __init__(self, gate: Gate, qubits: Union[int, Iterable[int]]):
 
         self._gate = gate
