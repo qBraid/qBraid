@@ -3,8 +3,11 @@ from ...gate import Gate
 
 
 class PowGate(Gate):
-    """Applies a global phase to a gate."""
+    """Extension of gate for gates with a variable power.
 
+    Args:
+        Gate (Gate(ABC)): Extends basic gate class
+    """
     def __init__(
         self,
         name: str,
