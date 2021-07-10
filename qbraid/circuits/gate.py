@@ -3,6 +3,14 @@ from typing import Optional, List
 from typing_extensions import ParamSpec
 
 class Gate(ABC):
+    """Abstract class for gate library to extend and apply to instructions.
+
+    Args:
+        ABC (ABC): Extends Abstract Class
+
+    Returns:
+        None: No return for abstract class
+    """
 
     @abstractmethod
     def __init__(self, name: str, num_qubits: int, params: List = None, global_phase: Optional[float]=0.0):

@@ -3,6 +3,11 @@ from abc import abstractmethod
 from .gate import Gate
 
 class ControlledGate(Gate):
+    """Extension of Gate for standard gates with a controlled operation
+
+    Args:
+        Gate (Gate(ABC)): Extensions of basic gate class
+    """
 
     def __init__(self, name, num_qubits: int, params: List, global_phase: Optional[float]=0.0, 
     num_ctrls: Optional[int]=1, base_gate: Optional[Gate]=None):

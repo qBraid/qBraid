@@ -3,6 +3,11 @@ from ...controlledgate import ControlledGate
 from typing import Optional
 
 class H(Gate):
+    """Single qubit hadamard Gate or superposition gate
+
+    Args:
+        Gate (ABC): Extension of basic gate class
+    """
     def __init__(self, global_phase: Optional[float]=0.0):
         super().__init__(
             "H", 
