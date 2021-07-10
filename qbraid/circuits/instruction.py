@@ -4,7 +4,7 @@ from .gate import Gate
 
 
 class Instruction:
-    """[summary]
+    """Instructions are the class which define the qubits which the operators will act on.
     """
     def __init__(self, gate: Gate, qubits: Union[int, Iterable[int]]):
 
