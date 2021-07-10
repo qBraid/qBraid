@@ -26,7 +26,6 @@ class H(Gate):
             
             return ControlledGate(base_gate=self, num_ctrls=num_ctrls)
 
-
 class CH(ControlledGate):
     """Controlled version of Hadamard Gate
 

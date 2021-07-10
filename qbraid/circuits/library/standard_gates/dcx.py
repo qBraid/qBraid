@@ -7,7 +7,5 @@ class DCX(Gate):
     Args:
         Gate (ABC): Extension of basic gate class
     """
-
-class DCX(Gate):
     def __init__(self, global_phase: Optional[float] = 0.0):
         super().__init__("DCX", num_qubits=2, params=[], global_phase=global_phase)

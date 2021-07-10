@@ -6,7 +6,7 @@ from .instruction import Instruction
 from .moment import Moment
 
 
-def validate_qubit(op: Union[Instruction,Moment], num_qubits:int) -> bool:
+def validate_qubit(op: Union[Instruction, Moment], num_qubits: int) -> bool:
     """Checks that the target qubits used in instructionsa are availbale on the circuit.
 
     Args:
@@ -14,21 +14,21 @@ def validate_qubit(op: Union[Instruction,Moment], num_qubits:int) -> bool:
         num_qubits (int): The number of qubits in the circuit.
 
     """
+    if not op.qubits:
+        return True
     if isinstance(op, Instruction):
         if max(op.qubits) < num_qubits and np.all(np.array(op.qubits) >= 0):
             return True
         else:
             return False
     elif isinstance(op, Moment):
-        op = [op]
         # validate moment
-        for moment in op:
-            if max(moment.qubits) > num_qubits:
-                raise CircuitError(
-                    "Index {} exceeds number of qubits {} in circuit".format(
-                        moment.qubits, num_qubits
-                    )
+        if max(op.qubits) > num_qubits - 1:
+            raise CircuitError(
+                "Index {} exceeds number of qubits {} in circuit".format(
+                    op.qubits, num_qubits
                 )
+            )
         return True
     else:
         return True
@@ -39,7 +39,7 @@ def validate_operation(
         Instruction,
         Moment,
     ],
-    num_qubits:int,
+    num_qubits: int,
 ) -> bool:
     """Validates that the operation is an instance of an Instruction, Moment, or Circuit.
 
@@ -49,9 +49,10 @@ def validate_operation(
 
     """
     from .circuit import Circuit
+
     if validate_qubit(op, num_qubits) and (
         isinstance(op, Instruction) or isinstance(op, Moment) or isinstance(op, Circuit)
-    ) :
+    ):
         return True
     else:
         raise CircuitError(

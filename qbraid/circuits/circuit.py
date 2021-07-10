@@ -1,8 +1,7 @@
-from tests.circuits.test_circuit import instruction
+from qbraid.circuits.library.standard_gates.u import U
 from typing import Union, Iterable
 import itertools
 
-from .circuit import Circuit
 from .update_rule import UpdateRule
 from .instruction import Instruction
 from .moment import Moment
@@ -46,7 +45,7 @@ class Circuit:
         return instructions_list
 
     def num_gates(self) -> int:
-        return len(list(itertools.chain(*self.instructions)))
+        return len(list(itertools.chain(self.instructions)))
 
     def __str__(self):
         return (
@@ -56,7 +55,7 @@ class Circuit:
     def __len__(self):
         return len(self._moments)
 
-    def _append_circuit(self, circuit:Circuit, mapping: Union[list, dict]=None) -> None:
+    def _append_circuit(self, circuit, update_rule,) -> None:
 
         """this is for adding subroutines to circuits. so if we have a 3-qubit subroutine,
         the user should specify [2,4,5], implying that qubit 0 on the subroutine is mapped
@@ -71,8 +70,10 @@ class Circuit:
         """
         moments = circuit.moments
         for moment in moments:
-            if validate_operation(moment) and isinstance(moment , Moment):
-                self._moments.extend(moment)
+            if validate_operation(moment,self.num_qubits) and isinstance(moment , Moment):
+                self.append(moment,update_rule=update_rule)
+            else:
+                raise CircuitError(f"{circuit} of size {circuit.num_qubits} not appendable")
 
     def _earliest_appended(self, op:Instruction) -> bool:
         """Helper function that scans through all the moments and appends the operation
@@ -154,9 +155,14 @@ class Circuit:
                     ),
                     0,
                 )
-                # moments don't need a strategy.
-                self._moments.insert(k, op)
-                k += 1
+                if validate_operation(op,num_qubits=self.num_qubits):
+                    # moments don't need a strategy.
+                    self._moments.insert(k, op)
+                    k += 1
+                else:
+                    raise CircuitError(f"The {op} moment is not appendable.")
+            elif isinstance(op, Circuit):
+                self._append_circuit(op,update_rule=update_rule)
 
     def append(
         self,
@@ -184,11 +190,6 @@ class Circuit:
         # iterable
         if isinstance(operation, Iterable):
             self._update(operation, update_rule=update_rule, index=len(self._moments))
-        elif isinstance(operation, Circuit):
-            self._append_circuit(
-                operation,
-                mapping,
-            )
         else:
             # make operation into interable and attempt to append.
             self.append(operation=[operation], mapping=mapping, update_rule=update_rule)

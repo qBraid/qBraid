@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, List
 from typing_extensions import ParamSpec
 
+
 class Gate(ABC):
     """Abstract class for gate library to extend and apply to instructions.
 
@@ -11,6 +12,7 @@ class Gate(ABC):
     Returns:
         None: No return for abstract class
     """
+
 
 class Gate(ABC):
     @abstractmethod
@@ -60,7 +62,8 @@ class Gate(ABC):
     def __call__(self, qubits):
         return self.on(qubits)
 
-    def control(self, num_ctrls: Optional[int]=1):
+    def control(self, num_ctrls: Optional[int] = 1):
 
         from .controlledgate import ControlledGate
+
         return ControlledGate(self, num_ctrls, self)

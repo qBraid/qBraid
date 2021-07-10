@@ -1,14 +1,16 @@
-""" Update Rule """
-from .update_rule import (
-    UpdateRule,
-)
+from .circuit import Circuit
+
+from .drawer import drawer
 
 from .instruction import (
     Instruction,
 )
 
+""" Update Rule """
+from .update_rule import (
+    UpdateRule,
+)
 
-from .circuit import Circuit
 
 """" Standard Gates """
 from .library.standard_gates import (
@@ -18,6 +20,7 @@ from .library.standard_gates import (
     HPow,
     I,
     iSwap,
+    Measure,
     Phase,
     CPhase,
     pSwap,
@@ -50,5 +53,4 @@ from .library.standard_gates import (
     CZ,
     Z,
     ZPow,
-    Measure,
 )
