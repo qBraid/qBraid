@@ -169,12 +169,10 @@ def test_cirq():
 
     print(dir(circuit))
 
-    #simulator = Simulator()
-    #result = simulator.run(circuit)
-    #print("simulator result")
-    #print(result)
-
-    
+    # simulator = Simulator()
+    # result = simulator.run(circuit)
+    # print("simulator result")
+    # print(result)
 
 
 def test_qiskit():
@@ -208,7 +206,9 @@ def test_qiskit():
 def test_braket():
     """Testing building a braket circuit, no qbraid wrapper."""
 
-    circuit = BraketCircuit().h(range(4)).cnot(control=0, target=2).cnot(control=1, target=3)
+    circuit = (
+        BraketCircuit().h(range(4)).cnot(control=0, target=2).cnot(control=1, target=3)
+    )
     print(circuit)
 
     for instruction in circuit.instructions:
@@ -376,24 +376,24 @@ if __name__ == "__main__":
 
     print("BRAKET TESTS")
     print("------------------------------")
-    #test_braket()
-    #test_braket_to_all()
+    # test_braket()
+    # test_braket_to_all()
     # print("------------------------------")
     # print()
     #
     print("QISKIT TESTS")
-    #print("------------------------------")
-    #test_qiskit_prmtrzd()
+    # print("------------------------------")
+    # test_qiskit_prmtrzd()
     # test_qiskit_execute()
     # test_qiskit()
-    #test_qiskit_to_cirq_prmtrzd()
+    # test_qiskit_to_cirq_prmtrzd()
     test_qiskit_to_all()
     # print("------------------------------")
     # print()
     #
     print("CIRQ TESTS")
     print("------------------------------")
-    #test_cirq()
+    # test_cirq()
     # test_cirq_execute()
     # test_cirq_qiskit_two_way()
     test_cirq_to_all()

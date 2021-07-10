@@ -4,8 +4,11 @@ from .update_rule import (
 )
 
 from .instruction import (
-   Instruction,
+    Instruction,
 )
+
+
+from .circuit import Circuit
 
 """" Standard Gates """
 from .library.standard_gates import (
@@ -47,4 +50,5 @@ from .library.standard_gates import (
     CZ,
     Z,
     ZPow,
+    Measure,
 )

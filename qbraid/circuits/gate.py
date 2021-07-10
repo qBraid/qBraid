@@ -12,13 +12,20 @@ class Gate(ABC):
         None: No return for abstract class
     """
 
+class Gate(ABC):
     @abstractmethod
-    def __init__(self, name: str, num_qubits: int, params: List = None, global_phase: Optional[float]=0.0):
-        self._name=name
-        self._num_qubits=num_qubits
-        self._params= [] if params == None else params 
-        self._global_phase=global_phase
-    
+    def __init__(
+        self,
+        name: str,
+        num_qubits: int,
+        params: List = None,
+        global_phase: Optional[float] = 0.0,
+    ):
+        self._name = name
+        self._num_qubits = num_qubits
+        self._params = [] if params == None else params
+        self._global_phase = global_phase
+
     @property
     def name(self):
         return self._name
@@ -37,26 +44,23 @@ class Gate(ABC):
 
     @property
     def global_phase(self):
-        return self._global_phase if hasattr(self,'_global_phase') else 0.0
+        return self._global_phase if hasattr(self, "_global_phase") else 0.0
 
     @global_phase.setter
-    def global_phase(self, value: Optional[float]=0.0):
+    def global_phase(self, value: Optional[float] = 0.0):
         self._global_phase = value
 
     def on(self, qubits):
-        
-        #avoid circular import
+
+        # avoid circular import
         from qbraid.circuits.instruction import Instruction
-        return Instruction(self,qubits)
+
+        return Instruction(self, qubits)
 
     def __call__(self, qubits):
         return self.on(qubits)
-"""
+
     def control(self, num_ctrls: Optional[int]=1):
 
         from .controlledgate import ControlledGate
-        new_name = 'C'+self._name
-        self._name=new_name
-        self._params=ParamSpec
-        return ControlledGate(new_name, self._num_qubits+1, self._params, self._global_phase, num_ctrls, self)
-        """
+        return ControlledGate(self, num_ctrls, self)
