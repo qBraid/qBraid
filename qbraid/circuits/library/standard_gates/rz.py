@@ -10,6 +10,7 @@ class RZ(Gate):
     Args:
         Gate (ABC): Extends basic gate class
     """
+
     def __init__(self, phi: float, global_phase: Optional[float] = 0.0):
         super().__init__("RZ", num_qubits=1, params=[phi], global_phase=global_phase)
 
@@ -28,5 +29,6 @@ class CRZ(ControlledGate):
     Args:
         ControlledGate (Gate): Extends controlled gate class
     """
+
     def __init__(self, phi: float, global_phase: Optional[float] = 0.0):
         super().__init__(RZ(phi), global_phase=global_phase)

@@ -6,13 +6,10 @@ from .instruction import (
     Instruction,
 )
 
-""" Update Rule """
 from .update_rule import (
     UpdateRule,
 )
 
-
-"""" Standard Gates """
 from .library.standard_gates import (
     DCX,
     H,

@@ -1,4 +1,3 @@
-from qbraid.circuits.library.standard_gates.u import U
 from typing import Union, Iterable
 import itertools
 
@@ -18,6 +17,7 @@ class Circuit:
         name: The name of the circuit
         update_rule: How to pick/create the moment to put operations into.
     """
+
     def __init__(
         self,
         num_qubits,
@@ -55,7 +55,11 @@ class Circuit:
     def __len__(self):
         return len(self._moments)
 
-    def _append_circuit(self, circuit, update_rule,) -> None:
+    def _append_circuit(
+        self,
+        circuit,
+        update_rule,
+    ) -> None:
 
         """this is for adding subroutines to circuits. so if we have a 3-qubit subroutine,
         the user should specify [2,4,5], implying that qubit 0 on the subroutine is mapped
@@ -66,12 +70,16 @@ class Circuit:
         """
         moments = circuit.moments
         for moment in moments:
-            if validate_operation(moment,self.num_qubits) and isinstance(moment , Moment):
-                self.append(moment,update_rule=update_rule)
+            if validate_operation(moment, self.num_qubits) and isinstance(
+                moment, Moment
+            ):
+                self.append(moment, update_rule=update_rule)
             else:
-                raise CircuitError(f"{circuit} of size {circuit.num_qubits} not appendable")
+                raise CircuitError(
+                    f"{circuit} of size {circuit.num_qubits} not appendable"
+                )
 
-    def _earliest_appended(self, op:Instruction) -> bool:
+    def _earliest_appended(self, op: Instruction) -> bool:
         """Helper function that scans through all the moments and appends the operation
         in the earliest moment.
         Args:
@@ -96,7 +104,10 @@ class Circuit:
         self._moments.append(new_moment)
 
     def _update(
-        self, operation: Union[Moment, Iterable[Instruction]], update_rule:UpdateRule, index:int=0
+        self,
+        operation: Union[Moment, Iterable[Instruction]],
+        update_rule: UpdateRule,
+        index: int = 0,
     ) -> None:
         """Cycles through all the operations and appends to circuit according to update rule.
 
@@ -151,14 +162,14 @@ class Circuit:
                     ),
                     0,
                 )
-                if validate_operation(op,num_qubits=self.num_qubits):
+                if validate_operation(op, num_qubits=self.num_qubits):
                     # moments don't need a strategy.
                     self._moments.insert(k, op)
                     k += 1
                 else:
                     raise CircuitError(f"The {op} moment is not appendable.")
             elif isinstance(op, Circuit):
-                self._append_circuit(op,update_rule=update_rule)
+                self._append_circuit(op, update_rule=update_rule)
 
     def append(
         self,
@@ -166,12 +177,15 @@ class Circuit:
         mapping: Union[list, dict] = None,
         update_rule: UpdateRule = None,
     ) -> None:
-        """ Appends an operation (circuit, moment or instruction) to the circuit.
+        """Appends an operation (circuit, moment or instruction) to the circuit.
 
         Args:
-            operation (Union[Instruction, Moment, Iterable[Instruction], Iterable[Moment]]): The moment/instruction or iterable of moment/instructions to append.
-            mapping (Union[list, dict], optional): An iterable with the qubits which the operation acts upon. Defaults to None.
-            update_rule (UpdateRule, optional): ow to pick/create the moment to put operations into. Defaults to None.
+            operation (Union[Instruction, Moment, Iterable[Instruction], Iterable[Moment]]):
+                The moment/instruction or iterable of moment/instructions to append.
+            mapping (Union[list, dict], optional):
+                An iterable with the qubits which the operation acts upon. Defaults to None.
+            update_rule (UpdateRule, optional):
+                How to pick/create the moment to put operations into. Defaults to None.
 
         """
         if operation is None:

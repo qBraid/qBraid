@@ -3,6 +3,8 @@ from ...gate import Gate
 
 
 class PowGate(Gate):
+    """Applies a global phase to a gate."""
+
     def __init__(
         self,
         name: str,

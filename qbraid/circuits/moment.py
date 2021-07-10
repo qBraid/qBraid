@@ -73,7 +73,8 @@ class Moment:
         """Wrapper which preps instructions to be appended, throws error if not appendable.
 
         Args:
-            instruction (Union[Instruction, Iterable[Instruction], Set]): The instruction or iterable of instructions to append.
+            instruction (Union[Instruction, Iterable[Instruction], Set]):
+            The instruction or iterable of instructions to append.
 
         Raises:
             TypeError: Non appendable type.
@@ -81,7 +82,8 @@ class Moment:
         # TODO: add generator appending functionality.
         if isinstance(instruction, Instruction):
             self._insert(instruction)
-        # might be redundant to have iterable here since circuit only appends Instructions or Moments.
+        # might be redundant to have iterable here since circuit
+        # only appends Instructions or Moments.
         elif isinstance(instruction, Iterable):
             for i in instruction:
                 self.append(i)

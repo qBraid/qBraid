@@ -1,4 +1,4 @@
-from typing import Iterable, Type, Union
+from typing import Iterable, Union
 
 from .circuit import Circuit
 
@@ -24,11 +24,10 @@ def _fix_length(output: Iterable[str]) -> str:
 
             Qubit 0: ---|H|-
             Qubit 1: -------
-        
     """
-    for i in range(len(output)):
-        if len(output[i]) < len(max(output, key=len)):
-            diff = len(max(output, key=len)) - len(output[i])
+    for i, val in enumerate(output):
+        if len(val) < len(max(output, key=len)):
+            diff = len(max(output, key=len)) - len(val)
             output[i] += "-" * diff
     return output
 
@@ -58,7 +57,7 @@ def drawer(circuit: Circuit) -> None:
     Args:
         circuit (Union[Circuit, Iterable[Circuit]]): The circuit that is to be drawn.
     """
-    if isinstance(circuit,Circuit):
+    if isinstance(circuit, Circuit):
         output = [f"Qubit {str(i)}:" for i in range(circuit.num_qubits)]
         for moment in circuit.moments:
             output = _draw_moment(output, circuit)
@@ -68,9 +67,7 @@ def drawer(circuit: Circuit) -> None:
                     output[instruction.qubits[0]] += gate_content
                 else:
                     # assuming only two qubit gates
-                    gate_content = "┤{}├".format(
-                        instruction.gate.name, instruction.qubits[0]
-                    )
+                    gate_content = "┤{}├".format(instruction.gate.name)
                     output[instruction.qubits[0]] += gate_content
                     output[instruction.qubits[1]] += gate_content
             output = _fix_length(output)

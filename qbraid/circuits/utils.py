@@ -1,5 +1,6 @@
-import numpy as np
 from typing import Union
+
+import numpy as np
 
 from .exceptions import CircuitError
 from .instruction import Instruction
@@ -51,7 +52,7 @@ def validate_operation(
     from .circuit import Circuit
 
     if validate_qubit(op, num_qubits) and (
-        isinstance(op, Instruction) or isinstance(op, Moment) or isinstance(op, Circuit)
+        isinstance(op, (Instruction, Moment, Circuit))
     ):
         return True
     else:

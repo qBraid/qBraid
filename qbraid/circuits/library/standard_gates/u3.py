@@ -9,6 +9,7 @@ class U3(Gate):
     Args:
         Gate (ABC): Extends basic gate class
     """
+
     def __init__(
         self, theta: float, phi: float, lam: float, global_phase: Optional[float] = 0.0
     ):

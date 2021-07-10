@@ -1,7 +1,5 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List
-from typing_extensions import ParamSpec
-
 
 class Gate(ABC):
     """Abstract class for gate library to extend and apply to instructions.
@@ -13,8 +11,6 @@ class Gate(ABC):
         None: No return for abstract class
     """
 
-
-class Gate(ABC):
     @abstractmethod
     def __init__(
         self,
@@ -25,7 +21,7 @@ class Gate(ABC):
     ):
         self._name = name
         self._num_qubits = num_qubits
-        self._params = [] if params == None else params
+        self._params = [] if params is None else params
         self._global_phase = global_phase
 
     @property
@@ -53,7 +49,6 @@ class Gate(ABC):
         self._global_phase = value
 
     def on(self, qubits):
-
         # avoid circular import
         from qbraid.circuits.instruction import Instruction
 

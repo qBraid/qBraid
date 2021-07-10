@@ -1,11 +1,11 @@
-from typing import Type, Union, Iterable
+from typing import Union, Iterable
 
 from .gate import Gate
 
 
 class Instruction:
-    """Instructions are the class which define the qubits which the operators will act on.
-    """
+    """Instructions are the class which define the qubits which the operators will act on."""
+
     def __init__(self, gate: Gate, qubits: Union[int, Iterable[int]]):
 
         self._gate = gate
