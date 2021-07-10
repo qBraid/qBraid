@@ -107,4 +107,4 @@ class Moment:
         else:
             raise CircuitError(
                 "Instructions of type {} not appendable".format(type(instruction))
-            )
+            )   

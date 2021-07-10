@@ -16,6 +16,7 @@ from typing import Optional
 
 from .scipy_optimizer import SciPyOptimizer
 
+
 class SLSQP(SciPyOptimizer):
     """
     Sequential Least SQuares Programming optimizer.

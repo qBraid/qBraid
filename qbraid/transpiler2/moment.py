@@ -7,8 +7,8 @@ from .utils import supported_packages
 from braket.circuits.moments import Moments as BraketMoments
 from cirq.ops.moment import Moment as CirqMoment
 
-class AbstractMomentWrapper(ABC):
 
+class AbstractMomentWrapper(ABC):
     def __init__(self):
         pass
 

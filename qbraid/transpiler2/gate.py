@@ -42,12 +42,10 @@ class GateWrapper(QbraidWrapper):
         """If transpiled object not created, create it. Then return."""
 
         if package not in self._outputs.keys():
-            
+
             if package not in self.supported_packages:
                 raise PackageError(package)
             output = gate_outputs[package](self, output_param_mapping)
             self._add_output(package, output)
-        
-        return self._outputs[package]
 
-    
+        return self._outputs[package]

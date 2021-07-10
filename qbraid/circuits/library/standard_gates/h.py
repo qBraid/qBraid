@@ -3,6 +3,7 @@ from ...controlledgate import ControlledGate
 from typing import Optional
 
 
+
 class H(Gate):
     """Single qubit hadamard Gate or superposition gate
 

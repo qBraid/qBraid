@@ -9,6 +9,7 @@ from .utils import validate_operation
 from .exceptions import CircuitError
 
 
+
 class Circuit:
     """
     Circuit class for qBraid quantum circuit objects.
@@ -17,7 +18,7 @@ class Circuit:
         name: The name of the circuit
         update_rule: How to pick/create the moment to put operations into.
     """
-
+    
     def __init__(
         self,
         num_qubits,
@@ -32,13 +33,14 @@ class Circuit:
     @property
     def num_qubits(self):
         return len(self._qubits)
-
+      
     @property
     def moments(self):
         return self._moments
 
     @property
     def instructions(self):
+
         instructions_list = []
         for moment in self._moments:
             instructions_list.extend(moment.instructions)

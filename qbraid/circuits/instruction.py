@@ -9,7 +9,6 @@ class Instruction:
     def __init__(self, gate: Gate, qubits: Union[int, Iterable[int]]):
 
         self._gate = gate
-
         if isinstance(qubits, int):
             self._qubits = [qubits]
         elif isinstance(qubits, Iterable):
@@ -20,8 +19,8 @@ class Instruction:
                     f"The input {qubits} is the incorrect number of qubits for {gate}."
                 )
         else:
-            raise AttributeError(f"The input type {type(qubits)} is invalid.")
 
+            raise AttributeError(f"The input type {type(qubits)} is invalid.")
     @property
     def gate(self):
         return self._gate
@@ -32,3 +31,4 @@ class Instruction:
 
     def __str__(self) -> str:
         return f"Instruction ({self._qubits} qubits, {self._gate} gate)"
+

@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional, List
 
+
 class Gate(ABC):
     """Abstract class for gate library to extend and apply to instructions.
 
