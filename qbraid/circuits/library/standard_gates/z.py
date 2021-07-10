@@ -4,6 +4,11 @@ from typing import Optional
 
 
 class Z(Gate):
+    """Single qubit Z gate or phase flip gate
+
+    Args:
+        Gate (ABC): Extends basic gate class
+    """
     def __init__(self, global_phase: Optional[float] = 0.0):
         super().__init__("Z", num_qubits=1, params=[], global_phase=global_phase)
 
@@ -17,5 +22,10 @@ class Z(Gate):
 
 
 class CZ(ControlledGate):
+    """Controlled version of Z gate
+
+    Args:
+        ControlledGate (Gate): Extends controlled gate class
+    """
     def __init__(self, global_phase: Optional[float] = 0.0):
         super().__init__(Z(),global_phase=global_phase)

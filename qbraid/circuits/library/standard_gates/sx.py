@@ -4,6 +4,13 @@ from typing import Optional
 
 
 class SX(Gate):
+    """Single qubit Square Root X gate, or x gate to 1/2 power
+
+    Also, know as a rotation of pi/4 about the x-axis
+
+    Args:
+        Gate (ABC): Extends basic gate class
+    """
     def __init__(self, global_phase: Optional[float] = 0.0):
         super().__init__("SX", num_qubits=1, params=[], global_phase=global_phase)
 
@@ -17,6 +24,11 @@ class SX(Gate):
 
 
 class CSX(ControlledGate):
+    """Controlled version of SX gate
+
+    Args:
+        ControlledGate (Gate): Extends controlled gate class
+    """
     def __init__(self, base_gate = None, global_phase: Optional[float] = 0.0):
         if not base_gate:
             base_gate = SX()

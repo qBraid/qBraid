@@ -28,5 +28,10 @@ class H(Gate):
 
 
 class CH(ControlledGate):
+    """Controlled version of Hadamard Gate
+
+    Args:
+        ControlledGate (Gate): Extends controlled gate class
+    """
     def __init__(self, global_phase: Optional[float] = 0.0):
         super().__init__(H(),1, global_phase = global_phase,)

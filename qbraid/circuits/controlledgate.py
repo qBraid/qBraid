@@ -5,13 +5,11 @@ from .gate import Gate
 
 
 class ControlledGate(Gate):
-<<<<<<< HEAD
     """Extension of Gate for standard gates with a controlled operation
 
     Args:
         Gate (Gate(ABC)): Extensions of basic gate class
     """
-=======
     def __init__(
         self,
         base_gate,
@@ -25,7 +23,6 @@ class ControlledGate(Gate):
     @property
     def num_qubits(self):
         return self.num_ctrls + self.base_gate.num_qubits
->>>>>>> 04ec590e17fa8a808f29650c735404918a2c4b99
 
     @property
     def num_ctrls(self):

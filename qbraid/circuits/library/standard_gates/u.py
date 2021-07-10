@@ -4,6 +4,12 @@ from typing import Optional
 
 
 class U(Gate):
+    """Single qubit generic rotation gate
+    with theta, phi, and lambda parameters
+
+    Args:
+        Gate (ABC): Extends basic gate class
+    """
     def __init__(
         self, theta: float, phi: float, lam: float, global_phase: Optional[float] = 0.0
     ):
@@ -22,6 +28,11 @@ class U(Gate):
 
 
 class CU(ControlledGate):
+    """Controlled version of U gate
+
+    Args:
+        ControlledGate (Gate): Extends controlled gate class
+    """
     def __init__(
         self, theta: float, phi: float, lam: float, global_phase: Optional[float] = 0.0
     ):

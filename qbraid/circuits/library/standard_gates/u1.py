@@ -4,6 +4,12 @@ from typing import Optional
 
 
 class U1(Gate):
+    """Single qubit diagonal gate for rotations about the z-axis
+    with theta parameter
+
+    Args:
+        Gate (ABC): Extends basic gate class
+    """
     def __init__(self, theta: float, global_phase: Optional[float] = 0.0):
         super().__init__("U1", num_qubits=1, params=[theta], global_phase=global_phase)
 
@@ -17,6 +23,11 @@ class U1(Gate):
 
 
 class CU1(ControlledGate):
+    """Controlled version of U1 gate
+
+    Args:
+        ControlledGate (Gate): Extends controlled gate class
+    """
     def __init__(self, theta: float, global_phase: Optional[float] = 0.0):
         super().__init__(
             "CU1",
