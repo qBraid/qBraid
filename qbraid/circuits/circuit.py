@@ -63,10 +63,6 @@ class Circuit:
 
         the user should also be able to specify directly as a dict:
             {0:2,1:4,5:5}
-
-            qiskit has two gate operation that,
-            circuit can just append moments (still need moments)
-            extend(**unzipped moments)
         """
         moments = circuit.moments
         for moment in moments:
