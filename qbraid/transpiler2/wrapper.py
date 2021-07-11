@@ -1,8 +1,8 @@
 from abc import ABC, abstractmethod
 from .utils import supported_packages
 
-class QbraidWrapper(ABC):
 
+class QbraidWrapper(ABC):
     @property
     @abstractmethod
     def package(self):
@@ -15,5 +15,3 @@ class QbraidWrapper(ABC):
     @abstractmethod
     def transpile(self):
         pass
-
-

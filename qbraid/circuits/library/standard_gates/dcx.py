@@ -1,6 +1,7 @@
 from ...gate import Gate
 from typing import Optional
 
+
 class DCX(Gate):
     """
     Two qubit double CNOT gate, 

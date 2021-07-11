@@ -3,18 +3,17 @@ from ...controlledgate import ControlledGate
 from typing import Optional
 
 
+
 class H(Gate):
     """
     Single qubit Hadamard gate or superposition gate.
     Args:
         global_phase[Optional]: The global phase on the gate
     """
-    def __init__(self, global_phase: Optional[float]=0.0):
-        super().__init__(
-            "H", 
-            num_qubits=1, 
-            params=[], 
-            global_phase=global_phase)
+
+    def __init__(self, global_phase: Optional[float] = 0.0):
+        super().__init__("H", num_qubits=1, params=[], global_phase=global_phase)
+
     def __init__(self, global_phase: Optional[float] = 0.0):
         super().__init__("H", num_qubits=1, params=[], global_phase=global_phase)
 
@@ -23,7 +22,7 @@ class H(Gate):
             return CH(self._global_phase)
         else:
             from ...controlledgate import ControlledGate
-            
+
             return ControlledGate(base_gate=self, num_ctrls=num_ctrls)
 
 
@@ -33,5 +32,10 @@ class CH(ControlledGate):
     Args:
         global_phase[Optional]: The global phase on the gate
     """
+
     def __init__(self, global_phase: Optional[float] = 0.0):
-        super().__init__(H(),1, global_phase = global_phase,)
+        super().__init__(
+            H(),
+            1,
+            global_phase=global_phase,
+        )

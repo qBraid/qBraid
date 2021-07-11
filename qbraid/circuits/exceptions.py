@@ -1,4 +1,4 @@
-from .exceptions import QbraidError
+from qbraid.exceptions import QbraidError
 
 
 class CircuitError(QbraidError):

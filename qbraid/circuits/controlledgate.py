@@ -1,5 +1,4 @@
-from typing import Optional, List
-from abc import abstractmethod
+from typing import Optional
 
 from .gate import Gate
 
@@ -10,12 +9,13 @@ class ControlledGate(Gate):
     Args:
         Gate (Gate(ABC)): Extensions of basic gate class
     """
+
     def __init__(
         self,
         base_gate,
         num_ctrls: Optional[int] = 1,
         global_phase: Optional[float] = 0.0,
-    ):
+    ):  #super?
         self._global_phase = global_phase
         self._num_ctrls = num_ctrls
         self._base_gate = base_gate
@@ -43,12 +43,10 @@ class ControlledGate(Gate):
     @property
     def name(self):
         if self._num_ctrls > 2:
-            return f'C{self._num_ctrls}{self._base_gate.name}'
+            return f"C{self._num_ctrls}{self._base_gate.name}"
         else:
-            c_s = 'C'*self._num_ctrls
+            c_s = "C" * self._num_ctrls
             return c_s + self._base_gate.name
-            
 
-    def control(self, num_ctrls:int = 1):
+    def control(self, num_ctrls: int = 1):
         self._num_ctrls += num_ctrls
-
