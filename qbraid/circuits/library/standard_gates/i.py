@@ -3,10 +3,11 @@ from typing import Optional
 
 
 class I(Gate):
-    """Single qubit identity gate that keeps qubit in same state
-
+    """
+    A single qubit identity gate that keeps qubit in same state
+    for a wait cycle. Should not be optimized.
     Args:
-        Gate (ABC): Extends basic gate class
+        global_phase[Optional]: The global phase on the gate
     """
 
     def __init__(self, global_phase: Optional[float] = 0.0):
