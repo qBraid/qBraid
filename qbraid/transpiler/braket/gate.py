@@ -1,10 +1,10 @@
-from ..gate import AbstractGate
+from ..gate import GateWrapper
 from .utils import get_braket_gate_data
 
 from braket.circuits.gate import Gate as BraketGate
 
 
-class BraketGateWrapper(AbstractGate):
+class BraketGateWrapper(GateWrapper):
     def __init__(self, gate: BraketGate):
 
         super().__init__()
@@ -24,4 +24,7 @@ class BraketGateWrapper(AbstractGate):
 
         self._gate_type = data["type"]
         self._outputs["braket"] = gate
-        self.package = "braket"
+
+    @property
+    def package(self):
+        return "braket"

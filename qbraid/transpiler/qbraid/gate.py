@@ -1,7 +1,7 @@
-from ..gate import AbstractGate
+from ..gate import GateWrapper
 
 
-class QbraidGateWrapper(AbstractGate):
+class QbraidGateWrapper(GateWrapper):
     """
     qBraid Gate Wrapper class
 

@@ -7,3 +7,9 @@ class CircuitError(QbraidError):
     """Base class for errors raised while processing a circuit."""
 
     pass
+
+
+class ParsingError(QbraidError):
+    """Base class for errors raised while processing a circuit."""
+
+    pass
