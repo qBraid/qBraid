@@ -1,4 +1,4 @@
-from .powgate import PowGate
+from ...powgate import PowGate
 from typing import Optional
 
 

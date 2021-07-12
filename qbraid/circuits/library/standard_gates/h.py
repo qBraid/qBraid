@@ -5,10 +5,12 @@ from typing import Optional
 
 
 class H(Gate):
-    """Single qubit hadamard Gate or superposition gate
-
+    """
+    A single qubit rotation about the x+z axis bringing a state
+    from the computational basis to the diagonal basis, i.e
+    |+>,|-> basis.
     Args:
-        Gate (ABC): Extension of basic gate class
+        global_phase[Optional]: The global phase on the gate
     """
 
     def __init__(self, global_phase: Optional[float] = 0.0):
@@ -27,10 +29,10 @@ class H(Gate):
 
 
 class CH(ControlledGate):
-    """Controlled version of Hadamard Gate
-
+    """
+    Controlled version of Hadamard Gate.
     Args:
-        ControlledGate (Gate): Extends controlled gate class
+        global_phase[Optional]: The global phase on the gate
     """
 
     def __init__(self, global_phase: Optional[float] = 0.0):

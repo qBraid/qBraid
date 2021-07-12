@@ -4,10 +4,10 @@ from typing import Optional
 
 
 class Phase(Gate):
-    """Single qubit phase gate with theta parameter
-
+    """Single qubit rotation about the x-y plane.
     Args:
-        Gate (ABC): Extends basic gate class
+        theta: Rotation in the x-y plane
+        global_phase[Optional]: The global phase on the gate
     """
 
     def __init__(self, theta: float, global_phase: Optional[float] = 0.0):
