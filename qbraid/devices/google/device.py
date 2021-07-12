@@ -1,5 +1,6 @@
 from ..device import DeviceLikeWrapper
 from .job import CirqEngineJobWrapper
+from .result import CirqResultWrapper
 from .utils import CIRQ_PROVIDERS
 from cirq import Circuit
 
@@ -24,8 +25,20 @@ class CirqSamplerWrapper(DeviceLikeWrapper):
         """Return the default options for running this device."""
         pass
 
-    def run(self, run_input, **options):
-        pass
+    def run(self, program, **options):
+        """Samples from the given Circuit. By default, the `run_async` method invokes this method
+        on another thread. So this method is supposed to be thread safe.
+        Args:
+            program: The circuit to sample from.
+            param_resolver: Parameters to run with the program.
+            repetitions: The number of times to sample.
+        Returns:
+            Result for a run.
+        """
+        cirq_sampler = self.vendor_dlo
+        cirq_result = cirq_sampler.run(program, **options)
+        qbraid_result = CirqResultWrapper(cirq_result)
+        return qbraid_result
 
 
 class CirqEngineWrapper(DeviceLikeWrapper):
