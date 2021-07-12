@@ -15,7 +15,7 @@ class ControlledGate(Gate):
         base_gate,
         num_ctrls: Optional[int] = 1,
         global_phase: Optional[float] = 0.0,
-    ):  #super?
+    ):  # super?
         self._global_phase = global_phase
         self._num_ctrls = num_ctrls
         self._base_gate = base_gate

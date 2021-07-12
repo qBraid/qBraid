@@ -3,7 +3,6 @@ from ...controlledgate import ControlledGate
 from typing import Optional
 
 
-
 class H(Gate):
     """
     A single qubit rotation about the x+z axis bringing a state

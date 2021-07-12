@@ -13,7 +13,7 @@ def circuit_to_qiskit(cw, auto_measure=False, output_mapping=None) -> QuantumCir
     qreg = QuantumRegister(cw.num_qubits)
     output_qubit_mapping = {index: Qubit(qreg, index) for index in range(len(qreg))}
     cw.output_qubit_mapping = output_qubit_mapping
-    
+
     # get instruction data to intermediate format
     # (will eventually include combing through moments)
     data = []
@@ -72,7 +72,6 @@ def gate_to_qiskit(gw, output_param_mapping):
     for i, param in enumerate(qiskit_params):
         if isinstance(param, ParamID):
             qiskit_params[i] = output_param_mapping[param]
-
 
     data = {
         "type": gw._gate_type,

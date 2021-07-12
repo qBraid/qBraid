@@ -19,7 +19,6 @@ from ..exceptions import JobError
 
 
 class QiskitJobWrapper(JobLikeWrapper):
-
     def __init__(self, qiskit_job: Job):
         """Qiskit ``Job`` wrapper class.
         Args:
@@ -53,8 +52,7 @@ class QiskitJobWrapper(JobLikeWrapper):
         return self.vendor_jlo.in_final_state()
 
     def wait_for_final_state(
-            self, timeout: Optional[float] = None, wait: float = 5,
-            callback: Optional[Callable] = None
+        self, timeout: Optional[float] = None, wait: float = 5, callback: Optional[Callable] = None
     ):
         """Poll the job status until it progresses to a final state such as ``DONE`` or ``ERROR``.
         Args:
@@ -72,14 +70,14 @@ class QiskitJobWrapper(JobLikeWrapper):
         try:
             self.vendor_jlo.wait_for_final_state(timeout, wait, callback)
         except JobTimeoutError as e:
-            raise JobError('qBraid JobError raised from {}'.format(type(e))) from e
+            raise JobError("qBraid JobError raised from {}".format(type(e))) from e
 
     def submit(self):
         """Submit the job to the backend for execution."""
         try:
             return self.vendor_jlo.submit()
         except QiskitJobError as e:
-            raise JobError('qBraid JobError raised from {}'.format(type(e))) from e
+            raise JobError("qBraid JobError raised from {}".format(type(e))) from e
 
     def result(self):
         """Return the results of the job."""

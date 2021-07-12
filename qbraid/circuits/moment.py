@@ -66,9 +66,7 @@ class Moment:
         """
         return set(instruction.qubits).isdisjoint(self.qubits)
 
-    def append(
-        self, instruction: Union[Instruction, Iterable[Instruction], Set]
-    ) -> None:
+    def append(self, instruction: Union[Instruction, Iterable[Instruction], Set]) -> None:
 
         """Wrapper which preps instructions to be appended, throws error if not appendable.
 
@@ -89,9 +87,7 @@ class Moment:
                 self.append(i)
         # error
         else:
-            raise TypeError(
-                "Instructions of type {} not appendable".format(type(instruction))
-            )
+            raise TypeError("Instructions of type {} not appendable".format(type(instruction)))
 
     def _insert(self, instruction: Instruction) -> None:
         """
@@ -105,6 +101,4 @@ class Moment:
         if self.appendable(instruction):
             self._instructions.append(instruction)
         else:
-            raise CircuitError(
-                "Instructions of type {} not appendable".format(type(instruction))
-            )   
+            raise CircuitError("Instructions of type {} not appendable".format(type(instruction)))

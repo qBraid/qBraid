@@ -22,7 +22,6 @@ import pandas as pd
 
 
 class CirqResultWrapper(ResultWrapper):
-
     def __init__(self, cirq_result: Result):
         """Cirq ``Result`` wrapper class.
         Args:

@@ -23,7 +23,6 @@ import asyncio
 
 
 class BraketQuantumTaskWrapper(JobLikeWrapper):
-
     def __init__(self, quantum_task: QuantumTask):
         """Braket ``QuantumTask`` wrapper class.
         Args:

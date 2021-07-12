@@ -2,6 +2,7 @@ from ..instruction import InstructionWrapper
 from ..parameter import ParamID
 from .gate import CirqGateWrapper
 from cirq.ops.raw_types import Operation as CirqInstruction
+
 # from cirq.ops.gate_operation import GateOperation as CirqInstruction
 
 

@@ -21,6 +21,7 @@ class Instruction:
         else:
 
             raise AttributeError(f"The input type {type(qubits)} is invalid.")
+
     @property
     def gate(self):
         return self._gate
@@ -31,4 +32,3 @@ class Instruction:
 
     def __str__(self) -> str:
         return f"Instruction ({self._qubits} qubits, {self._gate} gate)"
-

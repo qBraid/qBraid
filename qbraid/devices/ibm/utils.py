@@ -6,11 +6,10 @@ from typing import Union
 QiskitRunInput = Union[QuantumCircuit, Schedule, list]
 
 IBM_DEVICES = {
-    'AerSimulator': AerSimulator(),
-    'PulseSimulator': PulseSimulator(),
+    "AerSimulator": AerSimulator(),
+    "PulseSimulator": PulseSimulator(),
 }
 
 QISKIT_PROVIDERS = {
-    'IBM': IBM_DEVICES,
+    "IBM": IBM_DEVICES,
 }
-

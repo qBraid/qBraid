@@ -20,7 +20,6 @@ from ..job import JobLikeWrapper
 
 
 class CirqEngineJobWrapper(JobLikeWrapper):
-
     def __init__(self, engine_job: EngineJob):
         """Cirq ``EngineJob`` wrapper class.
         Args:

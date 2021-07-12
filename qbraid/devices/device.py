@@ -15,7 +15,6 @@ from .wrapper import QbraidDeviceLikeWrapper
 
 
 class DeviceLikeWrapper(QbraidDeviceLikeWrapper):
-
     def __init__(self, name, provider, **fields):
         """Abstract interface for device-like classes.
         Args:

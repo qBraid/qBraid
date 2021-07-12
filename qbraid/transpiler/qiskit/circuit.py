@@ -7,7 +7,7 @@ from qbraid.exceptions import PackageError
 
 
 class QiskitCircuitWrapper(CircuitWrapper):
-    def __init__(self, circuit: QuantumCircuit, input_qubit_mapping = None):
+    def __init__(self, circuit: QuantumCircuit, input_qubit_mapping=None):
 
         super().__init__()
 

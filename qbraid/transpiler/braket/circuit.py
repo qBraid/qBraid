@@ -12,9 +12,12 @@ class BraketCircuitWrapper(CircuitWrapper):
 
         self.circuit = circuit
         self.qubits = circuit.qubits
-        self.input_qubit_mapping = input_qubit_mapping if input_qubit_mapping \
+        self.input_qubit_mapping = (
+            input_qubit_mapping
+            if input_qubit_mapping
             else {q: i for i, q in enumerate(self.qubits)}
-        self.instructions = [] 
+        )
+        self.instructions = []
 
         for instruction in circuit.instructions:
 
