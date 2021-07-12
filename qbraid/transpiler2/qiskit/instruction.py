@@ -14,7 +14,7 @@ class QiskitInstructionWrapper(InstructionWrapper):
         self.qubits = qubits
 
         self.gate = QiskitGateWrapper(instruction, params)
-        self.params = params
+        self._params = params
 
     @property
     def package(self):

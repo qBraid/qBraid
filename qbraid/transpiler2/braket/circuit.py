@@ -1,3 +1,4 @@
+from braket.circuits.instruction import InstructionOperator
 from ..circuit import CircuitWrapper
 from .instruction import BraketInstructionWrapper
 from qbraid.exceptions import PackageError
@@ -5,18 +6,19 @@ from braket.circuits.circuit import Circuit
 
 
 class BraketCircuitWrapper(CircuitWrapper):
-    def __init__(self, circuit: Circuit):
+    def __init__(self, circuit: Circuit, input_qubit_mapping=None):
 
         super().__init__()
 
         self.circuit = circuit
         self.qubits = circuit.qubits
-        self.input_mapping = {q: i for i, q in enumerate(self.qubits)}
-        self.instructions = []
+        self.input_qubit_mapping = input_qubit_mapping if input_qubit_mapping \
+            else {q: i for i, q in enumerate(self.qubits)}
+        self.instructions = [] 
 
         for instruction in circuit.instructions:
 
-            qubits = [self.input_mapping[q] for q in instruction.target]
+            qubits = [self.input_qubit_mapping[q] for q in instruction.target]
             next_instruction = BraketInstructionWrapper(instruction, qubits)
             self.instructions.append(next_instruction)
 

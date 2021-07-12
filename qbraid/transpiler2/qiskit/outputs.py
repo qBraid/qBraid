@@ -11,14 +11,15 @@ from .utils import create_qiskit_gate, qiskit_gates
 def circuit_to_qiskit(cw, auto_measure=False, output_mapping=None) -> QuantumCircuit:
 
     qreg = QuantumRegister(cw.num_qubits)
-    output_mapping = {index: Qubit(qreg, index) for index in range(len(qreg))}
-
+    output_qubit_mapping = {index: Qubit(qreg, index) for index in range(len(qreg))}
+    cw.output_qubit_mapping = output_qubit_mapping
+    
     # get instruction data to intermediate format
     # (will eventually include combing through moments)
     data = []
     measurement_qubit_indices = set()
     for instruction in cw.instructions:
-        gate, qubits, measurement_qubits = instruction.transpile("qiskit", output_mapping)
+        gate, qubits, measurement_qubits = instruction.transpile("qiskit", output_qubit_mapping)
         data.append((gate, qubits, measurement_qubits))
         measurement_qubit_indices.update(measurement_qubits)
 
@@ -67,9 +68,11 @@ def gate_to_qiskit(gw, output_param_mapping):
     """Create qiskit gate from a qbraid gate wrapper object."""
 
     qiskit_params = gw.params.copy()
+
     for i, param in enumerate(qiskit_params):
         if isinstance(param, ParamID):
             qiskit_params[i] = output_param_mapping[param]
+
 
     data = {
         "type": gw._gate_type,

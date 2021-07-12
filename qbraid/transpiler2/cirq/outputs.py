@@ -67,3 +67,6 @@ def gate_to_cirq(gw, output_param_mapping):
         data["name"] = data["type"]
         data["type"] = "Unitary"
         return create_cirq_gate(data)
+
+    else:
+        raise TypeError(f"Gate type {gw._gate_type} not supported.")
