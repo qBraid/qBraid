@@ -54,7 +54,10 @@ def qiskit_shared_gates_circuit():
     circuit.cx(0, 1)
     circuit.cp(np.pi / 4, 2, 3)
 
-    return circuit
+    unitary = to_unitary(circuit)
+    qbraid_circuit = qbraid_wrapper(circuit)
+
+    return qbraid_circuit, unitary
 
 
 def cirq_shared_gates_circuit(rev_qubits=False):
@@ -64,6 +67,7 @@ def cirq_shared_gates_circuit(rev_qubits=False):
     circuit = CirqCircuit()
     qubits = [cirq.LineQubit(i) for i in range(4)]
     q3, q2, q1, q0 = qubits if rev_qubits else list(reversed(qubits))
+    mapping = {q3: 0, q2: 1, q1: 2, q0: 3} if rev_qubits else {q0: 0, q1: 1, q2: 2, q3: 3}
 
     cirq_gates = [
         cirq.H(q0),
@@ -94,7 +98,10 @@ def cirq_shared_gates_circuit(rev_qubits=False):
     for gate in cirq_gates:
         circuit.append(gate)
 
-    return circuit
+    unitary = to_unitary(circuit)
+    qbraid_circuit = qbraid_wrapper(circuit, input_qubit_mapping=mapping)
+
+    return qbraid_circuit, unitary
 
 
 def braket_shared_gates_circuit():
@@ -122,29 +129,22 @@ def braket_shared_gates_circuit():
     circuit.cnot(0, 1)
     circuit.cphaseshift(2, 3, np.pi / 4)
 
-    return circuit
+    unitary = to_unitary(circuit)
+    qbraid_circuit = qbraid_wrapper(circuit)
+
+    return qbraid_circuit, unitary
 
 
 # Define circuits and unitaries
-braket_circuit = braket_shared_gates_circuit()
-cirq_circuit = cirq_shared_gates_circuit()
-cirq_rev_circuit = cirq_shared_gates_circuit(rev_qubits=True)
-qiskit_circuit = qiskit_shared_gates_circuit()
-
-braket_unitary = to_unitary(braket_circuit)
-cirq_unitary = to_unitary(cirq_circuit)
-cirq_rev_unitary = to_unitary(cirq_rev_circuit)
-qiskit_unitary = to_unitary(qiskit_circuit)
+qbraid_circuit_braket, braket_unitary = braket_shared_gates_circuit()
+qbraid_circuit_cirq, cirq_unitary = cirq_shared_gates_circuit()
+qbraid_circuit_cirq_rev, cirq_rev_unitary = cirq_shared_gates_circuit(rev_qubits=True)
+qbraid_circuit_qiskit, qiskit_unitary = qiskit_shared_gates_circuit()
 
 cirq_qiskit_equal = np.allclose(cirq_rev_unitary, qiskit_unitary)
 cirq_braket_equal = np.allclose(cirq_rev_unitary, braket_unitary)
 qiskit_braket_equal = np.allclose(qiskit_unitary, braket_unitary)
 assert cirq_qiskit_equal and cirq_braket_equal and qiskit_braket_equal
-
-qbraid_circuit_braket = qbraid_wrapper(braket_circuit)
-qbraid_circuit_cirq = qbraid_wrapper(cirq_circuit)
-qbraid_circuit_cirq_rev = qbraid_wrapper(cirq_rev_circuit)
-qbraid_circuit_qiskit = qbraid_wrapper(qiskit_circuit)
 
 data_test_shared_gates = [
     (qbraid_circuit_braket, "cirq", cirq_unitary),
