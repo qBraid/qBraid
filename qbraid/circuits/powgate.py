@@ -1,5 +1,5 @@
 from typing import Optional, List
-from ...gate import Gate
+from gate import Gate
 
 
 class PowGate(Gate):
