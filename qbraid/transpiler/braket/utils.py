@@ -147,7 +147,12 @@ braket_gates = {
 }
 
 
-def create_braket_gate(gate_type: str, params: Iterable = None, matrix=None):
+def create_braket_gate(data):
+
+    gate_type = data["type"]
+    params = data["params"]
+    matrix = data["matrix"]
+
     # single qubit
     if gate_type in ("H", "X", "Y", "Z", "S", "Sdg", "T", "Tdg", "I", "SX", "SXdg"):
         return braket_gates[gate_type]()
@@ -177,5 +182,4 @@ def create_braket_gate(gate_type: str, params: Iterable = None, matrix=None):
 
     # error
     else:
-        print(gate_type)
-        raise TypeError("Gate type not handled")
+        raise TypeError(f"Gate of type {gate_type} not supported.")

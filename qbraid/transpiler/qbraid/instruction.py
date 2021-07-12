@@ -1,8 +1,8 @@
-from ..instruction import AbstractInstructionWrapper
+from ..instruction import InstructionWrapper
 from .gate import QbraidGateWrapper
 
 
-class QbraidInstructionWrapper(AbstractInstructionWrapper):
+class QbraidInstructionWrapper(InstructionWrapper):
     def __init__(self, qbraid_gate: QbraidGateWrapper, qubits, clbits=None):
 
         super().__init__()

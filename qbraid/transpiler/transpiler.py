@@ -1,11 +1,9 @@
-from .braket.circuit import BraketCircuitWrapper
-from .cirq.circuit import CirqCircuitWrapper
-from .qiskit.circuit import QiskitCircuitWrapper
 from .utils import get_package_name
+from .wrappers import circuit_wrappers
 from qbraid.exceptions import PackageError
 
 
-def qbraid_wrapper(circuit):
+def qbraid_wrapper(circuit, **kwargs):
 
     """Apply qbraid wrapper to a circuit-type object from a supported packasge.
     currently only works for "circuit" objects, but should probably also work
@@ -13,11 +11,7 @@ def qbraid_wrapper(circuit):
 
     package = get_package_name(circuit)
 
-    if package == "qiskit":
-        return QiskitCircuitWrapper(circuit)
-    elif package == "cirq":
-        return CirqCircuitWrapper(circuit)
-    elif package == "braket":
-        return BraketCircuitWrapper(circuit)
+    if package in circuit_wrappers:
+        return circuit_wrappers[package](circuit, **kwargs)
     else:
         raise PackageError(package)

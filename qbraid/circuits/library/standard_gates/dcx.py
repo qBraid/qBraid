@@ -3,10 +3,11 @@ from typing import Optional
 
 
 class DCX(Gate):
-    """2 qubit double CNOT gate, two CNOTs with opposite control qubits next to each other
-
+    """
+    A 2-qubit double CNOT gate consisting of two CNOTs place
+    back-to-back with alternating control qubits.
     Args:
-        Gate (ABC): Extension of basic gate class
+        global_phase[Optional]: The global phase on the gate
     """
 
     def __init__(self, global_phase: Optional[float] = 0.0):

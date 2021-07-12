@@ -3,10 +3,10 @@ from typing import Optional
 
 
 class Measure(Gate):
-    """Place single qubit measurement
-
+    """
+    Place a single qubit measurement to collapse the state of the qubit.
     Args:
-        Gate (ABC): Extends Basic gate class
+        global_phase[Optional]: The global phase on the gate
     """
 
     def __init__(self, global_phase: Optional[float] = 0):
