@@ -1,5 +1,3 @@
-from typing import Iterable
-
 from braket.circuits.gate import Gate as BraketGate
 
 
@@ -182,4 +180,4 @@ def create_braket_gate(data):
 
     # error
     else:
-        raise TypeError(f"Gate of type {gate_type} not supported.")
+        raise TypeError(f"Gate of type {gate_type} not supported for Braket transpile.")

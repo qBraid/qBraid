@@ -19,19 +19,4 @@ class QbraidError(Exception):
 class PackageError(QbraidError):
     """Raised when trying to use an unsuported package."""
 
-    def __init__(self, package: Optional[str] = None, msg: Optional[str] = None) -> None:
-        """Set the error message.
-        Args:
-            package: Name of unsupported package
-            msg: Descriptive message, if any
-        """
-
-        message = []
-        if package:
-            message.append("{} is not a supported package".format(package))
-        else:
-            message.append("Package not supported")
-        if msg:
-            message.append(" {}.".format(msg))
-
-        super().__init__(" ".join(message))
+    pass

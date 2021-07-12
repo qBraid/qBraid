@@ -10,4 +10,4 @@ class QbraidInstructionWrapper(InstructionWrapper):
         self.instruction = qbraid_gate
         self.qubits = qubits
         self.clbits = clbits
-        self.package = "qbraid"
+        self._package = "qbraid"

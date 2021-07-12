@@ -3,9 +3,10 @@ from .utils import supported_packages
 
 
 class QbraidWrapper(ABC):
+
     @property
     @abstractmethod
-    def package(self):
+    def package(self) -> str:
         pass
 
     @property
@@ -13,5 +14,5 @@ class QbraidWrapper(ABC):
         return supported_packages[self.package]
 
     @abstractmethod
-    def transpile(self):
+    def transpile(self, package: str, *args, **kwargs):
         pass

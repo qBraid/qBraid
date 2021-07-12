@@ -24,6 +24,7 @@ class CirqGateWrapper(GateWrapper):
 
         self._gate_type = data["type"]
         self._outputs["cirq"] = gate
+        self._package = "cirq"
 
     def get_abstract_params(self):
         if not (self.params is None):
@@ -35,7 +36,3 @@ class CirqGateWrapper(GateWrapper):
         self.params = [
             input_param_mapping[p] if isinstance(p, CirqParameter) else p for p in self.params
         ]
-
-    @property
-    def package(self):
-        return "cirq"

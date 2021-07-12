@@ -1,8 +1,6 @@
 from ..circuit import CircuitWrapper
 from .instruction import CirqInstructionWrapper
 
-# from qbraid.exceptions import PackageError
-
 from cirq.circuits import Circuit
 
 

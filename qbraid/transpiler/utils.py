@@ -16,4 +16,4 @@ def get_package_name(obj):
     if package_name in ["qiskit", "cirq", "braket", "qbraid"]:
         return package_name
     else:
-        raise PackageError(str(package_name))
+        raise PackageError(f"{package_name} is not a supported package.")

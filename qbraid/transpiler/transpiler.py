@@ -14,4 +14,4 @@ def qbraid_wrapper(circuit, **kwargs):
     if package in circuit_wrappers:
         return circuit_wrappers[package](circuit, **kwargs)
     else:
-        raise PackageError(package)
+        raise PackageError(f"{package} is not a supported package.")

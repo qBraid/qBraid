@@ -68,11 +68,8 @@ CirqGate = Union[Gate, MeasurementGate]
 
 
 def get_cirq_gate_data(gate: CirqGate) -> dict:
-    """
+    """Returns cirq gate data."""
 
-    :param gate:
-    :return:
-    """
     data = {"type": None, "params": [], "matrix": None, "num_controls": 0}
 
     # measurement gate
@@ -241,4 +238,4 @@ def create_cirq_gate(data):
 
     # error
     else:
-        raise PackageError("{} gate not supported for Cirq conversion.".format(gate_type))
+        raise TypeError(f"Gate of type {gate_type} not supported for Cirq transpile.")

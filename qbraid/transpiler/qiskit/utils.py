@@ -1,3 +1,4 @@
+from qiskit.circuit import Instruction
 from qiskit.circuit.gate import Gate
 from qiskit.circuit.measure import Measure
 from qiskit.extensions.unitary import UnitaryGate
@@ -51,7 +52,7 @@ qiskit_gates = {
     "MEASURE": Measure,
 }
 
-QiskitGate = Union[Measure, Gate]
+QiskitGate = Union[Measure, Gate, Instruction]
 
 
 def get_qiskit_gate_data(gate: QiskitGate) -> dict:
@@ -275,4 +276,4 @@ def create_qiskit_gate(data: dict) -> QiskitGate:
         return UnitaryGate(matrix, label=gate_type)
 
     else:
-        raise CircuitError("{} gate not supported for Qiskit conversion.".format(gate_type))
+        raise TypeError(f"Gate of type {gate_type} not supported for Qiskit transpile.")

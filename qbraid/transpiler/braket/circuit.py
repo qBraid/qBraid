@@ -1,8 +1,7 @@
-from braket.circuits.instruction import InstructionOperator
-from ..circuit import CircuitWrapper
-from .instruction import BraketInstructionWrapper
-from qbraid.exceptions import PackageError
 from braket.circuits.circuit import Circuit
+
+from .instruction import BraketInstructionWrapper
+from ..circuit import CircuitWrapper
 
 
 class BraketCircuitWrapper(CircuitWrapper):

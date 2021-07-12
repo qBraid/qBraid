@@ -12,7 +12,4 @@ class BraketInstructionWrapper(InstructionWrapper):
         self.instruction = instruction
         self.qubits = qubits
         self.gate = BraketGateWrapper(instruction.operator)
-
-    @property
-    def package(self):
-        return "braket"
+        self._package = "braket"

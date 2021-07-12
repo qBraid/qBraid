@@ -1,9 +1,8 @@
-from ..circuit import CircuitWrapper
-from ..utils import supported_packages
-from ..parameter import ParamID
-from .instruction import QiskitInstructionWrapper
 from qiskit.circuit import QuantumCircuit, Parameter
-from qbraid.exceptions import PackageError
+
+from .instruction import QiskitInstructionWrapper
+from ..circuit import CircuitWrapper
+from ..parameter import ParamID
 
 
 class QiskitCircuitWrapper(CircuitWrapper):

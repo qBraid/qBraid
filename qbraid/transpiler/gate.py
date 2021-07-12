@@ -19,21 +19,22 @@ class GateWrapper(QbraidWrapper):
 
         self._gate_type = None
         self._outputs = {}
+        self._package = None
 
     def _add_output(self, package, output):
         self._outputs[package] = output
 
     @property
     def package(self):
-        return None
+        return self._package
 
-    def transpile(self, package: str, output_param_mapping):
+    def transpile(self, package, *output_param_mapping):
         """If transpiled object not created, create it. Then return."""
 
         if package not in self._outputs.keys():
 
             if package not in self.supported_packages:
-                raise PackageError(package)
+                raise PackageError(f"{package} is not a supported package.")
             output = gate_outputs[package](self, output_param_mapping)
             self._add_output(package, output)
 

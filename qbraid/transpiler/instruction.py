@@ -13,6 +13,7 @@ class InstructionWrapper(QbraidWrapper):
         self._params = None
 
         self._outputs = {}
+        self._package = None
 
     @property
     def params(self):
@@ -20,17 +21,15 @@ class InstructionWrapper(QbraidWrapper):
 
     @property
     def package(self):
-        return None
+        return self._package
 
     def transpile(
         self, package: str, output_qubit_mapping: dict = None, output_param_mapping: dict = None
     ):
 
         if package == self.package:
-            return self.circuit
+            return self.instruction
         elif package in self.supported_packages:
             return instruction_outputs[package](self, output_qubit_mapping, output_param_mapping)
         else:
-            raise PackageError(
-                f"This instruction cannot be transpiled from {self.package} to {package}."
-            )
+            raise PackageError(f"{package} is not a supported package.")

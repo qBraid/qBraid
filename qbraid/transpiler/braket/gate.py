@@ -24,7 +24,4 @@ class BraketGateWrapper(GateWrapper):
 
         self._gate_type = data["type"]
         self._outputs["braket"] = gate
-
-    @property
-    def package(self):
-        return "braket"
+        self._package = "braket"

@@ -14,9 +14,6 @@ class QbraidGateWrapper(GateWrapper):
     Attributes:
         package: the name of the pacakge to which the original gate object
             belongs (eg. 'qiskit')
-
-    Methods:
-
     """
 
     def __init__(self, gate_type: str):
@@ -24,4 +21,4 @@ class QbraidGateWrapper(GateWrapper):
         super().__init__()
 
         self._gate_type = gate_type
-        self.package = "qbraid"
+        self._package = "qbraid"

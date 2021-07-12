@@ -1,10 +1,11 @@
-from ..exceptions import ParsingError
+from typing import Union
+
 from braket.circuits import Circuit
+from braket.circuits import Gate as BraketGate
 from braket.circuits import Instruction
 from braket.circuits import Qubit
-from braket.circuits import Gate as BraketGate
+
 from .utils import create_braket_gate, braket_gates
-from typing import Union
 
 
 def circuit_to_braket(cw, output_mapping=None):
