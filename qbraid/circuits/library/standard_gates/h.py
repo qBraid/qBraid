@@ -6,7 +6,9 @@ from typing import Optional
 
 class H(Gate):
     """
-    Single qubit Hadamard gate or superposition gate.
+    A single qubit rotation about the x+z axis bringing a state
+    from the computational basis to the diagonal basis, i.e
+    |+>,|-> basis.
     Args:
         global_phase[Optional]: The global phase on the gate
     """

@@ -4,8 +4,8 @@ from typing import Optional
 
 class DCX(Gate):
     """
-    Two qubit double CNOT gate, 
-    which is two CNOTs with opposite control qubits next to each other.
+    A 2-qubit double CNOT gate consisting of two CNOTs place
+    back-to-back with alternating control qubits.
     Args:
         global_phase[Optional]: The global phase on the gate
     """
