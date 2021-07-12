@@ -11,10 +11,10 @@ from qbraid.devices.google.device import CirqSamplerWrapper
 
 import qiskit
 from qiskit.providers.aer.aerjob import AerJob
-from abc import ABCMeta as QiskitDeviceType
+from qiskit.providers import BackendV1 as QiskitBackend
+
 from qbraid.devices.ibm.device import QiskitBackendWrapper
 from qbraid.devices.ibm.job import QiskitJobWrapper
-
 from qbraid.devices.utils import SUPPORTED_VENDORS
 from qbraid.devices.utils import device_wrapper
 
@@ -46,7 +46,7 @@ def test_init_cirq_device_wrapper(device, provider, vendor):
     qbraid_device = device_wrapper(device, provider, vendor=vendor)
     vendor_device = qbraid_device.vendor_dlo
     assert isinstance(qbraid_device, CirqSamplerWrapper)
-    assert isinstance(vendor_device, CirqDevice)
+    assert isinstance(vendor_device, CirqDevice) or vendor_device is None
 
 
 @pytest.mark.parametrize("device,provider,vendor", inputs_qiskit_device_wrapper)
@@ -54,7 +54,7 @@ def test_init_qiskit_device_wrapper(device, provider, vendor):
     qbraid_device = device_wrapper(device, provider, vendor=vendor)
     vendor_device = qbraid_device.vendor_dlo
     assert isinstance(qbraid_device, QiskitBackendWrapper)
-    assert isinstance(vendor_device, QiskitDeviceType)
+    assert isinstance(vendor_device, QiskitBackend) or vendor_device is None
 
 
 @pytest.mark.parametrize("device,provider,vendor", [inputs_qiskit_device_wrapper[0]])
