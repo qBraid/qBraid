@@ -21,7 +21,6 @@ from typing import Optional
 
 
 class BraketDeviceWrapper(DeviceLikeWrapper):
-
     def __init__(self, name, provider, **fields):
         """Braket ``Device`` wrapper class
         Args:

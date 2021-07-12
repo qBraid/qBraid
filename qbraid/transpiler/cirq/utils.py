@@ -7,7 +7,7 @@ from cirq.ops.swap_gates import *
 from cirq.ops.three_qubit_gates import *
 import numpy as np
 
-from ..exceptions import CircuitError
+from qbraid.exceptions import PackageError
 
 
 class CirqU3Gate(SingleQubitGate):
@@ -92,40 +92,45 @@ def get_cirq_gate_data(gate: CirqGate) -> dict:
             data["params"] = [t]
 
     elif isinstance(gate, XPowGate):
-        if gate.exponent == 1:
-            data["type"] = "X"
-        elif gate.global_shift == -0.5:
-            params = [gate.exponent * np.pi]
+        if gate.global_shift == -0.5:
             data["type"] = "RX"
-            data["params"] = params
+            data["params"] = [gate.exponent * np.pi]
+        elif gate.global_shift == 0.0 and gate.exponent == 1:
+            data["type"] = "X"
         else:
             data["type"] = "XPow"
-
-            t = gate.exponent
-            data["params"] = [t]
+            data["params"] = [gate.exponent]
 
     elif isinstance(gate, YPowGate):
-        if gate.exponent == 1:
+        if gate.global_shift == -0.5:
+            data["type"] = "RY"
+            data["params"] = [gate.exponent * np.pi]
+        elif gate.global_shift == 0 and gate.exponent == 1:
             data["type"] = "Y"
         else:
             data["type"] = "YPow"
-
-            t = gate.exponent
-            data["params"] = [t]
+            data["params"] = [gate.exponent]
 
     elif isinstance(gate, ZPowGate):
-        if gate.exponent == 1:
-            data["type"] = "Z"
-        elif gate.exponent == 0.5:
-            data["type"] = "S"
-        elif gate.exponent == 0.25:
-            data["type"] = "T"
+        if gate.global_shift == 0:
+            if gate.exponent == 1:
+                data["type"] = "Z"
+            elif gate.exponent == 0.5:
+                data["type"] = "S"
+            elif gate.exponent == 0.25:
+                data["type"] = "T"
+            else:
+                data["type"] = "Phase"
+                t = gate.exponent
+                lam = t * np.pi
+                data["params"] = [lam]
+        elif gate.global_shift == -0.5:
+            data["type"] = "RZ"
+            params = [gate.exponent * np.pi]
+            data["params"] = params
         else:
-            data["type"] = "Phase"
-
-            t = gate.exponent
-            lam = t * np.pi
-            data["params"] = [lam]
+            data["type"] = "ZPow"
+            data["params"] = [gate.exponent]
 
     # two qubit gates
     elif isinstance(gate, CXPowGate):
@@ -169,7 +174,7 @@ def get_cirq_gate_data(gate: CirqGate) -> dict:
 
     else:
         if data["type"] != "MEASURE":
-            raise CircuitError("Gate of type {} not supported".format(type(gate)))
+            raise PackageError("Gate of type {} not supported".format(type(gate)))
 
     return data
 
@@ -236,4 +241,4 @@ def create_cirq_gate(data):
 
     # error
     else:
-        raise CircuitError("{} gate not supported for Cirq conversion.".format(gate_type))
+        raise PackageError("{} gate not supported for Cirq conversion.".format(gate_type))

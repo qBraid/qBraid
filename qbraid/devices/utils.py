@@ -11,14 +11,15 @@ from .google.utils import CIRQ_PROVIDERS
 from .ibm.utils import QISKIT_PROVIDERS
 
 SUPPORTED_VENDORS = {
-    'AWS': BRAKET_PROVIDERS,
-    'Google': CIRQ_PROVIDERS,
-    'IBM': QISKIT_PROVIDERS,
+    "AWS": BRAKET_PROVIDERS,
+    "Google": CIRQ_PROVIDERS,
+    "IBM": QISKIT_PROVIDERS,
 }
 
 
-def device_wrapper(name: str, provider: str, vendor: Optional[str] = None, **fields) \
-        -> DeviceLikeWrapper:
+def device_wrapper(
+    name: str, provider: str, vendor: Optional[str] = None, **fields
+) -> DeviceLikeWrapper:
     """Apply qbraid device wrapper to device from a supported device provider. If vendor is None,
     it is assumed that the vendor is the same as the provider. If the vendor is not the same as the
     provider, the vendor must be specified.
@@ -43,7 +44,7 @@ def device_wrapper(name: str, provider: str, vendor: Optional[str] = None, **fie
     elif vendor == "IBM":
         return QiskitBackendWrapper(name, provider, **fields)
     else:
-        raise DeviceError("\"{}\" is not a supported vendor.".format(vendor))
+        raise DeviceError('"{}" is not a supported vendor.'.format(vendor))
 
 
 def get_devices():
@@ -53,4 +54,4 @@ def get_devices():
         for provider_key in SUPPORTED_VENDORS[vendor_key]:
             for device_key in SUPPORTED_VENDORS[vendor_key][provider_key]:
                 device_list.append([vendor_key, provider_key, device_key])
-    print(tabulate(device_list, headers=['Software Vendor', 'Device Provider', 'Device Name']))
+    print(tabulate(device_list, headers=["Software Vendor", "Device Provider", "Device Name"]))

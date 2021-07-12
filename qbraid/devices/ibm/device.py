@@ -16,7 +16,6 @@ from .job import QiskitJobWrapper
 
 
 class QiskitBackendWrapper(DeviceLikeWrapper):
-
     def __init__(self, name, provider, **fields):
         """Qiskit ``Backend`` wrapper class
         Args:

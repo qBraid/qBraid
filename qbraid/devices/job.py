@@ -17,7 +17,6 @@ from typing import Dict, Any
 
 
 class JobLikeWrapper(QbraidJobLikeWrapper):
-
     def __init__(self, vendor_jlo):
         """Abstract interface for job-like classes.
         Args:
@@ -61,5 +60,3 @@ class JobLikeWrapper(QbraidJobLikeWrapper):
     def __repr__(self) -> str:
         """String representation of a JobLikeWrapper object."""
         return f"<{self.__class__.__name__}(id:'{self.id}')>"
-
-

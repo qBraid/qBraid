@@ -1,64 +1,36 @@
-from abc import ABC
-from braket.circuits.instruction import Instruction as BraketInstruction
-from cirq.ops.measure_util import measure as CirqMeasure
-from qiskit.circuit.measure import Measure as QiskitMeasure
-
 from qbraid.exceptions import PackageError
+from .outputs import instruction_outputs
+from .wrapper import QbraidWrapper
 
 
-class AbstractInstructionWrapper(ABC):
+class InstructionWrapper(QbraidWrapper):
     def __init__(self):
 
         self.instruction = None
         self.qubits = []
-        self.clbits = []
-        self.package = None
+
         self.gate = None
-        self.params = None
+        self._params = None
 
         self._outputs = {}
 
-    def _to_braket(self):
+    @property
+    def params(self):
+        return self._params
 
-        gate = self.gate.transpile("braket")
-        qubits = [qubit.transpile("braket") for qubit in self.qubits]
+    @property
+    def package(self):
+        return None
 
-        if gate == "BraketMeasure":
-            return None
+    def transpile(
+        self, package: str, output_qubit_mapping: dict = None, output_param_mapping: dict = None
+    ):
+
+        if package == self.package:
+            return self.circuit
+        elif package in self.supported_packages:
+            return instruction_outputs[package](self, output_qubit_mapping, output_param_mapping)
         else:
-            return BraketInstruction(gate, qubits)
-
-    def _to_cirq(self):
-
-        qubits = [qubit.transpile("cirq") for qubit in self.qubits]
-        gate = self.gate.transpile("cirq")
-
-        if gate == "CirqMeasure":
-            return [CirqMeasure(q, key=str(q.x)) for q in qubits]
-        else:
-            return gate(*qubits)
-
-    def _to_qiskit(self):
-
-        gate = self.gate.transpile("qiskit")
-        qubits = [qubit.transpile("qiskit") for qubit in self.qubits]
-        clbits = [clbit.output("qiskit") for clbit in self.clbits]
-
-        if isinstance(gate, QiskitMeasure):
-            return gate, qubits, clbits
-        else:
-            if len(clbits) == 0:
-                return gate, qubits
-            else:
-                return gate, qubits, clbits
-
-    def transpile(self, package: str):
-
-        if package == "braket":
-            return self._to_braket()
-        elif package == "cirq":
-            return self._to_cirq()
-        elif package == "qiskit":
-            return self._to_qiskit()
-        else:
-            raise PackageError(package)
+            raise PackageError(
+                f"This instruction cannot be transpiled from {self.package} to {package}."
+            )

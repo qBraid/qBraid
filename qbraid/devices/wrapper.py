@@ -3,7 +3,6 @@ from qbraid.devices.exceptions import DeviceError
 
 
 class QbraidDeviceLikeWrapper(ABC):
-
     @property
     @abstractmethod
     def name(self):
@@ -24,20 +23,19 @@ class QbraidDeviceLikeWrapper(ABC):
             supported_devices = supported_providers[self.provider]
         except KeyError:
             raise DeviceError(
-                "Provider \"{}\" not supported by vendor \"{}\".".format(self.provider, self.vendor)
+                'Provider "{}" not supported by vendor "{}".'.format(self.provider, self.vendor)
             )
         try:
             device_object = supported_devices[self.name]
         except KeyError:
-            msg = "Device \"{}\" not supported by provider \"{}\"".format(self.name, self.provider)
+            msg = 'Device "{}" not supported by provider "{}"'.format(self.name, self.provider)
             if self.provider != self.vendor:
-                msg += " from vendor \"{}\"".format(self.vendor)
+                msg += ' from vendor "{}"'.format(self.vendor)
             raise DeviceError(msg + ".")
         return device_object
 
 
 class QbraidJobLikeWrapper(ABC):
-
     def _set_device(self, dev):
         """Internally, we set the device property after creating the JobWrapper object."""
         self._device = dev

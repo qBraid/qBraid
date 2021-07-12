@@ -12,7 +12,7 @@ GOOGLE_DEVICES = {
 }
 
 IONQ_DEVICES = {
-    'IonQ': None #ionq.Service()
+    'ionQdevice': None #ionq.Service()
 }
 
 PASQAL_DEVICES = {

@@ -21,7 +21,6 @@ import numpy as np
 
 
 class BraketGateModelResultWrapper(ResultWrapper):
-
     def __init__(self, gate_model_result: GateModelQuantumTaskResult):
         """Braket ``GateModelQuantumTaskResult`` wrapper class.
         Args:

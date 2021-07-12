@@ -18,9 +18,8 @@
 # from qiskit.providers.aer.noise import NoiseModel
 
 
-
 # def get_qubit_op(dist):
-#     driver = PySCFDriver(atom="Li .0 .0 .0; H .0 .0 " + str(dist), unit=UnitsType.ANGSTROM, 
+#     driver = PySCFDriver(atom="Li .0 .0 .0; H .0 .0 " + str(dist), unit=UnitsType.ANGSTROM,
 #                          charge=0, spin=0, basis='sto3g')
 #     molecule = driver.run()
 #     freeze_list = [0]
@@ -57,7 +56,7 @@
 #         num_spin_orbitals,
 #         num_particles,
 #         qubit_mapping='parity'
-#     ) 
+#     )
 #     var_form = UCCSD(
 #         num_orbitals=num_spin_orbitals,
 #         num_particles=num_particles,
@@ -68,26 +67,30 @@
 #     vqe_result = np.real(vqe.run(backend)['eigenvalue'] + shift)
 #     vqe_energies.append(vqe_result)
 #     print("Interatomic Distance:", np.round(dist, 2), "VQE Result:", vqe_result, "Exact Energy:", exact_energies[-1])
-    
+
 # print("All energies have been calculated")
 
 from qiskit_nature.drivers import PySCFDriver, UnitsType
-from qiskit_nature.problems.second_quantization.electronic import ElectronicStructureProblem
+from qiskit_nature.problems.second_quantization.electronic import (
+    ElectronicStructureProblem,
+)
 
 # Use PySCF, a classical computational chemistry software
 # package, to compute the one-body and two-body integrals in
 # electronic-orbital basis, necessary to form the Fermionic operator
-driver = PySCFDriver(atom='H .0 .0 .0; H .0 .0 0.735',
-                     unit=UnitsType.ANGSTROM,
-                     basis='sto3g')
+driver = PySCFDriver(
+    atom="H .0 .0 .0; H .0 .0 0.735", unit=UnitsType.ANGSTROM, basis="sto3g"
+)
 problem = ElectronicStructureProblem(driver)
 
 # generate the second-quantized operators
 second_q_ops = problem.second_q_ops()
 main_op = second_q_ops[0]
 
-num_particles = (problem.molecule_data_transformed.num_alpha,
-                 problem.molecule_data_transformed.num_beta)
+num_particles = (
+    problem.molecule_data_transformed.num_alpha,
+    problem.molecule_data_transformed.num_beta,
+)
 
 num_spin_orbitals = 2 * problem.molecule_data.num_molecular_orbitals
 
@@ -114,7 +117,7 @@ init_state = HartreeFock(num_spin_orbitals, num_particles, converter)
 # setup the ansatz for VQE
 from qiskit.circuit.library import TwoLocal
 
-ansatz = TwoLocal(num_spin_orbitals, ['ry', 'rz'], 'cz')
+ansatz = TwoLocal(num_spin_orbitals, ["ry", "rz"], "cz")
 
 # add the initial state
 ansatz.compose(init_state, front=True)
@@ -122,14 +125,12 @@ ansatz.compose(init_state, front=True)
 # set the backend for the quantum computation
 from qiskit import Aer
 
-backend = Aer.get_backend('aer_simulator_statevector')
+backend = Aer.get_backend("aer_simulator_statevector")
 
 # setup and run VQE
 from qbraid.algorithms import VQE
 
-algorithm = VQE(ansatz,
-                optimizer=optimizer,
-                quantum_instance=backend)
+algorithm = VQE(ansatz, optimizer=optimizer, quantum_instance=backend)
 
 result = algorithm.compute_minimum_eigenvalue(qubit_op)
 print(result.eigenvalue.real)

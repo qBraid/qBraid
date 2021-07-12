@@ -16,7 +16,6 @@ from typing import Dict
 
 
 class QiskitResultWrapper(ResultWrapper):
-
     def __init__(self, qiskit_result: Result):
         """Qiskit ``Result`` wrapper class.
         Args:
