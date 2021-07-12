@@ -1,13 +1,10 @@
 from typing import Optional, List
+from ...gate import Gate
 
-from .gate import Gate
 
 class PowGate(Gate):
-    """Extension of gate for gates with a variable power.
+    """Applies a global phase to a gate."""
 
-    Args:
-        Gate (Gate(ABC)): Extends basic gate class
-    """
     def __init__(
         self,
         name: str,
