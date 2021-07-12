@@ -1,7 +1,7 @@
 from cirq_google import Sycamore, Sycamore23, Bristlecone, Foxtail
 
 AQT_DEVICES = {
-    'AQT': None #AQTSampler(url, access_token=access_token)
+    'AQT': None,  # AQTSampler(url, access_token=access_token),
 }
 
 GOOGLE_DEVICES = {
@@ -12,11 +12,11 @@ GOOGLE_DEVICES = {
 }
 
 IONQ_DEVICES = {
-    'ionQdevice': None #ionq.Service()
+    'ionQdevice': None,  # ionq.Service(),
 }
 
 PASQAL_DEVICES = {
-    'PasqalVirtualDevice': None #PasqalVirtualDevice
+    'PasqalVirtualDevice': None,  # PasqalVirtualDevice,
 }
 
 CIRQ_PROVIDERS = {
