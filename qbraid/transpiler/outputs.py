@@ -1,6 +1,6 @@
-from .cirq.outputs import circuit_to_cirq, instruction_to_cirq, gate_to_cirq
-from .qiskit.outputs import circuit_to_qiskit, instruction_to_qiskit, gate_to_qiskit
-from .braket.outputs import circuit_to_braket, instruction_to_braket, gate_to_braket
+from .cirq import circuit_to_cirq, instruction_to_cirq, gate_to_cirq
+from .qiskit import circuit_to_qiskit, instruction_to_qiskit, gate_to_qiskit
+from .braket import circuit_to_braket, instruction_to_braket, gate_to_braket
 
 circuit_outputs = {
     "cirq": circuit_to_cirq,

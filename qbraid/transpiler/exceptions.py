@@ -3,13 +3,7 @@
 from qbraid.exceptions import QbraidError
 
 
-class CircuitError(QbraidError):
-    """Base class for errors raised while processing a circuit."""
-
-    pass
-
-
-class ParsingError(QbraidError):
-    """Base class for errors raised while processing a circuit."""
+class TranspileError(QbraidError):
+    """Base class for errors raised while transpiling a circuit."""
 
     pass

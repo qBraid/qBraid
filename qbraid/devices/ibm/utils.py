@@ -1,12 +1,11 @@
-from typing import Union
-
 from qiskit import QuantumCircuit
 from qiskit.providers.aer import AerSimulator, PulseSimulator, QasmSimulator, \
     StatevectorSimulator, UnitarySimulator
 from qiskit.providers.basicaer import QasmSimulatorPy, StatevectorSimulatorPy, UnitarySimulatorPy
 from qiskit.pulse import Schedule
+from typing import Union, List
 
-QiskitRunInput = Union[QuantumCircuit, Schedule, list]
+QiskitRunInput = Union[QuantumCircuit, Schedule, List]
 
 IBM_DEVICES = {
     'AerSimulator': AerSimulator(),

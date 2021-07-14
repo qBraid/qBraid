@@ -14,10 +14,11 @@
 # NOTICE: This file has been modified from the original:
 # https://github.com/aws/amazon-braket-sdk-python/blob/main/src/braket/devices/device.py
 
-from ..device import DeviceLikeWrapper
+from typing import Optional
+
+from qbraid.devices.device import DeviceLikeWrapper
 from .job import BraketQuantumTaskWrapper
 from .utils import BRAKET_PROVIDERS
-from typing import Optional
 
 
 class BraketDeviceWrapper(DeviceLikeWrapper):

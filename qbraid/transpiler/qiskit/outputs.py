@@ -2,9 +2,9 @@ from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister
 from qiskit.circuit import Instruction as QiskitInstruction
 from qiskit.circuit.measure import Measure as QiskitMeasure
 from qiskit.circuit.quantumregister import Qubit
-
 from typing import Tuple
-from ..parameter import ParamID
+
+from qbraid.transpiler.parameter import ParamID
 from .utils import create_qiskit_gate, qiskit_gates
 
 

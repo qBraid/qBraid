@@ -4,8 +4,6 @@ from qiskit.circuit.measure import Measure
 from qiskit.extensions.unitary import UnitaryGate
 from qiskit.circuit.library.standard_gates import *
 from typing import Union
-from qbraid.transpiler.exceptions import CircuitError
-
 
 qiskit_gates = {
     "H": HGate,
@@ -197,7 +195,7 @@ def get_qiskit_gate_data(gate: QiskitGate) -> dict:
     # error
     else:
         if data["type"] != "MEASURE":
-            raise CircuitError("Gate of type {} not supported".format(type(gate)))
+            raise TypeError("Gate of type {} not supported".format(type(gate)))
 
     return data
 

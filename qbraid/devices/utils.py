@@ -1,14 +1,14 @@
+from tabulate import tabulate
+from typing import Optional
+
 from .aws.device import BraketDeviceWrapper
 from .google.device import CirqSamplerWrapper
 from .ibm.device import QiskitBackendWrapper
 from .device import DeviceLikeWrapper
 from .exceptions import DeviceError
-from tabulate import tabulate
-from typing import Optional
-
-from .aws.utils import BRAKET_PROVIDERS
-from .google.utils import CIRQ_PROVIDERS
-from .ibm.utils import QISKIT_PROVIDERS
+from .aws import BRAKET_PROVIDERS
+from .google import CIRQ_PROVIDERS
+from .ibm import QISKIT_PROVIDERS
 
 SUPPORTED_VENDORS = {
     "AWS": BRAKET_PROVIDERS,

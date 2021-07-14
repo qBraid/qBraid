@@ -1,8 +1,9 @@
-from ..device import DeviceLikeWrapper
+from cirq import Circuit
+
+from qbraid.devices.device import DeviceLikeWrapper
 from .job import CirqEngineJobWrapper
 from .result import CirqResultWrapper
 from .utils import CIRQ_PROVIDERS
-from cirq import Circuit
 
 
 class CirqSamplerWrapper(DeviceLikeWrapper):

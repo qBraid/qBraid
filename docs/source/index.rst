@@ -1,6 +1,3 @@
-.. qBraid-sdk documentation master file, created by
-   sphinx-quickstart on Tue Jul 13 12:47:46 2021.
-
 qBraid-sdk Documentation
 =========================
 
@@ -89,11 +86,25 @@ porta, id sagittis urna sollicitudin.
    development/guide
 
 .. toctree::
-   :maxdepth: 1
-   :caption: API
+   :maxdepth: 4
+   :caption: Circuits API
    :hidden:
 
-   code/qbraid
-   code/qbraid_circuits
-   code/qbraid_transpiler
-   code/qbraid_devices
+.. toctree::
+   :maxdepth: 3
+   :caption: Transpiler API
+   :hidden:
+
+.. toctree::
+   :maxdepth: 3
+   :caption: Devices API
+   :hidden:
+
+
+
+Indices and tables
+-------------------
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

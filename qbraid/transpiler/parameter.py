@@ -1,9 +1,7 @@
-import abc
-from abc import ABC
-from typing import Union
-
+from abc import ABC, abstractmethod
 from qiskit.circuit import Parameter as QiskitParameter
 from sympy import Symbol as CirqParameter
+from typing import Union
 
 ParameterInput = Union[float, int, str]
 
@@ -28,6 +26,6 @@ class ParameterWrapper(ABC):
     def _create_qiskit(self):
         self._outputs["qiskit"] = QiskitParameter(self.name)
 
-    @abc.abstractmethod
+    @abstractmethod
     def transpile(self, package: str):
         pass

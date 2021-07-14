@@ -1,10 +1,9 @@
-from typing import Union, Iterable
-
 from qiskit.circuit import Instruction
 from qiskit.circuit import Parameter
+from typing import Union, Iterable
 
+from qbraid.transpiler.gate import GateWrapper
 from .utils import get_qiskit_gate_data
-from ..gate import GateWrapper
 
 
 class QiskitGateWrapper(GateWrapper):

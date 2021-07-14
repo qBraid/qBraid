@@ -9,7 +9,8 @@ from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.quantum_info import Operator as QiskitOperator
 from braket.circuits import Circuit as BraketCircuit
 from braket.circuits.unitary_calculation import calculate_unitary
-from qbraid.transpiler.transpiler import qbraid_wrapper
+
+from qbraid import qbraid_wrapper
 
 
 def to_unitary(circuit):

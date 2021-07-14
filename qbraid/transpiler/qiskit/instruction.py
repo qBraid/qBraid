@@ -1,7 +1,7 @@
 from qiskit.circuit import Instruction
 
+from qbraid.transpiler.instruction import InstructionWrapper
 from .gate import QiskitGateWrapper
-from ..instruction import InstructionWrapper
 
 
 class QiskitInstructionWrapper(InstructionWrapper):

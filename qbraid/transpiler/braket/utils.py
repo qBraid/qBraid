@@ -97,8 +97,7 @@ def get_braket_gate_data(gate: BraketGate):
 
     # error
     else:
-        print(gate)
-        raise TypeError("Could not determine gate type.")
+        raise TypeError("Gate of type {} not supported".format(type(gate)))
 
     return data
 

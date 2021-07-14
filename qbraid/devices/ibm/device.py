@@ -10,9 +10,9 @@
 # NOTICE: This file has been modified from the original:
 # https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/providers/backend.py
 
-from .utils import QISKIT_PROVIDERS, QiskitRunInput
-from ..device import DeviceLikeWrapper
+from qbraid.devices.device import DeviceLikeWrapper
 from .job import QiskitJobWrapper
+from .utils import QISKIT_PROVIDERS, QiskitRunInput
 
 
 class QiskitBackendWrapper(DeviceLikeWrapper):

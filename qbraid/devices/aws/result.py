@@ -15,9 +15,10 @@
 # https://github.com/aws/amazon-braket-sdk-python/blob/6926c1676dd5b465ef404614a44538c42ee2727d
 # /src/braket/tasks/annealing_quantum_task_result.py
 
-from ..result import ResultWrapper
 from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
 import numpy as np
+
+from qbraid.devices.result import ResultWrapper
 
 
 class BraketGateModelResultWrapper(ResultWrapper):

@@ -16,9 +16,10 @@
 # https://github.com/quantumlib/Cirq/blob/504bdbb9bb30249d85ecf7ba199b047150ee33f3/cirq-core/cirq
 # /study/result.py
 
-from ..result import ResultWrapper
 from cirq.study.result import Result
 import pandas as pd
+
+from qbraid.devices.result import ResultWrapper
 
 
 class CirqResultWrapper(ResultWrapper):

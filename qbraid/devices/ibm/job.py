@@ -11,11 +11,12 @@
 # https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/providers/job.py
 
 from qiskit.providers.job import Job
-from ..job import JobLikeWrapper
-from typing import Callable, Optional
 from qiskit.providers.exceptions import JobTimeoutError
 from qiskit.providers.exceptions import JobError as QiskitJobError
-from ..exceptions import JobError
+from typing import Callable, Optional
+
+from qbraid.devices.job import JobLikeWrapper
+from qbraid.devices.exceptions import JobError
 
 
 class QiskitJobWrapper(JobLikeWrapper):

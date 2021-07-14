@@ -1,6 +1,6 @@
+from qbraid.exceptions import PackageError
 from .utils import get_package_name
 from .wrappers import circuit_wrappers
-from qbraid.exceptions import PackageError
 
 
 def qbraid_wrapper(circuit, **kwargs):

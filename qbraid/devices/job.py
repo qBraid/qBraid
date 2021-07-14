@@ -11,9 +11,10 @@
 # https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/providers/job.py
 
 from abc import abstractmethod
+from typing import Dict, Any
+
 from .device import DeviceLikeWrapper
 from .wrapper import QbraidJobLikeWrapper
-from typing import Dict, Any
 
 
 class JobLikeWrapper(QbraidJobLikeWrapper):

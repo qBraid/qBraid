@@ -1,9 +1,10 @@
-from ..gate import GateWrapper
 from cirq import Gate
 from cirq.ops.measurement_gate import MeasurementGate
-from .utils import get_cirq_gate_data
-from typing import Union
 from sympy import Symbol as CirqParameter
+from typing import Union
+
+from qbraid.transpiler.gate import GateWrapper
+from .utils import get_cirq_gate_data
 
 CirqGate = Union[Gate, MeasurementGate]
 

@@ -1,7 +1,5 @@
 """Exceptions for errors raised by qBraid."""
 
-from typing import Optional
-
 
 class QbraidError(Exception):
     """Base class for errors raised by qBraid."""

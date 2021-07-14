@@ -1,10 +1,9 @@
 from cirq import Circuit, LineQubit
 from cirq.ops.measure_util import measure as CirqMeasure
-
 from sympy import Symbol
 
+from qbraid.transpiler.parameter import ParamID
 from .utils import cirq_gates, create_cirq_gate
-from ..parameter import ParamID
 
 
 def circuit_to_cirq(cw, auto_measure=False, output_qubit_mapping=None, output_param_mapping=None):

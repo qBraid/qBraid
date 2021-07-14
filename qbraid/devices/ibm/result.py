@@ -10,9 +10,10 @@
 # NOTICE: This file has been modified from the original:
 # https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/result/result.py
 
-from ..result import ResultWrapper
 from qiskit.result.result import Result
 from typing import Dict
+
+from qbraid.devices.result import ResultWrapper
 
 
 class QiskitResultWrapper(ResultWrapper):

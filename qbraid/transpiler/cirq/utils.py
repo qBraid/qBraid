@@ -7,8 +7,6 @@ from cirq.ops.swap_gates import *
 from cirq.ops.three_qubit_gates import *
 import numpy as np
 
-from qbraid.exceptions import PackageError
-
 
 class CirqU3Gate(SingleQubitGate):
     def __init__(self, theta, phi, lam):
@@ -171,7 +169,7 @@ def get_cirq_gate_data(gate: CirqGate) -> dict:
 
     else:
         if data["type"] != "MEASURE":
-            raise PackageError("Gate of type {} not supported".format(type(gate)))
+            raise TypeError("Gate of type {} not supported".format(type(gate)))
 
     return data
 

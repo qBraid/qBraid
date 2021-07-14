@@ -1,9 +1,9 @@
-from qbraid.transpiler.braket.instruction import BraketInstructionWrapper
-from qbraid.transpiler.cirq.instruction import CirqInstructionWrapper
-from qbraid.transpiler.qiskit.instruction import QiskitInstructionWrapper
-from qbraid.transpiler.braket.circuit import BraketCircuitWrapper
-from qbraid.transpiler.cirq.circuit import CirqCircuitWrapper
-from qbraid.transpiler.qiskit.circuit import QiskitCircuitWrapper
+from .braket.circuit import BraketCircuitWrapper
+from .braket.instruction import BraketInstructionWrapper
+from .cirq.circuit import CirqCircuitWrapper
+from .cirq.instruction import CirqInstructionWrapper
+from .qiskit.circuit import QiskitCircuitWrapper
+from .qiskit.instruction import QiskitInstructionWrapper
 
 circuit_wrappers = {
     "qiskit": QiskitCircuitWrapper,

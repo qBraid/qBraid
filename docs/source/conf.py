@@ -1,4 +1,5 @@
-# Configuration file for the Sphinx documentation builder.
+# qBraid documentation build configuration file, created by
+# sphinx-quickstart on Tue Jul 13 12:47:46 2021.
 #
 # This file only contains a selection of the most common options. For a full
 # list see the documentation:
@@ -12,8 +13,8 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../../qbraid'))
-
+sys.path.insert(0, os.path.abspath('.'))
+sys.path.insert(0, os.path.abspath('../../qbraid/'))
 
 # -- Project information -----------------------------------------------------
 
@@ -37,6 +38,13 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
 ]
+
+autosummary_generate = True
+autosummary_imported_members = False
+# automodapi_toctreedirnm = "api/api"
+automodsumm_inherited_members = True
+
+# ignore_warnings = [('api/api/qbraid.utils.pres_to_im*', 'no module named qbraid.utils.pres_to_im')]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

@@ -16,7 +16,8 @@
 # https://github.com/quantumlib/Cirq/blob/master/cirq-google/cirq_google/engine/engine_job.py
 
 from cirq_google.engine.engine_job import EngineJob
-from ..job import JobLikeWrapper
+
+from qbraid.devices.job import JobLikeWrapper
 
 
 class CirqEngineJobWrapper(JobLikeWrapper):

@@ -15,8 +15,8 @@ from qiskit.providers import BackendV1 as QiskitBackend
 
 from qbraid.devices.ibm.device import QiskitBackendWrapper
 from qbraid.devices.ibm.job import QiskitJobWrapper
-from qbraid.devices.utils import SUPPORTED_VENDORS
-from qbraid.devices.utils import device_wrapper
+from qbraid.devices import SUPPORTED_VENDORS
+from qbraid import device_wrapper
 
 
 def device_wrapper_inputs(vendor):

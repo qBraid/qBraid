@@ -1,7 +1,7 @@
-from ..circuit import CircuitWrapper
-from .instruction import CirqInstructionWrapper
-
 from cirq.circuits import Circuit
+
+from qbraid.transpiler.circuit import CircuitWrapper
+from .instruction import CirqInstructionWrapper
 
 
 class CirqCircuitWrapper(CircuitWrapper):

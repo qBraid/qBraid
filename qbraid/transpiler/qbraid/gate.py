@@ -1,4 +1,4 @@
-from ..gate import GateWrapper
+from qbraid.transpiler.gate import GateWrapper
 
 
 class QbraidGateWrapper(GateWrapper):

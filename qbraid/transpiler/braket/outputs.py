@@ -63,4 +63,4 @@ def gate_to_braket(gw, output_param_mapping) -> Union[BraketGate, str]:
         return create_braket_gate(data)
 
     else:
-        raise TypeError(f"Gate type {gw._gate_type} not supported.")
+        raise TypeError(f"Gate of type {gw._gate_type} not supported.")

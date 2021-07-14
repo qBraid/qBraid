@@ -1,8 +1,8 @@
 from qiskit.circuit import QuantumCircuit, Parameter
 
+from qbraid.transpiler.circuit import CircuitWrapper
+from qbraid.transpiler.parameter import ParamID
 from .instruction import QiskitInstructionWrapper
-from ..circuit import CircuitWrapper
-from ..parameter import ParamID
 
 
 class QiskitCircuitWrapper(CircuitWrapper):

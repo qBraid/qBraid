@@ -1,7 +1,7 @@
 from braket.circuits.circuit import Circuit
 
+from qbraid.transpiler.circuit import CircuitWrapper
 from .instruction import BraketInstructionWrapper
-from ..circuit import CircuitWrapper
 
 
 class BraketCircuitWrapper(CircuitWrapper):
