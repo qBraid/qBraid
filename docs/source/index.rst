@@ -1,7 +1,5 @@
-qBraid-sdk Documentation
+qBraid SDK Documentation
 =========================
-
-.. rst-class:: lead grey-text ml-2
 
 :Release: |release|
 
@@ -10,33 +8,26 @@ qBraid is a platform for running quantum algorithms on various quantum computers
 Features
 --------
 
-.. image:: _static/logo-square.png
+.. image:: _static/logo.png
     :align: left
-    :width: 100px
+    :width: 300px
     :target: javascript:void(0);
 
-
-- *Feature 1*.
-   Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sed dolor elit. Sed interdum
-   laoreet justo, id pellentesque libero consectetur ac. Nulla facilisi.
-
-..
-
-- *Feature 2*.
-   Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+- *Feature 1*
+   Lorem ipsum dolo   r sit amet, consectetur adipiscing elit. Nunc sed dolor elit. Fusce neque lectus,
+   imperdiet id tellus at, mollis facilisis arcu.
 
 ..
 
-- *Feature 3*.
-   Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sed dolor elit. Sed interdum
-   laoreet justo, id pellentesque libero consectetur ac. Nulla facilisi. In quis fringilla justo,
-   ut ullamcorper nulla. Fusce neque lectus, imperdiet id tellus at, mollis facilisis arcu.
+- *Feature 2*
+   Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sed dolor elit sed interdum
+   laoreet justo.
 
 ..
 
-- *Feature 4*.
-   Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sed dolor elit. Sed interdum
-   laoreet justo, id pellentesque libero consectetur ac. Nulla facilisi.
+- *Feature 3*
+   Lorem ipsum dolor sit amet, consectetur adipiscing elit. Id pellentesque libero consectetur ac
+   nulla.
 
 Getting started
 ---------------
@@ -73,10 +64,10 @@ porta, id sagittis urna sollicitudin.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Using qBraid
+   :caption: Overview
    :hidden:
 
-   introduction/qbraid
+   overview/introduction
 
 .. toctree::
    :maxdepth: 1
@@ -87,23 +78,30 @@ porta, id sagittis urna sollicitudin.
 
 .. toctree::
    :maxdepth: 1
-   :caption: API
+   :caption: API Reference
    :hidden:
 
-   api/qbraid.circuits.library.generalized_gates
-   api/qbraid.circuits.library
-   api/qbraid.circuits.library.standard_gates
+   api/qbraid
+   api/qbraid.algorithms
+   api/qbraid.algorithms.minimum_eigen_solvers
+   api/qbraid.algorithms.optimizers
+   api/qbraid.applications
    api/qbraid.circuits
+   api/qbraid.circuits.library
+   api/qbraid.circuits.library.generalized_gates
+   api/qbraid.circuits.library.standard_gates
+   api/qbraid.devices
    api/qbraid.devices.aws
    api/qbraid.devices.google
    api/qbraid.devices.ibm
-   api/qbraid.devices
-   api/qbraid
+   api/qbraid.operators
+   api/qbraid.transpiler
    api/qbraid.transpiler.braket
    api/qbraid.transpiler.cirq
    api/qbraid.transpiler.qbraid
    api/qbraid.transpiler.qiskit
-   api/qbraid.transpiler
+   api/modules
+
 
 .. Hiding - Indices and tables
    :ref:`genindex`

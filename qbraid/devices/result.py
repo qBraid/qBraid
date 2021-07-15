@@ -7,6 +7,7 @@ class ResultWrapper(ABC):
         Args:
             vendor_rlo: a result-like object
         """
+
         self.vendor_rlo = vendor_rlo
 
     @abstractmethod
