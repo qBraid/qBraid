@@ -13,6 +13,7 @@
 #
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath('.'))
 sys.path.insert(0, os.path.abspath('../../qbraid/'))
 
@@ -24,7 +25,6 @@ author = 'qBraid Development Team'
 
 # The full version, including alpha/beta/rc tags
 release = '0.0.1'
-
 
 # -- General configuration ---------------------------------------------------
 
@@ -39,21 +39,37 @@ extensions = [
     'sphinx.ext.viewcode',
 ]
 
-autosummary_generate = True
-autosummary_imported_members = False
-# automodapi_toctreedirnm = "api/api"
-automodsumm_inherited_members = True
-
-# ignore_warnings = [('api/api/qbraid.utils.pres_to_im*', 'no module named qbraid.utils.pres_to_im')]
-
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
+
+# -- Autosummary -------------------------------------------------------------
+
+# -- Autodoc -----------------------------------------------------------------
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+# exclude_patterns = [
+#     "_build",
+#     "**.ipynb_checkpoints",
+#     "*pres_to_im*",
+#     "*algorithms*",
+#     "*applications*",
+# ]
 
+# The name of the Pygments (syntax highlighting) style to use.
+pygments_style = "colorful"
+
+# A boolean that decides whether module names are prepended to all object names
+# (for object types where a “module” of some kind is defined), e.g. for
+# py:function directives.
+add_module_names = False
+
+# A list of prefixes that are ignored for sorting the Python module index
+# (e.g., if this is set to ['foo.'], then foo.bar is shown under B, not F).
+# This can be handy if you document a project that consists of a single
+# package. Works only for the HTML builder currently.
+modindex_common_prefix = ["qbraid."]
 
 # -- Options for HTML output -------------------------------------------------
 

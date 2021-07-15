@@ -12,7 +12,7 @@ Features
 
 .. image:: _static/logo-square.png
     :align: left
-    :width: 450px
+    :width: 100px
     :target: javascript:void(0);
 
 
@@ -86,25 +86,26 @@ porta, id sagittis urna sollicitudin.
    development/guide
 
 .. toctree::
-   :maxdepth: 4
-   :caption: Circuits API
+   :maxdepth: 1
+   :caption: API
    :hidden:
 
-.. toctree::
-   :maxdepth: 3
-   :caption: Transpiler API
-   :hidden:
+   api/qbraid.circuits.library.generalized_gates
+   api/qbraid.circuits.library
+   api/qbraid.circuits.library.standard_gates
+   api/qbraid.circuits
+   api/qbraid.devices.aws
+   api/qbraid.devices.google
+   api/qbraid.devices.ibm
+   api/qbraid.devices
+   api/qbraid
+   api/qbraid.transpiler.braket
+   api/qbraid.transpiler.cirq
+   api/qbraid.transpiler.qbraid
+   api/qbraid.transpiler.qiskit
+   api/qbraid.transpiler
 
-.. toctree::
-   :maxdepth: 3
-   :caption: Devices API
-   :hidden:
-
-
-
-Indices and tables
--------------------
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. Hiding - Indices and tables
+   :ref:`genindex`
+   :ref:`modindex`
+   :ref:`search`
