@@ -79,7 +79,7 @@ class Optimizer(ABC):
         Returns:
             grad: the gradient computed
         """
-        forig = f(*((x_center,)))
+        forig = f(*(x_center,))
         grad = []
         ei = np.zeros((len(x_center),), float)
         todos = []
@@ -151,26 +151,26 @@ class Optimizer(ABC):
         variable_bounds=None,
         initial_point=None,
     ):
-        """
-        Perform optimization.
+        """Perform optimization.
+
         Args:
             num_vars (int) : Number of parameters to be optimized.
-            objective_function (callable) : A function that
-                computes the objective function.
-            gradient_function (callable) : A function that
-                computes the gradient of the objective function, or
-                None if not available.
-            variable_bounds (list[(float, float)]) : List of variable
-                bounds, given as pairs (lower, upper). None means
-                unbounded.
+            objective_function (callable) : A function that computes the objective function.
+            gradient_function (callable) : A function that computes the gradient of the objective
+                function, or None if not available.
+            variable_bounds (list[(float, float)]) : List of variable bounds, given as pairs
+                (lower, upper). None means unbounded.
             initial_point (numpy.ndarray[float]) : Initial point.
+
         Returns:
             point, value, nfev
                point: is a 1D numpy.ndarray[float] containing the solution
                value: is a float with the objective function value
                nfev: number of objective function calls made if available or None
+
         Raises:
             ValueError: invalid input
+            
         """
         if initial_point is not None and len(initial_point) != num_vars:
             raise ValueError("Initial point does not match dimension")

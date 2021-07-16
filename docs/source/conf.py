@@ -13,14 +13,15 @@
 import os
 import sys
 import qbraid
+
 sys.path.insert(0, os.path.abspath('..'))
 sys.path.insert(0, os.path.abspath('../../qbraid'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'qBraid-sdk'
-copyright = '2021, qBraid Development Team'
-author = 'qBraid Development Team'
+project = "qBraid-sdk"
+copyright = "2021, qBraid Development Team"
+author = "qBraid Development Team"
 
 # The full version, including alpha/beta/rc tags
 release = qbraid.__version__
@@ -31,24 +32,35 @@ release = qbraid.__version__
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
-    'sphinx.ext.napoleon',
-    # 'sphinx.ext.mathjax',
-    # 'sphinx.ext.viewcode',
-    # 'sphinx_automodapi.automodapi',
-    # 'sphinx_automodapi.smart_resolver',
+    "sphinx.ext.napoleon",
+    "sphinx.ext.autodoc",
+    "sphinx.ext.autosummary",
+    "sphinx.ext.viewcode",
+    "sphinx.ext.todo",
+    "sphinx.ext.mathjax",
+    "sphinx_autodoc_typehints",
+    "sphinx.ext.coverage",
 ]
 
+autodoc_member_order = "bysource"
+autoclass_content = "both"
 autodoc_mock_imports = ["cirq", "qiskit", "braket", "numpy"]
 napoleon_numpy_docstring = False
+todo_include_todos = True
+mathjax_path = "https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = []
+exclude_patterns = ["_build", "*.pytest_cache", "*.ipynb_checkpoints", "*pres_to_im.py"]
+
+# A boolean that decides whether module names are prepended to all object names
+# (for object types where a “module” of some kind is defined), e.g. for
+# py:function directives.
+add_module_names = False
 
 # A list of prefixes that are ignored for sorting the Python module index
 # (e.g., if this is set to ['foo.'], then foo.bar is shown under B, not F).
@@ -60,11 +72,10 @@ modindex_common_prefix = ["qbraid."]
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
-html_theme = 'sphinx_rtd_theme'
-html_favicon = '_static/favicon.ico'
+html_theme = "sphinx_rtd_theme"
+html_favicon = "_static/favicon.ico"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = ["_static"]

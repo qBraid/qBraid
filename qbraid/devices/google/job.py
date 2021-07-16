@@ -23,8 +23,10 @@ from qbraid.devices.job import JobLikeWrapper
 class CirqEngineJobWrapper(JobLikeWrapper):
     def __init__(self, engine_job: EngineJob):
         """Cirq ``EngineJob`` wrapper class.
+
         Args:
             engine_job (EngineJob): a Cirq ``EngineJob`` object used to run circuits.
+
         """
         super().__init__(engine_job)
 

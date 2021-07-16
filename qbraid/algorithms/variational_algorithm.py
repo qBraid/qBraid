@@ -40,13 +40,13 @@ class VariationalAlgorithm:
     """The Variational Algorithm Base Class."""
 
     def __init__(
-        self,
-        ansatz: QuantumCircuit,
-        optimizer: Optimizer,
-        cost_fn: Optional[Callable] = None,
-        gradient: Optional[Union[GradientBase, Callable]] = None,
-        initial_point: Optional[np.ndarray] = None,
-        quantum_instance: Optional[Union[QuantumInstance, BaseBackend, Backend]] = None,
+            self,
+            ansatz: QuantumCircuit,
+            optimizer: Optimizer,
+            cost_fn: Optional[Callable] = None,
+            gradient: Optional[Union[GradientBase, Callable]] = None,
+            initial_point: Optional[np.ndarray] = None,
+            quantum_instance: Optional[Union[QuantumInstance, BaseBackend, Backend]] = None,
     ) -> None:
         """
         Args:
@@ -87,7 +87,7 @@ class VariationalAlgorithm:
 
     @quantum_instance.setter
     def quantum_instance(
-        self, quantum_instance: Union[QuantumInstance, BaseBackend, Backend]
+            self, quantum_instance: Union[QuantumInstance, BaseBackend, Backend]
     ) -> None:
         """Sets quantum instance."""
         if isinstance(quantum_instance, (BaseBackend, Backend)):
@@ -133,28 +133,30 @@ class VariationalAlgorithm:
         self._initial_point = initial_point
 
     def find_minimum(
-        self,
-        initial_point: Optional[np.ndarray] = None,
-        ansatz: Optional[QuantumCircuit] = None,
-        cost_fn: Optional[Callable] = None,
-        optimizer: Optional[Optimizer] = None,
-        gradient_fn: Optional[Callable] = None,
+            self,
+            initial_point: Optional[np.ndarray] = None,
+            ansatz: Optional[QuantumCircuit] = None,
+            cost_fn: Optional[Callable] = None,
+            optimizer: Optional[Optimizer] = None,
+            gradient_fn: Optional[Callable] = None,
     ) -> "VariationalResult":
         """Optimize to find the minimum cost value.
+
         Args:
             initial_point: If not `None` will be used instead of any initial point supplied via
-                constructor. If `None` and `None` was supplied to constructor then a random
-                point will be used if the optimizer requires an initial point.
+                constructor. If `None` and `None` was supplied to constructor then a random point
+                will be used if the optimizer requires an initial point.
             ansatz: If not `None` will be used instead of any ansatz supplied via constructor.
-            cost_fn: If not `None` will be used instead of any cost_fn supplied via
-                constructor.
-            optimizer: If not `None` will be used instead of any optimizer supplied via
-                constructor.
+            cost_fn: If not `None` will be used instead of any cost_fn supplied via constructor.
+            optimizer: If not `None` will be used instead of any optimizer supplied via constructor.
             gradient_fn: Optional gradient function for optimizer
+
         Returns:
             dict: Optimized variational parameters, and corresponding minimum cost value.
+
         Raises:
             ValueError: invalid input
+
         """
         initial_point = initial_point if initial_point is not None else self.initial_point
         ansatz = ansatz if ansatz is not None else self.ansatz
@@ -233,7 +235,7 @@ class VariationalAlgorithm:
         return result
 
     def get_prob_vector_for_params(
-        self, construct_circuit_fn, params_s, quantum_instance, construct_circuit_args=None
+            self, construct_circuit_fn, params_s, quantum_instance, construct_circuit_args=None
     ):
         """Helper function to get probability vectors for a set of params"""
         circuits = []

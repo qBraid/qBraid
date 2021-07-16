@@ -23,13 +23,18 @@ from .utils import BRAKET_PROVIDERS
 
 class BraketDeviceWrapper(DeviceLikeWrapper):
     def __init__(self, name, provider, **fields):
-        """Braket ``Device`` wrapper class
+        """Braket ``Device`` wrapper class.
+
         Args:
             name (str): a Braket supported device
             provider (str): the provider that this device comes from
-            fields: kwargs for the values to use to override the default options.
+            fields: Any kwarg options to pass to the backend for running the config. If a key is
+                also present in the options attribute/object then the expectation is that the value
+                specified will be used instead of what's set in the options object.
+
         Raises:
             AttributeError: if input field not a valid options
+
         """
         super().__init__(name, provider, **fields)
         self._vendor = "AWS"
@@ -43,13 +48,16 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
     def run(self, task_specification, shots=Optional[int], *args, **kwargs):
         """Run a quantum task specification on this quantum device. A task can be a circuit or an
         annealing problem.
+
         Args:
             task_specification (Union[Circuit, Problem]):  Specification of a task to run on device.
-            shots (int): The number of times to run the task on the device. Default is `None`.
+            shots (int): The number of times to run the task on the device. Default is ``None``.
+
         Returns:
             BraketJobWrapper: The :class:`~qbraid.devices.braket.job.BraketJobWrapper` job object
             for the run.
             QuantumTask: The QuantumTask tracking task execution on this device
+
         """
         braket_device = self.vendor_dlo
         braket_quantum_task = braket_device.run(task_specification, shots=shots, *args, **kwargs)

@@ -22,8 +22,10 @@ from qbraid.devices.exceptions import JobError
 class QiskitJobWrapper(JobLikeWrapper):
     def __init__(self, qiskit_job: Job):
         """Qiskit ``Job`` wrapper class.
+
         Args:
             qiskit_job (Job): a Qiskit ``Job`` object used to run circuits.
+
         """
         super().__init__(qiskit_job)
 
@@ -56,6 +58,7 @@ class QiskitJobWrapper(JobLikeWrapper):
         self, timeout: Optional[float] = None, wait: float = 5, callback: Optional[Callable] = None
     ):
         """Poll the job status until it progresses to a final state such as ``DONE`` or ``ERROR``.
+
         Args:
             timeout: Seconds to wait for the job. If ``None``, wait indefinitely.
             wait: Seconds between queries.
@@ -65,8 +68,10 @@ class QiskitJobWrapper(JobLikeWrapper):
                 * job_status: Status of the job from the last query
                 * job: This BaseJob instance
                 Note: different subclass might provide different arguments to the callback function.
+
         Raises:
             JobError: If the job does not reach a final state before the specified timeout.
+
         """
         try:
             self.vendor_jlo.wait_for_final_state(timeout, wait, callback)

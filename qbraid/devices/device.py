@@ -17,12 +17,15 @@ from .wrapper import QbraidDeviceLikeWrapper
 class DeviceLikeWrapper(QbraidDeviceLikeWrapper):
     def __init__(self, name, provider, **fields):
         """Abstract interface for device-like classes.
+
         Args:
             name (str): a qBraid supported device
             provider (str): the provider that this device comes from
             fields: kwargs for the values to use to override the default options.
+
         Raises:
             AttributeError: if input field not a valid options
+
         """
         self._name = name
         self._provider = provider
@@ -44,12 +47,16 @@ class DeviceLikeWrapper(QbraidDeviceLikeWrapper):
 
     def set_options(self, **fields):
         """Set the options fields for the device.
+
         This method is used to update the options of a device. If you need to change any of the
         options prior to running just pass in the kwarg with the new value for the options.
+
         Args:
             fields: The fields to update the options
+
         Raises:
             AttributeError: If the field passed in is not part of the options
+
         """
         for field in fields:
             if not hasattr(self._options, field):
@@ -58,42 +65,52 @@ class DeviceLikeWrapper(QbraidDeviceLikeWrapper):
 
     def configuration(self):
         """Return the device configuration.
+
         Returns:
             dict: the configuration for the device. If the device does not support properties,
             it returns ``None``.
+
         """
         return self._configuration
 
     @property
     def name(self):
         """Return the device name.
+
         Returns:
             str: the name of the device.
+
         """
         return self._name
 
     @property
     def provider(self):
         """Return the device provider.
+
         Returns:
             str: the provider responsible for the device.
+
         """
         return self._provider
 
     @property
     def vendor(self):
         """Return the software vendor name.
+
         Returns:
             str: the name of the software vendor.
+
         """
         return self._vendor
 
     @property
     def options(self):
-        """Return the options for the device
+        """Return the options for the device.
+
         The options of a device are the dynamic parameters defining
         how the device is used. These are used to control the :meth:`run`
         method.
+
         """
         return self._options
 

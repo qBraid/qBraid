@@ -31,19 +31,23 @@ class MinimumEigensolver(ABC):
     def compute_minimum_eigenvalue(
         self, operator: OperatorBase, aux_operators: Optional[List[Optional[OperatorBase]]] = None
     ) -> "MinimumEigensolverResult":
-        """
-        Computes minimum eigenvalue. Operator and aux_operators can be supplied here and
-        if not None will override any already set into algorithm so it can be reused with
-        different operators. While an operator is required by algorithms, aux_operators
-        are optional. To 'remove' a previous aux_operators array use an empty list here.
+        """Computes minimum eigenvalue.
+
+        Operator and aux_operators can be supplied here and if not None will override any already
+        set into algorithm so it can be reused with different operators. While an operator is
+        required by algorithms, aux_operators are optional. To 'remove' a previous aux_operators
+        array use an empty list here.
+
         Args:
             operator: Qubit operator of the Observable
-            aux_operators: Optional list of auxiliary operators to be evaluated with the
-                eigenstate of the minimum eigenvalue main result and their expectation values
-                returned. For instance in chemistry these can be dipole operators, total particle
-                count operators so we can get values for these at the ground state.
+            aux_operators: Optional list of auxiliary operators to be evaluated with the eigenstate
+                of the minimum eigenvalue main result and their expectation values returned. For
+                instance in chemistry these can be dipole operators, total particle count operators
+                so we can get values for these at the ground state.
+
         Returns:
             MinimumEigensolverResult
+
         """
         return MinimumEigensolverResult()
 

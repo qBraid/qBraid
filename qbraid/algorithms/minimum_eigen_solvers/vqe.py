@@ -12,6 +12,7 @@
 
 """The Variational Quantum Eigensolver algorithm.
 See https://arxiv.org/abs/1304.3061
+
 """
 
 from typing import Optional, List, Callable, Union, Dict
@@ -51,40 +52,71 @@ logger = logging.getLogger(__name__)
 
 class VQE(VariationalAlgorithm, MinimumEigensolver):
     r"""The Variational Quantum Eigensolver algorithm.
-    `VQE <https://arxiv.org/abs/1304.3061>`__ is a quantum algorithm that uses a
-    variational technique to find
-    the minimum eigenvalue of the Hamiltonian :math:`H` of a given system.
-    An instance of VQE requires defining two algorithmic sub-components:
-    a trial state (a.k.a. ansatz) which is a :class:`QuantumCircuit`, and one of the classical
+
+    `VQE <https://arxiv.org/abs/1304.3061>`__ is a quantum algorithm that uses a variational
+    technique to find the minimum eigenvalue of the Hamiltonian :math:`H` of a given system. An
+    instance of VQE requires defining two algorithmic sub-components: a trial state (a.k.a. ansatz)
+    which is a :class:`QuantumCircuit`, and one of the classical
     :mod:`~qiskit.algorithms.optimizers`. The ansatz is varied, via its set of parameters, by the
     optimizer, such that it works towards a state, as determined by the parameters applied to the
     ansatz, that will result in the minimum expectation value being measured of the input operator
-    (Hamiltonian).
-    An optional array of parameter values, via the *initial_point*, may be provided as the
-    starting point for the search of the minimum eigenvalue. This feature is particularly useful
-    such as when there are reasons to believe that the solution point is close to a particular
-    point.  As an example, when building the dissociation profile of a molecule,
-    it is likely that using the previous computed optimal solution as the starting
+    (Hamiltonian). An optional array of parameter values, via the *initial_point*, may be provided
+    as the starting point for the search of the minimum eigenvalue. This feature is particularly
+    useful such as when there are reasons to believe that the solution point is close to a
+    particular point.  As an example, when building the dissociation profile of a molecule, it is
+    likely that using the previous computed optimal solution as the starting
     initial point for the next interatomic distance is going to reduce the number of iterations
-    necessary for the variational algorithm to converge.  It provides an
-    `initial point tutorial <https://github.com/Qiskit/qiskit-tutorials-community/blob/master
-    /chemistry/h2_vqe_initial_point.ipynb>`__ detailing this use case.
-    The length of the *initial_point* list value must match the number of the parameters
-    expected by the ansatz being used. If the *initial_point* is left at the default
-    of ``None``, then VQE will look to the ansatz for a preferred value, based on its
-    given initial state. If the ansatz returns ``None``,
-    then a random point will be generated within the parameter bounds set, as per above.
-    If the ansatz provides ``None`` as the lower bound, then VQE
-    will default it to :math:`-2\pi`; similarly, if the ansatz returns ``None``
-    as the upper bound, the default value will be :math:`2\pi`.
+    necessary for the variational algorithm to converge.  It provides an `initial point tutorial
+    <https://github.com/Qiskit/qiskit-tutorials-community/blob/master/chemistry
+    /h2_vqe_initial_point.ipynb>`__ detailing this use case. The length of the *initial_point* list
+    value must match the number of the parameters expected by the ansatz being used. If the
+    *initial_point* is left at the default of ``None``, then VQE will look to the ansatz for a
+    preferred value, based on its given initial state. If the ansatz returns ``None``, then a
+    random point will be generated within the parameter bounds set, as per above. If the ansatz
+    provides ``None`` as the lower bound, then VQE will default it to :math:`-2\pi`; similarly, if
+    the ansatz returns ``None`` as the upper bound, the default value will be :math:`2\pi`.
+
     .. note::
         The VQE stores the parameters of ``ansatz`` sorted by name to map the values
         provided by the optimizer to the circuit. This is done to ensure reproducible results,
         for example such that running the optimization twice with same random seeds yields the
         same result. Also, the ``optimal_point`` of the result object can be used as initial
         point of another VQE run by passing it as ``initial_point`` to the initializer.
-    """
 
+    Args:
+        ansatz: A parameterized circuit used as Ansatz for the wave function.
+        optimizer: A classical optimizer.
+        initial_point: An optional initial point (i.e. initial parameter values) for the
+            optimizer. If ``None`` then VQE will look to the ansatz for a preferred point and
+            if not will simply compute a random one.
+        gradient: An optional gradient function or operator for optimizer.
+        expectation: The Expectation converter for taking the average value of the Observable
+            over the ansatz state function. When ``None`` (the default) an
+            :class:`~qiskit.opflow.expectations.ExpectationFactory` is used to select an
+            appropriate expectation based on the operator and backend. When using Aer
+            qasm_simulator backend, with paulis, it is however much faster to leverage custom
+            Aer function for the computation but, although VQE performs much faster with it,
+            the outcome is ideal, with no shot noise, like using a state vector simulator. If
+            you are just looking for the quickest performance when choosing Aer qasm_simulator
+            and the lack of shot noise is not an issue then set `include_custom` parameter here
+            to ``True`` (defaults to ``False``).
+        include_custom: When `expectation` parameter here is None setting this to ``True`` will
+            allow the factory to include the custom Aer pauli expectation.
+        max_evals_grouped: Max number of evaluations performed simultaneously. Signals the
+            given optimizer that more than one set of parameters can be supplied so that
+            potentially the expectation values can be computed in parallel. Typically this is
+            possible when a finite difference gradient is used by the optimizer such that
+            multiple points to compute the gradient can be passed and if computed in parallel
+            improve overall execution time. Deprecated if a gradient operator or function is
+            given.
+        callback: a callback that can access the intermediate data during the optimization.
+            Four parameter values are passed to the callback as follows during each evaluation
+            by the optimizer for its current set of parameters as it works towards the minimum.
+            These are: the evaluation count, the optimizer parameters for the ansatz, the
+            evaluated mean and the evaluated standard deviation.`
+        quantum_instance: Quantum Instance or Backend
+
+    """
     def __init__(
         self,
         ansatz: Optional[QuantumCircuit] = None,
@@ -97,40 +129,7 @@ class VQE(VariationalAlgorithm, MinimumEigensolver):
         callback: Optional[Callable[[int, np.ndarray, float, float], None]] = None,
         quantum_instance: Optional[Union[QuantumInstance, BaseBackend, Backend]] = None,
     ) -> None:
-        """
-        Args:
-            ansatz: A parameterized circuit used as Ansatz for the wave function.
-            optimizer: A classical optimizer.
-            initial_point: An optional initial point (i.e. initial parameter values)
-                for the optimizer. If ``None`` then VQE will look to the ansatz for a preferred
-                point and if not will simply compute a random one.
-            gradient: An optional gradient function or operator for optimizer.
-            expectation: The Expectation converter for taking the average value of the
-                Observable over the ansatz state function. When ``None`` (the default) an
-                :class:`~qiskit.opflow.expectations.ExpectationFactory` is used to select
-                an appropriate expectation based on the operator and backend. When using Aer
-                qasm_simulator backend, with paulis, it is however much faster to leverage custom
-                Aer function for the computation but, although VQE performs much faster
-                with it, the outcome is ideal, with no shot noise, like using a state vector
-                simulator. If you are just looking for the quickest performance when choosing Aer
-                qasm_simulator and the lack of shot noise is not an issue then set `include_custom`
-                parameter here to ``True`` (defaults to ``False``).
-            include_custom: When `expectation` parameter here is None setting this to ``True`` will
-                allow the factory to include the custom Aer pauli expectation.
-            max_evals_grouped: Max number of evaluations performed simultaneously. Signals the
-                given optimizer that more than one set of parameters can be supplied so that
-                potentially the expectation values can be computed in parallel. Typically this is
-                possible when a finite difference gradient is used by the optimizer such that
-                multiple points to compute the gradient can be passed and if computed in parallel
-                improve overall execution time. Deprecated if a gradient operator or function is
-                given.
-            callback: a callback that can access the intermediate data during the optimization.
-                Four parameter values are passed to the callback as follows during each evaluation
-                by the optimizer for its current set of parameters as it works towards the minimum.
-                These are: the evaluation count, the optimizer parameters for the
-                ansatz, the evaluated mean and the evaluated standard deviation.`
-            quantum_instance: Quantum Instance or Backend
-        """
+
         validate_min("max_evals_grouped", max_evals_grouped, 1)
         if ansatz is None:
             ansatz = RealAmplitudes()
@@ -226,7 +225,9 @@ class VQE(VariationalAlgorithm, MinimumEigensolver):
 
     @property
     def setting(self):
-        """Prepare the setting of VQE as a string."""
+        """Prepare the setting of VQE as a string.
+
+        """
         ret = "Algorithm: {}\n".format(self.__class__.__name__)
         params = ""
         for key, value in self.__dict__.items():
@@ -239,10 +240,11 @@ class VQE(VariationalAlgorithm, MinimumEigensolver):
         return ret
 
     def print_settings(self):
-        """
-        Preparing the setting of VQE into a string.
+        """Preparing the setting of VQE into a string.
+
         Returns:
             str: the formatted setting of VQE
+
         """
         ret = "\n"
         ret += "==================== Setting of {} ============================\n".format(
@@ -268,17 +270,20 @@ class VQE(VariationalAlgorithm, MinimumEigensolver):
         parameter: Union[List[float], List[Parameter], np.ndarray],
         operator: OperatorBase,
     ) -> OperatorBase:
-        r"""
-        Generate the ansatz circuit and expectation value measurement, and return their
+        r"""Generate the ansatz circuit and expectation value measurement, and return their
         runnable composition.
+
         Args:
             parameter: Parameters for the ansatz circuit.
             operator: Qubit operator of the Observable
+
         Returns:
             The Operator equalling the measurement of the ansatz :class:`StateFn` by the
             Observable's expectation :class:`StateFn`.
+
         Raises:
             AlgorithmError: If no operator has been provided.
+
         """
         if operator is None:
             raise AlgorithmError("The operator was never provided.")
@@ -298,9 +303,8 @@ class VQE(VariationalAlgorithm, MinimumEigensolver):
         # If setting the expectation failed, raise an Error:
         if self._expectation is None:
             raise AlgorithmError(
-                "No expectation set and could not automatically set one, please "
-                "try explicitly setting an expectation or specify a backend so it "
-                "can be chosen automatically."
+                "No expectation set and could not automatically set one, please try explicitly "
+                "setting an expectation or specify a backend so it can be chosen automatically."
             )
 
         observable_meas = self.expectation.convert(StateFn(operator, is_measurement=True))
@@ -313,11 +317,14 @@ class VQE(VariationalAlgorithm, MinimumEigensolver):
         operator: OperatorBase,
     ) -> List[QuantumCircuit]:
         """Return the circuits used to compute the expectation value.
+
         Args:
             parameter: Parameters for the ansatz circuit.
             operator: Qubit operator of the Observable
+
         Returns:
             A list of the circuits used to compute the expectation value.
+
         """
         expect_op = self.construct_expectation(parameter, operator).to_circuit_op()
 
@@ -371,7 +378,9 @@ class VQE(VariationalAlgorithm, MinimumEigensolver):
         return operator
 
     def compute_minimum_eigenvalue(
-        self, operator: OperatorBase, aux_operators: Optional[List[Optional[OperatorBase]]] = None
+            self,
+            operator: OperatorBase,
+            aux_operators: Optional[List[Optional[OperatorBase]]] = None
     ) -> MinimumEigensolverResult:
         super().compute_minimum_eigenvalue(operator, aux_operators)
 
@@ -447,16 +456,21 @@ class VQE(VariationalAlgorithm, MinimumEigensolver):
         return self._ret
 
     def _energy_evaluation(
-        self, parameters: Union[List[float], np.ndarray]
+            self, parameters: Union[List[float], np.ndarray]
     ) -> Union[float, List[float]]:
         """Evaluate energy at given parameters for the ansatz.
+
         This is the objective function to be passed to the optimizer that is used for evaluation.
+
         Args:
             parameters: The parameters for the ansatz.
+
         Returns:
             Energy of the hamiltonian of each parameter.
+
         Raises:
             RuntimeError: If the ansatz has no parameters.
+
         """
         num_parameters = self.ansatz.num_parameters
         if self._ansatz.num_parameters == 0:
@@ -544,17 +558,16 @@ class VQE(VariationalAlgorithm, MinimumEigensolver):
 
 class VQEResult(VariationalResult, MinimumEigensolverResult):
     """VQE Result."""
-
     def __init__(self) -> None:
         super().__init__()
         self._cost_function_evals = None
 
     @property
     def cost_function_evals(self) -> Optional[int]:
-        """Returns number of cost optimizer evaluations"""
+        """Returns number of cost optimizer evaluations."""
         return self._cost_function_evals
 
     @cost_function_evals.setter
     def cost_function_evals(self, value: int) -> None:
-        """Sets number of cost function evaluations"""
+        """Sets number of cost function evaluations."""
         self._cost_function_evals = value

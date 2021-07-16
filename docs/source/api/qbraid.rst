@@ -25,14 +25,6 @@ qbraid.exceptions module
    :undoc-members:
    :show-inheritance:
 
-qbraid.pres\_to\_im module
---------------------------
-
-.. automodule:: qbraid.pres_to_im
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 

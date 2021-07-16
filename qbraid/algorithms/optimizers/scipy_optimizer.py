@@ -92,6 +92,7 @@ class SciPyOptimizer(Optimizer):
         variable_bounds: Optional[Union[Sequence, Bounds]] = None,
         initial_point=None,
     ):
+        """Optimizer wrapping scipy.optimize.minimize."""
         # Remove ignored parameters to supress the warning of scipy.optimize.minimize
         if self.is_bounds_ignored:
             variable_bounds = None

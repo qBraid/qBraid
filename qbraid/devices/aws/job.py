@@ -26,8 +26,10 @@ from qbraid.devices.job import JobLikeWrapper
 class BraketQuantumTaskWrapper(JobLikeWrapper):
     def __init__(self, quantum_task: QuantumTask):
         """Braket ``QuantumTask`` wrapper class.
+
         Args:
             quantum_task (BraketQuantumTask): a braket ``QuantumTask`` object used to run circuits.
+
         """
         super().__init__(quantum_task)
 
@@ -38,12 +40,15 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
 
     def metadata(self, use_cached_value: bool = False) -> Dict[str, Any]:
         """Get task metadata.
+
         Args:
             use_cached_value (bool, optional): If True, uses the value retrieved from the previous
                 request.
+
         Returns:
             Dict[str, Any]: The metadata regarding the job. If `use_cached_value` is True,
             then the value retrieved from the most recent request is used.
+
         """
         return self.vendor_jlo.metadata(use_cached_value=use_cached_value)
 
