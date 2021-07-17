@@ -79,3 +79,19 @@ html_favicon = "_static/favicon.ico"
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
+
+html_title = "qBraid Documentation"
+html_short_title = "qBraid Docs"
+htmlhelp_basename = "qbraiddoc"
+html_show_sphinx = False
+
+# -- More customizations ----------------------------------------------------
+
+
+# def skip_member(app, what, name, obj, skip, options):
+#     print(app, what, name, obj, skip, options)
+#     return True
+#
+#
+# def setup(app):
+#     app.connect('autodoc-skip-member', skip_member)
