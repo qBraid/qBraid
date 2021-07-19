@@ -32,7 +32,9 @@ def _fix_length(output: Iterable[str]) -> str:
     return output
 
 
-def _draw_moment(output: Iterable[str], circuit: Union[Circuit, Iterable[Circuit]]) -> list:
+def _draw_moment(
+    output: Iterable[str], circuit: Union[Circuit, Iterable[Circuit]]
+) -> list:
     """Draws a "|" to divide each moment.
 
     Args:

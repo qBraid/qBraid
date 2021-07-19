@@ -11,7 +11,9 @@ class Phase(Gate):
     """
 
     def __init__(self, theta: float, global_phase: Optional[float] = 0.0):
-        super().__init__("Phase", num_qubits=1, params=[theta], global_phase=global_phase)
+        super().__init__(
+            "Phase", num_qubits=1, params=[theta], global_phase=global_phase
+        )
 
     def control(self, num_ctrls: int = 1):
         if num_ctrls == 1:
