@@ -49,7 +49,9 @@ class Circuit:
         return len(list(itertools.chain(self.instructions)))
 
     def __str__(self):
-        return f"Circuit({self.name}, {self.num_qubits} qubits, {self.num_gates()} gates)"
+        return (
+            f"Circuit({self.name}, {self.num_qubits} qubits, {self.num_gates()} gates)"
+        )
 
     def __len__(self):
         return len(self._moments)
@@ -69,10 +71,14 @@ class Circuit:
         """
         moments = circuit.moments
         for moment in moments:
-            if validate_operation(moment, self.num_qubits) and isinstance(moment, Moment):
+            if validate_operation(moment, self.num_qubits) and isinstance(
+                moment, Moment
+            ):
                 self.append(moment, update_rule=update_rule)
             else:
-                raise CircuitError(f"{circuit} of size {circuit.num_qubits} not appendable")
+                raise CircuitError(
+                    f"{circuit} of size {circuit.num_qubits} not appendable"
+                )
 
     def _earliest_appended(self, op: Instruction) -> bool:
         """Helper function that scans through all the moments and appends the operation
@@ -91,12 +97,28 @@ class Circuit:
                 appended = True
         return appended
 
-    def _create_new_moment(self, op=None):
+    def _create_new_moment(self, op: Instruction = None):
         """ "helper function that makes a new moment and appends the operation."""
         new_moment = Moment()
         if op:
             new_moment.instructions.append(op)
         self._moments.append(new_moment)
+
+    def _new_update_rule(self, op: Instruction = None):
+        if not self.moments[0].instructions:
+            self.moments[0].append(op)
+        # add new
+        else:
+            self._create_new_moment(op)
+
+    def _inline_update_rule(self, op: Instruction = None):
+        # the last moment in the circuit
+        curr_moment = self._moments[-1]
+        if curr_moment.appendable(op):
+            curr_moment.append(op)
+        else:
+            # create a new moment
+            self._create_new_moment(op)
 
     def _update(
         self,
@@ -119,33 +141,21 @@ class Circuit:
             if isinstance(op, Instruction):
                 if validate_operation(op, self.num_qubits):
                     if update_rule is UpdateRule.NEW_THEN_INLINE:
-                        if not self.moments[0].instructions:
-                            self.moments[0].append(op)
-                        # add new
-                        else:
-                            self._create_new_moment(op)
+                        self._new_update_rule(op)
                         # update_rule changes to INLINE
                         update_rule = UpdateRule.INLINE
                     elif update_rule is UpdateRule.INLINE:
-                        # the last moment in the circuit
-                        curr_moment = self._moments[-1]
-                        if curr_moment.appendable(op):
-                            curr_moment.append(op)
-                        else:
-                            # create a new moment
-                            self._create_new_moment(op)
+                        self._inline_update_rule(op)
                     elif update_rule is UpdateRule.NEW:
-                        if not self.moments[0].instructions:
-                            self.moments[0].append(op)
-                        # add new
-                        else:
-                            # create a new moment every time append is called
-                            self._create_new_moment(op)
+                        # create a new moment every time append is called
+                        self._new_update_rule(op)
                     elif update_rule is UpdateRule.EARLIEST:
                         if not self._earliest_appended(op):
                             self._create_new_moment(op)
                     else:
-                        raise CircuitError(f"The {update_rule} update rule is not implemented.")
+                        raise CircuitError(
+                            f"The {update_rule} update rule is not implemented."
+                        )
             elif isinstance(op, Moment):
                 # limit index to 0..len(self._moments), also deal with indices smaller 0
                 k = max(

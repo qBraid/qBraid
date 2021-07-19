@@ -11,8 +11,12 @@ class U(Gate):
         Gate (ABC): Extends basic gate class
     """
 
-    def __init__(self, theta: float, phi: float, lam: float, global_phase: Optional[float] = 0.0):
-        super().__init__("U", num_qubits=1, params=[theta, phi, lam], global_phase=global_phase)
+    def __init__(
+        self, theta: float, phi: float, lam: float, global_phase: Optional[float] = 0.0
+    ):
+        super().__init__(
+            "U", num_qubits=1, params=[theta, phi, lam], global_phase=global_phase
+        )
 
     def control(self, num_ctrls: int = 1):
         if num_ctrls == 1:
@@ -35,5 +39,7 @@ class CU(ControlledGate):
         ControlledGate (Gate): Extends controlled gate class
     """
 
-    def __init__(self, theta: float, phi: float, lam: float, global_phase: Optional[float] = 0.0):
+    def __init__(
+        self, theta: float, phi: float, lam: float, global_phase: Optional[float] = 0.0
+    ):
         super().__init__(U(theta, phi, lam, global_phase=global_phase))

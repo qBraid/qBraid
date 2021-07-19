@@ -26,7 +26,9 @@ def validate_qubit(op: Union[Instruction, Moment], num_qubits: int) -> bool:
         # validate moment
         if max(op.qubits) > num_qubits - 1:
             raise CircuitError(
-                "Index {} exceeds number of qubits {} in circuit".format(op.qubits, num_qubits)
+                "Index {} exceeds number of qubits {} in circuit".format(
+                    op.qubits, num_qubits
+                )
             )
         return True
     else:
@@ -49,7 +51,9 @@ def validate_operation(
     """
     from .circuit import Circuit
 
-    if validate_qubit(op, num_qubits) and (isinstance(op, (Instruction, Moment, Circuit))):
+    if validate_qubit(op, num_qubits) and (
+        isinstance(op, (Instruction, Moment, Circuit))
+    ):
         return True
     else:
         raise CircuitError(
