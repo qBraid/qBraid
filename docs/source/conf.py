@@ -80,9 +80,6 @@ html_favicon = "_static/favicon.ico"
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ["_static"]
 
-html_title = "qBraid Documentation"
-html_short_title = "qBraid Docs"
-htmlhelp_basename = "qbraiddoc"
 html_show_sphinx = False
 
 # -- More customizations ----------------------------------------------------
