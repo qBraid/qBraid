@@ -1,2 +1,10 @@
-from .utils import create_braket_gate, braket_gates
-from .outputs import circuit_to_braket, instruction_to_braket, gate_to_braket
+"""
+==============================================================
+Braket Transpiler Interface (:mod:`qbraid.transpiler.braket`)
+==============================================================
+
+.. currentmodule:: qbraid.transpiler.braket
+
+This module contains the classes used to transpile quantum circuits to the Braket API.
+
+"""

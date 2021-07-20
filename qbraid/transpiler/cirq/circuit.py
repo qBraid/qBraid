@@ -10,7 +10,6 @@ class CirqCircuitWrapper(CircuitWrapper):
         super().__init__()
 
         self.circuit = circuit
-
         self.qubits = circuit.all_qubits()
         self.input_qubit_mapping = (
             {qubit: index for index, qubit in enumerate(self.qubits)}

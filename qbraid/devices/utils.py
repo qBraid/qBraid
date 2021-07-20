@@ -6,9 +6,9 @@ from .google.device import CirqSamplerWrapper
 from .ibm.device import QiskitBackendWrapper
 from .device import DeviceLikeWrapper
 from .exceptions import DeviceError
-from .aws import BRAKET_PROVIDERS
-from .google import CIRQ_PROVIDERS
-from .ibm import QISKIT_PROVIDERS
+from .aws.utils import BRAKET_PROVIDERS
+from .google.utils import CIRQ_PROVIDERS
+from .ibm.utils import QISKIT_PROVIDERS
 
 SUPPORTED_VENDORS = {
     "AWS": BRAKET_PROVIDERS,
