@@ -1,4 +1,50 @@
-from braket.circuits.gate import Gate as BraketGate
+from typing import Union
+
+from braket.circuits import Circuit
+from braket.circuits import Gate as BraketGate
+from braket.circuits import Instruction
+from braket.circuits import Qubit
+
+braket_gates = {
+    # one-qubit, zero parameter
+    "H": BraketGate.H,
+    "X": BraketGate.X,
+    "Y": BraketGate.Y,
+    "Z": BraketGate.Z,
+    "S": BraketGate.S,
+    "Sdg": BraketGate.Si,
+    "T": BraketGate.T,
+    "Tdg": BraketGate.Ti,
+    "I": BraketGate.I,
+    "SX": BraketGate.V,
+    "SXdg": BraketGate.Vi,
+    # one-qubit, one parameter
+    "Phase": BraketGate.PhaseShift,
+    "RX": BraketGate.Rx,
+    "RY": BraketGate.Ry,
+    "RZ": BraketGate.Rz,
+    "U1": BraketGate.PhaseShift,
+    # two-qubit, zero parameter
+    # 'CH':BraketGate.,
+    "CX": BraketGate.CNot,
+    "Swap": BraketGate.Swap,
+    "iSwap": BraketGate.ISwap,
+    "pSwap": BraketGate.PSwap,
+    # 'CSX':BraketGate.,
+    # 'DCX': BraketGate.,
+    "CY": BraketGate.CY,
+    "CZ": BraketGate.CZ,
+    # two-qubit, one parameter
+    "RXX": BraketGate.XX,
+    "RXY": BraketGate.XY,
+    "RYY": BraketGate.YY,
+    "RZZ": BraketGate.ZZ,
+    "CPhase": BraketGate.CPhaseShift,
+    # multi-qubit
+    "CCX": BraketGate.CCNot,
+    # unitary
+    "Unitary": BraketGate.Unitary,
+}
 
 
 def get_braket_gate_data(gate: BraketGate):
@@ -102,48 +148,6 @@ def get_braket_gate_data(gate: BraketGate):
     return data
 
 
-braket_gates = {
-    # one-qubit, zero parameter
-    "H": BraketGate.H,
-    "X": BraketGate.X,
-    "Y": BraketGate.Y,
-    "Z": BraketGate.Z,
-    "S": BraketGate.S,
-    "Sdg": BraketGate.Si,
-    "T": BraketGate.T,
-    "Tdg": BraketGate.Ti,
-    "I": BraketGate.I,
-    "SX": BraketGate.V,
-    "SXdg": BraketGate.Vi,
-    # one-qubit, one parameter
-    "Phase": BraketGate.PhaseShift,
-    "RX": BraketGate.Rx,
-    "RY": BraketGate.Ry,
-    "RZ": BraketGate.Rz,
-    "U1": BraketGate.PhaseShift,
-    # two-qubit, zero parameter
-    # 'CH':BraketGate.,
-    "CX": BraketGate.CNot,
-    "Swap": BraketGate.Swap,
-    "iSwap": BraketGate.ISwap,
-    "pSwap": BraketGate.PSwap,
-    # 'CSX':BraketGate.,
-    # 'DCX': BraketGate.,
-    "CY": BraketGate.CY,
-    "CZ": BraketGate.CZ,
-    # two-qubit, one parameter
-    "RXX": BraketGate.XX,
-    "RXY": BraketGate.XY,
-    "RYY": BraketGate.YY,
-    "RZZ": BraketGate.ZZ,
-    "CPhase": BraketGate.CPhaseShift,
-    # multi-qubit
-    "CCX": BraketGate.CCNot,
-    # unitary
-    "Unitary": BraketGate.Unitary,
-}
-
-
 def create_braket_gate(data):
 
     gate_type = data["type"]
@@ -180,3 +184,61 @@ def create_braket_gate(data):
     # error
     else:
         raise TypeError(f"Gate of type {gate_type} not supported for Braket transpile.")
+
+
+def circuit_to_braket(cw, output_mapping=None):
+
+    output_circ = Circuit()
+
+    # some instructions may be null (i.e. classically controlled gates, measurement)
+    # these will return None, which should not be added to the circuit
+
+    if not output_mapping:
+        output_mapping = {x: Qubit(x) for x in range(len(cw.qubits))}
+
+    for instruction in cw.instructions:
+        instr = instruction.transpile("braket", output_mapping)
+        if instr:
+            output_circ.add_instruction(instr)
+
+    return output_circ
+
+
+def instruction_to_braket(iw, output_qubit_mapping, output_param_mapping):
+
+    gate = iw.gate.transpile("braket", output_param_mapping)
+    qubits = [output_qubit_mapping[q] for q in iw.qubits]
+
+    if gate == "BraketMeasure":
+        return None
+    else:
+        return Instruction(gate, qubits)
+
+
+def gate_to_braket(gw, output_param_mapping) -> Union[BraketGate, str]:
+
+    """Create braket gate from a qbraid gate wrapper object."""
+
+    # braket_params = [output_param_mapping[p] if isinstance(p,ParamID) else p for p in gw.params]
+    braket_params = gw.params
+
+    data = {
+        "type": gw._gate_type,
+        "matrix": gw.matrix,
+        "name": gw.name,
+        "params": braket_params,
+    }
+
+    if gw._gate_type in braket_gates.keys():
+        return create_braket_gate(data)
+
+    elif gw._gate_type == "MEASURE":
+        return "BraketMeasure"
+
+    elif gw.matrix is not None:
+        data["name"] = data["type"]
+        data["type"] = "Unitary"
+        return create_braket_gate(data)
+
+    else:
+        raise TypeError(f"Gate of type {gw._gate_type} not supported.")

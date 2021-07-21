@@ -1,9 +1,10 @@
-from qiskit.circuit import Instruction
-from qiskit.circuit import Parameter
 from typing import Union, Iterable
 
+from qiskit.circuit import Instruction
+from qiskit.circuit import Parameter
+
 from qbraid.transpiler.gate import GateWrapper
-from .utils import get_qiskit_gate_data
+from qbraid.transpiler.utils import get_qiskit_gate_data
 
 
 class QiskitGateWrapper(GateWrapper):
@@ -21,8 +22,6 @@ class QiskitGateWrapper(GateWrapper):
         self.num_controls = data["num_controls"]
 
         self._gate_type = data["type"]
-        self._outputs["qiskit"] = gate
-        self._package = "qiskit"
 
     def get_abstract_params(self):
         return [p for p in self.params if isinstance(p, Parameter)]

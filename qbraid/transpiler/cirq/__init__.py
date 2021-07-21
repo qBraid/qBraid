@@ -7,4 +7,10 @@ Cirq Transpiler Interface (:mod:`qbraid.transpiler.cirq`)
 
 This module contains the classes used to transpile quantum circuits to the Cirq API.
 
+.. autosummary::
+   :toctree: ../stubs/
+
+   CirqCircuitWrapper
+
 """
+from .circuit import CirqCircuitWrapper

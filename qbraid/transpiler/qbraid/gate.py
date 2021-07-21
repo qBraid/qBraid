@@ -21,4 +21,3 @@ class QbraidGateWrapper(GateWrapper):
         super().__init__()
 
         self._gate_type = gate_type
-        self._package = "qbraid"

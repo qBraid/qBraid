@@ -40,13 +40,17 @@ class QiskitCircuitWrapper(CircuitWrapper):
             self.instructions.append(next_instruction)
 
     @property
+    def package(self):
+        return "qiskit"
+
+    @property
+    def supported_packages(self):
+        return ["braket", "cirq"]
+
+    @property
     def num_qubits(self):
         return self.circuit.num_qubits
 
     @property
     def num_clbits(self):
         return self.circuit.num_clbits
-
-    @property
-    def package(self):
-        return "qiskit"

@@ -1,11 +1,14 @@
 """This top level module contains the main qBraid public functionality."""
 
+from importlib import reload
+import pkg_resources
+
 # qbraid errors operator
 from qbraid.exceptions import QbraidError, PackageError
 
 # The main qbraid operators and functions
 from qbraid.circuits import Circuit, UpdateRule
-from qbraid.transpiler import CircuitWrapper, qbraid_wrapper
+from qbraid.transpiler import CircuitWrapper
 from qbraid.devices import (
     DeviceLikeWrapper,
     JobLikeWrapper,
@@ -15,13 +18,29 @@ from qbraid.devices import (
 )
 
 from qbraid._version import __version__
-from typing import Union
 
-SUPPORTED_CIRCUIT = Union[
-    "braket.circuits.circuit.Circuit",
-    "cirq.circuits.circuit.Circuit",
-    "qiskit.circuit.quantumcircuit.QuantumCircuit",
-]
+
+def _get_entrypoints(group: str):
+    """Returns a dictionary mapping each entry of ``group`` to its loadable entrypoint."""
+    return {entry.name: entry for entry in pkg_resources.iter_entry_points(group)}
+
+
+def refresh_transpiler():
+    """Scan installed qBraid plugins to refresh the transpiler list."""
+
+    # This function does not return anything; instead, it has a side effect
+    # which is to update the global plugin_devices variable.
+
+    # We wish to retain the behaviour of a global plugin_devices dictionary,
+    # as re-importing pkg_resources can be a very slow operation on systems
+    # with a large number of installed packages.
+    global transpiler_entrypoints  # pylint:disable=global-statement
+
+    reload(pkg_resources)
+    transpiler_entrypoints = _get_entrypoints("qbraid.transpiler")
+
+
+transpiler_entrypoints = _get_entrypoints("qbraid.transpiler")
 
 
 def circuit_wrapper(circuit, **kwargs):
@@ -60,14 +79,26 @@ def circuit_wrapper(circuit, **kwargs):
     Please refer to the documentation of the individual qbraid circuit wrapper objects to see
     any additional arguments that might be supported.
 
-   Args:
-        circuit (SUPPORTED_CIRCUIT): a supported quantum circuit object
-        kwargs: keyword arguments including (dict) ``input_qubit_mapping`` which maps each
-            qubit object an index as shown above.
+    Args:
+        circuit: a supported quantum circuit object
 
-    Returns:
-        :class:`~qbraid.transpiler.CircuitWrapper`: a package-specific instance of a
-            qbraid circuit wrapper.
+    Keyword Args:
+        input_qubit_mapping: dictionary mapping each qubit object to an index
 
     """
+    package = circuit.__module__.split(".")[0]
+
+    if package not in transpiler_entrypoints:
+
+        refresh_transpiler()
+
+    if package in transpiler_entrypoints:
+
+        circuit_wrapper_class = transpiler_entrypoints[package].load()
+        return circuit_wrapper_class(circuit, **kwargs)
+
+    raise PackageError(f"{package} is not a supported package.")
+
+
+
 

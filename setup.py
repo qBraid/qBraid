@@ -12,5 +12,12 @@ setup(
     author_email="noreply@qBraid.com",
     license="Restricted",
     packages=find_packages(exclude=["test*"]),
+    entry_points={
+        "qbraid.transpiler": [
+            "braket = qbraid.transpiler.braket.circuit:BraketCircuitWrapper",
+            "cirq = qbraid.transpiler.cirq.circuit:CirqCircuitWrapper",
+            "qiskit = qbraid.transpiler.qiskit.circuit:QiskitCircuitWrapper"
+        ]
+    },
     zip_safe=False,
 )

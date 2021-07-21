@@ -1,7 +1,7 @@
+from braket.circuits.instruction import Instruction as BraketInstruction
+
 from qbraid.transpiler.instruction import InstructionWrapper
 from .gate import BraketGateWrapper
-
-from braket.circuits.instruction import Instruction as BraketInstruction
 
 
 class BraketInstructionWrapper(InstructionWrapper):
@@ -12,4 +12,3 @@ class BraketInstructionWrapper(InstructionWrapper):
         self.instruction = instruction
         self.qubits = qubits
         self.gate = BraketGateWrapper(instruction.operator)
-        self._package = "braket"

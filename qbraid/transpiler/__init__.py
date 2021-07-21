@@ -12,7 +12,6 @@ Transpiler API
    :toctree: ../stubs/
 
    CircuitWrapper
-   qbraid_wrapper
 
 Exceptions
 ==========
@@ -24,5 +23,4 @@ Exceptions
 
 """
 from .circuit import CircuitWrapper
-from .transpiler import qbraid_wrapper
 from .exceptions import TranspileError

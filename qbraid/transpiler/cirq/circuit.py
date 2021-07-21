@@ -32,9 +32,14 @@ class CirqCircuitWrapper(CircuitWrapper):
             instruction.gate.parse_params(self.input_param_mapping)
 
     @property
+    def package(self):
+        return "cirq"
+
+    @property
+    def supported_packages(self):
+        return ["braket", "qiskit"]
+
+    @property
     def num_qubits(self):
         return len(self.qubits)
 
-    @property
-    def package(self):
-        return "cirq"

@@ -1,10 +1,11 @@
+from typing import Union
+
 from cirq import Gate
 from cirq.ops.measurement_gate import MeasurementGate
 from sympy import Symbol as CirqParameter
-from typing import Union
 
 from qbraid.transpiler.gate import GateWrapper
-from .utils import get_cirq_gate_data
+from qbraid.transpiler.utils import get_cirq_gate_data
 
 CirqGate = Union[Gate, MeasurementGate]
 
@@ -24,8 +25,6 @@ class CirqGateWrapper(GateWrapper):
         self.num_controls = data["num_controls"]
 
         self._gate_type = data["type"]
-        self._outputs["cirq"] = gate
-        self._package = "cirq"
 
     def get_abstract_params(self):
         if not (self.params is None):

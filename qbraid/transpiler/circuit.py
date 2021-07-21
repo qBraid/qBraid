@@ -1,10 +1,10 @@
-from abc import abstractmethod
+from abc import abstractmethod, ABC
+
+from .utils import circuit_outputs
 from qbraid.exceptions import PackageError
-from .outputs import circuit_outputs
-from .wrapper import QbraidWrapper
 
 
-class CircuitWrapper(QbraidWrapper):
+class CircuitWrapper(ABC):
     def __init__(self):
         self.instructions = []
         self.params = []
@@ -12,10 +12,20 @@ class CircuitWrapper(QbraidWrapper):
 
     @property
     @abstractmethod
+    def package(self) -> str:
+        pass
+
+    @property
+    @abstractmethod
+    def supported_packages(self) -> list:
+        pass
+
+    @property
+    @abstractmethod
     def num_qubits(self) -> int:
         pass
 
-    def transpile(self, package, **kwargs):
+    def transpile(self, package: str, **kwargs):
 
         if package == self.package:
             return self.circuit
@@ -23,3 +33,4 @@ class CircuitWrapper(QbraidWrapper):
             return circuit_outputs[package](self)
         else:
             raise PackageError(f"{package} is not a supported package.")
+

@@ -13,7 +13,6 @@ class CirqInstructionWrapper(InstructionWrapper):
         self.instruction = instruction
         self.qubits = qubits
         self.gate = CirqGateWrapper(instruction.gate)
-        self._package = "cirq"
 
     @property
     def params(self):
