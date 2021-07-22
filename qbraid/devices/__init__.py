@@ -34,9 +34,8 @@ Exceptions
    JobError
 
 """
-
 from .device import DeviceLikeWrapper
 from .job import JobLikeWrapper
 from .result import ResultWrapper
-from .utils import get_devices, device_wrapper
+from ._utils import get_devices
 from .exceptions import DeviceError, JobError

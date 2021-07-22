@@ -2,6 +2,7 @@
 
 from importlib import reload
 import pkg_resources
+from typing import Optional
 
 # qbraid errors operator
 from qbraid.exceptions import QbraidError, PackageError
@@ -14,10 +15,21 @@ from qbraid.devices import (
     JobLikeWrapper,
     ResultWrapper,
     get_devices,
-    device_wrapper,
 )
 
 from qbraid._version import __version__
+
+
+def refresh_transpiler():
+    global transpiler_entrypoints  # pylint:disable=global-statement
+    reload(pkg_resources)
+    transpiler_entrypoints = _get_entrypoints("qbraid.transpiler")
+
+
+def refresh_devices():
+    global devices_entrypoints  # pylint:disable=global-statement
+    reload(pkg_resources)
+    devices_entrypoints = _get_entrypoints("qbraid.devices")
 
 
 def _get_entrypoints(group: str):
@@ -25,22 +37,8 @@ def _get_entrypoints(group: str):
     return {entry.name: entry for entry in pkg_resources.iter_entry_points(group)}
 
 
-def refresh_transpiler():
-    """Scan installed qBraid plugins to refresh the transpiler list."""
-
-    # This function does not return anything; instead, it has a side effect
-    # which is to update the global plugin_devices variable.
-
-    # We wish to retain the behaviour of a global plugin_devices dictionary,
-    # as re-importing pkg_resources can be a very slow operation on systems
-    # with a large number of installed packages.
-    global transpiler_entrypoints  # pylint:disable=global-statement
-
-    reload(pkg_resources)
-    transpiler_entrypoints = _get_entrypoints("qbraid.transpiler")
-
-
 transpiler_entrypoints = _get_entrypoints("qbraid.transpiler")
+devices_entrypoints = _get_entrypoints("qbraid.devices")
 
 
 def circuit_wrapper(circuit, **kwargs):
@@ -89,16 +87,37 @@ def circuit_wrapper(circuit, **kwargs):
     package = circuit.__module__.split(".")[0]
 
     if package not in transpiler_entrypoints:
-
         refresh_transpiler()
 
     if package in transpiler_entrypoints:
-
         circuit_wrapper_class = transpiler_entrypoints[package].load()
         return circuit_wrapper_class(circuit, **kwargs)
 
     raise PackageError(f"{package} is not a supported package.")
 
 
+def device_wrapper(name: str, provider: str, vendor: Optional[str] = None, **kwargs):
+    """Apply qbraid device wrapper to device from a supported device provider. If vendor is None,
+    it is assumed that the vendor is the same as the provider. If the vendor is not the same as the
+    provider, the vendor must be specified.
 
+    Args:
+        name (str): a quantum hardware device/simulator available through given ``provider``
+        provider (str): a quantum hardware device/simulator provider available through ``vendor``
+        vendor (Optional[str]): a quantum software vendor
 
+    Returns:
+        :class:`~qbraid.devices.device.DeviceWrapper`: a qbraid device wrapper object
+
+    Raises:
+        ValueError: If ``vendor`` is not a supported vendor.
+    """
+    if name not in devices_entrypoints:
+        refresh_devices()
+
+    if name in devices_entrypoints:
+        device_wrapper_class = devices_entrypoints[name].load()
+        return device_wrapper_class(name, provider, vendor, **kwargs)
+
+    else:
+        raise ValueError(f"{vendor} is not a supported vendor.")

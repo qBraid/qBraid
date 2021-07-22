@@ -12,7 +12,7 @@
 
 from qbraid.devices.device import DeviceLikeWrapper
 from .job import QiskitJobWrapper
-from .utils import QISKIT_PROVIDERS, QiskitRunInput
+from .._utils import QISKIT_PROVIDERS, QiskitRunInput
 
 
 class QiskitBackendWrapper(DeviceLikeWrapper):

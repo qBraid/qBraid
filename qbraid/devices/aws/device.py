@@ -18,7 +18,7 @@ from typing import Optional
 
 from qbraid.devices.device import DeviceLikeWrapper
 from .job import BraketQuantumTaskWrapper
-from .utils import BRAKET_PROVIDERS
+from .._utils import BRAKET_PROVIDERS
 
 
 class BraketDeviceWrapper(DeviceLikeWrapper):

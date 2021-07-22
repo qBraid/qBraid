@@ -17,6 +17,11 @@ setup(
             "braket = qbraid.transpiler.braket:BraketCircuitWrapper",
             "cirq = qbraid.transpiler.cirq:CirqCircuitWrapper",
             "qiskit = qbraid.transpiler.qiskit:QiskitCircuitWrapper"
+        ],
+        "qbraid.devices": [
+            "AWS = qbraid.devices.aws:BraketDeviceWrapper",
+            "Google = qbraid.devices.google:CirqSamplerWrapper",
+            "IBM = qbraid.devices.ibm:QiskitBackendWrapper"
         ]
     },
     zip_safe=False,
