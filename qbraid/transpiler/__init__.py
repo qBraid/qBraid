@@ -12,6 +12,9 @@ Transpiler API
    :toctree: ../stubs/
 
    CircuitWrapper
+   GateWrapper
+   ParamID
+   ParameterWrapper
 
 Exceptions
 ==========
@@ -23,4 +26,6 @@ Exceptions
 
 """
 from .circuit import CircuitWrapper
+from .gate import GateWrapper
+from .parameter import ParamID, ParameterWrapper
 from .exceptions import TranspileError

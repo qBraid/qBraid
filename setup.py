@@ -14,9 +14,9 @@ setup(
     packages=find_packages(exclude=["test*"]),
     entry_points={
         "qbraid.transpiler": [
-            "braket = qbraid.transpiler.braket.circuit:BraketCircuitWrapper",
-            "cirq = qbraid.transpiler.cirq.circuit:CirqCircuitWrapper",
-            "qiskit = qbraid.transpiler.qiskit.circuit:QiskitCircuitWrapper"
+            "braket = qbraid.transpiler.braket:BraketCircuitWrapper",
+            "cirq = qbraid.transpiler.cirq:CirqCircuitWrapper",
+            "qiskit = qbraid.transpiler.qiskit:QiskitCircuitWrapper"
         ]
     },
     zip_safe=False,

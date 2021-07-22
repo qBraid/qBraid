@@ -1,12 +1,11 @@
-from braket.circuits.gate import Gate as BraketGate
+from braket.circuits.gate import Gate
 
+from .._utils import get_braket_gate_data
 from qbraid.transpiler.gate import GateWrapper
-from qbraid.transpiler.utils import get_braket_gate_data
 
 
 class BraketGateWrapper(GateWrapper):
-    def __init__(self, gate: BraketGate):
-
+    def __init__(self, gate: Gate):
         super().__init__()
 
         self.gate = gate
@@ -22,5 +21,4 @@ class BraketGateWrapper(GateWrapper):
             # self.base_gate = data['base_gate']
             self.num_controls = data["num_controls"]
 
-        self._gate_type = data["type"]
-        self._outputs["braket"] = gate
+        self.gate_type = data["type"]

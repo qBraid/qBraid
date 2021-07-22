@@ -1,12 +1,11 @@
 from braket.circuits.circuit import Circuit
 
 from qbraid.transpiler.circuit import CircuitWrapper
-from .instruction import BraketInstructionWrapper
+from .gate import BraketGateWrapper
 
 
 class BraketCircuitWrapper(CircuitWrapper):
     def __init__(self, circuit: Circuit, input_qubit_mapping=None):
-
         super().__init__()
 
         self.circuit = circuit
@@ -19,9 +18,17 @@ class BraketCircuitWrapper(CircuitWrapper):
         self.instructions = []
 
         for instruction in circuit.instructions:
-
             qubits = [self.input_qubit_mapping[q] for q in instruction.target]
-            next_instruction = BraketInstructionWrapper(instruction, qubits)
+            params = None
+            gate = BraketGateWrapper(instruction.operator)
+
+            next_instruction = {
+                "instruction": instruction,
+                "qubits": qubits,
+                "params": params,
+                "gate": gate,
+            }
+
             self.instructions.append(next_instruction)
 
         self._package = "braket"

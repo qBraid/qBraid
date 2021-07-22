@@ -287,13 +287,20 @@ def circuit_to_qiskit(cw, auto_measure=False) -> QuantumCircuit:
     qreg = QuantumRegister(cw.num_qubits)
     output_qubit_mapping = {index: Qubit(qreg, index) for index in range(len(qreg))}
     cw.output_qubit_mapping = output_qubit_mapping
+    output_param_mapping = None
 
     # get instruction data to intermediate format
     # (will eventually include combing through moments)
     data = []
     measurement_qubit_indices = set()
-    for instruction in cw.instructions:
-        gate, qubits, measurement_qubits = instruction.transpile("qiskit", output_qubit_mapping)
+    for next_instruction in cw.instructions:
+
+        gate_wrapper = next_instruction["gate"]
+        gate = gate_wrapper.transpile("qiskit", output_param_mapping)
+        qubits = [output_qubit_mapping[q] for q in next_instruction["qubits"]]
+        measurement_qubits = []
+        if isinstance(gate, Measure):
+            measurement_qubits = next_instruction["qubits"]
         data.append((gate, qubits, measurement_qubits))
         measurement_qubit_indices.update(measurement_qubits)
 
@@ -324,19 +331,6 @@ def circuit_to_qiskit(cw, auto_measure=False) -> QuantumCircuit:
     return output_circ
 
 
-def instruction_to_qiskit(
-    iw, output_qubit_mapping, output_param_mapping=None
-) -> Tuple[Instruction, list, list]:
-
-    gate = iw.gate.transpile("qiskit", output_param_mapping)
-    qubits = [output_qubit_mapping[q] for q in iw.qubits]
-
-    if isinstance(gate, Measure):
-        return gate, qubits, iw.qubits
-    else:
-        return gate, qubits, []
-
-
 def gate_to_qiskit(gw, output_param_mapping):
 
     """Create qiskit gate from a qbraid gate wrapper object."""
@@ -348,20 +342,22 @@ def gate_to_qiskit(gw, output_param_mapping):
             qiskit_params[i] = output_param_mapping[param]
 
     data = {
-        "type": gw._gate_type,
+        "type": gw.gate_type,
         "matrix": gw.matrix,
         "name": gw.name,
         "params": qiskit_params,
     }
 
-    if gw._gate_type in qiskit_gates.keys():
-        gw._outputs["qiskit"] = create_qiskit_gate(data)
+    if gw.gate_type in qiskit_gates:
+        return create_qiskit_gate(data)
 
     elif gw.base_gate:
-        gw._outputs["qiskit"] = gw.base_gate.transpile("qiskit").control(gw.num_controls)
+        return gw.base_gate.transpile("qiskit").control(gw.num_controls)
 
     elif not (gw.matrix is None):
+        data["name"] = data["type"]
         data["type"] = "Unitary"
-        gw._outputs["qiskit"] = create_qiskit_gate(data)
+        return create_qiskit_gate(data)
 
-    return create_qiskit_gate(data)
+    else:
+        raise TypeError(f"Gate type {gw.gate_type} not supported.")

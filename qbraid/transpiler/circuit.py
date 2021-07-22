@@ -1,7 +1,7 @@
 from abc import abstractmethod, ABC
 
-from .utils import circuit_outputs, supported_packages
 from qbraid.exceptions import PackageError
+from ._utils import circuit_outputs, supported_packages
 
 
 class CircuitWrapper(ABC):
@@ -33,4 +33,3 @@ class CircuitWrapper(ABC):
             return circuit_outputs[package](self, **kwargs)
         else:
             raise PackageError(f"{package} is not a supported package.")
-

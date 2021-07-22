@@ -1,7 +1,8 @@
 from cirq.circuits import Circuit
 
+from qbraid.transpiler.parameter import ParamID
 from qbraid.transpiler.circuit import CircuitWrapper
-from .instruction import CirqInstructionWrapper
+from .gate import CirqGateWrapper
 
 
 class CirqCircuitWrapper(CircuitWrapper):
@@ -19,21 +20,28 @@ class CirqCircuitWrapper(CircuitWrapper):
 
         self.params = set()
 
-        for op in circuit.all_operations():
+        for instruction in circuit.all_operations():
+            qubits = [self.input_qubit_mapping[qubit] for qubit in instruction.qubits]
+            gate = CirqGateWrapper(instruction.gate)
+            params = [p for p in gate.params if isinstance(p, ParamID)]
 
-            qbs = [self.input_qubit_mapping[qubit] for qubit in op.qubits]
-            next_instruction = CirqInstructionWrapper(op, qbs)
-            self.params.union(set(next_instruction.gate.get_abstract_params()))
+            next_instruction = {
+                "instruction": instruction,
+                "qubits": qubits,
+                "params": params,
+                "gate": gate,
+            }
+
+            self.params.union(set(gate.get_abstract_params()))
             self.instructions.append(next_instruction)
 
         self.input_param_mapping = {param: index for index, param in enumerate(self.params)}
 
-        for instruction in self.instructions:
-            instruction.gate.parse_params(self.input_param_mapping)
+        for next_instruction in self.instructions:
+            next_instruction["gate"].parse_params(self.input_param_mapping)
 
         self._package = "cirq"
 
     @property
     def num_qubits(self):
         return len(self.qubits)
-
