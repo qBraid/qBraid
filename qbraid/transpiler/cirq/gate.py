@@ -25,6 +25,7 @@ class CirqGateWrapper(GateWrapper):
         self.num_controls = data["num_controls"]
 
         self._gate_type = data["type"]
+        self._outputs["cirq"] = gate
 
     def get_abstract_params(self):
         if not (self.params is None):

@@ -12,6 +12,8 @@ class InstructionWrapper(ABC):
         self.gate = None
         self._params = None
 
+        self._outputs = {}
+
     @property
     def params(self):
         return self._params

@@ -24,13 +24,7 @@ class BraketCircuitWrapper(CircuitWrapper):
             next_instruction = BraketInstructionWrapper(instruction, qubits)
             self.instructions.append(next_instruction)
 
-    @property
-    def package(self):
-        return "braket"
-
-    @property
-    def supported_packages(self):
-        return ["qiskit", "cirq"]
+        self._package = "braket"
 
     @property
     def num_qubits(self):

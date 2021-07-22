@@ -1,5 +1,4 @@
 from abc import ABC
-
 from .utils import gate_outputs
 
 
@@ -10,15 +9,18 @@ class GateWrapper(ABC):
 
         self.gate = None
         self.name = None
-
         self.params = []
         self.matrix = None
-
         self.num_controls = 0
         self.base_gate = None
-
         self._gate_type = None
+        self._outputs = {}
+
+    def _add_output(self, package, output):
+        self._outputs[package] = output
 
     def transpile(self, package, *output_param_mapping):
-        """If transpiled object not created, create it. Then return."""
-        return gate_outputs[package](self, output_param_mapping)
+
+        output = gate_outputs[package](self, output_param_mapping)
+        self._add_output(package, output)
+        return self._outputs[package]

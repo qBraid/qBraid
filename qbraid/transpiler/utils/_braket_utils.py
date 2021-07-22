@@ -1,9 +1,10 @@
-from typing import Union
-
 from braket.circuits import Circuit
 from braket.circuits import Gate as BraketGate
 from braket.circuits import Instruction
 from braket.circuits import Qubit
+from typing import Union
+
+from qbraid.transpiler.parameter import ParamID
 
 braket_gates = {
     # one-qubit, zero parameter
@@ -188,11 +189,10 @@ def create_braket_gate(data):
 
 def circuit_to_braket(cw, output_mapping=None):
 
-    output_circ = Circuit()
+    output_circ = Circuit()  # create circuit object
 
     # some instructions may be null (i.e. classically controlled gates, measurement)
     # these will return None, which should not be added to the circuit
-
     if not output_mapping:
         output_mapping = {x: Qubit(x) for x in range(len(cw.qubits))}
 
@@ -215,12 +215,17 @@ def instruction_to_braket(iw, output_qubit_mapping, output_param_mapping):
         return Instruction(gate, qubits)
 
 
-def gate_to_braket(gw, output_param_mapping) -> Union[BraketGate, str]:
+def gate_to_braket(gw, output_param_mapping=None) -> Union[BraketGate, str]:
+    """Create braket gate from a qbraid gate wrapper object.
 
-    """Create braket gate from a qbraid gate wrapper object."""
+    Args:
+        output_param_mapping (dict):
+        gw (BraketGateWrapper):
 
-    # braket_params = [output_param_mapping[p] if isinstance(p,ParamID) else p for p in gw.params]
-    braket_params = gw.params
+    """
+
+    braket_params = gw.params if not output_param_mapping \
+        else [output_param_mapping[p] if isinstance(p, ParamID) else p for p in gw.params]
 
     data = {
         "type": gw._gate_type,

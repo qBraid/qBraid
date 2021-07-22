@@ -22,6 +22,12 @@ from ._qiskit_utils import (
     gate_to_qiskit
 )
 
+supported_packages = {
+    "cirq": ["braket", "qiskit"],
+    "qiskit": ["braket", "cirq"],
+    "braket": ["qiskit", "cirq"],
+}
+
 circuit_outputs = {
     "cirq": circuit_to_cirq,
     "qiskit": circuit_to_qiskit,

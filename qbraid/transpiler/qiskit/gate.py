@@ -22,6 +22,7 @@ class QiskitGateWrapper(GateWrapper):
         self.num_controls = data["num_controls"]
 
         self._gate_type = data["type"]
+        self._outputs["qiskit"] = gate
 
     def get_abstract_params(self):
         return [p for p in self.params if isinstance(p, Parameter)]

@@ -17,9 +17,10 @@ class BraketGateWrapper(GateWrapper):
         self.matrix = data["matrix"]
         self.params = data["params"]
 
-        if "base_gate" in data.keys():
+        if "base_gate" in data:
             self.base_gate = BraketGateWrapper(data["base_gate"])
             # self.base_gate = data['base_gate']
             self.num_controls = data["num_controls"]
 
         self._gate_type = data["type"]
+        self._outputs["braket"] = gate
