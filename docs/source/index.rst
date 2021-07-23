@@ -100,7 +100,6 @@ porta, id sagittis urna sollicitudin.
    api/qbraid.transpiler.cirq
    api/qbraid.transpiler.qbraid
    api/qbraid.transpiler.qiskit
-   api/qbraid.utils
 
 
 

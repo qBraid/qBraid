@@ -1,23 +1,21 @@
 """This top level module contains the main qBraid public functionality."""
 
 from importlib import reload
-import pkg_resources
 from typing import Optional
 
-# qbraid errors operator
-from qbraid.exceptions import QbraidError, PackageError
+import pkg_resources
 
-# The main qbraid operators and functions
+from qbraid._version import __version__
 from qbraid.circuits import Circuit, UpdateRule
-from qbraid.transpiler import CircuitWrapper
 from qbraid.devices import (
     DeviceLikeWrapper,
     JobLikeWrapper,
     ResultWrapper,
     get_devices,
 )
-
-from qbraid._version import __version__
+from qbraid.exceptions import PackageError
+from qbraid.exceptions import QbraidError, PackageError
+from qbraid.transpiler import CircuitWrapper
 
 
 def refresh_transpiler():
