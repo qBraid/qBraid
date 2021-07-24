@@ -8,6 +8,7 @@ from qiskit.circuit.library.standard_gates import *
 from typing import Union, Tuple
 
 from qbraid.transpiler.parameter import ParamID
+from ..exceptions import TranspilerError
 
 
 qiskit_gates = {
@@ -200,7 +201,7 @@ def get_qiskit_gate_data(gate: QiskitGate) -> dict:
     # error
     else:
         if data["type"] != "MEASURE":
-            raise TypeError("Gate of type {} not supported".format(type(gate)))
+            raise TranspilerError("Gate of type {} not supported".format(type(gate)))
 
     return data
 
@@ -279,7 +280,7 @@ def create_qiskit_gate(data: dict) -> QiskitGate:
         return UnitaryGate(matrix, label=gate_type)
 
     else:
-        raise TypeError(f"Gate of type {gate_type} not supported for Qiskit transpile.")
+        raise TranspilerError(f"Gate of type {gate_type} not supported for Qiskit transpile.")
 
 
 def circuit_to_qiskit(cw, auto_measure=False) -> QuantumCircuit:
@@ -287,20 +288,13 @@ def circuit_to_qiskit(cw, auto_measure=False) -> QuantumCircuit:
     qreg = QuantumRegister(cw.num_qubits)
     output_qubit_mapping = {index: Qubit(qreg, index) for index in range(len(qreg))}
     cw.output_qubit_mapping = output_qubit_mapping
-    output_param_mapping = None
 
     # get instruction data to intermediate format
     # (will eventually include combing through moments)
     data = []
     measurement_qubit_indices = set()
-    for next_instruction in cw.instructions:
-
-        gate_wrapper = next_instruction["gate"]
-        gate = gate_wrapper.transpile("qiskit", output_param_mapping)
-        qubits = [output_qubit_mapping[q] for q in next_instruction["qubits"]]
-        measurement_qubits = []
-        if isinstance(gate, Measure):
-            measurement_qubits = next_instruction["qubits"]
+    for instruction in cw.instructions:
+        gate, qubits, measurement_qubits = instruction.transpile("qiskit", output_qubit_mapping)
         data.append((gate, qubits, measurement_qubits))
         measurement_qubit_indices.update(measurement_qubits)
 
@@ -329,6 +323,18 @@ def circuit_to_qiskit(cw, auto_measure=False) -> QuantumCircuit:
         raise NotImplementedError
 
     return output_circ
+
+
+def instruction_to_qiskit(iw, output_qubit_mapping, output_param_mapping=None) \
+        -> Tuple[Instruction, list, list]:
+
+    gate = iw.gate.transpile("qiskit", output_param_mapping)
+    qubits = [output_qubit_mapping[q] for q in iw.qubits]
+
+    if isinstance(gate, Measure):
+        return gate, qubits, iw.qubits
+    else:
+        return gate, qubits, []
 
 
 def gate_to_qiskit(gw, output_param_mapping):
@@ -360,4 +366,4 @@ def gate_to_qiskit(gw, output_param_mapping):
         return create_qiskit_gate(data)
 
     else:
-        raise TypeError(f"Gate type {gw.gate_type} not supported.")
+        raise TranspilerError(f"Gate type {gw.gate_type} not supported.")

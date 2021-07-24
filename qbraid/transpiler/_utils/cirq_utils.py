@@ -10,6 +10,7 @@ from cirq.ops.measure_util import measure as CirqMeasure
 from sympy import Symbol
 
 from qbraid.transpiler.parameter import ParamID
+from ..exceptions import TranspilerError
 
 
 class CirqU3Gate(SingleQubitGate):
@@ -173,7 +174,7 @@ def get_cirq_gate_data(gate: CirqGate) -> dict:
 
     else:
         if data["type"] != "MEASURE":
-            raise TypeError("Gate of type {} not supported".format(type(gate)))
+            raise TranspilerError("Gate of type {} not supported".format(type(gate)))
 
     return data
 
@@ -240,7 +241,7 @@ def create_cirq_gate(data):
 
     # error
     else:
-        raise TypeError(f"Gate of type {gate_type} not supported for Cirq transpile.")
+        raise TranspilerError(f"Gate of type {gate_type} not supported for Cirq transpile.")
 
 
 def circuit_to_cirq(cw, auto_measure=False, output_qubit_mapping=None, output_param_mapping=None):
@@ -253,22 +254,31 @@ def circuit_to_cirq(cw, auto_measure=False, output_qubit_mapping=None, output_pa
     if not output_param_mapping:
         output_param_mapping = {pid: Symbol(pid.name) for pid in cw.params}
 
-    for next_instruction in cw.instructions:
-
-        gate_wrapper = next_instruction["gate"]
-        gate = gate_wrapper.transpile("cirq", output_param_mapping)
-        qubits = [output_qubit_mapping[x] for x in next_instruction["qubits"]]
-        if gate == "CirqMeasure":
-            instr = [CirqMeasure(q, key=str(q.x)) for q in qubits]
-        else:
-            instr = gate(*qubits)
-        output_circ.append(instr)
+    for instruction in cw.instructions:
+        output_circ.append(
+            instruction.transpile(
+                "cirq",
+                output_qubit_mapping=output_qubit_mapping,
+                output_param_mapping=output_param_mapping,
+            )
+        )
 
     # auto measure
     if auto_measure:
         raise NotImplementedError
 
     return output_circ
+
+
+def instruction_to_cirq(iw, output_qubit_mapping, output_param_mapping):
+
+    qubits = [output_qubit_mapping[x] for x in iw.qubits]
+    gate = iw.gate.transpile("cirq", output_param_mapping)
+
+    if gate == "CirqMeasure":
+        return [CirqMeasure(q, key=str(q.x)) for q in qubits]
+    else:
+        return gate(*qubits)
 
 
 def gate_to_cirq(gw, output_param_mapping):
@@ -296,4 +306,4 @@ def gate_to_cirq(gw, output_param_mapping):
         return create_cirq_gate(data)
 
     else:
-        raise TypeError(f"Gate type {gw.gate_type} not supported.")
+        raise TranspilerError(f"Gate type {gw.gate_type} not supported.")

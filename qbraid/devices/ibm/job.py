@@ -20,14 +20,15 @@ from qbraid.devices.exceptions import JobError
 
 
 class QiskitJobWrapper(JobLikeWrapper):
-    def __init__(self, qiskit_job: Job):
+    def __init__(self, device, qiskit_job: Job):
         """Qiskit ``Job`` wrapper class.
 
         Args:
+            device (QiskitBackendWrapper): a Qiskit device object
             qiskit_job (Job): a Qiskit ``Job`` object used to run circuits.
 
         """
-        super().__init__(qiskit_job)
+        super().__init__(device, qiskit_job)
 
     @property
     def id(self):

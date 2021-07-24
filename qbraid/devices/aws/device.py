@@ -61,6 +61,5 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         """
         braket_device = self.vendor_dlo
         braket_quantum_task = braket_device.run(task_specification, shots=shots, *args, **kwargs)
-        qbraid_job = BraketQuantumTaskWrapper(braket_quantum_task)
-        qbraid_job._set_device(self)
+        qbraid_job = BraketQuantumTaskWrapper(self, braket_quantum_task)
         return qbraid_job

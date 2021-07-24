@@ -24,14 +24,15 @@ from qbraid.devices.job import JobLikeWrapper
 
 
 class BraketQuantumTaskWrapper(JobLikeWrapper):
-    def __init__(self, quantum_task: QuantumTask):
+    def __init__(self, device, quantum_task: QuantumTask):
         """Braket ``QuantumTask`` wrapper class.
 
         Args:
+            device:
             quantum_task (BraketQuantumTask): a braket ``QuantumTask`` object used to run circuits.
 
         """
-        super().__init__(quantum_task)
+        super().__init__(device, quantum_task)
 
     @property
     def id(self):

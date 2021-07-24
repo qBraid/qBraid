@@ -33,7 +33,6 @@
 
    .. autosummary::
    
-      ~QiskitJobWrapper.device
       ~QiskitJobWrapper.id
    
    

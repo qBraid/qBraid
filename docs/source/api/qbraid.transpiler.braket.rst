@@ -20,6 +20,14 @@ qbraid.transpiler.braket.gate module
    :undoc-members:
    :show-inheritance:
 
+qbraid.transpiler.braket.instruction module
+-------------------------------------------
+
+.. automodule:: qbraid.transpiler.braket.instruction
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

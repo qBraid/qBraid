@@ -1,7 +1,9 @@
-from abc import ABC, abstractmethod
+from typing import Union
+
 from qiskit.circuit import Parameter as QiskitParameter
 from sympy import Symbol as CirqParameter
-from typing import Union
+
+from .transpiler import QbraidTranspiler
 
 ParameterInput = Union[float, int, str]
 
@@ -12,20 +14,18 @@ class ParamID:
         self.name = name
 
 
-class ParameterWrapper(ABC):
+class ParameterWrapper(QbraidTranspiler):
     """Wrap a 'parameter' for parametrized circuits"""
 
     def __init__(self):
         self.name = None
         self.parameter = None
-        self._outputs = {}
 
     def _create_cirq(self):
-        self._outputs["cirq"] = CirqParameter(self.name)
+        return CirqParameter(self.name)
 
     def _create_qiskit(self):
-        self._outputs["qiskit"] = QiskitParameter(self.name)
+        return QiskitParameter(self.name)
 
-    @abstractmethod
-    def transpile(self, package: str):
-        pass
+    def transpile(self, package, *args, **kwargs):
+        return NotImplementedError

@@ -10,28 +10,19 @@
 # NOTICE: This file has been modified from the original:
 # https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/providers/job.py
 
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import Dict, Any
 
-from .device import DeviceLikeWrapper
-from .wrapper import QbraidJobLikeWrapper
 
-
-class JobLikeWrapper(QbraidJobLikeWrapper):
-    def __init__(self, vendor_jlo):
+class JobLikeWrapper(ABC):
+    def __init__(self, device, vendor_jlo):
         """Abstract interface for job-like classes.
         Args:
             vendor_jlo: a job-like object used to run circuits.
+            device: qbraid device wrapper object
         """
+        self.device = device
         self.vendor_jlo = vendor_jlo  # vendor job-like object
-        self._device = None  # to be set after instantiation
-
-    @property
-    def device(self) -> DeviceLikeWrapper:
-        """Return the :class:`~qbraid.devices.device.DeviceWrapper` where this job was executed."""
-        if self._device is None:
-            raise SystemError("device property of JobWrapper object is None")
-        return self._device
 
     @property
     @abstractmethod

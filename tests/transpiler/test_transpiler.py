@@ -10,7 +10,7 @@ from qiskit.quantum_info import Operator as QiskitOperator
 from braket.circuits import Circuit as BraketCircuit
 from braket.circuits.unitary_calculation import calculate_unitary
 
-from qbraid import qbraid_wrapper
+from qbraid import circuit_wrapper
 
 
 def to_unitary(circuit):
@@ -56,7 +56,7 @@ def qiskit_shared_gates_circuit():
     circuit.cp(np.pi / 4, 2, 3)
 
     unitary = to_unitary(circuit)
-    qbraid_circuit = qbraid_wrapper(circuit)
+    qbraid_circuit = circuit_wrapper(circuit)
 
     return qbraid_circuit, unitary
 
@@ -100,7 +100,7 @@ def cirq_shared_gates_circuit(rev_qubits=False):
         circuit.append(gate)
 
     unitary = to_unitary(circuit)
-    qbraid_circuit = qbraid_wrapper(circuit, input_qubit_mapping=mapping)
+    qbraid_circuit = circuit_wrapper(circuit, input_qubit_mapping=mapping)
 
     return qbraid_circuit, unitary
 
@@ -131,7 +131,7 @@ def braket_shared_gates_circuit():
     circuit.cphaseshift(2, 3, np.pi / 4)
 
     unitary = to_unitary(circuit)
-    qbraid_circuit = qbraid_wrapper(circuit)
+    qbraid_circuit = circuit_wrapper(circuit)
 
     return qbraid_circuit, unitary
 

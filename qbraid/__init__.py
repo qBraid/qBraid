@@ -7,15 +7,8 @@ import pkg_resources
 
 from qbraid._version import __version__
 from qbraid.circuits import Circuit, UpdateRule
-from qbraid.devices import (
-    DeviceLikeWrapper,
-    JobLikeWrapper,
-    ResultWrapper,
-    get_devices,
-)
-from qbraid.exceptions import PackageError
-from qbraid.exceptions import QbraidError, PackageError
-from qbraid.transpiler import CircuitWrapper
+from qbraid.devices import get_devices
+from qbraid.exceptions import QbraidError, WrapperError
 
 
 def refresh_transpiler():
@@ -91,7 +84,7 @@ def circuit_wrapper(circuit, **kwargs):
         circuit_wrapper_class = transpiler_entrypoints[package].load()
         return circuit_wrapper_class(circuit, **kwargs)
 
-    raise PackageError(f"{package} is not a supported package.")
+    raise WrapperError(f"{package} is not a supported package.")
 
 
 def device_wrapper(name: str, provider: str, vendor: Optional[str] = None, **kwargs):
@@ -108,14 +101,16 @@ def device_wrapper(name: str, provider: str, vendor: Optional[str] = None, **kwa
         :class:`~qbraid.devices.device.DeviceWrapper`: a qbraid device wrapper object
 
     Raises:
-        ValueError: If ``vendor`` is not a supported vendor.
+        DeviceError: If ``vendor`` is not a supported vendor.
     """
-    if name not in devices_entrypoints:
+    vendor = provider if not vendor else vendor
+
+    if vendor not in devices_entrypoints:
         refresh_devices()
 
-    if name in devices_entrypoints:
-        device_wrapper_class = devices_entrypoints[name].load()
-        return device_wrapper_class(name, provider, vendor, **kwargs)
+    if vendor in devices_entrypoints:
+        device_wrapper_class = devices_entrypoints[vendor].load()
+        return device_wrapper_class(name, provider, **kwargs)
 
     else:
-        raise ValueError(f"{vendor} is not a supported vendor.")
+        raise WrapperError(f"{vendor} is not a supported vendor.")

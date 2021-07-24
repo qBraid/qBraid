@@ -27,7 +27,6 @@
 
    .. autosummary::
    
-      ~JobLikeWrapper.device
       ~JobLikeWrapper.id
    
    

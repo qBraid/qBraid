@@ -20,6 +20,14 @@ qbraid.transpiler.qiskit.gate module
    :undoc-members:
    :show-inheritance:
 
+qbraid.transpiler.qiskit.instruction module
+-------------------------------------------
+
+.. automodule:: qbraid.transpiler.qiskit.instruction
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

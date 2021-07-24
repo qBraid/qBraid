@@ -1,9 +1,8 @@
-from abc import ABC
-
 from ._utils import gate_outputs
+from .transpiler import QbraidTranspiler
 
 
-class GateWrapper(ABC):
+class GateWrapper(QbraidTranspiler):
     """Abstract Gate wrapper object. Extended by 'QiskitGateWrapper', etc."""
 
     def __init__(self):
@@ -16,4 +15,13 @@ class GateWrapper(ABC):
         self.gate_type = None
 
     def transpile(self, package, *output_param_mapping):
+        """
+
+        Args:
+            package (str):
+            *output_param_mapping (dict):
+
+        Returns:
+
+        """
         return gate_outputs[package](self, output_param_mapping)

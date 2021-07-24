@@ -25,8 +25,9 @@ Exceptions
    TranspileError
 
 """
+from .transpiler import QbraidTranspiler
 from .circuit import CircuitWrapper
 from .gate import GateWrapper
 from .parameter import ParamID, ParameterWrapper
-from .exceptions import TranspileError
+from .exceptions import TranspilerError
 

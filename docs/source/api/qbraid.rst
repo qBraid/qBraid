@@ -25,14 +25,6 @@ qbraid.exceptions module
    :undoc-members:
    :show-inheritance:
 
-qbraid.utils module
--------------------
-
-.. automodule:: qbraid.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Module contents
 ---------------
 

@@ -14,7 +14,6 @@ class QbraidError(Exception):
         return repr(self.message)
 
 
-class PackageError(QbraidError):
-    """Raised when trying to use an unsuported package."""
-
+class WrapperError(QbraidError):
+    """Base class for errors raised while appling a qbraid wrapper."""
     pass

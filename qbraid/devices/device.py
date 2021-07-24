@@ -10,11 +10,11 @@
 # NOTICE: This file has been modified from the original:
 # https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/providers/backend.py
 
-from abc import abstractmethod
-from .wrapper import QbraidDeviceLikeWrapper
+from abc import ABC, abstractmethod
+from .exceptions import DeviceError
 
 
-class DeviceLikeWrapper(QbraidDeviceLikeWrapper):
+class DeviceLikeWrapper(ABC):
     def __init__(self, name, provider, **fields):
         """Abstract interface for device-like classes.
 
@@ -36,8 +36,24 @@ class DeviceLikeWrapper(QbraidDeviceLikeWrapper):
         if fields:
             for field in fields:
                 if field not in self._options.data:
-                    raise AttributeError("Options field %s is not valid for this device" % field)
+                    raise DeviceError(f"Options field {field} is not valid for this device")
             self._options.update_config(**fields)
+
+    def _get_device_obj(self, supported_providers: dict):
+        try:
+            supported_devices = supported_providers[self.provider]
+        except KeyError:
+            raise DeviceError(
+                'Provider "{}" not supported by vendor "{}".'.format(self.provider, self.vendor)
+            )
+        try:
+            device_object = supported_devices[self.name]
+        except KeyError:
+            msg = 'Device "{}" not supported by provider "{}"'.format(self.name, self.provider)
+            if self.provider != self.vendor:
+                msg += ' from vendor "{}"'.format(self.vendor)
+            raise DeviceError(msg + ".")
+        return device_object
 
     @classmethod
     @abstractmethod
@@ -60,7 +76,7 @@ class DeviceLikeWrapper(QbraidDeviceLikeWrapper):
         """
         for field in fields:
             if not hasattr(self._options, field):
-                raise AttributeError("Options field %s is not valid for this " "device" % field)
+                raise DeviceError(f"Options field {field} is not valid for this device.")
         self._options.update_options(**fields)
 
     def configuration(self):

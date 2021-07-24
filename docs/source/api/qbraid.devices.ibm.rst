@@ -28,6 +28,14 @@ qbraid.devices.ibm.result module
    :undoc-members:
    :show-inheritance:
 
+qbraid.devices.ibm.utils module
+-------------------------------
+
+.. automodule:: qbraid.devices.ibm.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

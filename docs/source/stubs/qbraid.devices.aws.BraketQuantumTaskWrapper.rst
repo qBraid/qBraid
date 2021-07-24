@@ -28,7 +28,6 @@
 
    .. autosummary::
    
-      ~BraketQuantumTaskWrapper.device
       ~BraketQuantumTaskWrapper.id
    
    

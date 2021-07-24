@@ -27,7 +27,6 @@
 
    .. autosummary::
    
-      ~CirqEngineJobWrapper.device
       ~CirqEngineJobWrapper.id
    
    

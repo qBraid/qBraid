@@ -3,7 +3,7 @@ from qiskit.circuit import QuantumCircuit
 
 from qbraid.transpiler.parameter import ParamID
 from qbraid.transpiler.circuit import CircuitWrapper
-from .gate import QiskitGateWrapper
+from .instruction import QiskitInstructionWrapper
 
 
 class QiskitCircuitWrapper(CircuitWrapper):
@@ -29,20 +29,15 @@ class QiskitCircuitWrapper(CircuitWrapper):
 
         # create an Instruction object for each instruction in the circuit
         for instruction, qubit_list, clbit_list in circuit.data:
+
             qubits = [self.input_qubit_mapping[qubit] for qubit in qubit_list]
+
+            param_list = instruction.params
             params = [
-                self.input_param_mapping[p] if isinstance(p, Parameter) else p
-                for p in instruction.params
+                self.input_param_mapping[p] if isinstance(p, Parameter) else p for p in param_list
             ]
-            gate = QiskitGateWrapper(instruction, params)
 
-            next_instruction = {
-                "instruction": instruction,
-                "qubits": qubits,
-                "params": params,
-                "gate": gate,
-            }
-
+            next_instruction = QiskitInstructionWrapper(instruction, qubits, params=params)
             self.instructions.append(next_instruction)
 
         self._package = "qiskit"

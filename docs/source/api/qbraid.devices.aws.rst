@@ -28,6 +28,14 @@ qbraid.devices.aws.result module
    :undoc-members:
    :show-inheritance:
 
+qbraid.devices.aws.utils module
+-------------------------------
+
+.. automodule:: qbraid.devices.aws.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

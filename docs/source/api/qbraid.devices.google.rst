@@ -28,6 +28,14 @@ qbraid.devices.google.result module
    :undoc-members:
    :show-inheritance:
 
+qbraid.devices.google.utils module
+----------------------------------
+
+.. automodule:: qbraid.devices.google.utils
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 

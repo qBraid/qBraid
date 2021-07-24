@@ -106,6 +106,5 @@ class CirqEngineWrapper(DeviceLikeWrapper):
         """
         cirq_engine = self.vendor_dlo
         cirq_engine_job = cirq_engine.run_sweep(program, **kwargs)
-        qbraid_job = CirqEngineJobWrapper(cirq_engine_job)
-        qbraid_job._set_device(self)
+        qbraid_job = CirqEngineJobWrapper(self, cirq_engine_job)
         return qbraid_job

@@ -5,6 +5,7 @@ from braket.circuits import Qubit
 from typing import Union
 
 from qbraid.transpiler.parameter import ParamID
+from ..exceptions import TranspilerError
 
 braket_gates = {
     # one-qubit, zero parameter
@@ -144,7 +145,7 @@ def get_braket_gate_data(gate: BraketGate):
 
     # error
     else:
-        raise TypeError("Gate of type {} not supported".format(type(gate)))
+        raise TranspilerError("Gate of type {} not supported".format(type(gate)))
 
     return data
 
@@ -184,28 +185,36 @@ def create_braket_gate(data):
 
     # error
     else:
-        raise TypeError(f"Gate of type {gate_type} not supported for Braket transpile.")
+        raise TranspilerError(f"Gate of type {gate_type} not supported for Braket transpile.")
 
 
-def circuit_to_braket(cw, output_qubit_mapping=None):
+def circuit_to_braket(cw, output_mapping=None):
 
-    output_circ = Circuit()  # create circuit object
+    output_circ = Circuit()
 
     # some instructions may be null (i.e. classically controlled gates, measurement)
     # these will return None, which should not be added to the circuit
-    if not output_qubit_mapping:
-        output_qubit_mapping = {x: Qubit(x) for x in range(len(cw.qubits))}
 
-    for next_instruction in cw.instructions:
+    if not output_mapping:
+        output_mapping = {x: Qubit(x) for x in range(len(cw.qubits))}
 
-        gate_wrapper = next_instruction["gate"]
-        gate = gate_wrapper.transpile("braket")
-        qubits = [output_qubit_mapping[q] for q in next_instruction["qubits"]]
-        if gate != "BraketMeasure":
-            instr = Instruction(gate, qubits)
+    for instruction in cw.instructions:
+        instr = instruction.transpile("braket", output_mapping)
+        if instr:
             output_circ.add_instruction(instr)
 
     return output_circ
+
+
+def instruction_to_braket(iw, output_qubit_mapping, output_param_mapping):
+
+    gate = iw.gate.transpile("braket", output_param_mapping)
+    qubits = [output_qubit_mapping[q] for q in iw.qubits]
+
+    if gate == "BraketMeasure":
+        return None
+    else:
+        return Instruction(gate, qubits)
 
 
 def gate_to_braket(gw, output_param_mapping=None) -> Union[BraketGate, str]:
@@ -242,4 +251,4 @@ def gate_to_braket(gw, output_param_mapping=None) -> Union[BraketGate, str]:
         return create_braket_gate(data)
 
     else:
-        raise TypeError(f"Gate of type {gw.gate_type} not supported.")
+        raise TranspilerError(f"Gate of type {gw.gate_type} not supported.")

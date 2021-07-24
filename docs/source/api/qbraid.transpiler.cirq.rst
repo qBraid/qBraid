@@ -20,6 +20,14 @@ qbraid.transpiler.cirq.gate module
    :undoc-members:
    :show-inheritance:
 
+qbraid.transpiler.cirq.instruction module
+-----------------------------------------
+
+.. automodule:: qbraid.transpiler.cirq.instruction
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Module contents
 ---------------
 
