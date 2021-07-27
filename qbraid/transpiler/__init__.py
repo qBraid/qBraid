@@ -11,6 +11,7 @@ Transpiler API
 .. autosummary::
    :toctree: ../stubs/
 
+   QbraidTranspiler
    CircuitWrapper
    GateWrapper
    ParamID
@@ -22,7 +23,7 @@ Exceptions
 .. autosummary::
    :toctree: ../stubs/
 
-   TranspileError
+   TranspilerError
 
 """
 from .transpiler import QbraidTranspiler
