@@ -3,14 +3,7 @@ from typing import Optional, List
 
 
 class Gate(ABC):
-    """Abstract class for gate library to extend and apply to instructions.
-
-    Args:
-        ABC (ABC): Extends Abstract Class
-
-    Returns:
-        None: No return for abstract class
-    """
+    """Abstract class for gate library to extend and apply to instructions."""
 
     @abstractmethod
     def __init__(

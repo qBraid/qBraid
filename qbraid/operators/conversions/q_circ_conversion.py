@@ -1,28 +1,31 @@
-# -*- coding: utf-8 -*-
-# All rights reserved-2019©.
+"""
+.. :todo:
+    Make a class with a variable: circ rather than updating the circ variable everytime an
+    instruction is added.
 
-from pyquil import quil, Program, gates
+"""
+
+from pyquil import quil, gates
+from pyquil.quil import Program
 from pyquil.quilbase import Gate, Measurement
-from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
+from qiskit import QuantumCircuit, QuantumRegister
 from qiskit.circuit import Gate
 from qiskit.circuit.library.standard_gates import *
 from qiskit.circuit.measure import Measure
 
 
-# Things to do: Make a class with a variable: circ
-# rather than updating the circ variable everytime
-# an instruction is added.
-
-
 def q_circ_convert(q_circ, output_circ_type="QISKIT"):
     """Quantum circuit conversion between different packages.
-    in
+
     Args:
         q_circ: Program class in Pyquil
                 QuantumCircuit class in Qiskit
                 Circuit class in cirq
+        output_circ_type:
+
     Returns:
         quantumcircuit class in the requested package.
+
     """
 
     if isinstance(q_circ, Program):
@@ -31,8 +34,6 @@ def q_circ_convert(q_circ, output_circ_type="QISKIT"):
     elif isinstance(q_circ, QuantumCircuit):
         qiskit_circ_conversion(q_circ, output_circ_type)
 
-    elif isinstance(q_circ, circuit):
-        pass
     else:
         raise TypeError("Input must be an one of the QubitOperators")
 
@@ -73,7 +74,7 @@ def initialize_pyquil_circuit(c_regs=None, input_circ_type="QISKIT"):
             for c_reg in c_regs:
                 name = c_reg.name
                 size = c_reg.size
-                p.declare(name, "BIT", size)
+                p.declare(name, "BIT", size)  # Program has no attribute declare
         return p
 
 
@@ -170,7 +171,7 @@ def pyquil_circ_conversion(q_circ, output_circ_type="QISKIT"):
 
 
 def qiskit_circ_conversion(q_circ, output_circ_type="PYQUIL"):
-    num_qubits = len(q_circ.qubits)
+    # num_qubits = len(q_circ.qubits)
     q_regs = q_circ.qregs
     print(q_regs)
     q_reg_name_list = []

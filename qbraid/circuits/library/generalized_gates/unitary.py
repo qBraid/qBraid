@@ -1,12 +1,14 @@
 from ...gate import Gate
-from typing import Optional, List
 
 
 class Unitary(Gate):
-    """
-    .. :todo:
+    """Unitary gate.
+
+    .. todo: Finish implementing unitary gate
 
     """
-    def __init__(self, name: str, num_qubits: int, params: List = None,
-                 global_phase: Optional[float] = 0.0):
+
+    def __init__(self, name, num_qubits, params=None, global_phase=0.0):
+        super().__init__(name, num_qubits, params=params, global_phase=global_phase)
+
         pass

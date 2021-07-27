@@ -1,3 +1,5 @@
+# pylint: skip-file
+#
 # This code is part of Qiskit.
 #
 # (C) Copyright IBM 2018, 2020.
@@ -14,7 +16,6 @@
 See https://arxiv.org/abs/1304.3061
 
 """
-
 from typing import Optional, List, Callable, Union, Dict
 import logging
 from time import time
@@ -45,9 +46,6 @@ from .minimum_eigen_solver import MinimumEigensolver, MinimumEigensolverResult
 from ..exceptions import AlgorithmError
 
 logger = logging.getLogger(__name__)
-
-# disable check for ansatzes, optimizer setter because of pylint bug
-# pylint: disable=no-member
 
 
 class VQE(VariationalAlgorithm, MinimumEigensolver):

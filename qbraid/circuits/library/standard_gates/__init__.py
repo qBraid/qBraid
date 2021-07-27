@@ -47,7 +47,6 @@ Standard Gates (:mod:`qbraid.circuits.library.standard_gates`)
    ZPow
 
 """
-
 from .dcx import DCX
 from .h import H, CH
 from .hpow import HPow
