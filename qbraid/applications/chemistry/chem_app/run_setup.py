@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 from qiskit import IBMQ, BasicAer, Aer
 from qiskit.ignis.mitigation.measurement import CompleteMeasFitter
 from qiskit.providers.aer.noise import NoiseModel

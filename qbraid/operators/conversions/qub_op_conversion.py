@@ -1,6 +1,3 @@
-# -*- coding: utf-8 -*-
-# All rights reserved-2019©.
-
 import numpy as np
 from openfermion.ops import QubitOperator
 from openfermion.utils import count_qubits
@@ -12,7 +9,7 @@ def convert(qubit_operator, output_qo_type="QISKIT"):
     """Convert the qubit_operator between the various types available
     in
     Args:
-        qubit_operator class: in either qiskit-aqua or openfermion
+        qubit_operator: in either qiskit-aqua or openfermion
         output_qo_type (string): string for specifying the return package type for
                                 qubit_operator
     Returns:

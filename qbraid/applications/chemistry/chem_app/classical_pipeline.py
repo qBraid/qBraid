@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 import numpy as np
 from qiskit.chemistry.drivers import PySCFDriver, HFMethodType
 from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister, execute

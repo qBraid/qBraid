@@ -10,12 +10,13 @@ from .exceptions import CircuitError
 
 
 class Circuit:
-    """
-    Circuit class for qBraid quantum circuit objects.
+    """Circuit class for qBraid quantum circuit objects.
+
     Args:
         num_qubits: The total number of qubits
         name: The name of the circuit
         update_rule: How to pick/create the moment to put operations into.
+
     """
 
     def __init__(

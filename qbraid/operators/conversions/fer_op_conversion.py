@@ -1,10 +1,6 @@
-# -*- coding: utf-8 -*-
-# All rights reserved-2020©.
-
 import numpy as np
 from openfermion.ops import FermionOperator, InteractionOperator
 
-# from openfermion
 from openfermion.transforms import (
     get_interaction_operator,
     get_fermion_operator,
@@ -15,15 +11,16 @@ from qiskit.chemistry import FermionicOperator
 
 
 def convert(fer_int_op, output_type="QISKIT"):
-    """Convert the fermion_operator between the various types available
-    in
+    """Convert the fermion_operator between the various types available.
+
     Args:
-        fer_int_op: FermionicOperator class in qiskit-aqua or interactionoperator class in
-        openfermion
-        output_fo_type (string): string for specifying the return package type for
-                                qubit_operator
+        fer_int_op: FermionicOperator class in qiskit-aqua or interactionoperator class
+            in openfermion
+        output_type (string): string for specifying the return package type for qubit_operator
+
     Returns:
         fermion_operator class in the requested package
+
     """
     if isinstance(fer_int_op, InteractionOperator):
         if output_type == "QISKIT":
@@ -34,7 +31,7 @@ def convert(fer_int_op, output_type="QISKIT"):
             fer_op_qiskit = FermionicOperator(h1, h2)
             fer_op_qiskit._convert_to_block_spins()
             return fer_op_qiskit
-        elif output_qo_type == "OPENFERMION":
+        elif output_type == "OPENFERMION":
             pass
 
     if isinstance(fer_int_op, FermionOperator):
@@ -48,7 +45,7 @@ def convert(fer_int_op, output_type="QISKIT"):
             fer_op_qiskit = FermionicOperator(h1, h2)
             fer_op_qiskit._convert_to_block_spins()
             return fer_op_qiskit
-        elif output_qo_type == "OPENFERMION":
+        elif output_type == "OPENFERMION":
             pass
 
     elif isinstance(fer_int_op, FermionicOperator):
