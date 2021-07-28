@@ -5,8 +5,36 @@
 
 .. currentmodule:: qbraid.devices
 
-Abstract Classes
-================
+Overview
+---------
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus viverra auctor euismod.
+Nullam feugiat ante eget diam ultrices imperdiet. In bibendum lorem tincidunt tincidunt feugiat.
+Phasellus ac nibh non massa tincidunt consectetur eget ultrices massa. Sed pulvinar gravida odio
+quis posuere. Sed nibh leo, egestas vitae iaculis id, dignissim eget massa. Nullam bibendum cursus
+elit a efficitur. Maecenas dignissim, justo id tincidunt feugiat, quam est bibendum velit, ultrices
+sagittis nibh magna quis nunc. Fusce ullamcorper dictum nibh, sit amet molestie dolor semper vel.
+
+Example Usage
+--------------
+
+    .. code-block:: python
+
+        from cirq import Circuit, LineQubit
+        from qbraid import device_wrapper
+
+        # Create a cirq circuit
+        q0, q1 = [LineQubit(i) for i in range(2)]
+        cirq_circuit = Circuit(cirq.H(q0), cirq.CNOT(q0, q1))
+
+        # Run circuit on any supported device using the qraid device wrapper
+        qbraid_device = device_wrapper("AerSimulator", "IBM")
+        qbraid_job = qbraid_device.run(cirq_circuit)  # run cirq circuit on IBM Aer simulator
+        qbraid_result = qbraid_job.result
+        print(qbraid_result.data)  # view the raw data from the run
+        ...
+
+Devices API
+------------
 
 .. autosummary::
    :toctree: ../stubs/
@@ -14,22 +42,7 @@ Abstract Classes
    DeviceLikeWrapper
    JobLikeWrapper
    ResultWrapper
-
-Functions
-==========
-
-.. autosummary::
-   :toctree: ../stubs/
-
    get_devices
-   device_wrapper
-
-Exceptions
-==========
-
-.. autosummary::
-   :toctree: ../stubs/
-
    DeviceError
    JobError
 

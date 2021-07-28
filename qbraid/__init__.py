@@ -1,5 +1,6 @@
 """This top level module contains the main qBraid public functionality."""
 
+
 from importlib import reload
 from typing import Optional
 
@@ -98,10 +99,10 @@ def device_wrapper(name: str, provider: str, vendor: Optional[str] = None, **kwa
         vendor (Optional[str]): a quantum software vendor
 
     Returns:
-        :class:`~qbraid.devices.device.DeviceWrapper`: a qbraid device wrapper object
+        :class:`~qbraid.devices.DeviceLikeWrapper`: a qbraid device wrapper object
 
     Raises:
-        DeviceError: If ``vendor`` is not a supported vendor.
+        ``WrapperError``: If ``vendor`` is not a supported vendor.
     """
     vendor = provider if not vendor else vendor
 

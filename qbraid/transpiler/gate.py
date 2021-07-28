@@ -3,7 +3,7 @@ from .transpiler import QbraidTranspiler
 
 
 class GateWrapper(QbraidTranspiler):
-    """Abstract Gate wrapper object. Extended by 'QiskitGateWrapper', etc."""
+    """Abstract class for qbraid gate wrapper objects."""
 
     def __init__(self):
         self.gate = None
@@ -15,13 +15,16 @@ class GateWrapper(QbraidTranspiler):
         self.gate_type = None
 
     def transpile(self, package, *output_param_mapping):
-        """
+        """Transpile a qbraid quantum gate wrapper object to quantum gate object of type
+         specified by ``package``.
 
         Args:
-            package (str):
-            *output_param_mapping (dict):
+            package (str): target package
+            *output_param_mapping (dict): optional parameter mapping specification for
+                parameterized gates.
 
         Returns:
+            quantum gate object of type specified by ``package``.
 
         """
         return gate_outputs[package](self, output_param_mapping)

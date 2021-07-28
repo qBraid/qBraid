@@ -6,7 +6,7 @@ Circuit Library (:mod:`qbraid.circuits.library`)
 .. currentmodule:: qbraid.circuits.library
 
 Standard Gates
-===============
+---------------
 
 .. autosummary::
    :toctree: ../stubs/
@@ -52,7 +52,7 @@ Standard Gates
    ZPow
 
 Generalized Gates
-==================
+------------------
 
 .. autosummary::
    :toctree: ../stubs/
@@ -61,6 +61,5 @@ Generalized Gates
    Unitary
 
 """
-
 from .standard_gates import *
 from .generalized_gates import RV, Unitary

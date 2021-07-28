@@ -82,24 +82,9 @@ porta, id sagittis urna sollicitudin.
    :hidden:
 
    api/qbraid
-   api/qbraid.algorithms
-   api/qbraid.algorithms.minimum_eigen_solvers
-   api/qbraid.algorithms.optimizers
-   api/qbraid.applications
    api/qbraid.circuits
-   api/qbraid.circuits.library
-   api/qbraid.circuits.library.generalized_gates
-   api/qbraid.circuits.library.standard_gates
    api/qbraid.devices
-   api/qbraid.devices.aws
-   api/qbraid.devices.google
-   api/qbraid.devices.ibm
-   api/qbraid.operators
    api/qbraid.transpiler
-   api/qbraid.transpiler.braket
-   api/qbraid.transpiler.cirq
-   api/qbraid.transpiler.qbraid
-   api/qbraid.transpiler.qiskit
 
 
 

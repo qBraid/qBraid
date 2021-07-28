@@ -1,3 +1,5 @@
+:orphan:
+
 qbraid.circuits.library.generalized\_gates package
 ==================================================
 
