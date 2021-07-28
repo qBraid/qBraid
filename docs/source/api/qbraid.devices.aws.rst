@@ -1,3 +1,5 @@
+:orphan:
+
 qbraid.devices.aws package
 ==========================
 

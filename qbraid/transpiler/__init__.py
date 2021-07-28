@@ -1,12 +1,15 @@
 """
-==================================================
+========================================
 Transpiler (:mod:`qbraid.transpiler`)
-==================================================
+========================================
 
 .. currentmodule:: qbraid.transpiler
 
+Overview
+--------
+
 Transpiler API
-===============
+---------------
 
 .. autosummary::
    :toctree: ../stubs/
@@ -15,13 +18,6 @@ Transpiler API
    GateWrapper
    ParamID
    ParameterWrapper
-
-Exceptions
-==========
-
-.. autosummary::
-   :toctree: ../stubs/
-
    TranspileError
 
 """
