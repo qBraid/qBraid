@@ -40,8 +40,4 @@ instruction_outputs = {
     "braket": instruction_to_braket,
 }
 
-gate_outputs = {
-    "cirq": gate_to_cirq,
-    "qiskit": gate_to_qiskit,
-    "braket": gate_to_braket
-}
+gate_outputs = {"cirq": gate_to_cirq, "qiskit": gate_to_qiskit, "braket": gate_to_braket}

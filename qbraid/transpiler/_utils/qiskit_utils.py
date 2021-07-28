@@ -325,8 +325,9 @@ def circuit_to_qiskit(cw, auto_measure=False) -> QuantumCircuit:
     return output_circ
 
 
-def instruction_to_qiskit(iw, output_qubit_mapping, output_param_mapping=None) \
-        -> Tuple[Instruction, list, list]:
+def instruction_to_qiskit(
+    iw, output_qubit_mapping, output_param_mapping=None
+) -> Tuple[Instruction, list, list]:
 
     gate = iw.gate.transpile("qiskit", output_param_mapping)
     qubits = [output_qubit_mapping[q] for q in iw.qubits]

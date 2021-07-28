@@ -42,13 +42,13 @@ class VariationalAlgorithm:
     """The Variational Algorithm Base Class."""
 
     def __init__(
-            self,
-            ansatz: QuantumCircuit,
-            optimizer: Optimizer,
-            cost_fn: Optional[Callable] = None,
-            gradient: Optional[Union[GradientBase, Callable]] = None,
-            initial_point: Optional[np.ndarray] = None,
-            quantum_instance: Optional[Union[QuantumInstance, BaseBackend, Backend]] = None,
+        self,
+        ansatz: QuantumCircuit,
+        optimizer: Optimizer,
+        cost_fn: Optional[Callable] = None,
+        gradient: Optional[Union[GradientBase, Callable]] = None,
+        initial_point: Optional[np.ndarray] = None,
+        quantum_instance: Optional[Union[QuantumInstance, BaseBackend, Backend]] = None,
     ) -> None:
         """
         Args:
@@ -89,7 +89,7 @@ class VariationalAlgorithm:
 
     @quantum_instance.setter
     def quantum_instance(
-            self, quantum_instance: Union[QuantumInstance, BaseBackend, Backend]
+        self, quantum_instance: Union[QuantumInstance, BaseBackend, Backend]
     ) -> None:
         """Sets quantum instance."""
         if isinstance(quantum_instance, (BaseBackend, Backend)):
@@ -135,12 +135,12 @@ class VariationalAlgorithm:
         self._initial_point = initial_point
 
     def find_minimum(
-            self,
-            initial_point: Optional[np.ndarray] = None,
-            ansatz: Optional[QuantumCircuit] = None,
-            cost_fn: Optional[Callable] = None,
-            optimizer: Optional[Optimizer] = None,
-            gradient_fn: Optional[Callable] = None,
+        self,
+        initial_point: Optional[np.ndarray] = None,
+        ansatz: Optional[QuantumCircuit] = None,
+        cost_fn: Optional[Callable] = None,
+        optimizer: Optional[Optimizer] = None,
+        gradient_fn: Optional[Callable] = None,
     ) -> "VariationalResult":
         """Optimize to find the minimum cost value.
 
@@ -237,7 +237,7 @@ class VariationalAlgorithm:
         return result
 
     def get_prob_vector_for_params(
-            self, construct_circuit_fn, params_s, quantum_instance, construct_circuit_args=None
+        self, construct_circuit_fn, params_s, quantum_instance, construct_circuit_args=None
     ):
         """Helper function to get probability vectors for a set of params"""
         circuits = []

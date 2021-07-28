@@ -11,17 +11,19 @@ def f0():
     m = n  # ancilla qubits
     out_qubit = 2 * n + m - 1
 
-    circ = QuantumCircuit(2 * n + m,
-                          1)  # the first argument specifies that we are building a circuit
-    # acting on 2n + m qubits. 
+    circ = QuantumCircuit(
+        2 * n + m, 1
+    )  # the first argument specifies that we are building a circuit
+    # acting on 2n + m qubits.
     # The second argument specifies that we'll be measuring just 1 qubit.
 
-    # first, we copy the input in the first n qubits to the second n qubits. 
+    # first, we copy the input in the first n qubits to the second n qubits.
     for i in range(n):
         circ.cx(i, i + n)
 
-    for i in [2 * n + k for k in
-              range(m - 1)]:  # apply an X gate to all ancilla qubits (i.e. we are initializing
+    for i in [
+        2 * n + k for k in range(m - 1)
+    ]:  # apply an X gate to all ancilla qubits (i.e. we are initializing
         # them as |1>)
         circ.x(i)
 
@@ -49,14 +51,15 @@ def f0():
             circ.x(index + 2 * k + 1)
             circ.x(index + 2 * k)
 
-    for i in [2 * n + k for k in
-              range(m - 1)]:  # notice that we don't undo the x gate acting on the output qubit.
+    for i in [
+        2 * n + k for k in range(m - 1)
+    ]:  # notice that we don't undo the x gate acting on the output qubit.
         circ.x(i)
 
     for i in range(n):
         circ.cx(i, i + n)
 
-    circ.draw(output='mpl')
+    circ.draw(output="mpl")
 
 
 def f1():
@@ -66,18 +69,19 @@ def f1():
     m = n  # ancilla qubits
     out_qubit = 2 * n + m - 1
 
-    circ = QuantumCircuit(2 * n + m,
-                          1)  # the first argument specifies that we are building a circuit
-    # acting on 2n + m qubits. 
+    circ = QuantumCircuit(
+        2 * n + m, 1
+    )  # the first argument specifies that we are building a circuit
+    # acting on 2n + m qubits.
     # The second argument specifies that we'll be measuring just 1 qubit.
 
-    # first, we copy the input in the first n qubits to the second n qubits. 
+    # first, we copy the input in the first n qubits to the second n qubits.
     for i in range(n):
         circ.cx(i, i + n)
 
-    for i in [2 * n + k for k in
-              range(
-                  m - 1)]:  # apply an X gate to all ancilla qubits (i.e. we are initializing
+    for i in [
+        2 * n + k for k in range(m - 1)
+    ]:  # apply an X gate to all ancilla qubits (i.e. we are initializing
         # them as |1>)
         circ.x(i)
 
@@ -105,11 +109,12 @@ def f1():
             circ.x(index + 2 * k + 1)
             circ.x(index + 2 * k)
 
-    for i in [2 * n + k for k in
-              range(m - 1)]:  # notice that we don't undo the x gate acting on the output qubit.
+    for i in [
+        2 * n + k for k in range(m - 1)
+    ]:  # notice that we don't undo the x gate acting on the output qubit.
         circ.x(i)
 
     for i in range(n):
         circ.cx(i, i + n)
 
-    circ.draw(output='mpl')
+    circ.draw(output="mpl")

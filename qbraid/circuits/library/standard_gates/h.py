@@ -13,6 +13,7 @@ class H(Gate):
         global_phase[Optional]: The global phase on the gate
 
     """
+
     def __init__(self, global_phase: Optional[float] = 0.0):
         super().__init__("H", num_qubits=1, params=[], global_phase=global_phase)
 

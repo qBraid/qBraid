@@ -13,7 +13,7 @@ class InstructionWrapper(QbraidTranspiler):
 
     @property
     def params(self):
-        """Return the """
+        """Return the"""
         return self._params
 
     def transpile(self, package, output_qubit_mapping=None, output_param_mapping=None):

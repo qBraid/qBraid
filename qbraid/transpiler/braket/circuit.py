@@ -24,5 +24,3 @@ class BraketCircuitWrapper(CircuitWrapper):
             instructions.append(next_instruction)
 
         return instructions
-
-

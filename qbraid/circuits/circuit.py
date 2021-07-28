@@ -50,9 +50,7 @@ class Circuit:
         return len(list(itertools.chain(self.instructions)))
 
     def __str__(self):
-        return (
-            f"Circuit({self.name}, {self.num_qubits} qubits, {self.num_gates()} gates)"
-        )
+        return f"Circuit({self.name}, {self.num_qubits} qubits, {self.num_gates()} gates)"
 
     def __len__(self):
         return len(self._moments)
@@ -72,14 +70,10 @@ class Circuit:
         """
         moments = circuit.moments
         for moment in moments:
-            if validate_operation(moment, self.num_qubits) and isinstance(
-                moment, Moment
-            ):
+            if validate_operation(moment, self.num_qubits) and isinstance(moment, Moment):
                 self.append(moment, update_rule=update_rule)
             else:
-                raise CircuitError(
-                    f"{circuit} of size {circuit.num_qubits} not appendable"
-                )
+                raise CircuitError(f"{circuit} of size {circuit.num_qubits} not appendable")
 
     def _earliest_appended(self, op: Instruction) -> bool:
         """Helper function that scans through all the moments and appends the operation
@@ -154,9 +148,7 @@ class Circuit:
                         if not self._earliest_appended(op):
                             self._create_new_moment(op)
                     else:
-                        raise CircuitError(
-                            f"The {update_rule} update rule is not implemented."
-                        )
+                        raise CircuitError(f"The {update_rule} update rule is not implemented.")
             elif isinstance(op, Moment):
                 # limit index to 0..len(self._moments), also deal with indices smaller 0
                 k = max(

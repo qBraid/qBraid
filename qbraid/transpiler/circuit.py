@@ -7,6 +7,7 @@ from .transpiler import QbraidTranspiler
 
 class CircuitWrapper(QbraidTranspiler):
     """Abstract class for qbraid circuit wrapper objects."""
+
     def __init__(self, circuit, input_qubit_mapping):
 
         self._circuit = circuit

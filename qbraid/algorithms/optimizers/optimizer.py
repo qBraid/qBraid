@@ -172,7 +172,7 @@ class Optimizer(ABC):
 
         Raises:
             ValueError: invalid input
-            
+
         """
         if initial_point is not None and len(initial_point) != num_vars:
             raise ValueError("Initial point does not match dimension")
