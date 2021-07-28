@@ -7,7 +7,10 @@ from .moment import Moment
 from .qubit import Qubit
 from .utils import validate_operation
 from .exceptions import CircuitError
-
+from .parameter import Parameter
+from .parametertable import ParameterTable
+from .gate import Gate
+from .library.supported_gates import supported_gates
 
 class Circuit:
     """
@@ -28,6 +31,7 @@ class Circuit:
         self._moments: Iterable[Moment] = []  # list of moments
         self.name = name
         self.update_rule = update_rule
+        self._parameter_table = ParameterTable()
 
     @property
     def num_qubits(self):
@@ -49,9 +53,7 @@ class Circuit:
         return len(list(itertools.chain(self.instructions)))
 
     def __str__(self):
-        return (
-            f"Circuit({self.name}, {self.num_qubits} qubits, {self.num_gates()} gates)"
-        )
+        return f"Circuit({self.name}, {self.num_qubits} qubits, {self.num_gates()} gates)"
 
     def __len__(self):
         return len(self._moments)
@@ -71,14 +73,10 @@ class Circuit:
         """
         moments = circuit.moments
         for moment in moments:
-            if validate_operation(moment, self.num_qubits) and isinstance(
-                moment, Moment
-            ):
+            if validate_operation(moment, self.num_qubits) and isinstance(moment, Moment):
                 self.append(moment, update_rule=update_rule)
             else:
-                raise CircuitError(
-                    f"{circuit} of size {circuit.num_qubits} not appendable"
-                )
+                raise CircuitError(f"{circuit} of size {circuit.num_qubits} not appendable")
 
     def _earliest_appended(self, op: Instruction) -> bool:
         """Helper function that scans through all the moments and appends the operation
@@ -97,28 +95,37 @@ class Circuit:
                 appended = True
         return appended
 
-    def _create_new_moment(self, op: Instruction = None):
+    def _create_new_moment(self, op=None):
         """ "helper function that makes a new moment and appends the operation."""
         new_moment = Moment()
         if op:
             new_moment.instructions.append(op)
         self._moments.append(new_moment)
 
-    def _new_update_rule(self, op: Instruction = None):
-        if not self.moments[0].instructions:
-            self.moments[0].append(op)
-        # add new
-        else:
-            self._create_new_moment(op)
+    def _add_parameters(self,instruction):
 
-    def _inline_update_rule(self, op: Instruction = None):
-        # the last moment in the circuit
-        curr_moment = self._moments[-1]
-        if curr_moment.appendable(op):
-            curr_moment.append(op)
-        else:
-            # create a new moment
-            self._create_new_moment(op)
+        for param_index, param in enumerate(instruction.gate.params):
+            if isinstance(param, Parameter):
+                current_parameters = self._parameter_table
+
+                if param in current_parameters:
+                    if not self._check_dup_param_spec(self._parameter_table[param],
+                                                        instruction, param_index):
+                        self._parameter_table[param].append((instruction, param_index))
+                else:
+                    if param.name in self._parameter_table.get_names():
+                        raise CircuitError(
+                            'Name conflict on adding parameter: {}'.format(param.name))
+                    self._parameter_table[param] = [(instruction, param_index)]
+
+                    # clear cache if new parameter is added
+                    self._parameters = None
+
+    def _check_dup_param_spec(self, parameter_spec_list, instruction, param_index):
+        for spec in parameter_spec_list:
+            if spec[0] is instruction and spec[1] == param_index:
+                return True
+        return False
 
     def _update(
         self,
@@ -140,22 +147,35 @@ class Circuit:
         for op in operation:
             if isinstance(op, Instruction):
                 if validate_operation(op, self.num_qubits):
+                    self._add_parameters(op)
                     if update_rule is UpdateRule.NEW_THEN_INLINE:
-                        self._new_update_rule(op)
+                        if not self.moments[0].instructions:
+                            self.moments[0].append(op)
+                        # add new
+                        else:
+                            self._create_new_moment(op)
                         # update_rule changes to INLINE
                         update_rule = UpdateRule.INLINE
                     elif update_rule is UpdateRule.INLINE:
-                        self._inline_update_rule(op)
+                        # the last moment in the circuit
+                        curr_moment = self._moments[-1]
+                        if curr_moment.appendable(op):
+                            curr_moment.append(op)
+                        else:
+                            # create a new moment
+                            self._create_new_moment(op)
                     elif update_rule is UpdateRule.NEW:
-                        # create a new moment every time append is called
-                        self._new_update_rule(op)
+                        if not self.moments[0].instructions:
+                            self.moments[0].append(op)
+                        # add new
+                        else:
+                            # create a new moment every time append is called
+                            self._create_new_moment(op)
                     elif update_rule is UpdateRule.EARLIEST:
                         if not self._earliest_appended(op):
                             self._create_new_moment(op)
                     else:
-                        raise CircuitError(
-                            f"The {update_rule} update rule is not implemented."
-                        )
+                        raise CircuitError(f"The {update_rule} update rule is not implemented.")
             elif isinstance(op, Moment):
                 # limit index to 0..len(self._moments), also deal with indices smaller 0
                 k = max(
@@ -167,6 +187,8 @@ class Circuit:
                 )
                 if validate_operation(op, num_qubits=self.num_qubits):
                     # moments don't need a strategy.
+                    for instr in op.instructions:
+                        self._add_parameters(instr)
                     self._moments.insert(k, op)
                     k += 1
                 else:
@@ -176,7 +198,7 @@ class Circuit:
 
     def append(
         self,
-        operation: Union[Instruction, Moment, Iterable[Instruction], Iterable[Moment]],
+        operation: Union[Instruction, Moment, Iterable[Instruction], Iterable[Moment], str],
         mapping: Union[list, dict] = None,
         update_rule: UpdateRule = None,
     ) -> None:
@@ -206,3 +228,8 @@ class Circuit:
         else:
             # make operation into interable and attempt to append.
             self.append(operation=[operation], mapping=mapping, update_rule=update_rule)
+
+    def add_instruction(self, gate_name: str, params, qubits):
+
+        gate = supported_gates[gate_name](*params)
+        self.append(Instruction(gate, qubits))

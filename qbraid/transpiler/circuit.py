@@ -9,6 +9,7 @@ class CircuitWrapper(QbraidTranspiler):
     def __init__(self):
 
         self.instructions = []
+        self.moments = []
         self.params = []
         self.circuit = None
         self._package = None

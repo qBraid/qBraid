@@ -1,12 +1,6 @@
 from ...gate import Gate
-from typing import Optional, List
+from typing import Optional
 
 
 class Unitary(Gate):
-    """
-    .. :todo:
-
-    """
-    def __init__(self, name: str, num_qubits: int, params: List = None,
-                 global_phase: Optional[float] = 0.0):
-        pass
+    pass

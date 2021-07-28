@@ -10,6 +10,7 @@ from .cirq_utils import (
     get_cirq_gate_data,
     create_cirq_gate,
     circuit_to_cirq,
+    moment_to_cirq,
     instruction_to_cirq,
     gate_to_cirq,
 )
@@ -23,15 +24,20 @@ from .qiskit_utils import (
 )
 
 supported_packages = {
-    "cirq": ["braket", "qiskit"],
-    "qiskit": ["braket", "cirq"],
-    "braket": ["qiskit", "cirq"],
+    "cirq": ["braket", "qiskit", "qbraid"],
+    "qiskit": ["braket", "cirq", "qbraid"],
+    "braket": ["qiskit", "cirq", "qbraid"],
+    "qbraid": ["cirq","braket","qisit"]
 }
 
 circuit_outputs = {
     "cirq": circuit_to_cirq,
     "qiskit": circuit_to_qiskit,
     "braket": circuit_to_braket,
+}
+
+moment_outputs = {
+    'cirq': moment_to_cirq,
 }
 
 instruction_outputs = {

@@ -1,5 +1,6 @@
 from cirq import Gate
 from cirq import Circuit, LineQubit
+from cirq.ops.moment import Moment
 from cirq.ops.common_gates import *
 from cirq.ops.controlled_gate import ControlledGate
 from cirq.ops.gate_features import SingleQubitGate
@@ -254,14 +255,21 @@ def circuit_to_cirq(cw, auto_measure=False, output_qubit_mapping=None, output_pa
     if not output_param_mapping:
         output_param_mapping = {pid: Symbol(pid.name) for pid in cw.params}
 
-    for instruction in cw.instructions:
-        output_circ.append(
-            instruction.transpile(
-                "cirq",
+    if cw.moments:
+        for m in cw.moments:
+            output_circ.append(m.transpile('cirq',
                 output_qubit_mapping=output_qubit_mapping,
                 output_param_mapping=output_param_mapping,
+            ))
+    else:
+        for instruction in cw.instructions:
+            output_circ.append(
+                instruction.transpile(
+                    "cirq",
+                    output_qubit_mapping,
+                    output_param_mapping,
+                )
             )
-        )
 
     # auto measure
     if auto_measure:
@@ -269,6 +277,12 @@ def circuit_to_cirq(cw, auto_measure=False, output_qubit_mapping=None, output_pa
 
     return output_circ
 
+def moment_to_cirq(mw,output_qubit_mapping,output_param_mapping):
+
+    return Moment([i.transpile('cirq',
+        output_qubit_mapping,
+        output_param_mapping,) \
+         for i in mw.instructions])
 
 def instruction_to_cirq(iw, output_qubit_mapping, output_param_mapping):
 
@@ -279,6 +293,7 @@ def instruction_to_cirq(iw, output_qubit_mapping, output_param_mapping):
         return [CirqMeasure(q, key=str(q.x)) for q in qubits]
     else:
         return gate(*qubits)
+
 
 
 def gate_to_cirq(gw, output_param_mapping):
