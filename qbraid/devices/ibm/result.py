@@ -13,7 +13,7 @@
 from qiskit.result.result import Result
 from typing import Dict
 
-from qbraid.devices.result import ResultWrapper
+from qbraid.devices import ResultWrapper
 
 
 class QiskitResultWrapper(ResultWrapper):

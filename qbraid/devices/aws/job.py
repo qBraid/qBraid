@@ -20,7 +20,7 @@ from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResu
 from typing import Any, Dict, Union
 import asyncio
 
-from qbraid.devices.job import JobLikeWrapper
+from qbraid.devices import JobLikeWrapper
 
 
 class BraketQuantumTaskWrapper(JobLikeWrapper):

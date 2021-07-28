@@ -18,7 +18,7 @@
 from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
 import numpy as np
 
-from qbraid.devices.result import ResultWrapper
+from qbraid.devices import ResultWrapper
 
 
 class BraketGateModelResultWrapper(ResultWrapper):

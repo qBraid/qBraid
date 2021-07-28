@@ -15,8 +15,8 @@ from qiskit.providers.exceptions import JobTimeoutError
 from qiskit.providers.exceptions import JobError as QiskitJobError
 from typing import Callable, Optional
 
-from qbraid.devices.job import JobLikeWrapper
-from qbraid.devices.exceptions import JobError
+from qbraid.devices import JobLikeWrapper
+from qbraid.devices import JobError
 
 
 class QiskitJobWrapper(JobLikeWrapper):
@@ -24,7 +24,7 @@ class QiskitJobWrapper(JobLikeWrapper):
         """Qiskit ``Job`` wrapper class.
 
         Args:
-            device (QiskitBackendWrapper): a Qiskit device object
+            device (qbraid.devices.ibm.QiskitBackendWrapper): a Qiskit device object
             qiskit_job (Job): a Qiskit ``Job`` object used to run circuits.
 
         """

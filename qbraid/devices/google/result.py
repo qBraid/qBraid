@@ -19,7 +19,7 @@
 from cirq.study.result import Result
 import pandas as pd
 
-from qbraid.devices.result import ResultWrapper
+from qbraid.devices import ResultWrapper
 
 
 class CirqResultWrapper(ResultWrapper):

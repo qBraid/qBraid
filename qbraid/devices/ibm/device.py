@@ -10,7 +10,7 @@
 # NOTICE: This file has been modified from the original:
 # https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/providers/backend.py
 
-from qbraid.devices.device import DeviceLikeWrapper
+from qbraid.devices import DeviceLikeWrapper
 from .job import QiskitJobWrapper
 from .._utils import QISKIT_PROVIDERS, QiskitRunInput
 
@@ -63,8 +63,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
                 specified will be used instead of what's set in the options object.
 
         Returns:
-            QiskitJobWrapper: The :class:`~qbraid.devices.ibm.job.QiskitJobWrapper` job object for
-            the run.
+            Result for this run
 
         """
         qiskit_device = self.vendor_dlo

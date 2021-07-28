@@ -42,7 +42,7 @@ Transpiler API
    GateWrapper
    ParamID
    ParameterWrapper
-   TranspileError
+   TranspilerError
 
 """
 from .transpiler import QbraidTranspiler

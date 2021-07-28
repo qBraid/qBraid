@@ -17,7 +17,7 @@
 
 from cirq_google.engine.engine_job import EngineJob
 
-from qbraid.devices.job import JobLikeWrapper
+from qbraid.devices import JobLikeWrapper
 
 
 class CirqEngineJobWrapper(JobLikeWrapper):

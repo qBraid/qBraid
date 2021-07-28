@@ -19,15 +19,15 @@ Example Usage
 
     .. code-block:: python
 
-        from cirq import Circuit, LineQubit
-        from qbraid import device_wrapper
+        import cirq
+        import qbraid
 
         # Create a cirq circuit
-        q0, q1 = [LineQubit(i) for i in range(2)]
-        cirq_circuit = Circuit(cirq.H(q0), cirq.CNOT(q0, q1))
+        q0, q1 = [cirq.LineQubit(i) for i in range(2)]
+        cirq_circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1))
 
         # Run circuit on any supported device using the qraid device wrapper
-        qbraid_device = device_wrapper("AerSimulator", "IBM")
+        qbraid_device = qbraid.device_wrapper("AerSimulator", "IBM")
         qbraid_job = qbraid_device.run(cirq_circuit)  # run cirq circuit on IBM Aer simulator
         qbraid_result = qbraid_job.result
         print(qbraid_result.data)  # view the raw data from the run

@@ -16,7 +16,7 @@
 
 from typing import Optional
 
-from qbraid.devices.device import DeviceLikeWrapper
+from qbraid.devices import DeviceLikeWrapper
 from .job import BraketQuantumTaskWrapper
 from .._utils import BRAKET_PROVIDERS
 
