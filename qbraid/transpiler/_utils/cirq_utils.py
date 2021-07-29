@@ -9,6 +9,7 @@ from cirq.ops.swap_gates import *
 from cirq.ops.three_qubit_gates import *
 from cirq.ops.measure_util import measure as CirqMeasure
 from sympy import Symbol
+import numpy as np
 
 from qbraid.transpiler.parameter import ParamID
 from ..exceptions import TranspilerError
@@ -254,12 +255,14 @@ def circuit_to_cirq(cw, auto_measure=False, output_qubit_mapping=None, output_pa
 
     if not output_param_mapping:
         output_param_mapping = {pid: Symbol(pid.name) for pid in cw.params}
+        print(output_param_mapping)
+        print(cw.params)
 
     if cw.moments:
         for m in cw.moments:
             output_circ.append(m.transpile('cirq',
-                output_qubit_mapping=output_qubit_mapping,
-                output_param_mapping=output_param_mapping,
+                output_qubit_mapping,
+                output_param_mapping,
             ))
     else:
         for instruction in cw.instructions:
@@ -278,10 +281,8 @@ def circuit_to_cirq(cw, auto_measure=False, output_qubit_mapping=None, output_pa
     return output_circ
 
 def moment_to_cirq(mw,output_qubit_mapping,output_param_mapping):
-
-    return Moment([i.transpile('cirq',
-        output_qubit_mapping,
-        output_param_mapping,) \
+    
+    return Moment([i.transpile('cirq',output_qubit_mapping,output_param_mapping) \
          for i in mw.instructions])
 
 def instruction_to_cirq(iw, output_qubit_mapping, output_param_mapping):

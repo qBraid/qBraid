@@ -4,6 +4,7 @@ from braket.circuits.circuit import Circuit
 
 from qbraid.transpiler.circuit import CircuitWrapper
 from .instruction import BraketInstructionWrapper
+from .moment import BraketMomentWrapper
 
 
 class BraketCircuitWrapper(CircuitWrapper):
@@ -13,6 +14,10 @@ class BraketCircuitWrapper(CircuitWrapper):
         self._qubits = circuit.qubits
         self._num_qubits = len(self.qubits)
         self._package = "braket"
+
+    @property
+    def moments(self) -> List[BraketMomentWrapper]:
+        pass
 
     @property
     def instructions(self) -> List[BraketInstructionWrapper]:

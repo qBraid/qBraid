@@ -50,6 +50,10 @@ class Circuit:
             instructions_list.extend(moment.instructions)
         return instructions_list
 
+    @property
+    def params(self):
+        return self._parameter_table.get_keys()
+
     def num_gates(self) -> int:
         return len(list(itertools.chain(self.instructions)))
 

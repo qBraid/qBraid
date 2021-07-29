@@ -25,6 +25,12 @@ class CircuitWrapper(QbraidTranspiler):
         pass
 
     @property
+    @abstractmethod
+    def moments(self):
+        """Return an Iterable of moments in the circuit."""
+        pass
+
+    @property
     def circuit(self):
         return self._circuit
 

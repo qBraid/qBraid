@@ -1,10 +1,12 @@
-from typing import List
+from qbraid.transpiler.cirq.moment import CirqMomentWrapper
+from typing import List, Iterable
 
 from cirq.circuits import Circuit
+from cirq.ops.moment import Moment
 
 from qbraid.transpiler.circuit import CircuitWrapper
 from .instruction import CirqInstructionWrapper
-
+from ..parameter import ParamID
 
 class CirqCircuitWrapper(CircuitWrapper):
     def __init__(self, circuit: Circuit, input_qubit_mapping=None):
@@ -14,22 +16,46 @@ class CirqCircuitWrapper(CircuitWrapper):
         self._num_qubits = len(self.qubits)
         self._package = "cirq"
 
-    @property
-    def instructions(self) -> List[CirqInstructionWrapper]:
+        self._wrap_moments(circuit)
 
+    def _wrap_circuit(self, circuit: Iterable[Moment]):
+        
         params = set()
-        instructions = []
-        for op in self.circuit.all_operations():
-            qbs = [self.input_qubit_mapping[qubit] for qubit in op.qubits]
-            next_instruction = CirqInstructionWrapper(op, qbs)
-            params.union(set(next_instruction.gate.get_abstract_params()))
-            instructions.append(next_instruction)
+        moments = []
 
-        input_param_mapping = {param: index for index, param in enumerate(self.params)}
+        for moment in circuit.moments:
 
-        for instruction in instructions:
-            instruction.gate.parse_params(self.input_param_mapping)
+            instructions = []
+
+            for op in moment.operations:
+
+                qbs = [self.input_qubit_mapping[qubit] for qubit in op.qubits]
+                next_instruction = CirqInstructionWrapper(op, qbs)
+                params.union(set(next_instruction.gate.get_abstract_params()))
+                instructions.append(next_instruction)
+
+            next_moment = CirqMomentWrapper(moment,instructions=instructions)
+            moments.append(next_moment)
 
         self._params = params
-        self._input_param_mapping = input_param_mapping
+        self.input_param_mapping =  {param: ParamID(index,param.name) for index, param in enumerate(self.params)}
+
+        for moment in self._moments:
+            for instruction in moment.instructions:
+                instruction.gate.parse_params(self.input_param_mapping)
+
+        self._moments = moments
+
+    @property
+    def moments(self) -> List[CirqMomentWrapper]:
+        return self._moments
+
+    @property
+    def instructions(self) -> List[CirqInstructionWrapper]:
+    
+        instructions = []
+        for m in self._moments:
+            instructions.append(m.instructions)
+
         return instructions
+        
