@@ -234,7 +234,28 @@ class Circuit:
             # make operation into interable and attempt to append.
             self.append(operation=[operation], mapping=mapping, update_rule=update_rule)
 
-    def add_instruction(self, gate_name: str, params, qubits):
+    @staticmethod
+    def _validate_params(params):
+
+        if not all(isinstance(p,(int,float,Parameter)) for p in params):
+            raise CircuitError('incorrect parameter arguments')
+
+    @staticmethod
+    def _validate_qubits(qubits):
+
+        if isinstance(qubits,Iterable):
+            if not all(isinstance(p,(int)) for p in qubits):
+                raise CircuitError('incorrect parameter arguments')
+        elif not isinstance(qubits,int):
+            raise CircuitError('incorrect parameter arguments')
+
+    def add_instruction(self, gate_name: str, *args):
+
+        qubits = args[-1]
+        params , qubits =  args[:-1], args[-1]
+
+        self._validate_params(params)
+        self._validate_qubits(qubits)
 
         gate = supported_gates[gate_name](*params)
         self.append(Instruction(gate, qubits))

@@ -15,19 +15,30 @@ class BraketCircuitWrapper(CircuitWrapper):
         self._num_qubits = len(self.qubits)
         self._package = "braket"
 
-    @property
-    def moments(self) -> List[BraketMomentWrapper]:
-        pass
+        self._circuit(circuit)
 
-    @property
-    def instructions(self) -> List[BraketInstructionWrapper]:
+    def _wrap_circuit(self, circuit, input_qubit_mapping):
+
+        self._circuit
 
         instructions = []
-        for instruction in self.circuit.instructions:
-            qubits = [self.input_qubit_mapping[q] for q in instruction.target]
+        for instruction in circuit.instructions:
+            qubits = [input_qubit_mapping[q] for q in instruction.target]
             next_instruction = BraketInstructionWrapper(instruction, qubits)
             instructions.append(next_instruction)
 
-        return instructions
+        self._instructions =  instructions
+
+    @property
+    def moments(self) -> List[BraketMomentWrapper]:
+        raise NotImplementedError
+
+    @property
+    def instructions(self) -> List[BraketInstructionWrapper]:
+        if hasattr(self,'_instructions'):
+            return self._instructions
+        return list()
+
+        
 
 

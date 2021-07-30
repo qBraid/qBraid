@@ -27,7 +27,7 @@ supported_packages = {
     "cirq": ["braket", "qiskit", "qbraid"],
     "qiskit": ["braket", "cirq", "qbraid"],
     "braket": ["qiskit", "cirq", "qbraid"],
-    "qbraid": ["cirq","braket","qisit"]
+    "qbraid": ["cirq","braket","qiskit"]
 }
 
 circuit_outputs = {
