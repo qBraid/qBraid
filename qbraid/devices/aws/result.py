@@ -19,9 +19,9 @@
 
 import numpy as np
 
-from qbraid.devices.result import ResultWrapper
-
 from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
+
+from qbraid.devices.result import ResultWrapper
 
 
 class BraketGateModelResultWrapper(ResultWrapper):
@@ -45,6 +45,6 @@ class BraketGateModelResultWrapper(ResultWrapper):
         """
         return self.vendor_rlo.measurements
 
-    def data(self):
+    def data(self, **kwargs):
         """Return the raw data associated with the run/job."""
         return self.measurements

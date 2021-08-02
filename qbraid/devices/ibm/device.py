@@ -10,24 +10,26 @@
 # NOTICE: This file has been modified from the original:
 # https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/providers/backend.py
 
+"""QiskitBackendWrapper Class"""
+
 from qbraid.devices.device import DeviceLikeWrapper
-from .job import QiskitJobWrapper
-from .._utils import QISKIT_PROVIDERS, QiskitRunInput
+from qbraid.devices.ibm.job import QiskitJobWrapper
+from qbraid.devices._utils import QISKIT_PROVIDERS, QiskitRunInput
 
 
 class QiskitBackendWrapper(DeviceLikeWrapper):
+    """Wrapper class for IBM Qiskit ``Backend`` objects
+
+    Args:
+        name (str): a Qiskit supported device
+        provider (str): the provider that this device comes from
+        fields: kwargs for the values to use to override the default options.
+
+    Raises:
+        DeviceError: if input field not a valid options
+
+    """
     def __init__(self, name, provider, **fields):
-        """Qiskit ``Backend`` wrapper class
-
-        Args:
-            name (str): a Qiskit supported device
-            provider (str): the provider that this device comes from
-            fields: kwargs for the values to use to override the default options.
-
-        Raises:
-            AttributeError: if input field not a valid options
-
-        """
         super().__init__(name, provider, **fields)
         self._vendor = "IBM"
         self.vendor_dlo = self._get_device_obj(QISKIT_PROVIDERS)
@@ -44,9 +46,8 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             qiskit.providers.Options: A options object with default values set
 
         """
-        pass
 
-    def run(self, run_input: QiskitRunInput, **options) -> QiskitJobWrapper:
+    def run(self, run_input: QiskitRunInput, *args, **kwargs) -> QiskitJobWrapper:
         """Run on the qiskit backend.
 
         This method that will return a :class:`~qiskit.providers.Job` object that run circuits.
@@ -58,7 +59,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             run_input (QuantumCircuit or Schedule or list): An individual or a list of
                 :class:`~qiskit.circuits.QuantumCircuit` or :class:`~qiskit.pulse.Schedule` objects
                 to run on the backend.
-            options: Any kwarg options to pass to the backend for running the config. If a key is
+            kwargs: Any kwarg options to pass to the backend for running the config. If a key is
                 also present in the options attribute/object then the expectation is that the value
                 specified will be used instead of what's set in the options object.
 
@@ -68,6 +69,6 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
 
         """
         qiskit_device = self.vendor_dlo
-        qiskit_job = qiskit_device.run(run_input, **options)
+        qiskit_job = qiskit_device.run(run_input, *args, **kwargs)
         qbraid_job = QiskitJobWrapper(self, qiskit_job)
         return qbraid_job
