@@ -21,18 +21,18 @@ from qbraid.devices.job import JobLikeWrapper
 
 
 class CirqEngineJobWrapper(JobLikeWrapper):
+    """Wrapper class for Google Cirq ``EngineJob`` objects.
+
+    Args:
+        device:
+        engine_job (EngineJob): a Cirq ``EngineJob`` object used to run circuits.
+
+    """
     def __init__(self, device, engine_job: EngineJob):
-        """Cirq ``EngineJob`` wrapper class.
-
-        Args:
-            device:
-            engine_job (EngineJob): a Cirq ``EngineJob`` object used to run circuits.
-
-        """
         super().__init__(device, engine_job)
 
     @property
-    def id(self):
+    def job_id(self):
         """Return the unique ID of the job within the parent program."""
         return self.vendor_jlo.job_id
 

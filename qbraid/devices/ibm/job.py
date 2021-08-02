@@ -31,7 +31,7 @@ class QiskitJobWrapper(JobLikeWrapper):
         super().__init__(device, qiskit_job)
 
     @property
-    def id(self):
+    def job_id(self):
         """Return a unique id identifying the job."""
         return self.vendor_jlo.job_id
 
