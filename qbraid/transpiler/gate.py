@@ -14,7 +14,7 @@ class GateWrapper(QbraidTranspiler):
         self.base_gate = None
         self.gate_type = None
 
-    def transpile(self, package, *output_param_mapping):
+    def transpile(self, package, output_param_mapping):
         """Transpile a qbraid quantum gate wrapper object to quantum gate object of type
          specified by ``package``.
 

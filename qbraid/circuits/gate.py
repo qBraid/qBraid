@@ -1,6 +1,6 @@
-from abc import ABC, abstractmethod
+from abc import ABC, abstractmethod, abstractproperty
+from qbraid.circuits.exceptions import CircuitError
 from typing import Optional, List
-
 
 class Gate(ABC):
     """Abstract class for gate library to extend and apply to instructions."""
@@ -15,6 +15,7 @@ class Gate(ABC):
     ):
         self._name = name
         self._num_qubits = num_qubits
+
         self._params = [] if params is None else params
         self._global_phase = global_phase
 
@@ -28,7 +29,7 @@ class Gate(ABC):
 
     @property
     def params(self):
-        return self._params
+        return self._params if hasattr(self,'_params') else []
 
     @params.setter
     def params(self, params: List):
@@ -56,3 +57,15 @@ class Gate(ABC):
         from .controlledgate import ControlledGate
 
         return ControlledGate(self, num_ctrls, self)
+
+    def _check_params(self, params, expected_num_params):
+            
+        if len(params) != expected_num_params:
+            raise CircuitError(f'Expected {expected_num_params} params but received {len(params)}.')
+
+        from .parameter import Parameter
+        for p in params:
+            if not isinstance(p,(Parameter,float,int)):
+                raise CircuitError(f'Unexpected type {type(p)} for parameter input.')
+
+

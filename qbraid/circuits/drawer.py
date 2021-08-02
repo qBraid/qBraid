@@ -1,13 +1,14 @@
-"""
-A rudimentary module for drawing circuits.
-"""
-
-from typing import Iterable, List, Union
+from typing import Iterable, Union
 
 from .circuit import Circuit
 
 
-def _fix_length(output: List[str]) -> List[str]:
+"""
+A rudimentary module for drawing circuits.
+"""
+
+
+def _fix_length(output: Iterable[str]) -> str:
     """Fixes the length of the circuit.
 
     Args:
@@ -23,7 +24,6 @@ def _fix_length(output: List[str]) -> List[str]:
 
             Qubit 0: ---|H|-
             Qubit 1: -------
-
     """
     for i, val in enumerate(output):
         if len(val) < len(max(output, key=len)):
@@ -32,7 +32,7 @@ def _fix_length(output: List[str]) -> List[str]:
     return output
 
 
-def _draw_moment(output: List[str], circuit: Union[Circuit, Iterable[Circuit]]) -> List[str]:
+def _draw_moment(output: Iterable[str], circuit: Union[Circuit, Iterable[Circuit]]) -> list:
     """Draws a "|" to divide each moment.
 
     Args:
@@ -41,7 +41,6 @@ def _draw_moment(output: List[str], circuit: Union[Circuit, Iterable[Circuit]]) 
 
     Returns:
         list: The iterable of strings where the new moment is separated from the previous one.
-
     """
     for i in range(circuit.num_qubits):
         output[i] += "|"
@@ -51,13 +50,10 @@ def _draw_moment(output: List[str], circuit: Union[Circuit, Iterable[Circuit]]) 
 def drawer(circuit: Circuit) -> None:
     """A rudimentary circuit drawer that prints out a string for each qubit.
 
-    .. todo::
-        * Draw the control and target qubit differently.
-        * Optimize currently O(n^3)...
-
+        TODO: Draw the control and target qubit differently.
+        TODO: Optimize currently O(n^3)...
     Args:
         circuit (Union[Circuit, Iterable[Circuit]]): The circuit that is to be drawn.
-
     """
     if isinstance(circuit, Circuit):
         output = [f"Qubit {str(i)}:" for i in range(circuit.num_qubits)]
