@@ -25,6 +25,7 @@ class QiskitResultWrapper(ResultWrapper):
         vendor_rlo (Result): a Qiskit ``Result`` object
 
     """
+
     # pylint: disable=too-few-public-methods
     def __init__(self, vendor_rlo: Result):
         super().__init__(vendor_rlo)

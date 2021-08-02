@@ -31,6 +31,7 @@ class BraketGateModelResultWrapper(ResultWrapper):
         gate_model_result (GateModelQuantumTaskResult): a Braket ``Result`` object
 
     """
+
     def __init__(self, gate_model_result: GateModelQuantumTaskResult):
 
         # redundant super delegation but might at more functionality later
