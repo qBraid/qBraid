@@ -24,6 +24,7 @@ class JobLikeWrapper(ABC):
         vendor_jlo: a job-like object used to run circuits.
 
     """
+
     def __init__(self, device, vendor_jlo):
 
         self.device = device

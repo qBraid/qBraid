@@ -31,6 +31,7 @@ class CirqResultWrapper(ResultWrapper):
         cirq_result (Result): a Cirq ``Result`` object
 
     """
+
     # pylint: disable=too-few-public-methods
     def __init__(self, cirq_result: Result):
 

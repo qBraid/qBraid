@@ -34,6 +34,7 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
         quantum_task (BraketQuantumTask): a braket ``QuantumTask`` object used to run circuits.
 
     """
+
     def __init__(self, device, quantum_task: QuantumTask):
 
         # redundant super delegation but might at more functionality later

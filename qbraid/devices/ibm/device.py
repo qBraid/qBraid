@@ -29,6 +29,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         DeviceError: if input field not a valid options
 
     """
+
     def __init__(self, name, provider, **fields):
         super().__init__(name, provider, **fields)
         self._vendor = "IBM"

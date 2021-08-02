@@ -30,6 +30,7 @@ class CirqEngineJobWrapper(JobLikeWrapper):
         vendor_jlo (EngineJob): a Cirq ``EngineJob`` object used to run circuits.
 
     """
+
     def __init__(self, device, vendor_jlo: EngineJob):
         super().__init__(device, vendor_jlo)
         self.device = device

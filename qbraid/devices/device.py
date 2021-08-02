@@ -28,6 +28,7 @@ class DeviceLikeWrapper(ABC):
         DeviceError: if input field not a valid options
 
     """
+
     def __init__(self, name, provider, **fields):
 
         self._name = name

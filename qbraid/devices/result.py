@@ -10,6 +10,7 @@ class ResultWrapper(ABC):
         vendor_rlo: a result-like object
 
     """
+
     # pylint: disable=too-few-public-methods
     def __init__(self, vendor_rlo):
 

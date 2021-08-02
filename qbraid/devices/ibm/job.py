@@ -29,6 +29,7 @@ class QiskitJobWrapper(JobLikeWrapper):
         vendor_jlo (Job): a Qiskit ``Job`` object used to run circuits.
 
     """
+
     def __init__(self, device, vendor_jlo: Job):
         super().__init__(device, vendor_jlo)
         self.device = device
