@@ -34,3 +34,7 @@ class QiskitCircuitWrapper(CircuitWrapper):
             instructions.append(next_instruction)
 
         return instructions
+
+    @property
+    def moments(self):
+        return None

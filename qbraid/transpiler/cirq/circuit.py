@@ -16,7 +16,7 @@ class CirqCircuitWrapper(CircuitWrapper):
         self._num_qubits = len(self.qubits)
         self._package = "cirq"
 
-        self._wrap_moments(circuit)
+        self._wrap_circuit(circuit)
 
     def _wrap_circuit(self, circuit: Iterable[Moment]):
         
@@ -38,9 +38,9 @@ class CirqCircuitWrapper(CircuitWrapper):
             moments.append(next_moment)
 
         self._params = params
-        self.input_param_mapping =  {param: ParamID(index,param.name) for index, param in enumerate(self.params)}
+        self._input_param_mapping =  {param: ParamID(index,param.name) for index, param in enumerate(self.params)}
 
-        for moment in self._moments:
+        for moment in moments:
             for instruction in moment.instructions:
                 instruction.gate.parse_params(self.input_param_mapping)
 
@@ -54,8 +54,9 @@ class CirqCircuitWrapper(CircuitWrapper):
     def instructions(self) -> List[CirqInstructionWrapper]:
     
         instructions = []
-        for m in self._moments:
-            instructions.append(m.instructions)
+        for m in self.moments:
+            for i in m.instructions:
+                instructions.append(i)
 
         return instructions
         
