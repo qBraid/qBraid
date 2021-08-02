@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 from qiskit import QuantumCircuit
 from qiskit.providers.aer import AerSimulator, PulseSimulator, QasmSimulator, \
     StatevectorSimulator, UnitarySimulator

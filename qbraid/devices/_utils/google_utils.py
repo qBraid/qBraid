@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 from cirq_google import Sycamore, Sycamore23, Bristlecone, Foxtail
 
 AQT_DEVICES = {
