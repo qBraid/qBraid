@@ -189,7 +189,6 @@ def give_cirq_gate_name(cirq_gate, name, n_qubits):
 
 
 def create_cirq_gate(data):
-
     gate_type = data["type"]
     params = data["params"]
     matrix = data["matrix"]
@@ -247,7 +246,6 @@ def create_cirq_gate(data):
 
 
 def circuit_to_cirq(cw, auto_measure=False, output_qubit_mapping=None, output_param_mapping=None):
-
     output_circ = Circuit()
 
     if not output_qubit_mapping:
@@ -255,15 +253,18 @@ def circuit_to_cirq(cw, auto_measure=False, output_qubit_mapping=None, output_pa
 
     if not output_param_mapping:
         output_param_mapping = {pid: Symbol(pid.name) for pid in cw.params}
-        print(output_param_mapping)
-        print(cw.params)
+        # print(output_param_mapping)
+        # print(cw.params)
 
     if cw.moments:
         for m in cw.moments:
-            output_circ.append(m.transpile('cirq',
-                output_qubit_mapping,
-                output_param_mapping,
-            ))
+            output_circ.append(
+                m.transpile(
+                    'cirq',
+                    output_qubit_mapping,
+                    output_param_mapping,
+                )
+            )
     else:
         for instruction in cw.instructions:
             output_circ.append(
@@ -280,13 +281,13 @@ def circuit_to_cirq(cw, auto_measure=False, output_qubit_mapping=None, output_pa
 
     return output_circ
 
-def moment_to_cirq(mw,output_qubit_mapping,output_param_mapping):
-    
-    return Moment([i.transpile('cirq',output_qubit_mapping,output_param_mapping) \
-         for i in mw.instructions])
+
+def moment_to_cirq(mw, output_qubit_mapping, output_param_mapping):
+    return Moment([i.transpile('cirq', output_qubit_mapping, output_param_mapping) \
+                   for i in mw.instructions])
+
 
 def instruction_to_cirq(iw, output_qubit_mapping, output_param_mapping):
-
     qubits = [output_qubit_mapping[x] for x in iw.qubits]
     gate = iw.gate.transpile("cirq", output_param_mapping)
 
@@ -296,9 +297,7 @@ def instruction_to_cirq(iw, output_qubit_mapping, output_param_mapping):
         return gate(*qubits)
 
 
-
 def gate_to_cirq(gw, output_param_mapping):
-
     """Create cirq gate from a qbraid gate wrapper object."""
 
     cirq_params = [output_param_mapping[p] if isinstance(p, ParamID) else p for p in gw.params]

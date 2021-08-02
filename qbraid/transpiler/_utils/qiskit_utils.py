@@ -297,9 +297,11 @@ def circuit_to_qiskit(cw, auto_measure=False) -> QuantumCircuit:
     data = []
     measurement_qubit_indices = set()
     for instruction in cw.instructions:
-        gate, qubits, measurement_qubits = instruction.transpile("qiskit", 
+        gate, qubits, measurement_qubits = instruction.transpile(
+            "qiskit",
             output_qubit_mapping, 
-            output_param_mapping)
+            output_param_mapping
+        )
         data.append((gate, qubits, measurement_qubits))
         measurement_qubit_indices.update(measurement_qubits)
 

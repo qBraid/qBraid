@@ -4,8 +4,9 @@ from ..parameter import ParamID
 
 from qbraid.circuits.circuit import Circuit
 
+
 class QbraidCircuitWrapper(CircuitWrapper):
-    def __init__(self, circuit: Circuit, input_qubit_mapping=None, input_param_mapping = None):
+    def __init__(self, circuit: Circuit, input_qubit_mapping=None, input_param_mapping=None):
 
         super().__init__(circuit, input_qubit_mapping)
 
@@ -15,8 +16,9 @@ class QbraidCircuitWrapper(CircuitWrapper):
         self._params = circuit.params
 
         if not input_param_mapping:
-            self._input_param_mapping = {p:ParamID(i,p.name) for i,p in enumerate(circuit.params)}
-        
+            self._input_param_mapping = {p: ParamID(i, p.name) for i, p in
+                                         enumerate(circuit.params)}
+
         self._params = self._input_param_mapping.values()
 
         self._wrap_circuit()
@@ -26,14 +28,12 @@ class QbraidCircuitWrapper(CircuitWrapper):
         self._moments = []
 
         for moment in self._circuit.moments:
-            
+
             next_moment = QbraidMomentWrapper(moment)
             self._moments.append(next_moment)
-            
+
             for instruction in next_moment.instructions:
                 instruction.gate.parse_params(self.input_param_mapping)
-
-
 
     @property
     def instructions(self):

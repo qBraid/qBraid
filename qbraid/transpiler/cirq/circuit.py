@@ -8,6 +8,7 @@ from qbraid.transpiler.circuit import CircuitWrapper
 from .instruction import CirqInstructionWrapper
 from ..parameter import ParamID
 
+
 class CirqCircuitWrapper(CircuitWrapper):
     def __init__(self, circuit: Circuit, input_qubit_mapping=None):
         super().__init__(circuit, input_qubit_mapping)
@@ -19,7 +20,7 @@ class CirqCircuitWrapper(CircuitWrapper):
         self._wrap_circuit(circuit)
 
     def _wrap_circuit(self, circuit: Iterable[Moment]):
-        
+
         params = set()
         moments = []
 
@@ -28,17 +29,17 @@ class CirqCircuitWrapper(CircuitWrapper):
             instructions = []
 
             for op in moment.operations:
-
                 qbs = [self.input_qubit_mapping[qubit] for qubit in op.qubits]
                 next_instruction = CirqInstructionWrapper(op, qbs)
                 params.union(set(next_instruction.gate.get_abstract_params()))
                 instructions.append(next_instruction)
 
-            next_moment = CirqMomentWrapper(moment,instructions=instructions)
+            next_moment = CirqMomentWrapper(moment, instructions=instructions)
             moments.append(next_moment)
 
         self._params = params
-        self._input_param_mapping =  {param: ParamID(index,param.name) for index, param in enumerate(self.params)}
+        self._input_param_mapping = {param: ParamID(index, param.name) for index, param in
+                                     enumerate(self.params)}
 
         for moment in moments:
             for instruction in moment.instructions:
@@ -52,11 +53,10 @@ class CirqCircuitWrapper(CircuitWrapper):
 
     @property
     def instructions(self) -> List[CirqInstructionWrapper]:
-    
+
         instructions = []
         for m in self.moments:
             for i in m.instructions:
                 instructions.append(i)
 
         return instructions
-        
