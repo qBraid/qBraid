@@ -10,32 +10,36 @@
 # NOTICE: This file has been modified from the original:
 # https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/providers/job.py
 
+"""QiskitJobWrapper Class"""
+
+from typing import Callable, Optional
 from qiskit.providers.job import Job
 from qiskit.providers.exceptions import JobTimeoutError
 from qiskit.providers.exceptions import JobError as QiskitJobError
-from typing import Callable, Optional
 
 from qbraid.devices.job import JobLikeWrapper
 from qbraid.devices.exceptions import JobError
 
 
 class QiskitJobWrapper(JobLikeWrapper):
-    def __init__(self, device, qiskit_job: Job):
-        """Qiskit ``Job`` wrapper class.
+    """Wrapper class for IBM Qiskit ``Job`` objects.
 
-        Args:
-            device (QiskitBackendWrapper): a Qiskit device object
-            qiskit_job (Job): a Qiskit ``Job`` object used to run circuits.
+    Args:
+        device (QiskitBackendWrapper): a Qiskit device object
+        vendor_jlo (Job): a Qiskit ``Job`` object used to run circuits.
 
-        """
-        super().__init__(device, qiskit_job)
+    """
+    def __init__(self, device, vendor_jlo: Job):
+        super().__init__(device, vendor_jlo)
+        self.device = device
+        self.vendor_jlo = vendor_jlo
 
     @property
     def job_id(self):
         """Return a unique id identifying the job."""
         return self.vendor_jlo.job_id
 
-    def metadata(self):
+    def metadata(self, **kwargs):
         """Return the metadata regarding the job."""
         return self.vendor_jlo.metadata
 
@@ -76,15 +80,15 @@ class QiskitJobWrapper(JobLikeWrapper):
         """
         try:
             self.vendor_jlo.wait_for_final_state(timeout, wait, callback)
-        except JobTimeoutError as e:
-            raise JobError("qBraid JobError raised from {}".format(type(e))) from e
+        except JobTimeoutError as err:
+            raise JobError("qBraid JobError raised from {}".format(type(err))) from err
 
     def submit(self):
         """Submit the job to the backend for execution."""
         try:
             return self.vendor_jlo.submit()
-        except QiskitJobError as e:
-            raise JobError("qBraid JobError raised from {}".format(type(e))) from e
+        except QiskitJobError as err:
+            raise JobError("qBraid JobError raised from {}".format(type(err))) from err
 
     def result(self):
         """Return the results of the job."""

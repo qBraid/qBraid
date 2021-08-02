@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 from tabulate import tabulate
 
 from .aws_utils import BRAKET_PROVIDERS
