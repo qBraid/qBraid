@@ -22,7 +22,6 @@ class QiskitCircuitWrapper(CircuitWrapper):
 
     @property
     def instructions(self) -> List[QiskitInstructionWrapper]:
-
         instructions = []
         for instruction, qubit_list, clbit_list in self.circuit.data:
             qubits = [self.input_qubit_mapping[q] for q in qubit_list]
@@ -34,3 +33,7 @@ class QiskitCircuitWrapper(CircuitWrapper):
             instructions.append(next_instruction)
 
         return instructions
+
+    @property
+    def moments(self):
+        return None

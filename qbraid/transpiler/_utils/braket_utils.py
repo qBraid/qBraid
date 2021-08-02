@@ -188,18 +188,22 @@ def create_braket_gate(data):
         raise TranspilerError(f"Gate of type {gate_type} not supported for Braket transpile.")
 
 
-def circuit_to_braket(cw, output_mapping=None):
+def circuit_to_braket(cw, output_qubit_mapping=None):
+
+    if cw.input_param_mapping:
+        raise TranspilerError("Circuit cannot be transpiled to braket\
+             because it abstract parameters.")
 
     output_circ = Circuit()
 
     # some instructions may be null (i.e. classically controlled gates, measurement)
     # these will return None, which should not be added to the circuit
 
-    if not output_mapping:
-        output_mapping = {x: Qubit(x) for x in range(len(cw.qubits))}
+    if not output_qubit_mapping:
+        output_qubit_mapping = {x: Qubit(x) for x in range(len(cw.qubits))}
 
     for instruction in cw.instructions:
-        instr = instruction.transpile("braket", output_mapping)
+        instr = instruction.transpile("braket", output_qubit_mapping)
         if instr:
             output_circ.add_instruction(instr)
 
