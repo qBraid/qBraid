@@ -6,7 +6,11 @@ class MomentWrapper(QbraidTranspiler):
 
     def __init__(self):
         self.moment = None
-        self.instructions = []
+        self._instructions = []
+
+    @property
+    def instructions(self):
+        return self._instructions
 
     def transpile(self, package, output_qubit_mapping, output_param_mapping):
         """

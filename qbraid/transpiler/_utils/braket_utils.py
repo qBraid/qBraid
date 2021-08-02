@@ -200,7 +200,7 @@ def circuit_to_braket(cw, output_qubit_mapping=None):
     # these will return None, which should not be added to the circuit
 
     if not output_qubit_mapping:
-        output_mapping = {x: Qubit(x) for x in range(len(cw.qubits))}
+        output_qubit_mapping = {x: Qubit(x) for x in range(len(cw.qubits))}
 
     for instruction in cw.instructions:
         instr = instruction.transpile("braket", output_qubit_mapping)
