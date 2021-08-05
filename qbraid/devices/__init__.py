@@ -47,6 +47,7 @@ Devices API
    JobError
 
 """
+# pylint: skip-file
 from .device import DeviceLikeWrapper
 from .job import JobLikeWrapper
 from .result import ResultWrapper

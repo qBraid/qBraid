@@ -16,13 +16,19 @@ class CircuitWrapper(QbraidTranspiler):
         self._num_qubits = 0
         self._num_clbits = 0
         self._params = []
-        self._input_param_mapping = None
+        self._input_param_mapping = {}
         self._package = None
 
     @property
     @abstractmethod
     def instructions(self):
         """Return an Iterable of instructions in the circuit."""
+        pass
+
+    @property
+    @abstractmethod
+    def moments(self):
+        """Return an Iterable of moments in the circuit."""
         pass
 
     @property

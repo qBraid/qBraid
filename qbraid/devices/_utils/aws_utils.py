@@ -1,3 +1,5 @@
+# pylint: skip-file
+
 # from braket.aws import AwsDevice
 from braket.devices import LocalSimulator
 
@@ -14,6 +16,8 @@ s3_folder = (my_bucket, my_prefix)
 
 ValueError: Only the following devices are available dict_keys(['default']) (07/02/2021) 
 """
+
+# pylint: skip-file
 
 AWS_DEVICES = {
     "SV1": None,  # AwsDevice('arn:aws:braket:::device/quantum-simulator/amazon/sv1'),

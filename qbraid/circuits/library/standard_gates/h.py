@@ -4,15 +4,16 @@ from typing import Optional
 
 
 class H(Gate):
-    r"""Single-qubit Hadamard gate.
-
-    A single qubit rotation about the X+Z axis bringing a state from the computational basis to
-    the diagonal basis, i.e :math:`|+\rangle,|-\rangle` basis.
-
+    """
+    A single qubit rotation about the x+z axis bringing a state
+    from the computational basis to the diagonal basis, i.e
+    |+>,|-> basis.
     Args:
         global_phase[Optional]: The global phase on the gate
-
     """
+
+    def __init__(self, global_phase: Optional[float] = 0.0):
+        super().__init__("H", num_qubits=1, params=[], global_phase=global_phase)
 
     def __init__(self, global_phase: Optional[float] = 0.0):
         super().__init__("H", num_qubits=1, params=[], global_phase=global_phase)
@@ -27,11 +28,10 @@ class H(Gate):
 
 
 class CH(ControlledGate):
-    """Controlled version of Hadamard Gate.
-
+    """
+    Controlled version of Hadamard Gate.
     Args:
         global_phase[Optional]: The global phase on the gate
-
     """
 
     def __init__(self, global_phase: Optional[float] = 0.0):

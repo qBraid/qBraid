@@ -8,5 +8,3 @@ class QbraidTranspiler(ABC):
     def transpile(self, package: str, *args, **kwargs):
         """Transpile a qbraid circuit, instruction, or gate wrapper object to an equivalent object
         of type specified by ``package``."""
-
-        pass

@@ -10,23 +10,27 @@
 # NOTICE: This file has been modified from the original:
 # https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/providers/backend.py
 
+"""DeviceLikeWrapper Class"""
+
 from abc import ABC, abstractmethod
-from .exceptions import DeviceError
+from qbraid.devices.exceptions import DeviceError
 
 
 class DeviceLikeWrapper(ABC):
+    """Abstract interface for device-like classes.
+
+    Args:
+        name (str): a qBraid supported device
+        provider (str): the provider that this device comes from
+        fields: kwargs for the values to use to override the default options.
+
+    Raises:
+        DeviceError: if input field not a valid options
+
+    """
+
     def __init__(self, name, provider, **fields):
-        """Abstract interface for device-like classes.
 
-        Args:
-            name (str): a qBraid supported device
-            provider (str): the provider that this device comes from
-            fields: kwargs for the values to use to override the default options.
-
-        Raises:
-            AttributeError: if input field not a valid options
-
-        """
         self._name = name
         self._provider = provider
         self._vendor = None
@@ -42,24 +46,23 @@ class DeviceLikeWrapper(ABC):
     def _get_device_obj(self, supported_providers: dict):
         try:
             supported_devices = supported_providers[self.provider]
-        except KeyError:
+        except KeyError as err:
             raise DeviceError(
                 'Provider "{}" not supported by vendor "{}".'.format(self.provider, self.vendor)
-            )
+            ) from err
         try:
             device_object = supported_devices[self.name]
-        except KeyError:
+        except KeyError as err:
             msg = 'Device "{}" not supported by provider "{}"'.format(self.name, self.provider)
             if self.provider != self.vendor:
                 msg += ' from vendor "{}"'.format(self.vendor)
-            raise DeviceError(msg + ".")
+            raise DeviceError(msg + ".") from err
         return device_object
 
     @classmethod
     @abstractmethod
     def _default_options(cls):
         """Return the default options for running this device."""
-        pass
 
     def set_options(self, **fields):
         """Set the options fields for the device.
@@ -71,7 +74,7 @@ class DeviceLikeWrapper(ABC):
             fields: The fields to update the options
 
         Raises:
-            AttributeError: If the field passed in is not part of the options
+            DeviceError: If the field passed in is not part of the options
 
         """
         for field in fields:
@@ -138,5 +141,5 @@ class DeviceLikeWrapper(ABC):
         return f"<{self.__class__.__name__}({self.provider}:'{self.name}')>"
 
     @abstractmethod
-    def run(self, run_input, **options):
-        pass
+    def run(self, run_input, *args, **kwargs):
+        """Abstract run method."""

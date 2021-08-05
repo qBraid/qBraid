@@ -15,6 +15,7 @@ This module contains the classes used to run quantum circuits on devices availab
    QiskitResultWrapper
 
 """
+# pylint: skip-file
 from .device import QiskitBackendWrapper
 from .job import QiskitJobWrapper
 from .result import QiskitResultWrapper

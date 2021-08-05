@@ -16,7 +16,8 @@ setup(
         "qbraid.transpiler": [
             "braket = qbraid.transpiler.braket:BraketCircuitWrapper",
             "cirq = qbraid.transpiler.cirq:CirqCircuitWrapper",
-            "qiskit = qbraid.transpiler.qiskit:QiskitCircuitWrapper"
+            "qiskit = qbraid.transpiler.qiskit:QiskitCircuitWrapper",
+            "qbraid = qbraid.transpiler.qbraid:QbraidCircuitWrapper"
         ],
         "qbraid.devices": [
             "AWS = qbraid.devices.aws:BraketDeviceWrapper",

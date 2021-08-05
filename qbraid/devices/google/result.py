@@ -16,21 +16,29 @@
 # https://github.com/quantumlib/Cirq/blob/504bdbb9bb30249d85ecf7ba199b047150ee33f3/cirq-core/cirq
 # /study/result.py
 
-from cirq.study.result import Result
+"""CirqResultWrapper Class"""
+
 import pandas as pd
+from cirq.study.result import Result
 
 from qbraid.devices import ResultWrapper
 
 
 class CirqResultWrapper(ResultWrapper):
-    def __init__(self, cirq_result: Result):
-        """Cirq ``Result`` wrapper class.
-        Args:
-            cirq_result (Result): a Cirq ``Result`` object
-        """
-        super().__init__(cirq_result)
+    """Cirq ``Result`` wrapper class.
 
-    def data(self) -> pd.DataFrame:
+    Args:
+        cirq_result (Result): a Cirq ``Result`` object
+
+    """
+
+    # pylint: disable=too-few-public-methods
+    def __init__(self, cirq_result: Result):
+
+        super().__init__(cirq_result)
+        self.vendor_rlo = cirq_result
+
+    def data(self, **kwargs) -> pd.DataFrame:
         """Return a DataFrame with columns as measurement keys, rows as repetitions, and a big
         endian integer for individual measurements. Note that when a numpy array is produced from
         this data frame, Pandas will try to use np.int64 as dtype, but will upgrade to object if

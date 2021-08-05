@@ -10,21 +10,28 @@
 # NOTICE: This file has been modified from the original:
 # https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/result/result.py
 
-from qiskit.result.result import Result
+"""QiskitResultWrapper Class"""
+
 from typing import Dict
+from qiskit.result.result import Result
 
 from qbraid.devices import ResultWrapper
 
 
 class QiskitResultWrapper(ResultWrapper):
-    def __init__(self, qiskit_result: Result):
-        """Qiskit ``Result`` wrapper class.
-        Args:
-            qiskit_result (Result): a Qiskit ``Result`` object
-        """
-        super().__init__(qiskit_result)
+    """Qiskit ``Result`` wrapper class.
 
-    def data(self, experiment=None) -> Dict:
+    Args:
+        vendor_rlo (Result): a Qiskit ``Result`` object
+
+    """
+
+    # pylint: disable=too-few-public-methods
+    def __init__(self, vendor_rlo: Result):
+        super().__init__(vendor_rlo)
+        self.vendor_rlo = vendor_rlo
+
+    def data(self, **kwargs) -> Dict:
         """Get the raw data for an experiment.
 
         Note this data will be a single classical and quantum register and in a format required by
@@ -32,13 +39,14 @@ class QiskitResultWrapper(ResultWrapper):
         be post-processed for the data type.
 
         Args:
-            experiment (str or QuantumCircuit or Schedule or int or None): the index of the
-                experiment. Several types are accepted for convenience::
-                * str: the name of the experiment.
-                * QuantumCircuit: the name of the circuit instance will be used.
-                * Schedule: the name of the schedule instance will be used.
-                * int: the position of the experiment.
-                * None: if there is only one experiment, returns it.
+            kwargs:
+                experiment (str or QuantumCircuit or Schedule or int or None): the index of the
+                    experiment. Several types are accepted for convenience::
+                    * str: the name of the experiment.
+                    * QuantumCircuit: the name of the circuit instance will be used.
+                    * Schedule: the name of the schedule instance will be used.
+                    * int: the position of the experiment.
+                    * None: if there is only one experiment, returns it.
 
         Returns:
             dict: A dictionary of results data for an experiment. The data depends on the backend
@@ -63,4 +71,4 @@ class QiskitResultWrapper(ResultWrapper):
             QiskitError: if data for the experiment could not be retrieved.
 
         """
-        return self.vendor_rlo.data(expiriment=experiment)
+        return self.vendor_rlo.data(**kwargs)

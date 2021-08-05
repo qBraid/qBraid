@@ -15,28 +15,33 @@
 # NOTICE: This file has been modified from the original:
 # https://github.com/quantumlib/Cirq/blob/master/cirq-google/cirq_google/engine/engine_job.py
 
+"""CirqEngineJobWrapper Class"""
+
 from cirq_google.engine.engine_job import EngineJob
 
 from qbraid.devices import JobLikeWrapper
 
 
 class CirqEngineJobWrapper(JobLikeWrapper):
-    def __init__(self, device, engine_job: EngineJob):
-        """Cirq ``EngineJob`` wrapper class.
+    """Wrapper class for Google Cirq ``EngineJob`` objects.
 
-        Args:
-            device:
-            engine_job (EngineJob): a Cirq ``EngineJob`` object used to run circuits.
+    Args:
+        device: the CirqEngineDeviceWrapper associated with this job
+        vendor_jlo (EngineJob): a Cirq ``EngineJob`` object used to run circuits.
 
-        """
-        super().__init__(device, engine_job)
+    """
+
+    def __init__(self, device, vendor_jlo: EngineJob):
+        super().__init__(device, vendor_jlo)
+        self.device = device
+        self.vendor_jlo = vendor_jlo
 
     @property
-    def id(self):
+    def job_id(self):
         """Return the unique ID of the job within the parent program."""
         return self.vendor_jlo.job_id
 
-    def metadata(self):
+    def metadata(self, **kwargs):
         """Returns the labels of the job."""
         return self.vendor_jlo.labels()
 

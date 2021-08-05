@@ -15,19 +15,28 @@
 # https://github.com/aws/amazon-braket-sdk-python/blob/6926c1676dd5b465ef404614a44538c42ee2727d
 # /src/braket/tasks/annealing_quantum_task_result.py
 
-from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
+"""BraketGateModelResult Class"""
+
 import numpy as np
 
-from qbraid.devices import ResultWrapper
+from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
+
+from qbraid.devices.result import ResultWrapper
 
 
 class BraketGateModelResultWrapper(ResultWrapper):
+    """Wrapper class for Amazon Braket ``GateModelQuantumTaskResult`` objects.
+
+    Args:
+        gate_model_result (GateModelQuantumTaskResult): a Braket ``Result`` object
+
+    """
+
     def __init__(self, gate_model_result: GateModelQuantumTaskResult):
-        """Braket ``GateModelQuantumTaskResult`` wrapper class.
-        Args:
-            gate_model_result (GateModelQuantumTaskResult): a Braket ``Result`` object
-        """
+
+        # redundant super delegation but might at more functionality later
         super().__init__(gate_model_result)
+        self.vendor_rlo = gate_model_result
 
     @property
     def measurements(self) -> np.ndarray:
@@ -37,5 +46,6 @@ class BraketGateModelResultWrapper(ResultWrapper):
         """
         return self.vendor_rlo.measurements
 
-    def data(self):
+    def data(self, **kwargs):
+        """Return the raw data associated with the run/job."""
         return self.measurements

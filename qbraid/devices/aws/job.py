@@ -14,44 +14,53 @@
 # NOTICE: This file has been modified from the original:
 # https://github.com/aws/amazon-braket-sdk-python/blob/main/src/braket/tasks/quantum_task.py
 
+"""BraketQuantumtaskWrapper Class"""
+
+import asyncio
+from typing import Any, Dict, Union
+
 from braket.tasks.quantum_task import QuantumTask
 from braket.tasks.annealing_quantum_task_result import AnnealingQuantumTaskResult
 from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
-from typing import Any, Dict, Union
-import asyncio
 
 from qbraid.devices import JobLikeWrapper
 
 
 class BraketQuantumTaskWrapper(JobLikeWrapper):
+    """Wrapper class for Amazon Braket ``QuantumTask`` objects.
+
+    Args:
+        device: the BraketDeviceWrapper associated with this quantum task i.e. job
+        quantum_task (BraketQuantumTask): a braket ``QuantumTask`` object used to run circuits.
+
+    """
+
     def __init__(self, device, quantum_task: QuantumTask):
-        """Braket ``QuantumTask`` wrapper class.
 
-        Args:
-            device:
-            quantum_task (BraketQuantumTask): a braket ``QuantumTask`` object used to run circuits.
-
-        """
+        # redundant super delegation but might at more functionality later
         super().__init__(device, quantum_task)
+        self.device = device
+        self.vendor_jlo = quantum_task
 
     @property
-    def id(self):
+    def job_id(self):
         """Return a unique id identifying the task."""
         return self.vendor_jlo.id
 
-    def metadata(self, use_cached_value: bool = False) -> Dict[str, Any]:
+    def metadata(self, **kwargs) -> Dict[str, Any]:
         """Get task metadata.
 
         Args:
-            use_cached_value (bool, optional): If True, uses the value retrieved from the previous
-                request.
+            **kwargs:
+                use_cached_value (bool, optional): If True, uses the value retrieved from the
+                    previous request.
 
         Returns:
             Dict[str, Any]: The metadata regarding the job. If `use_cached_value` is True,
             then the value retrieved from the most recent request is used.
 
         """
-        return self.vendor_jlo.metadata(use_cached_value=use_cached_value)
+        return self.vendor_jlo.metadata(**kwargs)
 
     def result(self) -> Union[GateModelQuantumTaskResult, AnnealingQuantumTaskResult]:
         """Return the results of the job."""
