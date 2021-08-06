@@ -9,3 +9,7 @@ class DeviceError(QbraidError):
 
 class JobError(QbraidError):
     """Base class for errors raised by Jobs."""
+
+
+class ConfigError(QbraidError):
+    """Base class for errors raised while setting a user configuartion"""

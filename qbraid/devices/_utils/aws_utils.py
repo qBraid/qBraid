@@ -1,7 +1,6 @@
 # pylint: skip-file
 
-# from braket.aws import AwsDevice
-from braket.devices import LocalSimulator
+import os
 
 """
 If you are working with the local simulator LocalSimulator() you do not need to specify any 
@@ -17,15 +16,25 @@ s3_folder = (my_bucket, my_prefix)
 ValueError: Only the following devices are available dict_keys(['default']) (07/02/2021) 
 """
 
-# pylint: skip-file
+aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "cred")
+aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
+
+AWS_CONFIG_PROMPT = [
+    # (config_name, prompt_text, is_secret, section, filepath)
+    ("aws_access_key_id", "AWS Access Key ID", True, "default", aws_cred_path),
+    ("aws_secret_access_key", "AWS Secret Access Key", True, "default", aws_cred_path),
+    ("region", "Default region name", False, "default", aws_config_path),
+    ("output", "Default output format", False, "default", aws_config_path),
+]
+
 
 AWS_DEVICES = {
-    "SV1": None,  # AwsDevice('arn:aws:braket:::device/quantum-simulator/amazon/sv1'),
-    "DM1": None,  # AwsDevice('arn:aws:braket:::device/quantum-simulator/amazon/dm1'),
-    "TN1": None,  # AwsDevice('arn:aws:braket:::device/quantum-simulator/amazon/tn1'),
-    "braket_sv": None,  # LocalSimulator(backend="braket_sv"),
-    "braket_dm": None,  # LocalSimulator(backend="braket_dm"),
-    "default": LocalSimulator(backend="default"),
+    "SV1": (True, 'arn:aws:braket:::device/quantum-simulator/amazon/sv1'),
+    "DM1": (True, 'arn:aws:braket:::device/quantum-simulator/amazon/dm1'),
+    "TN1": (True, 'arn:aws:braket:::device/quantum-simulator/amazon/tn1'),
+    "braket_sv": (True, 'braket_sv'),
+    "braket_dm": (True, 'braket_dm'),
+    "default": (False, 'default'),
 }
 
 DWAVE_DEVICES = {

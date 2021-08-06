@@ -12,9 +12,9 @@
 
 """QiskitBackendWrapper Class"""
 
+from qbraid.devices._utils import QiskitRunInput
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.ibm.job import QiskitJobWrapper
-from qbraid.devices._utils import QISKIT_PROVIDERS, QiskitRunInput
 
 
 class QiskitBackendWrapper(DeviceLikeWrapper):
@@ -33,7 +33,9 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
     def __init__(self, name, provider, **fields):
         super().__init__(name, provider, **fields)
         self._vendor = "IBM"
-        self.vendor_dlo = self._get_device_obj(QISKIT_PROVIDERS)
+
+    def init_device(self, str_rep):
+        return NotImplementedError
 
     @classmethod
     def _default_options(cls):

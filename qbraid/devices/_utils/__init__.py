@@ -2,15 +2,26 @@
 
 from tabulate import tabulate
 
-from .aws_utils import BRAKET_PROVIDERS
+from .aws_utils import (
+    BRAKET_PROVIDERS,
+    AWS_CONFIG_PROMPT,
+)
+
 from .google_utils import CIRQ_PROVIDERS
 from .ibm_utils import QISKIT_PROVIDERS
 from .ibm_utils import QiskitRunInput
+from .user_config import set_config, validate_config
 
 SUPPORTED_VENDORS = {
     "AWS": BRAKET_PROVIDERS,
     "Google": CIRQ_PROVIDERS,
     "IBM": QISKIT_PROVIDERS,
+}
+
+CONFIG_PROMPTS = {
+    "AWS": AWS_CONFIG_PROMPT,
+    "Google": None,
+    "IBM": None,
 }
 
 

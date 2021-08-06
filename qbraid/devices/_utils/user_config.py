@@ -1,65 +1,73 @@
 import configparser
+from getpass import getpass
 import os
 import sys
 
+from qbraid.devices.exceptions import ConfigError
+
 raw_input = input
-
-aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws-test", "credentials")
-aws_config_path = os.path.join(os.path.expanduser("~"), ".aws-test", "config")
-qiskit_config_path = os.path.join(os.path.expanduser("~"), ".qiskit-test", "settings.conf")
-
-aws_values_to_prompt = [
-    # (config_name, prompt_text, filepath, section)
-    ('aws_access_key_id', "AWS Access Key ID", "default", aws_cred_path),
-    ('aws_secret_access_key', "AWS Secret Access Key", "default", aws_cred_path),
-    ('region', "Default region name", "default", aws_config_path),
-    ('output', "Default output format", "default", aws_config_path),
-]
+secret_input = getpass
 
 
 def mask_value(current_value):
     if current_value is None:
         return 'None'
-    else:
-        return ('*' * 16) + current_value[-4:]
+    val = round(len(current_value) / 5)
+    len_hint = 4 if val > 4 else 0 if val < 2 else val
+    return ('*' * (len(current_value) - len_hint)) + current_value[-len_hint:]
 
 
-def get_value(current_value, config_name, prompt_text=''):
-    if config_name in ('aws_access_key_id', 'aws_secret_access_key'):
-        current_value = mask_value(current_value)
-    response = compat_input("%s [%s]: " % (prompt_text, current_value))
+def get_value(current_value, is_secret, prompt_text=''):
+    display_value = mask_value(current_value) if is_secret else current_value
+    response = compat_input("%s [%s]: " % (prompt_text, display_value), is_secret)
     if not response:
         response = None
     return response
 
 
-def compat_input(prompt):
+def compat_input(prompt, is_secret):
+    if is_secret:
+        return secret_input(prompt=prompt)
     sys.stdout.write(prompt)
     sys.stdout.flush()
     return raw_input()
 
 
-def _run_main(values_to_prompt):
-    config_dict = {}
-    config = configparser.ConfigParser()
-    for config_name, prompt_text, section, filename in values_to_prompt:
-        if not os.path.exists(filename):
+def set_config(config_name, prompt_text, is_secret, section, filepath):
+    """Adds or modifies a user configuration
 
-        config.read(filename)
-        if section not in config.sections():
-            config.add_section(section)
-        current_value = config_dict.get(config_name)
-        new_value = get_value(current_value, config_name, prompt_text)
-        if new_value is not None and new_value != current_value:
-            config.set(section, config_name, str(new_value))
-            try:
-                with open(filename, "w") as cfgfile:
-                    config.write(cfgfile)
-            except OSError as ex:
-                raise Exception(f"Unable to load the config file {filename}. Error: '{str(ex)}'")
+    Args:
+        config_name (str): the name of the config
+        prompt_text (str): the text that will prompt the user to enter config_name
+        is_secret (bool) = specifies if the value of this config should be kept private
+        section (str) = the section of the config file to store config_name
+        filepath (str): the existing or desired path to config file
+
+    Raises:
+        Exception if unable to load file from specified ``filename``.
+
+    """
+    if not os.path.isfile(filepath):
+        os.makedirs(os.path.dirname(filepath), exist_ok=True)
+    config = configparser.ConfigParser()
+    config.read(filepath)
+    current_value = None
+    if section in config.sections():
+        if config_name in config[section]:
+            current_value = config[section][config_name]
+    else:
+        config.add_section(section)
+    new_value = get_value(current_value, is_secret, prompt_text)
+    if new_value is not None and new_value != current_value:
+        config.set(section, config_name, str(new_value))
+    try:
+        with open(filepath, "w") as cfgfile:
+            config.write(cfgfile)
+    except OSError as ex:
+        raise ConfigError(f"Unable to load the config file {filepath}. Error: '{str(ex)}'")
     return 0
 
 
-if __name__ == "__main__":
-    _run_main(aws_values_to_prompt)
-
+def validate_config(vendor):
+    # TO DO: validate configuration for given vendor
+    return False

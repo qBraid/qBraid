@@ -1,12 +1,12 @@
 """Module for Cirq device-like object wrappers."""
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.google.job import CirqEngineJobWrapper
 from qbraid.devices.google.result import CirqResultWrapper
-from qbraid.devices._utils import CIRQ_PROVIDERS
 
 if TYPE_CHECKING:
     from cirq import Circuit
@@ -29,7 +29,9 @@ class CirqSamplerWrapper(DeviceLikeWrapper):
 
         super().__init__(name, provider, **fields)
         self._vendor = "Google"
-        self.vendor_dlo = self._get_device_obj(CIRQ_PROVIDERS)
+
+    def init_device(self, str_rep):
+        return NotImplementedError
 
     @classmethod
     def _default_options(cls):
@@ -72,7 +74,6 @@ class CirqEngineWrapper(DeviceLikeWrapper):
 
         super().__init__(name, provider, **fields)
         self._vendor = "Google"
-        self.vendor_dlo = self._get_device_obj(CIRQ_PROVIDERS)
 
     @classmethod
     def _default_options(cls):

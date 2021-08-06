@@ -18,7 +18,9 @@
 
 from qbraid.devices.aws.job import BraketQuantumTaskWrapper
 from qbraid.devices.device import DeviceLikeWrapper
-from qbraid.devices._utils import BRAKET_PROVIDERS
+
+from braket.aws import AwsDevice
+from braket.devices import LocalSimulator
 
 
 class BraketDeviceWrapper(DeviceLikeWrapper):
@@ -38,9 +40,12 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
 
     def __init__(self, name, provider, **fields):
 
-        super().__init__(name, provider, **fields)
-        self._vendor = "AWS"
-        self.vendor_dlo = self._get_device_obj(BRAKET_PROVIDERS)
+        super().__init__(name, provider, vendor="AWS", **fields)
+
+    def init_device(self, str_rep):
+        if str_rep[0:3] == "arn":
+            return AwsDevice(str_rep)
+        return LocalSimulator(backend=str_rep)
 
     @classmethod
     def _default_options(cls):
