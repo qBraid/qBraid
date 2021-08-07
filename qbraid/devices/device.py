@@ -17,7 +17,7 @@ from qbraid.devices._utils import (
     SUPPORTED_VENDORS,
     CONFIG_PROMPTS,
     set_config,
-    validate_config,
+    valid_config,
 )
 from qbraid.devices.exceptions import DeviceError
 
@@ -57,22 +57,33 @@ class DeviceLikeWrapper(ABC):
                 'Provider "{}" not supported by vendor "{}".'.format(self.provider, self.vendor)
             ) from err
         try:
-            requires_config, str_rep = supported_devices[self.name]
+            device_ref = supported_devices[self.name]
         except KeyError as err:
             msg = 'Device "{}" not supported by provider "{}"'.format(self.name, self.provider)
             if self.provider != self.vendor:
                 msg += ' from vendor "{}"'.format(self.vendor)
             raise DeviceError(msg + ".") from err
-        if requires_config and not validate_config(self.vendor):
-            prompt_lst = CONFIG_PROMPTS[self.vendor]
-            for prompt in prompt_lst:
-                set_config(*prompt)
-        device_object = self.init_device(str_rep)
-        return device_object
+        if isinstance(device_ref, str):
+            if not valid_config(self.vendor):
+                prompt_lst = CONFIG_PROMPTS[self.vendor]
+                for prompt in prompt_lst:
+                    set_config(*prompt)
+            return self.init_cred_device(device_ref)
+        return device_ref
 
     @abstractmethod
-    def init_device(self, str_rep):
-        """Returns device object associated with given string representation."""
+    def init_cred_device(self, device_ref):
+        """Returns device object associated with given device_ref. This method is invoked when
+         a user has called the qBraid device wrapper on a device that requires a particular set
+         of credentials to access, e.g. an AWS, Google Cloud, or IBMQ account.
+
+        Args:
+            device_ref (str): string representation of device.
+
+        Raises:
+            ConfigError when device_rep is invalid
+
+        """
 
     @classmethod
     @abstractmethod

@@ -25,14 +25,14 @@ from qbraid.devices.result import ResultWrapper
 
 
 class BraketGateModelResultWrapper(ResultWrapper):
-    """Wrapper class for Amazon Braket ``GateModelQuantumTaskResult`` objects.
-
-    Args:
-        gate_model_result (GateModelQuantumTaskResult): a Braket ``Result`` object
-
-    """
+    """Wrapper class for Amazon Braket ``GateModelQuantumTaskResult`` objects."""
 
     def __init__(self, gate_model_result: GateModelQuantumTaskResult):
+        """Create new Braket result wrapper
+
+        Args:
+            gate_model_result (GateModelQuantumTaskResult): a Braket ``Result`` object
+        """
 
         # redundant super delegation but might at more functionality later
         super().__init__(gate_model_result)
@@ -48,4 +48,4 @@ class BraketGateModelResultWrapper(ResultWrapper):
 
     def data(self, **kwargs):
         """Return the raw data associated with the run/job."""
-        return self.measurements
+        return NotImplementedError

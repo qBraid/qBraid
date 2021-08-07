@@ -18,24 +18,29 @@ from qbraid.devices.ibm.job import QiskitJobWrapper
 
 
 class QiskitBackendWrapper(DeviceLikeWrapper):
-    """Wrapper class for IBM Qiskit ``Backend`` objects
-
-    Args:
-        name (str): a Qiskit supported device
-        provider (str): the provider that this device comes from
-        fields: kwargs for the values to use to override the default options.
-
-    Raises:
-        DeviceError: if input field not a valid options
-
-    """
+    """Wrapper class for IBM Qiskit ``Backend`` objects."""
 
     def __init__(self, name, provider, **fields):
-        super().__init__(name, provider, **fields)
-        self._vendor = "IBM"
+        """Create a QiskitBackendWrapper
 
-    def init_device(self, str_rep):
-        return NotImplementedError
+        Args:
+            name (str): a Qiskit supported device
+            provider (str): the provider that this device comes from
+            fields: kwargs for the values to use to override the default options.
+
+        Raises:
+            DeviceError: if input field not a valid options
+
+        """
+        super().__init__(name, provider, vendor="IBM", **fields)
+
+    def init_cred_device(self, device_ref):
+        """Initialize an IBM credentialed device."""
+        from qiskit import IBMQ
+        IBMQ.load_account()
+        provider = IBMQ.get_provider('ibm-q')
+        backend = provider.get_backend(device_ref)
+        return backend
 
     @classmethod
     def _default_options(cls):

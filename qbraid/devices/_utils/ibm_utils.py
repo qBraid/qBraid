@@ -1,5 +1,7 @@
 # pylint: skip-file
 
+import os
+
 from qiskit import QuantumCircuit
 from qiskit.providers.aer import (
     AerSimulator,
@@ -8,13 +10,45 @@ from qiskit.providers.aer import (
     StatevectorSimulator,
     UnitarySimulator,
 )
-from qiskit.providers.basicaer import QasmSimulatorPy, StatevectorSimulatorPy, UnitarySimulatorPy
+from qiskit.providers.basicaer import (
+    QasmSimulatorPy,
+    StatevectorSimulatorPy,
+    UnitarySimulatorPy,
+)
+
 from qiskit.pulse import Schedule
 from typing import Union, List
 
 QiskitRunInput = Union[QuantumCircuit, Schedule, List]
 
-IBM_DEVICES = {
+ibmq_config_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
+account_url = "https://auth.quantum-computing.ibm.com/api"
+
+IBMQ_CONFIG_PROMPT = [
+    # (config_name, prompt_text, default_value, is_secret, section, filepath)
+    ("token", "IBMQ API Token", None, True, "ibmq", ibmq_config_path),
+    ("url", "", account_url, False, "ibmq", ibmq_config_path),
+    ("verify", "", "True", False, "ibmq", ibmq_config_path),
+]
+
+IBMQ_DEVICES = {
+    "Armonk": "ibmq_armonk",
+    "Belem": "ibmq_belem",
+    "Bogota": "ibmq_bogota",
+    "Clifford Simulator": "simulator_stabilizer",
+    "Extended Clifford Simulator": "simulator_extended_stabilizer",
+    "Lima": "ibmq_lima",
+    "Manila": "ibmq_manila",
+    "MPS Simulator": "simulator_mps",
+    "QASM Simulator": "ibmq_qasm_simulator",
+    "Quito": "ibmq_quito",
+    "Santiago": "ibmq_santiago",
+    "Statevector Simulator": "simulator_statevector",
+    "Yorktown": "ibmq_5_yorktown",
+}
+
+
+AER_DEVICES = {
     "AerSimulator": AerSimulator(),
     "PulseSimulator": PulseSimulator(),
     "QasmSimulator": QasmSimulator(),  # Aer.getbackend('qasm_simulator') also works
@@ -23,28 +57,9 @@ IBM_DEVICES = {
     "BasicAer StatevectorSimulator": StatevectorSimulatorPy(),
     "BasicAer UnitarySimulator": UnitarySimulatorPy(),
     "BasicAer QasmSimulator": QasmSimulatorPy(),
-    "IBMQ Montreal": None,  # provider.get_backend('ibmq_armonk')
-    "IBMQ Kolkata": None,  # provider.get_backend('ibmq_LOCATION')
-    "IBMQ Mumbai": None,  # etc...
-    "IBMQ Dublin": None,
-    "IBMQ Manhattan": None,
-    "IBMQ Brooklyn": None,
-    "IBMQ Toronto": None,
-    "IBMQ Sydney": None,
-    "IBMQ Guadalupe": None,
-    "IBMQ Casablanca": None,
-    "IBMQ Nairobi": None,
-    "IBMQ Santiago": None,
-    "IBMQ Manila": None,
-    "IBMQ Bogota": None,
-    "IBMQ Jakarta": None,
-    "IBMQ Quito": None,
-    "IBMQ Belem": None,
-    "IBMQ Yorktown": None,
-    "IBMQ Lima": None,
-    "IBMQ Armonk": None,
 }
 
 QISKIT_PROVIDERS = {
-    "IBM": IBM_DEVICES,
+    "IBMQ": IBMQ_DEVICES,
+    "AER": AER_DEVICES,
 }

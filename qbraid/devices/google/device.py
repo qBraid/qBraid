@@ -13,24 +13,24 @@ if TYPE_CHECKING:
 
 
 class CirqSamplerWrapper(DeviceLikeWrapper):
-    """Wrapper class for Google Cirq ``Sampler`` objects
-
-    Args:
-        name (str): a Cirq supported device
-        provider (str): the provider that this device comes from
-        fields: kwargs for the values to use to override the default options.
-
-    Raises:
-        DeviceError: if input field not a valid options
-
-    """
+    """Wrapper class for Google Cirq ``Sampler`` objects."""
 
     def __init__(self, name, provider, **fields):
+        """Create CirqSamplerWrapper
 
-        super().__init__(name, provider, **fields)
-        self._vendor = "Google"
+        Args:
+            name (str): a Cirq supported device
+            provider (str): the provider that this device comes from
+            fields: kwargs for the values to use to override the default options.
 
-    def init_device(self, str_rep):
+        Raises:
+            DeviceError: if input field not a valid options
+
+        """
+        super().__init__(name, provider, vendor="Google", **fields)
+
+    def init_cred_device(self, device_ref):
+        """Initialize a Google credentialed device."""
         return NotImplementedError
 
     @classmethod
@@ -58,22 +58,25 @@ class CirqSamplerWrapper(DeviceLikeWrapper):
 
 
 class CirqEngineWrapper(DeviceLikeWrapper):
-    """Wrapper class for Google Cirq ``Engine`` objects.
-
-    Args:
-        name (str): a Cirq supported device
-        provider (str): the provider that this device comes from
-        fields: kwargs for the values to use to override the default options.
-
-    Raises:
-        DeviceError: if input field not a valid options
-
-    """
+    """Wrapper class for Google Cirq ``Engine`` objects."""
 
     def __init__(self, name, provider, **fields):
+        """Creat a CirqEngineWrapper
 
-        super().__init__(name, provider, **fields)
-        self._vendor = "Google"
+        Args:
+            name (str): a Cirq supported device
+            provider (str): the provider that this device comes from
+            fields: kwargs for the values to use to override the default options.
+
+        Raises:
+            DeviceError: if input field not a valid options
+
+        """
+        super().__init__(name, provider, vendor="Google", **fields)
+
+    def init_cred_device(self, device_ref):
+        """Initialize a Google credentialed device."""
+        return NotImplementedError
 
     @classmethod
     def _default_options(cls):

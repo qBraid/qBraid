@@ -24,28 +24,29 @@ from braket.devices import LocalSimulator
 
 
 class BraketDeviceWrapper(DeviceLikeWrapper):
-    """Wrapper class for Amazon Braket ``Device`` objects.
-
-    Args:
-        name (str): a Braket supported device
-        provider (str): the provider that this device comes from
-        fields: Any kwarg options to pass to the backend for running the config. If a key is
-            also present in the options attribute/object then the expectation is that the value
-            specified will be used instead of what's set in the options object.
-
-    Raises:
-        DeviceError: if input field not a valid options
-
-    """
+    """Wrapper class for Amazon Braket ``Device`` objects."""
 
     def __init__(self, name, provider, **fields):
+        """Create a BraketDeviceWrapper
 
+        Args:
+            name (str): a Braket supported device
+            provider (str): the provider that this device comes from
+            fields: Any kwarg options to pass to the backend for running the config. If a key is
+                also present in the options attribute/object then the expectation is that the value
+                specified will be used instead of what's set in the options object.
+
+        Raises:
+            DeviceError: if input field not a valid options
+
+        """
         super().__init__(name, provider, vendor="AWS", **fields)
 
-    def init_device(self, str_rep):
-        if str_rep[0:3] == "arn":
-            return AwsDevice(str_rep)
-        return LocalSimulator(backend=str_rep)
+    def init_cred_device(self, device_ref):
+        """Initialize an AWS credentialed device."""
+        if device_ref[0:3] == "arn":
+            return AwsDevice(device_ref)
+        return LocalSimulator(backend=device_ref)
 
     @classmethod
     def _default_options(cls):
