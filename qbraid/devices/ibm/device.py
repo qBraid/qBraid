@@ -12,8 +12,11 @@
 
 """QiskitBackendWrapper Class"""
 
+from qiskit import QuantumCircuit
+
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.ibm.job import QiskitJobWrapper
+from qbraid import circuit_wrapper
 
 
 class QiskitBackendWrapper(DeviceLikeWrapper):
@@ -76,6 +79,8 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
                 the run.
 
         """
+        if not isinstance(run_input, QuantumCircuit):
+            run_input = circuit_wrapper(run_input).transpile("qiskit")
         qiskit_device = self.vendor_dlo
         qiskit_job = qiskit_device.run(run_input, *args, **kwargs)
         qbraid_job = QiskitJobWrapper(self, qiskit_job)

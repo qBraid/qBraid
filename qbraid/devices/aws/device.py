@@ -19,8 +19,10 @@
 from qbraid.devices.aws.job import BraketQuantumTaskWrapper
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices._utils import get_config, aws_config_path
+from qbraid import circuit_wrapper
 
 from braket.aws import AwsDevice
+from braket.circuits import Circuit
 
 
 class BraketDeviceWrapper(DeviceLikeWrapper):
@@ -72,6 +74,8 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             QuantumTask: The QuantumTask tracking task execution on this device
 
         """
+        if not isinstance(run_input, Circuit):
+            run_input = circuit_wrapper(run_input).transpile("braket")
         braket_device = self.vendor_dlo
         if self.requires_creds:
             braket_quantum_task = braket_device.run(run_input, self.s3_location, *args, **kwargs)
