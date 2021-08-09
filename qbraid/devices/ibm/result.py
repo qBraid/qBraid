@@ -19,15 +19,16 @@ from qbraid.devices.result import ResultWrapper
 
 
 class QiskitResultWrapper(ResultWrapper):
-    """Qiskit ``Result`` wrapper class.
-
-    Args:
-        vendor_rlo (Result): a Qiskit ``Result`` object
-
-    """
+    """Qiskit ``Result`` wrapper class."""
 
     # pylint: disable=too-few-public-methods
     def __init__(self, vendor_rlo: Result):
+        """Create a QiskitResultWrapper
+
+        Args:
+            vendor_rlo (Result): a Qiskit ``Result`` object
+
+        """
         super().__init__(vendor_rlo)
         self.vendor_rlo = vendor_rlo
 

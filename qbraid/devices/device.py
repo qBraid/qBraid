@@ -13,11 +13,11 @@
 """DeviceLikeWrapper Class"""
 
 from abc import ABC, abstractmethod
+
 from qbraid.devices._utils import (
     SUPPORTED_VENDORS,
     CONFIG_PROMPTS,
     set_config,
-    valid_config,
 )
 from qbraid.devices.exceptions import DeviceError
 
@@ -41,7 +41,7 @@ class DeviceLikeWrapper(ABC):
         self._provider = provider
         self._vendor = vendor
         self._options = self._default_options()
-        self._configuration = None
+        self._device_configuration = None
         self.requires_creds = False
         self.vendor_dlo = self._get_device_obj()  # vendor device-like object
         if fields:
@@ -65,10 +65,9 @@ class DeviceLikeWrapper(ABC):
                 msg += ' from vendor "{}"'.format(self.vendor)
             raise DeviceError(msg + ".") from err
         if isinstance(device_ref, str):
-            if not valid_config(self.vendor):
-                prompt_lst = CONFIG_PROMPTS[self.vendor]
-                for prompt in prompt_lst:
-                    set_config(*prompt)
+            prompt_lst = CONFIG_PROMPTS[self.vendor]
+            for prompt in prompt_lst:
+                set_config(*prompt)
             self.requires_creds = True
             return self.init_cred_device(device_ref)
         return device_ref
@@ -110,7 +109,7 @@ class DeviceLikeWrapper(ABC):
                 raise DeviceError(f"Options field {field} is not valid for this device.")
         self._options.update_options(**fields)
 
-    def configuration(self):
+    def device_configuration(self):
         """Return the device configuration.
 
         Returns:
@@ -118,7 +117,7 @@ class DeviceLikeWrapper(ABC):
             it returns ``None``.
 
         """
-        return self._configuration
+        return self._device_configuration
 
     @property
     def name(self):

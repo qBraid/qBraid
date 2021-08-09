@@ -11,12 +11,12 @@ secret_input = getpass
 
 def mask_value(current_value):
     if current_value is None:
-        return 'None'
+        return "None"
     val = round(len(current_value) / 5)
     len_hint = 4 if val > 4 else 0 if val < 2 else val
-    default_stars = (len(current_value) - len_hint)
+    default_stars = len(current_value) - len_hint
     len_stars = default_stars if default_stars <= 16 else 16
-    return ('*' * len_stars) + current_value[-len_hint:]
+    return ("*" * len_stars) + current_value[-len_hint:]
 
 
 def get_value(current_value, is_secret, prompt_text):
@@ -59,15 +59,16 @@ def set_config(config_name, prompt_text, default_value, is_secret, section, file
     if section in config.sections():
         if config_name in config[section]:
             current_value = config[section][config_name]
+            if not (current_value is None or update):
+                return 0
     else:
         config.add_section(section)
-    if current_value is None or update:
-        if len(prompt_text) == 0:
-            new_value = default_value
-        else:
-            new_value = get_value(current_value, is_secret, prompt_text)
-        config_val = default_value if new_value is None else new_value
-        config.set(section, config_name, str(config_val))
+    if len(prompt_text) == 0:
+        new_value = default_value
+    else:
+        new_value = get_value(current_value, is_secret, prompt_text)
+    config_val = default_value if new_value is None else new_value
+    config.set(section, config_name, str(config_val))
     try:
         with open(filepath, "w") as cfgfile:
             config.write(cfgfile)

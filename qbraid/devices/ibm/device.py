@@ -36,8 +36,9 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
     def init_cred_device(self, device_ref):
         """Initialize an IBM credentialed device."""
         from qiskit import IBMQ
+
         IBMQ.load_account()
-        provider = IBMQ.get_provider('ibm-q')
+        provider = IBMQ.get_provider("ibm-q")
         backend = provider.get_backend(device_ref)
         return backend
 

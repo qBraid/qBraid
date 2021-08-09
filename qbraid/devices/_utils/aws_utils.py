@@ -19,25 +19,25 @@ AWS_CONFIG_PROMPT = [
 
 
 AWS_DEVICES = {
-    "simulator_statevector": 'arn:aws:braket:::device/quantum-simulator/amazon/sv1',
-    "simulator_densitymatrix": 'arn:aws:braket:::device/quantum-simulator/amazon/dm1',
-    "simulator_tensornetwork": 'arn:aws:braket:::device/quantum-simulator/amazon/tn1',
-    "local_simulator_default": LocalSimulator(backend='default'),
-    "local_simulator_densitymatrix": 'braket_dm',
-    "local_simulator_statevector": 'braket_sv',
+    "simulator_statevector": "arn:aws:braket:::device/quantum-simulator/amazon/sv1",
+    "simulator_densitymatrix": "arn:aws:braket:::device/quantum-simulator/amazon/dm1",
+    "simulator_tensornetwork": "arn:aws:braket:::device/quantum-simulator/amazon/tn1",
+    "local_simulator_default": LocalSimulator(backend="default"),
+    "local_simulator_densitymatrix": "braket_dm",
+    "local_simulator_statevector": "braket_sv",
 }
 
 DWAVE_DEVICES = {
-    "DW_2000Q_6": 'arn:aws:braket:::device/qpu/d-wave/DW_2000Q_6',
-    "Advantage_system1": 'arn:aws:braket:::device/qpu/d-wave/Advantage_system1',
+    "DW_2000Q_6": "arn:aws:braket:::device/qpu/d-wave/DW_2000Q_6",
+    "Advantage_system1": "arn:aws:braket:::device/qpu/d-wave/Advantage_system1",
 }
 
 IONQ_DEVICES = {
-    "ionQdevice": 'arn:aws:braket:::device/qpu/ionq/ionQdevice',
+    "ionQdevice": "arn:aws:braket:::device/qpu/ionq/ionQdevice",
 }
 
 RIGETTI_DEVICES = {
-    "Aspen-9": 'arn:aws:braket:::device/qpu/rigetti/Aspen-9',
+    "Aspen-9": "arn:aws:braket:::device/qpu/rigetti/Aspen-9",
 }
 
 BRAKET_PROVIDERS = {
@@ -46,6 +46,3 @@ BRAKET_PROVIDERS = {
     "IonQ": IONQ_DEVICES,
     "Rigetti": RIGETTI_DEVICES,
 }
-
-
-

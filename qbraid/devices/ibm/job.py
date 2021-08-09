@@ -22,15 +22,16 @@ from qbraid.devices.exceptions import JobError
 
 
 class QiskitJobWrapper(JobLikeWrapper):
-    """Wrapper class for IBM Qiskit ``Job`` objects.
-
-    Args:
-        device (QiskitBackendWrapper): a Qiskit device object
-        vendor_jlo (Job): a Qiskit ``Job`` object used to run circuits.
-
-    """
+    """Wrapper class for IBM Qiskit ``Job`` objects."""
 
     def __init__(self, device, vendor_jlo: Job):
+        """Create a QiskitJobWrapper.
+
+        Args:
+            device (QiskitBackendWrapper): a Qiskit device object
+            vendor_jlo (Job): a Qiskit ``Job`` object used to run circuits.
+
+        """
         super().__init__(device, vendor_jlo)
         self.device = device
         self.vendor_jlo = vendor_jlo

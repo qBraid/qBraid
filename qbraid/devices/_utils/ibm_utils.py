@@ -31,14 +31,14 @@ IBMQ_DEVICES = {
 }
 
 AER_DEVICES = {
-    "simulator_aer": Aer.get_backend('aer_simulator'),
-    "simulator_pulse": Aer.get_backend('pulse_simulator'),
-    "simulator_qasm": Aer.get_backend('qasm_simulator'),
-    "simulator_statevector": Aer.get_backend('statevector_simulator'),
-    "simulator_unitary": Aer.get_backend('unitary_simulator'),
-    "local_simulator_qasm": BasicAer.get_backend('qasm_simulator'),
-    "local_simulator_statevector": BasicAer.get_backend('statevector_simulator'),
-    "local_simulator_unitary": BasicAer.get_backend('unitary_simulator'),
+    "simulator_aer": Aer.get_backend("aer_simulator"),
+    "simulator_pulse": Aer.get_backend("pulse_simulator"),
+    "simulator_qasm": Aer.get_backend("qasm_simulator"),
+    "simulator_statevector": Aer.get_backend("statevector_simulator"),
+    "simulator_unitary": Aer.get_backend("unitary_simulator"),
+    "local_simulator_qasm": BasicAer.get_backend("qasm_simulator"),
+    "local_simulator_statevector": BasicAer.get_backend("statevector_simulator"),
+    "local_simulator_unitary": BasicAer.get_backend("unitary_simulator"),
 }
 
 # RUNTIME = {
