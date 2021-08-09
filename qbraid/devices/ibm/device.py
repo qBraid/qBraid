@@ -12,7 +12,6 @@
 
 """QiskitBackendWrapper Class"""
 
-from qbraid.devices._utils import QiskitRunInput
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.ibm.job import QiskitJobWrapper
 
@@ -55,7 +54,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
 
         """
 
-    def run(self, run_input: QiskitRunInput, *args, **kwargs) -> QiskitJobWrapper:
+    def run(self, run_input, *args, **kwargs) -> QiskitJobWrapper:
         """Run on the qiskit backend.
 
         This method that will return a :class:`~qiskit.providers.Job` object that run circuits.
@@ -73,7 +72,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
 
         Returns:
             QiskitJobWrapper: The :class:`~qbraid.devices.ibm.job.QiskitJobWrapper` job object for
-            the run.
+                the run.
 
         """
         qiskit_device = self.vendor_dlo

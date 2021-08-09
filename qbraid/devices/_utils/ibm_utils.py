@@ -2,24 +2,7 @@
 
 import os
 
-from qiskit import QuantumCircuit
-from qiskit.providers.aer import (
-    AerSimulator,
-    PulseSimulator,
-    QasmSimulator,
-    StatevectorSimulator,
-    UnitarySimulator,
-)
-from qiskit.providers.basicaer import (
-    QasmSimulatorPy,
-    StatevectorSimulatorPy,
-    UnitarySimulatorPy,
-)
-
-from qiskit.pulse import Schedule
-from typing import Union, List
-
-QiskitRunInput = Union[QuantumCircuit, Schedule, List]
+from qiskit import Aer, BasicAer
 
 ibmq_config_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
 account_url = "https://auth.quantum-computing.ibm.com/api"
@@ -32,34 +15,41 @@ IBMQ_CONFIG_PROMPT = [
 ]
 
 IBMQ_DEVICES = {
-    "Armonk": "ibmq_armonk",
-    "Belem": "ibmq_belem",
-    "Bogota": "ibmq_bogota",
-    "Clifford Simulator": "simulator_stabilizer",
-    "Extended Clifford Simulator": "simulator_extended_stabilizer",
-    "Lima": "ibmq_lima",
-    "Manila": "ibmq_manila",
-    "MPS Simulator": "simulator_mps",
-    "QASM Simulator": "ibmq_qasm_simulator",
-    "Quito": "ibmq_quito",
-    "Santiago": "ibmq_santiago",
-    "Statevector Simulator": "simulator_statevector",
-    "Yorktown": "ibmq_5_yorktown",
+    "armonk": "ibmq_armonk",
+    "belem": "ibmq_belem",
+    "bogota": "ibmq_bogota",
+    "lima": "ibmq_lima",
+    "manila": "ibmq_manila",
+    "quito": "ibmq_quito",
+    "santiago": "ibmq_santiago",
+    "yorktown": "ibmq_5_yorktown",
+    "simulator_stabilizer": "simulator_stabilizer",
+    "simulator_stabilizer_ext": "simulator_extended_stabilizer",
+    "simulator_mps": "simulator_mps",
+    "simulator_qasm": "ibmq_qasm_simulator",
+    "simulator_statevector": "simulator_statevector",
 }
-
 
 AER_DEVICES = {
-    "AerSimulator": AerSimulator(),
-    "PulseSimulator": PulseSimulator(),
-    "QasmSimulator": QasmSimulator(),  # Aer.getbackend('qasm_simulator') also works
-    "StatevectorSimulator": StatevectorSimulator(),
-    "UnitarySimulator": UnitarySimulator(),
-    "BasicAer StatevectorSimulator": StatevectorSimulatorPy(),
-    "BasicAer UnitarySimulator": UnitarySimulatorPy(),
-    "BasicAer QasmSimulator": QasmSimulatorPy(),
+    "simulator_aer": Aer.get_backend('aer_simulator'),
+    "simulator_pulse": Aer.get_backend('pulse_simulator'),
+    "simulator_qasm": Aer.get_backend('qasm_simulator'),
+    "simulator_statevector": Aer.get_backend('statevector_simulator'),
+    "simulator_unitary": Aer.get_backend('unitary_simulator'),
+    "local_simulator_qasm": BasicAer.get_backend('qasm_simulator'),
+    "local_simulator_statevector": BasicAer.get_backend('statevector_simulator'),
+    "local_simulator_unitary": BasicAer.get_backend('unitary_simulator'),
 }
+
+# RUNTIME = {
+#     "coming_soon": None,  # https://qiskit.org/documentation/partners/qiskit_runtime/
+# }
+#
+# IONQ_DEVICES = {
+#     "TO-DO": None,  # https://qiskit.org/documentation/partners/ionq/guides/install.html
+# }
 
 QISKIT_PROVIDERS = {
     "IBMQ": IBMQ_DEVICES,
-    "AER": AER_DEVICES,
+    "Aer": AER_DEVICES,
 }

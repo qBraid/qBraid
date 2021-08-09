@@ -48,7 +48,7 @@ def set_config(config_name, prompt_text, default_value, is_secret, section, file
         update (optional, bool): True if user is updating an already existing config
 
     Raises:
-        Exception if unable to load file from specified ``filename``.
+        ConfigError if unable to load file from specified ``filename``.
 
     """
     if not os.path.isfile(filepath):
@@ -74,3 +74,27 @@ def set_config(config_name, prompt_text, default_value, is_secret, section, file
     except OSError as ex:
         raise ConfigError(f"Unable to load the config file {filepath}. Error: '{str(ex)}'")
     return 0
+
+
+def get_config(config_name, section, filepath):
+    """Returns the config value of specified config
+
+    Args:
+        config_name (str): the name of the config
+        section (str) = the section of the config file to store config_name
+        filepath (str): the existing or desired path to config file
+
+    Raises:
+        ConfigError if config_name, section or filepath do not exist.
+
+    """
+    if not os.path.isfile(filepath):
+        raise ConfigError(f"Config file {filepath} does not exist.")
+    config = configparser.ConfigParser()
+    config.read(filepath)
+    if section not in config.sections():
+        raise ConfigError(f"Config section {section} does not exist.")
+    if config_name not in config[section]:
+        raise ConfigError(f"Config {config_name} does not exist.")
+    config_value = config[section][config_name]
+    return config_value

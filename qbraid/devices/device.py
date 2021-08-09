@@ -42,6 +42,7 @@ class DeviceLikeWrapper(ABC):
         self._vendor = vendor
         self._options = self._default_options()
         self._configuration = None
+        self.requires_creds = False
         self.vendor_dlo = self._get_device_obj()  # vendor device-like object
         if fields:
             for field in fields:
@@ -68,6 +69,7 @@ class DeviceLikeWrapper(ABC):
                 prompt_lst = CONFIG_PROMPTS[self.vendor]
                 for prompt in prompt_lst:
                     set_config(*prompt)
+            self.requires_creds = True
             return self.init_cred_device(device_ref)
         return device_ref
 
@@ -160,7 +162,7 @@ class DeviceLikeWrapper(ABC):
         return self._options
 
     def __str__(self):
-        return self.name
+        return f"{self.vendor} {self.provider} {self.name} device wrapper"
 
     def __repr__(self):
         """String representation of a DeviceWrapper object."""
