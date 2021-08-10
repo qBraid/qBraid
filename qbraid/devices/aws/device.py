@@ -16,13 +16,12 @@
 
 """BraketDeviceWrapper Class"""
 
+from braket.aws import AwsDevice
+from braket.devices import LocalSimulator
+
+from qbraid.devices._utils import get_config
 from qbraid.devices.aws.job import BraketQuantumTaskWrapper
 from qbraid.devices.device import DeviceLikeWrapper
-from qbraid.devices._utils import get_config, aws_config_path
-from qbraid import circuit_wrapper
-
-from braket.aws import AwsDevice
-from braket.circuits import Circuit
 
 
 class BraketDeviceWrapper(DeviceLikeWrapper):
@@ -46,13 +45,15 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         if not self.requires_creds:
             self.s3_location = None
         else:
-            bucket = get_config("bucket", "s3_location", aws_config_path)
-            folder = get_config("folder", "s3_location", aws_config_path)
+            bucket = get_config("s3_bucket", "AWS")
+            folder = get_config("s3_folder", "AWS")
             self.s3_location = (bucket, folder)
 
-    def init_cred_device(self, device_ref):
+    def _init_cred_device(self, device_ref):
         """Initialize an AWS credentialed device."""
-        return AwsDevice(device_ref)
+        if device_ref[0:3] == "arn":
+            return AwsDevice(device_ref)
+        return LocalSimulator(backend=device_ref)
 
     @classmethod
     def _default_options(cls):
@@ -74,8 +75,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             QuantumTask: The QuantumTask tracking task execution on this device
 
         """
-        if not isinstance(run_input, Circuit):
-            run_input = circuit_wrapper(run_input).transpile("braket")
+        run_input = self._compat_run_input(run_input)
         braket_device = self.vendor_dlo
         if self.requires_creds:
             braket_quantum_task = braket_device.run(run_input, self.s3_location, *args, **kwargs)

@@ -14,10 +14,13 @@
 
 from abc import ABC, abstractmethod
 
+import qbraid
 from qbraid.devices._utils import (
     SUPPORTED_VENDORS,
+    VENDOR_RUN_REQS,
     CONFIG_PROMPTS,
     set_config,
+    get_config,
 )
 from qbraid.devices.exceptions import DeviceError
 
@@ -42,6 +45,8 @@ class DeviceLikeWrapper(ABC):
         self._vendor = vendor
         self._options = self._default_options()
         self._device_configuration = None
+        self._run_package = VENDOR_RUN_REQS[self.vendor][0]
+        self._type_run_input = VENDOR_RUN_REQS[self.vendor][1]
         self.requires_creds = False
         self.vendor_dlo = self._get_device_obj()  # vendor device-like object
         if fields:
@@ -64,16 +69,25 @@ class DeviceLikeWrapper(ABC):
             if self.provider != self.vendor:
                 msg += ' from vendor "{}"'.format(self.vendor)
             raise DeviceError(msg + ".") from err
+        if device_ref is None:
+            raise DeviceError("Device not currently available.")
         if isinstance(device_ref, str):
-            prompt_lst = CONFIG_PROMPTS[self.vendor]
-            for prompt in prompt_lst:
-                set_config(*prompt)
+            if get_config("verify", self.vendor) != "True":
+                prompt_lst = CONFIG_PROMPTS[self.vendor]
+                for prompt in prompt_lst:
+                    set_config(*prompt)
             self.requires_creds = True
-            return self.init_cred_device(device_ref)
+            return self._init_cred_device(device_ref)
         return device_ref
 
+    def _compat_run_input(self, run_input):
+        """Checks if ``run_input`` is compatible with device and if not, calls transpiler."""
+        if not isinstance(run_input, self._type_run_input):
+            run_input = qbraid.circuit_wrapper(run_input).transpile(self._run_package)
+        return run_input
+
     @abstractmethod
-    def init_cred_device(self, device_ref):
+    def _init_cred_device(self, device_ref):
         """Returns device object associated with given device_ref. This method is invoked when
          a user has called the qBraid device wrapper on a device that requires a particular set
          of credentials to access, e.g. an AWS, Google Cloud, or IBMQ account.
@@ -147,6 +161,8 @@ class DeviceLikeWrapper(ABC):
             str: the name of the software vendor.
 
         """
+        if self._vendor is None:
+            raise DeviceError("vendor is None")
         return self._vendor
 
     @property

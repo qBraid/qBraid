@@ -6,15 +6,18 @@ from .aws_utils import (
     BRAKET_PROVIDERS,
     AWS_CONFIG_PROMPT,
     aws_config_path,
+    braket_run_input,
 )
 
 from .ibm_utils import (
     QISKIT_PROVIDERS,
     IBMQ_CONFIG_PROMPT,
+    qiskit_run_input,
 )
 
 from .google_utils import (
     CIRQ_PROVIDERS,
+    cirq_run_input,
 )
 
 from .user_config import set_config, get_config
@@ -23,6 +26,12 @@ SUPPORTED_VENDORS = {
     "AWS": BRAKET_PROVIDERS,
     "Google": CIRQ_PROVIDERS,
     "IBM": QISKIT_PROVIDERS,
+}
+
+VENDOR_RUN_REQS = {
+    "AWS": ("braket", braket_run_input),
+    "Google": ("cirq", cirq_run_input),
+    "IBM": ("qiskit", qiskit_run_input),
 }
 
 CONFIG_PROMPTS = {
@@ -43,11 +52,6 @@ def update_config(vendor):
     for prompt in prompt_lst:
         set_config(*prompt, update=True)
     return 0
-
-
-def valid_config(vendor):
-    # TO DO: validate configuration for given vendor
-    return False
 
 
 def get_devices(provider=None, vendor=None, simulator=None, creds=None):

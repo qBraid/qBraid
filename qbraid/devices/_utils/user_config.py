@@ -8,6 +8,8 @@ from qbraid.devices.exceptions import ConfigError
 raw_input = input
 secret_input = getpass
 
+qbraid_config_path = os.path.join(os.path.expanduser("~"), ".qbraid", "config")
+
 
 def mask_value(current_value):
     if current_value is None:
@@ -56,10 +58,13 @@ def set_config(config_name, prompt_text, default_value, is_secret, section, file
     config = configparser.ConfigParser()
     config.read(filepath)
     current_value = None
+    qbraid_verify = (filepath == qbraid_config_path) and config_name == "verify"
     if section in config.sections():
         if config_name in config[section]:
             current_value = config[section][config_name]
-            if not (current_value is None or update):
+            if qbraid_verify and current_value == "True":
+                return 0
+            if current_value is not None and update is False:
                 return 0
     else:
         config.add_section(section)
@@ -77,25 +82,22 @@ def set_config(config_name, prompt_text, default_value, is_secret, section, file
     return 0
 
 
-def get_config(config_name, section, filepath):
+def get_config(config_name, section, filepath=None):
     """Returns the config value of specified config
 
     Args:
         config_name (str): the name of the config
         section (str) = the section of the config file to store config_name
-        filepath (str): the existing or desired path to config file
-
-    Raises:
-        ConfigError if config_name, section or filepath do not exist.
-
+        filepath (optioanl, str): the existing or desired path to config file. Defaults to the
+            qbraid config path.
+    Returns:
+        Config value or -1 if config does not exist
     """
-    if not os.path.isfile(filepath):
-        raise ConfigError(f"Config file {filepath} does not exist.")
-    config = configparser.ConfigParser()
-    config.read(filepath)
-    if section not in config.sections():
-        raise ConfigError(f"Config section {section} does not exist.")
-    if config_name not in config[section]:
-        raise ConfigError(f"Config {config_name} does not exist.")
-    config_value = config[section][config_name]
-    return config_value
+    filepath = qbraid_config_path if filepath is None else filepath
+    if os.path.isfile(filepath):
+        config = configparser.ConfigParser()
+        config.read(filepath)
+        if section in config.sections():
+            if config_name in config[section]:
+                return config[section][config_name]
+    return -1

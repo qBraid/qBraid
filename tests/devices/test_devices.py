@@ -3,11 +3,12 @@ Unit tests for the qbraid device layer.
 """
 import pytest
 
-from braket.devices import LocalSimulator as BraketSimulator
+from braket.devices import LocalSimulator as AwsSimulator
+from braket.aws import AwsDevice
 from qbraid.devices.aws.device import BraketDeviceWrapper
 
-from cirq.devices.device import Device as CirqDevice
-from qbraid.devices.google.device import CirqSamplerWrapper
+from cirq.sim.simulator_base import SimulatorBase as CirqSimulator
+from qbraid.devices.google.device import CirqSimulatorWrapper
 
 import qiskit
 from qiskit.providers.aer.aerjob import AerJob
@@ -23,43 +24,43 @@ def device_wrapper_inputs(vendor):
     input_list = []
     for provider in SUPPORTED_VENDORS[vendor]:
         for device in SUPPORTED_VENDORS[vendor][provider]:
-            data = (device, provider, vendor)
+            data = (device, provider)
             input_list.append(data)
     return input_list
 
 
-inputs_braket_device_wrapper = device_wrapper_inputs("AWS")
-inputs_cirq_device_wrapper = device_wrapper_inputs("Google")
-inputs_qiskit_device_wrapper = device_wrapper_inputs("IBM")
+inputs_braket_dw = device_wrapper_inputs("AWS")
+inputs_cirq_dw = device_wrapper_inputs("Google")
+inputs_qiskit_dw = device_wrapper_inputs("IBM")
 
 
-@pytest.mark.parametrize("device,provider,vendor", inputs_braket_device_wrapper)
-def test_init_braket_device_wrapper(device, provider, vendor):
-    qbraid_device = device_wrapper(device, provider, vendor=vendor)
+@pytest.mark.parametrize("device,provider", inputs_braket_dw)
+def test_init_braket_device_wrapper(device, provider):
+    qbraid_device = device_wrapper(device, provider, vendor="AWS")
     vendor_device = qbraid_device.vendor_dlo
     assert isinstance(qbraid_device, BraketDeviceWrapper)
-    assert isinstance(vendor_device, BraketSimulator) or vendor_device is None
+    assert isinstance(vendor_device, AwsSimulator) or isinstance(vendor_device, AwsDevice)
 
 
-@pytest.mark.parametrize("device,provider,vendor", inputs_cirq_device_wrapper)
-def test_init_cirq_device_wrapper(device, provider, vendor):
-    qbraid_device = device_wrapper(device, provider, vendor=vendor)
+@pytest.mark.parametrize("device,provider", inputs_cirq_dw)
+def test_init_cirq_device_wrapper(device, provider):
+    qbraid_device = device_wrapper(device, provider, vendor="Google")
     vendor_device = qbraid_device.vendor_dlo
-    assert isinstance(qbraid_device, CirqSamplerWrapper)
-    assert isinstance(vendor_device, CirqDevice) or vendor_device is None
+    assert isinstance(qbraid_device, CirqSimulatorWrapper)
+    assert isinstance(vendor_device, CirqSimulator)
 
 
-@pytest.mark.parametrize("device,provider,vendor", inputs_qiskit_device_wrapper)
-def test_init_qiskit_device_wrapper(device, provider, vendor):
-    qbraid_device = device_wrapper(device, provider, vendor=vendor)
+@pytest.mark.parametrize("device,provider", inputs_qiskit_dw)
+def test_init_qiskit_device_wrapper(device, provider):
+    qbraid_device = device_wrapper(device, provider, vendor="IBM")
     vendor_device = qbraid_device.vendor_dlo
     assert isinstance(qbraid_device, QiskitBackendWrapper)
-    assert isinstance(vendor_device, QiskitBackend) or vendor_device is None
+    assert isinstance(vendor_device, QiskitBackend)
 
 
-@pytest.mark.parametrize("device,provider,vendor", [inputs_qiskit_device_wrapper[0]])
-def test_run_qiskit_device_wrapper(device, provider, vendor):
-    qbraid_device = device_wrapper(device, provider, vendor=vendor)
+@pytest.mark.parametrize("device,provider", [inputs_qiskit_dw[0]])
+def test_run_qiskit_device_wrapper(device, provider):
+    qbraid_device = device_wrapper(device, provider, vendor="IBM")
     circuit = qiskit.QuantumCircuit(3)  # Create a qiskit circuit
     circuit.h(0)
     circuit.cx(0, 1)

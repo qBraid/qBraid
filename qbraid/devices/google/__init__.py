@@ -18,6 +18,6 @@ This module contains the classes used to run quantum circuits on devices availab
 """
 # pylint: skip-file
 from .device import CirqEngineWrapper
-from .device import CirqSamplerWrapper
+from .device import CirqSimulatorWrapper
 from .job import CirqEngineJobWrapper
 from .result import CirqResultWrapper

@@ -1,8 +1,15 @@
 # pylint: skip-file
 
 import os
+from typing import Union, List
 
 from qiskit import Aer, BasicAer
+from qiskit import QuantumCircuit
+from qiskit.pulse import Schedule
+
+from .user_config import qbraid_config_path
+
+qiskit_run_input = Union[QuantumCircuit, Schedule, List]
 
 ibmq_config_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
 account_url = "https://auth.quantum-computing.ibm.com/api"
@@ -12,6 +19,7 @@ IBMQ_CONFIG_PROMPT = [
     ("token", "IBMQ API Token", None, True, "ibmq", ibmq_config_path),
     ("url", "", account_url, False, "ibmq", ibmq_config_path),
     ("verify", "", "True", False, "ibmq", ibmq_config_path),
+    ("verify", "", "True", False, "IBM", qbraid_config_path),
 ]
 
 IBMQ_DEVICES = {
@@ -22,7 +30,7 @@ IBMQ_DEVICES = {
     "manila": "ibmq_manila",
     "quito": "ibmq_quito",
     "santiago": "ibmq_santiago",
-    "yorktown": "ibmq_5_yorktown",
+    # "yorktown": "ibmq_5_yorktown",  # not available
     "simulator_stabilizer": "simulator_stabilizer",
     "simulator_stabilizer_ext": "simulator_extended_stabilizer",
     "simulator_mps": "simulator_mps",
