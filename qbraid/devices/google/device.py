@@ -1,35 +1,37 @@
 """Module for Cirq device-like object wrappers."""
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.google.job import CirqEngineJobWrapper
 from qbraid.devices.google.result import CirqResultWrapper
-from qbraid.devices._utils import CIRQ_PROVIDERS
 
 if TYPE_CHECKING:
     from cirq import Circuit
 
 
 class CirqSamplerWrapper(DeviceLikeWrapper):
-    """Wrapper class for Google Cirq ``Sampler`` objects
-
-    Args:
-        name (str): a Cirq supported device
-        provider (str): the provider that this device comes from
-        fields: kwargs for the values to use to override the default options.
-
-    Raises:
-        DeviceError: if input field not a valid options
-
-    """
+    """Wrapper class for Google Cirq ``Sampler`` objects."""
 
     def __init__(self, name, provider, **fields):
+        """Create CirqSamplerWrapper
 
-        super().__init__(name, provider, **fields)
-        self._vendor = "Google"
-        self.vendor_dlo = self._get_device_obj(CIRQ_PROVIDERS)
+        Args:
+            name (str): a Cirq supported device
+            provider (str): the provider that this device comes from
+            fields: kwargs for the values to use to override the default options.
+
+        Raises:
+            DeviceError: if input field not a valid options
+
+        """
+        super().__init__(name, provider, vendor="Google", **fields)
+
+    def init_cred_device(self, device_ref):
+        """Initialize a Google credentialed device."""
+        return NotImplementedError
 
     @classmethod
     def _default_options(cls):
@@ -56,23 +58,25 @@ class CirqSamplerWrapper(DeviceLikeWrapper):
 
 
 class CirqEngineWrapper(DeviceLikeWrapper):
-    """Wrapper class for Google Cirq ``Engine`` objects.
-
-    Args:
-        name (str): a Cirq supported device
-        provider (str): the provider that this device comes from
-        fields: kwargs for the values to use to override the default options.
-
-    Raises:
-        DeviceError: if input field not a valid options
-
-    """
+    """Wrapper class for Google Cirq ``Engine`` objects."""
 
     def __init__(self, name, provider, **fields):
+        """Creat a CirqEngineWrapper
 
-        super().__init__(name, provider, **fields)
-        self._vendor = "Google"
-        self.vendor_dlo = self._get_device_obj(CIRQ_PROVIDERS)
+        Args:
+            name (str): a Cirq supported device
+            provider (str): the provider that this device comes from
+            fields: kwargs for the values to use to override the default options.
+
+        Raises:
+            DeviceError: if input field not a valid options
+
+        """
+        super().__init__(name, provider, vendor="Google", **fields)
+
+    def init_cred_device(self, device_ref):
+        """Initialize a Google credentialed device."""
+        return NotImplementedError
 
     @classmethod
     def _default_options(cls):

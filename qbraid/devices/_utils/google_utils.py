@@ -1,16 +1,19 @@
 # pylint: skip-file
 
-from cirq_google import Sycamore, Sycamore23, Bristlecone, Foxtail
+# from cirq_google import Sycamore, Sycamore23, Bristlecone, Foxtail
+from cirq import Simulator, DensityMatrixSimulator
 
 AQT_DEVICES = {
     "AQT": None,  # AQTSampler(url, access_token=access_token),
 }
 
 GOOGLE_DEVICES = {
-    "Sycamore": Sycamore,
-    "Sycamore23": Sycamore23,
-    "Bristlecone": Bristlecone,
-    "Foxtail": Foxtail,
+    "Sycamore": None,  # Sycamore,
+    "Sycamore23": None,  # Sycamore23,
+    "Bristlecone": None,  # Bristlecone,
+    "Foxtail": None,  # Foxtail,
+    "local_simulator_default": Simulator(),
+    "local_simulator_densitymatrix": DensityMatrixSimulator(),
 }
 
 IONQ_DEVICES = {

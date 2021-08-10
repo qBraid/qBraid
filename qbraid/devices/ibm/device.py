@@ -12,28 +12,38 @@
 
 """QiskitBackendWrapper Class"""
 
+from qiskit import QuantumCircuit
+
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.ibm.job import QiskitJobWrapper
-from qbraid.devices._utils import QISKIT_PROVIDERS, QiskitRunInput
+from qbraid import circuit_wrapper
 
 
 class QiskitBackendWrapper(DeviceLikeWrapper):
-    """Wrapper class for IBM Qiskit ``Backend`` objects
-
-    Args:
-        name (str): a Qiskit supported device
-        provider (str): the provider that this device comes from
-        fields: kwargs for the values to use to override the default options.
-
-    Raises:
-        DeviceError: if input field not a valid options
-
-    """
+    """Wrapper class for IBM Qiskit ``Backend`` objects."""
 
     def __init__(self, name, provider, **fields):
-        super().__init__(name, provider, **fields)
-        self._vendor = "IBM"
-        self.vendor_dlo = self._get_device_obj(QISKIT_PROVIDERS)
+        """Create a QiskitBackendWrapper
+
+        Args:
+            name (str): a Qiskit supported device
+            provider (str): the provider that this device comes from
+            fields: kwargs for the values to use to override the default options.
+
+        Raises:
+            DeviceError: if input field not a valid options
+
+        """
+        super().__init__(name, provider, vendor="IBM", **fields)
+
+    def init_cred_device(self, device_ref):
+        """Initialize an IBM credentialed device."""
+        from qiskit import IBMQ
+
+        IBMQ.load_account()
+        provider = IBMQ.get_provider("ibm-q")
+        backend = provider.get_backend(device_ref)
+        return backend
 
     @classmethod
     def _default_options(cls):
@@ -48,7 +58,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
 
         """
 
-    def run(self, run_input: QiskitRunInput, *args, **kwargs) -> QiskitJobWrapper:
+    def run(self, run_input, *args, **kwargs) -> QiskitJobWrapper:
         """Run on the qiskit backend.
 
         This method that will return a :class:`~qiskit.providers.Job` object that run circuits.
@@ -66,9 +76,11 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
 
         Returns:
             QiskitJobWrapper: The :class:`~qbraid.devices.ibm.job.QiskitJobWrapper` job object for
-            the run.
+                the run.
 
         """
+        if not isinstance(run_input, QuantumCircuit):
+            run_input = circuit_wrapper(run_input).transpile("qiskit")
         qiskit_device = self.vendor_dlo
         qiskit_job = qiskit_device.run(run_input, *args, **kwargs)
         qbraid_job = QiskitJobWrapper(self, qiskit_job)

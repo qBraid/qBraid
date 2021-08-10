@@ -43,13 +43,15 @@ Devices API
    JobLikeWrapper
    ResultWrapper
    get_devices
+   update_config
    DeviceError
    JobError
+   ConfigError
 
 """
 # pylint: skip-file
 from .device import DeviceLikeWrapper
 from .job import JobLikeWrapper
 from .result import ResultWrapper
-from ._utils import get_devices
-from .exceptions import DeviceError, JobError
+from ._utils import get_devices, update_config
+from .exceptions import DeviceError, JobError, ConfigError

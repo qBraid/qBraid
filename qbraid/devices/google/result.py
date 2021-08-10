@@ -25,15 +25,16 @@ from qbraid.devices import ResultWrapper
 
 
 class CirqResultWrapper(ResultWrapper):
-    """Cirq ``Result`` wrapper class.
-
-    Args:
-        cirq_result (Result): a Cirq ``Result`` object
-
-    """
+    """Cirq ``Result`` wrapper class."""
 
     # pylint: disable=too-few-public-methods
     def __init__(self, cirq_result: Result):
+        """Create a CirqResultWrapper
+
+        Args:
+            cirq_result (Result): a Cirq ``Result`` object
+
+        """
 
         super().__init__(cirq_result)
         self.vendor_rlo = cirq_result
