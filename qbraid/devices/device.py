@@ -13,6 +13,12 @@
 """DeviceLikeWrapper Class"""
 
 from abc import ABC, abstractmethod
+
+from qbraid.devices._utils import (
+    SUPPORTED_VENDORS,
+    CONFIG_PROMPTS,
+    set_config,
+)
 from qbraid.devices.exceptions import DeviceError
 
 
@@ -29,35 +35,56 @@ class DeviceLikeWrapper(ABC):
 
     """
 
-    def __init__(self, name, provider, **fields):
+    def __init__(self, name, provider, vendor=None, **fields):
 
         self._name = name
         self._provider = provider
-        self._vendor = None
+        self._vendor = vendor
         self._options = self._default_options()
-        self._configuration = None
-        self.vendor_dlo = None  # vendor device-like object
+        self._device_configuration = None
+        self.requires_creds = False
+        self.vendor_dlo = self._get_device_obj()  # vendor device-like object
         if fields:
             for field in fields:
                 if field not in self._options.data:
                     raise DeviceError(f"Options field {field} is not valid for this device")
             self._options.update_config(**fields)
 
-    def _get_device_obj(self, supported_providers: dict):
+    def _get_device_obj(self):
         try:
-            supported_devices = supported_providers[self.provider]
+            supported_devices = SUPPORTED_VENDORS[self.vendor][self.provider]
         except KeyError as err:
             raise DeviceError(
                 'Provider "{}" not supported by vendor "{}".'.format(self.provider, self.vendor)
             ) from err
         try:
-            device_object = supported_devices[self.name]
+            device_ref = supported_devices[self.name]
         except KeyError as err:
             msg = 'Device "{}" not supported by provider "{}"'.format(self.name, self.provider)
             if self.provider != self.vendor:
                 msg += ' from vendor "{}"'.format(self.vendor)
             raise DeviceError(msg + ".") from err
-        return device_object
+        if isinstance(device_ref, str):
+            prompt_lst = CONFIG_PROMPTS[self.vendor]
+            for prompt in prompt_lst:
+                set_config(*prompt)
+            self.requires_creds = True
+            return self.init_cred_device(device_ref)
+        return device_ref
+
+    @abstractmethod
+    def init_cred_device(self, device_ref):
+        """Returns device object associated with given device_ref. This method is invoked when
+         a user has called the qBraid device wrapper on a device that requires a particular set
+         of credentials to access, e.g. an AWS, Google Cloud, or IBMQ account.
+
+        Args:
+            device_ref (str): string representation of device.
+
+        Raises:
+            ConfigError when device_rep is invalid
+
+        """
 
     @classmethod
     @abstractmethod
@@ -82,7 +109,7 @@ class DeviceLikeWrapper(ABC):
                 raise DeviceError(f"Options field {field} is not valid for this device.")
         self._options.update_options(**fields)
 
-    def configuration(self):
+    def device_configuration(self):
         """Return the device configuration.
 
         Returns:
@@ -90,7 +117,7 @@ class DeviceLikeWrapper(ABC):
             it returns ``None``.
 
         """
-        return self._configuration
+        return self._device_configuration
 
     @property
     def name(self):
@@ -134,7 +161,7 @@ class DeviceLikeWrapper(ABC):
         return self._options
 
     def __str__(self):
-        return self.name
+        return f"{self.vendor} {self.provider} {self.name} device wrapper"
 
     def __repr__(self):
         """String representation of a DeviceWrapper object."""

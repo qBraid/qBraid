@@ -27,16 +27,16 @@ from qbraid.devices.job import JobLikeWrapper
 
 
 class BraketQuantumTaskWrapper(JobLikeWrapper):
-    """Wrapper class for Amazon Braket ``QuantumTask`` objects.
-
-    Args:
-        device: the BraketDeviceWrapper associated with this quantum task i.e. job
-        quantum_task (BraketQuantumTask): a braket ``QuantumTask`` object used to run circuits.
-
-    """
+    """Wrapper class for Amazon Braket ``QuantumTask`` objects."""
 
     def __init__(self, device, quantum_task: QuantumTask):
+        """Create a BraketQuantumTaskWrapper
 
+        Args:
+            device: the BraketDeviceWrapper associated with this quantum task i.e. job
+            quantum_task (BraketQuantumTask): a braket ``QuantumTask`` object used to run circuits.
+
+        """
         # redundant super delegation but might at more functionality later
         super().__init__(device, quantum_task)
         self.device = device
