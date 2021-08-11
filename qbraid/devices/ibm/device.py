@@ -13,7 +13,10 @@
 """QiskitBackendWrapper Class"""
 
 from qiskit import IBMQ
+from qiskit import execute
+from qiskit.providers.ibmq import least_busy
 
+from qbraid.devices._utils import get_config
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.ibm.job import QiskitJobWrapper
 
@@ -39,9 +42,13 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         """Initialize an IBM credentialed device."""
         if IBMQ.active_account() is None:
             IBMQ.load_account()
-        provider = IBMQ.get_provider(hub='ibm-q', group='open', project='main')
-        backend = provider.get_backend(device_ref)
-        return backend
+        group = get_config("group", "IBM")
+        project = get_config("project", "IBM")
+        provider = IBMQ.get_provider(hub='ibm-q', group=group, project=project)
+        if device_ref == "least_busy":
+            backends = provider.backends(filters=lambda x: not x.configuration().simulator)
+            return least_busy(backends)
+        return provider.get_backend(device_ref)
 
     @classmethod
     def _default_options(cls):
@@ -79,6 +86,6 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         """
         run_input = self._compat_run_input(run_input)
         qiskit_device = self.vendor_dlo
-        qiskit_job = qiskit_device.run(run_input, *args, **kwargs)
+        qiskit_job = execute(run_input, qiskit_device, *args, **kwargs)
         qbraid_job = QiskitJobWrapper(self, qiskit_job)
         return qbraid_job

@@ -1,15 +1,10 @@
 # pylint: skip-file
 
 import os
-from typing import Union, List
 
 from qiskit import Aer, BasicAer
-from qiskit import QuantumCircuit
-from qiskit.pulse import Schedule
 
 from .user_config import qbraid_config_path
-
-qiskit_run_input = Union[QuantumCircuit, Schedule, List]
 
 ibmq_config_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
 account_url = "https://auth.quantum-computing.ibm.com/api"
@@ -19,6 +14,8 @@ IBMQ_CONFIG_PROMPT = [
     ("token", "IBMQ API Token", None, True, "ibmq", ibmq_config_path),
     ("url", "", account_url, False, "ibmq", ibmq_config_path),
     ("verify", "", "True", False, "ibmq", ibmq_config_path),
+    ("group", "Group name (optional)", "open", False, "IBM", qbraid_config_path),
+    ("project", "Project name (optional)", "main", False, "IBM", qbraid_config_path),
     ("verify", "", "True", False, "IBM", qbraid_config_path),
 ]
 
@@ -36,6 +33,7 @@ IBMQ_DEVICES = {
     "simulator_mps": "simulator_mps",
     "simulator_qasm": "ibmq_qasm_simulator",
     "simulator_statevector": "simulator_statevector",
+    "least_busy_qpu": "least_busy",
 }
 
 AER_DEVICES = {
@@ -44,9 +42,12 @@ AER_DEVICES = {
     "simulator_qasm": Aer.get_backend("qasm_simulator"),
     "simulator_statevector": Aer.get_backend("statevector_simulator"),
     "simulator_unitary": Aer.get_backend("unitary_simulator"),
-    "local_simulator_qasm": BasicAer.get_backend("qasm_simulator"),
-    "local_simulator_statevector": BasicAer.get_backend("statevector_simulator"),
-    "local_simulator_unitary": BasicAer.get_backend("unitary_simulator"),
+}
+
+BASIC_AER_DEVICES = {
+    "simulator_qasm": BasicAer.get_backend("qasm_simulator"),
+    "simulator_statevector": BasicAer.get_backend("statevector_simulator"),
+    "simulator_unitary": BasicAer.get_backend("unitary_simulator"),
 }
 
 # RUNTIME = {
@@ -60,4 +61,5 @@ AER_DEVICES = {
 QISKIT_PROVIDERS = {
     "IBMQ": IBMQ_DEVICES,
     "Aer": AER_DEVICES,
+    "BasicAer": BASIC_AER_DEVICES,
 }

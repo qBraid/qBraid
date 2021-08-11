@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 import qbraid
 from qbraid.devices._utils import (
     SUPPORTED_VENDORS,
-    VENDOR_RUN_REQS,
+    RUN_PACKAGE,
     CONFIG_PROMPTS,
     set_config,
     get_config,
@@ -45,8 +45,7 @@ class DeviceLikeWrapper(ABC):
         self._vendor = vendor
         self._options = self._default_options()
         self._device_configuration = None
-        self._run_package = VENDOR_RUN_REQS[self.vendor][0]
-        self._type_run_input = VENDOR_RUN_REQS[self.vendor][1]
+        self._run_package = RUN_PACKAGE[self.vendor]
         self.requires_creds = False
         self.vendor_dlo = self._get_device_obj()  # vendor device-like object
         if fields:
@@ -82,7 +81,8 @@ class DeviceLikeWrapper(ABC):
 
     def _compat_run_input(self, run_input):
         """Checks if ``run_input`` is compatible with device and if not, calls transpiler."""
-        if not isinstance(run_input, self._type_run_input):
+        run_input_package = run_input.__module__.split(".")[0]
+        if run_input_package != self._run_package:
             run_input = qbraid.circuit_wrapper(run_input).transpile(self._run_package)
         return run_input
 

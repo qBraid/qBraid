@@ -6,18 +6,15 @@ from .aws_utils import (
     BRAKET_PROVIDERS,
     AWS_CONFIG_PROMPT,
     aws_config_path,
-    braket_run_input,
 )
 
 from .ibm_utils import (
     QISKIT_PROVIDERS,
     IBMQ_CONFIG_PROMPT,
-    qiskit_run_input,
 )
 
 from .google_utils import (
     CIRQ_PROVIDERS,
-    cirq_run_input,
 )
 
 from .user_config import set_config, get_config
@@ -28,10 +25,10 @@ SUPPORTED_VENDORS = {
     "IBM": QISKIT_PROVIDERS,
 }
 
-VENDOR_RUN_REQS = {
-    "AWS": ("braket", braket_run_input),
-    "Google": ("cirq", cirq_run_input),
-    "IBM": ("qiskit", qiskit_run_input),
+RUN_PACKAGE = {
+    "AWS": "braket",
+    "Google": "cirq",
+    "IBM": "qiskit",
 }
 
 CONFIG_PROMPTS = {

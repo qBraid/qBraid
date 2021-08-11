@@ -1,12 +1,7 @@
 # pylint: skip-file
 
-import os
-
 # from cirq_google import Sycamore, Sycamore23, Bristlecone, Foxtail
 from cirq import Simulator, DensityMatrixSimulator
-from cirq.circuits import Circuit
-
-cirq_run_input = Circuit
 
 AQT_DEVICES = {
     # "AQT": AQTSampler(url, access_token=access_token),  # not available

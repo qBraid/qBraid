@@ -11,18 +11,18 @@ secret_input = getpass
 qbraid_config_path = os.path.join(os.path.expanduser("~"), ".qbraid", "config")
 
 
-def mask_value(current_value):
-    if current_value is None:
+def mask_value(value):
+    if value is None:
         return "None"
-    val = round(len(current_value) / 5)
+    val = round(len(value) / 5)
     len_hint = 4 if val > 4 else 0 if val < 2 else val
-    default_stars = len(current_value) - len_hint
+    default_stars = len(value) - len_hint
     len_stars = default_stars if default_stars <= 16 else 16
-    return ("*" * len_stars) + current_value[-len_hint:]
+    return ("*" * len_stars) + value[-len_hint:]
 
 
-def get_value(current_value, is_secret, prompt_text):
-    display_value = mask_value(current_value) if is_secret else current_value
+def get_value(display_value, is_secret, prompt_text):
+    display_value = mask_value(display_value) if is_secret else display_value
     response = compat_input("%s [%s]: " % (prompt_text, display_value), is_secret)
     if not response:
         response = None
@@ -62,16 +62,19 @@ def set_config(config_name, prompt_text, default_value, is_secret, section, file
     if section in config.sections():
         if config_name in config[section]:
             current_value = config[section][config_name]
-            if qbraid_verify and current_value == "True":
-                return 0
-            if current_value is not None and update is False:
-                return 0
+            if qbraid_verify:
+                if current_value == "True":
+                    return 0
+            else:
+                if current_value is not None and update is False:
+                    return 0
     else:
         config.add_section(section)
     if len(prompt_text) == 0:
         new_value = default_value
     else:
-        new_value = get_value(current_value, is_secret, prompt_text)
+        display_value = default_value if current_value is None else current_value
+        new_value = get_value(display_value, is_secret, prompt_text)
     config_val = default_value if new_value is None else new_value
     config.set(section, config_name, str(config_val))
     try:
