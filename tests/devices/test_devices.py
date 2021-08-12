@@ -8,6 +8,7 @@ from braket.circuits import Circuit as BraketCircuit
 from braket.aws import AwsDevice
 from braket.devices import LocalSimulator as AwsSimulator
 from braket.tasks.quantum_task import QuantumTask as BraketQuantumTask
+from dwave.system.composites import EmbeddingComposite
 
 import cirq
 from cirq.sim.simulator_base import SimulatorBase as CirqSimulator
@@ -39,6 +40,7 @@ Device wrapper tests: initialization
 Coverage: all vendors, all available devices
 """
 inputs_braket_dw = device_wrapper_inputs("AWS")
+inputs_braket_sampler = [("DW_2000Q_6", "D-Wave"), ("Advantage_system1", "D-Wave")]
 inputs_cirq_dw = device_wrapper_inputs("Google")
 inputs_qiskit_dw = device_wrapper_inputs("IBM")
 
@@ -49,6 +51,13 @@ def test_init_braket_device_wrapper(device, provider):
     vendor_device = qbraid_device.vendor_dlo
     assert isinstance(qbraid_device, BraketDeviceWrapper)
     assert isinstance(vendor_device, AwsSimulator) or isinstance(vendor_device, AwsDevice)
+
+
+@pytest.mark.parametrize("device,provider", inputs_braket_sampler)
+def test_init_braket_dwave_sampler(device, provider):
+    qbraid_device = device_wrapper(device, provider, vendor="AWS")
+    vendor_sampler = qbraid_device.get_sampler()
+    assert isinstance(vendor_sampler, EmbeddingComposite)
 
 
 @pytest.mark.parametrize("device,provider", inputs_cirq_dw)
@@ -142,4 +151,5 @@ def test_run_qiskit_device_wrapper(device, provider, circuit):
     vendor_job = qbraid_job.vendor_jlo
     assert isinstance(qbraid_job, QiskitJobWrapper)
     assert isinstance(vendor_job, QiskitJob)
+
 

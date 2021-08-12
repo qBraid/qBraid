@@ -16,20 +16,15 @@
 
 """BraketDeviceWrapper Class"""
 
-from typing import TYPE_CHECKING
-
 from braket.aws import AwsDevice
 from braket.devices import LocalSimulator
-from braket.ocean_plugin import BraketDWaveSampler
+from braket.ocean_plugin import BraketSampler, BraketDWaveSampler
 from dwave.system.composites import EmbeddingComposite
-import dwave_networkx as dnx
 
 from qbraid.devices._utils import get_config
 from qbraid.devices.aws.job import BraketQuantumTaskWrapper
 from qbraid.devices.device import DeviceLikeWrapper
-
-if TYPE_CHECKING:
-    from networkx.classes.graph import Graph as nxGraph
+from qbraid.devices.exceptions import DeviceError
 
 
 class BraketDeviceWrapper(DeviceLikeWrapper):
@@ -54,14 +49,9 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             bucket = get_config("s3_bucket", "AWS")
             folder = get_config("s3_folder", "AWS")
             self.s3_location = (bucket, folder)
-
-            if provider == "D-Wave":
-                dwave_sampler = BraketDWaveSampler(self.s3_location, self._arn)
-                self.sampler = EmbeddingComposite(dwave_sampler)
         else:
             self._arn = None
             self.s3_location = None
-            self.sampler = None
 
     def _init_cred_device(self, device_ref):
         """Initialize an AWS credentialed device."""
@@ -74,6 +64,30 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
     def _default_options(cls):
         """Return the default options for running this device."""
         return NotImplementedError
+
+    def get_sampler(self, braket_default=False, embedding=True):
+        """Returns BraketSampler created from device. Only compatible with D-Wave devices.
+
+        Args:
+            braket_default (optional, bool): If True, returns default BraketSampler. Defaults to
+                False, returning BraketDWaveSampler.
+            embedding (optional, bool): If True, uses EmbeddingComposite to automatically map the
+                problem to the structure of the solver. If False, returns as sampler as-is.
+
+        Returns:
+            Sampler derived from device
+
+        Raises:
+            DeviceError if not a D-Wave annealing device.
+
+        """
+        if self.provider != "D-Wave":
+            raise DeviceError("Sampler only available for D-Wave (annealing) devices")
+        sampler = BraketSampler(self.s3_location, self._arn) if braket_default else \
+            BraketDWaveSampler(self.s3_location, self._arn)
+        if not embedding:
+            return sampler
+        return EmbeddingComposite(sampler)
 
     def run(self, run_input, *args, **kwargs):
         """Run a quantum task specification on this quantum device. A task can be a circuit or an
@@ -99,25 +113,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         qbraid_job = BraketQuantumTaskWrapper(self, braket_quantum_task)
         return qbraid_job
 
-    def min_vertex_cover(self, graph: 'nxGraph', weighted=False, **kwargs):
-        """Returns an approximate minimum weighted vertex cover.
 
-        Defines a QUBO with ground states corresponding to a minimum weighted vertex cover and uses
-        the BraketDWaveSampler to sample from it. A vertex cover is a set of vertices such that each
-        edge of the graph is incident with at least one vertex in the set. A minimum weighted vertex
-        cover is the vertex cover of minimum total node weight.
-
-        Args:
-            graph (nxGraph): The graph on which to find a minimum vertex cover.
-            weighted (optional, bool): if True, calculates the minimum *weighted* vertex cover
-
-        Returns:
-            vertex_cover (lst): List of nodes that form a minimum (non/weighted) vertex cover.
-
-        """
-        if weighted:
-            return dnx.min_weighted_vertex_cover(graph, sampler=self.sampler, **kwargs)
-        return dnx.min_vertex_cover(graph, sampler=self.sampler, **kwargs)
 
 
 
