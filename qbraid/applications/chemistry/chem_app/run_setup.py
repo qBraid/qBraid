@@ -1,10 +1,10 @@
 # pylint: skip-file
 
-from qiskit import IBMQ, BasicAer, Aer
+import numpy as np
+from qiskit import BasicAer, Aer
+from qiskit.aqua import QuantumInstance
 from qiskit.ignis.mitigation.measurement import CompleteMeasFitter
 from qiskit.providers.aer.noise import NoiseModel
-from qiskit.aqua import QuantumInstance
-import numpy as np
 
 
 def run_config_qiskit_run(

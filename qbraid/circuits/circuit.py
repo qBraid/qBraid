@@ -1,16 +1,16 @@
-from typing import Union, Iterable
 import itertools
+from typing import Union, Iterable
 
-from .update_rule import UpdateRule
-from .instruction import Instruction
-from .moment import Moment
-from .qubit import Qubit
-from .utils import validate_operation
 from .exceptions import CircuitError
+from .instruction import Instruction
+from .library.supported_gates import supported_gates
+from .moment import Moment
 from .parameter import Parameter
 from .parametertable import ParameterTable
-from .gate import Gate
-from .library.supported_gates import supported_gates
+from .qubit import Qubit
+from .update_rule import UpdateRule
+from .utils import validate_operation
+
 
 class Circuit:
     """Circuit class for qBraid quantum circuit objects.

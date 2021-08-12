@@ -2,15 +2,9 @@
 # All rights reserved-2019©.
 import numpy as np
 from pyquil import Program
-from qiskit import QuantumCircuit
-from qiskit.circuit.library.standard_gates import *
-
+from pyquil.gates import *
 
 from qbraid.operators.conversions.q_circ_conversion import *
-
-
-from pyquil import Program
-from pyquil.gates import *
 
 
 def test_initialize_qiskit_circuit():

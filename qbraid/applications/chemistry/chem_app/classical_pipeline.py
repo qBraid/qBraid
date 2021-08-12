@@ -1,21 +1,12 @@
 # pylint: skip-file
 
 import numpy as np
-from qiskit.chemistry.drivers import PySCFDriver, HFMethodType
-from qiskit import QuantumCircuit, ClassicalRegister, QuantumRegister, execute
-from qiskit.aqua.operators import Z2Symmetries
-from pyscf import gto, ao2mo
-import numpy
-
-import os
-
-from openfermion.hamiltonians import MolecularData
-
 import openfermionpyscf
+from pyscf import gto, scf, ao2mo
+from qiskit.chemistry.drivers import PySCFDriver, HFMethodType
 
 
 def pyscf_code_run(molecule_name, geometry, basis, method):
-    from pyscf import gto, scf
 
     threshold = 1e-12
     mol = gto.Mole()
@@ -86,7 +77,7 @@ def pyscf_code_run(molecule_name, geometry, basis, method):
     nspin_orbs = 2 * norbs
 
     # One electron terms
-    moh1_qubit = numpy.zeros([nspin_orbs, nspin_orbs])
+    moh1_qubit = np.zeros([nspin_orbs, nspin_orbs])
     for p in range(nspin_orbs):  # pylint: disable=invalid-name
         for q in range(nspin_orbs):
             spinp = int(p / norbs)
@@ -103,17 +94,17 @@ def pyscf_code_run(molecule_name, geometry, basis, method):
     classical_output.one_body_integrals = one_body_integrals
 
     # Two electron terms
-    ints_aa = numpy.einsum("ijkl->ljik", mohijkl)
+    ints_aa = np.einsum("ijkl->ljik", mohijkl)
 
     if mohijkl_bb is None or mohijkl_ba is None:
         ints_bb = ints_ba = ints_ab = ints_aa
     else:
-        ints_bb = numpy.einsum("ijkl->ljik", mohijkl_bb)
-        ints_ba = numpy.einsum("ijkl->ljik", mohijkl_ba)
-        ints_ab = numpy.einsum("ijkl->ljik", mohijkl_ba.transpose())
+        ints_bb = np.einsum("ijkl->ljik", mohijkl_bb)
+        ints_ba = np.einsum("ijkl->ljik", mohijkl_ba)
+        ints_ab = np.einsum("ijkl->ljik", mohijkl_ba.transpose())
 
     # Two electron terms
-    moh2_qubit = numpy.zeros([nspin_orbs, nspin_orbs, nspin_orbs, nspin_orbs])
+    moh2_qubit = np.zeros([nspin_orbs, nspin_orbs, nspin_orbs, nspin_orbs])
     for p in range(nspin_orbs):  # pylint: disable=invalid-name
         for q in range(nspin_orbs):
             for r in range(nspin_orbs):
@@ -223,7 +214,7 @@ def pyscf_code_print(molecule_name: str, geometry: str, basis: str, method: str)
     nspin_orbs = 2*norbs
 
     # One electron terms
-    moh1_qubit = numpy.zeros([nspin_orbs, nspin_orbs])
+    moh1_qubit = np.zeros([nspin_orbs, nspin_orbs])
     for p in range(nspin_orbs):  # pylint: disable=invalid-name
         for q in range(nspin_orbs):
             spinp = int(p/norbs)
@@ -239,18 +230,18 @@ def pyscf_code_print(molecule_name: str, geometry: str, basis: str, method: str)
     classical_calc_output.one_body_integrals= moh1_qubit
     
     #Two electron terms
-    ints_aa = numpy.einsum('ijkl->ljik', mohijkl)
+    ints_aa = np.einsum('ijkl->ljik', mohijkl)
 
     if mohijkl_bb is None or mohijkl_ba is None:
         ints_bb = ints_ba = ints_ab = ints_aa
     else:
-        ints_bb = numpy.einsum('ijkl->ljik', mohijkl_bb)
-        ints_ba = numpy.einsum('ijkl->ljik', mohijkl_ba)
-        ints_ab = numpy.einsum('ijkl->ljik', mohijkl_ba.transpose())
+        ints_bb = np.einsum('ijkl->ljik', mohijkl_bb)
+        ints_ba = np.einsum('ijkl->ljik', mohijkl_ba)
+        ints_ab = np.einsum('ijkl->ljik', mohijkl_ba.transpose())
 
 
     # Two electron terms
-    moh2_qubit = numpy.zeros([nspin_orbs, nspin_orbs, nspin_orbs, nspin_orbs])
+    moh2_qubit = np.zeros([nspin_orbs, nspin_orbs, nspin_orbs, nspin_orbs])
     for p in range(nspin_orbs):  # pylint: disable=invalid-name
         for q in range(nspin_orbs):
             for r in range(nspin_orbs):
