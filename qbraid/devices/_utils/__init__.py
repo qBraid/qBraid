@@ -25,6 +25,12 @@ SUPPORTED_VENDORS = {
     "IBM": QISKIT_PROVIDERS,
 }
 
+RUN_PACKAGE = {
+    "AWS": "braket",
+    "Google": "cirq",
+    "IBM": "qiskit",
+}
+
 CONFIG_PROMPTS = {
     "AWS": AWS_CONFIG_PROMPT,
     "Google": None,
@@ -43,11 +49,6 @@ def update_config(vendor):
     for prompt in prompt_lst:
         set_config(*prompt, update=True)
     return 0
-
-
-def valid_config(vendor):
-    # TO DO: validate configuration for given vendor
-    return False
 
 
 def get_devices(provider=None, vendor=None, simulator=None, creds=None):
