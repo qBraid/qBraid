@@ -16,12 +16,20 @@
 
 """BraketDeviceWrapper Class"""
 
+from typing import TYPE_CHECKING
+
 from braket.aws import AwsDevice
 from braket.devices import LocalSimulator
+from braket.ocean_plugin import BraketDWaveSampler
+from dwave.system.composites import EmbeddingComposite
+import dwave_networkx as dnx
 
 from qbraid.devices._utils import get_config
 from qbraid.devices.aws.job import BraketQuantumTaskWrapper
 from qbraid.devices.device import DeviceLikeWrapper
+
+if TYPE_CHECKING:
+    from networkx.classes.graph import Graph as nxGraph
 
 
 class BraketDeviceWrapper(DeviceLikeWrapper):
@@ -42,16 +50,23 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
 
         """
         super().__init__(name, provider, vendor="AWS", **fields)
-        if not self.requires_creds:
-            self.s3_location = None
-        else:
+        if self.requires_creds:
             bucket = get_config("s3_bucket", "AWS")
             folder = get_config("s3_folder", "AWS")
             self.s3_location = (bucket, folder)
 
+            if provider == "D-Wave":
+                dwave_sampler = BraketDWaveSampler(self.s3_location, self._arn)
+                self.sampler = EmbeddingComposite(dwave_sampler)
+        else:
+            self._arn = None
+            self.s3_location = None
+            self.sampler = None
+
     def _init_cred_device(self, device_ref):
         """Initialize an AWS credentialed device."""
         if device_ref[0:3] == "arn":
+            self._arn = device_ref
             return AwsDevice(device_ref)
         return LocalSimulator(backend=device_ref)
 
@@ -83,3 +98,27 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             braket_quantum_task = braket_device.run(run_input, *args, **kwargs)
         qbraid_job = BraketQuantumTaskWrapper(self, braket_quantum_task)
         return qbraid_job
+
+    def min_vertex_cover(self, graph: 'nxGraph', weighted=False, **kwargs):
+        """Returns an approximate minimum weighted vertex cover.
+
+        Defines a QUBO with ground states corresponding to a minimum weighted vertex cover and uses
+        the BraketDWaveSampler to sample from it. A vertex cover is a set of vertices such that each
+        edge of the graph is incident with at least one vertex in the set. A minimum weighted vertex
+        cover is the vertex cover of minimum total node weight.
+
+        Args:
+            graph (nxGraph): The graph on which to find a minimum vertex cover.
+            weighted (optional, bool): if True, calculates the minimum *weighted* vertex cover
+
+        Returns:
+            vertex_cover (lst): List of nodes that form a minimum (non/weighted) vertex cover.
+
+        """
+        if weighted:
+            return dnx.min_weighted_vertex_cover(graph, sampler=self.sampler, **kwargs)
+        return dnx.min_vertex_cover(graph, sampler=self.sampler, **kwargs)
+
+
+
+
