@@ -47,7 +47,7 @@ inputs_qiskit_dw = device_wrapper_inputs("IBM")
 
 @pytest.mark.parametrize("device,provider", inputs_braket_dw)
 def test_init_braket_device_wrapper(device, provider):
-    qbraid_device = device_wrapper(device, provider, vendor="AWS")
+    qbraid_device = device_wrapper(device, provider, "AWS")
     vendor_device = qbraid_device.vendor_dlo
     assert isinstance(qbraid_device, BraketDeviceWrapper)
     assert isinstance(vendor_device, AwsSimulator) or isinstance(vendor_device, AwsDevice)
@@ -55,14 +55,14 @@ def test_init_braket_device_wrapper(device, provider):
 
 @pytest.mark.parametrize("device,provider", inputs_braket_sampler)
 def test_init_braket_dwave_sampler(device, provider):
-    qbraid_device = device_wrapper(device, provider, vendor="AWS")
+    qbraid_device = device_wrapper(device, provider, "AWS")
     vendor_sampler = qbraid_device.get_sampler()
     assert isinstance(vendor_sampler, EmbeddingComposite)
 
 
 @pytest.mark.parametrize("device,provider", inputs_cirq_dw)
 def test_init_cirq_device_wrapper(device, provider):
-    qbraid_device = device_wrapper(device, provider, vendor="Google")
+    qbraid_device = device_wrapper(device, provider, "Google")
     vendor_device = qbraid_device.vendor_dlo
     assert isinstance(qbraid_device, CirqSimulatorWrapper)
     assert isinstance(vendor_device, CirqSimulator)
@@ -70,7 +70,7 @@ def test_init_cirq_device_wrapper(device, provider):
 
 @pytest.mark.parametrize("device,provider", inputs_qiskit_dw)
 def test_init_qiskit_device_wrapper(device, provider):
-    qbraid_device = device_wrapper(device, provider, vendor="IBM")
+    qbraid_device = device_wrapper(device, provider, "IBM")
     vendor_device = qbraid_device.vendor_dlo
     assert isinstance(qbraid_device, QiskitBackendWrapper)
     assert isinstance(vendor_device, QiskitBackend)
@@ -114,42 +114,42 @@ def qiskit_circuit(meas=True):
 circuits_braket_run = [braket_circuit(), cirq_circuit(False), qiskit_circuit(False)]
 circuits_cirq_run = [cirq_circuit(), qiskit_circuit()]
 circuits_qiskit_run = circuits_cirq_run
-inputs_braket_run = [("simulator_statevector", "AWS")]
 inputs_cirq_run = [("local_simulator_densitymatrix", "Google")]
+inputs_braket_run = [
+    ("simulator_statevector", "AWS"), ("ionQdevice", "IonQ"), ("Aspen-9", "Rigetti")
+]
 inputs_qiskit_run = [
     ("least_busy_qpu", "IBMQ"), ("simulator_qasm", "BasicAer"), ("simulator_aer", "Aer")
 ]
 
 
-# Runtime ~3 seconds/test
-@pytest.mark.parametrize("circuit", circuits_braket_run)
-@pytest.mark.parametrize("device,provider", inputs_braket_run)
+@pytest.mark.parametrize("circuit", circuits_qiskit_run)
+@pytest.mark.parametrize("device,provider", inputs_qiskit_run)
 def test_run_qiskit_device_wrapper(device, provider, circuit):
-    qbraid_device = device_wrapper(device, provider, vendor="AWS")
+    qbraid_device = device_wrapper(device, provider, "IBM")
     qbraid_job = qbraid_device.run(circuit, shots=10)
     vendor_job = qbraid_job.vendor_jlo
-    assert isinstance(qbraid_job, BraketQuantumTaskWrapper)
-    assert isinstance(vendor_job, BraketQuantumTask)
+    assert isinstance(qbraid_job, QiskitJobWrapper)
+    assert isinstance(vendor_job, QiskitJob)
 
 
 @pytest.mark.parametrize("circuit", circuits_cirq_run)
 @pytest.mark.parametrize("device,provider", inputs_cirq_run)
 def test_run_cirq_device_wrapper(device, provider, circuit):
-    qbraid_device = device_wrapper(device, provider, vendor="Google")
+    qbraid_device = device_wrapper(device, provider, "Google")
     qbraid_result = qbraid_device.run(circuit, repetitions=10)
     vendor_result = qbraid_result.vendor_rlo
     assert isinstance(qbraid_result, CirqResultWrapper)
     assert isinstance(vendor_result, CirqResult)
 
 
-# Runtime ~3 seconds/test 6 tests,  ~20 seconds
-@pytest.mark.parametrize("circuit", circuits_qiskit_run)
-@pytest.mark.parametrize("device,provider", inputs_qiskit_run)
-def test_run_qiskit_device_wrapper(device, provider, circuit):
-    qbraid_device = device_wrapper(device, provider, vendor="IBM")
+@pytest.mark.parametrize("circuit", circuits_braket_run)
+@pytest.mark.parametrize("device,provider", inputs_braket_run)
+def test_run_braket_device_wrapper(device, provider, circuit):
+    qbraid_device = device_wrapper(device, provider, "AWS")
     qbraid_job = qbraid_device.run(circuit, shots=10)
     vendor_job = qbraid_job.vendor_jlo
-    assert isinstance(qbraid_job, QiskitJobWrapper)
-    assert isinstance(vendor_job, QiskitJob)
+    assert isinstance(qbraid_job, BraketQuantumTaskWrapper)
+    assert isinstance(vendor_job, BraketQuantumTask)
 
 
