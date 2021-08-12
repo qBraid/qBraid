@@ -12,11 +12,13 @@
 
 """QiskitBackendWrapper Class"""
 
-from qiskit import QuantumCircuit
+from qiskit import IBMQ
+from qiskit import execute
+from qiskit.providers.ibmq import least_busy
 
+from qbraid.devices._utils import get_config
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.ibm.job import QiskitJobWrapper
-from qbraid import circuit_wrapper
 
 
 class QiskitBackendWrapper(DeviceLikeWrapper):
@@ -36,14 +38,17 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         """
         super().__init__(name, provider, vendor="IBM", **fields)
 
-    def init_cred_device(self, device_ref):
+    def _init_cred_device(self, device_ref):
         """Initialize an IBM credentialed device."""
-        from qiskit import IBMQ
-
-        IBMQ.load_account()
-        provider = IBMQ.get_provider("ibm-q")
-        backend = provider.get_backend(device_ref)
-        return backend
+        if IBMQ.active_account() is None:
+            IBMQ.load_account()
+        group = get_config("group", "IBM")
+        project = get_config("project", "IBM")
+        provider = IBMQ.get_provider(hub='ibm-q', group=group, project=project)
+        if device_ref == "least_busy":
+            backends = provider.backends(filters=lambda x: not x.configuration().simulator)
+            return least_busy(backends)
+        return provider.get_backend(device_ref)
 
     @classmethod
     def _default_options(cls):
@@ -79,9 +84,8 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
                 the run.
 
         """
-        if not isinstance(run_input, QuantumCircuit):
-            run_input = circuit_wrapper(run_input).transpile("qiskit")
+        run_input = self._compat_run_input(run_input)
         qiskit_device = self.vendor_dlo
-        qiskit_job = qiskit_device.run(run_input, *args, **kwargs)
+        qiskit_job = execute(run_input, qiskit_device, *args, **kwargs)
         qbraid_job = QiskitJobWrapper(self, qiskit_job)
         return qbraid_job

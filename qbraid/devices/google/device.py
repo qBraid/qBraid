@@ -1,22 +1,16 @@
 """Module for Cirq device-like object wrappers."""
 
-from __future__ import annotations
-
-from typing import TYPE_CHECKING
-
 from qbraid.devices.device import DeviceLikeWrapper
+from qbraid.devices.exceptions import DeviceError
 from qbraid.devices.google.job import CirqEngineJobWrapper
 from qbraid.devices.google.result import CirqResultWrapper
 
-if TYPE_CHECKING:
-    from cirq import Circuit
 
-
-class CirqSamplerWrapper(DeviceLikeWrapper):
-    """Wrapper class for Google Cirq ``Sampler`` objects."""
+class CirqSimulatorWrapper(DeviceLikeWrapper):
+    """Wrapper class for Google Cirq ``Simulator`` objects."""
 
     def __init__(self, name, provider, **fields):
-        """Create CirqSamplerWrapper
+        """Create CirqSimulatorWrapper
 
         Args:
             name (str): a Cirq supported device
@@ -29,9 +23,9 @@ class CirqSamplerWrapper(DeviceLikeWrapper):
         """
         super().__init__(name, provider, vendor="Google", **fields)
 
-    def init_cred_device(self, device_ref):
+    def _init_cred_device(self, device_ref):
         """Initialize a Google credentialed device."""
-        return NotImplementedError
+        raise DeviceError("Initializing a ``cirq.Simulator`` does not require credentials.")
 
     @classmethod
     def _default_options(cls):
@@ -51,14 +45,18 @@ class CirqSamplerWrapper(DeviceLikeWrapper):
             Result for a run.
 
         """
-        cirq_sampler = self.vendor_dlo
-        cirq_result = cirq_sampler.run(run_input, *args, **kwargs)
+        run_input = self._compat_run_input(run_input)
+        cirq_simulator = self.vendor_dlo
+        cirq_result = cirq_simulator.run(run_input, *args, **kwargs)
         qbraid_result = CirqResultWrapper(cirq_result)
         return qbraid_result
 
 
 class CirqEngineWrapper(DeviceLikeWrapper):
-    """Wrapper class for Google Cirq ``Engine`` objects."""
+    """Wrapper class for Google Cirq ``Engine`` objects. NOTE: Right now the CirqEngine only allows
+    privelaged access, so this class has not been tested.
+
+    """
 
     def __init__(self, name, provider, **fields):
         """Creat a CirqEngineWrapper
@@ -74,16 +72,16 @@ class CirqEngineWrapper(DeviceLikeWrapper):
         """
         super().__init__(name, provider, vendor="Google", **fields)
 
-    def init_cred_device(self, device_ref):
+    def _init_cred_device(self, device_ref):
         """Initialize a Google credentialed device."""
-        return NotImplementedError
+        return NotImplementedError  # privelaged access
 
     @classmethod
     def _default_options(cls):
         """Return the default options for running this device."""
         return NotImplementedError
 
-    def run(self, run_input: Circuit, *args, **kwargs):
+    def run(self, run_input, *args, **kwargs):
         """Runs the supplied Circuit via Quantum Engine.
 
         Args:
@@ -94,19 +92,23 @@ class CirqEngineWrapper(DeviceLikeWrapper):
                 specified will be used instead of what's set in the options object.
 
         Returns:
-            A single Result for this run.
+            A CirqResultWrapper representing the Result for this run.
 
         """
-        return self.vendor_dlo.run(run_input, **kwargs)
+        run_input = self._compat_run_input(run_input)
+        cirq_engine = self.vendor_dlo
+        cirq_result = cirq_engine.run(run_input, *args, **kwargs)
+        qbraid_result = CirqResultWrapper(cirq_result)
+        return qbraid_result
 
-    def run_sweep(self, program: Circuit, *args, **kwargs):
+    def run_sweep(self, run_input, *args, **kwargs):
         """Runs the supplied Circuit via Quantum Engine.Creates
 
         In contrast to run, this runs across multiple parameter sweeps, and does not block until
         a result is returned.
 
         Args:
-            program: The Circuit to execute. If a circuit is provided, a moment by moment schedule
+            run_input: The Circuit to execute. If a circuit is provided, a moment by moment schedule
                 will be used.
             kwargs: Any kwarg options to pass to the backend for running the config. If a key is
                 also present in the options attribute/object then the expectation is that the value
@@ -117,7 +119,8 @@ class CirqEngineWrapper(DeviceLikeWrapper):
             TrialResults, one for each parameter sweep.
 
         """
+        run_input = self._compat_run_input(run_input)
         cirq_engine = self.vendor_dlo
-        cirq_engine_job = cirq_engine.run_sweep(program, *args, **kwargs)
+        cirq_engine_job = cirq_engine.run_sweep(run_input, *args, **kwargs)
         qbraid_job = CirqEngineJobWrapper(self, cirq_engine_job)
         return qbraid_job
