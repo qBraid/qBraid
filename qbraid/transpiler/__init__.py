@@ -7,12 +7,20 @@ Transpiler (:mod:`qbraid.transpiler`)
 
 Overview
 ---------
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus viverra auctor euismod.
-Nullam feugiat ante eget diam ultrices imperdiet. In bibendum lorem tincidunt tincidunt feugiat.
-Phasellus ac nibh non massa tincidunt consectetur eget ultrices massa. Sed pulvinar gravida odio
-quis posuere. Sed nibh leo, egestas vitae iaculis id, dignissim eget massa. Nullam bibendum cursus
-elit a efficitur. Maecenas dignissim, justo id tincidunt feugiat, quam est bibendum velit, ultrices
-sagittis nibh magna quis nunc. Fusce ullamcorper dictum nibh, sit amet molestie dolor semper vel.
+The qBraid transpiler accepts circuit objects constructed using one of the 
+standard quantum computing packages, and produces a circuit object of the 
+same circuit constructed using a different package. 
+
+The transpiler maintains as much abstract information as possible during 
+the transpilation process, though the result will not necessarily be identical.
+For example, a particular two-qubit rotation gate might be implemented in one package
+abstractly, but only constructable as an arbitrary unitary gate in another. See
+this mapping page for more information about gate equivalences in various packages.
+
+The transpiler layer eliminates the need for implementing a circuit multiple times 
+in various packages for the purposing of using the devices associate with that pacakge.
+In conjunction with the qBraid device layer, it is possible to execute a single circuit 
+on multiple families of devices without calling this transpiler directly.
 
 Example Usage
 --------------

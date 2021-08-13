@@ -7,6 +7,9 @@ from .instruction import BraketInstructionWrapper
 
 
 class BraketCircuitWrapper(CircuitWrapper):
+
+    """Braket implementation of the abstract CircuitWrapper class"""
+
     def __init__(self, circuit: Circuit, input_qubit_mapping=None):
         super().__init__(circuit, input_qubit_mapping)
 

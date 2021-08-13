@@ -251,6 +251,9 @@ class Circuit:
 
     def add_instruction(self, gate_name: str, *args):
 
+        if gate_name not in supported_gates:
+            raise CircuitError(f'Gate {gate_name} is not supported.')
+
         qubits = args[-1]
         params , qubits =  args[:-1], args[-1]
 
