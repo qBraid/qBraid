@@ -9,6 +9,9 @@ from .instruction import QiskitInstructionWrapper
 
 
 class QiskitCircuitWrapper(CircuitWrapper):
+
+    """Qiskit implementation of the abstract CircuitWrapper class"""
+
     def __init__(self, circuit: Circuit, input_qubit_mapping=None):
         super().__init__(circuit, input_qubit_mapping)
 
