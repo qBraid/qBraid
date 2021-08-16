@@ -26,7 +26,7 @@ class Circuit:
         self,
         num_qubits,
         name: str = None,
-        update_rule: UpdateRule = UpdateRule.NEW_THEN_INLINE,
+        update_rule: UpdateRule = UpdateRule.EARLIEST,
     ):
         self._qubits = [Qubit(i) for i in range(abs(num_qubits))]
         self._moments: Iterable[Moment] = []  # list of moments
@@ -224,9 +224,11 @@ class Circuit:
             )  # redundant
         if update_rule is None:
             update_rule = self.update_rule
-        if not self._moments:
-            # initialize a new moment
-            self._create_new_moment()
+        if not self._moments and isinstance(operation, Iterable):
+            # initialize a new moment, unless the operation which is added into a list
+            # is a Moment or a Circuit
+            if isinstance(operation[0],Instruction):
+                self._create_new_moment()
         # iterable
         if isinstance(operation, Iterable):
             self._update(operation, update_rule=update_rule, index=len(self._moments))

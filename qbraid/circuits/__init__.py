@@ -137,3 +137,4 @@ from .library.standard_gates import (
 )
 
 from .parameter import Parameter
+from .parametertable import ParameterTable

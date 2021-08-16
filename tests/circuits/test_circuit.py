@@ -9,6 +9,7 @@ from qbraid.circuits.exceptions import CircuitError
 from qbraid.circuits.instruction import Instruction
 from qbraid.circuits.moment import Moment
 import qbraid.circuits.update_rule
+from qbraid.circuits import ParameterTable
 from qbraid.circuits.update_rule import UpdateRule
 
 
@@ -191,6 +192,25 @@ class TestCircuit:
         circuit2.append([h1, h2, h3])
         circuit.append(circuit2)
         assert len(circuit.moments) == 2
+    
+    def test_add_empty_circuit_first(self, gate):
+        """Test adding circuit to another circuit."""
+        circuit = Circuit(num_qubits=3, name="test_circuit")
+        circuit2 = Circuit(num_qubits=3, name="circuit_2")
+        circuit.append(circuit2)
+        # Nothing should be added to the circuit
+        assert len(circuit.moments) == 0
+    
+    def test_add_filled_circuit_first(self, gate):
+        """Test adding circuit to another circuit."""
+        h1 = Instruction(gate, 0)
+        h2 = Instruction(gate, 1)
+        h3 = Instruction(gate, 2)
+        circuit = Circuit(num_qubits=3, name="test_circuit")
+        circuit2 = Circuit(num_qubits=3, name="circuit_2")
+        circuit2.append([h1, h2, h3])
+        circuit.append(circuit2)
+        assert len(circuit.moments) == 1
 
     def test_add_small_circuit(self, gate):
         """Test adding a small circuit to another larger circuit."""
@@ -356,7 +376,8 @@ class TestCircuit:
                         "_qubits": [0, 1, 2],
                         "_moments": [],
                         "name": "test_circuit",
-                        "update_rule": qbraid.circuits.update_rule.UpdateRule.NEW_THEN_INLINE,
+                        '_parameter_table': ParameterTable({}),
+                        "update_rule": qbraid.circuits.update_rule.UpdateRule.EARLIEST,
                     },
             ),
         ],
@@ -375,9 +396,10 @@ class TestCircuit:
                     circuit(),
                     {
                         "_qubits": [0, 1, 2],
-                        "_moments": [Moment("[]"), Moment("[]")],
+                        "_moments": [Moment("[]")],
                         "name": "test_circuit",
-                        "update_rule": qbraid.circuits.update_rule.UpdateRule.NEW_THEN_INLINE,
+                        '_parameter_table': ParameterTable({}),
+                        "update_rule": qbraid.circuits.update_rule.UpdateRule.EARLIEST,
                     },
             )
         ],
