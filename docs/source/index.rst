@@ -68,6 +68,7 @@ porta, id sagittis urna sollicitudin.
    :hidden:
 
    overview/introduction
+   overview/supported-devices
 
 .. toctree::
    :maxdepth: 1

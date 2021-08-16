@@ -16,22 +16,22 @@
 
 """BraketQuantumtaskWrapper Class"""
 
-from typing import Any, Dict, TYPE_CHECKING
-from qbraid.devices.job import JobLikeWrapper
+from __future__ import annotations
 
-if TYPE_CHECKING:
-    from typing import Union
-    from asyncio import Task as AsyncTask
-    from braket.tasks.quantum_task import QuantumTask
-    from braket.tasks.annealing_quantum_task_result import AnnealingQuantumTaskResult
-    from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
-    QuantumTaskResult = Union[AnnealingQuantumTaskResult, GateModelQuantumTaskResult]
+from asyncio import Task
+from typing import Any, Dict, Union
+
+from braket.tasks import QuantumTask
+from braket.tasks.annealing_quantum_task_result import AnnealingQuantumTaskResult
+from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
+
+from qbraid.devices.job import JobLikeWrapper
 
 
 class BraketQuantumTaskWrapper(JobLikeWrapper):
     """Wrapper class for Amazon Braket ``QuantumTask`` objects."""
 
-    def __init__(self, device, quantum_task: 'QuantumTask'):
+    def __init__(self, device, quantum_task: QuantumTask):
         """Create a BraketQuantumTaskWrapper
 
         Args:
@@ -64,11 +64,11 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
         """
         return self.vendor_jlo.metadata(**kwargs)
 
-    def result(self) -> 'QuantumTaskResult':
+    def result(self) -> Union[AnnealingQuantumTaskResult, GateModelQuantumTaskResult]:
         """Return the results of the job."""
         return self.vendor_jlo.result()
 
-    def async_result(self) -> 'AsyncTask':
+    def async_result(self) -> Task:
         """asyncio.Task: Get the quantum task result asynchronously."""
         return self.vendor_jlo.async_result()
 

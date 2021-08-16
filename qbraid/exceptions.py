@@ -16,4 +16,5 @@ class QbraidError(Exception):
 
 class WrapperError(QbraidError):
     """Base class for errors raised while appling a qbraid wrapper."""
+
     pass

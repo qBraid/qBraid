@@ -9,7 +9,8 @@ Overview
 ---------
 The qbraid circuit layer is designed as a lightweight infrastructure for creating
 circuits. Without the machinery to interface with devices directly, the qBraid circuit
-layer is built primarily for interfacing with the qBraid transpiler. For this reason, the structure of this circuit layer mirrors that of the transpiler
+layer is built primarily for interfacing with the qBraid transpiler. For this reason,
+the structure of this circuit layer mirrors that of the transpiler
 wrapper classes closely.
 
 The circuit layer also mirrors cirq in its use of moments and instructions. However,
@@ -44,24 +45,24 @@ how circuits can be created more directly.
 
     .. code-block:: python
 
-        from qbraid.circuits import Circuit,Instruction, Moment, H, RX, drawer
-    from numpy import pi
+        from qbraid.circuits import Circuit, Instruction, Moment, H, RX, drawer
+        from numpy import pi
 
-    circuit = Circuit(3)
+        circuit = Circuit(3)
 
-    h = H()
-    instr_h0 = Instruction(h,0)
-    instr_h1 = Instruction(h,1)
+        h = H()
+        instr_h0 = Instruction(h,0)
+        instr_h1 = Instruction(h,1)
 
-    moment = Moment([instr_h0,instr_h1])
+        moment = Moment([instr_h0,instr_h1])
 
-    instr_rx0 = RX(pi/2)(0)
-    instr_rx2 = RX(pi/4)(2)
-    circuit.append(moment)
-    circuit.append(instr_rx0)
-    circuit.append(instr_rx2)
+        instr_rx0 = RX(pi/2)(0)
+        instr_rx2 = RX(pi/4)(2)
+        circuit.append(moment)
+        circuit.append(instr_rx0)
+        circuit.append(instr_rx2)
 
-    drawer(circuit)
+        drawer(circuit)
 
 Circuits API
 -------------
@@ -72,68 +73,20 @@ Circuits API
    Circuit
    Gate
    Instruction
+   Moment
    Qubit
    UpdateRule
-   drawer
+   Parameter
    CircuitError
+   drawer
 
 """
 from .circuit import Circuit
-
-from .drawer import drawer
-
-from .instruction import (
-    Instruction,
-)
-
-from .moment import (
-    Moment,
-)
-
-from .update_rule import (
-    UpdateRule,
-)
-
-from .library.standard_gates import (
-    DCX,
-    H,
-    CH,
-    HPow,
-    I,
-    iSwap,
-    Measure,
-    Phase,
-    CPhase,
-    pSwap,
-    R,
-    RX,
-    RXX,
-    RXY,
-    RY,
-    RYY,
-    RZ,
-    RZZ,
-    RZX,
-    S,
-    Sdg,
-    Swap,
-    SX,
-    SXdg,
-    T,
-    Tdg,
-    U,
-    U1,
-    U2,
-    U3,
-    X,
-    CX,
-    XPow,
-    Y,
-    CY,
-    YPow,
-    CZ,
-    Z,
-    ZPow,
-)
-
+from .gate import Gate
+from .instruction import Instruction
+from .moment import Moment
+from .qubit import Qubit
+from .update_rule import UpdateRule
 from .parameter import Parameter
+from .exceptions import CircuitError
+from .drawer import drawer

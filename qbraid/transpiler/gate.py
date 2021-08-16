@@ -4,15 +4,15 @@ from .transpiler import QbraidTranspiler
 
 class GateWrapper(QbraidTranspiler):
     """Abstract class for qbraid gate wrapper objects.
-    
+
     Attributes:
         matrix (numpy.ndarray): matrix representing the gate
         name (optional[str]): name of the gate
         gate_type (str): the abstract name of the gate. No matter the way a gate
             is named in the underlying packet, this string follows qbraid's conventions,
             which can be found here.
-        num_controls(int): Default is 0. 
-        base_gate( :class:`qbraid.transpiler.gate.GateWrapper`): the single- or two-qubit gate being controlled. 
+        num_controls(int): Default is 0.
+        base_gate( :class:`qbraid.transpiler.gate.GateWrapper`): the single- or two-qubit gate being controlled.
             Defaults to `None`.
         params( list[int,float,ParamID]): all the parameters associated with the gate. These may be abstract parameters
             or simply numbers.

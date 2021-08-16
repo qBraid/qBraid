@@ -8,6 +8,8 @@ Circuit Library (:mod:`qbraid.circuits.library`)
 Standard Gates
 ---------------
 
+The circuits library module for standard gates.
+
 .. autosummary::
    :toctree: ../stubs/
 
@@ -53,6 +55,8 @@ Standard Gates
 
 Generalized Gates
 ------------------
+
+The circuits library module for generalized gates.
 
 .. autosummary::
    :toctree: ../stubs/

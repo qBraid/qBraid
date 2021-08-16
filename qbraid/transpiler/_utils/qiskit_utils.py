@@ -289,8 +289,10 @@ def circuit_to_qiskit(cw, auto_measure=False) -> QuantumCircuit:
     qreg = QuantumRegister(cw.num_qubits)
     output_qubit_mapping = {index: Qubit(qreg, index) for index in range(len(qreg))}
     cw.output_qubit_mapping = output_qubit_mapping
-    
-    output_param_mapping = {pid: QiskitParameter(pid.name) for pid in cw.input_param_mapping.values()}
+
+    output_param_mapping = {
+        pid: QiskitParameter(pid.name) for pid in cw.input_param_mapping.values()
+    }
 
     # get instruction data to intermediate format
     # (will eventually include combing through moments)
@@ -298,9 +300,7 @@ def circuit_to_qiskit(cw, auto_measure=False) -> QuantumCircuit:
     measurement_qubit_indices = set()
     for instruction in cw.instructions:
         gate, qubits, measurement_qubits = instruction.transpile(
-            "qiskit",
-            output_qubit_mapping, 
-            output_param_mapping
+            "qiskit", output_qubit_mapping, output_param_mapping
         )
         data.append((gate, qubits, measurement_qubits))
         measurement_qubit_indices.update(measurement_qubits)
@@ -332,8 +332,9 @@ def circuit_to_qiskit(cw, auto_measure=False) -> QuantumCircuit:
     return output_circ
 
 
-def instruction_to_qiskit(iw, output_qubit_mapping, output_param_mapping) \
-        -> Tuple[Instruction, list, list]:
+def instruction_to_qiskit(
+    iw, output_qubit_mapping, output_param_mapping
+) -> Tuple[Instruction, list, list]:
 
     gate = iw.gate.transpile("qiskit", output_param_mapping)
     qubits = [output_qubit_mapping[q] for q in iw.qubits]

@@ -27,12 +27,12 @@ class ChemAppResults:
 
 
 def classical_cal(
-        molecule_name,
-        geometry,
-        library: str = "pyscf",
-        basis="sto-3g",
-        method="HF",
-        print_code=False,
+    molecule_name,
+    geometry,
+    library: str = "pyscf",
+    basis="sto-3g",
+    method="HF",
+    print_code=False,
 ):
     """Classical calculation. More customization will be provided in the newer versions.
 
@@ -92,13 +92,13 @@ def classical_cal(
 
 
 def quantum_calc(
-        library: str,
-        classical_output: classical_calc_output,
-        mapping: str = "jordan_wigner",
-        qubit_tapering=False,
-        algorithm: str = "exact_diag",
-        algo_config: dict = None,
-        print_code: bool = False,
+    library: str,
+    classical_output: classical_calc_output,
+    mapping: str = "jordan_wigner",
+    qubit_tapering=False,
+    algorithm: str = "exact_diag",
+    algo_config: dict = None,
+    print_code: bool = False,
 ):
     """Quantum calculation. More customization will be provided in the newer versions.
 
@@ -150,11 +150,11 @@ def quantum_calc(
 
 
 def run(
-        library,
-        quantum_calc_output,
-        run_on_hardware=False,
-        hardware_config=None,
-        simulation_config=None,
+    library,
+    quantum_calc_output,
+    run_on_hardware=False,
+    hardware_config=None,
+    simulation_config=None,
 ):
     """Run method. More customization will be provided in the newer versions.
 

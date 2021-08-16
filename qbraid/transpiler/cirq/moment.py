@@ -5,7 +5,6 @@ from cirq.ops import Moment as CirqMoment
 
 
 class CirqMomentWrapper(MomentWrapper):
-
     def __init__(self, moment: CirqMoment, instructions=None):
 
         super().__init__()

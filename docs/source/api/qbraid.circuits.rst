@@ -6,6 +6,11 @@ qbraid.circuits
    :undoc-members:
    :show-inheritance:
 
+.. automodule:: qbraid.circuits.library
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 .. automodule:: qbraid.circuits.library.standard_gates
    :members:
    :undoc-members:

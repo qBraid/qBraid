@@ -191,8 +191,10 @@ def create_braket_gate(data):
 def circuit_to_braket(cw, output_qubit_mapping=None):
 
     if cw.input_param_mapping:
-        raise TranspilerError("Circuit cannot be transpiled to braket\
-             because it abstract parameters.")
+        raise TranspilerError(
+            "Circuit cannot be transpiled to braket\
+             because it abstract parameters."
+        )
 
     output_circ = Circuit()
 

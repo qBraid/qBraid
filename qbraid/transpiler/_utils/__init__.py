@@ -27,7 +27,7 @@ supported_packages = {
     "cirq": ["braket", "qiskit", "qbraid"],
     "qiskit": ["braket", "cirq", "qbraid"],
     "braket": ["qiskit", "cirq", "qbraid"],
-    "qbraid": ["cirq","braket","qiskit"]
+    "qbraid": ["cirq", "braket", "qiskit"],
 }
 
 circuit_outputs = {
@@ -37,7 +37,7 @@ circuit_outputs = {
 }
 
 moment_outputs = {
-    'cirq': moment_to_cirq,
+    "cirq": moment_to_cirq,
 }
 
 instruction_outputs = {
@@ -46,8 +46,4 @@ instruction_outputs = {
     "braket": instruction_to_braket,
 }
 
-gate_outputs = {
-    "cirq": gate_to_cirq,
-    "qiskit": gate_to_qiskit,
-    "braket": gate_to_braket
-}
+gate_outputs = {"cirq": gate_to_cirq, "qiskit": gate_to_qiskit, "braket": gate_to_braket}

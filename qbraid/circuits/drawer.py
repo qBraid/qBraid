@@ -1,11 +1,8 @@
+"""A rudimentary module for drawing circuits."""
+
 from typing import Iterable, Union
 
 from .circuit import Circuit
-
-
-"""
-A rudimentary module for drawing circuits.
-"""
 
 
 def _fix_length(output: Iterable[str]) -> str:
@@ -24,6 +21,7 @@ def _fix_length(output: Iterable[str]) -> str:
 
             Qubit 0: ---|H|-
             Qubit 1: -------
+
     """
     for i, val in enumerate(output):
         if len(val) < len(max(output, key=len)):
@@ -41,6 +39,7 @@ def _draw_moment(output: Iterable[str], circuit: Union[Circuit, Iterable[Circuit
 
     Returns:
         list: The iterable of strings where the new moment is separated from the previous one.
+
     """
     for i in range(circuit.num_qubits):
         output[i] += "|"
@@ -52,8 +51,10 @@ def drawer(circuit: Circuit) -> None:
 
         TODO: Draw the control and target qubit differently.
         TODO: Optimize currently O(n^3)...
+
     Args:
         circuit (Union[Circuit, Iterable[Circuit]]): The circuit that is to be drawn.
+
     """
     if isinstance(circuit, Circuit):
         output = [f"Qubit {str(i)}:" for i in range(circuit.num_qubits)]

@@ -3,8 +3,10 @@
  Cirq Transpiler  (:mod:`qbraid.transpiler.cirq`)
 ======================================================
 
+.. currentmodule:: qbraid.transpiler.cirq
+
 Wrapping Strategy
----------
+------------------
 
 Cirq's circuit layer stores all circuit data in a bottom up fashion. Qubit objects are
 stored locally as part of an instruction object (called an "operation" in cirq). Additionally,
@@ -16,7 +18,7 @@ For this reason, all instructions and moments must be parsed from within the sam
 to efficiently generate these global lists.
 
 Note:
-   the `all_qubits` method returns a set of all qubits in the circuit. This set has no particular
+   the ``all_qubits`` method returns a set of all qubits in the circuit. This set has no particular
    order, so the intermediate serialization of this list can lead to different output circuits 
    depending on the issue.
 
@@ -26,9 +28,6 @@ any other package.
 
 Output Strategy
 ---------------
-
-
-.. currentmodule:: qbraid.transpiler.cirq
 
 .. autosummary::
    :toctree: ../stubs/

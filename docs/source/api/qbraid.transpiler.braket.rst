@@ -29,11 +29,3 @@ qbraid.transpiler.braket.instruction module
    :members:
    :undoc-members:
    :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: qbraid.transpiler.braket
-   :members:
-   :undoc-members:
-   :show-inheritance:
