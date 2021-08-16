@@ -17,17 +17,17 @@
 
 """CirqEngineJobWrapper Class"""
 
-from typing import TYPE_CHECKING
-from qbraid.devices.job import JobLikeWrapper
+from __future__ import annotations
 
-if TYPE_CHECKING:
-    from cirq_google.engine.engine_job import EngineJob
+from cirq_google.engine.engine_job import EngineJob
+
+from qbraid.devices.job import JobLikeWrapper
 
 
 class CirqEngineJobWrapper(JobLikeWrapper):
     """Wrapper class for Google Cirq ``EngineJob`` objects."""
 
-    def __init__(self, device, vendor_jlo: 'EngineJob'):
+    def __init__(self, device, vendor_jlo: EngineJob):
         """Create a CirqEngineJobWrapper
 
         Args:

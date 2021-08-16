@@ -32,4 +32,5 @@ def aloha_quantum_world(input_str="classical"):
         elif key == "1":
             print("Bye World!")
 
+
 # defining a desired qubit state with a circuit

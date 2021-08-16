@@ -115,6 +115,7 @@ class VQE(VariationalAlgorithm, MinimumEigensolver):
         quantum_instance: Quantum Instance or Backend
 
     """
+
     def __init__(
         self,
         ansatz: Optional[QuantumCircuit] = None,
@@ -223,9 +224,7 @@ class VQE(VariationalAlgorithm, MinimumEigensolver):
 
     @property
     def setting(self):
-        """Prepare the setting of VQE as a string.
-
-        """
+        """Prepare the setting of VQE as a string."""
         ret = "Algorithm: {}\n".format(self.__class__.__name__)
         params = ""
         for key, value in self.__dict__.items():
@@ -376,9 +375,7 @@ class VQE(VariationalAlgorithm, MinimumEigensolver):
         return operator
 
     def compute_minimum_eigenvalue(
-            self,
-            operator: OperatorBase,
-            aux_operators: Optional[List[Optional[OperatorBase]]] = None
+        self, operator: OperatorBase, aux_operators: Optional[List[Optional[OperatorBase]]] = None
     ) -> MinimumEigensolverResult:
         super().compute_minimum_eigenvalue(operator, aux_operators)
 
@@ -454,7 +451,7 @@ class VQE(VariationalAlgorithm, MinimumEigensolver):
         return self._ret
 
     def _energy_evaluation(
-            self, parameters: Union[List[float], np.ndarray]
+        self, parameters: Union[List[float], np.ndarray]
     ) -> Union[float, List[float]]:
         """Evaluate energy at given parameters for the ansatz.
 
@@ -556,6 +553,7 @@ class VQE(VariationalAlgorithm, MinimumEigensolver):
 
 class VQEResult(VariationalResult, MinimumEigensolverResult):
     """VQE Result."""
+
     def __init__(self) -> None:
         super().__init__()
         self._cost_function_evals = None

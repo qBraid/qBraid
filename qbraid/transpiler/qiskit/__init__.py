@@ -3,8 +3,11 @@
  Qiskit Transpiler  (:mod:`qbraid.transpiler.qiskit`)
 ======================================================
 
+.. currentmodule:: qbraid.transpiler.qiskit
+
 Wrapping Strategy
----------
+------------------
+
 Qiskit's circuit layer stores abstract parameters globally, making them easily retreivable. 
 The qBraid transpiler does the same.
 
@@ -15,11 +18,10 @@ and `Instruction` object refers not to the above concept but rather to an abstra
 
 Output Strategy
 ---------------
+
 Because qubits and parameters are stored as global attributes of the CircuitWrapper class, these
 output mappings must be passed as arguments of the transpile functions for lower-level objects: 
 moments,circuits, and gates.
-
-.. currentmodule:: qbraid.transpiler.qiskit
 
 .. autosummary::
    :toctree: ../stubs/

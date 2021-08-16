@@ -50,7 +50,7 @@ Transpiler API
    GateWrapper
    ParamID
    ParameterWrapper
-   TranspileError
+   TranspilerError
 
 """
 from .transpiler import QbraidTranspiler
@@ -58,4 +58,3 @@ from .circuit import CircuitWrapper
 from .gate import GateWrapper
 from .parameter import ParamID, ParameterWrapper
 from .exceptions import TranspilerError
-

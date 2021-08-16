@@ -34,15 +34,16 @@ release = qbraid.__version__
 extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.autodoc",
+    "sphinx_autodoc_typehints",
     "sphinx.ext.autosummary",
     "sphinx.ext.viewcode",
     "sphinx.ext.todo",
     "sphinx.ext.mathjax",
-    "sphinx_autodoc_typehints",
     "sphinx.ext.coverage",
     # "sphinx_automodapi.automodapi",
 ]
 
+# set_type_checking_flag = True
 autodoc_member_order = "bysource"
 autoclass_content = "both"
 autodoc_mock_imports = ["cirq", "qiskit", "braket", "numpy"]

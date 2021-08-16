@@ -10,14 +10,15 @@ class QbraidCircuitWrapper(CircuitWrapper):
 
         super().__init__(circuit, input_qubit_mapping)
 
-        self._package = 'qbraid'
+        self._package = "qbraid"
 
         self._qubits = list(range(circuit.num_qubits))
         self._params = circuit.params
 
         if not input_param_mapping:
-            self._input_param_mapping = {p: ParamID(i, p.name) for i, p in
-                                         enumerate(circuit.params)}
+            self._input_param_mapping = {
+                p: ParamID(i, p.name) for i, p in enumerate(circuit.params)
+            }
 
         self._params = self._input_param_mapping.values()
 

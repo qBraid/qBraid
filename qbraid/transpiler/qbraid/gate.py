@@ -6,7 +6,6 @@ from qbraid.circuits.parameter import Parameter as QbraidParameter
 
 
 class QbraidGateWrapper(GateWrapper):
-
     def __init__(self, gate: QbraidGate):
         super().__init__()
 
@@ -22,5 +21,6 @@ class QbraidGateWrapper(GateWrapper):
         return []
 
     def parse_params(self, input_param_mapping):
-        self.params = [input_param_mapping[p] if isinstance(p, QbraidParameter) else p for p in
-                       self.params]
+        self.params = [
+            input_param_mapping[p] if isinstance(p, QbraidParameter) else p for p in self.params
+        ]

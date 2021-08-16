@@ -29,11 +29,3 @@ qbraid.transpiler.cirq.instruction module
    :members:
    :undoc-members:
    :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: qbraid.transpiler.cirq
-   :members:
-   :undoc-members:
-   :show-inheritance:

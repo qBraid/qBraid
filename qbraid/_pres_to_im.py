@@ -28,4 +28,3 @@
 # nb_filename = os.path.splitext(pdf_filename)[0] + ".ipynb"
 #
 # nbf.write(nb, os.path.dirname(dir_path) + "/" + nb_filename)
-

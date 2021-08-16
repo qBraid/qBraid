@@ -21,11 +21,3 @@ qbraid.circuits.library.generalized\_gates.unitary module
    :members:
    :undoc-members:
    :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: qbraid.circuits.library.generalized_gates
-   :members:
-   :undoc-members:
-   :show-inheritance:

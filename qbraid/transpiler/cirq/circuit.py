@@ -41,8 +41,9 @@ class CirqCircuitWrapper(CircuitWrapper):
             moments.append(next_moment)
 
         self._params = params
-        self._input_param_mapping = {param: ParamID(index, param.name) for index, param in
-                                     enumerate(self.params)}
+        self._input_param_mapping = {
+            param: ParamID(index, param.name) for index, param in enumerate(self.params)
+        }
 
         for moment in moments:
             for instruction in moment.instructions:

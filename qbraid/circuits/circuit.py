@@ -69,7 +69,7 @@ class Circuit:
         update_rule,
     ) -> None:
 
-        """this is for adding subroutines to circuits. so if we have a 3-qubit subroutine,
+        """This is for adding subroutines to circuits. so if we have a 3-qubit subroutine,
         the user should specify [2,4,5], implying that qubit 0 on the subroutine is mapped
         to qubit 2 on the circuit, qubit 1 on the subroutine maps to qubit 4 on the circuit, etc.
 
@@ -107,20 +107,22 @@ class Circuit:
             new_moment.instructions.append(op)
         self._moments.append(new_moment)
 
-    def _add_parameters(self,instruction):
+    def _add_parameters(self, instruction):
 
         for param_index, param in enumerate(instruction.gate.params):
             if isinstance(param, Parameter):
                 current_parameters = self._parameter_table
 
                 if param in current_parameters:
-                    if not self._check_dup_param_spec(self._parameter_table[param],
-                                                        instruction, param_index):
+                    if not self._check_dup_param_spec(
+                        self._parameter_table[param], instruction, param_index
+                    ):
                         self._parameter_table[param].append((instruction, param_index))
                 else:
                     if param.name in self._parameter_table.get_names():
                         raise CircuitError(
-                            'Name conflict on adding parameter: {}'.format(param.name))
+                            "Name conflict on adding parameter: {}".format(param.name)
+                        )
                     self._parameter_table[param] = [(instruction, param_index)]
 
                     # clear cache if new parameter is added
@@ -239,25 +241,25 @@ class Circuit:
     @staticmethod
     def _validate_params(params):
 
-        if not all(isinstance(p,(int,float,Parameter)) for p in params):
-            raise CircuitError('incorrect parameter arguments')
+        if not all(isinstance(p, (int, float, Parameter)) for p in params):
+            raise CircuitError("incorrect parameter arguments")
 
     @staticmethod
     def _validate_qubits(qubits):
 
-        if isinstance(qubits,Iterable):
-            if not all(isinstance(p,(int)) for p in qubits):
-                raise CircuitError('incorrect parameter arguments')
-        elif not isinstance(qubits,int):
-            raise CircuitError('incorrect parameter arguments')
+        if isinstance(qubits, Iterable):
+            if not all(isinstance(p, (int)) for p in qubits):
+                raise CircuitError("incorrect parameter arguments")
+        elif not isinstance(qubits, int):
+            raise CircuitError("incorrect parameter arguments")
 
     def add_instruction(self, gate_name: str, *args):
 
         if gate_name not in supported_gates:
-            raise CircuitError(f'Gate {gate_name} is not supported.')
+            raise CircuitError(f"Gate {gate_name} is not supported.")
 
         qubits = args[-1]
-        params , qubits =  args[:-1], args[-1]
+        params, qubits = args[:-1], args[-1]
 
         self._validate_params(params)
         self._validate_qubits(qubits)

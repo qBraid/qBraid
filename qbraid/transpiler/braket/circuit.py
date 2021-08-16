@@ -38,6 +38,6 @@ class BraketCircuitWrapper(CircuitWrapper):
 
     @property
     def instructions(self) -> List[BraketInstructionWrapper]:
-        if hasattr(self, '_instructions'):
+        if hasattr(self, "_instructions"):
             return self._instructions
         return list()

@@ -29,11 +29,3 @@ qbraid.transpiler.qiskit.instruction module
    :members:
    :undoc-members:
    :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: qbraid.transpiler.qiskit
-   :members:
-   :undoc-members:
-   :show-inheritance:

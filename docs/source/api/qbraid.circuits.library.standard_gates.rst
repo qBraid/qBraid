@@ -285,11 +285,3 @@ qbraid.circuits.library.standard\_gates.zpow module
    :members:
    :undoc-members:
    :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: qbraid.circuits.library.standard_gates
-   :members:
-   :undoc-members:
-   :show-inheritance:

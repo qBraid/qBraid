@@ -36,9 +36,9 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         Args:
             name (str): a Braket supported device
             provider (str): the provider that this device comes from
-            fields: Any kwarg options to pass to the backend for running the config. If a key is
-                also present in the options attribute/object then the expectation is that the value
-                specified will be used instead of what's set in the options object.
+            fields: Any kwarg options to pass to the backend for running the config. If a key
+                is also present in the options attribute/object then the expectation is that
+                the value specified will be used instead of what's set in the options object.
 
         Raises:
             DeviceError: if input field not a valid options
@@ -97,14 +97,12 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         annealing problem.
 
         Args:
-            run_input (Union[Circuit, Problem]):  Specification of a task to run on device.
-            kwargs:
-                shots (int): The number of times to run the task on the device.
+            run_input (Union[Circuit, Problem]): Specification of a task to run on device.
+            kwargs: shots (int): The number of times to run the task on the device.
 
         Returns:
-            BraketJobWrapper: The :class:`~qbraid.devices.braket.job.BraketJobWrapper` job object
-                for the run.
-            QuantumTask: The QuantumTask tracking task execution on this device
+            :class:`~qbraid.devices.braket.job.BraketQuantumTaskWrapper`: The job like object for
+                the run.
 
         """
         run_input = self._compat_run_input(run_input)

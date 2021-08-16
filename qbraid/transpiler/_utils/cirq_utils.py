@@ -260,7 +260,7 @@ def circuit_to_cirq(cw, auto_measure=False, output_qubit_mapping=None, output_pa
         for m in cw.moments:
             output_circ.append(
                 m.transpile(
-                    'cirq',
+                    "cirq",
                     output_qubit_mapping,
                     output_param_mapping,
                 )
@@ -283,8 +283,9 @@ def circuit_to_cirq(cw, auto_measure=False, output_qubit_mapping=None, output_pa
 
 
 def moment_to_cirq(mw, output_qubit_mapping, output_param_mapping):
-    return Moment([i.transpile('cirq', output_qubit_mapping, output_param_mapping) \
-                   for i in mw.instructions])
+    return Moment(
+        [i.transpile("cirq", output_qubit_mapping, output_param_mapping) for i in mw.instructions]
+    )
 
 
 def instruction_to_cirq(iw, output_qubit_mapping, output_param_mapping):
