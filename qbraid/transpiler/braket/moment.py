@@ -5,7 +5,6 @@ from braket.circuits.moments import Moments as BraketMoment
 
 
 class BraketMomentWrapper(MomentWrapper):
-
     def __init__(self, moment: BraketMoment):
         super().__init__()
         self.moment = moment

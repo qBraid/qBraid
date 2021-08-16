@@ -4,12 +4,13 @@ from typing import Optional
 
 
 class H(Gate):
-    """
-    A single qubit rotation about the x+z axis bringing a state
-    from the computational basis to the diagonal basis, i.e
-    |+>,|-> basis.
+    r"""
+    A single qubit rotation about the x+z axis bringing a state from the computational basis to
+    the diagonal basis, i.e :math:`|+\rangle,|-\rangle` basis.
+
     Args:
         global_phase[Optional]: The global phase on the gate
+
     """
 
     def __init__(self, global_phase: Optional[float] = 0.0):

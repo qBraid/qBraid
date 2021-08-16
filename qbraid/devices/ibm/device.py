@@ -80,8 +80,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
                 specified will be used instead of what's set in the options object.
 
         Returns:
-            QiskitJobWrapper: The :class:`~qbraid.devices.ibm.job.QiskitJobWrapper` job object for
-                the run.
+            :class:`~qbraid.devices.ibm.job.QiskitJobWrapper`: The job like object for the run.
 
         """
         run_input = self._compat_run_input(run_input)

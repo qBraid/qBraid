@@ -11,7 +11,7 @@ This module contains the classes used to run quantum circuits on devices availab
    :toctree: ../stubs/
 
    CirqEngineWrapper
-   CirqSamplerWrapper
+   CirqSimulatorWrapper
    CirqEngineJobWrapper
    CirqResultWrapper
 

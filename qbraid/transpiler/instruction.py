@@ -3,15 +3,15 @@ from .transpiler import QbraidTranspiler
 
 
 class InstructionWrapper(QbraidTranspiler):
-    
+
     """
-    Abstract class for instruction objects. Instructions are objects which 
+    Abstract class for instruction objects. Instructions are objects which
     store a quantum gate and the qubits applied to that gate. These objects
     may be named differently in various pacakges, but their function is the
     same.
 
     Attributes:
-        params (list): return list of abstract params as :class:`qbraid.transpiler.paramater.ParamID` 
+        params (list): return list of abstract params as :class:`qbraid.transpiler.paramater.ParamID`
         used within the instruction.
     """
 
