@@ -14,7 +14,7 @@
 
 from abc import ABC, abstractmethod
 
-# import qbraid
+import qbraid
 from qbraid.devices._utils import (
     SUPPORTED_VENDORS,
     RUN_PACKAGE,
@@ -83,8 +83,7 @@ class DeviceLikeWrapper(ABC):
         """Checks if ``run_input`` is compatible with device and if not, calls transpiler."""
         run_input_package = run_input.__module__.split(".")[0]
         if run_input_package != self._run_package:
-            raise DeviceError
-            # run_input = qbraid.circuit_wrapper(run_input).transpile(self._run_package)
+            run_input = qbraid.circuit_wrapper(run_input).transpile(self._run_package)
         return run_input
 
     @abstractmethod
