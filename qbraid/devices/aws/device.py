@@ -83,8 +83,11 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         """
         if self.provider != "D-Wave":
             raise DeviceError("Sampler only available for D-Wave (annealing) devices")
-        sampler = BraketSampler(self.s3_location, self._arn) if braket_default else \
-            BraketDWaveSampler(self.s3_location, self._arn)
+        sampler = (
+            BraketSampler(self.s3_location, self._arn)
+            if braket_default
+            else BraketDWaveSampler(self.s3_location, self._arn)
+        )
         if not embedding:
             return sampler
         return EmbeddingComposite(sampler)
@@ -112,9 +115,3 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             braket_quantum_task = braket_device.run(run_input, *args, **kwargs)
         qbraid_job = BraketQuantumTaskWrapper(self, braket_quantum_task)
         return qbraid_job
-
-
-
-
-
-

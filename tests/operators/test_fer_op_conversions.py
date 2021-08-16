@@ -1,15 +1,12 @@
 # -*- coding: utf-8 -*-
 # All rights reserved-2019©.
 import copy
-import numpy as np
-from numpy.testing._private.utils import assert_equal
-from qbraid.operators.conversions.fer_op_conversion import convert
 
-## SET BACKEND
+# SET BACKEND
 import matplotlib as mpl
+import numpy as np
 
-mpl.use("TkAgg")
-
+from qbraid.operators.conversions.fer_op_conversion import convert
 from openfermion.chem import MolecularData
 from openfermion.ops import InteractionOperator
 from openfermion.transforms import (
@@ -18,10 +15,11 @@ from openfermion.transforms import (
 )
 from openfermion.linalg import eigenspectrum
 
-
 from qiskit.chemistry.drivers import PySCFDriver
 from qiskit.aqua.algorithms import NumPyEigensolver as EE
 from qiskit.chemistry import FermionicOperator
+
+mpl.use("TkAgg")
 
 
 def test_fer_op_H2_of_qk():
@@ -124,7 +122,6 @@ def get_rand_one_b_tensors():
 
 
 def get_rand_two_b_tensors():
-
     two_body_0 = np.zeros([4, 4, 4, 4])
     # initiating number operator terms for all the possible cases
     two_body_1 = copy.deepcopy(two_body_0)

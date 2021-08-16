@@ -12,17 +12,18 @@
 
 """QiskitResultWrapper Class"""
 
-from typing import Dict
-from qiskit.result.result import Result
-
+from typing import Dict, TYPE_CHECKING
 from qbraid.devices.result import ResultWrapper
+
+if TYPE_CHECKING:
+    from qiskit.result.result import Result
 
 
 class QiskitResultWrapper(ResultWrapper):
     """Qiskit ``Result`` wrapper class."""
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, vendor_rlo: Result):
+    def __init__(self, vendor_rlo: 'Result'):
         """Create a QiskitResultWrapper
 
         Args:

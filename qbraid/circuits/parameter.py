@@ -15,6 +15,7 @@ Parameter Class for variable parameters.
 
 from uuid import uuid4
 
+
 class Parameter:
     """Parameter Class for variable parameters."""
 
@@ -36,7 +37,7 @@ class Parameter:
         # Unpickling won't in general call __init__ but will always call
         # __new__. Specify arguments to be passed to __new__ when unpickling.
 
-        return (self.name, self._uuid)
+        return self.name, self._uuid
 
     def __init__(self, name: str):
         """Create a new named :class:`Parameter`.
