@@ -6,8 +6,32 @@ from .transpiler import QbraidTranspiler
 
 
 class CircuitWrapper(QbraidTranspiler):
-    """Abstract class for qbraid circuit wrapper objects."""
+    """Abstract class for qbraid circuit wrapper objects.
+    
+    Note:
+        The circuit wrapper object keeps track of abstract parameters and qubits using an intermediate representation. 
+        Qubits are stored simplhy as integers, and abstract parameters are stored as a :class:`qbraid.transpiler.parameter.ParamID`
+        object, which stores an index in addition to a name.
 
+        All other objects are transpiled directly when the :method:`qbraid.transpiler.circuitwrapper.CircuitWrapper.transpile` method is called.
+
+    Attributes:
+        instructions (Iterable): list of :class:`qbraid.transpiler.instructionwrapper.InstructionWrapper` objects
+        moments (Iterable): list of :class:`qbraid.transpiler.momentwrapper.MomentWrapper` objects, may be none if
+            package does not support moments
+        circuit: the underlying circuit object that has been wrapped
+        qubits (list[int]): list of integers which represent all the qubits in the circuit, 
+            typically stored sequentially
+        params: (Iterable): list of abstract paramaters in the circuit, stored as :class:`qbraid.transpiler.parameter.ParamID` objects
+        num_qubits (int): number of qubits in the circuit
+        input_qubit_mapping (dict): dictionary where the keys are qubit objects of the underlying circuit and
+            values are integers which track the qubit identity.
+        input_param_mapping (dict): dictionary where the keys are abstract parameter objects of the underlying 
+            circuit and values are :class:`qbraid.transpiler.parameter.ParamID` objects
+        package (str): the package with which the underlying circuit was cosntructed
+        
+
+    """
     def __init__(self, circuit, input_qubit_mapping):
 
         self._circuit = circuit
@@ -33,6 +57,7 @@ class CircuitWrapper(QbraidTranspiler):
 
     @property
     def circuit(self):
+        """Return the underlying circuit that has been wrapped."""
         return self._circuit
 
     @property

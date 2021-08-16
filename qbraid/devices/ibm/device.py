@@ -44,7 +44,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             IBMQ.load_account()
         group = get_config("group", "IBM")
         project = get_config("project", "IBM")
-        provider = IBMQ.get_provider(hub='ibm-q', group=group, project=project)
+        provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
         if device_ref == "least_busy":
             backends = provider.backends(filters=lambda x: not x.configuration().simulator)
             return least_busy(backends)

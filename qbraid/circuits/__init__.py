@@ -7,25 +7,61 @@
 
 Overview
 ---------
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus viverra auctor euismod.
-Nullam feugiat ante eget diam ultrices imperdiet. In bibendum lorem tincidunt tincidunt feugiat.
-Phasellus ac nibh non massa tincidunt consectetur eget ultrices massa. Sed pulvinar gravida odio
-quis posuere. Sed nibh leo, egestas vitae iaculis id, dignissim eget massa. Nullam bibendum cursus
-elit a efficitur. Maecenas dignissim, justo id tincidunt feugiat, quam est bibendum velit, ultrices
-sagittis nibh magna quis nunc. Fusce ullamcorper dictum nibh, sit amet molestie dolor semper vel.
+The qbraid circuit layer is designed as a lightweight infrastructure for creating
+circuits. Without the machinery to interface with devices directly, the qBraid circuit
+layer is built primarily for interfacing with the qBraid transpiler. For this reason, the structure of this circuit layer mirrors that of the transpiler
+wrapper classes closely.
+
+The circuit layer also mirrors cirq in its use of moments and instructions. However,
+parameters are stored globally. Qubits are simply integers.
 
 Example Usage
 --------------
 
+To create a circuit simply, the following code will suffice.
+
     .. code-block:: python
 
-        from qbraid.circuits import Circuit, H, CX, drawer
+        import numpy as np
+        from qbraid.circuits import Circuit, RX, drawer
 
-        h, cx = H(0), CX(1)                 # initialize each gate by assigning a global phase.
-        circuit = Circuit(num_qubits=2)     # specify the number of qubits that will be used
-        circuit.append([h(0), cx([0, 1])])  # assign qubits to each gate and append to circuit
-        drawer(circuit)                     # print out the resulting circuit
+        circuit = Circuit(3) #create a circuit with 3 qubits
+        circuit.add_instruction('H',0)
+        circuit.add_instruction('RX',np.pi/2,2)
+        circuit.add_instruction('CX',[1,2])
+
+        crx_gate = RX(np.pi/4).control()
+        circuit.append(crx_gate([0,1]))
+
+        drawer(circuit)
         ...
+
+The string passed to the ``add_instruction`` argument follows the convention of the
+transpiler, which is documented here.
+
+For more explicit control over Moments, Instructions, and Gates, the following code shows
+how circuits can be created more directly.
+
+    .. code-block:: python
+
+        from qbraid.circuits import Circuit,Instruction, Moment, H, RX, drawer
+    from numpy import pi
+
+    circuit = Circuit(3)
+
+    h = H()
+    instr_h0 = Instruction(h,0)
+    instr_h1 = Instruction(h,1)
+
+    moment = Moment([instr_h0,instr_h1])
+
+    instr_rx0 = RX(pi/2)(0)
+    instr_rx2 = RX(pi/4)(2)
+    circuit.append(moment)
+    circuit.append(instr_rx0)
+    circuit.append(instr_rx2)
+
+    drawer(circuit)
 
 Circuits API
 -------------
@@ -48,6 +84,10 @@ from .drawer import drawer
 
 from .instruction import (
     Instruction,
+)
+
+from .moment import (
+    Moment,
 )
 
 from .update_rule import (

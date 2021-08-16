@@ -16,25 +16,27 @@
 
 """BraketQuantumtaskWrapper Class"""
 
-import asyncio
-from typing import Any, Dict, Union
+from typing import Any, Dict, TYPE_CHECKING
+from qbraid.devices.job import JobLikeWrapper
 
-from braket.tasks.quantum_task import QuantumTask
-from braket.tasks.annealing_quantum_task_result import AnnealingQuantumTaskResult
-from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
-
-from qbraid.devices import JobLikeWrapper
+if TYPE_CHECKING:
+    from typing import Union
+    from asyncio import Task as AsyncTask
+    from braket.tasks.quantum_task import QuantumTask
+    from braket.tasks.annealing_quantum_task_result import AnnealingQuantumTaskResult
+    from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
+    QuantumTaskResult = Union[AnnealingQuantumTaskResult, GateModelQuantumTaskResult]
 
 
 class BraketQuantumTaskWrapper(JobLikeWrapper):
     """Wrapper class for Amazon Braket ``QuantumTask`` objects."""
 
-    def __init__(self, device, quantum_task: QuantumTask):
+    def __init__(self, device, quantum_task: 'QuantumTask'):
         """Create a BraketQuantumTaskWrapper
 
         Args:
             device: the BraketDeviceWrapper associated with this quantum task i.e. job
-            quantum_task (BraketQuantumTask): a braket ``QuantumTask`` object used to run circuits.
+            quantum_task (QuantumTask): a braket ``QuantumTask`` object used to run circuits.
 
         """
         # redundant super delegation but might at more functionality later
@@ -62,11 +64,11 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
         """
         return self.vendor_jlo.metadata(**kwargs)
 
-    def result(self) -> Union[GateModelQuantumTaskResult, AnnealingQuantumTaskResult]:
+    def result(self) -> 'QuantumTaskResult':
         """Return the results of the job."""
         return self.vendor_jlo.result()
 
-    def async_result(self) -> asyncio.Task:
+    def async_result(self) -> 'AsyncTask':
         """asyncio.Task: Get the quantum task result asynchronously."""
         return self.vendor_jlo.async_result()
 

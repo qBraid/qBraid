@@ -18,17 +18,19 @@
 
 """CirqResultWrapper Class"""
 
-import pandas as pd
-from cirq.study.result import Result
+from typing import TYPE_CHECKING
+from qbraid.devices.result import ResultWrapper
 
-from qbraid.devices import ResultWrapper
+if TYPE_CHECKING:
+    from cirq.study.result import Result
+    from pandas import DataFrame
 
 
 class CirqResultWrapper(ResultWrapper):
     """Cirq ``Result`` wrapper class."""
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, cirq_result: Result):
+    def __init__(self, cirq_result: 'Result'):
         """Create a CirqResultWrapper
 
         Args:
@@ -39,7 +41,7 @@ class CirqResultWrapper(ResultWrapper):
         super().__init__(cirq_result)
         self.vendor_rlo = cirq_result
 
-    def data(self, **kwargs) -> pd.DataFrame:
+    def data(self, **kwargs) -> 'DataFrame':
         """Return a DataFrame with columns as measurement keys, rows as repetitions, and a big
         endian integer for individual measurements. Note that when a numpy array is produced from
         this data frame, Pandas will try to use np.int64 as dtype, but will upgrade to object if

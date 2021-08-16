@@ -12,19 +12,21 @@
 
 """QiskitJobWrapper Class"""
 
-from typing import Callable, Optional
-from qiskit.providers.job import Job
+from typing import Callable, Optional, TYPE_CHECKING
 from qiskit.providers.exceptions import JobTimeoutError
 from qiskit.providers.exceptions import JobError as QiskitJobError
 
 from qbraid.devices.job import JobLikeWrapper
 from qbraid.devices.exceptions import JobError
 
+if TYPE_CHECKING:
+    from qiskit.providers.job import Job
+
 
 class QiskitJobWrapper(JobLikeWrapper):
     """Wrapper class for IBM Qiskit ``Job`` objects."""
 
-    def __init__(self, device, vendor_jlo: Job):
+    def __init__(self, device, vendor_jlo: 'Job'):
         """Create a QiskitJobWrapper.
 
         Args:

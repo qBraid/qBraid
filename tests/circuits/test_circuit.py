@@ -1,15 +1,14 @@
 # -*- coding: utf-8 -*-
 # All rights reserved-2021©.
-from qbraid.circuits import drawer
-import numpy as np
 import pytest
 
 from qbraid import circuits
-import qbraid.circuits.update_rule
+from qbraid.circuits import drawer
 from qbraid.circuits.circuit import Circuit
 from qbraid.circuits.exceptions import CircuitError
-from qbraid.circuits.moment import Moment
 from qbraid.circuits.instruction import Instruction
+from qbraid.circuits.moment import Moment
+import qbraid.circuits.update_rule
 from qbraid.circuits.update_rule import UpdateRule
 
 
@@ -29,18 +28,17 @@ def circuit():
 INSTRUCTIONS
 """
 
+
 class TestInstructions():
     @pytest.fixture()
     def gate(self):
         return circuits.H()
 
-
     @pytest.fixture()
-    def instruction(self,gate):
+    def instruction(self, gate):
         return Instruction(gate=gate, qubits=[0])
 
-
-    def test_instruction_creation(self,instruction):
+    def test_instruction_creation(self, instruction):
         """Test Instruction Object Creation. """
         assert [type(instruction), type(instruction.gate), type(instruction.qubits)] == [
             Instruction,
@@ -48,30 +46,25 @@ class TestInstructions():
             list,
         ]
 
-
-    def test_too_many_qubits(self,gate):
+    def test_too_many_qubits(self, gate):
         """Test gate with too many qubits."""
         with pytest.raises(AttributeError):
             Instruction(gate=gate, qubits=[1, 2, 3])
-
 
     def test_too_few_qubits(self):
         """Test gate with too few qubits. """
         with pytest.raises(AttributeError):
             Instruction(gate=circuit.CH(), qubits=[1])
 
-
     def test_no_qubits(self):
         """Test gate with no qubits."""
         with pytest.raises(AttributeError):
             Instruction(gate=circuit.CH())
 
-
     def test_invalid_gate(self):
         """Test invalid gate."""
         with pytest.raises(AttributeError):
             Instruction(gate="SWAP", qubits=[1, 2])
-
 
     def test_control_gate(self):
         """Test Instruction Parameters."""
@@ -82,16 +75,15 @@ class TestInstructions():
 MOMENTS
 """
 
+
 class TestMoments():
     @pytest.fixture()
     def gate(self):
         return circuits.H()
 
-
     @pytest.fixture()
     def instruction(self, gate):
         return Instruction(gate=gate, qubits=[0])
-
 
     @pytest.fixture()
     def two_same_instructions(self):
@@ -100,7 +92,6 @@ class TestMoments():
             Instruction(gate=circuits.CH(), qubits=[1, 2]),
         ]
 
-
     @pytest.fixture()
     def two_diff_instructions(self):
         return [
@@ -108,29 +99,24 @@ class TestMoments():
             Instruction(gate=circuits.RZX(theta=0), qubits=[3, 2]),
         ]
 
-
     @pytest.fixture()
-    def moment(self,instruction):
+    def moment(self, instruction):
         return Moment(instructions=instruction)
-
 
     def test_moment_w_instruction(self, moment):
         # check class parameter
         """Test moment with an instruction always should be a list."""
         assert type(moment.instructions) == list
 
-
     def test_not_instruction(self, moment):
         """Test moment with not instruction type appended."""
         with pytest.raises(TypeError):
             moment.append(5)
 
-
     def test_append_set(self, moment, two_diff_instructions):
         """Test moment with nested list, works since recursively unpacks instructions."""
         moment.append([{*two_diff_instructions}])
         assert len(moment.instructions) == 3
-
 
     def test_nested_list(self, moment):
         """Test moment with nested list, works since recursively unpacks instructions."""
@@ -138,19 +124,16 @@ class TestMoments():
         moment.append([[instruction1]])
         assert len(moment.instructions) == 2
 
-
     def test_add_operators_on_same_qubit(self, moment, two_same_instructions):
         """Test adding two instructions acting onsame qubits."""
         with pytest.raises(CircuitError):
             moment.append(two_same_instructions)
 
-
-    def test_same_qubit_at_a_time(self,moment , two_same_instructions):
+    def test_same_qubit_at_a_time(self, moment, two_same_instructions):
         """Test adding two instructions acting on the same qubits."""
         with pytest.raises(CircuitError):
             for instruction in two_same_instructions:
                 moment.append(instruction)
-
 
     def test_add_operators_on_diff_qubit(self, moment):
         """Test adding two instructions acting on diff qubits."""
@@ -164,16 +147,15 @@ class TestMoments():
 CIRCUITS
 """
 
-class TestCircuit():
+
+class TestCircuit:
     @pytest.fixture()
     def gate(self):
         return circuits.H()
 
-
     @pytest.fixture()
     def instruction(self, gate):
         return Instruction(gate=gate, qubits=[0])
-
 
     @pytest.fixture()
     def two_same_instructions(self):
@@ -182,7 +164,6 @@ class TestCircuit():
             Instruction(gate=circuits.CH(), qubits=[1, 2]),
         ]
 
-
     @pytest.fixture()
     def two_diff_instructions(self):
         return [
@@ -190,17 +171,14 @@ class TestCircuit():
             Instruction(gate=circuits.RZX(theta=0), qubits=[3, 2]),
         ]
 
-
     @pytest.fixture()
-    def moment(self,instruction):
+    def moment(self, instruction):
         return Moment(instructions=instruction)
-
 
     def test_circuit_str(self):
         """Test str result"""
         circuit = Circuit(num_qubits=3, name="test_circuit")
         assert circuit.__str__() == "Circuit(test_circuit, 3 qubits, 0 gates)"
-
 
     def test_add_circuit(self, gate):
         """Test adding circuit to another circuit."""
@@ -214,7 +192,6 @@ class TestCircuit():
         circuit.append(circuit2)
         assert len(circuit.moments) == 2
 
-
     def test_add_small_circuit(self, gate):
         """Test adding a small circuit to another larger circuit."""
         h1 = Instruction(gate, 0)
@@ -226,7 +203,6 @@ class TestCircuit():
         circuit2.append([h1, h2])
         circuit.append(circuit2)
         assert len(circuit.moments) == 2
-
 
     def test_add_larger_circuit(self, gate):
         """Test adding a larger circuit to another smaller circuit."""
@@ -240,14 +216,12 @@ class TestCircuit():
         with pytest.raises(CircuitError):
             circuit2.append(circuit)
 
-
     def test_unrecognized_update_rule(self, gate):
         """Test fake update rule."""
         h1 = Instruction(gate, 0)
         circuit = Circuit(num_qubits=3, name="test_circuit", update_rule="Not Updating")
         with pytest.raises(CircuitError):
             circuit.append(h1)
-
 
     def test_negative_circuit_qubit(self, gate):
         """Test circuit specified to negative number of qubits.
@@ -258,14 +232,12 @@ class TestCircuit():
         circuit.append(h3)
         assert circuit.num_qubits == 3
 
-
     def test_negative_qubit(self, gate):
         """Test qubit specified to negative qubit."""
         h3 = Instruction(gate, -10)
         circuit = Circuit(num_qubits=3, name="test_circuit")
         with pytest.raises(CircuitError):
             circuit.append(h3)
-
 
     def test_qubit_not_in_channel(self, gate):
         """Test qubit specified to too high of a qubit."""
@@ -274,14 +246,12 @@ class TestCircuit():
         with pytest.raises(CircuitError):
             circuit.append(h3)
 
-
     def test_far_qubit_not_in_channel(self, gate):
         """Test qubit specified to too high of a qubit."""
         h3 = Instruction(gate, 10)
         circuit = Circuit(num_qubits=3, name="test_circuit")
         with pytest.raises(CircuitError):
             circuit.append(h3)
-
 
     def test_inline_update_rule(self, gate):
         """Test inline update rule indivdually"""
@@ -294,7 +264,6 @@ class TestCircuit():
         circuit.append(h3)
         assert len(circuit.instructions) == 3
 
-
     def test_inline_update_rule_together(self, gate):
         """Test inline update rule as list"""
         h1 = Instruction(gate, 0)
@@ -303,7 +272,6 @@ class TestCircuit():
         circuit = Circuit(num_qubits=3, name="test_circuit", update_rule=UpdateRule.INLINE)
         circuit.append([h1, h2, h3])
         assert len(circuit.instructions) == 3
-
 
     def test_new_update_rule(self, gate):
         """Test new update rule as list"""
@@ -316,7 +284,6 @@ class TestCircuit():
         circuit.append(h3)
         assert len(circuit.moments) == 3
 
-
     def test_new_update_rule_together(self, gate):
         """Test new update rule as list"""
         h1 = Instruction(gate, 0)
@@ -325,7 +292,6 @@ class TestCircuit():
         circuit = Circuit(num_qubits=3, name="test_circuit", update_rule=UpdateRule.NEW)
         circuit.append([h1, h2, h3])
         assert len(circuit.moments) == 3
-
 
     def test_earliest_update_rule(self, gate):
         """Test earliest update rule as list"""
@@ -340,7 +306,6 @@ class TestCircuit():
         circuit.append(h3)
         assert len(circuit.moments) == 1
 
-
     def test_earliest_update_rule_together(self, gate):
         """Test earliest update rule as list"""
         h1 = Instruction(gate, 0)
@@ -351,7 +316,6 @@ class TestCircuit():
         )
         circuit.append([h1, h2, h3])
         assert len(circuit.moments) == 2
-
 
     def test_new_then_inline_rule(self, gate):
         """Test new then inline update rule.
@@ -371,7 +335,6 @@ class TestCircuit():
         circuit.append(h4)
         assert len(circuit.moments) == 4
 
-
     def test_new_then_inline_rule_together(self, gate):
         """Test new then inline update rule """
         h1 = Instruction(gate, 1)
@@ -384,45 +347,42 @@ class TestCircuit():
         circuit.append([h1, h2, h3, h4])
         assert len(circuit.moments) == 3
 
-
     @pytest.mark.parametrize(
         "circuit_param, expected",
         [
             (
-                circuit(),
-                {
-                    "_qubits": [0, 1, 2],
-                    "_moments": [],
-                    "name": "test_circuit",
-                    "update_rule": qbraid.circuits.update_rule.UpdateRule.NEW_THEN_INLINE,
-                },
+                    circuit(),
+                    {
+                        "_qubits": [0, 1, 2],
+                        "_moments": [],
+                        "name": "test_circuit",
+                        "update_rule": qbraid.circuits.update_rule.UpdateRule.NEW_THEN_INLINE,
+                    },
             ),
         ],
     )
-    def test_creating_circuit(self,circuit_param, expected):
+    def test_creating_circuit(self, circuit_param, expected):
         """ Test creating a circuit."""
         # check class parameters
         dict = circuit_param.__dict__.copy()
         get_qubit_idx_dict(dict)
         assert dict == expected
 
-
     @pytest.mark.parametrize(
         "circuit_param, expected",
         [
             (
-                circuit(),
-                {
-                    "_qubits": [0, 1, 2],
-                    "_moments": [Moment("[]"), Moment("[]")],
-                    "name": "test_circuit",
-                    "update_rule": qbraid.circuits.update_rule.UpdateRule.NEW_THEN_INLINE,
-                },
+                    circuit(),
+                    {
+                        "_qubits": [0, 1, 2],
+                        "_moments": [Moment("[]"), Moment("[]")],
+                        "name": "test_circuit",
+                        "update_rule": qbraid.circuits.update_rule.UpdateRule.NEW_THEN_INLINE,
+                    },
             )
         ],
     )
-    
-    def test_add_moment(self,circuit_param, expected):
+    def test_add_moment(self, circuit_param, expected):
         """ Test adding a moment."""
         moment = Moment()
         circuit_param.append(moment)
@@ -433,11 +393,11 @@ class TestCircuit():
         DRAWER TESTS
         """
 
+
 class TestDrawer():
     @pytest.fixture()
     def gate(self):
         return circuits.H()
-
 
     def test_circuit_drawer(self, gate):
         h1 = Instruction(gate, 1)
@@ -451,14 +411,12 @@ class TestDrawer():
         drawer(circuit)
         assert True
 
-
     def test_moment_drawer(self, gate):
         h1 = Instruction(gate, 1)
         moment = Moment()
         moment.append(h1)
         with pytest.raises(TypeError):
             drawer(moment)
-
 
     def test_instruction_drawer(self, gate):
         h1 = Instruction(gate, 1)

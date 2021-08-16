@@ -4,6 +4,8 @@ from ._utils import moment_outputs
 
 class MomentWrapper(QbraidTranspiler):
 
+    """Abstract class for wrapping Moment objects."""
+
     def __init__(self):
         self.moment = None
         self._instructions = []

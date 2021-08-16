@@ -1,12 +1,8 @@
-import cirq
-from qiskit.circuit.parametertable import ParameterTable
-
 from braket.circuits.circuit import Circuit as BraketCircuit
-import braket
-from braket.circuits.gate import Gate
+import cirq
+
 
 def test_cirq():
-
     qubits = [cirq.GridQubit(x, y) for x in range(3) for y in range(3)]
 
     print(qubits[0])
@@ -19,10 +15,10 @@ def test_cirq():
     circuit = cirq.Circuit((moment0, moment1))
 
     print(circuit.moments[0].operations)
-    #print(dir(circuit))
+    # print(dir(circuit))
+
 
 def test_braket():
-
     import numpy as np
     circuit = BraketCircuit()
 
@@ -51,8 +47,7 @@ def test_braket():
     for moment in circuit.moments:
         print(moment)
 
-    
+    print(dir(circuit.moments[(0, [1])]))
 
-    print(dir(circuit.moments[(0,[1])]))
 
 test_braket()

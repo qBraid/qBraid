@@ -1,6 +1,8 @@
-from abc import ABC, abstractmethod, abstractproperty
-from qbraid.circuits.exceptions import CircuitError
+from abc import ABC, abstractmethod
 from typing import Optional, List
+
+from qbraid.circuits.exceptions import CircuitError
+
 
 class Gate(ABC):
     """Abstract class for gate library to extend and apply to instructions."""

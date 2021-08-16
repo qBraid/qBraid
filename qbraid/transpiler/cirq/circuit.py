@@ -10,6 +10,9 @@ from ..parameter import ParamID
 
 
 class CirqCircuitWrapper(CircuitWrapper):
+
+    """Cirq implementation of the abstract CircuitWrapper class"""
+
     def __init__(self, circuit: Circuit, input_qubit_mapping=None):
         super().__init__(circuit, input_qubit_mapping)
 

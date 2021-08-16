@@ -2,9 +2,9 @@
 # All rights reserved-2019©.
 import numpy as np
 from openfermion.ops import QubitOperator
-from openfermion.utils import count_qubits
-from qiskit.quantum_info import Pauli
 from qiskit.aqua.operators import WeightedPauliOperator
+from qiskit.quantum_info import Pauli
+
 from qbraid.operators.conversions.qub_op_conversion import convert
 
 

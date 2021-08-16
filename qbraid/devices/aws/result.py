@@ -17,17 +17,18 @@
 
 """BraketGateModelResult Class"""
 
-import numpy as np
-
-from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
-
+from typing import TYPE_CHECKING
 from qbraid.devices.result import ResultWrapper
+
+if TYPE_CHECKING:
+    from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
+    from numpy import ndarray
 
 
 class BraketGateModelResultWrapper(ResultWrapper):
     """Wrapper class for Amazon Braket ``GateModelQuantumTaskResult`` objects."""
 
-    def __init__(self, gate_model_result: GateModelQuantumTaskResult):
+    def __init__(self, gate_model_result: 'GateModelQuantumTaskResult'):
         """Create new Braket result wrapper
 
         Args:
@@ -39,7 +40,7 @@ class BraketGateModelResultWrapper(ResultWrapper):
         self.vendor_rlo = gate_model_result
 
     @property
-    def measurements(self) -> np.ndarray:
+    def measurements(self) -> 'ndarray':
         """2d array - row is shot and column is qubit. Default is None. Only available when
         shots > 0. The qubits in `measurements` are the ones in
         `GateModelQuantumTaskResult.measured_qubits`.

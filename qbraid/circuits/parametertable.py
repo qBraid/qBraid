@@ -1,5 +1,4 @@
-import functools
-from collections.abc import MutableMapping, MappingView
+from collections.abc import MutableMapping
 
 from .instruction import Instruction
 

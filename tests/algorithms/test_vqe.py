@@ -66,7 +66,9 @@
 #     vqe = VQE(qubitOp, var_form, optimizer)
 #     vqe_result = np.real(vqe.run(backend)['eigenvalue'] + shift)
 #     vqe_energies.append(vqe_result)
-#     print("Interatomic Distance:", np.round(dist, 2), "VQE Result:", vqe_result, "Exact Energy:", exact_energies[-1])
+#     print("Interatomic Distance:", np.round(dist, 2), "VQE Result:", vqe_result,
+#     "Exact Energy:", exact_energies[-1])
+
 
 # print("All energies have been calculated")
 
