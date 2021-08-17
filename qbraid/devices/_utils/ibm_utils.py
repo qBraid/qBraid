@@ -76,7 +76,7 @@ IBM_DEVICE_INFO = {
     "ibm_q_stabilizer_ext_sim": ["IBM Quantum", "Extended Stabilizer Simulator", "--"],
     "ibm_q_mps_sim": ["IBM Quantum", "Matrix Product State Simulator", "--"],
     "ibm_q_qasm_sim": ["IBM Quantum", "QASM Simulator", "--"],
-    "ibm_q_sv_sim": ["IBM Quantum", "State-Vector Simulator", "--"],
+    "ibm_q_sv_sim": ["IBM Quantum", "State Vector Simulator", "--"],
     "ibm_q_least_busy_qpu": ["IBM Quantum", "least-busy QPU", "TBD"],
     "ibm_aer_default_sim": ["IBM Aer", "Default Simulator", "--"],
     "ibm_aer_pulse_sim": ["IBM Aer", "Pulse Simulator", "--"],

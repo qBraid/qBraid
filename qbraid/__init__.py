@@ -112,7 +112,7 @@ def device_wrapper(device_id: str, **kwargs):
 
     if vendor in devices_entrypoints:
         device_wrapper_class = devices_entrypoints[vendor].load()
-        return device_wrapper_class(qbraid_device_id, provider, **kwargs)
+        return device_wrapper_class(device_id, provider, **kwargs)
 
     else:
         raise WrapperError("Invalid device ID")

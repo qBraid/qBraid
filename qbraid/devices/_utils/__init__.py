@@ -81,11 +81,12 @@ def get_devices(provider=None, vendor=None, simulator=None, creds=None):
                             device_ref = SUPPORTED_VENDORS[vendor_key][provider_key][device_key]
                             if creds is None or creds == isinstance(device_ref, str):
                                 device_info = DEVICE_INFO[vendor_key][device_key]
-                                device_info.append(device_key)
-                                device_list.append(device_info)
+                                device_list.append([*device_info, device_key])
     if len(device_list) == 0:
         print("No devices found matching given criteria.")
     else:
+        if len(device_list) == 1:
+            device_list = device_list[0]
         print(tabulate(
             device_list,
             headers=["Provider", "Device Name", "Num Qubits", "qBraid ID"]
