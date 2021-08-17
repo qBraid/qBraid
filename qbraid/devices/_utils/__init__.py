@@ -4,37 +4,46 @@ from tabulate import tabulate
 
 from .aws_utils import (
     BRAKET_PROVIDERS,
+    AWS_DEVICE_INFO,
     AWS_CONFIG_PROMPT,
     aws_config_path,
 )
 
 from .ibm_utils import (
     QISKIT_PROVIDERS,
+    IBM_DEVICE_INFO,
     IBMQ_CONFIG_PROMPT,
 )
 
 from .google_utils import (
     CIRQ_PROVIDERS,
+    GOOGLE_DEVICE_INFO,
 )
 
 from .user_config import set_config, get_config
 
 SUPPORTED_VENDORS = {
-    "AWS": BRAKET_PROVIDERS,
-    "Google": CIRQ_PROVIDERS,
-    "IBM": QISKIT_PROVIDERS,
+    "aws": BRAKET_PROVIDERS,
+    "google": CIRQ_PROVIDERS,
+    "ibm": QISKIT_PROVIDERS,
+}
+
+DEVICE_INFO = {
+    "aws": AWS_DEVICE_INFO,
+    "google": GOOGLE_DEVICE_INFO,
+    "ibm": IBM_DEVICE_INFO,
 }
 
 RUN_PACKAGE = {
-    "AWS": "braket",
-    "Google": "cirq",
-    "IBM": "qiskit",
+    "aws": "braket",
+    "google": "cirq",
+    "ibm": "qiskit",
 }
 
 CONFIG_PROMPTS = {
-    "AWS": AWS_CONFIG_PROMPT,
-    "Google": None,
-    "IBM": IBMQ_CONFIG_PROMPT,
+    "aws": AWS_CONFIG_PROMPT,
+    "google": None,
+    "ibm": IBMQ_CONFIG_PROMPT,
 }
 
 
@@ -68,11 +77,16 @@ def get_devices(provider=None, vendor=None, simulator=None, creds=None):
             for provider_key in SUPPORTED_VENDORS[vendor_key]:
                 if provider is None or provider == provider_key:
                     for device_key in SUPPORTED_VENDORS[vendor_key][provider_key]:
-                        if simulator is None or simulator == (device_key.find("simulator") != -1):
+                        if simulator is None or simulator == (device_key.find("sim") != -1):
                             device_ref = SUPPORTED_VENDORS[vendor_key][provider_key][device_key]
                             if creds is None or creds == isinstance(device_ref, str):
-                                device_list.append([vendor_key, provider_key, device_key])
+                                device_info = DEVICE_INFO[vendor_key][device_key]
+                                device_info.append(device_key)
+                                device_list.append(device_info)
     if len(device_list) == 0:
         print("No devices found matching given criteria.")
     else:
-        print(tabulate(device_list, headers=["Software Vendor", "Device Provider", "Device Name"]))
+        print(tabulate(
+            device_list,
+            headers=["Provider", "Device Name", "Num Qubits", "qBraid ID"]
+        ))

@@ -25,9 +25,9 @@ setup(
             "qbraid = qbraid.transpiler.qbraid:QbraidCircuitWrapper"
         ],
         "qbraid.devices": [
-            "AWS = qbraid.devices.aws:BraketDeviceWrapper",
-            "Google = qbraid.devices.google:CirqSimulatorWrapper",
-            "IBM = qbraid.devices.ibm:QiskitBackendWrapper"
+            "aws = qbraid.devices.aws:BraketDeviceWrapper",
+            "google = qbraid.devices.google:CirqSimulatorWrapper",
+            "ibm = qbraid.devices.ibm:QiskitBackendWrapper"
         ]
     },
     zip_safe=False,

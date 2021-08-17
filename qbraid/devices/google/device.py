@@ -21,7 +21,7 @@ class CirqSimulatorWrapper(DeviceLikeWrapper):
             DeviceError: if input field not a valid options
 
         """
-        super().__init__(name, provider, vendor="Google", **fields)
+        super().__init__(name, provider, vendor="google", **fields)
 
     def _init_cred_device(self, device_ref):
         """Initialize a Google credentialed device."""
@@ -70,7 +70,7 @@ class CirqEngineWrapper(DeviceLikeWrapper):
             DeviceError: if input field not a valid options
 
         """
-        super().__init__(name, provider, vendor="Google", **fields)
+        super().__init__(name, provider, vendor="google", **fields)
 
     def _init_cred_device(self, device_ref):
         """Initialize a Google credentialed device."""

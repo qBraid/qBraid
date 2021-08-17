@@ -88,15 +88,13 @@ def circuit_wrapper(circuit, **kwargs):
     raise WrapperError(f"{package} is not a supported package.")
 
 
-def device_wrapper(name: str, provider: str, vendor: Optional[str] = None, **kwargs):
+def device_wrapper(qbraid_device_id: str, **kwargs):
     """Apply qbraid device wrapper to device from a supported device provider. If vendor is None,
     it is assumed that the vendor is the same as the provider. If the vendor is not the same as the
     provider, the vendor must be specified.
 
     Args:
-        name (str): a quantum hardware device/simulator available through given ``provider``
-        provider (str): a quantum hardware device/simulator provider available through ``vendor``
-        vendor (Optional[str]): a quantum software vendor
+        qbraid_device_id (str): unique ID specifying an supported quantum hardware device/simulator
 
     Returns:
         :class:`~qbraid.devices.DeviceLikeWrapper`: a qbraid device wrapper object
@@ -104,14 +102,19 @@ def device_wrapper(name: str, provider: str, vendor: Optional[str] = None, **kwa
     Raises:
         ``WrapperError``: If ``vendor`` is not a supported vendor.
     """
-    vendor = provider if not vendor else vendor
+    parse_id = qbraid_device_id.split("_")
+    vendor = parse_id[0]
+    provider = parse_id[1]
+
+    if provider == "native":
+        provider = vendor
 
     if vendor not in devices_entrypoints:
         refresh_devices()
 
     if vendor in devices_entrypoints:
         device_wrapper_class = devices_entrypoints[vendor].load()
-        return device_wrapper_class(name, provider, **kwargs)
+        return device_wrapper_class(qbraid_device_id, provider, **kwargs)
 
     else:
-        raise WrapperError(f"{vendor} is not a supported vendor.")
+        raise WrapperError("Invalid device ID")

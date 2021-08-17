@@ -12,8 +12,11 @@ GOOGLE_DEVICES = {
     # "Sycamore23": Sycamore23,    # not available
     # "Bristlecone": Bristlecone,  # not available
     # "Foxtail": Foxtail,          # not available
-    "local_simulator_default": Simulator(),
-    "local_simulator_densitymatrix": DensityMatrixSimulator(),
+}
+
+CIRQ_SIMULATORS = {
+    "google_cirq_sparse_sim": Simulator(),
+    "google_cirq_dm_sim": DensityMatrixSimulator(),
 }
 
 IONQ_DEVICES = {
@@ -25,8 +28,14 @@ PASQAL_DEVICES = {
 }
 
 CIRQ_PROVIDERS = {
-    "AQT": AQT_DEVICES,
-    "Google": GOOGLE_DEVICES,
-    "IonQ": IONQ_DEVICES,
-    "Pasqal": PASQAL_DEVICES,
+    "aqt": AQT_DEVICES,
+    "google": GOOGLE_DEVICES,
+    "cirq": CIRQ_SIMULATORS,
+    "ionQ": IONQ_DEVICES,
+    "pasqal": PASQAL_DEVICES,
+}
+
+GOOGLE_DEVICE_INFO = {
+    "google_cirq_sparse_sim": ["Google", "Cirq Sparse Simulator", "--"],
+    "google_cirq_dm_sim": ["Google", "Cirq Density Matrix Simulator", "--"],
 }
