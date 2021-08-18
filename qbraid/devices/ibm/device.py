@@ -16,10 +16,12 @@ from qiskit import IBMQ
 from qiskit import execute
 from qiskit.providers.ibmq import least_busy
 from qiskit.utils.quantum_instance import QuantumInstance
+from qiskit.providers.backend import Backend as QiskitBackend
 
 from qbraid.devices._utils import get_config
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.ibm.job import QiskitJobWrapper
+from qbraid.devices.ibm.result import QiskitResultWrapper
 
 
 class QiskitBackendWrapper(DeviceLikeWrapper):
@@ -38,9 +40,8 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
 
         """
         super().__init__(name, provider, vendor="ibm", **fields)
-        self.quantum_instance = QuantumInstance(self.vendor_dlo)
 
-    def _init_cred_device(self, device_ref):
+    def _init_cred_device(self, device_ref) -> QiskitBackend:
         """Initialize an IBM credentialed device."""
         if IBMQ.active_account() is None:
             IBMQ.load_account()
@@ -65,24 +66,46 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
 
         """
 
-    def run(self, run_input, *args, **kwargs) -> QiskitJobWrapper:
-        """Run on the qiskit backend.
+    def execute(self, run_input, *args, **kwargs):
+        """Runs circuit(s) on qiskit backend via :meth:`~qiskit.utils.QuantumInstance.execute`.
 
-        This method that will return a :class:`~qiskit.providers.Job` object that run circuits.
-        Depending on the backend this may be either an async or sync call. It is the discretion of
-        the provider to decide whether running should  block until the execution is finished or not.
-        The Job class can handle either situation.
+        Creates a :class:`~qiskit.utils.QuantumInstance`, invokes its ``execute`` method,
+        applies a QiskitResultWrapper, and returns the result. Internally, the quantum instance
+        execute method used :meth:`~qiskit.utils.QuantumInstance.transpile` to ensure that qiskit
+        algorithms can access the given circuit(s).
 
         Args:
-            run_input (QuantumCircuit or Schedule or list): An individual or a list of
-                :class:`~qiskit.circuits.QuantumCircuit` or :class:`~qiskit.pulse.Schedule` objects
-                to run on the backend.
+            run_input: An individual or a list of circuit objects to run on the wrapped device.
+            kwargs: Any kwarg options to pass to the device for the run. If a key is also present
+                in the options attribute/object then the expectation is that the value specified
+                will be used instead of what's set in the options object.
+
+        Returns:
+            QiskitResultWrapper: The result like object for the run.
+
+        """
+        run_input = self._compat_run_input(run_input)
+        quantum_instance = QuantumInstance(self.vendor_dlo, *args, **kwargs)
+        qiskit_result = quantum_instance.execute(run_input)
+        qbraid_result = QiskitResultWrapper(qiskit_result)
+        return qbraid_result
+
+    def run(self, run_input, *args, **kwargs) -> QiskitJobWrapper:
+        """Runs circuit(s) on qiskit backend via :meth:`~qiskit.execute`
+
+        Uses the :meth:`~qiskit.execute` method to create a :class:`~qiskit.providers.Job` object,
+        applies a :class:`~qbraid.devices.ibm.QiskitJobWrapper`, and return the result. Depending
+        on the backend this may be either an async or sync call. It is the discretion of the
+        provider to decide whether running should block until the execution is finished or not.
+        The qiskit Job class can handle either situation.
+
+        Args:
+            run_input: An individual or a list of circuit objects to run on the wrapped device.
             kwargs: Any kwarg options to pass to the backend for running the config. If a key is
                 also present in the options attribute/object then the expectation is that the value
                 specified will be used instead of what's set in the options object.
-
         Returns:
-            :class:`~qbraid.devices.ibm.job.QiskitJobWrapper`: The job like object for the run.
+            QiskitJobWrapper: The job like object for the run.
 
         """
         run_input = self._compat_run_input(run_input)

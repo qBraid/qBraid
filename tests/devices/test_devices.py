@@ -17,12 +17,13 @@ from cirq.study.result import Result as CirqResult
 from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.job import Job as QiskitJob
+from qiskit.result import Result as QiskitResult
 
 from qbraid import device_wrapper
 from qbraid.devices._utils import SUPPORTED_VENDORS
 from qbraid.devices.aws import BraketDeviceWrapper, BraketQuantumTaskWrapper
 from qbraid.devices.google import CirqSimulatorWrapper, CirqResultWrapper
-from qbraid.devices.ibm import QiskitBackendWrapper, QiskitJobWrapper
+from qbraid.devices.ibm import QiskitBackendWrapper, QiskitJobWrapper, QiskitResultWrapper
 
 
 def device_wrapper_inputs(vendor: str):
@@ -126,6 +127,16 @@ def test_run_qiskit_device_wrapper(device_id, circuit):
     vendor_job = qbraid_job.vendor_jlo
     assert isinstance(qbraid_job, QiskitJobWrapper)
     assert isinstance(vendor_job, QiskitJob)
+
+
+@pytest.mark.parametrize("circuit", circuits_qiskit_run)
+@pytest.mark.parametrize("device_id", inputs_qiskit_run)
+def test_execute_qiskit_device_wrapper(device_id, circuit):
+    qbraid_device = device_wrapper(device_id)
+    qbraid_result = qbraid_device.execute(circuit, shots=10)
+    vendor_result = qbraid_result.vendor_rlo
+    assert isinstance(qbraid_result, QiskitResultWrapper)
+    assert isinstance(vendor_result, QiskitResult)
 
 
 @pytest.mark.parametrize("circuit", circuits_cirq_run)
