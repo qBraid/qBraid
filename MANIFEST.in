@@ -1,0 +1,5 @@
+include README.md
+include LICENSE
+include docs/*
+recursive-include tests *.py
+recursive-include tutorials *.ipynb
