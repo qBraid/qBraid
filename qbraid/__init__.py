@@ -2,7 +2,6 @@
 
 
 from importlib import reload
-from typing import Optional
 
 import pkg_resources
 
@@ -78,6 +77,11 @@ def circuit_wrapper(circuit, **kwargs):
     """
     package = circuit.__module__.split(".")[0]
 
+    # eps = importlib.metadata.entry_points()['qbraid.transpiler']
+    # if package in eps:
+    #     circuit_wrapper_class = package.load()
+    #     return circuit_wrapper_class(circuit, **kwargs)
+
     if package not in transpiler_entrypoints:
         refresh_transpiler()
 
@@ -106,6 +110,11 @@ def device_wrapper(device_id: str, **kwargs):
 
     if provider == "native":
         provider = vendor
+
+    # eps = importlib.metadata.entry_points()['qbraid.devices']
+    # if vendor in eps:
+    #     device_wrapper_class = vendor.load()
+    #     return device_wrapper_class(device_id, provider, **kwargs)
 
     if vendor not in devices_entrypoints:
         refresh_devices()

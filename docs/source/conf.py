@@ -40,7 +40,6 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.mathjax",
     "sphinx.ext.coverage",
-    # "sphinx_automodapi.automodapi",
 ]
 
 # set_type_checking_flag = True
