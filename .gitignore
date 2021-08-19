@@ -70,7 +70,7 @@ instance/
 .scrapy
 
 # Sphinx documentation
-docs/_build/
+docs/build/
 
 # PyBuilder
 target/
@@ -129,7 +129,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 *.DS_Store
-
-# Local git helper scripts
-git-merge-origin.sh
 

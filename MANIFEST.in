@@ -1,5 +1,6 @@
-include README.md
-include LICENSE
-include docs/*
-recursive-include tests *.py
+include *.rst *.txt *.ini
+global-exclude *.pyc
+recursice-include docs *.rst *.py
+recursive-include tests *.py *.ipynb
 recursive-include tutorials *.ipynb
+prune docs/build/
