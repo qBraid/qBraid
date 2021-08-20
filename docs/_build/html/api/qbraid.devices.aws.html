@@ -1,0 +1,412 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>qbraid.devices.aws package &mdash; qBraid-sdk 0.1.0.dev0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> qBraid-sdk
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview/supported-devices.html">Supported Devices</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../development/guide.html">Development guide</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="qbraid.html">qbraid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="qbraid.circuits.html">qbraid.circuits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="qbraid.devices.html">qbraid.devices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="qbraid.transpiler.html">qbraid.transpiler</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">qBraid-sdk</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>qbraid.devices.aws package</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="../_sources/api/qbraid.devices.aws.rst.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <section id="qbraid-devices-aws-package">
+<h1>qbraid.devices.aws package<a class="headerlink" href="#qbraid-devices-aws-package" title="Permalink to this headline">¶</a></h1>
+<section id="submodules">
+<h2>Submodules<a class="headerlink" href="#submodules" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="module-qbraid.devices.aws.device">
+<span id="qbraid-devices-aws-device-module"></span><h2>qbraid.devices.aws.device module<a class="headerlink" href="#module-qbraid.devices.aws.device" title="Permalink to this headline">¶</a></h2>
+<p>BraketDeviceWrapper Class</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="qbraid.devices.aws.device.BraketDeviceWrapper">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">BraketDeviceWrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">provider</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">fields</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/qbraid/devices/aws/device.html#BraketDeviceWrapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qbraid.devices.aws.device.BraketDeviceWrapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../stubs/qbraid.devices.DeviceLikeWrapper.html#qbraid.devices.DeviceLikeWrapper" title="qbraid.devices.device.DeviceLikeWrapper"><code class="xref py py-class docutils literal notranslate"><span class="pre">qbraid.devices.device.DeviceLikeWrapper</span></code></a></p>
+<p>Wrapper class for Amazon Braket <code class="docutils literal notranslate"><span class="pre">Device</span></code> objects.</p>
+<p>Create a BraketDeviceWrapper</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – a Braket supported device</p></li>
+<li><p><strong>provider</strong> (<em>str</em>) – the provider that this device comes from</p></li>
+<li><p><strong>fields</strong> – Any kwarg options to pass to the backend for running the config. If a key
+is also present in the options attribute/object then the expectation is that
+the value specified will be used instead of what’s set in the options object.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><a class="reference internal" href="../stubs/qbraid.devices.DeviceError.html#qbraid.devices.DeviceError" title="qbraid.devices.DeviceError"><strong>DeviceError</strong></a> – if input field not a valid options</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="qbraid.devices.aws.device.BraketDeviceWrapper.get_sampler">
+<span class="sig-name descname"><span class="pre">get_sampler</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">braket_default</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">embedding</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/qbraid/devices/aws/device.html#BraketDeviceWrapper.get_sampler"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qbraid.devices.aws.device.BraketDeviceWrapper.get_sampler" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns BraketSampler created from device. Only compatible with D-Wave devices.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>braket_default</strong> (<em>optional</em><em>, </em><em>bool</em>) – If True, returns default BraketSampler. Defaults to
+False, returning BraketDWaveSampler.</p></li>
+<li><p><strong>embedding</strong> (<em>optional</em><em>, </em><em>bool</em>) – If True, uses EmbeddingComposite to automatically map the
+problem to the structure of the solver. If False, returns as sampler as-is.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Sampler derived from device</p>
+</dd>
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><strong>DeviceError if not a D-Wave annealing device.</strong> – </p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="qbraid.devices.aws.device.BraketDeviceWrapper.run">
+<span class="sig-name descname"><span class="pre">run</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">run_input</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/qbraid/devices/aws/device.html#BraketDeviceWrapper.run"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qbraid.devices.aws.device.BraketDeviceWrapper.run" title="Permalink to this definition">¶</a></dt>
+<dd><p>Run a quantum task specification on this quantum device. A task can be a circuit or an
+annealing problem.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>run_input</strong> (<em>Union</em><em>[</em><a class="reference internal" href="../stubs/qbraid.circuits.Circuit.html#qbraid.circuits.Circuit" title="qbraid.circuits.Circuit"><em>Circuit</em></a><em>, </em><em>Problem</em><em>]</em>) – Specification of a task to run on device.</p></li>
+<li><p><strong>kwargs</strong> – shots (int): The number of times to run the task on the device.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><dl class="simple">
+<dt>The job like object for</dt><dd><p>the run.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">BraketQuantumTaskWrapper</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-qbraid.devices.aws.job">
+<span id="qbraid-devices-aws-job-module"></span><h2>qbraid.devices.aws.job module<a class="headerlink" href="#module-qbraid.devices.aws.job" title="Permalink to this headline">¶</a></h2>
+<p>BraketQuantumtaskWrapper Class</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="qbraid.devices.aws.job.BraketQuantumTaskWrapper">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">BraketQuantumTaskWrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">device</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">quantum_task</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/qbraid/devices/aws/job.html#BraketQuantumTaskWrapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qbraid.devices.aws.job.BraketQuantumTaskWrapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../stubs/qbraid.devices.JobLikeWrapper.html#qbraid.devices.JobLikeWrapper" title="qbraid.devices.job.JobLikeWrapper"><code class="xref py py-class docutils literal notranslate"><span class="pre">qbraid.devices.job.JobLikeWrapper</span></code></a></p>
+<p>Wrapper class for Amazon Braket <code class="docutils literal notranslate"><span class="pre">QuantumTask</span></code> objects.</p>
+<p>Create a BraketQuantumTaskWrapper</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>device</strong> – the BraketDeviceWrapper associated with this quantum task i.e. job</p></li>
+<li><p><strong>quantum_task</strong> (<em>QuantumTask</em>) – a braket <code class="docutils literal notranslate"><span class="pre">QuantumTask</span></code> object used to run circuits.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="qbraid.devices.aws.job.BraketQuantumTaskWrapper.job_id">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">job_id</span></span><a class="headerlink" href="#qbraid.devices.aws.job.BraketQuantumTaskWrapper.job_id" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return a unique id identifying the task.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="qbraid.devices.aws.job.BraketQuantumTaskWrapper.metadata">
+<span class="sig-name descname"><span class="pre">metadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/qbraid/devices/aws/job.html#BraketQuantumTaskWrapper.metadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qbraid.devices.aws.job.BraketQuantumTaskWrapper.metadata" title="Permalink to this definition">¶</a></dt>
+<dd><p>Get task metadata.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>**kwargs</strong> – <dl class="simple">
+<dt>use_cached_value (bool, optional): If True, uses the value retrieved from the</dt><dd><p>previous request.</p>
+</dd>
+</dl>
+</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The metadata regarding the job. If <cite>use_cached_value</cite> is True,
+then the value retrieved from the most recent request is used.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Dict[str, Any]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="qbraid.devices.aws.job.BraketQuantumTaskWrapper.result">
+<span class="sig-name descname"><span class="pre">result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/qbraid/devices/aws/job.html#BraketQuantumTaskWrapper.result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qbraid.devices.aws.job.BraketQuantumTaskWrapper.result" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the results of the job.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">AnnealingQuantumTaskResult</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">GateModelQuantumTaskResult</span></code>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="qbraid.devices.aws.job.BraketQuantumTaskWrapper.async_result">
+<span class="sig-name descname"><span class="pre">async_result</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/qbraid/devices/aws/job.html#BraketQuantumTaskWrapper.async_result"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qbraid.devices.aws.job.BraketQuantumTaskWrapper.async_result" title="Permalink to this definition">¶</a></dt>
+<dd><p>asyncio.Task: Get the quantum task result asynchronously.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Task</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="qbraid.devices.aws.job.BraketQuantumTaskWrapper.cancel">
+<span class="sig-name descname"><span class="pre">cancel</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/qbraid/devices/aws/job.html#BraketQuantumTaskWrapper.cancel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qbraid.devices.aws.job.BraketQuantumTaskWrapper.cancel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Cancel the quantum task.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="qbraid.devices.aws.job.BraketQuantumTaskWrapper.status">
+<span class="sig-name descname"><span class="pre">status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/qbraid/devices/aws/job.html#BraketQuantumTaskWrapper.status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qbraid.devices.aws.job.BraketQuantumTaskWrapper.status" title="Permalink to this definition">¶</a></dt>
+<dd><p>State of the quantum task</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="module-qbraid.devices.aws.result">
+<span id="qbraid-devices-aws-result-module"></span><h2>qbraid.devices.aws.result module<a class="headerlink" href="#module-qbraid.devices.aws.result" title="Permalink to this headline">¶</a></h2>
+<p>BraketGateModelResult Class</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="qbraid.devices.aws.result.BraketGateModelResultWrapper">
+<em class="property"><span class="pre">class</span> </em><span class="sig-name descname"><span class="pre">BraketGateModelResultWrapper</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">gate_model_result</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/qbraid/devices/aws/result.html#BraketGateModelResultWrapper"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qbraid.devices.aws.result.BraketGateModelResultWrapper" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="../stubs/qbraid.devices.ResultWrapper.html#qbraid.devices.ResultWrapper" title="qbraid.devices.result.ResultWrapper"><code class="xref py py-class docutils literal notranslate"><span class="pre">qbraid.devices.result.ResultWrapper</span></code></a></p>
+<p>Wrapper class for Amazon Braket <code class="docutils literal notranslate"><span class="pre">GateModelQuantumTaskResult</span></code> objects.</p>
+<p>Create new Braket result wrapper</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>gate_model_result</strong> (<em>GateModelQuantumTaskResult</em>) – a Braket <code class="docutils literal notranslate"><span class="pre">Result</span></code> object</p>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="qbraid.devices.aws.result.BraketGateModelResultWrapper.measurements">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">measurements</span></span><em class="property"><span class="pre">:</span> <span class="pre">numpy.ndarray</span></em><a class="headerlink" href="#qbraid.devices.aws.result.BraketGateModelResultWrapper.measurements" title="Permalink to this definition">¶</a></dt>
+<dd><p>2d array - row is shot and column is qubit. Default is None. Only available when
+shots &gt; 0. The qubits in <cite>measurements</cite> are the ones in
+<cite>GateModelQuantumTaskResult.measured_qubits</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="qbraid.devices.aws.result.BraketGateModelResultWrapper.data">
+<span class="sig-name descname"><span class="pre">data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/qbraid/devices/aws/result.html#BraketGateModelResultWrapper.data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#qbraid.devices.aws.result.BraketGateModelResultWrapper.data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Return the raw data associated with the run/job.</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+</section>
+
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, qBraid Development Team.
+
+    </p>
+  </div> 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

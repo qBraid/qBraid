@@ -11,6 +11,7 @@ __pycache__/
 *.vscode/*
 .Python
 build/
+docs/_build/
 develop-eggs/
 dist/
 downloads/

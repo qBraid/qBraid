@@ -1,0 +1,398 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>qbraid.devices.device &mdash; qBraid-sdk 0.1.0.dev0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> qBraid-sdk
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview/supported-devices.html">Supported Devices</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/guide.html">Development guide</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/qbraid.html">qbraid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/qbraid.circuits.html">qbraid.circuits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/qbraid.devices.html">qbraid.devices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/qbraid.transpiler.html">qbraid.transpiler</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">qBraid-sdk</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../qbraid.html">qbraid</a> &raquo;</li>
+        
+      <li>qbraid.devices.device</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for qbraid.devices.device</h1><div class="highlight"><pre>
+<span></span><span class="c1"># This code is part of Qiskit.</span>
+<span class="c1">#</span>
+<span class="c1"># (C) Copyright IBM 2017.</span>
+<span class="c1">#</span>
+<span class="c1"># This code is licensed under the Apache License, Version 2.0. You may</span>
+<span class="c1"># obtain a copy of this license in the LICENSE.txt file in the root directory</span>
+<span class="c1"># of the source tree https://github.com/Qiskit/qiskit-terra/blob/main/LICENSE.txt</span>
+<span class="c1"># or at http://www.apache.org/licenses/LICENSE-2.0.</span>
+<span class="c1">#</span>
+<span class="c1"># NOTICE: This file has been modified from the original:</span>
+<span class="c1"># https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/providers/backend.py</span>
+
+<span class="sd">&quot;&quot;&quot;DeviceLikeWrapper Class&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+
+<span class="kn">import</span> <span class="nn">qbraid</span>
+<span class="kn">from</span> <span class="nn">qbraid.devices._utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SUPPORTED_VENDORS</span><span class="p">,</span>
+    <span class="n">RUN_PACKAGE</span><span class="p">,</span>
+    <span class="n">CONFIG_PROMPTS</span><span class="p">,</span>
+    <span class="n">set_config</span><span class="p">,</span>
+    <span class="n">get_config</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">qbraid.devices.exceptions</span> <span class="kn">import</span> <span class="n">DeviceError</span>
+
+
+<div class="viewcode-block" id="DeviceLikeWrapper"><a class="viewcode-back" href="../../../stubs/qbraid.devices.DeviceLikeWrapper.html#qbraid.devices.DeviceLikeWrapper">[docs]</a><span class="k">class</span> <span class="nc">DeviceLikeWrapper</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Abstract interface for device-like classes.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        name (str): a qBraid supported device</span>
+<span class="sd">        provider (str): the provider that this device comes from</span>
+<span class="sd">        fields: kwargs for the values to use to override the default options.</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        DeviceError: if input field not a valid options</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="DeviceLikeWrapper.__init__"><a class="viewcode-back" href="../../../stubs/qbraid.devices.DeviceLikeWrapper.html#qbraid.devices.DeviceLikeWrapper.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">provider</span><span class="p">,</span> <span class="n">vendor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">fields</span><span class="p">):</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_provider</span> <span class="o">=</span> <span class="n">provider</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_vendor</span> <span class="o">=</span> <span class="n">vendor</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_default_options</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_device_configuration</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_run_package</span> <span class="o">=</span> <span class="n">RUN_PACKAGE</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">vendor</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">requires_creds</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vendor_dlo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_device_obj</span><span class="p">()</span>  <span class="c1"># vendor device-like object</span>
+        <span class="k">if</span> <span class="n">fields</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">field</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">data</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">DeviceError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Options field </span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2"> is not valid for this device&quot;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">update_config</span><span class="p">(</span><span class="o">**</span><span class="n">fields</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_get_device_obj</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">supported_devices</span> <span class="o">=</span> <span class="n">SUPPORTED_VENDORS</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">vendor</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">provider</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">DeviceError</span><span class="p">(</span>
+                <span class="s1">&#39;Provider &quot;</span><span class="si">{}</span><span class="s1">&quot; not supported by vendor &quot;</span><span class="si">{}</span><span class="s1">&quot;.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">provider</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vendor</span><span class="p">)</span>
+            <span class="p">)</span> <span class="kn">from</span> <span class="nn">err</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">device_ref</span> <span class="o">=</span> <span class="n">supported_devices</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">err</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s1">&#39;Device &quot;</span><span class="si">{}</span><span class="s1">&quot; not supported by provider &quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">provider</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">provider</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vendor</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s1">&#39; from vendor &quot;</span><span class="si">{}</span><span class="s1">&quot;&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">vendor</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">DeviceError</span><span class="p">(</span><span class="n">msg</span> <span class="o">+</span> <span class="s2">&quot;.&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">err</span>
+        <span class="k">if</span> <span class="n">device_ref</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">DeviceError</span><span class="p">(</span><span class="s2">&quot;Device not currently available.&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">device_ref</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">get_config</span><span class="p">(</span><span class="s2">&quot;verify&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">vendor</span><span class="p">)</span> <span class="o">!=</span> <span class="s2">&quot;True&quot;</span><span class="p">:</span>
+                <span class="n">prompt_lst</span> <span class="o">=</span> <span class="n">CONFIG_PROMPTS</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">vendor</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">prompt_lst</span><span class="p">:</span>
+                    <span class="n">set_config</span><span class="p">(</span><span class="o">*</span><span class="n">prompt</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">requires_creds</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_init_cred_device</span><span class="p">(</span><span class="n">device_ref</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">device_ref</span>
+
+    <span class="k">def</span> <span class="nf">_compat_run_input</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_input</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Checks if ``run_input`` is compatible with device and if not, calls transpiler.&quot;&quot;&quot;</span>
+        <span class="n">run_input_package</span> <span class="o">=</span> <span class="n">run_input</span><span class="o">.</span><span class="vm">__module__</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">run_input_package</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_run_package</span><span class="p">:</span>
+            <span class="n">run_input</span> <span class="o">=</span> <span class="n">qbraid</span><span class="o">.</span><span class="n">circuit_wrapper</span><span class="p">(</span><span class="n">run_input</span><span class="p">)</span><span class="o">.</span><span class="n">transpile</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_run_package</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">run_input</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_init_cred_device</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device_ref</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns device object associated with given device_ref. This method is invoked when</span>
+<span class="sd">         a user has called the qBraid device wrapper on a device that requires a particular set</span>
+<span class="sd">         of credentials to access, e.g. an AWS, Google Cloud, or IBMQ account.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            device_ref (str): string representation of device.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ConfigError when device_rep is invalid</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">_default_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the default options for running this device.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="nf">set_options</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">fields</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Set the options fields for the device.</span>
+
+<span class="sd">        This method is used to update the options of a device. If you need to change any of the</span>
+<span class="sd">        options prior to running just pass in the kwarg with the new value for the options.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            fields: The fields to update the options</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            DeviceError: If the field passed in is not part of the options</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="p">,</span> <span class="n">field</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">DeviceError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Options field </span><span class="si">{</span><span class="n">field</span><span class="si">}</span><span class="s2"> is not valid for this device.&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_options</span><span class="o">.</span><span class="n">update_options</span><span class="p">(</span><span class="o">**</span><span class="n">fields</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">device_configuration</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the device configuration.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: the configuration for the device. If the device does not support properties,</span>
+<span class="sd">            it returns ``None``.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_device_configuration</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">name</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the device name.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: the name of the device.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_name</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">provider</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the device provider.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: the provider responsible for the device.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_provider</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">vendor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the software vendor name.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: the name of the software vendor.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vendor</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">DeviceError</span><span class="p">(</span><span class="s2">&quot;vendor is None&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_vendor</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">options</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the options for the device.</span>
+
+<span class="sd">        The options of a device are the dynamic parameters defining</span>
+<span class="sd">        how the device is used. These are used to control the :meth:`run`</span>
+<span class="sd">        method.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_options</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">vendor</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">provider</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> device wrapper&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;String representation of a DeviceWrapper object.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;&lt;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">provider</span><span class="si">}</span><span class="s2">:&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&#39;)&gt;&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_input</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Abstract run method.&quot;&quot;&quot;</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, qBraid Development Team.
+
+    </p>
+  </div> 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

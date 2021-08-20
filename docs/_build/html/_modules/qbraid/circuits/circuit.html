@@ -1,0 +1,478 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>qbraid.circuits.circuit &mdash; qBraid-sdk 0.1.0.dev0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> qBraid-sdk
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview/supported-devices.html">Supported Devices</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/guide.html">Development guide</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/qbraid.html">qbraid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/qbraid.circuits.html">qbraid.circuits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/qbraid.devices.html">qbraid.devices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/qbraid.transpiler.html">qbraid.transpiler</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">qBraid-sdk</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../qbraid.html">qbraid</a> &raquo;</li>
+        
+      <li>qbraid.circuits.circuit</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for qbraid.circuits.circuit</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Iterable</span>
+
+<span class="kn">from</span> <span class="nn">.exceptions</span> <span class="kn">import</span> <span class="n">CircuitError</span>
+<span class="kn">from</span> <span class="nn">.instruction</span> <span class="kn">import</span> <span class="n">Instruction</span>
+<span class="kn">from</span> <span class="nn">.library.supported_gates</span> <span class="kn">import</span> <span class="n">supported_gates</span>
+<span class="kn">from</span> <span class="nn">.moment</span> <span class="kn">import</span> <span class="n">Moment</span>
+<span class="kn">from</span> <span class="nn">.parameter</span> <span class="kn">import</span> <span class="n">Parameter</span>
+<span class="kn">from</span> <span class="nn">.parametertable</span> <span class="kn">import</span> <span class="n">ParameterTable</span>
+<span class="kn">from</span> <span class="nn">.qubit</span> <span class="kn">import</span> <span class="n">Qubit</span>
+<span class="kn">from</span> <span class="nn">.update_rule</span> <span class="kn">import</span> <span class="n">UpdateRule</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">validate_operation</span>
+
+
+<div class="viewcode-block" id="Circuit"><a class="viewcode-back" href="../../../stubs/qbraid.circuits.Circuit.html#qbraid.circuits.Circuit">[docs]</a><span class="k">class</span> <span class="nc">Circuit</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Circuit class for qBraid quantum circuit objects.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        num_qubits: The total number of qubits</span>
+<span class="sd">        name: The name of the circuit</span>
+<span class="sd">        update_rule: How to pick/create the moment to put operations into.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="Circuit.__init__"><a class="viewcode-back" href="../../../stubs/qbraid.circuits.Circuit.html#qbraid.circuits.Circuit.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">num_qubits</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">update_rule</span><span class="p">:</span> <span class="n">UpdateRule</span> <span class="o">=</span> <span class="n">UpdateRule</span><span class="o">.</span><span class="n">EARLIEST</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_qubits</span> <span class="o">=</span> <span class="p">[</span><span class="n">Qubit</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="n">num_qubits</span><span class="p">))]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_moments</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Moment</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># list of moments</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">update_rule</span> <span class="o">=</span> <span class="n">update_rule</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_parameter_table</span> <span class="o">=</span> <span class="n">ParameterTable</span><span class="p">()</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">num_qubits</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_qubits</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">moments</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_moments</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">instructions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+
+        <span class="n">instructions_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">moment</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_moments</span><span class="p">:</span>
+            <span class="n">instructions_list</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">moment</span><span class="o">.</span><span class="n">instructions</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">instructions_list</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameter_table</span><span class="o">.</span><span class="n">get_keys</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">num_gates</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">chain</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">instructions</span><span class="p">)))</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Circuit(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_qubits</span><span class="si">}</span><span class="s2"> qubits, </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">num_gates</span><span class="p">()</span><span class="si">}</span><span class="s2"> gates)&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_moments</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_append_circuit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">circuit</span><span class="p">,</span>
+        <span class="n">update_rule</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="sd">&quot;&quot;&quot;This is for adding subroutines to circuits. so if we have a 3-qubit subroutine,</span>
+<span class="sd">        the user should specify [2,4,5], implying that qubit 0 on the subroutine is mapped</span>
+<span class="sd">        to qubit 2 on the circuit, qubit 1 on the subroutine maps to qubit 4 on the circuit, etc.</span>
+
+<span class="sd">        the user should also be able to specify directly as a dict:</span>
+<span class="sd">            {0:2,1:4,5:5}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">moments</span> <span class="o">=</span> <span class="n">circuit</span><span class="o">.</span><span class="n">moments</span>
+        <span class="k">for</span> <span class="n">moment</span> <span class="ow">in</span> <span class="n">moments</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">validate_operation</span><span class="p">(</span><span class="n">moment</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_qubits</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">moment</span><span class="p">,</span> <span class="n">Moment</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">moment</span><span class="p">,</span> <span class="n">update_rule</span><span class="o">=</span><span class="n">update_rule</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="n">CircuitError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">circuit</span><span class="si">}</span><span class="s2"> of size </span><span class="si">{</span><span class="n">circuit</span><span class="o">.</span><span class="n">num_qubits</span><span class="si">}</span><span class="s2"> not appendable&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_earliest_appended</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="p">:</span> <span class="n">Instruction</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Helper function that scans through all the moments and appends the operation</span>
+<span class="sd">        in the earliest moment.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            op (Instruction): Instruction to be appended to the earliest moment.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: True if appended, False otherwise.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">appended</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="c1"># scan through the moments beginning with the first moment</span>
+        <span class="k">for</span> <span class="n">moment</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_moments</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">moment</span><span class="o">.</span><span class="n">appendable</span><span class="p">(</span><span class="n">op</span><span class="p">):</span>
+                <span class="n">moment</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+                <span class="n">appended</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="n">appended</span>
+
+    <span class="k">def</span> <span class="nf">_create_new_moment</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">op</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; &quot;helper function that makes a new moment and appends the operation.&quot;&quot;&quot;</span>
+        <span class="n">new_moment</span> <span class="o">=</span> <span class="n">Moment</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">op</span><span class="p">:</span>
+            <span class="n">new_moment</span><span class="o">.</span><span class="n">instructions</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_moments</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_moment</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_add_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">instruction</span><span class="p">):</span>
+
+        <span class="k">for</span> <span class="n">param_index</span><span class="p">,</span> <span class="n">param</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">instruction</span><span class="o">.</span><span class="n">gate</span><span class="o">.</span><span class="n">params</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">):</span>
+                <span class="n">current_parameters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameter_table</span>
+
+                <span class="k">if</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">current_parameters</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_dup_param_spec</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_parameter_table</span><span class="p">[</span><span class="n">param</span><span class="p">],</span> <span class="n">instruction</span><span class="p">,</span> <span class="n">param_index</span>
+                    <span class="p">):</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_parameter_table</span><span class="p">[</span><span class="n">param</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">instruction</span><span class="p">,</span> <span class="n">param_index</span><span class="p">))</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">param</span><span class="o">.</span><span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_parameter_table</span><span class="o">.</span><span class="n">get_names</span><span class="p">():</span>
+                        <span class="k">raise</span> <span class="n">CircuitError</span><span class="p">(</span>
+                            <span class="s2">&quot;Name conflict on adding parameter: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                        <span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_parameter_table</span><span class="p">[</span><span class="n">param</span><span class="p">]</span> <span class="o">=</span> <span class="p">[(</span><span class="n">instruction</span><span class="p">,</span> <span class="n">param_index</span><span class="p">)]</span>
+
+                    <span class="c1"># clear cache if new parameter is added</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_parameters</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">_check_dup_param_spec</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">parameter_spec_list</span><span class="p">,</span> <span class="n">instruction</span><span class="p">,</span> <span class="n">param_index</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">spec</span> <span class="ow">in</span> <span class="n">parameter_spec_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">spec</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">is</span> <span class="n">instruction</span> <span class="ow">and</span> <span class="n">spec</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="n">param_index</span><span class="p">:</span>
+                <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">_update</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">operation</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Moment</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Instruction</span><span class="p">]],</span>
+        <span class="n">update_rule</span><span class="p">:</span> <span class="n">UpdateRule</span><span class="p">,</span>
+        <span class="n">index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Cycles through all the operations and appends to circuit according to update rule.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            operation (Union[Moment, Iterable[Instruction]]): [description]</span>
+<span class="sd">            update_rule ([type]): [description]</span>
+<span class="sd">            index (int, optional): [description]. Defaults to 0.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            CircuitError: [description]</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># takes in both moment and instructions</span>
+        <span class="k">for</span> <span class="n">op</span> <span class="ow">in</span> <span class="n">operation</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">Instruction</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">validate_operation</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_qubits</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_add_parameters</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">update_rule</span> <span class="ow">is</span> <span class="n">UpdateRule</span><span class="o">.</span><span class="n">NEW_THEN_INLINE</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">moments</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">instructions</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">moments</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+                        <span class="c1"># add new</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_create_new_moment</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+                        <span class="c1"># update_rule changes to INLINE</span>
+                        <span class="n">update_rule</span> <span class="o">=</span> <span class="n">UpdateRule</span><span class="o">.</span><span class="n">INLINE</span>
+                    <span class="k">elif</span> <span class="n">update_rule</span> <span class="ow">is</span> <span class="n">UpdateRule</span><span class="o">.</span><span class="n">INLINE</span><span class="p">:</span>
+                        <span class="c1"># the last moment in the circuit</span>
+                        <span class="n">curr_moment</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_moments</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                        <span class="k">if</span> <span class="n">curr_moment</span><span class="o">.</span><span class="n">appendable</span><span class="p">(</span><span class="n">op</span><span class="p">):</span>
+                            <span class="n">curr_moment</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="c1"># create a new moment</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_create_new_moment</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">update_rule</span> <span class="ow">is</span> <span class="n">UpdateRule</span><span class="o">.</span><span class="n">NEW</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">moments</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">instructions</span><span class="p">:</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">moments</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+                        <span class="c1"># add new</span>
+                        <span class="k">else</span><span class="p">:</span>
+                            <span class="c1"># create a new moment every time append is called</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_create_new_moment</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+                    <span class="k">elif</span> <span class="n">update_rule</span> <span class="ow">is</span> <span class="n">UpdateRule</span><span class="o">.</span><span class="n">EARLIEST</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_earliest_appended</span><span class="p">(</span><span class="n">op</span><span class="p">):</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">_create_new_moment</span><span class="p">(</span><span class="n">op</span><span class="p">)</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">raise</span> <span class="n">CircuitError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The </span><span class="si">{</span><span class="n">update_rule</span><span class="si">}</span><span class="s2"> update rule is not implemented.&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">Moment</span><span class="p">):</span>
+                <span class="c1"># limit index to 0..len(self._moments), also deal with indices smaller 0</span>
+                <span class="n">k</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span>
+                    <span class="nb">min</span><span class="p">(</span>
+                        <span class="n">index</span> <span class="k">if</span> <span class="n">index</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_moments</span><span class="p">)</span> <span class="o">+</span> <span class="n">index</span><span class="p">,</span>
+                        <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_moments</span><span class="p">),</span>
+                    <span class="p">),</span>
+                    <span class="mi">0</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">validate_operation</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">num_qubits</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_qubits</span><span class="p">):</span>
+                    <span class="c1"># moments don&#39;t need a strategy.</span>
+                    <span class="k">for</span> <span class="n">instr</span> <span class="ow">in</span> <span class="n">op</span><span class="o">.</span><span class="n">instructions</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">_add_parameters</span><span class="p">(</span><span class="n">instr</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_moments</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">k</span><span class="p">,</span> <span class="n">op</span><span class="p">)</span>
+                    <span class="n">k</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="n">CircuitError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The </span><span class="si">{</span><span class="n">op</span><span class="si">}</span><span class="s2"> moment is not appendable.&quot;</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">Circuit</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_append_circuit</span><span class="p">(</span><span class="n">op</span><span class="p">,</span> <span class="n">update_rule</span><span class="o">=</span><span class="n">update_rule</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">append</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">operation</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Instruction</span><span class="p">,</span> <span class="n">Moment</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Instruction</span><span class="p">],</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Moment</span><span class="p">],</span> <span class="nb">str</span><span class="p">],</span>
+        <span class="n">mapping</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">list</span><span class="p">,</span> <span class="nb">dict</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">update_rule</span><span class="p">:</span> <span class="n">UpdateRule</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Appends an operation (circuit, moment or instruction) to the circuit.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            operation (Union[Instruction, Moment, Iterable[Instruction], Iterable[Moment]]):</span>
+<span class="sd">                The moment/instruction or iterable of moment/instructions to append.</span>
+<span class="sd">            mapping (Union[list, dict], optional):</span>
+<span class="sd">                An iterable with the qubits which the operation acts upon. Defaults to None.</span>
+<span class="sd">            update_rule (UpdateRule, optional):</span>
+<span class="sd">                How to pick/create the moment to put operations into. Defaults to None.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">operation</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                <span class="s2">&quot;Operation of type </span><span class="si">{}</span><span class="s2"> not appendable&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">operation</span><span class="p">))</span>
+            <span class="p">)</span>  <span class="c1"># redundant</span>
+        <span class="k">if</span> <span class="n">update_rule</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">update_rule</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">update_rule</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_moments</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+            <span class="c1"># initialize a new moment, unless the operation which is added into a list</span>
+            <span class="c1"># is a Moment or a Circuit</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">operation</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">Instruction</span><span class="p">):</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_create_new_moment</span><span class="p">()</span>
+        <span class="c1"># iterable</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_update</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span> <span class="n">update_rule</span><span class="o">=</span><span class="n">update_rule</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_moments</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># make operation into interable and attempt to append.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">operation</span><span class="o">=</span><span class="p">[</span><span class="n">operation</span><span class="p">],</span> <span class="n">mapping</span><span class="o">=</span><span class="n">mapping</span><span class="p">,</span> <span class="n">update_rule</span><span class="o">=</span><span class="n">update_rule</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_validate_params</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">Parameter</span><span class="p">))</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">params</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">CircuitError</span><span class="p">(</span><span class="s2">&quot;incorrect parameter arguments&quot;</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_validate_qubits</span><span class="p">(</span><span class="n">qubits</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">qubits</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">p</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">))</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">qubits</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="n">CircuitError</span><span class="p">(</span><span class="s2">&quot;incorrect parameter arguments&quot;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">qubits</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">CircuitError</span><span class="p">(</span><span class="s2">&quot;incorrect parameter arguments&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">add_instruction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gate_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">):</span>
+
+        <span class="k">if</span> <span class="n">gate_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">supported_gates</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">CircuitError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Gate </span><span class="si">{</span><span class="n">gate_name</span><span class="si">}</span><span class="s2"> is not supported.&quot;</span><span class="p">)</span>
+
+        <span class="n">qubits</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">params</span><span class="p">,</span> <span class="n">qubits</span> <span class="o">=</span> <span class="n">args</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">args</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_params</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_validate_qubits</span><span class="p">(</span><span class="n">qubits</span><span class="p">)</span>
+
+        <span class="n">gate</span> <span class="o">=</span> <span class="n">supported_gates</span><span class="p">[</span><span class="n">gate_name</span><span class="p">](</span><span class="o">*</span><span class="n">params</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Instruction</span><span class="p">(</span><span class="n">gate</span><span class="p">,</span> <span class="n">qubits</span><span class="p">))</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, qBraid Development Team.
+
+    </p>
+  </div> 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

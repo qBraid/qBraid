@@ -1,0 +1,286 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>qbraid.devices.ibm.result &mdash; qBraid-sdk 0.1.0.dev0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../../../../_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> qBraid-sdk
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview/supported-devices.html">Supported Devices</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/guide.html">Development guide</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/qbraid.html">qbraid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/qbraid.circuits.html">qbraid.circuits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/qbraid.devices.html">qbraid.devices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/qbraid.transpiler.html">qbraid.transpiler</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">qBraid-sdk</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../../qbraid.html">qbraid</a> &raquo;</li>
+        
+      <li>qbraid.devices.ibm.result</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for qbraid.devices.ibm.result</h1><div class="highlight"><pre>
+<span></span><span class="c1"># This code is part of Qiskit.</span>
+<span class="c1">#</span>
+<span class="c1"># (C) Copyright IBM 2017.</span>
+<span class="c1">#</span>
+<span class="c1"># This code is licensed under the Apache License, Version 2.0. You may</span>
+<span class="c1"># obtain a copy of this license in the LICENSE.txt file in the root directory</span>
+<span class="c1"># of the source tree https://github.com/Qiskit/qiskit-terra/blob/main/LICENSE.txt</span>
+<span class="c1"># or at http://www.apache.org/licenses/LICENSE-2.0.</span>
+<span class="c1">#</span>
+<span class="c1"># NOTICE: This file has been modified from the original:</span>
+<span class="c1"># https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/result/result.py</span>
+
+<span class="sd">&quot;&quot;&quot;QiskitResultWrapper Class&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span>
+<span class="kn">from</span> <span class="nn">qiskit.result.result</span> <span class="kn">import</span> <span class="n">Result</span>
+
+<span class="kn">from</span> <span class="nn">qbraid.devices.result</span> <span class="kn">import</span> <span class="n">ResultWrapper</span>
+
+
+<div class="viewcode-block" id="QiskitResultWrapper"><a class="viewcode-back" href="../../../../stubs/qbraid.devices.ibm.QiskitResultWrapper.html#qbraid.devices.ibm.result.QiskitResultWrapper">[docs]</a><span class="k">class</span> <span class="nc">QiskitResultWrapper</span><span class="p">(</span><span class="n">ResultWrapper</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Qiskit ``Result`` wrapper class.&quot;&quot;&quot;</span>
+
+    <span class="c1"># pylint: disable=too-few-public-methods</span>
+<div class="viewcode-block" id="QiskitResultWrapper.__init__"><a class="viewcode-back" href="../../../../stubs/qbraid.devices.ibm.QiskitResultWrapper.html#qbraid.devices.ibm.result.QiskitResultWrapper.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">vendor_rlo</span><span class="p">:</span> <span class="n">Result</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a QiskitResultWrapper</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            vendor_rlo (Result): a Qiskit ``Result`` object</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">vendor_rlo</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vendor_rlo</span> <span class="o">=</span> <span class="n">vendor_rlo</span></div>
+
+<div class="viewcode-block" id="QiskitResultWrapper.data"><a class="viewcode-back" href="../../../../api/qbraid.devices.ibm.html#qbraid.devices.ibm.result.QiskitResultWrapper.data">[docs]</a>    <span class="k">def</span> <span class="nf">data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Get the raw data for an experiment.</span>
+
+<span class="sd">        Note this data will be a single classical and quantum register and in a format required by</span>
+<span class="sd">        the results schema. We recommend that most users use the get_xxx method, and the data will</span>
+<span class="sd">        be post-processed for the data type.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            kwargs:</span>
+<span class="sd">                experiment (str or QuantumCircuit or Schedule or int or None): the index of the</span>
+<span class="sd">                    experiment. Several types are accepted for convenience::</span>
+<span class="sd">                    * str: the name of the experiment.</span>
+<span class="sd">                    * QuantumCircuit: the name of the circuit instance will be used.</span>
+<span class="sd">                    * Schedule: the name of the schedule instance will be used.</span>
+<span class="sd">                    * int: the position of the experiment.</span>
+<span class="sd">                    * None: if there is only one experiment, returns it.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            dict: A dictionary of results data for an experiment. The data depends on the backend</span>
+<span class="sd">                it ran on and the settings of `meas_level`, `meas_return` and `memory`. QASM</span>
+<span class="sd">                backends return a dictionary of dictionary with the key &#39;counts&#39; and  with the</span>
+<span class="sd">                counts, with the second dictionary keys containing a string in hex format</span>
+<span class="sd">                (``0x123``) and values equal to the number of times this outcome was measured.</span>
+<span class="sd">                Statevector backends return a dictionary with key &#39;statevector&#39; and values being a</span>
+<span class="sd">                list[list[complex components]] list of 2^num_qubits complex amplitudes. Where each</span>
+<span class="sd">                complex number is represented as a 2 entry list for each component. For example, a</span>
+<span class="sd">                list of [0.5+1j, 0-1j] would be represented as [[0.5, 1], [0, -1]].</span>
+<span class="sd">                Unitary backends return a dictionary with key &#39;unitary&#39; and values being a</span>
+<span class="sd">                list[list[list[complex components]]] list of 2^num_qubits x 2^num_qubits complex</span>
+<span class="sd">                amplitudes in a two entry list for each component. For example if the amplitude is</span>
+<span class="sd">                [[0.5+0j, 0-1j], ...] the value returned will be [[[0.5, 0], [0, -1]], ...].</span>
+<span class="sd">                The simulator backends also have an optional key &#39;snapshots&#39; which returns a dict</span>
+<span class="sd">                of snapshots specified by the simulator backend. The value is of the form</span>
+<span class="sd">                dict[slot: dict[str: array]] where the keys are the requested snapshot slots, and</span>
+<span class="sd">                the values are a dictionary of the snapshots.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            QiskitError: if data for the experiment could not be retrieved.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vendor_rlo</span><span class="o">.</span><span class="n">data</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, qBraid Development Team.
+
+    </p>
+  </div> 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -1,0 +1,303 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>qbraid.devices._utils &mdash; qBraid-sdk 0.1.0.dev0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> qBraid-sdk
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview/supported-devices.html">Supported Devices</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/guide.html">Development guide</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/qbraid.html">qbraid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/qbraid.circuits.html">qbraid.circuits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/qbraid.devices.html">qbraid.devices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/qbraid.transpiler.html">qbraid.transpiler</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">qBraid-sdk</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../qbraid.html">qbraid</a> &raquo;</li>
+        
+      <li>qbraid.devices._utils</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for qbraid.devices._utils</h1><div class="highlight"><pre>
+<span></span><span class="c1"># pylint: skip-file</span>
+
+<span class="kn">from</span> <span class="nn">tabulate</span> <span class="kn">import</span> <span class="n">tabulate</span>
+
+<span class="kn">from</span> <span class="nn">.aws_utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">BRAKET_PROVIDERS</span><span class="p">,</span>
+    <span class="n">AWS_DEVICE_INFO</span><span class="p">,</span>
+    <span class="n">AWS_CONFIG_PROMPT</span><span class="p">,</span>
+    <span class="n">aws_config_path</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">.ibm_utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">QISKIT_PROVIDERS</span><span class="p">,</span>
+    <span class="n">IBM_DEVICE_INFO</span><span class="p">,</span>
+    <span class="n">IBMQ_CONFIG_PROMPT</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">.google_utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">CIRQ_PROVIDERS</span><span class="p">,</span>
+    <span class="n">GOOGLE_DEVICE_INFO</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">.user_config</span> <span class="kn">import</span> <span class="n">set_config</span><span class="p">,</span> <span class="n">get_config</span>
+
+<span class="n">SUPPORTED_VENDORS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;aws&quot;</span><span class="p">:</span> <span class="n">BRAKET_PROVIDERS</span><span class="p">,</span>
+    <span class="s2">&quot;google&quot;</span><span class="p">:</span> <span class="n">CIRQ_PROVIDERS</span><span class="p">,</span>
+    <span class="s2">&quot;ibm&quot;</span><span class="p">:</span> <span class="n">QISKIT_PROVIDERS</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">DEVICE_INFO</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;aws&quot;</span><span class="p">:</span> <span class="n">AWS_DEVICE_INFO</span><span class="p">,</span>
+    <span class="s2">&quot;google&quot;</span><span class="p">:</span> <span class="n">GOOGLE_DEVICE_INFO</span><span class="p">,</span>
+    <span class="s2">&quot;ibm&quot;</span><span class="p">:</span> <span class="n">IBM_DEVICE_INFO</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">RUN_PACKAGE</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;aws&quot;</span><span class="p">:</span> <span class="s2">&quot;braket&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;google&quot;</span><span class="p">:</span> <span class="s2">&quot;cirq&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ibm&quot;</span><span class="p">:</span> <span class="s2">&quot;qiskit&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">CONFIG_PROMPTS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;aws&quot;</span><span class="p">:</span> <span class="n">AWS_CONFIG_PROMPT</span><span class="p">,</span>
+    <span class="s2">&quot;google&quot;</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="s2">&quot;ibm&quot;</span><span class="p">:</span> <span class="n">IBMQ_CONFIG_PROMPT</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="update_config"><a class="viewcode-back" href="../../../stubs/qbraid.devices.update_config.html#qbraid.devices.update_config">[docs]</a><span class="k">def</span> <span class="nf">update_config</span><span class="p">(</span><span class="n">vendor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Update the config associated with given vendor</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        vendor (str): a supported vendor</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">prompt_lst</span> <span class="o">=</span> <span class="n">CONFIG_PROMPTS</span><span class="p">[</span><span class="n">vendor</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">prompt</span> <span class="ow">in</span> <span class="n">prompt_lst</span><span class="p">:</span>
+        <span class="n">set_config</span><span class="p">(</span><span class="o">*</span><span class="n">prompt</span><span class="p">,</span> <span class="n">update</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="mi">0</span></div>
+
+
+<div class="viewcode-block" id="get_devices"><a class="viewcode-back" href="../../../stubs/qbraid.devices.get_devices.html#qbraid.devices.get_devices">[docs]</a><span class="k">def</span> <span class="nf">get_devices</span><span class="p">(</span><span class="n">provider</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">vendor</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">simulator</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">creds</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Prints all available devices, tabulated by provider and vendor. The user may filter results</span>
+<span class="sd">    according to a particular device provider, software vendor, or simulators/non-simulators.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        provider (optional, str): the name of a device provider</span>
+<span class="sd">        vendor (optional, str): the name of a software vendor</span>
+<span class="sd">        simulator (optional, bool): filter for simulators</span>
+<span class="sd">        creds (optional, bool): filter for devices that require credentials to use</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">device_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">vendor_key</span> <span class="ow">in</span> <span class="n">SUPPORTED_VENDORS</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">vendor</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">vendor</span> <span class="o">==</span> <span class="n">vendor_key</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">provider_key</span> <span class="ow">in</span> <span class="n">SUPPORTED_VENDORS</span><span class="p">[</span><span class="n">vendor_key</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="n">provider</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">provider</span> <span class="o">==</span> <span class="n">provider_key</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">device_key</span> <span class="ow">in</span> <span class="n">SUPPORTED_VENDORS</span><span class="p">[</span><span class="n">vendor_key</span><span class="p">][</span><span class="n">provider_key</span><span class="p">]:</span>
+                        <span class="k">if</span> <span class="n">simulator</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">simulator</span> <span class="o">==</span> <span class="p">(</span><span class="n">device_key</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;sim&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+                            <span class="n">device_ref</span> <span class="o">=</span> <span class="n">SUPPORTED_VENDORS</span><span class="p">[</span><span class="n">vendor_key</span><span class="p">][</span><span class="n">provider_key</span><span class="p">][</span><span class="n">device_key</span><span class="p">]</span>
+                            <span class="k">if</span> <span class="n">creds</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">creds</span> <span class="o">==</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">device_ref</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                                <span class="n">device_info</span> <span class="o">=</span> <span class="n">DEVICE_INFO</span><span class="p">[</span><span class="n">vendor_key</span><span class="p">][</span><span class="n">device_key</span><span class="p">]</span>
+                                <span class="n">device_list</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="o">*</span><span class="n">device_info</span><span class="p">,</span> <span class="n">device_key</span><span class="p">])</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">device_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;No devices found matching given criteria.&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">device_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">device_list</span> <span class="o">=</span> <span class="n">device_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">tabulate</span><span class="p">(</span>
+            <span class="n">device_list</span><span class="p">,</span>
+            <span class="n">headers</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Provider&quot;</span><span class="p">,</span> <span class="s2">&quot;Device Name&quot;</span><span class="p">,</span> <span class="s2">&quot;Num Qubits&quot;</span><span class="p">,</span> <span class="s2">&quot;qBraid ID&quot;</span><span class="p">]</span>
+        <span class="p">))</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, qBraid Development Team.
+
+    </p>
+  </div> 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

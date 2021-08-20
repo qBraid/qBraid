@@ -1,0 +1,305 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>qbraid &mdash; qBraid-sdk 0.1.0.dev0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../_static/css/theme.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+        <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+        <script src="../_static/jquery.js"></script>
+        <script src="../_static/underscore.js"></script>
+        <script src="../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../index.html" class="icon icon-home"> qBraid-sdk
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../overview/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../overview/supported-devices.html">Supported Devices</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../development/guide.html">Development guide</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../api/qbraid.html">qbraid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/qbraid.circuits.html">qbraid.circuits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/qbraid.devices.html">qbraid.devices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../api/qbraid.transpiler.html">qbraid.transpiler</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">qBraid-sdk</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="index.html">Module code</a> &raquo;</li>
+        
+      <li>qbraid</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for qbraid</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;This top level module contains the main qBraid public functionality.&quot;&quot;&quot;</span>
+
+
+<span class="kn">from</span> <span class="nn">importlib.metadata</span> <span class="kn">import</span> <span class="n">entry_points</span><span class="p">,</span> <span class="n">version</span>
+<span class="kn">from</span> <span class="nn">qbraid.circuits</span> <span class="kn">import</span> <span class="n">Circuit</span><span class="p">,</span> <span class="n">UpdateRule</span>
+<span class="kn">from</span> <span class="nn">qbraid.devices</span> <span class="kn">import</span> <span class="n">get_devices</span>
+<span class="kn">from</span> <span class="nn">qbraid.exceptions</span> <span class="kn">import</span> <span class="n">QbraidError</span><span class="p">,</span> <span class="n">WrapperError</span>
+
+<span class="n">__version__</span> <span class="o">=</span> <span class="n">version</span><span class="p">(</span><span class="s1">&#39;qbraid&#39;</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_get_entrypoints</span><span class="p">(</span><span class="n">group</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Returns a dictionary mapping each entry of ``group`` to its loadable entrypoint.&quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">entry</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">entry</span> <span class="k">for</span> <span class="n">entry</span> <span class="ow">in</span> <span class="n">entry_points</span><span class="p">()[</span><span class="n">group</span><span class="p">]}</span>
+
+
+<span class="n">transpiler_entrypoints</span> <span class="o">=</span> <span class="n">_get_entrypoints</span><span class="p">(</span><span class="s2">&quot;qbraid.transpiler&quot;</span><span class="p">)</span>
+<span class="n">devices_entrypoints</span> <span class="o">=</span> <span class="n">_get_entrypoints</span><span class="p">(</span><span class="s2">&quot;qbraid.devices&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="circuit_wrapper"><a class="viewcode-back" href="../api/qbraid.html#qbraid.circuit_wrapper">[docs]</a><span class="k">def</span> <span class="nf">circuit_wrapper</span><span class="p">(</span><span class="n">circuit</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sa">r</span><span class="sd">&quot;&quot;&quot;circuit_wrapper(circuit, input_qubit_mapping=None, **kwargs)</span>
+<span class="sd">    Load a class :class:`~qbraid.transpiler.CircuitWrapper` and return the instance.</span>
+
+<span class="sd">    This function is used to create a qBraid circuit-wrapper object, which can then be transpiled</span>
+<span class="sd">    to any supported quantum circuit-building package. The input quantum circuit object must be</span>
+<span class="sd">    an instance of a circuit object derived from a supported package. qBraid comes with support</span>
+<span class="sd">    for the following input circuit objects and corresponding quantum circuit-building packages:</span>
+
+<span class="sd">    * :class:`braket.circuits.circuit.Circuit`: Amazon Braket is a fully</span>
+<span class="sd">      mamanged AWS service that helps researchers, scientists, and developers get started</span>
+<span class="sd">      with quantum computing. Amazon Braket provides on-demand access to managed, high-performance</span>
+<span class="sd">      quantum circuit simulators, as well as different types of quantum computing hardware.</span>
+
+<span class="sd">    * :class:`cirq.circuits.circuit.Circuit`: Cirq is a Python library designed by Google</span>
+<span class="sd">      for writing, manipulating, and optimizing quantum circuits and running them against</span>
+<span class="sd">      quantum computers and simulators.</span>
+
+<span class="sd">    * :class:`qiskit.circuit.quantumcircuit.QuantumCircuit`: Qiskit is an open-source quantum</span>
+<span class="sd">      software framework designed by IBM. Supported hardware backends include the IBM Quantum</span>
+<span class="sd">      Experience.</span>
+
+<span class="sd">    All circuit-wrapper objects accept an ``input_qubit_mapping`` argument which gives an explicit</span>
+<span class="sd">    specification for the ordering of qubits. This argument may be needed for transpiling between</span>
+<span class="sd">    circuit-building packages that do not share equivalent qubit indexing.</span>
+
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        cirq_circuit = cirq.Circuit()</span>
+<span class="sd">        q0, q1, q2 = [cirq.LineQubit(i) for i in range(3)]</span>
+<span class="sd">        input_qubit_mapping = {q0:2,q1:1,q2:0}  # specify a reverse qubit ordering</span>
+<span class="sd">        ...</span>
+
+<span class="sd">    Please refer to the documentation of the individual qbraid circuit wrapper objects to see</span>
+<span class="sd">    any additional arguments that might be supported.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        circuit: a supported quantum circuit object</span>
+
+<span class="sd">    Keyword Args:</span>
+<span class="sd">        input_qubit_mapping: dictionary mapping each qubit object to an index</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">package</span> <span class="o">=</span> <span class="n">circuit</span><span class="o">.</span><span class="vm">__module__</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">package</span> <span class="ow">in</span> <span class="n">transpiler_entrypoints</span><span class="p">:</span>
+        <span class="n">circuit_wrapper_class</span> <span class="o">=</span> <span class="n">transpiler_entrypoints</span><span class="p">[</span><span class="n">package</span><span class="p">]</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">circuit_wrapper_class</span><span class="p">(</span><span class="n">circuit</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">raise</span> <span class="n">WrapperError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">package</span><span class="si">}</span><span class="s2"> is not a supported package.&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="device_wrapper"><a class="viewcode-back" href="../api/qbraid.html#qbraid.device_wrapper">[docs]</a><span class="k">def</span> <span class="nf">device_wrapper</span><span class="p">(</span><span class="n">device_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Apply qbraid device wrapper to device from a supported device provider.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        device_id (str): unique ID specifying a supported quantum hardware device/simulator</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        :class:`~qbraid.devices.DeviceLikeWrapper`: a qbraid device wrapper object</span>
+
+<span class="sd">    Raises:</span>
+<span class="sd">        WrapperError: If ``device_id`` is not a valid device reference.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">parse_id</span> <span class="o">=</span> <span class="n">device_id</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)</span>
+    <span class="n">vendor</span> <span class="o">=</span> <span class="n">parse_id</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">provider</span> <span class="o">=</span> <span class="n">parse_id</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">if</span> <span class="n">provider</span> <span class="o">==</span> <span class="s2">&quot;native&quot;</span><span class="p">:</span>
+        <span class="n">provider</span> <span class="o">=</span> <span class="n">vendor</span>
+
+    <span class="k">if</span> <span class="n">vendor</span> <span class="ow">in</span> <span class="n">devices_entrypoints</span><span class="p">:</span>
+        <span class="n">device_wrapper_class</span> <span class="o">=</span> <span class="n">devices_entrypoints</span><span class="p">[</span><span class="n">vendor</span><span class="p">]</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">device_wrapper_class</span><span class="p">(</span><span class="n">device_id</span><span class="p">,</span> <span class="n">provider</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">WrapperError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">device_id</span><span class="si">}</span><span class="s2"> is not a valid device ID.&quot;</span><span class="p">)</span></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, qBraid Development Team.
+
+    </p>
+  </div> 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

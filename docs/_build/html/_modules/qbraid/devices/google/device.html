@@ -1,0 +1,336 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>qbraid.devices.google.device &mdash; qBraid-sdk 0.1.0.dev0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../../../../_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> qBraid-sdk
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview/supported-devices.html">Supported Devices</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/guide.html">Development guide</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/qbraid.html">qbraid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/qbraid.circuits.html">qbraid.circuits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/qbraid.devices.html">qbraid.devices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/qbraid.transpiler.html">qbraid.transpiler</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">qBraid-sdk</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../../qbraid.html">qbraid</a> &raquo;</li>
+        
+      <li>qbraid.devices.google.device</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for qbraid.devices.google.device</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Module for Cirq device-like object wrappers.&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">qbraid.devices.device</span> <span class="kn">import</span> <span class="n">DeviceLikeWrapper</span>
+<span class="kn">from</span> <span class="nn">qbraid.devices.exceptions</span> <span class="kn">import</span> <span class="n">DeviceError</span>
+<span class="kn">from</span> <span class="nn">qbraid.devices.google.job</span> <span class="kn">import</span> <span class="n">CirqEngineJobWrapper</span>
+<span class="kn">from</span> <span class="nn">qbraid.devices.google.result</span> <span class="kn">import</span> <span class="n">CirqResultWrapper</span>
+
+
+<div class="viewcode-block" id="CirqSimulatorWrapper"><a class="viewcode-back" href="../../../../stubs/qbraid.devices.google.CirqSimulatorWrapper.html#qbraid.devices.google.device.CirqSimulatorWrapper">[docs]</a><span class="k">class</span> <span class="nc">CirqSimulatorWrapper</span><span class="p">(</span><span class="n">DeviceLikeWrapper</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Wrapper class for Google Cirq ``Simulator`` objects.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="CirqSimulatorWrapper.__init__"><a class="viewcode-back" href="../../../../stubs/qbraid.devices.google.CirqSimulatorWrapper.html#qbraid.devices.google.device.CirqSimulatorWrapper.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">provider</span><span class="p">,</span> <span class="o">**</span><span class="n">fields</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create CirqSimulatorWrapper</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name (str): a Cirq supported device</span>
+<span class="sd">            provider (str): the provider that this device comes from</span>
+<span class="sd">            fields: kwargs for the values to use to override the default options.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            DeviceError: if input field not a valid options</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">provider</span><span class="p">,</span> <span class="n">vendor</span><span class="o">=</span><span class="s2">&quot;google&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">fields</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_init_cred_device</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device_ref</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize a Google credentialed device.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="n">DeviceError</span><span class="p">(</span><span class="s2">&quot;Initializing a ``cirq.Simulator`` does not require credentials.&quot;</span><span class="p">)</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_default_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the default options for running this device.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="CirqSimulatorWrapper.run"><a class="viewcode-back" href="../../../../api/qbraid.devices.google.html#qbraid.devices.google.device.CirqSimulatorWrapper.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_input</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Samples from the given Circuit. By default, the `run_async` method invokes this method</span>
+<span class="sd">        on another thread. So this method is supposed to be thread safe.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            run_input: The circuit, i.e. program, to sample from.</span>
+<span class="sd">            kwargs:</span>
+<span class="sd">                param_resolver: Parameters to run with the program.</span>
+<span class="sd">                repetitions (int): The number of times to sample.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Result for a run.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">run_input</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compat_run_input</span><span class="p">(</span><span class="n">run_input</span><span class="p">)</span>
+        <span class="n">cirq_simulator</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vendor_dlo</span>
+        <span class="n">cirq_result</span> <span class="o">=</span> <span class="n">cirq_simulator</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">run_input</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">qbraid_result</span> <span class="o">=</span> <span class="n">CirqResultWrapper</span><span class="p">(</span><span class="n">cirq_result</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">qbraid_result</span></div></div>
+
+
+<div class="viewcode-block" id="CirqEngineWrapper"><a class="viewcode-back" href="../../../../stubs/qbraid.devices.google.CirqEngineWrapper.html#qbraid.devices.google.device.CirqEngineWrapper">[docs]</a><span class="k">class</span> <span class="nc">CirqEngineWrapper</span><span class="p">(</span><span class="n">DeviceLikeWrapper</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Wrapper class for Google Cirq ``Engine`` objects. NOTE: Right now the CirqEngine only allows</span>
+<span class="sd">    privelaged access, so this class has not been tested.</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="CirqEngineWrapper.__init__"><a class="viewcode-back" href="../../../../stubs/qbraid.devices.google.CirqEngineWrapper.html#qbraid.devices.google.device.CirqEngineWrapper.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">provider</span><span class="p">,</span> <span class="o">**</span><span class="n">fields</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Creat a CirqEngineWrapper</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            name (str): a Cirq supported device</span>
+<span class="sd">            provider (str): the provider that this device comes from</span>
+<span class="sd">            fields: kwargs for the values to use to override the default options.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            DeviceError: if input field not a valid options</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">provider</span><span class="p">,</span> <span class="n">vendor</span><span class="o">=</span><span class="s2">&quot;google&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">fields</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_init_cred_device</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device_ref</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize a Google credentialed device.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ne">NotImplementedError</span>  <span class="c1"># privelaged access</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_default_options</span><span class="p">(</span><span class="bp">cls</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return the default options for running this device.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ne">NotImplementedError</span>
+
+<div class="viewcode-block" id="CirqEngineWrapper.run"><a class="viewcode-back" href="../../../../api/qbraid.devices.google.html#qbraid.devices.google.device.CirqEngineWrapper.run">[docs]</a>    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_input</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Runs the supplied Circuit via Quantum Engine.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            run_input: The Circuit to execute. If a circuit is provided, a moment by moment schedule</span>
+<span class="sd">                will be used.</span>
+<span class="sd">            kwargs: Any kwarg options to pass to the backend for running the config. If a key is</span>
+<span class="sd">                also present in the options attribute/object then the expectation is that the value</span>
+<span class="sd">                specified will be used instead of what&#39;s set in the options object.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A CirqResultWrapper representing the Result for this run.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">run_input</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compat_run_input</span><span class="p">(</span><span class="n">run_input</span><span class="p">)</span>
+        <span class="n">cirq_engine</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vendor_dlo</span>
+        <span class="n">cirq_result</span> <span class="o">=</span> <span class="n">cirq_engine</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">run_input</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">qbraid_result</span> <span class="o">=</span> <span class="n">CirqResultWrapper</span><span class="p">(</span><span class="n">cirq_result</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">qbraid_result</span></div>
+
+<div class="viewcode-block" id="CirqEngineWrapper.run_sweep"><a class="viewcode-back" href="../../../../api/qbraid.devices.google.html#qbraid.devices.google.device.CirqEngineWrapper.run_sweep">[docs]</a>    <span class="k">def</span> <span class="nf">run_sweep</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">run_input</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Runs the supplied Circuit via Quantum Engine.Creates</span>
+
+<span class="sd">        In contrast to run, this runs across multiple parameter sweeps, and does not block until</span>
+<span class="sd">        a result is returned.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            run_input: The Circuit to execute. If a circuit is provided, a moment by moment schedule</span>
+<span class="sd">                will be used.</span>
+<span class="sd">            kwargs: Any kwarg options to pass to the backend for running the config. If a key is</span>
+<span class="sd">                also present in the options attribute/object then the expectation is that the value</span>
+<span class="sd">                specified will be used instead of what&#39;s set in the options object.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            An EngineJob. If this is iterated over it returns a list of</span>
+<span class="sd">            TrialResults, one for each parameter sweep.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">run_input</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_compat_run_input</span><span class="p">(</span><span class="n">run_input</span><span class="p">)</span>
+        <span class="n">cirq_engine</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">vendor_dlo</span>
+        <span class="n">cirq_engine_job</span> <span class="o">=</span> <span class="n">cirq_engine</span><span class="o">.</span><span class="n">run_sweep</span><span class="p">(</span><span class="n">run_input</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">qbraid_job</span> <span class="o">=</span> <span class="n">CirqEngineJobWrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">cirq_engine_job</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">qbraid_job</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, qBraid Development Team.
+
+    </p>
+  </div> 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

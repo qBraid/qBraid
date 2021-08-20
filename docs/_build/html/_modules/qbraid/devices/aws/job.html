@@ -1,0 +1,291 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>qbraid.devices.aws.job &mdash; qBraid-sdk 0.1.0.dev0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../../_static/css/theme.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../../../../_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+        <script src="../../../../_static/jquery.js"></script>
+        <script src="../../../../_static/underscore.js"></script>
+        <script src="../../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../../index.html" class="icon icon-home"> qBraid-sdk
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../overview/supported-devices.html">Supported Devices</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../development/guide.html">Development guide</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/qbraid.html">qbraid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/qbraid.circuits.html">qbraid.circuits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/qbraid.devices.html">qbraid.devices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../api/qbraid.transpiler.html">qbraid.transpiler</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../../index.html">qBraid-sdk</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../../qbraid.html">qbraid</a> &raquo;</li>
+        
+      <li>qbraid.devices.aws.job</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for qbraid.devices.aws.job</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;). You</span>
+<span class="c1"># may not use this file except in compliance with the License. A copy of</span>
+<span class="c1"># the License is located at</span>
+<span class="c1">#</span>
+<span class="c1">#     http://aws.amazon.com/apache2.0/</span>
+<span class="c1">#</span>
+<span class="c1"># or at https://github.com/aws/amazon-braket-sdk-python/blob/main/LICENSE.</span>
+<span class="c1"># This file is distributed on an &quot;AS IS&quot; BASIS, WITHOUT WARRANTIES OR</span>
+<span class="c1"># CONDITIONS OF ANY KIND, either express or implied. See the License for</span>
+<span class="c1"># the specific language governing permissions and limitations under the License.</span>
+<span class="c1">#</span>
+<span class="c1"># NOTICE: This file has been modified from the original:</span>
+<span class="c1"># https://github.com/aws/amazon-braket-sdk-python/blob/main/src/braket/tasks/quantum_task.py</span>
+
+<span class="sd">&quot;&quot;&quot;BraketQuantumtaskWrapper Class&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span> <span class="nn">asyncio</span> <span class="kn">import</span> <span class="n">Task</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">from</span> <span class="nn">braket.tasks</span> <span class="kn">import</span> <span class="n">QuantumTask</span>
+<span class="kn">from</span> <span class="nn">braket.tasks.annealing_quantum_task_result</span> <span class="kn">import</span> <span class="n">AnnealingQuantumTaskResult</span>
+<span class="kn">from</span> <span class="nn">braket.tasks.gate_model_quantum_task_result</span> <span class="kn">import</span> <span class="n">GateModelQuantumTaskResult</span>
+
+<span class="kn">from</span> <span class="nn">qbraid.devices.job</span> <span class="kn">import</span> <span class="n">JobLikeWrapper</span>
+
+
+<div class="viewcode-block" id="BraketQuantumTaskWrapper"><a class="viewcode-back" href="../../../../stubs/qbraid.devices.aws.BraketQuantumTaskWrapper.html#qbraid.devices.aws.job.BraketQuantumTaskWrapper">[docs]</a><span class="k">class</span> <span class="nc">BraketQuantumTaskWrapper</span><span class="p">(</span><span class="n">JobLikeWrapper</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Wrapper class for Amazon Braket ``QuantumTask`` objects.&quot;&quot;&quot;</span>
+
+<div class="viewcode-block" id="BraketQuantumTaskWrapper.__init__"><a class="viewcode-back" href="../../../../stubs/qbraid.devices.aws.BraketQuantumTaskWrapper.html#qbraid.devices.aws.job.BraketQuantumTaskWrapper.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">quantum_task</span><span class="p">:</span> <span class="n">QuantumTask</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Create a BraketQuantumTaskWrapper</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            device: the BraketDeviceWrapper associated with this quantum task i.e. job</span>
+<span class="sd">            quantum_task (QuantumTask): a braket ``QuantumTask`` object used to run circuits.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># redundant super delegation but might at more functionality later</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">device</span><span class="p">,</span> <span class="n">quantum_task</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">device</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">vendor_jlo</span> <span class="o">=</span> <span class="n">quantum_task</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">job_id</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Return a unique id identifying the task.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vendor_jlo</span><span class="o">.</span><span class="n">id</span>
+
+<div class="viewcode-block" id="BraketQuantumTaskWrapper.metadata"><a class="viewcode-back" href="../../../../api/qbraid.devices.aws.html#qbraid.devices.aws.job.BraketQuantumTaskWrapper.metadata">[docs]</a>    <span class="k">def</span> <span class="nf">metadata</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Get task metadata.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            **kwargs:</span>
+<span class="sd">                use_cached_value (bool, optional): If True, uses the value retrieved from the</span>
+<span class="sd">                    previous request.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            Dict[str, Any]: The metadata regarding the job. If `use_cached_value` is True,</span>
+<span class="sd">            then the value retrieved from the most recent request is used.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vendor_jlo</span><span class="o">.</span><span class="n">metadata</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BraketQuantumTaskWrapper.result"><a class="viewcode-back" href="../../../../api/qbraid.devices.aws.html#qbraid.devices.aws.job.BraketQuantumTaskWrapper.result">[docs]</a>    <span class="k">def</span> <span class="nf">result</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">AnnealingQuantumTaskResult</span><span class="p">,</span> <span class="n">GateModelQuantumTaskResult</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Return the results of the job.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vendor_jlo</span><span class="o">.</span><span class="n">result</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BraketQuantumTaskWrapper.async_result"><a class="viewcode-back" href="../../../../api/qbraid.devices.aws.html#qbraid.devices.aws.job.BraketQuantumTaskWrapper.async_result">[docs]</a>    <span class="k">def</span> <span class="nf">async_result</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Task</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;asyncio.Task: Get the quantum task result asynchronously.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vendor_jlo</span><span class="o">.</span><span class="n">async_result</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BraketQuantumTaskWrapper.cancel"><a class="viewcode-back" href="../../../../api/qbraid.devices.aws.html#qbraid.devices.aws.job.BraketQuantumTaskWrapper.cancel">[docs]</a>    <span class="k">def</span> <span class="nf">cancel</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Cancel the quantum task.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vendor_jlo</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="BraketQuantumTaskWrapper.status"><a class="viewcode-back" href="../../../../api/qbraid.devices.aws.html#qbraid.devices.aws.job.BraketQuantumTaskWrapper.status">[docs]</a>    <span class="k">def</span> <span class="nf">status</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;State of the quantum task&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">vendor_jlo</span><span class="o">.</span><span class="n">state</span><span class="p">()</span></div></div>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, qBraid Development Team.
+
+    </p>
+  </div> 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

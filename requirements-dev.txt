@@ -1,0 +1,7 @@
+black
+jupyter
+pylint
+pytest
+sphinx
+sphinx-autodoc-typehints
+sphinx-rtd-theme

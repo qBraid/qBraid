@@ -1,0 +1,293 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>qbraid.circuits.update_rule &mdash; qBraid-sdk 0.1.0.dev0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="../../../_static/css/theme.css" type="text/css" />
+
+  
+  
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="../../../" src="../../../_static/documentation_options.js"></script>
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="../../../_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="../../../index.html" class="icon icon-home"> qBraid-sdk
+          
+
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <p class="caption"><span class="caption-text">Overview</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview/introduction.html">Introduction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../overview/supported-devices.html">Supported Devices</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Development</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../development/guide.html">Development guide</a></li>
+</ul>
+<p class="caption"><span class="caption-text">API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/qbraid.html">qbraid</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/qbraid.circuits.html">qbraid.circuits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/qbraid.devices.html">qbraid.devices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../api/qbraid.transpiler.html">qbraid.transpiler</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">qBraid-sdk</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="../../../index.html" class="icon icon-home"></a> &raquo;</li>
+        
+          <li><a href="../../index.html">Module code</a> &raquo;</li>
+        
+          <li><a href="../../qbraid.html">qbraid</a> &raquo;</li>
+        
+      <li>qbraid.circuits.update_rule</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <h1>Source code for qbraid.circuits.update_rule</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright 2018 The Cirq Developers</span>
+<span class="c1">#</span>
+<span class="c1"># Licensed under the Apache License, Version 2.0 (the &quot;License&quot;);</span>
+<span class="c1"># you may not use this file except in compliance with the License.</span>
+<span class="c1"># You may obtain a copy of the License at</span>
+<span class="c1">#</span>
+<span class="c1">#     https://www.apache.org/licenses/LICENSE-2.0</span>
+<span class="c1">#</span>
+<span class="c1"># Unless required by applicable law or agreed to in writing, software</span>
+<span class="c1"># distributed under the License is distributed on an &quot;AS IS&quot; BASIS,</span>
+<span class="c1"># WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.</span>
+<span class="c1"># See the License for the specific language governing permissions and</span>
+<span class="c1"># limitations under the License.</span>
+
+<span class="sd">&quot;&quot;&quot;Hard-coded options for adding multiple operations to a circuit.&quot;&quot;&quot;</span>
+
+
+<div class="viewcode-block" id="UpdateRule"><a class="viewcode-back" href="../../../stubs/qbraid.circuits.UpdateRule.html#qbraid.circuits.UpdateRule">[docs]</a><span class="k">class</span> <span class="nc">UpdateRule</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Indicates preferences on how to add multiple operations to a circuit.&quot;&quot;&quot;</span>
+
+    <span class="n">NEW</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: UpdateRule</span>
+    <span class="n">NEW_THEN_INLINE</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: UpdateRule</span>
+    <span class="n">INLINE</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: UpdateRule</span>
+    <span class="n">EARLIEST</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># type: UpdateRule</span>
+
+<div class="viewcode-block" id="UpdateRule.__init__"><a class="viewcode-back" href="../../../stubs/qbraid.circuits.UpdateRule.html#qbraid.circuits.UpdateRule.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">doc</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="vm">__doc__</span> <span class="o">=</span> <span class="n">doc</span></div>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;qbraid.circuits.update_rule.UpdateRule.</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<span class="n">UpdateRule</span><span class="o">.</span><span class="n">NEW</span> <span class="o">=</span> <span class="n">UpdateRule</span><span class="p">(</span>
+    <span class="s2">&quot;NEW&quot;</span><span class="p">,</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Always creates a new moment at the desired insert location, and adds the</span>
+<span class="sd">    operation to insert into that moment.</span>
+<span class="sd">    &quot;&quot;&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">UpdateRule</span><span class="o">.</span><span class="n">NEW_THEN_INLINE</span> <span class="o">=</span> <span class="n">UpdateRule</span><span class="p">(</span>
+    <span class="s2">&quot;NEW_THEN_INLINE&quot;</span><span class="p">,</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Creates a new moment at the desired insert location for the first</span>
+<span class="sd">    operation, but then switches to inserting operations inline.</span>
+<span class="sd">    &quot;&quot;&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="n">UpdateRule</span><span class="o">.</span><span class="n">INLINE</span> <span class="o">=</span> <span class="n">UpdateRule</span><span class="p">(</span>
+    <span class="s2">&quot;INLINE&quot;</span><span class="p">,</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Attempts to add the operation to insert into the moment just before the</span>
+<span class="sd">    desired insert location. But, if there&#39;s already an existing operation</span>
+<span class="sd">    affecting any of the qubits touched by the operation to insert, or the</span>
+<span class="sd">    desired index is 0, a new moment is created and inserted at the desired</span>
+<span class="sd">    location instead.</span>
+<span class="sd">    In case the insert index is smaller than -len(&lt;moments-in-circuit&gt;) it is</span>
+<span class="sd">    treated like it would be 0.</span>
+<span class="sd">    For too big indices it attempts to insert the operation into the last</span>
+<span class="sd">    moment of the circuit.</span>
+<span class="sd">    &quot;&quot;&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="n">UpdateRule</span><span class="o">.</span><span class="n">EARLIEST</span> <span class="o">=</span> <span class="n">UpdateRule</span><span class="p">(</span>
+    <span class="s2">&quot;EARLIEST&quot;</span><span class="p">,</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Scans backward from the insert location until a moment with operations</span>
+<span class="sd">    touching qubits affected by the operation to insert is found. The operation</span>
+<span class="sd">    is added into the moment just after that location.</span>
+<span class="sd">    If the scan reaches the start of the circuit without finding any conflicting</span>
+<span class="sd">    operations, the operation is added into the first moment of the circuit.</span>
+<span class="sd">    The operation is never added into moments after the insert location.</span>
+<span class="sd">    If the moment just before the insert location has conflicting operations,</span>
+<span class="sd">    or the insert index is 0, then the operation is inserted into a new moment</span>
+<span class="sd">    at the desired location.</span>
+<span class="sd">    &quot;&quot;&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+
+           </div>
+           
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, qBraid Development Team.
+
+    </p>
+  </div> 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

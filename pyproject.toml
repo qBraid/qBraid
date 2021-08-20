@@ -4,4 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [tool.black]
 line-length = 100
-target_version = ['py37', 'py38', 'py39']
+target-version = ['py37', 'py38', 'py39']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.__pycache__
+  | \.tox
+  | \.venv
+  | tutorials
+  | dist
+)/
+'''
+
+
+
+
