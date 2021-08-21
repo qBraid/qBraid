@@ -11,7 +11,6 @@ __pycache__/
 *.vscode/*
 .Python
 build/
-docs/_build/
 develop-eggs/
 dist/
 downloads/
@@ -71,9 +70,6 @@ instance/
 # Scrapy stuff:
 .scrapy
 
-# Sphinx documentation
-docs/build/
-
 # PyBuilder
 target/
 
@@ -120,8 +116,8 @@ venv.bak/
 /site
 
 # Sphinx documentation
-docs/_build/*
-docs/source/stubs/*
+docs/_build/
+docs/source/stubs/
 
 # mypy
 .mypy_cache/
