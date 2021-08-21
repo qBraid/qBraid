@@ -27,7 +27,14 @@ parallel = true
 
 [tool.coverage.report]
 show_missing = true
+skip_covered = true
 ignore_errors = true
+# exclude_lines = [
+#     "*raise AssertionError*",
+#     "*raise NotImplementedError*",
+#     "*return NotImplemented*",
+#     "*raise*$",
+#     ]
 
 [tool.coverage.html]
 directory = "tests/_coverage"

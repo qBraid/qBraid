@@ -1,8 +1,10 @@
 black
 coverage
+dwave-system
 jupyter
 pylint
 pytest
 sphinx
 sphinx-autodoc-typehints
 sphinx-rtd-theme
+tox
