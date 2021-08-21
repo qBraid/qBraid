@@ -6,7 +6,7 @@ from qbraid.circuits import Circuit, UpdateRule
 from qbraid.devices import get_devices
 from qbraid.exceptions import QbraidError, WrapperError
 
-__version__ = version('qbraid')
+__version__ = version("qbraid")
 
 
 def _get_entrypoints(group: str):

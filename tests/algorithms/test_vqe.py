@@ -80,9 +80,7 @@ from qiskit_nature.problems.second_quantization.electronic import (
 # Use PySCF, a classical computational chemistry software
 # package, to compute the one-body and two-body integrals in
 # electronic-orbital basis, necessary to form the Fermionic operator
-driver = PySCFDriver(
-    atom="H .0 .0 .0; H .0 .0 0.735", unit=UnitsType.ANGSTROM, basis="sto3g"
-)
+driver = PySCFDriver(atom="H .0 .0 .0; H .0 .0 0.735", unit=UnitsType.ANGSTROM, basis="sto3g")
 problem = ElectronicStructureProblem(driver)
 
 # generate the second-quantized operators

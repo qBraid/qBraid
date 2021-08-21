@@ -2,6 +2,11 @@
 requires = ["setuptools>=51", "wheel"]
 build-backend = "setuptools.build_meta"
 
+[tool.pytest.ini_options]
+addopts = "--maxfail=2 -rf"
+testpaths = ["tests/circuits", "tests/devices", "tests/transpiler"]
+filterwarnings = "ignore:.*U.*mode is deprecated:DeprecationWarning"
+
 [tool.black]
 line-length = 100
 target-version = ['py37', 'py38', 'py39']
@@ -17,6 +22,19 @@ exclude = '''
 )/
 '''
 
+[tool.coverage.run]
+parallel = true
+
+[tool.coverage.report]
+show_missing = true
+ignore_errors = true
+
+[tool.coverage.html]
+directory = "tests/_coverage"
+
+[tool.pylint.'MESSAGES CONTROL']
+max-line-length = 100
+disable = "R0801, R0913, R0902"
 
 
 

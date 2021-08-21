@@ -87,7 +87,4 @@ def get_devices(provider=None, vendor=None, simulator=None, creds=None):
     else:
         if len(device_list) == 1:
             device_list = device_list[0]
-        print(tabulate(
-            device_list,
-            headers=["Provider", "Device Name", "Num Qubits", "qBraid ID"]
-        ))
+        print(tabulate(device_list, headers=["Provider", "Device Name", "Num Qubits", "qBraid ID"]))

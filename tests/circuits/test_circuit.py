@@ -30,7 +30,7 @@ INSTRUCTIONS
 """
 
 
-class TestInstructions():
+class TestInstructions:
     @pytest.fixture()
     def gate(self):
         return circuits.H()
@@ -40,7 +40,7 @@ class TestInstructions():
         return Instruction(gate=gate, qubits=[0])
 
     def test_instruction_creation(self, instruction):
-        """Test Instruction Object Creation. """
+        """Test Instruction Object Creation."""
         assert [type(instruction), type(instruction.gate), type(instruction.qubits)] == [
             Instruction,
             circuits.H,
@@ -53,7 +53,7 @@ class TestInstructions():
             Instruction(gate=gate, qubits=[1, 2, 3])
 
     def test_too_few_qubits(self):
-        """Test gate with too few qubits. """
+        """Test gate with too few qubits."""
         with pytest.raises(AttributeError):
             Instruction(gate=circuit.CH(), qubits=[1])
 
@@ -77,7 +77,7 @@ MOMENTS
 """
 
 
-class TestMoments():
+class TestMoments:
     @pytest.fixture()
     def gate(self):
         return circuits.H()
@@ -192,7 +192,7 @@ class TestCircuit:
         circuit2.append([h1, h2, h3])
         circuit.append(circuit2)
         assert len(circuit.moments) == 2
-    
+
     def test_add_empty_circuit_first(self, gate):
         """Test adding circuit to another circuit."""
         circuit = Circuit(num_qubits=3, name="test_circuit")
@@ -200,7 +200,7 @@ class TestCircuit:
         circuit.append(circuit2)
         # Nothing should be added to the circuit
         assert len(circuit.moments) == 0
-    
+
     def test_add_filled_circuit_first(self, gate):
         """Test adding circuit to another circuit."""
         h1 = Instruction(gate, 0)
@@ -318,9 +318,7 @@ class TestCircuit:
         h1 = Instruction(gate, 0)
         h2 = Instruction(gate, 1)
         h3 = Instruction(gate, 2)
-        circuit = Circuit(
-            num_qubits=3, name="test_circuit", update_rule=UpdateRule.EARLIEST
-        )
+        circuit = Circuit(num_qubits=3, name="test_circuit", update_rule=UpdateRule.EARLIEST)
         circuit.append(h1)
         circuit.append(h2)
         circuit.append(h3)
@@ -331,9 +329,7 @@ class TestCircuit:
         h1 = Instruction(gate, 0)
         h2 = Instruction(gate, 1)
         h3 = Instruction(gate, 1)
-        circuit = Circuit(
-            num_qubits=3, name="test_circuit", update_rule=UpdateRule.EARLIEST
-        )
+        circuit = Circuit(num_qubits=3, name="test_circuit", update_rule=UpdateRule.EARLIEST)
         circuit.append([h1, h2, h3])
         assert len(circuit.moments) == 2
 
@@ -346,9 +342,7 @@ class TestCircuit:
         h2 = Instruction(gate, 1)
         h3 = Instruction(gate, 2)
         h4 = Instruction(gate, 2)
-        circuit = Circuit(
-            num_qubits=3, name="test_circuit", update_rule=UpdateRule.NEW_THEN_INLINE
-        )
+        circuit = Circuit(num_qubits=3, name="test_circuit", update_rule=UpdateRule.NEW_THEN_INLINE)
         circuit.append(h1)
         circuit.append(h2)
         circuit.append(h3)
@@ -356,14 +350,12 @@ class TestCircuit:
         assert len(circuit.moments) == 4
 
     def test_new_then_inline_rule_together(self, gate):
-        """Test new then inline update rule """
+        """Test new then inline update rule"""
         h1 = Instruction(gate, 1)
         h2 = Instruction(gate, 1)
         h3 = Instruction(gate, 2)
         h4 = Instruction(gate, 2)
-        circuit = Circuit(
-            num_qubits=3, name="test_circuit", update_rule=UpdateRule.NEW_THEN_INLINE
-        )
+        circuit = Circuit(num_qubits=3, name="test_circuit", update_rule=UpdateRule.NEW_THEN_INLINE)
         circuit.append([h1, h2, h3, h4])
         assert len(circuit.moments) == 3
 
@@ -371,19 +363,19 @@ class TestCircuit:
         "circuit_param, expected",
         [
             (
-                    circuit(),
-                    {
-                        "_qubits": [0, 1, 2],
-                        "_moments": [],
-                        "name": "test_circuit",
-                        '_parameter_table': ParameterTable({}),
-                        "update_rule": qbraid.circuits.update_rule.UpdateRule.EARLIEST,
-                    },
+                circuit(),
+                {
+                    "_qubits": [0, 1, 2],
+                    "_moments": [],
+                    "name": "test_circuit",
+                    "_parameter_table": ParameterTable({}),
+                    "update_rule": qbraid.circuits.update_rule.UpdateRule.EARLIEST,
+                },
             ),
         ],
     )
     def test_creating_circuit(self, circuit_param, expected):
-        """ Test creating a circuit."""
+        """Test creating a circuit."""
         # check class parameters
         dict = circuit_param.__dict__.copy()
         get_qubit_idx_dict(dict)
@@ -393,19 +385,19 @@ class TestCircuit:
         "circuit_param, expected",
         [
             (
-                    circuit(),
-                    {
-                        "_qubits": [0, 1, 2],
-                        "_moments": [Moment("[]")],
-                        "name": "test_circuit",
-                        '_parameter_table': ParameterTable({}),
-                        "update_rule": qbraid.circuits.update_rule.UpdateRule.EARLIEST,
-                    },
+                circuit(),
+                {
+                    "_qubits": [0, 1, 2],
+                    "_moments": [Moment("[]")],
+                    "name": "test_circuit",
+                    "_parameter_table": ParameterTable({}),
+                    "update_rule": qbraid.circuits.update_rule.UpdateRule.EARLIEST,
+                },
             )
         ],
     )
     def test_add_moment(self, circuit_param, expected):
-        """ Test adding a moment."""
+        """Test adding a moment."""
         moment = Moment()
         circuit_param.append(moment)
         dict = circuit_param.__dict__.copy()
@@ -416,7 +408,7 @@ class TestCircuit:
         """
 
 
-class TestDrawer():
+class TestDrawer:
     @pytest.fixture()
     def gate(self):
         return circuits.H()
@@ -426,9 +418,7 @@ class TestDrawer():
         h2 = Instruction(gate, 1)
         h3 = Instruction(gate, 2)
         h4 = Instruction(gate, 2)
-        circuit = Circuit(
-            num_qubits=3, name="test_circuit", update_rule=UpdateRule.NEW_THEN_INLINE
-        )
+        circuit = Circuit(num_qubits=3, name="test_circuit", update_rule=UpdateRule.NEW_THEN_INLINE)
         circuit.append([h1, h2, h3, h4])
         drawer(circuit)
         assert True

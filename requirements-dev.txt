@@ -1,4 +1,5 @@
 black
+coverage
 jupyter
 pylint
 pytest

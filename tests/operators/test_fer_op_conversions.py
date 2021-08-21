@@ -86,8 +86,7 @@ def test_fer_op_H2_qk_of():
     qub_op = jordan_wigner(fermion_hamiltonian)
     es_correct = eigenspectrum(qub_op)
     assert np.all(
-        np.round(es_correct, 7)
-        == np.round(es_of + np.ones(np.shape(es_of)) * 0.71375399, 7)
+        np.round(es_correct, 7) == np.round(es_of + np.ones(np.shape(es_of)) * 0.71375399, 7)
     )
 
 
@@ -99,9 +98,7 @@ def random_hams_of_qiskit(self):
 
 def get_rand_one_b_tensors():
     one_body_0 = np.zeros([4, 4])
-    one_body_1 = np.array(
-        [[0.4, 0, 0, 0], [0, 0.5, 0, 0], [0, 0, 0.6, 0], [0, 0, 0, 0.7]]
-    )
+    one_body_1 = np.array([[0.4, 0, 0, 0], [0, 0.5, 0, 0], [0, 0, 0.6, 0], [0, 0, 0, 0.7]])
     one_body_2 = np.array([[1, 2, 0, 3], [2, 1, 2, 0], [0, 2, 1, 2.5], [3, 0, 2.5, 1]])
     one_body_3 = np.array([[1, 2, 0, 3], [2, 1, 2, 0], [0, 2, 1, 2.5], [3, 0, 2.5, 1]])
     one_body_4 = np.array(
@@ -179,8 +176,7 @@ def test_fer_op_LiH_qk_of():
     qub_op = fer_op.mapping("jordan_wigner")
     evals_correct = EE(qub_op, k=8).run()
     assert np.all(
-        np.round(np.real(evals.eigenvalues), 7)
-        == np.round(np.real(evals_correct.eigenvalues), 7)
+        np.round(np.real(evals.eigenvalues), 7) == np.round(np.real(evals_correct.eigenvalues), 7)
     )
 
 

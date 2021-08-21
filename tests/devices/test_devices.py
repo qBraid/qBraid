@@ -95,7 +95,8 @@ def cirq_circuit(meas=True):
         yield cirq.H(q0)
         yield cirq.Ry(rads=np.pi / 2)(q0)
         if meas:
-            yield cirq.measure(q0, key='q0')
+            yield cirq.measure(q0, key="q0")
+
     circuit = cirq.Circuit()
     circuit.append(basic_circuit())
     return circuit
@@ -146,5 +147,3 @@ def test_run_braket_device_wrapper(device_id, circuit):
     vendor_job = qbraid_job.vendor_jlo
     assert isinstance(qbraid_job, BraketQuantumTaskWrapper)
     assert isinstance(vendor_job, BraketQuantumTask)
-
-

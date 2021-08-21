@@ -52,6 +52,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+tests/_coverage/
 
 # Translations
 *.mo
@@ -119,7 +120,7 @@ venv.bak/
 /site
 
 # Sphinx documentation
-docs/build/*
+docs/_build/*
 docs/source/stubs/*
 
 # mypy
