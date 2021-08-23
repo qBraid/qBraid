@@ -1,5 +1,6 @@
-from ...gate import Gate
 from typing import Optional
+
+from ...gate import Gate
 
 
 class I(Gate):

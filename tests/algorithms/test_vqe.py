@@ -73,9 +73,8 @@
 # print("All energies have been calculated")
 
 from qiskit_nature.drivers import PySCFDriver, UnitsType
-from qiskit_nature.problems.second_quantization.electronic import (
-    ElectronicStructureProblem,
-)
+from qiskit_nature.problems.second_quantization.electronic import \
+    ElectronicStructureProblem
 
 # Use PySCF, a classical computational chemistry software
 # package, to compute the one-body and two-body integrals in
@@ -99,9 +98,9 @@ from qiskit.algorithms.optimizers import L_BFGS_B
 
 optimizer = L_BFGS_B()
 
+from qiskit_nature.converters.second_quantization import QubitConverter
 # setup the mapper and qubit converter
 from qiskit_nature.mappers.second_quantization import ParityMapper
-from qiskit_nature.converters.second_quantization import QubitConverter
 
 mapper = ParityMapper()
 converter = QubitConverter(mapper=mapper, two_qubit_reduction=True)

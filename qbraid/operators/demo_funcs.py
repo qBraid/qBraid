@@ -1,4 +1,4 @@
-from qiskit import QuantumCircuit, Aer, execute
+from qiskit import Aer, QuantumCircuit, execute
 
 
 def quantum_hello_bye_world():

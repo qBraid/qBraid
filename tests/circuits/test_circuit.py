@@ -2,14 +2,13 @@
 # All rights reserved-2021©.
 import pytest
 
+import qbraid.circuits.update_rule
 from qbraid import circuits
-from qbraid.circuits import drawer
+from qbraid.circuits import ParameterTable, drawer
 from qbraid.circuits.circuit import Circuit
 from qbraid.circuits.exceptions import CircuitError
 from qbraid.circuits.instruction import Instruction
 from qbraid.circuits.moment import Moment
-import qbraid.circuits.update_rule
-from qbraid.circuits import ParameterTable
 from qbraid.circuits.update_rule import UpdateRule
 
 

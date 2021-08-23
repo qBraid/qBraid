@@ -1,7 +1,8 @@
 from braket.circuits.gate import Gate
 
-from .._utils import get_braket_gate_data
 from qbraid.transpiler.gate import GateWrapper
+
+from .._utils import get_braket_gate_data
 
 
 class BraketGateWrapper(GateWrapper):

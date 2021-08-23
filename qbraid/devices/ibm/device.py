@@ -12,8 +12,7 @@
 
 """QiskitBackendWrapper Class"""
 
-from qiskit import IBMQ
-from qiskit import execute
+from qiskit import IBMQ, execute
 from qiskit.providers.ibmq import least_busy
 from qiskit.utils.quantum_instance import QuantumInstance
 

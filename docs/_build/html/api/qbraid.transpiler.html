@@ -4,8 +4,7 @@
 <html class="writer-html5" lang="en" >
 <head>
   <meta charset="utf-8" />
-  <meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   
   <title>qbraid.transpiler &mdash; qBraid-sdk 0.1.0.dev0 documentation</title>
@@ -90,16 +89,16 @@
               
             
             
-              <p class="caption"><span class="caption-text">Overview</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../overview/introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../overview/supported-devices.html">Supported Devices</a></li>
 </ul>
-<p class="caption"><span class="caption-text">Development</span></p>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../development/guide.html">Development guide</a></li>
 </ul>
-<p class="caption"><span class="caption-text">API Reference</span></p>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
 <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="qbraid.html">qbraid</a></li>
 <li class="toctree-l1"><a class="reference internal" href="qbraid.circuits.html">qbraid.circuits</a></li>
@@ -215,11 +214,11 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
             
-  <section id="module-qbraid.transpiler">
+  <div class="section" id="module-qbraid.transpiler">
 <span id="qbraid-transpiler"></span><h1>qbraid.transpiler<a class="headerlink" href="#module-qbraid.transpiler" title="Permalink to this headline">¶</a></h1>
-<section id="transpiler-qbraid-transpiler">
+<div class="section" id="transpiler-qbraid-transpiler">
 <h2>Transpiler (<a class="reference internal" href="#module-qbraid.transpiler" title="qbraid.transpiler"><code class="xref py py-mod docutils literal notranslate"><span class="pre">qbraid.transpiler</span></code></a>)<a class="headerlink" href="#transpiler-qbraid-transpiler" title="Permalink to this headline">¶</a></h2>
-<section id="overview">
+<div class="section" id="overview">
 <h3>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h3>
 <p>The qBraid transpiler accepts circuit objects constructed using one of the
 standard quantum computing packages, and produces a circuit object of the
@@ -233,8 +232,8 @@ this mapping page for more information about gate equivalences in various packag
 in various packages for the purposing of using the devices associate with that pacakge.
 In conjunction with the qBraid device layer, it is possible to execute a single circuit
 on multiple families of devices without calling this transpiler directly.</p>
-</section>
-<section id="example-usage">
+</div>
+<div class="section" id="example-usage">
 <h3>Example Usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">braket.circuits</span> <span class="kn">import</span> <span class="n">Circuit</span>
@@ -251,8 +250,8 @@ on multiple families of devices without calling this transpiler directly.</p>
 </pre></div>
 </div>
 </div></blockquote>
-</section>
-<section id="transpiler-api">
+</div>
+<div class="section" id="transpiler-api">
 <h3>Transpiler API<a class="headerlink" href="#transpiler-api" title="Permalink to this headline">¶</a></h3>
 <table class="longtable docutils align-default">
 <colgroup>
@@ -280,19 +279,19 @@ on multiple families of devices without calling this transpiler directly.</p>
 </tr>
 </tbody>
 </table>
-</section>
-</section>
-<span class="target" id="module-qbraid.transpiler.braket"></span><section id="braket-transpiler-qbraid-transpiler-braket">
+</div>
+</div>
+<span class="target" id="module-qbraid.transpiler.braket"></span><div class="section" id="braket-transpiler-qbraid-transpiler-braket">
 <h2>Braket Transpiler  (<a class="reference internal" href="#module-qbraid.transpiler.braket" title="qbraid.transpiler.braket"><code class="xref py py-mod docutils literal notranslate"><span class="pre">qbraid.transpiler.braket</span></code></a>)<a class="headerlink" href="#braket-transpiler-qbraid-transpiler-braket" title="Permalink to this headline">¶</a></h2>
-<section id="wrapping-strategy">
+<div class="section" id="wrapping-strategy">
 <h3>Wrapping Strategy<a class="headerlink" href="#wrapping-strategy" title="Permalink to this headline">¶</a></h3>
 <p>The braket <code class="docutils literal notranslate"><span class="pre">Moments</span></code> data structure keeps track of when qubits should be placed
 in the circuit, but does not stored individual instructions within dedicated
 moment objects. Therefore, the circuits are wrapped using circuits.</p>
 <p>Without dedicated abstract parameters, much of the complexity of wrapping
 braket circuits is reduced.</p>
-</section>
-<section id="output-strategy">
+</div>
+<div class="section" id="output-strategy">
 <h3>Output Strategy<a class="headerlink" href="#output-strategy" title="Permalink to this headline">¶</a></h3>
 <p>Braket cannot acommodate abstract parameters. Trying to transpile a parametrized
 circuit to Braket will yield an error.</p>
@@ -310,11 +309,11 @@ circuit to Braket will yield an error.</p>
 </tr>
 </tbody>
 </table>
-</section>
-</section>
-<span class="target" id="module-qbraid.transpiler.cirq"></span><section id="cirq-transpiler-qbraid-transpiler-cirq">
+</div>
+</div>
+<span class="target" id="module-qbraid.transpiler.cirq"></span><div class="section" id="cirq-transpiler-qbraid-transpiler-cirq">
 <h2>Cirq Transpiler  (<a class="reference internal" href="#module-qbraid.transpiler.cirq" title="qbraid.transpiler.cirq"><code class="xref py py-mod docutils literal notranslate"><span class="pre">qbraid.transpiler.cirq</span></code></a>)<a class="headerlink" href="#cirq-transpiler-qbraid-transpiler-cirq" title="Permalink to this headline">¶</a></h2>
-<section id="id1">
+<div class="section" id="id1">
 <h3>Wrapping Strategy<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
 <p>Cirq’s circuit layer stores all circuit data in a bottom up fashion. Qubit objects are
 stored locally as part of an instruction object (called an “operation” in cirq). Additionally,
@@ -332,8 +331,8 @@ depending on the issue.</p>
 <p>Cirq’s moment object is relatively unique amongst major packages. For the most detailed control,
 the transpiler has a decicated wrapper object for moments, though this object is not used for
 any other package.</p>
-</section>
-<section id="id2">
+</div>
+<div class="section" id="id2">
 <h3>Output Strategy<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
 <table class="longtable docutils align-default">
 <colgroup>
@@ -349,11 +348,11 @@ any other package.</p>
 </tr>
 </tbody>
 </table>
-</section>
-</section>
-<span class="target" id="module-qbraid.transpiler.qiskit"></span><section id="qiskit-transpiler-qbraid-transpiler-qiskit">
+</div>
+</div>
+<span class="target" id="module-qbraid.transpiler.qiskit"></span><div class="section" id="qiskit-transpiler-qbraid-transpiler-qiskit">
 <h2>Qiskit Transpiler  (<a class="reference internal" href="#module-qbraid.transpiler.qiskit" title="qbraid.transpiler.qiskit"><code class="xref py py-mod docutils literal notranslate"><span class="pre">qbraid.transpiler.qiskit</span></code></a>)<a class="headerlink" href="#qiskit-transpiler-qbraid-transpiler-qiskit" title="Permalink to this headline">¶</a></h2>
-<section id="id3">
+<div class="section" id="id3">
 <h3>Wrapping Strategy<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
 <p>Qiskit’s circuit layer stores abstract parameters globally, making them easily retreivable.
 The qBraid transpiler does the same.</p>
@@ -361,8 +360,8 @@ The qBraid transpiler does the same.</p>
 Rather, this concept is stored in <cite>QuantumCircuit.data</cite> as a tuple (gate,qubits,clbits). To add some confusion,
 and <cite>Instruction</cite> object refers not to the above concept but rather to an abstract class which is extended by
 <cite>QuantumGate</cite>.</p>
-</section>
-<section id="id4">
+</div>
+<div class="section" id="id4">
 <h3>Output Strategy<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h3>
 <p>Because qubits and parameters are stored as global attributes of the CircuitWrapper class, these
 output mappings must be passed as arguments of the transpile functions for lower-level objects:
@@ -381,9 +380,9 @@ moments,circuits, and gates.</p>
 </tr>
 </tbody>
 </table>
-</section>
-</section>
-</section>
+</div>
+</div>
+</div>
 
 
            </div>

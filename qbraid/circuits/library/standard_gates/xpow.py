@@ -1,5 +1,6 @@
-from .powgate import PowGate
 from typing import Optional
+
+from .powgate import PowGate
 
 
 class XPow(PowGate):

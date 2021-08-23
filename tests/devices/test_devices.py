@@ -1,19 +1,16 @@
 """
 Unit tests for the qbraid device layer.
 """
-import pytest
+import cirq
 import numpy as np
-
-from braket.circuits import Circuit as BraketCircuit
+import pytest
 from braket.aws import AwsDevice
+from braket.circuits import Circuit as BraketCircuit
 from braket.devices import LocalSimulator as AwsSimulator
 from braket.tasks.quantum_task import QuantumTask as BraketQuantumTask
-from dwave.system.composites import EmbeddingComposite
-
-import cirq
 from cirq.sim.simulator_base import SimulatorBase as CirqSimulator
 from cirq.study.result import Result as CirqResult
-
+from dwave.system.composites import EmbeddingComposite
 from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.job import Job as QiskitJob
@@ -21,7 +18,7 @@ from qiskit.providers.job import Job as QiskitJob
 from qbraid import device_wrapper
 from qbraid.devices._utils import SUPPORTED_VENDORS
 from qbraid.devices.aws import BraketDeviceWrapper, BraketQuantumTaskWrapper
-from qbraid.devices.google import CirqSimulatorWrapper, CirqResultWrapper
+from qbraid.devices.google import CirqResultWrapper, CirqSimulatorWrapper
 from qbraid.devices.ibm import QiskitBackendWrapper, QiskitJobWrapper
 
 

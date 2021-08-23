@@ -87,16 +87,16 @@
               
             
             
-              <p class="caption"><span class="caption-text">Overview</span></p>
+              <p class="caption" role="heading"><span class="caption-text">Overview</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../overview/introduction.html">Introduction</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../overview/supported-devices.html">Supported Devices</a></li>
 </ul>
-<p class="caption"><span class="caption-text">Development</span></p>
+<p class="caption" role="heading"><span class="caption-text">Development</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../development/guide.html">Development guide</a></li>
 </ul>
-<p class="caption"><span class="caption-text">API Reference</span></p>
+<p class="caption" role="heading"><span class="caption-text">API Reference</span></p>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../../api/qbraid.html">qbraid</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../api/qbraid.circuits.html">qbraid.circuits</a></li>
@@ -401,7 +401,7 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_moments</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>
             <span class="c1"># initialize a new moment, unless the operation which is added into a list</span>
             <span class="c1"># is a Moment or a Circuit</span>
-            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">operation</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span><span class="n">Instruction</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">operation</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Instruction</span><span class="p">):</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_create_new_moment</span><span class="p">()</span>
         <span class="c1"># iterable</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">operation</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">):</span>

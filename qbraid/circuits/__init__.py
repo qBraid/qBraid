@@ -82,68 +82,17 @@ Circuits API
 
 """
 from .circuit import Circuit
+from .drawer import drawer
+from .exceptions import CircuitError
 from .gate import Gate
 from .instruction import Instruction
+from .library.standard_gates import (CH, CX, CY, CZ, DCX, RX, RXX, RXY, RY,
+                                     RYY, RZ, RZX, RZZ, SX, U1, U2, U3, CPhase,
+                                     H, HPow, I, Measure, Phase, R, S, Sdg,
+                                     Swap, SXdg, T, Tdg, U, X, XPow, Y, YPow,
+                                     Z, ZPow, iSwap, pSwap)
 from .moment import Moment
-from .qubit import Qubit
-from .update_rule import UpdateRule
-from .parameter import Parameter
-from .exceptions import CircuitError
-from .drawer import drawer
-
-from .instruction import (
-    Instruction,
-)
-
-from .moment import (
-    Moment,
-)
-
-from .update_rule import (
-    UpdateRule,
-)
-
-from .library.standard_gates import (
-    DCX,
-    H,
-    CH,
-    HPow,
-    I,
-    iSwap,
-    Measure,
-    Phase,
-    CPhase,
-    pSwap,
-    R,
-    RX,
-    RXX,
-    RXY,
-    RY,
-    RYY,
-    RZ,
-    RZZ,
-    RZX,
-    S,
-    Sdg,
-    Swap,
-    SX,
-    SXdg,
-    T,
-    Tdg,
-    U,
-    U1,
-    U2,
-    U3,
-    X,
-    CX,
-    XPow,
-    Y,
-    CY,
-    YPow,
-    CZ,
-    Z,
-    ZPow,
-)
-
 from .parameter import Parameter
 from .parametertable import ParameterTable
+from .qubit import Qubit
+from .update_rule import UpdateRule

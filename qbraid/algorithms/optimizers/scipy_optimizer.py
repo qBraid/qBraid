@@ -18,9 +18,8 @@ from collections.abc import Sequence
 from typing import Any, Callable, Dict, Optional, Union
 
 import numpy as np
-from scipy.optimize import Bounds, minimize
-
 from qiskit.utils.validation import validate_min
+from scipy.optimize import Bounds, minimize
 
 from .optimizer import Optimizer, OptimizerSupportLevel
 

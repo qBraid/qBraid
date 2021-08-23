@@ -1,6 +1,7 @@
 """This top level module contains the main qBraid public functionality."""
 
 from importlib.metadata import entry_points, version
+
 from qbraid.circuits import Circuit, UpdateRule
 from qbraid.devices import get_devices
 from qbraid.exceptions import QbraidError, WrapperError

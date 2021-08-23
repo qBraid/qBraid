@@ -1,7 +1,7 @@
 import configparser
-from getpass import getpass
 import os
 import sys
+from getpass import getpass
 
 from qbraid.devices.exceptions import ConfigError
 

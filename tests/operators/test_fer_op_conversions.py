@@ -5,19 +5,15 @@ import copy
 # SET BACKEND
 import matplotlib as mpl
 import numpy as np
-
-from qbraid.operators.conversions.fer_op_conversion import convert
 from openfermion.chem import MolecularData
-from openfermion.ops import InteractionOperator
-from openfermion.transforms import (
-    get_fermion_operator,
-    jordan_wigner,
-)
 from openfermion.linalg import eigenspectrum
-
-from qiskit.chemistry.drivers import PySCFDriver
+from openfermion.ops import InteractionOperator
+from openfermion.transforms import get_fermion_operator, jordan_wigner
 from qiskit.aqua.algorithms import NumPyEigensolver as EE
 from qiskit.chemistry import FermionicOperator
+from qiskit.chemistry.drivers import PySCFDriver
+
+from qbraid.operators.conversions.fer_op_conversion import convert
 
 mpl.use("TkAgg")
 

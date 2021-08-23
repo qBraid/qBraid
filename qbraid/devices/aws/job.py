@@ -22,8 +22,10 @@ from asyncio import Task
 from typing import Any, Dict, Union
 
 from braket.tasks import QuantumTask
-from braket.tasks.annealing_quantum_task_result import AnnealingQuantumTaskResult
-from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
+from braket.tasks.annealing_quantum_task_result import \
+    AnnealingQuantumTaskResult
+from braket.tasks.gate_model_quantum_task_result import \
+    GateModelQuantumTaskResult
 
 from qbraid.devices.job import JobLikeWrapper
 

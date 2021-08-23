@@ -2,25 +2,11 @@
 
 from tabulate import tabulate
 
-from .aws_utils import (
-    BRAKET_PROVIDERS,
-    AWS_DEVICE_INFO,
-    AWS_CONFIG_PROMPT,
-    aws_config_path,
-)
-
-from .ibm_utils import (
-    QISKIT_PROVIDERS,
-    IBM_DEVICE_INFO,
-    IBMQ_CONFIG_PROMPT,
-)
-
-from .google_utils import (
-    CIRQ_PROVIDERS,
-    GOOGLE_DEVICE_INFO,
-)
-
-from .user_config import set_config, get_config
+from .aws_utils import (AWS_CONFIG_PROMPT, AWS_DEVICE_INFO, BRAKET_PROVIDERS,
+                        aws_config_path)
+from .google_utils import CIRQ_PROVIDERS, GOOGLE_DEVICE_INFO
+from .ibm_utils import IBM_DEVICE_INFO, IBMQ_CONFIG_PROMPT, QISKIT_PROVIDERS
+from .user_config import get_config, set_config
 
 SUPPORTED_VENDORS = {
     "aws": BRAKET_PROVIDERS,

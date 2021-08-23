@@ -41,7 +41,7 @@ directory = "tests/_coverage"
 
 [tool.pylint.'MESSAGES CONTROL']
 max-line-length = 100
-disable = "R0801, R0913, R0902"
+disable = "R0801, R0913, R0902, E0401"
 
 
 

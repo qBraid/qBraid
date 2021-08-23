@@ -19,6 +19,7 @@
 """CirqResultWrapper Class"""
 
 from __future__ import annotations
+
 from cirq.study.result import Result
 from pandas import DataFrame
 

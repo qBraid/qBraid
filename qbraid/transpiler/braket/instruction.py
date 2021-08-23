@@ -1,7 +1,7 @@
+from braket.circuits.instruction import Instruction as BraketInstruction
+
 from ..instruction import InstructionWrapper
 from .gate import BraketGateWrapper
-
-from braket.circuits.instruction import Instruction as BraketInstruction
 
 
 class BraketInstructionWrapper(InstructionWrapper):

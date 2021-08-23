@@ -1,5 +1,5 @@
 import itertools
-from typing import Union, Iterable
+from typing import Iterable, Union
 
 from .exceptions import CircuitError
 from .instruction import Instruction

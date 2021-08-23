@@ -14,9 +14,10 @@
 
 """Optimizer interface"""
 
-from enum import IntEnum
 import logging
 from abc import ABC, abstractmethod
+from enum import IntEnum
+
 import numpy as np
 
 logger = logging.getLogger(__name__)

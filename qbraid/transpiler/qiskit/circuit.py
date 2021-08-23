@@ -3,8 +3,9 @@ from typing import List
 from qiskit.circuit import Parameter
 from qiskit.circuit import QuantumCircuit as Circuit
 
-from qbraid.transpiler.parameter import ParamID
 from qbraid.transpiler.circuit import CircuitWrapper
+from qbraid.transpiler.parameter import ParamID
+
 from .instruction import QiskitInstructionWrapper
 
 

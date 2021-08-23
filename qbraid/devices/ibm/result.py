@@ -13,7 +13,9 @@
 """QiskitResultWrapper Class"""
 
 from __future__ import annotations
+
 from typing import Dict
+
 from qiskit.result.result import Result
 
 from qbraid.devices.result import ResultWrapper

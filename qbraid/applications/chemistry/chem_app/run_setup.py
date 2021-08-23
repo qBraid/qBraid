@@ -1,7 +1,7 @@
 # pylint: skip-file
 
 import numpy as np
-from qiskit import BasicAer, Aer
+from qiskit import Aer, BasicAer
 from qiskit.aqua import QuantumInstance
 from qiskit.ignis.mitigation.measurement import CompleteMeasFitter
 from qiskit.providers.aer.noise import NoiseModel

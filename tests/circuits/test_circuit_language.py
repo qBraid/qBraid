@@ -4,9 +4,9 @@
 
 import pytest
 
-from qbraid.circuits.controlledgate import ControlledGate
 from qbraid import circuits
 from qbraid.circuits import *
+from qbraid.circuits.controlledgate import ControlledGate
 
 """
 GATE TESTS

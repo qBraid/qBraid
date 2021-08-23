@@ -116,8 +116,8 @@ venv.bak/
 /site
 
 # Sphinx documentation
-docs/_build/
-docs/source/stubs/
+docs/_build/*
+docs/source/stubs/*
 
 # mypy
 .mypy_cache/

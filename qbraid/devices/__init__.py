@@ -49,9 +49,9 @@ Devices API
    ConfigError
 
 """
+from ._utils import get_devices, update_config
 # pylint: skip-file
 from .device import DeviceLikeWrapper
+from .exceptions import ConfigError, DeviceError, JobError
 from .job import JobLikeWrapper
 from .result import ResultWrapper
-from ._utils import get_devices, update_config
-from .exceptions import DeviceError, JobError, ConfigError
