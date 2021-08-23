@@ -6,7 +6,7 @@ The qBraid SDK provides a platform for running quantum algorithms on various qua
 quantum simulators.
 
 .. figure:: docs/_static/logo.png
-    :width: 300px
+    :width: 150px
     :align: right
 
 Features
