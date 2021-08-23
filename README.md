@@ -1,46 +1,26 @@
-===========
-qBraid SDK
-===========
+# qBraid SDK
 
 The qBraid SDK provides a platform for running quantum algorithms on various quantum computers and
 quantum simulators.
 
-.. figure:: docs/_static/logo.png
-    :width: 150px
-    :align: right
+<a href="https://tox.readthedocs.io/en/latest/#system-overview">
+    <img src="/docs/_static/logo.png"
+         alt="tox flow"
+         width="250px"
+         align="right">
+</a>
 
-Features
---------
-
-- *Feature 1*
-   Lorem ipsum dolo   r sit amet, consectetur adipiscing elit. Nunc sed dolor elit. Fusce neque lectus,
-   imperdiet id tellus at, mollis facilisis arcu.
-
-..
-
-- *Feature 2*
-   Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sed dolor elit sed interdum
-   laoreet justo.
-
-..
-
-- *Feature 3*
-   Lorem ipsum dolor sit amet, consectetur adipiscing elit. Id pellentesque libero consectetur ac
-   nulla.
-
-Installation
--------------
+## Installation
 You can install from source by cloning this repository and running a pip install command in the
 root directory of the repository:
 
-.. code-block::
+```console
+$ git clone https://github.com/qbraid/qBraid.git
+$ cd qBraid
+$ python -m pip install -e .
+```
 
-    $ git clone https://github.com/qbraid/qBraid.git
-    $ cd qBraid
-    $ python -m pip install -e .
-
-Getting started
-----------------
+## Getting started
 
 Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin ullamcorper, nisi eu rutrum
 tristique, eros massa maximus mi, id mollis enim massa ac nunc. Suspendisse bibendum sagittis eros,
@@ -54,15 +34,7 @@ dolor. Proin semper eu justo sed bibendum. Duis laoreet sem sed felis ultricies 
 lorem. Donec aliquet velit id tincidunt porttitor. In a auctor dui. Sed hendrerit, tellus finibus
 varius accumsan, lorem urna accumsan lacus, aliquet hendrerit magna nisi porttitor dui.
 
-How to cite
------------
-
-Lorem ipsum nullam lorem nibh, consequat sed fermentum interdum, suscipit quis augue. Class aptent
-taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Proin eget est et
-velit eleifend laoreet. Vivamus eu quam id augue pharetra rhoncus.
-
-Support and contribution
-------------------------
+## Support and contribution
 
 - **Source Code:** https://github.com/qBraid/qBraid
 - **Issue Tracker:** https://github.com/qBraid/qBraid/issues
