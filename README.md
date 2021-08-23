@@ -4,18 +4,13 @@ The qBraid SDK provides a platform for running quantum algorithms on various qua
 quantum simulators.
 
 <a href="https://qbraid.com">
-    <img src="https://qbraid.com/assets/images/logo-square.png"
+    <img src="https://raw.githubusercontent.com/qBraid/qBraid/master/docs/source/_static/logo.png"
          alt="qbraid logo"
          height="150px"
          align="right">
 </a>
 
-<a href="https://qbraid.com">
-    <img src="https://github.com/qBraid/qBraid/blob/master/docs/_static/logo.png"
-         alt="qbraid logo1"
-         height="150px"
-         align="right">
-</a>
+
 
 ## Installation
 You can install from source by cloning this repository and running a pip install command in the
