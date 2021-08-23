@@ -5,7 +5,14 @@ quantum simulators.
 
 <a href="https://qbraid.com">
     <img src="https://qbraid.com/assets/images/logo-square.png"
-         alt="tox logo"
+         alt="qbraid logo"
+         height="150px"
+         align="right">
+</a>
+
+<a href="https://qbraid.com">
+    <img src="https://github.com/qBraid/qBraid/blob/master/docs/_static/logo.png"
+         alt="qbraid logo1"
          height="150px"
          align="right">
 </a>
