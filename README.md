@@ -61,9 +61,8 @@ Alternatively:
 pip install -e ".[test]"
 pytest tests/{path-to-test}
 ```
-Running unit tests with tox will automatically generate a coverage report, which can be found in
-`tests/_coverage/index.html`, and can be viewed in your browser using the same procedure described
-in Documentation, above.
+Running unit tests with tox will automatically generate a coverage report, which can be viewed in
+your browser via `tests/_coverage/index.html`.
 
 To run linters and doc generators and unit tests:
 ```
