@@ -37,14 +37,15 @@ Both methods will run Sphinx in your shell. If the build succeeded, it will say
 `The HTML pages are in build/html`. You can view the generated documentation
 in your browser using:
 ```
-open build/html/index.html # On OS X
+open build/html/index.html  # On OS X
 ```
 You can also view it by running a web server in that directory:
 ```
 cd build/html
 python3 -m http.server
 ```
-Then open your browser to http://localhost:8000. 
+Then open your browser to http://localhost:8000. If you make changes to the docs that aren't
+reflected in subsequent builds, run `make clean html`, which will force a full rebuild.
 
 ## Testing
 To run all unit tests:
