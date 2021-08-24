@@ -13,7 +13,7 @@ quantum simulators.
 
 ## Installation
 You can install from source by cloning this repository and running a pip install command in the
-root directory of the repository:
+root directory:
 
 ```
 git clone https://github.com/qbraid/qBraid.git
