@@ -43,5 +43,9 @@ directory = "tests/_coverage"
 max-line-length = 100
 disable = "R0801, R0913, R0902, E0401"
 
+[tool.isort]
+profile = "hug"
+
+
 
 
