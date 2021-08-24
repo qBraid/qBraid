@@ -34,16 +34,17 @@ cd docs
 make html
 ```
 Both methods will run Sphinx in your shell. If the build succeeded, it will say 
-`The HTML pages are in build/html`. On OS X, you can view the generated documentation
+`The HTML pages are in build/html`. You can view the generated documentation
 in your browser using:
 ```
-open build/html/index.html
+open build/html/index.html # On OS X
 ```
 You can also view it by running a web server in that directory:
 ```
+cd build/html
 python3 -m http.server
 ```
-Then open your browser to http://localhost:8000.
+Then open your browser to http://localhost:8000. 
 
 ## Testing
 To run all unit tests:
