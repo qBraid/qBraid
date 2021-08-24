@@ -62,8 +62,7 @@ pip install -e ".[test]"
 pytest tests/{path-to-test}
 ```
 Running unit tests with tox will automatically generate a coverage report, which can be viewed by
-opening `tests/_coverage/index.html` in your browser. Use `coverage erase` between runs to generate
-a fresh report each time.
+opening `tests/_coverage/index.html` in your browser.
 
 To run linters and doc generators and unit tests:
 ```
