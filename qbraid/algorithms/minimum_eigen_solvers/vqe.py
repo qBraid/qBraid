@@ -24,9 +24,16 @@ import numpy as np
 from qiskit import ClassicalRegister, QuantumCircuit
 from qiskit.circuit import Parameter
 from qiskit.circuit.library import RealAmplitudes
-from qiskit.opflow import (CircuitSampler, CircuitStateFn, ExpectationBase,
-                           ExpectationFactory, I, ListOp, OperatorBase,
-                           StateFn)
+from qiskit.opflow import (
+    CircuitSampler,
+    CircuitStateFn,
+    ExpectationBase,
+    ExpectationFactory,
+    I,
+    ListOp,
+    OperatorBase,
+    StateFn,
+)
 from qiskit.opflow.gradients import GradientBase
 from qiskit.providers import Backend, BaseBackend
 from qiskit.utils.backend_utils import is_aer_provider

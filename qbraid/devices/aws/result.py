@@ -19,8 +19,7 @@
 
 from __future__ import annotations
 
-from braket.tasks.gate_model_quantum_task_result import \
-    GateModelQuantumTaskResult
+from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
 from numpy import ndarray
 
 from qbraid.devices.result import ResultWrapper

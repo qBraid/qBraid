@@ -15,8 +15,13 @@
 from abc import ABC, abstractmethod
 
 import qbraid
-from qbraid.devices._utils import (CONFIG_PROMPTS, RUN_PACKAGE,
-                                   SUPPORTED_VENDORS, get_config, set_config)
+from qbraid.devices._utils import (
+    CONFIG_PROMPTS,
+    RUN_PACKAGE,
+    SUPPORTED_VENDORS,
+    get_config,
+    set_config,
+)
 from qbraid.devices.exceptions import DeviceError
 
 

@@ -14,5 +14,4 @@ Operators (:mod:`qbraid.operators`)
 
 """
 
-from .conversions import (fer_op_conversion, q_circ_conversion,
-                          qub_op_conversion)
+from .conversions import fer_op_conversion, q_circ_conversion, qub_op_conversion

@@ -24,7 +24,7 @@ exclude = '''
 
 [tool.coverage.run]
 # source_pkgs = ["qbraid/circuits", "qbraid/transpiler", "qbraid/devices"]
-source = ["qbraid/devices"]
+source = ["qbraid/transpiler"]
 parallel = true
 
 [tool.coverage.report]

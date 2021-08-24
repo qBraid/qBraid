@@ -73,8 +73,7 @@
 # print("All energies have been calculated")
 
 from qiskit_nature.drivers import PySCFDriver, UnitsType
-from qiskit_nature.problems.second_quantization.electronic import \
-    ElectronicStructureProblem
+from qiskit_nature.problems.second_quantization.electronic import ElectronicStructureProblem
 
 # Use PySCF, a classical computational chemistry software
 # package, to compute the one-body and two-body integrals in

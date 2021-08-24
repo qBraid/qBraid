@@ -2,8 +2,7 @@
 
 from classical_pipeline import classical_calc_output
 from openfermion.ops import InteractionOperator
-from openfermion.transforms import (bravyi_kitaev, get_fermion_operator,
-                                    jordan_wigner, parity_code)
+from openfermion.transforms import bravyi_kitaev, get_fermion_operator, jordan_wigner, parity_code
 from qiskit.aqua.algorithms import VQE
 from qiskit.aqua.components.optimizers import COBYLA, SLSQP, SPSA
 from qiskit.aqua.operators import Z2Symmetries
