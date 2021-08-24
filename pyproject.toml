@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 addopts = "--maxfail=2 -rf"
-testpaths = ["tests/circuits", "tests/devices", "tests/transpiler"]
+# testpaths = ["tests/circuits", "tests/devices", "tests/transpiler"]
 filterwarnings = "ignore:.*U.*mode is deprecated:DeprecationWarning"
 
 [tool.black]
@@ -23,6 +23,8 @@ exclude = '''
 '''
 
 [tool.coverage.run]
+# source_pkgs = ["qbraid/circuits", "qbraid/transpiler", "qbraid/devices"]
+source = ["qbraid/devices"]
 parallel = true
 
 [tool.coverage.report]
