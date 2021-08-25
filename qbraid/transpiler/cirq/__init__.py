@@ -36,5 +36,5 @@ Output Strategy
    CirqCircuitWrapper
 
 """
-from .gate import CirqGateWrapper
 from .circuit import CirqCircuitWrapper
+from .gate import CirqGateWrapper

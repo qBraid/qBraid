@@ -18,7 +18,7 @@
 
 from braket.aws import AwsDevice
 from braket.devices import LocalSimulator
-from braket.ocean_plugin import BraketSampler, BraketDWaveSampler
+from braket.ocean_plugin import BraketDWaveSampler, BraketSampler
 from dwave.system.composites import EmbeddingComposite
 
 from qbraid.devices._utils import get_config
@@ -44,7 +44,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             DeviceError: if input field not a valid options
 
         """
-        super().__init__(name, provider, vendor="AWS", **fields)
+        super().__init__(name, provider, vendor="aws", **fields)
         if self.requires_creds:
             bucket = get_config("s3_bucket", "AWS")
             folder = get_config("s3_folder", "AWS")
@@ -81,7 +81,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             DeviceError if not a D-Wave annealing device.
 
         """
-        if self.provider != "D-Wave":
+        if self.provider != "dwave":
             raise DeviceError("Sampler only available for D-Wave (annealing) devices")
         sampler = (
             BraketSampler(self.s3_location, self._arn)

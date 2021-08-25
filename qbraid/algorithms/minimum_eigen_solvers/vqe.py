@@ -16,34 +16,34 @@
 See https://arxiv.org/abs/1304.3061
 
 """
-from typing import Optional, List, Callable, Union, Dict
 import logging
 from time import time
-import numpy as np
+from typing import Callable, Dict, List, Optional, Union
 
+import numpy as np
 from qiskit import ClassicalRegister, QuantumCircuit
 from qiskit.circuit import Parameter
 from qiskit.circuit.library import RealAmplitudes
-from qiskit.providers import BaseBackend
-from qiskit.providers import Backend
 from qiskit.opflow import (
-    OperatorBase,
+    CircuitSampler,
+    CircuitStateFn,
     ExpectationBase,
     ExpectationFactory,
-    StateFn,
-    CircuitStateFn,
-    ListOp,
     I,
-    CircuitSampler,
+    ListOp,
+    OperatorBase,
+    StateFn,
 )
 from qiskit.opflow.gradients import GradientBase
-from qiskit.utils.validation import validate_min
+from qiskit.providers import Backend, BaseBackend
 from qiskit.utils.backend_utils import is_aer_provider
 from qiskit.utils.quantum_instance import QuantumInstance
-from ..optimizers import Optimizer, SLSQP
+from qiskit.utils.validation import validate_min
+
+from ..exceptions import AlgorithmError
+from ..optimizers import SLSQP, Optimizer
 from ..variational_algorithm import VariationalAlgorithm, VariationalResult
 from .minimum_eigen_solver import MinimumEigensolver, MinimumEigensolverResult
-from ..exceptions import AlgorithmError
 
 logger = logging.getLogger(__name__)
 

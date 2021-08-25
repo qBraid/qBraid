@@ -1,14 +1,14 @@
 """
 Unit tests for the qbraid transpiler.
 """
-import pytest
-import numpy as np
 import cirq
+import numpy as np
+import pytest
+from braket.circuits import Circuit as BraketCircuit
+from braket.circuits.unitary_calculation import calculate_unitary
 from cirq import Circuit as CirqCircuit
 from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.quantum_info import Operator as QiskitOperator
-from braket.circuits import Circuit as BraketCircuit
-from braket.circuits.unitary_calculation import calculate_unitary
 
 from qbraid import circuit_wrapper
 

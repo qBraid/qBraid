@@ -1,7 +1,7 @@
+from cirq.ops import Moment as CirqMoment
+
 from ..moment import MomentWrapper
 from .instruction import CirqInstructionWrapper
-
-from cirq.ops import Moment as CirqMoment
 
 
 class CirqMomentWrapper(MomentWrapper):

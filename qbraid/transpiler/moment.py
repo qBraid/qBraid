@@ -1,5 +1,5 @@
-from .transpiler import QbraidTranspiler
 from ._utils import moment_outputs
+from .transpiler import QbraidTranspiler
 
 
 class MomentWrapper(QbraidTranspiler):

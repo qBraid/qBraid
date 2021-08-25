@@ -51,6 +51,7 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+build/coverage/*
 
 # Translations
 *.mo
@@ -68,9 +69,6 @@ instance/
 
 # Scrapy stuff:
 .scrapy
-
-# Sphinx documentation
-docs/_build/
 
 # PyBuilder
 target/
@@ -119,7 +117,7 @@ venv.bak/
 
 # Sphinx documentation
 docs/build/*
-docs/source/stubs/*
+docs/stubs/*
 
 # mypy
 .mypy_cache/
@@ -129,7 +127,4 @@ dmypy.json
 # Pyre type checker
 .pyre/
 *.DS_Store
-
-# Local git helper scripts
-git-merge-origin.sh
 

@@ -1,6 +1,7 @@
 from qbraid.circuits.instruction import Instruction as QbraidInstruction
-from .gate import QbraidGateWrapper
+
 from ..instruction import InstructionWrapper
+from .gate import QbraidGateWrapper
 
 # from qbraid.circuits.parameter import Parameter
 

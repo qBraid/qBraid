@@ -12,9 +12,9 @@
 
 """QiskitBackendWrapper Class"""
 
-from qiskit import IBMQ
-from qiskit import execute
+from qiskit import IBMQ, execute
 from qiskit.providers.ibmq import least_busy
+from qiskit.utils.quantum_instance import QuantumInstance
 
 from qbraid.devices._utils import get_config
 from qbraid.devices.device import DeviceLikeWrapper
@@ -36,7 +36,8 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             DeviceError: if input field not a valid options
 
         """
-        super().__init__(name, provider, vendor="IBM", **fields)
+        super().__init__(name, provider, vendor="ibm", **fields)
+        self.quantum_instance = QuantumInstance(self.vendor_dlo)
 
     def _init_cred_device(self, device_ref):
         """Initialize an IBM credentialed device."""

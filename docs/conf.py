@@ -12,10 +12,11 @@
 #
 import os
 import sys
+
 import qbraid
 
-sys.path.insert(0, os.path.abspath('..'))
-sys.path.insert(0, os.path.abspath('../../qbraid'))
+sys.path.insert(0, os.path.abspath(".."))
+sys.path.insert(0, os.path.abspath("../../qbraid"))
 
 # -- Project information -----------------------------------------------------
 
@@ -40,7 +41,6 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.mathjax",
     "sphinx.ext.coverage",
-    # "sphinx_automodapi.automodapi",
 ]
 
 # set_type_checking_flag = True

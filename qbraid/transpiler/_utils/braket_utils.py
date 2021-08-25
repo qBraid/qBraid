@@ -1,10 +1,11 @@
-from braket.circuits import Circuit
-from braket.circuits import Gate as BraketGate
-from braket.circuits import Instruction
-from braket.circuits import Qubit
 from typing import Union
 
+from braket.circuits import Circuit
+from braket.circuits import Gate as BraketGate
+from braket.circuits import Instruction, Qubit
+
 from qbraid.transpiler.parameter import ParamID
+
 from ..exceptions import TranspilerError
 
 braket_gates = {

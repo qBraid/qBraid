@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=51", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.pytest.ini_options]
+addopts = "--maxfail=2 -rf"
+# testpaths = ["tests/circuits", "tests/devices", "tests/transpiler"]
+filterwarnings = "ignore:.*U.*mode is deprecated:DeprecationWarning"
+
+[tool.black]
+line-length = 100
+target-version = ['py37', 'py38', 'py39']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+  | \.__pycache__
+  | \.tox
+  | \.venv
+  | tutorials
+  | dist
+)/
+'''
+
+[tool.coverage.run]
+parallel = true
+source = ["qbraid"]
+omit = ["**/qbraid/algorithms/*", "**/qbraid/applications/*", "**/qbraid/operators/*"]
+
+[tool.coverage.paths]
+source = ["qbraid", ".tox/*/lib/python*/site-packages/qbraid"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+ignore_errors = true
+# exclude_lines = [
+#     "*raise AssertionError*",
+#     "*raise NotImplementedError*",
+#     "*return NotImplemented*",
+#     "*raise*$",
+#     ]
+
+[tool.coverage.html]
+directory = "build/coverage"
+
+[tool.coverage.xml]
+output = "build/coverage/coverage.xml"
+
+[tool.pylint.'MESSAGES CONTROL']
+max-line-length = 100
+disable = "R0801, R0913, R0902, E0401"
+
+[tool.isort]
+profile = "hug"
+
+
+
+

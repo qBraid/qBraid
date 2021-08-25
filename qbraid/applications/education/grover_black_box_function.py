@@ -1,7 +1,7 @@
 # pylint: skip-file
 
-from qiskit import QuantumCircuit
 import numpy as np
+from qiskit import QuantumCircuit
 
 
 def f0():

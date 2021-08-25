@@ -1,7 +1,7 @@
-from .instruction import QbraidInstructionWrapper
-from ..moment import MomentWrapper
-
 from qbraid.circuits.moment import Moment as QbraidMoment
+
+from ..moment import MomentWrapper
+from .instruction import QbraidInstructionWrapper
 
 
 class QbraidMomentWrapper(MomentWrapper):

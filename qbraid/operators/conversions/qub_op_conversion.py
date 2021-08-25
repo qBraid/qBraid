@@ -1,8 +1,8 @@
 import numpy as np
 from openfermion.ops import QubitOperator
 from openfermion.utils import count_qubits
-from qiskit.quantum_info import Pauli
 from qiskit.aqua.operators import WeightedPauliOperator
+from qiskit.quantum_info import Pauli
 
 
 def convert(qubit_operator, output_qo_type="QISKIT"):

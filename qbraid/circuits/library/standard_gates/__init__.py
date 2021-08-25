@@ -1,9 +1,10 @@
 from .dcx import DCX
-from .h import H, CH
+from .h import CH, H
 from .hpow import HPow
 from .i import I
 from .iswap import iSwap
-from .phase import Phase, CPhase
+from .measure import Measure
+from .phase import CPhase, Phase
 from .pswap import pSwap
 from .r import R
 from .rx import RX
@@ -12,8 +13,8 @@ from .rxy import RXY
 from .ry import RY
 from .ryy import RYY
 from .rz import RZ
-from .rzz import RZZ
 from .rzx import RZX
+from .rzz import RZZ
 from .s import S
 from .sdg import Sdg
 from .swap import Swap
@@ -25,10 +26,9 @@ from .u import U
 from .u1 import U1
 from .u2 import U2
 from .u3 import U3
-from .x import X, CX
+from .x import CX, X
 from .xpow import XPow
-from .y import Y, CY
+from .y import CY, Y
 from .ypow import YPow
-from .z import Z, CZ
+from .z import CZ, Z
 from .zpow import ZPow
-from .measure import Measure

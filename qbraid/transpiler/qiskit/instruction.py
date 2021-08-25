@@ -1,7 +1,7 @@
 from qiskit.circuit import Instruction
 
-from .gate import QiskitGateWrapper
 from ..instruction import InstructionWrapper
+from .gate import QiskitGateWrapper
 
 
 class QiskitInstructionWrapper(InstructionWrapper):
