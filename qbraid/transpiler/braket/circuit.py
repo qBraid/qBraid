@@ -1,14 +1,14 @@
+"""BraketCircuitWrapper Class"""
+
 from typing import List
 
 from braket.circuits.circuit import Circuit
 
 from qbraid.transpiler.circuit import CircuitWrapper
-
-from .instruction import BraketInstructionWrapper
+from qbraid.transpiler.braket.instruction import BraketInstructionWrapper
 
 
 class BraketCircuitWrapper(CircuitWrapper):
-
     """Braket implementation of the abstract CircuitWrapper class"""
 
     def __init__(self, circuit: Circuit, input_qubit_mapping=None):
@@ -24,7 +24,7 @@ class BraketCircuitWrapper(CircuitWrapper):
         self._wrap_circuit(circuit, input_qubit_mapping)
 
     def _wrap_circuit(self, circuit, input_qubit_mapping):
-
+        """Apply circuit wrapper based on given qubit mapping."""
         instructions = []
         for instruction in circuit.instructions:
             qubits = [input_qubit_mapping[q] for q in instruction.target]
@@ -35,10 +35,12 @@ class BraketCircuitWrapper(CircuitWrapper):
 
     @property
     def moments(self) -> None:
+        """Returns the circuit's moments."""
         return None
 
     @property
     def instructions(self) -> List[BraketInstructionWrapper]:
+        """Returns a list of the circuit's instructions"""
         if hasattr(self, "_instructions"):
             return self._instructions
         return list()
