@@ -23,9 +23,12 @@ exclude = '''
 '''
 
 [tool.coverage.run]
-# source_pkgs = ["qbraid/circuits", "qbraid/transpiler", "qbraid/devices"]
-source = ["qbraid/circuits", "qbraid/transpiler", "qbraid/devices"]
 parallel = true
+source = ["qbraid"]
+omit = ["**/qbraid/algorithms/*", "**/qbraid/applications/*", "**/qbraid/operators/*"]
+
+[tool.coverage.paths]
+source = ["qbraid", ".tox/*/lib/python*/site-packages/qbraid"]
 
 [tool.coverage.report]
 show_missing = true
@@ -39,7 +42,10 @@ ignore_errors = true
 #     ]
 
 [tool.coverage.html]
-directory = "tests/_coverage"
+directory = "build/coverage"
+
+[tool.coverage.xml]
+output = "build/coverage/coverage.xml"
 
 [tool.pylint.'MESSAGES CONTROL']
 max-line-length = 100

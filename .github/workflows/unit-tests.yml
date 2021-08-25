@@ -1,4 +1,4 @@
-name: Tests
+name: Unit tests
 
 on:
   push:
@@ -28,3 +28,5 @@ jobs:
     - name: Run unit tests
       run: |
         tox -e unit-tests
+    - name: Upload coverage report to Codecov
+      uses: codecov/codecov-action@v1
