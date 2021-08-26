@@ -9,9 +9,16 @@ from qbraid.transpiler.braket.instruction import BraketInstructionWrapper
 
 
 class BraketCircuitWrapper(CircuitWrapper):
-    """Braket implementation of the abstract CircuitWrapper class"""
+    """Wrapper class for Amazon Braket ``Circuit`` objects."""
 
     def __init__(self, circuit: Circuit, input_qubit_mapping=None):
+        """Create a BraketCircuitWrapper
+
+        Args:
+            circuit: the circuit object to be wrapped
+            input_qubit_mapping (optional, dict): qubit mapping
+
+        """
         super().__init__(circuit, input_qubit_mapping)
 
         self._qubits = circuit.qubits

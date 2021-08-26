@@ -7,9 +7,16 @@ from qbraid.transpiler._utils import get_braket_gate_data
 
 
 class BraketGateWrapper(GateWrapper):
-    def __init__(self, gate: Gate):
-        super().__init__()
+    """Wrapper class for Amazon Braket ``Gate`` objects."""
 
+    def __init__(self, gate: Gate):
+        """Create a BraketDeviceWrapper
+
+        Args:
+            gate: the Braket gate to be wrapped
+
+        """
+        super().__init__()
         self.gate = gate
         self.name = None
 

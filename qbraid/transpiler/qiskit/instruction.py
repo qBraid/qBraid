@@ -1,11 +1,23 @@
+"""QiskitInstructionWrapper Class"""
+
 from qiskit.circuit import Instruction
 
-from ..instruction import InstructionWrapper
-from .gate import QiskitGateWrapper
+from qbraid.transpiler.instruction import InstructionWrapper
+from qbraid.transpiler.qiskit.gate import QiskitGateWrapper
 
 
 class QiskitInstructionWrapper(InstructionWrapper):
+    """Wrapper class for Qiskit ``Instruction`` objects"""
+
     def __init__(self, instruction: Instruction, qubits, params=None):
+        """Create a QiskitInstructionWrapper
+
+        Args:
+            instruction: the qiskit ``Instruction`` object to be wrapped
+            qubits: list of the qubits associated with the instruction
+            params: list of the paramaters associated with the instruction
+
+        """
         super().__init__()
 
         if params is None:

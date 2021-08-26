@@ -1,3 +1,5 @@
+"""QiskitCircuitWrapper Class"""
+
 from typing import List
 
 from qiskit.circuit import Parameter
@@ -6,14 +8,19 @@ from qiskit.circuit import QuantumCircuit as Circuit
 from qbraid.transpiler.circuit import CircuitWrapper
 from qbraid.transpiler.parameter import ParamID
 
-from .instruction import QiskitInstructionWrapper
+from qbraid.transpiler.qiskit.instruction import QiskitInstructionWrapper
 
 
 class QiskitCircuitWrapper(CircuitWrapper):
-
-    """Qiskit implementation of the abstract CircuitWrapper class"""
+    """Wrapper class for Qiskit ``Circuit`` objects"""
 
     def __init__(self, circuit: Circuit, input_qubit_mapping=None):
+        """Create a QiskitCircuitWrapper
+
+        Args
+            circuit: the qiskit ``Circuit`` object to be wrapped
+            input_qubit_mapping (optional, dict): the input qubit mapping
+        """
         super().__init__(circuit, input_qubit_mapping)
 
         self._qubits = circuit.qubits
@@ -26,6 +33,7 @@ class QiskitCircuitWrapper(CircuitWrapper):
 
     @property
     def instructions(self) -> List[QiskitInstructionWrapper]:
+        """Return list of the circuit's instrucions."""
         instructions = []
         for instruction, qubit_list, clbit_list in self.circuit.data:
             qubits = [self.input_qubit_mapping[q] for q in qubit_list]
@@ -40,4 +48,5 @@ class QiskitCircuitWrapper(CircuitWrapper):
 
     @property
     def moments(self):
+        """Return list of the circuit's moments"""
         return None
