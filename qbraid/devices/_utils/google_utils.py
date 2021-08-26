@@ -1,7 +1,7 @@
 # pylint: skip-file
 
 # from cirq_google import Sycamore, Sycamore23, Bristlecone, Foxtail
-from cirq import Simulator, DensityMatrixSimulator
+from cirq import DensityMatrixSimulator, Simulator
 
 AQT_DEVICES = {
     # "AQT": AQTSampler(url, access_token=access_token),  # not available

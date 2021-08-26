@@ -2,8 +2,8 @@
 
 import numpy as np
 import openfermionpyscf
-from pyscf import gto, scf, ao2mo
-from qiskit.chemistry.drivers import PySCFDriver, HFMethodType
+from pyscf import ao2mo, gto, scf
+from qiskit.chemistry.drivers import HFMethodType, PySCFDriver
 
 
 def pyscf_code_run(molecule_name, geometry, basis, method):

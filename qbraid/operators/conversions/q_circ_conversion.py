@@ -5,7 +5,7 @@
 
 """
 
-from pyquil import quil, gates
+from pyquil import gates, quil
 from pyquil.quil import Program
 from pyquil.quilbase import Gate, Measurement
 from qiskit import QuantumCircuit, QuantumRegister

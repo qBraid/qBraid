@@ -1,6 +1,7 @@
-from ...gate import Gate
-from ...controlledgate import ControlledGate
 from typing import Optional
+
+from ...controlledgate import ControlledGate
+from ...gate import Gate
 
 
 class H(Gate):

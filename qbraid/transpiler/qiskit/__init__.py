@@ -30,5 +30,5 @@ moments,circuits, and gates.
    QiskitCircuitWrapper
 
 """
-from .gate import QiskitGateWrapper
 from .circuit import QiskitCircuitWrapper
+from .gate import QiskitGateWrapper

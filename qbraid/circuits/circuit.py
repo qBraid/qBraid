@@ -1,5 +1,5 @@
 import itertools
-from typing import Union, Iterable
+from typing import Iterable, Union
 
 from .exceptions import CircuitError
 from .instruction import Instruction
@@ -229,7 +229,7 @@ class Circuit:
         if not self._moments and isinstance(operation, Iterable):
             # initialize a new moment, unless the operation which is added into a list
             # is a Moment or a Circuit
-            if isinstance(operation[0],Instruction):
+            if isinstance(operation[0], Instruction):
                 self._create_new_moment()
         # iterable
         if isinstance(operation, Iterable):

@@ -1,32 +1,17 @@
 """This top level module contains the main qBraid public functionality."""
 
+from importlib.metadata import entry_points, version
 
-from importlib import reload
-from typing import Optional
-
-import pkg_resources
-
-from qbraid._version import __version__
 from qbraid.circuits import Circuit, UpdateRule
 from qbraid.devices import get_devices
 from qbraid.exceptions import QbraidError, WrapperError
 
-
-def refresh_transpiler():
-    global transpiler_entrypoints  # pylint:disable=global-statement
-    reload(pkg_resources)
-    transpiler_entrypoints = _get_entrypoints("qbraid.transpiler")
-
-
-def refresh_devices():
-    global devices_entrypoints  # pylint:disable=global-statement
-    reload(pkg_resources)
-    devices_entrypoints = _get_entrypoints("qbraid.devices")
+__version__ = version("qbraid")
 
 
 def _get_entrypoints(group: str):
     """Returns a dictionary mapping each entry of ``group`` to its loadable entrypoint."""
-    return {entry.name: entry for entry in pkg_resources.iter_entry_points(group)}
+    return {entry.name: entry for entry in entry_points()[group]}
 
 
 transpiler_entrypoints = _get_entrypoints("qbraid.transpiler")
@@ -78,9 +63,6 @@ def circuit_wrapper(circuit, **kwargs):
     """
     package = circuit.__module__.split(".")[0]
 
-    if package not in transpiler_entrypoints:
-        refresh_transpiler()
-
     if package in transpiler_entrypoints:
         circuit_wrapper_class = transpiler_entrypoints[package].load()
         return circuit_wrapper_class(circuit, **kwargs)
@@ -98,7 +80,7 @@ def device_wrapper(device_id: str, **kwargs):
         :class:`~qbraid.devices.DeviceLikeWrapper`: a qbraid device wrapper object
 
     Raises:
-        ``WrapperError``: If ``device_id`` is not a valid device reference.
+        WrapperError: If ``device_id`` is not a valid device reference.
     """
     parse_id = device_id.split("_")
     vendor = parse_id[0]
@@ -107,12 +89,9 @@ def device_wrapper(device_id: str, **kwargs):
     if provider == "native":
         provider = vendor
 
-    if vendor not in devices_entrypoints:
-        refresh_devices()
-
     if vendor in devices_entrypoints:
         device_wrapper_class = devices_entrypoints[vendor].load()
         return device_wrapper_class(device_id, provider, **kwargs)
 
     else:
-        raise WrapperError("Invalid device ID")
+        raise WrapperError(f"{device_id} is not a valid device ID.")

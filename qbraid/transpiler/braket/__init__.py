@@ -28,5 +28,5 @@ circuit to Braket will yield an error.
    BraketCircuitWrapper
 
 """
-from .gate import BraketGateWrapper
 from .circuit import BraketCircuitWrapper
+from .gate import BraketGateWrapper

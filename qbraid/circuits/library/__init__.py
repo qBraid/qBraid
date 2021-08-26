@@ -65,5 +65,5 @@ The circuits library module for generalized gates.
    Unitary
 
 """
-from .standard_gates import *
 from .generalized_gates import RV, Unitary
+from .standard_gates import *

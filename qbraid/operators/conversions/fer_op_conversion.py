@@ -1,12 +1,6 @@
 import numpy as np
 from openfermion.ops import FermionOperator, InteractionOperator
-
-from openfermion.transforms import (
-    get_interaction_operator,
-    get_fermion_operator,
-    normal_ordered,
-)
-
+from openfermion.transforms import get_fermion_operator, get_interaction_operator, normal_ordered
 from qiskit.chemistry import FermionicOperator
 
 

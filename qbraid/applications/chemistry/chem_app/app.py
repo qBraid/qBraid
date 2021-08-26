@@ -1,19 +1,19 @@
 # pylint: skip-file
 
 from classical_pipeline import (
+    classical_calc_output,
+    openfermion_classical_code_print,
+    openfermion_classical_code_run,
     pyscf_code_print,
     pyscf_code_run,
     qiskit_classical_code_print,
     qiskit_classical_code_run,
-    classical_calc_output,
-    openfermion_classical_code_run,
-    openfermion_classical_code_print,
 )
 from quantum_pipeline import (
-    qiskit_quantum_code_print,
-    qiskit_quantum_code_run,
     openfermion_quantum_code_print,
     openfermion_quantum_code_run,
+    qiskit_quantum_code_print,
+    qiskit_quantum_code_run,
 )
 from run_setup import run_config_qiskit_run
 

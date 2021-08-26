@@ -1,12 +1,13 @@
-from qbraid.transpiler.cirq.moment import CirqMomentWrapper
-from typing import List, Iterable
+from typing import Iterable, List
 
 from cirq.circuits import Circuit
 from cirq.ops.moment import Moment
 
 from qbraid.transpiler.circuit import CircuitWrapper
-from .instruction import CirqInstructionWrapper
+from qbraid.transpiler.cirq.moment import CirqMomentWrapper
+
 from ..parameter import ParamID
+from .instruction import CirqInstructionWrapper
 
 
 class CirqCircuitWrapper(CircuitWrapper):

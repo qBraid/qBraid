@@ -1,21 +1,15 @@
 # pylint: skip-file
 
+from classical_pipeline import classical_calc_output
 from openfermion.ops import InteractionOperator
-from openfermion.transforms import (
-    get_fermion_operator,
-    jordan_wigner,
-    bravyi_kitaev,
-    parity_code,
-)
+from openfermion.transforms import bravyi_kitaev, get_fermion_operator, jordan_wigner, parity_code
 from qiskit.aqua.algorithms import VQE
-from qiskit.aqua.components.optimizers import COBYLA, SPSA, SLSQP
+from qiskit.aqua.components.optimizers import COBYLA, SLSQP, SPSA
 from qiskit.aqua.operators import Z2Symmetries
 from qiskit.chemistry import FermionicOperator
 from qiskit.chemistry.components.initial_states import HartreeFock
 from qiskit.chemistry.components.variational_forms import UCCSD
 from qiskit.circuit.library import EfficientSU2
-
-from classical_pipeline import classical_calc_output
 
 history = {"eval_count": [], "parameters": [], "mean": [], "std": []}
 

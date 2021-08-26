@@ -13,13 +13,15 @@
 """QiskitJobWrapper Class"""
 
 from __future__ import annotations
-from typing import Optional, Callable
-from qiskit.providers.job import Job
-from qiskit.providers.exceptions import JobTimeoutError
-from qiskit.providers.exceptions import JobError as QiskitJobError
 
-from qbraid.devices.job import JobLikeWrapper
+from typing import Callable, Optional
+
+from qiskit.providers.exceptions import JobError as QiskitJobError
+from qiskit.providers.exceptions import JobTimeoutError
+from qiskit.providers.job import Job
+
 from qbraid.devices.exceptions import JobError
+from qbraid.devices.job import JobLikeWrapper
 
 
 class QiskitJobWrapper(JobLikeWrapper):

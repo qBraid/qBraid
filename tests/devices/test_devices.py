@@ -1,29 +1,25 @@
 """
 Unit tests for the qbraid device layer.
 """
-import pytest
+import cirq
 import numpy as np
-
-from braket.circuits import Circuit as BraketCircuit
+import pytest
 from braket.aws import AwsDevice
+from braket.circuits import Circuit as BraketCircuit
 from braket.devices import LocalSimulator as AwsSimulator
 from braket.tasks.quantum_task import QuantumTask as BraketQuantumTask
-from dwave.system.composites import EmbeddingComposite
-
-import cirq
 from cirq.sim.simulator_base import SimulatorBase as CirqSimulator
 from cirq.study.result import Result as CirqResult
-
+from dwave.system.composites import EmbeddingComposite
 from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.job import Job as QiskitJob
-from qiskit.result import Result as QiskitResult
 
 from qbraid import device_wrapper
 from qbraid.devices._utils import SUPPORTED_VENDORS
 from qbraid.devices.aws import BraketDeviceWrapper, BraketQuantumTaskWrapper
-from qbraid.devices.google import CirqSimulatorWrapper, CirqResultWrapper
-from qbraid.devices.ibm import QiskitBackendWrapper, QiskitJobWrapper, QiskitResultWrapper
+from qbraid.devices.google import CirqResultWrapper, CirqSimulatorWrapper
+from qbraid.devices.ibm import QiskitBackendWrapper, QiskitJobWrapper
 
 
 def device_wrapper_inputs(vendor: str):
@@ -96,7 +92,8 @@ def cirq_circuit(meas=True):
         yield cirq.H(q0)
         yield cirq.Ry(rads=np.pi / 2)(q0)
         if meas:
-            yield cirq.measure(q0, key='q0')
+            yield cirq.measure(q0, key="q0")
+
     circuit = cirq.Circuit()
     circuit.append(basic_circuit())
     return circuit
@@ -129,16 +126,6 @@ def test_run_qiskit_device_wrapper(device_id, circuit):
     assert isinstance(vendor_job, QiskitJob)
 
 
-@pytest.mark.parametrize("circuit", circuits_qiskit_run)
-@pytest.mark.parametrize("device_id", inputs_qiskit_run)
-def test_execute_qiskit_device_wrapper(device_id, circuit):
-    qbraid_device = device_wrapper(device_id)
-    qbraid_result = qbraid_device.execute(circuit, shots=10)
-    vendor_result = qbraid_result.vendor_rlo
-    assert isinstance(qbraid_result, QiskitResultWrapper)
-    assert isinstance(vendor_result, QiskitResult)
-
-
 @pytest.mark.parametrize("circuit", circuits_cirq_run)
 @pytest.mark.parametrize("device_id", inputs_cirq_run)
 def test_run_cirq_device_wrapper(device_id, circuit):
@@ -157,5 +144,3 @@ def test_run_braket_device_wrapper(device_id, circuit):
     vendor_job = qbraid_job.vendor_jlo
     assert isinstance(qbraid_job, BraketQuantumTaskWrapper)
     assert isinstance(vendor_job, BraketQuantumTask)
-
-

@@ -1,3 +1,5 @@
+"""QbraidTranspiler Class"""
+
 from abc import ABC, abstractmethod
 
 

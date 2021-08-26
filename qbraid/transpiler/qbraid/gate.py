@@ -1,8 +1,8 @@
-from ..gate import GateWrapper
-
-from qbraid.circuits.gate import Gate as QbraidGate
 from qbraid.circuits.controlledgate import ControlledGate as QbraidControlledGate
+from qbraid.circuits.gate import Gate as QbraidGate
 from qbraid.circuits.parameter import Parameter as QbraidParameter
+
+from ..gate import GateWrapper
 
 
 class QbraidGateWrapper(GateWrapper):

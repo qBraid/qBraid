@@ -1,8 +1,10 @@
+"""CircuitWrapper Class"""
+
 from abc import abstractmethod
 
-from ._utils import circuit_outputs, supported_packages
-from .exceptions import TranspilerError
-from .transpiler import QbraidTranspiler
+from qbraid.transpiler._utils import circuit_outputs, supported_packages
+from qbraid.transpiler.exceptions import TranspilerError
+from qbraid.transpiler.transpiler import QbraidTranspiler
 
 
 class CircuitWrapper(QbraidTranspiler):
@@ -48,13 +50,11 @@ class CircuitWrapper(QbraidTranspiler):
     @abstractmethod
     def instructions(self):
         """Return an Iterable of instructions in the circuit."""
-        pass
 
     @property
     @abstractmethod
     def moments(self):
         """Return an Iterable of moments in the circuit."""
-        pass
 
     @property
     def circuit(self):
@@ -68,10 +68,12 @@ class CircuitWrapper(QbraidTranspiler):
 
     @property
     def num_qubits(self):
+        """Return the number of qubits in the circuit."""
         return self._num_qubits
 
     @property
     def num_clbits(self):
+        """Return the number of classical bits in the circuit."""
         return self._num_clbits
 
     @property
@@ -114,7 +116,6 @@ class CircuitWrapper(QbraidTranspiler):
         """
         if package == self.package:
             return self.circuit
-        elif package in self.supported_packages:
+        if package in self.supported_packages:
             return circuit_outputs[package](self, *args, **kwargs)
-        else:
-            raise TranspilerError(f"{package} is not a supported package.")
+        raise TranspilerError(f"{package} is not a supported package.")

@@ -21,19 +21,19 @@ of this class to carry out the optimization. Alternatively, all of the functions
 overridden to opt-out of this infrastructure but still meet the interface requirements.
 """
 
-from typing import Optional, Callable, Union, Dict
-import time
 import logging
+import time
 from abc import abstractmethod
-import numpy as np
+from typing import Callable, Dict, Optional, Union
 
+import numpy as np
 from qiskit.circuit import QuantumCircuit
-from qiskit.providers import BaseBackend
-from qiskit.providers import Backend
 from qiskit.opflow.gradients import GradientBase
+from qiskit.providers import Backend, BaseBackend
 from qiskit.utils import QuantumInstance, algorithm_globals
+
 from .algorithm_result import AlgorithmResult
-from .optimizers import Optimizer, SLSQP
+from .optimizers import SLSQP, Optimizer
 
 logger = logging.getLogger(__name__)
 

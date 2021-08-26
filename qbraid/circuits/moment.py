@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import logging
-from typing import Set, Union, Iterable
+from typing import Iterable, Set, Union
 
 from .exceptions import CircuitError
 from .instruction import Instruction

@@ -65,7 +65,7 @@ QISKIT_PROVIDERS = {
 }
 
 IBM_DEVICE_INFO = {
-    "ibm_q_armonk": ["IBM Quantum",  "Armonk QPU", "1"],
+    "ibm_q_armonk": ["IBM Quantum", "Armonk QPU", "1"],
     "ibm_q_belem": ["IBM Quantum", "Belem QPU", "5"],
     "ibm_q_bogota": ["IBM Quantum", "Bogota QPU", "5"],
     "ibm_q_lima": ["IBM Quantum", "Lima QPU", "5"],

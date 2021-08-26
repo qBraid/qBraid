@@ -1,5 +1,7 @@
-from ._utils import gate_outputs
-from .transpiler import QbraidTranspiler
+"""GateWrapper Class"""
+
+from qbraid.transpiler._utils import gate_outputs
+from qbraid.transpiler.transpiler import QbraidTranspiler
 
 
 class GateWrapper(QbraidTranspiler):
@@ -12,10 +14,10 @@ class GateWrapper(QbraidTranspiler):
             is named in the underlying packet, this string follows qbraid's conventions,
             which can be found here.
         num_controls(int): Default is 0.
-        base_gate( :class:`qbraid.transpiler.gate.GateWrapper`): the single- or two-qubit gate being controlled.
-            Defaults to `None`.
-        params( list[int,float,ParamID]): all the parameters associated with the gate. These may be abstract parameters
-            or simply numbers.
+        base_gate( :class:`qbraid.transpiler.gate.GateWrapper`): the single- or two-qubit gate
+            being controlled. Defaults to `None`.
+        params( list[int,float,ParamID]): all the parameters associated with the gate. These may be
+            abstract parameters or simply numbers.
     """
 
     def __init__(self):
