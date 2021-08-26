@@ -1,3 +1,5 @@
+"""CirqCircuitWrapper Class"""
+
 from typing import Iterable, List
 
 from cirq.circuits import Circuit
@@ -6,15 +8,21 @@ from cirq.ops.moment import Moment
 from qbraid.transpiler.circuit import CircuitWrapper
 from qbraid.transpiler.cirq.moment import CirqMomentWrapper
 
-from ..parameter import ParamID
-from .instruction import CirqInstructionWrapper
+from qbraid.transpiler.parameter import ParamID
+from qbraid.transpiler.cirq.instruction import CirqInstructionWrapper
 
 
 class CirqCircuitWrapper(CircuitWrapper):
-
-    """Cirq implementation of the abstract CircuitWrapper class"""
+    """Wrapper class for Cirq ``Circuit`` objects."""
 
     def __init__(self, circuit: Circuit, input_qubit_mapping=None):
+        """Create a CirqCircuitWrapper
+
+        Args:
+            circuit: the cirq ``Circuit`` object to be wrapped
+            input_qubit_mapping (optinal, dict): input qubit mapping
+
+        """
         super().__init__(circuit, input_qubit_mapping)
 
         self._qubits = circuit.all_qubits()
@@ -24,7 +32,7 @@ class CirqCircuitWrapper(CircuitWrapper):
         self._wrap_circuit(circuit)
 
     def _wrap_circuit(self, circuit: Iterable[Moment]):
-
+        """Internal circuit wrapper initialization helper function."""
         params = set()
         moments = []
 
@@ -54,11 +62,12 @@ class CirqCircuitWrapper(CircuitWrapper):
 
     @property
     def moments(self) -> List[CirqMomentWrapper]:
+        """Return list of the circuit's moments."""
         return self._moments
 
     @property
     def instructions(self) -> List[CirqInstructionWrapper]:
-
+        """Return list of the circuit's instructions."""
         instructions = []
         for m in self.moments:
             for i in m.instructions:
