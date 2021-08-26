@@ -1,8 +1,6 @@
 name: Unit tests
 
 on:
-  push:
-    branches: [ master ]
   pull_request:
     branches: [ master ]
 
@@ -28,5 +26,3 @@ jobs:
     - name: Run unit tests
       run: |
         tox -e unit-tests
-    - name: Upload coverage report to Codecov
-      uses: codecov/codecov-action@v1
