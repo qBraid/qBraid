@@ -49,8 +49,8 @@ def _get_device_data():
     )
     client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
     db = client["devices"]
+    vendors = db.list_collection_names()
     device_data = []
-    vendors = ["aws", "google", "ibm"]
     for vendor in vendors:
         collection = db[vendor]
         cursor = collection.find({})
