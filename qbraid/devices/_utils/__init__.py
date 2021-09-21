@@ -66,6 +66,8 @@ def _get_device_data():
 def get_devices():
     """Prints all available devices, tabulated by provider, name, and qBraid ID."""
 
+    device_data = _get_device_data()
+
     html = """<h3>Supported Devices</h3><table><tr>
     <th style='text-align:left'>Provider</th>
     <th style='text-align:left'>Name</th>
