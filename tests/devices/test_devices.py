@@ -16,7 +16,7 @@ from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.job import Job as QiskitJob
 
 from qbraid import device_wrapper
-from qbraid.devices._utils import SUPPORTED_VENDORS
+from qbraid.devices._utils import SUPPORTED_DEVICES
 from qbraid.devices.aws import BraketDeviceWrapper, BraketQuantumTaskWrapper
 from qbraid.devices.google import CirqResultWrapper, CirqSimulatorWrapper
 from qbraid.devices.ibm import QiskitBackendWrapper, QiskitJobWrapper
@@ -25,9 +25,8 @@ from qbraid.devices.ibm import QiskitBackendWrapper, QiskitJobWrapper
 def device_wrapper_inputs(vendor: str):
     """Returns list of tuples containing all device_wrapper inputs for given vendor."""
     input_list = []
-    for provider in SUPPORTED_VENDORS[vendor]:
-        for device in SUPPORTED_VENDORS[vendor][provider]:
-            input_list.append(device)
+    for device in SUPPORTED_DEVICES[vendor]:
+        input_list.append(device)
     return input_list
 
 
@@ -112,7 +111,7 @@ circuits_braket_run = [braket_circuit(), cirq_circuit(False), qiskit_circuit(Fal
 circuits_cirq_run = [cirq_circuit(), qiskit_circuit()]
 circuits_qiskit_run = circuits_cirq_run
 inputs_cirq_run = ["google_cirq_dm_sim"]
-inputs_braket_run = ["aws_native_sv_sim", "aws_ionQ", "aws_rigetti_aspen9"]
+inputs_braket_run = ["aws_sv_sim", "aws_ionq", "aws_rigetti_aspen_9"]
 inputs_qiskit_run = ["ibm_q_least_busy_qpu", "ibm_aer_qasm_sim", "ibm_aer_default_sim"]
 
 

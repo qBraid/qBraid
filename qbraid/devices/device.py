@@ -18,7 +18,7 @@ import qbraid
 from qbraid.devices._utils import (
     CONFIG_PROMPTS,
     RUN_PACKAGE,
-    SUPPORTED_VENDORS,
+    SUPPORTED_DEVICES,
     get_config,
     set_config,
 )
@@ -38,9 +38,9 @@ class DeviceLikeWrapper(ABC):
 
     """
 
-    def __init__(self, name, provider, vendor=None, **fields):
+    def __init__(self, device_id, provider, vendor=None, **fields):
 
-        self._name = name
+        self._name = device_id
         self._provider = provider
         self._vendor = vendor
         self._options = self._default_options()
@@ -56,10 +56,10 @@ class DeviceLikeWrapper(ABC):
 
     def _get_device_obj(self):
         try:
-            supported_devices = SUPPORTED_VENDORS[self.vendor][self.provider]
+            supported_devices = SUPPORTED_DEVICES[self.vendor]
         except KeyError as err:
             raise DeviceError(
-                'Provider "{}" not supported by vendor "{}".'.format(self.provider, self.vendor)
+                '"{}" is not a supported by vendor.'.format(self.vendor)
             ) from err
         try:
             device_ref = supported_devices[self.name]

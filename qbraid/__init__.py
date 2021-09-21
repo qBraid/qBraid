@@ -84,13 +84,13 @@ def device_wrapper(device_id: str, **kwargs):
     """
     parse_id = device_id.split("_")
     vendor = parse_id[0]
-    provider = parse_id[1]
-
-    if provider == "native":
-        provider = vendor
 
     if vendor in devices_entrypoints:
         device_wrapper_class = devices_entrypoints[vendor].load()
+        provider = parse_id[1]
+        auxillary_providers = ["dwave", "ionq", "rigetti"]
+        if provider not in auxillary_providers:
+            provider = vendor
         return device_wrapper_class(device_id, provider, **kwargs)
 
     else:
