@@ -43,8 +43,10 @@ def update_config(vendor):
 def _get_device_data():
     """Connect with MongoDB to retrieve device data"""
 
-    conn_str = "mongodb+srv://ryanjh88:Rq2bYCtKnMgh3tIA@cluster0.jkqzi.mongodb.net/" \
-               "devices?retryWrites=true&w=majority"
+    conn_str = (
+        "mongodb+srv://ryanjh88:Rq2bYCtKnMgh3tIA@cluster0.jkqzi.mongodb.net/"
+        "devices?retryWrites=true&w=majority"
+    )
     client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
     db = client["devices"]
     device_data = []
@@ -84,5 +86,3 @@ def get_devices():
     html += "</table>"
 
     return display(HTML(html))
-
-

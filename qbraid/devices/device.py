@@ -58,9 +58,7 @@ class DeviceLikeWrapper(ABC):
         try:
             supported_devices = SUPPORTED_DEVICES[self.vendor]
         except KeyError as err:
-            raise DeviceError(
-                '"{}" is not a supported by vendor.'.format(self.vendor)
-            ) from err
+            raise DeviceError('"{}" is not a supported by vendor.'.format(self.vendor)) from err
         try:
             device_ref = supported_devices[self.name]
         except KeyError as err:
