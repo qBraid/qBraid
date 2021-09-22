@@ -40,20 +40,49 @@ def update_config(vendor):
     return 0
 
 
-def _get_device_data():
-    """Connect with MongoDB to retrieve device data"""
+def _mongodb_connect():
+    """Connect to MongoDB and return client object.
 
+    Note: Eventually this function will be replaced by a call to our qbraid API.
+
+    """
+
+    # Authentication string to be stored in our API
     conn_str = (
         "mongodb+srv://ryanjh88:Rq2bYCtKnMgh3tIA@cluster0.jkqzi.mongodb.net/"
         "devices?retryWrites=true&w=majority"
     )
-    client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
+    return MongoClient(conn_str, serverSelectionTimeoutMS=5000)
+
+
+def _get_device_data(filter_dict):
+    """Internal :meth:`qbraid.get_devices` helper function that connects with the MongoDB database
+    and returns a list of devices that match the ``filter_dict`` filters. Each device is
+    represented by its own length-3 list containing the device provider, name, and qbraid_id.
+
+    Note: Right now each vendor has its own collection in MongoDB, so the vendor filter is handled
+    seperatley. Eventually, we will want to list all of the devices under just one collection. By
+    then adding a "vendor" field to each document, we can apply all filters at once. This will
+    eliminate the need for the "vendor in filter_dict" if/else and the "vendor in vendors" for-loop.
+    """
+
+    client = _mongodb_connect()  # This line will be replaced by qBraid API call
     db = client["devices"]
-    vendors = db.list_collection_names()
+    if "vendor" in filter_dict:
+        vendors_input = filter_dict["vendor"]
+        if isinstance(vendors_input, str):
+            vendors = [vendors_input.lower()]
+        elif isinstance(vendors_input, list):
+            vendors = [x.lower() for x in vendors_input]
+        else:
+            raise TypeError("'vendor' must be of type <class 'str'> or <class 'list'>.")
+        del filter_dict["vendor"]
+    else:
+        vendors = db.list_collection_names()
     device_data = []
     for vendor in vendors:
         collection = db[vendor]
-        cursor = collection.find({})
+        cursor = collection.find(filter_dict)
         for document in cursor:
             name = document["name"]
             provider = document["provider"]
@@ -65,10 +94,17 @@ def _get_device_data():
     return device_data
 
 
-def get_devices():
-    """Prints all available devices, tabulated by provider, name, and qBraid ID."""
+def get_devices(filter_dict=None):
+    """Displays a list of all supported devices matching given filters, tabulated by provider,
+        name, and qBraid ID.
 
-    device_data = _get_device_data()
+    Args:
+        filter_dict (optional, dict): a dictionary containing any filters to be applied.
+
+    """
+
+    filter_dict = {} if filter_dict is None else filter_dict
+    device_data = _get_device_data(filter_dict)
 
     html = """<h3>Supported Devices</h3><table><tr>
     <th style='text-align:left'>Provider</th>
@@ -82,6 +118,10 @@ def get_devices():
         <td style='text-align:left'>{data[1]}</td>
         <td style='text-align:left'><code>{data[2]}</code></td></tr>
         """
+
+    if len(device_data) == 0:
+        html += "<tr><td colspan='3'; style='text-align:center'>No results matching " \
+                "criteria</td></tr></table>"
 
     html += "</table>"
 
