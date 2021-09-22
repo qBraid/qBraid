@@ -26,7 +26,7 @@ from qbraid.devices.ibm.result import QiskitResultWrapper
 class QiskitBackendWrapper(DeviceLikeWrapper):
     """Wrapper class for IBM Qiskit ``Backend`` objects."""
 
-    def __init__(self, name, provider, **fields):
+    def __init__(self, device_info, **fields):
         """Create a QiskitBackendWrapper
 
         Args:
@@ -38,7 +38,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             DeviceError: if input field not a valid options
 
         """
-        super().__init__(name, provider, vendor="ibm", **fields)
+        super().__init__(device_info, **fields)
 
     def _init_cred_device(self, device_ref) -> QiskitBackend:
         """Initialize an IBM credentialed device."""

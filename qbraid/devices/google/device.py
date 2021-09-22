@@ -9,7 +9,7 @@ from qbraid.devices.google.result import CirqResultWrapper
 class CirqSimulatorWrapper(DeviceLikeWrapper):
     """Wrapper class for Google Cirq ``Simulator`` objects."""
 
-    def __init__(self, name, provider, **fields):
+    def __init__(self, device_info, **fields):
         """Create CirqSimulatorWrapper
 
         Args:
@@ -21,7 +21,7 @@ class CirqSimulatorWrapper(DeviceLikeWrapper):
             DeviceError: if input field not a valid options
 
         """
-        super().__init__(name, provider, vendor="google", **fields)
+        super().__init__(device_info, **fields)
 
     def _init_cred_device(self, device_ref):
         """Initialize a Google credentialed device."""
@@ -58,7 +58,7 @@ class CirqEngineWrapper(DeviceLikeWrapper):
 
     """
 
-    def __init__(self, name, provider, **fields):
+    def __init__(self, device_info, **fields):
         """Creat a CirqEngineWrapper
 
         Args:
@@ -70,7 +70,7 @@ class CirqEngineWrapper(DeviceLikeWrapper):
             DeviceError: if input field not a valid options
 
         """
-        super().__init__(name, provider, vendor="google", **fields)
+        super().__init__(device_info, **fields)
 
     def _init_cred_device(self, device_ref):
         """Initialize a Google credentialed device."""

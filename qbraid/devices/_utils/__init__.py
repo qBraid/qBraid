@@ -14,12 +14,6 @@ SUPPORTED_DEVICES = {
     "ibm": IBM_DEVICES,
 }
 
-RUN_PACKAGE = {
-    "aws": "braket",
-    "google": "cirq",
-    "ibm": "qiskit",
-}
-
 CONFIG_PROMPTS = {
     "aws": AWS_CONFIG_PROMPT,
     "google": None,
@@ -40,55 +34,27 @@ def update_config(vendor):
     return 0
 
 
-def _mongodb_connect():
-    """Connect to MongoDB and return client object.
-
-    Note: Eventually this function will be replaced by a call to our qbraid API.
-
-    """
-
-    # Authentication string to be stored in our API
-    conn_str = (
-        "mongodb+srv://ryanjh88:Rq2bYCtKnMgh3tIA@cluster0.jkqzi.mongodb.net/"
-        "devices?retryWrites=true&w=majority"
-    )
-    return MongoClient(conn_str, serverSelectionTimeoutMS=5000)
-
-
 def _get_device_data(filter_dict):
     """Internal :meth:`qbraid.get_devices` helper function that connects with the MongoDB database
     and returns a list of devices that match the ``filter_dict`` filters. Each device is
     represented by its own length-3 list containing the device provider, name, and qbraid_id.
-
-    Note: Right now each vendor has its own collection in MongoDB, so the vendor filter is handled
-    seperately. Eventually, we will want to store all of the devices under just one collection. By
-    then adding a "vendor" field to each document, we can apply all filters at once. This will
-    eliminate the need for the "vendor in filter_dict" if/else and the "vendor in vendors" for-loop.
     """
-
-    client = _mongodb_connect()  # This line will be replaced by qBraid API call
-    db = client["devices"]
-    if "vendor" in filter_dict:
-        vendors_input = filter_dict["vendor"]
-        if isinstance(vendors_input, str):
-            vendors = [vendors_input.lower()]
-        elif isinstance(vendors_input, list):
-            vendors = [x.lower() for x in vendors_input]
-        else:
-            raise TypeError("'vendor' must be of type <class 'str'> or <class 'list'>.")
-        del filter_dict["vendor"]
-    else:
-        vendors = db.list_collection_names()
+    # Hard-coded autentication to be replaced with API call
+    conn_str = (
+        "mongodb+srv://ryanjh88:Rq2bYCtKnMgh3tIA@cluster0.jkqzi.mongodb.net/"
+        "qbraid-sdk?retryWrites=true&w=majority"
+    )
+    client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
+    db = client["qbraid-sdk"]
+    collection = db["supported_devices"]
+    cursor = collection.find(filter_dict)
     device_data = []
-    for vendor in vendors:
-        collection = db[vendor]
-        cursor = collection.find(filter_dict)
-        for document in cursor:
-            name = document["name"]
-            provider = document["provider"]
-            qbraid_id = document["qbraid_id"]
-            device_data.append([provider, name, qbraid_id])
-        cursor.close()
+    for document in cursor:
+        name = document["name"]
+        provider = document["provider"]
+        qbraid_id = document["qbraid_id"]
+        device_data.append([provider, name, qbraid_id])
+    cursor.close()
     client.close()
     device_data.sort()
     return device_data
@@ -121,7 +87,7 @@ def get_devices(filter_dict=None):
 
     if len(device_data) == 0:
         html += "<tr><td colspan='3'; style='text-align:center'>No results matching " \
-                "criteria</td></tr></table>"
+                "given criteria</td></tr>"
 
     html += "</table>"
 

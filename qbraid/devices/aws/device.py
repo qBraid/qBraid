@@ -30,7 +30,7 @@ from qbraid.devices.exceptions import DeviceError
 class BraketDeviceWrapper(DeviceLikeWrapper):
     """Wrapper class for Amazon Braket ``Device`` objects."""
 
-    def __init__(self, name, provider, **fields):
+    def __init__(self, device_info, **fields):
         """Create a BraketDeviceWrapper
 
         Args:
@@ -44,7 +44,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             DeviceError: if input field not a valid options
 
         """
-        super().__init__(name, provider, vendor="aws", **fields)
+        super().__init__(device_info, **fields)
         if self.requires_creds:
             bucket = get_config("s3_bucket", "AWS")
             folder = get_config("s3_folder", "AWS")

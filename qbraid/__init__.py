@@ -1,6 +1,7 @@
 """This top level module contains the main qBraid public functionality."""
 
 from importlib.metadata import entry_points, version
+from pymongo import MongoClient
 
 from qbraid.circuits import Circuit, UpdateRule
 from qbraid.devices import get_devices
@@ -70,28 +71,32 @@ def circuit_wrapper(circuit, **kwargs):
     raise WrapperError(f"{package} is not a supported package.")
 
 
-def device_wrapper(device_id: str, **kwargs):
+def device_wrapper(qbraid_id: str, **kwargs):
     """Apply qbraid device wrapper to device from a supported device provider.
 
     Args:
-        device_id (str): unique ID specifying a supported quantum hardware device/simulator
+        qbraid_id (str): unique ID specifying a supported quantum hardware device/simulator
 
     Returns:
         :class:`~qbraid.devices.DeviceLikeWrapper`: a qbraid device wrapper object
 
     Raises:
-        WrapperError: If ``device_id`` is not a valid device reference.
+        WrapperError: If ``qbraid_id`` is not a valid device reference.
     """
-    parse_id = device_id.split("_")
-    vendor = parse_id[0]
+    # Hard-coded authentication to be placed with API call
+    conn_str = (
+        "mongodb+srv://ryanjh88:Rq2bYCtKnMgh3tIA@cluster0.jkqzi.mongodb.net/"
+        "qbraid-sdk?retryWrites=true&w=majority"
+    )
+    client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
+    db = client["qbraid-sdk"]
+    collection = db["supported_devices"]
+    device_info = collection.find_one({"qbraid_id": qbraid_id})
+    client.close()
 
-    if vendor in devices_entrypoints:
-        device_wrapper_class = devices_entrypoints[vendor].load()
-        provider = parse_id[1]
-        auxillary_providers = ["dwave", "ionq", "rigetti"]
-        if provider not in auxillary_providers:
-            provider = vendor
-        return device_wrapper_class(device_id, provider, **kwargs)
+    if device_info is None:
+        raise WrapperError(f"{qbraid_id} is not a valid device ID.")
 
-    else:
-        raise WrapperError(f"{device_id} is not a valid device ID.")
+    vendor = device_info["vendor"]
+    device_wrapper_class = devices_entrypoints[vendor].load()
+    return device_wrapper_class(device_info, **kwargs)

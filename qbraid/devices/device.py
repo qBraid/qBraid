@@ -17,7 +17,6 @@ from abc import ABC, abstractmethod
 import qbraid
 from qbraid.devices._utils import (
     CONFIG_PROMPTS,
-    RUN_PACKAGE,
     SUPPORTED_DEVICES,
     get_config,
     set_config,
@@ -38,14 +37,11 @@ class DeviceLikeWrapper(ABC):
 
     """
 
-    def __init__(self, device_id, provider, vendor=None, **fields):
+    def __init__(self, device_info, **fields):
 
-        self._name = device_id
-        self._provider = provider
-        self._vendor = vendor
+        self._info = device_info
         self._options = self._default_options()
         self._device_configuration = None
-        self._run_package = RUN_PACKAGE[self.vendor]
         self.requires_creds = False
         self.vendor_dlo = self._get_device_obj()  # vendor device-like object
         if fields:
@@ -79,9 +75,10 @@ class DeviceLikeWrapper(ABC):
 
     def _compat_run_input(self, run_input):
         """Checks if ``run_input`` is compatible with device and if not, calls transpiler."""
-        run_input_package = run_input.__module__.split(".")[0]
-        if run_input_package != self._run_package:
-            run_input = qbraid.circuit_wrapper(run_input).transpile(self._run_package)
+        device_run_package = self.info["run_package"]
+        input_run_package = run_input.__module__.split(".")[0]
+        if input_run_package != device_run_package:
+            run_input = qbraid.circuit_wrapper(run_input).transpile(device_run_package)
         return run_input
 
     @abstractmethod
@@ -132,6 +129,11 @@ class DeviceLikeWrapper(ABC):
         return self._device_configuration
 
     @property
+    def info(self) -> dict:
+        """Return the device info."""
+        return self._info
+
+    @property
     def name(self):
         """Return the device name.
 
@@ -139,7 +141,7 @@ class DeviceLikeWrapper(ABC):
             str: the name of the device.
 
         """
-        return self._name
+        return self.info["name"]
 
     @property
     def provider(self):
@@ -149,7 +151,7 @@ class DeviceLikeWrapper(ABC):
             str: the provider responsible for the device.
 
         """
-        return self._provider
+        return self.info["provider"]
 
     @property
     def vendor(self):
@@ -159,9 +161,7 @@ class DeviceLikeWrapper(ABC):
             str: the name of the software vendor.
 
         """
-        if self._vendor is None:
-            raise DeviceError("vendor is None")
-        return self._vendor
+        return self.info["vendor"]
 
     @property
     def options(self):
