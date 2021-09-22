@@ -61,7 +61,7 @@ def _get_device_data(filter_dict):
     represented by its own length-3 list containing the device provider, name, and qbraid_id.
 
     Note: Right now each vendor has its own collection in MongoDB, so the vendor filter is handled
-    seperatley. Eventually, we will want to list all of the devices under just one collection. By
+    seperately. Eventually, we will want to store all of the devices under just one collection. By
     then adding a "vendor" field to each document, we can apply all filters at once. This will
     eliminate the need for the "vendor in filter_dict" if/else and the "vendor in vendors" for-loop.
     """
@@ -96,7 +96,7 @@ def _get_device_data(filter_dict):
 
 def get_devices(filter_dict=None):
     """Displays a list of all supported devices matching given filters, tabulated by provider,
-        name, and qBraid ID.
+    name, and qBraid ID.
 
     Args:
         filter_dict (optional, dict): a dictionary containing any filters to be applied.
