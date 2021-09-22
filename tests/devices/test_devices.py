@@ -34,10 +34,10 @@ def device_wrapper_inputs(vendor: str):
 Device wrapper tests: initialization
 Coverage: all vendors, all available devices
 """
-inputs_braket_dw = device_wrapper_inputs("aws")
+inputs_braket_dw = device_wrapper_inputs("AWS")
 inputs_braket_sampler = ["aws_dwave_2000Q_6", "aws_dwave_advantage_system1"]
-inputs_cirq_dw = device_wrapper_inputs("google")
-inputs_qiskit_dw = device_wrapper_inputs("ibm")
+inputs_cirq_dw = device_wrapper_inputs("Google")
+inputs_qiskit_dw = device_wrapper_inputs("IBM")
 
 
 @pytest.mark.parametrize("device_id", inputs_braket_dw)

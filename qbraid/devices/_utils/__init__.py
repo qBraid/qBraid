@@ -9,15 +9,15 @@ from .ibm_utils import IBMQ_CONFIG_PROMPT, IBM_DEVICES
 from .user_config import get_config, set_config
 
 SUPPORTED_DEVICES = {
-    "aws": AWS_DEVICES,
-    "google": GOOGLE_DEVICES,
-    "ibm": IBM_DEVICES,
+    "AWS": AWS_DEVICES,
+    "Google": GOOGLE_DEVICES,
+    "IBM": IBM_DEVICES,
 }
 
 CONFIG_PROMPTS = {
-    "aws": AWS_CONFIG_PROMPT,
-    "google": None,
-    "ibm": IBMQ_CONFIG_PROMPT,
+    "AWS": AWS_CONFIG_PROMPT,
+    "Google": None,
+    "IBM": IBMQ_CONFIG_PROMPT,
 }
 
 
@@ -86,8 +86,10 @@ def get_devices(filter_dict=None):
         """
 
     if len(device_data) == 0:
-        html += "<tr><td colspan='3'; style='text-align:center'>No results matching " \
-                "given criteria</td></tr>"
+        html += (
+            "<tr><td colspan='3'; style='text-align:center'>No results matching "
+            "given criteria</td></tr>"
+        )
 
     html += "</table>"
 

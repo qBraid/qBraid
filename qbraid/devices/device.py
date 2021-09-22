@@ -141,7 +141,7 @@ class DeviceLikeWrapper(ABC):
             str: the name of the device.
 
         """
-        return self.info["name"]
+        return self.info["qbraid_id"]
 
     @property
     def provider(self):

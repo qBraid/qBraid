@@ -81,7 +81,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             DeviceError if not a D-Wave annealing device.
 
         """
-        if self.provider != "dwave":
+        if self.provider != "D-Wave":
             raise DeviceError("Sampler only available for D-Wave (annealing) devices")
         sampler = (
             BraketSampler(self.s3_location, self._arn)
