@@ -1,18 +1,6 @@
-# This code is part of Qiskit.
-#
-# (C) Copyright IBM 2017.
-#
-# This code is licensed under the Apache License, Version 2.0. You may
-# obtain a copy of this license in the LICENSE.txt file in the root directory
-# of the source tree https://github.com/Qiskit/qiskit-terra/blob/main/LICENSE.txt
-# or at http://www.apache.org/licenses/LICENSE-2.0.
-#
-# NOTICE: This file has been modified from the original:
-# https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/providers/backend.py
-
 """QiskitBackendWrapper Class"""
 
-from qiskit import IBMQ, execute
+from qiskit import Aer, BasicAer, IBMQ, execute
 from qiskit.providers.ibmq import least_busy
 from qiskit.utils.quantum_instance import QuantumInstance
 from qiskit.providers.backend import Backend as QiskitBackend
@@ -21,6 +9,7 @@ from qbraid.devices._utils import get_config
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.ibm.job import QiskitJobWrapper
 from qbraid.devices.ibm.result import QiskitResultWrapper
+from qbraid.devices.exceptions import DeviceError
 
 
 class QiskitBackendWrapper(DeviceLikeWrapper):
@@ -40,30 +29,25 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         """
         super().__init__(device_info, **fields)
 
-    def _init_cred_device(self, device_ref) -> QiskitBackend:
-        """Initialize an IBM credentialed device."""
-        if IBMQ.active_account() is None:
-            IBMQ.load_account()
-        group = get_config("group", "IBM")
-        project = get_config("project", "IBM")
-        provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
-        if device_ref == "least_busy":
-            backends = provider.backends(filters=lambda x: not x.configuration().simulator)
-            return least_busy(backends)
-        return provider.get_backend(device_ref)
-
-    @classmethod
-    def _default_options(cls):
-        """Return the default options
-
-        This method will return a :class:`qiskit.providers.Options` subclass object that will be
-        used for the default options. These should be the default parameters to use for the
-        options of the backend.
-
-        Returns:
-            qiskit.providers.Options: A options object with default values set
-
-        """
+    def _get_device(self, obj_ref, obj_arg) -> QiskitBackend:
+        """Initialize an IBM device."""
+        if obj_ref == "IBMQ":
+            if IBMQ.active_account() is None:
+                IBMQ.load_account()
+            group = get_config("group", "IBM")
+            project = get_config("project", "IBM")
+            provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
+            if obj_arg == "least_busy":
+                backends = provider.backends(filters=lambda x: not x.configuration().simulator)
+                return least_busy(backends)
+            else:
+                return provider.get_backend(obj_arg)
+        elif obj_ref == "Aer":
+            return Aer.get_backend(obj_arg)
+        elif obj_ref == "BasicAer":
+            return BasicAer.get_backend(obj_arg)
+        else:
+            raise DeviceError(f"obj_ref {obj_ref} not found.")
 
     def execute(self, run_input, *args, **kwargs):
         """Runs circuit(s) on qiskit backend via :meth:`~qiskit.utils.QuantumInstance.execute`.

@@ -1,19 +1,3 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License"). You
-# may not use this file except in compliance with the License. A copy of
-# the License is located at
-#
-#     http://aws.amazon.com/apache2.0/
-#
-# or at https://github.com/aws/amazon-braket-sdk-python/blob/main/LICENSE.
-# This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-# CONDITIONS OF ANY KIND, either express or implied. See the License for
-# the specific language governing permissions and limitations under the License.
-#
-# NOTICE: This file has been modified from the original:
-# https://github.com/aws/amazon-braket-sdk-python/blob/main/src/braket/devices/device.py
-
 """BraketDeviceWrapper Class"""
 
 from braket.aws import AwsDevice
@@ -43,17 +27,17 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
 
         """
         super().__init__(device_info, **kwargs)
-        self._s3_location = None
-        self._arn = None
-
-    def _init_device(self, obj_ref, obj_arg):
-        """Initialize an AWS device."""
         if self.requires_cred:
-            self._check_cred()
             bucket = get_config("s3_bucket", "AWS")
             folder = get_config("s3_folder", "AWS")
             self._s3_location = (bucket, folder)
-            self._arn = obj_arg
+            self._arn = self._obj_arg
+        else:
+            self._s3_location = None
+            self._arn = None
+
+    def _get_device(self, obj_ref, obj_arg):
+        """Initialize an AWS device."""
         if obj_ref == "AwsDevice":
             return AwsDevice(obj_arg)
         elif obj_ref == "LocalSimulator":

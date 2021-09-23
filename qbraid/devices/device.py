@@ -29,13 +29,11 @@ class DeviceLikeWrapper(ABC):
         self._obj_ref = device_info.pop("obj_ref")
         self._obj_arg = device_info.pop("obj_arg")
         self.requires_cred = device_info.pop("requires_cred")
-        self.vendor_dlo = self._init_device(self._obj_ref, self._obj_arg)
-
-    def _check_cred(self):
-        if get_config("verify", self.vendor) != "True":
+        if self.requires_cred and get_config("verify", self.vendor) != "True":
             prompt_lst = CONFIG_PROMPTS[self.vendor]
             for prompt in prompt_lst:
                 set_config(*prompt)
+        self.vendor_dlo = self._get_device(self._obj_ref, self._obj_arg)
 
     def _compat_run_input(self, run_input):
         """Checks if ``run_input`` is compatible with device and if not, calls transpiler."""
@@ -93,7 +91,7 @@ class DeviceLikeWrapper(ABC):
         return f"<{self.__class__.__name__}({self.provider}:'{self.name}')>"
 
     @abstractmethod
-    def _init_device(self, obj_ref, obj_arg):
+    def _get_device(self, obj_ref, obj_arg):
         """Abstract init device method."""
 
     @abstractmethod
