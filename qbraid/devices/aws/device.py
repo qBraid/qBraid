@@ -18,8 +18,6 @@
 
 from braket.aws import AwsDevice
 from braket.devices import LocalSimulator
-from braket.ocean_plugin import BraketDWaveSampler, BraketSampler
-from dwave.system.composites import EmbeddingComposite
 
 from qbraid.devices._utils import get_config
 from qbraid.devices.aws.job import BraketQuantumTaskWrapper
@@ -30,7 +28,7 @@ from qbraid.devices.exceptions import DeviceError
 class BraketDeviceWrapper(DeviceLikeWrapper):
     """Wrapper class for Amazon Braket ``Device`` objects."""
 
-    def __init__(self, device_info, **fields):
+    def __init__(self, device_info, **kwargs):
         """Create a BraketDeviceWrapper
 
         Args:
@@ -44,26 +42,24 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             DeviceError: if input field not a valid options
 
         """
-        super().__init__(device_info, **fields)
-        if self.requires_creds:
+        super().__init__(device_info, **kwargs)
+        self._s3_location = None
+        self._arn = None
+
+    def _init_device(self, obj_ref, obj_arg):
+        """Initialize an AWS device."""
+        if self.requires_cred:
+            self._check_cred()
             bucket = get_config("s3_bucket", "AWS")
             folder = get_config("s3_folder", "AWS")
-            self.s3_location = (bucket, folder)
+            self._s3_location = (bucket, folder)
+            self._arn = obj_arg
+        if obj_ref == "AwsDevice":
+            return AwsDevice(obj_arg)
+        elif obj_ref == "LocalSimulator":
+            return LocalSimulator(backend=obj_arg)
         else:
-            self._arn = None
-            self.s3_location = None
-
-    def _init_cred_device(self, device_ref):
-        """Initialize an AWS credentialed device."""
-        if device_ref[0:3] == "arn":
-            self._arn = device_ref
-            return AwsDevice(device_ref)
-        return LocalSimulator(backend=device_ref)
-
-    @classmethod
-    def _default_options(cls):
-        """Return the default options for running this device."""
-        return NotImplementedError
+            raise DeviceError(f"obj_ref {obj_ref} not found.")
 
     def get_sampler(self, braket_default=False, embedding=True):
         """Returns BraketSampler created from device. Only compatible with D-Wave devices.
@@ -83,14 +79,17 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         """
         if self.provider != "D-Wave":
             raise DeviceError("Sampler only available for D-Wave (annealing) devices")
-        sampler = (
-            BraketSampler(self.s3_location, self._arn)
-            if braket_default
-            else BraketDWaveSampler(self.s3_location, self._arn)
-        )
-        if not embedding:
+        if braket_default:
+            from braket.ocean_plugin import BraketSampler
+            sampler = BraketSampler(self._s3_location, self._arn)
+        else:
+            from braket.ocean_plugin import BraketDWaveSampler
+            sampler = BraketDWaveSampler(self._s3_location, self._arn)
+        if embedding:
+            from dwave.system.composites import EmbeddingComposite
+            return EmbeddingComposite(sampler)
+        else:
             return sampler
-        return EmbeddingComposite(sampler)
 
     def run(self, run_input, *args, **kwargs):
         """Run a quantum task specification on this quantum device. A task can be a circuit or an
@@ -107,8 +106,8 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         """
         run_input = self._compat_run_input(run_input)
         braket_device = self.vendor_dlo
-        if self.requires_creds:
-            braket_quantum_task = braket_device.run(run_input, self.s3_location, *args, **kwargs)
+        if self.requires_cred:
+            braket_quantum_task = braket_device.run(run_input, self._s3_location, *args, **kwargs)
         else:
             braket_quantum_task = braket_device.run(run_input, *args, **kwargs)
         qbraid_job = BraketQuantumTaskWrapper(self, braket_quantum_task)

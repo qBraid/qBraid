@@ -97,6 +97,7 @@ def device_wrapper(qbraid_id: str, **kwargs):
     if device_info is None:
         raise WrapperError(f"{qbraid_id} is not a valid device ID.")
 
+    del device_info["_id"]  # unecessary for sdk
     vendor = device_info["vendor"]
     device_wrapper_class = devices_entrypoints[vendor].load()
     return device_wrapper_class(device_info, **kwargs)
