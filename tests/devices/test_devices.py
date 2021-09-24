@@ -14,9 +14,9 @@ from dwave.system.composites import EmbeddingComposite
 from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.job import Job as QiskitJob
+from pymongo import MongoClient
 
 from qbraid import device_wrapper
-from qbraid.devices._utils import SUPPORTED_DEVICES
 from qbraid.devices.aws import BraketDeviceWrapper, BraketQuantumTaskWrapper
 from qbraid.devices.google import CirqResultWrapper, CirqSimulatorWrapper
 from qbraid.devices.ibm import QiskitBackendWrapper, QiskitJobWrapper
@@ -24,9 +24,20 @@ from qbraid.devices.ibm import QiskitBackendWrapper, QiskitJobWrapper
 
 def device_wrapper_inputs(vendor: str):
     """Returns list of tuples containing all device_wrapper inputs for given vendor."""
+    conn_str = (
+        "mongodb+srv://ryanjh88:Rq2bYCtKnMgh3tIA@cluster0.jkqzi.mongodb.net/"
+        "qbraid-sdk?retryWrites=true&w=majority"
+    )
+    client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
+    db = client["qbraid-sdk"]
+    collection = db["supported_devices"]
+    cursor = collection.find({})
     input_list = []
-    for device in SUPPORTED_DEVICES[vendor]:
-        input_list.append(device)
+    for document in cursor:
+        if document["vendor"] == vendor:
+            input_list.append(document["qbraid_id"])
+    cursor.close()
+    client.close()
     return input_list
 
 
@@ -36,7 +47,7 @@ Coverage: all vendors, all available devices
 """
 inputs_braket_dw = device_wrapper_inputs("AWS")
 inputs_braket_sampler = ["aws_dwave_2000Q_6", "aws_dwave_advantage_system1"]
-inputs_cirq_dw = device_wrapper_inputs("Google")
+inputs_cirq_dw = ["google_cirq_sparse_sim", "google_cirq_dm_sim"]
 inputs_qiskit_dw = device_wrapper_inputs("IBM")
 
 

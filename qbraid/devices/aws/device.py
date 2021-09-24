@@ -65,12 +65,15 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             raise DeviceError("Sampler only available for D-Wave (annealing) devices")
         if braket_default:
             from braket.ocean_plugin import BraketSampler
+
             sampler = BraketSampler(self._s3_location, self._arn)
         else:
             from braket.ocean_plugin import BraketDWaveSampler
+
             sampler = BraketDWaveSampler(self._s3_location, self._arn)
         if embedding:
             from dwave.system.composites import EmbeddingComposite
+
             return EmbeddingComposite(sampler)
         else:
             return sampler
