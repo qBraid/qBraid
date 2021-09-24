@@ -2,12 +2,11 @@
 
 import os
 
-from braket.devices import LocalSimulator
-
-from .user_config import qbraid_config_path
-
+qbraid_config_path = os.path.join(os.path.expanduser("~"), ".qbraid", "config")
 aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
 aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
+ibmq_config_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
+ibmq_account_url = "https://auth.quantum-computing.ibm.com/api"
 
 AWS_CONFIG_PROMPT = [
     # (config_name, prompt_text, default_value, is_secret, section, filepath)
@@ -20,16 +19,18 @@ AWS_CONFIG_PROMPT = [
     ("verify", "", "True", False, "AWS", qbraid_config_path),
 ]
 
+IBMQ_CONFIG_PROMPT = [
+    # (config_name, prompt_text, default_value, is_secret, section, filepath)
+    ("token", "IBMQ API Token", None, True, "ibmq", ibmq_config_path),
+    ("url", "", ibmq_account_url, False, "ibmq", ibmq_config_path),
+    ("verify", "", "True", False, "ibmq", ibmq_config_path),
+    ("group", "Group name (optional)", "open", False, "IBM", qbraid_config_path),
+    ("project", "Project name (optional)", "main", False, "IBM", qbraid_config_path),
+    ("verify", "", "True", False, "IBM", qbraid_config_path),
+]
 
-AWS_DEVICES = {
-    "aws_braket_default_sim": LocalSimulator(backend="default"),
-    "aws_dm_sim": "arn:aws:braket:::device/quantum-simulator/amazon/dm1",
-    "aws_sv_sim": "arn:aws:braket:::device/quantum-simulator/amazon/sv1",
-    "aws_tn_sim": "arn:aws:braket:::device/quantum-simulator/amazon/tn1",
-    "aws_dwave_advantage_system1": "arn:aws:braket:::device/qpu/d-wave/Advantage_system1",
-    "aws_dwave_2000Q_6": "arn:aws:braket:::device/qpu/d-wave/DW_2000Q_6",
-    "aws_ionq": "arn:aws:braket:::device/qpu/ionq/ionQdevice",
-    "aws_rigetti_aspen_9": "arn:aws:braket:::device/qpu/rigetti/Aspen-9",
-    # "local_simulator_densitymatrix": "braket_dm",  # not available
-    # "local_simulator_statevector": "braket_sv",    # not available
+CONFIG_PROMPTS = {
+    "AWS": AWS_CONFIG_PROMPT,
+    "Google": None,
+    "IBM": IBMQ_CONFIG_PROMPT,
 }

@@ -10,13 +10,10 @@ This module contains the classes used to run quantum circuits on devices availab
 .. autosummary::
    :toctree: ../stubs/
 
-   CirqEngineWrapper
    CirqSimulatorWrapper
-   CirqEngineJobWrapper
    CirqResultWrapper
 
 """
 # pylint: skip-file
-from .device import CirqEngineWrapper, CirqSimulatorWrapper
-from .job import CirqEngineJobWrapper
+from .device import CirqSimulatorWrapper
 from .result import CirqResultWrapper

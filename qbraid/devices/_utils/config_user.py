@@ -4,11 +4,10 @@ import sys
 from getpass import getpass
 
 from qbraid.devices.exceptions import ConfigError
+from .config_prompts import qbraid_config_path, CONFIG_PROMPTS
 
 raw_input = input
 secret_input = getpass
-
-qbraid_config_path = os.path.join(os.path.expanduser("~"), ".qbraid", "config")
 
 
 def mask_value(value):
@@ -104,3 +103,16 @@ def get_config(config_name, section, filepath=None):
             if config_name in config[section]:
                 return config[section][config_name]
     return -1
+
+
+def update_config(vendor):
+    """Update the config associated with given vendor
+
+    Args:
+        vendor (str): a supported vendor
+
+    """
+    prompt_lst = CONFIG_PROMPTS[vendor]
+    for prompt in prompt_lst:
+        set_config(*prompt, update=True)
+    return 0
