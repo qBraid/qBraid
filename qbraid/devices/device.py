@@ -8,23 +8,31 @@ from qbraid.devices._utils import (
     get_config,
     set_config,
 )
+from .exceptions import DeviceError
 
 
 class DeviceLikeWrapper(ABC):
-    """Abstract interface for device-like classes.
-
-    Args:
-        name (str): a qBraid supported device
-        provider (str): the provider that this device comes from
-        fields: kwargs for the values to use to override the default options.
-
-    Raises:
-        DeviceError: if input field not a valid options
-
-    """
+    """Abstract interface for device-like classes."""
 
     def __init__(self, device_info, **kwargs):
+        """Create a ``DeviceLikeWrapper`` object.
 
+        Args:
+            device_info (dict): device information dictionary containing the following fields:
+                * qbraid_id (str): the internal device ID (see :func:`qbraid.get_devices`)
+                * name (str): the name of the device
+                * provider (str): the company to which the device belongs
+                * vendor (str): the company who's software is used to access the device
+                * run_package (str): the software package used to access the device
+                * obj_ref (str): used internally to indicate the name of the object in run_package
+                  that corresponds to the device
+                * obj_arg (str): used internally to indicate any arguments that need to be provided
+                  to the run_package object specified by obj_ref
+                * requires_cred (bool): whether or not this device requires credentials for access
+                * type (str): the type of the device, "QPU" or "Simulator"
+                * qubits (int): the number of qubits in the device (if QPU)
+
+        """
         self._info = device_info
         self._obj_ref = device_info.pop("obj_ref")
         self._obj_arg = device_info.pop("obj_arg")
@@ -36,11 +44,21 @@ class DeviceLikeWrapper(ABC):
         self.vendor_dlo = self._get_device(self._obj_ref, self._obj_arg)
 
     def _compat_run_input(self, run_input):
-        """Checks if ``run_input`` is compatible with device and if not, calls transpiler."""
+        """Checks if ``run_input`` is compatible with device and calls transpiler if necessary.
+
+        Returns:
+            run_input: the run_input e.g. a circuit object, possibly transpiled
+        Raises:
+            DeviceError: if circuit number qubits > device number of qubits (only for QPUs)
+
+        """
         device_run_package = self.info["run_package"]
         input_run_package = run_input.__module__.split(".")[0]
+        qbraid_circuit = qbraid.circuit_wrapper(run_input)
+        if self.num_qubits and qbraid_circuit.num_qubits > self.num_qubits:
+            raise DeviceError("Number of qubits in circuit exceeds number of qubits in device")
         if input_run_package != device_run_package:
-            run_input = qbraid.circuit_wrapper(run_input).transpile(device_run_package)
+            run_input = qbraid_circuit.transpile(device_run_package)
         return run_input
 
     @property
@@ -82,6 +100,28 @@ class DeviceLikeWrapper(ABC):
 
         """
         return self.info["vendor"]
+
+    @property
+    def num_qubits(self):
+        """The number of qubits supported by the device.
+
+        Returns:
+            int number of qubits supported by QPU. If device is Simulator, returns None.
+
+        Raises:
+            DeviceError: if there is no field `type` in self.info
+        """
+        device_type = self.info["type"]
+        if device_type == "QPU":
+            num_qubits = self.info["qubits"]
+        elif device_type == "Simulator":
+            num_qubits = None
+        else:
+            try:
+                num_qubits = self.info["qubits"]
+            except KeyError:
+                raise DeviceError("Num qubits not found / could not be determined.")
+        return num_qubits
 
     def __str__(self):
         return f"{self.vendor} {self.provider} {self.name} device wrapper"

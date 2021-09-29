@@ -15,19 +15,10 @@ from qbraid.devices.exceptions import DeviceError
 class QiskitBackendWrapper(DeviceLikeWrapper):
     """Wrapper class for IBM Qiskit ``Backend`` objects."""
 
-    def __init__(self, device_info, **fields):
-        """Create a QiskitBackendWrapper
+    def __init__(self, device_info, **kwargs):
+        """Create a QiskitBackendWrapper."""
 
-        Args:
-            name (str): a Qiskit supported device
-            provider (str): the provider that this device comes from
-            fields: kwargs for the values to use to override the default options.
-
-        Raises:
-            DeviceError: if input field not a valid options
-
-        """
-        super().__init__(device_info, **fields)
+        super().__init__(device_info, **kwargs)
 
     def _get_device(self, obj_ref, obj_arg) -> QiskitBackend:
         """Initialize an IBM device."""
@@ -53,15 +44,11 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         """Runs circuit(s) on qiskit backend via :meth:`~qiskit.utils.QuantumInstance.execute`.
 
         Creates a :class:`~qiskit.utils.QuantumInstance`, invokes its ``execute`` method,
-        applies a QiskitResultWrapper, and returns the result. Internally, the quantum instance
-        execute method used :meth:`~qiskit.utils.QuantumInstance.transpile` to ensure that qiskit
-        algorithms can access the given circuit(s).
+        applies a QiskitResultWrapper, and returns the result.
 
         Args:
             run_input: An individual or a list of circuit objects to run on the wrapped device.
-            kwargs: Any kwarg options to pass to the device for the run. If a key is also present
-                in the options attribute/object then the expectation is that the value specified
-                will be used instead of what's set in the options object.
+            kwargs: Any kwarg options to pass to the device for the run.
 
         Returns:
             QiskitResultWrapper: The result like object for the run.
@@ -73,20 +60,16 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         qbraid_result = QiskitResultWrapper(qiskit_result)
         return qbraid_result
 
-    def run(self, run_input, *args, **kwargs) -> QiskitJobWrapper:
+    def run(self, run_input, *args, **kwargs):
         """Runs circuit(s) on qiskit backend via :meth:`~qiskit.execute`
 
         Uses the :meth:`~qiskit.execute` method to create a :class:`~qiskit.providers.Job` object,
-        applies a :class:`~qbraid.devices.ibm.QiskitJobWrapper`, and return the result. Depending
-        on the backend this may be either an async or sync call. It is the discretion of the
-        provider to decide whether running should block until the execution is finished or not.
-        The qiskit Job class can handle either situation.
+        applies a :class:`~qbraid.devices.ibm.QiskitJobWrapper`, and return the result.
 
         Args:
             run_input: An individual or a list of circuit objects to run on the wrapped device.
-            kwargs: Any kwarg options to pass to the backend for running the config. If a key is
-                also present in the options attribute/object then the expectation is that the value
-                specified will be used instead of what's set in the options object.
+            kwargs: Any kwarg options to pass to the backend for running the config.
+
         Returns:
             QiskitJobWrapper: The job like object for the run.
 

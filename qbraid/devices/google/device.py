@@ -12,17 +12,8 @@ class CirqSimulatorWrapper(DeviceLikeWrapper):
     """Wrapper class for Google Cirq ``Simulator`` objects."""
 
     def __init__(self, device_info, **fields):
-        """Create CirqSimulatorWrapper
+        """Create CirqSimulatorWrapper."""
 
-        Args:
-            name (str): a Cirq supported device
-            provider (str): the provider that this device comes from
-            fields: kwargs for the values to use to override the default options.
-
-        Raises:
-            DeviceError: if input field not a valid options
-
-        """
         super().__init__(device_info, **fields)
 
     def _get_device(self, obj_ref, obj_arg):
@@ -45,7 +36,7 @@ class CirqSimulatorWrapper(DeviceLikeWrapper):
                 repetitions (int): The number of times to sample.
 
         Returns:
-            Result for a run.
+            CirqResultWrapper: The result like object for the run.
 
         """
         run_input = self._compat_run_input(run_input)
@@ -62,27 +53,13 @@ class CirqEngineWrapper(DeviceLikeWrapper):
     """
 
     def __init__(self, device_info, **kwargs):
-        """Creat a CirqEngineWrapper
+        """Creat a CirqEngineWrapper."""
 
-        Args:
-            name (str): a Cirq supported device
-            provider (str): the provider that this device comes from
-            kwargs: kwargs for the values to use to override the default options.
-
-        Raises:
-            DeviceError: if input field not a valid options
-
-        """
         super().__init__(device_info, **kwargs)
 
     def _get_device(self, obj_ref, obj_arg):
         """Initialize a Google credentialed device."""
         return NotImplementedError  # privelaged access
-
-    @classmethod
-    def _default_options(cls):
-        """Return the default options for running this device."""
-        return NotImplementedError
 
     def run(self, run_input, *args, **kwargs):
         """Runs the supplied Circuit via Quantum Engine.
