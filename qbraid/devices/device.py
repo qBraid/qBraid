@@ -56,8 +56,10 @@ class DeviceLikeWrapper(ABC):
         input_run_package = run_input.__module__.split(".")[0]
         qbraid_circuit = qbraid.circuit_wrapper(run_input)
         if self.num_qubits and qbraid_circuit.num_qubits > self.num_qubits:
-            raise DeviceError(f"Number of qubits in circuit ({qbraid_circuit.num_qubits}) exceeds "
-                              f"number of qubits in device ({self.num_qubits}).")
+            raise DeviceError(
+                f"Number of qubits in circuit ({qbraid_circuit.num_qubits}) exceeds "
+                f"number of qubits in device ({self.num_qubits})."
+            )
         if input_run_package != device_run_package:
             run_input = qbraid_circuit.transpile(device_run_package)
         return run_input
@@ -110,19 +112,15 @@ class DeviceLikeWrapper(ABC):
             int number of qubits supported by QPU. If device is Simulator, returns None.
 
         Raises:
-            DeviceError: if there is no field `type` in self.info
+            DeviceError: if there is no field `qubits` in self.info
         """
-        device_type = self.info["type"]
-        if device_type == "QPU":
-            num_qubits = self.info["qubits"]
-        elif device_type == "Simulator":
-            num_qubits = None
+        if self.info["type"] == "Simulator":
+            return None
         else:
             try:
-                num_qubits = self.info["qubits"]
+                return self.info["qubits"]
             except KeyError:
                 raise DeviceError("Num qubits not found / could not be determined.")
-        return num_qubits
 
     def __str__(self):
         return f"{self.vendor} {self.provider} {self.name} device wrapper"
