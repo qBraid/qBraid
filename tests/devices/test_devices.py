@@ -17,6 +17,7 @@ from qiskit.providers.job import Job as QiskitJob
 from pymongo import MongoClient
 
 from qbraid import device_wrapper
+from qbraid.devices import DeviceError
 from qbraid.devices.aws import BraketDeviceWrapper, BraketQuantumTaskWrapper
 from qbraid.devices.google import CirqResultWrapper, CirqSimulatorWrapper
 from qbraid.devices.ibm import QiskitBackendWrapper, QiskitJobWrapper
@@ -154,3 +155,19 @@ def test_run_braket_device_wrapper(device_id, circuit):
     vendor_job = qbraid_job.vendor_jlo
     assert isinstance(qbraid_job, BraketQuantumTaskWrapper)
     assert isinstance(vendor_job, BraketQuantumTask)
+
+
+def test_circuit_too_many_qubits():
+    two_qubit_circuit = QiskitCircuit(2)
+    two_qubit_circuit.h([0, 1])
+    two_qubit_circuit.cx(0, 1)
+    one_qubit_device = device_wrapper("ibm_q_armonk")
+    with pytest.raises(DeviceError):
+        one_qubit_device.run(two_qubit_circuit)
+
+
+def test_device_num_qubits():
+    one_qubit_device = device_wrapper("ibm_q_armonk")
+    # simulator_device = device_wrapper("aws_braket_default_sim")
+    assert one_qubit_device.num_qubits == 1
+   # assert simulator_device.num_qubits is None

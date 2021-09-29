@@ -56,7 +56,8 @@ class DeviceLikeWrapper(ABC):
         input_run_package = run_input.__module__.split(".")[0]
         qbraid_circuit = qbraid.circuit_wrapper(run_input)
         if self.num_qubits and qbraid_circuit.num_qubits > self.num_qubits:
-            raise DeviceError("Number of qubits in circuit exceeds number of qubits in device")
+            raise DeviceError(f"Number of qubits in circuit ({qbraid_circuit.num_qubits}) exceeds "
+                              f"number of qubits in device ({self.num_qubits}).")
         if input_run_package != device_run_package:
             run_input = qbraid_circuit.transpile(device_run_package)
         return run_input
