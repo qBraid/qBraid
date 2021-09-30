@@ -48,10 +48,14 @@ class DeviceLikeWrapper(ABC):
 
         Returns:
             run_input: the run_input e.g. a circuit object, possibly transpiled
+
         Raises:
-            DeviceError: if circuit number qubits > device number of qubits (only for QPUs)
+            DeviceError: if devices is offline or if the number of qubits used in the circuit
+            exceeds the number of qubits supported by the device.
 
         """
+        if self.status == "OFFLINE":
+            raise DeviceError("Device is currently offline.")
         device_run_package = self.info["run_package"]
         input_run_package = run_input.__module__.split(".")[0]
         qbraid_circuit = qbraid.circuit_wrapper(run_input)
@@ -121,6 +125,11 @@ class DeviceLikeWrapper(ABC):
                 return self.info["qubits"]
             except KeyError:
                 raise DeviceError("Num qubits not found / could not be determined.")
+
+    @property
+    @abstractmethod
+    def status(self):
+        """Return device status."""
 
     def __str__(self):
         return f"{self.vendor} {self.provider} {self.name} device wrapper"

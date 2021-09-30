@@ -25,6 +25,15 @@ class CirqSimulatorWrapper(DeviceLikeWrapper):
         else:
             raise DeviceError(f"obj_ref {obj_ref} not found.")
 
+    @property
+    def status(self):
+        """Return the status of this Device.
+
+        Returns:
+            str: The status of this Device
+        """
+        return "ONLINE"
+
     def run(self, run_input, *args, **kwargs):
         """Samples from the given Circuit. By default, the `run_async` method invokes this method
         on another thread. So this method is supposed to be thread safe.
@@ -60,6 +69,15 @@ class CirqEngineWrapper(DeviceLikeWrapper):
     def _get_device(self, obj_ref, obj_arg):
         """Initialize a Google credentialed device."""
         return NotImplementedError  # privelaged access
+
+    @property
+    def status(self):
+        """Return the status of this Device.
+
+        Returns:
+            str: The status of this Device
+        """
+        return NotImplementedError
 
     def run(self, run_input, *args, **kwargs):
         """Runs the supplied Circuit via Quantum Engine.

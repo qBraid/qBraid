@@ -40,6 +40,19 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         else:
             raise DeviceError(f"obj_ref {obj_ref} not found.")
 
+    @property
+    def status(self):
+        """Return the status of this Device.
+
+        Returns:
+            str: The status of this Device
+        """
+        if self._obj_ref == "IBMQ":
+            backend_status = self.vendor_dlo.status()
+            if not backend_status.operational:
+                return "OFFLINE"
+        return "ONLINE"
+
     def execute(self, run_input, *args, **kwargs):
         """Runs circuit(s) on qiskit backend via :meth:`~qiskit.utils.QuantumInstance.execute`.
 

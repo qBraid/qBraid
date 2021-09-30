@@ -34,6 +34,17 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         else:
             raise DeviceError(f"obj_ref {obj_ref} not found.")
 
+    @property
+    def status(self):
+        """Return the status of this Device.
+
+        Returns:
+            str: The status of this Device
+        """
+        if self._obj_ref == "AwsDevice":
+            return self.vendor_dlo.status
+        return "ONLINE"
+
     def get_sampler(self, braket_default=False, embedding=True):
         """Returns BraketSampler created from device. Only compatible with D-Wave devices.
 
