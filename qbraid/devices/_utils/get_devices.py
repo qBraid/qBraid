@@ -2,6 +2,7 @@ import qbraid
 from IPython.core.display import HTML, display
 from pymongo import MongoClient
 from time import time
+from tqdm.notebook import tqdm
 import logging
 
 
@@ -51,17 +52,22 @@ def refresh_device_status():
     client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
     db = client["qbraid-sdk"]
     collection = db["supported_devices"]
+    pbar = tqdm(total=12, leave=False)
     cursor = collection.find({"type": "QPU", "vendor": {"$in": ["AWS", "IBM"]}})
+    num_devices = 0
     for document in cursor:
         mongo_id = document["_id"]
         qbraid_id = document["qbraid_id"]
         device = qbraid.device_wrapper(qbraid_id)
         status = device.status
         collection.update_one({'_id': mongo_id}, {"$set": {"status": status}}, upsert=False)
+        pbar.update(1)
+        num_devices += 1
     cursor.close()
+    pbar.close()
     time_stamp = time()
     collection.update_one(
-        {"qbraid_id": "last_refresh"}, {"$set": {"time_stamp": time_stamp}}, upsert=False
+        {"qbraid_id": "last_refresh"}, {"$set": {"time_stamp": time_stamp, "num_devices": num_devices}}, upsert=False
     )
     client.close()
 
