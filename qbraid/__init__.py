@@ -4,7 +4,7 @@ from importlib.metadata import entry_points, version
 from pymongo import MongoClient
 
 from qbraid.circuits import Circuit, UpdateRule
-from qbraid.devices import get_devices
+from qbraid.devices import get_devices, refresh_devices
 from qbraid.exceptions import QbraidError, WrapperError
 
 __version__ = version("qbraid")
