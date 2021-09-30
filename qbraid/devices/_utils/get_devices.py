@@ -30,7 +30,7 @@ def _get_device_data(query):
         provider = document["provider"]
         status_refresh = document["status_refresh"]
         timestamp = time()
-        lag = timestamp - status_refresh
+        lag = 0 if status_refresh == -1 else timestamp - status_refresh
         if lag > 3600:
             print("\r", "Auto-refreshing device status" + "." * tot_dev, end="")
             device = qbraid.device_wrapper(qbraid_id)
