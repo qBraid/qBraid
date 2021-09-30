@@ -87,20 +87,6 @@ porta, id sagittis urna sollicitudin.
    api/qbraid.devices
    api/qbraid.transpiler
 
-.. toctree::
-   :maxdepth: 1
-   :caption: Supported Devices
-   :hidden:
-
-   supported-devices/aws
-   supported-devices/dwave
-   supported-devices/google
-   supported-devices/ibm
-   supported-devices/ionq
-
-
-
-
 .. Hiding - Indices and tables
    :ref:`genindex`
    :ref:`modindex`

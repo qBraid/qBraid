@@ -45,7 +45,7 @@ class CirqSimulatorWrapper(DeviceLikeWrapper):
                 repetitions (int): The number of times to sample.
 
         Returns:
-            CirqResultWrapper: The result like object for the run.
+            qbraid.devices.google.CirqResultWrapper: The result like object for the run.
 
         """
         run_input = self._compat_run_input(run_input)
@@ -90,7 +90,7 @@ class CirqEngineWrapper(DeviceLikeWrapper):
                 value specified will be used instead of what's set in the options object.
 
         Returns:
-            A CirqResultWrapper representing the Result for this run.
+            qbraid.devices.google.CirqResultWrapper: The result for this run.
 
         """
         run_input = self._compat_run_input(run_input)

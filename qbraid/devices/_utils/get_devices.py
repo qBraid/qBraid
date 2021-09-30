@@ -89,7 +89,7 @@ def get_devices(query=None):
     name, and qBraid ID. Each device also has a status given by a solid green bubble or a hollow
     red bubble, indicating that the device is online or offline, respectively. You can narrow your
     device search by supplying a dictionary containing the desired criteria. Available filters
-    include but are not limited to:
+    include:
 
     * name (str)
     * vendor (str): AWS | IBM | Google
@@ -100,7 +100,7 @@ def get_devices(query=None):
     * requires_cred (bool): true | false
     * status (str): ONLINE | OFFLINE
 
-    Here are a few example ``get_devices`` arguments using the above filters:
+    Here are a few example use cases:
 
     .. code-block:: python
 
@@ -116,7 +116,7 @@ def get_devices(query=None):
         get_devices({"type": "Simulator", "name": {"$regex": "Unitary"}, "requires_cred": False})
 
     For a complete list of search operators, see
-    `Query Selectors`<https://docs.mongodb.com/manual/reference/operator/query/#query-selectors>.
+    `Query Selectors<https://docs.mongodb.com/manual/reference/operator/query/#query-selectors>`.
     To refresh the device status column, call :func:`~qbraid.refresh_devices`, and then
     re-run :func:`~qbraid.get_devices`. The bottom-right corner of the ``get_devices`` table
     indicates time since the last status refresh. Device status is auto-refreshed every hour.

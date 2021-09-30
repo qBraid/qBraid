@@ -64,7 +64,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             kwargs: Any kwarg options to pass to the device for the run.
 
         Returns:
-            QiskitResultWrapper: The result like object for the run.
+            qbraid.devices.ibm.QiskitResultWrapper: The result like object for the run.
 
         """
         run_input = self._compat_run_input(run_input)
@@ -84,7 +84,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             kwargs: Any kwarg options to pass to the backend for running the config.
 
         Returns:
-            QiskitJobWrapper: The job like object for the run.
+            qbraid.devices.ibm.QiskitJobWrapper: The job like object for the run.
 
         """
         run_input = self._compat_run_input(run_input)

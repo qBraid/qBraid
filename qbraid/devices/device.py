@@ -25,9 +25,9 @@ class DeviceLikeWrapper(ABC):
                 * vendor (str): the company who's software is used to access the device
                 * run_package (str): the software package used to access the device
                 * obj_ref (str): used internally to indicate the name of the object in run_package
-                  that corresponds to the device
+                that corresponds to the device
                 * obj_arg (str): used internally to indicate any arguments that need to be provided
-                  to the run_package object specified by obj_ref
+                to the run_package object specified by obj_ref
                 * requires_cred (bool): whether or not this device requires credentials for access
                 * type (str): the type of the device, "QPU" or "Simulator"
                 * qubits (int): the number of qubits in the device (if QPU)

@@ -1,5 +1,5 @@
 from typing import Union
-
+import braket
 from braket.circuits import Circuit
 from braket.circuits import Gate as BraketGate
 from braket.circuits import Instruction, Qubit
@@ -10,43 +10,43 @@ from ..exceptions import TranspilerError
 
 braket_gates = {
     # one-qubit, zero parameter
-    "H": BraketGate.H,
-    "X": BraketGate.X,
-    "Y": BraketGate.Y,
-    "Z": BraketGate.Z,
-    "S": BraketGate.S,
-    "Sdg": BraketGate.Si,
-    "T": BraketGate.T,
-    "Tdg": BraketGate.Ti,
-    "I": BraketGate.I,
-    "SX": BraketGate.V,
-    "SXdg": BraketGate.Vi,
+    "H": braket.circuits.gates.H,
+    "X": braket.circuits.gates.X,
+    "Y": braket.circuits.gates.Y,
+    "Z": braket.circuits.gates.Z,
+    "S": braket.circuits.gates.S,
+    "Sdg": braket.circuits.gates.Si,
+    "T": braket.circuits.gates.T,
+    "Tdg": braket.circuits.gates.Ti,
+    "I": braket.circuits.gates.I,
+    "SX": braket.circuits.gates.V,
+    "SXdg": braket.circuits.gates.Vi,
     # one-qubit, one parameter
-    "Phase": BraketGate.PhaseShift,
-    "RX": BraketGate.Rx,
-    "RY": BraketGate.Ry,
-    "RZ": BraketGate.Rz,
-    "U1": BraketGate.PhaseShift,
+    "Phase": braket.circuits.gates.PhaseShift,
+    "RX": braket.circuits.gates.Rx,
+    "RY": braket.circuits.gates.Ry,
+    "RZ": braket.circuits.gates.Rz,
+    "U1": braket.circuits.gates.PhaseShift,
     # two-qubit, zero parameter
     # 'CH':BraketGate.,
-    "CX": BraketGate.CNot,
-    "Swap": BraketGate.Swap,
-    "iSwap": BraketGate.ISwap,
-    "pSwap": BraketGate.PSwap,
+    "CX": braket.circuits.gates.CNot,
+    "Swap": braket.circuits.gates.Swap,
+    "iSwap": braket.circuits.gates.ISwap,
+    "pSwap": braket.circuits.gates.PSwap,
     # 'CSX':BraketGate.,
     # 'DCX': BraketGate.,
-    "CY": BraketGate.CY,
-    "CZ": BraketGate.CZ,
+    "CY": braket.circuits.gates.CY,
+    "CZ": braket.circuits.gates.CZ,
     # two-qubit, one parameter
-    "RXX": BraketGate.XX,
-    "RXY": BraketGate.XY,
-    "RYY": BraketGate.YY,
-    "RZZ": BraketGate.ZZ,
-    "CPhase": BraketGate.CPhaseShift,
+    "RXX": braket.circuits.gates.XX,
+    "RXY": braket.circuits.gates.XY,
+    "RYY": braket.circuits.gates.YY,
+    "RZZ": braket.circuits.gates.ZZ,
+    "CPhase": braket.circuits.gates.CPhaseShift,
     # multi-qubit
-    "CCX": BraketGate.CCNot,
+    "CCX": braket.circuits.gates.CCNot,
     # unitary
-    "Unitary": BraketGate.Unitary,
+    "Unitary": braket.circuits.gates.Unitary,
 }
 
 
