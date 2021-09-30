@@ -5,7 +5,7 @@ from time import time
 from tqdm.notebook import tqdm
 
 
-def _get_device_data(filter_dict):
+def _get_device_data(query):
     """Internal :meth:`qbraid.get_devices` helper function that connects with the MongoDB database
     and returns a list of devices that match the ``filter_dict`` filters. Each device is
     represented by its own length-4 list containing the device provider, name, qbraid_id,
@@ -19,31 +19,43 @@ def _get_device_data(filter_dict):
     client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
     db = client["qbraid-sdk"]
     collection = db["supported_devices"]
-    refresh_doc = collection.find_one({"qbraid_id": "last_refresh"})
-    last_refresh = refresh_doc["time_stamp"]
-    current_time = time()
-    seconds_diff = current_time - last_refresh
-    if seconds_diff > 3600:  # If it has been more than one hour since the last refresh
-        print("Auto-refreshing")
-        refresh_devices(auto_refresh=True)
-        seconds_diff = 0
-    refresh_minutes, _ = divmod(seconds_diff, 60)
-    cursor = collection.find(filter_dict)
+    cursor = collection.find(query)
     device_data = []
+    tot_dev = 0
+    ref_dev = 0
+    tot_lag = 0
     for document in cursor:
         qbraid_id = document["qbraid_id"]
-        if qbraid_id != "last_refresh":  # last_refresh is its own document in MongoDB
-            name = document["name"]
-            provider = document["provider"]
+        name = document["name"]
+        provider = document["provider"]
+        status_refresh = document["status_refresh"]
+        timestamp = time()
+        lag = timestamp - status_refresh
+        if lag > 3600:
+            print("\r", "Auto-refreshing device status" + "." * tot_dev, end="")
+            device = qbraid.device_wrapper(qbraid_id)
+            status = device.status
+            collection.update_one(
+                {"qbraid_id": qbraid_id},
+                {"$set": {"status": status, "status_refresh": timestamp}},
+                upsert=False
+            )
+            ref_dev += 1
+        else:
             status = document["status"]
-            device_data.append([provider, name, qbraid_id, status])
+        tot_dev += 1
+        tot_lag += lag
+        device_data.append([provider, name, qbraid_id, status])
     cursor.close()
     client.close()
     device_data.sort()
-    return device_data, refresh_minutes
+    if ref_dev > 0:
+        print(f"Auto-refreshed status for {ref_dev} devices")
+    lag_minutes, _ = divmod(tot_lag / tot_dev, 60)
+    return device_data, int(lag_minutes)
 
 
-def refresh_devices(auto_refresh=False):
+def refresh_devices():
     """Refreshes device status, seen in :func:`~qbraid.get_devices` output.
     Runtime ~20 seconds, with progress given by blue status bar."""
 
@@ -54,30 +66,25 @@ def refresh_devices(auto_refresh=False):
     client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
     db = client["qbraid-sdk"]
     collection = db["supported_devices"]
-    desc = "Auto-refresh" if auto_refresh else ""
-    pbar = tqdm(total=12, desc=desc, leave=False)
-    cursor = collection.find({"type": "QPU", "vendor": {"$in": ["AWS", "IBM"]}})
-    num_devices = 0
+    cursor = collection.find({})
+    pbar = tqdm(total=35, leave=False)
     for document in cursor:
-        mongo_id = document["_id"]
-        qbraid_id = document["qbraid_id"]
-        device = qbraid.device_wrapper(qbraid_id)
-        status = device.status
-        collection.update_one({'_id': mongo_id}, {"$set": {"status": status}}, upsert=False)
+        if document["status_refresh"] != -1:
+            qbraid_id = document["qbraid_id"]
+            device = qbraid.device_wrapper(qbraid_id)
+            status = device.status
+            collection.update_one(
+                {"qbraid_id": qbraid_id},
+                {"$set": {"status": status, "status_refresh": time()}},
+                upsert=False
+            )
         pbar.update(1)
-        num_devices += 1
-    cursor.close()
     pbar.close()
-    time_stamp = time()
-    collection.update_one(
-        {"qbraid_id": "last_refresh"},
-        {"$set": {"time_stamp": time_stamp, "num_devices": num_devices}},
-        upsert=False
-    )
+    cursor.close()
     client.close()
 
 
-def get_devices(filter_dict=None):
+def get_devices(query=None):
     """Displays a list of all supported devices matching given filters, tabulated by provider,
     name, and qBraid ID. Each device also has a status given by a solid green bubble or a hollow
     red bubble, indicating that the device is online or offline, respectively. You can narrow your
@@ -115,13 +122,13 @@ def get_devices(filter_dict=None):
     indicates time since the last status refresh. Device status is auto-refreshed every hour.
 
     Args:
-        filter_dict (optional, dict): a dictionary containing any filters to be applied.
+        query (optional, dict): a dictionary containing any filters to be applied.
 
     """
 
-    filter_dict = {} if filter_dict is None else filter_dict
-    device_data, refresh_minutes = _get_device_data(filter_dict)
-    last_refresh = "< 1" if refresh_minutes == 0 else "~" + str(int(refresh_minutes))
+    input_query = {} if query is None else query
+    device_data, lag = _get_device_data(input_query)
+    msg = "All status up-to-date" if lag == 0 else f"Avg status lag ~{lag} min"
 
     html = """<h3>Supported Devices</h3><table><tr>
     <th style='text-align:left'>Provider</th>
@@ -152,10 +159,7 @@ def get_devices(filter_dict=None):
             "given criteria</td></tr>"
         )
     else:
-        html += (
-            f"<tr><td colspan='4'; style='text-align:right'>Status last refreshed "
-            f"{last_refresh} min ago</td></tr>"
-        )
+        html += f"<tr><td colspan='4'; style='text-align:right'>{msg}</td></tr>"
 
     html += "</table>"
 
