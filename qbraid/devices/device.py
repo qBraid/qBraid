@@ -36,6 +36,7 @@ class DeviceLikeWrapper(ABC):
         self._info = device_info
         self._obj_ref = device_info.pop("obj_ref")
         self._obj_arg = device_info.pop("obj_arg")
+        self._qubits = device_info["qubits"] if device_info["qubits"] else device_info.pop("qubits")
         self.requires_cred = device_info.pop("requires_cred")
         if self.requires_cred and get_config("verify", self.vendor) != "True":
             prompt_lst = CONFIG_PROMPTS[self.vendor]
@@ -113,18 +114,10 @@ class DeviceLikeWrapper(ABC):
         """The number of qubits supported by the device.
 
         Returns:
-            int number of qubits supported by QPU. If device is Simulator, returns None.
+            int number of qubits supported by QPU. If Simulator returns None.
 
-        Raises:
-            DeviceError: if there is no field `qubits` in self.info
         """
-        if self.info["type"] == "Simulator":
-            return None
-        else:
-            try:
-                return self.info["qubits"]
-            except KeyError:
-                raise DeviceError("Num qubits not found / could not be determined.")
+        return self._qubits
 
     @property
     @abstractmethod

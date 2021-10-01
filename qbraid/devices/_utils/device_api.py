@@ -109,17 +109,20 @@ def get_devices(query=None):
         # Search for gate-based devices provided by Google that are online/available
         get_devices({"paradigm": "gate-based", "provider": "Google", "status": "ONLINE"})
 
-        # Search for QPUs with at least 5 qubits available through AWS or IBM
+        # Search for QPUs with at least 5 qubits that are available through AWS or IBM
         get_devices({"type": "QPU", "qubits": {"$gte": 5}, "vendor": {"$in": ["AWS", "IBM"]}})
 
         # Search for open-access simulators that have "Unitary" contained in their name
         get_devices({"type": "Simulator", "name": {"$regex": "Unitary"}, "requires_cred": False})
 
-    For a complete list of search operators, see
-    `Query Selectors<https://docs.mongodb.com/manual/reference/operator/query/#query-selectors>`.
-    To refresh the device status column, call :func:`~qbraid.refresh_devices`, and then
-    re-run :func:`~qbraid.get_devices`. The bottom-right corner of the ``get_devices`` table
-    indicates time since the last status refresh. Device status is auto-refreshed every hour.
+    For a complete list of search operators, see `Query Selectors`__. To refresh the device status
+    column, call :func:`~qbraid.refresh_devices`, and then re-run :func:`~qbraid.get_devices`.
+    The bottom-right corner of the ``get_devices`` table indicates time since the last status
+    refresh. Device status is auto-refreshed every hour.
+
+    .. __: https://docs.mongodb.com/manual/reference/operator/query/#query-selectors
+
+
 
     Args:
         query (optional, dict): a dictionary containing any filters to be applied.

@@ -171,6 +171,3 @@ def test_device_num_qubits():
     assert one_qubit_device.num_qubits == 1
     simulator_device = device_wrapper("aws_braket_default_sim")
     assert simulator_device.num_qubits is None
-    del one_qubit_device._info["qubits"]
-    with pytest.raises(DeviceError):
-        one_qubit_device.num_qubits()

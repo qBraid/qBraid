@@ -7,4 +7,4 @@ from .config_user import (
     CONFIG_PROMPTS,
 )
 
-from .get_devices import get_devices, refresh_devices
+from .device_api import get_devices, refresh_devices

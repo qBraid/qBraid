@@ -3,7 +3,7 @@ import qiskit
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
 from qiskit.circuit import Instruction
 from qiskit.circuit.gate import Gate
-# from qiskit.circuit.library.standard_gates import
+from qiskit.circuit.library.standard_gates import *
 from qiskit.circuit.measure import Measure
 from qiskit.circuit.parameter import Parameter as QiskitParameter
 from qiskit.circuit.quantumregister import Qubit
