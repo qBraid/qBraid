@@ -141,7 +141,7 @@ def test_run_qiskit_device_wrapper(device_id, circuit):
 @pytest.mark.parametrize("device_id", inputs_cirq_run)
 def test_run_cirq_device_wrapper(device_id, circuit):
     qbraid_device = device_wrapper(device_id)
-    qbraid_result = qbraid_device.run(circuit, repetitions=10)
+    qbraid_result = qbraid_device.run(circuit, shots=10)
     vendor_result = qbraid_result.vendor_rlo
     assert isinstance(qbraid_result, CirqResultWrapper)
     assert isinstance(vendor_result, CirqResult)

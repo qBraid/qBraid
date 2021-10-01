@@ -60,7 +60,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             Sampler derived from device
 
         Raises:
-            DeviceError if not a D-Wave annealing device.
+            DeviceError: If not a D-Wave annealing device.
 
         """
         if self.provider != "D-Wave":
@@ -79,12 +79,16 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         annealing problem.
 
         Args:
-            run_input (Union[Circuit, Problem]): Specification of a task to run on device.
-            kwargs: shots (int): The number of times to run the task on the device.
+            run_input: Specification of a task to run on device.
+
+        Keyword Args:
+            shots (int): The number of times to run the task on the device. If
+            :attr:`~self.vendor_dlo` is instance of :class:`braket.devices.LocalSimulator`,
+            default is 0. If :attr:`~self.vendor_dlo` is instance of
+            :class:`braket.devices.AwsDevice`, default is `None`.
 
         Returns:
-            :class:`~qbraid.devices.braket.job.BraketQuantumTaskWrapper`: The job like object for
-                the run.
+            qbraid.devices.aws.BraketQuantumTaskWrapper: The job like object for the run.
 
         """
         run_input = self._compat_run_input(run_input)
