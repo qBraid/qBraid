@@ -27,7 +27,7 @@ Example Usage
         cirq_circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1))
 
         # Run circuit on any supported device using the qraid device wrapper
-        qbraid_device = qbraid.device_wrapper("AerSimulator", "IBM")
+        qbraid_device = qbraid.device_wrapper("ibm_aer_default_sim")
         qbraid_job = qbraid_device.run(cirq_circuit)  # run cirq circuit on IBM Aer simulator
         qbraid_result = qbraid_job.result
         print(qbraid_result.data)  # view the raw data from the run

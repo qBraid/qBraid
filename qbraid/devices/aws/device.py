@@ -83,9 +83,9 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
 
         Keyword Args:
             shots (int): The number of times to run the task on the device. If
-            :attr:`~self.vendor_dlo` is instance of :class:`braket.devices.LocalSimulator`,
-            default is 0. If :attr:`~self.vendor_dlo` is instance of
-            :class:`braket.devices.AwsDevice`, default is `None`.
+                :attr:`~self.vendor_dlo` is instance of :class:`braket.devices.LocalSimulator`,
+                default is 0. If :attr:`~self.vendor_dlo` is instance of
+                :class:`braket.devices.AwsDevice`, default is `None`.
 
         Returns:
             qbraid.devices.aws.BraketQuantumTaskWrapper: The job like object for the run.
