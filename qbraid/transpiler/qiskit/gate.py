@@ -4,8 +4,8 @@ from typing import Iterable, Union
 
 from qiskit.circuit import Instruction, Parameter
 
-from qbraid.transpiler.gate import GateWrapper
 from qbraid.transpiler._utils import get_qiskit_gate_data
+from qbraid.transpiler.gate import GateWrapper
 
 
 class QiskitGateWrapper(GateWrapper):

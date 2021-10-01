@@ -2,8 +2,7 @@
 
 from braket.aws import AwsDevice
 from braket.devices import LocalSimulator
-from braket.ocean_plugin import BraketSampler
-from braket.ocean_plugin import BraketDWaveSampler
+from braket.ocean_plugin import BraketDWaveSampler, BraketSampler
 from dwave.system.composites import EmbeddingComposite
 
 from qbraid.devices._utils import get_config

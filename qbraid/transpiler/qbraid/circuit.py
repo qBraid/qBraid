@@ -1,7 +1,6 @@
 """QbraidCircuitWrapper Class"""
 
 from qbraid.circuits.circuit import Circuit
-
 from qbraid.transpiler.circuit import CircuitWrapper
 from qbraid.transpiler.parameter import ParamID
 from qbraid.transpiler.qbraid.moment import QbraidMomentWrapper

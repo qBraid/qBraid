@@ -1,4 +1,5 @@
 from typing import Union
+
 import braket
 from braket.circuits import Circuit
 from braket.circuits import Gate as BraketGate

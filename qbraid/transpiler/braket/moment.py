@@ -2,8 +2,8 @@
 
 from braket.circuits.moments import Moments as BraketMoment
 
-from qbraid.transpiler.moment import MomentWrapper
 from qbraid.transpiler.braket.instruction import BraketInstructionWrapper
+from qbraid.transpiler.moment import MomentWrapper
 
 
 class BraketMomentWrapper(MomentWrapper):

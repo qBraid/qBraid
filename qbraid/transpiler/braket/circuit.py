@@ -4,8 +4,8 @@ from typing import List
 
 from braket.circuits.circuit import Circuit
 
-from qbraid.transpiler.circuit import CircuitWrapper
 from qbraid.transpiler.braket.instruction import BraketInstructionWrapper
+from qbraid.transpiler.circuit import CircuitWrapper
 
 
 class BraketCircuitWrapper(CircuitWrapper):

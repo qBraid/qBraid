@@ -2,8 +2,8 @@
 
 from typing import Union
 
-from sympy import Symbol as CirqParameter
 from qiskit.circuit import Parameter as QiskitParameter
+from sympy import Symbol as CirqParameter
 
 from qbraid.transpiler.transpiler import QbraidTranspiler
 

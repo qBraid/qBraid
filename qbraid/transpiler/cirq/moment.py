@@ -2,8 +2,8 @@
 
 from cirq.ops import Moment as CirqMoment
 
-from qbraid.transpiler.moment import MomentWrapper
 from qbraid.transpiler.cirq.instruction import CirqInstructionWrapper
+from qbraid.transpiler.moment import MomentWrapper
 
 
 class CirqMomentWrapper(MomentWrapper):

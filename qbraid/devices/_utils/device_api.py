@@ -1,8 +1,10 @@
-import qbraid
+from time import time
+
 from IPython.core.display import HTML, display
 from pymongo import MongoClient
-from time import time
 from tqdm.notebook import tqdm
+
+import qbraid
 
 
 def _get_device_data(query):
@@ -38,8 +40,9 @@ def _get_device_data(query):
             collection.update_one(
                 {"qbraid_id": qbraid_id},
                 {"$set": {"status": status, "status_refresh": timestamp}},
-                upsert=False
+                upsert=False,
             )
+            lag = 0
             ref_dev += 1
         else:
             status = document["status"]
@@ -50,7 +53,7 @@ def _get_device_data(query):
     client.close()
     device_data.sort()
     if ref_dev > 0:
-        print(f"Auto-refreshed status for {ref_dev} devices")
+        print("\r", f"Auto-refreshed status for {ref_dev}/{tot_dev} queried devices", end="")
     lag_minutes, _ = divmod(tot_lag / tot_dev, 60)
     return device_data, int(lag_minutes)
 
@@ -76,7 +79,7 @@ def refresh_devices():
             collection.update_one(
                 {"qbraid_id": qbraid_id},
                 {"$set": {"status": status, "status_refresh": time()}},
-                upsert=False
+                upsert=False,
             )
         pbar.update(1)
     pbar.close()
@@ -121,8 +124,6 @@ def get_devices(query=None):
     refresh. Device status is auto-refreshed every hour.
 
     .. __: https://docs.mongodb.com/manual/reference/operator/query/#query-selectors
-
-
 
     Args:
         query (optional, dict): a dictionary containing any filters to be applied.

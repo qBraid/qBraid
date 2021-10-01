@@ -1,3 +1,5 @@
+from typing import Union
+
 import cirq
 from cirq import Circuit, Gate, LineQubit
 from cirq.ops.common_gates import *
@@ -9,8 +11,6 @@ from cirq.ops.moment import Moment
 from cirq.ops.swap_gates import *
 from cirq.ops.three_qubit_gates import *
 from sympy import Symbol
-
-from typing import Union
 
 from qbraid.transpiler.parameter import ParamID
 

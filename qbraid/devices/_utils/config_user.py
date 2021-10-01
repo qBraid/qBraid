@@ -4,7 +4,8 @@ import sys
 from getpass import getpass
 
 from qbraid.devices.exceptions import ConfigError
-from .config_prompts import qbraid_config_path, CONFIG_PROMPTS
+
+from .config_prompts import CONFIG_PROMPTS, qbraid_config_path
 
 raw_input = input
 secret_input = getpass

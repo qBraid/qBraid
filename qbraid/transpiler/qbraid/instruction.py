@@ -1,7 +1,6 @@
 """QbraidInstructionWrapper Class"""
 
 from qbraid.circuits.instruction import Instruction as QbraidInstruction
-
 from qbraid.transpiler.instruction import InstructionWrapper
 from qbraid.transpiler.qbraid.gate import QbraidGateWrapper
 

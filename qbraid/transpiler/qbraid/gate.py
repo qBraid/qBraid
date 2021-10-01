@@ -3,7 +3,6 @@
 from qbraid.circuits.controlledgate import ControlledGate as QbraidControlledGate
 from qbraid.circuits.gate import Gate as QbraidGate
 from qbraid.circuits.parameter import Parameter as QbraidParameter
-
 from qbraid.transpiler.gate import GateWrapper
 
 

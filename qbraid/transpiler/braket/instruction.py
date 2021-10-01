@@ -2,8 +2,8 @@
 
 from braket.circuits.instruction import Instruction as BraketInstruction
 
-from qbraid.transpiler.instruction import InstructionWrapper
 from qbraid.transpiler.braket.gate import BraketGateWrapper
+from qbraid.transpiler.instruction import InstructionWrapper
 
 
 class BraketInstructionWrapper(InstructionWrapper):

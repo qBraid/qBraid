@@ -1,7 +1,6 @@
 """QbraidMomentWrapper Class"""
 
 from qbraid.circuits.moment import Moment as QbraidMoment
-
 from qbraid.transpiler.moment import MomentWrapper
 from qbraid.transpiler.qbraid.instruction import QbraidInstructionWrapper
 

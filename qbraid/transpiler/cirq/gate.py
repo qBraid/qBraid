@@ -6,9 +6,8 @@ from cirq import Gate
 from cirq.ops.measurement_gate import MeasurementGate
 from sympy import Symbol
 
-from qbraid.transpiler.gate import GateWrapper
-
 from qbraid.transpiler._utils import get_cirq_gate_data
+from qbraid.transpiler.gate import GateWrapper
 
 CirqGate = Union[Gate, MeasurementGate]
 

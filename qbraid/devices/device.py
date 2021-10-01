@@ -3,11 +3,8 @@
 from abc import ABC, abstractmethod
 
 import qbraid
-from qbraid.devices._utils import (
-    CONFIG_PROMPTS,
-    get_config,
-    set_config,
-)
+from qbraid.devices._utils import CONFIG_PROMPTS, get_config, set_config
+
 from .exceptions import DeviceError
 
 

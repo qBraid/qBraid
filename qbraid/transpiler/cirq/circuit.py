@@ -6,10 +6,9 @@ from cirq.circuits import Circuit
 from cirq.ops.moment import Moment
 
 from qbraid.transpiler.circuit import CircuitWrapper
-from qbraid.transpiler.cirq.moment import CirqMomentWrapper
-
-from qbraid.transpiler.parameter import ParamID
 from qbraid.transpiler.cirq.instruction import CirqInstructionWrapper
+from qbraid.transpiler.cirq.moment import CirqMomentWrapper
+from qbraid.transpiler.parameter import ParamID
 
 
 class CirqCircuitWrapper(CircuitWrapper):

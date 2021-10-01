@@ -2,9 +2,9 @@
 
 from cirq.ops.raw_types import Operation as CirqInstruction
 
+from qbraid.transpiler.cirq.gate import CirqGateWrapper
 from qbraid.transpiler.instruction import InstructionWrapper
 from qbraid.transpiler.parameter import ParamID
-from qbraid.transpiler.cirq.gate import CirqGateWrapper
 
 
 class CirqInstructionWrapper(InstructionWrapper):
