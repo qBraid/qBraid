@@ -1,9 +1,38 @@
 from typing import Union
 
-import braket
 from braket.circuits import Circuit
 from braket.circuits import Gate as BraketGate
 from braket.circuits import Instruction, Qubit
+from braket.circuits.gates import (
+    CY,
+    CZ,
+    XX,
+    XY,
+    YY,
+    ZZ,
+    CCNot,
+    CNot,
+    CPhaseShift,
+    H,
+    I,
+    ISwap,
+    PhaseShift,
+    PSwap,
+    Rx,
+    Ry,
+    Rz,
+    S,
+    Si,
+    Swap,
+    T,
+    Ti,
+    Unitary,
+    V,
+    Vi,
+    X,
+    Y,
+    Z,
+)
 
 from qbraid.transpiler.parameter import ParamID
 
@@ -11,43 +40,43 @@ from ..exceptions import TranspilerError
 
 braket_gates = {
     # one-qubit, zero parameter
-    "H": braket.circuits.gates.H,
-    "X": braket.circuits.gates.X,
-    "Y": braket.circuits.gates.Y,
-    "Z": braket.circuits.gates.Z,
-    "S": braket.circuits.gates.S,
-    "Sdg": braket.circuits.gates.Si,
-    "T": braket.circuits.gates.T,
-    "Tdg": braket.circuits.gates.Ti,
-    "I": braket.circuits.gates.I,
-    "SX": braket.circuits.gates.V,
-    "SXdg": braket.circuits.gates.Vi,
+    "H": H,
+    "X": X,
+    "Y": Y,
+    "Z": Z,
+    "S": S,
+    "Sdg": Si,
+    "T": T,
+    "Tdg": Ti,
+    "I": I,
+    "SX": V,
+    "SXdg": Vi,
     # one-qubit, one parameter
-    "Phase": braket.circuits.gates.PhaseShift,
-    "RX": braket.circuits.gates.Rx,
-    "RY": braket.circuits.gates.Ry,
-    "RZ": braket.circuits.gates.Rz,
-    "U1": braket.circuits.gates.PhaseShift,
+    "Phase": PhaseShift,
+    "RX": Rx,
+    "RY": Ry,
+    "RZ": Rz,
+    "U1": PhaseShift,
     # two-qubit, zero parameter
     # 'CH':BraketGate.,
-    "CX": braket.circuits.gates.CNot,
-    "Swap": braket.circuits.gates.Swap,
-    "iSwap": braket.circuits.gates.ISwap,
-    "pSwap": braket.circuits.gates.PSwap,
+    "CX": CNot,
+    "Swap": Swap,
+    "iSwap": ISwap,
+    "pSwap": PSwap,
     # 'CSX':BraketGate.,
     # 'DCX': BraketGate.,
-    "CY": braket.circuits.gates.CY,
-    "CZ": braket.circuits.gates.CZ,
+    "CY": CY,
+    "CZ": CZ,
     # two-qubit, one parameter
-    "RXX": braket.circuits.gates.XX,
-    "RXY": braket.circuits.gates.XY,
-    "RYY": braket.circuits.gates.YY,
-    "RZZ": braket.circuits.gates.ZZ,
-    "CPhase": braket.circuits.gates.CPhaseShift,
+    "RXX": XX,
+    "RXY": XY,
+    "RYY": YY,
+    "RZZ": ZZ,
+    "CPhase": CPhaseShift,
     # multi-qubit
-    "CCX": braket.circuits.gates.CCNot,
+    "CCX": CCNot,
     # unitary
-    "Unitary": braket.circuits.gates.Unitary,
+    "Unitary": Unitary,
 }
 
 
@@ -59,90 +88,90 @@ def get_braket_gate_data(gate: BraketGate):
     }
 
     # single qubit , no parameters
-    if isinstance(gate, BraketGate.H):
+    if isinstance(gate, H):
         data["type"] = "H"
-    elif isinstance(gate, BraketGate.X):
+    elif isinstance(gate, X):
         data["type"] = "X"
-    elif isinstance(gate, BraketGate.Y):
+    elif isinstance(gate, Y):
         data["type"] = "Y"
-    elif isinstance(gate, BraketGate.Z):
+    elif isinstance(gate, Z):
         data["type"] = "Z"
-    elif isinstance(gate, BraketGate.S):
+    elif isinstance(gate, S):
         data["type"] = "S"
-    elif isinstance(gate, BraketGate.Si):
+    elif isinstance(gate, Si):
         data["type"] = "Sdg"
-    elif isinstance(gate, BraketGate.T):
+    elif isinstance(gate, T):
         data["type"] = "T"
-    elif isinstance(gate, BraketGate.Ti):
+    elif isinstance(gate, Ti):
         data["type"] = "Tdg"
-    elif isinstance(gate, BraketGate.I):
+    elif isinstance(gate, I):
         data["type"] = "I"
-    elif isinstance(gate, BraketGate.V):
+    elif isinstance(gate, V):
         data["type"] = "SX"
-    elif isinstance(gate, BraketGate.Vi):
+    elif isinstance(gate, Vi):
         data["type"] = "SXdg"
 
     # single-qubit, one param
-    elif isinstance(gate, BraketGate.PhaseShift):
+    elif isinstance(gate, PhaseShift):
         data["type"] = "Phase"
         data["params"] = [gate.angle]
-    elif isinstance(gate, BraketGate.Rx):
+    elif isinstance(gate, Rx):
         data["type"] = "RX"
         data["params"] = [gate.angle]
-    elif isinstance(gate, BraketGate.Ry):
+    elif isinstance(gate, Ry):
         data["type"] = "RY"
         data["params"] = [gate.angle]
-    elif isinstance(gate, BraketGate.Rz):
+    elif isinstance(gate, Rz):
         data["type"] = "RZ"
         data["params"] = [gate.angle]
 
     # two-qubit zero params
-    elif isinstance(gate, BraketGate.CNot):
+    elif isinstance(gate, CNot):
         data["type"] = "CX"
         data["num_controls"] = 1
-        data["base_gate"] = BraketGate.X()
-    elif isinstance(gate, BraketGate.Swap):
+        data["base_gate"] = X()
+    elif isinstance(gate, Swap):
         data["type"] = "Swap"
-    elif isinstance(gate, BraketGate.ISwap):
+    elif isinstance(gate, ISwap):
         data["type"] = "iSwap"
-    elif isinstance(gate, BraketGate.PSwap):
+    elif isinstance(gate, PSwap):
         data["type"] = "pSwap"
-    elif isinstance(gate, BraketGate.CY):
+    elif isinstance(gate, CY):
         data["type"] = "CY"
         data["num_controls"] = 1
-        data["base_gate"] = BraketGate.Y()
-    elif isinstance(gate, BraketGate.CZ):
+        data["base_gate"] = Y()
+    elif isinstance(gate, CZ):
         data["type"] = "CZ"
         data["num_controls"] = 1
-        data["base_gate"] = BraketGate.Z()
+        data["base_gate"] = Z()
 
     # two-qubit, one param
-    elif isinstance(gate, BraketGate.XX):
+    elif isinstance(gate, XX):
         data["type"] = "RXX"
         data["params"] = [gate.angle]
-    elif isinstance(gate, BraketGate.XY):
+    elif isinstance(gate, XY):
         data["type"] = "RXY"
         data["params"] = [gate.angle]
-    elif isinstance(gate, BraketGate.YY):
+    elif isinstance(gate, YY):
         data["type"] = "RYY"
         data["params"] = [gate.angle]
-    elif isinstance(gate, BraketGate.ZZ):
+    elif isinstance(gate, ZZ):
         data["type"] = "RZZ"
         data["params"] = [gate.angle]
-    elif isinstance(gate, BraketGate.CPhaseShift):
+    elif isinstance(gate, CPhaseShift):
         data["type"] = "CPhase"
         data["params"] = [gate.angle]
         data["num_controls"] = 1
-        data["base_gate"] = BraketGate.PhaseShift(gate.angle)
+        data["base_gate"] = PhaseShift(gate.angle)
 
     # multi-qubit gates
-    elif isinstance(gate, BraketGate.CCNot):
+    elif isinstance(gate, CCNot):
         data["type"] = "CCX"
         data["num_controls"] = 2
-        data["base_gate"] = BraketGate.X()
+        data["base_gate"] = X()
 
     # unitary
-    elif isinstance(gate, BraketGate.Unitary):
+    elif isinstance(gate, Unitary):
         data["type"] = "Unitary"
 
     # error

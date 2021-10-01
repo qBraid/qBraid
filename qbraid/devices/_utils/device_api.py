@@ -1,6 +1,6 @@
 from time import time
 
-from IPython.core.display import HTML, display, clear_output
+from IPython.core.display import HTML, clear_output, display
 from pymongo import MongoClient
 from tqdm.notebook import tqdm
 

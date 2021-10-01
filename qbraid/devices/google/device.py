@@ -1,6 +1,6 @@
 """Module for Cirq device-like object wrappers."""
 
-from cirq import DensityMatrixSimulator, Simulator, Sampler
+from cirq import DensityMatrixSimulator, Sampler, Simulator
 
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.exceptions import DeviceError

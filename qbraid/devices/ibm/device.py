@@ -2,7 +2,7 @@
 
 from qiskit import IBMQ, Aer, BasicAer, execute
 from qiskit.providers.backend import Backend as QiskitBackend
-from qiskit.providers.ibmq import least_busy, IBMQProviderError
+from qiskit.providers.ibmq import IBMQProviderError, least_busy
 from qiskit.utils.quantum_instance import QuantumInstance
 
 from qbraid.devices._utils import get_config
