@@ -1,15 +1,27 @@
 from typing import Union
 
-import cirq
-from cirq import Circuit, Gate, LineQubit
-from cirq.ops.common_gates import *
+import numpy as np
+from cirq import Circuit, Gate, LineQubit, unitary
+from cirq.ops import CSwapGate, MeasurementGate
+from cirq.ops.common_gates import (
+    CXPowGate,
+    CZPowGate,
+    HPowGate,
+    XPowGate,
+    YPowGate,
+    ZPowGate,
+    cphase,
+    rx,
+    ry,
+    rz,
+)
 from cirq.ops.controlled_gate import ControlledGate
 from cirq.ops.gate_features import SingleQubitGate
 from cirq.ops.matrix_gates import MatrixGate
 from cirq.ops.measure_util import measure as CirqMeasure
 from cirq.ops.moment import Moment
-from cirq.ops.swap_gates import *
-from cirq.ops.three_qubit_gates import *
+from cirq.ops.swap_gates import ISwapPowGate, SwapPowGate
+from cirq.ops.three_qubit_gates import CCXPowGate, CCZPowGate
 from sympy import Symbol
 
 from qbraid.transpiler.parameter import ParamID
@@ -44,34 +56,34 @@ class CirqU3Gate(SingleQubitGate):
 
 
 cirq_gates = {
-    "H": cirq.ops.common_gates.HPowGate,
-    "X": cirq.ops.common_gates.XPowGate,
-    "Y": cirq.ops.common_gates.YPowGate,
-    "Z": cirq.ops.common_gates.ZPowGate,
-    "S": cirq.ops.common_gates.ZPowGate,
-    "T": cirq.ops.common_gates.ZPowGate,
-    "HPow": cirq.ops.common_gates.HPowGate,
-    "XPow": cirq.ops.common_gates.XPowGate,
-    "YPow": cirq.ops.common_gates.YPowGate,
-    "ZPow": cirq.ops.common_gates.ZPowGate,
-    "RX": cirq.ops.common_gates.rx,
-    "RY": cirq.ops.common_gates.ry,
-    "RZ": cirq.ops.common_gates.rz,
-    "Phase": cirq.ops.common_gates.ZPowGate,
-    "U1": cirq.ops.common_gates.ZPowGate,
-    "CX": cirq.ops.common_gates.CXPowGate,
-    "Swap": cirq.ops.swap_gates.SwapPowGate,
-    "iSwap": cirq.ops.swap_gates.ISwapPowGate,
-    "CZ": cirq.ops.common_gates.CZPowGate,
-    "CPhase": cirq.ops.common_gates.cphase,
-    "CCZ": cirq.ops.three_qubit_gates.CCZPowGate,
-    "CCX": cirq.ops.three_qubit_gates.CCXPowGate,
-    "MEASURE": cirq.ops.measurement_gate.MeasurementGate,
+    "H": HPowGate,
+    "X": XPowGate,
+    "Y": YPowGate,
+    "Z": ZPowGate,
+    "S": ZPowGate,
+    "T": ZPowGate,
+    "HPow": HPowGate,
+    "XPow": XPowGate,
+    "YPow": YPowGate,
+    "ZPow": ZPowGate,
+    "RX": rx,
+    "RY": ry,
+    "RZ": rz,
+    "Phase": ZPowGate,
+    "U1": ZPowGate,
+    "CX": CXPowGate,
+    "Swap": SwapPowGate,
+    "iSwap": ISwapPowGate,
+    "CZ": CZPowGate,
+    "CPhase": cphase,
+    "CCZ": CCZPowGate,
+    "CCX": CCXPowGate,
+    "MEASURE": MeasurementGate,
     "U3": CirqU3Gate,
-    "Unitary": cirq.ops.matrix_gates.MatrixGate,
+    "Unitary": MatrixGate,
 }
 
-CirqGate = Union[Gate, cirq.ops.measurement_gate.MeasurementGate]
+CirqGate = Union[Gate, MeasurementGate]
 
 
 def get_cirq_gate_data(gate: CirqGate) -> dict:
@@ -83,7 +95,7 @@ def get_cirq_gate_data(gate: CirqGate) -> dict:
     if isinstance(gate, MeasurementGate):
         data["type"] = "MEASURE"
     else:
-        data["matrix"] = cirq.unitary(gate)
+        data["matrix"] = unitary(gate)
 
     # single qubit gates
     if isinstance(gate, HPowGate):

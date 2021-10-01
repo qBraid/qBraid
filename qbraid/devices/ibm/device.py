@@ -2,7 +2,7 @@
 
 from qiskit import IBMQ, Aer, BasicAer, execute
 from qiskit.providers.backend import Backend as QiskitBackend
-from qiskit.providers.ibmq import least_busy
+from qiskit.providers.ibmq import IBMQProviderError, least_busy
 from qiskit.utils.quantum_instance import QuantumInstance
 
 from qbraid.devices._utils import get_config
@@ -27,7 +27,11 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
                 IBMQ.load_account()
             group = get_config("group", "IBM")
             project = get_config("project", "IBM")
-            provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
+            try:
+                provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
+            except IBMQProviderError:
+                IBMQ.load_account()
+                provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
             if obj_arg == "least_busy":
                 backends = provider.backends(filters=lambda x: not x.configuration().simulator)
                 return least_busy(backends)
@@ -81,7 +85,11 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
 
         Args:
             run_input: An individual or a list of circuit objects to run on the wrapped device.
-            kwargs: Any kwarg options to pass to the backend for running the config.
+
+        Keyword Args:
+            shots (int): shots (int): The number of times to run the task on the device.
+            Default is 1024.
+
 
         Returns:
             qbraid.devices.ibm.QiskitJobWrapper: The job like object for the run.

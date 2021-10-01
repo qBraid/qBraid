@@ -1,6 +1,6 @@
 from time import time
 
-from IPython.core.display import HTML, display
+from IPython.core.display import HTML, clear_output, display
 from pymongo import MongoClient
 from tqdm.notebook import tqdm
 
@@ -32,9 +32,10 @@ def _get_device_data(query):
         provider = document["provider"]
         status_refresh = document["status_refresh"]
         timestamp = time()
-        lag = 0 if status_refresh == -1 else timestamp - status_refresh
+        lag = 0 if status_refresh is None else timestamp - status_refresh
         if lag > 3600:
-            print("\r", "Auto-refreshing device status" + "." * tot_dev, end="")
+            clear_output(wait=True)
+            print("Auto-refreshing status for queried devices" + "." * tot_dev, flush=True)
             device = qbraid.device_wrapper(qbraid_id)
             status = device.status
             collection.update_one(
@@ -53,14 +54,15 @@ def _get_device_data(query):
     client.close()
     device_data.sort()
     if ref_dev > 0:
-        print("\r", f"Auto-refreshed status for {ref_dev}/{tot_dev} queried devices", end="")
+        clear_output(wait=True)
+        # print("All status up-to-date", flush=True)
+        # print("\r", f"Auto-refreshed status for {ref_dev}/{tot_dev} queried devices", end="")
     lag_minutes, _ = divmod(tot_lag / tot_dev, 60)
     return device_data, int(lag_minutes)
 
 
 def refresh_devices():
-    """Refreshes device status, seen in :func:`~qbraid.get_devices` output.
-    Runtime ~20 seconds, with progress given by blue status bar."""
+    """Refreshes status for all qbraid supported devices. Runtime ~30 seconds."""
 
     conn_str = (
         "mongodb+srv://ryanjh88:Rq2bYCtKnMgh3tIA@cluster0.jkqzi.mongodb.net/"
@@ -72,7 +74,7 @@ def refresh_devices():
     cursor = collection.find({})
     pbar = tqdm(total=35, leave=False)
     for document in cursor:
-        if document["status_refresh"] != -1:
+        if document["status_refresh"] is not None:  # None => internally not available at moment
             qbraid_id = document["qbraid_id"]
             device = qbraid.device_wrapper(qbraid_id)
             status = device.status
@@ -132,7 +134,7 @@ def get_devices(query=None):
 
     input_query = {} if query is None else query
     device_data, lag = _get_device_data(input_query)
-    msg = "All status up-to-date" if lag == 0 else f"Avg status lag ~{lag} min"
+    # msg = "All status up-to-date" if lag == 0 else f"Avg status lag ~{lag} min"
 
     html = """<h3>Supported Devices</h3><table><tr>
     <th style='text-align:left'>Provider</th>
@@ -162,8 +164,9 @@ def get_devices(query=None):
             "<tr><td colspan='4'; style='text-align:center'>No results matching "
             "given criteria</td></tr>"
         )
-    else:
-        html += f"<tr><td colspan='4'; style='text-align:right'>{msg}</td></tr>"
+
+    # else:  # Design choice whether to display anything here or not
+    #     html += f"<tr><td colspan='4'; style='text-align:right'>{msg}</td></tr>"
 
     html += "</table>"
 

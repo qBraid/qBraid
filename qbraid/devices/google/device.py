@@ -1,6 +1,6 @@
 """Module for Cirq device-like object wrappers."""
 
-from cirq import DensityMatrixSimulator, Simulator
+from cirq import DensityMatrixSimulator, Sampler, Simulator
 
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.exceptions import DeviceError
@@ -35,29 +35,29 @@ class CirqSimulatorWrapper(DeviceLikeWrapper):
         return "ONLINE"
 
     def run(self, run_input, *args, **kwargs):
-        """Samples from the given Circuit. By default, the `run_async` method invokes this method
-        on another thread. So this method is supposed to be thread safe.
+        """Samples from the given Circuit.
 
         Args:
             run_input: The circuit, i.e. program, to sample from.
-            kwargs:
-                param_resolver: Parameters to run with the program.
-                repetitions (int): The number of times to sample.
+
+        Keyword Args:
+            shots (int): The number of times to sample. Default is 1.
 
         Returns:
             qbraid.devices.google.CirqResultWrapper: The result like object for the run.
 
         """
+        shots = kwargs.pop("shots") if "shots" in kwargs else 1
         run_input = self._compat_run_input(run_input)
         cirq_simulator = self.vendor_dlo
-        cirq_result = cirq_simulator.run(run_input, *args, **kwargs)
+        cirq_result = cirq_simulator.run(run_input, repetitions=shots, *args, **kwargs)
         qbraid_result = CirqResultWrapper(cirq_result)
         return qbraid_result
 
 
 class CirqEngineWrapper(DeviceLikeWrapper):
     """Wrapper class for Google Cirq ``Engine`` objects. NOTE: Right now the CirqEngine only
-    allows privelaged access, so this class has not been tested.
+    allows privelaged access, so this class has not been tested and is still in development.
 
     """
 
