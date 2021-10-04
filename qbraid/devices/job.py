@@ -15,6 +15,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
+from ._utils import mongo_init_job
+
 
 class JobLikeWrapper(ABC):
     """Abstract interface for job-like classes.
@@ -26,14 +28,14 @@ class JobLikeWrapper(ABC):
     """
 
     def __init__(self, device, vendor_jlo):
-
         self.device = device
         self.vendor_jlo = vendor_jlo
+        self._job_id = mongo_init_job(self.device.vendor)
 
     @property
-    @abstractmethod
     def job_id(self) -> str:
         """Return a unique id identifying the job."""
+        return self._job_id
 
     @abstractmethod
     def metadata(self, **kwargs) -> Dict[str, Any]:
@@ -45,7 +47,12 @@ class JobLikeWrapper(ABC):
 
     @abstractmethod
     def status(self):
-        """Return the status of the job."""
+        """State of the quantum task.
+
+        Returns:
+            str: CREATED | QUEUED | RUNNING | COMPLETED | FAILED | CANCELLING | CANCELLED
+
+        """
 
     def cancel(self) -> None:
         """Attempt to cancel the job."""

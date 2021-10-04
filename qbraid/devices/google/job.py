@@ -39,11 +39,6 @@ class CirqEngineJobWrapper(JobLikeWrapper):
         self.device = device
         self.vendor_jlo = vendor_jlo
 
-    @property
-    def job_id(self):
-        """Return the unique ID of the job within the parent program."""
-        return self.vendor_jlo.job_id
-
     def metadata(self, **kwargs):
         """Returns the labels of the job."""
         return self.vendor_jlo.labels()

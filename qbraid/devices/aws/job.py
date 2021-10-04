@@ -44,11 +44,6 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
         self.device = device
         self.vendor_jlo = quantum_task
 
-    @property
-    def job_id(self):
-        """Return a unique id identifying the task."""
-        return self.vendor_jlo.id
-
     def metadata(self, **kwargs) -> Dict[str, Any]:
         """Get task metadata.
 
@@ -76,6 +71,11 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
         """Cancel the quantum task."""
         return self.vendor_jlo.cancel()
 
-    def status(self) -> str:
-        """State of the quantum task"""
+    def status(self):
+        """State of the quantum task.
+
+        Returns:
+            str: CREATED | QUEUED | RUNNING | COMPLETED | FAILED | CANCELLING | CANCELLED
+
+        """
         return self.vendor_jlo.state()

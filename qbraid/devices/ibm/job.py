@@ -39,11 +39,6 @@ class QiskitJobWrapper(JobLikeWrapper):
         self.device = device
         self.vendor_jlo = vendor_jlo
 
-    @property
-    def job_id(self):
-        """Return a unique id identifying the job."""
-        return self.vendor_jlo.job_id
-
     def metadata(self, **kwargs):
         """Return the metadata regarding the job."""
         return self.vendor_jlo.metadata

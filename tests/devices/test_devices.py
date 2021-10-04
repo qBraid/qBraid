@@ -5,7 +5,7 @@ import cirq
 import numpy as np
 import pytest
 from braket.aws import AwsDevice
-from braket.circuits import Circuit as BraketCircuit
+from braket.circuits import Circuit as BraketCircuit, Observable as BraketObservable
 from braket.devices import LocalSimulator as AwsSimulator
 from braket.tasks.quantum_task import QuantumTask as BraketQuantumTask
 from cirq.sim.simulator_base import SimulatorBase as CirqSimulator
@@ -152,6 +152,22 @@ def test_run_cirq_device_wrapper(device_id, circuit):
 def test_run_braket_device_wrapper(device_id, circuit):
     qbraid_device = device_wrapper(device_id)
     qbraid_job = qbraid_device.run(circuit, shots=10)
+    vendor_job = qbraid_job.vendor_jlo
+    assert isinstance(qbraid_job, BraketQuantumTaskWrapper)
+    assert isinstance(vendor_job, BraketQuantumTask)
+
+
+@pytest.mark.parametrize("device_id", ["aws_dm_sim", "aws_sv_sim"])
+def test_run_braket_device_wrapper_no_shots(device_id):
+    circuit = BraketCircuit().h(0).cnot(0, 1)
+    if device_id == "aws_dm_sim":
+        circuit.expectation(observable=BraketObservable.Z(), target=0)
+    elif device_id == "aws_sv_sim":
+        circuit.amplitude(state=["01", "10"])
+    else:
+        assert False
+    qbraid_device = device_wrapper(device_id)
+    qbraid_job = qbraid_device.run(circuit)  # Note: shots kwarg not provided
     vendor_job = qbraid_job.vendor_jlo
     assert isinstance(qbraid_job, BraketQuantumTaskWrapper)
     assert isinstance(vendor_job, BraketQuantumTask)

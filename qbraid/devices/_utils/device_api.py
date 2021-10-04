@@ -1,3 +1,4 @@
+from os import environ
 from time import time
 
 from IPython.core.display import HTML, clear_output, display
@@ -5,6 +6,7 @@ from pymongo import MongoClient
 from tqdm.notebook import tqdm
 
 import qbraid
+from .config_user import get_config
 
 
 def _get_device_data(query):
@@ -13,11 +15,7 @@ def _get_device_data(query):
     represented by its own length-4 list containing the device provider, name, qbraid_id,
     and status.
     """
-    # Hard-coded authentication to be replaced with API call
-    conn_str = (
-        "mongodb+srv://ryanjh88:Rq2bYCtKnMgh3tIA@cluster0.jkqzi.mongodb.net/"
-        "qbraid-sdk?retryWrites=true&w=majority"
-    )
+    conn_str = environ.get('MONGO_DB')  # To be replaced with API call
     client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
     db = client["qbraid-sdk"]
     collection = db["supported_devices"]
@@ -65,11 +63,7 @@ def _get_device_data(query):
 
 def refresh_devices():
     """Refreshes status for all qbraid supported devices. Runtime ~30 seconds."""
-
-    conn_str = (
-        "mongodb+srv://ryanjh88:Rq2bYCtKnMgh3tIA@cluster0.jkqzi.mongodb.net/"
-        "qbraid-sdk?retryWrites=true&w=majority"
-    )
+    conn_str = environ.get('MONGO_DB')  # To be replaced with API call
     client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
     db = client["qbraid-sdk"]
     collection = db["supported_devices"]
@@ -173,3 +167,24 @@ def get_devices(query=None):
     html += "</table>"
 
     return display(HTML(html))
+
+
+def mongo_init_job(vendor):
+    """Create new job document and add to MongoDB.
+
+    Returns:
+        str: the `qbraid_job_id` associated with the MongoDB document for this job
+
+    """
+    conn_str = environ.get('MONGO_DB')  # To be replaced with API call
+    client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
+    db = client["qbraid-sdk"]
+    collection = db["jobs"]
+    job = collection.insert_one({"account_email": get_config("account_email", "qBraid")})
+    qbraid_job_id = vendor.lower() + "_" + str(job.inserted_id)
+    collection.update_one(
+        {"_id": job.inserted_id},
+        {"$set": {"qbraid_job_id": qbraid_job_id}}
+    )
+    client.close()
+    return qbraid_job_id

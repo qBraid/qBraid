@@ -3,7 +3,7 @@
 from abc import ABC, abstractmethod
 
 import qbraid
-from qbraid.devices._utils import CONFIG_PROMPTS, get_config, set_config
+from qbraid.devices._utils import verify_user
 
 from .exceptions import DeviceError
 
@@ -35,10 +35,8 @@ class DeviceLikeWrapper(ABC):
         self._obj_arg = device_info.pop("obj_arg")
         self._qubits = device_info["qubits"] if device_info["qubits"] else device_info.pop("qubits")
         self.requires_cred = device_info.pop("requires_cred")
-        if self.requires_cred and get_config("verify", self.vendor) != "True":
-            prompt_lst = CONFIG_PROMPTS[self.vendor]
-            for prompt in prompt_lst:
-                set_config(*prompt)
+        if self.requires_cred:
+            verify_user(self.vendor)
         self.vendor_dlo = self._get_device(self._obj_ref, self._obj_arg)
 
     def _compat_run_input(self, run_input):
