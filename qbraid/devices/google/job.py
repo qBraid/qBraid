@@ -36,12 +36,15 @@ class CirqEngineJobWrapper(JobLikeWrapper):
 
         """
         super().__init__(device, vendor_jlo)
-        self.device = device
-        self.vendor_jlo = vendor_jlo
+        self._vendor_job_id = self.vendor_jlo.job_id
 
     def metadata(self, **kwargs):
         """Returns the labels of the job."""
         return self.vendor_jlo.labels()
+
+    def _compat_metadata(self):
+        """Add job metadata to MongoDB."""
+        return NotImplementedError
 
     def result(self):
         """Returns the job results, blocking until the job is complete."""

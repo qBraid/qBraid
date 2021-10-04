@@ -39,10 +39,8 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
             quantum_task (QuantumTask): a braket ``QuantumTask`` object used to run circuits.
 
         """
-        # redundant super delegation but might at more functionality later
         super().__init__(device, quantum_task)
-        self.device = device
-        self.vendor_jlo = quantum_task
+        self._vendor_job_id = self.vendor_jlo.id
 
     def metadata(self, **kwargs) -> Dict[str, Any]:
         """Get task metadata.
@@ -58,6 +56,10 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
 
         """
         return self.vendor_jlo.metadata(**kwargs)
+
+    def _compat_metadata(self):
+        """Add job metadata to MongoDB."""
+        return NotImplementedError
 
     def result(self) -> Union[AnnealingQuantumTaskResult, GateModelQuantumTaskResult]:
         """Return the results of the job."""

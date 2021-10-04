@@ -1,6 +1,5 @@
 """This top level module contains the main qBraid public functionality."""
 
-from os import environ
 from importlib.metadata import entry_points, version
 from pymongo import MongoClient
 
@@ -9,6 +8,12 @@ from qbraid.devices import get_devices, refresh_devices
 from qbraid.exceptions import QbraidError, WrapperError
 
 __version__ = version("qbraid")
+
+# To be replaced with API call
+MONGO_DB = (
+    "mongodb+srv://ryanjh88:Rq2bYCtKnMgh3tIA@cluster0.jkqzi.mongodb.net/"
+    "qbraid-sdk?retryWrites=true&w=majority"
+)
 
 
 def _get_entrypoints(group: str):
@@ -84,8 +89,7 @@ def device_wrapper(qbraid_id: str, **kwargs):
     Raises:
         WrapperError: If ``qbraid_id`` is not a valid device reference.
     """
-    conn_str = environ.get('MONGO_DB')  # To be replaced with API call
-    client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
+    client = MongoClient(MONGO_DB, serverSelectionTimeoutMS=5000)
     db = client["qbraid-sdk"]
     collection = db["supported_devices"]
     device_info = collection.find_one({"qbraid_id": qbraid_id})

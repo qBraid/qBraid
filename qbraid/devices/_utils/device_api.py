@@ -1,6 +1,5 @@
-from os import environ
 from time import time
-
+from datetime import datetime
 from IPython.core.display import HTML, clear_output, display
 from pymongo import MongoClient
 from tqdm.notebook import tqdm
@@ -15,8 +14,7 @@ def _get_device_data(query):
     represented by its own length-4 list containing the device provider, name, qbraid_id,
     and status.
     """
-    conn_str = environ.get('MONGO_DB')  # To be replaced with API call
-    client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
+    client = MongoClient(qbraid.MONGO_DB, serverSelectionTimeoutMS=5000)
     db = client["qbraid-sdk"]
     collection = db["supported_devices"]
     cursor = collection.find(query)
@@ -63,8 +61,7 @@ def _get_device_data(query):
 
 def refresh_devices():
     """Refreshes status for all qbraid supported devices. Runtime ~30 seconds."""
-    conn_str = environ.get('MONGO_DB')  # To be replaced with API call
-    client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
+    client = MongoClient(qbraid.MONGO_DB, serverSelectionTimeoutMS=5000)
     db = client["qbraid-sdk"]
     collection = db["supported_devices"]
     cursor = collection.find({})
@@ -176,15 +173,15 @@ def mongo_init_job(vendor):
         str: the `qbraid_job_id` associated with the MongoDB document for this job
 
     """
-    conn_str = environ.get('MONGO_DB')  # To be replaced with API call
-    client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
+    client = MongoClient(qbraid.MONGO_DB, serverSelectionTimeoutMS=5000)
     db = client["qbraid-sdk"]
     collection = db["jobs"]
-    job = collection.insert_one({"account_email": get_config("account_email", "qBraid")})
+    job = collection.insert_one(
+        {"account_email": get_config("account_email", "qBraid"), "createdAt": datetime.now()}
+    )
     qbraid_job_id = vendor.lower() + "_" + str(job.inserted_id)
     collection.update_one(
-        {"_id": job.inserted_id},
-        {"$set": {"qbraid_job_id": qbraid_job_id}}
+        {"_id": job.inserted_id}, {"$set": {"qbraid_job_id": qbraid_job_id}}
     )
     client.close()
     return qbraid_job_id

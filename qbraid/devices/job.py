@@ -42,6 +42,10 @@ class JobLikeWrapper(ABC):
         """Return the metadata regarding the job."""
 
     @abstractmethod
+    def _compat_metadata(self):
+        """Add job metadata to MongoDB."""
+
+    @abstractmethod
     def result(self):
         """Return the results of the job."""
 

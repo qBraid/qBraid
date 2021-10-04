@@ -36,12 +36,15 @@ class QiskitJobWrapper(JobLikeWrapper):
 
         """
         super().__init__(device, vendor_jlo)
-        self.device = device
-        self.vendor_jlo = vendor_jlo
+        self._vendor_job_id = self.vendor_jlo.job_id
 
     def metadata(self, **kwargs):
         """Return the metadata regarding the job."""
         return self.vendor_jlo.metadata
+
+    def _compat_metadata(self):
+        """Add job metadata to MongoDB."""
+        return NotImplementedError
 
     def done(self):
         """Return whether the job has successfully run."""
