@@ -41,8 +41,12 @@ class JobLikeWrapper(ABC):
 
     @abstractmethod
     def _set_static(self):
-        """Return a dictionary that implements the following:
-        static_data = {"vendor_job_id": ..., "createdAt": ..., "shots": ...}."""
+        """Return a dictionary that provides key-value mappings for the following keys:
+        * vendor_job_id (str): the job ID from the vendor job-like-object.
+        * createdAt (datetime.datime): the time the job was created
+        * shots (int): the number of repetitions used in the run
+
+        """
 
     @abstractmethod
     def status(self):
@@ -71,9 +75,9 @@ class JobLikeWrapper(ABC):
     def result(self):
         """Return the results of the job."""
 
-    def cancel(self) -> None:
+    @abstractmethod
+    def cancel(self):
         """Attempt to cancel the job."""
-        raise NotImplementedError
 
     def __repr__(self) -> str:
         """String representation of a JobLikeWrapper object."""

@@ -96,6 +96,6 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
 
         """
         run_input, qbraid_circuit = self._compat_run_input(run_input)
-        qiskit_job = execute(run_input, *args, **kwargs)
+        qiskit_job = execute(run_input, self.vendor_dlo, *args, **kwargs)
         qbraid_job = QiskitJobWrapper(self, qbraid_circuit, qiskit_job)
         return qbraid_job

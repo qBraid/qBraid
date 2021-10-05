@@ -20,7 +20,7 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
 
         Args:
             device: the BraketDeviceWrapper associated with this quantum task i.e. job
-            circuit: a qbraid circuit wrapper object
+            circuit: qbraid wrapped circuit object used in this job
             quantum_task (QuantumTask): a braket ``QuantumTask`` object used to run circuits.
 
         """
