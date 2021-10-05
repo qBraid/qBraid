@@ -62,7 +62,7 @@ class DeviceLikeWrapper(ABC):
             )
         if input_run_package != device_run_package:
             run_input = qbraid_circuit.transpile(device_run_package)
-        return run_input
+        return run_input, qbraid_circuit
 
     @property
     def info(self):

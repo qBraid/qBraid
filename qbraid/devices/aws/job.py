@@ -1,25 +1,9 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License"). You
-# may not use this file except in compliance with the License. A copy of
-# the License is located at
-#
-#     http://aws.amazon.com/apache2.0/
-#
-# or at https://github.com/aws/amazon-braket-sdk-python/blob/main/LICENSE.
-# This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-# CONDITIONS OF ANY KIND, either express or implied. See the License for
-# the specific language governing permissions and limitations under the License.
-#
-# NOTICE: This file has been modified from the original:
-# https://github.com/aws/amazon-braket-sdk-python/blob/main/src/braket/tasks/quantum_task.py
-
 """BraketQuantumtaskWrapper Class"""
 
 from __future__ import annotations
 
 from asyncio import Task
-from typing import Any, Dict, Union
+from typing import Union
 
 from braket.tasks import QuantumTask
 from braket.tasks.annealing_quantum_task_result import AnnealingQuantumTaskResult
@@ -31,35 +15,32 @@ from qbraid.devices.job import JobLikeWrapper
 class BraketQuantumTaskWrapper(JobLikeWrapper):
     """Wrapper class for Amazon Braket ``QuantumTask`` objects."""
 
-    def __init__(self, device, quantum_task: QuantumTask):
+    def __init__(self, device, circuit, quantum_task: QuantumTask):
         """Create a BraketQuantumTaskWrapper
 
         Args:
             device: the BraketDeviceWrapper associated with this quantum task i.e. job
+            circuit: a qbraid circuit wrapper object
             quantum_task (QuantumTask): a braket ``QuantumTask`` object used to run circuits.
 
         """
-        super().__init__(device, quantum_task)
-        self._vendor_job_id = self.vendor_jlo.id
+        super().__init__(device, circuit, quantum_task)
 
-    def metadata(self, **kwargs) -> Dict[str, Any]:
-        """Get task metadata.
+    def _set_static(self):
+        self._vendor_metadata = self.vendor_jlo.metadata()
+        return {
+            "shots": self._vendor_metadata["shots"],
+            "vendor_job_id": self._vendor_metadata["quantumTaskArn"],
+            "createdAt": self._vendor_metadata["createdAt"],
+            "endedAt": None,
+        }
 
-        Args:
-            **kwargs:
-                use_cached_value (bool, optional): If True, uses the value retrieved from the
-                    previous request.
+    def status(self):
+        return self.vendor_jlo.metadata()["status"]
 
-        Returns:
-            Dict[str, Any]: The metadata regarding the job. If `use_cached_value` is True,
-            then the value retrieved from the most recent request is used.
-
-        """
-        return self.vendor_jlo.metadata(**kwargs)
-
-    def _compat_metadata(self):
-        """Add job metadata to MongoDB."""
-        return NotImplementedError
+    def ended_at(self):
+        """The time when the job ended."""
+        return self.vendor_jlo.metadata()["endedAt"]
 
     def result(self) -> Union[AnnealingQuantumTaskResult, GateModelQuantumTaskResult]:
         """Return the results of the job."""
@@ -72,12 +53,3 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
     def cancel(self):
         """Cancel the quantum task."""
         return self.vendor_jlo.cancel()
-
-    def status(self):
-        """State of the quantum task.
-
-        Returns:
-            str: CREATED | QUEUED | RUNNING | COMPLETED | FAILED | CANCELLING | CANCELLED
-
-        """
-        return self.vendor_jlo.state()

@@ -48,7 +48,7 @@ class CirqSimulatorWrapper(DeviceLikeWrapper):
 
         """
         shots = kwargs.pop("shots") if "shots" in kwargs else 1
-        run_input = self._compat_run_input(run_input)
+        run_input, _ = self._compat_run_input(run_input)
         cirq_simulator = self.vendor_dlo
         cirq_result = cirq_simulator.run(run_input, repetitions=shots, *args, **kwargs)
         qbraid_result = CirqResultWrapper(cirq_result)
@@ -93,7 +93,7 @@ class CirqEngineWrapper(DeviceLikeWrapper):
             qbraid.devices.google.CirqResultWrapper: The result for this run.
 
         """
-        run_input = self._compat_run_input(run_input)
+        run_input, _ = self._compat_run_input(run_input)
         cirq_engine = self.vendor_dlo
         cirq_result = cirq_engine.run(run_input, *args, **kwargs)
         qbraid_result = CirqResultWrapper(cirq_result)
@@ -117,8 +117,8 @@ class CirqEngineWrapper(DeviceLikeWrapper):
             TrialResults, one for each parameter sweep.
 
         """
-        run_input = self._compat_run_input(run_input)
+        run_input, qbraid_circuit = self._compat_run_input(run_input)
         cirq_engine = self.vendor_dlo
         cirq_engine_job = cirq_engine.run_sweep(run_input, *args, **kwargs)
-        qbraid_job = CirqEngineJobWrapper(self, cirq_engine_job)
+        qbraid_job = CirqEngineJobWrapper(self, qbraid_circuit, cirq_engine_job)
         return qbraid_job

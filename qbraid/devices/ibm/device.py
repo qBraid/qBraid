@@ -71,7 +71,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             qbraid.devices.ibm.QiskitResultWrapper: The result like object for the run.
 
         """
-        run_input = self._compat_run_input(run_input)
+        run_input, _ = self._compat_run_input(run_input)
         quantum_instance = QuantumInstance(self.vendor_dlo, *args, **kwargs)
         qiskit_result = quantum_instance.execute(run_input)
         qbraid_result = QiskitResultWrapper(qiskit_result)
@@ -95,8 +95,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             qbraid.devices.ibm.QiskitJobWrapper: The job like object for the run.
 
         """
-        run_input = self._compat_run_input(run_input)
-        qiskit_device = self.vendor_dlo
-        qiskit_job = execute(run_input, qiskit_device, *args, **kwargs)
-        qbraid_job = QiskitJobWrapper(self, qiskit_job)
+        run_input, qbraid_circuit = self._compat_run_input(run_input)
+        qiskit_job = execute(run_input, *args, **kwargs)
+        qbraid_job = QiskitJobWrapper(self, qbraid_circuit, qiskit_job)
         return qbraid_job

@@ -27,6 +27,7 @@ class CircuitWrapper(QbraidTranspiler):
         params: (Iterable): list of abstract paramaters in the circuit, stored as
             :class:`qbraid.transpiler.parameter.ParamID` objects
         num_qubits (int): number of qubits in the circuit
+        depth (int): the depth of the circuit
         input_qubit_mapping (dict): dictionary where the keys are qubit objects of the underlying
             circuit and values are integers which track the qubit identity.
         input_param_mapping (dict): dictionary where the keys are abstract parameter objects of the
@@ -42,6 +43,7 @@ class CircuitWrapper(QbraidTranspiler):
         self._qubits = []
         self._num_qubits = 0
         self._num_clbits = 0
+        self._depth = 0
         self._params = []
         self._input_param_mapping = {}
         self._package = None
@@ -75,6 +77,11 @@ class CircuitWrapper(QbraidTranspiler):
     def num_clbits(self):
         """Return the number of classical bits in the circuit."""
         return self._num_clbits
+
+    @property
+    def depth(self):
+        """Return the circuit depth (i.e., length of critical path)."""
+        return self._depth
 
     @property
     def params(self):

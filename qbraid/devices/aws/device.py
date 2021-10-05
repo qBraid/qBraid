@@ -91,11 +91,11 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             qbraid.devices.aws.BraketQuantumTaskWrapper: The job like object for the run.
 
         """
-        run_input = self._compat_run_input(run_input)
+        run_input, qbraid_circuit = self._compat_run_input(run_input)
         braket_device = self.vendor_dlo
         if self.requires_cred:
             braket_quantum_task = braket_device.run(run_input, self._s3_location, *args, **kwargs)
         else:
             braket_quantum_task = braket_device.run(run_input, *args, **kwargs)
-        qbraid_job = BraketQuantumTaskWrapper(self, braket_quantum_task)
+        qbraid_job = BraketQuantumTaskWrapper(self, qbraid_circuit, braket_quantum_task)
         return qbraid_job

@@ -23,6 +23,7 @@ class BraketCircuitWrapper(CircuitWrapper):
 
         self._qubits = circuit.qubits
         self._num_qubits = len(self.qubits)
+        self._depth = circuit.depth
         self._package = "braket"
 
         if not input_qubit_mapping:
