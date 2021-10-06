@@ -27,32 +27,38 @@ from qbraid.devices.job import JobLikeWrapper
 class CirqEngineJobWrapper(JobLikeWrapper):
     """Wrapper class for Google Cirq ``EngineJob`` objects."""
 
-    def __init__(self, device, vendor_jlo: EngineJob):
+    def __init__(self, device, circuit, vendor_jlo: EngineJob):
         """Create a CirqEngineJobWrapper
 
         Args:
             device: the CirqEngineDeviceWrapper associated with this job
+            circuit: qbraid wrapped circuit object used in this job
             vendor_jlo (EngineJob): a Cirq ``EngineJob`` object used to run circuits.
 
         """
-        super().__init__(device, vendor_jlo)
-        self._vendor_job_id = self.vendor_jlo.job_id
+        super().__init__(device, circuit, vendor_jlo)
 
-    def metadata(self, **kwargs):
-        """Returns the labels of the job."""
-        return self.vendor_jlo.labels()
+    @property
+    def vendor_job_id(self) -> str:
+        """Return the job ID from the vendor job-like-object."""
+        return self.vendor_jlo.job_id
 
-    def _compat_metadata(self):
-        """Add job metadata to MongoDB."""
-        return NotImplementedError
+    @property
+    def _shots(self) -> int:
+        """Return the number of repetitions used in the run"""
+        return 0
+
+    def _status(self):
+        """Returns status from Cirq Google Engine Job object."""
+        return self.vendor_jlo.status()
+
+    def ended_at(self):
+        """The time when the job ended."""
+        return "TODO"
 
     def result(self):
         """Returns the job results, blocking until the job is complete."""
         return self.vendor_jlo.results()
-
-    def status(self):
-        """Return the execution status of the job."""
-        return self.vendor_jlo.status()
 
     def cancel(self):
         """Cancel the job."""

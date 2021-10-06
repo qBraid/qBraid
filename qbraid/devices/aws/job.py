@@ -10,6 +10,7 @@ from braket.tasks.annealing_quantum_task_result import AnnealingQuantumTaskResul
 from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
 
 from qbraid.devices.job import JobLikeWrapper
+from qbraid.devices.enums import Status
 
 
 class BraketQuantumTaskWrapper(JobLikeWrapper):
@@ -26,16 +27,18 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
         """
         super().__init__(device, circuit, quantum_task)
 
-    def _set_static(self):
-        self._vendor_metadata = self.vendor_jlo.metadata()
-        return {
-            "shots": self._vendor_metadata["shots"],
-            "vendor_job_id": self._vendor_metadata["quantumTaskArn"],
-            "createdAt": self._vendor_metadata["createdAt"],
-            "endedAt": None,
-        }
+    @property
+    def vendor_job_id(self) -> str:
+        """Return the job ID from the vendor job-like-object."""
+        return self.vendor_jlo.metadata()["quantumTaskArn"]
 
-    def status(self):
+    @property
+    def _shots(self) -> int:
+        """Return the number of repetitions used in the run"""
+        return self.vendor_jlo.metadata()["shots"]
+
+    def _status(self):
+        """Returns status from Braket QuantumTask object metadata."""
         return self.vendor_jlo.metadata()["status"]
 
     def ended_at(self):

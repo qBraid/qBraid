@@ -45,12 +45,14 @@ Devices API
    get_devices
    refresh_devices
    update_config
+   Status
    DeviceError
    JobError
    ConfigError
 
 """
 # pylint: skip-file
+from .enums import Status
 from ._utils import get_devices, refresh_devices, update_config
 from .device import DeviceLikeWrapper
 from .exceptions import ConfigError, DeviceError, JobError
