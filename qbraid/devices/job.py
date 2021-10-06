@@ -66,8 +66,10 @@ class JobLikeWrapper(ABC):
         try:
             return self._status_map[vendor_status]
         except KeyError:
-            logging.warning(f"Expected {self.device.vendor} job status matching one of "
-                            f"{list(self._status_map.keys())}, but instead got '{vendor_status}'.")
+            logging.warning(
+                f"Expected {self.device.vendor} job status matching one of "
+                f"{list(self._status_map.keys())}, but instead got '{vendor_status}'."
+            )
             return Status.UNKNOWN
 
     @abstractmethod
