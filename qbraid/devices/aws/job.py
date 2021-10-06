@@ -10,7 +10,6 @@ from braket.tasks.annealing_quantum_task_result import AnnealingQuantumTaskResul
 from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
 
 from qbraid.devices.job import JobLikeWrapper
-from qbraid.devices.enums import Status
 
 
 class BraketQuantumTaskWrapper(JobLikeWrapper):
@@ -40,10 +39,6 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
     def _status(self):
         """Returns status from Braket QuantumTask object metadata."""
         return self.vendor_jlo.metadata()["status"]
-
-    def ended_at(self):
-        """The time when the job ended."""
-        return self.vendor_jlo.metadata()["endedAt"]
 
     def result(self) -> Union[AnnealingQuantumTaskResult, GateModelQuantumTaskResult]:
         """Return the results of the job."""

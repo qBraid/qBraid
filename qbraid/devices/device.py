@@ -38,6 +38,7 @@ class DeviceLikeWrapper(ABC):
         if self.requires_cred:
             verify_user(self.vendor)
         self.vendor_dlo = self._get_device(self._obj_ref, self._obj_arg)
+        self.shots = None
 
     def _compat_run_input(self, run_input):
         """Checks if ``run_input`` is compatible with device and calls transpiler if necessary.

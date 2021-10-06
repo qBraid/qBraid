@@ -1,12 +1,13 @@
 """JobLikeWrapper Class"""
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict
 from datetime import datetime
-
 import logging
+from typing import Any, Dict
+from time import time, sleep
 
 from qbraid.devices.enums import Status, STATUS_FINAL
+from qbraid.devices import JobError
 from ._utils import mongo_init_job, mongo_update_job, STATUS_MAP
 
 
@@ -35,8 +36,7 @@ class JobLikeWrapper(ABC):
             "circuit_depth": self.circuit.depth,
             "shots": self._shots,
             "createdAt": datetime.now(),
-            "endedAt": None,
-            "status": self.status().name,
+            "status": Status.INITIALIZING,
         }
         self._qbraid_job_id = mongo_init_job(self._init_data)
 
@@ -67,7 +67,7 @@ class JobLikeWrapper(ABC):
             return self._status_map[vendor_status]
         except KeyError:
             logging.warning(f"Expected {self.device.vendor} job status matching one of "
-                            f"{list(self._status_map.keys())}, but instead got {vendor_status}.")
+                            f"{list(self._status_map.keys())}, but instead got '{vendor_status}'.")
             return Status.UNKNOWN
 
     @abstractmethod
@@ -75,20 +75,33 @@ class JobLikeWrapper(ABC):
         """Status method helper function. Uses vendor_jlo to get status of the job / task, casts
         as string if necessary, returns result. """
 
-    @abstractmethod
-    def ended_at(self):
-        """The time when the job ended."""
-
-    def metadata(self, **kwargs) -> Dict[str, Any]:
+    def metadata(self) -> Dict[str, Any]:
         """Return the metadata regarding the job."""
         status = self.status()
         if not self._cache_metadata or status != self._cache_status:
-            data = {"status": status.name}
-            if status in STATUS_FINAL:
-                data["endedAt"] = self.ended_at()
             self._cache_status = status
-            self._cache_metadata = mongo_update_job(self.id, data)
+            self._cache_metadata = mongo_update_job(self.id, {"status": status.name})
         return self._cache_metadata
+
+    def wait_for_final_state(self, timeout=None, wait=5) -> None:
+        """Poll the job status until it progresses to a final state.
+
+        Args:
+            timeout: Seconds to wait for the job. If ``None``, wait indefinitely.
+            wait: Seconds between queries.
+
+        Raises:
+            JobError: If the job does not reach a final state before the specified timeout.
+
+        """
+        start_time = time()
+        status = self.status()
+        while status not in STATUS_FINAL:
+            elapsed_time = time() - start_time
+            if timeout is not None and elapsed_time >= timeout:
+                raise JobError(f"Timeout while waiting for job {self.id}.")
+            sleep(wait)
+            status = self.status()
 
     @abstractmethod
     def result(self):

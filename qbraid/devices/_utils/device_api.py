@@ -1,11 +1,10 @@
 from time import time
 
 from IPython.core.display import HTML, clear_output, display
-from pymongo import MongoClient, ReturnDocument
+from pymongo import MongoClient
 from tqdm.notebook import tqdm
 
 import qbraid
-from .config_user import get_config
 
 
 def _get_device_data(query):
@@ -164,41 +163,3 @@ def get_devices(query=None):
     html += "</table>"
 
     return display(HTML(html))
-
-
-def mongo_init_job(init_data):
-    """Create a new MongoDB job document.
-
-    Returns:
-        str: the qbraid_job_id associated with this job
-
-    """
-    client = MongoClient(qbraid.MONGO_DB, serverSelectionTimeoutMS=5000)
-    docs = client["qbraid-sdk"]["jobs"]
-    user_id = get_config("idToken", "qBraid")
-    init_data["qbraid_user_id"] = user_id
-    new_job = docs.insert_one(init_data)
-    qbraid_job_id = init_data["qbraid_device_id"] + ":" + user_id + ":" + str(new_job.inserted_id)
-    docs.update_one({"_id": new_job.inserted_id}, {"$set": {"qbraid_job_id": qbraid_job_id}})
-    client.close()
-    return qbraid_job_id
-
-
-def mongo_update_job(qbraid_job_id, data):
-    """Update a new MongoDB job document.
-
-    Returns:
-        dict: the metadata associated with this job
-
-    """
-    client = MongoClient(qbraid.MONGO_DB, serverSelectionTimeoutMS=5000)
-    docs = client["qbraid-sdk"]["jobs"]
-    metadata = docs.find_one_and_update(
-        {"qbraid_job_id": qbraid_job_id},
-        {"$set": data},
-        upsert=False,
-        projection={"_id": False},
-        return_document=ReturnDocument.AFTER,
-    )
-    client.close()
-    return metadata

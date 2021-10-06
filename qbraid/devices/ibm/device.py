@@ -87,8 +87,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             run_input: An individual or a list of circuit objects to run on the wrapped device.
 
         Keyword Args:
-            shots (int): shots (int): The number of times to run the task on the device.
-            Default is 1024.
+            shots (int): The number of times to run the task on the device. Default is 1024.
 
 
         Returns:
@@ -96,6 +95,9 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
 
         """
         run_input, qbraid_circuit = self._compat_run_input(run_input)
+        if "shots" in kwargs:
+            shots = kwargs.pop("shots")
+            self.vendor_dlo.set_options(shots=shots)
         qiskit_job = execute(run_input, self.vendor_dlo, *args, **kwargs)
         qbraid_job = QiskitJobWrapper(self, qbraid_circuit, qiskit_job)
         return qbraid_job

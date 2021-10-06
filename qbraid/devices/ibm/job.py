@@ -31,15 +31,11 @@ class QiskitJobWrapper(JobLikeWrapper):
     @property
     def _shots(self) -> int:
         """Return the number of repetitions used in the run"""
-        return 0
+        return self.device.vendor_dlo.options.get("shots")
 
     def _status(self):
         """Returns status from Qiskit Job object."""
         return str(self.vendor_jlo.status())
-
-    def ended_at(self):
-        """The time when the job ended."""
-        return "TODO"
 
     def submit(self):
         """Submit the job to the backend for execution."""
