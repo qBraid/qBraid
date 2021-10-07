@@ -31,14 +31,14 @@ class DeviceLikeWrapper(ABC):
 
         """
         self._info = device_info
+        self._code = device_info.pop("_code")
         self._obj_ref = device_info.pop("obj_ref")
         self._obj_arg = device_info.pop("obj_arg")
-        self._qubits = device_info["qubits"] if device_info["qubits"] else device_info.pop("qubits")
+        self._qubits = device_info["qubits"]
         self.requires_cred = device_info.pop("requires_cred")
         if self.requires_cred:
             verify_user(self.vendor)
-        self.vendor_dlo = self._get_device(self._obj_ref, self._obj_arg)
-        self.shots = None
+        self.vendor_dlo = self._get_device()
 
     def _compat_run_input(self, run_input):
         """Checks if ``run_input`` is compatible with device and calls transpiler if necessary.
@@ -51,7 +51,7 @@ class DeviceLikeWrapper(ABC):
             exceeds the number of qubits supported by the device.
 
         """
-        if self.status == "OFFLINE":
+        if self.status.value == 1:
             raise DeviceError("Device is currently offline.")
         device_run_package = self.info["run_package"]
         input_run_package = run_input.__module__.split(".")[0]
@@ -128,7 +128,7 @@ class DeviceLikeWrapper(ABC):
         return f"<{self.__class__.__name__}({self.provider}:'{self.name}')>"
 
     @abstractmethod
-    def _get_device(self, obj_ref, obj_arg):
+    def _get_device(self):
         """Abstract init device method."""
 
     @abstractmethod

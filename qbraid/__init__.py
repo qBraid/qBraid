@@ -22,7 +22,11 @@ def _get_entrypoints(group: str):
 
 
 transpiler_entrypoints = _get_entrypoints("qbraid.transpiler")
-devices_entrypoints = _get_entrypoints("qbraid.devices")
+devices_entrypoints = {
+    "AWS": _get_entrypoints("qbraid.devices.aws"),
+    "IBM": _get_entrypoints("qbraid.devices.ibm"),
+    "Google": _get_entrypoints("qbraid.devices.google"),
+}
 
 
 def circuit_wrapper(circuit, **kwargs):
@@ -101,5 +105,8 @@ def device_wrapper(qbraid_id: str, **kwargs):
     del device_info["_id"]  # unecessary for sdk
     del device_info["status_refresh"]
     vendor = device_info["vendor"]
-    device_wrapper_class = devices_entrypoints[vendor].load()
+    obj_ref = device_info["obj_ref"]
+    if vendor == "IBM" and obj_ref != "BasicAer":
+        obj_ref = "Async"
+    device_wrapper_class = devices_entrypoints[vendor][obj_ref].load()
     return device_wrapper_class(device_info, **kwargs)

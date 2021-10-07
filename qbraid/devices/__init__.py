@@ -52,7 +52,7 @@ Devices API
 
 """
 # pylint: skip-file
-from .enums import Status
+from .enums import DeviceStatus, JobStatus
 from ._utils import get_devices, refresh_devices, update_config
 from .device import DeviceLikeWrapper
 from .exceptions import ConfigError, DeviceError, JobError

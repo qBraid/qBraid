@@ -3,7 +3,19 @@
 import enum
 
 
-class Status(enum.IntEnum):
+class DeviceType(enum.IntEnum):
+    LOCALSIM = 0
+    REMOTESIM = 2
+    QPUGATE = 1
+    QPUANN = 3
+
+
+class DeviceStatus(enum.IntEnum):
+    ONLINE = 0
+    OFFLINE = 1
+
+
+class JobStatus(enum.IntEnum):
     """Class for the status of processes (i.e. jobs / quantum tasks) resulting from any
     :meth:`~qbraid.devices.DeviceLikeWrapper.run` method.
 
@@ -31,4 +43,4 @@ class Status(enum.IntEnum):
     UNKNOWN = 8
 
 
-STATUS_FINAL = (Status.COMPLETED, Status.CANCELLED, Status.FAILED)
+JOB_FINAL = (JobStatus.COMPLETED, JobStatus.CANCELLED, JobStatus.FAILED)

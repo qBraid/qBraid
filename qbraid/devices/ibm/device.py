@@ -1,15 +1,16 @@
 """QiskitBackendWrapper Class"""
 
-from qiskit import IBMQ, Aer, BasicAer, execute
+from qiskit import IBMQ, Aer, execute
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.ibmq import IBMQProviderError, least_busy
 from qiskit.utils.quantum_instance import QuantumInstance
 
 from qbraid.devices._utils import get_config, init_job
 from qbraid.devices.device import DeviceLikeWrapper
-from qbraid.devices.exceptions import DeviceError
+from qbraid.devices.enums import DeviceStatus
 from qbraid.devices.ibm.job import QiskitJobWrapper
 from qbraid.devices.ibm.result import QiskitResultWrapper
+from qbraid.devices.exceptions import DeviceError
 
 
 class QiskitBackendWrapper(DeviceLikeWrapper):
@@ -20,9 +21,9 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
 
         super().__init__(device_info, **kwargs)
 
-    def _get_device(self, obj_ref, obj_arg) -> QiskitBackend:
+    def _get_device(self) -> QiskitBackend:
         """Initialize an IBM device."""
-        if obj_ref == "IBMQ":
+        if self._obj_ref == "IBMQ":
             if IBMQ.active_account() is None:
                 IBMQ.load_account()
             group = get_config("group", "IBM")
@@ -32,17 +33,15 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             except IBMQProviderError:
                 IBMQ.load_account()
                 provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
-            if obj_arg == "least_busy":
+            if self._obj_arg == "least_busy":
                 backends = provider.backends(filters=lambda x: not x.configuration().simulator)
                 return least_busy(backends)
             else:
-                return provider.get_backend(obj_arg)
-        elif obj_ref == "Aer":
-            return Aer.get_backend(obj_arg)
-        elif obj_ref == "BasicAer":
-            return BasicAer.get_backend(obj_arg)
+                return provider.get_backend(self._obj_arg)
+        elif self._obj_ref == "Aer":
+            return Aer.get_backend(self._obj_arg)
         else:
-            raise DeviceError(f"obj_ref {obj_ref} not found.")
+            raise DeviceError(f"obj_ref {self._obj_ref} not found.")
 
     @property
     def status(self):
@@ -51,11 +50,10 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         Returns:
             str: The status of this Device
         """
-        if self._obj_ref == "IBMQ":
-            backend_status = self.vendor_dlo.status()
-            if not backend_status.operational:
-                return "OFFLINE"
-        return "ONLINE"
+        backend_status = self.vendor_dlo.status()
+        if not backend_status.operational:
+            return DeviceStatus.OFFLINE
+        return DeviceStatus.ONLINE
 
     def execute(self, run_input, *args, **kwargs):
         """Runs circuit(s) on qiskit backend via :meth:`~qiskit.utils.QuantumInstance.execute`.
