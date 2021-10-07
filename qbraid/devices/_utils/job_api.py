@@ -3,7 +3,7 @@ from datetime import datetime
 
 import qbraid
 from .config_user import get_config
-from qbraid.devices.enums import Status
+from qbraid.devices.enums import JobStatus
 
 
 def mongo_init_job(init_data, device_id):
@@ -53,6 +53,6 @@ def init_job(vendor_job_id, device, circuit, shots):
         "circuit_depth": circuit.depth,
         "shots": shots,
         "createdAt": datetime.now(),
-        "status": Status.INITIALIZING,
+        "status": JobStatus.INITIALIZING,
     }
     return mongo_init_job(data, device.id)

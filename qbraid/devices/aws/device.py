@@ -86,9 +86,5 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         vendor_job_id = aws_quantum_task.metadata()["quantumTaskArn"]
         job_id = init_job(vendor_job_id, self, qbraid_circuit, shots)
         return BraketQuantumTaskWrapper(
-            job_id,
-            vendor_job_id=vendor_job_id,
-            device=self,
-            vendor_jlo=aws_quantum_task
+            job_id, vendor_job_id=vendor_job_id, device=self, vendor_jlo=aws_quantum_task
         )
-

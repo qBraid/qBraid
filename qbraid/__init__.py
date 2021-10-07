@@ -105,8 +105,7 @@ def device_wrapper(qbraid_id: str, **kwargs):
     del device_info["_id"]  # unecessary for sdk
     del device_info["status_refresh"]
     vendor = device_info["vendor"]
-    obj_ref = device_info["obj_ref"]
-    if vendor == "IBM" and obj_ref != "BasicAer":
-        obj_ref = "Async"
-    device_wrapper_class = devices_entrypoints[vendor][obj_ref].load()
+    code = device_info.pop("_code")
+    ep = "LOC" if code == 0 else "REM"
+    device_wrapper_class = devices_entrypoints[vendor][ep].load()
     return device_wrapper_class(device_info, **kwargs)

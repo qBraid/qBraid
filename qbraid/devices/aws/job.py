@@ -16,7 +16,7 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
     """Wrapper class for Amazon Braket ``QuantumTask`` objects."""
 
     def __init__(self, job_id, vendor_job_id=None, device=None, vendor_jlo=None):
-        """Create a BraketQuantumTaskWrapper. """
+        """Create a BraketQuantumTaskWrapper."""
 
         super().__init__(job_id, vendor_job_id, device, vendor_jlo)
 

@@ -13,15 +13,15 @@ class QiskitJobWrapper(JobLikeWrapper):
     """Wrapper class for IBM Qiskit ``Job`` objects."""
 
     def __init__(self, job_id, vendor_job_id=None, device=None, vendor_jlo=None):
-        """Create a ``QiskitJobWrapper`` object.
-
-        """
+        """Create a ``QiskitJobWrapper`` object."""
         super().__init__(job_id, vendor_job_id, device, vendor_jlo)
 
     @property
     def vendor_jlo(self):
         """Return the job like object that is being wrapped."""
-        return Job(self._device.vendor_dlo, self.vendor_job_id)
+        if self._vendor_jlo is None:
+            return NotImplementedError
+        return self._vendor_jlo
 
     def _status(self):
         """Returns status from Qiskit Job object."""

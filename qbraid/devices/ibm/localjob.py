@@ -7,9 +7,7 @@ class QiskitBasicAerJobWrapper(LocalJobWrapper):
     """Wrapper class for IBM Qiskit ``Job`` objects."""
 
     def __init__(self, device, vendor_jlo):
-        """Create a ``QiskitJobWrapper`` object.
-
-        """
+        """Create a ``QiskitJobWrapper`` object."""
         super().__init__(device, vendor_jlo)
 
     @property

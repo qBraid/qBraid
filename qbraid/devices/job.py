@@ -7,22 +7,20 @@ from typing import Any, Dict
 
 import qbraid
 from qbraid.devices import JobError
-from qbraid.devices.enums import Status, STATUS_FINAL
+from qbraid.devices.enums import JobStatus, JOB_FINAL
 from ._utils import mongo_get_job, STATUS_MAP
 
 
 class JobLikeWrapper(ABC):
-    """Abstract interface for job-like classes.
-
-    """
+    """Abstract interface for job-like classes."""
 
     def __init__(self, job_id, vendor_job_id, device, vendor_jlo):
         self._cache_metadata = None
         self._cache_status = None
         self._job_id = job_id
         self._vendor_job_id = vendor_job_id
-        self._device = qbraid.device_wrapper(job_id.split(":")[0]) if not device else device
-        self._vendor_jlo = self.vendor_jlo if not vendor_jlo else vendor_jlo
+        self._device = device
+        self._vendor_jlo = vendor_jlo
         self._status_map = STATUS_MAP[self._device.vendor]
 
     @property
@@ -32,19 +30,25 @@ class JobLikeWrapper(ABC):
 
     @property
     def vendor_job_id(self):
-        if not self._vendor_job_id:
+        if self._vendor_job_id is None:
             self._cache_metadata = mongo_get_job(self.id)
             self._cache_status = self._cache_metadata["status"]
             self._vendor_job_id = self._cache_metadata["vendor_job_id"]
         return self._vendor_job_id
 
     @property
+    def device(self):
+        if self._device is None:
+            self._device = qbraid.device_wrapper(self.id.split(":")[0])
+        return self._device
+
+    @property
     @abstractmethod
     def vendor_jlo(self):
         """Return the job like object that is being wrapped."""
 
-    def status(self) -> Status:
-        """Return the status of the job / task , among the values of ``Status``."""
+    def status(self) -> JobStatus:
+        """Return the status of the job / task , among the values of ``JobStatus``."""
         vendor_status = self._status()
         try:
             return self._status_map[vendor_status]
@@ -53,12 +57,12 @@ class JobLikeWrapper(ABC):
                 f"Expected {self._device.vendor} job status matching one of "
                 f"{list(self._status_map.keys())}, but instead got '{vendor_status}'."
             )
-            return Status.UNKNOWN
+            return JobStatus.UNKNOWN
 
     @abstractmethod
     def _status(self) -> str:
         """Status method helper function. Uses vendor_jlo to get status of the job / task, casts
-        as string if necessary, returns result. """
+        as string if necessary, returns result."""
 
     def metadata(self) -> Dict[str, Any]:
         """Return the metadata regarding the job."""
@@ -81,7 +85,7 @@ class JobLikeWrapper(ABC):
         """
         start_time = time()
         status = self.status()
-        while status not in STATUS_FINAL:
+        while status not in JOB_FINAL:
             elapsed_time = time() - start_time
             if timeout is not None and elapsed_time >= timeout:
                 raise JobError(f"Timeout while waiting for job {self.id}.")

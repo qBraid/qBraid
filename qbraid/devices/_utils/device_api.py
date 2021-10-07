@@ -32,7 +32,7 @@ def _get_device_data(query):
             clear_output(wait=True)
             print("Auto-refreshing status for queried devices" + "." * tot_dev, flush=True)
             device = qbraid.device_wrapper(qbraid_id)
-            status = device.status
+            status = device.status.name
             collection.update_one(
                 {"qbraid_id": qbraid_id},
                 {"$set": {"status": status, "status_refresh": timestamp}},
@@ -69,7 +69,7 @@ def refresh_devices():
         if document["status_refresh"] is not None:  # None => internally not available at moment
             qbraid_id = document["qbraid_id"]
             device = qbraid.device_wrapper(qbraid_id)
-            status = device.status
+            status = device.status.name
             collection.update_one(
                 {"qbraid_id": qbraid_id},
                 {"$set": {"status": status, "status_refresh": time()}},
