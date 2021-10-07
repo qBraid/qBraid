@@ -5,7 +5,7 @@ from braket.devices import LocalSimulator
 from braket.ocean_plugin import BraketDWaveSampler, BraketSampler
 from dwave.system.composites import EmbeddingComposite
 
-from qbraid.devices._utils import get_config
+from qbraid.devices._utils import get_config, init_job
 from qbraid.devices.aws.job import BraketQuantumTaskWrapper
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.exceptions import DeviceError
@@ -94,8 +94,16 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         run_input, qbraid_circuit = self._compat_run_input(run_input)
         braket_device = self.vendor_dlo
         if self.requires_cred:
-            braket_quantum_task = braket_device.run(run_input, self._s3_location, *args, **kwargs)
+            aws_quantum_task = braket_device.run(run_input, self._s3_location, *args, **kwargs)
+            shots = aws_quantum_task.metadata()["shots"]
+            job_id = init_job(self._arn, self, run_input, shots)
+            qbraid_job = BraketQuantumTaskWrapper(
+                job_id,
+                vendor_job_id=self._arn,
+                device=self,
+                vendor_jlo=aws_quantum_task
+            )
         else:
-            braket_quantum_task = braket_device.run(run_input, *args, **kwargs)
-        qbraid_job = BraketQuantumTaskWrapper(self, qbraid_circuit, braket_quantum_task)
+            # local_quantum_task = braket_device.run(run_input, *args, **kwargs)
+            raise NotImplementedError
         return qbraid_job

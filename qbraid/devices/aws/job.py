@@ -5,7 +5,7 @@ from __future__ import annotations
 from asyncio import Task
 from typing import Union
 
-from braket.tasks import QuantumTask
+from braket.aws import AwsQuantumTask
 from braket.tasks.annealing_quantum_task_result import AnnealingQuantumTaskResult
 from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
 
@@ -15,26 +15,15 @@ from qbraid.devices.job import JobLikeWrapper
 class BraketQuantumTaskWrapper(JobLikeWrapper):
     """Wrapper class for Amazon Braket ``QuantumTask`` objects."""
 
-    def __init__(self, device, circuit, quantum_task: QuantumTask):
-        """Create a BraketQuantumTaskWrapper
+    def __init__(self, job_id, vendor_job_id=None, device=None, vendor_jlo=None):
+        """Create a BraketQuantumTaskWrapper. """
 
-        Args:
-            device: the BraketDeviceWrapper associated with this quantum task i.e. job
-            circuit: qbraid wrapped circuit object used in this job
-            quantum_task (QuantumTask): a braket ``QuantumTask`` object used to run circuits.
-
-        """
-        super().__init__(device, circuit, quantum_task)
+        super().__init__(job_id, vendor_job_id, device, vendor_jlo)
 
     @property
-    def vendor_job_id(self) -> str:
-        """Return the job ID from the vendor job-like-object."""
-        return self.vendor_jlo.metadata()["quantumTaskArn"]
-
-    @property
-    def _shots(self) -> int:
-        """Return the number of repetitions used in the run"""
-        return self.vendor_jlo.metadata()["shots"]
+    def vendor_jlo(self):
+        """Return the job like object that is being wrapped."""
+        return AwsQuantumTask(self.vendor_job_id)
 
     def _status(self):
         """Returns status from Braket QuantumTask object metadata."""

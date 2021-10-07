@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from qiskit.providers.exceptions import JobError as QiskitJobError
-from qiskit.providers.job import Job
+from qiskit.providers.job import JobV1 as Job
 
 from qbraid.devices.exceptions import JobError
 from qbraid.devices.job import JobLikeWrapper
@@ -12,26 +12,16 @@ from qbraid.devices.job import JobLikeWrapper
 class QiskitJobWrapper(JobLikeWrapper):
     """Wrapper class for IBM Qiskit ``Job`` objects."""
 
-    def __init__(self, device, circuit, vendor_jlo: Job):
+    def __init__(self, job_id, vendor_job_id=None, device=None, vendor_jlo=None):
         """Create a ``QiskitJobWrapper`` object.
 
-        Args:
-            device: the QiskitBackendWrapper device object associated with this job
-            circuit: qbraid wrapped circuit object used in this job
-            vendor_jlo (Job): a Qiskit ``Job`` object used to run circuits.
-
         """
-        super().__init__(device, circuit, vendor_jlo)
+        super().__init__(job_id, vendor_job_id, device, vendor_jlo)
 
     @property
-    def vendor_job_id(self) -> str:
-        """Return the job ID from the vendor job-like-object."""
-        return self.vendor_jlo.job_id()
-
-    @property
-    def _shots(self) -> int:
-        """Return the number of repetitions used in the run"""
-        return self.device.vendor_dlo.options.get("shots")
+    def vendor_jlo(self):
+        """Return the job like object that is being wrapped."""
+        return Job(self._device.vendor_dlo, self.vendor_job_id)
 
     def _status(self):
         """Returns status from Qiskit Job object."""

@@ -5,7 +5,7 @@ from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.ibmq import IBMQProviderError, least_busy
 from qiskit.utils.quantum_instance import QuantumInstance
 
-from qbraid.devices._utils import get_config
+from qbraid.devices._utils import get_config, init_job
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.exceptions import DeviceError
 from qbraid.devices.ibm.job import QiskitJobWrapper
@@ -99,5 +99,12 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             shots = kwargs.pop("shots")
             self.vendor_dlo.set_options(shots=shots)
         qiskit_job = execute(run_input, self.vendor_dlo, *args, **kwargs)
-        qbraid_job = QiskitJobWrapper(self, qbraid_circuit, qiskit_job)
+        shots = self.vendor_dlo.options.get("shots")
+        job_id = init_job(qiskit_job.job_id(), self, run_input, shots)
+        qbraid_job = QiskitJobWrapper(
+            job_id,
+            vendor_job_id=qiskit_job.job_id(),
+            device=self,
+            vendor_jlo=qiskit_job
+        )
         return qbraid_job
