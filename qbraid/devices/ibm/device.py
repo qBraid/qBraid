@@ -100,7 +100,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             self.vendor_dlo.set_options(shots=shots)
         qiskit_job = execute(run_input, self.vendor_dlo, *args, **kwargs)
         shots = self.vendor_dlo.options.get("shots")
-        job_id = init_job(qiskit_job.job_id(), self, run_input, shots)
+        job_id = init_job(qiskit_job.job_id(), self, qbraid_circuit, shots)
         qbraid_job = QiskitJobWrapper(
             job_id,
             vendor_job_id=qiskit_job.job_id(),

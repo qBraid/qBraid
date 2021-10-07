@@ -96,10 +96,11 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         if self.requires_cred:
             aws_quantum_task = braket_device.run(run_input, self._s3_location, *args, **kwargs)
             shots = aws_quantum_task.metadata()["shots"]
-            job_id = init_job(self._arn, self, run_input, shots)
+            vendor_job_id = aws_quantum_task.metadata()["quantumTaskArn"]
+            job_id = init_job(vendor_job_id, self, qbraid_circuit, shots)
             qbraid_job = BraketQuantumTaskWrapper(
                 job_id,
-                vendor_job_id=self._arn,
+                vendor_job_id=vendor_job_id,
                 device=self,
                 vendor_jlo=aws_quantum_task
             )
