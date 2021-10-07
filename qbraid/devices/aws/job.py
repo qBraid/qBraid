@@ -20,12 +20,11 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
 
         super().__init__(job_id, vendor_job_id, device, vendor_jlo)
 
-    @property
-    def vendor_jlo(self):
+    def _get_vendor_jlo(self):
         """Return the job like object that is being wrapped."""
         return AwsQuantumTask(self.vendor_job_id)
 
-    def _status(self):
+    def _get_status(self):
         """Returns status from Braket QuantumTask object metadata."""
         return self.vendor_jlo.metadata()["status"]
 

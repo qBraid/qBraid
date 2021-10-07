@@ -43,13 +43,19 @@ class JobLikeWrapper(ABC):
         return self._device
 
     @property
-    @abstractmethod
     def vendor_jlo(self):
+        """Return the job like object that is being wrapped."""
+        if self._vendor_jlo is None:
+            self._vendor_jlo = self._get_vendor_jlo()
+        return self._vendor_jlo
+
+    @abstractmethod
+    def _get_vendor_jlo(self):
         """Return the job like object that is being wrapped."""
 
     def status(self) -> JobStatus:
         """Return the status of the job / task , among the values of ``JobStatus``."""
-        vendor_status = self._status()
+        vendor_status = self._get_status()
         try:
             return self._status_map[vendor_status]
         except KeyError:
@@ -60,7 +66,7 @@ class JobLikeWrapper(ABC):
             return JobStatus.UNKNOWN
 
     @abstractmethod
-    def _status(self) -> str:
+    def _get_status(self) -> str:
         """Status method helper function. Uses vendor_jlo to get status of the job / task, casts
         as string if necessary, returns result."""
 

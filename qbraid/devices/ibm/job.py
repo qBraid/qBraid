@@ -1,9 +1,7 @@
 """QiskitJobWrapper Class"""
 
-from __future__ import annotations
-
 from qiskit.providers.exceptions import JobError as QiskitJobError
-from qiskit.providers.job import JobV1 as Job
+from qiskit.providers.aer.backends import AerSimulator
 
 from qbraid.devices.exceptions import JobError
 from qbraid.devices.job import JobLikeWrapper
@@ -16,14 +14,16 @@ class QiskitJobWrapper(JobLikeWrapper):
         """Create a ``QiskitJobWrapper`` object."""
         super().__init__(job_id, vendor_job_id, device, vendor_jlo)
 
-    @property
-    def vendor_jlo(self):
+    def _get_vendor_jlo(self):
         """Return the job like object that is being wrapped."""
-        if self._vendor_jlo is None:
-            return NotImplementedError
-        return self._vendor_jlo
+        # backend = self.device.vendor_dlo
+        # job_id = self.vendor_job_id
+        # fn = self.device.vendor_dlo._run
+        # qobj = None  # need to find qobj
+        # return AerSimulator(backend, job_id, fn, qobj)
+        return NotImplementedError
 
-    def _status(self):
+    def _get_status(self):
         """Returns status from Qiskit Job object."""
         return str(self.vendor_jlo.status())
 
