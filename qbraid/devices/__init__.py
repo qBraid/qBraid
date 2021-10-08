@@ -45,6 +45,7 @@ Devices API
    get_devices
    refresh_devices
    update_config
+   ibmq_least_busy_qpu
    Status
    DeviceError
    JobError
@@ -53,7 +54,7 @@ Devices API
 """
 # pylint: skip-file
 from .enums import DeviceStatus, JobStatus
-from ._utils import get_devices, refresh_devices, update_config
+from ._utils import get_devices, refresh_devices, update_config, ibmq_least_busy_qpu
 from .device import DeviceLikeWrapper
 from .exceptions import ConfigError, DeviceError, JobError
 from .job import JobLikeWrapper

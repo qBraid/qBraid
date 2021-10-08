@@ -34,11 +34,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             except IBMQProviderError:
                 IBMQ.load_account()
                 provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
-            if self._obj_arg == "least_busy":
-                backends = provider.backends(filters=lambda x: not x.configuration().simulator)
-                return least_busy(backends)
-            else:
-                return provider.get_backend(self._obj_arg)
+            return provider.get_backend(self._obj_arg)
         elif self._obj_ref == "Aer":
             return Aer.get_backend(self._obj_arg)
         else:

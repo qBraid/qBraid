@@ -4,7 +4,7 @@ from importlib.metadata import entry_points, version
 from pymongo import MongoClient
 
 from qbraid.circuits import Circuit, UpdateRule, random_circuit
-from qbraid.devices import get_devices, refresh_devices
+from qbraid.devices import get_devices, refresh_devices, ibmq_least_busy_qpu
 from qbraid.exceptions import QbraidError, WrapperError
 
 __version__ = version("qbraid")
@@ -81,11 +81,11 @@ def circuit_wrapper(circuit, **kwargs):
     raise WrapperError(f"{package} is not a supported package.")
 
 
-def device_wrapper(qbraid_id: str, **kwargs):
+def device_wrapper(qbraid_device_id: str, **kwargs):
     """Apply qbraid device wrapper to device from a supported device provider.
 
     Args:
-        qbraid_id (str): unique ID specifying a supported quantum hardware device/simulator
+        qbraid_device_id (str): unique ID specifying a supported quantum hardware device/simulator
 
     Returns:
         :class:`~qbraid.devices.DeviceLikeWrapper`: a qbraid device wrapper object
@@ -93,14 +93,17 @@ def device_wrapper(qbraid_id: str, **kwargs):
     Raises:
         WrapperError: If ``qbraid_id`` is not a valid device reference.
     """
+    if qbraid_device_id == "ibm_q_least_busy_qpu":
+        qbraid_device_id = ibmq_least_busy_qpu()
+
     client = MongoClient(MONGO_DB, serverSelectionTimeoutMS=5000)
     db = client["qbraid-sdk"]
     collection = db["supported_devices"]
-    device_info = collection.find_one({"qbraid_id": qbraid_id})
+    device_info = collection.find_one({"qbraid_id": qbraid_device_id})
     client.close()
 
     if device_info is None:
-        raise WrapperError(f"{qbraid_id} is not a valid device ID.")
+        raise WrapperError(f"{qbraid_device_id} is not a valid device ID.")
 
     del device_info["_id"]  # unecessary for sdk
     del device_info["status_refresh"]
@@ -109,3 +112,13 @@ def device_wrapper(qbraid_id: str, **kwargs):
     ep = "LOC" if code == 0 else "REM"
     device_wrapper_class = devices_entrypoints[vendor][ep].load()
     return device_wrapper_class(device_info, **kwargs)
+
+
+def retrieve_job(qbraid_job_id):
+    """Retrieve a job from qBraid API using job ID and return job wrapper object."""
+    qbraid_device = device_wrapper(qbraid_job_id.split(":")[0])
+    vendor = qbraid_device.vendor
+    if vendor == "Google":
+        raise ValueError(f"API job retrieval not supported for {qbraid_device.id}")
+    job_wrapper_class = devices_entrypoints[vendor]["JOB"].load()
+    return job_wrapper_class(qbraid_job_id, device=qbraid_device)
