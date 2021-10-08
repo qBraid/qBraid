@@ -79,6 +79,7 @@ Circuits API
    Parameter
    CircuitError
    drawer
+   random_circuit
 
 """
 from .circuit import Circuit
@@ -132,3 +133,4 @@ from .parameter import Parameter
 from .parametertable import ParameterTable
 from .qubit import Qubit
 from .update_rule import UpdateRule
+from .random import random_circuit

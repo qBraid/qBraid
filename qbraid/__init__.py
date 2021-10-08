@@ -3,7 +3,7 @@
 from importlib.metadata import entry_points, version
 from pymongo import MongoClient
 
-from qbraid.circuits import Circuit, UpdateRule
+from qbraid.circuits import Circuit, UpdateRule, random_circuit
 from qbraid.devices import get_devices, refresh_devices
 from qbraid.exceptions import QbraidError, WrapperError
 

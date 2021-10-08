@@ -1,6 +1,6 @@
 """QiskitSimulatorWrapper Class"""
 
-from qiskit import BasicAer, transpile
+from qiskit import BasicAer, transpile as qiskit_transpile
 
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
@@ -46,6 +46,6 @@ class QiskitBasicAerWrapper(DeviceLikeWrapper):
 
         """
         run_input, _ = self._compat_run_input(run_input)
-        compiled_circuit = transpile(run_input, self.vendor_dlo)
+        compiled_circuit = qiskit_transpile(run_input, self.vendor_dlo)
         qiskit_job = self.vendor_dlo.run(compiled_circuit, *args, **kwargs)
         return QiskitBasicAerJobWrapper(self, qiskit_job)

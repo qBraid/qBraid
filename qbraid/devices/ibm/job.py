@@ -1,7 +1,8 @@
 """QiskitJobWrapper Class"""
 
 from qiskit.providers.exceptions import JobError as QiskitJobError
-from qiskit.providers.aer.backends import AerSimulator
+from qiskit.providers.ibmq import IBMQBackend
+from qiskit.providers.ibmq.managed import IBMQJobManager
 
 from qbraid.devices.exceptions import JobError
 from qbraid.devices.job import JobLikeWrapper
@@ -16,12 +17,16 @@ class QiskitJobWrapper(JobLikeWrapper):
 
     def _get_vendor_jlo(self):
         """Return the job like object that is being wrapped."""
-        # backend = self.device.vendor_dlo
-        # job_id = self.vendor_job_id
-        # fn = self.device.vendor_dlo._run
-        # qobj = None  # need to find qobj
-        # return AerSimulator(backend, job_id, fn, qobj)
-        return NotImplementedError
+        if not isinstance(self.device.vendor_dlo, IBMQBackend):
+            raise JobError(
+                f"Retrieving previously submitted job not supported for {self.device.id}."
+            )
+        job_manager = IBMQJobManager()
+        job_set_id = self.vendor_job_id
+        provider = self.device.vendor_dlo.provider()
+        job_set = job_manager.retrieve_job_set(job_set_id=job_set_id, provider=provider)
+        jobs = job_set.jobs()  # ATM len(jobs) always 1 b/c qbraid run method takes single circuit
+        return jobs[0]
 
     def _get_status(self):
         """Returns status from Qiskit Job object."""

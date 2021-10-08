@@ -31,7 +31,6 @@ class DeviceLikeWrapper(ABC):
 
         """
         self._info = device_info
-        # self._code = device_info.pop("_code")
         self._obj_ref = device_info.pop("obj_ref")
         self._obj_arg = device_info.pop("obj_arg")
         self._qubits = device_info["qubits"]

@@ -1,6 +1,7 @@
 """QiskitBackendWrapper Class"""
 
-from qiskit import IBMQ, Aer, execute
+from qiskit import IBMQ, Aer, execute, transpile as qiskit_transpile
+from qiskit.providers.ibmq.managed import IBMQJobManager
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.ibmq import IBMQProviderError, least_busy
 from qiskit.utils.quantum_instance import QuantumInstance
@@ -82,7 +83,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         applies a :class:`~qbraid.devices.ibm.QiskitJobWrapper`, and return the result.
 
         Args:
-            run_input: An individual or a list of circuit objects to run on the wrapped device.
+            run_input: A circuit object to run on the wrapped device.
 
         Keyword Args:
             shots (int): The number of times to run the task on the device. Default is 1024.
@@ -96,10 +97,17 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         if "shots" in kwargs:
             shots = kwargs.pop("shots")
             self.vendor_dlo.set_options(shots=shots)
-        qiskit_job = execute(run_input, self.vendor_dlo, *args, **kwargs)
+        compiled_circuit = qiskit_transpile(run_input, self.vendor_dlo)
         shots = self.vendor_dlo.options.get("shots")
-        job_id = init_job(qiskit_job.job_id(), self, qbraid_circuit, shots)
+        if self._obj_ref == "Aer":
+            qiskit_job = execute(compiled_circuit, self.vendor_dlo, *args, **kwargs)
+            qiskit_job_id = qiskit_job.job_id()
+        else:
+            job_manager = IBMQJobManager()
+            qiskit_job = job_manager.run([compiled_circuit], backend=self.vendor_dlo)  # job set
+            qiskit_job_id = qiskit_job.job_set_id()
+        qbraid_job_id = init_job(qiskit_job_id, self, qbraid_circuit, shots)
         qbraid_job = QiskitJobWrapper(
-            job_id, vendor_job_id=qiskit_job.job_id(), device=self, vendor_jlo=qiskit_job
+            qbraid_job_id, vendor_job_id=qiskit_job_id, device=self, vendor_jlo=qiskit_job
         )
         return qbraid_job
