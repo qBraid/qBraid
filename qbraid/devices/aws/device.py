@@ -86,7 +86,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             warnings.warn(
                 "No result types specified for circuit and shots=0. See "
                 "`braket.circuit.result_types`. Defaulting to shots=1024 and continuing run.",
-                UserWarning
+                UserWarning,
             )
             kwargs["shots"] = 1024
         aws_quantum_task = self.vendor_dlo.run(run_input, self._s3_location, *args, **kwargs)

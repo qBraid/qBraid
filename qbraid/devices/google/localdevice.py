@@ -55,7 +55,8 @@ class CirqSimulatorWrapper(DeviceLikeWrapper):
         if not run_input.has_measurements():
             warnings.warn(
                 "Circuit has no measurements to sample. Applying measurement gate to all qubits "
-                "and continuing run.", UserWarning
+                "and continuing run.",
+                UserWarning,
             )
             qubits = list(run_input.all_qubits())
             measure_all = [measure(q, key=str(q.x)) for q in qubits]

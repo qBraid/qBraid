@@ -21,7 +21,7 @@ class JobLikeWrapper(ABC):
         self._vendor_job_id = vendor_job_id
         self._device = device
         self._vendor_jlo = vendor_jlo
-        self._status_map = STATUS_MAP[self._device.vendor]
+        self._status_map = STATUS_MAP[self.device.vendor]
 
     @property
     def id(self) -> str:
