@@ -15,14 +15,23 @@ from pymongo import MongoClient
 from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.job import Job as QiskitJob
+from qiskit.providers.ibmq.managed import ManagedJobSet as QiskitManagedJobSet
 
 from qbraid import device_wrapper
 from qbraid.devices import DeviceError
-from qbraid.devices.aws import BraketDeviceWrapper, BraketLocalSimulatorWrapper, \
-    BraketQuantumTaskWrapper, BraketLocalQuantumTaskWrapper
+from qbraid.devices.aws import (
+    BraketDeviceWrapper,
+    BraketLocalSimulatorWrapper,
+    BraketQuantumTaskWrapper,
+    BraketLocalQuantumTaskWrapper,
+)
 from qbraid.devices.google import CirqResultWrapper, CirqSimulatorWrapper
-from qbraid.devices.ibm import QiskitBackendWrapper, QiskitBasicAerWrapper, \
-    QiskitJobWrapper, QiskitBasicAerJobWrapper
+from qbraid.devices.ibm import (
+    QiskitBackendWrapper,
+    QiskitBasicAerWrapper,
+    QiskitJobWrapper,
+    QiskitBasicAerJobWrapper,
+)
 
 
 def device_wrapper_inputs(vendor: str):
@@ -58,8 +67,9 @@ inputs_qiskit_dw = device_wrapper_inputs("IBM")
 def test_init_braket_device_wrapper(device_id):
     qbraid_device = device_wrapper(device_id)
     vendor_device = qbraid_device.vendor_dlo
-    assert isinstance(qbraid_device, BraketDeviceWrapper) or \
-           isinstance(qbraid_device, BraketLocalSimulatorWrapper)
+    assert isinstance(qbraid_device, BraketDeviceWrapper) or isinstance(
+        qbraid_device, BraketLocalSimulatorWrapper
+    )
     assert isinstance(vendor_device, AwsSimulator) or isinstance(vendor_device, AwsDevice)
 
 
@@ -82,8 +92,9 @@ def test_init_cirq_device_wrapper(device_id):
 def test_init_qiskit_device_wrapper(device_id):
     qbraid_device = device_wrapper(device_id)
     vendor_device = qbraid_device.vendor_dlo
-    assert isinstance(qbraid_device, QiskitBackendWrapper) \
-           or isinstance(qbraid_device, QiskitBasicAerWrapper)
+    assert isinstance(qbraid_device, QiskitBackendWrapper) or isinstance(
+        qbraid_device, QiskitBasicAerWrapper
+    )
     assert isinstance(vendor_device, QiskitBackend)
 
 
@@ -137,9 +148,10 @@ def test_run_qiskit_device_wrapper(device_id, circuit):
     qbraid_device = device_wrapper(device_id)
     qbraid_job = qbraid_device.run(circuit, shots=10)
     vendor_job = qbraid_job.vendor_jlo
-    assert isinstance(qbraid_job, QiskitJobWrapper) \
-           or isinstance(qbraid_job, QiskitBasicAerJobWrapper)
-    assert isinstance(vendor_job, QiskitJob)
+    assert isinstance(qbraid_job, QiskitJobWrapper) or isinstance(
+        qbraid_job, QiskitBasicAerJobWrapper
+    )
+    assert isinstance(vendor_job, QiskitJob) or isinstance(vendor_job, QiskitManagedJobSet)
 
 
 @pytest.mark.parametrize("circuit", circuits_cirq_run)
@@ -158,8 +170,9 @@ def test_run_braket_device_wrapper(device_id, circuit):
     qbraid_device = device_wrapper(device_id)
     qbraid_job = qbraid_device.run(circuit, shots=10)
     vendor_job = qbraid_job.vendor_jlo
-    assert isinstance(qbraid_job, BraketQuantumTaskWrapper) \
-           or isinstance(qbraid_job, BraketLocalQuantumTaskWrapper)
+    assert isinstance(qbraid_job, BraketQuantumTaskWrapper) or isinstance(
+        qbraid_job, BraketLocalQuantumTaskWrapper
+    )
     assert isinstance(vendor_job, BraketQuantumTask)
 
 
