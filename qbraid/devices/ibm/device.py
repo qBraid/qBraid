@@ -97,15 +97,17 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         if "shots" in kwargs:
             shots = kwargs.pop("shots")
             self.vendor_dlo.set_options(shots=shots)
+        else:
+            shots = self.vendor_dlo.options.get("shots")
         compiled_circuit = qiskit_transpile(run_input, self.vendor_dlo)
-        shots = self.vendor_dlo.options.get("shots")
         if self._obj_ref == "Aer":
             qiskit_job = execute(compiled_circuit, self.vendor_dlo, *args, **kwargs)
             qiskit_job_id = qiskit_job.job_id()
         else:
             job_manager = IBMQJobManager()
-            qiskit_job = job_manager.run([compiled_circuit], backend=self.vendor_dlo)  # job set
-            qiskit_job_id = qiskit_job.job_set_id()
+            job_set = job_manager.run([compiled_circuit], backend=self.vendor_dlo)
+            qiskit_job = job_set.jobs()[0]
+            qiskit_job_id = job_set.job_set_id()
         qbraid_job_id = init_job(qiskit_job_id, self, qbraid_circuit, shots)
         qbraid_job = QiskitJobWrapper(
             qbraid_job_id, vendor_job_id=qiskit_job_id, device=self, vendor_jlo=qiskit_job

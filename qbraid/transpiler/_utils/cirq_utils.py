@@ -222,7 +222,7 @@ def create_cirq_gate(data):
         # theta = data["params"][0] / np.pi
         return cirq_gates[gate_type](theta)
 
-    elif gate_type == "Phase":
+    elif gate_type in ("Phase", "U1"):
         t = data["params"][0] / np.pi
         return cirq_gates["Phase"](exponent=t)
 
@@ -248,11 +248,11 @@ def create_cirq_gate(data):
     elif gate_type == "U3":
         return CirqU3Gate(*params)
 
-    elif gate_type == "Unitary":
+    elif gate_type == "Unitary" or matrix is not None:
         n_qubits = int(np.log2(len(matrix)))
-        unitary = cirq_gates[gate_type](matrix)
-        give_cirq_gate_name(unitary, "U", n_qubits)
-        return unitary
+        unitary_gate = cirq_gates[gate_type](matrix)
+        give_cirq_gate_name(unitary_gate, "U", n_qubits)
+        return unitary_gate
 
     # error
     else:

@@ -1,6 +1,8 @@
 """Module for Cirq device-like object wrappers."""
 
-from cirq import DensityMatrixSimulator, Simulator
+import warnings
+
+from cirq import DensityMatrixSimulator, Simulator, measure
 
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.exceptions import DeviceError
@@ -47,8 +49,16 @@ class CirqSimulatorWrapper(DeviceLikeWrapper):
             qbraid.devices.google.CirqResultWrapper: The result like object for the run.
 
         """
-        shots = kwargs.pop("shots") if "shots" in kwargs else 1
-        run_input, _ = self._compat_run_input(run_input)
-        cirq_simulator = self.vendor_dlo
-        cirq_result = cirq_simulator.run(run_input, repetitions=shots, *args, **kwargs)
+        if "shots" in kwargs:
+            kwargs["repetitions"] = kwargs.pop("shots")
+        run_input, qbraid_circuit = self._compat_run_input(run_input)
+        if not run_input.has_measurements():
+            warnings.warn(
+                "Circuit has no measurements to sample. Applying measurement gate to all qubits "
+                "and continuing run.", UserWarning
+            )
+            qubits = list(run_input.all_qubits())
+            measure_all = [measure(q, key=str(q.x)) for q in qubits]
+            run_input.append(measure_all)
+        cirq_result = self.vendor_dlo.run(run_input, *args, **kwargs)
         return CirqResultWrapper(cirq_result)

@@ -5,7 +5,7 @@ from numpy.random import randint
 from qiskit.circuit.exceptions import CircuitError as QiskitCircuitError
 from qiskit.circuit.random import random_circuit as qiskit_random_circuit
 
-from qbraid import circuit_wrapper
+import qbraid
 from qbraid.circuits.exceptions import CircuitError
 
 
@@ -34,10 +34,6 @@ def random_circuit(package, num_qubits=None, depth=None, measure=False):
         raise CircuitError(str(err)) from err
     if package == "qiskit":
         return qiskit_circuit
-    qbraid_circuit = circuit_wrapper(qiskit_circuit)
+    qbraid_circuit = qbraid.circuit_wrapper(qiskit_circuit)
     package_circuit = qbraid_circuit.transpile(package)
     return package_circuit
-
-
-
-

@@ -1,5 +1,7 @@
 """BraketDeviceWrapper Class"""
 
+import warnings
+
 from braket.aws import AwsDevice
 from braket.ocean_plugin import BraketDWaveSampler, BraketSampler
 from dwave.system.composites import EmbeddingComposite
@@ -80,8 +82,14 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
 
         """
         run_input, qbraid_circuit = self._compat_run_input(run_input)
-        braket_device = self.vendor_dlo
-        aws_quantum_task = braket_device.run(run_input, self._s3_location, *args, **kwargs)
+        if "shots" not in kwargs and not run_input.result_types:
+            warnings.warn(
+                "No result types specified for circuit and shots=0. See "
+                "`braket.circuit.result_types`. Defaulting to shots=1024 and continuing run.",
+                UserWarning
+            )
+            kwargs["shots"] = 1024
+        aws_quantum_task = self.vendor_dlo.run(run_input, self._s3_location, *args, **kwargs)
         shots = aws_quantum_task.metadata()["shots"]
         vendor_job_id = aws_quantum_task.metadata()["quantumTaskArn"]
         job_id = init_job(vendor_job_id, self, qbraid_circuit, shots)
