@@ -6,15 +6,13 @@ from pymongo import MongoClient
 
 from qbraid.circuits import Circuit, UpdateRule, random_circuit
 from qbraid.devices import get_devices, ibmq_least_busy_qpu, refresh_devices
+from qbraid.devices._utils import get_config
 from qbraid.exceptions import QbraidError, WrapperError
 
 __version__ = version("qbraid")
 
 # To be replaced with API call
-MONGO_DB = (
-    "mongodb+srv://ryanjh88:Rq2bYCtKnMgh3tIA@cluster0.jkqzi.mongodb.net/"
-    "qbraid-sdk?retryWrites=true&w=majority"
-)
+MONGO_DB = get_config("uri", "qBraid-admin")
 
 
 def _get_entrypoints(group: str):
