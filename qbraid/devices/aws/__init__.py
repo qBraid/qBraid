@@ -19,7 +19,7 @@ This module contains the classes used to run quantum circuits on devices availab
 """
 # pylint: skip-file
 from .device import BraketDeviceWrapper
-from .localdevice import BraketLocalSimulatorWrapper
 from .job import BraketQuantumTaskWrapper
+from .localdevice import BraketLocalSimulatorWrapper
 from .localjob import BraketLocalQuantumTaskWrapper
 from .result import BraketGateModelResultWrapper

@@ -2,8 +2,9 @@
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict
-from qbraid.devices.exceptions import JobError
+
 from qbraid.devices.enums import JobStatus
+from qbraid.devices.exceptions import JobError
 
 
 class LocalJobWrapper(ABC):

@@ -1,14 +1,15 @@
 """JobLikeWrapper Class"""
 
-from abc import ABC, abstractmethod
 import logging
-from time import time, sleep
+from abc import ABC, abstractmethod
+from time import sleep, time
 from typing import Any, Dict
 
 import qbraid
 from qbraid.devices import JobError
-from qbraid.devices.enums import JobStatus, JOB_FINAL
-from ._utils import mongo_get_job, STATUS_MAP
+from qbraid.devices.enums import JOB_FINAL, JobStatus
+
+from ._utils import STATUS_MAP, mongo_get_job
 
 
 class JobLikeWrapper(ABC):

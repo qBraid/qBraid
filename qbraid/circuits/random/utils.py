@@ -1,7 +1,6 @@
 """Utility functions for generating random circuits."""
 
 from numpy.random import randint
-
 from qiskit.circuit.exceptions import CircuitError as QiskitCircuitError
 from qiskit.circuit.random import random_circuit as qiskit_random_circuit
 

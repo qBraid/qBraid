@@ -7,9 +7,9 @@ from braket.ocean_plugin import BraketDWaveSampler, BraketSampler
 from dwave.system.composites import EmbeddingComposite
 
 from qbraid.devices._utils import get_config, init_job
-from qbraid.devices.enums import DeviceStatus
 from qbraid.devices.aws.job import BraketQuantumTaskWrapper
 from qbraid.devices.device import DeviceLikeWrapper
+from qbraid.devices.enums import DeviceStatus
 from qbraid.devices.exceptions import DeviceError
 
 

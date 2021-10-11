@@ -1,10 +1,11 @@
 """This top level module contains the main qBraid public functionality."""
 
 from importlib.metadata import entry_points, version
+
 from pymongo import MongoClient
 
 from qbraid.circuits import Circuit, UpdateRule, random_circuit
-from qbraid.devices import get_devices, refresh_devices, ibmq_least_busy_qpu
+from qbraid.devices import get_devices, ibmq_least_busy_qpu, refresh_devices
 from qbraid.exceptions import QbraidError, WrapperError
 
 __version__ = version("qbraid")

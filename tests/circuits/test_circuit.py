@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 # All rights reserved-2021©.
 import pytest
-
-from qiskit import QuantumCircuit as QiskitCircuit
 from braket.circuits import Circuit as BraketCircuit
 from cirq import Circuit as CirqCircuit
+from qiskit import QuantumCircuit as QiskitCircuit
 
 from qbraid import circuits
-from qbraid.circuits import ParameterTable, drawer, update_rule, random_circuit
+from qbraid.circuits import ParameterTable, drawer, random_circuit, update_rule
 from qbraid.circuits.circuit import Circuit
 from qbraid.circuits.exceptions import CircuitError
 from qbraid.circuits.instruction import Instruction

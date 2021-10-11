@@ -5,9 +5,9 @@ import warnings
 from cirq import DensityMatrixSimulator, Simulator, measure
 
 from qbraid.devices.device import DeviceLikeWrapper
+from qbraid.devices.enums import DeviceStatus
 from qbraid.devices.exceptions import DeviceError
 from qbraid.devices.google.result import CirqResultWrapper
-from qbraid.devices.enums import DeviceStatus
 
 
 class CirqSimulatorWrapper(DeviceLikeWrapper):

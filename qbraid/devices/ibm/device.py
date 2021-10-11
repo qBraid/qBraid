@@ -1,17 +1,18 @@
 """QiskitBackendWrapper Class"""
 
-from qiskit import IBMQ, Aer, execute, transpile as qiskit_transpile
-from qiskit.providers.ibmq.managed import IBMQJobManager
+from qiskit import IBMQ, Aer, execute
+from qiskit import transpile as qiskit_transpile
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.ibmq import IBMQProviderError
+from qiskit.providers.ibmq.managed import IBMQJobManager
 from qiskit.utils.quantum_instance import QuantumInstance
 
 from qbraid.devices._utils import get_config, init_job
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
+from qbraid.devices.exceptions import DeviceError
 from qbraid.devices.ibm.job import QiskitJobWrapper
 from qbraid.devices.ibm.result import QiskitResultWrapper
-from qbraid.devices.exceptions import DeviceError
 
 
 class QiskitBackendWrapper(DeviceLikeWrapper):

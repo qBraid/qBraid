@@ -1,6 +1,7 @@
 """QiskitSimulatorWrapper Class"""
 
-from qiskit import BasicAer, transpile as qiskit_transpile
+from qiskit import BasicAer
+from qiskit import transpile as qiskit_transpile
 
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus

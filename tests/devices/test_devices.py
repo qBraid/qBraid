@@ -5,7 +5,8 @@ import cirq
 import numpy as np
 import pytest
 from braket.aws import AwsDevice
-from braket.circuits import Circuit as BraketCircuit, Observable as BraketObservable
+from braket.circuits import Circuit as BraketCircuit
+from braket.circuits import Observable as BraketObservable
 from braket.devices import LocalSimulator as AwsSimulator
 from braket.tasks.quantum_task import QuantumTask as BraketQuantumTask
 from cirq.sim.simulator_base import SimulatorBase as CirqSimulator
@@ -20,16 +21,16 @@ from qbraid import device_wrapper, random_circuit, retrieve_job
 from qbraid.devices import DeviceError, JobError
 from qbraid.devices.aws import (
     BraketDeviceWrapper,
+    BraketLocalQuantumTaskWrapper,
     BraketLocalSimulatorWrapper,
     BraketQuantumTaskWrapper,
-    BraketLocalQuantumTaskWrapper,
 )
 from qbraid.devices.google import CirqResultWrapper, CirqSimulatorWrapper
 from qbraid.devices.ibm import (
     QiskitBackendWrapper,
+    QiskitBasicAerJobWrapper,
     QiskitBasicAerWrapper,
     QiskitJobWrapper,
-    QiskitBasicAerJobWrapper,
 )
 
 
