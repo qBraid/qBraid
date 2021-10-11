@@ -2,9 +2,12 @@
 # All rights reserved-2021©.
 import pytest
 
-import qbraid.circuits.update_rule
+from qiskit import QuantumCircuit as QiskitCircuit
+from braket.circuits import Circuit as BraketCircuit
+from cirq import Circuit as CirqCircuit
+
 from qbraid import circuits
-from qbraid.circuits import ParameterTable, drawer
+from qbraid.circuits import ParameterTable, drawer, update_rule, random_circuit
 from qbraid.circuits.circuit import Circuit
 from qbraid.circuits.exceptions import CircuitError
 from qbraid.circuits.instruction import Instruction
@@ -368,7 +371,7 @@ class TestCircuit:
                     "_moments": [],
                     "name": "test_circuit",
                     "_parameter_table": ParameterTable({}),
-                    "update_rule": qbraid.circuits.update_rule.UpdateRule.EARLIEST,
+                    "update_rule": update_rule.UpdateRule.EARLIEST,
                 },
             ),
         ],
@@ -390,7 +393,7 @@ class TestCircuit:
                     "_moments": [Moment("[]")],
                     "name": "test_circuit",
                     "_parameter_table": ParameterTable({}),
-                    "update_rule": qbraid.circuits.update_rule.UpdateRule.EARLIEST,
+                    "update_rule": update_rule.UpdateRule.EARLIEST,
                 },
             )
         ],
@@ -433,3 +436,21 @@ class TestDrawer:
         h1 = Instruction(gate, 1)
         with pytest.raises(TypeError):
             drawer(h1)
+
+
+class TestRandomCircuit:
+
+    @pytest.mark.parametrize("package", ["qiskit", "braket", "cirq"])
+    def test_random_circuit(self, package):
+        rand_circuit = random_circuit(package)
+        if package == "qiskit":
+            assert isinstance(rand_circuit, QiskitCircuit)
+        elif package == "braket":
+            assert isinstance(rand_circuit, BraketCircuit)
+        elif package == "cirq":
+            assert isinstance(rand_circuit, CirqCircuit)
+        else:
+            raise ValueError
+
+
+
