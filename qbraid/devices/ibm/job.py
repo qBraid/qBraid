@@ -1,24 +1,8 @@
-# This code is part of Qiskit.
-#
-# (C) Copyright IBM 2017.
-#
-# This code is licensed under the Apache License, Version 2.0. You may
-# obtain a copy of this license in the LICENSE.txt file in the root directory
-# of the source tree https://github.com/Qiskit/qiskit-terra/blob/main/LICENSE.txt
-# or at http://www.apache.org/licenses/LICENSE-2.0.
-#
-# NOTICE: This file has been modified from the original:
-# https://github.com/Qiskit/qiskit-terra/blob/main/qiskit/providers/job.py
-
 """QiskitJobWrapper Class"""
 
-from __future__ import annotations
-
-from typing import Callable, Optional
-
 from qiskit.providers.exceptions import JobError as QiskitJobError
-from qiskit.providers.exceptions import JobTimeoutError
-from qiskit.providers.job import Job
+from qiskit.providers.ibmq import IBMQBackend
+from qiskit.providers.ibmq.managed import IBMQJobManager
 
 from qbraid.devices.exceptions import JobError
 from qbraid.devices.job import JobLikeWrapper
@@ -27,66 +11,26 @@ from qbraid.devices.job import JobLikeWrapper
 class QiskitJobWrapper(JobLikeWrapper):
     """Wrapper class for IBM Qiskit ``Job`` objects."""
 
-    def __init__(self, device, vendor_jlo: Job):
-        """Create a ``QiskitJobWrapper`` object.
+    def __init__(self, job_id, vendor_job_id=None, device=None, vendor_jlo=None):
+        """Create a ``QiskitJobWrapper`` object."""
+        super().__init__(job_id, vendor_job_id, device, vendor_jlo)
 
-        Args:
-            device: the QiskitBackendWrapper device object associated with this job
-            vendor_jlo (Job): a Qiskit ``Job`` object used to run circuits.
+    def _get_vendor_jlo(self):
+        """Return the job like object that is being wrapped."""
+        if not isinstance(self.device.vendor_dlo, IBMQBackend):
+            raise JobError(
+                f"Retrieving previously submitted job not supported for {self.device.id}."
+            )
+        job_manager = IBMQJobManager()
+        job_set_id = self.vendor_job_id
+        provider = self.device.vendor_dlo.provider()
+        job_set = job_manager.retrieve_job_set(job_set_id=job_set_id, provider=provider)
+        jobs = job_set.jobs()  # ATM len(jobs) always 1 b/c qbraid run method takes single circuit
+        return jobs[0]
 
-        """
-        super().__init__(device, vendor_jlo)
-        self.device = device
-        self.vendor_jlo = vendor_jlo
-
-    @property
-    def job_id(self):
-        """Return a unique id identifying the job."""
-        return self.vendor_jlo.job_id
-
-    def metadata(self, **kwargs):
-        """Return the metadata regarding the job."""
-        return self.vendor_jlo.metadata
-
-    def done(self):
-        """Return whether the job has successfully run."""
-        return self.vendor_jlo.done()
-
-    def running(self):
-        """Return whether the job is actively running."""
-        return self.vendor_jlo.running()
-
-    def cancelled(self):
-        """Return whether the job has been cancelled."""
-        return self.vendor_jlo.cancelled()
-
-    def in_final_state(self):
-        """Return whether the job is in a final job state such as ``DONE`` or ``ERROR``."""
-        return self.vendor_jlo.in_final_state()
-
-    def wait_for_final_state(
-        self, timeout: Optional[float] = None, wait: float = 5, callback: Optional[Callable] = None
-    ):
-        """Poll the job status until it progresses to a final state such as ``DONE`` or ``ERROR``.
-
-        Args:
-            timeout: Seconds to wait for the job. If ``None``, wait indefinitely.
-            wait: Seconds between queries.
-            callback: Callback function invoked after each query.
-                The following positional arguments are provided to the callback function:
-                * job_id: Job ID
-                * job_status: Status of the job from the last query
-                * job: This BaseJob instance
-                Note: different subclass might provide different arguments to the callback function.
-
-        Raises:
-            JobError: If the job does not reach a final state before the specified timeout.
-
-        """
-        try:
-            self.vendor_jlo.wait_for_final_state(timeout, wait, callback)
-        except JobTimeoutError as err:
-            raise JobError("qBraid JobError raised from {}".format(type(err))) from err
+    def _get_status(self):
+        """Returns status from Qiskit Job object."""
+        return str(self.vendor_jlo.status())
 
     def submit(self):
         """Submit the job to the backend for execution."""
@@ -98,10 +42,6 @@ class QiskitJobWrapper(JobLikeWrapper):
     def result(self):
         """Return the results of the job."""
         return self.vendor_jlo.result()
-
-    def status(self):
-        """Return the status of the job."""
-        return self.vendor_jlo.status()
 
     def cancel(self):
         """Attempt to cancel the job."""

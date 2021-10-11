@@ -11,11 +11,15 @@ This module contains the classes used to run quantum circuits on devices availab
    :toctree: ../stubs/
 
    QiskitBackendWrapper
+   QiskitBasicAerWrapper
    QiskitJobWrapper
+   QiskitBasicAerJobWrapper
    QiskitResultWrapper
 
 """
 # pylint: skip-file
 from .device import QiskitBackendWrapper
 from .job import QiskitJobWrapper
+from .localdevice import QiskitBasicAerWrapper
+from .localjob import QiskitBasicAerJobWrapper
 from .result import QiskitResultWrapper

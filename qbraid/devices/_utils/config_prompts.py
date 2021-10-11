@@ -29,8 +29,15 @@ IBMQ_CONFIG_PROMPT = [
     ("verify", "", "True", False, "IBM", qbraid_config_path),
 ]
 
+QBRAID_CONFIG_PROMPT = [
+    # (config_name, prompt_text, default_value, is_secret, section, filepath)
+    ("email", "qBraid login email", None, True, "email", qbraid_config_path),
+    ("verify", "", "True", False, "qBraid", qbraid_config_path),
+]
+
 CONFIG_PROMPTS = {
     "AWS": AWS_CONFIG_PROMPT,
     "Google": None,
     "IBM": IBMQ_CONFIG_PROMPT,
+    "qBraid": QBRAID_CONFIG_PROMPT,
 }

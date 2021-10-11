@@ -1,21 +1,7 @@
-# Copyright 2019-2019 Amazon.com, Inc. or its affiliates. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License"). You
-# may not use this file except in compliance with the License. A copy of
-# the License is located at
-#
-#     http://aws.amazon.com/apache2.0/
-#
-# or at https://github.com/aws/amazon-braket-sdk-python/blob/main/LICENSE.
-# This file is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
-# CONDITIONS OF ANY KIND, either express or implied. See the License for
-# the specific language governing permissions and limitations under the License.
-#
-# NOTICE: This file has been modified from the original:
+"""BraketGateModelResult Class"""
+
 # https://github.com/aws/amazon-braket-sdk-python/blob/6926c1676dd5b465ef404614a44538c42ee2727d
 # /src/braket/tasks/annealing_quantum_task_result.py
-
-"""BraketGateModelResult Class"""
 
 from __future__ import annotations
 

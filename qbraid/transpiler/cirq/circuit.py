@@ -26,6 +26,7 @@ class CirqCircuitWrapper(CircuitWrapper):
 
         self._qubits = circuit.all_qubits()
         self._num_qubits = len(self.qubits)
+        self._depth = len(Circuit(circuit.all_operations()))
         self._package = "cirq"
 
         self._wrap_circuit(circuit)

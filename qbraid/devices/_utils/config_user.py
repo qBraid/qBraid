@@ -37,13 +37,13 @@ def compat_input(prompt, is_secret):
     return raw_input()
 
 
-def set_config(config_name, prompt_text, default_value, is_secret, section, filepath, update=False):
+def set_config(config_name, prompt_text, default_val, is_secret, section, filepath, update=False):
     """Adds or modifies a user configuration
 
     Args:
         config_name (str): the name of the config
         prompt_text (str): the text that will prompt the user to enter config_name.
-        default_value (None, str): default value for config name
+        default_val (None, str): default value for config name
         is_secret (bool) = specifies if the value of this config should be kept private
         section (str) = the section of the config file to store config_name
         filepath (str): the existing or desired path to config file
@@ -71,17 +71,30 @@ def set_config(config_name, prompt_text, default_value, is_secret, section, file
     else:
         config.add_section(section)
     if len(prompt_text) == 0:
-        new_value = default_value
+        new_value = default_val
     else:
-        display_value = default_value if current_value is None else current_value
+        display_value = default_val if current_value is None else current_value
         new_value = get_value(display_value, is_secret, prompt_text)
-    config_val = default_value if new_value is None else new_value
+    config_val = default_val if new_value is None else new_value
     config.set(section, config_name, str(config_val))
     try:
         with open(filepath, "w") as cfgfile:
             config.write(cfgfile)
     except OSError as ex:
         raise ConfigError(f"Unable to load the config file {filepath}. Error: '{str(ex)}'")
+    return 0
+
+
+def verify_user(vendor):
+    """Checks for the required user credentials associated with running on device associated with
+    given vendor. If requirements are verified, returns 0. Else, calls set_config, and returns 0
+    after credentials are provided and config is successfully made.
+
+    """
+    if get_config("verify", vendor) != "True":
+        prompt_lst = CONFIG_PROMPTS[vendor] + CONFIG_PROMPTS["qBraid"]
+        for prompt in prompt_lst:
+            set_config(*prompt)
     return 0
 
 

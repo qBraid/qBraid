@@ -33,11 +33,12 @@ pip install -e ".[docs]"
 cd docs
 make html
 ```
-Both methods will run Sphinx in your shell. If the build succeeded, it will say 
-`The HTML pages are in build/html`. You can view the generated documentation
-in your browser using:
+Both methods will run Sphinx in your shell. If the build results in an `InvocationError` due to a 
+duplicate object description, try `rm docs/stubs/*` to empty the old stubs directory, and then 
+re-start the build. If the build succeeds, it will say `The HTML pages are in build/html`. You can 
+view the generated documentation in your browser (on OS X) using:
 ```
-open build/html/index.html  # On OS X
+open build/html/index.html
 ```
 You can also view it by running a web server in that directory:
 ```

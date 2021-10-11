@@ -26,6 +26,7 @@ class QiskitCircuitWrapper(CircuitWrapper):
         self._params = circuit.parameters
         self._num_qubits = circuit.num_qubits
         self._num_clbits = circuit.num_clbits
+        self._depth = circuit.depth()
         self._input_param_mapping = {p: ParamID(i, p.name) for i, p in enumerate(self.params)}
         self.output_qubit_mapping = {}
         self._package = "qiskit"

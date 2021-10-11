@@ -13,12 +13,7 @@ def _get_device_data(query):
     represented by its own length-4 list containing the device provider, name, qbraid_id,
     and status.
     """
-    # Hard-coded authentication to be replaced with API call
-    conn_str = (
-        "mongodb+srv://ryanjh88:Rq2bYCtKnMgh3tIA@cluster0.jkqzi.mongodb.net/"
-        "qbraid-sdk?retryWrites=true&w=majority"
-    )
-    client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
+    client = MongoClient(qbraid.MONGO_DB, serverSelectionTimeoutMS=5000)
     db = client["qbraid-sdk"]
     collection = db["supported_devices"]
     cursor = collection.find(query)
@@ -37,7 +32,7 @@ def _get_device_data(query):
             clear_output(wait=True)
             print("Auto-refreshing status for queried devices" + "." * tot_dev, flush=True)
             device = qbraid.device_wrapper(qbraid_id)
-            status = device.status
+            status = device.status.name
             collection.update_one(
                 {"qbraid_id": qbraid_id},
                 {"$set": {"status": status, "status_refresh": timestamp}},
@@ -65,12 +60,7 @@ def _get_device_data(query):
 
 def refresh_devices():
     """Refreshes status for all qbraid supported devices. Runtime ~30 seconds."""
-
-    conn_str = (
-        "mongodb+srv://ryanjh88:Rq2bYCtKnMgh3tIA@cluster0.jkqzi.mongodb.net/"
-        "qbraid-sdk?retryWrites=true&w=majority"
-    )
-    client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
+    client = MongoClient(qbraid.MONGO_DB, serverSelectionTimeoutMS=5000)
     db = client["qbraid-sdk"]
     collection = db["supported_devices"]
     cursor = collection.find({})
@@ -79,7 +69,7 @@ def refresh_devices():
         if document["status_refresh"] is not None:  # None => internally not available at moment
             qbraid_id = document["qbraid_id"]
             device = qbraid.device_wrapper(qbraid_id)
-            status = device.status
+            status = device.status.name
             collection.update_one(
                 {"qbraid_id": qbraid_id},
                 {"$set": {"status": status, "status_refresh": time()}},
