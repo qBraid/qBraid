@@ -188,6 +188,9 @@ def get_cirq_gate_data(gate: CirqGate) -> dict:
         data["base_gate_data"] = get_cirq_gate_data(gate.sub_gate)
         data["num_controls"] = gate.num_controls()
 
+    elif isinstance(gate, CirqU3Gate) or data["matrix"] is not None:
+        data["type"] = "Unitary"
+
     else:
         if data["type"] != "MEASURE":
             raise TranspilerError("Gate of type {} not supported".format(type(gate)))
