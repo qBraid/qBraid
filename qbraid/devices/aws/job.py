@@ -1,7 +1,5 @@
 """BraketQuantumtaskWrapper Class"""
 
-from __future__ import annotations
-
 from asyncio import Task
 from typing import Union
 

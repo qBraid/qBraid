@@ -3,7 +3,7 @@
 from qiskit import IBMQ, Aer, execute, transpile as qiskit_transpile
 from qiskit.providers.ibmq.managed import IBMQJobManager
 from qiskit.providers.backend import Backend as QiskitBackend
-from qiskit.providers.ibmq import IBMQProviderError, least_busy
+from qiskit.providers.ibmq import IBMQProviderError
 from qiskit.utils.quantum_instance import QuantumInstance
 
 from qbraid.devices._utils import get_config, init_job

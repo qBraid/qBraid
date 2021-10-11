@@ -11,7 +11,9 @@ This module contains the classes used to run quantum circuits on devices availab
    :toctree: ../stubs/
 
    QiskitBackendWrapper
+   QiskitBasicAerWrapper
    QiskitJobWrapper
+   QiskitBasicAerJobWrapper
    QiskitResultWrapper
 
 """
