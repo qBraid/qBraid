@@ -22,3 +22,4 @@ class BraketInstructionWrapper(InstructionWrapper):
         self.instruction = instruction
         self.qubits = qubits
         self.gate = BraketGateWrapper(instruction.operator)
+        self.package = "braket"

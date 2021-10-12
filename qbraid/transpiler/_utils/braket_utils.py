@@ -1,5 +1,5 @@
 from typing import Union
-
+import numpy as np
 from braket.circuits import Circuit
 from braket.circuits import Gate as BraketGate
 from braket.circuits import Instruction, Qubit
@@ -211,7 +211,7 @@ def create_braket_gate(data):
     elif gate_type == "MEASURE":
         return "BraketMeasure"
 
-    elif not (matrix is None):
+    elif matrix is not None:
         return braket_gates["Unitary"](matrix)
 
     # error
@@ -246,12 +246,15 @@ def circuit_to_braket(cw, output_qubit_mapping=None):
 def instruction_to_braket(iw, output_qubit_mapping, output_param_mapping):
 
     gate = iw.gate.transpile("braket", output_param_mapping)
-    qubits = [output_qubit_mapping[q] for q in iw.qubits]
+    mapping = [output_qubit_mapping[q] for q in iw.qubits]
 
     if gate == "BraketMeasure":
         return None
+    elif isinstance(gate, Unitary):
+        qubits = list(reversed(mapping))
     else:
-        return Instruction(gate, qubits)
+        qubits = mapping
+    return Instruction(gate, qubits)
 
 
 def gate_to_braket(gw, output_param_mapping=None) -> Union[BraketGate, str]:

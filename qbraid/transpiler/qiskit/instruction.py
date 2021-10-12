@@ -27,3 +27,4 @@ class QiskitInstructionWrapper(InstructionWrapper):
 
         self.gate = QiskitGateWrapper(instruction, params)
         self._params = params
+        self.package = "qiskit"

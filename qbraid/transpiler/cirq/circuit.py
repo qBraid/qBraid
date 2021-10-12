@@ -5,6 +5,7 @@ from typing import Iterable, List
 from cirq.circuits import Circuit
 from cirq.ops.moment import Moment
 
+from qbraid.transpiler._utils import circuit_to_cirq
 from qbraid.transpiler.circuit import CircuitWrapper
 from qbraid.transpiler.cirq.instruction import CirqInstructionWrapper
 from qbraid.transpiler.cirq.moment import CirqMomentWrapper
@@ -42,10 +43,12 @@ class CirqCircuitWrapper(CircuitWrapper):
 
             for op in moment.operations:
                 qbs = [self.input_qubit_mapping[qubit] for qubit in op.qubits]
+                # qbs = list(reversed(mapping))
                 next_instruction = CirqInstructionWrapper(op, qbs)
                 params.union(set(next_instruction.gate.get_abstract_params()))
                 instructions.append(next_instruction)
 
+            # instructions = list(reversed(instructions))
             next_moment = CirqMomentWrapper(moment, instructions=instructions)
             moments.append(next_moment)
 
@@ -74,3 +77,14 @@ class CirqCircuitWrapper(CircuitWrapper):
                 instructions.append(i)
 
         return instructions
+
+    @classmethod
+    def _compat_wrapper(cls, circuit):
+        return cls(circuit)
+
+    def transpile(self, package, *args, **kwargs):
+        if "compat" in kwargs and kwargs["compat"] is True:
+            return super().transpile(package)
+        circuit = circuit_to_cirq(self)
+        circuit_wrapper = self._compat_wrapper(circuit)
+        return circuit_wrapper.transpile(package, compat=True)

@@ -438,7 +438,6 @@ class TestDrawer:
 
 
 class TestRandomCircuit:
-
     @pytest.mark.parametrize("package", ["qiskit", "braket", "cirq"])
     def test_random_circuit(self, package):
         rand_circuit = random_circuit(package)
@@ -450,6 +449,3 @@ class TestRandomCircuit:
             assert isinstance(rand_circuit, CirqCircuit)
         else:
             raise ValueError
-
-
-

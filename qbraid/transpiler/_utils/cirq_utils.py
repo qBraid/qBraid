@@ -225,6 +225,10 @@ def create_cirq_gate(data):
         # theta = data["params"][0] / np.pi
         return cirq_gates[gate_type](theta)
 
+    elif gate_type in ("HPow", "XPow", "YPow", "ZPow"):
+        exponent = data["params"][0]
+        return cirq_gates[gate_type](exponent=exponent)
+
     elif gate_type in ("Phase", "U1"):
         t = data["params"][0] / np.pi
         return cirq_gates["Phase"](exponent=t)
@@ -266,7 +270,8 @@ def circuit_to_cirq(cw, auto_measure=False, output_qubit_mapping=None, output_pa
     output_circ = Circuit()
 
     if not output_qubit_mapping:
-        output_qubit_mapping = {x: LineQubit(x) for x in range(len(cw.qubits))}
+        qubits = list(reversed([LineQubit(x) for x in range(len(cw.qubits))]))
+        output_qubit_mapping = {x: qubits[x] for x in range(len(qubits))}
 
     if not output_param_mapping:
         output_param_mapping = {pid: Symbol(pid.name) for pid in cw.params}
@@ -306,13 +311,17 @@ def moment_to_cirq(mw, output_qubit_mapping, output_param_mapping):
 
 
 def instruction_to_cirq(iw, output_qubit_mapping, output_param_mapping):
-    qubits = [output_qubit_mapping[x] for x in iw.qubits]
+
     gate = iw.gate.transpile("cirq", output_param_mapping)
+    mapping = [output_qubit_mapping[x] for x in iw.qubits]
 
     if gate == "CirqMeasure":
-        return [CirqMeasure(q, key=str(q.x)) for q in qubits]
+        return [CirqMeasure(q, key=str(q.x)) for q in mapping]
+    elif isinstance(gate, MatrixGate):
+        qubits = list(reversed(mapping))
     else:
-        return gate(*qubits)
+        qubits = mapping
+    return gate(*qubits)
 
 
 def gate_to_cirq(gw, output_param_mapping):
