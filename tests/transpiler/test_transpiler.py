@@ -436,3 +436,15 @@ def test_yes_cirq_no_braket(gate_str):
     braket_circuit = qbraid_cirq_circ.transpile("braket")
     braket_u = to_unitary(braket_circuit)
     assert np.allclose(cirq_u, braket_u)
+
+
+def test_braket_transpile_ccnot():
+    braket_circuit = BraketCircuit()
+    braket_circuit.ccnot(2, 0, 1)
+    braket_circuit.ccnot(3, 1, 0)
+    qbraid_braket = circuit_wrapper(braket_circuit)
+    qiskit_circuit = qbraid_braket.transpile("qiskit")
+    braket_ccnot_unitary = to_unitary(braket_circuit)
+    qiskit_ccnot_unitary = to_unitary(qiskit_circuit)
+    assert np.allclose(braket_ccnot_unitary, qiskit_ccnot_unitary)
+
