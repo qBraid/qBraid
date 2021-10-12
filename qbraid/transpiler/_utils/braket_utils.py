@@ -62,7 +62,6 @@ braket_gates = {
     "CX": CNot,
     "Swap": Swap,
     "iSwap": ISwap,
-    "pSwap": PSwap,
     # 'CSX':BraketGate.,
     # 'DCX': BraketGate.,
     "CY": CY,
@@ -72,6 +71,7 @@ braket_gates = {
     "RXY": XY,
     "RYY": YY,
     "RZZ": ZZ,
+    "pSwap": PSwap,
     "CPhase": CPhaseShift,
     # multi-qubit
     "CCX": CCNot,

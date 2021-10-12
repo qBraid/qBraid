@@ -180,13 +180,15 @@ def nqubits_nparams(gate):
         return 1, 0
     elif gate in ["Phase", "RX", "RY", "RZ", "U1"]:
         return 1, 1
-    elif gate in ["U3"]:
+    elif gate in ["R", "U2"]:
+        return 1, 2
+    elif gate in ["U", "U3"]:
         return 1, 3
-    elif gate in ["CX", "Swap", "iSwap", "pSwap", "CY", "CZ"]:
+    elif gate in ["CX", "CSX", "CH", "DCX", "Swap", "iSwap", "CY", "CZ"]:
         return 2, 0
-    elif gate in ["RXX", "RXY", "RYY", "RZZ", "CPhase"]:
+    elif gate in ["RXX", "RXY", "RZX", "RYY", "CU1", "CRY", "RZZ", "CRZ", "CRX", "pSwap", "CPhase"]:
         return 2, 1
-    elif gate in ["CCX"]:
+    elif gate in ["CCX", "RCCX"]:
         return 3, 0
     else:
         raise ValueError
@@ -304,7 +306,7 @@ def test_gate_intersect_braket_qiskit(gate_str):
 @pytest.mark.parametrize("gate_str", intersect_qiskit_cirq)
 def test_gate_intersect_qiskit_cirq(gate_str):
     if gate_str in ["Unitary", "MEASURE"]:
-        pytest.skip("skip unitary")
+        pytest.skip("skip unitary and measure")
     qiskit_init_gate = qiskit_gates[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
     cirq_gate, qiskt_gate = assign_params_cirq(gate_str, qiskit_init_gate, nparams)
@@ -337,6 +339,41 @@ def test_gate_intersect_qiskit_cirq(gate_str):
     cirq_transpile_u = to_unitary(cirq_circuit_transpile)
     assert np.allclose(cirq_u, cirq_transpile_u)
     assert np.allclose(braket_u, braket_transpile_u)
+
+
+yes_braket_no_qiskit = list(set(braket_gates).difference(qiskit_gates))
+yes_qiskit_no_braket = list(set(qiskit_gates).difference(braket_gates))
+yes_braket_no_cirq = list(set(braket_gates).difference(cirq_gates))
+yes_cirq_no_braket = list(set(cirq_gates).difference(braket_gates))
+yes_cirq_no_qiskit = list(set(cirq_gates).difference(qiskit_gates))
+yes_qiskit_no_cirq = list(set(qiskit_gates).difference(cirq_gates))
+
+
+@pytest.mark.parametrize("gate_str", yes_braket_no_qiskit)
+def test_yes_braket_no_qiskit(gate_str):
+    braket_init_gate = braket_gates[gate_str]
+    nqubits, nparams = nqubits_nparams(gate_str)
+    params = np.random.random_sample(nparams) * np.pi
+    braket_gate = braket_init_gate(*params)
+    braket_u, qbraid_braket_circ = braket_gate_test_circuit(braket_gate, nqubits)
+    qiskit_circuit = qbraid_braket_circ.transpile("qiskit")
+    qiskit_u = to_unitary(qiskit_circuit)
+    assert np.allclose(braket_u, qiskit_u)
+
+
+@pytest.mark.parametrize("gate_str", yes_qiskit_no_braket)
+def test_yes_qiskit_no_braket(gate_str):
+    if gate_str in ["MEASURE", "RC3X"]:
+        pytest.skip("skip measure and triple controlled toffoli")
+    qiskit_init_gate = qiskit_gates[gate_str]
+    nqubits, nparams = nqubits_nparams(gate_str)
+    params = np.random.random_sample(nparams) * np.pi
+    qiskit_gate = qiskit_init_gate(*params)
+    qiskit_u, qbraid_qiskit_circ = qiskit_gate_test_circuit(qiskit_gate, nqubits)
+    braket_circuit = qbraid_qiskit_circ.transpile("braket")
+    braket_u = to_unitary(braket_circuit)
+    assert np.allclose(qiskit_u, braket_u)
+
 
 
 
