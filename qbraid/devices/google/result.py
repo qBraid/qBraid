@@ -1,7 +1,6 @@
 """CirqResultWrapper Class"""
 
 import numpy as np
-
 from cirq.study.result import Result
 
 from qbraid.devices.result import ResultWrapper
@@ -24,7 +23,7 @@ class CirqResultWrapper(ResultWrapper):
     def measurements(self):
         cirq_meas = self.vendor_rlo.measurements
         marray = np.array([cirq_meas[key].flatten() for key in cirq_meas], dtype="int64")
-        qbraid_meas = np.einsum('ji->ij', marray)
+        qbraid_meas = np.einsum("ji->ij", marray)
         return np.flip(qbraid_meas, 1)
 
     def measurement_counts(self):

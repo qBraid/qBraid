@@ -28,4 +28,3 @@ class ResultWrapper(ABC):
     def plot_counts(self):
         counts = self.measurement_counts()
         return plot_histogram(counts)
-

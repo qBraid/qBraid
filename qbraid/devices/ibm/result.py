@@ -1,7 +1,6 @@
 """QiskitResultWrapper Class"""
 
 import numpy as np
-
 from qiskit.result.result import Result
 
 from qbraid.devices.result import ResultWrapper

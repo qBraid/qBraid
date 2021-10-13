@@ -5,8 +5,8 @@ from qiskit.providers.ibmq import IBMQBackend
 from qiskit.providers.ibmq.managed import IBMQJobManager
 
 from qbraid.devices.exceptions import JobError
-from qbraid.devices.job import JobLikeWrapper
 from qbraid.devices.ibm import QiskitResultWrapper
+from qbraid.devices.job import JobLikeWrapper
 
 
 class QiskitJobWrapper(JobLikeWrapper):

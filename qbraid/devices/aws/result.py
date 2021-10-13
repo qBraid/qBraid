@@ -1,9 +1,9 @@
 """BraketResultWrapper Class"""
 
 from typing import Union
-import numpy as np
 
-from braket.tasks import GateModelQuantumTaskResult, AnnealingQuantumTaskResult
+import numpy as np
+from braket.tasks import AnnealingQuantumTaskResult, GateModelQuantumTaskResult
 
 from qbraid.devices.result import ResultWrapper
 
@@ -41,4 +41,3 @@ class BraketResultWrapper(ResultWrapper):
                 "Available methods for 'GateModelQuantumTaskResult' wrapper objects include "
                 "'measurements' and 'measurement_counts'."
             ) from err
-

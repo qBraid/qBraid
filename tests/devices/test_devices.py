@@ -18,7 +18,7 @@ from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.job import Job as QiskitJob
 
 from qbraid import device_wrapper, random_circuit, retrieve_job
-from qbraid.devices import DeviceError, JobError
+from qbraid.devices import DeviceError, JobError, ResultWrapper
 from qbraid.devices.aws import (
     BraketDeviceWrapper,
     BraketLocalQuantumTaskWrapper,
@@ -228,3 +228,19 @@ def test_retrieve_job_ibmq(device_id):
     qbraid_job.wait_for_final_state()
     retrieved_job = retrieve_job(qbraid_job.id)
     assert qbraid_job.status() == retrieved_job.status()
+
+
+@pytest.mark.parametrize("device_id", ["ibm_q_sv_sim", "aws_dm_sim", "google_cirq_dm_sim"])
+def test_result_wrapper_measurements(device_id):
+    circuit = random_circuit("qiskit", num_qubits=3, depth=3, measure=True)
+    sim = device_wrapper(device_id).run(circuit, shots=10)
+    if device_id[:6] == "google":
+        qbraid_result = sim
+    else:
+        qbraid_result = sim.result()
+    assert isinstance(qbraid_result, ResultWrapper)
+    measurements = qbraid_result.measurements()
+    assert measurements.shape == (10, 3)
+
+
+

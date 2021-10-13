@@ -1,6 +1,6 @@
 """QiskitBackendWrapper Class"""
 
-from qiskit import IBMQ, Aer, execute, assemble
+from qiskit import IBMQ, Aer, assemble, execute
 from qiskit import transpile as qiskit_transpile
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.ibmq import IBMQProviderError
@@ -105,12 +105,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         else:
             memory = True if "memory" not in kwargs else kwargs.pop("memory")
             job_manager = IBMQJobManager()  # assemble included in run method
-            job_set = job_manager.run(
-                [run_input],
-                backend=self.vendor_dlo,
-                memory=memory,
-                **kwargs
-            )
+            job_set = job_manager.run([run_input], backend=self.vendor_dlo, memory=memory, **kwargs)
             qiskit_job = job_set.jobs()[0]
             qiskit_job_id = job_set.job_set_id()
         qbraid_job_id = init_job(qiskit_job_id, self, qbraid_circuit, shots)

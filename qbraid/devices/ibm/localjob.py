@@ -1,7 +1,7 @@
 """QiskitJobWrapper Class"""
 
-from qbraid.devices.localjob import LocalJobWrapper
 from qbraid.devices.ibm import QiskitResultWrapper
+from qbraid.devices.localjob import LocalJobWrapper
 
 
 class QiskitBasicAerJobWrapper(LocalJobWrapper):

@@ -14,7 +14,7 @@ from qiskit import QuantumRegister as QiskitQuantumRegister
 from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 from qiskit.quantum_info import Operator as QiskitOperator
 
-from qbraid import circuit_wrapper
+from qbraid import circuit_wrapper, random_circuit
 from qbraid.transpiler._utils.braket_utils import braket_gates
 from qbraid.transpiler._utils.cirq_utils import cirq_gates, create_cirq_gate
 from qbraid.transpiler._utils.qiskit_utils import qiskit_gates
@@ -460,3 +460,26 @@ def test_braket_transpile_unitary():
     assert np.allclose(braket_u, qiskit_u)
 
 
+@pytest.mark.parametrize("num_qubits", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+def test_1000_random_circuits(num_qubits):
+    for _ in range(10):
+        packages = ["braket", "qiskit", "cirq"]
+        i, j = np.random.randint(0, high=3), np.random.randint(0, high=2)
+        origin = packages[i]
+        del packages[i]
+        target = packages[j]
+        origin_circuit = random_circuit(origin, num_qubits=num_qubits)
+        origin_unitary = to_unitary(origin_circuit)
+        target_circuit = circuit_wrapper(origin_circuit).transpile(target)
+        target_unitary = to_unitary(target_circuit)
+        if not np.allclose(origin_unitary, target_unitary):
+            print()
+            print(f"failed {origin} --> {target}")
+            print()
+            print(origin)
+            print(origin_circuit)
+            print()
+            print(target)
+            print(target_circuit)
+            assert False
+    assert True

@@ -1,7 +1,7 @@
 """BraketQuantumtaskWrapper Class"""
 
-from qbraid.devices.localjob import LocalJobWrapper
 from qbraid.devices.aws import BraketResultWrapper
+from qbraid.devices.localjob import LocalJobWrapper
 
 
 class BraketLocalQuantumTaskWrapper(LocalJobWrapper):

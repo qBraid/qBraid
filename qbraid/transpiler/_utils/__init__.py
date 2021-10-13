@@ -11,6 +11,7 @@ from .cirq_utils import (
     gate_to_cirq,
     get_cirq_gate_data,
     instruction_to_cirq,
+    int_from_qubit,
     moment_to_cirq,
 )
 from .qiskit_utils import (

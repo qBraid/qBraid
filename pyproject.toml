@@ -53,6 +53,7 @@ disable = "R0801, R0913, R0902, R0903, E0401"
 
 [tool.isort]
 profile = "hug"
+skip_glob = "**/qbraid/devices/*/__init__.py"
 
 
 

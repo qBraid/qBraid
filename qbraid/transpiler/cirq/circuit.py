@@ -5,7 +5,7 @@ from typing import Iterable, List
 from cirq.circuits import Circuit
 from cirq.ops.moment import Moment
 
-from qbraid.transpiler._utils import circuit_to_cirq
+from qbraid.transpiler._utils import circuit_to_cirq, int_from_qubit
 from qbraid.transpiler.circuit import CircuitWrapper
 from qbraid.transpiler.cirq.instruction import CirqInstructionWrapper
 from qbraid.transpiler.cirq.moment import CirqMomentWrapper
@@ -42,7 +42,8 @@ class CirqCircuitWrapper(CircuitWrapper):
             instructions = []
 
             for op in moment.operations:
-                qbs = [self.input_qubit_mapping[qubit] for qubit in op.qubits]
+                # qbs = [self.input_qubit_mapping[qubit] for qubit in op.qubits]
+                qbs = [int_from_qubit(q) for q in op.qubits]
                 # qbs = list(reversed(mapping))
                 next_instruction = CirqInstructionWrapper(op, qbs)
                 params.union(set(next_instruction.gate.get_abstract_params()))
