@@ -35,7 +35,7 @@ class BraketCircuitWrapper(CircuitWrapper):
         """Apply circuit wrapper based on given qubit mapping."""
         instructions = []
         for instruction in circuit.instructions:
-            qubits = [input_qubit_mapping[q] for q in instruction.target]
+            qubits = [int(q) for q in instruction.target]
             next_instruction = BraketInstructionWrapper(instruction, qubits)
             instructions.append(next_instruction)
 

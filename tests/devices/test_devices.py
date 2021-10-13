@@ -228,12 +228,3 @@ def test_retrieve_job_ibmq(device_id):
     qbraid_job.wait_for_final_state()
     retrieved_job = retrieve_job(qbraid_job.id)
     assert qbraid_job.status() == retrieved_job.status()
-
-
-
-
-
-
-
-
-
