@@ -1,5 +1,6 @@
 from typing import Union
 import numpy as np
+from braket.circuits.unitary_calculation import calculate_unitary
 from braket.circuits import Circuit
 from braket.circuits import Gate as BraketGate
 from braket.circuits import Instruction, Qubit
@@ -173,6 +174,13 @@ def get_braket_gate_data(gate: BraketGate):
     # unitary
     elif isinstance(gate, Unitary):
         data["type"] = "Unitary"
+        matrix = data["matrix"]
+        gate = braket_gates["Unitary"](matrix)
+        nqubits = int(np.log2(len(matrix)))
+        qubits = [i for i in range(nqubits)] if nqubits > 1 else 0
+        circuit = Circuit([Instruction(gate, qubits)])
+        output_matrix = calculate_unitary(circuit.qubit_count, circuit.instructions)
+        data["matrix"] = output_matrix
 
     # error
     else:
@@ -233,7 +241,8 @@ def circuit_to_braket(cw, output_qubit_mapping=None):
     # these will return None, which should not be added to the circuit
 
     if not output_qubit_mapping:
-        output_qubit_mapping = {x: Qubit(x) for x in range(len(cw.qubits))}
+        # output_qubit_mapping = {x: Qubit(x) for x in range(len(cw.qubits))}
+        output_qubit_mapping = cw.input_qubit_mapping
 
     for instruction in cw.instructions:
         instr = instruction.transpile("braket", output_qubit_mapping)
@@ -246,7 +255,8 @@ def circuit_to_braket(cw, output_qubit_mapping=None):
 def instruction_to_braket(iw, output_qubit_mapping, output_param_mapping):
 
     gate = iw.gate.transpile("braket", output_param_mapping)
-    mapping = [output_qubit_mapping[q] for q in iw.qubits]
+    # mapping = [output_qubit_mapping[q] for q in iw.qubits]
+    mapping = [int(q) for q in iw.qubits]
 
     if gate == "BraketMeasure":
         return None

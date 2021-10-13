@@ -209,7 +209,7 @@ def assign_params_cirq(gate_str, init_gate2, nparams):
     return new_cirq_gate, init_gate2(*params)
 
 
-def braket_gate_test_circuit(test_gate, nqubits):
+def braket_gate_test_circuit(test_gate, nqubits, only_test_gate=False):
     qubits = [i for i in range(nqubits)] if nqubits > 1 else 0
 
     gates_qubits = [
@@ -220,6 +220,9 @@ def braket_gate_test_circuit(test_gate, nqubits):
         (BraketGate.CNot(), [0, 1]),
         (BraketGate.Ry(np.pi), 2),
     ]
+
+    if only_test_gate:
+        gates_qubits = [(test_gate, qubits)]
 
     circuit = BraketCircuit([BraketInstruction(*gate_qubit) for gate_qubit in gates_qubits])
 
@@ -447,4 +450,14 @@ def test_braket_transpile_ccnot():
     braket_ccnot_unitary = to_unitary(braket_circuit)
     qiskit_ccnot_unitary = to_unitary(qiskit_circuit)
     assert np.allclose(braket_ccnot_unitary, qiskit_ccnot_unitary)
+
+
+def test_braket_transpile_unitary():
+    matrix = braket_gates["CCX"]().to_matrix()
+    braket_gate = braket_gates["Unitary"](matrix)
+    braket_u, qbraid_braket_circ = braket_gate_test_circuit(braket_gate, 3, only_test_gate=True)
+    qiskit_circuit = qbraid_braket_circ.transpile("qiskit")
+    qiskit_u = to_unitary(qiskit_circuit)
+    assert np.allclose(braket_u, qiskit_u)
+
 
