@@ -1,6 +1,6 @@
 from typing import Union
+
 import numpy as np
-from braket.circuits.unitary_calculation import calculate_unitary
 from braket.circuits import Circuit
 from braket.circuits import Gate as BraketGate
 from braket.circuits import Instruction, Qubit
@@ -34,6 +34,7 @@ from braket.circuits.gates import (
     Y,
     Z,
 )
+from braket.circuits.unitary_calculation import calculate_unitary
 
 from qbraid.transpiler.parameter import ParamID
 

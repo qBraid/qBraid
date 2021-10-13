@@ -1,7 +1,6 @@
 from typing import Union
 
 import numpy as np
-
 from braket.circuits import Circuit as BraketCircuit
 from braket.circuits.unitary_calculation import calculate_unitary
 from cirq import Circuit as CirqCircuit
@@ -67,11 +66,14 @@ def validate_operation(
 
 def to_unitary(circuit):
     """Calculate unitary of a braket, cirq, or qiskit circuit.
+
     Args:
-        circuit (braket, cirq, or qiskit Circuit): The circuit object for which
-            the unitary matrix will be calculated.
+        circuit (braket, cirq, or qiskit Circuit): The circuit object for which the unitary
+        matrix will be calculated.
+
     Returns:
         numpy.ndarray: A numpy array representing the `circuit` as a unitary
+
     """
     if isinstance(circuit, BraketCircuit):
         return calculate_unitary(circuit.qubit_count, circuit.instructions)

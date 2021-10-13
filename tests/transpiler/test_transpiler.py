@@ -4,21 +4,20 @@ Unit tests for the qbraid transpiler.
 import cirq
 import numpy as np
 import pytest
-from braket.circuits import (
-    Circuit as BraketCircuit,
-    Gate as BraketGate,
-    Instruction as BraketInstruction,
-)
+from braket.circuits import Circuit as BraketCircuit
+from braket.circuits import Gate as BraketGate
+from braket.circuits import Instruction as BraketInstruction
 from braket.circuits.unitary_calculation import calculate_unitary
 from cirq import Circuit as CirqCircuit
-from qiskit import QuantumCircuit as QiskitCircuit, QuantumRegister as QiskitQuantumRegister
-from qiskit.quantum_info import Operator as QiskitOperator
+from qiskit import QuantumCircuit as QiskitCircuit
+from qiskit import QuantumRegister as QiskitQuantumRegister
 from qiskit.circuit.quantumregister import Qubit as QiskitQubit
+from qiskit.quantum_info import Operator as QiskitOperator
 
 from qbraid import circuit_wrapper
 from qbraid.transpiler._utils.braket_utils import braket_gates
-from qbraid.transpiler._utils.qiskit_utils import qiskit_gates
 from qbraid.transpiler._utils.cirq_utils import cirq_gates, create_cirq_gate
+from qbraid.transpiler._utils.qiskit_utils import qiskit_gates
 
 
 def to_unitary(circuit):
