@@ -19,6 +19,9 @@ class BraketLocalSimulatorWrapper(DeviceLikeWrapper):
         """Initialize an AWS local simulator."""
         return LocalSimulator(backend=self._obj_arg)
 
+    def _vendor_compat_run_input(self, run_input):
+        return run_input
+
     @property
     def status(self):
         """Return the status of this Device.

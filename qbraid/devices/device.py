@@ -62,7 +62,12 @@ class DeviceLikeWrapper(ABC):
             )
         if input_run_package != device_run_package:
             run_input = qbraid_circuit.transpile(device_run_package)
-        return run_input, qbraid_circuit
+        compat_run_input = self._vendor_compat_run_input(run_input)
+        return compat_run_input, qbraid_circuit
+
+    @abstractmethod
+    def _vendor_compat_run_input(self, run_input):
+        """Applies any software/device specific modifications to run input."""
 
     @property
     def info(self):

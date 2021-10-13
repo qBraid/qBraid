@@ -1,12 +1,10 @@
 """BraketQuantumtaskWrapper Class"""
 
 from asyncio import Task
-from typing import Union
 
 from braket.aws import AwsQuantumTask
-from braket.tasks.annealing_quantum_task_result import AnnealingQuantumTaskResult
-from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
 
+from qbraid.devices.aws import BraketResultWrapper
 from qbraid.devices.job import JobLikeWrapper
 
 
@@ -26,13 +24,14 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
         """Returns status from Braket QuantumTask object metadata."""
         return self.vendor_jlo.metadata()["status"]
 
-    def result(self) -> Union[AnnealingQuantumTaskResult, GateModelQuantumTaskResult]:
+    def result(self) -> BraketResultWrapper:
         """Return the results of the job."""
-        return self.vendor_jlo.result()
+        return BraketResultWrapper(self.vendor_jlo.result())
 
     def async_result(self) -> Task:
         """asyncio.Task: Get the quantum task result asynchronously."""
-        return self.vendor_jlo.async_result()
+        # return self.vendor_jlo.async_result()
+        raise NotImplementedError
 
     def cancel(self):
         """Cancel the quantum task."""

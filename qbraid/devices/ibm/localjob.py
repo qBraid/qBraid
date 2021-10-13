@@ -1,6 +1,7 @@
 """QiskitJobWrapper Class"""
 
 from qbraid.devices.localjob import LocalJobWrapper
+from qbraid.devices.ibm import QiskitResultWrapper
 
 
 class QiskitBasicAerJobWrapper(LocalJobWrapper):
@@ -21,4 +22,4 @@ class QiskitBasicAerJobWrapper(LocalJobWrapper):
 
     def result(self):
         """Return the results of the job."""
-        return self.vendor_jlo.result()
+        return QiskitResultWrapper(self.vendor_jlo.result())

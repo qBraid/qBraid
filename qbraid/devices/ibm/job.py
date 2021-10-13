@@ -6,6 +6,7 @@ from qiskit.providers.ibmq.managed import IBMQJobManager
 
 from qbraid.devices.exceptions import JobError
 from qbraid.devices.job import JobLikeWrapper
+from qbraid.devices.ibm import QiskitResultWrapper
 
 
 class QiskitJobWrapper(JobLikeWrapper):
@@ -41,7 +42,7 @@ class QiskitJobWrapper(JobLikeWrapper):
 
     def result(self):
         """Return the results of the job."""
-        return self.vendor_jlo.result()
+        return QiskitResultWrapper(self.vendor_jlo.result())
 
     def cancel(self):
         """Attempt to cancel the job."""

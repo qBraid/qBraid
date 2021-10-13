@@ -1,6 +1,6 @@
 """QiskitBackendWrapper Class"""
 
-from qiskit import IBMQ, Aer, execute
+from qiskit import IBMQ, Aer, execute, assemble
 from qiskit import transpile as qiskit_transpile
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.ibmq import IBMQProviderError
@@ -40,6 +40,9 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             return Aer.get_backend(self._obj_arg)
         else:
             raise DeviceError(f"obj_ref {self._obj_ref} not found.")
+
+    def _vendor_compat_run_input(self, run_input):
+        return qiskit_transpile(run_input, self.vendor_dlo)
 
     @property
     def status(self):
@@ -92,17 +95,22 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         """
         run_input, qbraid_circuit = self._compat_run_input(run_input)
         if "shots" in kwargs:
-            shots = kwargs.pop("shots")
-            self.vendor_dlo.set_options(shots=shots)
+            shots = kwargs["shots"]
         else:
             shots = self.vendor_dlo.options.get("shots")
-        compiled_circuit = qiskit_transpile(run_input, self.vendor_dlo)
         if self._obj_ref == "Aer":
-            qiskit_job = execute(compiled_circuit, self.vendor_dlo, *args, **kwargs)
+            qobj = assemble(run_input, memory=True, **kwargs)
+            qiskit_job = self.vendor_dlo.run(qobj)
             qiskit_job_id = qiskit_job.job_id()
         else:
-            job_manager = IBMQJobManager()
-            job_set = job_manager.run([compiled_circuit], backend=self.vendor_dlo)
+            memory = True if "memory" not in kwargs else kwargs.pop("memory")
+            job_manager = IBMQJobManager()  # assemble included in run method
+            job_set = job_manager.run(
+                [run_input],
+                backend=self.vendor_dlo,
+                memory=memory,
+                **kwargs
+            )
             qiskit_job = job_set.jobs()[0]
             qiskit_job_id = job_set.job_set_id()
         qbraid_job_id = init_job(qiskit_job_id, self, qbraid_circuit, shots)

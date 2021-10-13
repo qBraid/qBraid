@@ -1,12 +1,8 @@
 """CirqResultWrapper Class"""
 
-# https://github.com/quantumlib/Cirq/blob/504bdbb9bb30249d85ecf7ba199b047150ee33f3/cirq-core/cirq
-# /study/result.py
-
-from __future__ import annotations
+import numpy as np
 
 from cirq.study.result import Result
-from pandas import DataFrame
 
 from qbraid.devices.result import ResultWrapper
 
@@ -15,21 +11,27 @@ class CirqResultWrapper(ResultWrapper):
     """Cirq ``Result`` wrapper class."""
 
     # pylint: disable=too-few-public-methods
-    def __init__(self, cirq_result: Result):
+    def __init__(self, result: Result):
         """Create a CirqResultWrapper
 
         Args:
-            cirq_result (Result): a Cirq ``Result`` object
+            result (Result): a Cirq ``Result`` object
 
         """
 
-        super().__init__(cirq_result)
-        self.vendor_rlo = cirq_result
+        super().__init__(result)
 
-    def data(self, **kwargs) -> DataFrame:
-        """Return a DataFrame with columns as measurement keys, rows as repetitions, and a big
-        endian integer for individual measurements. Note that when a numpy array is produced from
-        this data frame, Pandas will try to use np.int64 as dtype, but will upgrade to object if
-        any value is too large to fit.
-        """
-        return self.vendor_rlo.data
+    def measurements(self):
+        cirq_meas = self.vendor_rlo.measurements
+        marray = np.array([cirq_meas[key].flatten() for key in cirq_meas], dtype="int64")
+        qbraid_meas = np.einsum('ji->ij', marray)
+        return np.flip(qbraid_meas, 1)
+
+    def measurement_counts(self):
+        keys = list(self.vendor_rlo.measurements.keys())
+        cirq_counts = dict(self.vendor_rlo.multi_measurement_histogram(keys=keys))
+        qbraid_counts = {}
+        for key in cirq_counts:
+            str_key = "".join(reversed([str(i) for i in key]))
+            qbraid_counts[str_key] = cirq_counts[key]
+        return qbraid_counts

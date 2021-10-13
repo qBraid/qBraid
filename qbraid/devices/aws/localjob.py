@@ -1,6 +1,7 @@
 """BraketQuantumtaskWrapper Class"""
 
 from qbraid.devices.localjob import LocalJobWrapper
+from qbraid.devices.aws import BraketResultWrapper
 
 
 class BraketLocalQuantumTaskWrapper(LocalJobWrapper):
@@ -22,4 +23,4 @@ class BraketLocalQuantumTaskWrapper(LocalJobWrapper):
 
     def result(self):
         """Return the results of the job."""
-        return self.vendor_jlo.result()
+        return BraketResultWrapper(self.vendor_jlo.result())
