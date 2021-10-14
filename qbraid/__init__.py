@@ -1,14 +1,13 @@
 """This top level module contains the main qBraid public functionality."""
 
 import pkg_resources
-
 from pymongo import MongoClient
 
+from qbraid._version import __version__
 from qbraid.circuits import Circuit, UpdateRule, random_circuit, to_unitary
 from qbraid.devices import get_devices, ibmq_least_busy_qpu, refresh_devices
 from qbraid.devices._utils import get_config
 from qbraid.exceptions import QbraidError, WrapperError
-from qbraid._version import __version__
 
 # To be replaced with API call
 MONGO_DB = get_config("uri", "qBraid-admin")

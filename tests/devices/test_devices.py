@@ -17,7 +17,7 @@ from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.job import Job as QiskitJob
 
-from qbraid import device_wrapper, random_circuit, retrieve_job
+from qbraid import MONGO_DB, device_wrapper, random_circuit, retrieve_job
 from qbraid.devices import DeviceError, JobError, ResultWrapper
 from qbraid.devices.aws import (
     BraketDeviceWrapper,
@@ -36,11 +36,8 @@ from qbraid.devices.ibm import (
 
 def device_wrapper_inputs(vendor: str):
     """Returns list of tuples containing all device_wrapper inputs for given vendor."""
-    conn_str = (
-        "mongodb+srv://ryanjh88:Rq2bYCtKnMgh3tIA@cluster0.jkqzi.mongodb.net/"
-        "qbraid-sdk?retryWrites=true&w=majority"
-    )
-    client = MongoClient(conn_str, serverSelectionTimeoutMS=5000)
+
+    client = MongoClient(MONGO_DB, serverSelectionTimeoutMS=5000)
     db = client["qbraid-sdk"]
     collection = db["supported_devices"]
     cursor = collection.find({})
@@ -57,6 +54,7 @@ def device_wrapper_inputs(vendor: str):
 Device wrapper tests: initialization
 Coverage: all vendors, all available devices
 """
+
 inputs_braket_dw = device_wrapper_inputs("AWS")
 inputs_braket_sampler = ["aws_dwave_2000Q_6", "aws_dwave_advantage_system1"]
 inputs_cirq_dw = ["google_cirq_sparse_sim", "google_cirq_dm_sim"]
@@ -141,8 +139,9 @@ circuits_braket_run = [braket_circuit(), cirq_circuit(False), qiskit_circuit(Fal
 circuits_cirq_run = [cirq_circuit(), qiskit_circuit()]
 circuits_qiskit_run = circuits_cirq_run
 inputs_cirq_run = ["google_cirq_dm_sim"]
-inputs_braket_run = ["aws_sv_sim", "aws_ionq", "aws_rigetti_aspen_9", "aws_braket_default_sim"]
+# inputs_braket_run = ["aws_sv_sim", "aws_ionq", "aws_rigetti_aspen_9", "aws_braket_default_sim"]
 inputs_qiskit_run = ["ibm_basicaer_qasm_sim", "ibm_aer_qasm_sim", "ibm_aer_default_sim"]
+inputs_braket_run = ["aws_sv_sim", "aws_rigetti_aspen_9"]
 
 
 @pytest.mark.parametrize("circuit", circuits_qiskit_run)
@@ -185,7 +184,6 @@ def test_run_braket_device_wrapper(device_id, circuit):
     else:
         assert isinstance(qbraid_job, BraketQuantumTaskWrapper)
         assert isinstance(vendor_job, BraketQuantumTask)
-        qbraid_job.cancel()
 
 
 @pytest.mark.parametrize("device_id", ["aws_dm_sim", "aws_sv_sim"])
@@ -241,6 +239,3 @@ def test_result_wrapper_measurements(device_id):
     assert isinstance(qbraid_result, ResultWrapper)
     measurements = qbraid_result.measurements()
     assert measurements.shape == (10, 3)
-
-
-

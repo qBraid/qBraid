@@ -1,41 +1,22 @@
 """
 Unit tests for the qbraid transpiler.
 """
+
 import cirq
 import numpy as np
 import pytest
 from braket.circuits import Circuit as BraketCircuit
 from braket.circuits import Gate as BraketGate
 from braket.circuits import Instruction as BraketInstruction
-from braket.circuits.unitary_calculation import calculate_unitary
 from cirq import Circuit as CirqCircuit
 from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit import QuantumRegister as QiskitQuantumRegister
 from qiskit.circuit.quantumregister import Qubit as QiskitQubit
-from qiskit.quantum_info import Operator as QiskitOperator
 
-from qbraid import circuit_wrapper, random_circuit
+from qbraid import circuit_wrapper, random_circuit, to_unitary
 from qbraid.transpiler._utils.braket_utils import braket_gates
 from qbraid.transpiler._utils.cirq_utils import cirq_gates, create_cirq_gate
 from qbraid.transpiler._utils.qiskit_utils import qiskit_gates
-
-
-def to_unitary(circuit):
-    """Calculate unitary of a braket, cirq, or qiskit circuit.
-    Args:
-        circuit (braket, cirq, or qiskit Circuit): The circuit object for which
-            the unitary matrix will be calculated.
-    Returns:
-        numpy.ndarray: A numpy array representing the `circuit` as a unitary
-    """
-    if isinstance(circuit, BraketCircuit):
-        return calculate_unitary(circuit.qubit_count, circuit.instructions)
-    elif isinstance(circuit, CirqCircuit):
-        return circuit.unitary()
-    elif isinstance(circuit, QiskitCircuit):
-        return QiskitOperator(circuit).data
-    else:
-        raise TypeError(f"to_unitary calculation not supported for type {type(circuit)}")
 
 
 def qiskit_shared_gates_circuit():
@@ -68,16 +49,15 @@ def qiskit_shared_gates_circuit():
     return qbraid_circuit, unitary
 
 
-def cirq_shared_gates_circuit(rev_qubits=False):
+def cirq_shared_gates_circuit():
     """Returns cirq `Circuit` for qBraid `TestSharedGates`
     rev_qubits=True reverses ordering of qubits."""
 
     circuit = CirqCircuit()
-    qubits = [cirq.LineQubit(i) for i in range(4)]
-    q3, q2, q1, q0 = qubits if rev_qubits else list(reversed(qubits))
-    mapping = {q3: 0, q2: 1, q1: 2, q0: 3} if rev_qubits else {q0: 0, q1: 1, q2: 2, q3: 3}
+    q3, q2, q1, q0 = [cirq.LineQubit(i) for i in range(4)]
+    mapping = {q3: 0, q2: 1, q1: 2, q0: 3}
 
-    cirq_gates = [
+    cirq_shared_gates = [
         cirq.H(q0),
         cirq.H(q1),
         cirq.H(q2),
@@ -103,7 +83,7 @@ def cirq_shared_gates_circuit(rev_qubits=False):
         cirq.CZPowGate(exponent=0.25)(q2, q3),
     ]
 
-    for gate in cirq_gates:
+    for gate in cirq_shared_gates:
         circuit.append(gate)
 
     unitary = to_unitary(circuit)
@@ -146,11 +126,10 @@ def braket_shared_gates_circuit():
 # Define circuits and unitaries
 qbraid_circuit_braket, braket_unitary = braket_shared_gates_circuit()
 qbraid_circuit_cirq, cirq_unitary = cirq_shared_gates_circuit()
-qbraid_circuit_cirq_rev, cirq_rev_unitary = cirq_shared_gates_circuit(rev_qubits=True)
 qbraid_circuit_qiskit, qiskit_unitary = qiskit_shared_gates_circuit()
 
-cirq_qiskit_equal = np.allclose(cirq_rev_unitary, qiskit_unitary)
-cirq_braket_equal = np.allclose(cirq_rev_unitary, braket_unitary)
+cirq_qiskit_equal = np.allclose(cirq_unitary, qiskit_unitary)
+cirq_braket_equal = np.allclose(cirq_unitary, braket_unitary)
 qiskit_braket_equal = np.allclose(qiskit_unitary, braket_unitary)
 assert cirq_qiskit_equal and cirq_braket_equal and qiskit_braket_equal
 
@@ -164,7 +143,6 @@ data_test_shared_gates = [
 ]
 
 
-@pytest.mark.skip("old tests")
 @pytest.mark.parametrize("qbraid_circuit,target_package,target_unitary", data_test_shared_gates)
 def test_shared_gates(qbraid_circuit, target_package, target_unitary):
     """Tests transpiling circuits composed of gate types that share explicit support across
@@ -252,11 +230,11 @@ def qiskit_gate_test_circuit(test_gate, nqubits):
     return unitary, qbraid_circuit
 
 
-def cirq_gate_test_circuit(test_gate, nqubits, rev_qubits=False):
+def cirq_gate_test_circuit(test_gate, nqubits):
+
     circuit = CirqCircuit()
-    qubits = [cirq.LineQubit(i) for i in range(3)]
-    q2, q1, q0 = qubits if rev_qubits else list(reversed(qubits))
-    mapping = {q2: 0, q1: 1, q0: 2} if rev_qubits else {q0: 0, q1: 1, q2: 2}
+    q2, q1, q0 = [cirq.LineQubit(i) for i in range(3)]
+    mapping = {q2: 0, q1: 1, q0: 2}
 
     if nqubits == 1:
         input_qubits = [q0]
@@ -265,7 +243,7 @@ def cirq_gate_test_circuit(test_gate, nqubits, rev_qubits=False):
     else:
         input_qubits = [q0, q1, q2]
 
-    cirq_gates = [
+    cirq_gate_test_gates = [
         cirq.H(q0),
         cirq.H(q1),
         cirq.H(q2),
@@ -274,7 +252,7 @@ def cirq_gate_test_circuit(test_gate, nqubits, rev_qubits=False):
         cirq.CNOT(q0, q1),
     ]
 
-    for gate in cirq_gates:
+    for gate in cirq_gate_test_gates:
         circuit.append(gate)
 
     # print()
@@ -294,11 +272,14 @@ intersect_braket_qiskit = list(braket_gate_set.intersection(list(qiskit_gate_set
 intersect_qiskit_cirq = list(qiskit_gate_set.intersection(list(cirq_gate_set)))
 intersect_cirq_braket = list(cirq_gate_set.intersection(list(braket_gate_set)))
 
+intersect_braket_qiskit.remove("Unitary")
+intersect_qiskit_cirq.remove("Unitary")
+intersect_qiskit_cirq.remove("MEASURE")
+intersect_cirq_braket.remove("Unitary")
+
 
 @pytest.mark.parametrize("gate_str", intersect_braket_qiskit)
 def test_gate_intersect_braket_qiskit(gate_str):
-    if gate_str in ["Unitary"]:
-        pytest.skip("skip unitary")
     braket_init_gate = braket_gates[gate_str]
     qiskit_init_gate = qiskit_gates[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
@@ -316,12 +297,10 @@ def test_gate_intersect_braket_qiskit(gate_str):
 
 @pytest.mark.parametrize("gate_str", intersect_qiskit_cirq)
 def test_gate_intersect_qiskit_cirq(gate_str):
-    if gate_str in ["Unitary", "MEASURE"]:
-        pytest.skip("skip unitary and measure")
     qiskit_init_gate = qiskit_gates[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
     cirq_gate, qiskit_gate = assign_params_cirq(gate_str, qiskit_init_gate, nparams)
-    cirq_u, qbraid_cirq_circ = cirq_gate_test_circuit(cirq_gate, nqubits, rev_qubits=True)
+    cirq_u, qbraid_cirq_circ = cirq_gate_test_circuit(cirq_gate, nqubits)
     qiskit_u, qbraid_qiskit_circ = qiskit_gate_test_circuit(qiskit_gate, nqubits)
     assert np.allclose(cirq_u, qiskit_u)
     qiskit_circuit_transpile = qbraid_cirq_circ.transpile("qiskit")
@@ -334,12 +313,10 @@ def test_gate_intersect_qiskit_cirq(gate_str):
 
 @pytest.mark.parametrize("gate_str", intersect_cirq_braket)
 def test_gate_intersect_braket_cirq(gate_str):
-    if gate_str in ["Unitary"]:
-        pytest.skip("skip unitary")
     braket_init_gate = braket_gates[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
     cirq_gate, braket_gate = assign_params_cirq(gate_str, braket_init_gate, nparams)
-    cirq_u, qbraid_cirq_circ = cirq_gate_test_circuit(cirq_gate, nqubits, rev_qubits=True)
+    cirq_u, qbraid_cirq_circ = cirq_gate_test_circuit(cirq_gate, nqubits)
     braket_u, qbraid_braket_circ = braket_gate_test_circuit(braket_gate, nqubits)
     assert np.allclose(cirq_u, braket_u)
     braket_circuit_transpile = qbraid_cirq_circ.transpile("braket")
@@ -357,6 +334,11 @@ yes_cirq_no_braket = list(set(cirq_gates).difference(braket_gates))
 yes_cirq_no_qiskit = list(set(cirq_gates).difference(qiskit_gates))
 yes_qiskit_no_cirq = list(set(qiskit_gates).difference(cirq_gates))
 
+yes_qiskit_no_braket.remove("MEASURE")
+yes_qiskit_no_braket.remove("RC3X")
+yes_qiskit_no_cirq.remove("RC3X")
+yes_cirq_no_braket.remove("MEASURE")
+
 
 @pytest.mark.parametrize("gate_str", yes_braket_no_qiskit)
 def test_yes_braket_no_qiskit(gate_str):
@@ -372,8 +354,6 @@ def test_yes_braket_no_qiskit(gate_str):
 
 @pytest.mark.parametrize("gate_str", yes_qiskit_no_braket)
 def test_yes_qiskit_no_braket(gate_str):
-    if gate_str in ["MEASURE", "RC3X"]:
-        pytest.skip("skip measure and triple controlled toffoli")
     qiskit_init_gate = qiskit_gates[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
     params = np.random.random_sample(nparams) * np.pi
@@ -386,8 +366,6 @@ def test_yes_qiskit_no_braket(gate_str):
 
 @pytest.mark.parametrize("gate_str", yes_qiskit_no_cirq)
 def test_yes_qiskit_no_cirq(gate_str):
-    if gate_str in ["RC3X"]:
-        pytest.skip("skip triple controlled toffoli")
     qiskit_init_gate = qiskit_gates[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
     params = np.random.random_sample(nparams) * np.pi
@@ -424,8 +402,6 @@ def test_yes_cirq_no_qiskit(gate_str):
 
 @pytest.mark.parametrize("gate_str", yes_cirq_no_braket)
 def test_yes_cirq_no_braket(gate_str):
-    if gate_str in ["MEASURE"]:
-        pytest.skip("skip measurement gate")
     cirq_init_gate = cirq_gates[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
     if gate_str == "U3":
