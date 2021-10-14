@@ -1,6 +1,6 @@
 """This top level module contains the main qBraid public functionality."""
 
-from importlib.metadata import entry_points, version
+import pkg_resources
 
 from pymongo import MongoClient
 
@@ -8,8 +8,7 @@ from qbraid.circuits import Circuit, UpdateRule, random_circuit, to_unitary
 from qbraid.devices import get_devices, ibmq_least_busy_qpu, refresh_devices
 from qbraid.devices._utils import get_config
 from qbraid.exceptions import QbraidError, WrapperError
-
-__version__ = version("qbraid")
+from qbraid._version import __version__
 
 # To be replaced with API call
 MONGO_DB = get_config("uri", "qBraid-admin")
@@ -17,15 +16,11 @@ MONGO_DB = get_config("uri", "qBraid-admin")
 
 def _get_entrypoints(group: str):
     """Returns a dictionary mapping each entry of ``group`` to its loadable entrypoint."""
-    return {entry.name: entry for entry in entry_points()[group]}
+    return {entry.name: entry for entry in pkg_resources.iter_entry_points(group)}
 
 
 transpiler_entrypoints = _get_entrypoints("qbraid.transpiler")
-devices_entrypoints = {
-    "AWS": _get_entrypoints("qbraid.devices.aws"),
-    "IBM": _get_entrypoints("qbraid.devices.ibm"),
-    "Google": _get_entrypoints("qbraid.devices.google"),
-}
+devices_entrypoints = _get_entrypoints("qbraid.devices")
 
 
 def circuit_wrapper(circuit, **kwargs):
@@ -72,9 +67,10 @@ def circuit_wrapper(circuit, **kwargs):
 
     """
     package = circuit.__module__.split(".")[0]
+    ep = package.lower()
 
     if package in transpiler_entrypoints:
-        circuit_wrapper_class = transpiler_entrypoints[package].load()
+        circuit_wrapper_class = transpiler_entrypoints[ep].load()
         return circuit_wrapper_class(circuit, **kwargs)
 
     raise WrapperError(f"{package} is not a supported package.")
@@ -106,18 +102,20 @@ def device_wrapper(qbraid_device_id: str, **kwargs):
 
     del device_info["_id"]  # unecessary for sdk
     del device_info["status_refresh"]
-    vendor = device_info["vendor"]
+    vendor = device_info["vendor"].lower()
     code = device_info.pop("_code")
-    ep = "LOC" if code == 0 else "REM"
-    device_wrapper_class = devices_entrypoints[vendor][ep].load()
+    spec = ".local" if code == 0 else ".remote"
+    ep = vendor + spec
+    device_wrapper_class = devices_entrypoints[ep].load()
     return device_wrapper_class(device_info, **kwargs)
 
 
 def retrieve_job(qbraid_job_id):
     """Retrieve a job from qBraid API using job ID and return job wrapper object."""
     qbraid_device = device_wrapper(qbraid_job_id.split(":")[0])
-    vendor = qbraid_device.vendor
-    if vendor == "Google":
+    vendor = qbraid_device.vendor.lower()
+    if vendor == "google":
         raise ValueError(f"API job retrieval not supported for {qbraid_device.id}")
-    job_wrapper_class = devices_entrypoints[vendor]["JOB"].load()
+    ep = vendor + ".job"
+    job_wrapper_class = devices_entrypoints[ep].load()
     return job_wrapper_class(qbraid_job_id, device=qbraid_device)
