@@ -27,8 +27,7 @@ def _get_device_data(query):
         provider = document["provider"]
         status_refresh = document["status_refresh"]
         timestamp = datetime.now()
-        delta = timestamp - status_refresh
-        lag = 0 if status_refresh is None else delta.seconds
+        lag = 0 if status_refresh is None else (timestamp - status_refresh).seconds
         if lag > 3600:
             clear_output(wait=True)
             print("Auto-refreshing status for queried devices" + "." * tot_dev, flush=True)
