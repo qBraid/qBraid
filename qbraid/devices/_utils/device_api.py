@@ -73,7 +73,7 @@ def refresh_devices():
             status = device.status.name
             collection.update_one(
                 {"qbraid_id": qbraid_id},
-                {"$set": {"status": status, "status_refresh": time()}},
+                {"$set": {"status": status, "status_refresh": datetime.now()}},
                 upsert=False,
             )
         pbar.update(1)
