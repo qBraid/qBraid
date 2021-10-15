@@ -4,8 +4,11 @@ from asyncio import Task
 
 from braket.aws import AwsQuantumTask
 
+import logging
+
 from qbraid.devices.aws import BraketResultWrapper
 from qbraid.devices.job import JobLikeWrapper
+from qbraid.devices.enums import JOB_FINAL
 
 
 class BraketQuantumTaskWrapper(JobLikeWrapper):
@@ -24,8 +27,10 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
         """Returns status from Braket QuantumTask object metadata."""
         return self.vendor_jlo.metadata()["status"]
 
-    def result(self) -> BraketResultWrapper:
+    def result(self):
         """Return the results of the job."""
+        if self.status() not in JOB_FINAL:
+            logging.info("Result will be available when job as reached final state.")
         return BraketResultWrapper(self.vendor_jlo.result())
 
     def async_result(self) -> Task:

@@ -56,6 +56,9 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             return DeviceStatus.OFFLINE
         return DeviceStatus.ONLINE
 
+    def pending_jobs(self):
+        return self.vendor_dlo.status().to_dict()["pending_jobs"]
+
     def execute(self, run_input, *args, **kwargs):
         """Runs circuit(s) on qiskit backend via :meth:`~qiskit.utils.QuantumInstance.execute`.
 

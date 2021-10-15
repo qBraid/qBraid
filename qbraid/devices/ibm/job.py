@@ -1,5 +1,7 @@
 """QiskitJobWrapper Class"""
 
+import logging
+
 from qiskit.providers.exceptions import JobError as QiskitJobError
 from qiskit.providers.ibmq import IBMQBackend
 from qiskit.providers.ibmq.managed import IBMQJobManager
@@ -7,6 +9,7 @@ from qiskit.providers.ibmq.managed import IBMQJobManager
 from qbraid.devices.exceptions import JobError
 from qbraid.devices.ibm import QiskitResultWrapper
 from qbraid.devices.job import JobLikeWrapper
+from qbraid.devices.enums import JOB_FINAL
 
 
 class QiskitJobWrapper(JobLikeWrapper):
@@ -42,6 +45,8 @@ class QiskitJobWrapper(JobLikeWrapper):
 
     def result(self):
         """Return the results of the job."""
+        if self.status() not in JOB_FINAL:
+            logging.info("Result will be available when job as reached final state.")
         return QiskitResultWrapper(self.vendor_jlo.result())
 
     def cancel(self):
