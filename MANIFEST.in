@@ -1,6 +1,4 @@
 include *.rst *.txt *.md *.ini
-global-exclude *.pyc
-recursice-include docs *.rst *.py
-recursive-include tests *.py *.ipynb
+recursive-include docs *.rst *.py
 recursive-include qbraid *.py
 prune docs/build/
