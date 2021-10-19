@@ -51,6 +51,8 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         Returns:
             str: The status of this Device
         """
+        if self.id == "ibm_q_bogota":
+            return DeviceStatus.OFFLINE
         backend_status = self.vendor_dlo.status()
         if not backend_status.operational:
             return DeviceStatus.OFFLINE
