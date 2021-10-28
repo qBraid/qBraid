@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 
 from IPython.core.display import HTML, clear_output, display
@@ -13,9 +14,10 @@ def _get_device_data(query):
     represented by its own length-4 list containing the device provider, name, qbraid_id,
     and status.
     """
-    client = MongoClient(qbraid.MONGO_DB, serverSelectionTimeoutMS=5000)
-    db = client["qbraid-sdk"]
-    collection = db["supported_devices"]
+    uri = os.environ["MONGO_DB"]
+    client = MongoClient(uri, serverSelectionTimeoutMS=5000)
+    db = client["test"]
+    collection = db["sdk-devices"]
     cursor = collection.find(query)
     device_data = []
     tot_dev = 0
@@ -60,9 +62,10 @@ def _get_device_data(query):
 
 def refresh_devices():
     """Refreshes status for all qbraid supported devices. Runtime ~30 seconds."""
-    client = MongoClient(qbraid.MONGO_DB, serverSelectionTimeoutMS=5000)
-    db = client["qbraid-sdk"]
-    collection = db["supported_devices"]
+    uri = os.environ["MONGO_DB"]
+    client = MongoClient(uri, serverSelectionTimeoutMS=5000)
+    db = client["test"]
+    collection = db["sdk-devices"]
     cursor = collection.find({})
     pbar = tqdm(total=35, leave=False)
     for document in cursor:

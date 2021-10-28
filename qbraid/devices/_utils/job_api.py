@@ -1,8 +1,8 @@
+import os
 from datetime import datetime
 
 from pymongo import MongoClient, ReturnDocument
 
-import qbraid
 from qbraid.devices.enums import JobStatus
 
 from .config_user import get_config
@@ -15,9 +15,10 @@ def mongo_init_job(init_data, device_id):
         str: the qbraid_job_id associated with this job
 
     """
-    client = MongoClient(qbraid.MONGO_DB, serverSelectionTimeoutMS=5000)
-    docs = client["qbraid-sdk"]["jobs"]
-    init_data["qbraid_user_id"] = get_config("idToken", "qBraid")  # to be replaced with API call
+    uri = os.environ["MONGO_DB"]
+    client = MongoClient(uri, serverSelectionTimeoutMS=5000)
+    docs = client["test"]["sdk-jobs"]
+    init_data["user"] = os.environ["JUPYTERHUB_USER"]
     new_job = docs.insert_one(init_data)
     qbraid_job_id = device_id + ":" + str(new_job.inserted_id)
     docs.update_one({"_id": new_job.inserted_id}, {"$set": {"qbraid_job_id": qbraid_job_id}})
@@ -33,8 +34,9 @@ def mongo_get_job(qbraid_job_id, update=None):
 
     """
     data = {} if not update else update
-    client = MongoClient(qbraid.MONGO_DB, serverSelectionTimeoutMS=5000)
-    docs = client["qbraid-sdk"]["jobs"]
+    uri = os.environ["MONGO_DB"]
+    client = MongoClient(uri, serverSelectionTimeoutMS=5000)
+    docs = client["test"]["sdk-jobs"]
     metadata = docs.find_one_and_update(
         {"qbraid_job_id": qbraid_job_id},
         {"$set": data},

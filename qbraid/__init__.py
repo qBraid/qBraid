@@ -1,5 +1,6 @@
 """This top level module contains the main qBraid public functionality."""
 
+import os
 import pkg_resources
 from pymongo import MongoClient
 
@@ -8,9 +9,6 @@ from qbraid.circuits import Circuit, UpdateRule, random_circuit, to_unitary
 from qbraid.devices import get_devices, ibmq_least_busy_qpu, refresh_devices
 from qbraid.devices._utils import get_config
 from qbraid.exceptions import QbraidError, WrapperError
-
-# To be replaced with API call
-MONGO_DB = get_config("uri", "qBraid-admin")
 
 
 def _get_entrypoints(group: str):
@@ -90,9 +88,10 @@ def device_wrapper(qbraid_device_id: str, **kwargs):
     if qbraid_device_id == "ibm_q_least_busy_qpu":
         qbraid_device_id = ibmq_least_busy_qpu()
 
-    client = MongoClient(MONGO_DB, serverSelectionTimeoutMS=5000)
-    db = client["qbraid-sdk"]
-    collection = db["supported_devices"]
+    uri = os.environ["MONGO_DB"]
+    client = MongoClient(uri, serverSelectionTimeoutMS=5000)
+    db = client["test"]
+    collection = db["sdk-devices"]
     device_info = collection.find_one({"qbraid_id": qbraid_device_id})
     client.close()
 

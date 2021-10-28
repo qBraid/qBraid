@@ -92,7 +92,7 @@ def verify_user(vendor):
 
     """
     if get_config("verify", vendor) != "True":
-        prompt_lst = CONFIG_PROMPTS[vendor] + CONFIG_PROMPTS["qBraid"]
+        prompt_lst = CONFIG_PROMPTS[vendor]
         for prompt in prompt_lst:
             set_config(*prompt)
     return 0

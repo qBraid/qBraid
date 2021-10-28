@@ -1,6 +1,7 @@
 """
 Unit tests for the qbraid device layer.
 """
+import os
 import cirq
 import numpy as np
 import pytest
@@ -17,7 +18,7 @@ from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.job import Job as QiskitJob
 
-from qbraid import MONGO_DB, device_wrapper, random_circuit, retrieve_job
+from qbraid import device_wrapper, random_circuit, retrieve_job
 from qbraid.devices import DeviceError, JobError, ResultWrapper
 from qbraid.devices.aws import (
     BraketDeviceWrapper,
@@ -36,8 +37,8 @@ from qbraid.devices.ibm import (
 
 def device_wrapper_inputs(vendor: str):
     """Returns list of tuples containing all device_wrapper inputs for given vendor."""
-
-    client = MongoClient(MONGO_DB, serverSelectionTimeoutMS=5000)
+    uri = os.environ["MONGO_DB"]
+    client = MongoClient(uri, serverSelectionTimeoutMS=5000)
     db = client["qbraid-sdk"]
     collection = db["supported_devices"]
     cursor = collection.find({})
