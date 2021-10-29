@@ -2,6 +2,7 @@
 
 import os
 import pkg_resources
+import requests
 from pymongo import MongoClient
 
 from qbraid._version import __version__
@@ -10,6 +11,7 @@ from qbraid.devices import get_devices, ibmq_least_busy_qpu, refresh_devices
 from qbraid.devices._utils import get_config
 from qbraid.exceptions import QbraidError, WrapperError
 
+os.environ["MONGO_DB"] = requests.get("http://localhost:3001/api/mongodb/uri").json()
 
 def _get_entrypoints(group: str):
     """Returns a dictionary mapping each entry of ``group`` to its loadable entrypoint."""
