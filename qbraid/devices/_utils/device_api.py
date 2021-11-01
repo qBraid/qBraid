@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+import requests
 
 from IPython.core.display import HTML, clear_output, display
 from pymongo import MongoClient
@@ -14,27 +15,33 @@ def _get_device_data(query):
     represented by its own length-4 list containing the device provider, name, qbraid_id,
     and status.
     """
+    devices = requests.get(qbraid.api+"/get-devices", params=query).json()
     uri = os.environ["MONGO_DB"]
     client = MongoClient(uri, serverSelectionTimeoutMS=5000)
     db = client["test"]
     collection = db["sdk-devices"]
-    cursor = collection.find(query)
     device_data = []
     tot_dev = 0
     ref_dev = 0
     tot_lag = 0
-    for document in cursor:
+    for document in devices:
         qbraid_id = document["qbraid_id"]
         name = document["name"]
         provider = document["provider"]
         status_refresh = document["status_refresh"]
         timestamp = datetime.now()
-        lag = 0 if status_refresh is None else (timestamp - status_refresh).seconds
+        lag = 0
+        if status_refresh is not None:
+            format_datetime = str(status_refresh)[:10].split('-') + str(status_refresh)[11:19].split(':')
+            format_datetime_int = [int(x) for x in format_datetime]
+            mk_datime = datetime(*format_datetime_int)
+            lag += (timestamp - mk_datime).seconds
         if lag > 3600:
             clear_output(wait=True)
             print("Auto-refreshing status for queried devices" + "." * tot_dev, flush=True)
             device = qbraid.device_wrapper(qbraid_id)
             status = device.status.name
+            # requests.put(qbraid.api+"/update-device", params={{"qbraid_id": qbraid_id},{"$set": {"status": status, "status_refresh": timestamp}}})
             collection.update_one(
                 {"qbraid_id": qbraid_id},
                 {"$set": {"status": status, "status_refresh": timestamp}},
@@ -47,7 +54,6 @@ def _get_device_data(query):
         tot_dev += 1
         tot_lag += lag
         device_data.append([provider, name, qbraid_id, status])
-    cursor.close()
     client.close()
     if tot_dev == 0:
         return [], 0  # No results matching given criteria
@@ -62,13 +68,13 @@ def _get_device_data(query):
 
 def refresh_devices():
     """Refreshes status for all qbraid supported devices. Runtime ~30 seconds."""
+    devices = requests.get(qbraid.api+"/get-devices", params={}).json()
     uri = os.environ["MONGO_DB"]
     client = MongoClient(uri, serverSelectionTimeoutMS=5000)
     db = client["test"]
     collection = db["sdk-devices"]
-    cursor = collection.find({})
     pbar = tqdm(total=35, leave=False)
-    for document in cursor:
+    for document in devices:
         if document["status_refresh"] is not None:  # None => internally not available at moment
             qbraid_id = document["qbraid_id"]
             device = qbraid.device_wrapper(qbraid_id)
@@ -80,7 +86,6 @@ def refresh_devices():
             )
         pbar.update(1)
     pbar.close()
-    cursor.close()
     client.close()
 
 

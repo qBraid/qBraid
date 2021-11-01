@@ -1,9 +1,7 @@
 """This top level module contains the main qBraid public functionality."""
 
-import os
 import pkg_resources
 import requests
-from pymongo import MongoClient
 
 from qbraid._version import __version__
 from qbraid.circuits import Circuit, UpdateRule, random_circuit, to_unitary
@@ -11,7 +9,7 @@ from qbraid.devices import get_devices, ibmq_least_busy_qpu, refresh_devices
 from qbraid.devices._utils import get_config
 from qbraid.exceptions import QbraidError, WrapperError
 
-os.environ["MONGO_DB"] = requests.get("http://localhost:3001/api/mongodb/uri").json()
+api = "http://localhost:3001/api/"
 
 def _get_entrypoints(group: str):
     """Returns a dictionary mapping each entry of ``group`` to its loadable entrypoint."""
@@ -90,12 +88,7 @@ def device_wrapper(qbraid_device_id: str, **kwargs):
     if qbraid_device_id == "ibm_q_least_busy_qpu":
         qbraid_device_id = ibmq_least_busy_qpu()
 
-    uri = os.environ["MONGO_DB"]
-    client = MongoClient(uri, serverSelectionTimeoutMS=5000)
-    db = client["test"]
-    collection = db["sdk-devices"]
-    device_info = collection.find_one({"qbraid_id": qbraid_device_id})
-    client.close()
+    device_info = requests.get(api+"/get-devices", params={"qbraid_id": qbraid_device_id}).json()[0]
 
     if device_info is None:
         raise WrapperError(f"{qbraid_device_id} is not a valid device ID.")
