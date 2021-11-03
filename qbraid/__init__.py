@@ -2,14 +2,13 @@
 
 import pkg_resources
 import requests
+import os
 
 from qbraid._version import __version__
 from qbraid.circuits import Circuit, UpdateRule, random_circuit, to_unitary
 from qbraid.devices import get_devices, ibmq_least_busy_qpu, refresh_devices
 from qbraid.devices._utils import get_config
 from qbraid.exceptions import QbraidError, WrapperError
-
-api = "http://localhost:3001/api"
 
 
 def _get_entrypoints(group: str):
@@ -89,7 +88,7 @@ def device_wrapper(qbraid_device_id: str, **kwargs):
     if qbraid_device_id == "ibm_q_least_busy_qpu":
         qbraid_device_id = ibmq_least_busy_qpu()
 
-    device_info = requests.post(api + "/get-devices", json={"qbraid_id": qbraid_device_id}).json()
+    device_info = requests.post(os.getenv("API_URL") + "/get-devices", json={"qbraid_id": qbraid_device_id}).json()
 
     if isinstance(device_info, list):
         device_info = device_info[0]

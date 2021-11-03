@@ -3,10 +3,8 @@
 import warnings
 
 from braket.aws import AwsDevice
-from braket.ocean_plugin import BraketDWaveSampler, BraketSampler
-from dwave.system.composites import EmbeddingComposite
 
-from qbraid.devices._utils import get_config, init_job
+from qbraid.devices._utils import get_config, init_job, install
 from qbraid.devices.aws.job import BraketQuantumTaskWrapper
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
@@ -61,11 +59,21 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         """
         if self.provider != "D-Wave":
             raise DeviceError("Sampler only available for D-Wave (annealing) devices")
+        try:
+            from braket.ocean_plugin import BraketDWaveSampler, BraketSampler
+        except ModuleNotFoundError:
+            install("amazon-braket-ocean-plugin")
+            from braket.ocean_plugin import BraketDWaveSampler, BraketSampler
         if braket_default:
             sampler = BraketSampler(self._s3_location, self._arn)
         else:
             sampler = BraketDWaveSampler(self._s3_location, self._arn)
         if embedding:
+            try:
+                from dwave.system.composites import EmbeddingComposite
+            except ModuleNotFoundError:
+                install("dwave-ocean-sdk")
+                from dwave.system.composites import EmbeddingComposite
             return EmbeddingComposite(sampler)
         else:
             return sampler
