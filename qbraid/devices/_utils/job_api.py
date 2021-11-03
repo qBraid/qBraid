@@ -42,7 +42,7 @@ def init_job(vendor_job_id, device, circuit, shots):
         "circuit_num_qubits": circuit.num_qubits,
         "circuit_depth": circuit.depth,
         "shots": shots,
-        "createdAt": datetime.now(),
+        "createdAt": datetime.utcnow(),
         "status": JobStatus.INITIALIZING,
     }
-    return mongo_init_job(data, device.id)
+    return mongo_init_job(data)

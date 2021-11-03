@@ -88,7 +88,7 @@ def device_wrapper(qbraid_device_id: str, **kwargs):
     if qbraid_device_id == "ibm_q_least_busy_qpu":
         qbraid_device_id = ibmq_least_busy_qpu()
 
-    device_info = requests.get(api+"/get-devices", params={"qbraid_id": qbraid_device_id}).json()[0]
+    device_info = requests.post(api+"/get-devices", json={"qbraid_id": qbraid_device_id}).json()[0]
 
     if device_info is None:
         raise WrapperError(f"{qbraid_device_id} is not a valid device ID.")

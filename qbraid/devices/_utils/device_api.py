@@ -13,7 +13,7 @@ def _get_device_data(query):
     represented by its own length-4 list containing the device provider, name, qbraid_id,
     and status.
     """
-    devices = requests.get(qbraid.api+"/get-devices", params=query).json()
+    devices = requests.post(qbraid.api+"/get-devices", json=query).json()
     device_data = []
     tot_dev = 0
     ref_dev = 0
@@ -23,13 +23,13 @@ def _get_device_data(query):
         name = document["name"]
         provider = document["provider"]
         status_refresh = document["status_refresh"]
-        timestamp = datetime.now()
+        timestamp = datetime.utcnow()
         lag = 0
         if status_refresh is not None:
             format_datetime = str(status_refresh)[:10].split('-') + str(status_refresh)[11:19].split(':')
             format_datetime_int = [int(x) for x in format_datetime]
             mk_datime = datetime(*format_datetime_int)
-            lag += (timestamp - mk_datime).seconds
+            lag = (timestamp - mk_datime).seconds
         if lag > 3600:
             clear_output(wait=True)
             print("Auto-refreshing status for queried devices" + "." * tot_dev, flush=True)
@@ -37,7 +37,7 @@ def _get_device_data(query):
             status = device.status.name
             requests.put(
                 qbraid.api+"/update-device", 
-                params={"qbraid_id": qbraid_id, "$set": {"status": status, "status_refresh": timestamp}}
+                data={"qbraid_id": qbraid_id, "status": status}
                 )
             lag = 0
             ref_dev += 1
@@ -59,17 +59,14 @@ def _get_device_data(query):
 
 def refresh_devices():
     """Refreshes status for all qbraid supported devices. Runtime ~30 seconds."""
-    devices = requests.get(qbraid.api+"/get-devices", params={}).json()
+    devices = requests.post(qbraid.api+"/get-devices", json={}).json()
     pbar = tqdm(total=35, leave=False)
     for document in devices:
         if document["status_refresh"] is not None:  # None => internally not available at moment
             qbraid_id = document["qbraid_id"]
             device = qbraid.device_wrapper(qbraid_id)
             status = device.status.name
-            requests.put(
-                qbraid.api+"/update-device", 
-                params={"qbraid_id": qbraid_id, "$set": {"status": status, "status_refresh": datetime.now()}}
-                )
+            requests.put(qbraid.api+"/update-device", params={"qbraid_id": qbraid_id, "status": status})
         pbar.update(1)
     pbar.close()
 
@@ -116,7 +113,6 @@ def get_devices(query=None):
         query (optional, dict): a dictionary containing any filters to be applied.
 
     """
-
     input_query = {} if query is None else query
     device_data, lag = _get_device_data(input_query)
     # msg = "All status up-to-date" if lag == 0 else f"Avg status lag ~{lag} min"
