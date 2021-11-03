@@ -13,7 +13,7 @@ def _get_device_data(query):
     represented by its own length-4 list containing the device provider, name, qbraid_id,
     and status.
     """
-    devices = requests.post(qbraid.api+"/get-devices", json=query).json()
+    devices = requests.post(qbraid.api + "/get-devices", json=query).json()
     device_data = []
     tot_dev = 0
     ref_dev = 0
@@ -26,7 +26,9 @@ def _get_device_data(query):
         timestamp = datetime.utcnow()
         lag = 0
         if status_refresh is not None:
-            format_datetime = str(status_refresh)[:10].split('-') + str(status_refresh)[11:19].split(':')
+            format_datetime = str(status_refresh)[:10].split("-") + str(status_refresh)[
+                11:19
+            ].split(":")
             format_datetime_int = [int(x) for x in format_datetime]
             mk_datime = datetime(*format_datetime_int)
             lag = (timestamp - mk_datime).seconds
@@ -36,9 +38,8 @@ def _get_device_data(query):
             device = qbraid.device_wrapper(qbraid_id)
             status = device.status.name
             requests.put(
-                qbraid.api+"/update-device", 
-                data={"qbraid_id": qbraid_id, "status": status}
-                )
+                qbraid.api + "/update-device", data={"qbraid_id": qbraid_id, "status": status}
+            )
             lag = 0
             ref_dev += 1
         else:
@@ -59,14 +60,16 @@ def _get_device_data(query):
 
 def refresh_devices():
     """Refreshes status for all qbraid supported devices. Runtime ~30 seconds."""
-    devices = requests.post(qbraid.api+"/get-devices", json={}).json()
+    devices = requests.post(qbraid.api + "/get-devices", json={}).json()
     pbar = tqdm(total=35, leave=False)
     for document in devices:
         if document["status_refresh"] is not None:  # None => internally not available at moment
             qbraid_id = document["qbraid_id"]
             device = qbraid.device_wrapper(qbraid_id)
             status = device.status.name
-            requests.put(qbraid.api+"/update-device", params={"qbraid_id": qbraid_id, "status": status})
+            requests.put(
+                qbraid.api + "/update-device", params={"qbraid_id": qbraid_id, "status": status}
+            )
         pbar.update(1)
     pbar.close()
 

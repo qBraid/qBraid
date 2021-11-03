@@ -11,6 +11,7 @@ from qbraid.exceptions import QbraidError, WrapperError
 
 api = "http://localhost:3001/api"
 
+
 def _get_entrypoints(group: str):
     """Returns a dictionary mapping each entry of ``group`` to its loadable entrypoint."""
     return {entry.name: entry for entry in pkg_resources.iter_entry_points(group)}
@@ -88,7 +89,10 @@ def device_wrapper(qbraid_device_id: str, **kwargs):
     if qbraid_device_id == "ibm_q_least_busy_qpu":
         qbraid_device_id = ibmq_least_busy_qpu()
 
-    device_info = requests.post(api+"/get-devices", json={"qbraid_id": qbraid_device_id}).json()[0]
+    device_info = requests.post(api + "/get-devices", json={"qbraid_id": qbraid_device_id}).json()
+
+    if isinstance(device_info, list):
+        device_info = device_info[0]
 
     if device_info is None:
         raise WrapperError(f"{qbraid_device_id} is not a valid device ID.")
@@ -105,7 +109,7 @@ def device_wrapper(qbraid_device_id: str, **kwargs):
 
 def retrieve_job(qbraid_job_id):
     """Retrieve a job from qBraid API using job ID and return job wrapper object."""
-    qbraid_device = device_wrapper(qbraid_job_id.split(":")[0])
+    qbraid_device = device_wrapper(qbraid_job_id.split("-")[0])
     vendor = qbraid_device.vendor.lower()
     if vendor == "google":
         raise ValueError(f"API job retrieval not supported for {qbraid_device.id}")
