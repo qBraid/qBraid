@@ -9,7 +9,7 @@ from qbraid.devices import get_devices, ibmq_least_busy_qpu, refresh_devices
 from qbraid.devices._utils import get_config
 from qbraid.exceptions import QbraidError, WrapperError
 
-api = "http://localhost:3001/api/"
+api = "http://localhost:3001/api"
 
 def _get_entrypoints(group: str):
     """Returns a dictionary mapping each entry of ``group`` to its loadable entrypoint."""

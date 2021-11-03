@@ -5,6 +5,7 @@ import os
 import cirq
 import numpy as np
 import pytest
+import requests
 from braket.aws import AwsDevice
 from braket.circuits import Circuit as BraketCircuit
 from braket.circuits import Observable as BraketObservable
@@ -13,12 +14,11 @@ from braket.tasks.quantum_task import QuantumTask as BraketQuantumTask
 from cirq.sim.simulator_base import SimulatorBase as CirqSimulator
 from cirq.study.result import Result as CirqResult
 from dwave.system.composites import EmbeddingComposite
-from pymongo import MongoClient
 from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.job import Job as QiskitJob
 
-from qbraid import device_wrapper, random_circuit, retrieve_job
+from qbraid import device_wrapper, random_circuit, retrieve_job, api
 from qbraid.devices import DeviceError, JobError, ResultWrapper
 from qbraid.devices.aws import (
     BraketDeviceWrapper,
@@ -37,17 +37,11 @@ from qbraid.devices.ibm import (
 
 def device_wrapper_inputs(vendor: str):
     """Returns list of tuples containing all device_wrapper inputs for given vendor."""
-    uri = os.environ["MONGO_DB"]
-    client = MongoClient(uri, serverSelectionTimeoutMS=5000)
-    db = client["qbraid-sdk"]
-    collection = db["supported_devices"]
-    cursor = collection.find({})
+    devices = requests.get(api+"/get-devices", params={}).json()
     input_list = []
-    for document in cursor:
+    for document in devices:
         if document["vendor"] == vendor:
             input_list.append(document["qbraid_id"])
-    cursor.close()
-    client.close()
     return input_list
 
 
