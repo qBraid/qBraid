@@ -15,12 +15,13 @@ def _get_device_data(query):
     and status.
     """
     devices = requests.post(os.getenv("API_URL") + "/get-devices", json=query).json()
+    if isinstance(devices, str):
+        raise qbraid.QbraidError(devices)
     device_data = []
     tot_dev = 0
     ref_dev = 0
     tot_lag = 0
     for document in devices:
-        print(document)
         qbraid_id = document["qbraid_id"]
         name = document["name"]
         provider = document["provider"]

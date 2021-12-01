@@ -65,4 +65,4 @@ class CirqSimulatorWrapper(DeviceLikeWrapper):
             measure_all = [measure(q, key=str(q.x)) for q in qubits]
             run_input.append(measure_all)
         cirq_result = self.vendor_dlo.run(run_input, *args, **kwargs)
-        return CirqLocalJobWrapper(cirq_result)
+        return CirqLocalJobWrapper(self, cirq_result)
