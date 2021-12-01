@@ -20,6 +20,7 @@ def _get_device_data(query):
     ref_dev = 0
     tot_lag = 0
     for document in devices:
+        print(document)
         qbraid_id = document["qbraid_id"]
         name = document["name"]
         provider = document["provider"]

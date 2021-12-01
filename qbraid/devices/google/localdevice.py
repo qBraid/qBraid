@@ -7,7 +7,7 @@ from cirq import DensityMatrixSimulator, Simulator, measure
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
 from qbraid.devices.exceptions import DeviceError
-from qbraid.devices.google.result import CirqResultWrapper
+from qbraid.devices.google.localjob import CirqLocalJobWrapper
 
 
 class CirqSimulatorWrapper(DeviceLikeWrapper):
@@ -49,7 +49,7 @@ class CirqSimulatorWrapper(DeviceLikeWrapper):
             shots (int): The number of times to sample. Default is 1.
 
         Returns:
-            qbraid.devices.google.CirqResultWrapper: The result like object for the run.
+            qbraid.devices.google.CirqLocalJobWrapper: The job like object for the run.
 
         """
         if "shots" in kwargs:
@@ -65,4 +65,4 @@ class CirqSimulatorWrapper(DeviceLikeWrapper):
             measure_all = [measure(q, key=str(q.x)) for q in qubits]
             run_input.append(measure_all)
         cirq_result = self.vendor_dlo.run(run_input, *args, **kwargs)
-        return CirqResultWrapper(cirq_result)
+        return CirqLocalJobWrapper(cirq_result)
