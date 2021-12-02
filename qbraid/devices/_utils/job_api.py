@@ -28,7 +28,7 @@ def mongo_get_job(qbraid_job_id, update=None):
     """
     data = {} if not update else update
     body = {"qbraid_job_id": qbraid_job_id, "update": data}
-    metadata = requests.put(os.getenv("API_URL") + "/update-job", data=body).json()
+    metadata = requests.put(os.getenv("API_URL") + "/update-job", data=body, verify=False).json()
     del metadata["_id"]
     return metadata
 

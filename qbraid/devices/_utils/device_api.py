@@ -17,7 +17,7 @@ def _get_device_data(query):
     represented by its own length-4 list containing the device provider, name, qbraid_id,
     and status.
     """
-    devices = requests.post(os.getenv("API_URL") + "/get-devices", json=query).json()
+    devices = requests.post(os.getenv("API_URL") + "/get-devices", json=query, verify=False).json()
     if isinstance(devices, str):
         raise qbraid.QbraidError(devices)
     device_data = []
@@ -46,6 +46,7 @@ def _get_device_data(query):
             requests.put(
                 os.getenv("API_URL") + "/update-device",
                 data={"qbraid_id": qbraid_id, "status": status},
+                verify=False
             )
             lag = 0
             ref_dev += 1
@@ -67,7 +68,7 @@ def _get_device_data(query):
 
 def refresh_devices():
     """Refreshes status for all qbraid supported devices. Runtime ~30 seconds."""
-    devices = requests.post(os.getenv("API_URL") + "/get-devices", json={}).json()
+    devices = requests.post(os.getenv("API_URL") + "/get-devices", json={}, verify=False).json()
     pbar = tqdm(total=35, leave=False)
     for document in devices:
         if document["status_refresh"] is not None:  # None => internally not available at moment
@@ -77,6 +78,7 @@ def refresh_devices():
             requests.put(
                 os.getenv("API_URL") + "/update-device",
                 params={"qbraid_id": qbraid_id, "status": status},
+                verify=False
             )
         pbar.update(1)
     pbar.close()
