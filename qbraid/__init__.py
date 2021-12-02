@@ -3,6 +3,7 @@
 import pkg_resources
 import requests
 import os
+import urllib3
 
 from qbraid._version import __version__
 from qbraid._typing import SUPPORTED_PROGRAM_TYPES, QPROGRAM
@@ -12,6 +13,8 @@ from qbraid.devices import get_devices, ibmq_least_busy_qpu, refresh_devices
 from qbraid.devices._utils import get_config
 from qbraid.exceptions import QbraidError, WrapperError
 from qbraid.quirk import make_quirk, quirk_wrapper
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)  # temporary hack
 
 
 def _get_entrypoints(group: str):
