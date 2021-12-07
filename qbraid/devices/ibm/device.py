@@ -1,6 +1,6 @@
 """QiskitBackendWrapper Class"""
 
-from qiskit import IBMQ, Aer, assemble, execute
+from qiskit import IBMQ, Aer, assemble
 from qiskit import transpile as qiskit_transpile
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.ibmq import IBMQProviderError
@@ -18,11 +18,6 @@ from qbraid.devices.ibm.result import QiskitResultWrapper
 class QiskitBackendWrapper(DeviceLikeWrapper):
     """Wrapper class for IBM Qiskit ``Backend`` objects."""
 
-    def __init__(self, device_info, **kwargs):
-        """Create a QiskitBackendWrapper."""
-
-        super().__init__(device_info, **kwargs)
-
     def _get_device(self) -> QiskitBackend:
         """Initialize an IBM device."""
         if self._obj_ref == "IBMQ":
@@ -36,10 +31,9 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
                 IBMQ.load_account()
                 provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
             return provider.get_backend(self._obj_arg)
-        elif self._obj_ref == "Aer":
+        if self._obj_ref == "Aer":
             return Aer.get_backend(self._obj_arg)
-        else:
-            raise DeviceError(f"obj_ref {self._obj_ref} not found.")
+        raise DeviceError(f"obj_ref {self._obj_ref} not found.")
 
     def _vendor_compat_run_input(self, run_input):
         return qiskit_transpile(run_input, self.vendor_dlo)
@@ -59,6 +53,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         return DeviceStatus.ONLINE
 
     def pending_jobs(self):
+        """Return the number of jobs in the queue for the ibm backend"""
         return self.vendor_dlo.status().to_dict()["pending_jobs"]
 
     def execute(self, run_input, *args, **kwargs):
@@ -100,7 +95,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         """
         run_input, qbraid_circuit = self._compat_run_input(run_input)
         if "shots" in kwargs:
-            shots = kwargs["shots"]
+            shots = kwargs.get("shots")
         else:
             shots = self.vendor_dlo.options.get("shots")
         if self._obj_ref == "Aer":

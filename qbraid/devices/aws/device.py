@@ -14,10 +14,10 @@ from qbraid.devices.exceptions import DeviceError
 class BraketDeviceWrapper(DeviceLikeWrapper):
     """Wrapper class for Amazon Braket ``Device`` objects."""
 
-    def __init__(self, device_info, **kwargs):
+    def __init__(self, device_info):
         """Create a BraketDeviceWrapper."""
 
-        super().__init__(device_info, **kwargs)
+        super().__init__(device_info)
         bucket = get_config("s3_bucket", "AWS")
         folder = get_config("s3_folder", "AWS")
         self._s3_location = (bucket, folder)
@@ -57,6 +57,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             DeviceError: If not a D-Wave annealing device.
 
         """
+        # pylint: disable=import-outside-toplevel
         if self.provider != "D-Wave":
             raise DeviceError("Sampler only available for D-Wave (annealing) devices")
         try:
@@ -75,8 +76,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
                 install("dwave-ocean-sdk")
                 from dwave.system.composites import EmbeddingComposite
             return EmbeddingComposite(sampler)
-        else:
-            return sampler
+        return sampler
 
     def run(self, run_input, *args, **kwargs):
         """Run a quantum task specification on this quantum device. A task can be a circuit or an

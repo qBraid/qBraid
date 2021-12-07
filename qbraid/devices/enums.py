@@ -4,6 +4,15 @@ import enum
 
 
 class DeviceType(enum.IntEnum):
+    """Class for the types of devies.
+
+    Attributes:
+        LOCALSIM (int): local simulator
+        REMOTESIM (int): remote simulator
+        QPUGATE (int): gate-baed qpu
+        QPUANN (int): quantum annealer
+
+    """
     LOCALSIM = 0
     REMOTESIM = 2
     QPUGATE = 1
@@ -11,6 +20,13 @@ class DeviceType(enum.IntEnum):
 
 
 class DeviceStatus(enum.IntEnum):
+    """Class for the status of devies.
+
+    Attributes:
+        ONLINE (int): the device is online
+        OFFLINE (int): the device is offline
+
+    """
     ONLINE = 0
     OFFLINE = 1
 

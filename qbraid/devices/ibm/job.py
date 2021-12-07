@@ -41,7 +41,7 @@ class QiskitJobWrapper(JobLikeWrapper):
         try:
             return self.vendor_jlo.submit()
         except QiskitJobError as err:
-            raise JobError("qBraid JobError raised from {}".format(type(err))) from err
+            raise JobError from err
 
     def result(self):
         """Return the results of the job."""

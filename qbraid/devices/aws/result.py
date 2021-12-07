@@ -1,19 +1,12 @@
 """BraketResultWrapper Class"""
 
-from typing import Union
-
 import numpy as np
-from braket.tasks import AnnealingQuantumTaskResult, GateModelQuantumTaskResult
 
 from qbraid.devices.result import ResultWrapper
 
 
 class BraketResultWrapper(ResultWrapper):
     """Wrapper class for Amazon Braket result objects."""
-
-    def __init__(self, result: Union[GateModelQuantumTaskResult, AnnealingQuantumTaskResult]):
-        """Create new Braket result wrapper"""
-        super().__init__(result)
 
     def measurements(self):
         """2d array - row is shot and column is qubit. Default is None. Only available when

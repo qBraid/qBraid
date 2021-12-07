@@ -13,19 +13,13 @@ from qbraid.devices.google.localjob import CirqLocalJobWrapper
 class CirqSimulatorWrapper(DeviceLikeWrapper):
     """Wrapper class for Google Cirq ``Simulator`` objects."""
 
-    def __init__(self, device_info, **kwargs):
-        """Create CirqSimulatorWrapper."""
-
-        super().__init__(device_info, **kwargs)
-
     def _get_device(self):
         """Initialize a Google device."""
         if self._obj_ref == "Simulator":
             return Simulator()
-        elif self._obj_ref == "DensityMatrixSimulator":
+        if self._obj_ref == "DensityMatrixSimulator":
             return DensityMatrixSimulator()
-        else:
-            raise DeviceError(f"obj_ref {self._obj_ref} not found.")
+        raise DeviceError(f"obj_ref {self._obj_ref} not found.")
 
     def _vendor_compat_run_input(self, run_input):
         return run_input
@@ -54,7 +48,7 @@ class CirqSimulatorWrapper(DeviceLikeWrapper):
         """
         if "shots" in kwargs:
             kwargs["repetitions"] = kwargs.pop("shots")
-        run_input, qbraid_circuit = self._compat_run_input(run_input)
+        run_input, _ = self._compat_run_input(run_input)
         if not run_input.has_measurements():
             warnings.warn(
                 "Circuit has no measurements to sample. Applying measurement gate to all qubits "

@@ -11,7 +11,7 @@ from .exceptions import DeviceError
 class DeviceLikeWrapper(ABC):
     """Abstract interface for device-like classes."""
 
-    def __init__(self, device_info, **kwargs):
+    def __init__(self, device_info):
         """Create a ``DeviceLikeWrapper`` object.
 
         Args:
@@ -75,7 +75,7 @@ class DeviceLikeWrapper(ABC):
         return self._info
 
     @property
-    def id(self):
+    def id(self): # pylint:disable=invalid-name
         """Return the device ID."""
         return self.info["qbraid_id"]
 

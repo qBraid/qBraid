@@ -1,10 +1,9 @@
 """BraketQuantumtaskWrapper Class"""
 
+import logging
 from asyncio import Task
 
 from braket.aws import AwsQuantumTask
-
-import logging
 
 from qbraid.devices.aws import BraketResultWrapper
 from qbraid.devices.job import JobLikeWrapper

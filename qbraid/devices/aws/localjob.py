@@ -7,11 +7,6 @@ from qbraid.devices.localjob import LocalJobWrapper
 class BraketLocalQuantumTaskWrapper(LocalJobWrapper):
     """Wrapper class for Amazon Braket ``LocalQuantumTask`` objects."""
 
-    def __init__(self, device, vendor_jlo):
-        """Create a BraketLocalQuantumTaskWrapper."""
-
-        super().__init__(device, vendor_jlo)
-
     @property
     def id(self):
         """Return a unique id identifying the job."""

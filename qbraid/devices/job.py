@@ -25,12 +25,13 @@ class JobLikeWrapper(ABC):
         self._status_map = STATUS_MAP[self.device.vendor]
 
     @property
-    def id(self) -> str:
+    def id(self) -> str:  # pylint: disable=invalid-name
         """Return a unique id identifying the job."""
         return self._job_id
 
     @property
     def vendor_job_id(self):
+        """Returns the ID assigned by the device vendor"""
         if self._vendor_job_id is None:
             self._cache_metadata = mongo_get_job(self.id)
             self._cache_status = self._cache_metadata["status"]
@@ -39,6 +40,7 @@ class JobLikeWrapper(ABC):
 
     @property
     def device(self):
+        """Returns the qbraid DeviceLikeWrapper object associated with this job."""
         if self._device is None:
             self._device = qbraid.device_wrapper(self.id.split(":")[0])
         return self._device
@@ -60,10 +62,8 @@ class JobLikeWrapper(ABC):
         try:
             return self._status_map[vendor_status]
         except KeyError:
-            logging.warning(
-                f"Expected {self._device.vendor} job status matching one of "
-                f"{list(self._status_map.keys())}, but instead got '{vendor_status}'."
-            )
+            logging.warning("Expected %s job status matching one of %s but instead got '%s'.",
+                self._device.vendor, str(list(self._status_map.keys())), vendor_status)
             return JobStatus.UNKNOWN
 
     @abstractmethod

@@ -10,11 +10,6 @@ from qbraid.devices.enums import DeviceStatus
 class BraketLocalSimulatorWrapper(DeviceLikeWrapper):
     """Wrapper class for Amazon Braket ``LocalSimulator`` objects."""
 
-    def __init__(self, device_info, **kwargs):
-        """Create a BraketDeviceWrapper."""
-
-        super().__init__(device_info, **kwargs)
-
     def _get_device(self):
         """Initialize an AWS local simulator."""
         return LocalSimulator(backend=self._obj_arg)

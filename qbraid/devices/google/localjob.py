@@ -1,14 +1,15 @@
 """BraketQuantumtaskWrapper Class"""
 
+from datetime import datetime
 from qbraid.devices.google.result import CirqResultWrapper
 from qbraid.devices.localjob import LocalJobWrapper
-from datetime import datetime
 
 
 class CirqLocalJobWrapper(LocalJobWrapper):
-    """CirqLocalJobWrapper class. NOTE: This is a place-holder job class for consistency. In Cirq, calling the run
-    method on a simulator returns a result object. However, for consistency with the job-like interfaces in AWS Braket
-    and IBM Qiskit, we provide this place-holder job class so that run-time is procedure is identical for all devices."""
+    """CirqLocalJobWrapper class. NOTE: This is a place-holder job class for consistency.
+    In Cirq, calling the run method on a simulator returns a result object. However, for
+    consistency with the job-like interfaces in AWS Braket and IBM Qiskit, we provide this
+    place-holder job class so that run-time is procedure is identical for all devices."""
 
     def __init__(self, device, vendor_rlo):
         """Create a CirqSimulatorJob."""

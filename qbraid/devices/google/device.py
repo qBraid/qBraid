@@ -1,5 +1,7 @@
 """Module for Cirq device-like object wrappers."""
 
+# pylint: disable=unused-argument,unused-import,no-self-use
+
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.google.job import CirqEngineJobWrapper
 from qbraid.devices.google.result import CirqResultWrapper
@@ -7,14 +9,7 @@ from qbraid.devices.google.result import CirqResultWrapper
 
 class CirqEngineWrapper(DeviceLikeWrapper):
     """Wrapper class for Google Cirq ``Engine`` objects. NOTE: Right now the CirqEngine only
-    allows privelaged access, so this class has not been tested and is still in development.
-
-    """
-
-    def __init__(self, device_info, **kwargs):
-        """Creat a CirqEngineWrapper."""
-
-        super().__init__(device_info, **kwargs)
+    allows privelaged access, so this class has not been tested and is still in development."""
 
     def _get_device(self):
         """Initialize a Google credentialed device."""
@@ -46,10 +41,11 @@ class CirqEngineWrapper(DeviceLikeWrapper):
             qbraid.devices.google.CirqResultWrapper: The result for this run.
 
         """
-        run_input, _ = self._compat_run_input(run_input)
-        cirq_engine = self.vendor_dlo
-        cirq_result = cirq_engine.run(run_input, *args, **kwargs)
-        return CirqResultWrapper(cirq_result)
+        # run_input, _ = self._compat_run_input(run_input)
+        # cirq_engine = self.vendor_dlo
+        # cirq_result = cirq_engine.run(run_input, *args, **kwargs)
+        # return CirqResultWrapper(cirq_result)
+        return NotImplementedError
 
     def run_sweep(self, run_input, *args, **kwargs):
         """Runs the supplied Circuit via Quantum Engine.Creates
@@ -69,7 +65,8 @@ class CirqEngineWrapper(DeviceLikeWrapper):
             TrialResults, one for each parameter sweep.
 
         """
-        run_input, qbraid_circuit = self._compat_run_input(run_input)
-        cirq_engine = self.vendor_dlo
-        cirq_engine_job = cirq_engine.run_sweep(run_input, *args, **kwargs)
-        return CirqEngineJobWrapper(self, qbraid_circuit, cirq_engine_job)
+        # run_input, qbraid_circuit = self._compat_run_input(run_input)
+        # cirq_engine = self.vendor_dlo
+        # cirq_engine_job = cirq_engine.run_sweep(run_input, *args, **kwargs)
+        # return CirqEngineJobWrapper(self, qbraid_circuit, cirq_engine_job)
+        return NotImplementedError
