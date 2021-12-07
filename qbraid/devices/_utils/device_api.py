@@ -1,3 +1,5 @@
+"""Module for interacting with qbraid device API"""
+
 import os
 from datetime import datetime
 import requests
@@ -7,6 +9,7 @@ import qbraid
 from IPython.core.display import HTML, clear_output, display
 from tqdm.notebook import tqdm
 
+# pylint: disable=too-many-locals
 
 def _get_device_data(query):
     """Internal :meth:`qbraid.get_devices` helper function that connects with the MongoDB database
@@ -122,7 +125,7 @@ def get_devices(query=None):
 
     """
     input_query = {} if query is None else query
-    device_data, lag = _get_device_data(input_query)
+    device_data, _ = _get_device_data(input_query)
     # msg = "All status up-to-date" if lag == 0 else f"Avg status lag ~{lag} min"
 
     html = """<h3>Supported Devices</h3><table><tr>

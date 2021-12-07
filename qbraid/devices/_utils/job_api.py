@@ -1,3 +1,5 @@
+"""Module for interacting with qbraid job API"""
+
 import os
 from datetime import datetime
 import requests
@@ -32,6 +34,7 @@ def mongo_get_job(qbraid_job_id, update=None):
 
 
 def init_job(vendor_job_id, device, circuit, shots):
+    """Initialize data dictionary for new qbraid job and pass to mongo init function"""
     data = {
         "qbraid_job_id": "",
         "vendor_job_id": vendor_job_id,

@@ -1,3 +1,5 @@
+"""Module to map qbraid status to equivalent status of each supported front-end"""
+
 from qbraid.devices.enums import JobStatus
 
 BraketQuantumTask = {

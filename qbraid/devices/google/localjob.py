@@ -6,8 +6,8 @@ from datetime import datetime
 
 
 class CirqLocalJobWrapper(LocalJobWrapper):
-    """CirqLocalJobWrapper class. NOTE: This is a place-holder job class for consistency. In Cirq, calling the run 
-    method on a simulator returns a result object. However, for consistency with the job-like interfaces in AWS Braket 
+    """CirqLocalJobWrapper class. NOTE: This is a place-holder job class for consistency. In Cirq, calling the run
+    method on a simulator returns a result object. However, for consistency with the job-like interfaces in AWS Braket
     and IBM Qiskit, we provide this place-holder job class so that run-time is procedure is identical for all devices."""
 
     def __init__(self, device, vendor_rlo):
@@ -15,8 +15,7 @@ class CirqLocalJobWrapper(LocalJobWrapper):
 
         super().__init__(device, vendor_rlo)
         self.vendor_rlo = vendor_rlo
-        self._id = str(self.vendor_rlo).replace(' ', '') + str(datetime.now()).split(' ')[1]
-
+        self._id = str(self.vendor_rlo).replace(" ", "") + str(datetime.now()).split(" ")[1]
 
     @property
     def id(self):

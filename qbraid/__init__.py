@@ -89,7 +89,9 @@ def device_wrapper(qbraid_device_id: str, **kwargs):
     if qbraid_device_id == "ibm_q_least_busy_qpu":
         qbraid_device_id = ibmq_least_busy_qpu()
 
-    device_info = requests.post(os.getenv("API_URL") + "/get-devices", json={"qbraid_id": qbraid_device_id}).json()
+    device_info = requests.post(
+        os.getenv("API_URL") + "/get-devices", json={"qbraid_id": qbraid_device_id}
+    ).json()
 
     if isinstance(device_info, list):
         device_info = device_info[0]
