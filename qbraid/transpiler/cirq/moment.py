@@ -19,6 +19,7 @@ class CirqMomentWrapper(MomentWrapper):
         super().__init__()
         self.moment = moment
         if not instructions:
-            self._instructions = [CirqInstructionWrapper(i) for i in moment.instructions]
+            # https://github.com/qBraid/qBraid/issues/28
+            self._instructions = [CirqInstructionWrapper(i) for i in moment.instructions] # pylint: disable=no-value-for-parameter
         else:
             self._instructions = instructions

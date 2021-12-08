@@ -1,5 +1,7 @@
 """CirqCircuitWrapper Class"""
 
+# pylint: disable=invalid-name
+
 from typing import Iterable, List
 
 from cirq.circuits import Circuit

@@ -35,7 +35,7 @@ class QiskitCircuitWrapper(CircuitWrapper):
     def instructions(self) -> List[QiskitInstructionWrapper]:
         """Return list of the circuit's instrucions."""
         instructions = []
-        for instruction, qubit_list, clbit_list in self.circuit.data:
+        for instruction, qubit_list, _ in self.circuit.data:
             qubits = [self.input_qubit_mapping[q] for q in qubit_list]
             param_list = instruction.params
             params = [
