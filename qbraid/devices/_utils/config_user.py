@@ -1,5 +1,7 @@
 """Module for creating and modifying user config files"""
 
+# pylint: disable=too-many-arguments
+
 import configparser
 import os
 import sys
@@ -11,8 +13,6 @@ from .config_prompts import CONFIG_PROMPTS, qbraid_config_path
 
 raw_input = input
 secret_input = getpass
-
-# pylint: disable=too-many-arguments
 
 def mask_value(value):
     """Replaces all but last four characters of token ``value`` with *'s"""

@@ -1,5 +1,7 @@
 """DeviceLikeWrapper Class"""
 
+# pylint:disable=invalid-name
+
 from abc import ABC, abstractmethod
 
 import qbraid
@@ -75,7 +77,7 @@ class DeviceLikeWrapper(ABC):
         return self._info
 
     @property
-    def id(self): # pylint:disable=invalid-name
+    def id(self):
         """Return the device ID."""
         return self.info["qbraid_id"]
 

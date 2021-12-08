@@ -1,15 +1,15 @@
 """Module for interacting with qbraid device API"""
 
+# pylint: disable=too-many-locals
+
 import os
 from datetime import datetime
 import requests
 
-import qbraid
-
-from IPython.core.display import HTML, clear_output, display
 from tqdm.notebook import tqdm
+from IPython.core.display import HTML, clear_output, display
 
-# pylint: disable=too-many-locals
+import qbraid
 
 def _get_device_data(query):
     """Internal :meth:`qbraid.get_devices` helper function that connects with the MongoDB database

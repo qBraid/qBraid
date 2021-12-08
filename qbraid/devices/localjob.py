@@ -1,5 +1,7 @@
 """JobLikeWrapper Class"""
 
+# pylint: disable=invalid-name,no-self-use
+
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
@@ -37,6 +39,7 @@ class LocalJobWrapper(ABC):
         return JobStatus.COMPLETED
 
     def cancel(self) -> None:
+        """Cancel current job"""
         raise JobError("Cannot cancel a completed job.")
 
     def __repr__(self) -> str:

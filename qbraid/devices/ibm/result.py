@@ -1,10 +1,10 @@
 """QiskitResultWrapper Class"""
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
 
 from qbraid.devices.result import ResultWrapper
-
-# pylint: disable=too-few-public-methods
 
 
 class QiskitResultWrapper(ResultWrapper):
