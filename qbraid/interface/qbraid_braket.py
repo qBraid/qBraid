@@ -1,4 +1,6 @@
+import numpy as np
 from braket.circuits import Circuit
+from braket.circuits.unitary_calculation import calculate_unitary
 
 def make_contiguous(circuit: Circuit) -> Circuit:
     """Checks whether the circuit uses contiguous qubits/indices, 
@@ -17,4 +19,9 @@ def make_contiguous(circuit: Circuit) -> Circuit:
         for index in vacant_qubits:
             circuit.i(index)
     return circuit
-    
+
+
+def unitary_from_braket(circuit: Circuit) -> np.ndarray:
+    """Calculate unitary of a braket circuit."""
+    contiguous_circuit = make_contiguous(circuit)
+    return calculate_unitary(contiguous_circuit.qubit_count, contiguous_circuit.instructions)

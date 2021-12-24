@@ -6,7 +6,8 @@ import os
 
 from qbraid._version import __version__
 from qbraid._typing import SUPPORTED_PROGRAM_TYPES, QPROGRAM
-from qbraid.circuits import Circuit, UpdateRule, random_circuit, to_unitary
+from qbraid.interface import to_unitary, make_contiguous
+from qbraid.circuits import Circuit, UpdateRule, random_circuit
 from qbraid.devices import get_devices, ibmq_least_busy_qpu, refresh_devices
 from qbraid.devices._utils import get_config
 from qbraid.exceptions import QbraidError, WrapperError
@@ -70,7 +71,8 @@ def circuit_wrapper(circuit, **kwargs):
 
     if package in transpiler_entrypoints:
         circuit_wrapper_class = transpiler_entrypoints[ep].load()
-        return circuit_wrapper_class(circuit, **kwargs)
+        compat_circuit = make_contiguous(circuit)
+        return circuit_wrapper_class(compat_circuit, **kwargs)
 
     raise WrapperError(f"{package} is not a supported package.")
 

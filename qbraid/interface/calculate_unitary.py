@@ -16,7 +16,7 @@ def to_unitary(circuit: QPROGRAM) -> ndarray:
         circuit: Any quantum circuit object supported by qBraid.
 
     Raises:
-        TypeError: If the input circuit is not supported.
+        UnsupportedCircuitError: If the input circuit is not supported.
 
     Returns:
         numpy.ndarray: Matrix representation of the input circuit.
@@ -31,15 +31,15 @@ def to_unitary(circuit: QPROGRAM) -> ndarray:
         )
 
     if "qiskit" in package:
-        from qbraid.interface.qiskit.unitary import unitary_from_qiskit
+        from qbraid.interface.qbraid_qiskit import unitary_from_qiskit
 
         to_unitary_function = unitary_from_qiskit
     elif "cirq" in package:
-        from qbraid.interface.cirq.unitary import unitary_from_cirq
+        from qbraid.interface.qbraid_cirq import unitary_from_cirq
 
         to_unitary_function = unitary_from_cirq
     elif "braket" in package:
-        from qbraid.interface.braket.unitary import unitary_from_braket
+        from qbraid.interface.qbraid_braket import unitary_from_braket
 
         to_unitary_function = unitary_from_braket
     else:

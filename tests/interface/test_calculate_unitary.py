@@ -1,5 +1,5 @@
 """
-Unit tests for the qbraid unitary interface.
+Unit tests for the qbraid unitary interfacing
 """
 
 import pytest

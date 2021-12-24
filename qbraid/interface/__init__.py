@@ -1,1 +1,2 @@
-from .compat_unitary import to_unitary
+from .calculate_unitary import to_unitary
+from .convert_to_contiguous import make_contiguous
