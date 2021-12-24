@@ -459,3 +459,33 @@ def test_1000_random_circuits(num_qubits):
             print(target_circuit)
             assert False
     assert True
+
+
+def braket_hxyz(qubit_index):
+    circuit = BraketCircuit()
+    circuit.h(qubit_index)
+    circuit.x(qubit_index)
+    circuit.y(qubit_index)
+    circuit.z(qubit_index)
+    return circuit
+
+def cirq_hxyz(qubit_index):
+    circuit = CirqCircuit()
+    qubit = cirq.LineQubit(qubit_index)
+    circuit.append(cirq.H(qubit))
+    circuit.append(cirq.X(qubit))
+    circuit.append(cirq.Y(qubit))
+    circuit.append(cirq.Z(qubit))
+    return circuit
+    
+def qiskit_hxyz(qubit_index):
+    circuit = QiskitCircuit(qubit_index)
+    circuit.h(qubit_index)
+    circuit.x(qubit_index)
+    circuit.y(qubit_index)
+    circuit.z(qubit_index)
+    return circuit
+
+
+def test_non_contiguous_qubits():
+    assert True

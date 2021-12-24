@@ -5,6 +5,7 @@ import requests
 import os
 
 from qbraid._version import __version__
+from qbraid._typing import SUPPORTED_PROGRAM_TYPES, QPROGRAM
 from qbraid.circuits import Circuit, UpdateRule, random_circuit, to_unitary
 from qbraid.devices import get_devices, ibmq_least_busy_qpu, refresh_devices
 from qbraid.devices._utils import get_config
