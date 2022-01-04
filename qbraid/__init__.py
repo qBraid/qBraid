@@ -7,6 +7,7 @@ import urllib3
 
 from qbraid._version import __version__
 from qbraid._typing import SUPPORTED_PROGRAM_TYPES, QPROGRAM
+from qbraid import transpiler2
 from qbraid.interface import to_unitary, make_contiguous
 from qbraid.circuits import Circuit, UpdateRule, random_circuit
 from qbraid.devices import get_devices, ibmq_least_busy_qpu, refresh_devices
