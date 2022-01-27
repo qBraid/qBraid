@@ -44,7 +44,6 @@ Devices API
    LocalJobWrapper
    ResultWrapper
    get_devices
-   refresh_devices
    update_config
    ibmq_least_busy_qpu
    DeviceStatus
@@ -54,7 +53,7 @@ Devices API
    ConfigError
 
 """
-from ._utils import get_devices, ibmq_least_busy_qpu, refresh_devices, update_config
+from ._utils import get_devices, ibmq_least_busy_qpu, update_config
 from .device import DeviceLikeWrapper
 from .enums import DeviceStatus, JobStatus
 from .exceptions import ConfigError, DeviceError, JobError

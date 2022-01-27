@@ -8,7 +8,7 @@ import urllib3
 
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid._version import __version__
-from qbraid.devices import get_devices, ibmq_least_busy_qpu, refresh_devices
+from qbraid.devices import get_devices, ibmq_least_busy_qpu
 from qbraid.devices._utils import get_config
 from qbraid.exceptions import QbraidError, WrapperError
 from qbraid.interface import convert_to_contiguous, random_circuit, to_unitary

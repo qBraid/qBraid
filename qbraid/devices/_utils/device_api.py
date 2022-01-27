@@ -7,7 +7,6 @@ from datetime import datetime
 
 import requests
 from IPython.display import HTML, clear_output, display
-from tqdm.notebook import tqdm
 
 import qbraid
 
@@ -68,22 +67,24 @@ def _get_device_data(query):
     return device_data, int(lag_minutes)
 
 
-# def refresh_devices():
-#     """Refreshes status for all qbraid supported devices. Runtime ~30 seconds."""
-#     devices = requests.post(os.getenv("API_URL") + "/get-devices", json={}, verify=False).json()
-#     pbar = tqdm(total=35, leave=False)
-#     for document in devices:
-#         if document["status_refresh"] is not None:  # None => internally not available at moment
-#             qbraid_id = document["qbraid_id"]
-#             device = qbraid.device_wrapper(qbraid_id)
-#             status = device.status.name
-#             requests.put(
-#                 os.getenv("API_URL") + "/update-device",
-#                 params={"qbraid_id": qbraid_id, "status": status},
-#                 verify=False,
-#             )
-#         pbar.update(1)
-#     pbar.close()
+def refresh_devices():
+    """Refreshes status for all qbraid supported devices. Runtime ~30 seconds."""
+    from tqdm.notebook import tqdm
+
+    devices = requests.post(os.getenv("API_URL") + "/get-devices", json={}, verify=False).json()
+    pbar = tqdm(total=35, leave=False)
+    for document in devices:
+        if document["status_refresh"] is not None:  # None => internally not available at moment
+            qbraid_id = document["qbraid_id"]
+            device = qbraid.device_wrapper(qbraid_id)
+            status = device.status.name
+            requests.put(
+                os.getenv("API_URL") + "/update-device",
+                params={"qbraid_id": qbraid_id, "status": status},
+                verify=False,
+            )
+        pbar.update(1)
+    pbar.close()
 
 
 def get_devices(query=None):
@@ -130,19 +131,19 @@ def get_devices(query=None):
     """
     input_query = {} if query is None else query
     device_data, lag = _get_device_data(input_query)
-    hours, minutes = divmod(lag, 60)
-    min_10, _ = divmod(minutes, 10)
-    min_display = min_10 * 10
-    if hours > 0:
-        if minutes > 30:
-            msg = f"Device status updated {hours}.5 hours ago"
-        else:
-            hour_s = "hour" if hours == 1 else "hours"
-            msg = f"Device status updated {hours} {hour_s} ago"
-    else:
-        if minutes < 10:
-            min_display = minutes
-        msg = f"Device status updated {min_display} minutes ago"
+    # hours, minutes = divmod(lag, 60)
+    # min_10, _ = divmod(minutes, 10)
+    # min_display = min_10 * 10
+    # if hours > 0:
+    #     if minutes > 30:
+    #         msg = f"Device status updated {hours}.5 hours ago"
+    #     else:
+    #         hour_s = "hour" if hours == 1 else "hours"
+    #         msg = f"Device status updated {hours} {hour_s} ago"
+    # else:
+    #     if minutes < 10:
+    #         min_display = minutes
+    #     msg = f"Device status updated {min_display} minutes ago"
 
     html = """<h3>Supported Devices</h3><table><tr>
     <th style='text-align:left'>Provider</th>
@@ -173,8 +174,8 @@ def get_devices(query=None):
             "given criteria</td></tr>"
         )
 
-    else:  # Design choice whether to display anything here or not
-        html += f"<tr><td colspan='4'; style='text-align:right'>{msg}</td></tr>"
+    # else:  # Design choice whether to display anything here or not
+    #     html += f"<tr><td colspan='4'; style='text-align:right'>{msg}</td></tr>"
 
     html += "</table>"
 

@@ -5,4 +5,3 @@ qiskit~=0.34.0
 requests==2.26.0
 requests[use_chardet_on_py3]
 sympy~=1.7.1
-tqdm~=4.60.0
