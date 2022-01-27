@@ -1,9 +1,13 @@
-from numpy import ndarray
 from typing import Any, Callable
-from qbraid._typing import SUPPORTED_PROGRAM_TYPES, QPROGRAM
+
+from numpy import ndarray
+
+from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
+
 
 class UnsupportedCircuitError(Exception):
     pass
+
 
 class UnitaryCalculationError(Exception):
     pass
@@ -27,9 +31,7 @@ def to_unitary(circuit: QPROGRAM, ensure_contiguous=False) -> ndarray:
     try:
         package = circuit.__module__
     except AttributeError:
-        raise UnsupportedCircuitError(
-            "Could not determine the package of the input circuit."
-        )
+        raise UnsupportedCircuitError("Could not determine the package of the input circuit.")
 
     if "qiskit" in package:
         from qbraid.interface.qbraid_qiskit import unitary_from_qiskit
@@ -52,8 +54,6 @@ def to_unitary(circuit: QPROGRAM, ensure_contiguous=False) -> ndarray:
     try:
         unitary = to_unitary_function(circuit, ensure_contiguous=ensure_contiguous)
     except Exception:
-        raise UnitaryCalculationError(
-            "Unitary could not be calculated from given circuit."
-        )
+        raise UnitaryCalculationError("Unitary could not be calculated from given circuit.")
 
     return unitary

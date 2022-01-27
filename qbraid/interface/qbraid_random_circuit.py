@@ -1,9 +1,9 @@
 """Utility functions for generating random circuits."""
 
+from cirq.testing import random_circuit as cirq_random_circuit
 from numpy.random import randint
 from qiskit.circuit.exceptions import CircuitError as QiskitCircuitError
 from qiskit.circuit.random import random_circuit as qiskit_random_circuit
-from cirq.testing import random_circuit as cirq_random_circuit
 
 import qbraid
 from qbraid.circuits.exceptions import CircuitError
@@ -28,7 +28,7 @@ def random_circuit(package, num_qubits=None, depth=None, measure=False):
     """
     num_qubits = num_qubits if num_qubits else randint(1, 4)
     depth = depth if depth else randint(1, 4)
-    seed = randint(1,11)
+    seed = randint(1, 11)
     if package == "cirq":
         try:
             return cirq_random_circuit(num_qubits, n_moments=depth, op_density=1, random_state=seed)

@@ -364,7 +364,8 @@ def circuit_to_qiskit(cw, auto_measure=False) -> QuantumCircuit:
 
 
 def instruction_to_qiskit(
-    iw, output_qubit_mapping, output_param_mapping) -> Tuple[Instruction, list, list]:
+    iw, output_qubit_mapping, output_param_mapping
+) -> Tuple[Instruction, list, list]:
     """Convert qbraid instruction wrapper to qiskit instruction"""
 
     gate = iw.gate.transpile("qiskit", output_param_mapping)

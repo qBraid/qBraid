@@ -1,16 +1,9 @@
 from typing import List, Sequence
 
 import numpy as np
-
-from cirq import (
-    LineQubit,
-    GridQubit,
-    NamedQubit,
-    Circuit,
-    I,
-
-)
+from cirq import Circuit, GridQubit, I, LineQubit, NamedQubit
 from cirq.ops import Qid
+
 
 def _convert_to_line_qubits(
     circuit: Circuit,
@@ -41,8 +34,7 @@ def _key_from_qubit(qubit: Qid) -> str:
         key = str(qubit.name)
     else:
         raise ValueError(
-            "Expected qubit of type 'GridQubit' or 'LineQubit'"
-            f"but instead got {type(qubit)}"
+            "Expected qubit of type 'GridQubit' or 'LineQubit'" f"but instead got {type(qubit)}"
         )
     return key
 
@@ -57,8 +49,7 @@ def _int_from_qubit(qubit: Qid) -> int:
         index = int(qubit._comparison_key().split(":")[0][7:])
     else:
         raise ValueError(
-            "Expected qubit of type 'GridQubit' or 'LineQubit'"
-            f"but instead got {type(qubit)}"
+            "Expected qubit of type 'GridQubit' or 'LineQubit'" f"but instead got {type(qubit)}"
         )
     return index
 
@@ -77,6 +68,7 @@ def _make_qubits(circuit: Circuit, qubits: List[int]) -> Sequence[Qid]:
             f"'NamedQubit' but instead got {type(qubit_obj)}"
         )
     return qids
+
 
 def _convert_to_contiguous_cirq(circuit: Circuit) -> Circuit:
     """Checks whether the circuit uses contiguous qubits/indices,
@@ -102,8 +94,8 @@ def _convert_to_contiguous_cirq(circuit: Circuit) -> Circuit:
             circuit.append(I(q))
     return circuit
 
+
 def unitary_from_cirq(circuit: Circuit, ensure_contiguous=False) -> np.ndarray:
     """Calculate unitary of a cirq circuit."""
     input_circuit = circuit if not ensure_contiguous else _convert_to_contiguous_cirq(circuit)
     return input_circuit.unitary()
-

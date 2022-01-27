@@ -1,9 +1,9 @@
 """Defines input types for a quantum backend"""
 from typing import Union
 
+from braket.circuits import Circuit as _BraketCircuit
 from cirq import Circuit as _CirqCircuit
 from qiskit import QuantumCircuit as _QiskitCircuit
-from braket.circuits import Circuit as _BraketCircuit
 
 # Supported quantum programs.
 SUPPORTED_PROGRAM_TYPES = {

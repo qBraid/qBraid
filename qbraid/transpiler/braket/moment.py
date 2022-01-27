@@ -19,4 +19,6 @@ class BraketMomentWrapper(MomentWrapper):
         super().__init__()
         self.moment = moment
         # https://github.com/qBraid/qBraid/issues/28
-        self._instructions = [BraketInstructionWrapper(i) for i in moment.instructions] # pylint: disable=no-value-for-parameter
+        self._instructions = [
+            BraketInstructionWrapper(i) for i in moment.instructions
+        ]  # pylint: disable=no-value-for-parameter

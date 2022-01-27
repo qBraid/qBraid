@@ -2,6 +2,7 @@ import numpy as np
 from braket.circuits import Circuit
 from braket.circuits.unitary_calculation import calculate_unitary
 
+
 def _convert_to_contiguous_braket(circuit: Circuit) -> Circuit:
     """Checks whether the circuit uses contiguous qubits/indices,
     and if not, adds identity gates to vacant registers as needed."""

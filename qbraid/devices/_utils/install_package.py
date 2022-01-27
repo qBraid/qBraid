@@ -1,13 +1,13 @@
 """Module to pip install"""
 
+import logging
 import subprocess
 import sys
-import logging
 
 import qbraid
 
 
-def install(package : str):
+def install(package: str):
     """Executes ``python -m pip install package`` for given ``package``"""
     logging.info("Installing %s....", package)
     try:

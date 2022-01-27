@@ -4,12 +4,13 @@
 
 import os
 from datetime import datetime
-import requests
 
-from tqdm.notebook import tqdm
+import requests
 from IPython.display import HTML, clear_output, display
+from tqdm.notebook import tqdm
 
 import qbraid
+
 
 def _get_device_data(query):
     """Internal :meth:`qbraid.get_devices` helper function that connects with the MongoDB database
@@ -46,7 +47,7 @@ def _get_device_data(query):
             requests.put(
                 os.getenv("API_URL") + "/update-device",
                 data={"qbraid_id": qbraid_id, "status": status},
-                verify=False
+                verify=False,
             )
             lag = 0
             ref_dev += 1
@@ -78,7 +79,7 @@ def refresh_devices():
             requests.put(
                 os.getenv("API_URL") + "/update-device",
                 params={"qbraid_id": qbraid_id, "status": status},
-                verify=False
+                verify=False,
             )
         pbar.update(1)
     pbar.close()

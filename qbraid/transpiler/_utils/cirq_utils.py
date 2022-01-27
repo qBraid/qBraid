@@ -3,7 +3,6 @@ from typing import Union
 import numpy as np
 from cirq import Circuit, Gate, GridQubit, LineQubit, unitary
 from cirq.ops import CSwapGate, MeasurementGate
-from cirq.ops.identity import IdentityGate
 from cirq.ops.common_gates import (
     CXPowGate,
     CZPowGate,
@@ -18,6 +17,7 @@ from cirq.ops.common_gates import (
 )
 from cirq.ops.controlled_gate import ControlledGate
 from cirq.ops.gate_features import SingleQubitGate
+from cirq.ops.identity import IdentityGate
 from cirq.ops.matrix_gates import MatrixGate
 from cirq.ops.measure_util import measure as CirqMeasure
 from cirq.ops.moment import Moment

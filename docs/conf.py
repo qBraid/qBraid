@@ -20,8 +20,8 @@ sys.path.insert(0, os.path.abspath("../../qbraid"))
 
 # -- Project information -----------------------------------------------------
 
-project = "qBraid-sdk"
-copyright = "2021, qBraid Development Team"
+project = "qBraid-SDK"
+copyright = "2022, qBraid Development Team"
 author = "qBraid Development Team"
 
 # The full version, including alpha/beta/rc tags

@@ -1,15 +1,18 @@
 from typing import Any, Callable
-from qbraid._typing import SUPPORTED_PROGRAM_TYPES, QPROGRAM
+
+from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
+
 
 class UnsupportedCircuitError(Exception):
     pass
+
 
 class CircuitConversionError(Exception):
     pass
 
 
 def convert_to_contiguous(circuit: QPROGRAM) -> QPROGRAM:
-    """Checks whether the circuit uses contiguous qubits/indices, 
+    """Checks whether the circuit uses contiguous qubits/indices,
     and if not, adds identity gates to vacant registers as needed.
 
     Args:
@@ -26,9 +29,7 @@ def convert_to_contiguous(circuit: QPROGRAM) -> QPROGRAM:
     try:
         package = circuit.__module__
     except AttributeError:
-        raise UnsupportedCircuitError(
-            "Could not determine the package of the input circuit."
-        )
+        raise UnsupportedCircuitError("Could not determine the package of the input circuit.")
 
     if "qiskit" in package:
         return circuit

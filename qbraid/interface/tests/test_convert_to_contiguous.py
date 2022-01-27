@@ -5,7 +5,8 @@ Unit tests for the qbraid convert_to_contiguous interfacing
 import cirq
 import numpy as np
 from braket.circuits import Circuit as BraketCircuit
-from qbraid.interface import to_unitary, convert_to_contiguous
+
+from qbraid.interface import convert_to_contiguous, to_unitary
 
 
 def test_make_contiguous():
@@ -30,11 +31,10 @@ def test_make_contiguous():
 
     braket_compat_circuit = convert_to_contiguous(braket_circuit)
     assert braket_compat_circuit.qubit_count == 5
-    
+
     cirq_compat_circuit = convert_to_contiguous(cirq_circuit)
     assert len(cirq_circuit.all_qubits()) == 5
-    
+
     braket_compat_unitary = to_unitary(braket_compat_circuit, ensure_contiguous=True)
     cirq_compat_unitary = to_unitary(cirq_compat_circuit, ensure_contiguous=True)
     assert np.allclose(braket_compat_unitary, cirq_compat_unitary)
-

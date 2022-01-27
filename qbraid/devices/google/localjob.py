@@ -1,6 +1,7 @@
 """BraketQuantumtaskWrapper Class"""
 
 from datetime import datetime
+
 from qbraid.devices.google.result import CirqResultWrapper
 from qbraid.devices.localjob import LocalJobWrapper
 

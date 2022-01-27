@@ -14,6 +14,7 @@ from .config_prompts import CONFIG_PROMPTS, qbraid_config_path
 raw_input = input
 secret_input = getpass
 
+
 def mask_value(value):
     """Replaces all but last four characters of token ``value`` with *'s"""
     if value is None:

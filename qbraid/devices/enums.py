@@ -13,6 +13,7 @@ class DeviceType(enum.IntEnum):
         QPUANN (int): quantum annealer
 
     """
+
     LOCALSIM = 0
     REMOTESIM = 2
     QPUGATE = 1
@@ -27,6 +28,7 @@ class DeviceStatus(enum.IntEnum):
         OFFLINE (int): the device is offline
 
     """
+
     ONLINE = 0
     OFFLINE = 1
 
