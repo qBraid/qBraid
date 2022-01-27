@@ -23,7 +23,7 @@ def _get_device_data(query):
         raise qbraid.QbraidError(devices)
     device_data = []
     tot_dev = 0
-    ref_dev = 0
+    # ref_dev = 0
     tot_lag = 0
     for document in devices:
         qbraid_id = document["qbraid_id"]
@@ -59,10 +59,10 @@ def _get_device_data(query):
         device_data.append([provider, name, qbraid_id, status])
     if tot_dev == 0:
         return [], 0  # No results matching given criteria
-    if ref_dev > 0:
-        clear_output(wait=True)
-        # print("All status up-to-date", flush=True)
-        # print("\r", f"Auto-refreshed status for {ref_dev}/{tot_dev} queried devices", end="")
+    # if ref_dev > 0:
+    #     clear_output(wait=True)
+    #     # print("All status up-to-date", flush=True)
+    #     # print("\r", f"Auto-refreshed status for {ref_dev}/{tot_dev} queried devices", end="")
     device_data.sort()
     lag_minutes, _ = divmod(tot_lag / tot_dev, 60)
     return device_data, int(lag_minutes)
