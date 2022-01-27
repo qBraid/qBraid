@@ -79,8 +79,6 @@ Circuits API
    Parameter
    CircuitError
    drawer
-   random_circuit
-   to_unitary
 
 """
 from .circuit import Circuit
@@ -134,4 +132,3 @@ from .parameter import Parameter
 from .parametertable import ParameterTable
 from .qubit import Qubit
 from .update_rule import UpdateRule
-from .utils import to_unitary

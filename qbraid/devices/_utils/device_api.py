@@ -7,7 +7,7 @@ from datetime import datetime
 import requests
 
 from tqdm.notebook import tqdm
-from IPython.core.display import HTML, clear_output, display
+from IPython.display import HTML, clear_output, display
 
 import qbraid
 

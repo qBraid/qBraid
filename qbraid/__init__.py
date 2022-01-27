@@ -7,13 +7,10 @@ import urllib3
 
 from qbraid._version import __version__
 from qbraid._typing import SUPPORTED_PROGRAM_TYPES, QPROGRAM
-from qbraid import transpiler2
-from qbraid.interface import to_unitary, make_contiguous
-from qbraid.circuits import Circuit, UpdateRule, random_circuit
+from qbraid.interface import to_unitary, convert_to_contiguous, random_circuit
 from qbraid.devices import get_devices, ibmq_least_busy_qpu, refresh_devices
 from qbraid.devices._utils import get_config
 from qbraid.exceptions import QbraidError, WrapperError
-from qbraid.quirk import make_quirk, quirk_wrapper
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)  # temporary hack
 
@@ -75,8 +72,7 @@ def circuit_wrapper(circuit, **kwargs):
 
     if package in transpiler_entrypoints:
         circuit_wrapper_class = transpiler_entrypoints[ep].load()
-        compat_circuit = make_contiguous(circuit)
-        return circuit_wrapper_class(compat_circuit, **kwargs)
+        return circuit_wrapper_class(circuit, **kwargs)
 
     raise WrapperError(f"{package} is not a supported package.")
 
@@ -99,6 +95,8 @@ def device_wrapper(qbraid_device_id: str, **kwargs):
     device_info = requests.post(os.getenv("API_URL") + "/get-devices", json={"qbraid_id": qbraid_device_id}, verify=False).json()
 
     if isinstance(device_info, list):
+        if len(device_info) == 0:
+            raise WrapperError(f"{qbraid_device_id} is not a valid device ID.")
         device_info = device_info[0]
 
     if device_info is None:

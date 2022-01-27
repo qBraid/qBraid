@@ -1,4 +1,4 @@
-qBraid SDK Documentation
+qBraid-SDK Documentation
 =========================
 
 :Release: |release|
@@ -44,48 +44,15 @@ dolor. Proin semper eu justo sed bibendum. Duis laoreet sem sed felis ultricies 
 lorem. Donec aliquet velit id tincidunt porttitor. In a auctor dui. Sed hendrerit, tellus finibus
 varius accumsan, lorem urna accumsan lacus, aliquet hendrerit magna nisi porttitor dui.
 
-How to cite
------------
-
-Lorem ipsum nullam lorem nibh, consequat sed fermentum interdum, suscipit quis augue. Class aptent
-taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Proin eget est et
-velit eleifend laoreet. Vivamus eu quam id augue pharetra rhoncus.
-
-Support and contribution
-------------------------
-
-- **Source Code:** https://github.com/qBraid/qBraid
-- **Issue Tracker:** https://github.com/qBraid/qBraid/issues
-
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc neque nibh, condimentum a augue vitae,
-maximus gravida eros. Nunc at dolor lobortis, commodo nisl sed, convallis est. Proin nec metus eu
-magna finibus finibus. Vestibulum rhoncus dapibus metus vel lobortis. Nulla auctor est id lectus
-porta, id sagittis urna sollicitudin.
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Overview
-   :hidden:
-
-   overview/introduction
-   overview/supported-devices
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Development
-   :hidden:
-
-   development/guide
-
 .. toctree::
    :maxdepth: 1
    :caption: API Reference
    :hidden:
 
    api/qbraid
-   api/qbraid.circuits
-   api/qbraid.devices
+   api/qbraid.interface
    api/qbraid.transpiler
+   api/qbraid.devices
 
 .. Hiding - Indices and tables
    :ref:`genindex`

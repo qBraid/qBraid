@@ -8,7 +8,7 @@ class CircuitConversionError(Exception):
     pass
 
 
-def make_contiguous(circuit: QPROGRAM) -> QPROGRAM:
+def convert_to_contiguous(circuit: QPROGRAM) -> QPROGRAM:
     """Checks whether the circuit uses contiguous qubits/indices, 
     and if not, adds identity gates to vacant registers as needed.
 
@@ -34,13 +34,13 @@ def make_contiguous(circuit: QPROGRAM) -> QPROGRAM:
         return circuit
 
     if "cirq" in package:
-        from qbraid.interface.qbraid_cirq import make_contiguous
+        from qbraid.interface.qbraid_cirq import _convert_to_contiguous_cirq
 
-        conversion_function = make_contiguous
+        conversion_function = _convert_to_contiguous_cirq
     elif "braket" in package:
-        from qbraid.interface.qbraid_braket import make_contiguous
+        from qbraid.interface.qbraid_braket import _convert_to_contiguous_braket
 
-        conversion_function = make_contiguous
+        conversion_function = _convert_to_contiguous_braket
     else:
         raise UnsupportedCircuitError(
             f"Circuit from module {package} is not supported.\n\n"
@@ -51,7 +51,7 @@ def make_contiguous(circuit: QPROGRAM) -> QPROGRAM:
         compat_circuit = conversion_function(circuit)
     except Exception:
         raise CircuitConversionError(
-            "Unitary could not be calculated from given circuit."
+            "Could not convert given circuit to use contiguous qubits/indicies."
         )
 
     return compat_circuit

@@ -3,7 +3,6 @@ Unit tests for the qbraid unitary interfacing
 """
 
 import pytest
-import cirq
 import numpy as np
 from itertools import chain, combinations
 from braket.circuits import (
@@ -11,10 +10,11 @@ from braket.circuits import (
     Instruction as BraketInstruction,
     gates as braket_gates,
 )
-from cirq import Circuit as CirqCircuit
-from qiskit import QuantumCircuit as QiskitCircuit
 
-from qbraid.interface import to_unitary
+from qbraid.interface import (
+    convert_to_contiguous,
+    to_unitary,
+)
 
 
 def get_subsets(nqubits):
@@ -56,7 +56,8 @@ def unitary_test_helper(bk_instrs, u_expected):
     for instr in bk_instrs:
         Gate, index = instr
         circuit.add_instruction(BraketInstruction(Gate(), target=index))
-    u_test = to_unitary(circuit)
+    contig_circuit = convert_to_contiguous(circuit)
+    u_test = to_unitary(contig_circuit)
     return np.allclose(u_expected, u_test)
 
 test_gate_set = [braket_gates.X, braket_gates.Y, braket_gates.Z]
@@ -70,7 +71,8 @@ def test_bell_circuit():
     h_gate_kron = np.kron(np.eye(2), h_gate)
     cnot_gate = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
     u_expected = np.einsum('ij,jk->ki', h_gate_kron, cnot_gate)
-    u_test = to_unitary(circuit)
+    contig_circuit = convert_to_contiguous(circuit)
+    u_test = to_unitary(contig_circuit)
     assert np.allclose(u_expected, u_test)
 
 

@@ -60,7 +60,12 @@ master_doc = "index"
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "*.pytest_cache", "*.ipynb_checkpoints", "*pres_to_im.py"]
+exclude_patterns = [
+    "_build",
+    "*.pytest_cache",
+    "*.ipynb_checkpoints",
+    "*tests",
+]
 
 # A boolean that decides whether module names are prepended to all object names
 # (for object types where a “module” of some kind is defined), e.g. for

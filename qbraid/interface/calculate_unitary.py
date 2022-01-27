@@ -9,11 +9,12 @@ class UnitaryCalculationError(Exception):
     pass
 
 
-def to_unitary(circuit: QPROGRAM) -> ndarray:
+def to_unitary(circuit: QPROGRAM, ensure_contiguous=False) -> ndarray:
     """Calculates the unitary of any valid input circuit.
 
     Args:
         circuit: Any quantum circuit object supported by qBraid.
+        ensure_contiguous: If True, calculates unitary using contiguous qubit indexing
 
     Raises:
         UnsupportedCircuitError: If the input circuit is not supported.
@@ -49,7 +50,7 @@ def to_unitary(circuit: QPROGRAM) -> ndarray:
         )
 
     try:
-        unitary = to_unitary_function(circuit)
+        unitary = to_unitary_function(circuit, ensure_contiguous=ensure_contiguous)
     except Exception:
         raise UnitaryCalculationError(
             "Unitary could not be calculated from given circuit."

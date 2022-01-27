@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 # addopts = "--maxfail=2 -rf"
-# testpaths = ["tests/circuits", "tests/devices", "tests/transpiler"]
+# testpaths = ["qbraid/devices/tests", "qbraid/interface/tests", "qbraid/transpiler/tests"]
 filterwarnings = "ignore:.*U.*mode is deprecated:DeprecationWarning"
 
 [tool.black]
@@ -25,7 +25,7 @@ exclude = '''
 [tool.coverage.run]
 parallel = true
 source = ["qbraid"]
-omit = ["**/qbraid/algorithms/*", "**/qbraid/applications/*", "**/qbraid/operators/*"]
+omit = ["**/qbraid/algorithms/*", "**/qbraid/applications/*", "**/qbraid/circuits/*", "**/qbraid/operators/*"]
 
 [tool.coverage.paths]
 source = ["qbraid", ".tox/*/lib/python*/site-packages/qbraid"]
