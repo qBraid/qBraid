@@ -13,4 +13,4 @@ jobs:
       - name: Update diagram
         uses: githubocto/repo-visualizer@main
         with:
-          excluded_paths: ".github,docs,tests,tutorials,.gitignore,tox.ini"
+          excluded_paths: "qbraid/circuits,qbraid/operators,qbraid/applications,qbraid/algorithms,.github,docs,tests,tutorials,.gitignore,tox.ini"
