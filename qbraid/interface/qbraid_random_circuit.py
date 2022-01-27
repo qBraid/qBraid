@@ -6,7 +6,6 @@ from qiskit.circuit.exceptions import CircuitError as QiskitCircuitError
 from qiskit.circuit.random import random_circuit as qiskit_random_circuit
 
 import qbraid
-from qbraid.circuits.exceptions import CircuitError
 
 
 def random_circuit(package, num_qubits=None, depth=None, measure=False):
@@ -23,7 +22,7 @@ def random_circuit(package, num_qubits=None, depth=None, measure=False):
         CircuitWrapper: qbraid circuit wrapper object
 
     Raises:
-        CircuitError: when invalid options given
+        ValueError: when invalid options given
 
     """
     num_qubits = num_qubits if num_qubits else randint(1, 4)
@@ -33,11 +32,11 @@ def random_circuit(package, num_qubits=None, depth=None, measure=False):
         try:
             return cirq_random_circuit(num_qubits, n_moments=depth, op_density=1, random_state=seed)
         except ValueError as err:
-            raise CircuitError(str(err)) from err
+            raise ValueError from err
     try:
         random_circuit = qiskit_random_circuit(num_qubits, depth, measure=measure)
     except QiskitCircuitError as err:
-        raise CircuitError(str(err)) from err
+        raise ValueError from err
     if package == "qiskit":
         return random_circuit
     elif package == "braket":
