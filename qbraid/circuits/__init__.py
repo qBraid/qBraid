@@ -133,6 +133,5 @@ from .moment import Moment
 from .parameter import Parameter
 from .parametertable import ParameterTable
 from .qubit import Qubit
-from .random import random_circuit
 from .update_rule import UpdateRule
 from .utils import to_unitary
