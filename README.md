@@ -1,8 +1,7 @@
 # qBraid SDK
 <!-- [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) -->
 
-The qBraid SDK provides a platform for running quantum algorithms on various quantum computers and
-quantum simulators.
+The qBraid-SDK is a highly-extensible, hardware-agnostic sdk/toolkit for running quantum programs.
 
 <a href="https://qbraid.com/">
     <img src="/docs/_static/logo.png"
@@ -60,7 +59,7 @@ tox -e unit-tests -- {your-arguments}
 Alternatively:
 ```
 pip install -e ".[test]"
-pytest tests/{path-to-test}
+pytest {path-to-test}
 ```
 Running unit tests with tox will automatically generate a coverage report, which can be viewed by
 opening `tests/_coverage/index.html` in your browser.
