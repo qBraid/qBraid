@@ -1,5 +1,7 @@
 """ResultWrapper Class"""
 
+# pylint: disable=too-few-public-methods
+
 from abc import ABC, abstractmethod
 
 from qiskit.visualization import plot_histogram
@@ -13,7 +15,6 @@ class ResultWrapper(ABC):
 
     """
 
-    # pylint: disable=too-few-public-methods
     def __init__(self, vendor_rlo):
         self.vendor_rlo = vendor_rlo
 
@@ -26,5 +27,6 @@ class ResultWrapper(ABC):
         """Returns the histogram data of the run"""
 
     def plot_counts(self):
+        """Plot histogram of measurement counts"""
         counts = self.measurement_counts()
         return plot_histogram(counts)

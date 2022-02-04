@@ -17,6 +17,7 @@ from cirq.ops.common_gates import (
 )
 from cirq.ops.controlled_gate import ControlledGate
 from cirq.ops.gate_features import SingleQubitGate
+from cirq.ops.identity import IdentityGate
 from cirq.ops.matrix_gates import MatrixGate
 from cirq.ops.measure_util import measure as CirqMeasure
 from cirq.ops.moment import Moment
@@ -62,6 +63,7 @@ cirq_gates = {
     "Z": ZPowGate,
     "S": ZPowGate,
     "T": ZPowGate,
+    "I": IdentityGate,
     "HPow": HPowGate,
     "XPow": XPowGate,
     "YPow": YPowGate,
@@ -148,6 +150,9 @@ def get_cirq_gate_data(gate: CirqGate) -> dict:
             data["type"] = "ZPow"
             data["params"] = [gate.exponent]
 
+    elif isinstance(gate, IdentityGate):
+        data["type"] = "I"
+
     # two qubit gates
     elif isinstance(gate, CXPowGate):
         if gate.exponent == 1:
@@ -213,6 +218,9 @@ def create_cirq_gate(data):
     # single-qubit, no parameters
     if gate_type in ("H", "X", "Y", "Z"):
         return cirq_gates[gate_type]()
+
+    elif gate_type == "I":
+        return cirq_gates["I"](num_qubits=1)
 
     elif gate_type == "S":
         return cirq_gates["S"](exponent=0.5)

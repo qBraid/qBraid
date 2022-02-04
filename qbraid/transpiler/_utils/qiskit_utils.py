@@ -1,3 +1,12 @@
+"""Transpiler qiskit utils module
+
+TODO: Use a data-structure to eliminate excessive branching
+
+"""
+
+# pylint: disable=wildcard-import,unused-wildcard-import
+# pylint: disable=too-many-branches,too-many-statements
+
 from typing import Tuple, Union
 
 from qiskit import ClassicalRegister, QuantumCircuit, QuantumRegister
@@ -63,6 +72,21 @@ QiskitGate = Union[Measure, Gate, Instruction]
 
 
 def get_qiskit_gate_data(gate: QiskitGate) -> dict:
+    """Inspects Qiskit gate object and returns data describing gate
+
+    Args:
+        gate: Qiskit gate object
+
+    Returns:
+        dict:
+            * type (str or None)
+            * matrix (ndarray or None)
+            * num_controls (int or None)
+
+    Raises:
+        TranspilerError: If qiskit gate type is not supported
+
+    """
 
     data = {"type": None, "matrix": None, "num_controls": 0}
 
@@ -204,7 +228,7 @@ def get_qiskit_gate_data(gate: QiskitGate) -> dict:
     # error
     else:
         if data["type"] != "MEASURE":
-            raise TranspilerError("Gate of type {} not supported".format(type(gate)))
+            raise TranspilerError(f"Gate of type {type(gate)} not supported")
 
     return data
 
@@ -220,73 +244,78 @@ def create_qiskit_gate(data: dict) -> QiskitGate:
     params = data["params"]
     matrix = data["matrix"]
 
+    gate = None
+
     # measure
     if gate_type == "MEASURE":
-        return qiskit_gates[gate_type]()
+        gate = qiskit_gates[gate_type]()
 
     # single-qubit, zero-parameter
     elif gate_type in ("H", "X", "Y", "Z", "S", "Sdg", "T", "Tdg", "I", "SX", "SXdg"):
-        return qiskit_gates[gate_type]()
+        gate = qiskit_gates[gate_type]()
 
     # single-qubit, one-parameter
     elif gate_type in ("Phase", "RX", "RY", "RZ", "U1"):
-        return qiskit_gates[gate_type](params[0])
+        gate = qiskit_gates[gate_type](params[0])
 
     # single-qubit, two-parameter
-    if gate_type in ("R", "U2"):
-        return qiskit_gates[gate_type](params[0], params[1])
+    elif gate_type in ("R", "U2"):
+        gate = qiskit_gates[gate_type](params[0], params[1])
 
     # single-qubit, three-parameter
     elif gate_type in ("U", "U3"):
-        return qiskit_gates[gate_type]()
+        gate = qiskit_gates[gate_type]()
 
     # two-qubit, zero-parameter
     elif gate_type in ("CH", "CX", "Swap", "iSwap", "CSX", "DCX", "CY", "CZ"):
-        return qiskit_gates[gate_type]()
+        gate = qiskit_gates[gate_type]()
 
     # two-qubit, one-parameter
     elif gate_type in ("CPhase", "CRX", "RXX", "CRY", "RYY", "CRZ", "RZX", "RZZ", "CU1"):
-        return qiskit_gates[gate_type](params[0])
+        gate = qiskit_gates[gate_type](params[0])
 
     # two-qubit, three-parameter
     elif gate_type == "CU3":
-        return qiskit_gates[gate_type]()
+        gate = qiskit_gates[gate_type]()
 
     # four-parameter
     elif gate_type == "CU":
-        return qiskit_gates[gate_type]()
+        gate = qiskit_gates[gate_type]()
 
     # multi-qubit, zero-parameter
     elif gate_type == "RCCX":
-        return RCCXGate()
+        gate = RCCXGate()
     elif gate_type == "RC3X":
-        return RC3XGate()
+        gate = RC3XGate()
     elif gate_type == "CCX":
-        return CCXGate()
+        gate = CCXGate()
     elif gate_type == "MCXGrayCode":
-        return MCXGrayCode(params[0])
+        gate = MCXGrayCode(params[0])
     elif gate_type == "MCXRecursive":
-        return MCXRecursive(params[0])
+        gate = MCXRecursive(params[0])
     elif gate_type == "MCXVChain":
-        return MCXVChain(params[0])
+        gate = MCXVChain(params[0])
     elif gate_type == "CSwap":
-        return CSwapGate()
+        gate = CSwapGate()
 
     # multi-qubit, one-parameter
     elif gate_type == "MCU1":
-        return MCU1Gate(params[0], params[1])
+        gate = MCU1Gate(params[0], params[1])
     elif gate_type == "MCPhase":
-        return MCPhaseGate(params[0], params[1])
+        gate = MCPhaseGate(params[0], params[1])
 
     # non-compatible types, go from matrix
-    elif not (matrix is None):
-        return UnitaryGate(matrix, label=gate_type)
+    elif not matrix is None:
+        gate = UnitaryGate(matrix, label=gate_type)
 
     else:
         raise TranspilerError(f"Gate of type {gate_type} not supported for Qiskit transpile.")
 
+    return gate
+
 
 def circuit_to_qiskit(cw, auto_measure=False) -> QuantumCircuit:
+    """Convert qbraid circuit wrapper object to qiskit circuit"""
 
     qreg = QuantumRegister(cw.num_qubits)
     output_qubit_mapping = {index: Qubit(qreg, index) for index in range(len(qreg))}
@@ -337,19 +366,18 @@ def circuit_to_qiskit(cw, auto_measure=False) -> QuantumCircuit:
 def instruction_to_qiskit(
     iw, output_qubit_mapping, output_param_mapping
 ) -> Tuple[Instruction, list, list]:
+    """Convert qbraid instruction wrapper to qiskit instruction"""
 
     gate = iw.gate.transpile("qiskit", output_param_mapping)
     qubits = [output_qubit_mapping[q] for q in iw.qubits]
 
     if isinstance(gate, Measure):
         return gate, qubits, iw.qubits
-    else:
-        return gate, qubits, []
+    return gate, qubits, []
 
 
 def gate_to_qiskit(gw, output_param_mapping):
-
-    """Create qiskit gate from a qbraid gate wrapper object."""
+    """Convert qbraid gate wrapper to qiskit gate."""
 
     qiskit_params = gw.params.copy()
 
@@ -364,16 +392,20 @@ def gate_to_qiskit(gw, output_param_mapping):
         "params": qiskit_params,
     }
 
+    gate = None
+
     if gw.gate_type in qiskit_gates:
-        return create_qiskit_gate(data)
+        gate = create_qiskit_gate(data)
 
     elif gw.base_gate:
-        return gw.base_gate.transpile("qiskit").control(gw.num_controls)
+        gate = gw.base_gate.transpile("qiskit").control(gw.num_controls)
 
-    elif not (gw.matrix is None):
+    elif not gw.matrix is None:
         data["name"] = data["type"]
         data["type"] = "Unitary"
-        return create_qiskit_gate(data)
+        gate = create_qiskit_gate(data)
 
     else:
         raise TranspilerError(f"Gate type {gw.gate_type} not supported.")
+
+    return gate

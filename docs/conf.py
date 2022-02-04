@@ -20,8 +20,8 @@ sys.path.insert(0, os.path.abspath("../../qbraid"))
 
 # -- Project information -----------------------------------------------------
 
-project = "qBraid-sdk"
-copyright = "2021, qBraid Development Team"
+project = "qBraid-SDK"
+copyright = "2022, qBraid Development Team"
 author = "qBraid Development Team"
 
 # The full version, including alpha/beta/rc tags
@@ -60,7 +60,12 @@ master_doc = "index"
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ["_build", "*.pytest_cache", "*.ipynb_checkpoints", "*pres_to_im.py"]
+exclude_patterns = [
+    "_build",
+    "*.pytest_cache",
+    "*.ipynb_checkpoints",
+    "*tests",
+]
 
 # A boolean that decides whether module names are prepended to all object names
 # (for object types where a “module” of some kind is defined), e.g. for

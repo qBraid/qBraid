@@ -62,24 +62,3 @@ def validate_operation(
                 type(op), num_qubits
             )
         )
-
-
-def to_unitary(circuit):
-    """Calculate unitary of a braket, cirq, or qiskit circuit.
-
-    Args:
-        circuit (braket, cirq, or qiskit Circuit): The circuit object for which the unitary
-        matrix will be calculated.
-
-    Returns:
-        numpy.ndarray: A numpy array representing the `circuit` as a unitary
-
-    """
-    if isinstance(circuit, BraketCircuit):
-        return calculate_unitary(circuit.qubit_count, circuit.instructions)
-    elif isinstance(circuit, CirqCircuit):
-        return circuit.unitary()
-    elif isinstance(circuit, QiskitCircuit):
-        return QiskitOperator(circuit).data
-    else:
-        raise TypeError(f"to_unitary calculation not supported for type {type(circuit)}")

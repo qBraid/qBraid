@@ -1,5 +1,7 @@
 """DeviceLikeWrapper Class"""
 
+# pylint:disable=invalid-name
+
 from abc import ABC, abstractmethod
 
 import qbraid
@@ -11,7 +13,7 @@ from .exceptions import DeviceError
 class DeviceLikeWrapper(ABC):
     """Abstract interface for device-like classes."""
 
-    def __init__(self, device_info, **kwargs):
+    def __init__(self, device_info):
         """Create a ``DeviceLikeWrapper`` object.
 
         Args:

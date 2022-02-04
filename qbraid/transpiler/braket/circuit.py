@@ -29,9 +29,9 @@ class BraketCircuitWrapper(CircuitWrapper):
         if not input_qubit_mapping:
             input_qubit_mapping = {q: i for i, q in enumerate(self._qubits)}
 
-        self._wrap_circuit(circuit, input_qubit_mapping)
+        self._wrap_circuit(circuit)
 
-    def _wrap_circuit(self, circuit, input_qubit_mapping):
+    def _wrap_circuit(self, circuit):
         """Apply circuit wrapper based on given qubit mapping."""
         instructions = []
         for instruction in circuit.instructions:
@@ -51,4 +51,4 @@ class BraketCircuitWrapper(CircuitWrapper):
         """Returns a list of the circuit's instructions"""
         if hasattr(self, "_instructions"):
             return self._instructions
-        return list()
+        return []

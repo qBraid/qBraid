@@ -1,24 +1,14 @@
 """CirqResultWrapper Class"""
 
+# pylint: disable=too-few-public-methods
+
 import numpy as np
-from cirq.study.result import Result
 
 from qbraid.devices.result import ResultWrapper
 
 
 class CirqResultWrapper(ResultWrapper):
     """Cirq ``Result`` wrapper class."""
-
-    # pylint: disable=too-few-public-methods
-    def __init__(self, result: Result):
-        """Create a CirqResultWrapper
-
-        Args:
-            result (Result): a Cirq ``Result`` object
-
-        """
-
-        super().__init__(result)
 
     def measurements(self):
         cirq_meas = self.vendor_rlo.measurements

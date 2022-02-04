@@ -11,11 +11,6 @@ from qbraid.devices.ibm.localjob import QiskitBasicAerJobWrapper
 class QiskitBasicAerWrapper(DeviceLikeWrapper):
     """Wrapper class for Amazon Braket ``LocalSimulator`` objects."""
 
-    def __init__(self, device_info, **kwargs):
-        """Create a BraketDeviceWrapper."""
-
-        super().__init__(device_info, **kwargs)
-
     def _get_device(self):
         """Initialize an IBM simulator."""
         return BasicAer.get_backend(self._obj_arg)

@@ -1,3 +1,7 @@
+"""Module for creating and modifying user config files"""
+
+# pylint: disable=too-many-arguments
+
 import configparser
 import os
 import sys
@@ -12,6 +16,7 @@ secret_input = getpass
 
 
 def mask_value(value):
+    """Replaces all but last four characters of token ``value`` with *'s"""
     if value is None:
         return "None"
     val = round(len(value) / 5)
@@ -22,14 +27,16 @@ def mask_value(value):
 
 
 def get_value(display_value, is_secret, prompt_text):
+    """Applies mask to ``display_value`` and prompts user"""
     display_value = mask_value(display_value) if is_secret else display_value
-    response = compat_input("%s [%s]: " % (prompt_text, display_value), is_secret)
+    response = compat_input(f"{prompt_text} [{display_value}]: ", is_secret)
     if not response:
         response = None
     return response
 
 
 def compat_input(prompt, is_secret):
+    """Prompts user for value"""
     if is_secret:
         return secret_input(prompt=prompt)
     sys.stdout.write(prompt)
@@ -78,10 +85,10 @@ def set_config(config_name, prompt_text, default_val, is_secret, section, filepa
     config_val = default_val if new_value is None else new_value
     config.set(section, config_name, str(config_val))
     try:
-        with open(filepath, "w") as cfgfile:
+        with open(filepath, "w", encoding="utf-8") as cfgfile:
             config.write(cfgfile)
-    except OSError as ex:
-        raise ConfigError(f"Unable to load the config file {filepath}. Error: '{str(ex)}'")
+    except OSError as err:
+        raise ConfigError(f"Unable to load the config file {filepath}. ") from err
     return 0
 
 

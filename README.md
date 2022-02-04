@@ -1,8 +1,7 @@
-# qBraid SDK
+# qBraid-SDK
 <!-- [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) -->
 
-The qBraid SDK provides a platform for running quantum algorithms on various quantum computers and
-quantum simulators.
+The qBraid-SDK is a highly-extensible, hardware-agnostic sdk/toolkit for running quantum programs.
 
 <a href="https://qbraid.com/">
     <img src="/docs/_static/logo.png"
@@ -18,7 +17,7 @@ root directory:
 ```
 git clone https://github.com/qbraid/qBraid.git
 cd qBraid
-python -m pip install -e .
+python3 -m pip install -e .
 ```
 
 ## Documentation
@@ -49,7 +48,7 @@ Then open your browser to http://localhost:8000. If you make changes to the docs
 reflected in subsequent builds, run `make clean html`, which will force a full rebuild.
 
 ## Testing
-To run all unit tests:
+Update line 14 of `./tox.ini` to the desired API url and make sure your IP Address is white-listed on MongoDB. Then, to run all unit tests:
 ```
 tox -e unit-tests
 ```
@@ -60,7 +59,7 @@ tox -e unit-tests -- {your-arguments}
 Alternatively:
 ```
 pip install -e ".[test]"
-pytest tests/{path-to-test}
+pytest {path-to-test}
 ```
 Running unit tests with tox will automatically generate a coverage report, which can be viewed by
 opening `tests/_coverage/index.html` in your browser.

@@ -18,5 +18,7 @@ class BraketMomentWrapper(MomentWrapper):
         """
         super().__init__()
         self.moment = moment
-        # No value for 'qubits' argument in constructor call
-        self._instructions = [BraketInstructionWrapper(i) for i in moment.instructions]
+        # https://github.com/qBraid/qBraid/issues/28
+        self._instructions = [
+            BraketInstructionWrapper(i) for i in moment.instructions
+        ]  # pylint: disable=no-value-for-parameter

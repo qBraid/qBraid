@@ -13,7 +13,7 @@ from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit import QuantumRegister as QiskitQuantumRegister
 from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 
-from qbraid import circuit_wrapper, random_circuit, to_unitary
+from qbraid import circuit_wrapper, convert_to_contiguous, random_circuit, to_unitary
 from qbraid.transpiler._utils.braket_utils import braket_gates
 from qbraid.transpiler._utils.cirq_utils import cirq_gates, create_cirq_gate
 from qbraid.transpiler._utils.qiskit_utils import qiskit_gates
@@ -70,9 +70,9 @@ def cirq_shared_gates_circuit():
         cirq.ZPowGate(exponent=-0.5)(q1),
         cirq.T(q2),
         cirq.ZPowGate(exponent=-0.25)(q3),
-        cirq.Rx(rads=np.pi / 4)(q0),
-        cirq.Ry(rads=np.pi / 2)(q1),
-        cirq.Rz(rads=3 * np.pi / 4)(q2),
+        cirq.rx(rads=np.pi / 4)(q0),
+        cirq.ry(rads=np.pi / 2)(q1),
+        cirq.rz(rads=3 * np.pi / 4)(q2),
         cirq.ZPowGate(exponent=1 / 8)(q3),
         cirq.XPowGate(exponent=0.5)(q0),
         cirq.XPowGate(exponent=-0.5)(q1),
@@ -248,7 +248,7 @@ def cirq_gate_test_circuit(test_gate, nqubits):
         cirq.H(q1),
         cirq.H(q2),
         test_gate(*input_qubits),
-        cirq.Ry(rads=np.pi)(q2),
+        cirq.ry(rads=np.pi)(q2),
         cirq.CNOT(q0, q1),
     ]
 
@@ -444,7 +444,8 @@ def test_1000_random_circuits(num_qubits):
         origin = packages[i]
         del packages[i]
         target = packages[j]
-        origin_circuit = random_circuit(origin, num_qubits=num_qubits)
+        rand_circuit = random_circuit(origin, num_qubits=num_qubits)
+        origin_circuit = convert_to_contiguous(rand_circuit)
         origin_unitary = to_unitary(origin_circuit)
         target_circuit = circuit_wrapper(origin_circuit).transpile(target)
         target_unitary = to_unitary(target_circuit)
@@ -459,3 +460,53 @@ def test_1000_random_circuits(num_qubits):
             print(target_circuit)
             assert False
     assert True
+
+
+def test_non_contiguous_qubits_braket():
+    braket_circuit = BraketCircuit()
+    braket_circuit.h(0)
+    braket_circuit.cnot(0, 2)
+    braket_circuit.cnot(2, 4)
+    test_circuit = convert_to_contiguous(braket_circuit)
+    qbraid_wrapper = circuit_wrapper(test_circuit)
+    cirq_circuit = qbraid_wrapper.transpile("cirq")
+    qiskit_circuit = qbraid_wrapper.transpile("qiskit")
+    braket_unitary = to_unitary(test_circuit)
+    cirq_unitary = to_unitary(cirq_circuit)
+    qiskit_unitary = to_unitary(qiskit_circuit)
+    assert np.allclose(braket_unitary, cirq_unitary)
+    assert np.allclose(qiskit_unitary, braket_unitary)
+
+
+def test_non_contiguous_qubits_cirq():
+    cirq_circuit = CirqCircuit()
+    q0 = cirq.LineQubit(4)
+    q2 = cirq.LineQubit(2)
+    q4 = cirq.LineQubit(0)
+    cirq_circuit.append(cirq.H(q0))
+    cirq_circuit.append(cirq.CNOT(q0, q2))
+    cirq_circuit.append(cirq.CNOT(q2, q4))
+    test_circuit = convert_to_contiguous(cirq_circuit)
+    qbraid_wrapper = circuit_wrapper(test_circuit)
+    qiskit_circuit = qbraid_wrapper.transpile("qiskit")
+    braket_circuit = qbraid_wrapper.transpile("braket")
+    cirq_unitary = to_unitary(test_circuit)
+    qiskit_unitary = to_unitary(qiskit_circuit)
+    braket_unitary = to_unitary(braket_circuit)
+    assert np.allclose(cirq_unitary, qiskit_unitary)
+    assert np.allclose(braket_unitary, cirq_unitary)
+
+
+def test_non_contiguous_qubits_qiskit():
+    qiskit_circuit = QiskitCircuit(5)
+    qiskit_circuit.h(0)
+    qiskit_circuit.cx(0, 2)
+    qiskit_circuit.cx(2, 4)
+    qbraid_wrapper = circuit_wrapper(qiskit_circuit)
+    braket_circuit = qbraid_wrapper.transpile("braket")
+    cirq_circuit = qbraid_wrapper.transpile("cirq")
+    qiskit_unitary = to_unitary(qiskit_circuit)
+    braket_unitary = to_unitary(braket_circuit, ensure_contiguous=True)
+    cirq_unitary = to_unitary(cirq_circuit, ensure_contiguous=True)
+    assert np.allclose(qiskit_unitary, braket_unitary)
+    assert np.allclose(cirq_unitary, qiskit_unitary)
