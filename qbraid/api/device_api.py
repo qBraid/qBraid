@@ -5,6 +5,7 @@
 from datetime import datetime
 
 from IPython.display import HTML, display
+# from IPython.display import clear_output
 
 import qbraid
 from qbraid import api
@@ -127,6 +128,7 @@ def get_devices(query=None):
     """
     input_query = {} if query is None else query
     device_data, _ = _get_device_data(input_query)
+    # device_data, lag = _get_device_data(input_query)
     # hours, minutes = divmod(lag, 60)
     # min_10, _ = divmod(minutes, 10)
     # min_display = min_10 * 10
