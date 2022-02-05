@@ -1,5 +1,5 @@
 """BraketDeviceWrapper Class"""
-
+import math
 import warnings
 
 from braket.aws import AwsDevice
@@ -107,3 +107,21 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         return BraketQuantumTaskWrapper(
             job_id, vendor_job_id=vendor_job_id, device=self, vendor_jlo=aws_quantum_task
         )
+
+    def estimate_cost(self, circuit, *args, shots=1024, **kwargs) -> float:
+        """Estimate the cost of running a quantum task on this quantum device."""
+        task_price = 0.3
+        device = self._get_device()
+        device_prop_dict = device.properties.dict()
+        price = device_prop_dict["service"]["deviceCost"]["price"]
+        estimate = 0
+        # Simulators
+        if device.name == "SV1" or device.name == "DM1":
+            estimate = price * math.exp(shots / 1000)
+        elif device.name == "TN1":
+            estimate = price * circuit.num_qubits * math.exp(shots / 1000)
+        # QPUs
+        else:
+            estimate = price * shots + task_price
+        print("Your estimated cost is ${:.2f}".format(estimate))
+        return estimate
