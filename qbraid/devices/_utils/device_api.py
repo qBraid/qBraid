@@ -6,7 +6,7 @@ import os
 from datetime import datetime
 
 import requests
-from IPython.display import HTML, clear_output, display
+from IPython.display import HTML, display
 
 import qbraid
 
@@ -69,6 +69,7 @@ def _get_device_data(query):
 
 def refresh_devices():
     """Refreshes status for all qbraid supported devices. Runtime ~30 seconds."""
+    #pylint: disable=import-outside-toplevel
     from tqdm.notebook import tqdm
 
     devices = requests.post(os.getenv("API_URL") + "/get-devices", json={}, verify=False).json()
@@ -130,7 +131,7 @@ def get_devices(query=None):
 
     """
     input_query = {} if query is None else query
-    device_data, lag = _get_device_data(input_query)
+    device_data, _ = _get_device_data(input_query)
     # hours, minutes = divmod(lag, 60)
     # min_10, _ = divmod(minutes, 10)
     # min_display = min_10 * 10

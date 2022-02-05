@@ -48,3 +48,7 @@ class QiskitBasicAerWrapper(DeviceLikeWrapper):
         compiled_circuit = qiskit_transpile(run_input, self.vendor_dlo)
         qiskit_job = self.vendor_dlo.run(compiled_circuit, *args, **kwargs)
         return QiskitBasicAerJobWrapper(self, qiskit_job)
+
+    def estimate_cost(self, circuit, shots=1024):
+        """Estimate the cost of running a circuit on the device."""
+        print("It is free to run on your local simulator on qBraid.")

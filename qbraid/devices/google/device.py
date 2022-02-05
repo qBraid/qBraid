@@ -73,6 +73,5 @@ class CirqEngineWrapper(DeviceLikeWrapper):
 
     def estimate_cost(self, circuit, shots=1024):
         """Estimate the cost of running the supplied circuit."""
-        print("estimate_cost not implemented for Google, qBraid currently offers only free devices.")
+        print("qBraid currently offers only free devices.")
         print("Please contact rickyyoung@qbraid.com for more information.")
-        return None

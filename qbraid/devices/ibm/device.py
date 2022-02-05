@@ -115,6 +115,6 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         return qbraid_job
 
     def estimate_cost(self, circuit, shots=1024):
-        print("estimate_cost not implemented for IBM Q, qBraid currently offers only free devices.")
+        """Estimate the cost of running a circuit on the device."""
+        print("qBraid currently offers only free devices.")
         print("Please contact rickyyoung@qbraid.com for more information.")
-        return None
