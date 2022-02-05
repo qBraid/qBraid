@@ -142,5 +142,5 @@ class DeviceLikeWrapper(ABC):
         """Abstract run method."""
 
     @abstractmethod
-    def estimate_cost(self, circuit, *args, shots,**kwargs):
+    def estimate_cost(self, circuit, shots=1024):
         """Abstract estimate_cost method."""

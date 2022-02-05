@@ -70,3 +70,9 @@ class CirqEngineWrapper(DeviceLikeWrapper):
         # cirq_engine_job = cirq_engine.run_sweep(run_input, *args, **kwargs)
         # return CirqEngineJobWrapper(self, qbraid_circuit, cirq_engine_job)
         return NotImplementedError
+
+    def estimate_cost(self, circuit, shots=1024):
+        """Estimate the cost of running the supplied circuit."""
+        print("estimate_cost not implemented for Google, qBraid currently offers only free devices.")
+        print("Please contact rickyyoung@qbraid.com for more information.")
+        return None
