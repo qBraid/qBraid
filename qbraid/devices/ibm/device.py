@@ -113,3 +113,9 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             qbraid_job_id, vendor_job_id=qiskit_job_id, device=self, vendor_jlo=qiskit_job
         )
         return qbraid_job
+
+    def estimate_cost(self, circuit, shots=1024):
+        """Estimate the cost of running a circuit on the device."""
+        # print("qBraid currently offers only free devices.")
+        # print("Please contact rickyyoung@qbraid.com for more information.")
+        raise NotImplementedError

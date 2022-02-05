@@ -1,5 +1,5 @@
 """BraketDeviceWrapper Class"""
-
+import math
 import warnings
 
 from braket.aws import AwsDevice
@@ -107,3 +107,36 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         return BraketQuantumTaskWrapper(
             job_id, vendor_job_id=vendor_job_id, device=self, vendor_jlo=aws_quantum_task
         )
+
+    def estimate_cost(self, circuit, shots=1024) -> float:
+        """Estimate the cost of running a quantum task on this device.
+
+        Args:
+            circuit: The circuit to run on the device. Can be a Braket, Qiskit, or Cirq circuit.
+            shots (int, optional): Number of shots to run on device. Defaults to 1024.
+
+        Raises:
+            DeviceError: Throws error if circuit is not specified.
+
+        Returns:
+            float: The estimated cost of running the circuit on the device.
+
+        """
+        if circuit is None:
+            raise DeviceError("Circuit must be specified")
+        _, qbraid_circuit = self._compat_run_input(circuit)
+        estimate = 0
+        task_price = 0.3
+        device = self._get_device()
+        device_prop_dict = device.properties.dict()
+        price = device_prop_dict["service"]["deviceCost"]["price"]
+        # Simulators
+        if device.name == "SV1" or device.name == "DM1":
+            estimate = price * qbraid_circuit.num_qubits + math.exp(shots / 1000)
+        elif device.name == "TN1":
+            estimate = price * qbraid_circuit.num_qubits + math.exp(shots / 1000)
+        # QPUs
+        else:
+            estimate = price * shots + task_price
+        print("Your estimated cost is ${:.2f}".format(estimate))
+        return estimate

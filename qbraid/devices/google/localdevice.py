@@ -60,3 +60,7 @@ class CirqSimulatorWrapper(DeviceLikeWrapper):
             run_input.append(measure_all)
         cirq_result = self.vendor_dlo.run(run_input, *args, **kwargs)
         return CirqLocalJobWrapper(self, cirq_result)
+
+    def estimate_cost(self, circuit, shots=1024):
+        """Estimate the cost of running a circuit on the device."""
+        print("It is free to run on your local simulator on qBraid.")
