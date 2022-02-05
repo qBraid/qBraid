@@ -108,13 +108,13 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             job_id, vendor_job_id=vendor_job_id, device=self, vendor_jlo=aws_quantum_task
         )
 
-    def estimate_cost(self, circuit, *args, shots=1024, **kwargs) -> float:
+    def estimate_cost(self, circuit, shots=1024) -> float:
         """Estimate the cost of running a quantum task on this quantum device."""
+        estimate = 0
         task_price = 0.3
         device = self._get_device()
         device_prop_dict = device.properties.dict()
         price = device_prop_dict["service"]["deviceCost"]["price"]
-        estimate = 0
         # Simulators
         if device.name == "SV1" or device.name == "DM1":
             estimate = price * math.exp(shots / 1000)
