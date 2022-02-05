@@ -117,9 +117,9 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         price = device_prop_dict["service"]["deviceCost"]["price"]
         # Simulators
         if device.name == "SV1" or device.name == "DM1":
-            estimate = price * math.exp(shots / 1000)
+            estimate = price *circuit.num_qubits+ math.exp(shots / 1000)
         elif device.name == "TN1":
-            estimate = price * circuit.num_qubits * math.exp(shots / 1000)
+            estimate = price * circuit.num_qubits + math.exp(shots / 1000)
         # QPUs
         else:
             estimate = price * shots + task_price
