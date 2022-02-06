@@ -244,5 +244,4 @@ def test_result_wrapper_measurements(device_id):
 def test_cost_estimator(device_id):
     circuit = random_circuit("braket", num_qubits=3, depth=3, measure=True)
     estimate = device_wrapper(device_id).estimate_cost(circuit, shots=10)
-    print(estimate)
     assert isinstance(estimate, float)
