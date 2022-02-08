@@ -4,7 +4,7 @@ import warnings
 
 from braket.aws import AwsDevice
 
-from qbraid.devices._utils import get_config, init_job, install
+from qbraid.api import config_user, job_api, install_package
 from qbraid.devices.aws.job import BraketQuantumTaskWrapper
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
@@ -18,8 +18,8 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         """Create a BraketDeviceWrapper."""
 
         super().__init__(device_info)
-        bucket = get_config("s3_bucket", "AWS")
-        folder = get_config("s3_folder", "AWS")
+        bucket = config_user.get_config("s3_bucket", "AWS")
+        folder = config_user.get_config("s3_folder", "AWS")
         self._s3_location = (bucket, folder)
         self._arn = self._obj_arg
 
@@ -63,7 +63,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         try:
             from braket.ocean_plugin import BraketDWaveSampler, BraketSampler
         except ModuleNotFoundError:
-            install("amazon-braket-ocean-plugin")
+            install_package.install("amazon-braket-ocean-plugin")
             from braket.ocean_plugin import BraketDWaveSampler, BraketSampler
         if braket_default:
             sampler = BraketSampler(self._s3_location, self._arn)
@@ -73,7 +73,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             try:
                 from dwave.system.composites import EmbeddingComposite
             except ModuleNotFoundError:
-                install("dwave-ocean-sdk")
+                install_package.install("dwave-ocean-sdk")
                 from dwave.system.composites import EmbeddingComposite
             return EmbeddingComposite(sampler)
         return sampler
@@ -103,7 +103,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         aws_quantum_task = self.vendor_dlo.run(run_input, self._s3_location, *args, **kwargs)
         shots = aws_quantum_task.metadata()["shots"]
         vendor_job_id = aws_quantum_task.metadata()["quantumTaskArn"]
-        job_id = init_job(vendor_job_id, self, qbraid_circuit, shots)
+        job_id = job_api.init_job(vendor_job_id, self, qbraid_circuit, shots)
         return BraketQuantumTaskWrapper(
             job_id, vendor_job_id=vendor_job_id, device=self, vendor_jlo=aws_quantum_task
         )

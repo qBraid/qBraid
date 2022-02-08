@@ -2,14 +2,12 @@
 
 # pylint: disable=too-many-locals
 
-import os
 from datetime import datetime
 
-import requests
 from IPython.display import HTML, clear_output, display
 
 import qbraid
-
+from qbraid import api
 
 def _get_device_data(query):
     """Internal :meth:`qbraid.get_devices` helper function that connects with the MongoDB database
@@ -17,7 +15,7 @@ def _get_device_data(query):
     represented by its own length-4 list containing the device provider, name, qbraid_id,
     and status.
     """
-    devices = requests.post(os.getenv("API_URL") + "/get-devices", json=query, verify=False).json()
+    devices = api.post("/get-devices", json=query)
     if isinstance(devices, str):
         raise qbraid.QbraidError(devices)
     device_data = []
@@ -43,8 +41,8 @@ def _get_device_data(query):
         #     print("Auto-refreshing status for queried devices" + "." * tot_dev, flush=True)
         #     device = qbraid.device_wrapper(qbraid_id)
         #     status = device.status.name
-        #     requests.put(
-        #         os.getenv("API_URL") + "/update-device",
+        #     qbraid.api.put(
+        #         "/update-device",
         #         data={"qbraid_id": qbraid_id, "status": status},
         #         verify=False,
         #     )
@@ -68,21 +66,17 @@ def _get_device_data(query):
 
 
 def refresh_devices():
-    """Refreshes status for all qbraid supported devices. Runtime ~30 seconds."""
+    """Refreshes status for all qbraid supported devices. Requires credential for each vendor."""
     from tqdm.notebook import tqdm
 
-    devices = requests.post(os.getenv("API_URL") + "/get-devices", json={}, verify=False).json()
+    devices = api.post("/get-devices", json={})
     pbar = tqdm(total=35, leave=False)
     for document in devices:
         if document["status_refresh"] is not None:  # None => internally not available at moment
             qbraid_id = document["qbraid_id"]
             device = qbraid.device_wrapper(qbraid_id)
             status = device.status.name
-            requests.put(
-                os.getenv("API_URL") + "/update-device",
-                params={"qbraid_id": qbraid_id, "status": status},
-                verify=False,
-            )
+            api.put("/update-device", params={"qbraid_id": qbraid_id, "status": status})
         pbar.update(1)
     pbar.close()
 
