@@ -5,10 +5,12 @@
 from datetime import datetime
 
 from IPython.display import HTML, display
-# from IPython.display import clear_output
 
 import qbraid
 from qbraid import api
+
+# from IPython.display import clear_output
+
 
 # from IPython.display import clear_output
 
