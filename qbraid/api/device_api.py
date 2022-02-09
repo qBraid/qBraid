@@ -5,10 +5,11 @@
 from datetime import datetime
 
 from IPython.display import HTML, display
-# from IPython.display import clear_output
 
 import qbraid
 from qbraid import api
+
+# from IPython.display import clear_output
 
 
 def _get_device_data(query):
@@ -69,7 +70,7 @@ def _get_device_data(query):
 
 def refresh_devices():
     """Refreshes status for all qbraid supported devices. Requires credential for each vendor."""
-    #pylint: disable=import-outside-toplevel
+    # pylint: disable=import-outside-toplevel
     from tqdm.notebook import tqdm
 
     devices = api.post("/get-devices", json={})
