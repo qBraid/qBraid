@@ -43,3 +43,7 @@ class BraketLocalSimulatorWrapper(DeviceLikeWrapper):
         run_input, _ = self._compat_run_input(run_input)
         local_quantum_task = self.vendor_dlo.run(run_input, *args, **kwargs)
         return BraketLocalQuantumTaskWrapper(self, local_quantum_task)
+
+    def estimate_cost(self, circuit, shots=1024):
+        """Estimate the cost of running a circuit on the device."""
+        print("It is free to run on your local simulator on qBraid.")

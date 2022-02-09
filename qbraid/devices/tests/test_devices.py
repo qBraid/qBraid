@@ -233,3 +233,11 @@ def test_result_wrapper_measurements(device_id):
     assert isinstance(qbraid_result, ResultWrapper)
     measurements = qbraid_result.measurements()
     assert measurements.shape == (10, 3)
+
+
+@pytest.mark.parametrize("device_id", ["aws_tn_sim", "aws_dm_sim", "aws_sv_sim"])
+def test_cost_estimator(device_id):
+    circuit = random_circuit("braket", num_qubits=3, depth=3, measure=True)
+    estimate = device_wrapper(device_id).estimate_cost(circuit, shots=10)
+    print(estimate)
+    assert isinstance(estimate, float)
