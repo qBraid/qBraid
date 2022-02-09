@@ -47,12 +47,11 @@ Devices API
    JobStatus
    DeviceError
    JobError
-   ConfigError
 
 """
 from .device import DeviceLikeWrapper
 from .enums import DeviceStatus, JobStatus
-from .exceptions import ConfigError, DeviceError, JobError
+from .exceptions import DeviceError, JobError
 from .job import JobLikeWrapper
 from .localjob import LocalJobWrapper
 from .result import ResultWrapper

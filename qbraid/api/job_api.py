@@ -5,7 +5,7 @@ from datetime import datetime
 
 import requests
 
-from qbraid.api import BASE_URL
+from qbraid import api
 from qbraid.devices.enums import JobStatus
 
 
@@ -30,7 +30,7 @@ def mongo_get_job(qbraid_job_id, update=None):
     """
     data = {} if not update else update
     body = {"qbraid_job_id": qbraid_job_id, "update": data}
-    metadata = requests.put(BASE_URL + "/update-job", data=body, verify=False).json()
+    metadata = api.put("/update-job", data=body)
     del metadata["_id"]
     return metadata
 
