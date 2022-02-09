@@ -33,3 +33,13 @@ jobs:
         IBMQ_TOKEN: ${{ secrets.IBMQ_TOKEN }}
         JUPYTERHUB_USER: ${{ secrets.JUPYTERHUB_USER }}
         REFRESH: ${{ secrets.REFRESH }}
+    - name: Upload coverage.xml
+      if: ${{ matrix.platform == 'ubuntu-latest' && matrix.python-version == '3.9' }}
+      uses: actions/upload-artifact@v2
+      with:
+        name: coverage
+        path: coverage.xml
+        if-no-files-found: error
+    - name: Upload coverage.xml to codecov
+      if: ${{ matrix.platform == 'ubuntu-latest' && matrix.python-version == '3.9' }}
+      uses: codecov/codecov-action@v1
