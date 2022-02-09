@@ -1,11 +1,10 @@
 name: docs
 
 on:
-#   push:
-#     branches: main
-#   pull_request:
-#     branches: '*'
-  workflow_dispatch:
+  push:
+    branches: main
+  pull_request:
+    branches: '*'
 
 jobs:
   docs:
