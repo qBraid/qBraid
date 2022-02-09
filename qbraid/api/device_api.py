@@ -9,6 +9,7 @@ from IPython.display import HTML, clear_output, display
 import qbraid
 from qbraid import api
 
+
 def _get_device_data(query):
     """Internal :meth:`qbraid.get_devices` helper function that connects with the MongoDB database
     and returns a list of devices that match the ``filter_dict`` filters. Each device is

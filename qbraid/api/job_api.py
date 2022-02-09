@@ -3,8 +3,6 @@
 import os
 from datetime import datetime
 
-import requests
-
 from qbraid import api
 from qbraid.devices.enums import JobStatus
 
@@ -17,7 +15,7 @@ def mongo_init_job(init_data):
 
     """
     init_data["user"] = os.getenv("JUPYTERHUB_USER")
-    qbraid_job_id = requests.post("/init-job", data=init_data)
+    qbraid_job_id = api.post("/init-job", data=init_data)
     return qbraid_job_id
 
 

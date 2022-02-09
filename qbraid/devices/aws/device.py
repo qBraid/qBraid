@@ -4,7 +4,7 @@ import warnings
 
 from braket.aws import AwsDevice
 
-from qbraid.api import config_user, job_api, install_package
+from qbraid.api import config_user, install_package, job_api
 from qbraid.devices.aws.job import BraketQuantumTaskWrapper
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus

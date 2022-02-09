@@ -1,5 +1,5 @@
-import os
 import configparser
+import os
 
 qbraid_config_path = os.path.join(os.path.expanduser("~"), ".qbraid", "config")
 aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
@@ -28,6 +28,7 @@ config_lst = [
     ["verify", "True", "IBM", qbraid_config_path],
 ]
 
+
 def set_config():
     """Set config inside testing virtual environments with default values
     hard-coded and secret values read from environment variables."""
@@ -46,6 +47,7 @@ def set_config():
         config.set(section, config_name, str(config_value))
         with open(filepath, "w", encoding="utf-8") as cfgfile:
             config.write(cfgfile)
+
 
 if __name__ == "__main__":
 

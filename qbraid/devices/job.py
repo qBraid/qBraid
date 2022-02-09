@@ -6,11 +6,10 @@ from time import sleep, time
 from typing import Any, Dict
 
 import qbraid
-from qbraid.devices import JobError
-from qbraid.devices.enums import JOB_FINAL, JobStatus
-
 from qbraid.api import job_api
 from qbraid.api.status_maps import STATUS_MAP
+from qbraid.devices import JobError
+from qbraid.devices.enums import JOB_FINAL, JobStatus
 
 
 class JobLikeWrapper(ABC):
