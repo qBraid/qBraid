@@ -26,20 +26,10 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install tox tox-gh-actions
     - name: Test with tox
-      run: tox -e unit-tests
+      run: tox
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         IBMQ_TOKEN: ${{ secrets.IBMQ_TOKEN }}
         JUPYTERHUB_USER: ${{ secrets.JUPYTERHUB_USER }}
         REFRESH: ${{ secrets.REFRESH }}
-    - name: Upload coverage.xml
-      if: ${{ matrix.platform == 'ubuntu-latest' && matrix.python-version == '3.9' }}
-      uses: actions/upload-artifact@v2
-      with:
-        name: coverage
-        path: coverage.xml
-        if-no-files-found: error
-    - name: Upload coverage.xml to codecov
-      if: ${{ matrix.platform == 'ubuntu-latest' && matrix.python-version == '3.9' }}
-      uses: codecov/codecov-action@v1
