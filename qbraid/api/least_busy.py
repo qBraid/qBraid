@@ -3,15 +3,15 @@
 from qiskit import IBMQ
 from qiskit.providers.ibmq import least_busy
 
-from qbraid.devices._utils import get_config
+from qbraid.api import config_user
 
 
 def ibmq_least_busy_qpu():
     """Return the qbraid id of the least busy IBMQ QPU."""
     if IBMQ.active_account() is None:
         IBMQ.load_account()
-    group = get_config("group", "IBM")
-    project = get_config("project", "IBM")
+    group = config_user.get_config("group", "IBM")
+    project = config_user.get_config("project", "IBM")
     provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
     backends = provider.backends(filters=lambda x: not x.configuration().simulator)
     backend_obj = least_busy(backends)

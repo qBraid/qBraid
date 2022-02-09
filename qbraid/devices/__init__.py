@@ -43,20 +43,15 @@ Devices API
    JobLikeWrapper
    LocalJobWrapper
    ResultWrapper
-   get_devices
-   update_config
-   ibmq_least_busy_qpu
    DeviceStatus
    JobStatus
    DeviceError
    JobError
-   ConfigError
 
 """
-from ._utils import get_devices, ibmq_least_busy_qpu, update_config
 from .device import DeviceLikeWrapper
 from .enums import DeviceStatus, JobStatus
-from .exceptions import ConfigError, DeviceError, JobError
+from .exceptions import DeviceError, JobError
 from .job import JobLikeWrapper
 from .localjob import LocalJobWrapper
 from .result import ResultWrapper

@@ -6,10 +6,10 @@ from time import sleep, time
 from typing import Any, Dict
 
 import qbraid
+from qbraid.api import job_api
+from qbraid.api.status_maps import STATUS_MAP
 from qbraid.devices import JobError
 from qbraid.devices.enums import JOB_FINAL, JobStatus
-
-from ._utils import STATUS_MAP, mongo_get_job
 
 
 class JobLikeWrapper(ABC):
@@ -33,7 +33,7 @@ class JobLikeWrapper(ABC):
     def vendor_job_id(self):
         """Returns the ID assigned by the device vendor"""
         if self._vendor_job_id is None:
-            self._cache_metadata = mongo_get_job(self.id)
+            self._cache_metadata = job_api.mongo_get_job(self.id)
             self._cache_status = self._cache_metadata["status"]
             self._vendor_job_id = self._cache_metadata["vendor_job_id"]
         return self._vendor_job_id
@@ -80,7 +80,7 @@ class JobLikeWrapper(ABC):
         status = self.status()
         if not self._cache_metadata or status != self._cache_status:
             self._cache_status = status
-            self._cache_metadata = mongo_get_job(self.id, update={"status": status.name})
+            self._cache_metadata = job_api.mongo_get_job(self.id, update={"status": status.name})
         return self._cache_metadata
 
     def wait_for_final_state(self, timeout=None, wait=5) -> None:

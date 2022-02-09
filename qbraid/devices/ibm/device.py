@@ -7,7 +7,7 @@ from qiskit.providers.ibmq import IBMQProviderError
 from qiskit.providers.ibmq.managed import IBMQJobManager
 from qiskit.utils.quantum_instance import QuantumInstance
 
-from qbraid.devices._utils import get_config, init_job
+from qbraid.api import config_user, job_api
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
 from qbraid.devices.exceptions import DeviceError
@@ -23,8 +23,8 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         if self._obj_ref == "IBMQ":
             if IBMQ.active_account() is None:
                 IBMQ.load_account()
-            group = get_config("group", "IBM")
-            project = get_config("project", "IBM")
+            group = config_user.get_config("group", "IBM")
+            project = config_user.get_config("project", "IBM")
             try:
                 provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
             except IBMQProviderError:
@@ -108,7 +108,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             job_set = job_manager.run([run_input], backend=self.vendor_dlo, memory=memory, **kwargs)
             qiskit_job = job_set.jobs()[0]
             qiskit_job_id = job_set.job_set_id()
-        qbraid_job_id = init_job(qiskit_job_id, self, qbraid_circuit, shots)
+        qbraid_job_id = job_api.init_job(qiskit_job_id, self, qbraid_circuit, shots)
         qbraid_job = QiskitJobWrapper(
             qbraid_job_id, vendor_job_id=qiskit_job_id, device=self, vendor_jlo=qiskit_job
         )

@@ -5,7 +5,7 @@
 from abc import ABC, abstractmethod
 
 import qbraid
-from qbraid.devices._utils import verify_user
+from qbraid.api.config_user import verify_user
 
 from .exceptions import DeviceError
 

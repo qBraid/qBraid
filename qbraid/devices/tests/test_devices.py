@@ -1,12 +1,9 @@
 """
 Unit tests for the qbraid device layer.
 """
-import os
-
 import cirq
 import numpy as np
 import pytest
-import requests
 from braket.aws import AwsDevice
 from braket.circuits import Circuit as BraketCircuit
 from braket.circuits import Observable as BraketObservable
@@ -20,7 +17,7 @@ from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.job import Job as QiskitJob
 
-from qbraid import device_wrapper, random_circuit, retrieve_job
+from qbraid import api, device_wrapper, random_circuit, retrieve_job
 from qbraid.devices import DeviceError, JobError, ResultWrapper
 from qbraid.devices.aws import (
     BraketDeviceWrapper,
@@ -39,9 +36,7 @@ from qbraid.devices.ibm import (
 
 def device_wrapper_inputs(vendor: str):
     """Returns list of tuples containing all device_wrapper inputs for given vendor."""
-    devices = requests.post(
-        os.getenv("API_URL") + "/get-devices", json={}, verify=False
-    ).json()
+    devices = api.post("/get-devices", json={})
     input_list = []
     for document in devices:
         if document["vendor"] == vendor:
