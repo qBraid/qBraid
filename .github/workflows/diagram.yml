@@ -22,4 +22,4 @@ jobs:
             tutorials
             .github
             .gitignore
-            tox.ini"
+            tox.ini
