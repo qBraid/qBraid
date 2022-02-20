@@ -1,8 +1,43 @@
-from typing import List, Sequence
+from typing import List, Sequence, Tuple, Optional
+
+import cirq
 
 import numpy as np
-from cirq import Circuit, GridQubit, I, LineQubit, NamedQubit
-from cirq.ops import Qid
+from cirq import (
+    Circuit,
+    GridQubit,
+    I,
+    LineQubit,
+    NamedQubit,
+    Operation,
+    map_operations_and_unroll,
+    ops,
+    value
+)
+
+@value.value_equality
+class ZPowGate(ops.ZPowGate):
+    def _qasm_(
+        self, args: "cirq.QasmArgs", qubits: Tuple["cirq.Qid", ...]
+    ) -> Optional[str]:
+        args.validate_version("2.0")
+        if self._global_shift == 0:
+            if self._exponent == 0.25:
+                return args.format("t {0};\n", qubits[0])
+            if self._exponent == -0.25:
+                return args.format("tdg {0};\n", qubits[0])
+            if self._exponent == 0.5:
+                return args.format("s {0};\n", qubits[0])
+            if self._exponent == -0.5:
+                return args.format("sdg {0};\n", qubits[0])
+            if self._exponent == 1:
+                return args.format("z {0};\n", qubits[0])
+            return args.format(
+                "p({0:half_turns}) {1};\n", self._exponent, qubits[0]
+            )
+        return args.format(
+            "rz({0:half_turns}) {1};\n", self._exponent, qubits[0]
+        )
 
 
 def _convert_to_line_qubits(
@@ -24,7 +59,7 @@ def _convert_to_line_qubits(
     return line_qubit_circuit
 
 
-def _key_from_qubit(qubit: Qid) -> str:
+def _key_from_qubit(qubit: ops.Qid) -> str:
     if isinstance(qubit, LineQubit):
         key = str(qubit)
     elif isinstance(qubit, GridQubit):
@@ -39,7 +74,7 @@ def _key_from_qubit(qubit: Qid) -> str:
     return key
 
 
-def _int_from_qubit(qubit: Qid) -> int:
+def _int_from_qubit(qubit: ops.Qid) -> int:
     if isinstance(qubit, LineQubit):
         index = int(qubit)
     elif isinstance(qubit, GridQubit):
@@ -54,7 +89,7 @@ def _int_from_qubit(qubit: Qid) -> int:
     return index
 
 
-def _make_qubits(circuit: Circuit, qubits: List[int]) -> Sequence[Qid]:
+def _make_qubits(circuit: Circuit, qubits: List[int]) -> Sequence[ops.Qid]:
     qubit_obj = list(circuit.all_qubits())[0]
     if isinstance(qubit_obj, LineQubit):
         qids = [LineQubit(i) for i in qubits]
@@ -70,7 +105,7 @@ def _make_qubits(circuit: Circuit, qubits: List[int]) -> Sequence[Qid]:
     return qids
 
 
-def _convert_to_contiguous_cirq(circuit: Circuit) -> Circuit:
+def _contiguous_expansion(circuit: Circuit) -> Circuit:
     """Checks whether the circuit uses contiguous qubits/indices,
     and if not, adds identity gates to vacant registers as needed."""
     nqubits = 0
@@ -94,6 +129,45 @@ def _convert_to_contiguous_cirq(circuit: Circuit) -> Circuit:
             circuit.append(I(q))
     return circuit
 
+
+def map_func(op: Operation, _: int) -> ops.OP_TREE:
+    if isinstance(op.gate, ops.ZPowGate):
+        yield ZPowGate(
+            exponent=op.gate.exponent, global_shift=op.gate.global_shift
+        )(op.qubits[0])
+    else:
+        yield op
+
+
+def _contiguous_compression(
+    circuit: Circuit, rev_qubits=False, map_gates=False
+) -> Circuit:
+    """Checks whether the circuit uses contiguous qubits/indices,
+    and if not, reduces dimension accordingly."""
+    qubit_map = {}
+    circuit_qubits = list(circuit.all_qubits())
+    circuit_qubits.sort()
+    if rev_qubits:
+        circuit_qubits = list(reversed(circuit_qubits))
+    for index, qubit in enumerate(circuit_qubits):
+        qubit_map[_int_from_qubit(qubit)] = index
+    contig_circuit = Circuit()
+    for op in circuit.all_operations():
+        contig_indicies = [
+            qubit_map[_int_from_qubit(qubit)] for qubit in op.qubits
+        ]
+        contig_qubits = _make_qubits(circuit, contig_indicies)
+        contig_circuit.append(op.gate.on(*contig_qubits))
+    if map_gates:
+        return map_operations_and_unroll(contig_circuit, map_func)
+    return contig_circuit
+
+def _convert_to_contiguous_cirq(
+    circuit: Circuit, rev_qubits=False, map_gates=False, expansion=False
+) -> Circuit:
+    if expansion:
+        return _contiguous_expansion(circuit)
+    return _contiguous_compression(circuit, rev_qubits=rev_qubits, map_gates=map_gates)
 
 def unitary_from_cirq(circuit: Circuit, ensure_contiguous=False) -> np.ndarray:
     """Calculate unitary of a cirq circuit."""
