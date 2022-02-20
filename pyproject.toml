@@ -25,7 +25,13 @@ exclude = '''
 [tool.coverage.run]
 parallel = true
 source = ["qbraid"]
-omit = ["**/qbraid/algorithms/*", "**/qbraid/applications/*", "**/qbraid/circuits/*", "**/qbraid/operators/*"]
+omit = [
+  "**/qbraid/algorithms/*", 
+  "**/qbraid/api/*",
+  "**/qbraid/applications/*", 
+  "**/qbraid/circuits/*", 
+  "**/qbraid/operators/*"
+  ]
 
 [tool.coverage.paths]
 source = ["qbraid", ".tox/*/lib/python*/site-packages/qbraid"]

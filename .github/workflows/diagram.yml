@@ -1,9 +1,8 @@
 name: Create diagram
+
 on:
-  workflow_dispatch: {}
-  push:
-    branches:
-      - main
+  workflow_dispatch:
+  
 jobs:
   get_data:
     runs-on: ubuntu-latest
@@ -13,4 +12,4 @@ jobs:
       - name: Update diagram
         uses: githubocto/repo-visualizer@main
         with:
-          excluded_paths: "qbraid/circuits,qbraid/operators,qbraid/applications,qbraid/algorithms,.github,docs,tutorials,.gitignore,tox.ini"
+          excluded_paths: "qbraid/circuits,qbraid/operators,qbraid/applications,qbraid/algorithms,docs,tutorials,.github,.gitignore,tox.ini"

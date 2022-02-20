@@ -1,15 +1,12 @@
 """This top level module contains the main qBraid public functionality."""
 
-import os
-
 import pkg_resources
-import requests
 import urllib3
 
+from qbraid import api
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid._version import __version__
-from qbraid.devices import get_devices, ibmq_least_busy_qpu
-from qbraid.devices._utils import get_config
+from qbraid.api import get_devices
 from qbraid.exceptions import QbraidError, WrapperError
 from qbraid.interface import convert_to_contiguous, random_circuit, to_unitary
 
@@ -91,9 +88,9 @@ def device_wrapper(qbraid_device_id: str, **kwargs):
         WrapperError: If ``qbraid_id`` is not a valid device reference.
     """
     if qbraid_device_id == "ibm_q_least_busy_qpu":
-        qbraid_device_id = ibmq_least_busy_qpu()
+        qbraid_device_id = api.ibmq_least_busy_qpu()
 
-    device_info = requests.post(os.getenv("API_URL") + "/public/lab/get-devices", json={"qbraid_id": qbraid_device_id}, verify=False).json()
+    device_info = api.post("/public/get-devices", json={"qbraid_id": qbraid_device_id})
 
     if isinstance(device_info, list):
         if len(device_info) == 0:
