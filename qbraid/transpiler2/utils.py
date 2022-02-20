@@ -211,7 +211,7 @@ def _key_from_qubit(qubit: Qid) -> str:
         key = str(qubit.name)
     else:
         raise ValueError(
-            "Expected qubit of type 'GridQubit' or 'LineQubit'" f"but instead got {type(qubit)}"
+            "Expected qubit of type 'GridQubit' 'LineQubit' or 'NamedQubit'" f"but instead got {type(qubit)}"
         )
     return key
 
@@ -226,7 +226,7 @@ def _int_from_qubit(qubit: Qid) -> int:
         index = int(qubit._comparison_key().split(":")[0][7:])
     else:
         raise ValueError(
-            "Expected qubit of type 'GridQubit' or 'LineQubit'" f"but instead got {type(qubit)}"
+            "Expected qubit of type 'GridQubit' 'LineQubit' or 'NamedQubit'" f"but instead got {type(qubit)}"
         )
     return index
 

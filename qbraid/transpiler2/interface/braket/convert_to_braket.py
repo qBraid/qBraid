@@ -182,6 +182,9 @@ def _translate_one_qubit_cirq_operation_to_braket_instruction(
     elif isinstance(gate, cirq_ops.IdentityGate):
         return [BKInstruction(braket_gates.I(), target)]
 
+    elif isinstance(gate, cirq_ops.MeasurementGate):
+        return []
+
     else:
         matrix = protocols.unitary(gate)
         return _translate_one_qubit_cirq_operation_to_braket_instruction(

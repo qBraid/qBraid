@@ -1,6 +1,7 @@
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Iterable
 
 import numpy as np
+import fractions
 
 import cirq
 from cirq import ops, protocols, value
@@ -49,6 +50,13 @@ class U2Gate(raw_types.Gate):
         cirq_phi = self._phi / np.pi
         cirq_lam = self._lam / np.pi
         return f"U2({cirq_phi}, {cirq_lam})"
+    
+    def __str__(self) -> str:
+        cirq_phi = fractions.Fraction(self._phi / np.pi)
+        cirq_lam = fractions.Fraction(self._lam / np.pi)
+        gate_str = f"U2({cirq_phi},{cirq_lam})"
+        frac_str = gate_str.replace("/", "π/")
+        return frac_str.replace("1π", "π")
 
 
 class U3Gate(raw_types.Gate):
@@ -83,6 +91,14 @@ class U3Gate(raw_types.Gate):
         cirq_phi = self._phi / np.pi
         cirq_lam = self._lam / np.pi
         return f"U3({cirq_theta}, {cirq_phi}, {cirq_lam})"
+
+    def __str__(self) -> str:
+        cirq_theta = fractions.Fraction(self._theta / np.pi)
+        cirq_phi = fractions.Fraction(self._phi / np.pi)
+        cirq_lam = fractions.Fraction(self._lam / np.pi)
+        gate_str = f"U3({cirq_theta},{cirq_phi},{cirq_lam})"
+        frac_str = gate_str.replace("/", "π/")
+        return frac_str.replace("1π", "π")
 
 
 class RZZGate(raw_types.Gate):

@@ -1,7 +1,7 @@
 from typing import Union
 
 import numpy as np
-from cirq import Circuit, Gate, GridQubit, LineQubit, unitary
+from cirq import Circuit, Gate, GridQubit, LineQubit, NamedQubit, Qid, unitary
 from cirq.ops import CSwapGate, MeasurementGate
 from cirq.ops.common_gates import (
     CXPowGate,
@@ -359,12 +359,16 @@ def gate_to_cirq(gw, output_param_mapping):
         raise TranspilerError(f"Gate type {gw.gate_type} not supported.")
 
 
-def int_from_qubit(qubit):
+def int_from_qubit(qubit: Qid) -> int:
     if isinstance(qubit, LineQubit):
-        return int(qubit)
+        index = int(qubit)
     elif isinstance(qubit, GridQubit):
-        return qubit.row
+        index = qubit.row
+    elif isinstance(qubit, NamedQubit):
+        # Only correct if numbered sequentially
+        index = int(qubit._comparison_key().split(":")[0][7:])
     else:
         raise ValueError(
-            f"Expected qubit of type 'GridQubit' or 'LineQubit' but instead got {type(qubit)}"
+            "Expected qubit of type 'GridQubit' 'LineQubit' or 'NamedQubit'" f"but instead got {type(qubit)}"
         )
+    return index
