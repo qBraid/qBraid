@@ -68,9 +68,7 @@ class QasmOutput:
         self.qubits = qubits
         self.header = header
         self.measurements = tuple(
-            op
-            for op in self.operations
-            if isinstance(op.gate, ops.MeasurementGate)
+            op for op in self.operations if isinstance(op.gate, ops.MeasurementGate)
         )
         meas_key_id_map, meas_comments = self._generate_measurement_ids()
         self.meas_comments = meas_comments
@@ -172,10 +170,7 @@ class QasmOutput:
             if comment is None:
                 output(f"creg {meas_id}[{len(meas.qubits)}];\n")
             else:
-                output(
-                    f"creg {meas_id}[{len(meas.qubits)}];  "
-                    f"// Measurement: {comment}\n"
-                )
+                output(f"creg {meas_id}[{len(meas.qubits)}];  " f"// Measurement: {comment}\n")
         output_line_gap(2)
 
         # Operations
@@ -215,9 +210,7 @@ class QasmOutput:
 
             qasms = [protocols.qasm(op, args=self.args) for op in decomposed]
 
-            should_annotate = (
-                decomposed != [main_op] or qasms[0].count("\n") > 1
-            )
+            should_annotate = decomposed != [main_op] or qasms[0].count("\n") > 1
             if should_annotate:
                 output_line_gap(1)
                 if isinstance(main_op, ops.GateOperation):

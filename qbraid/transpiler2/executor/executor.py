@@ -141,10 +141,7 @@ class Executor:
             circuits = [circuits]
 
         # Get all required circuits to run.
-        if (
-            observable is not None
-            and self._executor_return_type in MeasurementResultLike
-        ):
+        if observable is not None and self._executor_return_type in MeasurementResultLike:
             all_circuits = [
                 circuit_with_measurements
                 for circuit in circuits
@@ -174,9 +171,7 @@ class Executor:
             observable = cast(Observable, observable)
             all_results = cast(List[MeasurementResult], all_results)
             results = [
-                observable._expectation_from_measurements(
-                    all_results[i : i + result_step]
-                )
+                observable._expectation_from_measurements(all_results[i : i + result_step])
                 for i in range(len(all_results) // result_step)
             ]
 
@@ -216,15 +211,12 @@ class Executor:
             #  incorrect. Safe conversions should follow the logic in
             #  qbraid.transpiler2.interface.noise_scaling_converter.
             _, conversion_type = convert_to_cirq(circuits[0])
-            hashable_circuits = [
-                convert_to_cirq(circ)[0].freeze() for circ in circuits
-            ]
+            hashable_circuits = [convert_to_cirq(circ)[0].freeze() for circ in circuits]
 
             # Get the unique circuits and counts
             collection = Counter(hashable_circuits)
             to_run = [
-                convert_from_cirq(circ.unfreeze(), conversion_type)
-                for circ in collection.keys()
+                convert_from_cirq(circ.unfreeze(), conversion_type) for circ in collection.keys()
             ]
 
         if not self.can_batch:
@@ -249,9 +241,7 @@ class Executor:
 
         return results
 
-    def _call_executor(
-        self, to_run: Union[QPROGRAM, Sequence[QPROGRAM]], **kwargs: Any
-    ) -> None:
+    def _call_executor(self, to_run: Union[QPROGRAM, Sequence[QPROGRAM]], **kwargs: Any) -> None:
         """Calls the executor on the input circuit(s) to run. Stores the
         executed circuits in ``self._executed_circuits`` and the quantum
         results in ``self._quantum_results``.
@@ -270,9 +260,7 @@ class Executor:
             self._executed_circuits.append(to_run)
 
     @staticmethod
-    def is_batched_executor(
-        executor: Callable[[Union[QPROGRAM, Sequence[QPROGRAM]]], Any]
-    ) -> bool:
+    def is_batched_executor(executor: Callable[[Union[QPROGRAM, Sequence[QPROGRAM]]], Any]) -> bool:
         """Returns True if the input function is recognized as a "batched
         executor", else False.
 

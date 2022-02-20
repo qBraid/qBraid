@@ -76,10 +76,7 @@ class PauliString:
 
         self._pauli: cirq.PauliString[Any] = cirq.PauliString(
             coeff,
-            (
-                self._string_to_gate_map[s].on(cirq.LineQubit(i))
-                for (i, s) in zip(support, spec)
-            ),
+            (self._string_to_gate_map[s].on(cirq.LineQubit(i)) for (i, s) in zip(support, spec)),
         )
 
     @property
@@ -102,9 +99,7 @@ class PauliString:
     def _basis_rotations(self) -> List[cirq.Operation]:
         """Returns the basis rotations needed to measure the PauliString."""
         return [
-            op
-            for op in self._pauli.to_z_basis_ops()
-            if op.gate != cirq.SingleQubitCliffordGate.I
+            op for op in self._pauli.to_z_basis_ops() if op.gate != cirq.SingleQubitCliffordGate.I
         ]
 
     def _qubits_to_measure(self) -> Set[cirq.Qid]:
@@ -120,9 +115,7 @@ class PauliString:
         Args:
             other: The PauliString to check simultaneous measurement with.
         """
-        overlap = set(self._pauli.qubits).intersection(
-            set(other._pauli.qubits)
-        )
+        overlap = set(self._pauli.qubits).intersection(set(other._pauli.qubits))
         for qubit in overlap:
             if cirq.I in (self._pauli.get(qubit), other._pauli.get(qubit)):
                 continue
@@ -139,12 +132,8 @@ class PauliString:
         """
         return sum(gate != cirq.I for gate in self._pauli.values())
 
-    def _expectation_from_measurements(
-        self, measurements: MeasurementResult
-    ) -> float:
-        return PauliStringCollection(self)._expectation_from_measurements(
-            measurements
-        )
+    def _expectation_from_measurements(self, measurements: MeasurementResult) -> float:
+        return PauliStringCollection(self)._expectation_from_measurements(measurements)
 
     def __mul__(self, other: "PauliString") -> "PauliString":
         result = PauliString()
@@ -169,9 +158,7 @@ class PauliStringCollection:
     measured with a single circuit.
     """
 
-    def __init__(
-        self, *paulis: PauliString, check_precondition: bool = True
-    ) -> None:
+    def __init__(self, *paulis: PauliString, check_precondition: bool = True) -> None:
         """Initializes a `PauliStringCollection`.
 
         Args:
@@ -201,14 +188,10 @@ class PauliStringCollection:
     def can_add(self, pauli: PauliString) -> bool:
         return all(pauli.can_be_measured_with(p) for p in self.elements)
 
-    def add(
-        self, *paulis: PauliString, check_precondition: bool = True
-    ) -> None:
+    def add(self, *paulis: PauliString, check_precondition: bool = True) -> None:
         for pauli in paulis:
             if check_precondition and not self.can_add(pauli):
-                raise ValueError(
-                    f"Cannot add PauliString {pauli} to PauliStringCollection."
-                )
+                raise ValueError(f"Cannot add PauliString {pauli} to PauliStringCollection.")
             weight = pauli.weight()
             if self._paulis_by_weight.get(weight) is None:
                 self._paulis_by_weight[weight] = Counter({pauli})
@@ -217,11 +200,7 @@ class PauliStringCollection:
 
     @property
     def elements(self) -> List[PauliString]:
-        return [
-            pauli
-            for paulis in self._paulis_by_weight.values()
-            for pauli in paulis.elements()
-        ]
+        return [pauli for paulis in self._paulis_by_weight.values() for pauli in paulis.elements()]
 
     @property
     def elements_by_weight(self) -> Dict[int, TCounter[PauliString]]:
@@ -247,9 +226,7 @@ class PauliStringCollection:
 
     @staticmethod
     @atomic_converter
-    def _measure_in(
-        circuit: cirq.Circuit, paulis: "PauliStringCollection"
-    ) -> cirq.Circuit:
+    def _measure_in(circuit: cirq.Circuit, paulis: "PauliStringCollection") -> cirq.Circuit:
         # Transform circuit to canonical qubit layout.
         qubit_map = dict(
             zip(
@@ -277,9 +254,7 @@ class PauliStringCollection:
         reverse_qubit_map = dict(zip(qubit_map.values(), qubit_map.keys()))
         return measured.transform_qubits(lambda q: reverse_qubit_map[q])
 
-    def _expectation_from_measurements(
-        self, measurements: MeasurementResult
-    ) -> float:
+    def _expectation_from_measurements(self, measurements: MeasurementResult) -> float:
         total = 0.0
         for pauli in self.elements:
             bitstrings = measurements[sorted(pauli.support())]

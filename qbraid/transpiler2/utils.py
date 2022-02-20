@@ -113,9 +113,7 @@ def _pop_measurements(
     return measurements
 
 
-def _append_measurements(
-    circuit: Circuit, measurements: List[Tuple[int, ops.Operation]]
-) -> None:
+def _append_measurements(circuit: Circuit, measurements: List[Tuple[int, ops.Operation]]) -> None:
     """Appends all measurements into the final moment of the circuit.
 
     Args:
@@ -171,9 +169,7 @@ def _equal(
         for circ in (circuit_one, circuit_two):
             measurements = [
                 (moment, op)
-                for moment, op, _ in circ.findall_operations_with_gate_type(
-                    MeasurementGate
-                )
+                for moment, op, _ in circ.findall_operations_with_gate_type(MeasurementGate)
             ]
             circ.batch_remove(measurements)
 
@@ -183,9 +179,7 @@ def _equal(
 
             circ.batch_insert(measurements)
 
-    return CircuitDag.from_circuit(circuit_one) == CircuitDag.from_circuit(
-        circuit_two
-    )
+    return CircuitDag.from_circuit(circuit_one) == CircuitDag.from_circuit(circuit_two)
 
 
 def _convert_to_line_qubits(
@@ -217,8 +211,7 @@ def _key_from_qubit(qubit: Qid) -> str:
         key = str(qubit.name)
     else:
         raise ValueError(
-            "Expected qubit of type 'GridQubit' or 'LineQubit'"
-            f"but instead got {type(qubit)}"
+            "Expected qubit of type 'GridQubit' or 'LineQubit'" f"but instead got {type(qubit)}"
         )
     return key
 
@@ -233,8 +226,7 @@ def _int_from_qubit(qubit: Qid) -> int:
         index = int(qubit._comparison_key().split(":")[0][7:])
     else:
         raise ValueError(
-            "Expected qubit of type 'GridQubit' or 'LineQubit'"
-            f"but instead got {type(qubit)}"
+            "Expected qubit of type 'GridQubit' or 'LineQubit'" f"but instead got {type(qubit)}"
         )
     return index
 
@@ -282,16 +274,14 @@ def _contiguous_expansion_cirq(circuit: Circuit) -> Circuit:
 
 def map_func(op: cirq.Operation, _: int) -> cirq.OP_TREE:
     if isinstance(op.gate, cirq.ZPowGate):
-        yield QASM_ZPowGate(
-            exponent=op.gate.exponent, global_shift=op.gate.global_shift
-        )(op.qubits[0])
+        yield QASM_ZPowGate(exponent=op.gate.exponent, global_shift=op.gate.global_shift)(
+            op.qubits[0]
+        )
     else:
         yield op
 
 
-def _contiguous_compression_cirq(
-    circuit: Circuit, rev_qubits=False, map_gates=False
-) -> Circuit:
+def _contiguous_compression_cirq(circuit: Circuit, rev_qubits=False, map_gates=False) -> Circuit:
     """Checks whether the circuit uses contiguous qubits/indices,
     and if not, reduces dimension accordingly."""
     qubit_map = {}
@@ -303,9 +293,7 @@ def _contiguous_compression_cirq(
         qubit_map[_int_from_qubit(qubit)] = index
     contig_circuit = Circuit()
     for op in circuit.all_operations():
-        contig_indicies = [
-            qubit_map[_int_from_qubit(qubit)] for qubit in op.qubits
-        ]
+        contig_indicies = [qubit_map[_int_from_qubit(qubit)] for qubit in op.qubits]
         contig_qubits = _make_qubits(circuit, contig_indicies)
         contig_circuit.append(op.gate.on(*contig_qubits))
     if map_gates:

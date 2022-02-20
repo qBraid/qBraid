@@ -20,9 +20,7 @@ def _unitary_braket(circuit: BKCircuit) -> np.ndarray:
     return calculate_unitary(circ.qubit_count, circ.instructions)
 
 
-def _equal_unitaries(
-    braket_circuit: BKCircuit, cirq_circuit: CirqCircuit
-) -> bool:
+def _equal_unitaries(braket_circuit: BKCircuit, cirq_circuit: CirqCircuit) -> bool:
     """Returns True if Braket circuit unitary and Cirq circuit
     unitary are equivalent."""
     braket_unitary = _unitary_braket(braket_circuit)
@@ -43,9 +41,7 @@ class C(Gate):
         sub_qubit_count = sub_gate.qubit_count
         self._num_controls = qubit_count - sub_qubit_count
         self._controls = targets[: self._num_controls]
-        ascii_symbols = ["C"] * self._num_controls + list(
-            self.sub_gate.ascii_symbols
-        )
+        ascii_symbols = ["C"] * self._num_controls + list(self.sub_gate.ascii_symbols)
 
         super().__init__(qubit_count=qubit_count, ascii_symbols=ascii_symbols)
 
@@ -53,9 +49,7 @@ class C(Gate):
         qid_shape = (2,) * self.qubit_count
         control_values = ((1,),) * self._num_controls
         sub_n = len(qid_shape) - self._num_controls
-        tensor = np.eye(
-            np.prod(qid_shape, dtype=np.int64).item(), dtype=sub_matrix.dtype
-        )
+        tensor = np.eye(np.prod(qid_shape, dtype=np.int64).item(), dtype=sub_matrix.dtype)
         tensor.shape = qid_shape * 2
         sub_tensor = sub_matrix.reshape(qid_shape[self._num_controls :] * 2)
         for control_vals in itertools.product(*control_values):
@@ -80,10 +74,7 @@ class C(Gate):
 
     @staticmethod
     def _transform_matrix_to_ir(matrix: np.ndarray):
-        return [
-            [[element.real, element.imag] for element in row]
-            for row in matrix.tolist()
-        ]
+        return [[[element.real, element.imag] for element in row] for row in matrix.tolist()]
 
     @staticmethod
     @circuit.subroutine(register=True)

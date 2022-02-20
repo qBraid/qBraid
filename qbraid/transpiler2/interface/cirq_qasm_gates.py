@@ -116,9 +116,7 @@ class RZZGate(raw_types.Gate):
 
 @value.value_equality
 class ZPowGate(ops.ZPowGate):
-    def _qasm_(
-        self, args: "cirq.QasmArgs", qubits: Tuple["cirq.Qid", ...]
-    ) -> Optional[str]:
+    def _qasm_(self, args: "cirq.QasmArgs", qubits: Tuple["cirq.Qid", ...]) -> Optional[str]:
         args.validate_version("2.0")
         if self._global_shift == 0:
             if self._exponent == 0.25:
@@ -131,9 +129,5 @@ class ZPowGate(ops.ZPowGate):
                 return args.format("sdg {0};\n", qubits[0])
             if self._exponent == 1:
                 return args.format("z {0};\n", qubits[0])
-            return args.format(
-                "p({0:half_turns}) {1};\n", self._exponent, qubits[0]
-            )
-        return args.format(
-            "rz({0:half_turns}) {1};\n", self._exponent, qubits[0]
-        )
+            return args.format("p({0:half_turns}) {1};\n", self._exponent, qubits[0])
+        return args.format("rz({0:half_turns}) {1};\n", self._exponent, qubits[0])

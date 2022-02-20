@@ -36,9 +36,7 @@ def test_unsupported_format():
     qasm = "OPENQASM 2.1;"
     parser = QasmParser()
 
-    with pytest.raises(
-        QasmException, match="Unsupported.*2.1.*2.0.*supported.*"
-    ):
+    with pytest.raises(QasmException, match="Unsupported.*2.1.*2.0.*supported.*"):
         parser.parse(qasm)
 
 
@@ -66,9 +64,7 @@ include "qelib1.inc";
 def test_error_not_starting_with_format(qasm: str):
     parser = QasmParser()
 
-    with pytest.raises(
-        QasmException, match="Missing 'OPENQASM 2.0;' statement"
-    ):
+    with pytest.raises(QasmException, match="Missing 'OPENQASM 2.0;' statement"):
         parser.parse(qasm)
 
 
@@ -238,9 +234,7 @@ def test_CX_gate_mismatched_registers():
 """
     parser = QasmParser()
 
-    with pytest.raises(
-        QasmException, match=r"Non matching.*length \[2 3\].*line 4"
-    ):
+    with pytest.raises(QasmException, match=r"Non matching.*length \[2 3\].*line 4"):
         parser.parse(qasm)
 
 
@@ -252,9 +246,7 @@ def test_CX_gate_bounds():
 """
     parser = QasmParser()
 
-    with pytest.raises(
-        QasmException, match=r"Out of bounds.*4.*q1.*2.*line 4"
-    ):
+    with pytest.raises(QasmException, match=r"Out of bounds.*4.*q1.*2.*line 4"):
         parser.parse(qasm)
 
 
@@ -292,9 +284,7 @@ def test_U_gate():
         )
     )
 
-    expected_circuit.append(
-        cirq.Moment([QasmUGate(3.14 / np.pi, -1.0, 8 / np.pi)(q0)])
-    )
+    expected_circuit.append(cirq.Moment([QasmUGate(3.14 / np.pi, -1.0, 8 / np.pi)(q0)]))
 
     parsed_qasm = parser.parse(qasm)
 
@@ -379,9 +369,7 @@ def test_expressions(expr: str):
     q0 = cirq.NamedQubit("q_0")
 
     expected_circuit = Circuit()
-    expected_circuit.append(
-        QasmUGate(float(sympy.sympify(expr)) / np.pi, 2.0, 1 / 2.0)(q0)
-    )
+    expected_circuit.append(QasmUGate(float(sympy.sympify(expr)) / np.pi, 2.0, 1 / 2.0)(q0))
 
     parsed_qasm = parser.parse(qasm)
 
@@ -403,9 +391,7 @@ def test_unknown_function():
 """
     parser = QasmParser()
 
-    with pytest.raises(
-        QasmException, match=r".*not recognized.*'nonexistent'.*line 3"
-    ):
+    with pytest.raises(QasmException, match=r".*not recognized.*'nonexistent'.*line 3"):
         parser.parse(qasm)
 
 
@@ -446,9 +432,7 @@ def test_rotation_gates(qasm_gate: str, cirq_gate: cirq.SingleQubitGate):
     q1 = cirq.NamedQubit("q_1")
 
     expected_circuit = Circuit()
-    expected_circuit.append(
-        cirq.Moment([cirq_gate(np.pi / 2).on(q0), cirq_gate(np.pi).on(q1)])
-    )
+    expected_circuit.append(cirq.Moment([cirq_gate(np.pi / 2).on(q0), cirq_gate(np.pi).on(q1)]))
     expected_circuit.append(
         cirq.Moment(
             [
@@ -508,9 +492,7 @@ def test_qelib_gate_without_include_statement():
     """
     parser = QasmParser()
 
-    with pytest.raises(
-        QasmException, match=r"""Unknown gate "x".* line 3.*forget.*\?"""
-    ):
+    with pytest.raises(QasmException, match=r"""Unknown gate "x".* line 3.*forget.*\?"""):
         parser.parse(qasm)
 
 
@@ -553,12 +535,8 @@ def test_measure_individual_bits():
 
     expected_circuit = Circuit()
 
-    expected_circuit.append(
-        cirq.MeasurementGate(num_qubits=1, key="c1_0").on(q1_0)
-    )
-    expected_circuit.append(
-        cirq.MeasurementGate(num_qubits=1, key="c1_1").on(q1_1)
-    )
+    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key="c1_0").on(q1_0))
+    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key="c1_1").on(q1_1))
 
     parsed_qasm = parser.parse(qasm)
 
@@ -585,15 +563,9 @@ def test_measure_registers():
 
     expected_circuit = Circuit()
 
-    expected_circuit.append(
-        cirq.MeasurementGate(num_qubits=1, key="c1_0").on(q1_0)
-    )
-    expected_circuit.append(
-        cirq.MeasurementGate(num_qubits=1, key="c1_1").on(q1_1)
-    )
-    expected_circuit.append(
-        cirq.MeasurementGate(num_qubits=1, key="c1_2").on(q1_2)
-    )
+    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key="c1_0").on(q1_0))
+    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key="c1_1").on(q1_1))
+    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key="c1_2").on(q1_2))
 
     parsed_qasm = parser.parse(qasm)
 
@@ -615,9 +587,7 @@ def test_measure_mismatched_register_size():
 
     parser = QasmParser()
 
-    with pytest.raises(
-        QasmException, match=r""".*mismatched .* 2 -> 3.*line 5"""
-    ):
+    with pytest.raises(QasmException, match=r""".*mismatched .* 2 -> 3.*line 5"""):
         parser.parse(qasm)
 
 
@@ -632,9 +602,7 @@ def test_measure_to_quantum_register():
 
     parser = QasmParser()
 
-    with pytest.raises(
-        QasmException, match=r"""Undefined classical register.*q1.*line 6"""
-    ):
+    with pytest.raises(QasmException, match=r"""Undefined classical register.*q1.*line 6"""):
         parser.parse(qasm)
 
 
@@ -648,9 +616,7 @@ def test_measure_undefined_classical_bit():
 
     parser = QasmParser()
 
-    with pytest.raises(
-        QasmException, match=r"""Undefined classical register.*c2.*line 5"""
-    ):
+    with pytest.raises(QasmException, match=r"""Undefined classical register.*c2.*line 5"""):
         parser.parse(qasm)
 
 
@@ -665,9 +631,7 @@ def test_measure_from_classical_register():
 
     parser = QasmParser()
 
-    with pytest.raises(
-        QasmException, match=r"""Undefined quantum register.*c1.*line 6"""
-    ):
+    with pytest.raises(QasmException, match=r"""Undefined quantum register.*c1.*line 6"""):
         parser.parse(qasm)
 
 
@@ -679,9 +643,7 @@ def test_measurement_bounds():
 """
     parser = QasmParser()
 
-    with pytest.raises(
-        QasmException, match=r"Out of bounds bit.*4.*c1.*size 3.*line 4"
-    ):
+    with pytest.raises(QasmException, match=r"Out of bounds bit.*4.*c1.*size 3.*line 4"):
         parser.parse(qasm)
 
 
@@ -720,9 +682,7 @@ def test_u2_gate():
     q0 = cirq.NamedQubit("q_0")
 
     expected_circuit = Circuit()
-    expected_circuit.append(
-        cirq_qasm_gates.U2Gate(2.0 * np.pi, np.pi / 3.0)(q0)
-    )
+    expected_circuit.append(cirq_qasm_gates.U2Gate(2.0 * np.pi, np.pi / 3.0)(q0))
 
     parsed_qasm = parser.parse(qasm)
 
@@ -785,9 +745,7 @@ def test_u3_gate():
         )
     )
 
-    expected_circuit.append(
-        cirq.Moment([cirq_qasm_gates.U3Gate(3.14, -np.pi, 8.0)(q0)])
-    )
+    expected_circuit.append(cirq.Moment([cirq_qasm_gates.U3Gate(3.14, -np.pi, 8.0)(q0)]))
 
     parsed_qasm = parser.parse(qasm)
 
@@ -976,9 +934,7 @@ def test_two_qubit_gates_with_too_much_parameters(qasm_gate: str):
 
     with pytest.raises(
         QasmException,
-        match=r".*{}.* takes 0 parameter\(s\).*got.*1.*line 5".format(
-            qasm_gate
-        ),
+        match=r".*{}.* takes 0 parameter\(s\).*got.*1.*line 5".format(qasm_gate),
     ):
         parser.parse(qasm)
 
@@ -987,9 +943,7 @@ three_qubit_gates = [("ccx", cirq.TOFFOLI), ("cswap", cirq.CSWAP)]
 
 
 @pytest.mark.parametrize("qasm_gate,cirq_gate", three_qubit_gates)
-def test_three_qubit_gates(
-    qasm_gate: str, cirq_gate: cirq.testing.TwoQubitGate
-):
+def test_three_qubit_gates(qasm_gate: str, cirq_gate: cirq.testing.TwoQubitGate):
     qasm = """
      OPENQASM 2.0;
      include "qelib1.inc";

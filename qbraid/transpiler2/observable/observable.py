@@ -117,9 +117,7 @@ class Observable:
 
         matrix = np.zeros(shape=(2 ** n, 2 ** n), dtype=dtype)
         for pauli in self._paulis:
-            matrix += pauli.matrix(
-                qubit_indices_to_include=qubit_indices
-            ).astype(dtype=dtype)
+            matrix += pauli.matrix(qubit_indices_to_include=qubit_indices).astype(dtype=dtype)
 
         return matrix
 
@@ -130,17 +128,13 @@ class Observable:
 
         return Executor(execute).evaluate(circuit, observable=self)[0]
 
-    def _expectation_from_measurements(
-        self, measurements: List[MeasurementResult]
-    ) -> float:
+    def _expectation_from_measurements(self, measurements: List[MeasurementResult]) -> float:
         return sum(
             pset._expectation_from_measurements(bitstrings)
             for (pset, bitstrings) in zip(self._groups, measurements)
         )
 
-    def _expectation_from_density_matrix(
-        self, density_matrix: np.ndarray
-    ) -> float:
+    def _expectation_from_density_matrix(self, density_matrix: np.ndarray) -> float:
         observable_matrix = self.matrix()
 
         if density_matrix.shape != observable_matrix.shape:

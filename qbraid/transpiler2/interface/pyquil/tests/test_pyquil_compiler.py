@@ -219,9 +219,7 @@ QUANTUM_GATES = {
 def _generate_random_program(n_qubits, length):
     """Randomly sample gates and arguments (qubits, angles)"""
     if n_qubits < 3:
-        raise ValueError(
-            "Please request n_qubits >= 3 so we can use 3-qubit gates."
-        )
+        raise ValueError("Please request n_qubits >= 3 so we can use 3-qubit gates.")
 
     gates = list(QUANTUM_GATES.values())
     prog = Program()

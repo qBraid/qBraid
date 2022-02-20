@@ -42,12 +42,8 @@ from qbraid.transpiler2.utils import _equal
 # Cirq Bell circuit.
 cirq_qreg = cirq.LineQubit.range(2)
 cirq_qreg_rev = list(reversed(cirq_qreg))
-cirq_circuit = cirq.Circuit(
-    cirq.ops.H.on(cirq_qreg[0]), cirq.ops.CNOT.on(*cirq_qreg)
-)
-cirq_circuit_rev = cirq.Circuit(
-    cirq.ops.H.on(cirq_qreg_rev[0]), cirq.ops.CNOT.on(*cirq_qreg_rev)
-)
+cirq_circuit = cirq.Circuit(cirq.ops.H.on(cirq_qreg[0]), cirq.ops.CNOT.on(*cirq_qreg))
+cirq_circuit_rev = cirq.Circuit(cirq.ops.H.on(cirq_qreg_rev[0]), cirq.ops.CNOT.on(*cirq_qreg_rev))
 
 # Qiskit Bell circuit.
 qiskit_qreg = qiskit.QuantumRegister(2)
@@ -94,14 +90,10 @@ def returns_several_circuits(circ: cirq.Circuit, *args, **kwargs):
 #  Moment object has no attribute 'all_qubits
 
 
-@pytest.mark.parametrize(
-    "circuit", (qiskit_circuit, pyquil_circuit, braket_circuit)
-)
+@pytest.mark.parametrize("circuit", (qiskit_circuit, pyquil_circuit, braket_circuit))
 def test_to_cirq(circuit):
     converted_circuit, input_type = convert_to_cirq(circuit)
-    assert _equal(converted_circuit, cirq_circuit) or _equal(
-        converted_circuit, cirq_circuit_rev
-    )
+    assert _equal(converted_circuit, cirq_circuit) or _equal(converted_circuit, cirq_circuit_rev)
     assert input_type in circuit.__module__
 
 
@@ -154,9 +146,7 @@ def test_converter(circuit_and_type):
     # Return a Cirq Circuit
     cirq_scaled = scaling_function(circuit, return_cirq=True)
     assert isinstance(cirq_scaled, cirq.Circuit)
-    assert _equal(cirq_scaled, cirq_circuit) or _equal(
-        cirq_scaled, cirq_circuit_rev
-    )
+    assert _equal(cirq_scaled, cirq_circuit) or _equal(cirq_scaled, cirq_circuit_rev)
 
 
 @pytest.mark.parametrize("nbits", [1, 10])

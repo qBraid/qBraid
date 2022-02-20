@@ -49,9 +49,7 @@ def convert_to_cirq(circuit: QPROGRAM) -> Tuple[Circuit, str]:
     try:
         package = circuit.__module__
     except AttributeError:
-        raise UnsupportedCircuitError(
-            "Could not determine the package of the input circuit."
-        )
+        raise UnsupportedCircuitError("Could not determine the package of the input circuit.")
 
     if "qiskit" in package:
         from qbraid.transpiler2.interface.qiskit.conversions import from_qiskit
@@ -153,20 +151,14 @@ def accept_any_qprogram_as_input(
     accept_cirq_circuit_function: Callable[[Circuit], Any]
 ) -> Callable[[QPROGRAM], Any]:
     @wraps(accept_cirq_circuit_function)
-    def accept_any_qprogram_function(
-        circuit: QPROGRAM, *args: Any, **kwargs: Any
-    ) -> Any:
+    def accept_any_qprogram_function(circuit: QPROGRAM, *args: Any, **kwargs: Any) -> Any:
         cirq_circuit, _ = convert_to_cirq(circuit)
-        return accept_cirq_circuit_function(  # type: ignore
-            cirq_circuit, *args, **kwargs
-        )
+        return accept_cirq_circuit_function(cirq_circuit, *args, **kwargs)  # type: ignore
 
     return accept_any_qprogram_function
 
 
-def atomic_converter(
-    cirq_circuit_modifier: Callable[..., Any]
-) -> Callable[..., Any]:
+def atomic_converter(cirq_circuit_modifier: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator which allows for a function which inputs and returns a Cirq
     circuit to input and return any QPROGRAM.
 
@@ -176,9 +168,7 @@ def atomic_converter(
     """
 
     @wraps(cirq_circuit_modifier)
-    def qprogram_modifier(
-        circuit: QPROGRAM, *args: Any, **kwargs: Any
-    ) -> QPROGRAM:
+    def qprogram_modifier(circuit: QPROGRAM, *args: Any, **kwargs: Any) -> QPROGRAM:
         # Convert to Cirq representation.
         cirq_circuit, input_circuit_type = convert_to_cirq(circuit)
 
@@ -200,14 +190,10 @@ def atomic_one_to_many_converter(
     cirq_circuit_modifier: Callable[..., Iterable[Circuit]]
 ) -> Callable[..., Iterable[QPROGRAM]]:
     @wraps(cirq_circuit_modifier)
-    def qprogram_modifier(
-        circuit: QPROGRAM, *args: Any, **kwargs: Any
-    ) -> Iterable[QPROGRAM]:
+    def qprogram_modifier(circuit: QPROGRAM, *args: Any, **kwargs: Any) -> Iterable[QPROGRAM]:
         cirq_circuit, input_circuit_type = convert_to_cirq(circuit)
 
-        modified_circuits: Iterable[Circuit] = cirq_circuit_modifier(
-            cirq_circuit, *args, **kwargs
-        )
+        modified_circuits: Iterable[Circuit] = cirq_circuit_modifier(cirq_circuit, *args, **kwargs)
 
         if kwargs.get("return_cirq") is True:
             return modified_circuits
@@ -220,9 +206,7 @@ def atomic_one_to_many_converter(
     return qprogram_modifier
 
 
-def noise_scaling_converter(
-    noise_scaling_function: Callable[..., Any]
-) -> Callable[..., Any]:
+def noise_scaling_converter(noise_scaling_function: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator for handling conversions with noise scaling functions.
 
     Args:
@@ -231,12 +215,8 @@ def noise_scaling_converter(
     """
 
     @wraps(noise_scaling_function)
-    def new_scaling_function(
-        circuit: QPROGRAM, *args: Any, **kwargs: Any
-    ) -> QPROGRAM:
-        scaled_circuit = atomic_converter(noise_scaling_function)(
-            circuit, *args, **kwargs
-        )
+    def new_scaling_function(circuit: QPROGRAM, *args: Any, **kwargs: Any) -> QPROGRAM:
+        scaled_circuit = atomic_converter(noise_scaling_function)(circuit, *args, **kwargs)
 
         # PyQuil: Restore declarations, measurements, and metadata.
         if "pyquil" in scaled_circuit.__module__:
@@ -247,9 +227,7 @@ def noise_scaling_converter(
 
             # Grab all measurements from the input circuit.
             measurements = [
-                instr
-                for instr in circuit.instructions
-                if isinstance(instr, Measurement)
+                instr for instr in circuit.instructions if isinstance(instr, Measurement)
             ]
 
             # Remove memory declarations added from Cirq -> pyQuil conversion.
@@ -268,9 +246,7 @@ def noise_scaling_converter(
             ]
 
             # Add back original declarations and measurements.
-            scaled_circuit = Program(
-                list(new_declarations.values()) + instructions + measurements
-            )
+            scaled_circuit = Program(list(new_declarations.values()) + instructions + measurements)
 
             # Set the number of shots to the input circuit.
             scaled_circuit.num_shots = circuit.num_shots

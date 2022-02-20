@@ -144,9 +144,7 @@ def test_bell_state_to_from_circuits():
     with a Bell state circuit.
     """
     qreg = cirq.LineQubit.range(2)
-    cirq_circuit = cirq.Circuit(
-        [cirq.ops.H.on(qreg[0]), cirq.ops.CNOT.on(qreg[0], qreg[1])]
-    )
+    cirq_circuit = cirq.Circuit([cirq.ops.H.on(qreg[0]), cirq.ops.CNOT.on(qreg[0], qreg[1])])
     qiskit_circuit = to_qiskit(cirq_circuit)  # Qiskit from Cirq
     circuit_cirq = from_qiskit(qiskit_circuit)  # Cirq from Qiskit
     assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
@@ -157,9 +155,7 @@ def test_bell_state_to_from_qasm():
     with a Bell state circuit.
     """
     qreg = cirq.LineQubit.range(2)
-    cirq_circuit = cirq.Circuit(
-        [cirq.ops.H.on(qreg[0]), cirq.ops.CNOT.on(qreg[0], qreg[1])]
-    )
+    cirq_circuit = cirq.Circuit([cirq.ops.H.on(qreg[0]), cirq.ops.CNOT.on(qreg[0], qreg[1])])
     qasm = to_qasm(cirq_circuit)  # Qasm from Cirq
     circuit_cirq = from_qasm(qasm)
     assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
@@ -186,9 +182,7 @@ def test_random_circuit_to_from_qasm():
     )
     qasm = to_qasm(cirq_circuit)
     circuit_cirq = from_qasm(qasm)
-    assert cirq.equal_up_to_global_phase(
-        cirq_circuit.unitary(), circuit_cirq.unitary()
-    )
+    assert cirq.equal_up_to_global_phase(cirq_circuit.unitary(), circuit_cirq.unitary())
 
 
 @pytest.mark.parametrize("as_qasm", (True, False))
@@ -276,9 +270,7 @@ def test_transform_qregs_one_qubit_ops(nqubits, with_ops, measure):
 def test_transform_qregs_two_qubit_ops(new_reg_sizes):
     nqubits = sum(new_reg_sizes)
     circ = to_qiskit(
-        cirq.testing.random_circuit(
-            nqubits, n_moments=5, op_density=1, random_state=1
-        )
+        cirq.testing.random_circuit(nqubits, n_moments=5, op_density=1, random_state=1)
     )
     orig = circ.copy()
 
@@ -298,11 +290,7 @@ def test_transform_qregs_two_qubit_ops(new_reg_sizes):
 @pytest.mark.parametrize("measure", [True, False])
 def test_transform_qregs_random_circuit(new_reg_sizes, measure):
     nbits = sum(new_reg_sizes)
-    circ = to_qiskit(
-        cirq.testing.random_circuit(
-            nbits, n_moments=5, op_density=1, random_state=10
-        )
-    )
+    circ = to_qiskit(cirq.testing.random_circuit(nbits, n_moments=5, op_density=1, random_state=10))
     creg = qiskit.ClassicalRegister(nbits)
     circ.add_register(creg)
     if measure:

@@ -28,9 +28,7 @@ def test_bell_state_to_qiskit():
     with a Bell state circuit.
     """
     qreg = cirq.LineQubit.range(2)
-    cirq_circuit = cirq.Circuit(
-        [cirq.ops.H.on(qreg[0]), cirq.ops.CNOT.on(qreg[0], qreg[1])]
-    )
+    cirq_circuit = cirq.Circuit([cirq.ops.H.on(qreg[0]), cirq.ops.CNOT.on(qreg[0], qreg[1])])
     qiskit_circuit = to_qiskit(cirq_circuit)
     print()
     print(cirq_circuit)

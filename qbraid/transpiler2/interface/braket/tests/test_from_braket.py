@@ -48,10 +48,7 @@ def test_from_braket_parameterized_single_qubit_gates(qubit_index):
         braket_gates.PhaseShift,
     ]
     angles = np.random.RandomState(11).random(len(pgates))
-    instructions = [
-        Instruction(rot(a), target=qubit_index)
-        for rot, a in zip(pgates, angles)
-    ]
+    instructions = [Instruction(rot(a), target=qubit_index) for rot, a in zip(pgates, angles)]
     for instr in instructions:
         braket_circuit.add_instruction(instr)
     cirq_circuit = from_braket(braket_circuit)
@@ -88,9 +85,7 @@ def test_from_braket_parameterized_two_qubit_gates():
         braket_gates.XY,
     ]
     angles = np.random.RandomState(2).random(len(pgates))
-    instructions = [
-        Instruction(rot(a), target=[0, 1]) for rot, a in zip(pgates, angles)
-    ]
+    instructions = [Instruction(rot(a), target=[0, 1]) for rot, a in zip(pgates, angles)]
     for instr in instructions:
         braket_circuit.add_instruction(instr)
     cirq_circuit = from_braket(braket_circuit)

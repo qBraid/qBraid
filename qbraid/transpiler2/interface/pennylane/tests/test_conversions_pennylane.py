@@ -140,9 +140,7 @@ def test_integration():
         for gates in gates_per_layers:
             for gate in gates:
                 params = list(np.pi * np.random.rand(gate.num_params))
-                rnd_wires = np.random.choice(
-                    range(n_wires), size=gate.num_wires, replace=False
-                )
+                rnd_wires = np.random.choice(range(n_wires), size=gate.num_wires, replace=False)
                 gate(
                     *params,
                     wires=[

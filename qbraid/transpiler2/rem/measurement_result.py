@@ -33,9 +33,7 @@ class MeasurementResult:
 
     def __post_init__(self) -> None:
         if not set(b for bits in self.result for b in bits).issubset({0, 1}):
-            raise ValueError(
-                "MeasurementResult contains elements which are not (0, 1)."
-            )
+            raise ValueError("MeasurementResult contains elements which are not (0, 1).")
 
         self._bitstrings = np.array(self.result)
         if isinstance(self.result, np.ndarray):
@@ -57,11 +55,7 @@ class MeasurementResult:
 
     @property
     def nqubits(self) -> int:
-        return (
-            self._bitstrings.shape[1]
-            if len(self._bitstrings.shape) >= 2
-            else 0
-        )
+        return self._bitstrings.shape[1] if len(self._bitstrings.shape) >= 2 else 0
 
     @property
     def asarray(self) -> np.ndarray:

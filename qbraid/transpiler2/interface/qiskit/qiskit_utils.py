@@ -43,12 +43,8 @@ def initialized_depolarizing_noise(noise_level: float) -> NoiseModel:
 
     # we assume the same depolarizing error for each
     # gate of the standard IBM basis
-    noise_model.add_all_qubit_quantum_error(
-        depolarizing_error(noise_level, 1), ["u1", "u2", "u3"]
-    )
-    noise_model.add_all_qubit_quantum_error(
-        depolarizing_error(noise_level, 2), ["cx"]
-    )
+    noise_model.add_all_qubit_quantum_error(depolarizing_error(noise_level, 1), ["u1", "u2", "u3"])
+    noise_model.add_all_qubit_quantum_error(depolarizing_error(noise_level, 2), ["cx"])
     return noise_model
 
 
@@ -66,9 +62,7 @@ def execute(circuit: QuantumCircuit, obs: np.ndarray) -> float:
     return execute_with_noise(circuit, obs, noise_model=None)
 
 
-def execute_with_shots(
-    circuit: QuantumCircuit, obs: np.ndarray, shots: int
-) -> float:
+def execute_with_shots(circuit: QuantumCircuit, obs: np.ndarray, shots: int) -> float:
     """Simulates the evolution of the circuit and returns
     the expectation value of the observable.
 
@@ -90,9 +84,7 @@ def execute_with_shots(
     )
 
 
-def execute_with_noise(
-    circuit: QuantumCircuit, obs: np.ndarray, noise_model: NoiseModel
-) -> float:
+def execute_with_noise(circuit: QuantumCircuit, obs: np.ndarray, noise_model: NoiseModel) -> float:
     """Simulates the evolution of the noisy circuit and returns
     the exact expectation value of the observable.
 
@@ -182,9 +174,7 @@ def execute_with_shots_and_noise(
     expectation = 0
 
     for bitstring, count in counts.items():
-        expectation += (
-            eigvals[int(bitstring[0 : circ.num_qubits], 2)] * count / shots
-        )
+        expectation += eigvals[int(bitstring[0 : circ.num_qubits], 2)] * count / shots
     return expectation
 
 
@@ -192,9 +182,7 @@ def _unitary_qiskit(circuit: QuantumCircuit) -> np.ndarray:
     return Operator(circuit).data
 
 
-def _equal_unitaries(
-    qiskit_circuit: QuantumCircuit, cirq_circuit: Circuit
-) -> bool:
+def _equal_unitaries(qiskit_circuit: QuantumCircuit, cirq_circuit: Circuit) -> bool:
     """Returns True if Qiskit circuit unitary and Cirq circuit
     unitary are equivalent."""
     qiskit_unitary = _unitary_qiskit(qiskit_circuit)

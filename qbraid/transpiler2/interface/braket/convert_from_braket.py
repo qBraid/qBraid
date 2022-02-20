@@ -42,9 +42,7 @@ def _gate_to_matrix_braket(gate: braket_gates.Unitary) -> np.ndarray:
     return calculate_unitary(circuit.qubit_count, circuit.instructions)
 
 
-def _contiguous_compression_braket(
-    circuit: BKCircuit, rev_qubits=False
-) -> BKCircuit:
+def _contiguous_compression_braket(circuit: BKCircuit, rev_qubits=False) -> BKCircuit:
     """Checks whether the circuit uses contiguous qubits/indices,
     and if not, reduces dimension accordingly."""
     qubit_map = {}
@@ -99,14 +97,10 @@ def _translate_braket_instruction_to_cirq_operation(
     qubits = [qubit_mapping[x] for x in BK_qubits]
 
     if nqubits == 1:
-        return _translate_one_qubit_braket_instruction_to_cirq_operation(
-            instr, qubits
-        )
+        return _translate_one_qubit_braket_instruction_to_cirq_operation(instr, qubits)
 
     elif nqubits == 2:
-        return _translate_two_qubit_braket_instruction_to_cirq_operation(
-            instr, qubits
-        )
+        return _translate_two_qubit_braket_instruction_to_cirq_operation(instr, qubits)
 
     elif nqubits == 3:
         if isinstance(instr.operator, braket_gates.CCNot):
@@ -118,9 +112,7 @@ def _translate_braket_instruction_to_cirq_operation(
                 matrix = _gate_to_matrix_braket(instr.operator)
                 return [cirq_ops.MatrixGate(matrix).on(*qubits)]
             except (ValueError, TypeError) as err:
-                raise ValueError(
-                    f"Unable to convert the instruction {instr} to Cirq."
-                ) from err
+                raise ValueError(f"Unable to convert the instruction {instr} to Cirq.") from err
 
     # Unknown instructions.
     else:
@@ -185,9 +177,7 @@ def _translate_one_qubit_braket_instruction_to_cirq_operation(
             matrix = _gate_to_matrix_braket(gate)
             return [cirq_ops.MatrixGate(matrix).on(*qubits)]
         except (ValueError, TypeError) as err:
-            raise ValueError(
-                f"Unable to convert the instruction {instr} to Cirq."
-            ) from err
+            raise ValueError(f"Unable to convert the instruction {instr} to Cirq.") from err
 
     return None  # type: ignore[return-value]  # pragma: no cover
 
@@ -252,23 +242,11 @@ def _translate_two_qubit_braket_instruction_to_cirq_operation(
             cirq_ops.CNOT.on(*qubits),
         ]
     elif isinstance(gate, braket_gates.XX):
-        return [
-            cirq_ops.XXPowGate(
-                exponent=gate.angle / np.pi, global_shift=-0.5
-            ).on(*qubits)
-        ]
+        return [cirq_ops.XXPowGate(exponent=gate.angle / np.pi, global_shift=-0.5).on(*qubits)]
     elif isinstance(gate, braket_gates.YY):
-        return [
-            cirq_ops.YYPowGate(
-                exponent=gate.angle / np.pi, global_shift=-0.5
-            ).on(*qubits)
-        ]
+        return [cirq_ops.YYPowGate(exponent=gate.angle / np.pi, global_shift=-0.5).on(*qubits)]
     elif isinstance(gate, braket_gates.ZZ):
-        return [
-            cirq_ops.ZZPowGate(
-                exponent=gate.angle / np.pi, global_shift=-0.5
-            ).on(*qubits)
-        ]
+        return [cirq_ops.ZZPowGate(exponent=gate.angle / np.pi, global_shift=-0.5).on(*qubits)]
     elif isinstance(gate, braket_gates.XY):
         return [cirq_ops.ISwapPowGate(exponent=gate.angle / np.pi).on(*qubits)]
 
@@ -278,8 +256,6 @@ def _translate_two_qubit_braket_instruction_to_cirq_operation(
             unitary_gate = _create_unitary_gate_cirq(matrix)
             return [unitary_gate.on(*qubits)]
         except (ValueError, TypeError) as err:
-            raise ValueError(
-                f"Unable to convert the instruction {instr} to Cirq."
-            ) from err
+            raise ValueError(f"Unable to convert the instruction {instr} to Cirq.") from err
 
     return None  # type: ignore[return-value]  # pragma: no cover

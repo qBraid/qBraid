@@ -74,23 +74,17 @@ def test_execute_with_depolarizing_noise():
     observable = np.diag([0, 1])
     # Test 1
     noise1 = 0.0
-    observable_exp_value = execute_with_depolarizing_noise(
-        qc, observable, noise1
-    )
+    observable_exp_value = execute_with_depolarizing_noise(qc, observable, noise1)
     assert 0.0 == observable_exp_value
 
     # Test 2
     noise2 = 0.5
-    observable_exp_value = execute_with_depolarizing_noise(
-        qc, observable, noise2
-    )
+    observable_exp_value = execute_with_depolarizing_noise(qc, observable, noise2)
     assert np.isclose(observable_exp_value, 0.5)
 
     # Test 3
     noise3 = 0.001
-    observable_exp_value = execute_with_depolarizing_noise(
-        qc, observable, noise3
-    )
+    observable_exp_value = execute_with_depolarizing_noise(qc, observable, noise3)
     assert np.isclose(observable_exp_value, 0.062452)
 
 
@@ -111,7 +105,5 @@ def test_execute_with_shots_and_depolarizing_noise():
     observable = cirq.PauliString(cirq.ops.Z.on(cirq.LineQubit(0)))
 
     p_d = 0.01  # depolarizing noise strength
-    observable_exp_value = execute_with_shots_and_depolarizing_noise(
-        qc, observable, p_d, shots
-    )
+    observable_exp_value = execute_with_shots_and_depolarizing_noise(qc, observable, p_d, shots)
     assert 0.5 <= observable_exp_value <= 1.0

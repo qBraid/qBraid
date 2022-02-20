@@ -24,9 +24,7 @@ def _to_qasm_output(
     """
     if header is None:
         header = f"Generated from Cirq v{cirq._version.__version__}"
-    qubits = ops.QubitOrder.as_qubit_order(qubit_order).order_for(
-        circuit.all_qubits()
-    )
+    qubits = ops.QubitOrder.as_qubit_order(qubit_order).order_for(circuit.all_qubits())
     return QasmOutput(
         operations=circuit.all_operations(),
         qubits=qubits,

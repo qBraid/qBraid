@@ -49,15 +49,13 @@ def from_pennylane(tape: QuantumTape) -> Circuit:
         wires = sorted(tape.wires)
     except TypeError:
         raise UnsupportedQuantumTapeError(
-            f"The wires of the tape must be sortable, but could not sort "
-            f"{tape.wires}."
+            f"The wires of the tape must be sortable, but could not sort " f"{tape.wires}."
         )
 
     for i in range(len(wires)):
         if wires[i] != i:
             raise UnsupportedQuantumTapeError(
-                "The wire labels of the tape must contiguously pack 0 "
-                "to n-1, for n wires."
+                "The wire labels of the tape must contiguously pack 0 " "to n-1, for n wires."
             )
 
     if len(tape.measurements) > 0:

@@ -58,9 +58,7 @@ def _remove_qasm_barriers(qasm: QASMType) -> QASMType:
     return "".join(lines)
 
 
-def _map_bit_index(
-    bit_index: int, new_register_sizes: List[int]
-) -> Tuple[int, int]:
+def _map_bit_index(bit_index: int, new_register_sizes: List[int]) -> Tuple[int, int]:
     """Returns the register index and (qu)bit index in this register for the
     mapped bit_index.
 
@@ -116,9 +114,7 @@ def _map_qubits(
     """
     indices = [bit.index for bit in qubits]
     mapped_indices = [_map_bit_index(i, new_register_sizes) for i in indices]
-    return [
-        qiskit.circuit.Qubit(new_registers[i], j) for i, j in mapped_indices
-    ]
+    return [qiskit.circuit.Qubit(new_registers[i], j) for i, j in mapped_indices]
 
 
 def _measurement_order(
@@ -258,9 +254,7 @@ def to_qiskit(circuit: cirq.Circuit) -> qiskit.QuantumCircuit:
     Returns:
         Qiskit.QuantumCircuit object equivalent to the input Cirq circuit.
     """
-    compat_circuit = _contiguous_compression_cirq(
-        circuit, rev_qubits=True, map_gates=True
-    )
+    compat_circuit = _contiguous_compression_cirq(circuit, rev_qubits=True, map_gates=True)
     return qiskit.QuantumCircuit.from_qasm_str(to_qasm(compat_circuit))
 
 

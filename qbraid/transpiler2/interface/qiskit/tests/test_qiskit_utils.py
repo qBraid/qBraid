@@ -52,9 +52,7 @@ def test_execute_with_shots():
     """
 
     circ = QuantumCircuit(1, 1)
-    expectation_value = execute_with_shots(
-        circuit=circ, obs=ONE_QUBIT_GS_PROJECTOR, shots=SHOTS
-    )
+    expectation_value = execute_with_shots(circuit=circ, obs=ONE_QUBIT_GS_PROJECTOR, shots=SHOTS)
     assert expectation_value == 1.0
 
     second_circ = QuantumCircuit(1)

@@ -47,9 +47,7 @@ def sample_bitstrings(
     result = sampler.run(circuit, repetitions=shots)
     return MeasurementResult(
         result=np.column_stack(list(result.measurements.values())),
-        qubit_indices=tuple(
-            int(q) for k in result.measurements.keys() for q in k.split(",")
-        ),
+        qubit_indices=tuple(int(q) for k in result.measurements.keys() for q in k.split(",")),
     )
 
 
@@ -102,9 +100,7 @@ def execute_with_shots(
     return psum.estimated_energy()
 
 
-def execute_with_depolarizing_noise(
-    circuit: cirq.Circuit, obs: np.ndarray, noise: float
-) -> float:
+def execute_with_depolarizing_noise(circuit: cirq.Circuit, obs: np.ndarray, noise: float) -> float:
     """Simulates a circuit with depolarizing noise at level noise.
 
     Args:

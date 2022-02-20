@@ -1,17 +1,33 @@
-# Copyright (C) 2021 Unitary Fund
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+==================================================================
+ Braket Transpiler2  (:mod:`qbraid.transpiler2.interface.braket`)
+==================================================================
+
+.. currentmodule:: qbraid.transpiler2.interface.braket
+
+Wrapping Strategy
+------------------
+
+The braket ``Moments`` data structure keeps track of when qubits should be placed in the circuit,
+but does not stored individual instructions within dedicated moment objects. Therefore, the
+circuits are wrapped using circuits.
+
+Without dedicated abstract parameters, much of the complexity of wrapping braket circuits is
+reduced.
+
+Output Strategy
+----------------
+
+Braket cannot acommodate abstract parameters. Trying to transpile a parametrized circuit to Braket
+will yield an error.
+
+.. autosummary::
+   :toctree: ../stubs/
+
+   BraketCircuitWrapper
+
+"""
+from .circuit_wrapper import BraketCircuitWrapper
 
 from qbraid.transpiler2.interface.braket.convert_from_braket import from_braket
 from qbraid.transpiler2.interface.braket.convert_to_braket import to_braket

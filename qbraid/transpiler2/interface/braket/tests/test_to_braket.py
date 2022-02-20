@@ -11,9 +11,7 @@ from qbraid.transpiler2.interface.braket.braket_utils import (
 from qbraid.transpiler2.interface.braket.convert_to_braket import to_braket
 
 
-@pytest.mark.parametrize(
-    "qreg", (LineQubit.range(2), [LineQubit(1), LineQubit(6)])
-)
+@pytest.mark.parametrize("qreg", (LineQubit.range(2), [LineQubit(1), LineQubit(6)]))
 def test_to_braket_bell_circuit(qreg):
     cirq_circuit = Circuit(ops.H(qreg[0]), ops.CNOT(*qreg))
     braket_circuit = to_braket(cirq_circuit)
@@ -155,9 +153,7 @@ def test_to_braket_common_two_qubit_gates(common_gate):
     """
     cirq_circuit = Circuit(common_gate.on(*LineQubit.range(2)))
     braket_circuit = to_braket(cirq_circuit)
-    if not isinstance(
-        common_gate, (ops.XXPowGate, ops.YYPowGate, ops.ZZPowGate)
-    ):
+    if not isinstance(common_gate, (ops.XXPowGate, ops.YYPowGate, ops.ZZPowGate)):
         _equal_unitaries(braket_circuit, cirq_circuit)
     else:
         cirq_unitary = _unitary_cirq(cirq_circuit)

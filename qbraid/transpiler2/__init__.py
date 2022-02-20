@@ -64,7 +64,7 @@ from qbraid.transpiler2._typing import (
     QuantumResult,
 )
 
-from qbraid.transpiler2.circuit import CircuitWrapper
+from qbraid.transpiler2.circuit_wrapper import CircuitWrapper
 from qbraid.transpiler2.rem.measurement_result import MeasurementResult
 
 # Executors and observables.
@@ -76,4 +76,4 @@ from qbraid.transpiler2 import interface
 
 # About and version.
 from qbraid.transpiler2._about import about
-from qbraid.transpiler2._version import __version__
+# from qbraid.transpiler2._version import __version__
