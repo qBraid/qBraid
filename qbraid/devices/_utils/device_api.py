@@ -18,7 +18,7 @@ def _get_device_data(query):
     represented by its own length-4 list containing the device provider, name, qbraid_id,
     and status.
     """
-    devices = requests.post(os.getenv("API_URL") + "/get-devices", json=query, verify=False).json()
+    devices = requests.post(os.getenv("API_URL") + "/public/lab/get-devices", json=query, verify=False).json()
     if isinstance(devices, str):
         raise qbraid.QbraidError(devices)
     device_data = []
@@ -73,7 +73,7 @@ def refresh_devices():
     #pylint: disable=import-outside-toplevel
     from tqdm.notebook import tqdm
 
-    devices = requests.post(os.getenv("API_URL") + "/get-devices", json={}, verify=False).json()
+    devices = requests.post(os.getenv("API_URL") + "/public/lab/get-devices", json={}, verify=False).json()
     pbar = tqdm(total=35, leave=False)
     for document in devices:
         if document["status_refresh"] is not None:  # None => internally not available at moment

@@ -60,6 +60,7 @@ class JobLikeWrapper(ABC):
         """Return the status of the job / task , among the values of ``JobStatus``."""
         vendor_status = self._get_status()
         try:
+            #if self._status_map[vendor_status] == 
             return self._status_map[vendor_status]
         except KeyError:
             logging.warning(

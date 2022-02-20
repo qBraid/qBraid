@@ -39,8 +39,8 @@ from qbraid.devices.ibm import (
 
 def device_wrapper_inputs(vendor: str):
     """Returns list of tuples containing all device_wrapper inputs for given vendor."""
-    devices = requests.post(
-        os.getenv("API_URL") + "/get-devices", json={}, verify=False
+    devices = requests.get(
+        os.getenv("API_URL") + "/public/lab/get-devices", verify=False
     ).json()
     input_list = []
     for document in devices:

@@ -1,4 +1,5 @@
 """QiskitBackendWrapper Class"""
+import os 
 
 from qiskit import IBMQ, Aer, assemble
 from qiskit import transpile as qiskit_transpile
@@ -21,18 +22,18 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
     def _get_device(self) -> QiskitBackend:
         """Initialize an IBM device."""
         if self._obj_ref == "IBMQ":
-            if IBMQ.active_account() is None:
-                IBMQ.load_account()
+            IBMQ.enable_account(os.getenv('refresh-token'),os.getenv('API_URL')+'/ibm-routes?route=')
             group = get_config("group", "IBM")
             project = get_config("project", "IBM")
             try:
                 provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
             except IBMQProviderError:
-                IBMQ.load_account()
+                IBMQ.enable_account(os.getenv('refresh-token'),os.getenv('API_URL')+'/ibm-routes?route=')
                 provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
             return provider.get_backend(self._obj_arg)
         if self._obj_ref == "Aer":
             return Aer.get_backend(self._obj_arg)
+        IBMQ.disable_account()
         raise DeviceError(f"obj_ref {self._obj_ref} not found.")
 
     def _vendor_compat_run_input(self, run_input):
@@ -105,6 +106,12 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         else:
             memory = True if "memory" not in kwargs else kwargs.pop("memory")
             job_manager = IBMQJobManager()  # assemble included in run method
+            #we need to do this part with api.qbraid.com
+            # if qbraid_job:
+            #    # get a qbraid one time token
+            
+            # pickle dump qiskit job into .qbraid/job/<job_id>
+            # 
             job_set = job_manager.run([run_input], backend=self.vendor_dlo, memory=memory, **kwargs)
             qiskit_job = job_set.jobs()[0]
             qiskit_job_id = job_set.job_set_id()
