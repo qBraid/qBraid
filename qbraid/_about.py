@@ -13,14 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Information about the qbraid.transpiler2 and dependencies."""
+"""Information about the qbraid and dependencies."""
 import platform
 
 from cirq import __version__ as cirq_version
 from numpy import __version__ as numpy_version
 from scipy import __version__ as scipy_version
 
-import qbraid.transpiler2
+import qbraid
 
 
 def about() -> None:
@@ -43,10 +43,10 @@ def about() -> None:
         braket_version = "Not installed"
 
     about_str = f"""
-A Python toolkit for transpiling quantum circuits / programs
-===============================================================
+A Python toolkit for building and executing quantum programs
+=============================================================
 
-Version:\t{qbraid.transpiler2.__version__}
+Version:\t{qbraid.__version__}
 
 Core Dependencies
 -----------------

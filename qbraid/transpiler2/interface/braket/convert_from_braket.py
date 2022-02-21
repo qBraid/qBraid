@@ -158,8 +158,6 @@ def _translate_one_qubit_braket_instruction_to_cirq_operation(
         except (ValueError, TypeError) as err:
             raise ValueError(f"Unable to convert the instruction {instr} to Cirq.") from err
 
-    return None  # type: ignore[return-value]  # pragma: no cover
-
 
 def _translate_two_qubit_braket_instruction_to_cirq_operation(
     instr: BKInstruction, qubits: List[LineQubit]
@@ -236,5 +234,3 @@ def _translate_two_qubit_braket_instruction_to_cirq_operation(
             return [unitary_gate.on(*qubits)]
         except (ValueError, TypeError) as err:
             raise ValueError(f"Unable to convert the instruction {instr} to Cirq.") from err
-
-    return None  # type: ignore[return-value]  # pragma: no cover

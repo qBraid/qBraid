@@ -1,15 +1,7 @@
 from typing import Any, Callable
 
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
-
-
-class UnsupportedCircuitError(Exception):
-    pass
-
-
-class CircuitConversionError(Exception):
-    pass
-
+from qbraid.transpiler2.exceptions import UnsupportedCircuitError, CircuitConversionError
 
 def convert_to_contiguous(circuit: QPROGRAM, expansion=False) -> QPROGRAM:
     """Checks whether the circuit uses contiguous qubits/indices,

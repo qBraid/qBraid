@@ -56,5 +56,4 @@ Transpiler2 API
 from qbraid.transpiler2 import interface
 
 # Quantum computer input/output.
-from qbraid.transpiler2._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid.transpiler2.circuit_wrapper import CircuitWrapper

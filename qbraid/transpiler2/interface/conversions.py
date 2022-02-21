@@ -14,13 +14,11 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """Functions for converting to/from Cirq's circuit representation."""
-from functools import wraps
-from typing import Any, Callable, Iterable, Tuple, cast
+from typing import Any, Callable, Tuple
 
-from black import err
 from cirq import Circuit
 
-from qbraid.transpiler2._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
+from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 
 
 class UnsupportedCircuitError(Exception):
@@ -134,13 +132,12 @@ def convert_from_cirq(circuit: Circuit, conversion_type: str) -> QPROGRAM:
             "unsupported. \nCircuit types supported by the "
             f"qbraid.transpiler2 = {SUPPORTED_PROGRAM_TYPES}"
         )
-    converted_circuit = conversion_function(circuit)
-    # try:
-    #     converted_circuit = conversion_function(circuit)
-    # except Exception:
-    #     raise CircuitConversionError(
-    #         f"Circuit could not be converted from a Cirq type to a "
-    #         f"circuit of type {conversion_type}."
-    #     )
+    try:
+        converted_circuit = conversion_function(circuit)
+    except Exception:
+        raise CircuitConversionError(
+            f"Circuit could not be converted from a Cirq type to a "
+            f"circuit of type {conversion_type}."
+        )
 
     return converted_circuit

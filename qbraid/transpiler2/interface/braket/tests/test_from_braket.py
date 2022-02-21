@@ -102,7 +102,7 @@ def test_from_braket_three_qubit_gates():
 
 
 def _rotation_of_pi_over_7(num_qubits):
-    matrix = np.identity(2 ** num_qubits)
+    matrix = np.identity(2**num_qubits)
     matrix[0:2, 0:2] = [
         [np.cos(np.pi / 7), np.sin(np.pi / 7)],
         [-np.sin(np.pi / 7), np.cos(np.pi / 7)],

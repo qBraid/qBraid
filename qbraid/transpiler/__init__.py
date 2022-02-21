@@ -49,12 +49,11 @@ Transpiler API
    CircuitWrapper
    GateWrapper
    ParamID
-   ParameterWrapper
    TranspilerError
 
 """
 from .circuit import CircuitWrapper
 from .exceptions import TranspilerError
 from .gate import GateWrapper
-from .parameter import ParameterWrapper, ParamID
+from .parameter import ParamID
 from .transpiler import QbraidTranspiler

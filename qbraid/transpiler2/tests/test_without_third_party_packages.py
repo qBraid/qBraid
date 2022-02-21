@@ -18,7 +18,7 @@ pyQuil, etc.
 
 Ideally these tests should touch all of qbraid.transpiler2 except for
 qbraid.transpiler2.interface.[package], where [package] is any supported package that
-interfaces with the qbraid.transpiler2 (see qbraid.transpiler2.SUPPORTED_PROGRAM_TYPES).
+interfaces with the qbraid (see qbraid.transpiler2.SUPPORTED_PROGRAM_TYPES).
 """
 from abc import ABCMeta
 
@@ -26,15 +26,15 @@ from abc import ABCMeta
 def test_import():
     """Simple test that the qbraid.transpiler2 can be imported without any
     (or all) supported program types."""
-    import qbraid.transpiler2
+    import qbraid
 
-    if isinstance(qbraid.transpiler2.QPROGRAM, ABCMeta):
+    if isinstance(qbraid.QPROGRAM, ABCMeta):
         pass  # If only Cirq is installed, QPROGRAM is not a typing.Union.
     else:
         assert (
             1  # cirq.Circuit is always supported.
-            <= len(qbraid.transpiler2.QPROGRAM.__args__)  # All installed types.
-            <= len(qbraid.transpiler2.SUPPORTED_PROGRAM_TYPES.keys())  # All types.
+            <= len(qbraid.QPROGRAM.__args__)  # All installed types.
+            <= len(qbraid.SUPPORTED_PROGRAM_TYPES.keys())  # All types.
         )
 
 

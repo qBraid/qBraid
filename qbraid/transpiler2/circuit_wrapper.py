@@ -1,7 +1,5 @@
 """CircuitWrapper Class"""
 
-from abc import abstractmethod
-
 from qbraid.transpiler2.exceptions import TranspilerError
 from qbraid.transpiler2.interface import convert_from_cirq, convert_to_cirq
 
@@ -16,10 +14,6 @@ class CircuitWrapper:
     :meth:`qbraid.transpiler.CircuitWrapper.transpile` method is called.
 
     Attributes:
-        instructions (Iterable): list of
-            :class:`qbraid.transpiler.instructionwrapper.InstructionWrapper` objects
-        moments (Iterable): list of :class:`qbraid.transpiler.momentwrapper.MomentWrapper` objects,
-            may be none if package does not support moments
         circuit: the underlying circuit object that has been wrapped
         qubits (List[int]): list of integers which represent all the qubits in the circuit,
             typically stored sequentially
@@ -27,18 +21,13 @@ class CircuitWrapper:
             :class:`qbraid.transpiler.parameter.ParamID` objects
         num_qubits (int): number of qubits in the circuit
         depth (int): the depth of the circuit
-        input_qubit_mapping (dict): dictionary where the keys are qubit objects of the underlying
-            circuit and values are integers which track the qubit identity.
-        input_param_mapping (dict): dictionary where the keys are abstract parameter objects of the
-            underlying circuit and values are :class:`qbraid.transpiler.parameter.ParamID` objects
         package (str): the package with which the underlying circuit was cosntructed
 
     """
 
-    def __init__(self, circuit, input_qubit_mapping):
+    def __init__(self, circuit):
 
         self._circuit = circuit
-        self._input_qubit_mapping = input_qubit_mapping
         self._qubits = []
         self._num_qubits = 0
         self._num_clbits = 0
@@ -46,16 +35,6 @@ class CircuitWrapper:
         self._params = []
         self._input_param_mapping = {}
         self._package = None
-
-    @property
-    @abstractmethod
-    def instructions(self):
-        """Return an Iterable of instructions in the circuit."""
-
-    @property
-    @abstractmethod
-    def moments(self):
-        """Return an Iterable of moments in the circuit."""
 
     @property
     def circuit(self):
@@ -93,13 +72,6 @@ class CircuitWrapper:
         return self._input_param_mapping
 
     @property
-    def input_qubit_mapping(self):
-        """Return the input qubit mapping."""
-        if self._input_qubit_mapping is None:
-            return {q: i for i, q in enumerate(self.qubits)}
-        return self._input_qubit_mapping
-
-    @property
     def package(self):
         """Return the original package of the wrapped circuit."""
         return self._package
@@ -111,7 +83,6 @@ class CircuitWrapper:
             "cirq": ["braket", "qiskit", "qbraid"],
             "qiskit": ["braket", "cirq", "qbraid"],
             "braket": ["qiskit", "cirq", "qbraid"],
-            "qbraid": ["cirq", "braket", "qiskit"],
         }
         return supported_packages[self.package]
 

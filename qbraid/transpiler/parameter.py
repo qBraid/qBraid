@@ -23,23 +23,3 @@ class ParamID:
     def __init__(self, index: int, name: str):
         self.index = index
         self.name = name
-
-
-class ParameterWrapper(QbraidTranspiler):
-    """Wrap a 'parameter' for parametrized circuits"""
-
-    def __init__(self):
-        self.name = None
-        self.parameter = None
-
-    def _create_cirq(self):
-        """Create cirq parameter."""
-        return CirqParameter(self.name)
-
-    def _create_qiskit(self):
-        """Create qiskit parameter"""
-        return QiskitParameter(self.name)
-
-    def transpile(self, package, *args, **kwargs):
-        """Transpile method"""
-        return NotImplementedError
