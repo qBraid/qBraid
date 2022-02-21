@@ -26,7 +26,16 @@ moments,circuits, and gates.
 .. autosummary::
    :toctree: ../stubs/
 
-   QiskitCircuitWrapper
+    QiskitCircuitWrapper
+    from_qasm
+    from_qiskit
+    to_qasm
+    to_qiskit
+    execute
+    execute_with_noise
+    execute_with_shots
+    execute_with_shots_and_noise
+    initialized_depolarizing_noise
 
 """
 from qbraid.transpiler2.interface.qiskit.conversions import (

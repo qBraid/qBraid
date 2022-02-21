@@ -21,7 +21,6 @@ from qbraid.transpiler2.interface._parser import QasmParser
 # from cirq.contrib.qasm_import._parser import QasmParser
 
 
-
 def test_format_header_circuit():
     parser = QasmParser()
 

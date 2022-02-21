@@ -48,6 +48,7 @@ cirq_gates = {
     "Unitary": MatrixGate,
 }
 
+
 def give_cirq_gate_name(cirq_gate, name, n_qubits):
     def _circuit_diagram_info_(args):
         return name, *(name,) * (n_qubits - 1)

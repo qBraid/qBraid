@@ -1,25 +1,23 @@
-# Copyright (C) 2021 Unitary Fund
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+"""
+============================================================
+Transpiler Interface  (:mod:`qbraid.transpiler2.interface`)
+============================================================
+
+.. currentmodule:: qbraid.transpiler2.interface
+
+.. autosummary::
+   :toctree: ../stubs/
+
+    CircuitConversionError
+    UnsupportedCircuitError
+    convert_from_cirq
+    convert_to_cirq
+
+"""
 
 from qbraid.transpiler2.interface.conversions import (
     CircuitConversionError,
     UnsupportedCircuitError,
-    accept_any_qprogram_as_input,
-    atomic_converter,
-    atomic_one_to_many_converter,
     convert_from_cirq,
     convert_to_cirq,
-    noise_scaling_converter,
 )

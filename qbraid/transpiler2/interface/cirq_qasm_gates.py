@@ -49,7 +49,7 @@ class U2Gate(raw_types.Gate):
         cirq_phi = self._phi / np.pi
         cirq_lam = self._lam / np.pi
         return f"U2({cirq_phi}, {cirq_lam})"
-    
+
     def __str__(self) -> str:
         cirq_phi = fractions.Fraction(self._phi / np.pi)
         cirq_lam = fractions.Fraction(self._lam / np.pi)

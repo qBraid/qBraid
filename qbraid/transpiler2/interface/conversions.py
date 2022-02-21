@@ -159,11 +159,12 @@ def accept_any_qprogram_as_input(
 
 def atomic_converter(cirq_circuit_modifier: Callable[..., Any]) -> Callable[..., Any]:
     """Decorator which allows for a function which inputs and returns a Cirq
-    circuit to input and return any QPROGRAM.
+    circuit to input and return any ``QPROGRAM``.
 
     Args:
         cirq_circuit_modifier: Function which inputs a Cirq circuit and returns
             a (potentially modified) Cirq circuit.
+
     """
 
     @wraps(cirq_circuit_modifier)

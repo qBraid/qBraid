@@ -25,6 +25,8 @@ will yield an error.
    :toctree: ../stubs/
 
    BraketCircuitWrapper
+   from_braket
+   to_braket
 
 """
 from qbraid.transpiler2.interface.braket.convert_from_braket import from_braket

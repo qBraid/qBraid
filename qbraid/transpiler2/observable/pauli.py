@@ -22,7 +22,7 @@ import cirq
 import numpy as np
 
 from qbraid.transpiler2._typing import QPROGRAM, MeasurementResult
-from qbraid.transpiler2.interface import atomic_converter
+from qbraid.transpiler2.interface.conversions import atomic_converter
 
 
 class PauliString:

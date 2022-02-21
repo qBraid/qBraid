@@ -150,7 +150,9 @@ def test_shared_gates(qbraid_circuit, target_package, target_unitary):
     """
     transpiled_circuit = qbraid_circuit.transpile(target_package)
     transpiled_unitary = to_unitary(transpiled_circuit)
-    cirq.testing.assert_allclose_up_to_global_phase(transpiled_unitary, transpiled_unitary, atol=1e-7)
+    cirq.testing.assert_allclose_up_to_global_phase(
+        transpiled_unitary, transpiled_unitary, atol=1e-7
+    )
     # assert np.allclose(transpiled_unitary, target_unitary)
 
 
@@ -447,7 +449,9 @@ def test_braket_transpile_ccnot():
     qiskit_circuit = qbraid_braket.transpile("qiskit")
     braket_ccnot_unitary = to_unitary(braket_circuit)
     qiskit_ccnot_unitary = to_unitary(qiskit_circuit)
-    cirq.testing.assert_allclose_up_to_global_phase(braket_ccnot_unitary, qiskit_ccnot_unitary, atol=1e-7)
+    cirq.testing.assert_allclose_up_to_global_phase(
+        braket_ccnot_unitary, qiskit_ccnot_unitary, atol=1e-7
+    )
     # assert np.allclose(braket_ccnot_unitary, qiskit_ccnot_unitary)
 
 
@@ -460,6 +464,7 @@ def test_braket_transpile_unitary():
     qiskit_u = to_unitary(qiskit_circuit)
     cirq.testing.assert_allclose_up_to_global_phase(braket_u, qiskit_u, atol=1e-7)
     # assert np.allclose(braket_u, qiskit_u)
+
 
 @pytest.mark.skip(reason="lots of different errors")
 @pytest.mark.parametrize("num_qubits", [1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
@@ -475,8 +480,10 @@ def test_1000_random_circuits(num_qubits):
         origin_unitary = to_unitary(origin_circuit)
         target_circuit = circuit_wrapper(origin_circuit).transpile(target)
         target_unitary = to_unitary(target_circuit)
-        if not cirq.testing.assert_allclose_up_to_global_phase(origin_unitary, target_unitary, atol=1e-7):
-        # if not np.allclose(origin_unitary, target_unitary):
+        if not cirq.testing.assert_allclose_up_to_global_phase(
+            origin_unitary, target_unitary, atol=1e-7
+        ):
+            # if not np.allclose(origin_unitary, target_unitary):
             print()
             print(f"failed {origin} --> {target}")
             print()
