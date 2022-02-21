@@ -14,9 +14,9 @@ s.headers.update({"email": _email, "refresh-token": _refresh})
 
 
 def _api_url(route):
-    # url = "http://localhost:3001/api"
+    url = "http://localhost:3001/api"
     # url = "https://api-staging.qbraid.com/api"
-    url = "https://api.qbraid.com/api"
+    #url = "https://api.qbraid.com/api"
     return url + route
 
 
