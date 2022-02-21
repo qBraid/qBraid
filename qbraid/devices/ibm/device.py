@@ -106,12 +106,6 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         else:
             memory = True if "memory" not in kwargs else kwargs.pop("memory")
             job_manager = IBMQJobManager()  # assemble included in run method
-            #we need to do this part with api.qbraid.com
-            # if qbraid_job:
-            #    # get a qbraid one time token
-            
-            # pickle dump qiskit job into .qbraid/job/<job_id>
-            # 
             job_set = job_manager.run([run_input], backend=self.vendor_dlo, memory=memory, **kwargs)
             qiskit_job = job_set.jobs()[0]
             qiskit_job_id = job_set.job_set_id()
