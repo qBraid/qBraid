@@ -19,7 +19,7 @@ def random_circuit(package, num_qubits=None, depth=None, measure=False):
         measure (bool): if True, measure all qubits at the end
 
     Returns:
-        CircuitWrapper: qbraid circuit wrapper object
+        qbraid.transpiler2.CircuitWrapper: qbraid circuit wrapper object
 
     Raises:
         ValueError: when invalid options given

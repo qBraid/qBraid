@@ -15,17 +15,13 @@
 from typing import Dict, List
 
 import numpy as np
-from braket.circuits import (
-    Circuit as BKCircuit,
-    Instruction as BKInstruction,
-    gates as braket_gates,
-)
-from cirq import (
-    Circuit,
-    LineQubit,
-    ops as cirq_ops,
-    protocols,
-)
+from braket.circuits import Circuit as BKCircuit
+from braket.circuits import Instruction as BKInstruction
+from braket.circuits import gates as braket_gates
+from cirq import Circuit, LineQubit
+from cirq import ops as cirq_ops
+from cirq import protocols
+
 from qbraid.interface.qbraid_braket import _contiguous_compression, unitary_from_braket
 from qbraid.transpiler2.utils import _create_unitary_gate_cirq
 

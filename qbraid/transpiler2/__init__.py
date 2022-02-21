@@ -45,8 +45,6 @@ Transpiler2 API
 .. autosummary::
    :toctree: ../stubs/
 
-   SUPPORTED_PROGRAM_TYPES
-   QPROGRAM
    CircuitWrapper
    interface
    

@@ -2,14 +2,7 @@ from typing import List, Sequence
 
 import cirq
 import numpy as np
-from cirq import (
-    Circuit,
-    GridQubit,
-    I,
-    LineQubit,
-    NamedQubit,
-    ops,
-)
+from cirq import Circuit, GridQubit, I, LineQubit, NamedQubit, ops
 
 
 def _convert_to_line_qubits(

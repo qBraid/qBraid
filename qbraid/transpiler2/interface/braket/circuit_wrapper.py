@@ -4,6 +4,7 @@ from braket.circuits.circuit import Circuit
 
 from qbraid.transpiler2.circuit_wrapper import CircuitWrapper
 
+
 class BraketCircuitWrapper(CircuitWrapper):
     """Wrapper class for Amazon Braket ``Circuit`` objects."""
 

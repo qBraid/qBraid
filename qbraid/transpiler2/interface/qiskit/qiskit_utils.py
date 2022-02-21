@@ -15,9 +15,7 @@
 
 """Qiskit utility functions."""
 import numpy as np
-
 from cirq import Circuit
-
 from qiskit import QuantumCircuit
 
 from qbraid.interface import to_unitary

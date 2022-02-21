@@ -1,13 +1,9 @@
-from typing import Optional, Tuple
 import fractions
+from typing import Optional, Tuple
 
 import cirq
 import numpy as np
-from cirq import (
-    ops,
-    value,
-    protocols,
-)
+from cirq import ops, protocols, value
 
 
 def rzz(theta):

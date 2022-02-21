@@ -25,11 +25,7 @@ from braket.circuits import gates as braket_gates
 from pyquil import Program, gates
 
 from qbraid.transpiler2._typing import SUPPORTED_PROGRAM_TYPES
-from qbraid.transpiler2.interface import (
-    UnsupportedCircuitError,
-    convert_from_cirq,
-    convert_to_cirq,
-)
+from qbraid.transpiler2.interface import UnsupportedCircuitError, convert_from_cirq, convert_to_cirq
 from qbraid.transpiler2.utils import _equal
 
 # Cirq Bell circuit.

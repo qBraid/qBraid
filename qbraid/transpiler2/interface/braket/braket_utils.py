@@ -1,12 +1,10 @@
 import itertools
 
-import numpy as np
-
 import braket.ir.jaqcd as ir
+import numpy as np
 from braket.circuits import Circuit as BKCircuit
 from braket.circuits import Gate, Instruction, circuit
 from braket.circuits.qubit_set import QubitSet
-
 from cirq import Circuit as CirqCircuit
 
 from qbraid.interface import to_unitary
