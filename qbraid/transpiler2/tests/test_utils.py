@@ -15,32 +15,19 @@
 
 """Tests for utility functions."""
 from copy import deepcopy
-import pytest
 
-import numpy as np
 import cirq
-from cirq import (
-    LineQubit,
-    Circuit,
-    ControlledGate,
-    X,
-    Y,
-    Z,
-    H,
-    CNOT,
-    S,
-    T,
-    MeasurementGate,
-    ops,
-)
+import numpy as np
+import pytest
+from cirq import CNOT, Circuit, ControlledGate, H, LineQubit, MeasurementGate, S, T, X, Y, Z, ops
 
 from qbraid.transpiler2.utils import (
     _append_measurements,
     _equal,
     _is_measurement,
-    _simplify_gate_exponent,
-    _simplify_circuit_exponents,
     _pop_measurements,
+    _simplify_circuit_exponents,
+    _simplify_gate_exponent,
 )
 
 

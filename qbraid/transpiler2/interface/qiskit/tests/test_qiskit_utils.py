@@ -19,8 +19,8 @@ from qiskit import QuantumCircuit
 
 from qbraid.transpiler2.interface.qiskit.qiskit_utils import (
     execute,
-    execute_with_shots,
     execute_with_noise,
+    execute_with_shots,
     execute_with_shots_and_noise,
     initialized_depolarizing_noise,
 )

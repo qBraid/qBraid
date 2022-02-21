@@ -1,9 +1,8 @@
-from typing import Optional, Tuple, Iterable
-
-import numpy as np
 import fractions
+from typing import Iterable, Optional, Tuple
 
 import cirq
+import numpy as np
 from cirq import ops, protocols, value
 from cirq.ops import raw_types
 

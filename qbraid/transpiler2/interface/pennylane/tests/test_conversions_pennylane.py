@@ -15,16 +15,15 @@
 
 """Unit tests for Pennylane <-> Cirq conversions."""
 
-import pytest
-import numpy as np
-
 import cirq
+import numpy as np
 import pennylane as qml
+import pytest
 
 from qbraid.transpiler2.interface.pennylane import (
+    UnsupportedQuantumTapeError,
     from_pennylane,
     to_pennylane,
-    UnsupportedQuantumTapeError,
 )
 from qbraid.transpiler2.utils import _equal
 

@@ -1,7 +1,6 @@
-from typing import List, Sequence, Tuple, Optional
+from typing import List, Optional, Sequence, Tuple
 
 import cirq
-
 import numpy as np
 from cirq import (
     Circuit,

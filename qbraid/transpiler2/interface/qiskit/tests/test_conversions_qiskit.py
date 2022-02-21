@@ -16,24 +16,23 @@
 """Unit tests for conversions between Cirq circuits and Qiskit circuits."""
 import copy
 
+import cirq
 import numpy as np
 import pytest
-
-import cirq
 import qiskit
 
-from qbraid.transpiler2.utils import _equal
-from qbraid.transpiler2.interface.qiskit.qiskit_utils import _equal_unitaries
 from qbraid.transpiler2.interface.qiskit.conversions import (
-    to_qasm,
-    to_qiskit,
-    from_qasm,
-    from_qiskit,
     _map_bit_index,
-    _transform_registers,
     _measurement_order,
     _remove_qasm_barriers,
+    _transform_registers,
+    from_qasm,
+    from_qiskit,
+    to_qasm,
+    to_qiskit,
 )
+from qbraid.transpiler2.interface.qiskit.qiskit_utils import _equal_unitaries
+from qbraid.transpiler2.utils import _equal
 
 
 def test_remove_qasm_barriers():

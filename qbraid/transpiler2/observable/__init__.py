@@ -13,5 +13,5 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-from qbraid.transpiler2.observable.pauli import PauliString
 from qbraid.transpiler2.observable.observable import Observable
+from qbraid.transpiler2.observable.pauli import PauliString

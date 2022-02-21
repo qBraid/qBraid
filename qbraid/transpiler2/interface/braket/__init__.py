@@ -27,7 +27,7 @@ will yield an error.
    BraketCircuitWrapper
 
 """
-from .circuit_wrapper import BraketCircuitWrapper
-
 from qbraid.transpiler2.interface.braket.convert_from_braket import from_braket
 from qbraid.transpiler2.interface.braket.convert_to_braket import to_braket
+
+from .circuit_wrapper import BraketCircuitWrapper

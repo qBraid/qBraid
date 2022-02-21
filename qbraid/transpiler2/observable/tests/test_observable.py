@@ -14,20 +14,16 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import functools
+
+import cirq
+import numpy as np
 import pytest
 
-import numpy as np
-import cirq
-
+from qbraid.transpiler2.interface.cirq.cirq_utils import compute_density_matrix, sample_bitstrings
 from qbraid.transpiler2.observable.observable import Observable
 from qbraid.transpiler2.observable.pauli import PauliString, PauliStringCollection
 from qbraid.transpiler2.rem.measurement_result import MeasurementResult
-from qbraid.transpiler2.interface.cirq.cirq_utils import (
-    sample_bitstrings,
-    compute_density_matrix,
-)
 from qbraid.transpiler2.utils import _equal
-
 
 # Basis rotations to measure Pauli X and Y.
 xrotation = cirq.SingleQubitCliffordGate.Y_nsqrt

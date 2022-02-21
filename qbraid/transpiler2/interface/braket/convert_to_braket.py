@@ -15,16 +15,16 @@
 from typing import Any, Dict, List, Union
 
 import numpy as np
-
-from cirq import Circuit, ops as cirq_ops, protocols
+from braket.circuits import Circuit as BKCircuit
+from braket.circuits import Instruction as BKInstruction
+from braket.circuits import gates as braket_gates
+from cirq import Circuit
+from cirq import ops as cirq_ops
+from cirq import protocols
 from cirq.linalg.decompositions import kak_decomposition
-from braket.circuits import (
-    gates as braket_gates,
-    Circuit as BKCircuit,
-    Instruction as BKInstruction,
-)
-from qbraid.transpiler2.utils import _int_from_qubit, _contiguous_compression_cirq
+
 from qbraid.transpiler2.interface.braket.braket_utils import C as BKControl
+from qbraid.transpiler2.utils import _contiguous_compression_cirq, _int_from_qubit
 
 
 def _raise_cirq_to_braket_error(op: Any) -> None:

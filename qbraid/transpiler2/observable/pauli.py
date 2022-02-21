@@ -14,19 +14,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from collections import Counter
-from typing import (
-    Any,
-    cast,
-    Counter as TCounter,
-    Dict,
-    List,
-    Optional,
-    Sequence,
-    Set,
-)
+from typing import Any
+from typing import Counter as TCounter
+from typing import Dict, List, Optional, Sequence, Set, cast
 
-import numpy as np
 import cirq
+import numpy as np
 
 from qbraid.transpiler2._typing import QPROGRAM, MeasurementResult
 from qbraid.transpiler2.interface import atomic_converter

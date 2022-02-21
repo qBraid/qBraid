@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from qbraid.transpiler2.interface.pennylane.conversions import (
+    UnsupportedQuantumTapeError,
     from_pennylane,
     to_pennylane,
-    UnsupportedQuantumTapeError,
 )

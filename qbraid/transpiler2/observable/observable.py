@@ -14,13 +14,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import copy
-from typing import Callable, cast, List, Optional, Set
+from typing import Callable, List, Optional, Set, cast
 
-import numpy as np
 import cirq
+import numpy as np
 
+from qbraid.transpiler2._typing import QPROGRAM, MeasurementResult, QuantumResult
 from qbraid.transpiler2.observable.pauli import PauliString, PauliStringCollection
-from qbraid.transpiler2._typing import MeasurementResult, QuantumResult, QPROGRAM
 
 
 class Observable:

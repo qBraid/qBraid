@@ -17,9 +17,8 @@
 pyQuil's circuit representation (Quil programs).
 """
 from cirq import Circuit, LineQubit
-from pyquil import Program
-
 from cirq.contrib.quil_import import circuit_from_quil
+from pyquil import Program
 
 QuilType = str
 

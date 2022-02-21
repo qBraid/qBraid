@@ -14,9 +14,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """Unit tests for measurement results."""
+import numpy as np
 import pytest
 
-import numpy as np
 from qbraid.transpiler2.rem.measurement_result import MeasurementResult
 
 

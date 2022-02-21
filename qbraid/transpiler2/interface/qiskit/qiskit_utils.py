@@ -14,18 +14,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """Qiskit utility functions."""
-import numpy as np
-import qiskit
-from qiskit import QuantumCircuit
-from qiskit.quantum_info import Operator
-from cirq import Circuit
 from typing import Optional
 
+import numpy as np
+import qiskit
+from cirq import Circuit
+from qiskit import QuantumCircuit
 # Noise simulation packages
 from qiskit.providers.aer.noise import NoiseModel
-from qiskit.providers.aer.noise.errors.standard_errors import (
-    depolarizing_error,
-)
+from qiskit.providers.aer.noise.errors.standard_errors import depolarizing_error
+from qiskit.quantum_info import Operator
+
 from qbraid.transpiler2.utils import _unitary_cirq
 
 

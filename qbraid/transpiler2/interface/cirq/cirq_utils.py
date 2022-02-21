@@ -16,10 +16,10 @@
 
 from typing import Tuple, Union
 
-import numpy as np
 import cirq
-from qbraid.transpiler2.rem import MeasurementResult
+import numpy as np
 
+from qbraid.transpiler2.rem import MeasurementResult
 
 # Note: This is the same as cirq.PauliSumLike but without a typing.ForwardRef
 # which causes Sphinx errors.

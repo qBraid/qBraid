@@ -30,7 +30,8 @@ omit = [
   "**/qbraid/api/*",
   "**/qbraid/applications/*", 
   "**/qbraid/circuits/*", 
-  "**/qbraid/operators/*"
+  "**/qbraid/operators/*",
+  "**/qbraid/transpiler/*"
   ]
 
 [tool.coverage.paths]

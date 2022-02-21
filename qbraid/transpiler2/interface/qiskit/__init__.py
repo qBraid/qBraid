@@ -29,8 +29,6 @@ moments,circuits, and gates.
    QiskitCircuitWrapper
 
 """
-from .circuit_wrapper import QiskitCircuitWrapper
-
 from qbraid.transpiler2.interface.qiskit.conversions import (
     from_qasm,
     from_qiskit,
@@ -39,8 +37,10 @@ from qbraid.transpiler2.interface.qiskit.conversions import (
 )
 from qbraid.transpiler2.interface.qiskit.qiskit_utils import (
     execute,
-    execute_with_shots,
     execute_with_noise,
+    execute_with_shots,
     execute_with_shots_and_noise,
     initialized_depolarizing_noise,
 )
+
+from .circuit_wrapper import QiskitCircuitWrapper

@@ -14,13 +14,12 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """Unit tests for conversions between Cirq circuits and Qiskit circuits."""
+import cirq
 import numpy as np
 import pytest
 
-import cirq
-
-from qbraid.transpiler2.interface.qiskit.qiskit_utils import _equal_unitaries
 from qbraid.transpiler2.interface.qiskit.conversions import to_qiskit
+from qbraid.transpiler2.interface.qiskit.qiskit_utils import _equal_unitaries
 
 
 def test_bell_state_to_qiskit():

@@ -15,12 +15,12 @@
 
 """Functions for converting to/from Cirq's circuit representation."""
 from functools import wraps
-from typing import Any, Callable, cast, Iterable, Tuple
-from black import err
+from typing import Any, Callable, Iterable, Tuple, cast
 
+from black import err
 from cirq import Circuit
 
-from qbraid.transpiler2._typing import SUPPORTED_PROGRAM_TYPES, QPROGRAM
+from qbraid.transpiler2._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 
 
 class UnsupportedCircuitError(Exception):
@@ -63,9 +63,7 @@ def convert_to_cirq(circuit: QPROGRAM) -> Tuple[Circuit, str]:
         input_circuit_type = "pyquil"
         conversion_function = from_pyquil
     elif "braket" in package:
-        from qbraid.transpiler2.interface.braket.convert_from_braket import (
-            from_braket,
-        )
+        from qbraid.transpiler2.interface.braket.convert_from_braket import from_braket
 
         input_circuit_type = "braket"
         conversion_function = from_braket
@@ -255,8 +253,8 @@ def noise_scaling_converter(noise_scaling_function: Callable[..., Any]) -> Calla
         # Qiskit: Keep the same register structure and measurement order.
         if "qiskit" in scaled_circuit.__module__:
             from qbraid.transpiler2.interface.qiskit.conversions import (
-                _transform_registers,
                 _measurement_order,
+                _transform_registers,
             )
 
             scaled_circuit.remove_final_measurements()

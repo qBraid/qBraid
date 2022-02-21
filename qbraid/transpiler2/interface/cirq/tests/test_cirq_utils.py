@@ -14,14 +14,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """ Tests for Cirq executors defined in cirq_utils.py"""
 
-import numpy as np
 import cirq
-
+import numpy as np
 
 from qbraid.transpiler2.interface.cirq.cirq_utils import (
     execute,
-    execute_with_shots,
     execute_with_depolarizing_noise,
+    execute_with_shots,
     execute_with_shots_and_depolarizing_noise,
 )
 

@@ -1,14 +1,10 @@
-import pytest
 import numpy as np
-
+import pytest
 from cirq import Circuit, LineQubit, ops, testing
 
-from qbraid.transpiler2.utils import _unitary_cirq
-from qbraid.transpiler2.interface.braket.braket_utils import (
-    _unitary_braket,
-    _equal_unitaries,
-)
+from qbraid.transpiler2.interface.braket.braket_utils import _equal_unitaries, _unitary_braket
 from qbraid.transpiler2.interface.braket.convert_to_braket import to_braket
+from qbraid.transpiler2.utils import _unitary_cirq
 
 
 @pytest.mark.parametrize("qreg", (LineQubit.range(2), [LineQubit(1), LineQubit(6)]))

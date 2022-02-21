@@ -14,21 +14,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """Unit tests for Collector."""
-import pytest
 from typing import List
 
-import numpy as np
-
 import cirq
+import numpy as np
 import pyquil
+import pytest
 
 from qbraid.transpiler2.executor.executor import Executor
-from qbraid.transpiler2.rem import MeasurementResult
+from qbraid.transpiler2.interface.cirq import compute_density_matrix, sample_bitstrings
 from qbraid.transpiler2.observable import Observable, PauliString
-from qbraid.transpiler2.interface.cirq import (
-    compute_density_matrix,
-    sample_bitstrings,
-)
+from qbraid.transpiler2.rem import MeasurementResult
 
 
 # Serial / batched executors which return floats.

@@ -53,8 +53,8 @@ Transpiler API
    TranspilerError
 
 """
-from .circuit import CircuitWrapper
-from .exceptions import TranspilerError
-from .gate import GateWrapper
-from .parameter import ParameterWrapper, ParamID
-from .transpiler import QbraidTranspiler
+# from .circuit import CircuitWrapper
+# from .exceptions import TranspilerError
+# from .gate import GateWrapper
+# from .parameter import ParameterWrapper, ParamID
+# from .transpiler import QbraidTranspiler

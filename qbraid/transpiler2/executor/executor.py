@@ -16,28 +16,16 @@
 """Defines utilities for efficiently running collections of circuits generated
 by error mitigation techniques to compute expectation values."""
 
-from collections import Counter
 import inspect
-from typing import (
-    Any,
-    Callable,
-    cast,
-    Iterable,
-    List,
-    Optional,
-    Sequence,
-    Tuple,
-    Union,
-)
+from collections import Counter
+from typing import Any, Callable, Iterable, List, Optional, Sequence, Tuple, Union, cast
 
 import numpy as np
 
 from qbraid.transpiler2 import QPROGRAM, QuantumResult
-
+from qbraid.transpiler2.interface import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler2.observable.observable import Observable
 from qbraid.transpiler2.rem.measurement_result import MeasurementResult
-from qbraid.transpiler2.interface import convert_from_cirq, convert_to_cirq
-
 
 DensityMatrixLike = [
     np.ndarray,

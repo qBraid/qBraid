@@ -13,25 +13,14 @@
 # limitations under the License.
 import functools
 import operator
-from typing import (
-    Any,
-    Callable,
-    cast,
-    Dict,
-    Iterable,
-    List,
-    Optional,
-    Sequence,
-    Union,
-)
+from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Union, cast
 
 import numpy as np
-from ply import yacc
-
-from cirq import ops, Circuit, NamedQubit, CX
+from cirq import CX, Circuit, NamedQubit, ops
 from cirq.circuits.qasm_output import QasmUGate
 from cirq.contrib.qasm_import._lexer import QasmLexer
 from cirq.contrib.qasm_import.exception import QasmException
+from ply import yacc
 
 from qbraid.transpiler2.interface import cirq_qasm_gates
 

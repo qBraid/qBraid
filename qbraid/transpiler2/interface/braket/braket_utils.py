@@ -1,17 +1,15 @@
 import itertools
-import numpy as np
-
-from cirq import Circuit as CirqCircuit
 
 import braket.ir.jaqcd as ir
-from braket.circuits import Circuit as BKCircuit, Gate, Instruction, circuit
-from braket.circuits.unitary_calculation import calculate_unitary
+import numpy as np
+from braket.circuits import Circuit as BKCircuit
+from braket.circuits import Gate, Instruction, circuit
 from braket.circuits.qubit_set import QubitSet
+from braket.circuits.unitary_calculation import calculate_unitary
+from cirq import Circuit as CirqCircuit
 
+from qbraid.transpiler2.interface.braket.convert_from_braket import _contiguous_compression_braket
 from qbraid.transpiler2.utils import _unitary_cirq
-from qbraid.transpiler2.interface.braket.convert_from_braket import (
-    _contiguous_compression_braket,
-)
 
 
 def _unitary_braket(circuit: BKCircuit) -> np.ndarray:

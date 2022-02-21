@@ -15,24 +15,22 @@
 
 """Utility functions."""
 from copy import deepcopy
-from typing import cast, List, Tuple, Sequence, Union, TYPE_CHECKING
-
-import numpy as np
+from typing import TYPE_CHECKING, List, Sequence, Tuple, Union, cast
 
 import cirq
-
+import numpy as np
 from cirq import (
-    LineQubit,
-    GridQubit,
-    NamedQubit,
     Circuit,
     CircuitDag,
     EigenGate,
     Gate,
-    MatrixGate,
     GateOperation,
-    Moment,
+    GridQubit,
     I,
+    LineQubit,
+    MatrixGate,
+    Moment,
+    NamedQubit,
     ops,
 )
 from cirq.ops import Qid

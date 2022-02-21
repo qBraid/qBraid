@@ -18,13 +18,12 @@ and modified to test a larger gateset.
 """
 
 import inspect
-import random
 import itertools
+import random
 from math import pi
 
 import numpy as np
 import pytest
-
 from cirq import equal_up_to_global_phase
 from pyquil.gates import (
     CCNOT,
@@ -32,18 +31,18 @@ from pyquil.gates import (
     CPHASE,
     CSWAP,
     CZ,
-    H,
-    I,
     ISWAP,
     PHASE,
     RX,
     RY,
     RZ,
-    S,
     SWAP,
+    XY,
+    H,
+    I,
+    S,
     T,
     X,
-    XY,
     Y,
     Z,
 )
@@ -51,7 +50,6 @@ from pyquil.quil import Program
 from pyquil.simulation.tools import program_unitary
 
 from qbraid.transpiler2.interface.pyquil.compiler import (
-    basic_compile,
     _CCNOT,
     _CNOT,
     _CPHASE,
@@ -64,6 +62,7 @@ from qbraid.transpiler2.interface.pyquil.compiler import (
     _X,
     _Y,
     _Z,
+    basic_compile,
 )
 
 

@@ -14,20 +14,11 @@
 
 """Utility classes for representing QASM."""
 
-from typing import (
-    Callable,
-    Dict,
-    Optional,
-    Set,
-    Tuple,
-    Union,
-    TYPE_CHECKING,
-)
-
 import re
+from typing import TYPE_CHECKING, Callable, Dict, Optional, Set, Tuple, Union
 
 from cirq import ops, protocols
-from cirq.circuits.qasm_output import QasmUGate, QasmTwoQubitGate
+from cirq.circuits.qasm_output import QasmTwoQubitGate, QasmUGate
 
 if TYPE_CHECKING:
     import cirq

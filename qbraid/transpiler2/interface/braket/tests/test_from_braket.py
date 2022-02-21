@@ -1,11 +1,8 @@
-import pytest
 import numpy as np
-
-from braket.circuits import (
-    Circuit as BKCircuit,
-    Instruction,
-    gates as braket_gates,
-)
+import pytest
+from braket.circuits import Circuit as BKCircuit
+from braket.circuits import Instruction
+from braket.circuits import gates as braket_gates
 
 from qbraid.transpiler2.interface.braket.braket_utils import _equal_unitaries
 from qbraid.transpiler2.interface.braket.convert_from_braket import from_braket

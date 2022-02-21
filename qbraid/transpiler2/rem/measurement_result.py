@@ -16,10 +16,9 @@
 """Defines MeasurementResult, a result obtained by measuring qubits on a
 quantum computer."""
 from dataclasses import dataclass
-from typing import cast, Iterable, List, Optional, Tuple
+from typing import Iterable, List, Optional, Tuple, cast
 
 import numpy as np
-
 
 Bitstring = List[int]
 

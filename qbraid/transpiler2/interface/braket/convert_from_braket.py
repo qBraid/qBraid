@@ -16,19 +16,13 @@ from multiprocessing.sharedctypes import Value
 from typing import Any, Dict, List
 
 import numpy as np
-
-from cirq import (
-    Circuit,
-    LineQubit,
-    ops as cirq_ops,
-    protocols,
-)
-from braket.circuits import (
-    gates as braket_gates,
-    Circuit as BKCircuit,
-    Instruction as BKInstruction,
-)
+from braket.circuits import Circuit as BKCircuit
+from braket.circuits import Instruction as BKInstruction
+from braket.circuits import gates as braket_gates
 from braket.circuits.unitary_calculation import calculate_unitary
+from cirq import Circuit, LineQubit
+from cirq import ops as cirq_ops
+from cirq import protocols
 
 from qbraid.transpiler2.utils import _create_unitary_gate_cirq
 

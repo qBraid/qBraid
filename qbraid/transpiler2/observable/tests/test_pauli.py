@@ -14,16 +14,15 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from collections import Counter
+
+import cirq
+import numpy as np
 import pytest
 
-import numpy as np
-import cirq
-
-from qbraid.transpiler2.interface import qiskit, pyquil
+from qbraid.transpiler2.interface import pyquil, qiskit
 from qbraid.transpiler2.observable.pauli import PauliString, PauliStringCollection
 from qbraid.transpiler2.rem import MeasurementResult
 from qbraid.transpiler2.utils import _equal
-
 
 # Basis rotations to measure Pauli X and Y.
 xrotation = cirq.SingleQubitCliffordGate.Y_nsqrt

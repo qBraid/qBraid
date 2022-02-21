@@ -17,20 +17,15 @@
 Qiskit's circuit representation.
 """
 import copy
-from typing import List, Optional, Tuple, Any
 import re
-
-import numpy as np
+from typing import Any, List, Optional, Tuple
 
 import cirq
+import numpy as np
 import qiskit
 
 from qbraid.transpiler2.interface.qasm import circuit_from_qasm
-from qbraid.transpiler2.utils import (
-    _contiguous_compression_cirq,
-    _convert_to_line_qubits,
-)
-
+from qbraid.transpiler2.utils import _contiguous_compression_cirq, _convert_to_line_qubits
 
 QASMType = str
 
