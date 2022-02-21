@@ -32,7 +32,7 @@ def _get_device_data(query):
         qbraid_id = document["qbraid_id"]
         name = document["name"]
         provider = document["provider"]
-        status_refresh = document["status_refresh"]
+        status_refresh = document["statusRefresh"]
         timestamp = datetime.utcnow()
         lag = 0
         if status_refresh is not None:
@@ -79,7 +79,7 @@ def refresh_devices():
     devices = api.post("/public/lab/get-devices", json={})
     pbar = tqdm(total=35, leave=False)
     for document in devices:
-        if document["status_refresh"] is not None:  # None => internally not available at moment
+        if document["statusRefresh"] is not None:  # None => internally not available at moment
             qbraid_id = document["qbraid_id"]
             device = qbraid.device_wrapper(qbraid_id)
             status = device.status.name

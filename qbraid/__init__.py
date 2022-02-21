@@ -101,7 +101,7 @@ def device_wrapper(qbraid_device_id: str, **kwargs):
         raise WrapperError(f"{qbraid_device_id} is not a valid device ID.")
 
     del device_info["_id"]  # unecessary for sdk
-    del device_info["status_refresh"]
+    del device_info["statusRefresh"]
     vendor = device_info["vendor"].lower()
     code = device_info.pop("_code")
     spec = ".local" if code == 0 else ".remote"
