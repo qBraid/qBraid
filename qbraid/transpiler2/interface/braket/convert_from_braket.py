@@ -12,18 +12,21 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-from multiprocessing.sharedctypes import Value
-from typing import Any, Dict, List
+from typing import Dict, List
 
 import numpy as np
-from braket.circuits import Circuit as BKCircuit
-from braket.circuits import Instruction as BKInstruction
-from braket.circuits import gates as braket_gates
-from braket.circuits.unitary_calculation import calculate_unitary
-from cirq import Circuit, LineQubit
-from cirq import ops as cirq_ops
-from cirq import protocols
-
+from braket.circuits import (
+    Circuit as BKCircuit,
+    Instruction as BKInstruction,
+    gates as braket_gates,
+)
+from cirq import (
+    Circuit,
+    LineQubit,
+    ops as cirq_ops,
+    protocols,
+)
+from qbraid.interface.qbraid_braket import _contiguous_compression, unitary_from_braket
 from qbraid.transpiler2.utils import _create_unitary_gate_cirq
 
 
@@ -33,25 +36,7 @@ def _gate_to_matrix_braket(gate: braket_gates.Unitary) -> np.ndarray:
     nqubits = int(np.log2(len(matrix)))
     qubits = [i for i in range(nqubits)] if nqubits > 1 else 0
     circuit = BKCircuit([BKInstruction(unitary_gate, qubits)])
-    return calculate_unitary(circuit.qubit_count, circuit.instructions)
-
-
-def _contiguous_compression_braket(circuit: BKCircuit, rev_qubits=False) -> BKCircuit:
-    """Checks whether the circuit uses contiguous qubits/indices,
-    and if not, reduces dimension accordingly."""
-    qubit_map = {}
-    circuit_qubits = list(circuit.qubits)
-    circuit_qubits.sort()
-    if rev_qubits:
-        circuit_qubits = list(reversed(circuit_qubits))
-    for index, qubit in enumerate(circuit_qubits):
-        qubit_map[int(qubit)] = index
-    contig_circuit = BKCircuit()
-    for instr in circuit.instructions:
-        contig_qubits = [qubit_map[int(qubit)] for qubit in list(instr.target)]
-        contig_instr = BKInstruction(instr.operator, target=contig_qubits)
-        contig_circuit.add_instruction(contig_instr)
-    return contig_circuit
+    return unitary_from_braket(circuit)
 
 
 def from_braket(circuit: BKCircuit) -> Circuit:
@@ -63,7 +48,7 @@ def from_braket(circuit: BKCircuit) -> Circuit:
     Args:
         circuit: Braket circuit to convert to a Cirq circuit.
     """
-    compat_circuit = _contiguous_compression_braket(circuit, rev_qubits=True)
+    compat_circuit = _contiguous_compression(circuit, rev_qubits=True)
     BK_qubits = [int(q) for q in compat_circuit.qubits]
     cirq_qubits = [LineQubit(x) for x in range(len(BK_qubits))]
     qubit_mapping = {x: cirq_qubits[x] for x in range(len(cirq_qubits))}

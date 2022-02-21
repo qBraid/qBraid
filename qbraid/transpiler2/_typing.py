@@ -25,10 +25,7 @@
 """
 from typing import Union
 
-import numpy as np
 from cirq import Circuit as _Circuit
-
-from qbraid.transpiler2.rem.measurement_result import MeasurementResult
 
 # Supported quantum programs.
 SUPPORTED_PROGRAM_TYPES = {
@@ -63,15 +60,3 @@ except ImportError:  # pragma: no cover
 
 # Supported + installed quantum programs.
 QPROGRAM = Union[_Circuit, _Program, _QuantumCircuit, _BKCircuit, _QuantumTape]
-
-
-# An `executor` function inputs a quantum program and outputs an object from
-# which expectation values can be computed. Explicitly, this object can be one
-# of the following types:
-QuantumResult = Union[
-    float,  # The expectation value itself.
-    MeasurementResult,  # Sampled bitstrings.
-    np.ndarray,  # Density matrix.
-    # TODO: Support the following:
-    # Sequence[np.ndarray],  # Wavefunctions sampled via quantum trajectories.
-]

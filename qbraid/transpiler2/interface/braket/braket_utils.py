@@ -1,29 +1,23 @@
 import itertools
 
-import braket.ir.jaqcd as ir
 import numpy as np
+
+import braket.ir.jaqcd as ir
 from braket.circuits import Circuit as BKCircuit
 from braket.circuits import Gate, Instruction, circuit
 from braket.circuits.qubit_set import QubitSet
-from braket.circuits.unitary_calculation import calculate_unitary
+
 from cirq import Circuit as CirqCircuit
 
-from qbraid.transpiler2.interface.braket.convert_from_braket import _contiguous_compression_braket
-from qbraid.transpiler2.utils import _unitary_cirq
+from qbraid.interface import to_unitary
 
 
-def _unitary_braket(circuit: BKCircuit) -> np.ndarray:
-    """Calculate unitary of a braket circuit."""
-    circ = _contiguous_compression_braket(circuit)
-    return calculate_unitary(circ.qubit_count, circ.instructions)
-
-
-def _equal_unitaries(braket_circuit: BKCircuit, cirq_circuit: CirqCircuit) -> bool:
+def _equal_unitaries(braket_circuit: BKCircuit, cirq_circuit: CirqCircuit):
     """Returns True if Braket circuit unitary and Cirq circuit
     unitary are equivalent."""
-    braket_unitary = _unitary_braket(braket_circuit)
-    cirq_unitary = _unitary_cirq(cirq_circuit)
-    return np.allclose(braket_unitary, cirq_unitary)
+    braket_u = to_unitary(braket_circuit, ensure_contiguous=True)
+    cirq_u = to_unitary(cirq_circuit, ensure_contiguous=True)
+    return np.allclose(braket_u, cirq_u)
 
 
 class C(Gate):

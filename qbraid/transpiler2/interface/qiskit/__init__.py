@@ -31,11 +31,6 @@ moments,circuits, and gates.
     from_qiskit
     to_qasm
     to_qiskit
-    execute
-    execute_with_noise
-    execute_with_shots
-    execute_with_shots_and_noise
-    initialized_depolarizing_noise
 
 """
 from qbraid.transpiler2.interface.qiskit.conversions import (
@@ -43,13 +38,6 @@ from qbraid.transpiler2.interface.qiskit.conversions import (
     from_qiskit,
     to_qasm,
     to_qiskit,
-)
-from qbraid.transpiler2.interface.qiskit.qiskit_utils import (
-    execute,
-    execute_with_noise,
-    execute_with_shots,
-    execute_with_shots_and_noise,
-    initialized_depolarizing_noise,
 )
 
 from .circuit_wrapper import QiskitCircuitWrapper

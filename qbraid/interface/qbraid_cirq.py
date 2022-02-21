@@ -1,4 +1,4 @@
-from typing import List, Optional, Sequence, Tuple
+from typing import List, Sequence
 
 import cirq
 import numpy as np
@@ -8,30 +8,8 @@ from cirq import (
     I,
     LineQubit,
     NamedQubit,
-    Operation,
-    map_operations_and_unroll,
     ops,
-    value,
 )
-
-
-@value.value_equality
-class ZPowGate(ops.ZPowGate):
-    def _qasm_(self, args: "cirq.QasmArgs", qubits: Tuple["cirq.Qid", ...]) -> Optional[str]:
-        args.validate_version("2.0")
-        if self._global_shift == 0:
-            if self._exponent == 0.25:
-                return args.format("t {0};\n", qubits[0])
-            if self._exponent == -0.25:
-                return args.format("tdg {0};\n", qubits[0])
-            if self._exponent == 0.5:
-                return args.format("s {0};\n", qubits[0])
-            if self._exponent == -0.5:
-                return args.format("sdg {0};\n", qubits[0])
-            if self._exponent == 1:
-                return args.format("z {0};\n", qubits[0])
-            return args.format("p({0:half_turns}) {1};\n", self._exponent, qubits[0])
-        return args.format("rz({0:half_turns}) {1};\n", self._exponent, qubits[0])
 
 
 def _convert_to_line_qubits(
@@ -63,7 +41,8 @@ def _key_from_qubit(qubit: ops.Qid) -> str:
         key = str(qubit.name)
     else:
         raise ValueError(
-            "Expected qubit of type 'GridQubit' or 'LineQubit'" f"but instead got {type(qubit)}"
+            "Expected qubit of type 'GridQubit' 'LineQubit' or 'NamedQubit'"
+            f"but instead got {type(qubit)}"
         )
     return key
 
@@ -78,7 +57,8 @@ def _int_from_qubit(qubit: ops.Qid) -> int:
         index = int(qubit._comparison_key().split(":")[0][7:])
     else:
         raise ValueError(
-            "Expected qubit of type 'GridQubit' or 'LineQubit'" f"but instead got {type(qubit)}"
+            "Expected qubit of type 'GridQubit' 'LineQubit' or 'NamedQubit'"
+            f"but instead got {type(qubit)}"
         )
     return index
 
@@ -124,13 +104,6 @@ def _contiguous_expansion(circuit: Circuit) -> Circuit:
     return circuit
 
 
-def map_func(op: Operation, _: int) -> ops.OP_TREE:
-    if isinstance(op.gate, ops.ZPowGate):
-        yield ZPowGate(exponent=op.gate.exponent, global_shift=op.gate.global_shift)(op.qubits[0])
-    else:
-        yield op
-
-
 def _contiguous_compression(circuit: Circuit, rev_qubits=False, map_gates=False) -> Circuit:
     """Checks whether the circuit uses contiguous qubits/indices,
     and if not, reduces dimension accordingly."""
@@ -146,8 +119,6 @@ def _contiguous_compression(circuit: Circuit, rev_qubits=False, map_gates=False)
         contig_indicies = [qubit_map[_int_from_qubit(qubit)] for qubit in op.qubits]
         contig_qubits = _make_qubits(circuit, contig_indicies)
         contig_circuit.append(op.gate.on(*contig_qubits))
-    if map_gates:
-        return map_operations_and_unroll(contig_circuit, map_func)
     return contig_circuit
 
 

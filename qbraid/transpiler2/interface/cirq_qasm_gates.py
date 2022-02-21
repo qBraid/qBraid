@@ -1,14 +1,13 @@
+from typing import Optional, Tuple
 import fractions
-from typing import Iterable, Optional, Tuple
 
 import cirq
 import numpy as np
-from cirq import ops, protocols, value
-from cirq.ops import raw_types
-
-# from cirq import linalg
-# from cirq.circuits.qasm_output import QasmUGate
-# from cirq.ops.parity_gates import ZZPowGate
+from cirq import (
+    ops,
+    value,
+    protocols,
+)
 
 
 def rzz(theta):
@@ -20,7 +19,7 @@ def rzz(theta):
         return RZZGate(theta)
 
 
-class U2Gate(raw_types.Gate):
+class U2Gate(ops.raw_types.Gate):
     def __init__(self, phi, lam):
         self._phi = float(phi)
         self._lam = float(lam)
@@ -58,7 +57,7 @@ class U2Gate(raw_types.Gate):
         return frac_str.replace("1π", "π")
 
 
-class U3Gate(raw_types.Gate):
+class U3Gate(ops.raw_types.Gate):
     def __init__(self, theta, phi, lam):
         self._theta = float(theta)
         self._phi = float(phi)
@@ -100,7 +99,7 @@ class U3Gate(raw_types.Gate):
         return frac_str.replace("1π", "π")
 
 
-class RZZGate(raw_types.Gate):
+class RZZGate(ops.raw_types.Gate):
     def __init__(self, theta):
         self._theta = float(theta)
 
@@ -146,3 +145,14 @@ class ZPowGate(ops.ZPowGate):
                 return args.format("z {0};\n", qubits[0])
             return args.format("p({0:half_turns}) {1};\n", self._exponent, qubits[0])
         return args.format("rz({0:half_turns}) {1};\n", self._exponent, qubits[0])
+
+
+def map_zpow(op: cirq.Operation, _: int) -> cirq.OP_TREE:
+    if isinstance(op.gate, cirq.ZPowGate):
+        yield ZPowGate(exponent=op.gate.exponent, global_shift=op.gate.global_shift)(op.qubits[0])
+    else:
+        yield op
+
+
+def map_zpow_and_unroll(circuit: cirq.Circuit) -> cirq.Circuit:
+    return cirq.map_operations_and_unroll(circuit, map_zpow)

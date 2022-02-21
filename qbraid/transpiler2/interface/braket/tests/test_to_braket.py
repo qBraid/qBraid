@@ -2,9 +2,9 @@ import numpy as np
 import pytest
 from cirq import Circuit, LineQubit, ops, testing
 
-from qbraid.transpiler2.interface.braket.braket_utils import _equal_unitaries, _unitary_braket
+from qbraid.interface import to_unitary
+from qbraid.transpiler2.interface.braket.braket_utils import _equal_unitaries
 from qbraid.transpiler2.interface.braket.convert_to_braket import to_braket
-from qbraid.transpiler2.utils import _unitary_cirq
 
 
 @pytest.mark.parametrize("qreg", (LineQubit.range(2), [LineQubit(1), LineQubit(6)]))
@@ -123,8 +123,8 @@ def test_to_braket_uncommon_one_qubit_gates(uncommon_gate):
     """
     cirq_circuit = Circuit(uncommon_gate.on(LineQubit(0)))
     braket_circuit = to_braket(cirq_circuit)
-    cirq_unitary = _unitary_cirq(cirq_circuit)
-    braket_unitary = _unitary_braket(braket_circuit)
+    cirq_unitary = to_unitary(cirq_circuit)
+    braket_unitary = to_unitary(braket_circuit)
     testing.assert_allclose_up_to_global_phase(
         braket_unitary,
         cirq_unitary,
@@ -152,8 +152,8 @@ def test_to_braket_common_two_qubit_gates(common_gate):
     if not isinstance(common_gate, (ops.XXPowGate, ops.YYPowGate, ops.ZZPowGate)):
         _equal_unitaries(braket_circuit, cirq_circuit)
     else:
-        cirq_unitary = _unitary_cirq(cirq_circuit)
-        braket_unitary = _unitary_braket(braket_circuit)
+        cirq_unitary = to_unitary(cirq_circuit)
+        braket_unitary = to_unitary(braket_circuit)
         testing.assert_allclose_up_to_global_phase(
             braket_unitary,
             cirq_unitary,
@@ -171,8 +171,8 @@ def test_to_braket_uncommon_two_qubit_gates(uncommon_gate):
     """
     cirq_circuit = Circuit(uncommon_gate.on(*LineQubit.range(2)))
     braket_circuit = to_braket(cirq_circuit)
-    cirq_unitary = _unitary_cirq(cirq_circuit)
-    braket_unitary = _unitary_braket(braket_circuit)
+    cirq_unitary = to_unitary(cirq_circuit)
+    braket_unitary = to_unitary(braket_circuit)
     testing.assert_allclose_up_to_global_phase(
         braket_unitary,
         cirq_unitary,

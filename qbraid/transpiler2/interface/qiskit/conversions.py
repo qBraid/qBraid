@@ -25,7 +25,8 @@ import numpy as np
 import qiskit
 
 from qbraid.transpiler2.interface.qasm import circuit_from_qasm
-from qbraid.transpiler2.utils import _contiguous_compression_cirq, _convert_to_line_qubits
+from qbraid.transpiler2.interface.cirq_qasm_gates import map_zpow_and_unroll
+from qbraid.interface.qbraid_cirq import _contiguous_compression, _convert_to_line_qubits
 
 QASMType = str
 
@@ -249,7 +250,8 @@ def to_qiskit(circuit: cirq.Circuit) -> qiskit.QuantumCircuit:
     Returns:
         Qiskit.QuantumCircuit object equivalent to the input Cirq circuit.
     """
-    compat_circuit = _contiguous_compression_cirq(circuit, rev_qubits=True, map_gates=True)
+    contig_circuit = _contiguous_compression(circuit, rev_qubits=True)
+    compat_circuit = map_zpow_and_unroll(contig_circuit)
     return qiskit.QuantumCircuit.from_qasm_str(to_qasm(compat_circuit))
 
 

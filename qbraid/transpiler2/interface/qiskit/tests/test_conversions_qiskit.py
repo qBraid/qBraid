@@ -176,12 +176,12 @@ def test_random_circuit_to_from_qasm():
     """Tests cirq.Circuit --> QASM string --> cirq.Circuit
     with a random one-qubit circuit.
     """
-    cirq_circuit = cirq.testing.random_circuit(
-        qubits=2, n_moments=10, op_density=0.99, random_state=2
-    )
-    qasm = to_qasm(cirq_circuit)
-    circuit_cirq = from_qasm(qasm)
-    assert cirq.equal_up_to_global_phase(cirq_circuit.unitary(), circuit_cirq.unitary())
+    circuit_0 = cirq.testing.random_circuit(qubits=2, n_moments=10, op_density=0.99, random_state=2)
+    qasm = to_qasm(circuit_0)
+    circuit_1 = from_qasm(qasm)
+    u_0 = circuit_0.unitary()
+    u_1 = circuit_1.unitary()
+    assert cirq.equal_up_to_global_phase(u_0, u_1)
 
 
 @pytest.mark.parametrize("as_qasm", (True, False))

@@ -23,8 +23,8 @@ from cirq import ops as cirq_ops
 from cirq import protocols
 from cirq.linalg.decompositions import kak_decomposition
 
+from qbraid.interface.qbraid_cirq import _contiguous_compression, _int_from_qubit
 from qbraid.transpiler2.interface.braket.braket_utils import C as BKControl
-from qbraid.transpiler2.utils import _contiguous_compression_cirq, _int_from_qubit
 
 
 def _raise_cirq_to_braket_error(op: Any) -> None:
@@ -37,7 +37,7 @@ def to_braket(circuit: Circuit) -> BKCircuit:
     Args:
         circuit: Cirq circuit to convert to a Braket circuit.
     """
-    compat_circuit = _contiguous_compression_cirq(circuit)
+    compat_circuit = _contiguous_compression(circuit)
     cirq_int_qubits = range(len(compat_circuit.all_qubits()))
     braket_int_qubits = list(reversed(cirq_int_qubits))
     qubit_mapping = {x: braket_int_qubits[x] for x in range(len(braket_int_qubits))}

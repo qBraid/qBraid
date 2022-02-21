@@ -33,21 +33,6 @@ Output Strategy
    :toctree: ../stubs/
 
    CirqCircuitWrapper
-   compute_density_matrix
-   execute
-   execute_with_depolarizing_noise
-   execute_with_shots
-   execute_with_shots_and_depolarizing_noise
-   sample_bitstrings
 
 """
-from qbraid.transpiler2.interface.cirq.cirq_utils import (
-    compute_density_matrix,
-    execute,
-    execute_with_depolarizing_noise,
-    execute_with_shots,
-    execute_with_shots_and_depolarizing_noise,
-    sample_bitstrings,
-)
-
 from .circuit_wrapper import CirqCircuitWrapper
