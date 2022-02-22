@@ -3,12 +3,17 @@
 import pkg_resources
 import urllib3
 
+from numpy import random
+from cirq.testing import random_circuit as cirq_random_circuit
+from qiskit.circuit.exceptions import CircuitError as QiskitCircuitError
+from qiskit.circuit.random import random_circuit as qiskit_random_circuit
+
 from qbraid import api
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid._version import __version__
 from qbraid.api import get_devices
 from qbraid.exceptions import QbraidError, WrapperError
-from qbraid.interface import convert_to_contiguous, random_circuit, to_unitary
+from qbraid.interface import convert_to_contiguous, to_unitary
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)  # temporary hack
 
@@ -52,7 +57,6 @@ def circuit_wrapper(circuit, **kwargs):
 
         cirq_circuit = cirq.Circuit()
         q0, q1, q2 = [cirq.LineQubit(i) for i in range(3)]
-        input_qubit_mapping = {q0:2,q1:1,q2:0}  # specify a reverse qubit ordering
         ...
 
     Please refer to the documentation of the individual qbraid circuit wrapper objects to see
@@ -70,7 +74,7 @@ def circuit_wrapper(circuit, **kwargs):
 
     if package in transpiler_entrypoints:
         circuit_wrapper_class = transpiler_entrypoints[ep].load()
-        return circuit_wrapper_class(circuit, **kwargs)
+        return circuit_wrapper_class(circuit)
 
     raise WrapperError(f"{package} is not a supported package.")
 
@@ -119,3 +123,45 @@ def retrieve_job(qbraid_job_id):
     ep = vendor + ".job"
     job_wrapper_class = devices_entrypoints[ep].load()
     return job_wrapper_class(qbraid_job_id, device=qbraid_device)
+
+
+def random_circuit(package, num_qubits=None, depth=None, measure=False):
+    """Generate random circuit of arbitrary size and form. If not provided, num_qubits
+    and depth are randomly selected in range [2, 4].
+
+    Args:
+        package (str): qbraid supported software package
+        num_qubits (int): number of quantum wires
+        depth (int): layers of operations (i.e. critical path length)
+        measure (bool): if True, measure all qubits at the end
+
+    Returns:
+        qbraid.transpiler.CircuitWrapper: qbraid circuit wrapper object
+
+    Raises:
+        ValueError: when invalid options given
+
+    """
+    num_qubits = num_qubits if num_qubits else random.randint(1, 4)
+    depth = depth if depth else random.randint(1, 4)
+    seed = random.randint(1, 11)
+    if package == "qiskit":
+        try:
+            return qiskit_random_circuit(num_qubits, depth, measure=measure)
+        except QiskitCircuitError as err:
+            raise ValueError from err
+    try:
+        random_circuit = cirq_random_circuit(
+            num_qubits, n_moments=depth, op_density=1, random_state=seed
+        )
+    except ValueError as err:
+        raise ValueError from err
+    if package == "cirq":
+        return random_circuit
+    elif package == "braket":
+        return circuit_wrapper(random_circuit).transpile("braket")
+    else:
+        raise ValueError(
+            f"{package} is not a supported package. \n"
+            "Supported packages include qiskit, cirq, braket. "
+        )

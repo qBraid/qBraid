@@ -17,7 +17,7 @@ from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.job import Job as QiskitJob
 
-from qbraid import api, device_wrapper, random_circuit, retrieve_job
+from qbraid import api, device_wrapper, retrieve_job, random_circuit
 from qbraid.devices import DeviceError, JobError, ResultWrapper
 from qbraid.devices.aws import (
     BraketDeviceWrapper,
@@ -237,6 +237,6 @@ def test_result_wrapper_measurements(device_id):
 
 @pytest.mark.parametrize("device_id", ["aws_tn_sim", "aws_dm_sim", "aws_sv_sim"])
 def test_cost_estimator(device_id):
-    circuit = random_circuit("braket", num_qubits=3, depth=3, measure=True)
+    circuit = BraketCircuit().h(0).cnot(0, 1)
     estimate = device_wrapper(device_id).estimate_cost(circuit, shots=10)
     assert isinstance(estimate, float)

@@ -55,7 +55,7 @@ def unitary_test_helper(bk_instrs, u_expected):
     for instr in bk_instrs:
         Gate, index = instr
         circuit.add_instruction(BraketInstruction(Gate(), target=index))
-    contig_circuit = convert_to_contiguous(circuit)
+    contig_circuit = convert_to_contiguous(circuit, expansion=True)
     u_test = to_unitary(contig_circuit)
     return np.allclose(u_expected, u_test)
 

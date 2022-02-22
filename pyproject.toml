@@ -2,11 +2,6 @@
 requires = ["setuptools>=51", "wheel"]
 build-backend = "setuptools.build_meta"
 
-[tool.pytest.ini_options]
-# addopts = "--maxfail=2 -rf"
-# testpaths = ["qbraid/devices/tests", "qbraid/interface/tests", "qbraid/transpiler/tests"]
-filterwarnings = "ignore:.*U.*mode is deprecated:DeprecationWarning"
-
 [tool.black]
 line-length = 100
 target-version = ['py37', 'py38', 'py39']
@@ -30,7 +25,8 @@ omit = [
   "**/qbraid/api/*",
   "**/qbraid/applications/*", 
   "**/qbraid/circuits/*", 
-  "**/qbraid/operators/*"
+  "**/qbraid/operators/*",
+  "**/qbraid/transpiler/*"
   ]
 
 [tool.coverage.paths]

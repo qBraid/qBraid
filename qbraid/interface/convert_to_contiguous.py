@@ -1,17 +1,11 @@
 from typing import Any, Callable
 
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
+from qbraid.exceptions import UnsupportedCircuitError
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 
-class UnsupportedCircuitError(Exception):
-    pass
-
-
-class CircuitConversionError(Exception):
-    pass
-
-
-def convert_to_contiguous(circuit: QPROGRAM) -> QPROGRAM:
+def convert_to_contiguous(circuit: QPROGRAM, expansion=False) -> QPROGRAM:
     """Checks whether the circuit uses contiguous qubits/indices,
     and if not, adds identity gates to vacant registers as needed.
 
@@ -49,7 +43,7 @@ def convert_to_contiguous(circuit: QPROGRAM) -> QPROGRAM:
         )
 
     try:
-        compat_circuit = conversion_function(circuit)
+        compat_circuit = conversion_function(circuit, expansion=expansion)
     except Exception:
         raise CircuitConversionError(
             "Could not convert given circuit to use contiguous qubits/indicies."
