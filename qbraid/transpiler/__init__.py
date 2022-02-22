@@ -39,21 +39,19 @@ Example Usage
         qiskit_circuit.draw()
         ...
 
-Transpiler API
+transpiler API
 ---------------
 
 .. autosummary::
    :toctree: ../stubs/
 
-   QbraidTranspiler
    CircuitWrapper
-   GateWrapper
-   ParamID
    TranspilerError
-
+   CircuitConversionError
+   
 """
-from .circuit import CircuitWrapper
-from .exceptions import TranspilerError
-from .gate import GateWrapper
-from .parameter import ParamID
-from .transpiler import QbraidTranspiler
+from qbraid.transpiler import interface
+
+# Quantum computer input/output.
+from qbraid.transpiler.circuit_wrapper import CircuitWrapper
+from qbraid.transpiler.exceptions import CircuitConversionError, TranspilerError

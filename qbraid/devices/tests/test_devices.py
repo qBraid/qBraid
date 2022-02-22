@@ -17,7 +17,7 @@ from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.job import Job as QiskitJob
 
-from qbraid import api, device_wrapper, random_circuit, retrieve_job
+from qbraid import api, device_wrapper, retrieve_job, random_circuit
 from qbraid.devices import DeviceError, JobError, ResultWrapper
 from qbraid.devices.aws import (
     BraketDeviceWrapper,

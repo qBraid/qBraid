@@ -24,7 +24,7 @@ import qbraid
 
 
 def about() -> None:
-    """Displays information about the qbraid.transpiler2, core/optional
+    """Displays information about the qbraid.transpiler, core/optional
     packages, and Python version/platform information.
     """
     try:

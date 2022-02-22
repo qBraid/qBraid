@@ -1,6 +1,9 @@
 amazon-braket-sdk~=1.11.1
 cirq==0.14.0.dev20220211222632
 numpy~=1.21.5
+pennylane~=0.20.0
+pennylane-qiskit~=0.18.0
+pyquil~=3.0.1
 qiskit~=0.34.0
 requests==2.26.0
 requests[use_chardet_on_py3]

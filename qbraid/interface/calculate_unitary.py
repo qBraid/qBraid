@@ -3,13 +3,10 @@ from typing import Any, Callable
 from numpy import ndarray
 
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
+from qbraid.exceptions import QbraidError, UnsupportedCircuitError
 
 
-class UnsupportedCircuitError(Exception):
-    pass
-
-
-class UnitaryCalculationError(Exception):
+class UnitaryCalculationError(QbraidError):
     pass
 
 

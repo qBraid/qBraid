@@ -16,9 +16,9 @@
 """Defines input / output types for a quantum backend:
 
   * SUPPORTED_PROGRAM_TYPES: All supported packages/circuits which
-       the qbraid.transpiler2 can interface with,
+       the qbraid.transpiler can interface with,
   * QPROGRAM: All supported packages / circuits which are installed in the
-       environment the qbraid.transpiler2 is run in, and
+       environment the qbraid.transpiler is run in, and
 """
 from typing import Union
 

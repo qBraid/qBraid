@@ -1,14 +1,5 @@
 """Paramater Module"""
 
-from typing import Union
-
-from qiskit.circuit import Parameter as QiskitParameter
-from sympy import Symbol as CirqParameter
-
-from qbraid.transpiler.transpiler import QbraidTranspiler
-
-ParameterInput = Union[float, int, str]
-
 
 class ParamID:
     """An itermediate representation for storing abstract parameters during the

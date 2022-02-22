@@ -1,7 +1,8 @@
 from typing import Any, Callable
 
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
-from qbraid.transpiler2.exceptions import CircuitConversionError, UnsupportedCircuitError
+from qbraid.exceptions import UnsupportedCircuitError
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 
 def convert_to_contiguous(circuit: QPROGRAM, expansion=False) -> QPROGRAM:
