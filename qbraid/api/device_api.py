@@ -21,7 +21,7 @@ def _get_device_data(query):
     represented by its own length-4 list containing the device provider, name, qbraid_id,
     and status.
     """
-    devices = api.post("/get-devices", json=query)
+    devices = api.get("/public/lab/get-devices", params=query)
     if isinstance(devices, str):
         raise qbraid.QbraidError(devices)
     device_data = []
@@ -32,7 +32,7 @@ def _get_device_data(query):
         qbraid_id = document["qbraid_id"]
         name = document["name"]
         provider = document["provider"]
-        status_refresh = document["status_refresh"]
+        status_refresh = document["statusRefresh"]
         timestamp = datetime.utcnow()
         lag = 0
         if status_refresh is not None:
@@ -76,14 +76,14 @@ def refresh_devices():
     # pylint: disable=import-outside-toplevel
     from tqdm.notebook import tqdm
 
-    devices = api.post("/get-devices", json={})
+    devices = api.get("/public/lab/get-devices", params={})
     pbar = tqdm(total=35, leave=False)
     for document in devices:
-        if document["status_refresh"] is not None:  # None => internally not available at moment
+        if document["statusRefresh"] is not None:  # None => internally not available at moment
             qbraid_id = document["qbraid_id"]
             device = qbraid.device_wrapper(qbraid_id)
             status = device.status.name
-            api.put("/update-device", params={"qbraid_id": qbraid_id, "status": status})
+            api.put("/lab/update-device", data={"qbraid_id": qbraid_id, "status": status})
         pbar.update(1)
     pbar.close()
 
@@ -99,9 +99,9 @@ def get_devices(query=None):
     * vendor (str): AWS | IBM | Google
     * provider (str): AWS | IBM | Google | D-Wave | IonQ | Rigetti
     * type (str): QPU | Simulator
-    * qubits (int)
+    * numberQubits (int)
     * paradigm (str): gate-based | quantum-annealer
-    * requires_cred (bool): true | false
+    * requiresCred (bool): true | false
     * status (str): ONLINE | OFFLINE
 
     Here are a few example use cases:
@@ -114,10 +114,10 @@ def get_devices(query=None):
         get_devices({"paradigm": "gate-based", "provider": "Google", "status": "ONLINE"})
 
         # Search for QPUs with at least 5 qubits that are available through AWS or IBM
-        get_devices({"type": "QPU", "qubits": {"$gte": 5}, "vendor": {"$in": ["AWS", "IBM"]}})
+        get_devices({"type": "QPU", "numberQubits": {"$gte": 5}, "vendor": {"$in": ["AWS", "IBM"]}})
 
         # Search for open-access simulators that have "Unitary" contained in their name
-        get_devices({"type": "Simulator", "name": {"$regex": "Unitary"}, "requires_cred": False})
+        get_devices({"type": "Simulator", "name": {"$regex": "Unitary"}, "requiresCred": False})
 
     For a complete list of search operators, see `Query Selectors`__. To refresh the device status
     column, call :func:`~qbraid.refresh_devices`, and then re-run :func:`~qbraid.get_devices`.

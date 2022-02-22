@@ -94,7 +94,7 @@ def device_wrapper(qbraid_device_id: str, **kwargs):
     if qbraid_device_id == "ibm_q_least_busy_qpu":
         qbraid_device_id = api.ibmq_least_busy_qpu()
 
-    device_info = api.post("/get-devices", json={"qbraid_id": qbraid_device_id})
+    device_info = api.get("/public/lab/get-devices", params={"qbraid_id": qbraid_device_id})
 
     if isinstance(device_info, list):
         if len(device_info) == 0:
@@ -105,7 +105,7 @@ def device_wrapper(qbraid_device_id: str, **kwargs):
         raise WrapperError(f"{qbraid_device_id} is not a valid device ID.")
 
     del device_info["_id"]  # unecessary for sdk
-    del device_info["status_refresh"]
+    del device_info["statusRefresh"]
     vendor = device_info["vendor"].lower()
     code = device_info.pop("_code")
     spec = ".local" if code == 0 else ".remote"

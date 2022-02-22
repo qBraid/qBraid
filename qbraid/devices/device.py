@@ -33,10 +33,10 @@ class DeviceLikeWrapper(ABC):
 
         """
         self._info = device_info
-        self._obj_ref = device_info.pop("obj_ref")
-        self._obj_arg = device_info.pop("obj_arg")
-        self._qubits = device_info["qubits"]
-        self.requires_cred = device_info.pop("requires_cred")
+        self._obj_ref = device_info.pop("objRef")
+        self._obj_arg = device_info.pop("objArg")
+        self._qubits = device_info["numberQubits"]
+        self.requires_cred = device_info.pop("requiresCred")
         if self.requires_cred:
             verify_user(self.vendor)
         self.vendor_dlo = self._get_device()
@@ -54,7 +54,7 @@ class DeviceLikeWrapper(ABC):
         """
         if self.status.value == 1:
             raise DeviceError("Device is currently offline.")
-        device_run_package = self.info["run_package"]
+        device_run_package = self.info["runPackage"]
         input_run_package = run_input.__module__.split(".")[0]
         qbraid_circuit = qbraid.circuit_wrapper(run_input)
         if self.num_qubits and qbraid_circuit.num_qubits > self.num_qubits:
