@@ -13,7 +13,7 @@ from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit import QuantumRegister as QiskitQuantumRegister
 from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 
-from qbraid import circuit_wrapper, random_circuit, convert_to_contiguous, to_unitary
+from qbraid import circuit_wrapper, convert_to_contiguous, random_circuit, to_unitary
 from qbraid.transpiler.interface.braket.tests._gate_archive import braket_gates
 from qbraid.transpiler.interface.cirq.tests._gate_archive import cirq_gates, create_cirq_gate
 from qbraid.transpiler.interface.qiskit.tests._gate_archive import qiskit_gates

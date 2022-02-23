@@ -25,4 +25,4 @@ from .config_user import update_config
 from .device_api import get_devices, refresh_devices
 from .exceptions import AuthError, ConfigError
 from .least_busy import ibmq_least_busy_qpu
-from .requests import get, put, post
+from .requests import get, post, put

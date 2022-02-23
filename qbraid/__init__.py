@@ -2,9 +2,8 @@
 
 import pkg_resources
 import urllib3
-
-from numpy import random
 from cirq.testing import random_circuit as cirq_random_circuit
+from numpy import random
 from qiskit.circuit.exceptions import CircuitError as QiskitCircuitError
 from qiskit.circuit.random import random_circuit as qiskit_random_circuit
 

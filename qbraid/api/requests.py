@@ -26,10 +26,12 @@ def get(route, **kwargs):
     res = s.get(url, verify=False, **kwargs)
     return res.json()
 
-def put(route, kwargs):
+
+def put(route, **kwargs):
     url = _api_url(route)
     res = s.put(url, verify=False, **kwargs)
     return res.json()
+
 
 def post(route, **kwargs):
     url = _api_url(route)
