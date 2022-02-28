@@ -1,9 +1,9 @@
 """
 ============================================================
-Transpiler Interface  (:mod:`qbraid.transpiler.interface`)
+Circuit Wrappers  (:mod:`qbraid.transpiler.wrappers`)
 ============================================================
 
-.. currentmodule:: qbraid.transpiler.interface
+.. currentmodule:: qbraid.transpiler.wrappers
 
 .. autosummary::
    :toctree: ../stubs/
