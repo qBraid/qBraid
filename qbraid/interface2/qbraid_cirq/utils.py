@@ -1,19 +1,3 @@
-# Copyright (C) 2020 Unitary Fund
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
-"""Utility functions."""
 from copy import deepcopy
 from typing import List, Tuple, Union, cast
 
@@ -22,23 +6,22 @@ from cirq import (
     Circuit,
     CircuitDag,
     EigenGate,
-    Gate,
     GateOperation,
     GridQubit,
-    I,
     LineQubit,
-    MatrixGate,
     Moment,
     NamedQubit,
-    ops,
+    Gate,
+    Qid,
+    Operation,
+    MeasurementGate,
 )
-from cirq.ops import Qid
-from cirq.ops.measurement_gate import MeasurementGate
-
-from qbraid.transpiler.interface.cirq_qasm_gates import ZPowGate as QASM_ZPowGate
 
 QUBIT = Union[LineQubit, GridQubit, NamedQubit, Qid]
 
+def _unitary_from_cirq(circuit: Circuit) -> np.ndarray:
+    """Calculate unitary of a cirq circuit."""
+    return circuit.unitary()
 
 def _simplify_gate_exponent(gate: EigenGate) -> EigenGate:
     """Returns the input gate with a simplified exponent if possible,
@@ -85,18 +68,18 @@ def _simplify_circuit_exponents(circuit: Circuit) -> None:
         circuit[moment_idx] = Moment(simplified_operations)
 
 
-def _is_measurement(op: ops.Operation) -> bool:
+def _is_measurement(op: Operation) -> bool:
     """Returns true if the operation's gate is a measurement, else False.
 
     Args:
         op: Gate operation.
     """
-    return isinstance(op.gate, ops.measurement_gate.MeasurementGate)
+    return isinstance(op.gate, MeasurementGate)
 
 
 def _pop_measurements(
     circuit: Circuit,
-) -> List[Tuple[int, ops.Operation]]:
+) -> List[Tuple[int, Operation]]:
     """Removes all measurements from a circuit.
 
     Args:
@@ -110,14 +93,14 @@ def _pop_measurements(
     return measurements
 
 
-def _append_measurements(circuit: Circuit, measurements: List[Tuple[int, ops.Operation]]) -> None:
+def _append_measurements(circuit: Circuit, measurements: List[Tuple[int, Operation]]) -> None:
     """Appends all measurements into the final moment of the circuit.
 
     Args:
         circuit: a quantum circuit as a :class:`cirq.Circuit`.
         measurements: measurements to perform.
     """
-    new_measurements: List[Tuple[int, ops.Operation]] = []
+    new_measurements: List[Tuple[int, Operation]] = []
     for i in range(len(measurements)):
         # Make sure the moment to insert into is the last in the circuit
         new_measurements.append((len(circuit) + 1, measurements[i][1]))
