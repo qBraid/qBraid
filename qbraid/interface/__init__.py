@@ -1,20 +1,17 @@
 """
-====================================
- Interface (:mod:`qbraid.interface`)
-====================================
+===============================================
+Interface (:mod:`qbraid.interface`)
+===============================================
 
 .. currentmodule:: qbraid.interface
-
-
-Interface API
---------------
 
 .. autosummary::
    :toctree: ../stubs/
 
-   to_unitary
    convert_to_contiguous
+   to_unitary
+   equal_unitaries
 
 """
-from .calculate_unitary import to_unitary
-from .convert_to_contiguous import convert_to_contiguous
+from qbraid.interface.calculate_unitary import equal_unitaries, to_unitary
+from qbraid.interface.convert_to_contiguous import convert_to_contiguous

@@ -5,7 +5,7 @@ from qbraid.exceptions import UnsupportedCircuitError
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
-def convert_to_contiguous(circuit: QPROGRAM, expansion=False) -> QPROGRAM:
+def convert_to_contiguous(circuit: QPROGRAM, **kwargs) -> QPROGRAM:
     """Checks whether the circuit uses contiguous qubits/indices,
     and if not, adds identity gates to vacant registers as needed.
 
@@ -29,11 +29,11 @@ def convert_to_contiguous(circuit: QPROGRAM, expansion=False) -> QPROGRAM:
         return circuit
 
     if "cirq" in package:
-        from qbraid.interface.qbraid_cirq import _convert_to_contiguous_cirq
+        from qbraid.interface.qbraid_cirq.contiguous import _convert_to_contiguous_cirq
 
         conversion_function = _convert_to_contiguous_cirq
     elif "braket" in package:
-        from qbraid.interface.qbraid_braket import _convert_to_contiguous_braket
+        from qbraid.interface.qbraid_braket.contiguous import _convert_to_contiguous_braket
 
         conversion_function = _convert_to_contiguous_braket
     else:
@@ -43,7 +43,7 @@ def convert_to_contiguous(circuit: QPROGRAM, expansion=False) -> QPROGRAM:
         )
 
     try:
-        compat_circuit = conversion_function(circuit, expansion=expansion)
+        compat_circuit = conversion_function(circuit, **kwargs)
     except Exception:
         raise CircuitConversionError(
             "Could not convert given circuit to use contiguous qubits/indicies."

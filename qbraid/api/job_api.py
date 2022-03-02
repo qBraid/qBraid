@@ -14,7 +14,7 @@ def mongo_init_job(init_data):
         str: the qbraid_job_id associated with this job
 
     """
-    init_data["user"] = os.getenv("JUPYTERHUB_USER")
+    init_data["email"] = os.getenv("JUPYTERHUB_USER")
     qbraid_job_id = api.post("/init-job", data=init_data)
     return qbraid_job_id
 
@@ -27,7 +27,7 @@ def mongo_get_job(qbraid_job_id, update=None):
 
     """
     data = {} if not update else update
-    body = {"qbraid_job_id": qbraid_job_id, "update": data}
+    body = {"qbraidJobId": qbraid_job_id, "update": data}
     metadata = api.put("/update-job", data=body)
     del metadata["_id"]
     return metadata
@@ -36,11 +36,11 @@ def mongo_get_job(qbraid_job_id, update=None):
 def init_job(vendor_job_id, device, circuit, shots):
     """Initialize data dictionary for new qbraid job and pass to mongo init function"""
     data = {
-        "qbraid_job_id": "",
-        "vendor_job_id": vendor_job_id,
-        "qbraid_device_id": device.id,
-        "circuit_num_qubits": circuit.num_qubits,
-        "circuit_depth": circuit.depth,
+        "qbraidJobId": "",
+        "vendorJobId": vendor_job_id,
+        "qbraidDeviceId": device.id,
+        "circuitNumQubits": circuit.num_qubits,
+        "circuitDepth": circuit.depth,
         "shots": shots,
         "createdAt": datetime.utcnow(),
         "status": JobStatus.INITIALIZING,

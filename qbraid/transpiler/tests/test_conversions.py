@@ -15,7 +15,6 @@
 
 """Tests for circuit conversions."""
 import cirq
-import numpy as np
 import pennylane as qml
 import pytest
 import qiskit
@@ -26,8 +25,8 @@ from pyquil import Program, gates
 
 from qbraid._typing import SUPPORTED_PROGRAM_TYPES
 from qbraid.exceptions import UnsupportedCircuitError
-from qbraid.transpiler.interface import convert_from_cirq, convert_to_cirq
-from qbraid.transpiler.utils import _equal
+from qbraid.interface.qbraid_cirq import _equal
+from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 
 # Cirq Bell circuit.
 cirq_qreg = cirq.LineQubit.range(2)

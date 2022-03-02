@@ -35,7 +35,7 @@ class JobLikeWrapper(ABC):
         if self._vendor_job_id is None:
             self._cache_metadata = job_api.mongo_get_job(self.id)
             self._cache_status = self._cache_metadata["status"]
-            self._vendor_job_id = self._cache_metadata["vendor_job_id"]
+            self._vendor_job_id = self._cache_metadata["vendorJobId"]
         return self._vendor_job_id
 
     @property

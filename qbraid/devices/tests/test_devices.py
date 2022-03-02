@@ -17,7 +17,7 @@ from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.job import Job as QiskitJob
 
-from qbraid import api, device_wrapper, retrieve_job, random_circuit
+from qbraid import api, device_wrapper, random_circuit, retrieve_job
 from qbraid.devices import DeviceError, JobError, ResultWrapper
 from qbraid.devices.aws import (
     BraketDeviceWrapper,
@@ -36,7 +36,7 @@ from qbraid.devices.ibm import (
 
 def device_wrapper_inputs(vendor: str):
     """Returns list of tuples containing all device_wrapper inputs for given vendor."""
-    devices = api.post("/get-devices", json={})
+    devices = api.get("/public/lab/get-devices", params={})
     input_list = []
     for document in devices:
         if document["vendor"] == vendor:
@@ -134,9 +134,8 @@ circuits_braket_run = [braket_circuit(), cirq_circuit(False), qiskit_circuit(Fal
 circuits_cirq_run = [cirq_circuit(), qiskit_circuit()]
 circuits_qiskit_run = circuits_cirq_run
 inputs_cirq_run = ["google_cirq_dm_sim"]
-# inputs_braket_run = ["aws_sv_sim", "aws_ionq", "aws_rigetti_aspen_9", "aws_braket_default_sim"]
-inputs_qiskit_run = ["ibm_basicaer_qasm_sim", "ibm_aer_qasm_sim", "ibm_aer_default_sim"]
-inputs_braket_run = ["aws_sv_sim", "aws_rigetti_aspen_11"]
+inputs_qiskit_run = ["ibm_basicaer_qasm_sim", "ibm_aer_default_sim"]
+inputs_braket_run = ["aws_sv_sim", "aws_braket_default_sim"]
 
 
 @pytest.mark.parametrize("circuit", circuits_qiskit_run)
