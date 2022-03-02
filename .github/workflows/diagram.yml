@@ -1,7 +1,8 @@
 name: Create diagram
 
 on:
-  workflow_dispatch:
+  push:
+    branches: main
   
 jobs:
   get_data:
