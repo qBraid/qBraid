@@ -6,11 +6,10 @@ import pytest
 import cirq
 from braket.circuits import Circuit as BraketCircuit
 
-from qbraid.transpiler2.interface.convert_to_contiguous import convert_to_contiguous
-from qbraid.transpiler2.interface.calculate_unitary import equal_unitaries
+from qbraid.interface2.convert_to_contiguous import convert_to_contiguous
+from qbraid.interface2.calculate_unitary import equal_unitaries
 
 
-@pytest.mark.parametrize("compat", (True, False))
 def test_make_contiguous():
     braket_circuit = BraketCircuit()
     braket_circuit.x(0)

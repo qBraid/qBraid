@@ -20,7 +20,7 @@ from cirq import Circuit
 
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid.exceptions import UnsupportedCircuitError
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler2.exceptions import CircuitConversionError
 
 
 def convert_to_cirq(circuit: QPROGRAM) -> Tuple[Circuit, str]:
@@ -45,22 +45,22 @@ def convert_to_cirq(circuit: QPROGRAM) -> Tuple[Circuit, str]:
         raise UnsupportedCircuitError("Could not determine the package of the input circuit.")
 
     if "qiskit" in package:
-        from qbraid.transpiler.interface.qiskit.conversions import from_qiskit
+        from qbraid.transpiler2.cirq_qiskit import from_qiskit
 
         input_circuit_type = "qiskit"
         conversion_function = from_qiskit
     elif "pyquil" in package:
-        from qbraid.transpiler.interface.pyquil.conversions import from_pyquil
+        from qbraid.transpiler2.cirq_pyquil import from_pyquil
 
         input_circuit_type = "pyquil"
         conversion_function = from_pyquil
     elif "braket" in package:
-        from qbraid.transpiler.interface.braket.convert_from_braket import from_braket
+        from qbraid.transpiler2.cirq_braket import from_braket
 
         input_circuit_type = "braket"
         conversion_function = from_braket
     elif "pennylane" in package:
-        from qbraid.transpiler.interface.pennylane.conversions import from_pennylane
+        from qbraid.transpiler2.cirq_pennylane import from_pennylane
 
         input_circuit_type = "pennylane"
         conversion_function = from_pennylane
@@ -100,19 +100,19 @@ def convert_from_cirq(circuit: Circuit, conversion_type: str) -> QPROGRAM:
     """
     conversion_function: Callable[[Circuit], QPROGRAM]
     if conversion_type == "qiskit":
-        from qbraid.transpiler.interface.qiskit.conversions import to_qiskit
+        from qbraid.transpiler2.cirq_qiskit import to_qiskit
 
         conversion_function = to_qiskit
     elif conversion_type == "pyquil":
-        from qbraid.transpiler.interface.pyquil.conversions import to_pyquil
+        from qbraid.transpiler2.cirq_pyquil import to_pyquil
 
         conversion_function = to_pyquil
     elif conversion_type == "braket":
-        from qbraid.transpiler.interface.braket.convert_to_braket import to_braket
+        from qbraid.transpiler2.cirq_braket import to_braket
 
         conversion_function = to_braket
     elif conversion_type == "pennylane":
-        from qbraid.transpiler.interface.pennylane.conversions import to_pennylane
+        from qbraid.transpiler2.cirq_pennylane import to_pennylane
 
         conversion_function = to_pennylane
     elif conversion_type == "cirq":

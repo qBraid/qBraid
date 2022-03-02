@@ -1,7 +1,7 @@
 """
-============================================================
-Transpiler Interface  (:mod:`qbraid.transpiler.interface`)
-============================================================
+==============================================================
+Transpiler Conversions  (:mod:`qbraid.transpiler.conversions`)
+==============================================================
 
 .. currentmodule:: qbraid.transpiler.interface
 
@@ -12,4 +12,4 @@ Transpiler Interface  (:mod:`qbraid.transpiler.interface`)
    convert_to_cirq
 
 """
-from qbraid.transpiler.interface.conversions import convert_from_cirq, convert_to_cirq
+from qbraid.transpiler2.conversions import convert_from_cirq, convert_to_cirq
