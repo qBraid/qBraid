@@ -1,12 +1,12 @@
 """
 Unit tests for the qbraid convert_to_contiguous interfacing
 """
-
 import cirq
-import numpy as np
+import pytest
 from braket.circuits import Circuit as BraketCircuit
 
-from qbraid.interface import convert_to_contiguous, to_unitary
+from qbraid.interface.calculate_unitary import equal_unitaries
+from qbraid.interface.convert_to_contiguous import convert_to_contiguous
 
 
 def test_make_contiguous():
@@ -25,9 +25,7 @@ def test_make_contiguous():
     cirq_circuit.append(cirq.Z(q4))
     assert len(cirq_circuit.all_qubits()) == 3
 
-    braket_unitary = to_unitary(braket_circuit, ensure_contiguous=True)
-    cirq_unitary = to_unitary(cirq_circuit, ensure_contiguous=True)
-    assert np.allclose(braket_unitary, cirq_unitary)
+    assert equal_unitaries(braket_circuit, cirq_circuit)
 
     braket_compat_circuit = convert_to_contiguous(braket_circuit)
     assert braket_compat_circuit.qubit_count == 3
@@ -35,6 +33,4 @@ def test_make_contiguous():
     cirq_compat_circuit = convert_to_contiguous(cirq_circuit)
     assert len(cirq_circuit.all_qubits()) == 3
 
-    braket_compat_unitary = to_unitary(braket_compat_circuit, ensure_contiguous=True)
-    cirq_compat_unitary = to_unitary(cirq_compat_circuit, ensure_contiguous=True)
-    assert np.allclose(braket_compat_unitary, cirq_compat_unitary)
+    assert equal_unitaries(braket_compat_circuit, cirq_compat_circuit)

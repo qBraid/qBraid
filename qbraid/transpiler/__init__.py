@@ -1,57 +1,23 @@
 """
-==================================================
-Transpiler (:mod:`qbraid.transpiler`)
-==================================================
+==============================================
+Transpiler  (:mod:`qbraid.transpiler`)
+==============================================
 
 .. currentmodule:: qbraid.transpiler
-
-Overview
----------
-The qBraid transpiler accepts circuit objects constructed using one of the
-standard quantum computing packages, and produces a circuit object of the
-same circuit constructed using a different package.
-
-The transpiler maintains as much abstract information as possible during
-the transpilation process, though the result will not necessarily be identical.
-For example, a particular two-qubit rotation gate might be implemented in one package
-abstractly, but only constructable as an arbitrary unitary gate in another. See
-this mapping page for more information about gate equivalences in various packages.
-
-The transpiler layer eliminates the need for implementing a circuit multiple times
-in various packages for the purposing of using the devices associate with that pacakge.
-In conjunction with the qBraid device layer, it is possible to execute a single circuit
-on multiple families of devices without calling this transpiler directly.
-
-Example Usage
---------------
-
-    .. code-block:: python
-
-        from braket.circuits import Circuit
-        from qbraid import circuit_wrapper
-
-        # Create a braket circuit
-        braket_circuit = Circuit().h(0).cnot(0, 1)
-
-        # Transpile to circuit of any supported package using qbraid circuit wrapper
-        qbraid_circuit = circuit_wrapper(braket_circuit)
-        qiskit_circuit = qbraid_circuit.transpile("qiskit")
-        qiskit_circuit.draw()
-        ...
-
-transpiler API
----------------
 
 .. autosummary::
    :toctree: ../stubs/
 
+   convert_from_cirq
+   convert_to_cirq
    CircuitWrapper
-   TranspilerError
-   CircuitConversionError
+   BraketCircuitWrapper
+   CirqCircuitWrapper
+   QiskitCircuitWrapper
 
 """
-# Quantum computer input/output.
-from qbraid.transpiler.circuit_wrapper import CircuitWrapper
-from qbraid.transpiler.exceptions import CircuitConversionError, TranspilerError
-
-from qbraid.transpiler import interface
+from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
+from qbraid.transpiler.wrapper_abc import CircuitWrapper
+from qbraid.transpiler.wrapper_braket import BraketCircuitWrapper
+from qbraid.transpiler.wrapper_cirq import CirqCircuitWrapper
+from qbraid.transpiler.wrapper_qiskit import QiskitCircuitWrapper
