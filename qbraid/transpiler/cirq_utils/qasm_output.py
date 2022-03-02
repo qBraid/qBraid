@@ -26,12 +26,12 @@ if TYPE_CHECKING:
 
 class QasmOutput:
     """Representation of a circuit in QASM (quantum assembly) format.
-    Please note that the QASM importer is in an experimental state and
-    currently only supports a subset of the full OpenQASM spec.
+    Please note that the QASM importer is in an experimental state
+    and currently only supports a subset of the full OpenQASM spec.
     Amongst others, classical control, arbitrary gate definitions,
     and even some of the gates that don't have a one-to-one representation
-    in Cirq, are not yet supported.
-    QASM output can be saved to a file using the save method.
+    in Cirq, are not yet supported. QASM output can be saved to a file
+    using the save method.
     """
 
     valid_id_re = re.compile(r"[a-z][a-zA-Z0-9_]*\Z")
@@ -48,12 +48,9 @@ class QasmOutput:
         Args:
             operations: Tree of operations to insert.
             qubits: The qubits used in the operations.
-            header: A multi-line string that is placed in a comment at the top
-                of the QASM.
-            precision: The number of digits after the decimal to show for
-                numbers in the QASM code.
-            version: The QASM version to target. Objects may return different
-                QASM depending on version.
+            header: A multi-line string that is placed in a comment at the top of the QASM.
+            precision: The number of digits after the decimal to show for numbers in the QASM code.
+            version: The QASM version to target. Objects may return different QASM depending on version.
         """
         self.operations = tuple(ops.flatten_to_ops(operations))
         self.qubits = qubits
