@@ -9,7 +9,7 @@ s = requests.Session()
 # authentication for testing
 # comment out for production deploy
 _email = os.getenv("JUPYTERHUB_USER")
-_refresh = os.getenv("REFRESH")
+_refresh = os.getenv("refresh-token")
 s.headers.update({"email": _email, "refresh-token": _refresh})
 
 
