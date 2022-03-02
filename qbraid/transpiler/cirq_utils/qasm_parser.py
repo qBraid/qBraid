@@ -22,7 +22,7 @@ from cirq.contrib.qasm_import._lexer import QasmLexer
 from cirq.contrib.qasm_import.exception import QasmException
 from ply import yacc
 
-import qbraid.interface.qbraid_cirq.gates as qbraid_cirq_gates
+import qbraid.transpiler.cirq_utils.custom_gates as qbraid_cirq_gates
 
 
 class Qasm:
@@ -48,11 +48,10 @@ class Qasm:
 
 
 class QasmGateStatement:
-    """Specifies how to convert a call to an OpenQASM gate
-    to a list of `cirq.GateOperation`s.
-    Has the responsibility to validate the arguments
-    and parameters of the call and to generate a list of corresponding
-    `cirq.GateOperation`s in the `on` method.
+    """Specifies how to convert a call to an OpenQASM gate to a
+    list of `cirq.GateOperation`s. Has the responsibility to validate
+    the arguments and parameters of the call and to generate a list
+    of corresponding `cirq.GateOperation`s in the `on` method.
     """
 
     # TODO(#3388) Add documentation for Args.
@@ -68,8 +67,7 @@ class QasmGateStatement:
         Args:
             qasm_gate: the symbol of the QASM gate
             cirq_gate: the gate class on the cirq side
-            num_args: the number of qubits (used in validation) this
-                        gate takes
+            num_args: the number of qubits (used in validation) this gate takes
         """
         self.qasm_gate = qasm_gate
         self.cirq_gate = cirq_gate

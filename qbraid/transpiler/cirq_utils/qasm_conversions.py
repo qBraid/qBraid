@@ -81,11 +81,9 @@ def circuit_to_qasm(
     """Converts a `cirq.Circuit` to an OpenQASM string.
     Args:
         circuit: cirq Circuit object
-        header: A multi-line string that is placed in a comment at the top
-            of the QASM. Defaults to a cirq version specifier.
+        header: A multi-line string that is placed in a comment at the top of the QASM. Defaults to a cirq version specifier.
         precision: Number of digits to use when representing numbers.
-        qubit_order: Determines how qubits are ordered in the QASM
-            register.
+        qubit_order: Determines how qubits are ordered in the QASM register.
     """
 
     return str(_to_qasm_output(circuit, header, precision, qubit_order))
