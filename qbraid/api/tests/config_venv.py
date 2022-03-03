@@ -43,7 +43,7 @@ def set_config():
         config_value = c[1]
         section = c[2]
         filepath = c[3]
-        print(f"{config_name}: {config_value}")
+        # print(f"{config_name}: {config_value}")
         if not os.path.isfile(filepath):
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
         config = configparser.ConfigParser()
