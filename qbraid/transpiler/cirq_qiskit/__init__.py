@@ -1,7 +1,7 @@
 """
-=================================================================
-Cirq-Qiskit Conversions  (:mod:`qbraid.transpiler.cirq_qiskit`)
-=================================================================
+=============================================================
+Qiskit Conversions  (:mod:`qbraid.transpiler.cirq_qiskit`)
+=============================================================
 
 .. currentmodule:: qbraid.transpiler.cirq_qiskit
 

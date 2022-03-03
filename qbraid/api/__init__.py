@@ -10,9 +10,6 @@
 
    get_devices
    ibmq_least_busy_qpu
-   get
-   put
-   post
    refresh_devices
    update_config
    AuthError

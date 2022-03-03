@@ -1,6 +1,7 @@
 import configparser
 import os
 
+qbraidrc_path = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
 qbraid_config_path = os.path.join(os.path.expanduser("~"), ".qbraid", "config")
 aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
 aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
@@ -10,6 +11,8 @@ ibmq_account_url = "https://auth.quantum-computing.ibm.com/api"
 aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
 ibmq_token = os.getenv("IBMQ_TOKEN")
+qbraid_user = os.getenv("JUPYTERHUB_USER")
+qbraid_token = os.getenv("REFRESH")
 
 config_lst = [
     # (config_name, config_value, section, filepath)
@@ -26,6 +29,9 @@ config_lst = [
     ["group", "open", "IBM", qbraid_config_path],
     ["project", "main", "IBM", qbraid_config_path],
     ["verify", "True", "IBM", qbraid_config_path],
+    ["user", qbraid_user, "sdk", qbraidrc_path],
+    ["token", qbraid_token, "sdk", qbraidrc_path],
+    ["verify", "True", "sdk", qbraidrc_path],
 ]
 
 

@@ -1,15 +1,17 @@
 """Module for making requests to the qbraid api"""
 
-import os
+from requests import Session
+from requests.exceptions import InvalidHeader
 
-import requests
+from qbraid.api.config_prompts import qbraidrc_path
+from qbraid.api.config_user import get_config
 
-s = requests.Session()
+s = Session()
 
 # authentication for testing
 # comment out for production deploy
-_email = os.getenv("JUPYTERHUB_USER")
-_refresh = os.getenv("REFRESH")
+_email = get_config("user", "sdk", filepath=qbraidrc_path)
+_refresh = get_config("token", "sdk", filepath=qbraidrc_path)
 s.headers.update({"email": _email, "refresh-token": _refresh})
 
 

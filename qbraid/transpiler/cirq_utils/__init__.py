@@ -1,7 +1,7 @@
 """
-====================================================
-Cirq-Utils  (:mod:`qbraid.transpiler.cirq_utils`)
-====================================================
+========================================================
+Cirq Conversions  (:mod:`qbraid.transpiler.cirq_utils`)
+========================================================
 
 .. currentmodule:: qbraid.transpiler.cirq_utils
 

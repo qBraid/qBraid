@@ -50,9 +50,10 @@ varius accumsan, lorem urna accumsan lacus, aliquet hendrerit magna nisi porttit
    :hidden:
 
    api/qbraid
+   api/qbraid.api
+   api/qbraid.devices
    api/qbraid.interface
    api/qbraid.transpiler
-   api/qbraid.devices
 
 .. Hiding - Indices and tables
    :ref:`genindex`

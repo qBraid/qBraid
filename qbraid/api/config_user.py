@@ -7,9 +7,9 @@ import os
 import sys
 from getpass import getpass
 
-from qbraid.api.exceptions import ConfigError
+from qbraid.api.exceptions import AuthError, ConfigError
 
-from .config_prompts import CONFIG_PROMPTS, qbraid_config_path
+from .config_prompts import CONFIG_PROMPTS, qbraid_config_path, qbraidrc_path
 
 raw_input = input
 secret_input = getpass
@@ -123,6 +123,8 @@ def get_config(config_name, section, filepath=None):
         if section in config.sections():
             if config_name in config[section]:
                 return config[section][config_name]
+    if filepath == qbraidrc_path:
+        raise AuthError("qBraid API credentials invalid or not found")
     return -1
 
 
