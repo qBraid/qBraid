@@ -1,7 +1,7 @@
 """
-==================================================================
-Cirq-PyQuil Conversions  (:mod:`qbraid.transpiler.cirq_pyquil`)
-==================================================================
+=============================================================
+PyQuil Conversions  (:mod:`qbraid.transpiler.cirq_pyquil`)
+=============================================================
 
 .. currentmodule:: qbraid.transpiler.cirq_pyquil
 

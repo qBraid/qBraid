@@ -8,8 +8,8 @@ from typing import Any, Dict
 import qbraid
 from qbraid.api import job_api
 from qbraid.api.status_maps import STATUS_MAP
-from qbraid.devices import JobError
 from qbraid.devices.enums import JOB_FINAL, JobStatus
+from qbraid.devices.exceptions import JobError
 
 
 class JobLikeWrapper(ABC):

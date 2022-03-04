@@ -1,7 +1,7 @@
 """
-======================================================================
-Cirq-Pennylane Conversions  (:mod:`qbraid.transpiler.cirq_pennylane`)
-======================================================================
+===================================================================
+Pennylane Conversions  (:mod:`qbraid.transpiler.cirq_pennylane`)
+===================================================================
 
 .. currentmodule:: qbraid.transpiler.cirq_pennylane
 

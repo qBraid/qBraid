@@ -1,7 +1,7 @@
 """
-=================================================================
-Cirq-Braket Conversions  (:mod:`qbraid.transpiler.cirq_braket`)
-=================================================================
+=============================================================
+Braket Conversions  (:mod:`qbraid.transpiler.cirq_braket`)
+=============================================================
 
 .. currentmodule:: qbraid.transpiler.cirq_braket
 

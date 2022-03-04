@@ -33,10 +33,12 @@ from qbraid.devices.ibm import (
     QiskitJobWrapper,
 )
 
+session = api.QbraidSession()
+
 
 def device_wrapper_inputs(vendor: str):
     """Returns list of tuples containing all device_wrapper inputs for given vendor."""
-    devices = api.get("/public/lab/get-devices", params={})
+    devices = session.get("/public/lab/get-devices", params={}).json()
     input_list = []
     for document in devices:
         if document["vendor"] == vendor:

@@ -6,11 +6,10 @@ from datetime import datetime
 
 from IPython.display import HTML, display
 
-import qbraid
-from qbraid import api
+from .exceptions import ApiError
+from .session import QbraidSession
 
-# from IPython.display import clear_output
-
+session = QbraidSession()
 
 # from IPython.display import clear_output
 
@@ -21,9 +20,10 @@ def _get_device_data(query):
     represented by its own length-4 list containing the device provider, name, qbraid_id,
     and status.
     """
-    devices = api.get("/public/lab/get-devices", params=query)
+    devices = session.get("/public/lab/get-devices", params=query).json()
+
     if isinstance(devices, str):
-        raise qbraid.QbraidError(devices)
+        raise ApiError(devices)
     device_data = []
     tot_dev = 0
     # ref_dev = 0
@@ -47,7 +47,7 @@ def _get_device_data(query):
         #     print("Auto-refreshing status for queried devices" + "." * tot_dev, flush=True)
         #     device = qbraid.device_wrapper(qbraid_id)
         #     status = device.status.name
-        #     qbraid.api.put(
+        #     session.put(
         #         "/update-device",
         #         data={"qbraid_id": qbraid_id, "status": status},
         #         verify=False,
@@ -76,14 +76,16 @@ def refresh_devices():
     # pylint: disable=import-outside-toplevel
     from tqdm.notebook import tqdm
 
-    devices = api.get("/public/lab/get-devices", params={})
+    import qbraid
+
+    devices = session.get("/public/lab/get-devices", params={}).json()
     pbar = tqdm(total=35, leave=False)
     for document in devices:
         if document["statusRefresh"] is not None:  # None => internally not available at moment
             qbraid_id = document["qbraid_id"]
             device = qbraid.device_wrapper(qbraid_id)
             status = device.status.name
-            api.put("/lab/update-device", data={"qbraid_id": qbraid_id, "status": status})
+            session.put("/lab/update-device", data={"qbraid_id": qbraid_id, "status": status})
         pbar.update(1)
     pbar.close()
 
