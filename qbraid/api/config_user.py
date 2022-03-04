@@ -9,7 +9,7 @@ from getpass import getpass
 
 from qbraid.api.exceptions import ConfigError
 
-from .config_prompts import CONFIG_PROMPTS, qbraid_config_path, qbraidrc_path
+from .config_prompts import CONFIG_PROMPTS, qbraid_config_path
 
 raw_input = input
 secret_input = getpass

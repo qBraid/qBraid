@@ -1,13 +1,13 @@
 """Module for making requests to the qbraid api"""
 
 import logging
-from typing import Optional, Any
+from typing import Any, Dict, Optional
 
-from requests import Session, RequestException, Response
+from requests import RequestException, Response, Session
 
-from qbraid.api.exceptions import AuthError, RequestsApiError
 from qbraid.api.config_prompts import qbraidrc_path
 from qbraid.api.config_user import get_config
+from qbraid.api.exceptions import AuthError, RequestsApiError
 
 logger = logging.getLogger(__name__)
 
@@ -24,6 +24,7 @@ class QbraidSession(Session):
     authentication with custom headers, has SSL verification disabled
     for compatibility with lab, and returns all responses as jsons for
     convenience in the sdk.
+
     """
 
     def __init__(
@@ -34,17 +35,19 @@ class QbraidSession(Session):
         verify: bool = False,
     ) -> None:
         """QbraidSession constructor.
+
         Args:
             base_url: Base URL for the session's requests.
             user_email: JupyterHub User.
             auth_token: qBraid authentication token.
             verify: Whether to enable SSL verification.
+
         """
         super().__init__()
 
         self.base_url = base_url
-        self._user_email = user_email
-        self._auth_token = auth_token
+        self.user_email = user_email
+        self.auth_token = auth_token
         self.verify = verify
 
     def _qbraidrc(self, field: str) -> Optional[str]:
@@ -53,14 +56,10 @@ class QbraidSession(Session):
             return None
         return config
 
-    def __del__(self) -> None:
-        """QbraidSession destructor. Closes the session."""
-        self.close()
-
     @property
     def user_email(self) -> Optional[str]:
         """Return the session user email."""
-        return self._refresh_token
+        return self._user_email
 
     @user_email.setter
     def user_email(self, value: Optional[str]) -> None:
@@ -82,7 +81,7 @@ class QbraidSession(Session):
         """Set the session refresh token."""
         token = value or self._qbraidrc("token")
         if token:
-            self._refresh_token = token
+            self._auth_token = token
             self.headers.update({"refresh-token": token})  # type: ignore[attr-defined]
         else:
             raise AuthError("qBraid authentication token invalid or not found")
@@ -127,3 +126,9 @@ class QbraidSession(Session):
             raise RequestsApiError(message) from ex
 
         return response
+
+    def __getstate__(self) -> Dict:
+        """Overwrite Session's getstate to include all attributes."""
+        state = super().__getstate__()  # type: ignore
+        state.update(self.__dict__)
+        return state
