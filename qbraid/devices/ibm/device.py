@@ -21,18 +21,16 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
     def _get_device(self) -> QiskitBackend:
         """Initialize an IBM device."""
         if self._obj_ref == "IBMQ":
-            if IBMQ.active_account() is None:
-                IBMQ.load_account()
-            group = config_user.get_config("group", "IBM")
-            project = config_user.get_config("project", "IBM")
-            try:
-                provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
-            except IBMQProviderError:
-                IBMQ.load_account()
-                provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
+            if not IBMQ.active_account():
+                token = config_user.get_config("token", "sdk", qbraidrc=True)
+                base_url = config_user.get_config("url", "QBRAID")
+                api_url = f"{base_url}/ibm-routes?route="
+                IBMQ.enable_account(token, api_url)
+            provider = IBMQ.get_provider(hub="ibm-q", group="open", project="main")
             return provider.get_backend(self._obj_arg)
         if self._obj_ref == "Aer":
             return Aer.get_backend(self._obj_arg)
+        IBMQ.disable_account()
         raise DeviceError(f"obj_ref {self._obj_ref} not found.")
 
     def _vendor_compat_run_input(self, run_input):

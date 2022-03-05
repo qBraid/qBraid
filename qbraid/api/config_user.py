@@ -11,6 +11,13 @@ from qbraid.api.exceptions import ConfigError
 
 from .config_prompts import CONFIG_PROMPTS, qbraid_config_path
 
+qbraidrc_path = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
+
+# qbraid_api_url = "http://localhost:3001/api"
+# qbraid_api_url = "https://api-staging.qbraid.com/api"
+# qbraid_api_url_URL = "https://api.qbraid.com/api"
+qbraid_api_url = "https://api-staging-1.qbraid.com/api"
+
 raw_input = input
 secret_input = getpass
 
@@ -105,24 +112,37 @@ def verify_user(vendor):
     return 0
 
 
-def get_config(config_name, section, filepath=None):
+def _get_set_url():
+    _ = set_config("url", "", qbraid_api_url, False, "QBRAID", qbraid_config_path)
+    return qbraid_api_url
+
+
+def get_config(config_name, section, qbraidrc=False, filepath=None):
     """Returns the config value of specified config
 
     Args:
         config_name (str): the name of the config
         section (str) = the section of the config file to store config_name
-        filepath (optioanl, str): the existing or desired path to config file. Defaults to the
+        qbraidrc (optional, bool): if True, filepath is qbraidrc path
+        filepath (optional, str): the existing or desired path to config file. Defaults to the
             qbraid config path.
     Returns:
         Config value or -1 if config does not exist
     """
-    filepath = qbraid_config_path if filepath is None else filepath
-    if os.path.isfile(filepath):
+    if qbraidrc:
+        configpath = qbraidrc_path
+    elif filepath is None:
+        configpath = qbraid_config_path
+    else:
+        configpath = filepath
+    if os.path.isfile(configpath):
         config = configparser.ConfigParser()
-        config.read(filepath)
+        config.read(configpath)
         if section in config.sections():
             if config_name in config[section]:
                 return config[section][config_name]
+    if config_name == "url" and section == "QBRAID":
+        return _get_set_url()
     return -1
 
 

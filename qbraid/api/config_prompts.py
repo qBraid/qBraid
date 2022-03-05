@@ -2,14 +2,11 @@
 
 import os
 
-qbraidrc_path = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
 qbraid_config_path = os.path.join(os.path.expanduser("~"), ".qbraid", "config")
 aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
 aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
 qiskitrc_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
 ibmq_account_url = "https://auth.quantum-computing.ibm.com/api"
-
-_email = os.getenv("JUPYTERHUB_USER")
 
 AWS_CONFIG_PROMPT = [
     # (config_name, prompt_text, default_value, is_secret, section, filepath)
@@ -32,16 +29,8 @@ IBMQ_CONFIG_PROMPT = [
     ("verify", "", "True", False, "IBM", qbraid_config_path),
 ]
 
-QBRAID_CONFIG_PROMPT = [
-    # (config_name, prompt_text, default_value, is_secret, section, filepath)
-    ("user", "", _email, False, "sdk", qbraidrc_path),
-    ("token", "", None, True, "sdk", qbraidrc_path),
-    ("verify", "", "True", False, "sdk", qbraidrc_path),
-]
-
 CONFIG_PROMPTS = {
     "AWS": AWS_CONFIG_PROMPT,
     "Google": None,
-    "IBM": IBMQ_CONFIG_PROMPT,
-    "qBraid": QBRAID_CONFIG_PROMPT,
+    "IBM": [],
 }

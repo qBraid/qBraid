@@ -50,7 +50,8 @@
    .. rubric:: Attributes
 
    .. autosummary::
-   
+
+      ~QbraidSession.base_url
       ~QbraidSession.auth_token
       ~QbraidSession.user_email
 
