@@ -22,4 +22,6 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install tox
     - name: Make docs
-      run: tox -e docs
+      run: 
+        echo $(which bash)
+        tox -e docs

@@ -5,16 +5,10 @@ from typing import Any, Dict, Optional
 
 from requests import RequestException, Response, Session
 
-from qbraid.api.config_prompts import qbraidrc_path
-from qbraid.api.config_user import get_config
-from qbraid.api.exceptions import AuthError, RequestsApiError
+from qbraid.api.config_user import get_config, qbraid_config_path, qbraidrc_path
+from qbraid.api.exceptions import AuthError, ConfigError, RequestsApiError
 
 logger = logging.getLogger(__name__)
-
-# API_URL = "http://localhost:3001/api"
-# API_URL = "https://api-staging.qbraid.com/api"
-# API_URL = "https://api.qbraid.com/api"
-API_URL = "https://api-staging-1.qbraid.com/api"
 
 
 class QbraidSession(Session):
@@ -29,10 +23,9 @@ class QbraidSession(Session):
 
     def __init__(
         self,
-        base_url: str = API_URL,
+        base_url: Optional[str] = None,
         user_email: Optional[str] = None,
         auth_token: Optional[str] = None,
-        verify: bool = False,
     ) -> None:
         """QbraidSession constructor.
 
@@ -40,7 +33,6 @@ class QbraidSession(Session):
             base_url: Base URL for the session's requests.
             user_email: JupyterHub User.
             auth_token: qBraid authentication token.
-            verify: Whether to enable SSL verification.
 
         """
         super().__init__()
@@ -48,13 +40,28 @@ class QbraidSession(Session):
         self.base_url = base_url
         self.user_email = user_email
         self.auth_token = auth_token
-        self.verify = verify
+        self.verify = False
 
-    def _qbraidrc(self, field: str) -> Optional[str]:
-        config = get_config(field, "sdk", filepath=qbraidrc_path)
-        if config == -1:
-            return None
+    def _get_config(self, field: str, section: str, path: str) -> Optional[str]:
+        config = get_config(field, section, filepath=path)
+        if config == -1 or config == "None":
+            if field == "url":
+                raise ConfigError(f"qBraid API URL {config} invalid or not found")
+            else:
+                msg = "user email" if field == "user" else field
+                raise AuthError(f"qBraid {msg} invalid or not found")
         return config
+
+    @property
+    def base_url(self) -> Optional[str]:
+        """Return the qbraid api url."""
+        return self._base_url
+
+    @base_url.setter
+    def base_url(self, value: Optional[str]) -> None:
+        """Set the qbraid api url."""
+        url = value if value else self._get_config("url", "QBRAID", qbraid_config_path)
+        self._base_url = url
 
     @property
     def user_email(self) -> Optional[str]:
@@ -64,12 +71,9 @@ class QbraidSession(Session):
     @user_email.setter
     def user_email(self, value: Optional[str]) -> None:
         """Set the session user email."""
-        user = value or self._qbraidrc("user")
-        if user:
-            self._user_email = user
-            self.headers.update({"email": user})  # type: ignore[attr-defined]
-        else:
-            raise AuthError("qBraid user email invalid or not found")
+        user = value if value else self._get_config("user", "sdk", qbraidrc_path)
+        self._user_email = user
+        self.headers.update({"email": user})  # type: ignore[attr-defined]
 
     @property
     def auth_token(self) -> Optional[str]:
@@ -79,12 +83,9 @@ class QbraidSession(Session):
     @auth_token.setter
     def auth_token(self, value: Optional[str]) -> None:
         """Set the session refresh token."""
-        token = value or self._qbraidrc("token")
-        if token:
-            self._auth_token = token
-            self.headers.update({"refresh-token": token})  # type: ignore[attr-defined]
-        else:
-            raise AuthError("qBraid authentication token invalid or not found")
+        token = value if value else self._get_config("token", "sdk", qbraidrc_path)
+        self._auth_token = token
+        self.headers.update({"refresh-token": token})  # type: ignore[attr-defined]
 
     def request(self, method: str, url: str, **kwargs: Any) -> Response:  # type: ignore[override]
         """Construct, prepare, and send a ``Request``.
@@ -126,9 +127,3 @@ class QbraidSession(Session):
             raise RequestsApiError(message) from ex
 
         return response
-
-    def __getstate__(self) -> Dict:
-        """Overwrite Session's getstate to include all attributes."""
-        state = super().__getstate__()  # type: ignore
-        state.update(self.__dict__)
-        return state

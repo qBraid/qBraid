@@ -29,7 +29,7 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
     def result(self):
         """Return the results of the job."""
         if self.status() not in JOB_FINAL:
-            logging.info("Result will be available when job as reached final state.")
+            logging.info("Result will be available when job has reached final state.")
         return BraketResultWrapper(self.vendor_jlo.result())
 
     def async_result(self) -> Task:

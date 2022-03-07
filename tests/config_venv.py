@@ -7,6 +7,10 @@ aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
 aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
 ibmq_config_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
 ibmq_account_url = "https://auth.quantum-computing.ibm.com/api"
+# qbraid_api_url = "http://localhost:3001/api"
+# qbraid_api_url = "https://api-staging.qbraid.com/api"
+# qbraid_api_url_URL = "https://api.qbraid.com/api"
+qbraid_api_url = "https://api-staging-1.qbraid.com/api"
 
 aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
@@ -23,15 +27,15 @@ config_lst = [
     ["s3_bucket", "amazon-braket-qbraid-test", "AWS", qbraid_config_path],
     ["s3_folder", "qbraid-sdk-output", "AWS", qbraid_config_path],
     ["verify", "True", "AWS", qbraid_config_path],
-    ["token", ibmq_token, "ibmq", ibmq_config_path],
-    ["url", ibmq_account_url, "ibmq", ibmq_config_path],
-    ["verify", "True", "ibmq", ibmq_config_path],
-    ["group", "open", "IBM", qbraid_config_path],
-    ["project", "main", "IBM", qbraid_config_path],
-    ["verify", "True", "IBM", qbraid_config_path],
+    # ["token", ibmq_token, "ibmq", ibmq_config_path],
+    # ["url", ibmq_account_url, "ibmq", ibmq_config_path],
+    # ["verify", "True", "ibmq", ibmq_config_path],
+    # ["group", "open", "IBM", qbraid_config_path],
+    # ["project", "main", "IBM", qbraid_config_path],
+    # ["verify", "True", "IBM", qbraid_config_path],
     ["user", qbraid_user, "sdk", qbraidrc_path],
     ["token", qbraid_token, "sdk", qbraidrc_path],
-    ["verify", "True", "sdk", qbraidrc_path],
+    ["url", qbraid_api_url, "QBRAID", qbraid_config_path],
 ]
 
 
