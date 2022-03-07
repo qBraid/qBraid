@@ -22,8 +22,9 @@ jobs:
         python -m pip install --upgrade pip
         python -m pip install tox
     - name: Test with tox
-      run: 
-        /usr/bin/bash tox -e unit-tests
+      run:
+        echo $(which bash)
+        tox -e unit-tests
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
