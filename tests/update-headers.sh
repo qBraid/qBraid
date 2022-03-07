@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 site_pkgs=$(pip show qiskit | grep -i "Location" | cut -b 11-)
 file="qiskit/providers/ibmq/api/session.py"
