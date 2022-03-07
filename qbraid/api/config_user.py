@@ -7,6 +7,8 @@ import os
 import sys
 from getpass import getpass
 
+from qiskit.providers.ibmq.api import session as ibmq_session
+
 from qbraid.api.exceptions import ConfigError
 
 from .config_prompts import CONFIG_PROMPTS, qbraid_config_path
@@ -113,6 +115,8 @@ def verify_user(vendor):
 
 
 def _get_set_url():
+    ibmq_session_path = str(ibmq_session).split(' ')[-1].replace("'>", "'").strip("'")
+    _ = set_config("ibmq_session", "", ibmq_session_path, False, "QBRAID", qbraid_config_path)
     _ = set_config("url", "", qbraid_api_url, False, "QBRAID", qbraid_config_path)
     return qbraid_api_url
 

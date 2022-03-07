@@ -1,7 +1,9 @@
 """Module for making requests to the qbraid api"""
 
+import os
 import logging
-from typing import Any, Dict, Optional
+import subprocess
+from typing import Any, Optional
 
 from requests import RequestException, Response, Session
 
@@ -41,6 +43,8 @@ class QbraidSession(Session):
         self.user_email = user_email
         self.auth_token = auth_token
         self.verify = False
+
+        self._update_headers()
 
     def _get_config(self, field: str, section: str, path: str) -> Optional[str]:
         config = get_config(field, section, filepath=path)
@@ -86,6 +90,11 @@ class QbraidSession(Session):
         token = value if value else self._get_config("token", "sdk", qbraidrc_path)
         self._auth_token = token
         self.headers.update({"refresh-token": token})  # type: ignore[attr-defined]
+
+    def _update_headers(self):
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        script_path = os.path.join(dir_path, "update-headers.sh")
+        subprocess.call([script_path])
 
     def request(self, method: str, url: str, **kwargs: Any) -> Response:  # type: ignore[override]
         """Construct, prepare, and send a ``Request``.

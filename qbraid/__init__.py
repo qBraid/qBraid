@@ -10,7 +10,7 @@ from qiskit.circuit.random import random_circuit as qiskit_random_circuit
 from qbraid import api
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid._version import __version__
-from qbraid.api import get_devices
+from qbraid.api import get_devices, QbraidSession
 from qbraid.exceptions import QbraidError, WrapperError
 from qbraid.interface import convert_to_contiguous, to_unitary
 
