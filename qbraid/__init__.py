@@ -1,11 +1,13 @@
 """This top level module contains the main qBraid public functionality."""
 
+import os
 import pkg_resources
 import urllib3
-from cirq.testing import random_circuit as cirq_random_circuit
-from numpy import random
-from qiskit.circuit.exceptions import CircuitError as QiskitCircuitError
-from qiskit.circuit.random import random_circuit as qiskit_random_circuit
+
+# dir_path = os.path.dirname(os.path.realpath(__file__))
+
+# with open(f"{dir_path}/startup.py") as f:
+#     exec(f.read())
 
 from qbraid import api
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
@@ -144,6 +146,11 @@ def random_circuit(package, num_qubits=None, depth=None, measure=False):
         ValueError: when invalid options given
 
     """
+    from numpy import random
+    from cirq.testing import random_circuit as cirq_random_circuit
+    from qiskit.circuit.random import random_circuit as qiskit_random_circuit
+    from qiskit.circuit.exceptions import CircuitError as QiskitCircuitError
+
     num_qubits = num_qubits if num_qubits else random.randint(1, 4)
     depth = depth if depth else random.randint(1, 4)
     seed = random.randint(1, 11)

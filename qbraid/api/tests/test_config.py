@@ -11,10 +11,10 @@ aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
 aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
 ibmq_config_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
 ibmq_account_url = "https://auth.quantum-computing.ibm.com/api"
-# qbraid_api_url = "http://localhost:3001/api"
+qbraid_api_url = "http://localhost:3001/api"
 # qbraid_api_url = "https://api-staging.qbraid.com/api"
 # qbraid_api_url_URL = "https://api.qbraid.com/api"
-qbraid_api_url = "https://api-staging-1.qbraid.com/api"
+# qbraid_api_url = "https://api-staging-1.qbraid.com/api"
 
 aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")

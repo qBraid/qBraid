@@ -1,14 +1,17 @@
 """Module for making requests to the qbraid api"""
 
-import os
 import logging
-import subprocess
 from typing import Any, Optional
 
 from requests import RequestException, Response, Session
 
-from qbraid.api.config_user import get_config, qbraid_config_path, qbraidrc_path
 from qbraid.api.exceptions import AuthError, ConfigError, RequestsApiError
+from qbraid.api.config_user import (
+    get_config,
+    verify_config,
+    qbraid_config_path,
+    qbraidrc_path,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +47,11 @@ class QbraidSession(Session):
         self.auth_token = auth_token
         self.verify = False
 
-        self._update_headers()
+        verify_config("QBRAID")
+
+    def __del__(self) -> None:
+        """QbraidSession destructor. Closes the session."""
+        self.close()
 
     def _get_config(self, field: str, section: str, path: str) -> Optional[str]:
         config = get_config(field, section, filepath=path)
@@ -90,11 +97,6 @@ class QbraidSession(Session):
         token = value if value else self._get_config("token", "sdk", qbraidrc_path)
         self._auth_token = token
         self.headers.update({"refresh-token": token})  # type: ignore[attr-defined]
-
-    def _update_headers(self):
-        dir_path = os.path.dirname(os.path.realpath(__file__))
-        script_path = os.path.join(dir_path, "update-headers.sh")
-        subprocess.call([script_path])
 
     def request(self, method: str, url: str, **kwargs: Any) -> Response:  # type: ignore[override]
         """Construct, prepare, and send a ``Request``.

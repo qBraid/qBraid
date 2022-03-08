@@ -7,22 +7,16 @@ import os
 import sys
 from getpass import getpass
 
-from qiskit.providers.ibmq.api import session as ibmq_session
-
 from qbraid.api.exceptions import ConfigError
 
-from .config_prompts import CONFIG_PROMPTS, qbraid_config_path
-
-qbraidrc_path = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
-
-# qbraid_api_url = "http://localhost:3001/api"
-# qbraid_api_url = "https://api-staging.qbraid.com/api"
-# qbraid_api_url_URL = "https://api.qbraid.com/api"
-qbraid_api_url = "https://api-staging-1.qbraid.com/api"
+from .config_specs import (
+    VENDOR_CONFIGS,
+    qbraid_config_path,
+    qbraidrc_path,
+)
 
 raw_input = input
 secret_input = getpass
-
 
 def mask_value(value):
     """Replaces all but last four characters of token ``value`` with *'s"""
@@ -101,24 +95,27 @@ def set_config(config_name, prompt_text, default_val, is_secret, section, filepa
     return 0
 
 
-def verify_user(vendor):
+def verify_config(vendor):
     """Checks for the required user credentials associated with running on device associated with
     given vendor. If requirements are verified, returns 0. Else, calls set_config, and returns 0
     after credentials are provided and config is successfully made.
 
     """
-    if get_config("verify", vendor) != "True":
-        prompt_lst = CONFIG_PROMPTS[vendor]
+    if get_config("verify", vendor) != "True" or vendor == "QBRAID":
+        prompt_lst = VENDOR_CONFIGS[vendor]
         for prompt in prompt_lst:
             set_config(*prompt)
+        if vendor != "QBRAID":
+            verify_config("QBRAID")
     return 0
 
 
-def _get_set_url():
-    ibmq_session_path = str(ibmq_session).split(' ')[-1].replace("'>", "'").strip("'")
-    _ = set_config("ibmq_session", "", ibmq_session_path, False, "QBRAID", qbraid_config_path)
-    _ = set_config("url", "", qbraid_api_url, False, "QBRAID", qbraid_config_path)
-    return qbraid_api_url
+def _set_qbraid_config(config):
+    for spec in VENDOR_CONFIGS["QBRAID"]:
+        if config == spec[0]:
+            set_config(*spec)
+            return spec[2]
+    raise ValueError(f"Invalid QBRAID config '{config}'.")
 
 
 def get_config(config_name, section, qbraidrc=False, filepath=None):
@@ -145,8 +142,8 @@ def get_config(config_name, section, qbraidrc=False, filepath=None):
         if section in config.sections():
             if config_name in config[section]:
                 return config[section][config_name]
-    if config_name == "url" and section == "QBRAID":
-        return _get_set_url()
+    if section == "QBRAID":
+        return _set_qbraid_config(config_name)
     return -1
 
 
@@ -157,7 +154,7 @@ def update_config(vendor):
         vendor (str): a supported vendor
 
     """
-    prompt_lst = CONFIG_PROMPTS[vendor]
+    prompt_lst = VENDOR_CONFIGS[vendor]
     for prompt in prompt_lst:
         set_config(*prompt, update=True)
     return 0
