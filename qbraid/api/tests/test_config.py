@@ -2,19 +2,15 @@ import os
 
 import pytest
 
-from qbraid.api.config_user import get_config
 from qbraid.api.session import QbraidSession
-
-qbraidrc_path = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
-qbraid_config_path = os.path.join(os.path.expanduser("~"), ".qbraid", "config")
-aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
-aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
-ibmq_config_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
-ibmq_account_url = "https://auth.quantum-computing.ibm.com/api"
-qbraid_api_url = "http://localhost:3001/api"
-# qbraid_api_url = "https://api-staging.qbraid.com/api"
-# qbraid_api_url_URL = "https://api.qbraid.com/api"
-# qbraid_api_url = "https://api-staging-1.qbraid.com/api"
+from qbraid.api.config_user import get_config
+from qbraid.api.config_specs import (
+    qbraidrc_path,
+    qbraid_config_path,
+    aws_cred_path,
+    aws_config_path,
+    qbraid_api_url,
+)
 
 aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")

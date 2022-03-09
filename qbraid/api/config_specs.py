@@ -13,10 +13,10 @@ ibmq_account_url = "https://auth.quantum-computing.ibm.com/api"
 qbraidrc_path = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
 # ibmq_session_path = str(ibmq_session).split(' ')[-1].replace("'>", "'").strip("'")
 
-qbraid_api_url = "http://localhost:3001/api"
+# qbraid_api_url = "http://localhost:3001/api"
 # qbraid_api_url = "https://api-staging.qbraid.com/api"
 # qbraid_api_url_URL = "https://api.qbraid.com/api"
-# qbraid_api_url = "https://api-staging-1.qbraid.com/api"
+qbraid_api_url = "https://api-staging-1.qbraid.com/api"
 
 AWS_CONFIGS = [
     # (config_name, prompt_text, default_value, is_secret, section, filepath)
