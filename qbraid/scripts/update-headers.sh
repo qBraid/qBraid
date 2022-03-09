@@ -50,6 +50,6 @@ if [ "$add_line_n" == "$add_line_n_target" ]; then
     exit 0
 fi
 
-sed -i '' ''"${mark_line_n}"' a\
+sed -i ''"${mark_line_n}"' a\
 '"${add}"'\
 ' "${filepath}"
