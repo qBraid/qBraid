@@ -13,14 +13,6 @@ set STUBSDIR=stubs
 
 if "%1" == "" goto help
 
-if "%1" == "cleanall" (
-	for /d %%i in (%BUILDDIR%\*) do rmdir /q /s %%i
-	del /q /s %BUILDDIR%\*
-	for /d %%i in (%STUBSDIR%\*) do rmdir /q /s %%i
-	del /q /s %STUBSDIR%\*
-	goto end
-)
-
 %SPHINXBUILD% >NUL 2>NUL
 if errorlevel 9009 (
 	echo.

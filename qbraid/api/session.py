@@ -5,13 +5,8 @@ from typing import Any, Optional
 
 from requests import RequestException, Response, Session
 
+from qbraid.api.config_user import get_config, qbraid_config_path, qbraidrc_path, verify_config
 from qbraid.api.exceptions import AuthError, ConfigError, RequestsApiError
-from qbraid.api.config_user import (
-    get_config,
-    verify_config,
-    qbraid_config_path,
-    qbraidrc_path,
-)
 
 logger = logging.getLogger(__name__)
 

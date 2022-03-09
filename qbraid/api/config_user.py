@@ -9,14 +9,11 @@ from getpass import getpass
 
 from qbraid.api.exceptions import ConfigError
 
-from .config_specs import (
-    VENDOR_CONFIGS,
-    qbraid_config_path,
-    qbraidrc_path,
-)
+from .config_specs import VENDOR_CONFIGS, qbraid_config_path, qbraidrc_path
 
 raw_input = input
 secret_input = getpass
+
 
 def mask_value(value):
     """Replaces all but last four characters of token ``value`` with *'s"""

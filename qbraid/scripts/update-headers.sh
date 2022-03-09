@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/bash
 
 qbraid_config="$HOME/.qbraid/config"
 qbraid_rc="$HOME/.qbraid/qbraidrc"

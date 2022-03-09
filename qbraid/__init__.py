@@ -1,20 +1,16 @@
 """This top level module contains the main qBraid public functionality."""
 
-import os
 import pkg_resources
 import urllib3
-
-# dir_path = os.path.dirname(os.path.realpath(__file__))
-
-# with open(f"{dir_path}/startup.py") as f:
-#     exec(f.read())
 
 from qbraid import api
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid._version import __version__
-from qbraid.api import get_devices, QbraidSession
+from qbraid.api import QbraidSession, get_devices
 from qbraid.exceptions import QbraidError, WrapperError
 from qbraid.interface import convert_to_contiguous, to_unitary
+
+from . import __main__
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)  # temporary hack
 
@@ -146,10 +142,10 @@ def random_circuit(package, num_qubits=None, depth=None, measure=False):
         ValueError: when invalid options given
 
     """
-    from numpy import random
     from cirq.testing import random_circuit as cirq_random_circuit
-    from qiskit.circuit.random import random_circuit as qiskit_random_circuit
+    from numpy import random
     from qiskit.circuit.exceptions import CircuitError as QiskitCircuitError
+    from qiskit.circuit.random import random_circuit as qiskit_random_circuit
 
     num_qubits = num_qubits if num_qubits else random.randint(1, 4)
     depth = depth if depth else random.randint(1, 4)
