@@ -19,14 +19,20 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install --upgrade pip
-        python -m pip install tox
-    - name: Install xmllint
-      run: sudo apt-get install -y libxml2-utils
-    - name: Test with tox
+        python -m pip install -U pip setuptools ipython
+        pip install -e ".[test]"
+        pip install -e ".[docs]"
+    - name: Pytest
       run:
-        echo $(which bash)
-        tox
+        python tests/config_venv.py
+        coverage run -m pytest qbraid/api \
+                               qbraid/interface \
+                               qbraid/transpiler \
+                               qbraid/devices
+        coverage combine
+        coverage report
+        coverage html
+        coverage xml
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
