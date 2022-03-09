@@ -25,7 +25,7 @@ jobs:
       run: sudo apt-get install -y libxml2-utils
     - name: Test with tox
       run:
-        echo $(which bash)
+        # echo $(which bash)
         tox -e unit-tests
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
