@@ -24,7 +24,6 @@ jobs:
     - name: Pytest
       run: |
         python tests/config_venv.py
-        /usr/bin/bash -c 'qbraid/scripts/strip-headers.sh'
         /usr/bin/bash -c 'qbraid/scripts/update-headers.sh'
         coverage run -m pytest qbraid/api \
                                qbraid/interface \
