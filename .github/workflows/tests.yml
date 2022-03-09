@@ -33,3 +33,4 @@ jobs:
         IBMQ_TOKEN: ${{ secrets.IBMQ_TOKEN }}
         JUPYTERHUB_USER: ${{ secrets.JUPYTERHUB_USER }}
         REFRESH: ${{ secrets.REFRESH }}
+        HOME: $HOME
