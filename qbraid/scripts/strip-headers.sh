@@ -15,7 +15,7 @@ if [[ ! -f "$filepath" ]]; then
     exit 1
 fi
 
-mark="headers.update({\'email\':\'"${user_email}"\',\'refresh-token\':\'"${refresh_token}"\'})"
+mark="headers.update({\'email\':"
 mark_line_n=$(grep -n "${mark}" "${filepath}" | cut -d : -f 1)
 mark_line_n_expected=274
 if [ "$mark_line_n" != "$mark_line_n_expected" ]; then
@@ -23,4 +23,4 @@ if [ "$mark_line_n" != "$mark_line_n_expected" ]; then
     exit 0
 fi
 
-sed -i '' '274d' "$filepath"
+sed -i '274d' "$filepath"
