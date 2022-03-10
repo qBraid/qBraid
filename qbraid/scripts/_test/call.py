@@ -20,8 +20,8 @@ def get_runner():
     return Runner(system)
 
 
-# RUNNER = get_runner()
-RUNNER = Runner.UBUNTU
+RUNNER = get_runner()
+# RUNNER = Runner.UBUNTU
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 

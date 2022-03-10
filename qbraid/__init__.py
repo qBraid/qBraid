@@ -3,14 +3,13 @@
 import pkg_resources
 import urllib3
 
+from . import __main__
 from qbraid import api
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid._version import __version__
 from qbraid.api import QbraidSession, get_devices
 from qbraid.exceptions import QbraidError, WrapperError
 from qbraid.interface import convert_to_contiguous, to_unitary
-
-from . import __main__
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)  # temporary hack
 
