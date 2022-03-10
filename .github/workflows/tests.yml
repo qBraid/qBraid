@@ -1,8 +1,9 @@
 name: Unit tests
 
 on:
-  pull_request:
-    branches: main
+  workflow_dispatch:
+#   pull_request:
+#     branches: main
 
 jobs:
   test:
@@ -23,16 +24,7 @@ jobs:
         pip install -e ".[test]"
     - name: Pytest
       run: |
-        python tests/config_venv.py
-        /usr/bin/bash -c 'qbraid/scripts/update-headers.sh'
-        coverage run -m pytest qbraid/api \
-                               qbraid/interface \
-                               qbraid/transpiler \
-                               qbraid/devices
-        coverage combine
-        coverage report
-        coverage html
-        coverage xml
+        pytest -x qbraid/devices/tests/test_ibmq.py
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
