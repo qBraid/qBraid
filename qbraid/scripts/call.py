@@ -23,6 +23,7 @@ def initialize_session():
     _call_script("update-headers.sh")
 
 
+
 def close_session():
     """Strip headers to close QbraidSession"""
     _call_script("strip-headers.sh")

@@ -1,12 +1,30 @@
+"""Module for pythonic calls to qbraid bash scripts"""
+
 import configparser
+import errno
 import os
+import subprocess
+import enum
+import platform
+
+class Runner(enum.Enum):
+    """Class for the types runtime environments."""
+    MACOS = 'Darwin'
+    UBUNTU = 'Linux'
+
+def get_runner():
+    system = platform.system()
+    return Runner(system)
+
+RUNNER = get_runner()
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
 
 qbraidrc_path = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
 qbraid_config_path = os.path.join(os.path.expanduser("~"), ".qbraid", "config")
 aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
 aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
-# ibmq_config_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
-ibmq_account_url = "https://auth.quantum-computing.ibm.com/api"
+
 # qbraid_api_url = "http://localhost:3001/api"
 # qbraid_api_url = "https://api-staging.qbraid.com/api"
 # qbraid_api_url_URL = "https://api.qbraid.com/api"
@@ -27,15 +45,10 @@ config_lst = [
     ["s3_bucket", "amazon-braket-qbraid-test", "AWS", qbraid_config_path],
     ["s3_folder", "qbraid-sdk-output", "AWS", qbraid_config_path],
     ["verify", "True", "AWS", qbraid_config_path],
-    # ["token", ibmq_token, "ibmq", ibmq_config_path],
-    # ["url", ibmq_account_url, "ibmq", ibmq_config_path],
-    # ["verify", "True", "ibmq", ibmq_config_path],
-    # ["group", "open", "IBM", qbraid_config_path],
-    # ["project", "main", "IBM", qbraid_config_path],
-    # ["verify", "True", "IBM", qbraid_config_path],
     ["user", qbraid_user, "sdk", qbraidrc_path],
     ["token", qbraid_token, "sdk", qbraidrc_path],
-    # ["url", qbraid_api_url, "QBRAID", qbraid_config_path],
+    ["url", qbraid_api_url, "QBRAID", qbraid_config_path],
+    ["verify", "True", "QBRAID", qbraid_config_path],
 ]
 
 
@@ -59,6 +72,26 @@ def set_config():
             config.write(cfgfile)
 
 
-if __name__ == "__main__":
+def _get_scripts():
+    return list(filter(lambda x: x[-3:] == ".sh", os.listdir(dir_path)))
 
-    set_config()
+
+def _call_script(script):
+    script_path = os.path.join(dir_path, script)
+    if not os.path.exists(script_path):
+        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), script)
+    subprocess.call([script_path])
+
+
+def delete_configs():
+    _call_script("delete-configs.sh")
+
+
+def initialize_session():
+    """Populate headers to enable QbraidSession"""
+    _call_script("update-headers.sh")
+
+
+def close_session():
+    """Strip headers to close QbraidSession"""
+    _call_script("strip-headers.sh")
