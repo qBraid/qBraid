@@ -2,15 +2,15 @@ import os
 
 import pytest
 
-from qbraid.api.session import QbraidSession
-from qbraid.api.config_user import get_config
 from qbraid.api.config_specs import (
-    qbraidrc_path,
-    qbraid_config_path,
-    aws_cred_path,
     aws_config_path,
+    aws_cred_path,
     qbraid_api_url,
+    qbraid_config_path,
+    qbraidrc_path,
 )
+from qbraid.api.config_user import get_config
+from qbraid.api.session import QbraidSession
 
 aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")

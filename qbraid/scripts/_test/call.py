@@ -1,20 +1,24 @@
 """Module for pythonic calls to qbraid bash scripts"""
 
 import configparser
+import enum
 import errno
 import os
-import subprocess
-import enum
 import platform
+import subprocess
+
 
 class Runner(enum.Enum):
     """Class for the types runtime environments."""
-    MACOS = 'Darwin'
-    UBUNTU = 'Linux'
+
+    MACOS = "Darwin"
+    UBUNTU = "Linux"
+
 
 def get_runner():
     system = platform.system()
     return Runner(system)
+
 
 RUNNER = get_runner()
 
