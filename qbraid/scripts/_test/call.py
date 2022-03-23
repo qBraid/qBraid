@@ -50,9 +50,9 @@ config_lst = [
     ["s3_bucket", "amazon-braket-qbraid-test", "AWS", qbraid_config_path],
     ["s3_folder", "qbraid-sdk-output", "AWS", qbraid_config_path],
     ["verify", "True", "AWS", qbraid_config_path],
-    ["user", qbraid_user, "sdk", qbraidrc_path],
-    ["token", qbraid_token, "sdk", qbraidrc_path],
-    ["url", qbraid_api_url, "QBRAID", qbraid_config_path],
+    ["email", qbraid_user, "sdk", qbraidrc_path],
+    ["refresh-token", qbraid_token, "sdk", qbraidrc_path],
+    ["url", qbraid_api_url, "QBRAID", qbraidrc_path],
     ["verify", "True", "QBRAID", qbraid_config_path],
 ]
 
