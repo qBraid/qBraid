@@ -7,7 +7,7 @@ import os
 import sys
 from getpass import getpass
 
-from sklearn import get_config
+# from sklearn import get_config
 
 from .exceptions import ConfigError
 

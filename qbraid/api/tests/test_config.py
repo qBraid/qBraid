@@ -61,6 +61,7 @@ def set_config():
         with open(filepath, "w", encoding="utf-8") as cfgfile:
             config.write(cfgfile)
 
+set_config()
 
 @pytest.mark.parametrize("config", config_lst)
 def test_get_config(config):
