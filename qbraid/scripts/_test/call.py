@@ -57,26 +57,6 @@ config_lst = [
 ]
 
 
-def set_config():
-    """Set config inside testing virtual environments with default values
-    hard-coded and secret values read from environment variables."""
-    for c in config_lst:
-        config_name = c[0]
-        config_value = c[1]
-        section = c[2]
-        filepath = c[3]
-        # print(f"{config_name}: {config_value}")
-        if not os.path.isfile(filepath):
-            os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        config = configparser.ConfigParser()
-        config.read(filepath)
-        if section not in config.sections():
-            config.add_section(section)
-        config.set(section, config_name, str(config_value))
-        with open(filepath, "w", encoding="utf-8") as cfgfile:
-            config.write(cfgfile)
-
-
 def _get_scripts():
     return list(filter(lambda x: x[-3:] == ".sh", os.listdir(dir_path)))
 

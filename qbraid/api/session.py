@@ -1,12 +1,13 @@
 """Module for making requests to the qbraid api"""
 
+from email.mime import base
 import logging
 from typing import Any, Optional
 
 from requests import RequestException, Response, Session
 
-from .config_user import get_config, verify_config, CONFIG_PATHS
-from .exceptions import AuthError, ConfigError, RequestsApiError
+from .config_user import get_config
+from .exceptions import RequestsApiError
 
 logger = logging.getLogger(__name__)
 
@@ -25,37 +26,34 @@ class QbraidSession(Session):
         self,
         base_url: Optional[str] = None,
         user_email: Optional[str] = None,
-        auth_token: Optional[str] = None,
+        id_token: Optional[str] = None,
+        refresh_token: Optional[str] = None,
     ) -> None:
         """QbraidSession constructor.
 
         Args:
             base_url: Base URL for the session's requests.
             user_email: JupyterHub User.
-            auth_token: qBraid authentication token.
+            id_token: Authenticated qBraid id-token.
+            refresh_token: Authenticated qBraid refresh-token.
 
         """
         super().__init__()
 
         self.base_url = base_url
         self.user_email = user_email
-        self.auth_token = auth_token
+        self.id_token = id_token
+        self.refresh_token = refresh_token
         self.verify = False
-
-        verify_config("QBRAID")
 
     def __del__(self) -> None:
         """QbraidSession destructor. Closes the session."""
         self.close()
 
-    def _get_config(self, field: str, section: str, path: str) -> Optional[str]:
-        config = get_config(field, section, filepath=path)
-        if config == -1 or config == "None":
-            if field == "url":
-                raise ConfigError(f"qBraid API URL {config} invalid or not found")
-            else:
-                msg = "user email" if field == "user" else field
-                raise AuthError(f"qBraid {msg} invalid or not found")
+    def _get_config(self, field: str) -> Optional[str]:
+        config = get_config(field, "default", vendor="QBRAID", filename="qbraidrc")
+        if config == -1 or config in ["", "None", None]:
+            return None
         return config
 
     @property
@@ -66,8 +64,8 @@ class QbraidSession(Session):
     @base_url.setter
     def base_url(self, value: Optional[str]) -> None:
         """Set the qbraid api url."""
-        url = value if value else self._get_config("url", "QBRAID", qbraid_config_path)
-        self._base_url = url
+        url = value if value else self._get_config("url")
+        self._base_url = url if url else ""
 
     @property
     def user_email(self) -> Optional[str]:
@@ -77,21 +75,36 @@ class QbraidSession(Session):
     @user_email.setter
     def user_email(self, value: Optional[str]) -> None:
         """Set the session user email."""
-        user = value if value else self._get_config("user", "sdk", qbraidrc_path)
-        self._user_email = user
-        self.headers.update({"email": user})  # type: ignore[attr-defined]
+        user_email = value if value else self._get_config("email")
+        self._user_email = user_email
+        if user_email:
+            self.headers.update({"email": user_email})  # type: ignore[attr-defined]
 
     @property
-    def auth_token(self) -> Optional[str]:
-        """Return the session refresh token."""
-        return self._auth_token
+    def id_token(self) -> Optional[str]:
+        """Return the session id token."""
+        return self._id_token
 
-    @auth_token.setter
-    def auth_token(self, value: Optional[str]) -> None:
+    @id_token.setter
+    def id_token(self, value: Optional[str]) -> None:
+        """Set the session id token."""
+        id_token = value if value else self._get_config("id-token")
+        self._id_token = id_token
+        if id_token:
+            self.headers.update({"id-token": id_token})  # type: ignore[attr-defined]
+
+    @property
+    def refresh_token(self) -> Optional[str]:
+        """Return the session refresh token."""
+        return self._refresh_token
+
+    @refresh_token.setter
+    def refresh_token(self, value: Optional[str]) -> None:
         """Set the session refresh token."""
-        token = value if value else self._get_config("token", "sdk", qbraidrc_path)
-        self._auth_token = token
-        self.headers.update({"refresh-token": token})  # type: ignore[attr-defined]
+        refresh_token = value if value else self._get_config("refresh-token")
+        self._refresh_token = refresh_token
+        if refresh_token:
+            self.headers.update({"refresh-token": refresh_token})  # type: ignore[attr-defined]
 
     def request(self, method: str, url: str, **kwargs: Any) -> Response:  # type: ignore[override]
         """Construct, prepare, and send a ``Request``.
@@ -127,8 +140,11 @@ class QbraidSession(Session):
                     # the response did not contain the expected json.
                     message += f". {ex.response.text}"
 
-            if self.auth_token:
-                message = message.replace(self.auth_token, "...")
+            if self.id_token:
+                message = message.replace(self.id_token, "...")
+            
+            if self.refresh_token:
+                message = message.replace(self.refresh_token, "...")
 
             raise RequestsApiError(message) from ex
 

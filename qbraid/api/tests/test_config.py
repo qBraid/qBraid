@@ -1,6 +1,7 @@
 import os
 
 import pytest
+import configparser
 
 from qbraid.api.config_specs import (
     aws_config_path,
@@ -36,9 +37,29 @@ config_lst = [
     ["project", "main", "IBM", qbraid_config_path],
     ["verify", "True", "IBM", qbraid_config_path],
     ["email", qbraid_user, "default", qbraidrc_path],
-    ["refresh-token", qbraid_token, "default", qbraidrc_path],
     ["url", qbraid_api_url, "default", qbraidrc_path],
+    ["refresh-token", qbraid_token, "default", qbraidrc_path],
 ]
+
+
+def set_config():
+    """Set config inside testing virtual environments with default values
+    hard-coded and secret values read from environment variables."""
+    for c in config_lst:
+        config_name = c[0]
+        config_value = c[1]
+        section = c[2]
+        filepath = c[3]
+        # print(f"{config_name}: {config_value}")
+        if not os.path.isfile(filepath):
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        config = configparser.ConfigParser()
+        config.read(filepath)
+        if section not in config.sections():
+            config.add_section(section)
+        config.set(section, config_name, str(config_value))
+        with open(filepath, "w", encoding="utf-8") as cfgfile:
+            config.write(cfgfile)
 
 
 @pytest.mark.parametrize("config", config_lst)
@@ -52,8 +73,8 @@ def test_get_config(config):
 
 
 def test_qbraid_session_from_config():
-    email = get_config("email", "default", filepath=qbraidrc_path)
-    refresh = get_config("refresh-token", "default", filepath=qbraidrc_path)
+    email = get_config("email", "default", vendor="QBRAID", filename="qbraidrc")
+    refresh = get_config("refresh-token", "default", vendor="QBRAID", filename="qbraidrc")
     session = QbraidSession()
     headers = session.headers
     assert headers["email"] == email
@@ -63,7 +84,7 @@ def test_qbraid_session_from_config():
 def test_qbraid_session_from_args():
     email = "test"
     refresh = "123"
-    session = QbraidSession(user_email=email, auth_token=refresh)
+    session = QbraidSession(user_email=email, refresh_token=refresh)
     headers = session.headers
     assert headers["email"] == email
     assert headers["refresh-token"] == refresh

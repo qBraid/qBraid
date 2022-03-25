@@ -97,38 +97,44 @@ def verify_config(vendor):
     """
     prompt_lst = VENDOR_CONFIGS[vendor]
     if vendor == "QBRAID":
-        url = get_config("url", "default", "QBRAID", "qbraidrc")
-        email = get_config("email", "default", "QBRAID", "qbraidrc")
-        refresh_token = get_config("refresh-token", "default", "QBRAID", "qbraidrc")
-        id_token = get_config("id-token", "default", "QBRAID", "qbraidrc")
+        filepath = CONFIG_PATHS["QBRAID"]["qbraidrc"]
+        url = get_config("url", "default", filepath=filepath)
+        email = get_config("email", "default", filepath=filepath)
+        refresh_token = get_config("refresh-token", "default", filepath=filepath)
+        id_token = get_config("id-token", "default", filepath=filepath)
         if url + email + max(refresh_token, id_token) == -3:
             raise ConfigError("Invalid qbraidrc")
     else:
-        if get_config("verify", vendor) != "True":
-            for prompt in prompt_lst:
-                set_config(*prompt)
+        file_dict = CONFIG_PATHS[vendor]
+        for file in file_dict:
+            filepath = file_dict[file]
+            if get_config("verify", vendor, filepath=filepath) != "True":
+                for prompt in prompt_lst:
+                    set_config(*prompt)
     return 0
 
 
-def get_config(config_name, section, vendor, filename):
-    """Returns the config value of specified config
+def get_config(config_name, section, vendor=None, filename=None, filepath=None):
+    """Returns the config value of specified config. If vendor and filename
+    are not specified, filepath must be specified.
 
     Args:
         config_name (str): the name of the config
         section (str) = the section of the config file to store config_name
-        qbraidrc (optional, bool): if True, filepath is qbraidrc path
-        filepath (optional, str): the existing or desired path to config file. Defaults to the
-            qbraid config path.
+        vendor (optional, str): the name of the vendor
+        filename (optional, str): the name of the config file.
+        filepath (optional, str): the existing or desired path to config file.
     Returns:
         Config value or -1 if config does not exist
     """
-    try:
-        configpath = CONFIG_PATHS[vendor][filename]
-    except KeyError:
-        return -1
-    if os.path.isfile(configpath):
+    if not filepath:
+        try:
+            filepath = CONFIG_PATHS[vendor][filename]
+        except KeyError:
+            return -1
+    if os.path.isfile(filepath):
         config = configparser.ConfigParser()
-        config.read(configpath)
+        config.read(filepath)
         if section in config.sections():
             if config_name in config[section]:
                 return config[section][config_name]

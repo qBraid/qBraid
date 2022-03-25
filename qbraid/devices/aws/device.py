@@ -18,8 +18,8 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         """Create a BraketDeviceWrapper."""
 
         super().__init__(device_info)
-        bucket = config_user.get_config("s3_bucket", "AWS")
-        folder = config_user.get_config("s3_folder", "AWS")
+        bucket = config_user.get_config("s3_bucket", "AWS", vendor="QBRAID", filename="config")
+        folder = config_user.get_config("s3_folder", "AWS", vendor="QBRAID", filename="config")
         self._s3_location = (bucket, folder)
         self._arn = self._obj_arg
 
