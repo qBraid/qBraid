@@ -5,6 +5,8 @@ import pytest
 from qbraid.api.config_specs import (
     aws_config_path,
     aws_cred_path,
+    qiskitrc_path,
+    ibmq_account_url,
     qbraid_api_url,
     qbraid_config_path,
     qbraidrc_path,
@@ -27,15 +29,15 @@ config_lst = [
     ["s3_bucket", "amazon-braket-qbraid-test", "AWS", qbraid_config_path],
     ["s3_folder", "qbraid-sdk-output", "AWS", qbraid_config_path],
     ["verify", "True", "AWS", qbraid_config_path],
-    # ["token", ibmq_token, "ibmq", ibmq_config_path],
-    # ["url", ibmq_account_url, "ibmq", ibmq_config_path],
-    # ["verify", "True", "ibmq", ibmq_config_path],
-    # ["group", "open", "IBM", qbraid_config_path],
-    # ["project", "main", "IBM", qbraid_config_path],
-    # ["verify", "True", "IBM", qbraid_config_path],
-    ["user", qbraid_user, "sdk", qbraidrc_path],
-    ["token", qbraid_token, "sdk", qbraidrc_path],
-    ["url", qbraid_api_url, "QBRAID", qbraid_config_path],
+    ["token", ibmq_token, "ibmq", qiskitrc_path],
+    ["url", ibmq_account_url, "ibmq", qiskitrc_path],
+    ["verify", "True", "ibmq", qiskitrc_path],
+    ["group", "open", "IBM", qbraid_config_path],
+    ["project", "main", "IBM", qbraid_config_path],
+    ["verify", "True", "IBM", qbraid_config_path],
+    ["email", qbraid_user, "default", qbraidrc_path],
+    ["refresh-token", qbraid_token, "default", qbraidrc_path],
+    ["url", qbraid_api_url, "default", qbraidrc_path],
 ]
 
 
@@ -50,8 +52,8 @@ def test_get_config(config):
 
 
 def test_qbraid_session_from_config():
-    email = get_config("user", "sdk", filepath=qbraidrc_path)
-    refresh = get_config("token", "sdk", filepath=qbraidrc_path)
+    email = get_config("email", "default", filepath=qbraidrc_path)
+    refresh = get_config("refresh-token", "default", filepath=qbraidrc_path)
     session = QbraidSession()
     headers = session.headers
     assert headers["email"] == email

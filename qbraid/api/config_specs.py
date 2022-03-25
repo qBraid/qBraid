@@ -2,8 +2,6 @@
 
 import os
 
-# from qiskit.providers.ibmq.api import session as ibmq_session
-
 qbraid_config_path = os.path.join(os.path.expanduser("~"), ".qbraid", "config")
 aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
 aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
@@ -11,7 +9,6 @@ qiskitrc_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
 ibmq_account_url = "https://auth.quantum-computing.ibm.com/api"
 
 qbraidrc_path = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
-# ibmq_session_path = str(ibmq_session).split(' ')[-1].replace("'>", "'").strip("'")
 
 # qbraid_api_url = "http://localhost:3001/api"
 # qbraid_api_url = "https://api-staging.qbraid.com/api"
@@ -40,14 +37,21 @@ IBMQ_CONFIGS = [
 ]
 
 QBRAID_CONFIGS = [
-    ("url", "", qbraid_api_url, False, "QBRAID", qbraid_config_path),
-    # ("ibmq_session", "", ibmq_session_path, False, "QBRAID", qbraid_config_path),
-    ("verify", "", "True", False, "QBRAID", qbraid_config_path),
+    ("url", "", qbraid_api_url, False, "default", qbraidrc_path),
+    ("email", "", os.getenv('JUPYTERHUB_USER'), False, "default", qbraidrc_path),
+    ("id-token", "", None, False, "default", qbraidrc_path),
+    ("refresh-token", "", None, False, "default", qbraidrc_path),
 ]
 
 VENDOR_CONFIGS = {
     "AWS": AWS_CONFIGS,
     "Google": None,
-    "IBM": [],
+    "IBM": IBMQ_CONFIGS,
     "QBRAID": QBRAID_CONFIGS,
+}
+
+CONFIG_PATHS = {
+    "AWS": {"config": aws_config_path, "credentials": aws_cred_path},
+    "IBM": {"qiskitrc": qiskitrc_path},
+    "QBRAID": {"config": qbraid_config_path, "qbraidrc": qbraidrc_path}
 }

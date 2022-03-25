@@ -3,7 +3,6 @@
 import pkg_resources
 import urllib3
 
-from . import __main__
 from qbraid import api
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid._version import __version__
