@@ -23,5 +23,4 @@ jobs:
         python -m pip install tox
     - name: Make docs
       run: 
-        echo $(which bash)
         tox -e docs
