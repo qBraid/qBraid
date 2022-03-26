@@ -7,11 +7,9 @@ import os
 import sys
 from getpass import getpass
 
-# from sklearn import get_config
-
+from .config_specs import CONFIG_PATHS, VENDOR_CONFIGS
 from .exceptions import ConfigError
 
-from .config_specs import VENDOR_CONFIGS, CONFIG_PATHS
 
 raw_input = input
 secret_input = getpass
@@ -97,11 +95,10 @@ def verify_config(vendor):
     """
     prompt_lst = VENDOR_CONFIGS[vendor]
     if vendor == "QBRAID":
-        filepath = CONFIG_PATHS["QBRAID"]["qbraidrc"]
-        url = get_config("url", "default", filepath=filepath)
-        email = get_config("email", "default", filepath=filepath)
-        refresh_token = get_config("refresh-token", "default", filepath=filepath)
-        id_token = get_config("id-token", "default", filepath=filepath)
+        url = get_config("url", "default")
+        email = get_config("email", "default")
+        refresh_token = get_config("refresh-token", "default")
+        id_token = get_config("id-token", "default")
         if url + email + max(refresh_token, id_token) == -3:
             raise ConfigError("Invalid qbraidrc")
     else:
@@ -114,22 +111,21 @@ def verify_config(vendor):
     return 0
 
 
-def get_config(config_name, section, vendor=None, filename=None, filepath=None):
+def get_config(config_name, section, filepath=None):
     """Returns the config value of specified config. If vendor and filename
     are not specified, filepath must be specified.
 
     Args:
         config_name (str): the name of the config
         section (str) = the section of the config file to store config_name
-        vendor (optional, str): the name of the vendor
-        filename (optional, str): the name of the config file.
         filepath (optional, str): the existing or desired path to config file.
     Returns:
         Config value or -1 if config does not exist
     """
     if not filepath:
+        filename = "qbraidrc" if section == "default" else "config"
         try:
-            filepath = CONFIG_PATHS[vendor][filename]
+            filepath = CONFIG_PATHS["QBRAID"][filename]
         except KeyError:
             return -1
     if os.path.isfile(filepath):

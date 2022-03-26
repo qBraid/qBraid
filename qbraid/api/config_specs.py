@@ -38,7 +38,7 @@ IBMQ_CONFIGS = [
 
 QBRAID_CONFIGS = [
     ("url", "", qbraid_api_url, False, "default", qbraidrc_path),
-    ("email", "", os.getenv('JUPYTERHUB_USER'), False, "default", qbraidrc_path),
+    ("email", "", os.getenv("JUPYTERHUB_USER"), False, "default", qbraidrc_path),
     ("id-token", "", None, False, "default", qbraidrc_path),
     ("refresh-token", "", None, False, "default", qbraidrc_path),
 ]
@@ -53,5 +53,5 @@ VENDOR_CONFIGS = {
 CONFIG_PATHS = {
     "AWS": {"config": aws_config_path, "credentials": aws_cred_path},
     "IBM": {"qiskitrc": qiskitrc_path},
-    "QBRAID": {"config": qbraid_config_path, "qbraidrc": qbraidrc_path}
+    "QBRAID": {"config": qbraid_config_path, "qbraidrc": qbraidrc_path},
 }

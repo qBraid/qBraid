@@ -1,5 +1,7 @@
 """QiskitBackendWrapper Class"""
 
+import os 
+
 from qiskit import IBMQ, Aer, assemble
 from qiskit import transpile as qiskit_transpile
 from qiskit.providers.backend import Backend as QiskitBackend
@@ -11,8 +13,11 @@ from qbraid.api import config_user, job_api
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
 from qbraid.devices.exceptions import DeviceError
+
 from .job import QiskitJobWrapper
 from .result import QiskitResultWrapper
+
+qiskitrc_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
 
 
 class QiskitBackendWrapper(DeviceLikeWrapper):
@@ -23,13 +28,13 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         if self._obj_ref == "IBMQ":
             if not IBMQ.active_account():
                 IBMQ.load_account()
-                # token = config_user.get_config("token", "ibmq", vendor="IBM", filename="qiskitrc")
-                # base_url = config_user.get_config("url", "default", vendor="QBRAID", filename="qbraidrc")
+                # token = config_user.get_config("token", "ibmq", filepath=qiskitrc_path)
+                # base_url = config_user.get_config("url", "default")
                 # api_url = f"{base_url}/ibm-routes?route="
                 # IBMQ.enable_account(token, api_url)
             # provider = IBMQ.get_provider(hub="ibm-q", group="open", project="main")
-            group = config_user.get_config("group", "ibmq", vendor="IBM", filename="qiskitrc")
-            project = config_user.get_config("project", "ibmq", vendor="IBM", filename="qiskitrc")
+            group = config_user.get_config("group", "IBM")
+            project = config_user.get_config("project", "IBM")
             try:
                 provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
             except IBMQProviderError:

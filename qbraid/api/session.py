@@ -1,7 +1,7 @@
 """Module for making requests to the qbraid api"""
 
-from email.mime import base
 import logging
+from email.mime import base
 from typing import Any, Optional
 
 from requests import RequestException, Response, Session
@@ -51,7 +51,7 @@ class QbraidSession(Session):
         self.close()
 
     def _get_config(self, field: str) -> Optional[str]:
-        config = get_config(field, "default", vendor="QBRAID", filename="qbraidrc")
+        config = get_config(field, "default")
         if config == -1 or config in ["", "None", None]:
             return None
         return config
@@ -142,7 +142,7 @@ class QbraidSession(Session):
 
             if self.id_token:
                 message = message.replace(self.id_token, "...")
-            
+
             if self.refresh_token:
                 message = message.replace(self.refresh_token, "...")
 

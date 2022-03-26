@@ -1,16 +1,16 @@
+import configparser
 import os
 
 import pytest
-import configparser
 
 from qbraid.api.config_specs import (
     aws_config_path,
     aws_cred_path,
-    qiskitrc_path,
     ibmq_account_url,
     qbraid_api_url,
     qbraid_config_path,
     qbraidrc_path,
+    qiskitrc_path,
 )
 from qbraid.api.config_user import get_config
 from qbraid.api.session import QbraidSession
@@ -61,7 +61,9 @@ def set_config():
         with open(filepath, "w", encoding="utf-8") as cfgfile:
             config.write(cfgfile)
 
+
 set_config()
+
 
 @pytest.mark.parametrize("config", config_lst)
 def test_get_config(config):
@@ -74,8 +76,8 @@ def test_get_config(config):
 
 
 def test_qbraid_session_from_config():
-    email = get_config("email", "default", vendor="QBRAID", filename="qbraidrc")
-    refresh = get_config("refresh-token", "default", vendor="QBRAID", filename="qbraidrc")
+    email = get_config("email", "default")
+    refresh = get_config("refresh-token", "default")
     session = QbraidSession()
     headers = session.headers
     assert headers["email"] == email

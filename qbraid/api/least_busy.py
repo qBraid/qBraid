@@ -1,22 +1,25 @@
 """Module to retrieve the least busy IBMQ QPU"""
 
+import os
 from qiskit import IBMQ
-from qiskit.providers.ibmq import least_busy, IBMQProviderError
+from qiskit.providers.ibmq import IBMQProviderError, least_busy
 
-from qbraid.api import config_user
+from .config_user import get_config
+
+qiskitrc_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
 
 
 def ibmq_least_busy_qpu():
     """Return the qbraid id of the least busy IBMQ QPU."""
     if not IBMQ.active_account():
         IBMQ.load_account()
-        # token = config_user.get_config("token", "ibmq", vendor="IBM", filename="qiskitrc")
-        # base_url = config_user.get_config("url", "default", vendor="QBRAID", filename="qbraidrc")
+        # token = get_config("token", "ibmq", filepath=qiskitrc_path)
+        # base_url = get_config("url", "default")
         # api_url = f"{base_url}/ibm-routes?route="
         # IBMQ.enable_account(token, api_url)
     # provider = IBMQ.get_provider(hub="ibm-q", group="open", project="main")
-    group = config_user.get_config("group", "ibmq", vendor="IBM", filename="qiskitrc")
-    project = config_user.get_config("project", "ibmq", vendor="IBM", filename="qiskitrc")
+    group = get_config("group", "IBM")
+    project = get_config("project", "IBM")
     try:
         provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
     except IBMQProviderError:
