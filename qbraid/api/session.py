@@ -11,6 +11,12 @@ from .exceptions import RequestsApiError
 
 logger = logging.getLogger(__name__)
 
+def _get_config(field: str) -> Optional[str]:
+    config = get_config(field, "default")
+    if config == -1 or config in ["", "None"]:
+        return None
+    return config
+
 
 class QbraidSession(Session):
     """Custom session with handling of request urls and authentication.
@@ -50,12 +56,6 @@ class QbraidSession(Session):
         """QbraidSession destructor. Closes the session."""
         self.close()
 
-    def _get_config(self, field: str) -> Optional[str]:
-        config = get_config(field, "default")
-        if config == -1 or config in ["", "None", None]:
-            return None
-        return config
-
     @property
     def base_url(self) -> Optional[str]:
         """Return the qbraid api url."""
@@ -64,7 +64,7 @@ class QbraidSession(Session):
     @base_url.setter
     def base_url(self, value: Optional[str]) -> None:
         """Set the qbraid api url."""
-        url = value if value else self._get_config("url")
+        url = value if value else _get_config("url")
         self._base_url = url if url else ""
 
     @property
@@ -75,7 +75,7 @@ class QbraidSession(Session):
     @user_email.setter
     def user_email(self, value: Optional[str]) -> None:
         """Set the session user email."""
-        user_email = value if value else self._get_config("email")
+        user_email = value if value else _get_config("email")
         self._user_email = user_email
         if user_email:
             self.headers.update({"email": user_email})  # type: ignore[attr-defined]
@@ -88,7 +88,7 @@ class QbraidSession(Session):
     @id_token.setter
     def id_token(self, value: Optional[str]) -> None:
         """Set the session id token."""
-        id_token = value if value else self._get_config("id-token")
+        id_token = value if value else _get_config("id-token")
         self._id_token = id_token
         if id_token:
             self.headers.update({"id-token": id_token})  # type: ignore[attr-defined]
@@ -101,7 +101,7 @@ class QbraidSession(Session):
     @refresh_token.setter
     def refresh_token(self, value: Optional[str]) -> None:
         """Set the session refresh token."""
-        refresh_token = value if value else self._get_config("refresh-token")
+        refresh_token = value if value else _get_config("refresh-token")
         self._refresh_token = refresh_token
         if refresh_token:
             self.headers.update({"refresh-token": refresh_token})  # type: ignore[attr-defined]

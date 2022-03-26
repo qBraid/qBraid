@@ -67,7 +67,7 @@ def set_config(config_name, prompt_text, default_val, is_secret, section, filepa
     if section in config.sections():
         if config_name in config[section]:
             current_value = config[section][config_name]
-            if current_value is not None and update is False:
+            if current_value not in ["", "None", None] and update is False:
                 return 0
     else:
         config.add_section(section)
@@ -76,7 +76,7 @@ def set_config(config_name, prompt_text, default_val, is_secret, section, filepa
     else:
         display_value = default_val if current_value is None else current_value
         new_value = get_value(display_value, is_secret, prompt_text)
-    config_val = default_val if new_value is None else new_value
+    config_val = default_val if new_value not in ["", "None", None] else new_value
     config.set(section, config_name, str(config_val))
     try:
         with open(filepath, "w", encoding="utf-8") as cfgfile:
