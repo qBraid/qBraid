@@ -10,7 +10,6 @@ from getpass import getpass
 from .config_specs import CONFIG_PATHS, VENDOR_CONFIGS
 from .exceptions import ConfigError
 
-
 raw_input = input
 secret_input = getpass
 

@@ -1,6 +1,6 @@
 """QiskitBackendWrapper Class"""
 
-import os 
+import os
 
 from qiskit import IBMQ, Aer, assemble
 from qiskit import transpile as qiskit_transpile

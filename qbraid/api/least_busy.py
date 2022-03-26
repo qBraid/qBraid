@@ -1,6 +1,7 @@
 """Module to retrieve the least busy IBMQ QPU"""
 
 import os
+
 from qiskit import IBMQ
 from qiskit.providers.ibmq import IBMQProviderError, least_busy
 
