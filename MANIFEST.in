@@ -1,6 +1,5 @@
-include *.rst *.txt *.md *.ini
+include *.rst *.txt *.md *.ini *.sh
 include tests/config_venv.py
-include tests/update-headers.sh
 recursive-include docs *.rst *.py
 recursive-include qbraid *.py
 prune docs/build/

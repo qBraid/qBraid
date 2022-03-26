@@ -7,7 +7,8 @@ from cirq import DensityMatrixSimulator, Simulator, measure
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
 from qbraid.devices.exceptions import DeviceError
-from qbraid.devices.google.localjob import CirqLocalJobWrapper
+
+from .localjob import CirqLocalJobWrapper
 
 
 class CirqSimulatorWrapper(DeviceLikeWrapper):

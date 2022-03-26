@@ -3,6 +3,7 @@ name: Docs build
 on:
   pull_request:
     branches: main
+  workflow_dispatch:
 
 jobs:
   docs:

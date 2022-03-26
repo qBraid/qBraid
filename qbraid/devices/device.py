@@ -5,7 +5,7 @@
 from abc import ABC, abstractmethod
 
 import qbraid
-from qbraid.api.config_user import verify_user
+from qbraid.api.config_user import verify_config
 
 from .exceptions import DeviceError
 
@@ -38,7 +38,7 @@ class DeviceLikeWrapper(ABC):
         self._qubits = device_info["numberQubits"]
         self.requires_cred = device_info.pop("requiresCred")
         if self.requires_cred:
-            verify_user(self.vendor)
+            verify_config(self.vendor)
         self.vendor_dlo = self._get_device()
 
     def _compat_run_input(self, run_input):

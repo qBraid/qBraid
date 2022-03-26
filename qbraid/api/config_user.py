@@ -7,16 +7,8 @@ import os
 import sys
 from getpass import getpass
 
-from qbraid.api.exceptions import ConfigError
-
-from .config_prompts import CONFIG_PROMPTS, qbraid_config_path
-
-qbraidrc_path = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
-
-# qbraid_api_url = "http://localhost:3001/api"
-# qbraid_api_url = "https://api-staging.qbraid.com/api"
-# qbraid_api_url_URL = "https://api.qbraid.com/api"
-qbraid_api_url = "https://api-staging-1.qbraid.com/api"
+from .config_specs import CONFIG_PATHS, VENDOR_CONFIGS
+from .exceptions import ConfigError
 
 raw_input = input
 secret_input = getpass
@@ -72,16 +64,11 @@ def set_config(config_name, prompt_text, default_val, is_secret, section, filepa
     config = configparser.ConfigParser()
     config.read(filepath)
     current_value = None
-    qbraid_verify = (filepath == qbraid_config_path) and config_name == "verify"
     if section in config.sections():
         if config_name in config[section]:
             current_value = config[section][config_name]
-            if qbraid_verify:
-                if current_value == "True":
-                    return 0
-            else:
-                if current_value is not None and update is False:
-                    return 0
+            if current_value is not None and update is False:
+                return 0
     else:
         config.add_section(section)
     if len(prompt_text) == 0:
@@ -99,61 +86,64 @@ def set_config(config_name, prompt_text, default_val, is_secret, section, filepa
     return 0
 
 
-def verify_user(vendor):
+def verify_config(vendor):
     """Checks for the required user credentials associated with running on device associated with
     given vendor. If requirements are verified, returns 0. Else, calls set_config, and returns 0
     after credentials are provided and config is successfully made.
 
     """
-    if get_config("verify", vendor) != "True":
-        prompt_lst = CONFIG_PROMPTS[vendor]
-        for prompt in prompt_lst:
-            set_config(*prompt)
+    prompt_lst = VENDOR_CONFIGS[vendor]
+    if vendor == "QBRAID":
+        url = get_config("url", "default")
+        email = get_config("email", "default")
+        refresh_token = get_config("refresh-token", "default")
+        id_token = get_config("id-token", "default")
+        if url + email + max(refresh_token, id_token) == -3:
+            raise ConfigError("Invalid qbraidrc")
+    else:
+        file_dict = CONFIG_PATHS[vendor]
+        for file in file_dict:
+            filepath = file_dict[file]
+            if get_config("verify", vendor, filepath=filepath) != "True":
+                for prompt in prompt_lst:
+                    set_config(*prompt)
     return 0
 
 
-def _get_set_url():
-    _ = set_config("url", "", qbraid_api_url, False, "QBRAID", qbraid_config_path)
-    return qbraid_api_url
-
-
-def get_config(config_name, section, qbraidrc=False, filepath=None):
-    """Returns the config value of specified config
+def get_config(config_name, section, filepath=None):
+    """Returns the config value of specified config. If vendor and filename
+    are not specified, filepath must be specified.
 
     Args:
         config_name (str): the name of the config
         section (str) = the section of the config file to store config_name
-        qbraidrc (optional, bool): if True, filepath is qbraidrc path
-        filepath (optional, str): the existing or desired path to config file. Defaults to the
-            qbraid config path.
+        filepath (optional, str): the existing or desired path to config file.
     Returns:
         Config value or -1 if config does not exist
     """
-    if qbraidrc:
-        configpath = qbraidrc_path
-    elif filepath is None:
-        configpath = qbraid_config_path
-    else:
-        configpath = filepath
-    if os.path.isfile(configpath):
+    if not filepath:
+        filename = "qbraidrc" if section == "default" else "config"
+        try:
+            filepath = CONFIG_PATHS["QBRAID"][filename]
+        except KeyError:
+            return -1
+    if os.path.isfile(filepath):
         config = configparser.ConfigParser()
-        config.read(configpath)
+        config.read(filepath)
         if section in config.sections():
             if config_name in config[section]:
                 return config[section][config_name]
-    if config_name == "url" and section == "QBRAID":
-        return _get_set_url()
     return -1
 
 
-def update_config(vendor):
+def update_config(vendor, update=True):
     """Update the config associated with given vendor
 
     Args:
         vendor (str): a supported vendor
 
     """
-    prompt_lst = CONFIG_PROMPTS[vendor]
+    prompt_lst = VENDOR_CONFIGS[vendor]
     for prompt in prompt_lst:
-        set_config(*prompt, update=True)
+        set_config(*prompt, update=update)
     return 0

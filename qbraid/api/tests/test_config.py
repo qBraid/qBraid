@@ -1,20 +1,19 @@
+import configparser
 import os
 
 import pytest
 
+from qbraid.api.config_specs import (
+    aws_config_path,
+    aws_cred_path,
+    ibmq_account_url,
+    qbraid_api_url,
+    qbraid_config_path,
+    qbraidrc_path,
+    qiskitrc_path,
+)
 from qbraid.api.config_user import get_config
 from qbraid.api.session import QbraidSession
-
-qbraidrc_path = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
-qbraid_config_path = os.path.join(os.path.expanduser("~"), ".qbraid", "config")
-aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
-aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
-ibmq_config_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
-ibmq_account_url = "https://auth.quantum-computing.ibm.com/api"
-# qbraid_api_url = "http://localhost:3001/api"
-# qbraid_api_url = "https://api-staging.qbraid.com/api"
-# qbraid_api_url_URL = "https://api.qbraid.com/api"
-qbraid_api_url = "https://api-staging-1.qbraid.com/api"
 
 aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
@@ -31,16 +30,39 @@ config_lst = [
     ["s3_bucket", "amazon-braket-qbraid-test", "AWS", qbraid_config_path],
     ["s3_folder", "qbraid-sdk-output", "AWS", qbraid_config_path],
     ["verify", "True", "AWS", qbraid_config_path],
-    # ["token", ibmq_token, "ibmq", ibmq_config_path],
-    # ["url", ibmq_account_url, "ibmq", ibmq_config_path],
-    # ["verify", "True", "ibmq", ibmq_config_path],
-    # ["group", "open", "IBM", qbraid_config_path],
-    # ["project", "main", "IBM", qbraid_config_path],
-    # ["verify", "True", "IBM", qbraid_config_path],
-    ["user", qbraid_user, "sdk", qbraidrc_path],
-    ["token", qbraid_token, "sdk", qbraidrc_path],
-    ["url", qbraid_api_url, "QBRAID", qbraid_config_path],
+    ["token", ibmq_token, "ibmq", qiskitrc_path],
+    ["url", ibmq_account_url, "ibmq", qiskitrc_path],
+    ["verify", "True", "ibmq", qiskitrc_path],
+    ["group", "open", "IBM", qbraid_config_path],
+    ["project", "main", "IBM", qbraid_config_path],
+    ["verify", "True", "IBM", qbraid_config_path],
+    ["email", qbraid_user, "default", qbraidrc_path],
+    ["url", qbraid_api_url, "default", qbraidrc_path],
+    ["refresh-token", qbraid_token, "default", qbraidrc_path],
 ]
+
+
+def set_config():
+    """Set config inside testing virtual environments with default values
+    hard-coded and secret values read from environment variables."""
+    for c in config_lst:
+        config_name = c[0]
+        config_value = c[1]
+        section = c[2]
+        filepath = c[3]
+        # print(f"{config_name}: {config_value}")
+        if not os.path.isfile(filepath):
+            os.makedirs(os.path.dirname(filepath), exist_ok=True)
+        config = configparser.ConfigParser()
+        config.read(filepath)
+        if section not in config.sections():
+            config.add_section(section)
+        config.set(section, config_name, str(config_value))
+        with open(filepath, "w", encoding="utf-8") as cfgfile:
+            config.write(cfgfile)
+
+
+set_config()
 
 
 @pytest.mark.parametrize("config", config_lst)
@@ -54,8 +76,8 @@ def test_get_config(config):
 
 
 def test_qbraid_session_from_config():
-    email = get_config("user", "sdk", filepath=qbraidrc_path)
-    refresh = get_config("token", "sdk", filepath=qbraidrc_path)
+    email = get_config("email", "default")
+    refresh = get_config("refresh-token", "default")
     session = QbraidSession()
     headers = session.headers
     assert headers["email"] == email
@@ -65,7 +87,7 @@ def test_qbraid_session_from_config():
 def test_qbraid_session_from_args():
     email = "test"
     refresh = "123"
-    session = QbraidSession(user_email=email, auth_token=refresh)
+    session = QbraidSession(user_email=email, refresh_token=refresh)
     headers = session.headers
     assert headers["email"] == email
     assert headers["refresh-token"] == refresh

@@ -1,5 +1,7 @@
 """QiskitBackendWrapper Class"""
 
+import os
+
 from qiskit import IBMQ, Aer, assemble
 from qiskit import transpile as qiskit_transpile
 from qiskit.providers.backend import Backend as QiskitBackend
@@ -11,8 +13,11 @@ from qbraid.api import config_user, job_api
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
 from qbraid.devices.exceptions import DeviceError
-from qbraid.devices.ibm.job import QiskitJobWrapper
-from qbraid.devices.ibm.result import QiskitResultWrapper
+
+from .job import QiskitJobWrapper
+from .result import QiskitResultWrapper
+
+qiskitrc_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
 
 
 class QiskitBackendWrapper(DeviceLikeWrapper):
@@ -22,15 +27,23 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         """Initialize an IBM device."""
         if self._obj_ref == "IBMQ":
             if not IBMQ.active_account():
-                token = config_user.get_config("token", "sdk", qbraidrc=True)
-                base_url = config_user.get_config("url", "QBRAID")
-                api_url = f"{base_url}/ibm-routes?route="
-                IBMQ.enable_account(token, api_url)
-            provider = IBMQ.get_provider(hub="ibm-q", group="open", project="main")
+                IBMQ.load_account()
+                # token = config_user.get_config("token", "ibmq", filepath=qiskitrc_path)
+                # base_url = config_user.get_config("url", "default")
+                # api_url = f"{base_url}/ibm-routes?route="
+                # IBMQ.enable_account(token, api_url)
+            # provider = IBMQ.get_provider(hub="ibm-q", group="open", project="main")
+            group = config_user.get_config("group", "IBM")
+            project = config_user.get_config("project", "IBM")
+            try:
+                provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
+            except IBMQProviderError:
+                IBMQ.load_account()
+                provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
             return provider.get_backend(self._obj_arg)
         if self._obj_ref == "Aer":
             return Aer.get_backend(self._obj_arg)
-        IBMQ.disable_account()
+        # IBMQ.disable_account()
         raise DeviceError(f"obj_ref {self._obj_ref} not found.")
 
     def _vendor_compat_run_input(self, run_input):

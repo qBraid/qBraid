@@ -52,8 +52,9 @@
    .. autosummary::
 
       ~QbraidSession.base_url
-      ~QbraidSession.auth_token
       ~QbraidSession.user_email
+      ~QbraidSession.id_token
+      ~QbraidSession.refresh_token
 
 """
 # pylint: skip-file

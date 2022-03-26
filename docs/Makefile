@@ -13,11 +13,7 @@ STUBSDIR      = stubs
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: help cleanall Makefile
-
-cleanall:
-	@echo "Removing everything under '$(BUILDDIR)'..."
-	@echo "Removing everything under '$(STUBSDIR)'..."
+.PHONY: help Makefile
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
