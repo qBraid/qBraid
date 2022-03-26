@@ -58,25 +58,26 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
 
         """
         # pylint: disable=import-outside-toplevel
-        if self.provider != "D-Wave":
-            raise DeviceError("Sampler only available for D-Wave (annealing) devices")
-        try:
-            from braket.ocean_plugin import BraketDWaveSampler, BraketSampler
-        except ModuleNotFoundError:
-            install_package.install("amazon-braket-ocean-plugin")
-            from braket.ocean_plugin import BraketDWaveSampler, BraketSampler
-        if braket_default:
-            sampler = BraketSampler(self._s3_location, self._arn)
-        else:
-            sampler = BraketDWaveSampler(self._s3_location, self._arn)
-        if embedding:
-            try:
-                from dwave.system.composites import EmbeddingComposite
-            except ModuleNotFoundError:
-                install_package.install("dwave-ocean-sdk")
-                from dwave.system.composites import EmbeddingComposite
-            return EmbeddingComposite(sampler)
-        return sampler
+        # if self.provider != "D-Wave":
+        #     raise DeviceError("Sampler only available for D-Wave (annealing) devices")
+        # try:
+        #     from braket.ocean_plugin import BraketDWaveSampler, BraketSampler
+        # except ModuleNotFoundError:
+        #     install_package.install("amazon-braket-ocean-plugin")
+        #     from braket.ocean_plugin import BraketDWaveSampler, BraketSampler
+        # if braket_default:
+        #     sampler = BraketSampler(self._s3_location, self._arn)
+        # else:
+        #     sampler = BraketDWaveSampler(self._s3_location, self._arn)
+        # if embedding:
+        #     try:
+        #         from dwave.system.composites import EmbeddingComposite
+        #     except ModuleNotFoundError:
+        #         install_package.install("dwave-ocean-sdk")
+        #         from dwave.system.composites import EmbeddingComposite
+        #     return EmbeddingComposite(sampler)
+        # return sampler
+        return NotImplemented
 
     def run(self, run_input, *args, **kwargs):
         """Run a quantum task specification on this quantum device. A task can be a circuit or an
