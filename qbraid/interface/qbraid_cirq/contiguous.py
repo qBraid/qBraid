@@ -1,3 +1,5 @@
+"""Module for converting circuits to use contiguous qubits/indexing"""
+
 from typing import List, Sequence, Union
 
 from cirq import Circuit, GridQubit, I, LineQubit, NamedQubit, Qid
@@ -97,7 +99,7 @@ def _contiguous_expansion(circuit: Circuit) -> Circuit:
     return circuit
 
 
-def _contiguous_compression(circuit: Circuit, rev_qubits=False, map_gates=False) -> Circuit:
+def _contiguous_compression(circuit: Circuit, rev_qubits=False) -> Circuit:
     """Checks whether the circuit uses contiguous qubits/indices,
     and if not, reduces dimension accordingly."""
     qubit_map = {}
@@ -116,8 +118,8 @@ def _contiguous_compression(circuit: Circuit, rev_qubits=False, map_gates=False)
 
 
 def _convert_to_contiguous_cirq(
-    circuit: Circuit, rev_qubits=False, map_gates=False, expansion=False
+    circuit: Circuit, rev_qubits=False, expansion=False
 ) -> Circuit:
     if expansion:
         return _contiguous_expansion(circuit)
-    return _contiguous_compression(circuit, rev_qubits=rev_qubits, map_gates=map_gates)
+    return _contiguous_compression(circuit, rev_qubits=rev_qubits)

@@ -1,7 +1,6 @@
 """Module for making requests to the qbraid api"""
 
 import logging
-from email.mime import base
 from typing import Any, Optional
 
 from requests import RequestException, Response, Session
@@ -132,9 +131,9 @@ class QbraidSession(Session):
             if ex.response is not None:
                 try:
                     error_json = ex.response.json()["error"]
-                    message += ". {}, Error code: {}.".format(
-                        error_json["message"], error_json["code"]
-                    )
+                    msg = error_json["message"]
+                    code = error_json["code"]
+                    message += f". {msg}, Error code: {code}."
                     logger.debug("Response uber-trace-id: %s", ex.response.headers["uber-trace-id"])
                 except Exception:  # pylint: disable=broad-except
                     # the response did not contain the expected json.

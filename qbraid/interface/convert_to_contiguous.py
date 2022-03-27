@@ -1,3 +1,5 @@
+"""Module for converting quantum circuit/program to use contiguous qubit indexing"""
+
 from typing import Any, Callable
 
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
@@ -22,8 +24,12 @@ def convert_to_contiguous(circuit: QPROGRAM, **kwargs) -> QPROGRAM:
 
     try:
         package = circuit.__module__
-    except AttributeError:
-        raise UnsupportedCircuitError("Could not determine the package of the input circuit.")
+    except AttributeError as err:
+        raise UnsupportedCircuitError(
+            "Could not determine the package of the input circuit."
+        ) from err
+
+    # pylint: disable=import-outside-toplevel
 
     if "qiskit" in package:
         return circuit
@@ -44,9 +50,9 @@ def convert_to_contiguous(circuit: QPROGRAM, **kwargs) -> QPROGRAM:
 
     try:
         compat_circuit = conversion_function(circuit, **kwargs)
-    except Exception:
+    except Exception as err:
         raise CircuitConversionError(
             "Could not convert given circuit to use contiguous qubits/indicies."
-        )
+        ) from err
 
     return compat_circuit
