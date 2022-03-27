@@ -10,6 +10,7 @@ from .exceptions import RequestsApiError
 
 logger = logging.getLogger(__name__)
 
+
 def _get_config(field: str) -> Optional[str]:
     config = get_config(field, "default")
     if config == -1 or config in ["", "None"]:

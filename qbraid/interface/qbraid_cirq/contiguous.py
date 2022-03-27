@@ -117,9 +117,7 @@ def _contiguous_compression(circuit: Circuit, rev_qubits=False) -> Circuit:
     return contig_circuit
 
 
-def _convert_to_contiguous_cirq(
-    circuit: Circuit, rev_qubits=False, expansion=False
-) -> Circuit:
+def _convert_to_contiguous_cirq(circuit: Circuit, rev_qubits=False, expansion=False) -> Circuit:
     if expansion:
         return _contiguous_expansion(circuit)
     return _contiguous_compression(circuit, rev_qubits=rev_qubits)

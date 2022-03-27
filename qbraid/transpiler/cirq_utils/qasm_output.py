@@ -12,6 +12,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: skip-file
+
 """Utility classes for representing QASM."""
 
 import re
@@ -50,7 +52,8 @@ class QasmOutput:
             qubits: The qubits used in the operations.
             header: A multi-line string that is placed in a comment at the top of the QASM.
             precision: The number of digits after the decimal to show for numbers in the QASM code.
-            version: The QASM version to target. Objects may return different QASM depending on version.
+            version: The QASM version to target. Objects may return different
+             QASM depending on version.
         """
         self.operations = tuple(ops.flatten_to_ops(operations))
         self.qubits = qubits

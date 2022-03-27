@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
+# pylint: skip-file
+
 import functools
 import operator
 from typing import Any, Callable, Dict, Iterable, List, Optional, Sequence, Union, cast
@@ -54,8 +57,6 @@ class QasmGateStatement:
     of corresponding `cirq.GateOperation`s in the `on` method.
     """
 
-    # TODO(#3388) Add documentation for Args.
-    # pylint: disable=missing-param-doc
     def __init__(
         self,
         qasm_gate: str,
@@ -77,7 +78,6 @@ class QasmGateStatement:
         assert num_args >= 1
         self.num_args = num_args
 
-    # pylint: enable=missing-param-doc
     def _validate_args(self, args: List[List[ops.Qid]], lineno: int):
         if len(args) != self.num_args:
             raise QasmException(

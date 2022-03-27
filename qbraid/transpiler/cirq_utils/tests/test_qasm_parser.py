@@ -6,6 +6,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# pylint: skip-file
+
 import cirq
 import cirq.testing as ct
 import numpy as np

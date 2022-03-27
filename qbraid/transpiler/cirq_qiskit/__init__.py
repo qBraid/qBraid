@@ -7,7 +7,7 @@ Qiskit Conversions  (:mod:`qbraid.transpiler.cirq_qiskit`)
 
 .. autosummary::
    :toctree: ../stubs/
-   
+
    from_qiskit
    to_qiskit
 

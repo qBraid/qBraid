@@ -190,9 +190,7 @@ def _translate_one_qubit_cirq_operation_to_braket_instruction(
         return []
 
     matrix = protocols.unitary(gate)
-    return _translate_one_qubit_cirq_operation_to_braket_instruction(
-        matrix, target, name=str(gate)
-    )
+    return _translate_one_qubit_cirq_operation_to_braket_instruction(matrix, target, name=str(gate))
 
 
 def _translate_two_qubit_cirq_operation_to_braket_instruction(
