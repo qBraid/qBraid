@@ -1,3 +1,7 @@
+"""
+Unit tests for converting Cirq circuits to Braket circuits
+"""
+
 import numpy as np
 import pytest
 from cirq import Circuit, LineQubit, ops, testing
@@ -8,12 +12,14 @@ from qbraid.transpiler.cirq_braket.convert_to_braket import to_braket
 
 @pytest.mark.parametrize("qreg", (LineQubit.range(2), [LineQubit(1), LineQubit(6)]))
 def test_to_braket_bell_circuit(qreg):
+    """Test converting bell circuit"""
     cirq_circuit = Circuit(ops.H(qreg[0]), ops.CNOT(*qreg))
     braket_circuit = to_braket(cirq_circuit)
     assert equal_unitaries(braket_circuit, cirq_circuit)
 
 
 def test_to_braket_non_parameterized_single_qubit_gates():
+    """Test converting circuit containing non-parameterized single-qubits gates"""
     qreg = LineQubit.range(4)
     cirq_circuit = Circuit(
         ops.I(qreg[0]),
@@ -34,8 +40,9 @@ def test_to_braket_non_parameterized_single_qubit_gates():
 
 @pytest.mark.parametrize("qubit_index", (0, 3))
 def test_to_braket_parameterized_single_qubit_gates(qubit_index):
+    """Testing converting circuit containing parameterized single-qubit gates"""
     qubit = LineQubit(qubit_index)
-    angles = np.random.RandomState(11).random(4)
+    angles = np.random.RandomState(11).random(4)  # pylint: disable=no-member
     cirq_circuit = Circuit(
         ops.rx(angles[0]).on(qubit),
         ops.ry(angles[1]).on(qubit),
@@ -48,6 +55,7 @@ def test_to_braket_parameterized_single_qubit_gates(qubit_index):
 
 
 def test_to_braket_non_parameterized_two_qubit_gates():
+    """Test converting circuit containing non-parameterized two-qubit gates."""
     qreg = LineQubit.range(2, 5)
     cirq_circuit = Circuit(
         ops.CNOT(*qreg[:2]),
@@ -61,6 +69,7 @@ def test_to_braket_non_parameterized_two_qubit_gates():
 
 
 def test_to_braket_three_qubit_gates():
+    """Testing converting circuits containing three-qubit gates"""
     qreg = LineQubit.range(1, 4)
     cirq_circuit = Circuit(ops.TOFFOLI(*qreg), ops.FREDKIN(*qreg))
     braket_circuit = to_braket(cirq_circuit)
@@ -78,6 +87,7 @@ def _rotation_of_pi_over_7(num_qubits):
 
 @pytest.mark.skip(reason="Unsupported gates become unitaries.")
 def test_to_braket_raises_on_unsupported_gates():
+    """Test that converting circuit with unsupported gate raises error"""
     for num_qubits in range(3, 5):
         print(num_qubits)
         qubits = [LineQubit(int(qubit)) for qubit in range(num_qubits)]
@@ -197,6 +207,7 @@ def test_to_braket_common_three_qubit_gates(common_gate):
 
 @pytest.mark.parametrize("num_qubits", [1, 2, 3, 4, 5])
 def test_50_random_circuits(num_qubits):
+    """Testing converting 50 random circuits"""
     for i in range(10):
         moments = np.random.randint(1, 6)
         state = num_qubits + i

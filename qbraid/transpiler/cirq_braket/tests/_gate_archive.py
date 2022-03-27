@@ -1,3 +1,5 @@
+"""Module for Braket gate dictionary used for testing"""
+
 from braket.circuits.gates import (
     CY,
     CZ,
