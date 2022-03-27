@@ -35,7 +35,7 @@ def f0():
             circ.x(index + 2 * k + 1)
             circ.ccx(index + 2 * k, index + 2 * k + 1, next_available_ancilla)
             next_available_ancilla += 1
-        index += n // 2 ** j
+        index += n // 2**j
 
     # finally a CNOT to the output qubit.
     circ.cx(out_qubit - 1, out_qubit)
@@ -44,7 +44,7 @@ def f0():
 
     # Undoing all gates, except the last.
     for j in list(reversed(range(int(np.log2(n))))):
-        index -= n // 2 ** j
+        index -= n // 2**j
         for k in list(reversed(range(n // 2 ** (j + 1)))):
             next_available_ancilla -= 1
             circ.ccx(index + 2 * k, index + 2 * k + 1, next_available_ancilla)
@@ -93,7 +93,7 @@ def f1():
             circ.x(index + 2 * k + 1)
             circ.ccx(index + 2 * k, index + 2 * k + 1, next_available_ancilla)
             next_available_ancilla += 1
-        index += n // 2 ** j
+        index += n // 2**j
 
     # finally a CNOT to the output qubit.
     circ.cx(out_qubit - 1, out_qubit)
@@ -102,7 +102,7 @@ def f1():
 
     # Undoing all gates, except the last.
     for j in list(reversed(range(int(np.log2(n))))):
-        index -= n // 2 ** j
+        index -= n // 2**j
         for k in list(reversed(range(n // 2 ** (j + 1)))):
             next_available_ancilla -= 1
             circ.ccx(index + 2 * k, index + 2 * k + 1, next_available_ancilla)

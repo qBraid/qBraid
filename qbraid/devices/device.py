@@ -4,7 +4,7 @@
 
 from abc import ABC, abstractmethod
 
-import qbraid
+from qbraid import circuit_wrapper
 from qbraid.api.config_user import verify_config
 
 from .exceptions import DeviceError
@@ -56,7 +56,7 @@ class DeviceLikeWrapper(ABC):
             raise DeviceError("Device is currently offline.")
         device_run_package = self.info["runPackage"]
         input_run_package = run_input.__module__.split(".")[0]
-        qbraid_circuit = qbraid.circuit_wrapper(run_input)
+        qbraid_circuit = circuit_wrapper(run_input)
         if self.num_qubits and qbraid_circuit.num_qubits > self.num_qubits:
             raise DeviceError(
                 f"Number of qubits in circuit ({qbraid_circuit.num_qubits}) exceeds "

@@ -1,3 +1,5 @@
+"""Cirq utility module"""
+
 from copy import deepcopy
 from typing import List, Tuple, Union, cast
 
@@ -103,9 +105,9 @@ def _append_measurements(circuit: Circuit, measurements: List[Tuple[int, Operati
         measurements: measurements to perform.
     """
     new_measurements: List[Tuple[int, Operation]] = []
-    for i in range(len(measurements)):
+    for _, value in enumerate(measurements):
         # Make sure the moment to insert into is the last in the circuit
-        new_measurements.append((len(circuit) + 1, measurements[i][1]))
+        new_measurements.append((len(circuit) + 1, value[1]))
     circuit.batch_insert(new_measurements)
 
 
@@ -155,8 +157,8 @@ def _equal(
             ]
             circ.batch_remove(measurements)
 
-            for i in range(len(measurements)):
-                gate = cast(MeasurementGate, measurements[i][1].gate)
+            for _, value in enumerate(measurements):
+                gate = cast(MeasurementGate, value[1].gate)
                 gate.key = ""
 
             circ.batch_insert(measurements)

@@ -52,9 +52,9 @@ def _map_bit_index(bit_index: int, new_register_sizes: List[int]) -> Tuple[int, 
 
     # Could be faster via bisection.
     register_index = None
-    for i in range(len(max_indices_in_registers)):
-        if bit_index <= max_indices_in_registers[i]:
-            register_index = i
+    for count, bit_index_iter in enumerate(max_indices_in_registers):
+        if bit_index <= bit_index_iter:
+            register_index = count
             break
     assert register_index is not None
 
@@ -181,8 +181,8 @@ def _map_qasm_str_to_def(qasm_str):
     gate_defs = {}
     qasm_lst = qasm_str.split("\n")
     qasm_lst_out = []
-    for i in range(len(qasm_lst)):
-        line_str = qasm_lst[i]
+    for _, qasm_line in enumerate(qasm_lst):
+        line_str = qasm_line
         line_args = line_str.split(" ")
         if line_args[0] == "gate":
             gate = line_args[1]
@@ -193,8 +193,8 @@ def _map_qasm_str_to_def(qasm_str):
         elif line_args[0] in gate_defs:
             qs, instr = gate_defs[line_args[0]]
             map_qs = line_args[1].strip(";").split(",")
-            for i in range(len(qs)):
-                instr = instr.replace(qs[i], map_qs[i])
+            for i, qs_i in enumerate(qs):
+                instr = instr.replace(qs_i, map_qs[i])
             line_str_out = instr
         else:
             line_str_out = line_str

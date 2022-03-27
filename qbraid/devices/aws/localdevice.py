@@ -2,9 +2,10 @@
 
 from braket.devices import LocalSimulator
 
-from qbraid.devices.aws.localjob import BraketLocalQuantumTaskWrapper
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
+
+from .localjob import BraketLocalQuantumTaskWrapper
 
 
 class BraketLocalSimulatorWrapper(DeviceLikeWrapper):

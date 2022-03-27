@@ -5,8 +5,8 @@
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
-from qbraid.devices.enums import JobStatus
-from qbraid.devices.exceptions import JobError
+from .enums import JobStatus
+from .exceptions import JobError
 
 
 class LocalJobWrapper(ABC):

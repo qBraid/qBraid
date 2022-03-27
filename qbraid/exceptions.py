@@ -14,12 +14,5 @@ class QbraidError(Exception):
         return repr(self.message)
 
 
-class WrapperError(QbraidError):
-    """Base class for errors raised while appling a qbraid wrapper."""
-
-    pass
-
-
 class UnsupportedCircuitError(QbraidError):
-
-    pass
+    """Base class for errors raised when processing unsupported circuits"""

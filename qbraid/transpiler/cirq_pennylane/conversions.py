@@ -32,7 +32,7 @@ SUPPORTED = SUPPORTED_PL - UNSUPPORTED
 
 
 class UnsupportedQuantumTapeError(Exception):
-    pass
+    """Class for exceptions raised processing unsupported quantum tape objects"""
 
 
 def from_pennylane(tape: QuantumTape) -> Circuit:
@@ -46,13 +46,13 @@ def from_pennylane(tape: QuantumTape) -> Circuit:
     """
     try:
         wires = sorted(tape.wires)
-    except TypeError:
+    except TypeError as err:
         raise UnsupportedQuantumTapeError(
             f"The wires of the tape must be sortable, but could not sort " f"{tape.wires}."
-        )
+        ) from err
 
-    for i in range(len(wires)):
-        if wires[i] != i:
+    for index, wire in enumerate(wires):
+        if wire != index:
             raise UnsupportedQuantumTapeError(
                 "The wire labels of the tape must contiguously pack 0 " "to n-1, for n wires."
             )

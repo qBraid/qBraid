@@ -5,9 +5,10 @@ from asyncio import Task
 
 from braket.aws import AwsQuantumTask
 
-from qbraid.devices.aws import BraketResultWrapper
 from qbraid.devices.enums import JOB_FINAL
 from qbraid.devices.job import JobLikeWrapper
+
+from .result import BraketResultWrapper
 
 
 class BraketQuantumTaskWrapper(JobLikeWrapper):

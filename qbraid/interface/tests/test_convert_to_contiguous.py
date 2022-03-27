@@ -2,7 +2,6 @@
 Unit tests for the qbraid convert_to_contiguous interfacing
 """
 import cirq
-import pytest
 from braket.circuits import Circuit as BraketCircuit
 
 from qbraid.interface.calculate_unitary import equal_unitaries
@@ -10,6 +9,8 @@ from qbraid.interface.convert_to_contiguous import convert_to_contiguous
 
 
 def test_make_contiguous():
+    """Test unitary equivalance after converting to contiguous qubits"""
+    # pylint: disable=no-member
     braket_circuit = BraketCircuit()
     braket_circuit.x(0)
     braket_circuit.y(2)

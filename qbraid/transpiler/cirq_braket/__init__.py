@@ -7,7 +7,7 @@ Braket Conversions  (:mod:`qbraid.transpiler.cirq_braket`)
 
 .. autosummary::
    :toctree: ../stubs/
-   
+
    from_braket
    to_braket
 

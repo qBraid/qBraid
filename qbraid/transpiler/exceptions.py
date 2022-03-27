@@ -8,4 +8,4 @@ class TranspilerError(QbraidError):
 
 
 class CircuitConversionError(TranspilerError):
-    pass
+    """Base class for errors raised while converting a circuit."""

@@ -1,3 +1,7 @@
+"""Module for Cirq custom gates to aid the transpiler and qasm parser"""
+
+# pylint: disable=unused-argument
+
 import fractions
 from typing import Optional, Tuple
 
@@ -17,11 +21,15 @@ from cirq import (
 
 
 class U2Gate(Gate):
+    """A single qubit gate for rotations about the
+    X+Z axis of the Bloch sphere.
+    """
+
     def __init__(self, phi, lam):
         self._phi = float(phi)
         self._lam = float(lam)
 
-        super(U2Gate, self)
+        super()
 
     def _num_qubits_(self) -> int:
         return 1
@@ -55,12 +63,16 @@ class U2Gate(Gate):
 
 
 class U3Gate(Gate):
+    """A single qubit gate for generic rotations
+    given 3 Euler angles.
+    """
+
     def __init__(self, theta, phi, lam):
         self._theta = float(theta)
         self._phi = float(phi)
         self._lam = float(lam)
 
-        super(U3Gate, self)
+        super()
 
     def _num_qubits_(self) -> int:
         return 1
@@ -97,10 +109,12 @@ class U3Gate(Gate):
 
 
 class RZZGate(Gate):
+    """A two qubit gate for rotations about ZZ."""
+
     def __init__(self, theta):
         self._theta = float(theta)
 
-        super(RZZGate, self)
+        super()
 
     def _num_qubits_(self) -> int:
         return 2
@@ -127,6 +141,11 @@ class RZZGate(Gate):
 
 @value.value_equality
 class ZPowGate(cirq.ZPowGate):
+    """A single qubit gate for rotations around the
+    Z axis of the Bloch sphere.
+    """
+
+    # pylint: disable=too-many-return-statements
     def _qasm_(self, args: "cirq.QasmArgs", qubits: Tuple["cirq.Qid", ...]) -> Optional[str]:
         args.validate_version("2.0")
         if self._global_shift == 0:
@@ -152,6 +171,7 @@ def _give_cirq_gate_name(gate: Gate, name: str, n_qubits: int) -> Gate:
 
 
 def matrix_gate(matrix: np.ndarray) -> MatrixGate:
+    """Return cirq matrix gate given unitary"""
     n_qubits = int(np.log2(len(matrix)))
     unitary_gate = MatrixGate(matrix)
     _give_cirq_gate_name(unitary_gate, "U", n_qubits)
@@ -159,12 +179,12 @@ def matrix_gate(matrix: np.ndarray) -> MatrixGate:
 
 
 def rzz(theta):
+    """Returns custom cirq RZZ gate given rotation angle"""
     if theta == 0:
         return IdentityGate(2)
-    elif theta == 2 * np.pi:
+    if theta == 2 * np.pi:
         return TwoQubitDiagonalGate([np.pi] * 4)
-    else:
-        return RZZGate(theta)
+    return RZZGate(theta)
 
 
 def _map_zpow(op: Operation, _: int) -> OP_TREE:

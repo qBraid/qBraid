@@ -7,7 +7,7 @@ Cirq Conversions  (:mod:`qbraid.transpiler.cirq_utils`)
 
 .. autosummary::
    :toctree: ../stubs/
-   
+
    from_qasm
    to_qasm
 

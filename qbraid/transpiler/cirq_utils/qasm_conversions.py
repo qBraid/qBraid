@@ -1,3 +1,5 @@
+"""Module for conversions between Cirq Circuits and QASM strings"""
+
 # Copyright 2018 The Cirq Developers
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -61,7 +63,9 @@ def _to_qasm_output(
             register.
     """
     if header is None:
-        header = f"Generated from Cirq v{cirq._version.__version__}"
+        header = (
+            f"Generated from Cirq v{cirq._version.__version__}"  # pylint: disable=protected-access
+        )
     qubits = ops.QubitOrder.as_qubit_order(qubit_order).order_for(circuit.all_qubits())
     return QasmOutput(
         operations=circuit.all_operations(),
@@ -81,7 +85,8 @@ def circuit_to_qasm(
     """Converts a `cirq.Circuit` to an OpenQASM string.
     Args:
         circuit: cirq Circuit object
-        header: A multi-line string that is placed in a comment at the top of the QASM. Defaults to a cirq version specifier.
+        header: A multi-line string that is placed in a comment at the top of the QASM.
+        Defaults to a cirq version specifier.
         precision: Number of digits to use when representing numbers.
         qubit_order: Determines how qubits are ordered in the QASM register.
     """

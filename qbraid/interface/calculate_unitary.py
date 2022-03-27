@@ -1,3 +1,5 @@
+"""Module for calculating unitary of quantum circuit/program"""
+
 from typing import Any, Callable
 
 import numpy as np
@@ -8,7 +10,7 @@ from qbraid.interface.convert_to_contiguous import convert_to_contiguous
 
 
 class UnitaryCalculationError(QbraidError):
-    pass
+    """Class for exceptions raised during unitary calculation"""
 
 
 def to_unitary(circuit: QPROGRAM, ensure_contiguous=False) -> np.ndarray:
@@ -28,8 +30,12 @@ def to_unitary(circuit: QPROGRAM, ensure_contiguous=False) -> np.ndarray:
 
     try:
         package = circuit.__module__
-    except AttributeError:
-        raise UnsupportedCircuitError("Could not determine the package of the input circuit.")
+    except AttributeError as err:
+        raise UnsupportedCircuitError(
+            "Could not determine the package of the input circuit."
+        ) from err
+
+    # pylint: disable=import-outside-toplevel
 
     if "qiskit" in package:
         from qbraid.interface.qbraid_qiskit.utils import _unitary_from_qiskit
@@ -53,8 +59,10 @@ def to_unitary(circuit: QPROGRAM, ensure_contiguous=False) -> np.ndarray:
 
     try:
         unitary = to_unitary_function(circuit_input)
-    except Exception:
-        raise UnitaryCalculationError("Unitary could not be calculated from given circuit.")
+    except Exception as err:
+        raise UnitaryCalculationError(
+            "Unitary could not be calculated from given circuit."
+        ) from err
 
     return unitary
 
