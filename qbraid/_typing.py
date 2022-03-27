@@ -22,7 +22,11 @@
 """
 from typing import Union
 
+from braket.circuits import Circuit as _BKCircuit
 from cirq import Circuit as _Circuit
+from pennylane.tape import QuantumTape as _QuantumTape
+from pyquil import Program as _Program
+from qiskit import QuantumCircuit as _QuantumCircuit
 
 # Supported quantum programs.
 SUPPORTED_PROGRAM_TYPES = {
@@ -33,25 +37,5 @@ SUPPORTED_PROGRAM_TYPES = {
     "pennylane": "QuantumTape",
 }
 
-try:
-    from pyquil import Program as _Program
-except ImportError:  # pragma: no cover
-    _Program = _Circuit  # type: ignore
-
-try:
-    from qiskit import QuantumCircuit as _QuantumCircuit
-except ImportError:  # pragma: no cover
-    _QuantumCircuit = _Circuit
-
-try:
-    from braket.circuits import Circuit as _BKCircuit
-except ImportError:  # pragma: no cover
-    _BKCircuit = _Circuit
-
-try:
-    from pennylane.tape import QuantumTape as _QuantumTape
-except ImportError:  # pragma: no cover
-    _QuantumTape = _Circuit
-
-# Supported + installed quantum programs.
+# Supported quantum programs.
 QPROGRAM = Union[_Circuit, _Program, _QuantumCircuit, _BKCircuit, _QuantumTape]

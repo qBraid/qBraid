@@ -6,4 +6,3 @@ PennyLane-qiskit==0.22.0
 pyquil==3.0.1
 qiskit==0.34.2
 requests==2.27.1
-sympy==1.9

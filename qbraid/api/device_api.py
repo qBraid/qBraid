@@ -3,6 +3,7 @@
 # pylint: disable=too-many-locals
 
 from datetime import datetime
+from typing import Optional
 
 from IPython.display import HTML, display
 
@@ -90,8 +91,9 @@ def refresh_devices():
     pbar.close()
 
 
-def get_devices(query=None):
-    """Displays a list of all supported devices matching given filters, tabulated by provider,
+def get_devices(query: Optional[dict]):
+    """get_devices(query)
+    Displays a list of all supported devices matching given filters, tabulated by provider,
     name, and qBraid ID. Each device also has a status given by a solid green bubble or a hollow
     red bubble, indicating that the device is online or offline, respectively. You can narrow your
     device search by supplying a dictionary containing the desired criteria. Available filters

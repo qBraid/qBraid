@@ -4,7 +4,7 @@ import logging
 import subprocess
 import sys
 
-import qbraid
+from qbraid import QbraidError
 
 
 def install(package: str):
@@ -13,4 +13,4 @@ def install(package: str):
     try:
         subprocess.check_call([sys.executable, "-m", "pip", "install", package])
     except subprocess.CalledProcessError as err:
-        raise qbraid.QbraidError(f"Failed to install {package}") from err
+        raise QbraidError(f"Failed to install {package}") from err

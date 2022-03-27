@@ -5,7 +5,8 @@ from qiskit import transpile as qiskit_transpile
 
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
-from qbraid.devices.ibm.localjob import QiskitBasicAerJobWrapper
+
+from .localjob import QiskitBasicAerJobWrapper
 
 
 class QiskitBasicAerWrapper(DeviceLikeWrapper):

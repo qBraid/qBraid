@@ -17,7 +17,8 @@ from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.job import Job as QiskitJob
 
-from qbraid import api, device_wrapper, random_circuit, retrieve_job
+from qbraid import device_wrapper, retrieve_job
+from qbraid.api import QbraidSession
 from qbraid.devices import DeviceError, JobError, ResultWrapper
 from qbraid.devices.aws import (
     BraketDeviceWrapper,
@@ -32,8 +33,9 @@ from qbraid.devices.ibm import (
     QiskitBasicAerWrapper,
     QiskitJobWrapper,
 )
+from qbraid.testing import random_circuit
 
-session = api.QbraidSession()
+session = QbraidSession()
 
 
 def device_wrapper_inputs(vendor: str):

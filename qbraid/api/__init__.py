@@ -8,7 +8,6 @@
 .. autosummary::
    :toctree: ../stubs/
 
-   get_devices
    ibmq_least_busy_qpu
    refresh_devices
    update_config

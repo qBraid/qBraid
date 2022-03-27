@@ -8,8 +8,8 @@ Interface (:mod:`qbraid.interface`)
 .. autosummary::
    :toctree: ../stubs/
 
-   convert_to_contiguous
    to_unitary
+   convert_to_contiguous
    equal_unitaries
 
 """

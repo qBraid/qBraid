@@ -3,8 +3,9 @@
 # pylint: disable=unused-argument,unused-import,no-self-use
 
 from qbraid.devices.device import DeviceLikeWrapper
-from qbraid.devices.google.job import CirqEngineJobWrapper
-from qbraid.devices.google.result import CirqResultWrapper
+
+from .job import CirqEngineJobWrapper
+from .result import CirqResultWrapper
 
 
 class CirqEngineWrapper(DeviceLikeWrapper):

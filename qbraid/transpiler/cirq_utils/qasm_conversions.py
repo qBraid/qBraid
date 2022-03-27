@@ -63,7 +63,9 @@ def _to_qasm_output(
             register.
     """
     if header is None:
-        header = f"Generated from Cirq v{cirq._version.__version__}"  # pylint: disable=protected-access
+        header = (
+            f"Generated from Cirq v{cirq._version.__version__}"  # pylint: disable=protected-access
+        )
     qubits = ops.QubitOrder.as_qubit_order(qubit_order).order_for(circuit.all_qubits())
     return QasmOutput(
         operations=circuit.all_operations(),
@@ -84,7 +86,7 @@ def circuit_to_qasm(
     Args:
         circuit: cirq Circuit object
         header: A multi-line string that is placed in a comment at the top of the QASM.
-          Defaults to a cirq version specifier.
+        Defaults to a cirq version specifier.
         precision: Number of digits to use when representing numbers.
         qubit_order: Determines how qubits are ordered in the QASM register.
     """
