@@ -15,14 +15,11 @@ class UnitaryCalculationError(QbraidError):
 
 def to_unitary(circuit: QPROGRAM, ensure_contiguous=False) -> np.ndarray:
     """Calculates the unitary of any valid input circuit.
-
     Args:
         circuit: Any quantum circuit object supported by qBraid.
         ensure_contiguous: If True, calculates unitary using contiguous qubit indexing
-
     Raises:
         UnsupportedCircuitError: If the input circuit is not supported.
-
     Returns:
         numpy.ndarray: Matrix representation of the input circuit.
     """

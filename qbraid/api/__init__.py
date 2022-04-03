@@ -9,7 +9,6 @@
    :toctree: ../stubs/
 
    ibmq_least_busy_qpu
-   refresh_devices
    update_config
    ApiError
    AuthError
@@ -59,7 +58,6 @@
 # pylint: skip-file
 
 from .config_user import update_config
-from .device_api import get_devices, refresh_devices
 from .exceptions import ApiError, AuthError, ConfigError, RequestsApiError
 from .least_busy import ibmq_least_busy_qpu
 from .session import QbraidSession

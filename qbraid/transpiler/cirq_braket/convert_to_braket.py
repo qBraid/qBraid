@@ -33,8 +33,8 @@ from qbraid.interface.qbraid_cirq.contiguous import _int_from_qubit
 from qbraid.transpiler.cirq_braket.custom_gates import C as BKControl
 
 
-def _raise_cirq_to_braket_error(op: Any) -> None:
-    raise ValueError(f"Unable to convert {op} to Braket.")
+def _raise_cirq_to_braket_error(opr: Any) -> None:
+    raise ValueError(f"Unable to convert {opr} to Braket.")
 
 
 def to_braket(circuit: Circuit) -> BKCircuit:
@@ -48,13 +48,13 @@ def to_braket(circuit: Circuit) -> BKCircuit:
     braket_int_qubits = list(reversed(cirq_int_qubits))
     qubit_mapping = {x: braket_int_qubits[x] for x in range(len(braket_int_qubits))}
     return BKCircuit(
-        _translate_cirq_operation_to_braket_instruction(op, qubit_mapping)
-        for op in compat_circuit.all_operations()
+        _translate_cirq_operation_to_braket_instruction(opr, qubit_mapping)
+        for opr in compat_circuit.all_operations()
     )
 
 
 def _translate_cirq_operation_to_braket_instruction(
-    op: cirq_ops.Operation,
+    opr: cirq_ops.Operation,
     qubit_mapping: Dict[int, int],
 ) -> List[BKInstruction]:
     """Converts the Cirq operation to an equivalent Braket instruction or list
@@ -66,31 +66,31 @@ def _translate_cirq_operation_to_braket_instruction(
     Raises:
         ValueError: If the operation cannot be converted to Braket.
     """
-    nqubits = protocols.num_qubits(op)
-    cirq_qubits = [_int_from_qubit(q) for q in op.qubits]
+    nqubits = protocols.num_qubits(opr)
+    cirq_qubits = [_int_from_qubit(q) for q in opr.qubits]
     qubits = [qubit_mapping[x] for x in cirq_qubits]
 
     if nqubits == 1:
         target = qubits[0]
-        return _translate_one_qubit_cirq_operation_to_braket_instruction(op, target)
+        return _translate_one_qubit_cirq_operation_to_braket_instruction(opr, target)
 
     if nqubits == 2:
-        return _translate_two_qubit_cirq_operation_to_braket_instruction(op, qubits)
+        return _translate_two_qubit_cirq_operation_to_braket_instruction(opr, qubits)
 
     if nqubits == 3:
-        if op == cirq_ops.TOFFOLI.on(*op.qubits):
+        if opr == cirq_ops.TOFFOLI.on(*opr.qubits):
             return [BKInstruction(braket_gates.CCNot(), qubits)]
-        if op == cirq_ops.FREDKIN.on(*op.qubits):
+        if opr == cirq_ops.FREDKIN.on(*opr.qubits):
             return [BKInstruction(braket_gates.CSwap(), qubits)]
-        if isinstance(op.gate, cirq_ops.ControlledGate):
+        if isinstance(opr.gate, cirq_ops.ControlledGate):
             sub_gate_instr = _translate_two_qubit_cirq_operation_to_braket_instruction(
-                op.gate.sub_gate, qubits[1:]
+                opr.gate.sub_gate, qubits[1:]
             )
             sub_gate = sub_gate_instr[0].operator
             return [BKInstruction(BKControl(sub_gate, qubits), qubits)]
         try:
-            matrix = protocols.unitary(op)
-            name = str(op.gate)
+            matrix = protocols.unitary(opr)
+            name = str(opr.gate)
             return [
                 BKInstruction(
                     braket_gates.Unitary(matrix, display_name=name),
@@ -98,17 +98,17 @@ def _translate_cirq_operation_to_braket_instruction(
                 )
             ]
         except (ValueError, TypeError):
-            _raise_cirq_to_braket_error(op)
+            _raise_cirq_to_braket_error(opr)
 
     # Unsupported gates.
     else:
-        _raise_cirq_to_braket_error(op)
+        _raise_cirq_to_braket_error(opr)
 
     return None  # type: ignore[return-value]  # pragma: no cover
 
 
 def _translate_one_qubit_cirq_operation_to_braket_instruction(
-    op: Union[np.ndarray, cirq_ops.Gate, cirq_ops.Operation],
+    opr: Union[np.ndarray, cirq_ops.Gate, cirq_ops.Operation],
     target: int,
     name: str = None,
 ) -> List[BKInstruction]:
@@ -116,31 +116,31 @@ def _translate_one_qubit_cirq_operation_to_braket_instruction(
     instruction(s) according to the following rules:
 
     1. Attempts to find a "standard translation" from Cirq to Braket.
-        - e.g., checks if `op` is Pauli-X and, if so, returns the Braket X.
+        - e.g., checks if `opr` is Pauli-X and, if so, returns the Braket X.
 
-    2. If (1) is not successful, decomposes the unitary of `op` to
+    2. If (1) is not successful, decomposes the unitary of `opr` to
     Rz(theta) Ry(phi) Rz(lambda) and returns the series of rotations as Braket
     instructions.
 
     Args:
-        op: One-qubit Cirq operation to translate.
-        target: Qubit index for the op to act on. Must be specified and if only
-            if `op` is given as a numpy array.
-        name: Optional unitary gate display name for `op` of type `np.ndarray`
+        opr: One-qubit Cirq operation to translate.
+        target: Qubit index for the operation to act on. Must be specified and if only
+            if `opr` is given as a numpy array.
+        name: Optional unitary gate display name for `opr` of type `np.ndarray`
     """
-    if isinstance(op, np.ndarray):
+    if isinstance(opr, np.ndarray):
         gate_name = "U" if name is None else name
-        return [BKInstruction(braket_gates.Unitary(op, display_name=gate_name), target)]
+        return [BKInstruction(braket_gates.Unitary(opr, display_name=gate_name), target)]
 
     # Check common single-qubit gates.
-    if isinstance(op, cirq_ops.Operation):
-        gate = op.gate
+    if isinstance(opr, cirq_ops.Operation):
+        gate = opr.gate
 
-    elif isinstance(op, cirq_ops.Gate):
-        gate = op
+    elif isinstance(opr, cirq_ops.Gate):
+        gate = opr
 
     else:
-        raise _raise_cirq_to_braket_error(op)
+        raise _raise_cirq_to_braket_error(opr)
 
     if isinstance(gate, cirq_ops.XPowGate):
         exponent = gate.exponent
@@ -194,17 +194,17 @@ def _translate_one_qubit_cirq_operation_to_braket_instruction(
 
 
 def _translate_two_qubit_cirq_operation_to_braket_instruction(
-    op: Union[cirq_ops.Gate, cirq_ops.Operation],
+    opr: Union[cirq_ops.Gate, cirq_ops.Operation],
     qubits: List[int],
 ) -> List[BKInstruction]:
     """Translates a two-qubit Cirq operation to a (sequence of) Braket
     instruction(s) according to the following rules:
 
     1. Attempts to find a "standard translation" from Cirq to Braket.
-        - e.g., checks if `op` is a CNOT and, if so, returns the Braket CNOT.
+        - e.g., checks if `opr` is a CNOT and, if so, returns the Braket CNOT.
 
     2. If (1) is not successful, performs a KAK decomposition of the unitary of
-    `op` to obtain a circuit
+    `opr` to obtain a circuit
 
         ──A1──X^0.5───@───X^a───X──────────────────@───B1───
                       │         │                  │
@@ -214,20 +214,20 @@ def _translate_two_qubit_cirq_operation_to_braket_instruction(
     are floats.
 
     Args:
-        op: Two-qubit Cirq operation to translate.
+        opr: Two-qubit Cirq operation to translate.
     """
     # Translate qubit indices.
     q1, q2 = qubits
 
     # Check common single-qubit gates.
-    if isinstance(op, cirq_ops.Operation):
-        gate = op.gate
+    if isinstance(opr, cirq_ops.Operation):
+        gate = opr.gate
 
-    elif isinstance(op, cirq_ops.Gate):
-        gate = op
+    elif isinstance(opr, cirq_ops.Gate):
+        gate = opr
 
     else:
-        raise _raise_cirq_to_braket_error(op)
+        raise _raise_cirq_to_braket_error(opr)
 
     # Check common two-qubit gates.
     if isinstance(gate, cirq_ops.CNotPowGate) and np.isclose(abs(gate.exponent), 1.0):
@@ -252,7 +252,7 @@ def _translate_two_qubit_cirq_operation_to_braket_instruction(
         return [BKInstruction(BKControl(sub_gate, [0, 1]), [q1, q2])]
 
     # Arbitrary two-qubit unitary decomposition.
-    kak = kak_decomposition(protocols.unitary(op))
+    kak = kak_decomposition(protocols.unitary(opr))
     A1, A2 = kak.single_qubit_operations_before
 
     x, y, z = kak.interaction_coefficients

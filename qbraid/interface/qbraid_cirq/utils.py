@@ -55,30 +55,30 @@ def _simplify_circuit_exponents(circuit: Circuit) -> None:
     for moment_idx, moment in enumerate(circuit):
         simplified_operations = []
         # Iterate over operations in moment
-        for op in moment:
+        for opr in moment:
 
-            if not isinstance(op, GateOperation):
-                simplified_operations.append(op)
+            if not isinstance(opr, GateOperation):
+                simplified_operations.append(opr)
                 continue
 
-            if isinstance(op.gate, EigenGate):
-                simplified_gate: Gate = _simplify_gate_exponent(op.gate)
+            if isinstance(opr.gate, EigenGate):
+                simplified_gate: Gate = _simplify_gate_exponent(opr.gate)
             else:
-                simplified_gate = op.gate
+                simplified_gate = opr.gate
 
-            simplified_operation = op.with_gate(simplified_gate)
+            simplified_operation = opr.with_gate(simplified_gate)
             simplified_operations.append(simplified_operation)
         # Mutate the input circuit
         circuit[moment_idx] = Moment(simplified_operations)
 
 
-def _is_measurement(op: Operation) -> bool:
+def _is_measurement(opr: Operation) -> bool:
     """Returns true if the operation's gate is a measurement, else False.
 
     Args:
         op: Gate operation.
     """
-    return isinstance(op.gate, MeasurementGate)
+    return isinstance(opr.gate, MeasurementGate)
 
 
 def _pop_measurements(

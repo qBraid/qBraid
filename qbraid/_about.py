@@ -55,7 +55,7 @@ def about() -> None:
 
     Python Version:\t{platform.python_version()}
     Platform Info:\t{platform.system()} ({platform.machine()})"""
-    
+
     print(about_str)
 
 

@@ -22,17 +22,16 @@ from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid.exceptions import UnsupportedCircuitError
 from qbraid.transpiler.exceptions import CircuitConversionError
 
+# pylint: disable=import-outside-toplevel
+
 
 def convert_to_cirq(circuit: QPROGRAM) -> Tuple[Circuit, str]:
     """Converts any valid input circuit to a Cirq circuit.
-
     Args:
         circuit: Any quantum circuit object supported by qbraid.transpiler.
-                 See qbraid.transpiler.SUPPORTED_PROGRAM_TYPES.
-
+        See qbraid.transpiler.SUPPORTED_PROGRAM_TYPES.
     Raises:
         UnsupportedCircuitError: If the input circuit is not supported.
-
     Returns:
         circuit: Cirq circuit equivalent to input circuit.
         input_circuit_type: Type of input circuit represented by a string.
@@ -41,8 +40,10 @@ def convert_to_cirq(circuit: QPROGRAM) -> Tuple[Circuit, str]:
 
     try:
         package = circuit.__module__
-    except AttributeError:
-        raise UnsupportedCircuitError("Could not determine the package of the input circuit.")
+    except AttributeError as err:
+        raise UnsupportedCircuitError(
+            "Could not determine the package of the input circuit."
+        ) from err
 
     if "qiskit" in package:
         from qbraid.transpiler.cirq_qiskit import from_qiskit
@@ -79,21 +80,20 @@ def convert_to_cirq(circuit: QPROGRAM) -> Tuple[Circuit, str]:
 
     try:
         cirq_circuit = conversion_function(circuit)
-    except Exception:
+    except Exception as err:
         raise CircuitConversionError(
             "Circuit could not be converted to a Cirq circuit. "
             "This may be because the circuit contains custom gates or "
             f"Pragmas (pyQuil). \n\nProvided circuit has type {type(circuit)} "
             f"and is:\n\n{circuit}\n\nCircuit types supported by the "
             f"qbraid.transpiler are \n{SUPPORTED_PROGRAM_TYPES}."
-        )
+        ) from err
 
     return cirq_circuit, input_circuit_type
 
 
 def convert_from_cirq(circuit: Circuit, conversion_type: str) -> QPROGRAM:
     """Converts a Cirq circuit to a type specified by the conversion type.
-
     Args:
         circuit: Cirq circuit to convert.
         conversion_type: String specifier for the converted circuit type.
@@ -128,10 +128,10 @@ def convert_from_cirq(circuit: Circuit, conversion_type: str) -> QPROGRAM:
         )
     try:
         converted_circuit = conversion_function(circuit)
-    except Exception:
+    except Exception as err:
         raise CircuitConversionError(
             f"Circuit could not be converted from a Cirq type to a "
             f"circuit of type {conversion_type}."
-        )
+        ) from err
 
     return converted_circuit

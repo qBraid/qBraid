@@ -19,10 +19,10 @@ def _convert_to_line_qubits(
         qubits = list(reversed(qubits))
     qubit_map = {_key_from_qubit(q): i for i, q in enumerate(qubits)}
     line_qubit_circuit = Circuit()
-    for op in circuit.all_operations():
-        qubit_indicies = [qubit_map[_key_from_qubit(q)] for q in op.qubits]
+    for opr in circuit.all_operations():
+        qubit_indicies = [qubit_map[_key_from_qubit(q)] for q in opr.qubits]
         line_qubits = [LineQubit(i) for i in qubit_indicies]
-        line_qubit_circuit.append(op.gate.on(*line_qubits))
+        line_qubit_circuit.append(opr.gate.on(*line_qubits))
     return line_qubit_circuit
 
 
@@ -94,8 +94,8 @@ def _contiguous_expansion(circuit: Circuit) -> Circuit:
         all_qubits = list(range(0, qubit_count))
         vacant_qubits = list(set(all_qubits) - set(occupied_qubits))
         cirq_qubits = _make_qubits(circuit, vacant_qubits)
-        for q in cirq_qubits:
-            circuit.append(I(q))
+        for qubit in cirq_qubits:
+            circuit.append(I(qubit))
     return circuit
 
 
@@ -110,10 +110,10 @@ def _contiguous_compression(circuit: Circuit, rev_qubits=False) -> Circuit:
     for index, qubit in enumerate(circuit_qubits):
         qubit_map[_int_from_qubit(qubit)] = index
     contig_circuit = Circuit()
-    for op in circuit.all_operations():
-        contig_indicies = [qubit_map[_int_from_qubit(qubit)] for qubit in op.qubits]
+    for opr in circuit.all_operations():
+        contig_indicies = [qubit_map[_int_from_qubit(qubit)] for qubit in opr.qubits]
         contig_qubits = _make_qubits(circuit, contig_indicies)
-        contig_circuit.append(op.gate.on(*contig_qubits))
+        contig_circuit.append(opr.gate.on(*contig_qubits))
     return contig_circuit
 
 

@@ -10,13 +10,10 @@ from qbraid.transpiler.exceptions import CircuitConversionError
 def convert_to_contiguous(circuit: QPROGRAM, **kwargs) -> QPROGRAM:
     """Checks whether the circuit uses contiguous qubits/indices,
     and if not, adds identity gates to vacant registers as needed.
-
     Args:
         circuit: Any quantum circuit object supported by qBraid.
-
     Raises:
         UnsupportedCircuitError: If the input circuit is not supported.
-
     Returns:
         QPROGRAM: Circuit object of the same type as the input circuit.
     """

@@ -13,5 +13,5 @@ Interface (:mod:`qbraid.interface`)
    equal_unitaries
 
 """
-from qbraid.interface.calculate_unitary import equal_unitaries, to_unitary
-from qbraid.interface.convert_to_contiguous import convert_to_contiguous
+from .calculate_unitary import equal_unitaries, to_unitary
+from .convert_to_contiguous import convert_to_contiguous
