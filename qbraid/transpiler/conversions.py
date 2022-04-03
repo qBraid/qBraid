@@ -21,22 +21,17 @@ from cirq import Circuit
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid.exceptions import UnsupportedCircuitError
 from qbraid.transpiler.exceptions import CircuitConversionError
-from qbraid.transpiler.cirq_qiskit import from_qiskit, to_qiskit
-from qbraid.transpiler.cirq_pyquil import from_pyquil, to_pyquil
-from qbraid.transpiler.cirq_braket import from_braket, to_braket
-from qbraid.transpiler.cirq_pennylane import from_pennylane, to_pennylane
+
+# pylint: disable=import-outside-toplevel
 
 
 def convert_to_cirq(circuit: QPROGRAM) -> Tuple[Circuit, str]:
     """Converts any valid input circuit to a Cirq circuit.
-
     Args:
         circuit: Any quantum circuit object supported by qbraid.transpiler.
-                 See qbraid.transpiler.SUPPORTED_PROGRAM_TYPES.
-
+        See qbraid.transpiler.SUPPORTED_PROGRAM_TYPES.
     Raises:
         UnsupportedCircuitError: If the input circuit is not supported.
-
     Returns:
         circuit: Cirq circuit equivalent to input circuit.
         input_circuit_type: Type of input circuit represented by a string.
@@ -51,15 +46,23 @@ def convert_to_cirq(circuit: QPROGRAM) -> Tuple[Circuit, str]:
         ) from err
 
     if "qiskit" in package:
+        from qbraid.transpiler.cirq_qiskit import from_qiskit
+
         input_circuit_type = "qiskit"
         conversion_function = from_qiskit
     elif "pyquil" in package:
+        from qbraid.transpiler.cirq_pyquil import from_pyquil
+
         input_circuit_type = "pyquil"
         conversion_function = from_pyquil
     elif "braket" in package:
+        from qbraid.transpiler.cirq_braket import from_braket
+
         input_circuit_type = "braket"
         conversion_function = from_braket
     elif "pennylane" in package:
+        from qbraid.transpiler.cirq_pennylane import from_pennylane
+
         input_circuit_type = "pennylane"
         conversion_function = from_pennylane
     elif isinstance(circuit, Circuit):
@@ -91,19 +94,26 @@ def convert_to_cirq(circuit: QPROGRAM) -> Tuple[Circuit, str]:
 
 def convert_from_cirq(circuit: Circuit, conversion_type: str) -> QPROGRAM:
     """Converts a Cirq circuit to a type specified by the conversion type.
-
     Args:
         circuit: Cirq circuit to convert.
         conversion_type: String specifier for the converted circuit type.
     """
     conversion_function: Callable[[Circuit], QPROGRAM]
     if conversion_type == "qiskit":
+        from qbraid.transpiler.cirq_qiskit import to_qiskit
+
         conversion_function = to_qiskit
     elif conversion_type == "pyquil":
+        from qbraid.transpiler.cirq_pyquil import to_pyquil
+
         conversion_function = to_pyquil
     elif conversion_type == "braket":
+        from qbraid.transpiler.cirq_braket import to_braket
+
         conversion_function = to_braket
     elif conversion_type == "pennylane":
+        from qbraid.transpiler.cirq_pennylane import to_pennylane
+
         conversion_function = to_pennylane
     elif conversion_type == "cirq":
 
