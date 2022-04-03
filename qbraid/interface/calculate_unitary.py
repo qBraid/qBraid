@@ -8,6 +8,8 @@ from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid.exceptions import QbraidError, UnsupportedCircuitError
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
 
+# pylint: disable=import-outside-toplevel,duplicate-code
+
 
 class UnitaryCalculationError(QbraidError):
     """Class for exceptions raised during unitary calculation"""
@@ -34,8 +36,6 @@ def to_unitary(circuit: QPROGRAM, ensure_contiguous=False) -> np.ndarray:
         raise UnsupportedCircuitError(
             "Could not determine the package of the input circuit."
         ) from err
-
-    # pylint: disable=import-outside-toplevel
 
     if "qiskit" in package:
         from qbraid.interface.qbraid_qiskit.utils import _unitary_from_qiskit

@@ -6,6 +6,8 @@ from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid.exceptions import UnsupportedCircuitError
 from qbraid.transpiler.exceptions import CircuitConversionError
 
+# pylint: disable=import-outside-toplevel,duplicate-code
+
 
 def convert_to_contiguous(circuit: QPROGRAM, **kwargs) -> QPROGRAM:
     """Checks whether the circuit uses contiguous qubits/indices,
@@ -28,8 +30,6 @@ def convert_to_contiguous(circuit: QPROGRAM, **kwargs) -> QPROGRAM:
         raise UnsupportedCircuitError(
             "Could not determine the package of the input circuit."
         ) from err
-
-    # pylint: disable=import-outside-toplevel
 
     if "qiskit" in package:
         return circuit
