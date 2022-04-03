@@ -7,7 +7,7 @@ PyQuil Conversions  (:mod:`qbraid.transpiler.cirq_pyquil`)
 
 .. autosummary::
    :toctree: ../stubs/
-   
+
    from_pyquil
    from_quil
    to_pyquil

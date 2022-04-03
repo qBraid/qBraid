@@ -1,10 +1,5 @@
 """CircuitWrapper Class"""
 
-from abc import abstractmethod
-from typing import Tuple
-
-from cirq import Circuit
-
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid.exceptions import UnsupportedCircuitError
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
@@ -21,7 +16,7 @@ class CircuitWrapper:
     :meth:`qbraid.transpiler.CircuitWrapper.transpile` method is called.
 
     Attributes:
-        circuit: the underlying circuit object that has been wrapped
+        circuit (QPROGRAM): the underlying circuit object that has been wrapped
         qubits (List[int]): list of integers which represent all the qubits in the circuit,
             typically stored sequentially
         params: (Iterable): list of abstract paramaters in the circuit, stored as
@@ -32,7 +27,7 @@ class CircuitWrapper:
 
     """
 
-    def __init__(self, circuit):
+    def __init__(self, circuit: QPROGRAM):
 
         self._circuit = circuit
         self._qubits = []
@@ -83,7 +78,7 @@ class CircuitWrapper:
         """Return the original package of the wrapped circuit."""
         return self._package
 
-    def transpile(self, conversion_type, *args, **kwargs):
+    def transpile(self, conversion_type):
         """Transpile a qbraid quantum circuit wrapper object to quantum circuit object of type
          specified by ``conversion_type``.
 
@@ -105,21 +100,21 @@ class CircuitWrapper:
         if conversion_type in SUPPORTED_PROGRAM_TYPES:
             try:
                 cirq_circuit, _ = convert_to_cirq(self.circuit)
-            except Exception:
+            except Exception as err:
                 raise CircuitConversionError(
                     "Circuit could not be converted to a Cirq circuit. "
                     "This may be because the circuit contains custom gates or "
                     f"Pragmas (pyQuil). \n\nProvided circuit has type {type(self.circuit)} "
                     f"and is:\n\n{self.circuit}\n\nCircuit types supported by the "
                     f"qbraid.transpiler are \n{SUPPORTED_PROGRAM_TYPES}."
-                )
+                ) from err
             try:
                 converted_circuit = convert_from_cirq(cirq_circuit, conversion_type)
-            except Exception:
+            except Exception as err:
                 raise CircuitConversionError(
                     f"Circuit could not be converted from a Cirq type to a "
                     f"circuit of type {conversion_type}."
-                )
+                ) from err
             return converted_circuit
 
         raise UnsupportedCircuitError(

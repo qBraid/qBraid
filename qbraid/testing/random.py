@@ -7,10 +7,7 @@ from qbraid.exceptions import QbraidError
 
 
 def random_circuit(
-    package: str, 
-    num_qubits: Optional[int], 
-    depth: Optional[int], 
-    measure: Optional[bool]=False
+    package: str, num_qubits: Optional[int], depth: Optional[int], measure: Optional[bool] = False
 ) -> QPROGRAM:
     """Generate random circuit of arbitrary size and form. If not provided, num_qubits
     and depth are randomly selected in range [2, 4].

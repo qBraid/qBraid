@@ -5,8 +5,10 @@ from typing import Any, Callable
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid.exceptions import UnsupportedCircuitError
 from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.interface.qbraid_cirq.contiguous import _convert_to_contiguous_cirq
+from qbraid.interface.qbraid_braket.contiguous import _convert_to_contiguous_braket
 
-# pylint: disable=import-outside-toplevel,duplicate-code
+# pylint: disable=duplicate-code
 
 
 def convert_to_contiguous(circuit: QPROGRAM, **kwargs) -> QPROGRAM:
@@ -35,12 +37,8 @@ def convert_to_contiguous(circuit: QPROGRAM, **kwargs) -> QPROGRAM:
         return circuit
 
     if "cirq" in package:
-        from qbraid.interface.qbraid_cirq.contiguous import _convert_to_contiguous_cirq
-
         conversion_function = _convert_to_contiguous_cirq
     elif "braket" in package:
-        from qbraid.interface.qbraid_braket.contiguous import _convert_to_contiguous_braket
-
         conversion_function = _convert_to_contiguous_braket
     else:
         raise UnsupportedCircuitError(

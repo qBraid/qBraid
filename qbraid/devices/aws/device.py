@@ -43,7 +43,9 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             return DeviceStatus.OFFLINE
         return DeviceStatus.ONLINE
 
-    def get_sampler(self, braket_default=False, embedding=True):
+    def get_sampler(
+        self, braket_default=False, embedding=True
+    ):  # pylint: disable=unused-argument,no-self-use
         """Returns BraketSampler created from device. Only compatible with D-Wave devices.
 
         Args:
@@ -134,12 +136,12 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         device_prop_dict = device.properties.dict()
         price = device_prop_dict["service"]["deviceCost"]["price"]
         # Simulators
-        if device.name == "SV1" or device.name == "DM1":
+        if device.name in ["SV1", "DM1"]:
             estimate = price * qbraid_circuit.num_qubits + math.exp(shots / 1000)
         elif device.name == "TN1":
             estimate = price * qbraid_circuit.num_qubits + math.exp(shots / 1000)
         # QPUs
         else:
             estimate = price * shots + task_price
-        print("Your estimated cost is ${:.2f}".format(estimate))
+        print(f"Your estimated cost is {estimate}")
         return estimate

@@ -7,8 +7,11 @@ import numpy as np
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid.exceptions import QbraidError, UnsupportedCircuitError
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
+from qbraid.interface.qbraid_qiskit.utils import _unitary_from_qiskit
+from qbraid.interface.qbraid_cirq.utils import _unitary_from_cirq
+from qbraid.interface.qbraid_braket.utils import _unitary_from_braket
 
-# pylint: disable=import-outside-toplevel,duplicate-code
+# pylint: disable=duplicate-code
 
 
 class UnitaryCalculationError(QbraidError):
@@ -38,16 +41,10 @@ def to_unitary(circuit: QPROGRAM, ensure_contiguous=False) -> np.ndarray:
         ) from err
 
     if "qiskit" in package:
-        from qbraid.interface.qbraid_qiskit.utils import _unitary_from_qiskit
-
         to_unitary_function = _unitary_from_qiskit
     elif "cirq" in package:
-        from qbraid.interface.qbraid_cirq.utils import _unitary_from_cirq
-
         to_unitary_function = _unitary_from_cirq
     elif "braket" in package:
-        from qbraid.interface.qbraid_braket.utils import _unitary_from_braket
-
         to_unitary_function = _unitary_from_braket
     else:
         raise UnsupportedCircuitError(
