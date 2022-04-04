@@ -3,67 +3,95 @@ qBraid-SDK Documentation
 
 :Release: |release|
 
-qBraid is a platform for running quantum algorithms on various quantum computers and quantum simulators.
+A Python toolkit for building and executing quantum programs.
 
 Features
 --------
 
 .. image:: _static/logo.png
-    :align: left
-    :width: 300px
-    :target: javascript:void(0);
+   :align: left
+   :width: 280px
+   :target: qBraid_
 
-- *Feature 1*
-   Lorem ipsum dolo   r sit amet, consectetur adipiscing elit. Nunc sed dolor elit. Fusce neque lectus,
-   imperdiet id tellus at, mollis facilisis arcu.
+- *Unified quantum frontend interface*
+   Transpile quantum circuits between supported packages. Leverage capabilities
+   of multiple frontends through simple, consistent protocols.
 
-..
+- *Build once, execute anywhere*
+   Create quantum programs using your preferred circuit-building package and
+   execute it on any backend that interfaces with a supported frontend.
 
-- *Feature 2*
-   Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nunc sed dolor elit sed interdum
-   laoreet justo.
+- *Benchmark, compare, interpret results*
+   Compatable post-processing simplifies comparing results between runs and across backends.
 
-..
 
-- *Feature 3*
-   Lorem ipsum dolor sit amet, consectetur adipiscing elit. Id pellentesque libero consectetur ac
-   nulla.
+Supported Frontends
+--------------------
 
-Getting started
----------------
++-------------+-------------+------------+-------------+-------------+
+|  Cirq_      |  Braket_    |  Qiskit_   |  PyQuil_    |  Pennylane_ |
++=============+=============+============+=============+=============+
+| |cirq|      | |braket|    | |qiskit|   | |pyquil|    | |pennylane| |
++-------------+-------------+------------+-------------+-------------+
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin ullamcorper, nisi eu rutrum
-tristique, eros massa maximus mi, id mollis enim massa ac nunc. Suspendisse bibendum sagittis eros,
-nec pellentesque turpis gravida at. Aliquam mollis dui non ligula rhoncus placerat. Curabitur
-dapibus, diam at maximus aliquam, odio leo scelerisque felis, sit amet sollicitudin metus elit
-vitae justo. Mauris a blandit purus. Maecenas tristique mauris sed lectus auctor, eu posuere nisl.
 
-Phasellus vel lorem eu diam luctus lacinia sed sed nunc. Integer auctor dui id dignissim fringilla.
-Integer at eleifend felis, at egestas sem. Integer id tellus id arcu viverra congue. Sed a felis
-dolor. Proin semper eu justo sed bibendum. Duis laoreet sem sed felis ultricies feugiat sed lacinia
-lorem. Donec aliquet velit id tincidunt porttitor. In a auctor dui. Sed hendrerit, tellus finibus
-varius accumsan, lorem urna accumsan lacus, aliquet hendrerit magna nisi porttitor dui.
+.. |cirq| image:: _static/frontends/cirq.png
+   :align: middle
+   :width: 90%
+   :target: Cirq_
+
+.. |braket| image:: _static/frontends/braket.png
+   :align: middle
+   :width: 90%
+   :target: Braket_
+
+.. |qiskit| image:: _static/frontends/qiskit.png
+   :align: middle
+   :width: 90%
+   :target: Qiskit_
+
+.. |pyquil| image:: _static/frontends/pyquil.png
+   :align: middle
+   :width: 90%
+   :target: PyQuil_
+
+.. |pennylane| image:: _static/frontends/xanadu.png
+   :align: middle
+   :width: 90%
+   :target: Pennylane_
+
+
+.. _Cirq: https://quantumai.google/cirq
+.. _Braket: https://aws.amazon.com/braket
+.. _Qiskit: https://qiskit.org
+.. _PyQuil: https://www.rigetti.com/applications/pyquil
+.. _Pennylane: https://pennylane.ai
+.. _qBraid: https://qbraid.com/home.html
+
 
 .. toctree::
    :maxdepth: 1
    :caption: Getting Started
    :hidden:
 
-   sdk-intro/setup
+   getstart/setup
 
 .. toctree::
    :maxdepth: 1
    :caption: API Reference
    :hidden:
 
-   sdk-api/qbraid
-   sdk-api/qbraid.api
-   sdk-api/qbraid.interface
-   sdk-api/qbraid.transpiler
-   sdk-api/qbraid.devices
-   sdk-api/qbraid.testing
+   api/qbraid
+   api/qbraid.api
+   api/qbraid.interface
+   api/qbraid.transpiler
+   api/qbraid.devices
+   api/qbraid.testing
 
-.. Hiding - Indices and tables
-   :ref:`genindex`
-   :ref:`modindex`
-   :ref:`search`
+
+Indices and Tables
+------------------
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

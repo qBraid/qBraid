@@ -13,7 +13,7 @@ Open environment manager
 
 - Click **Add** to see the other environments available to install.
 
-.. image:: _static/setup0.png
+.. image:: ../_static/setup/0_open.png
     :align: center
     :width: 800px
     :target: javascript:void(0);
@@ -29,7 +29,7 @@ Install environment
 
 - Click **Browse Environments** to return to the **My Environments** tab.
 
-.. image:: _static/setup1.png
+.. image:: ../_static/setup/1_install.png
     :align: center
     :width: 800px
     :target: javascript:void(0);
@@ -45,7 +45,7 @@ Activate environment
 
 - Click **Activate** to activate the environment and create an associated ipykernel.
 
-.. image:: _static/setup2.png
+.. image:: ../_static/setup/2_activate.png
     :align: center
     :width: 800px
     :target: javascript:void(0);
@@ -59,7 +59,7 @@ Create notebook instance
   current Launcher tab to create a new Jupyter notebook (``.ipynb`` file)
   with this set as the start preferred kernel.
 
-.. image:: _static/setup3.png
+.. image:: ../_static/setup/3_create.png
     :align: center
     :width: 800px
     :target: javascript:void(0);
@@ -76,7 +76,7 @@ Verify kernel
 - Run ``import qbraid`` to verify that installation and
   kernel activation were successful.
 
-.. image:: _static/setup4.png
+.. image:: ../_static/setup/4_verify.png
     :align: center
     :width: 800px
     :target: javascript:void(0);
