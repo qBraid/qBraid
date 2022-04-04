@@ -46,15 +46,22 @@ varius accumsan, lorem urna accumsan lacus, aliquet hendrerit magna nisi porttit
 
 .. toctree::
    :maxdepth: 1
+   :caption: Getting Started
+   :hidden:
+
+   sdk-intro/setup
+
+.. toctree::
+   :maxdepth: 1
    :caption: API Reference
    :hidden:
 
-   api/qbraid
-   api/qbraid.api
-   api/qbraid.interface
-   api/qbraid.transpiler
-   api/qbraid.devices
-   api/qbraid.testing
+   sdk-api/qbraid
+   sdk-api/qbraid.api
+   sdk-api/qbraid.interface
+   sdk-api/qbraid.transpiler
+   sdk-api/qbraid.devices
+   sdk-api/qbraid.testing
 
 .. Hiding - Indices and tables
    :ref:`genindex`

@@ -1,3 +1,5 @@
+"""Information about qbraid and its dependencies."""
+
 # Copyright (C) 2020 Unitary Fund
 #
 # This program is free software: you can redistribute it and/or modify
@@ -13,7 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Information about qbraid and its dependencies."""
 import platform
 
 from braket._sdk import __version__ as braket_version
