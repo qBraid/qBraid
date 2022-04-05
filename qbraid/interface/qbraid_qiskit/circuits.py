@@ -1,7 +1,8 @@
 """Qiskit quantum circuits used for testing"""
 
-import numpy as np
 from typing import Optional
+
+import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.circuit.exceptions import CircuitError
 from qiskit.circuit.random import random_circuit

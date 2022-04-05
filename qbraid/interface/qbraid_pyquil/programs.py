@@ -1,7 +1,7 @@
 """pyQuil programs used for testing"""
 
 from pyquil import Program
-from pyquil.gates import H, CNOT
+from pyquil.gates import CNOT, H
 
 
 def pyquil_bell():

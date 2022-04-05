@@ -11,7 +11,7 @@ from braket.circuits import Instruction as BraketInstruction
 from braket.circuits import gates as braket_gates
 
 from qbraid.interface.bell_circuit import bell
-from qbraid.interface.calculate_unitary import to_unitary, equal_unitaries
+from qbraid.interface.calculate_unitary import equal_unitaries, to_unitary
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
 
 

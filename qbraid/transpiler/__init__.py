@@ -27,4 +27,6 @@ from qbraid.transpiler.parameter import ParamID
 from qbraid.transpiler.wrapper_abc import QuantumProgramWrapper
 from qbraid.transpiler.wrapper_braket import BraketCircuitWrapper
 from qbraid.transpiler.wrapper_cirq import CirqCircuitWrapper
+from qbraid.transpiler.wrapper_pennylane import PennylaneQTapeWrapper
+from qbraid.transpiler.wrapper_pyquil import PyQuilProgramWrapper
 from qbraid.transpiler.wrapper_qiskit import QiskitCircuitWrapper

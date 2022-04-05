@@ -1,8 +1,8 @@
 """Cirq tools"""
 
-import numpy as np
 from typing import List, Sequence, Union
 
+import numpy as np
 from cirq import Circuit, GridQubit, I, LineQubit, NamedQubit, Qid
 
 QUBIT = Union[LineQubit, GridQubit, NamedQubit, Qid]

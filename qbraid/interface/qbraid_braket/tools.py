@@ -1,8 +1,8 @@
 """Braket tools"""
 
 import numpy as np
-from braket.circuits import Instruction
 from braket.circuits import Circuit as BKCircuit
+from braket.circuits import Instruction
 from braket.circuits.unitary_calculation import calculate_unitary
 
 

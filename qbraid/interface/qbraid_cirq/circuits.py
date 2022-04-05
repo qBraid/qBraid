@@ -1,7 +1,8 @@
 """Cirq circuits used for testing"""
 
-import numpy as np
 from typing import Optional
+
+import numpy as np
 from cirq import Circuit, LineQubit, ops
 from cirq.testing import random_circuit
 
