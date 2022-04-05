@@ -37,11 +37,24 @@ class C(Gate):
             tensor[active] = sub_tensor
         return tensor.reshape((np.prod(qid_shape, dtype=np.int64).item(),) * 2)
 
+    # pylint: disable-next=unused-argument
     def to_matrix(self, *args, **kwargs) -> np.ndarray:
+        """Returns a matrix representation of the quantum operator
+
+        Returns:
+            np.ndarray: A matrix representation of the quantum operator
+        """
         sub_matrix = self.sub_gate.to_matrix()
         return self._extend_matrix(sub_matrix)
 
     def to_ir(self, target: QubitSet):
+        """Returns IR object of quantum operator and target
+
+        Args:
+            target (QubitSet): target qubit(s)
+        Returns:
+            IR object of the quantum operator and target
+        """
         return ir.Unitary.construct(
             targets=list(target),
             matrix=C._transform_matrix_to_ir(self.to_matrix()),

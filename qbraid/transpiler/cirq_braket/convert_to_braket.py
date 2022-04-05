@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# pylint: disable=too-many-locals,too-many-return-statements,too-many-branches
-
 from typing import Any, Dict, List, Union
 
 import numpy as np

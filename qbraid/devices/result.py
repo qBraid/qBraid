@@ -1,7 +1,5 @@
 """ResultWrapper Class"""
 
-# pylint: disable=too-few-public-methods
-
 from abc import ABC, abstractmethod
 
 from qiskit.visualization import plot_histogram

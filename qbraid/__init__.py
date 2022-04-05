@@ -13,7 +13,7 @@ Functions
 
 .. autosummary::
    :toctree: ../stubs/
-   
+
    about
    get_devices
    refresh_devices
@@ -26,7 +26,7 @@ Exceptions
 
 .. autosummary::
    :toctree: ../stubs/
-   
+
    QbraidError
    UnsupportedCircuitError
 

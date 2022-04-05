@@ -15,6 +15,7 @@ def test_make_contiguous():
     braket_circuit.x(0)
     braket_circuit.y(2)
     braket_circuit.z(4)
+    # pylint: enable=no-member
     assert braket_circuit.qubit_count == 3
 
     cirq_circuit = cirq.Circuit()

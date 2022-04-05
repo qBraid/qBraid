@@ -1,7 +1,5 @@
 """Module for creating and modifying user config files"""
 
-# pylint: disable=too-many-arguments
-
 import configparser
 import os
 import sys
@@ -43,6 +41,7 @@ def compat_input(prompt, is_secret):
     return raw_input()
 
 
+# pylint: disable-next=too-many-arguments
 def set_config(config_name, prompt_text, default_val, is_secret, section, filepath, update=False):
     """Adds or modifies a user configuration
 

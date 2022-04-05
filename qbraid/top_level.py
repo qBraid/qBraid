@@ -1,3 +1,9 @@
+"""
+Module containing top-level qbraid functionality, and any/all functions
+that directly or indirectly utilize entrypoints via ``pkg_resources``.
+
+"""
+
 from datetime import datetime
 from time import time
 
@@ -131,7 +137,6 @@ def _print_progress(start, count):
 
 def refresh_devices():
     """Refreshes status for all qbraid supported devices. Requires credential for each vendor."""
-    # pylint: disable=import-outside-toplevel
 
     session = QbraidSession()
     devices = session.get("/public/lab/get-devices", params={}).json()
@@ -161,7 +166,6 @@ def _get_device_data(query):
         raise ApiError(devices)
     device_data = []
     tot_dev = 0
-    # ref_dev = 0
     tot_lag = 0
     for document in devices:
         qbraid_id = document["qbraid_id"]
@@ -189,7 +193,7 @@ def _get_device_data(query):
 
 
 def get_devices(filters=None, refresh=False):
-    """get_devices(filters)
+    """
     Displays a list of all supported devices matching given filters, tabulated by provider,
     name, and qBraid ID. Each device also has a status given by a solid green bubble or a hollow
     red bubble, indicating that the device is online or offline, respectively. You can narrow your
@@ -206,6 +210,7 @@ def get_devices(filters=None, refresh=False):
     * status (str): ONLINE | OFFLINE
 
     Here are a few example use cases:
+    # pylint: disable=line-too-long
 
     .. code-block:: python
 
@@ -220,10 +225,11 @@ def get_devices(filters=None, refresh=False):
         # Search for open-access simulators that have "Unitary" contained in their name
         get_devices(filters={"type": "Simulator", "name": {"$regex": "Unitary"}, "requiresCred": False})
 
+    # pylint: enable=line-too-long
+
     For a complete list of search operators, see `Query Selectors`__. To refresh the device status
-    column, call :func:`~qbraid.refresh_devices`, and then re-run :func:`~qbraid.get_devices`.
-    The bottom-right corner of the ``get_devices`` table indicates time since the last status
-    refresh. Device status is auto-refreshed every hour.
+    column, call :func:`~qbraid.get_devices` with ``refresh=True`` keyword argument. The bottom-right
+    corner of the ``get_devices`` table indicates time since the last status refresh.
 
     .. __: https://docs.mongodb.com/manual/reference/operator/query/#query-selectors
 

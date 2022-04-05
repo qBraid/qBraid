@@ -31,6 +31,7 @@ class U2Gate(Gate):
 
         super()
 
+    # pylint: disable-next=no-self-use
     def _num_qubits_(self) -> int:
         return 1
 
@@ -74,6 +75,7 @@ class U3Gate(Gate):
 
         super()
 
+    # pylint: disable-next=no-self-use
     def _num_qubits_(self) -> int:
         return 1
 
@@ -116,6 +118,7 @@ class RZZGate(Gate):
 
         super()
 
+    # pylint: disable-next=no-self-use
     def _num_qubits_(self) -> int:
         return 2
 
@@ -145,7 +148,6 @@ class ZPowGate(cirq.ZPowGate):
     Z axis of the Bloch sphere.
     """
 
-    # pylint: disable=too-many-return-statements
     def _qasm_(self, args: "cirq.QasmArgs", qubits: Tuple["cirq.Qid", ...]) -> Optional[str]:
         args.validate_version("2.0")
         if self._global_shift == 0:
