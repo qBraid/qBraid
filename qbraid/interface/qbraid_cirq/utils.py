@@ -3,7 +3,6 @@
 from copy import deepcopy
 from typing import List, Tuple, Union, cast
 
-import numpy as np
 from cirq import (
     Circuit,
     CircuitDag,
@@ -20,11 +19,6 @@ from cirq import (
 )
 
 QUBIT = Union[LineQubit, GridQubit, NamedQubit, Qid]
-
-
-def _unitary_from_cirq(circuit: Circuit) -> np.ndarray:
-    """Calculate unitary of a cirq circuit."""
-    return circuit.unitary()
 
 
 def _simplify_gate_exponent(gate: EigenGate) -> EigenGate:

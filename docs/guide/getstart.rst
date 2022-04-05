@@ -1,12 +1,26 @@
-Installation & setup
-=====================
+.. _guide_getstart:
 
-First, navigate to `<https://lab.qbraid.com>`_ and login, or create an account.
+Getting started
+================
 
-Open environment manager
--------------------------
+.. _guide_getstart_platform:
 
-- Once in the qBraid-Lab console, click **Envs** in the right-sidebar to expand the
+Platform
+---------
+
+The qBraid-SDK is available exclusively through `qBraid Lab <https://lab.qbraid.com>`_,
+a cloud-based platform / IDE highly-optimized for quantum computing. Login (or create
+an account) and then follow the steps in :ref:`setup<guide_getstart_setup>` to get started using the SDK.
+
+.. _guide_getstart_setup:
+
+Setup
+------
+
+\1. Open environment manager
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+- Once in the qBraid Lab console, click **Envs** in the right-sidebar to expand the
   environment manager. **My Environments** are your currently installed environments.
 
 - The qBraid base environment and Microsoft Q# environment are installed by default.
@@ -20,8 +34,8 @@ Open environment manager
 
 |
 
-Install environment
----------------------
+\2. Install environment
+^^^^^^^^^^^^^^^^^^^^^^^^
 
 - Expand the **qBraid-SDK** environment pannel, and click **Install**.
 
@@ -36,8 +50,8 @@ Install environment
 
 |
 
-Activate environment
----------------------
+\3. Activate environment
+^^^^^^^^^^^^^^^^^^^^^^^^^
 
 - Expand the **qBraid-SDK** pannel under **My Environments**.
 
@@ -52,8 +66,8 @@ Activate environment
 
 |
 
-Create notebook instance
--------------------------
+\4. Create notebook
+^^^^^^^^^^^^^^^^^^^^
 
 - Select the **Python 3 [qBraid-SDK]** kernel under **Notebooks** in your
   current Launcher tab to create a new Jupyter notebook (``.ipynb`` file)
@@ -66,8 +80,8 @@ Create notebook instance
 
 |
 
-Verify kernel
---------------
+\5. Verify kernel
+^^^^^^^^^^^^^^^^^^
 
 - In the upper-right of the newly created notebook, check that 
   **Python 3 [qBraid-SDK]** is the active kernel. If a different
@@ -83,5 +97,5 @@ Verify kernel
 
 |
 
-The notebook document format used in qBraid-Lab is the same as in the classic Jupyter Notebook.
+The notebook document format used in qBraid Lab is the same as in the classic Jupyter Notebook.
 For more on how to use the JupyterLab interface, see `JupyterLab Documentaion <https://jupyterlab.readthedocs.io/>`_.

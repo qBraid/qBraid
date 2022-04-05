@@ -28,7 +28,7 @@ Exceptions
    :toctree: ../stubs/
 
    QbraidError
-   UnsupportedCircuitError
+   UnsupportedProgramError
 
 """
 import urllib3
@@ -37,7 +37,7 @@ from ._about import about
 from ._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from ._version import __version__
 from .api import QbraidSession
-from .exceptions import QbraidError, UnsupportedCircuitError
+from .exceptions import QbraidError, UnsupportedProgramError
 from .interface import to_unitary
 from .top_level import circuit_wrapper, device_wrapper, get_devices, refresh_devices, retrieve_job
 

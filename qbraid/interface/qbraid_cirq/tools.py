@@ -1,10 +1,16 @@
-"""Module for converting circuits to use contiguous qubits/indexing"""
+"""Cirq tools"""
 
+import numpy as np
 from typing import List, Sequence, Union
 
 from cirq import Circuit, GridQubit, I, LineQubit, NamedQubit, Qid
 
 QUBIT = Union[LineQubit, GridQubit, NamedQubit, Qid]
+
+
+def _unitary_from_cirq(circuit: Circuit) -> np.ndarray:
+    """Return the unitary of a Cirq circuit."""
+    return circuit.unitary()
 
 
 def _convert_to_line_qubits(

@@ -10,52 +10,52 @@ Features
 
 .. image:: _static/logo.png
    :align: left
-   :width: 280px
+   :width: 275px
    :target: qBraid_
 
-- *Unified quantum frontend interface*
-   Transpile quantum circuits between supported packages. Leverage capabilities
-   of multiple frontends through simple, consistent protocols.
 
-- *Build once, execute anywhere*
-   Create quantum programs using your preferred circuit-building package and
-   execute it on any backend that interfaces with a supported frontend.
+- *Unified quantum frontend interface*. **Transpile** quantum circuits between supported packages. Leverage the capabilities of multiple frontends through **simple, consistent protocols**.
 
-- *Benchmark, compare, interpret results*
-   Compatable post-processing simplifies comparing results between runs and across backends.
+..
+
+- *Build once, target many*. **Create** quantum programs using your preferred circuit-building package, and **execute** on any backend that interfaces with a supported frontend.
+
+..
+
+- *Benchmark, compare, interpret results*. Built-in **compatable** post-processing enables comparing results between runs and **across backends**.
 
 
 Supported Frontends
 --------------------
 
 +-------------+-------------+------------+-------------+-------------+
-|  Cirq_      |  Braket_    |  Qiskit_   |  PyQuil_    |  Pennylane_ |
+|  Cirq_      |  Braket_    |  Qiskit_   |  pyQuil_    |  Pennylane_ |
 +=============+=============+============+=============+=============+
 | |cirq|      | |braket|    | |qiskit|   | |pyquil|    | |pennylane| |
 +-------------+-------------+------------+-------------+-------------+
 
 
-.. |cirq| image:: _static/frontends/cirq.png
+.. |cirq| image:: _static/pkg-logos/cirq.png
    :align: middle
    :width: 90%
    :target: Cirq_
 
-.. |braket| image:: _static/frontends/braket.png
+.. |braket| image:: _static/pkg-logos/braket.png
    :align: middle
    :width: 90%
    :target: Braket_
 
-.. |qiskit| image:: _static/frontends/qiskit.png
+.. |qiskit| image:: _static/pkg-logos/qiskit.png
    :align: middle
    :width: 90%
    :target: Qiskit_
 
-.. |pyquil| image:: _static/frontends/pyquil.png
+.. |pyquil| image:: _static/pkg-logos/pyquil.png
    :align: middle
    :width: 90%
-   :target: PyQuil_
+   :target: pyQuil_
 
-.. |pennylane| image:: _static/frontends/xanadu.png
+.. |pennylane| image:: _static/pkg-logos/xanadu.png
    :align: middle
    :width: 90%
    :target: Pennylane_
@@ -64,17 +64,22 @@ Supported Frontends
 .. _Cirq: https://quantumai.google/cirq
 .. _Braket: https://aws.amazon.com/braket
 .. _Qiskit: https://qiskit.org
-.. _PyQuil: https://www.rigetti.com/applications/pyquil
+.. _pyQuil: https://www.rigetti.com/applications/pyquil
 .. _Pennylane: https://pennylane.ai
 .. _qBraid: https://qbraid.com/home.html
 
 
 .. toctree::
    :maxdepth: 1
-   :caption: Getting Started
+   :caption: User Guide
    :hidden:
 
-   getstart/setup
+   guide/getstart
+   guide/intro
+   guide/circuits
+   guide/devices
+   guide/jobs
+   guide/results
 
 .. toctree::
    :maxdepth: 1

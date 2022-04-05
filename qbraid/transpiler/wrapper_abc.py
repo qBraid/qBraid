@@ -1,22 +1,22 @@
-"""CircuitWrapper Class"""
+"""QuantumProgramWrapper Class"""
 
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
-from qbraid.exceptions import UnsupportedCircuitError
+from qbraid.exceptions import UnsupportedProgramError
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
-class CircuitWrapper:
-    """Abstract class for qbraid circuit wrapper objects.
+class QuantumProgramWrapper:
+    """Abstract class for qbraid program wrapper objects.
 
-    Note: The circuit wrapper object keeps track of abstract parameters and qubits using an
+    Note: The program wrapper object keeps track of abstract parameters and qubits using an
     intermediate representation. Qubits are stored simplhy as integers, and abstract parameters
     are stored as a :class:`qbraid.transpiler.parameter.ParamID` object, which stores an index in
     addition to a name. All other objects are transpiled directly when the
-    :meth:`qbraid.transpiler.CircuitWrapper.transpile` method is called.
+    :meth:`qbraid.transpiler.QuantumProgramtWrapper.transpile` method is called.
 
     Attributes:
-        circuit (QPROGRAM): the underlying circuit object that has been wrapped
+        program (QPROGRAM): the underlying quantum program object that has been wrapped
         qubits (List[int]): list of integers which represent all the qubits in the circuit,
             typically stored sequentially
         params: (Iterable): list of abstract paramaters in the circuit, stored as
@@ -27,9 +27,9 @@ class CircuitWrapper:
 
     """
 
-    def __init__(self, circuit: QPROGRAM):
+    def __init__(self, program: QPROGRAM):
 
-        self._circuit = circuit
+        self._program = program
         self._qubits = []
         self._num_qubits = 0
         self._num_clbits = 0
@@ -39,9 +39,9 @@ class CircuitWrapper:
         self._package = None
 
     @property
-    def circuit(self):
-        """Return the underlying circuit that has been wrapped."""
-        return self._circuit
+    def program(self):
+        """Return the underlying quantum program that has been wrapped."""
+        return self._program
 
     @property
     def qubits(self):
@@ -79,46 +79,46 @@ class CircuitWrapper:
         return self._package
 
     def transpile(self, conversion_type):
-        """Transpile a qbraid quantum circuit wrapper object to quantum circuit object of type
+        """Transpile a qbraid quantum program wrapper object to quantum program object of type
          specified by ``conversion_type``.
 
         Args:
             conversion_type (str): target package
 
         Returns:
-            quantum circuit object of type specified by ``package``
+            quantum program object of type specified by ``package``
 
         Raises:
-            UnsupportedCircuitError: If the input circuit is not supported, or
+            UnsupportedProgramError: If the input program is not supported, or
                 conversion to circuit of type ``conversion_type`` is not unsupported.
-            CircuitConversionError: If the input circuit could not be converted to a
-                circuit of type ``conversion_type``.
+            CircuitConversionError: If the input program could not be converted to a
+                program of type ``conversion_type``.
 
         """
         if conversion_type == self.package:
-            return self.circuit
+            return self.program
         if conversion_type in SUPPORTED_PROGRAM_TYPES:
             try:
-                cirq_circuit, _ = convert_to_cirq(self.circuit)
+                cirq_circuit, _ = convert_to_cirq(self.program)
             except Exception as err:
                 raise CircuitConversionError(
-                    "Circuit could not be converted to a Cirq circuit. "
-                    "This may be because the circuit contains custom gates or "
-                    f"Pragmas (pyQuil). \n\nProvided circuit has type {type(self.circuit)} "
-                    f"and is:\n\n{self.circuit}\n\nCircuit types supported by the "
+                    "Quantum program could not be converted to a Cirq circuit. "
+                    "This may be because the program contains custom gates or "
+                    f"Pragmas (pyQuil). \n\nProvided program has type {type(self.program)} "
+                    f"and is:\n\n{self.program}\n\nQuantum program types supported by the "
                     f"qbraid.transpiler are \n{SUPPORTED_PROGRAM_TYPES}."
                 ) from err
             try:
-                converted_circuit = convert_from_cirq(cirq_circuit, conversion_type)
+                converted_program = convert_from_cirq(cirq_circuit, conversion_type)
             except Exception as err:
                 raise CircuitConversionError(
                     f"Circuit could not be converted from a Cirq type to a "
                     f"circuit of type {conversion_type}."
                 ) from err
-            return converted_circuit
+            return converted_program
 
-        raise UnsupportedCircuitError(
-            f"Conversion to circuit of type {conversion_type} is "
-            "unsupported. \nCircuit types supported by the "
-            f"qbraid.transpiler = {SUPPORTED_PROGRAM_TYPES}"
+        raise UnsupportedProgramError(
+            f"Conversion to a program of type {conversion_type} is "
+            "unsupported. \n\nQuantum program types supported by the "
+            f"qbraid.transpiler are \n{SUPPORTED_PROGRAM_TYPES}"
         )

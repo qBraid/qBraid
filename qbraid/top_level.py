@@ -23,8 +23,8 @@ def _get_entrypoints(group: str):
     return {entry.name: entry for entry in pkg_resources.iter_entry_points(group)}
 
 
-def circuit_wrapper(circuit: QPROGRAM):
-    """Apply qbraid circuit  wrapper to a supported quantum program.
+def circuit_wrapper(program: QPROGRAM):
+    """Apply qbraid quantum program wrapper to a supported quantum program.
 
     This function is used to create a qBraid circuit-wrapper object, which can then be transpiled
     to any supported quantum circuit-building package. The input quantum circuit object must be
@@ -43,22 +43,22 @@ def circuit_wrapper(circuit: QPROGRAM):
         circuit (QPROGRAM): a supported quantum circuit object
 
     Returns:
-        :class:`~qbraid.transpiler.CircuitWrapper`: a qbraid circuit wrapper object
+        :class:`~qbraid.transpiler.QuantumProgramWrapper`: a qbraid quantum program wrapper object
 
     Raises:
         QbraidError: If the input circuit is not a supported quantum program.
 
     """
-    package = circuit.__module__.split(".")[0]
+    package = program.__module__.split(".")[0]
     ep = package.lower()
 
     transpiler_entrypoints = _get_entrypoints("qbraid.transpiler")
 
     if package in transpiler_entrypoints:
         circuit_wrapper_class = transpiler_entrypoints[ep].load()
-        return circuit_wrapper_class(circuit)
+        return circuit_wrapper_class(program)
 
-    raise QbraidError(f"Error applying circuit wrapper to circuit of type {type(circuit)}")
+    raise QbraidError(f"Error applying circuit wrapper to quantum program of type {type(program)}")
 
 
 def device_wrapper(qbraid_device_id: str, **kwargs):

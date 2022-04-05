@@ -14,5 +14,5 @@ class QbraidError(Exception):
         return repr(self.message)
 
 
-class UnsupportedCircuitError(QbraidError):
-    """Base class for errors raised when processing unsupported circuits"""
+class UnsupportedProgramError(QbraidError):
+    """Base class for errors raised when processing unsupported quantum programs"""

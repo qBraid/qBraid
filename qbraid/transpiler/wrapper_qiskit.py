@@ -4,10 +4,10 @@ from cirq import Circuit
 
 # Currently not used because support parameterized circuits
 from qbraid.transpiler.parameter import ParamID
-from qbraid.transpiler.wrapper_abc import CircuitWrapper
+from qbraid.transpiler.wrapper_abc import QuantumProgramWrapper
 
 
-class QiskitCircuitWrapper(CircuitWrapper):
+class QiskitCircuitWrapper(QuantumProgramWrapper):
     """Wrapper class for Qiskit ``Circuit`` objects"""
 
     def __init__(self, circuit: Circuit):
@@ -25,3 +25,4 @@ class QiskitCircuitWrapper(CircuitWrapper):
         self._depth = circuit.depth()
         self._input_param_mapping = {p: ParamID(i, p.name) for i, p in enumerate(self.params)}
         self._package = "qiskit"
+        self._program_type = "QuantumCircuit"
