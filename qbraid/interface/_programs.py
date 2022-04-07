@@ -13,7 +13,7 @@ QROGRAM_TEST_TYPE = Tuple[Dict[str, Callable[[Any], QPROGRAM]], np.ndarray]
 # pylint: disable=import-outside-toplevel
 
 
-def bell_circuits() -> QROGRAM_TEST_TYPE:
+def bell_data() -> QROGRAM_TEST_TYPE:
     """Returns bell circuit/program in each supported package."""
     from qbraid.interface.qbraid_braket.circuits import braket_bell
     from qbraid.interface.qbraid_cirq.circuits import cirq_bell
@@ -34,7 +34,7 @@ def bell_circuits() -> QROGRAM_TEST_TYPE:
     return circuits, unitary
 
 
-def shared15_circuits() -> QROGRAM_TEST_TYPE:
+def shared15_data() -> QROGRAM_TEST_TYPE:
     """Returns shared gates circuit/program in each supported package."""
     from qbraid.interface.qbraid_braket.circuits import braket_shared15
     from qbraid.interface.qbraid_cirq.circuits import cirq_shared15

@@ -20,6 +20,7 @@ import numpy as np
 import pennylane as qml
 import pytest
 
+from qbraid.interface import circuits_allclose
 from qbraid.interface.qbraid_cirq._utils import _equal
 from qbraid.transpiler.cirq_pennylane.conversions import (
     UnsupportedQuantumTapeError,
@@ -67,9 +68,7 @@ def test_to_from_pennylane(random_state):
     converted = from_pennylane(to_pennylane(circuit))
     # Gates (e.g. iSWAP) aren't guaranteed to be preserved. Check unitary
     # instead of circuit equality.
-    cirq.testing.assert_allclose_up_to_global_phase(
-        cirq.unitary(converted), cirq.unitary(circuit), atol=1e-7
-    )
+    assert circuits_allclose(converted, circuit)
 
 
 def test_to_from_pennylane_cnot_same_gates():

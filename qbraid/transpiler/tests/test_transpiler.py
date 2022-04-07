@@ -15,13 +15,13 @@ from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 
 from qbraid import circuit_wrapper
 from qbraid.interface import convert_to_contiguous, to_unitary
-from qbraid.interface._programs import random_circuit, shared15_circuits, bell_circuits
+from qbraid.interface._programs import random_circuit, shared15_data, bell_data
 from qbraid.transpiler.cirq_braket.tests._gate_archive import braket_gates
 from qbraid.transpiler.cirq_qiskit.tests._gate_archive import qiskit_gates
 from qbraid.transpiler.cirq_utils.tests._gate_archive import cirq_gates, create_cirq_gate
 
-TEST_15, UNITARY_15 = shared15_circuits()
-TEST_BELL, UNITARY_BELL = bell_circuits()
+TEST_15, UNITARY_15 = shared15_data()
+TEST_BELL, UNITARY_BELL = bell_data()
 
 
 def shared_gates_test_data(package):

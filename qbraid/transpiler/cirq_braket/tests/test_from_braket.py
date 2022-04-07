@@ -8,7 +8,7 @@ from braket.circuits import Circuit as BKCircuit
 from braket.circuits import Instruction
 from braket.circuits import gates as braket_gates
 
-from qbraid.interface import equal_unitaries
+from qbraid.interface import circuits_allclose
 from qbraid.transpiler.cirq_braket.convert_from_braket import from_braket
 
 
@@ -17,7 +17,7 @@ def test_from_braket_bell_circuit():
     # pylint: disable-next=no-member
     braket_circuit = BKCircuit().h(0).cnot(0, 1)
     cirq_circuit = from_braket(braket_circuit)
-    assert equal_unitaries(braket_circuit, cirq_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
 def test_from_braket_non_parameterized_single_qubit_gates():
@@ -39,7 +39,7 @@ def test_from_braket_non_parameterized_single_qubit_gates():
     for instr in instructions:
         braket_circuit.add_instruction(instr)
     cirq_circuit = from_braket(braket_circuit)
-    assert equal_unitaries(braket_circuit, cirq_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
 @pytest.mark.parametrize("qubit_index", (0, 3))
@@ -59,7 +59,7 @@ def test_from_braket_parameterized_single_qubit_gates(qubit_index):
         braket_circuit.add_instruction(instr)
     cirq_circuit = from_braket(braket_circuit)
 
-    assert equal_unitaries(braket_circuit, cirq_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
 def test_from_braket_non_parameterized_two_qubit_gates():
@@ -75,7 +75,7 @@ def test_from_braket_non_parameterized_two_qubit_gates():
     for instr in instructions:
         braket_circuit.add_instruction(instr)
     cirq_circuit = from_braket(braket_circuit)
-    assert equal_unitaries(braket_circuit, cirq_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
 def test_from_braket_parameterized_two_qubit_gates():
@@ -98,7 +98,7 @@ def test_from_braket_parameterized_two_qubit_gates():
     for instr in instructions:
         braket_circuit.add_instruction(instr)
     cirq_circuit = from_braket(braket_circuit)
-    assert equal_unitaries(braket_circuit, cirq_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
 def test_from_braket_three_qubit_gates():
@@ -111,7 +111,7 @@ def test_from_braket_three_qubit_gates():
     for instr in instructions:
         braket_circuit.add_instruction(instr)
     cirq_circuit = from_braket(braket_circuit)
-    assert equal_unitaries(braket_circuit, cirq_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
 def _rotation_of_pi_over_7(num_qubits):
