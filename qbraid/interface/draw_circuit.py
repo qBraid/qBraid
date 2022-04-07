@@ -13,7 +13,7 @@ def draw(program: QPROGRAM) -> None:
         raise ProgramTypeError(program) from err
 
     if "qiskit" in package:
-        program.draw()   
+        program.draw()
 
     elif "pennylane" in package:
         print(program.draw())
@@ -23,5 +23,3 @@ def draw(program: QPROGRAM) -> None:
 
     else:
         raise ProgramTypeError(program)
-
-    return

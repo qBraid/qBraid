@@ -1,6 +1,5 @@
 """Module containing quantum programs used for testing"""
 
-from re import U
 from typing import Any, Callable, Dict, Tuple
 
 import numpy as np

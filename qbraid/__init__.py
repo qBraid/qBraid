@@ -34,12 +34,9 @@ Exceptions
    ProgramTypeError
 
 """
-import urllib3
-
+from . import _warnings
 from ._about import about
 from ._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from ._version import __version__
 from .exceptions import PackageValueError, ProgramTypeError, QbraidError
 from .top_level import circuit_wrapper, device_wrapper, get_devices, refresh_devices, retrieve_job
-
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
