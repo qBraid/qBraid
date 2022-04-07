@@ -9,7 +9,7 @@ from qbraid.interface.calculate_unitary import equal_unitaries
 
 def test_bell():
     """Test the equality of bell circuits"""
-    map = bell_circuits()
+    map, _ = bell_circuits()
     braket_bell = map["braket"]()
     cirq_bell = map["cirq"]()
     pyquil_bell = map["pyquil"]()
@@ -26,7 +26,7 @@ def test_bell():
 
 def test_shared15():
     """Test the equality of shared gates circuits"""
-    map = shared15_circuits()
+    map, _ = shared15_circuits()
     braket_shared15 = map["braket"]()
     cirq_shared15 = map["cirq"]()
     qiskit_shared15 = map["qiskit"]()
