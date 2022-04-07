@@ -21,7 +21,7 @@ import numpy as np
 import pytest
 import qiskit
 
-from qbraid.interface import equal_unitaries
+from qbraid.interface import circuits_allclose
 from qbraid.interface.qbraid_cirq._utils import _equal
 from qbraid.transpiler.cirq_qiskit.conversions import (
     _map_bit_index,
@@ -114,7 +114,7 @@ def test_convert_with_multiple_barriers(as_qasm):
     qbit = cirq.LineQubit(0)
     correct = cirq.Circuit(cirq.ops.H.on(qbit) for _ in range(num_ops))
     assert _equal(cirq_circuit, correct)
-    assert equal_unitaries(qiskit_circuit, cirq_circuit)
+    assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
 @pytest.mark.parametrize("reg_sizes", [[2, 4, 1, 6], [5, 4, 2], [6]])

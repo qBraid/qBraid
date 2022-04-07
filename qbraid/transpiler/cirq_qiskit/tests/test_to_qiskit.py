@@ -18,7 +18,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qbraid.interface import equal_unitaries
+from qbraid.interface import circuits_allclose
 from qbraid.transpiler.cirq_qiskit.conversions import to_qiskit
 
 
@@ -34,7 +34,7 @@ def test_bell_state_to_qiskit():
     print()
     print(qiskit_circuit)
     print()
-    assert equal_unitaries(qiskit_circuit, cirq_circuit)
+    assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
 @pytest.mark.parametrize("num_qubits", [1, 2, 3, 4, 5])
@@ -47,7 +47,7 @@ def test_random_circuit_to_qiskit(num_qubits):
             random_state=np.random.randint(1, 10),
         )
         qiskit_circuit = to_qiskit(cirq_circuit)
-        equal = equal_unitaries(qiskit_circuit, cirq_circuit)
+        equal = circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
         if not equal:
             print(qiskit_circuit)
             assert False

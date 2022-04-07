@@ -10,10 +10,12 @@ Interface (:mod:`qbraid.interface`)
 
    to_unitary
    convert_to_contiguous
-   equal_unitaries
+   circuits_allclose
    random_circuit
+   draw
 
 """
 from ._programs import random_circuit
-from .calculate_unitary import equal_unitaries, to_unitary
+from .calculate_unitary import circuits_allclose, to_unitary
 from .convert_to_contiguous import convert_to_contiguous
+from .draw_circuit import draw

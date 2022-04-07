@@ -76,6 +76,9 @@ target/
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# Testing
+sandbox.py
+
 # IPython
 profile_default/
 ipython_config.py

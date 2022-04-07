@@ -3,6 +3,7 @@
 from typing import Any, Callable
 
 import numpy as np
+from cirq.testing import assert_allclose_up_to_global_phase
 
 from qbraid._typing import QPROGRAM
 from qbraid.exceptions import ProgramTypeError, QbraidError
@@ -68,8 +69,28 @@ def to_unitary(program: QPROGRAM, ensure_contiguous=False) -> np.ndarray:
     return unitary
 
 
-def equal_unitaries(program_0: QPROGRAM, program_1: QPROGRAM) -> bool:
-    """Returns True if input quantum program unitaries are equivalent."""
-    unitary_0 = to_unitary(program_0, ensure_contiguous=True)
-    unitary_1 = to_unitary(program_1, ensure_contiguous=True)
-    return np.allclose(unitary_0, unitary_1)
+def circuits_allclose(
+    circuit0: QPROGRAM, circuit1: QPROGRAM, index_contig=True, strict_gphase=False, **kwargs
+) -> bool:
+    """Returns True if input quantum program unitaries are equivalent.
+
+    Args:
+        index_contig (optional, bool): If True, calculates circuit unitaries using
+            contiguous qubit indexing.
+        stric_gphase (optional, bool): If False, disregards global phase when verifying
+            equivalance of the input circuit's unitaries.
+
+    Returns:
+        bool: Whether the input circuits pass unitary equality check
+
+    """
+    unitary0 = to_unitary(circuit0, ensure_contiguous=index_contig)
+    unitary1 = to_unitary(circuit1, ensure_contiguous=index_contig)
+    if strict_gphase:
+        return np.allclose(unitary0, unitary1)
+    try:
+        atol = kwargs.pop("atol", None) or 1e-7
+        assert_allclose_up_to_global_phase(unitary0, unitary1, atol=atol, **kwargs)
+    except AssertionError:
+        return False
+    return True

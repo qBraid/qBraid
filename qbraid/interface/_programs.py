@@ -1,18 +1,19 @@
 """Module containing quantum programs used for testing"""
 
-from typing import Any, Callable, Dict
+from typing import Any, Callable, Dict, Tuple
 
 import numpy as np
 
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid.exceptions import PackageValueError
+from .calculate_unitary import to_unitary
 
-QROGRAM_MAP = Dict[str, Callable[[Any], QPROGRAM]]
+QROGRAM_TEST_TYPE = Tuple[Dict[str, Callable[[Any], QPROGRAM]], np.ndarray]
 
 # pylint: disable=import-outside-toplevel
 
 
-def bell_circuits() -> QROGRAM_MAP:
+def bell_data() -> QROGRAM_TEST_TYPE:
     """Returns bell circuit/program in each supported package."""
     from qbraid.interface.qbraid_braket.circuits import braket_bell
     from qbraid.interface.qbraid_cirq.circuits import cirq_bell
@@ -20,7 +21,9 @@ def bell_circuits() -> QROGRAM_MAP:
     from qbraid.interface.qbraid_pyquil.programs import pyquil_bell
     from qbraid.interface.qbraid_qiskit.circuits import qiskit_bell
 
-    return {
+    unitary = to_unitary(cirq_bell())
+
+    circuits = {
         "braket": braket_bell,
         "cirq": cirq_bell,
         "pennylane": pennylane_bell,
@@ -28,14 +31,20 @@ def bell_circuits() -> QROGRAM_MAP:
         "qiskit": qiskit_bell,
     }
 
+    return circuits, unitary
 
-def shared15_circuits() -> QROGRAM_MAP:
+
+def shared15_data() -> QROGRAM_TEST_TYPE:
     """Returns shared gates circuit/program in each supported package."""
     from qbraid.interface.qbraid_braket.circuits import braket_shared15
     from qbraid.interface.qbraid_cirq.circuits import cirq_shared15
     from qbraid.interface.qbraid_qiskit.circuits import qiskit_shared15
 
-    return {"braket": braket_shared15, "cirq": cirq_shared15, "qiskit": qiskit_shared15}
+    unitary = to_unitary(cirq_shared15())
+
+    circuits = {"braket": braket_shared15, "cirq": cirq_shared15, "qiskit": qiskit_shared15}
+
+    return circuits, unitary
 
 
 def random_circuit(package: str, **kwargs) -> QPROGRAM:
