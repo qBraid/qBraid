@@ -27,6 +27,21 @@ from ply import yacc
 
 import qbraid.transpiler.cirq_utils.custom_gates as qbraid_cirq_gates
 
+# Redefined lexer tokens (4/7/21) to surpress warning:
+# Token ['IF', 'NE'] defined, but not used
+QasmLexer.tokens = [
+    "FORMAT_SPEC",
+    "NUMBER",
+    "NATURAL_NUMBER",
+    "QELIBINC",
+    "ID",
+    "PI",
+    "QREG",
+    "CREG",
+    "MEASURE",
+    "ARROW",
+]
+
 
 class Qasm:
     """Qasm stores the final result of the Qasm parsing."""

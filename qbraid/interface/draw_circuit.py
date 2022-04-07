@@ -12,10 +12,7 @@ def draw(program: QPROGRAM) -> None:
     except AttributeError as err:
         raise ProgramTypeError(program) from err
 
-    if "qiskit" in package:
-        program.draw()
-
-    elif "pennylane" in package:
+    if "qiskit" in package or "pennylane" in package:
         print(program.draw())
 
     elif "braket" in package or "cirq" in package or "pyquil" in package:

@@ -1,4 +1,4 @@
 include *.rst *.txt *.md *.ini *.sh
-recursive-include docs *.rst *.py
+recursive-include docs *.rst *.py *.png *.ico
 recursive-include qbraid *.py
 prune docs/build/
