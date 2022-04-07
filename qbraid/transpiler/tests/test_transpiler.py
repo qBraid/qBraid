@@ -15,138 +15,74 @@ from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 
 from qbraid import circuit_wrapper
 from qbraid.interface import convert_to_contiguous, to_unitary
-from qbraid.testing import random_circuit
+from qbraid.interface._programs import random_circuit, shared15_circuits, bell_circuits
 from qbraid.transpiler.cirq_braket.tests._gate_archive import braket_gates
 from qbraid.transpiler.cirq_qiskit.tests._gate_archive import qiskit_gates
 from qbraid.transpiler.cirq_utils.tests._gate_archive import cirq_gates, create_cirq_gate
 
+SHARED15 = shared15_circuits()
+BELL = bell_circuits()
 
-def qiskit_shared_gates_circuit():
-    """Returns qiskit `QuantumCircuit` for qBraid `TestSharedGates`."""
 
-    circuit = QiskitCircuit(4)
-
-    circuit.h([0, 1, 2, 3])
-    circuit.x([0, 1])
-    circuit.y(2)
-    circuit.z(3)
-    circuit.s(0)
-    circuit.sdg(1)
-    circuit.t(2)
-    circuit.tdg(3)
-    circuit.rx(np.pi / 4, 0)
-    circuit.ry(np.pi / 2, 1)
-    circuit.rz(3 * np.pi / 4, 2)
-    circuit.p(np.pi / 8, 3)
-    circuit.sx(0)
-    circuit.sxdg(1)
-    circuit.iswap(2, 3)
-    circuit.swap([0, 1], [2, 3])
-    circuit.cx(0, 1)
-    circuit.cp(np.pi / 4, 2, 3)
-
+def shared_gates_test_data(package):
+    """Returns data ``TestSharedGates``."""
+    circuit = SHARED15[package]()
     unitary = to_unitary(circuit)
     qbraid_circuit = circuit_wrapper(circuit)
-
     return qbraid_circuit, unitary
 
 
-def cirq_shared_gates_circuit():
-    """Returns cirq `Circuit` for qBraid `TestSharedGates`
-    rev_qubits=True reverses ordering of qubits."""
-
-    circuit = CirqCircuit()
-    q3, q2, q1, q0 = [cirq.LineQubit(i) for i in range(4)]
-    mapping = {q3: 0, q2: 1, q1: 2, q0: 3}
-
-    cirq_shared_gates = [
-        cirq.H(q0),
-        cirq.H(q1),
-        cirq.H(q2),
-        cirq.H(q3),
-        cirq.X(q0),
-        cirq.X(q1),
-        cirq.Y(q2),
-        cirq.Z(q3),
-        cirq.S(q0),
-        cirq.ZPowGate(exponent=-0.5)(q1),
-        cirq.T(q2),
-        cirq.ZPowGate(exponent=-0.25)(q3),
-        cirq.rx(rads=np.pi / 4)(q0),
-        cirq.ry(rads=np.pi / 2)(q1),
-        cirq.rz(rads=3 * np.pi / 4)(q2),
-        cirq.ZPowGate(exponent=1 / 8)(q3),
-        cirq.XPowGate(exponent=0.5)(q0),
-        cirq.XPowGate(exponent=-0.5)(q1),
-        cirq.ISWAP(q2, q3),
-        cirq.SWAP(q0, q2),
-        cirq.SWAP(q1, q3),
-        cirq.CNOT(q0, q1),
-        cirq.CZPowGate(exponent=0.25)(q2, q3),
-    ]
-
-    for gate in cirq_shared_gates:
-        circuit.append(gate)
-
+def bell_test_data(package):
+    """Returns data ``TestSharedGates``."""
+    circuit = BELL[package]()
     unitary = to_unitary(circuit)
     qbraid_circuit = circuit_wrapper(circuit)
-
-    return qbraid_circuit, unitary
-
-
-def braket_shared_gates_circuit():
-    """Returns braket `Circuit` for qBraid `TestSharedGates`."""
-
-    circuit = BraketCircuit()
-
-    circuit.h([0, 1, 2, 3])
-    circuit.x([0, 1])
-    circuit.y(2)
-    circuit.z(3)
-    circuit.s(0)
-    circuit.si(1)
-    circuit.t(2)
-    circuit.ti(3)
-    circuit.rx(0, np.pi / 4)
-    circuit.ry(1, np.pi / 2)
-    circuit.rz(2, 3 * np.pi / 4)
-    circuit.phaseshift(3, np.pi / 8)
-    circuit.v(0)
-    circuit.vi(1)
-    circuit.iswap(2, 3)
-    circuit.swap(0, 2)
-    circuit.swap(1, 3)
-    circuit.cnot(0, 1)
-    circuit.cphaseshift(2, 3, np.pi / 4)
-
-    unitary = to_unitary(circuit)
-    qbraid_circuit = circuit_wrapper(circuit)
-
     return qbraid_circuit, unitary
 
 
 # Define circuits and unitaries
-qbraid_circuit_braket, braket_unitary = braket_shared_gates_circuit()
-qbraid_circuit_cirq, cirq_unitary = cirq_shared_gates_circuit()
-qbraid_circuit_qiskit, qiskit_unitary = qiskit_shared_gates_circuit()
+qbraid_braket_shared, braket_shared_u = shared_gates_test_data("braket")
+qbraid_cirq_shared, cirq_shared_u = shared_gates_test_data("cirq")
+qbraid_qiskit_shared, qiskit_shared_u = shared_gates_test_data("qiskit")
+qbraid_braket_bell, braket_bell_u = bell_test_data("braket")
+qbraid_cirq_bell, cirq_bell_u = bell_test_data("cirq")
+qbraid_pennylane_bell, pennylane_bell_u = bell_test_data("pennylane")
+qbraid_pyquil_bell, pyquil_bell_u = bell_test_data("pyquil")
+qbraid_qiskit_bell, qiskit_bell_u = bell_test_data("qiskit")
 
-cirq_qiskit_equal = np.allclose(cirq_unitary, qiskit_unitary)
-cirq_braket_equal = np.allclose(cirq_unitary, braket_unitary)
-qiskit_braket_equal = np.allclose(qiskit_unitary, braket_unitary)
-assert cirq_qiskit_equal and cirq_braket_equal and qiskit_braket_equal
 
-data_test_shared_gates = [
-    (qbraid_circuit_braket, "cirq", cirq_unitary),
-    (qbraid_circuit_braket, "qiskit", qiskit_unitary),
-    (qbraid_circuit_qiskit, "braket", braket_unitary),
-    (qbraid_circuit_qiskit, "cirq", cirq_unitary),
-    (qbraid_circuit_cirq, "braket", braket_unitary),
-    (qbraid_circuit_cirq, "qiskit", qiskit_unitary),
+data_test_programs = [
+    (qbraid_braket_shared, "cirq", cirq_shared_u),
+    (qbraid_braket_shared, "qiskit", qiskit_shared_u),
+    (qbraid_qiskit_shared, "braket", braket_shared_u),
+    (qbraid_qiskit_shared, "cirq", cirq_shared_u),
+    (qbraid_cirq_shared, "braket", braket_shared_u),
+    (qbraid_cirq_shared, "qiskit", qiskit_shared_u),
+    (qbraid_braket_bell, "cirq", cirq_bell_u),
+    (qbraid_braket_bell, "qiskit", qiskit_bell_u),
+    (qbraid_braket_bell, "pennylane", pennylane_bell_u),
+    (qbraid_braket_bell, "pyquil", pyquil_bell_u),
+    (qbraid_qiskit_bell, "braket", braket_bell_u),
+    (qbraid_qiskit_bell, "cirq", cirq_bell_u),
+    (qbraid_qiskit_bell, "pennylane", pennylane_bell_u),
+    (qbraid_qiskit_bell, "pyquil", pyquil_bell_u),
+    (qbraid_cirq_bell, "braket", braket_bell_u),
+    (qbraid_cirq_bell, "qiskit", qiskit_bell_u),
+    (qbraid_cirq_bell, "pennylane", pennylane_bell_u),
+    (qbraid_cirq_bell, "pyquil", pyquil_bell_u),
+    (qbraid_pennylane_bell, "braket", braket_bell_u),
+    (qbraid_pennylane_bell, "cirq", cirq_bell_u),
+    (qbraid_pennylane_bell, "pyquil", pyquil_bell_u),
+    (qbraid_pennylane_bell, "qiskit", qiskit_bell_u),
+    (qbraid_pyquil_bell, "braket", braket_bell_u),
+    (qbraid_pyquil_bell, "cirq", cirq_bell_u),
+    (qbraid_pyquil_bell, "pennylane", pennylane_bell_u),
+    (qbraid_pyquil_bell, "qiskit", qiskit_bell_u),
 ]
 
 
-@pytest.mark.parametrize("qbraid_circuit,target_package,target_unitary", data_test_shared_gates)
-def test_shared_gates(qbraid_circuit, target_package, target_unitary):
+@pytest.mark.parametrize("qbraid_circuit,target_package,target_unitary", data_test_programs)
+def test_programs(qbraid_circuit, target_package, target_unitary):
     """Tests transpiling circuits composed of gate types that share explicit support across
     multiple qbraid tranpsiler supported packages (qiskit, cirq, braket).
     """

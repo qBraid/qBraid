@@ -2,7 +2,7 @@
 
 from braket.circuits.circuit import Circuit as BKCircuit
 
-from qbraid.transpiler.wrapper_abc import QuantumProgramWrapper
+from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper
 
 
 class BraketCircuitWrapper(QuantumProgramWrapper):

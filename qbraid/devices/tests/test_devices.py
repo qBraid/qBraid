@@ -33,7 +33,7 @@ from qbraid.devices.ibm import (
     QiskitBasicAerWrapper,
     QiskitJobWrapper,
 )
-from qbraid.testing import random_circuit
+from qbraid.interface import random_circuit
 
 session = QbraidSession()
 

@@ -2,7 +2,7 @@
 
 from pennylane.tape import QuantumTape
 
-from qbraid.transpiler.wrapper_abc import QuantumProgramWrapper
+from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper
 
 
 class PennylaneQTapeWrapper(QuantumProgramWrapper):

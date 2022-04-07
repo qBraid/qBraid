@@ -19,7 +19,7 @@ from typing import Any, Callable, Tuple
 from cirq import Circuit
 
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
-from qbraid.exceptions import UnsupportedProgramError
+from qbraid.exceptions import PackageValueError, ProgramTypeError
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 # pylint: disable=import-outside-toplevel
@@ -27,13 +27,16 @@ from qbraid.transpiler.exceptions import CircuitConversionError
 
 def convert_to_cirq(program: QPROGRAM) -> Tuple[Circuit, str]:
     """Converts any valid input quantum program to a Cirq circuit.
+
     Args:
-        program: Any quantum program object supported by qbraid.transpiler.
-        See qbraid.transpiler.SUPPORTED_PROGRAM_TYPES.
+        program: A qbraid-supported quantum program object.
+
     Raises:
-        UnsupportedProgramError: If the input circuit is not supported.
+        ProgramTypeError: If the input quantum program is not supported.
+        CircuitConversionError: If the input quantum program could not be converted.
+
     Returns:
-        circuit: Cirq circuit equivalent to input circuit.
+        cirq_circuit: Cirq circuit equivalent to input circuit.
         input_program_type: Type of input quantum program represented by a string.
     """
     conversion_function: Callable[[Any], Circuit]
@@ -41,9 +44,7 @@ def convert_to_cirq(program: QPROGRAM) -> Tuple[Circuit, str]:
     try:
         package = program.__module__
     except AttributeError as err:
-        raise UnsupportedProgramError(
-            "Could not determine the package of the input quantum program."
-        ) from err
+        raise ProgramTypeError(program) from err
 
     if "qiskit" in package:
         from qbraid.transpiler.cirq_qiskit import from_qiskit
@@ -72,11 +73,7 @@ def convert_to_cirq(program: QPROGRAM) -> Tuple[Circuit, str]:
             return circ
 
     else:
-        raise UnsupportedProgramError(
-            f"Quantum program from module {package} is not supported.\n\n"
-            "Quantum program types supported by the qbraid.transpiler are"
-            f"\n{SUPPORTED_PROGRAM_TYPES}"
-        )
+        raise ProgramTypeError(program)
 
     try:
         cirq_circuit = conversion_function(program)
@@ -94,9 +91,17 @@ def convert_to_cirq(program: QPROGRAM) -> Tuple[Circuit, str]:
 
 def convert_from_cirq(circuit: Circuit, conversion_type: str) -> QPROGRAM:
     """Converts a Cirq circuit to a type specified by the conversion type.
+
     Args:
         circuit: Cirq circuit to convert.
         conversion_type: String specifier for the converted circuit type.
+
+    Raises:
+        ProgramTypeError: If the input quantum program is not supported.
+        CircuitConversionError: If the input quantum program could not be converted.
+
+    Returns:
+        quantum_program: A ``conversion_type`` quantum circuit / program.
     """
     conversion_function: Callable[[Circuit], QPROGRAM]
     if conversion_type == "qiskit":
@@ -121,11 +126,8 @@ def convert_from_cirq(circuit: Circuit, conversion_type: str) -> QPROGRAM:
             return circ
 
     else:
-        raise UnsupportedProgramError(
-            f"Conversion to quantum program of type {conversion_type} is "
-            "unsupported. \nQuantum program types supported by the "
-            f"qbraid.transpiler = {SUPPORTED_PROGRAM_TYPES}"
-        )
+        raise PackageValueError(conversion_type)
+
     try:
         quantum_program = conversion_function(circuit)
     except Exception as err:

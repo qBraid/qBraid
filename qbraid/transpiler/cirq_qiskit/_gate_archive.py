@@ -2,7 +2,7 @@
 
 from qiskit.circuit.library import standard_gates as sg
 
-# pylint: disable-next=unused-wildcard-import
+# pylint: disable-next=wildcard-import,unused-wildcard-import
 from qiskit.circuit.library.standard_gates import *
 from qiskit.circuit.measure import Measure
 from qiskit.extensions.unitary import UnitaryGate

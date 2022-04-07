@@ -21,6 +21,12 @@ from pyquil.gates import CNOT, CZ, RZ, H, X, Y, Z
 from qbraid.transpiler.cirq_pyquil.conversions import from_pyquil, to_pyquil
 
 
+def _from_to_pyquil_out(p):
+    circuit = from_pyquil(p, compat=False)
+    program = to_pyquil(circuit, compat=False)
+    return program.out()
+
+
 def test_to_pyquil_from_pyquil_simple():
     p = Program()
     p += X(0)
@@ -28,7 +34,7 @@ def test_to_pyquil_from_pyquil_simple():
     p += Z(2)
     p += CNOT(0, 1)
     p += CZ(1, 2)
-    assert p.out() == to_pyquil(from_pyquil(p)).out()
+    assert p.out() == _from_to_pyquil_out(p)
 
 
 def maxcut_qaoa_program(gamma: float) -> Program:
@@ -59,7 +65,7 @@ def maxcut_qaoa_program(gamma: float) -> Program:
 
 def test_to_pyquil_from_pyquil_parameterized():
     p = maxcut_qaoa_program(np.pi)
-    assert p.out() == to_pyquil(from_pyquil(p)).out()
+    assert p.out() == _from_to_pyquil_out(p)
 
 
 MEASURELESS_QUIL_PROGRAM = """
@@ -92,7 +98,7 @@ def test_to_pyquil_from_pyquil_almost_all_gates():
     and forth perfectly (in terms of labels -- the program unitaries and
     number of measurements are equivalent)."""
     p = Program(MEASURELESS_QUIL_PROGRAM)
-    assert p.out() == to_pyquil(from_pyquil(p)).out()
+    assert p.out() == _from_to_pyquil_out(p)
 
 
 def test_to_pyquil_from_pyquil_not_starting_at_zero():
@@ -102,4 +108,4 @@ def test_to_pyquil_from_pyquil_not_starting_at_zero():
     p += Z(12)
     p += CNOT(10, 11)
     p += CZ(11, 12)
-    assert p.out() == to_pyquil(from_pyquil(p)).out()
+    assert p.out() == _from_to_pyquil_out(p)

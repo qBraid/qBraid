@@ -1,9 +1,10 @@
 """QuantumProgramWrapper Class"""
 
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
-from qbraid.exceptions import UnsupportedProgramError
+from qbraid.exceptions import PackageValueError
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.interface import convert_to_contiguous
 
 
 class QuantumProgramWrapper:
@@ -78,21 +79,22 @@ class QuantumProgramWrapper:
         """Return the original package of the wrapped circuit."""
         return self._package
 
-    def transpile(self, conversion_type):
-        """Transpile a qbraid quantum program wrapper object to quantum program object of type
-         specified by ``conversion_type``.
+    def transpile(self, conversion_type: str) -> QPROGRAM:
+        r"""Transpile a qbraid quantum program wrapper object to quantum
+        program object of type specified by ``conversion_type``.
 
         Args:
-            conversion_type (str): target package
-
-        Returns:
-            quantum program object of type specified by ``package``
+            conversion_type: a supported quantum frontend package.
+                Must be one of :data:`~qbraid.SUPPORTED_PROGRAM_TYPES`.
 
         Raises:
-            UnsupportedProgramError: If the input program is not supported, or
-                conversion to circuit of type ``conversion_type`` is not unsupported.
-            CircuitConversionError: If the input program could not be converted to a
-                program of type ``conversion_type``.
+            PackageValueError: If ``conversion_type`` is not one of
+                :data:`~qbraid.SUPPORTED_PROGRAM_TYPES`.
+            CircuitConversionError: If the input quantum program could not be
+                converted to a program of type ``conversion_type``.
+
+        Returns:
+            converted_program: supported quantum program object
 
         """
         if conversion_type == self.package:
@@ -115,10 +117,7 @@ class QuantumProgramWrapper:
                     f"Circuit could not be converted from a Cirq type to a "
                     f"circuit of type {conversion_type}."
                 ) from err
+
             return converted_program
 
-        raise UnsupportedProgramError(
-            f"Conversion to a program of type {conversion_type} is "
-            "unsupported. \n\nQuantum program types supported by the "
-            f"qbraid.transpiler are \n{SUPPORTED_PROGRAM_TYPES}"
-        )
+        raise PackageValueError(conversion_type)

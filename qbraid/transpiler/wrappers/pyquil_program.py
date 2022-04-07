@@ -2,7 +2,7 @@
 
 from pyquil import Program
 
-from qbraid.transpiler.wrapper_abc import QuantumProgramWrapper
+from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper
 
 
 class PyQuilProgramWrapper(QuantumProgramWrapper):

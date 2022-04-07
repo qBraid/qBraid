@@ -10,8 +10,7 @@ from braket.circuits import Circuit as BraketCircuit
 from braket.circuits import Instruction as BraketInstruction
 from braket.circuits import gates as braket_gates
 
-from qbraid.interface.bell_circuit import bell
-from qbraid.interface.calculate_unitary import equal_unitaries, to_unitary
+from qbraid.interface.calculate_unitary import to_unitary
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
 
 
@@ -93,19 +92,3 @@ def test_continguous_qubits_unitary_calc(bk_instrs, u_expected):
 def test_non_continguous_qubits_unitary_calc(bk_instrs, u_expected):
     """Test unitary calc for instructions with non-contiguous qubit indexing"""
     assert unitary_test_helper(bk_instrs, u_expected)
-
-
-def test_all_bell_equal():
-    """Test the equality of bell circuit unitaries across each package"""
-    cirq_circuit = bell("cirq")
-    qiskit_circuit = bell("qiskit")
-    braket_circuit = bell("braket")
-    pyquil_program = bell("pyquil")
-    pennylane_tape = bell("pennylane")
-
-    eq1 = equal_unitaries(cirq_circuit, qiskit_circuit)
-    eq2 = equal_unitaries(qiskit_circuit, braket_circuit)
-    eq3 = equal_unitaries(braket_circuit, pyquil_program)
-    eq4 = equal_unitaries(pyquil_program, pennylane_tape)
-
-    assert eq1 and eq2 and eq3 and eq4

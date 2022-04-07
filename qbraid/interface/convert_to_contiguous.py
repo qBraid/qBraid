@@ -2,18 +2,22 @@
 
 from typing import Any, Callable
 
-from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
-from qbraid.exceptions import UnsupportedProgramError
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid._typing import QPROGRAM
+from qbraid.exceptions import ProgramTypeError, QbraidError
+
+
+class ContiguousConversionError(QbraidError):
+    """Class for exceptions raised while converting a circuit to use contiguous qubits/indices"""
 
 
 def convert_to_contiguous(program: QPROGRAM, **kwargs) -> QPROGRAM:
     """Checks whether the quantum program uses contiguous qubits/indices,
     and if not, adds identity gates to vacant registers as needed.
+
     Args:
         program: Any quantum quantum object supported by qBraid.
     Raises:
-        UnsupportedProgramError: If the input circuit is not supported.
+        ProgramTypeError: If the input circuit is not supported.
     Returns:
         QPROGRAM: Program of the same type as the input quantum program.
     """
@@ -22,9 +26,7 @@ def convert_to_contiguous(program: QPROGRAM, **kwargs) -> QPROGRAM:
     try:
         package = program.__module__
     except AttributeError as err:
-        raise UnsupportedProgramError(
-            "Could not determine the package of the input quantum program."
-        ) from err
+        raise ProgramTypeError(program) from err
 
     # pylint: disable=import-outside-toplevel
 
@@ -46,16 +48,13 @@ def convert_to_contiguous(program: QPROGRAM, **kwargs) -> QPROGRAM:
 
         conversion_function = _convert_to_contiguous_braket
     else:
-        raise UnsupportedProgramError(
-            f"Quantum program from module {package} is not supported.\n\n"
-            f"Quantum program types supported by qBraid are \n{SUPPORTED_PROGRAM_TYPES}"
-        )
+        raise ProgramTypeError(program)
 
     try:
         compat_program = conversion_function(program, **kwargs)
     except Exception as err:
-        raise CircuitConversionError(
-            "Could not convert given quantum program to use contiguous qubits/indicies."
+        raise ContiguousConversionError(
+            f"Could not convert {type(program)} to use contiguous qubits/indicies."
         ) from err
 
     return compat_program

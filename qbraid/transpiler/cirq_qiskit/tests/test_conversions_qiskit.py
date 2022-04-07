@@ -22,7 +22,7 @@ import pytest
 import qiskit
 
 from qbraid.interface import equal_unitaries
-from qbraid.interface.qbraid_cirq import _equal
+from qbraid.interface.qbraid_cirq._utils import _equal
 from qbraid.transpiler.cirq_qiskit.conversions import (
     _map_bit_index,
     _measurement_order,

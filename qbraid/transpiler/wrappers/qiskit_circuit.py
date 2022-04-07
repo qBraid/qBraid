@@ -4,7 +4,7 @@ from cirq import Circuit
 
 # Currently not used because support parameterized circuits
 from qbraid.transpiler.parameter import ParamID
-from qbraid.transpiler.wrapper_abc import QuantumProgramWrapper
+from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper
 
 
 class QiskitCircuitWrapper(QuantumProgramWrapper):

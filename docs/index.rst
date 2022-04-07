@@ -91,7 +91,6 @@ Supported Frontends
    api/qbraid.interface
    api/qbraid.transpiler
    api/qbraid.devices
-   api/qbraid.testing
 
 
 Indices and Tables
