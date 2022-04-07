@@ -1,7 +1,14 @@
-"""Braket contiguous circuit conversion module"""
+"""Braket tools"""
 
+import numpy as np
 from braket.circuits import Circuit as BKCircuit
 from braket.circuits import Instruction
+from braket.circuits.unitary_calculation import calculate_unitary
+
+
+def _unitary_from_braket(circuit: BKCircuit) -> np.ndarray:
+    """Return the unitary of a Braket circuit."""
+    return calculate_unitary(circuit.qubit_count, circuit.instructions)
 
 
 def _contiguous_expansion(circuit: BKCircuit) -> BKCircuit:

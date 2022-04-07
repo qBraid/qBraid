@@ -24,8 +24,8 @@ from braket.circuits import gates as braket_gates
 from pyquil import Program, gates
 
 from qbraid._typing import SUPPORTED_PROGRAM_TYPES
-from qbraid.exceptions import UnsupportedCircuitError
-from qbraid.interface.qbraid_cirq import _equal
+from qbraid.exceptions import ProgramTypeError
+from qbraid.interface.qbraid_cirq._utils import _equal
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 
 # Cirq Bell circuit.
@@ -69,10 +69,7 @@ def test_to_cirq(circuit):
 
 @pytest.mark.parametrize("item", ("circuit", 1, None))
 def test_to_cirq_bad_types(item):
-    with pytest.raises(
-        UnsupportedCircuitError,
-        match="Could not determine the package of the input circuit.",
-    ):
+    with pytest.raises(ProgramTypeError):
         convert_to_cirq(item)
 
 

@@ -24,7 +24,7 @@ import numpy as np
 import qiskit
 
 from qbraid.interface import convert_to_contiguous
-from qbraid.interface.qbraid_cirq import _convert_to_line_qubits
+from qbraid.interface.qbraid_cirq.tools import _convert_to_line_qubits
 from qbraid.transpiler.cirq_utils import from_qasm, to_qasm
 from qbraid.transpiler.cirq_utils.custom_gates import _map_zpow_and_unroll
 

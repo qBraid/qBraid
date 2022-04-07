@@ -11,7 +11,9 @@ Interface (:mod:`qbraid.interface`)
    to_unitary
    convert_to_contiguous
    equal_unitaries
+   random_circuit
 
 """
+from ._programs import random_circuit
 from .calculate_unitary import equal_unitaries, to_unitary
 from .convert_to_contiguous import convert_to_contiguous

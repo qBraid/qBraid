@@ -15,8 +15,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-# pylint: disable=too-many-locals,too-many-return-statements,too-many-branches
-
 from typing import Any, Dict, List, Union
 
 import numpy as np
@@ -29,7 +27,7 @@ from cirq import protocols
 from cirq.linalg.decompositions import kak_decomposition
 
 from qbraid.interface import convert_to_contiguous
-from qbraid.interface.qbraid_cirq.contiguous import _int_from_qubit
+from qbraid.interface.qbraid_cirq.tools import _int_from_qubit
 from qbraid.transpiler.cirq_braket.custom_gates import C as BKControl
 
 

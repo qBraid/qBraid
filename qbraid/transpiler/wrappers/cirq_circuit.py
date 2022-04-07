@@ -4,10 +4,10 @@
 
 from cirq.circuits import Circuit
 
-from qbraid.transpiler.wrapper_abc import CircuitWrapper
+from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper
 
 
-class CirqCircuitWrapper(CircuitWrapper):
+class CirqCircuitWrapper(QuantumProgramWrapper):
     """Wrapper class for Cirq ``Circuit`` objects."""
 
     def __init__(self, circuit: Circuit):
@@ -23,3 +23,4 @@ class CirqCircuitWrapper(CircuitWrapper):
         self._num_qubits = len(self.qubits)
         self._depth = len(Circuit(circuit.all_operations()))
         self._package = "cirq"
+        self._program_type = "Circuit"

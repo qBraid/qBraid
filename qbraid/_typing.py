@@ -15,10 +15,10 @@
 
 """Defines input / output types for a quantum backend:
 
-  * SUPPORTED_PROGRAM_TYPES: All supported packages/circuits which
-       the qbraid.transpiler can interface with,
-  * QPROGRAM: All supported packages / circuits which are installed in the
-       environment the qbraid.transpiler is run in, and
+  * SUPPORTED_PROGRAM_TYPES: Dict mapping all supported packages
+       with which the qbraid.transpiler can interface to string rep of
+       the its corrensponding quantum circuit / program type
+  * QPROGRAM: Type alias defining all supported quantum circuit / program types
 """
 from typing import Union
 
@@ -28,7 +28,7 @@ from pennylane.tape import QuantumTape as _QuantumTape
 from pyquil import Program as _Program
 from qiskit import QuantumCircuit as _QuantumCircuit
 
-# Supported quantum programs.
+# Supported quantum program type mappings.
 SUPPORTED_PROGRAM_TYPES = {
     "cirq": "Circuit",
     "pyquil": "Program",

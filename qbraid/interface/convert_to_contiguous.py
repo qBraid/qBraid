@@ -2,54 +2,59 @@
 
 from typing import Any, Callable
 
-from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
-from qbraid.exceptions import UnsupportedCircuitError
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid._typing import QPROGRAM
+from qbraid.exceptions import ProgramTypeError, QbraidError
 
 
-def convert_to_contiguous(circuit: QPROGRAM, **kwargs) -> QPROGRAM:
-    """Checks whether the circuit uses contiguous qubits/indices,
+class ContiguousConversionError(QbraidError):
+    """Class for exceptions raised while converting a circuit to use contiguous qubits/indices"""
+
+
+def convert_to_contiguous(program: QPROGRAM, **kwargs) -> QPROGRAM:
+    """Checks whether the quantum program uses contiguous qubits/indices,
     and if not, adds identity gates to vacant registers as needed.
+
     Args:
-        circuit: Any quantum circuit object supported by qBraid.
+        program: Any quantum quantum object supported by qBraid.
     Raises:
-        UnsupportedCircuitError: If the input circuit is not supported.
+        ProgramTypeError: If the input circuit is not supported.
     Returns:
-        QPROGRAM: Circuit object of the same type as the input circuit.
+        QPROGRAM: Program of the same type as the input quantum program.
     """
     conversion_function: Callable[[Any], QPROGRAM]
 
     try:
-        package = circuit.__module__
+        package = program.__module__
     except AttributeError as err:
-        raise UnsupportedCircuitError(
-            "Could not determine the package of the input circuit."
-        ) from err
+        raise ProgramTypeError(program) from err
 
     # pylint: disable=import-outside-toplevel
 
     if "qiskit" in package:
-        return circuit
+        return program
+
+    if "pyquil" in package:
+        return program
+
+    if "pennylane" in package:
+        return program
 
     if "cirq" in package:
-        from qbraid.interface.qbraid_cirq.contiguous import _convert_to_contiguous_cirq
+        from qbraid.interface.qbraid_cirq.tools import _convert_to_contiguous_cirq
 
         conversion_function = _convert_to_contiguous_cirq
     elif "braket" in package:
-        from qbraid.interface.qbraid_braket.contiguous import _convert_to_contiguous_braket
+        from qbraid.interface.qbraid_braket.tools import _convert_to_contiguous_braket
 
         conversion_function = _convert_to_contiguous_braket
     else:
-        raise UnsupportedCircuitError(
-            f"Circuit from module {package} is not supported.\n\n"
-            f"Circuit types supported by qBraid are \n{SUPPORTED_PROGRAM_TYPES}"
-        )
+        raise ProgramTypeError(program)
 
     try:
-        compat_circuit = conversion_function(circuit, **kwargs)
+        compat_program = conversion_function(program, **kwargs)
     except Exception as err:
-        raise CircuitConversionError(
-            "Could not convert given circuit to use contiguous qubits/indicies."
+        raise ContiguousConversionError(
+            f"Could not convert {type(program)} to use contiguous qubits/indicies."
         ) from err
 
-    return compat_circuit
+    return compat_program

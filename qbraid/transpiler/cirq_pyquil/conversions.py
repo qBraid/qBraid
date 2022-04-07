@@ -20,6 +20,8 @@ from cirq import Circuit, LineQubit
 from cirq.contrib.quil_import import circuit_from_quil
 from pyquil import Program
 
+from qbraid.interface.convert_to_contiguous import convert_to_contiguous
+
 QuilType = str
 
 
@@ -41,7 +43,7 @@ def to_quil(circuit: Circuit) -> QuilType:
     return circuit.to_quil()
 
 
-def to_pyquil(circuit: Circuit) -> Program:
+def to_pyquil(circuit: Circuit, compat=True) -> Program:
     """Returns a pyQuil Program equivalent to the input Cirq circuit.
 
     Args:
@@ -50,10 +52,12 @@ def to_pyquil(circuit: Circuit) -> Program:
     Returns:
         pyquil.Program object equivalent to the input Cirq circuit.
     """
+    if compat:
+        circuit = convert_to_contiguous(circuit, rev_qubits=True)
     return Program(to_quil(circuit))
 
 
-def from_pyquil(program: Program) -> Circuit:
+def from_pyquil(program: Program, compat=True) -> Circuit:
     """Returns a Cirq circuit equivalent to the input pyQuil Program.
 
     Args:
@@ -62,7 +66,10 @@ def from_pyquil(program: Program) -> Circuit:
     Returns:
         Cirq circuit representation equivalent to the input pyQuil Program.
     """
-    return from_quil(program.out())
+    circuit = from_quil(program.out())
+    if compat:
+        circuit = convert_to_contiguous(circuit, rev_qubits=True)
+    return circuit
 
 
 def from_quil(quil: QuilType) -> Circuit:

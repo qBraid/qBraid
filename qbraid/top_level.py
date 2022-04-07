@@ -1,3 +1,9 @@
+"""
+Module containing top-level qbraid functionality, and any/all functions
+that directly or indirectly utilize entrypoints via ``pkg_resources``.
+
+"""
+
 from datetime import datetime
 from time import time
 
@@ -17,8 +23,8 @@ def _get_entrypoints(group: str):
     return {entry.name: entry for entry in pkg_resources.iter_entry_points(group)}
 
 
-def circuit_wrapper(circuit: QPROGRAM):
-    """Apply qbraid circuit  wrapper to a supported quantum program.
+def circuit_wrapper(program: QPROGRAM):
+    """Apply qbraid quantum program wrapper to a supported quantum program.
 
     This function is used to create a qBraid circuit-wrapper object, which can then be transpiled
     to any supported quantum circuit-building package. The input quantum circuit object must be
@@ -37,22 +43,22 @@ def circuit_wrapper(circuit: QPROGRAM):
         circuit (QPROGRAM): a supported quantum circuit object
 
     Returns:
-        :class:`~qbraid.transpiler.CircuitWrapper`: a qbraid circuit wrapper object
+        :class:`~qbraid.transpiler.QuantumProgramWrapper`: a qbraid quantum program wrapper object
 
     Raises:
         QbraidError: If the input circuit is not a supported quantum program.
 
     """
-    package = circuit.__module__.split(".")[0]
+    package = program.__module__.split(".")[0]
     ep = package.lower()
 
     transpiler_entrypoints = _get_entrypoints("qbraid.transpiler")
 
     if package in transpiler_entrypoints:
         circuit_wrapper_class = transpiler_entrypoints[ep].load()
-        return circuit_wrapper_class(circuit)
+        return circuit_wrapper_class(program)
 
-    raise QbraidError(f"Error applying circuit wrapper to circuit of type {type(circuit)}")
+    raise QbraidError(f"Error applying circuit wrapper to quantum program of type {type(program)}")
 
 
 def device_wrapper(qbraid_device_id: str, **kwargs):
@@ -131,7 +137,6 @@ def _print_progress(start, count):
 
 def refresh_devices():
     """Refreshes status for all qbraid supported devices. Requires credential for each vendor."""
-    # pylint: disable=import-outside-toplevel
 
     session = QbraidSession()
     devices = session.get("/public/lab/get-devices", params={}).json()
@@ -161,7 +166,6 @@ def _get_device_data(query):
         raise ApiError(devices)
     device_data = []
     tot_dev = 0
-    # ref_dev = 0
     tot_lag = 0
     for document in devices:
         qbraid_id = document["qbraid_id"]
@@ -189,7 +193,7 @@ def _get_device_data(query):
 
 
 def get_devices(filters=None, refresh=False):
-    """get_devices(filters)
+    """
     Displays a list of all supported devices matching given filters, tabulated by provider,
     name, and qBraid ID. Each device also has a status given by a solid green bubble or a hollow
     red bubble, indicating that the device is online or offline, respectively. You can narrow your
@@ -206,6 +210,7 @@ def get_devices(filters=None, refresh=False):
     * status (str): ONLINE | OFFLINE
 
     Here are a few example use cases:
+    # pylint: disable=line-too-long
 
     .. code-block:: python
 
@@ -220,10 +225,11 @@ def get_devices(filters=None, refresh=False):
         # Search for open-access simulators that have "Unitary" contained in their name
         get_devices(filters={"type": "Simulator", "name": {"$regex": "Unitary"}, "requiresCred": False})
 
+    # pylint: enable=line-too-long
+
     For a complete list of search operators, see `Query Selectors`__. To refresh the device status
-    column, call :func:`~qbraid.refresh_devices`, and then re-run :func:`~qbraid.get_devices`.
-    The bottom-right corner of the ``get_devices`` table indicates time since the last status
-    refresh. Device status is auto-refreshed every hour.
+    column, call :func:`~qbraid.get_devices` with ``refresh=True`` keyword argument. The bottom-right
+    corner of the ``get_devices`` table indicates time since the last status refresh.
 
     .. __: https://docs.mongodb.com/manual/reference/operator/query/#query-selectors
 

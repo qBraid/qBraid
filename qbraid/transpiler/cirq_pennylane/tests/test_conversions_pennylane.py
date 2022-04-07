@@ -20,7 +20,7 @@ import numpy as np
 import pennylane as qml
 import pytest
 
-from qbraid.interface.qbraid_cirq import _equal
+from qbraid.interface.qbraid_cirq._utils import _equal
 from qbraid.transpiler.cirq_pennylane.conversions import (
     UnsupportedQuantumTapeError,
     from_pennylane,

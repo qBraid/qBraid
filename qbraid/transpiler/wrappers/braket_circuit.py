@@ -2,10 +2,10 @@
 
 from braket.circuits.circuit import Circuit as BKCircuit
 
-from qbraid.transpiler.wrapper_abc import CircuitWrapper
+from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper
 
 
-class BraketCircuitWrapper(CircuitWrapper):
+class BraketCircuitWrapper(QuantumProgramWrapper):
     """Wrapper class for Amazon Braket ``Circuit`` objects."""
 
     def __init__(self, circuit: BKCircuit):
@@ -21,3 +21,4 @@ class BraketCircuitWrapper(CircuitWrapper):
         self._num_qubits = len(self.qubits)
         self._depth = circuit.depth
         self._package = "braket"
+        self._program_type = "Circuit"

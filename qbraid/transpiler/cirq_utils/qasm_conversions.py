@@ -63,9 +63,8 @@ def _to_qasm_output(
             register.
     """
     if header is None:
-        header = (
-            f"Generated from Cirq v{cirq._version.__version__}"  # pylint: disable=protected-access
-        )
+        # pylint: disable-next=protected-access
+        header = f"Generated from Cirq v{cirq._version.__version__}"
     qubits = ops.QubitOrder.as_qubit_order(qubit_order).order_for(circuit.all_qubits())
     return QasmOutput(
         operations=circuit.all_operations(),

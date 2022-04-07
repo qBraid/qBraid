@@ -20,7 +20,7 @@ import cirq
 import pytest
 from cirq import CNOT, Circuit, ControlledGate, H, LineQubit, MeasurementGate, S, T, X, Y, Z, ops
 
-from qbraid.interface.qbraid_cirq.utils import (
+from qbraid.interface.qbraid_cirq._utils import (
     _append_measurements,
     _equal,
     _is_measurement,
