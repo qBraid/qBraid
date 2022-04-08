@@ -52,8 +52,8 @@ def _cirq_random(num_qubits: int, depth: int, **kwargs) -> Circuit:
         raise QbraidError("Could not create Cirq random circuit") from err
 
 
-def cirq_bell():
-    """Cirq bell circuit"""
+def cirq_bell() -> Circuit:
+    """Returns Cirq bell circuit"""
     q0, q1 = LineQubit.range(2)
     circuit = Circuit(ops.H(q0), ops.CNOT(q0, q1))
     return circuit

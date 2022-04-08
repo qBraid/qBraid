@@ -4,7 +4,6 @@ from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid.exceptions import PackageValueError
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
-from qbraid.interface import convert_to_contiguous
 
 
 class QuantumProgramWrapper:

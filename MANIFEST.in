@@ -1,4 +1,9 @@
-include *.rst *.txt *.md *.ini *.sh
+include *.txt *.md *.ini
 recursive-include docs *.rst *.py *.png *.ico
 recursive-include qbraid *.py
+prune qbraid/algorithms/
+prune qbraid/applications/
+prune qbraid/circuits/
+prune qbraid/operators/
+prune qbraid/scripts/
 prune docs/build/
