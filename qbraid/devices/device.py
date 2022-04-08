@@ -62,13 +62,8 @@ class DeviceLikeWrapper(ABC):
                 f"Number of qubits in circuit ({qbraid_circuit.num_qubits}) exceeds "
                 f"number of qubits in device ({self.num_qubits})."
             )
-        print(f"input_run_package: {input_run_package}")
-        print(f"device_run_package: {device_run_package}")
         if input_run_package != device_run_package:
-            print("entered transpiler")
             run_input = qbraid_circuit.transpile(device_run_package)
-        output_run_package = run_input.__module__.split(".")[0]
-        print(f"output_run_package: {output_run_package}")
         compat_run_input = self._vendor_compat_run_input(run_input)
         return compat_run_input, qbraid_circuit
 
