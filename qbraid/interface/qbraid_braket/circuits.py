@@ -4,7 +4,8 @@ import numpy as np
 from braket.circuits import Circuit as BKCircuit
 
 
-def braket_bell():
+def braket_bell() -> BKCircuit:
+    """Returns Braket bell circuit"""
     circuit = BKCircuit().h(1).cnot(1, 0)
     return circuit
 

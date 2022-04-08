@@ -31,7 +31,8 @@ def _qiskit_random(num_qubits: int, depth: int, **kwargs) -> QuantumCircuit:
         raise QbraidError("Could not create Qiskit random circuit") from err
 
 
-def qiskit_bell():
+def qiskit_bell() -> QuantumCircuit:
+    """Returns Qiskit bell circuit"""
     circuit = QuantumCircuit(2)
     circuit.h(1)
     circuit.cx(1, 0)
