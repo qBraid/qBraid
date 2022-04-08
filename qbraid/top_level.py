@@ -161,7 +161,7 @@ def _get_device_data(query):
     """
     session = QbraidSession()
 
-    # get-devices ust be a POST request with kwarg `json` (not `data`) to
+    # get-devices must be a POST request with kwarg `json` (not `data`) to
     # encode the query. This is because certain queries contain regular
     # expressions which cannot be encoded in GET request `params`.
     devices = session.post("/public/lab/get-devices", json=query).json()
