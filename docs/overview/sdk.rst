@@ -1,34 +1,27 @@
-.. _overview_sdk:
+.. include:: ../_static/s5defs.txt
 
-SDK
-====
+.. role:: raw-html(raw)
+   :format: html
 
-:Release: |release|
+:raw-html:`<h1 style="text-align: center"><img src="../_static/logo.png" alt="qbraid logo" style="width:50px;height:50px;"><span> qBraid</span><span style="color:#808080"> | SDK</span></h1><p style="text-align:center">A Python toolkit for building and executing quantum programs.</p>`
 
-A Python toolkit for building and executing quantum programs.
+""""
 
-Features
----------
+:raw-html:`<h2>Features</h2>`
 
-.. image:: ../_static/logo.png
-   :align: left
-   :width: 275px
-   :target: qBraid_
-
-
-- *Unified quantum frontend interface*. **Transpile** quantum circuits between supported packages. Leverage the capabilities of multiple frontends through **simple, consistent protocols**.
+\‣ *Unified quantum frontend interface*. **Transpile** quantum circuits between supported packages. Leverage the capabilities of multiple frontends through **simple, consistent protocols**.
 
 ..
 
-- *Build once, target many*. **Create** quantum programs using your preferred circuit-building package, and **execute** on any backend that interfaces with a supported frontend.
+\‣ *Build once, target many*. **Create** quantum programs using your preferred circuit-building package, and **execute** on any backend that interfaces with a supported frontend.
 
 ..
 
-- *Benchmark, compare, interpret results*. Built-in **compatable** post-processing enables comparing results between runs and **across backends**.
+\‣ *Benchmark, compare, interpret results*. Built-in **compatable** post-processing enables comparing results between runs and **across backends**.
 
+""""
 
-Supported Frontends
---------------------
+:raw-html:`<h2>Supported Frontends</h2>`
 
 +-------------+-------------+------------+-------------+-------------+
 |  Cirq_      |  Braket_    |  Qiskit_   |  pyQuil_    |  Pennylane_ |
@@ -62,10 +55,12 @@ Supported Frontends
    :width: 90%
    :target: Pennylane_
 
-
 .. _Cirq: https://quantumai.google/cirq
 .. _Braket: https://aws.amazon.com/braket
 .. _Qiskit: https://qiskit.org
 .. _pyQuil: https://www.rigetti.com/applications/pyquil
 .. _Pennylane: https://pennylane.ai
 .. _qBraid: https://qbraid.com/home.html
+
+:white:`SDK`
+-------------

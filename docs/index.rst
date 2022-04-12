@@ -1,11 +1,4 @@
-.. _home:
-
-qBraid Documentation
-=====================
-
-A cloud-based platform for quantum computing.
-
-.. rst-class:: lead grey-text ml-2
+.. include:: _static/s5defs.txt
    
 .. raw:: html
 
@@ -23,13 +16,18 @@ A cloud-based platform for quantum computing.
 
    /* Float four columns side by side */
    .column {
-   float: left;
+   display: inline-block;
+   vertical-align: middle;
+   float: none;
    width: 25%;
    padding: 0 10px;
    }
 
    /* Remove extra left and right margins, due to padding */
-   .row {margin: 0 -5px;}
+   .row {
+   text-align: center;
+   margin:0 auto;
+   }
 
    /* Clear floats after the columns */
    .row:after {
@@ -42,7 +40,6 @@ A cloud-based platform for quantum computing.
    @media screen and (max-width: 600px) {
    .column {
       width: 100%;
-      display: block;
       margin-bottom: 20px;
    }
    }
@@ -57,27 +54,38 @@ A cloud-based platform for quantum computing.
    </style>
    </head>
    <body>
-
+   <h1 style="text-align: center">
+   <img src="_static/logo.png" alt="qbraid logo" style="width:50px;height:50px;">
+   <span> qBraid</span>
+   <span style="color:#808080"> | Docs</span>
+   </h1>
+   <br></br>
    <div class="row">
    <div class="column">
-      <div class="card">
-         <h3>Lab</h3>
-         <p>Some text</p>
-      </div>
+      <a href="overview/lab.html">
+         <div class="card">
+            <h3>Lab</h3>
+            <p>Some text</p>
+         </div>
+      </a>
    </div>
    
    <div class="column">
-      <div class="card">
-         <h3>CLI</h3>
-         <p>Some text</p>
-      </div>
+      <a href="overview/cli.html">
+         <div class="card">
+            <h3>CLI</h3>
+            <p>Some text</p>
+         </div>
+      </a>
    </div>
    
    <div class="column">
-      <div class="card">
-         <h3>SDK</h3>
-         <p>Some text</p>
-      </div>
+      <a href="overview/sdk.html">
+         <div class="card">
+            <h3>SDK</h3>
+            <p>Some text</p>
+         </div>
+      </a>
    </div>
    </div>
 
@@ -85,36 +93,16 @@ A cloud-based platform for quantum computing.
    </html>
 
 
-Features
----------
-
-.. image:: _static/logo.png
-   :align: left
-   :width: 275px
-   :target: qBraid_
-
-.. _qBraid: https://qbraid.com/home.html
-
-
-- **Lab**: Customized JupyterLab console built specifically for quantum computing developers, researchers, and students.
-
-..
-
-- **CLI**: Gain access to quantum hardware from D-Wave, IonQ, Rigetti, Oxford Quantum Circuits, and more, using qBraid credits, all from one account.
-
-..
-
-- **SDK**: Python toolkit for building and executing quantum programs. Interface between quantum circuit building frontends including Qiskit, Pennylane, Cirq, Amazon Braket, and pyQuil.
-
-
+:white:`Docs`
+--------------
 
 .. toctree::
-   :maxdepth: 1
+   :titlesonly:
    :caption: Overview
    :hidden:
 
-   overview/lab
-   overview/cli
+   Lab <overview/lab>
+   CLI <overview/cli>
    overview/sdk
 
 .. toctree::
@@ -131,7 +119,7 @@ Features
 
 .. toctree::
    :maxdepth: 1
-   :caption: CLI Reference
+   :caption: CLI API
    :hidden:
 
    cli/qbraid
@@ -139,7 +127,7 @@ Features
 
 .. toctree::
    :maxdepth: 1
-   :caption: SDK Reference
+   :caption: SDK API
    :hidden:
 
    sdk/qbraid
@@ -149,9 +137,9 @@ Features
    sdk/qbraid.devices
 
 
-Indices and Tables
-------------------
+.. Indices and Tables
+.. ------------------
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+.. * :ref:`genindex`
+.. * :ref:`modindex`
+.. * :ref:`search`

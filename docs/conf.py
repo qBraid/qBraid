@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath("../../qbraid"))
 
 # -- Project information -----------------------------------------------------
 
-project = "qBraid-SDK"
+project = "qBraid"
 copyright = "2022, qBraid Development Team"
 author = "qBraid Development Team"
 
@@ -98,6 +98,8 @@ html_static_path = ["_static"]
 
 html_favicon = "_static/favicon.ico"
 html_show_sphinx = False
+
+html_css_files = ['css/s4defs-roles.css']
 
 # -- More customizations ----------------------------------------------------
 
