@@ -1,4 +1,6 @@
 .. include:: _static/s5defs.txt
+
+|
    
 .. raw:: html
 
@@ -55,35 +57,37 @@
    </head>
    <body>
    <h1 style="text-align: center">
-   <img src="_static/logo.png" alt="qbraid logo" style="width:50px;height:50px;">
-   <span> qBraid</span>
-   <span style="color:#808080"> | Docs</span>
+      <img src="_static/logo.png" alt="qbraid logo" style="width:50px;height:50px;">
+      <span> qBraid</span>
+      <span style="color:#808080"></span>
    </h1>
-   <br></br>
+   <p style="text-align:center;font-style:italic;color:#808080">
+      A cloud-based platform for quantum computing.
+   </p>
    <div class="row">
    <div class="column">
-      <a href="overview/lab.html">
+      <a href="lab/overview.html">
          <div class="card">
             <h3>Lab</h3>
-            <p>Some text</p>
+            <img src="_static/cards/jupyter.png" alt="terminal" style="width:60px;height:60px;">
          </div>
       </a>
    </div>
    
    <div class="column">
-      <a href="overview/cli.html">
+      <a href="cli/overview.html">
          <div class="card">
             <h3>CLI</h3>
-            <p>Some text</p>
+            <img src="_static/cards/terminal.png" alt="terminal" style="width:60px;height:60px;">
          </div>
       </a>
    </div>
    
    <div class="column">
-      <a href="overview/sdk.html">
+      <a href="sdk/overview.html">
          <div class="card">
             <h3>SDK</h3>
-            <p>Some text</p>
+            <img src="_static/cards/python.png" alt="terminal" style="width:60px;height:60px;">
          </div>
       </a>
    </div>
@@ -92,49 +96,49 @@
    </body>
    </html>
 
+|
 
 :white:`Docs`
---------------
-
-.. toctree::
-   :titlesonly:
-   :caption: Overview
-   :hidden:
-
-   Lab <overview/lab>
-   CLI <overview/cli>
-   overview/sdk
+==============
 
 .. toctree::
    :maxdepth: 1
-   :caption: User Guide
+   :caption: qBraid Lab
    :hidden:
 
-   guide/getstart
-   guide/intro
-   guide/circuits
-   guide/devices
-   guide/jobs
-   guide/results
+   lab/overview
 
 .. toctree::
    :maxdepth: 1
-   :caption: CLI API
+   :caption: qBraid CLI
    :hidden:
 
-   cli/qbraid
-
+   cli/overview
+   cli/reference
 
 .. toctree::
    :maxdepth: 1
-   :caption: SDK API
+   :caption: qBraid SDK
    :hidden:
 
-   sdk/qbraid
-   sdk/qbraid.api
-   sdk/qbraid.interface
-   sdk/qbraid.transpiler
-   sdk/qbraid.devices
+   sdk/overview
+   sdk/getstart
+   sdk/intro
+   sdk/circuits
+   sdk/devices
+   sdk/jobs
+   sdk/results
+
+.. toctree::
+   :maxdepth: 1
+   :caption: API Reference
+   :hidden:
+
+   api/qbraid
+   api/qbraid.api
+   api/qbraid.interface
+   api/qbraid.transpiler
+   api/qbraid.devices
 
 
 .. Indices and Tables

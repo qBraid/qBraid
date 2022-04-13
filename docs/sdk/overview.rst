@@ -1,13 +1,21 @@
-.. include:: ../_static/s5defs.txt
+Overview
+=========
 
-.. role:: raw-html(raw)
-   :format: html
+.. raw:: html
+   
+   <h1 style="text-align: center">
+      <img src="../_static/logo.png" alt="qbraid logo" style="width:50px;height:50px;">
+      <span> qBraid</span>
+      <span style="color:#808080"> | SDK</span>
+   </h1>
+   <p style="text-align:center;font-style:italic;color:#808080">
+      A Python toolkit for building and executing quantum programs.
+   </p>
 
-:raw-html:`<h1 style="text-align: center"><img src="../_static/logo.png" alt="qbraid logo" style="width:50px;height:50px;"><span> qBraid</span><span style="color:#808080"> | SDK</span></h1><p style="text-align:center">A Python toolkit for building and executing quantum programs.</p>`
+:Release: |release|
 
-""""
-
-:raw-html:`<h2>Features</h2>`
+Features
+---------
 
 \‣ *Unified quantum frontend interface*. **Transpile** quantum circuits between supported packages. Leverage the capabilities of multiple frontends through **simple, consistent protocols**.
 
@@ -19,9 +27,9 @@
 
 \‣ *Benchmark, compare, interpret results*. Built-in **compatable** post-processing enables comparing results between runs and **across backends**.
 
-""""
 
-:raw-html:`<h2>Supported Frontends</h2>`
+Supported Frontends
+--------------------
 
 +-------------+-------------+------------+-------------+-------------+
 |  Cirq_      |  Braket_    |  Qiskit_   |  pyQuil_    |  Pennylane_ |
@@ -61,6 +69,3 @@
 .. _pyQuil: https://www.rigetti.com/applications/pyquil
 .. _Pennylane: https://pennylane.ai
 .. _qBraid: https://qbraid.com/home.html
-
-:white:`SDK`
--------------
