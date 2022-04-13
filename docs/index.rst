@@ -1,6 +1,5 @@
-.. include:: _static/s5defs.txt
-
-|
+Documentation
+==============
    
 .. raw:: html
 
@@ -97,9 +96,6 @@
    </html>
 
 |
-
-:white:`Docs`
-==============
 
 .. toctree::
    :maxdepth: 1
