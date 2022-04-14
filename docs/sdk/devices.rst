@@ -1,4 +1,4 @@
-.. _guide_devices:
+.. _sdk_devices:
 
 Devices
 =========

@@ -1,4 +1,4 @@
-.. _guide_getstart:
+.. _sdk_getstart:
 
 Getting started
 ================

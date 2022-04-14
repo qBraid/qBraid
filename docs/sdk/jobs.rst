@@ -1,4 +1,4 @@
-.. _guide_jobs:
+.. _sdk_jobs:
 
 Jobs
 =====

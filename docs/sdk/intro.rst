@@ -1,4 +1,4 @@
-.. _guide_intro:
+.. _sdk_intro:
 
 Introduction
 =============
