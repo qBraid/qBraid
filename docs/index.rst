@@ -99,27 +99,19 @@ Documentation
 
 .. toctree::
    :maxdepth: 1
-   :caption: qBraid Lab
+   :caption: Lab User Guide
    :hidden:
 
    lab/overview
+   lab/environments
+   lab/notebooks
 
 .. toctree::
    :maxdepth: 1
-   :caption: qBraid CLI
-   :hidden:
-
-   cli/overview
-   cli/reference
-
-.. toctree::
-   :maxdepth: 1
-   :caption: qBraid SDK
+   :caption: SDK User Guide
    :hidden:
 
    sdk/overview
-   sdk/getstart
-   sdk/intro
    sdk/circuits
    sdk/devices
    sdk/jobs
@@ -127,7 +119,7 @@ Documentation
 
 .. toctree::
    :maxdepth: 1
-   :caption: API Reference
+   :caption: SDK API Reference
    :hidden:
 
    api/qbraid
@@ -135,6 +127,14 @@ Documentation
    api/qbraid.interface
    api/qbraid.transpiler
    api/qbraid.devices
+
+.. toctree::
+   :maxdepth: 1
+   :caption: CLI Reference
+   :hidden:
+
+   cli/overview
+   cli/commands
 
 
 .. Indices and Tables

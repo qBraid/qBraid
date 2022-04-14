@@ -1,4 +1,4 @@
-.. _guide_results:
+.. _sdk_results:
 
 Results
 ========

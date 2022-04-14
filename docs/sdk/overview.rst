@@ -1,3 +1,5 @@
+.. _sdk_overview:
+
 Overview
 =========
 
@@ -17,19 +19,36 @@ Overview
 Features
 ---------
 
-\‣ *Unified quantum frontend interface*. **Transpile** quantum circuits between supported packages. Leverage the capabilities of multiple frontends through **simple, consistent protocols**.
+- *Unified quantum frontend interface*. **Transpile** quantum circuits between supported packages. Leverage the capabilities of multiple frontends through **simple, consistent protocols**.
 
 ..
 
-\‣ *Build once, target many*. **Create** quantum programs using your preferred circuit-building package, and **execute** on any backend that interfaces with a supported frontend.
+- *Build once, target many*. **Create** quantum programs using your preferred circuit-building package, and **execute** on any backend that interfaces with a supported frontend.
 
 ..
 
-\‣ *Benchmark, compare, interpret results*. Built-in **compatable** post-processing enables comparing results between runs and **across backends**.
+- *Benchmark, compare, interpret results*. Built-in **compatable** post-processing enables comparing results between runs and **across backends**.
+
+
+Installation
+-------------
+
+The qBraid-SDK is available exclusively through `qBraid Lab <https://lab.qbraid.com>`_.
+Login (or create an account) and then follow the steps in `Installing an environment <../lab/environments.html#installing-an-environment>`_ to
+get started using the SDK.
+
+
+Usage
+------
+
+.. code-block:: python
+
+    import qbraid
+
 
 
 Supported Frontends
---------------------
+^^^^^^^^^^^^^^^^^^^^
 
 +-------------+-------------+------------+-------------+-------------+
 |  Cirq_      |  Braket_    |  Qiskit_   |  pyQuil_    |  Pennylane_ |

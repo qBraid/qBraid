@@ -3,7 +3,7 @@
 Circuits
 =========
 
-In this tutorial, you will learn how to use the qBraid SDK to interface with
+In this module, you will learn how to use the qBraid SDK to interface with
 quantum circuit objects accross various frontends. We will demonstrate how to
 use the transpiler to convert circuits between packages, and highlight a few
 other circuit-based convenience features.

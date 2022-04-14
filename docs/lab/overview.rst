@@ -14,14 +14,10 @@ Overview
 
 
 Features
----------
+----------
 
-\‣ Gain access to quantum hardware from D-Wave, IonQ, Rigetti, Oxford Quantum Circuits, and more, using qBraid credits, all from one account.
+- `Environment Manager <environments.html>`_
+- `Notebooks <notebooks.html>`_
 
-..
 
-\‣ *Build once, target many*. **Create** quantum programs using your preferred circuit-building package, and **execute** on any backend that interfaces with a supported frontend.
-
-..
-
-\‣ *Benchmark, compare, interpret results*. Built-in **compatable** post-processing enables comparing results between runs and **across backends**.
+For information on the JupyterLab interface, see `JupyterLab Documentaion <https://jupyterlab.readthedocs.io/>`_.

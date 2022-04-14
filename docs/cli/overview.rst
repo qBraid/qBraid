@@ -1,6 +1,10 @@
 Overview
 =========
 
+.. |br| raw:: html
+
+   <br />
+
 .. raw:: html
    
    <h1 style="text-align: center">
@@ -13,16 +17,43 @@ Overview
    </p>
 
 
-Features
----------
+Installation
+-------------
 
-\‣ Gain access to quantum hardware from D-Wave, IonQ, Rigetti, Oxford Quantum Circuits, and more, using qBraid credits, all from one account.
+The qBraid CLI is available exclusively through `qBraid Lab <https://lab.qbraid.com>`_.
+Login (or create an account) and then open Termainal to get started using the CLI.
 
-..
+.. code-block:: console
 
-\‣ *Build once, target many*. **Create** quantum programs using your preferred circuit-building package, and **execute** on any backend that interfaces with a supported frontend.
+   $ which qbraid
+   /usr/bin/qbraid
 
-..
 
-\‣ *Benchmark, compare, interpret results*. Built-in **compatable** post-processing enables comparing results between runs and **across backends**.
+Usage
+------
 
+.. code-block:: bash
+
+   qbraid <command>      
+
++---------------------------------------+---------------------------------------------------+
+| **<command>**                         | **Description**                                   |
++---------------------------------------+---------------------------------------------------+
+| ``install <package> <environment>``   | Install packages into specific environment.       |
++---------------------------------------+---------------------------------------------------+
+| ``enable account <environment>``      | Enable AWS quantum jobs through qBraid.           |
++---------------------------------------+---------------------------------------------------+
+| ``disable account <environment>``     | Disable AWS quantum jobs through qBraid.          |
++---------------------------------------+---------------------------------------------------+
+| ``credits``                           | Shows how many qBraid credits you have left.      |
++---------------------------------------+---------------------------------------------------+
+| ``freeze <environment>``              | Output installed packages in requirements form.   |
++---------------------------------------+---------------------------------------------------+
+| ``show <environment>``                | Show information about installed packages.        |
++---------------------------------------+---------------------------------------------------+
+| ``list <environment>``                | List installed packages.                          |
++---------------------------------------+---------------------------------------------------+
+| ``envs``                              | List installed environments.                      |
++---------------------------------------+---------------------------------------------------+
+| ``help``                              | Show help for commands.                           |
++---------------------------------------+---------------------------------------------------+
