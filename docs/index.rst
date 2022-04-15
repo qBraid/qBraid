@@ -114,8 +114,6 @@ Documentation
    sdk/overview
    sdk/circuits
    sdk/devices
-   sdk/jobs
-   sdk/results
 
 .. toctree::
    :maxdepth: 1
