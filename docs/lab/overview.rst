@@ -20,4 +20,6 @@ Features
 - `Notebooks <notebooks.html>`_
 
 
-For information on the JupyterLab interface, see `JupyterLab Documentaion <https://jupyterlab.readthedocs.io/>`_.
+.. seealso::
+   
+   For information on the JupyterLab interface, see `JupyterLab Documentaion <https://jupyterlab.readthedocs.io/>`_.

@@ -30,7 +30,7 @@ If a different kernel is activated, click on its name to open the kernel selecto
 
 |
 
-.. note::
+.. seealso::
 
     The notebook document format used in qBraid Lab is the same as in the classic Jupyter Notebook.
     For more on how to use the Jupyter Notebooks, see `Jupyter Notebook readthedocs <https://jupyter-notebook.readthedocs.io/en/stable/>`_.
