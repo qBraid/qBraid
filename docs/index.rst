@@ -1,89 +1,123 @@
-qBraid-SDK Documentation
-=========================
+Documentation
+==============
+   
+.. raw:: html
 
-:Release: |release|
+   <html>
+   <head>
+   <meta name="viewport" content="width=device-width, initial-scale=1">
+   <style>
+   * {
+   box-sizing: border-box;
+   }
 
-A Python toolkit for building and executing quantum programs.
+   body {
+   font-family: Arial, Helvetica, sans-serif;
+   }
 
-Features
---------
+   /* Float four columns side by side */
+   .column {
+   display: inline-block;
+   vertical-align: middle;
+   float: none;
+   width: 25%;
+   padding: 0 10px;
+   }
 
-.. image:: _static/logo.png
-   :align: left
-   :width: 275px
-   :target: qBraid_
+   /* Remove extra left and right margins, due to padding */
+   .row {
+   text-align: center;
+   margin:0 auto;
+   }
 
+   /* Clear floats after the columns */
+   .row:after {
+   content: "";
+   display: table;
+   clear: both;
+   }
 
-- *Unified quantum frontend interface*. **Transpile** quantum circuits between supported packages. Leverage the capabilities of multiple frontends through **simple, consistent protocols**.
+   /* Responsive columns */
+   @media screen and (max-width: 600px) {
+   .column {
+      width: 100%;
+      margin-bottom: 20px;
+   }
+   }
 
-..
+   /* Style the counter cards */
+   .card {
+   box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
+   padding: 16px;
+   text-align: center;
+   background-color: #f1f1f1;
+   }
+   </style>
+   </head>
+   <body>
+   <h1 style="text-align: center">
+      <img src="_static/logo.png" alt="qbraid logo" style="width:50px;height:50px;">
+      <span> qBraid</span>
+      <span style="color:#808080"></span>
+   </h1>
+   <p style="text-align:center;font-style:italic;color:#808080">
+      A cloud-based platform for quantum computing.
+   </p>
+   <div class="row">
+   <div class="column">
+      <a href="lab/overview.html">
+         <div class="card">
+            <h3>Lab</h3>
+            <img src="_static/cards/jupyter.png" alt="terminal" style="width:60px;height:60px;">
+         </div>
+      </a>
+   </div>
+   
+   <div class="column">
+      <a href="cli/overview.html">
+         <div class="card">
+            <h3>CLI</h3>
+            <img src="_static/cards/terminal.png" alt="terminal" style="width:60px;height:60px;">
+         </div>
+      </a>
+   </div>
+   
+   <div class="column">
+      <a href="sdk/overview.html">
+         <div class="card">
+            <h3>SDK</h3>
+            <img src="_static/cards/python.png" alt="terminal" style="width:60px;height:60px;">
+         </div>
+      </a>
+   </div>
+   </div>
 
-- *Build once, target many*. **Create** quantum programs using your preferred circuit-building package, and **execute** on any backend that interfaces with a supported frontend.
+   </body>
+   </html>
 
-..
-
-- *Benchmark, compare, interpret results*. Built-in **compatable** post-processing enables comparing results between runs and **across backends**.
-
-
-Supported Frontends
---------------------
-
-+-------------+-------------+------------+-------------+-------------+
-|  Cirq_      |  Braket_    |  Qiskit_   |  pyQuil_    |  Pennylane_ |
-+=============+=============+============+=============+=============+
-| |cirq|      | |braket|    | |qiskit|   | |pyquil|    | |pennylane| |
-+-------------+-------------+------------+-------------+-------------+
-
-
-.. |cirq| image:: _static/pkg-logos/cirq.png
-   :align: middle
-   :width: 90%
-   :target: Cirq_
-
-.. |braket| image:: _static/pkg-logos/braket.png
-   :align: middle
-   :width: 90%
-   :target: Braket_
-
-.. |qiskit| image:: _static/pkg-logos/qiskit.png
-   :align: middle
-   :width: 90%
-   :target: Qiskit_
-
-.. |pyquil| image:: _static/pkg-logos/pyquil.png
-   :align: middle
-   :width: 90%
-   :target: pyQuil_
-
-.. |pennylane| image:: _static/pkg-logos/xanadu.png
-   :align: middle
-   :width: 90%
-   :target: Pennylane_
-
-
-.. _Cirq: https://quantumai.google/cirq
-.. _Braket: https://aws.amazon.com/braket
-.. _Qiskit: https://qiskit.org
-.. _pyQuil: https://www.rigetti.com/applications/pyquil
-.. _Pennylane: https://pennylane.ai
-.. _qBraid: https://qbraid.com/home.html
-
+|
 
 .. toctree::
    :maxdepth: 1
-   :caption: User Guide
+   :caption: Lab User Guide
    :hidden:
 
-   guide/getstart
-   guide/intro
-   guide/circuits
-   guide/devices
-   guide/jobs
-   guide/results
+   lab/overview
+   lab/environments
+   lab/notebooks
 
 .. toctree::
    :maxdepth: 1
-   :caption: API Reference
+   :caption: SDK User Guide
+   :hidden:
+
+   sdk/overview
+   sdk/circuits
+   sdk/devices
+
+.. toctree::
+   :maxdepth: 1
+   :caption: SDK API Reference
    :hidden:
 
    api/qbraid
@@ -92,10 +126,18 @@ Supported Frontends
    api/qbraid.transpiler
    api/qbraid.devices
 
+.. toctree::
+   :maxdepth: 1
+   :caption: CLI Reference
+   :hidden:
 
-Indices and Tables
-------------------
+   cli/overview
+   cli/commands
 
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+
+.. Indices and Tables
+.. ------------------
+
+.. * :ref:`genindex`
+.. * :ref:`modindex`
+.. * :ref:`search`
