@@ -189,7 +189,7 @@ Qubit Indexing
 As a tool for interfacing between frontend modules, the qBrad SDK has a number of
 methods and functions dedicated to resolving any potential compatibility issues. For
 instance, each frontend has slightly different rules and standard conventions when it
-comes to qubit indexing; functions and/or methods in some modules require that circuits
+comes to qubit indexing. Functions and/or methods in some modules require that circuits
 are constructed using contiguous qubits i.e. sequential qubit indexing, while others
 do not. The ``convert_to_contiguous`` method can be used to map qubit indicies accordingly,
 and address compatibility issues without re-constructing each circuit.

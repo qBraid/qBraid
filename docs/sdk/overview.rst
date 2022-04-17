@@ -27,13 +27,13 @@ Features
 
 ..
 
-- *Benchmark, compare, interpret results*. Built-in **compatable** post-processing enables comparing results between runs and **across backends**.
+- *Benchmark, compare, interpret results*. Built-in **compatible** post-processing enables comparing results between runs and **across backends**.
 
 
 Installation
 -------------
 
-The qBraid-SDK is available exclusively through `qBraid Lab <https://lab.qbraid.com>`_.
+The qBraid SDK is available exclusively through `qBraid Lab <https://lab.qbraid.com>`_.
 Login (or create an account) and then follow the steps in `Installing an environment <../lab/environments.html#installing-an-environment>`_ to
 get started using the SDK.
 

@@ -6,13 +6,13 @@ Devices
 In this module, you will learn how to use the qBraid SDK to interface with
 quantum backends. We will demonstrate how to construct queries and search
 for available devices using the ``qbraid.get_devices`` function, and
-an overview how to execute circuits using the ``qbraid.devices`` module.
+overview how to execute circuits using the ``qbraid.devices`` module.
 
 Unified Device Search
 ----------------------
 
 The ``get_devices`` function provides a unified quantum device search. It returns a complete list
-of all quantum backends available the Qiskit, Cirq, and Amazon Braket, along with the "status" of
+of all quantum backends available through Qiskit, Cirq, and Amazon Braket, along with the "status" of
 each device, i.e. ``ONLINE`` or ``OFFLINE``.
 
 .. code-block:: python
@@ -109,9 +109,9 @@ object can be created as follows:
     qdevice = device_wrapper(qbraid_id)
 
 
-From here, a number of methods are available: Gather information about the device,
-execute quantum programs (to be covered in the next section), or even access the
-wrapped device object directly.
+From here, class methods are available to get information about the device,
+execute quantum programs (to be covered in the next section), access the
+wrapped device object directly, and more.
 
 .. code-block:: python
 
