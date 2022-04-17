@@ -1,5 +1,4 @@
 # qBraid-SDK
-[![CI](https://github.com/qBraid/qBraid/actions/workflows/main.yml/badge.svg)](https://github.com/qBraid/qBraid/actions/workflows/main.yml)
 [![codecov](https://codecov.io/gh/qBraid/qBraid/branch/main/graph/badge.svg?token=1UTM0XZB7A)](https://codecov.io/gh/qBraid/qBraid)
 [![Documentation Status](https://readthedocs.com/projects/qbraid-qbraid/badge/?version=latest&token=429dfd5a6bf3702e241c1dfe5f336a7d43629848878bd9cbbc19ba66f01e1eea)](https://qbraid-qbraid.readthedocs-hosted.com/en/latest/?badge=latest)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
