@@ -105,6 +105,7 @@ Documentation
    lab/overview
    lab/environments
    lab/notebooks
+   lab/vscode
 
 .. toctree::
    :maxdepth: 1
