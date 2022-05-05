@@ -9,14 +9,15 @@ session = QbraidSession()
 
 
 def init_job(vendor_job_id, device, circuit, shots):
-    """Initialize data dictionary for new qbraid job and 
+    """Initialize data dictionary for new qbraid job and
     create associated MongoDB job document.
 
     Returns:
         str: the qbraid_job_id associated with this job
-    
+
     """
-    from qbraid.devices.enums import JobStatus
+    from qbraid.devices.enums import JobStatus  # pylint: disable=import-outside-toplevel
+
     init_data = {
         "qbraidJobId": "",
         "vendorJobId": vendor_job_id,

@@ -7,6 +7,7 @@ from cirq import DensityMatrixSimulator, Simulator, measure
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
 from qbraid.devices.exceptions import DeviceError
+from qbraid.interface.qbraid_cirq.tools import _key_from_qubit
 
 from .localjob import CirqLocalJobWrapper
 
@@ -57,7 +58,7 @@ class CirqSimulatorWrapper(DeviceLikeWrapper):
                 UserWarning,
             )
             qubits = list(run_input.all_qubits())
-            measure_all = [measure(q, key=str(q.x)) for q in qubits]
+            measure_all = [measure(q, key=_key_from_qubit(q)) for q in qubits]
             run_input.append(measure_all)
         cirq_result = self.vendor_dlo.run(run_input, *args, **kwargs)
         return CirqLocalJobWrapper(self, cirq_result)

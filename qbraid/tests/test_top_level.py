@@ -58,5 +58,6 @@ def _mock_ipython(get_ipython_result):
 
 class MockIPython:
     """Mock IPython class for testing"""
+
     def __init__(self, kernel):
         self.kernel = kernel

@@ -74,7 +74,6 @@ class JobLikeWrapper(ABC):
             _ = get_job_data(self.id, status=current_status)
         return current_status
 
-
     @abstractmethod
     def _get_status(self) -> str:
         """Status method helper function. Uses vendor_jlo to get status of the job / task, casts
