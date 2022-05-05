@@ -5,8 +5,6 @@ from datetime import datetime
 
 from .session import QbraidSession
 
-session = QbraidSession()
-
 
 def init_job(vendor_job_id, device, circuit, shots):
     """Initialize data dictionary for new qbraid job and
@@ -17,6 +15,8 @@ def init_job(vendor_job_id, device, circuit, shots):
 
     """
     from qbraid.devices.enums import JobStatus  # pylint: disable=import-outside-toplevel
+
+    session = QbraidSession()
 
     init_data = {
         "qbraidJobId": "",
@@ -39,6 +39,7 @@ def get_job_data(qbraid_job_id, status=None):
         dict: the metadata associated with this job
 
     """
+    session = QbraidSession()
     body = {"qbraidJobId": qbraid_job_id}
     if status:
         body["status"] = status

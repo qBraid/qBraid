@@ -124,6 +124,9 @@ class QbraidSession(Session):
         headers.update(kwargs.pop("headers", {}))
 
         try:
+            # print(method)
+            # print(final_url)
+            # print(headers)
             response = super().request(method, final_url, headers=headers, **kwargs)
             response.raise_for_status()
         except RequestException as ex:

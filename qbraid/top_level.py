@@ -7,13 +7,17 @@ that directly or indirectly utilize entrypoints via ``pkg_resources``.
 from datetime import datetime
 from time import time
 
+import requests
 import pkg_resources
 from IPython.display import HTML, clear_output, display
 
 from ._typing import QPROGRAM
-from .api import ApiError, QbraidSession, ibmq_least_busy_qpu
+from .api import ApiError, QbraidSession, ibmq_least_busy_qpu, get_config
 from .exceptions import QbraidError
 from .ipython_utils import running_in_jupyter
+
+BASE_URL = get_config("url", "default")
+GET_DEVICES_ROUTE = "/public/lab/get-devices"
 
 # pylint: disable=too-many-locals
 
@@ -61,6 +65,14 @@ def circuit_wrapper(program: QPROGRAM):
     raise QbraidError(f"Error applying circuit wrapper to quantum program of type {type(program)}")
 
 
+def _get_devices_request(params=None):
+    session = requests.Session()
+    url = BASE_URL + GET_DEVICES_ROUTE
+    params = {} if not params else params
+    resp = session.get(url, params=params)
+    return resp.json()
+
+
 def device_wrapper(qbraid_device_id: str, **kwargs):
     """Apply qbraid device wrapper to device from a supported device provider.
 
@@ -77,10 +89,7 @@ def device_wrapper(qbraid_device_id: str, **kwargs):
     if qbraid_device_id == "ibm_q_least_busy_qpu":
         qbraid_device_id = ibmq_least_busy_qpu()
 
-    session = QbraidSession()
-    device_info = session.get(
-        "/public/lab/get-devices", params={"qbraid_id": qbraid_device_id}
-    ).json()
+    device_info = _get_devices_request(params={"qbraid_id": qbraid_device_id})
 
     if isinstance(device_info, list):
         if len(device_info) == 0:
@@ -138,8 +147,8 @@ def _print_progress(start, count):
 def refresh_devices():
     """Refreshes status for all qbraid supported devices. Requires credential for each vendor."""
 
+    devices = _get_devices_request()
     session = QbraidSession()
-    devices = session.get("/public/lab/get-devices", params={}).json()
     count = 0
     start = time()
     for document in devices:
