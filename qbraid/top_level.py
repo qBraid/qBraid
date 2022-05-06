@@ -16,9 +16,6 @@ from .api import ApiError, QbraidSession, ibmq_least_busy_qpu, get_config
 from .exceptions import QbraidError
 from .ipython_utils import running_in_jupyter
 
-BASE_URL = get_config("url", "default")
-GET_DEVICES_ROUTE = "/public/lab/get-devices"
-
 # pylint: disable=too-many-locals
 
 
@@ -67,7 +64,10 @@ def circuit_wrapper(program: QPROGRAM):
 
 def _get_devices_request(params=None):
     session = requests.Session()
-    url = BASE_URL + GET_DEVICES_ROUTE
+    base_url = get_config("url", "default")
+    if base_url == -1:
+        base_url = "https://api-staging-1.qbraid.com/api"
+    url = f"{base_url}/public/lab/get-devices"
     params = {} if not params else params
     resp = session.get(url, params=params)
     return resp.json()
