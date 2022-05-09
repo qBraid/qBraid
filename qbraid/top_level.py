@@ -7,12 +7,11 @@ that directly or indirectly utilize entrypoints via ``pkg_resources``.
 from datetime import datetime
 from time import time
 
-import requests
 import pkg_resources
 from IPython.display import HTML, clear_output, display
 
 from ._typing import QPROGRAM
-from .api import ApiError, QbraidSession, ibmq_least_busy_qpu, get_config
+from .api import ApiError, QbraidSession, ibmq_least_busy_qpu
 from .exceptions import QbraidError
 from .ipython_utils import running_in_jupyter
 
@@ -63,13 +62,9 @@ def circuit_wrapper(program: QPROGRAM):
 
 
 def _get_devices_request(params=None):
-    session = requests.Session()
-    base_url = get_config("url", "default")
-    if base_url == -1:
-        base_url = "https://api-staging-1.qbraid.com/api"
-    url = f"{base_url}/public/lab/get-devices"
+    session = QbraidSession()
     params = {} if not params else params
-    resp = session.get(url, params=params)
+    resp = session.get("/public/lab/get-devices", params=params)
     return resp.json()
 
 

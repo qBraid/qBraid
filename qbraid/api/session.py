@@ -4,9 +4,21 @@ import logging
 from typing import Any, Optional
 
 from requests import RequestException, Response, Session
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from .config_user import get_config
 from .exceptions import RequestsApiError
+
+STATUS_FORCELIST = (
+    500,  # General server error
+    502,  # Bad Gateway
+    503,  # Service Unavailable
+    504,  # Gateway Timeout
+    520,  # Cloudflare general error
+    522,  # Cloudflare connection timeout
+    524,  # Cloudflare Timeout
+)
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +28,62 @@ def _get_config(field: str) -> Optional[str]:
     if config == -1 or config in ["", "None"]:
         return None
     return config
+
+
+class PostForcelistRetry(Retry):
+    """Custom ``urllib3.Retry`` class that performs retry on ``POST`` errors in the force list.
+    Retrying of ``POST`` requests are allowed *only* when the status code returned is on the
+    ``STATUS_FORCELIST``. While ``POST`` requests are recommended not to be retried due to not
+    being idempotent, retrying on specific 5xx errors through the qBraid API is safe.
+    """
+
+    def increment(  # type: ignore[no-untyped-def]
+        self,
+        method=None,
+        url=None,
+        response=None,
+        error=None,
+        _pool=None,
+        _stacktrace=None,
+    ):
+        """Overwrites parent class increment method for logging."""
+        if logger.getEffectiveLevel() is logging.DEBUG:
+            status = data = headers = None
+            if response:
+                status = response.status
+                data = response.data
+                headers = response.headers
+            logger.debug(
+                "Retrying method=%s, url=%s, status=%s, error=%s, data=%s, headers=%s",
+                method,
+                url,
+                status,
+                error,
+                data,
+                headers,
+            )
+        return super().increment(
+            method=method,
+            url=url,
+            response=response,
+            error=error,
+            _pool=_pool,
+            _stacktrace=_stacktrace,
+        )
+
+    def is_retry(self, method: str, status_code: int, has_retry_after: bool = False) -> bool:
+        """Indicate whether the request should be retried.
+        Args:
+            method: Request method.
+            status_code: Status code.
+            has_retry_after: Whether retry has been done before.
+        Returns:
+            ``True`` if the request should be retried, ``False`` otherwise.
+        """
+        if method.upper() == "POST" and status_code in self.status_forcelist:
+            return True
+
+        return super().is_retry(method, status_code, has_retry_after)
 
 
 class QbraidSession(Session):
@@ -34,6 +102,9 @@ class QbraidSession(Session):
         user_email: Optional[str] = None,
         id_token: Optional[str] = None,
         refresh_token: Optional[str] = None,
+        retries_total: int = 5,
+        retries_connect: int = 3,
+        backoff_factor: float = 0.5,
     ) -> None:
         """QbraidSession constructor.
 
@@ -51,6 +122,8 @@ class QbraidSession(Session):
         self.id_token = id_token
         self.refresh_token = refresh_token
         self.verify = False
+
+        self._initialize_retry(retries_total, retries_connect, backoff_factor)
 
     def __del__(self) -> None:
         """QbraidSession destructor. Closes the session."""
@@ -105,6 +178,26 @@ class QbraidSession(Session):
         self._refresh_token = refresh_token
         if refresh_token:
             self.headers.update({"refresh-token": refresh_token})  # type: ignore[attr-defined]
+
+    def _initialize_retry(
+        self, retries_total: int, retries_connect: int, backoff_factor: float
+    ) -> None:
+        """Set the session retry policy.
+        Args:
+            retries_total: Number of total retries for the requests.
+            retries_connect: Number of connect retries for the requests.
+            backoff_factor: Backoff factor between retry attempts.
+        """
+        retry = PostForcelistRetry(
+            total=retries_total,
+            connect=retries_connect,
+            backoff_factor=backoff_factor,
+            status_forcelist=STATUS_FORCELIST,
+        )
+
+        retry_adapter = HTTPAdapter(max_retries=retry)
+        self.mount("http://", retry_adapter)
+        self.mount("https://", retry_adapter)
 
     def request(self, method: str, url: str, **kwargs: Any) -> Response:  # type: ignore[override]
         """Construct, prepare, and send a ``Request``.
