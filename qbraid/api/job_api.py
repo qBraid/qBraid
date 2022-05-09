@@ -3,42 +3,22 @@
 import os
 from datetime import datetime
 
-from qbraid.devices.enums import JobStatus
-
 from .session import QbraidSession
 
-session = QbraidSession()
 
-
-def mongo_init_job(init_data):
-    """Create a new MongoDB job document.
+def init_job(vendor_job_id, device, circuit, shots):
+    """Initialize data dictionary for new qbraid job and
+    create associated MongoDB job document.
 
     Returns:
         str: the qbraid_job_id associated with this job
 
     """
-    init_data["email"] = os.getenv("JUPYTERHUB_USER")
-    qbraid_job_id = session.post("/init-job", data=init_data).json()
-    return qbraid_job_id
+    from qbraid.devices.enums import JobStatus  # pylint: disable=import-outside-toplevel
 
+    session = QbraidSession()
 
-def mongo_get_job(qbraid_job_id, update=None):
-    """Update a new MongoDB job document.
-
-    Returns:
-        dict: the metadata associated with this job
-
-    """
-    data = {} if not update else update
-    body = {"qbraidJobId": qbraid_job_id, "update": data}
-    metadata = session.put("/update-job", data=body).json()
-    del metadata["_id"]
-    return metadata
-
-
-def init_job(vendor_job_id, device, circuit, shots):
-    """Initialize data dictionary for new qbraid job and pass to mongo init function"""
-    data = {
+    init_data = {
         "qbraidJobId": "",
         "vendorJobId": vendor_job_id,
         "qbraidDeviceId": device.id,
@@ -48,4 +28,22 @@ def init_job(vendor_job_id, device, circuit, shots):
         "createdAt": datetime.utcnow(),
         "status": JobStatus.INITIALIZING,
     }
-    return mongo_init_job(data)
+    init_data["email"] = os.getenv("JUPYTERHUB_USER")
+    return session.post("/init-job", data=init_data).json()
+
+
+def get_job_data(qbraid_job_id, status=None):
+    """Update a new MongoDB job document.
+
+    Returns:
+        dict: the metadata associated with this job
+
+    """
+    session = QbraidSession()
+    body = {"qbraidJobId": qbraid_job_id}
+    if status:
+        body["status"] = status
+    metadata = session.put("/update-job", data=body).json()[0]
+    metadata.pop("_id", None)
+    metadata.pop("user", None)
+    return metadata

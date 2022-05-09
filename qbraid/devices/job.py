@@ -6,7 +6,7 @@ from time import sleep, time
 from typing import Any, Dict
 
 from qbraid import device_wrapper
-from qbraid.api.job_api import mongo_get_job
+from qbraid.api import get_job_data
 from qbraid.api.status_maps import STATUS_MAP
 
 from .enums import JOB_FINAL, JobStatus
@@ -34,7 +34,7 @@ class JobLikeWrapper(ABC):
     def vendor_job_id(self):
         """Returns the ID assigned by the device vendor"""
         if self._vendor_job_id is None:
-            self._cache_metadata = mongo_get_job(self.id)
+            self._cache_metadata = get_job_data(self.id, status=self.status())
             self._cache_status = self._cache_metadata["status"]
             self._vendor_job_id = self._cache_metadata["vendorJobId"]
         return self._vendor_job_id
@@ -61,7 +61,7 @@ class JobLikeWrapper(ABC):
         """Return the status of the job / task , among the values of ``JobStatus``."""
         vendor_status = self._get_status()
         try:
-            return self._status_map[vendor_status]
+            current_status = self._status_map[vendor_status]
         except KeyError:
             logging.warning(
                 "Expected %s job status matching one of %s but instead got '%s'.",
@@ -69,7 +69,10 @@ class JobLikeWrapper(ABC):
                 str(list(self._status_map.keys())),
                 vendor_status,
             )
-            return JobStatus.UNKNOWN
+            current_status = JobStatus.UNKNOWN
+        if current_status != self._cache_status:
+            _ = get_job_data(self.id, status=current_status)
+        return current_status
 
     @abstractmethod
     def _get_status(self) -> str:
@@ -80,8 +83,8 @@ class JobLikeWrapper(ABC):
         """Return the metadata regarding the job."""
         status = self.status()
         if not self._cache_metadata or status != self._cache_status:
-            self._cache_status = status
-            self._cache_metadata = mongo_get_job(self.id, update={"status": status.name})
+            self._cache_metadata = get_job_data(self.id, status=status)
+            self._cache_status = self._cache_metadata["status"]
         return self._cache_metadata
 
     def wait_for_final_state(self, timeout=None, wait=5) -> None:
