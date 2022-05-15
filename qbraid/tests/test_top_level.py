@@ -9,8 +9,8 @@ from unittest.mock import Mock
 import pytest
 
 from qbraid._about import about
-from qbraid.ipython_utils import running_in_jupyter
 from qbraid.exceptions import PackageValueError
+from qbraid.ipython_utils import running_in_jupyter
 
 # pylint: disable=missing-function-docstring,redefined-outer-name
 

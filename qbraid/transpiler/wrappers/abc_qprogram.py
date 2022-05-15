@@ -1,9 +1,14 @@
 """QuantumProgramWrapper Class"""
 
-from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
+from typing import TYPE_CHECKING, List, Optional
+
+from qbraid._typing import SUPPORTED_PROGRAM_TYPES
 from qbraid.exceptions import PackageValueError
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
+
+if TYPE_CHECKING:
+    import qbraid
 
 
 class QuantumProgramWrapper:
@@ -11,23 +16,13 @@ class QuantumProgramWrapper:
 
     Note: The program wrapper object keeps track of abstract parameters and qubits using an
     intermediate representation. Qubits are stored simplhy as integers, and abstract parameters
-    are stored as a :class:`qbraid.transpiler.parameter.ParamID` object, which stores an index in
+    are stored as a :class:`~qbraid.transpiler.parameter.ParamID`, which stores an index in
     addition to a name. All other objects are transpiled directly when the
-    :meth:`qbraid.transpiler.QuantumProgramtWrapper.transpile` method is called.
-
-    Attributes:
-        program (QPROGRAM): the underlying quantum program object that has been wrapped
-        qubits (List[int]): list of integers which represent all the qubits in the circuit,
-            typically stored sequentially
-        params: (Iterable): list of abstract paramaters in the circuit, stored as
-            :class:`qbraid.transpiler.parameter.ParamID` objects
-        num_qubits (int): number of qubits in the circuit
-        depth (int): the depth of the circuit
-        package (str): the package with which the underlying circuit was cosntructed
+    :meth:`~qbraid.transpiler.QuantumProgramtWrapper.transpile` method is called.
 
     """
 
-    def __init__(self, program: QPROGRAM):
+    def __init__(self, program: "qbraid.QPROGRAM"):
 
         self._program = program
         self._qubits = []
@@ -39,46 +34,46 @@ class QuantumProgramWrapper:
         self._package = None
 
     @property
-    def program(self):
+    def program(self) -> "qbraid.QPROGRAM":
         """Return the underlying quantum program that has been wrapped."""
         return self._program
 
     @property
-    def qubits(self):
+    def qubits(self) -> List[int]:
         """Return the qubits acted upon by the operations in this circuit"""
         return self._qubits
 
     @property
-    def num_qubits(self):
+    def num_qubits(self) -> int:
         """Return the number of qubits in the circuit."""
         return self._num_qubits
 
     @property
-    def num_clbits(self):
+    def num_clbits(self) -> int:
         """Return the number of classical bits in the circuit."""
         return self._num_clbits
 
     @property
-    def depth(self):
+    def depth(self) -> int:
         """Return the circuit depth (i.e., length of critical path)."""
         return self._depth
 
     @property
-    def params(self):
+    def params(self) -> Optional[list]:
         """Return the circuit parameters. Defaults to None."""
         return self._params
 
     @property
-    def input_param_mapping(self):
+    def input_param_mapping(self) -> dict:
         """Return the input parameter mapping. Defaults to None."""
         return self._input_param_mapping
 
     @property
-    def package(self):
+    def package(self) -> str:
         """Return the original package of the wrapped circuit."""
         return self._package
 
-    def transpile(self, conversion_type: str) -> QPROGRAM:
+    def transpile(self, conversion_type: str) -> "qbraid.QPROGRAM":
         r"""Transpile a qbraid quantum program wrapper object to quantum
         program object of type specified by ``conversion_type``.
 
@@ -93,7 +88,7 @@ class QuantumProgramWrapper:
                 converted to a program of type ``conversion_type``.
 
         Returns:
-            converted_program: supported quantum program object
+            :data:`~qbraid.QPROGRAM`: supported quantum program object
 
         """
         if conversion_type == self.package:

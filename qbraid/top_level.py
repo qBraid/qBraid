@@ -26,9 +26,10 @@ def _get_entrypoints(group: str):
 def circuit_wrapper(program: QPROGRAM):
     """Apply qbraid quantum program wrapper to a supported quantum program.
 
-    This function is used to create a qBraid circuit-wrapper object, which can then be transpiled
-    to any supported quantum circuit-building package. The input quantum circuit object must be
-    an instance of a circuit object derived from a supported package.
+    This function is used to create a qBraid :class:`~qbraid.transpiler.QuantumProgramWrapper`
+    object, which can then be transpiled to any supported quantum circuit-building package.
+    The input quantum circuit object must be an instance of a circuit object derived from a
+    supported package.
 
     .. code-block:: python
 
@@ -40,13 +41,13 @@ def circuit_wrapper(program: QPROGRAM):
     any additional arguments that might be supported.
 
     Args:
-        circuit (QPROGRAM): a supported quantum circuit object
+        circuit (:data:`~qbraid.QPROGRAM`): a supported quantum circuit object
 
     Returns:
         :class:`~qbraid.transpiler.QuantumProgramWrapper`: a qbraid quantum program wrapper object
 
     Raises:
-        QbraidError: If the input circuit is not a supported quantum program.
+        :class:`~qbraid.QbraidError`: If the input circuit is not a supported quantum program.
 
     """
     package = program.__module__.split(".")[0]
@@ -68,17 +69,17 @@ def _get_devices_request(params=None):
     return resp.json()
 
 
-def device_wrapper(qbraid_device_id: str, **kwargs):
+def device_wrapper(qbraid_device_id: str):
     """Apply qbraid device wrapper to device from a supported device provider.
 
     Args:
-        qbraid_device_id (str): unique ID specifying a supported quantum hardware device/simulator
+        qbraid_device_id: unique ID specifying a supported quantum hardware device/simulator
 
     Returns:
-        :class:`~qbraid.devices.DeviceLikeWrapper`: a qbraid device wrapper object
+        :class:`~qbraid.devices.DeviceLikeWrapper`: A qbraid device wrapper object
 
     Raises:
-        QbraidError: If ``qbraid_id`` is not a valid device reference.
+        :class:`~qbraid.QbraidError`: If ``qbraid_id`` is not a valid device reference.
 
     """
     if qbraid_device_id == "ibm_q_least_busy_qpu":
@@ -103,11 +104,19 @@ def device_wrapper(qbraid_device_id: str, **kwargs):
     spec = ".local" if code == 0 else ".remote"
     ep = vendor + spec
     device_wrapper_class = devices_entrypoints[ep].load()
-    return device_wrapper_class(device_info, **kwargs)
+    return device_wrapper_class(**device_info)
 
 
 def retrieve_job(qbraid_job_id: str):
-    """Retrieve a job from qBraid API using job ID and return job wrapper object."""
+    """Retrieve a job from qBraid API using job ID and return job wrapper object.
+
+    Args:
+        qbraid_job_id: qBraid Job ID
+
+    Returns:
+        :class:`~qbraid.devices.job.JobLikeWrapper`
+
+    """
     qbraid_device = device_wrapper(qbraid_job_id.split("-")[0])
     vendor = qbraid_device.vendor.lower()
     if vendor == "google":
@@ -118,13 +127,13 @@ def retrieve_job(qbraid_job_id: str):
     return job_wrapper_class(qbraid_job_id, device=qbraid_device)
 
 
-def _print_progress(start, count):
-    """Internal :func:`qbraid.refresh_devices` helper for
+def _print_progress(start: float, count: int) -> None:
+    """Internal :func:`~qbraid.get_devices` helper for
     printing quasi-progress-bar.
 
     Args:
-        start (float): Time stamp marking beginning of function execution
-        count (int): The total number of iterations completed so far
+        start: Time stamp marking beginning of function execution
+        count: The total number of iterations completed so far
     """
     num_devices = 37  # i.e. number of iterations
     time_estimate = num_devices * 1.1  # estimated time for ~0.9 iters/s
@@ -139,7 +148,7 @@ def _print_progress(start, count):
     print(f"{percent} | {dots} {spaces} | {time_step}", flush=True)
 
 
-def refresh_devices():
+def refresh_devices() -> None:
     """Refreshes status for all qbraid supported devices. Requires credential for each vendor."""
 
     devices = _get_devices_request()
@@ -158,7 +167,7 @@ def refresh_devices():
 
 
 def _get_device_data(query):
-    """Internal :func:`qbraid.get_devices` helper function that connects with the MongoDB database
+    """Internal :func:`~qbraid.get_devices` helper function that connects with the MongoDB database
     and returns a list of devices that match the ``filter_dict`` filters. Each device is
     represented by its own length-4 list containing the device provider, name, qbraid_id,
     and status.
@@ -201,43 +210,45 @@ def _get_device_data(query):
 
 
 def get_devices(filters=None, refresh=False):
-    """
-    Displays a list of all supported devices matching given filters, tabulated by provider,
+    """Displays a list of all supported devices matching given filters, tabulated by provider,
     name, and qBraid ID. Each device also has a status given by a solid green bubble or a hollow
     red bubble, indicating that the device is online or offline, respectively. You can narrow your
     device search by supplying a dictionary containing the desired criteria. Available filters
     include:
 
-    * name (str)
-    * vendor (str): AWS | IBM | Google
-    * provider (str): AWS | IBM | Google | D-Wave | IonQ | Rigetti | OQC
-    * type (str): QPU | Simulator
-    * numberQubits (int)
-    * paradigm (str): gate-based | quantum-annealer
-    * requiresCred (bool): true | false
-    * status (str): ONLINE | OFFLINE
+    * ``name`` (str)
+    * ``vendor`` (str): AWS | IBM | Google
+    * ``provider`` (str): AWS | IBM | Google | D-Wave | IonQ | Rigetti | OQC
+    * ``type`` (str): QPU | Simulator
+    * ``numberQubits`` (int)
+    * ``paradigm`` (str): gate-based | quantum-annealer
+    * ``requiresCred`` (bool): true | false
+    * ``status`` (str): ONLINE | OFFLINE
 
     Here are a few example use cases:
-    # pylint: disable=line-too-long
 
     .. code-block:: python
 
         from qbraid import get_devices
 
         # Search for gate-based devices provided by Google that are online/available
-        get_devices(filters={"paradigm": "gate-based", "provider": "Google", "status": "ONLINE"})
+        get_devices(
+            filters={"paradigm": "gate-based", "provider": "Google", "status": "ONLINE"}
+        )
 
         # Search for QPUs with at least 5 qubits that are available through AWS or IBM
-        get_devices(filters={"type": "QPU", "numberQubits": {"$gte": 5}, "vendor": {"$in": ["AWS", "IBM"]}})
+        get_devices(
+            filters={"type": "QPU", "numberQubits": {"$gte": 5}, "vendor": {"$in": ["AWS", "IBM"]}}
+        )
 
         # Search for open-access simulators that have "Unitary" contained in their name
-        get_devices(filters={"type": "Simulator", "name": {"$regex": "Unitary"}, "requiresCred": False})
+        get_devices(
+            filters={"type": "Simulator", "name": {"$regex": "Unitary"}, "requiresCred": False}
+        )
 
-    # pylint: enable=line-too-long
-
-    For a complete list of search operators, see `Query Selectors`__. To refresh the device status
-    column, call :func:`~qbraid.get_devices` with ``refresh=True`` keyword argument. The bottom-right
-    corner of the ``get_devices`` table indicates time since the last status refresh.
+    For a complete list of search operators, see `Query Selectors`__. To refresh the device
+    status column, call :func:`~qbraid.get_devices` with ``refresh=True`` keyword argument.
+    The bottom-right corner of the device table indicates time since the last status refresh.
 
     .. __: https://docs.mongodb.com/manual/reference/operator/query/#query-selectors
 

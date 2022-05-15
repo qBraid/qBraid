@@ -31,10 +31,11 @@ def _get_config(field: str) -> Optional[str]:
 
 
 class PostForcelistRetry(Retry):
-    """Custom ``urllib3.Retry`` class that performs retry on ``POST`` errors in the force list.
-    Retrying of ``POST`` requests are allowed *only* when the status code returned is on the
-    ``STATUS_FORCELIST``. While ``POST`` requests are recommended not to be retried due to not
-    being idempotent, retrying on specific 5xx errors through the qBraid API is safe.
+    """Custom :py:class:`urllib3.Retry` class that performs retry on ``POST`` errors in the
+    force list. Retrying of ``POST`` requests are allowed *only* when the status code returned
+    is on the :py:const:`~qbraid.api.session.STATUS_FORCELIST`. While ``POST`` requests are
+    recommended not to be retried due to not being idempotent, retrying on specific 5xx errors
+    through the qBraid API is safe.
     """
 
     def increment(  # type: ignore[no-untyped-def]
@@ -73,10 +74,12 @@ class PostForcelistRetry(Retry):
 
     def is_retry(self, method: str, status_code: int, has_retry_after: bool = False) -> bool:
         """Indicate whether the request should be retried.
+
         Args:
             method: Request method.
             status_code: Status code.
             has_retry_after: Whether retry has been done before.
+
         Returns:
             ``True`` if the request should be retried, ``False`` otherwise.
         """
@@ -89,13 +92,23 @@ class PostForcelistRetry(Retry):
 class QbraidSession(Session):
     """Custom session with handling of request urls and authentication.
 
-    This is a child class of ``requests.Session``. It handles qbraid
+    This is a child class of :py:class:`requests.Session`. It handles qbraid
     authentication with custom headers, has SSL verification disabled
     for compatibility with lab, and returns all responses as jsons for
     convenience in the sdk.
 
+    Args:
+        base_url: Base URL for the session's requests.
+        user_email: JupyterHub User.
+        id_token: Authenticated qBraid id-token.
+        refresh_token: Authenticated qBraid refresh-token.
+        retries_total: Number of total retries for the requests.
+        retries_connect: Number of connect retries for the requests.
+        backoff_factor: Backoff factor between retry attempts.
+
     """
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         base_url: Optional[str] = None,
@@ -106,15 +119,7 @@ class QbraidSession(Session):
         retries_connect: int = 3,
         backoff_factor: float = 0.5,
     ) -> None:
-        """QbraidSession constructor.
 
-        Args:
-            base_url: Base URL for the session's requests.
-            user_email: JupyterHub User.
-            id_token: Authenticated qBraid id-token.
-            refresh_token: Authenticated qBraid refresh-token.
-
-        """
         super().__init__()
 
         self.base_url = base_url
@@ -126,7 +131,7 @@ class QbraidSession(Session):
         self._initialize_retry(retries_total, retries_connect, backoff_factor)
 
     def __del__(self) -> None:
-        """QbraidSession destructor. Closes the session."""
+        """qbraid session destructor. Closes the session."""
         self.close()
 
     @property

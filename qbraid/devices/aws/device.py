@@ -16,10 +16,10 @@ from .job import BraketQuantumTaskWrapper
 class BraketDeviceWrapper(DeviceLikeWrapper):
     """Wrapper class for Amazon Braket ``Device`` objects."""
 
-    def __init__(self, device_info):
+    def __init__(self, **kwargs):
         """Create a BraketDeviceWrapper."""
 
-        super().__init__(device_info)
+        super().__init__(**kwargs)
         bucket = get_config("s3_bucket", "AWS")
         folder = get_config("s3_folder", "AWS")
         self._s3_location = (bucket, folder)

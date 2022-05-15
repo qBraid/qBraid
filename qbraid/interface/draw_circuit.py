@@ -1,11 +1,22 @@
 """Module for drawing quantum circuit diagrams"""
 
-from qbraid._typing import QPROGRAM
+from typing import TYPE_CHECKING
+
 from qbraid.exceptions import ProgramTypeError
 
+if TYPE_CHECKING:
+    import qbraid
 
-def draw(program: QPROGRAM) -> None:
-    """Draws circuit diagram."""
+
+def draw(program: "qbraid.QPROGRAM") -> None:
+    """Draws circuit diagram.
+
+    Args:
+        :data:`~.qbraid.QPROGRAM`: Supported quantum program
+
+    Raises:
+        ProgramTypeError: If quantum program is not of a supported type
+    """
 
     try:
         package = program.__module__

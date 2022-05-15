@@ -1,14 +1,18 @@
 """Module containing quantum programs used for testing"""
 
-from typing import Any, Callable, Dict, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 import numpy as np
 
 from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid.exceptions import PackageValueError
+
 from .calculate_unitary import to_unitary
 
 QROGRAM_TEST_TYPE = Tuple[Dict[str, Callable[[Any], QPROGRAM]], np.ndarray]
+
+if TYPE_CHECKING:
+    import qbraid
 
 # pylint: disable=import-outside-toplevel
 
@@ -47,14 +51,15 @@ def shared15_data() -> QROGRAM_TEST_TYPE:
     return circuits, unitary
 
 
-def random_circuit(package: str, **kwargs) -> QPROGRAM:
+def random_circuit(
+    package: str, num_qubits: Optional[int] = None, depth: Optional[int] = None, **kwargs
+) -> "qbraid.QPROGRAM":
     """Generate random circuit of arbitrary size and form.
 
     Args:
-        package (str): qbraid supported software package
-        num_qubits (optional, int): number of quantum wires. If not provided,
-            set randomly in range [2,4].
-        depth (optional, int): layers of operations (i.e. critical path length)
+        package: qBraid supported software package
+        num_qubits: Number of quantum wires. If not provided, set randomly in range [2,4].
+        depth: Layers of operations (i.e. critical path length)
             If not provided, set randomly in range [2,4].
 
     Raises:
@@ -62,13 +67,13 @@ def random_circuit(package: str, **kwargs) -> QPROGRAM:
         QbraidError: when invalid random circuit options given
 
     Returns:
-        :ref:`QPROGRAM<data_types>`: randomly generated quantum circuit/program
+        :data:`~qbraid.QPROGRAM`: randomly generated quantum circuit/program
 
     """
     if package not in SUPPORTED_PROGRAM_TYPES:
         raise PackageValueError(package)
-    num_qubits = np.random.randint(1, 4) if "num_qubits" not in kwargs else kwargs.pop("num_qubits")
-    depth = np.random.randint(1, 4) if "depth" not in kwargs else kwargs.pop("depth")
+    num_qubits = np.random.randint(1, 4) if num_qubits is None else num_qubits
+    depth = np.random.randint(1, 4) if depth is None else depth
     if package == "qiskit":
         from qbraid.interface.qbraid_qiskit.circuits import _qiskit_random
 

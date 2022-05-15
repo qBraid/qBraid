@@ -14,7 +14,7 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 """Functions for converting to/from Cirq's circuit representation."""
-from typing import Any, Callable, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Tuple
 
 from cirq import Circuit
 
@@ -22,22 +22,25 @@ from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from qbraid.exceptions import PackageValueError, ProgramTypeError
 from qbraid.transpiler.exceptions import CircuitConversionError
 
+if TYPE_CHECKING:
+    import qbraid
+
 # pylint: disable=import-outside-toplevel
 
 
-def convert_to_cirq(program: QPROGRAM) -> Tuple[Circuit, str]:
+def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple[Circuit, str]:
     """Converts any valid input quantum program to a Cirq circuit.
 
     Args:
-        program: A qbraid-supported quantum program object.
+        program (:data:`~qbraid.QPROGRAM`): A qbraid-supported quantum program object.
 
     Raises:
         ProgramTypeError: If the input quantum program is not supported.
         CircuitConversionError: If the input quantum program could not be converted.
 
     Returns:
-        cirq_circuit: Cirq circuit equivalent to input circuit.
-        input_program_type: Type of input quantum program represented by a string.
+        A Tuple containing the Cirq circuit equivalent to input circuit and the
+            input quantum program type.
     """
     conversion_function: Callable[[Any], Circuit]
 
@@ -89,7 +92,7 @@ def convert_to_cirq(program: QPROGRAM) -> Tuple[Circuit, str]:
     return cirq_circuit, input_program_type
 
 
-def convert_from_cirq(circuit: Circuit, conversion_type: str) -> QPROGRAM:
+def convert_from_cirq(circuit: Circuit, conversion_type: str) -> "qbraid.QPROGRAM":
     """Converts a Cirq circuit to a type specified by the conversion type.
 
     Args:
@@ -101,7 +104,7 @@ def convert_from_cirq(circuit: Circuit, conversion_type: str) -> QPROGRAM:
         CircuitConversionError: If the input quantum program could not be converted.
 
     Returns:
-        quantum_program: A ``conversion_type`` quantum circuit / program.
+        :data:`~qbraid.QPROGRAM`: A ``conversion_type`` quantum circuit / program.
     """
     conversion_function: Callable[[Circuit], QPROGRAM]
     if conversion_type == "qiskit":

@@ -1,25 +1,33 @@
 """Module for converting quantum circuit/program to use contiguous qubit indexing"""
 
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable
 
 from qbraid._typing import QPROGRAM
 from qbraid.exceptions import ProgramTypeError, QbraidError
+
+if TYPE_CHECKING:
+    import qbraid
 
 
 class ContiguousConversionError(QbraidError):
     """Class for exceptions raised while converting a circuit to use contiguous qubits/indices"""
 
 
-def convert_to_contiguous(program: QPROGRAM, **kwargs) -> QPROGRAM:
+def convert_to_contiguous(program: "qbraid.QPROGRAM", **kwargs) -> "qbraid.QPROGRAM":
     """Checks whether the quantum program uses contiguous qubits/indices,
     and if not, adds identity gates to vacant registers as needed.
 
     Args:
-        program: Any quantum quantum object supported by qBraid.
+        program (:data:`~qbraid.QPROGRAM`): Any quantum quantum object supported by qBraid.
+
     Raises:
         ProgramTypeError: If the input circuit is not supported.
+        :class:`~qbraid.interface.ContiguousConversionError`: If qubit indexing
+            could not be converted
+
     Returns:
-        QPROGRAM: Program of the same type as the input quantum program.
+        :data:`~qbraid.QPROGRAM`: Program of the same type as the input quantum program.
+
     """
     conversion_function: Callable[[Any], QPROGRAM]
 

@@ -4,6 +4,7 @@ import configparser
 import os
 import sys
 from getpass import getpass
+from typing import Optional, Union
 
 from .config_specs import CONFIG_PATHS, VENDOR_CONFIGS
 from .exceptions import ConfigError
@@ -12,7 +13,7 @@ raw_input = input
 secret_input = getpass
 
 
-def mask_value(value):
+def mask_value(value: str) -> str:
     """Replaces all but last four characters of token ``value`` with *'s"""
     if value is None:
         return "None"
@@ -23,7 +24,7 @@ def mask_value(value):
     return ("*" * len_stars) + value[-len_hint:]
 
 
-def get_value(display_value, is_secret, prompt_text):
+def get_value(display_value: str, is_secret: bool, prompt_text: str) -> str:
     """Applies mask to ``display_value`` and prompts user"""
     display_value = mask_value(display_value) if is_secret else display_value
     response = compat_input(f"{prompt_text} [{display_value}]: ", is_secret)
@@ -32,7 +33,7 @@ def get_value(display_value, is_secret, prompt_text):
     return response
 
 
-def compat_input(prompt, is_secret):
+def compat_input(prompt: str, is_secret: bool) -> str:
     """Prompts user for value"""
     if is_secret:
         return secret_input(prompt=prompt)
@@ -42,20 +43,31 @@ def compat_input(prompt, is_secret):
 
 
 # pylint: disable-next=too-many-arguments
-def set_config(config_name, prompt_text, default_val, is_secret, section, filepath, update=False):
+def set_config(
+    config_name: str,
+    prompt_text: str,
+    default_val: Optional[str],
+    is_secret: bool,
+    section: str,
+    filepath: str,
+    update: Optional[bool] = False,
+) -> int:
     """Adds or modifies a user configuration
 
     Args:
-        config_name (str): the name of the config
-        prompt_text (str): the text that will prompt the user to enter config_name.
-        default_val (None, str): default value for config name
-        is_secret (bool) = specifies if the value of this config should be kept private
-        section (str) = the section of the config file to store config_name
-        filepath (str): the existing or desired path to config file
-        update (optional, bool): True if user is updating an already existing config
+        config_name: the name of the config
+        prompt_text: the text that will prompt the user to enter config_name.
+        default_val: default value for config name
+        is_secret: specifies if the value of this config should be kept private
+        section: the section of the config file to store config_name
+        filepath: the existing or desired path to config file
+        update: True if user is updating an already existing config
+
+    Returns:
+        Exit code 0 if config set was successful.
 
     Raises:
-        ConfigError if unable to load file from specified ``filename``.
+        :class:`~qbraid.api.ConfigError`: If unable to load file from specified ``filename``.
 
     """
     if not os.path.isfile(filepath):
@@ -85,10 +97,20 @@ def set_config(config_name, prompt_text, default_val, is_secret, section, filepa
     return 0
 
 
-def verify_config(vendor):
-    """Checks for the required user credentials associated with running on device associated with
-    given vendor. If requirements are verified, returns 0. Else, calls set_config, and returns 0
-    after credentials are provided and config is successfully made.
+def verify_config(vendor: str) -> int:
+    """Checks for the required user credentials associated with running on device
+    associated with given vendor. If requirements are verified, returns 0. Else,
+    calls :func:`~qbraid.api.set_config`, and returns 0 after credentials are provided
+    and config is successfully made.
+
+    Args:
+        vendor: a supported vendor
+
+    Returns:
+        Exit code 0 if config is valid.
+
+    Raises:
+        :class:`~qbraid.api.ConfigError`: If config is not valid.
 
     """
     prompt_lst = VENDOR_CONFIGS[vendor]
@@ -109,16 +131,18 @@ def verify_config(vendor):
     return 0
 
 
-def get_config(config_name, section, filepath=None):
+def get_config(config_name: str, section: str, filepath: Optional[str] = None) -> Union[str, int]:
     """Returns the config value of specified config. If vendor and filename
     are not specified, filepath must be specified.
 
     Args:
-        config_name (str): the name of the config
-        section (str) = the section of the config file to store config_name
-        filepath (optional, str): the existing or desired path to config file.
+        config_name: the name of the config
+        section: the section of the config file to store config_name
+        filepath: the existing or desired path to config file.
+
     Returns:
         Config value or -1 if config does not exist
+
     """
     if not filepath:
         filename = "qbraidrc" if section == "default" else "config"
@@ -135,11 +159,17 @@ def get_config(config_name, section, filepath=None):
     return -1
 
 
-def update_config(vendor, update=True):
+def update_config(vendor: str, update=True) -> int:
     """Update the config associated with given vendor
 
     Args:
         vendor (str): a supported vendor
+
+    Returns:
+        Exit code 0 if update is successful.
+
+    Raises:
+        :class:`~qbraid.api.ConfigError`: If there is an error updating the config.
 
     """
     prompt_lst = VENDOR_CONFIGS[vendor]
