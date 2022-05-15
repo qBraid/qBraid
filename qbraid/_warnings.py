@@ -1,5 +1,6 @@
 """Module for disabling certain warnings"""
 import warnings
+
 import urllib3
 
 warnings.filterwarnings("ignore", category=SyntaxWarning)

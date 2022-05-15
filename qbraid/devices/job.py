@@ -3,7 +3,7 @@
 import logging
 from abc import ABC, abstractmethod
 from time import sleep, time
-from typing import Any, Dict
+from typing import TYPE_CHECKING, Any, Dict
 
 from qbraid import device_wrapper
 from qbraid.api import get_job_data
@@ -12,11 +12,20 @@ from qbraid.api.status_maps import STATUS_MAP
 from .enums import JOB_FINAL, JobStatus
 from .exceptions import JobError
 
+if TYPE_CHECKING:
+    import qbraid
+
 
 class JobLikeWrapper(ABC):
     """Abstract interface for job-like classes."""
 
-    def __init__(self, job_id, vendor_job_id, device, vendor_jlo):
+    def __init__(
+        self,
+        job_id: str,
+        vendor_job_id: str,
+        device: "qbraid.devices.DeviceLikeWrapper",
+        vendor_jlo: Any,
+    ):
         self._cache_metadata = None
         self._cache_status = None
         self._job_id = job_id
@@ -31,7 +40,7 @@ class JobLikeWrapper(ABC):
         return self._job_id
 
     @property
-    def vendor_job_id(self):
+    def vendor_job_id(self) -> str:
         """Returns the ID assigned by the device vendor"""
         if self._vendor_job_id is None:
             self._cache_metadata = get_job_data(self.id, status=self.status())
@@ -40,14 +49,14 @@ class JobLikeWrapper(ABC):
         return self._vendor_job_id
 
     @property
-    def device(self):
+    def device(self) -> "qbraid.devices.DeviceLikeWrapper":
         """Returns the qbraid DeviceLikeWrapper object associated with this job."""
         if self._device is None:
             self._device = device_wrapper(self.id.split(":")[0])
         return self._device
 
     @property
-    def vendor_jlo(self):
+    def vendor_jlo(self) -> Any:
         """Return the job like object that is being wrapped."""
         if self._vendor_jlo is None:
             self._vendor_jlo = self._get_vendor_jlo()
@@ -108,11 +117,11 @@ class JobLikeWrapper(ABC):
             status = self.status()
 
     @abstractmethod
-    def result(self):
+    def result(self) -> "qbraid.devices.ResultWrapper":
         """Return the results of the job."""
 
     @abstractmethod
-    def cancel(self):
+    def cancel(self) -> None:
         """Attempt to cancel the job."""
 
     def __repr__(self) -> str:

@@ -4,7 +4,7 @@ from qbraid.exceptions import QbraidError
 
 
 class ApiError(QbraidError):
-    """Base class for errors raised in the qbraid API module"""
+    """Base class for errors raised in the :mod:`qbraid.api` module"""
 
 
 class AuthError(ApiError):

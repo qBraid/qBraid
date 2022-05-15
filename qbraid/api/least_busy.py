@@ -10,8 +10,8 @@ from .config_user import get_config
 qiskitrc_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
 
 
-def ibmq_least_busy_qpu():
-    """Return the qbraid id of the least busy IBMQ QPU."""
+def ibmq_least_busy_qpu() -> str:
+    """Return the qbraid ID of the least busy IBMQ QPU."""
     if not IBMQ.active_account():
         IBMQ.load_account()
         # token = get_config("token", "ibmq", filepath=qiskitrc_path)

@@ -1,29 +1,34 @@
 """Module for calculating unitary of quantum circuit/program"""
 
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import numpy as np
 from cirq.testing import assert_allclose_up_to_global_phase
 
-from qbraid._typing import QPROGRAM
 from qbraid.exceptions import ProgramTypeError, QbraidError
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
+
+if TYPE_CHECKING:
+    import qbraid
 
 
 class UnitaryCalculationError(QbraidError):
     """Class for exceptions raised during unitary calculation"""
 
 
-def to_unitary(program: QPROGRAM, ensure_contiguous=False) -> np.ndarray:
+def to_unitary(program: "qbraid.QPROGRAM", ensure_contiguous: Optional[bool] = False) -> np.ndarray:
     """Calculates the unitary of any valid input quantum program.
 
     Args:
-        program: Any quantum program object supported by qBraid.
+        program (:data:`~qbraid.QPROGRAM`): Any quantum program object supported by qBraid.
         ensure_contiguous: If True, calculates unitary using contiguous qubit indexing
+
     Raises:
         ProgramTypeError: If the input quantum program is not supported.
+        UnitaryCalculationError: If the programs unitary could not be calculated.
+
     Returns:
-        numpy.ndarray: Matrix representation of the input quantum program.
+        Matrix representation of the input quantum program.
     """
     to_unitary_function: Callable[[Any], np.ndarray]
 
@@ -70,18 +75,23 @@ def to_unitary(program: QPROGRAM, ensure_contiguous=False) -> np.ndarray:
 
 
 def circuits_allclose(
-    circuit0: QPROGRAM, circuit1: QPROGRAM, index_contig=True, strict_gphase=False, **kwargs
+    circuit0: "qbraid.QPROGRAM",
+    circuit1: "qbraid.QPROGRAM",
+    index_contig: Optional[bool] = True,
+    strict_gphase: Optional[bool] = False,
+    **kwargs,
 ) -> bool:
-    """Returns True if input quantum program unitaries are equivalent.
+    """Check if quantum program unitaries are equivalent.
 
     Args:
-        index_contig (optional, bool): If True, calculates circuit unitaries using
-            contiguous qubit indexing.
-        stric_gphase (optional, bool): If False, disregards global phase when verifying
+        circuit0 (:data:`~qbraid.QPROGRAM`): First quantum program to compare
+        circuit1 (:data:`~qbraid.QPROGRAM`): Second quantum program to compare
+        index_contig: If True, calculates circuit unitaries using contiguous qubit indexing.
+        stric_gphase: If False, disregards global phase when verifying
             equivalance of the input circuit's unitaries.
 
     Returns:
-        bool: Whether the input circuits pass unitary equality check
+        True if the input circuits pass unitary equality check
 
     """
     unitary0 = to_unitary(circuit0, ensure_contiguous=index_contig)

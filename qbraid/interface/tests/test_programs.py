@@ -3,8 +3,8 @@ Unit tests for equivalence of interfacing quantum programs
 """
 import pytest
 
-from qbraid.interface._programs import bell_data, random_circuit, shared15_data
 from qbraid.interface.calculate_unitary import circuits_allclose
+from qbraid.interface.programs import bell_data, random_circuit, shared15_data
 
 
 def test_bell():

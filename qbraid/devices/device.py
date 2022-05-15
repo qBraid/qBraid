@@ -3,49 +3,52 @@
 # pylint:disable=invalid-name
 
 from abc import ABC, abstractmethod
+from typing import TYPE_CHECKING, Union  # pylint: disable=unused-import
 
 from qbraid import circuit_wrapper
 from qbraid.api.config_user import verify_config
 
 from .exceptions import DeviceError
 
+if TYPE_CHECKING:
+    import qbraid
+
 
 class DeviceLikeWrapper(ABC):
     """Abstract interface for device-like classes."""
 
-    def __init__(self, device_info):
+    def __init__(self, **kwargs):
         """Create a ``DeviceLikeWrapper`` object.
 
-        Args:
-            device_info (dict): device information dictionary containing the following fields:
-                * qbraid_id (str): the internal device ID (see :func:`qbraid.get_devices`)
-                * name (str): the name of the device
-                * provider (str): the company to which the device belongs
-                * vendor (str): the company who's software is used to access the device
-                * run_package (str): the software package used to access the device
-                * obj_ref (str): used internally to indicate the name of the object in run_package
+        Keyword Args:
+            qbraid_id (str): the internal device ID (see :func:`~qbraid.get_devices`)
+            name (str): the name of the device
+            provider (str): the company to which the device belongs
+            vendor (str): the company who's software is used to access the device
+            runPackage (str): the software package used to access the device
+            objRef (str): used internally to indicate the name of the object in run_package
                 that corresponds to the device
-                * obj_arg (str): used internally to indicate any arguments that need to be provided
-                to the run_package object specified by obj_ref
-                * requires_cred (bool): whether or not this device requires credentials for access
-                * type (str): the type of the device, "QPU" or "Simulator"
-                * qubits (int): the number of qubits in the device (if QPU)
+            objArg (str): used internally to indicate any arguments that need to be provided
+                to the run_package object specified by ``objRef``
+            requiresCred (bool): whether or not this device requires credentials for access
+            type (str): the type of the device, "QPU" or "Simulator"
+            numberQubits (int): the number of qubits in the device (if QPU)
 
         """
-        self._info = device_info
-        self._obj_ref = device_info.pop("objRef")
-        self._obj_arg = device_info.pop("objArg")
-        self._qubits = device_info["numberQubits"]
-        self.requires_cred = device_info.pop("requiresCred")
+        self._info = kwargs
+        self._obj_ref = self._info.pop("objRef")
+        self._obj_arg = self._info.pop("objArg")
+        self._qubits = self._info["numberQubits"]
+        self.requires_cred = self._info.pop("requiresCred")
         if self.requires_cred:
             verify_config(self.vendor)
         self.vendor_dlo = self._get_device()
 
-    def _compat_run_input(self, run_input):
+    def _compat_run_input(self, run_input: "qbraid.QPROGRAM") -> "qbraid.QPROGRAM":
         """Checks if ``run_input`` is compatible with device and calls transpiler if necessary.
 
         Returns:
-            run_input: the run_input e.g. a circuit object, possibly transpiled
+            :data:`~qbraid.QPROGRAM`: The run_input e.g. a circuit object, possibly transpiled
 
         Raises:
             DeviceError: if devices is offline or if the number of qubits used in the circuit
@@ -72,58 +75,58 @@ class DeviceLikeWrapper(ABC):
         """Applies any software/device specific modifications to run input."""
 
     @property
-    def info(self):
+    def info(self) -> dict:
         """Return the device info."""
         return self._info
 
     @property
-    def id(self):
+    def id(self) -> str:
         """Return the device ID."""
         return self.info["qbraid_id"]
 
     @property
-    def name(self):
+    def name(self) -> str:
         """Return the device name.
 
         Returns:
-            str: the name of the device.
+            The name of the device.
 
         """
         return self.info["name"]
 
     @property
-    def provider(self):
+    def provider(self) -> str:
         """Return the device provider.
 
         Returns:
-            str: the provider responsible for the device.
+            The provider responsible for the device.
 
         """
         return self.info["provider"]
 
     @property
-    def vendor(self):
+    def vendor(self) -> str:
         """Return the software vendor name.
 
         Returns:
-            str: the name of the software vendor.
+            The name of the software vendor.
 
         """
         return self.info["vendor"]
 
     @property
-    def num_qubits(self):
+    def num_qubits(self) -> int:
         """The number of qubits supported by the device.
 
         Returns:
-            int number of qubits supported by QPU. If Simulator returns None.
+            Number of qubits supported by QPU. If Simulator returns None.
 
         """
         return self._qubits
 
     @property
     @abstractmethod
-    def status(self):
+    def status(self) -> "qbraid.devices.DeviceStatus":
         """Return device status."""
 
     def __str__(self):
@@ -138,7 +141,9 @@ class DeviceLikeWrapper(ABC):
         """Abstract init device method."""
 
     @abstractmethod
-    def run(self, run_input, *args, **kwargs):
+    def run(
+        self, run_input: "qbraid.QPROGRAM", *args, **kwargs
+    ) -> "Union[qbraid.devices.JobLikeWrapper, qbraid.devices.LocalJobWrapper]":
         """Abstract run method."""
 
     @abstractmethod

@@ -31,7 +31,7 @@ qiskit_version = __qiskit_version__["qiskit"]
 
 
 def about() -> None:
-    """Displays information about the qbraid.transpiler, core/optional
+    """Displays information about the :mod:`~qbraid.transpiler`, core/optional
     packages, and Python version/platform information.
     """
 
