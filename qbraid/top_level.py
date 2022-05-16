@@ -6,6 +6,7 @@ that directly or indirectly utilize entrypoints via ``pkg_resources``.
 
 from datetime import datetime
 from time import time
+from typing import Optional, Union
 
 import pkg_resources
 from IPython.display import HTML, clear_output, display
@@ -41,10 +42,10 @@ def circuit_wrapper(program: QPROGRAM):
     any additional arguments that might be supported.
 
     Args:
-        circuit (:data:`~qbraid.QPROGRAM`): a supported quantum circuit object
+        circuit (:data:`~qbraid.QPROGRAM`): A supported quantum circuit / program object
 
     Returns:
-        :class:`~qbraid.transpiler.QuantumProgramWrapper`: a qbraid quantum program wrapper object
+        :class:`~qbraid.transpiler.QuantumProgramWrapper`: A wrapped quantum circuit-like object
 
     Raises:
         :class:`~qbraid.QbraidError`: If the input circuit is not a supported quantum program.
@@ -76,7 +77,7 @@ def device_wrapper(qbraid_device_id: str):
         qbraid_device_id: unique ID specifying a supported quantum hardware device/simulator
 
     Returns:
-        :class:`~qbraid.devices.DeviceLikeWrapper`: A qbraid device wrapper object
+        :class:`~qbraid.devices.DeviceLikeWrapper`: A wrapped quantum device-like object
 
     Raises:
         :class:`~qbraid.QbraidError`: If ``qbraid_id`` is not a valid device reference.
@@ -114,7 +115,7 @@ def retrieve_job(qbraid_job_id: str):
         qbraid_job_id: qBraid Job ID
 
     Returns:
-        :class:`~qbraid.devices.job.JobLikeWrapper`
+        :class:`~qbraid.devices.job.JobLikeWrapper`: A wrapped quantum job-like object
 
     """
     qbraid_device = device_wrapper(qbraid_job_id.split("-")[0])
@@ -209,23 +210,41 @@ def _get_device_data(query):
     return device_data, int(lag_minutes)
 
 
-def get_devices(filters=None, refresh=False):
+def get_devices(filters: Optional[dict] = None, refresh: bool = False) -> Union[None, dict]:
     """Displays a list of all supported devices matching given filters, tabulated by provider,
     name, and qBraid ID. Each device also has a status given by a solid green bubble or a hollow
     red bubble, indicating that the device is online or offline, respectively. You can narrow your
-    device search by supplying a dictionary containing the desired criteria. Available filters
-    include:
+    device search by supplying a dictionary containing the desired criteria.
 
-    * ``name`` (str)
-    * ``vendor`` (str): AWS | IBM | Google
-    * ``provider`` (str): AWS | IBM | Google | D-Wave | IonQ | Rigetti | OQC
-    * ``type`` (str): QPU | Simulator
-    * ``numberQubits`` (int)
-    * ``paradigm`` (str): gate-based | quantum-annealer
-    * ``requiresCred`` (bool): true | false
-    * ``status`` (str): ONLINE | OFFLINE
+    **Request Syntax:**
 
-    Here are a few example use cases:
+    .. code-block:: python
+
+        get_devices(
+            filters={
+                'name': 'string',
+                'vendor': 'AWS'|'IBM'|'Google',
+                'provider: 'AWS'|'IBM'|'Google'|'D-Wave'|'IonQ'|'Rigetti'|'OQC',
+                'type': 'QPU' | 'Simulator',
+                'numberQubits': 123,
+                'paradigm': 'gate-based'|'quantum-annealer',
+                'requiresCred': True|False,
+                'status': 'ONLINE'|'OFFLINE'
+            }
+        )
+
+    **Filters:**
+
+        * **name** (str): Name quantum device name
+        * **vendor** (str): Company whose software facilitaces access to quantum device
+        * **provider** (str): Company providing the quantum device
+        * **type** (str): If the device is a quantum simulator or hardware
+        * **numberQubits** (int): The number of qubits in quantum device
+        * **paradigm** (str): The quantum model through which the device operates
+        * **requiresCred** (bool): Whether the device requires credentialed access
+        * **status** (str): Availability of device
+
+    **Examples:**
 
     .. code-block:: python
 
@@ -253,8 +272,8 @@ def get_devices(filters=None, refresh=False):
     .. __: https://docs.mongodb.com/manual/reference/operator/query/#query-selectors
 
     Args:
-        filters (optional, dict): a dictionary containing any filters to be applied.
-        refresh (optional, bool): If True, calls refresh_devices before execution.
+        filters: a dictionary containing any filters to be applied.
+        refresh: If True, calls :func:`~qbraid.refresh_devices` before execution.
 
     """
     if refresh:

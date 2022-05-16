@@ -2,6 +2,7 @@
 
 import logging
 from asyncio import Task
+from typing import TYPE_CHECKING, Optional
 
 from braket.aws import AwsQuantumTask
 
@@ -10,11 +11,20 @@ from qbraid.devices.job import JobLikeWrapper
 
 from .result import BraketResultWrapper
 
+if TYPE_CHECKING:
+    import qbraid
+
 
 class BraketQuantumTaskWrapper(JobLikeWrapper):
     """Wrapper class for Amazon Braket ``QuantumTask`` objects."""
 
-    def __init__(self, job_id, vendor_job_id=None, device=None, vendor_jlo=None):
+    def __init__(
+        self,
+        job_id: str,
+        vendor_job_id: Optional[str] = None,
+        device: "Optional[qbraid.devices.aws.BraketDeviceWrapper]" = None,
+        vendor_jlo: Optional[AwsQuantumTask] = None,
+    ):
         """Create a BraketQuantumTaskWrapper."""
 
         super().__init__(job_id, vendor_job_id, device, vendor_jlo)
@@ -27,7 +37,7 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
         """Returns status from Braket QuantumTask object metadata."""
         return self.vendor_jlo.metadata()["status"]
 
-    def result(self):
+    def result(self) -> BraketResultWrapper:
         """Return the results of the job."""
         if self.status() not in JOB_FINAL:
             logging.info("Result will be available when job has reached final state.")
@@ -38,6 +48,6 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
         # return self.vendor_jlo.async_result()
         raise NotImplementedError
 
-    def cancel(self):
+    def cancel(self) -> None:
         """Cancel the quantum task."""
         return self.vendor_jlo.cancel()

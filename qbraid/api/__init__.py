@@ -21,13 +21,13 @@
    RequestsApiError
 
 .. autoclass:: QbraidSession
- 
+
    .. automethod:: __init__
 
    .. rubric:: Methods
 
    .. autosummary::
-   
+  
       ~QbraidSession.__init__
       ~QbraidSession.close
       ~QbraidSession.delete

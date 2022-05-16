@@ -21,18 +21,18 @@ class DeviceLikeWrapper(ABC):
         """Create a ``DeviceLikeWrapper`` object.
 
         Keyword Args:
-            qbraid_id (str): the internal device ID (see :func:`~qbraid.get_devices`)
-            name (str): the name of the device
-            provider (str): the company to which the device belongs
-            vendor (str): the company who's software is used to access the device
-            runPackage (str): the software package used to access the device
-            objRef (str): used internally to indicate the name of the object in run_package
+            qbraid_id (str): The internal device ID (see :func:`~qbraid.get_devices`)
+            name (str): The name of the device
+            provider (str): The company to which the device belongs
+            vendor (str): The company who's software is used to access the device
+            runPackage (str): The software package used to access the device
+            objRef (str): Used internally to indicate the name of the object in run_package
                 that corresponds to the device
-            objArg (str): used internally to indicate any arguments that need to be provided
+            objArg (str): Used internally to indicate any arguments that need to be provided
                 to the run_package object specified by ``objRef``
             requiresCred (bool): whether or not this device requires credentials for access
-            type (str): the type of the device, "QPU" or "Simulator"
-            numberQubits (int): the number of qubits in the device (if QPU)
+            type (str): The type of the device, "QPU" or "Simulator"
+            numberQubits (int): The number of qubits in the device (if QPU)
 
         """
         self._info = kwargs
@@ -51,8 +51,8 @@ class DeviceLikeWrapper(ABC):
             :data:`~qbraid.QPROGRAM`: The run_input e.g. a circuit object, possibly transpiled
 
         Raises:
-            DeviceError: if devices is offline or if the number of qubits used in the circuit
-            exceeds the number of qubits supported by the device.
+            DeviceError: If devices is offline or if the number of qubits used in the circuit
+                exceeds the number of qubits supported by the device.
 
         """
         if self.status.value == 1:

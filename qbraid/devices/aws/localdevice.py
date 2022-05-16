@@ -1,11 +1,18 @@
 """BraketLocalSimulatorWrapper Class"""
 
+from typing import TYPE_CHECKING
+
 from braket.devices import LocalSimulator
 
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
 
 from .localjob import BraketLocalQuantumTaskWrapper
+
+if TYPE_CHECKING:
+    import braket
+
+    import qbraid
 
 
 class BraketLocalSimulatorWrapper(DeviceLikeWrapper):
@@ -19,15 +26,17 @@ class BraketLocalSimulatorWrapper(DeviceLikeWrapper):
         return run_input
 
     @property
-    def status(self):
+    def status(self) -> "qbraid.devices.DeviceStatus":
         """Return the status of this Device.
 
         Returns:
-            str: The status of this Device
+            The status of this Device
         """
         return DeviceStatus.ONLINE
 
-    def run(self, run_input, *args, **kwargs):
+    def run(
+        self, run_input: "braket.circuits.Circuit", *args, **kwargs
+    ) -> "qbraid.devices.aws.BraketLocalQuantumTaskWrapper":
         """Run a quantum task specification on this quantum device. A task can be a circuit or an
         annealing problem.
 
@@ -35,16 +44,16 @@ class BraketLocalSimulatorWrapper(DeviceLikeWrapper):
             run_input: Specification of a task to run on device.
 
         Keyword Args:
-            shots (int): The number of times to run the task on the device. Default is 0.
+            shots (int): The number of times to run the task on the device. Default is ``0``.
 
         Returns:
-            qbraid.devices.aws.BraketLocalQuantumTaskWrapper: The job like object for the run.
+            The job like object for the run.
 
         """
         run_input, _ = self._compat_run_input(run_input)
         local_quantum_task = self.vendor_dlo.run(run_input, *args, **kwargs)
         return BraketLocalQuantumTaskWrapper(self, local_quantum_task)
 
-    def estimate_cost(self, circuit, shots=1024):
+    def estimate_cost(self, circuit: "braket.circuits.Circuit", shots: int = 1024) -> int:
         """Estimate the cost of running a circuit on the device."""
         print("It is free to run on your local simulator on qBraid.")
