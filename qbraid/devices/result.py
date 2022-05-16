@@ -9,7 +9,7 @@ class ResultWrapper(ABC):
     """Abstract interface for result-like classes.
 
     Args:
-        vendor_rlo: a result-like object
+        vendor_rlo: A result-like object
 
     """
 

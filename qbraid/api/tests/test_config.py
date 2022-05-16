@@ -12,7 +12,8 @@ from qbraid.api.config_specs import (
     qbraidrc_path,
     qiskitrc_path,
 )
-from qbraid.api.config_user import get_config
+from qbraid.api.config_user import get_config, mask_value, verify_config
+from qbraid.api.exceptions import ConfigError, RequestsApiError
 from qbraid.api.session import QbraidSession
 
 aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
@@ -62,8 +63,23 @@ def set_config():
             config.write(cfgfile)
 
 
-set_config()
+def test_mask_value():
+    mask = mask_value("abc123")
+    assert mask == "******abc123"
 
+
+def test_verify_config():
+    with pytest.raises(ConfigError):
+        verify_config("QBRAID")
+
+
+def test_api_error():
+    with pytest.raises(RequestsApiError):
+        session = QbraidSession()
+        session.request('POST', 'not a url')
+
+
+set_config()
 
 @pytest.mark.parametrize("config", config_lst)
 def test_get_config(config):

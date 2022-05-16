@@ -21,9 +21,9 @@ def init_job(
 
     Args:
         vendor_job_id: Job ID provided by device vendor
-        device: wrapped quantum device
-        circuit: wrapped quantum circuit
-        shots: number of shots
+        device: Wrapped quantum device
+        circuit: Wrapped quantum circuit
+        shots: Number of shots
 
     Returns:
         The qbraid job ID associated with this job
@@ -52,7 +52,7 @@ def get_job_data(qbraid_job_id: str, status: Optional["qbraid.devices.JobStatus"
 
     Args:
         qbraid_job_id: The qbraid job ID associated with the job
-        status: job status update
+        status: Job status update
 
     Returns:
         The metadata associated with this job

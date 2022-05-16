@@ -11,9 +11,10 @@ from .exceptions import JobError
 
 class LocalJobWrapper(ABC):
     """Abstract interface for job-like classes.
+
     Args:
-        device: qbraid device wrapper object
-        vendor_jlo: a job-like object used to run circuits.
+        device: qBraid device wrapper object
+        vendor_jlo: A job-like object used to run circuits.
     """
 
     def __init__(self, device, vendor_jlo):

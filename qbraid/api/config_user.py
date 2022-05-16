@@ -55,12 +55,12 @@ def set_config(
     """Adds or modifies a user configuration
 
     Args:
-        config_name: the name of the config
-        prompt_text: the text that will prompt the user to enter config_name.
-        default_val: default value for config name
-        is_secret: specifies if the value of this config should be kept private
-        section: the section of the config file to store config_name
-        filepath: the existing or desired path to config file
+        config_name: The name of the config
+        prompt_text: The text that will prompt the user to enter config_name.
+        default_val: The default value for config name
+        is_secret: Specifies if the value of this config should be kept private
+        section: The section of the config file to store config_name
+        filepath: The existing or desired path to config file
         update: True if user is updating an already existing config
 
     Returns:
@@ -99,15 +99,15 @@ def set_config(
 
 def verify_config(vendor: str) -> int:
     """Checks for the required user credentials associated with running on device
-    associated with given vendor. If requirements are verified, returns 0. Else,
+    associated with given vendor. If requirements are verified, returns ``0``. Else,
     calls :func:`~qbraid.api.set_config`, and returns 0 after credentials are provided
     and config is successfully made.
 
     Args:
-        vendor: a supported vendor
+        vendor: A supported vendor
 
     Returns:
-        Exit code 0 if config is valid.
+        Exit code ``0`` if config is valid.
 
     Raises:
         :class:`~qbraid.api.ConfigError`: If config is not valid.
@@ -119,7 +119,10 @@ def verify_config(vendor: str) -> int:
         email = get_config("email", "default")
         refresh_token = get_config("refresh-token", "default")
         id_token = get_config("id-token", "default")
-        if url + email + max(refresh_token, id_token) == -3:
+        try:
+            if url + email + max(refresh_token, id_token) == -3:
+                raise ConfigError("Invalid qbraidrc")
+        except TypeError:
             raise ConfigError("Invalid qbraidrc")
     else:
         file_dict = CONFIG_PATHS[vendor]
@@ -136,20 +139,17 @@ def get_config(config_name: str, section: str, filepath: Optional[str] = None) -
     are not specified, filepath must be specified.
 
     Args:
-        config_name: the name of the config
-        section: the section of the config file to store config_name
-        filepath: the existing or desired path to config file.
+        config_name: The name of the config
+        section: The section of the config file to store config_name
+        filepath: The existing or desired path to config file.
 
     Returns:
-        Config value or -1 if config does not exist
+        Config value or ``-1`` if config does not exist
 
     """
     if not filepath:
         filename = "qbraidrc" if section == "default" else "config"
-        try:
-            filepath = CONFIG_PATHS["QBRAID"][filename]
-        except KeyError:
-            return -1
+        filepath = CONFIG_PATHS["QBRAID"][filename]
     if os.path.isfile(filepath):
         config = configparser.ConfigParser()
         config.read(filepath)
@@ -163,10 +163,10 @@ def update_config(vendor: str, update=True) -> int:
     """Update the config associated with given vendor
 
     Args:
-        vendor (str): a supported vendor
+        vendor (str): A supported vendor
 
     Returns:
-        Exit code 0 if update is successful.
+        Exit code ``0`` if update is successful.
 
     Raises:
         :class:`~qbraid.api.ConfigError`: If there is an error updating the config.
