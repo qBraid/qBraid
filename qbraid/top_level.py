@@ -51,7 +51,11 @@ def circuit_wrapper(program: QPROGRAM):
         :class:`~qbraid.QbraidError`: If the input circuit is not a supported quantum program.
 
     """
-    package = program.__module__.split(".")[0]
+    try:
+        package = program.__module__.split(".")[0]
+    except AttributeError:
+        raise QbraidError(f"Error applying circuit wrapper to quantum program of type {type(program)}")
+
     ep = package.lower()
 
     transpiler_entrypoints = _get_entrypoints("qbraid.transpiler")

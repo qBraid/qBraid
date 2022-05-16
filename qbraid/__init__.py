@@ -9,6 +9,7 @@ Data Types
 -----------
 
 .. autodata:: QPROGRAM
+   :annotation: = Type alias defining all supported quantum circuit / program types
 
 Functions
 ----------

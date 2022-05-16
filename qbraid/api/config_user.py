@@ -119,7 +119,10 @@ def verify_config(vendor: str) -> int:
         email = get_config("email", "default")
         refresh_token = get_config("refresh-token", "default")
         id_token = get_config("id-token", "default")
-        if url + email + max(refresh_token, id_token) == -3:
+        try:
+            if url + email + max(refresh_token, id_token) == -3:
+                raise ConfigError("Invalid qbraidrc")
+        except TypeError:
             raise ConfigError("Invalid qbraidrc")
     else:
         file_dict = CONFIG_PATHS[vendor]
@@ -146,10 +149,7 @@ def get_config(config_name: str, section: str, filepath: Optional[str] = None) -
     """
     if not filepath:
         filename = "qbraidrc" if section == "default" else "config"
-        try:
-            filepath = CONFIG_PATHS["QBRAID"][filename]
-        except KeyError:
-            return -1
+        filepath = CONFIG_PATHS["QBRAID"][filename]
     if os.path.isfile(filepath):
         config = configparser.ConfigParser()
         config.read(filepath)
