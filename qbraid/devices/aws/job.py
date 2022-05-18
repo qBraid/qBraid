@@ -18,16 +18,10 @@ if TYPE_CHECKING:
 class BraketQuantumTaskWrapper(JobLikeWrapper):
     """Wrapper class for Amazon Braket ``QuantumTask`` objects."""
 
-    def __init__(
-        self,
-        job_id: str,
-        vendor_job_id: Optional[str] = None,
-        device: "Optional[qbraid.devices.aws.BraketDeviceWrapper]" = None,
-        vendor_jlo: Optional[AwsQuantumTask] = None,
-    ):
+    def __init__(self, job_id: str, **kwargs):
         """Create a BraketQuantumTaskWrapper."""
 
-        super().__init__(job_id, vendor_job_id, device, vendor_jlo)
+        super().__init__(job_id, **kwargs)
 
     def _get_vendor_jlo(self):
         """Return the job like object that is being wrapped."""

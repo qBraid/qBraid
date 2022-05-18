@@ -1,6 +1,7 @@
 """This module defines all :mod:`~qbraid.devices` enumerated types."""
 
 import enum
+from multiprocessing.sharedctypes import Value
 
 
 class DeviceType(enum.IntEnum):
@@ -59,6 +60,17 @@ class JobStatus(enum.IntEnum):
     COMPLETED = 6
     FAILED = 7
     UNKNOWN = 8
+
+    def raw(self):
+        return str(self)[10:]
+
+
+def status_from_raw(status_str):
+    for e in JobStatus:
+        status_enum = JobStatus(e.value)
+        if status_str == status_enum.raw():
+            return status_enum
+    raise ValueError(f"Raw status '{status_str}' not recognized.")
 
 
 JOB_FINAL = (JobStatus.COMPLETED, JobStatus.CANCELLED, JobStatus.FAILED)

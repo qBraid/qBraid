@@ -23,6 +23,7 @@ Functions
    circuit_wrapper
    device_wrapper
    retrieve_job
+   job_wrapper
 
 Exceptions
 -----------
@@ -40,4 +41,4 @@ from ._about import about
 from ._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from ._version import __version__
 from .exceptions import PackageValueError, ProgramTypeError, QbraidError
-from .top_level import circuit_wrapper, device_wrapper, get_devices, refresh_devices, retrieve_job
+from .top_level import circuit_wrapper, device_wrapper, get_devices, refresh_devices, retrieve_job, job_wrapper

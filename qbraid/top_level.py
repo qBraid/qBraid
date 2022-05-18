@@ -122,14 +122,53 @@ def retrieve_job(qbraid_job_id: str):
         :class:`~qbraid.devices.job.JobLikeWrapper`: A wrapped quantum job-like object
 
     """
-    qbraid_device = device_wrapper(qbraid_job_id.split("-")[0])
+    session = QbraidSession()
+    job_data = session.post("/get-user-jobs", json={"qbraidJobId": qbraid_job_id}).json()
+    status = job_data["status"]
+    vendor_job_id = job_data["vendorJobId"]
+    qbraid_device_id = job_data["qbraidDeviceId"]
+    qbraid_device = device_wrapper(qbraid_device_id)
     vendor = qbraid_device.vendor.lower()
     if vendor == "google":
         raise QbraidError(f"API job retrieval not supported for {qbraid_device.id}")
     devices_entrypoints = _get_entrypoints("qbraid.devices")
     ep = vendor + ".job"
     job_wrapper_class = devices_entrypoints[ep].load()
-    return job_wrapper_class(qbraid_job_id, device=qbraid_device)
+    return job_wrapper_class(qbraid_job_id, vendor_job_id=vendor_job_id, device=qbraid_device)
+
+
+def job_wrapper(qbraid_job_id: str):
+    """Retrieve a job from qBraid API using job ID and return job wrapper object.
+
+    Args:
+        qbraid_job_id: qBraid Job ID
+
+    Returns:
+        :class:`~qbraid.devices.job.JobLikeWrapper`: A wrapped quantum job-like object
+
+    """
+    session = QbraidSession()
+    job_data = session.post("/get-user-jobs", json={"qbraidJobId": qbraid_job_id}).json()
+
+    if isinstance(job_data, list):
+        if len(job_data) == 0:
+            raise QbraidError(f"{qbraid_job_id} is not a valid job ID.")
+        job_data = job_data[0]
+
+    if job_data is None:
+        raise QbraidError(f"{qbraid_job_id} is not a valid job ID.")
+
+    status_str = job_data["status"]
+    vendor_job_id = job_data["vendorJobId"]
+    qbraid_device_id = job_data["qbraidDeviceId"]
+    qbraid_device = device_wrapper(qbraid_device_id)
+    vendor = qbraid_device.vendor.lower()
+    if vendor == "google":
+        raise QbraidError(f"API job retrieval not supported for {qbraid_device.id}")
+    devices_entrypoints = _get_entrypoints("qbraid.devices")
+    ep = vendor + ".job"
+    job_wrapper_class = devices_entrypoints[ep].load()
+    return job_wrapper_class(qbraid_job_id, vendor_job_id=vendor_job_id, device=qbraid_device, status=status_str)
 
 
 def _print_progress(start: float, count: int) -> None:
