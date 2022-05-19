@@ -2,7 +2,7 @@
 
 import os
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional  # pylint: disable=unused-import
 
 from .session import QbraidSession
 
@@ -33,6 +33,8 @@ def init_job(
 
     session = QbraidSession()
 
+    status = JobStatus.INITIALIZING
+
     init_data = {
         "qbraidJobId": "",
         "vendorJobId": vendor_job_id,
@@ -41,13 +43,13 @@ def init_job(
         "circuitDepth": circuit.depth,
         "shots": shots,
         "createdAt": datetime.utcnow(),
-        "status": JobStatus.INITIALIZING,
+        "status": status.raw(),
     }
     init_data["email"] = os.getenv("JUPYTERHUB_USER")
     return session.post("/init-job", data=init_data).json()
 
 
-def get_job_data(qbraid_job_id: str, status: Optional["qbraid.devices.JobStatus"]) -> dict:
+def get_job_data(qbraid_job_id: str, status: "Optional[qbraid.devices.JobStatus]" = None) -> dict:
     """Update a new MongoDB job document.
 
     Args:
@@ -61,7 +63,7 @@ def get_job_data(qbraid_job_id: str, status: Optional["qbraid.devices.JobStatus"
     session = QbraidSession()
     body = {"qbraidJobId": qbraid_job_id}
     if status:
-        body["status"] = status
+        body["status"] = status.raw()
     metadata = session.put("/update-job", data=body).json()[0]
     metadata.pop("_id", None)
     metadata.pop("user", None)

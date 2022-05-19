@@ -16,9 +16,9 @@ from .result import QiskitResultWrapper
 class QiskitJobWrapper(JobLikeWrapper):
     """Wrapper class for IBM Qiskit ``Job`` objects."""
 
-    def __init__(self, job_id, vendor_job_id=None, device=None, vendor_jlo=None):
+    def __init__(self, job_id: str, **kwargs):
         """Create a ``QiskitJobWrapper`` object."""
-        super().__init__(job_id, vendor_job_id, device, vendor_jlo)
+        super().__init__(job_id, **kwargs)
 
     def _get_vendor_jlo(self):
         """Return the job like object that is being wrapped."""

@@ -122,8 +122,8 @@ def verify_config(vendor: str) -> int:
         try:
             if url + email + max(refresh_token, id_token) == -3:
                 raise ConfigError("Invalid qbraidrc")
-        except TypeError:
-            raise ConfigError("Invalid qbraidrc")
+        except TypeError as err:
+            raise ConfigError("Invalid qbraidrc") from err
     else:
         file_dict = CONFIG_PATHS[vendor]
         for file in file_dict:

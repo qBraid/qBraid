@@ -3,31 +3,43 @@
 import logging
 from abc import ABC, abstractmethod
 from time import sleep, time
-from typing import TYPE_CHECKING, Any, Dict
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 from qbraid import device_wrapper
 from qbraid.api import get_job_data
 from qbraid.api.status_maps import STATUS_MAP
 
-from .enums import JOB_FINAL, JobStatus
+from .enums import JOB_FINAL, JobStatus, status_from_raw
 from .exceptions import JobError
 
 if TYPE_CHECKING:
     import qbraid
 
 
+def _set_init_status(status: Optional[Union[str, JobStatus]]) -> JobStatus:
+    if isinstance(status, JobStatus):
+        return status
+    if isinstance(status, str):
+        try:
+            return status_from_raw(status)
+        except ValueError:
+            return JobStatus.UNKNOWN
+    return JobStatus.UNKNOWN
+
+
 class JobLikeWrapper(ABC):
     """Abstract interface for job-like classes."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         job_id: str,
-        vendor_job_id: str,
-        device: "qbraid.devices.DeviceLikeWrapper",
-        vendor_jlo: Any,
+        vendor_job_id: Optional[str] = None,
+        device: "Optional[qbraid.devices.DeviceLikeWrapper]" = None,
+        vendor_jlo: Optional[Any] = None,
+        status: Optional[Union[str, JobStatus]] = None,
     ):
         self._cache_metadata = None
-        self._cache_status = None
+        self._cache_status = _set_init_status(status)
         self._job_id = job_id
         self._vendor_job_id = vendor_job_id
         self._device = device
@@ -43,8 +55,7 @@ class JobLikeWrapper(ABC):
     def vendor_job_id(self) -> str:
         """Returns the ID assigned by the device vendor"""
         if self._vendor_job_id is None:
-            self._cache_metadata = get_job_data(self.id, status=self.status())
-            self._cache_status = self._cache_metadata["status"]
+            self._cache_metadata = get_job_data(self.id)
             self._vendor_job_id = self._cache_metadata["vendorJobId"]
         return self._vendor_job_id
 
@@ -66,11 +77,10 @@ class JobLikeWrapper(ABC):
     def _get_vendor_jlo(self):
         """Return the job like object that is being wrapped."""
 
-    def status(self) -> JobStatus:
-        """Return the status of the job / task , among the values of ``JobStatus``."""
+    def _status(self) -> JobStatus:
         vendor_status = self._get_status()
         try:
-            current_status = self._status_map[vendor_status]
+            return self._status_map[vendor_status]
         except KeyError:
             logging.warning(
                 "Expected %s job status matching one of %s but instead got '%s'.",
@@ -78,7 +88,11 @@ class JobLikeWrapper(ABC):
                 str(list(self._status_map.keys())),
                 vendor_status,
             )
-            current_status = JobStatus.UNKNOWN
+            return JobStatus.UNKNOWN
+
+    def status(self) -> JobStatus:
+        """Return the status of the job / task , among the values of ``JobStatus``."""
+        current_status = self._status()
         if current_status != self._cache_status:
             _ = get_job_data(self.id, status=current_status)
         return current_status
@@ -90,10 +104,10 @@ class JobLikeWrapper(ABC):
 
     def metadata(self) -> Dict[str, Any]:
         """Return the metadata regarding the job."""
-        status = self.status()
+        status = self._status()
         if not self._cache_metadata or status != self._cache_status:
             self._cache_metadata = get_job_data(self.id, status=status)
-            self._cache_status = self._cache_metadata["status"]
+            self._cache_status = status_from_raw(self._cache_metadata["status"])
         return self._cache_metadata
 
     def wait_for_final_state(self, timeout=None, wait=5) -> None:

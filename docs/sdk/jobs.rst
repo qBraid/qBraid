@@ -51,9 +51,9 @@ information.
 
 .. code-block:: python
 
-    >>> from qbraid import retrieve_job
+    >>> from qbraid import job_wrapper
     >>> saved_job_id = 'aws_oqc_lucy-exampleuser-qjob-xxxxxxxxxxxxxxxxxxxx'
-    >>> qjob = retrieve_job(saved_job_id)
+    >>> qjob = job_wrapper(saved_job_id)
 
 Once the quantum job is complete, use the ``result`` method to gather the result:
 

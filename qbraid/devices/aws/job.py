@@ -2,7 +2,6 @@
 
 import logging
 from asyncio import Task
-from typing import TYPE_CHECKING, Optional
 
 from braket.aws import AwsQuantumTask
 
@@ -11,23 +10,14 @@ from qbraid.devices.job import JobLikeWrapper
 
 from .result import BraketResultWrapper
 
-if TYPE_CHECKING:
-    import qbraid
-
 
 class BraketQuantumTaskWrapper(JobLikeWrapper):
     """Wrapper class for Amazon Braket ``QuantumTask`` objects."""
 
-    def __init__(
-        self,
-        job_id: str,
-        vendor_job_id: Optional[str] = None,
-        device: "Optional[qbraid.devices.aws.BraketDeviceWrapper]" = None,
-        vendor_jlo: Optional[AwsQuantumTask] = None,
-    ):
+    def __init__(self, job_id: str, **kwargs):
         """Create a BraketQuantumTaskWrapper."""
 
-        super().__init__(job_id, vendor_job_id, device, vendor_jlo)
+        super().__init__(job_id, **kwargs)
 
     def _get_vendor_jlo(self):
         """Return the job like object that is being wrapped."""

@@ -9,11 +9,12 @@ from unittest.mock import Mock
 import pytest
 
 from qbraid._about import about
-from qbraid.top_level import get_devices
 from qbraid.exceptions import PackageValueError
 from qbraid.ipython_utils import running_in_jupyter
+from qbraid.top_level import get_devices
 
 # pylint: disable=missing-function-docstring,redefined-outer-name
+
 
 def test_get_devices():
     devices = get_devices(refresh=True)

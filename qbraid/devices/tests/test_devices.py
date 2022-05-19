@@ -18,7 +18,7 @@ from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.job import Job as QiskitJob
 
-from qbraid import device_wrapper, retrieve_job, QbraidError
+from qbraid import QbraidError, device_wrapper, job_wrapper
 from qbraid.api import QbraidSession
 from qbraid.devices import DeviceError, JobError, ResultWrapper
 from qbraid.devices.aws import (
@@ -62,7 +62,7 @@ inputs_qiskit_dw = device_wrapper_inputs("IBM")
 def test_device_wrapper_error():
     """Test raising circuit wrapper error"""
     with pytest.raises(QbraidError):
-        device_wrapper('Id123')
+        device_wrapper("Id123")
 
 
 @pytest.mark.parametrize("device_id", inputs_braket_dw)
@@ -206,6 +206,7 @@ def test_run_braket_device_wrapper_no_shots(device_id):
     assert isinstance(qbraid_job, BraketQuantumTaskWrapper)
     assert isinstance(vendor_job, BraketQuantumTask)
 
+
 def test_circuit_too_many_qubits():
     two_qubit_circuit = QiskitCircuit(2)
     two_qubit_circuit.h([0, 1])
@@ -224,18 +225,18 @@ def test_device_num_qubits():
 
 @pytest.mark.skip(reason="Skipping b/c takes long time to finish")
 @pytest.mark.parametrize("device_id", ["aws_sv_sim", "ibm_q_qasm_sim"])
-def test_retrieve_job_ibmq(device_id):
+def test_job_wrapper_ibmq(device_id):
     circuit = random_circuit("qiskit", num_qubits=1, depth=3, measure=True)
     qbraid_device = device_wrapper(device_id)
     qbraid_job = qbraid_device.run(circuit, shots=10)
     qbraid_job.wait_for_final_state()
-    retrieved_job = retrieve_job(qbraid_job.id)
+    retrieved_job = job_wrapper(qbraid_job.id)
     assert qbraid_job.status() == retrieved_job.status()
 
 
-def test_retrieve_job_error():
+def test_job_wrapper_error():
     with pytest.raises(QbraidError):
-        retrieve_job('google-test')
+        job_wrapper("google-test")
 
 
 # TODO 502 Server Error: Bad Gateway for url:
