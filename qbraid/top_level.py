@@ -197,7 +197,7 @@ def refresh_devices() -> None:
     clear_output(wait=True)
 
 
-def get_jobs(filters: Optional[dict] = None) -> Any:
+def get_jobs(filters: Optional[dict] = None) -> Any: # pylint: disable=too-many-statements
     """Displays a list of quantum jobs submitted by user, tabulated by job ID,
     the date/time it was submitted, and status. You can specify filters to
     narrow the search by supplying a dictionary containing the desired criteria.
@@ -244,20 +244,35 @@ def get_jobs(filters: Optional[dict] = None) -> Any:
     session = QbraidSession()
     jobs = session.post("/get-user-jobs", json=query).json()
 
+    max_results = 10
+    if "numResults" in query:
+        max_results = query["numResults"]
+        query.pop("numResults")
+
+    count = 0
+    num_jobs = len(jobs)
     job_data = []
     for document in jobs:
+        count += 1
+        progress = count / num_jobs
+        dots = ".." * count
+        spaces = "  " * (num_jobs - count)
+        percent = f"{int(progress*100)}%"
+        clear_output(wait=True)
+        print(f"{percent} |{dots}{spaces}|", flush=True)
         job_id = document["qbraidJobId"]
         timestamp = document["timeStamps"]["jobStarted"]
         status = document["status"]
         if not is_status_final(status):
             qbraid_job = job_wrapper(job_id)
-            status = qbraid_job.status()
+            qbraid_device = qbraid_job.device
+            if qbraid_device.requires_cred:
+                status_obj = qbraid_job.status()
+                status = status_obj.raw()
+            else:
+                status = "COMPLETED"
         job_data.append([job_id, timestamp, status])
-
-    num_jobs = len(job_data)
-    max_results = 10
-    if "numResults" in query:
-        max_results = query["numResults"]
+    clear_output(wait=True)
 
     if num_jobs == 0:  # Design choice whether to display anything here or not
         if len(query) == 0:
@@ -265,9 +280,9 @@ def get_jobs(filters: Optional[dict] = None) -> Any:
         else:
             msg = "No jobs found matching given criteria"
     elif num_jobs < max_results:
-        msg = f"Displaying {num_jobs}/{num_jobs} jobs found matching query"
+        msg = f"Displaying {num_jobs}/{num_jobs} jobs matching query"
     elif len(query) > 0:
-        msg = f"Displaying {num_jobs} most recent jobs found matching query"
+        msg = f"Displaying {num_jobs} most recent jobs matching query"
     else:
         msg = f"Displaying {num_jobs} most recent jobs"
 
@@ -284,7 +299,7 @@ def get_jobs(filters: Optional[dict] = None) -> Any:
         return None
 
     html = """<h3>Quantum Jobs</h3><table><tr>
-    <th style='text-align:left'>Job ID</th>
+    <th style='text-align:left'>qBraid ID</th>
     <th style='text-align:left'>Submitted</th>
     <th style='text-align:left'>Status</th></tr>
     """
