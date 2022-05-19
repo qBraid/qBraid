@@ -2,7 +2,7 @@
 
 import os
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional  # pylint: disable=unused-import
 
 from .session import QbraidSession
 
@@ -12,8 +12,8 @@ if TYPE_CHECKING:
 
 def init_job(
     vendor_job_id: str,
-    device: 'qbraid.devices.DeviceLikeWrapper',
-    circuit: 'qbraid.transpiler.QuantumProgramWrapper',
+    device: "qbraid.devices.DeviceLikeWrapper",
+    circuit: "qbraid.transpiler.QuantumProgramWrapper",
     shots: int,
 ) -> str:
     """Initialize data dictionary for new qbraid job and
@@ -43,13 +43,13 @@ def init_job(
         "circuitDepth": circuit.depth,
         "shots": shots,
         "createdAt": datetime.utcnow(),
-        "status": status.raw()
+        "status": status.raw(),
     }
     init_data["email"] = os.getenv("JUPYTERHUB_USER")
     return session.post("/init-job", data=init_data).json()
 
 
-def get_job_data(qbraid_job_id: str, status: 'Optional[qbraid.devices.JobStatus]') -> dict:
+def get_job_data(qbraid_job_id: str, status: "Optional[qbraid.devices.JobStatus]" = None) -> dict:
     """Update a new MongoDB job document.
 
     Args:

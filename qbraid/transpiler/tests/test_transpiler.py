@@ -13,7 +13,7 @@ from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit import QuantumRegister as QiskitQuantumRegister
 from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 
-from qbraid import circuit_wrapper, QbraidError
+from qbraid import QbraidError, circuit_wrapper
 from qbraid.interface import convert_to_contiguous, to_unitary
 from qbraid.interface.programs import bell_data, random_circuit, shared15_data
 from qbraid.transpiler.cirq_braket.tests._gate_archive import braket_gates
@@ -27,7 +27,8 @@ TEST_BELL, UNITARY_BELL = bell_data()
 def test_circuit_wrapper_error():
     """Test raising circuit wrapper error"""
     with pytest.raises(QbraidError):
-        circuit_wrapper('Not a circuit')
+        circuit_wrapper("Not a circuit")
+
 
 def shared_gates_test_data(package):
     """Returns data ``TestSharedGates``."""

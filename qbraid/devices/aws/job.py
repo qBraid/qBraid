@@ -2,7 +2,6 @@
 
 import logging
 from asyncio import Task
-from typing import TYPE_CHECKING, Optional
 
 from braket.aws import AwsQuantumTask
 
@@ -10,9 +9,6 @@ from qbraid.devices.enums import JOB_FINAL
 from qbraid.devices.job import JobLikeWrapper
 
 from .result import BraketResultWrapper
-
-if TYPE_CHECKING:
-    import qbraid
 
 
 class BraketQuantumTaskWrapper(JobLikeWrapper):

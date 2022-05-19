@@ -1,7 +1,6 @@
 """This module defines all :mod:`~qbraid.devices` enumerated types."""
-
 import enum
-from multiprocessing.sharedctypes import Value
+from typing import Union
 
 
 class DeviceType(enum.IntEnum):
@@ -62,15 +61,35 @@ class JobStatus(enum.IntEnum):
     UNKNOWN = 8
 
     def raw(self):
+        """Returns raw status string"""
         return str(self)[10:]
 
 
-def status_from_raw(status_str):
+JOB_FINAL = (JobStatus.COMPLETED, JobStatus.CANCELLED, JobStatus.FAILED)
+
+
+def status_from_raw(status_str: str) -> JobStatus:
+    """Returns JobStatus representation of input raw status string."""
     for e in JobStatus:
         status_enum = JobStatus(e.value)
-        if status_str == status_enum.raw():
+        if status_str == status_enum.raw() or status_str == str(status_enum):
             return status_enum
     raise ValueError(f"Raw status '{status_str}' not recognized.")
 
 
-JOB_FINAL = (JobStatus.COMPLETED, JobStatus.CANCELLED, JobStatus.FAILED)
+def is_status_final(status: Union[str, JobStatus]) -> bool:
+    """Returns True if job is in final state. False otherwise."""
+    if isinstance(status, str):
+        for job_status in JOB_FINAL:
+            if job_status.raw() == status:
+                return True
+    elif isinstance(status, JobStatus):
+        for job_status in JOB_FINAL:
+            if job_status == status:
+                return True
+    else:
+        raise TypeError(
+            f"Expected status of type 'str' or 'JobStatus' \
+            but instead got status of type {type(status)}."
+        )
+    return False

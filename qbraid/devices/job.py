@@ -30,13 +30,13 @@ def _set_init_status(status: Optional[Union[str, JobStatus]]) -> JobStatus:
 class JobLikeWrapper(ABC):
     """Abstract interface for job-like classes."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         job_id: str,
         vendor_job_id: Optional[str] = None,
-        device: 'Optional[qbraid.devices.DeviceLikeWrapper]' = None,
+        device: "Optional[qbraid.devices.DeviceLikeWrapper]" = None,
         vendor_jlo: Optional[Any] = None,
-        status: Optional[Union[str, JobStatus]] = None
+        status: Optional[Union[str, JobStatus]] = None,
     ):
         self._cache_metadata = None
         self._cache_status = _set_init_status(status)
@@ -89,7 +89,6 @@ class JobLikeWrapper(ABC):
                 vendor_status,
             )
             return JobStatus.UNKNOWN
-
 
     def status(self) -> JobStatus:
         """Return the status of the job / task , among the values of ``JobStatus``."""

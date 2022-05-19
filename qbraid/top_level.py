@@ -4,9 +4,10 @@ that directly or indirectly utilize entrypoints via ``pkg_resources``.
 
 """
 
+import os
 from datetime import datetime
 from time import time
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import pkg_resources
 from IPython.display import HTML, clear_output, display
@@ -53,8 +54,11 @@ def circuit_wrapper(program: QPROGRAM):
     """
     try:
         package = program.__module__.split(".")[0]
-    except AttributeError:
-        raise QbraidError(f"Error applying circuit wrapper to quantum program of type {type(program)}")
+    except AttributeError as err:
+        raise QbraidError(
+            f"Error applying circuit wrapper to quantum program \
+            of type {type(program)}"
+        ) from err
 
     ep = package.lower()
 
@@ -112,31 +116,6 @@ def device_wrapper(qbraid_device_id: str):
     return device_wrapper_class(**device_info)
 
 
-def retrieve_job(qbraid_job_id: str):
-    """Retrieve a job from qBraid API using job ID and return job wrapper object.
-
-    Args:
-        qbraid_job_id: qBraid Job ID
-
-    Returns:
-        :class:`~qbraid.devices.job.JobLikeWrapper`: A wrapped quantum job-like object
-
-    """
-    session = QbraidSession()
-    job_data = session.post("/get-user-jobs", json={"qbraidJobId": qbraid_job_id}).json()
-    status = job_data["status"]
-    vendor_job_id = job_data["vendorJobId"]
-    qbraid_device_id = job_data["qbraidDeviceId"]
-    qbraid_device = device_wrapper(qbraid_device_id)
-    vendor = qbraid_device.vendor.lower()
-    if vendor == "google":
-        raise QbraidError(f"API job retrieval not supported for {qbraid_device.id}")
-    devices_entrypoints = _get_entrypoints("qbraid.devices")
-    ep = vendor + ".job"
-    job_wrapper_class = devices_entrypoints[ep].load()
-    return job_wrapper_class(qbraid_job_id, vendor_job_id=vendor_job_id, device=qbraid_device)
-
-
 def job_wrapper(qbraid_job_id: str):
     """Retrieve a job from qBraid API using job ID and return job wrapper object.
 
@@ -148,15 +127,21 @@ def job_wrapper(qbraid_job_id: str):
 
     """
     session = QbraidSession()
-    job_data = session.post("/get-user-jobs", json={"qbraidJobId": qbraid_job_id}).json()
+    job_data = session.post(
+        "/get-user-jobs", json={"qbraidJobId": qbraid_job_id, "numResults": 1}
+    ).json()
 
     if isinstance(job_data, list):
         if len(job_data) == 0:
             raise QbraidError(f"{qbraid_job_id} is not a valid job ID.")
+        if len(job_data) > 1:
+            raise QbraidError(f"Job retrieval error: job ID '{qbraid_job_id}' is not unique.")
         job_data = job_data[0]
 
-    if job_data is None:
-        raise QbraidError(f"{qbraid_job_id} is not a valid job ID.")
+    if not isinstance(job_data, dict):
+        raise QbraidError(
+            f"Expected job data of type 'dict', but instead got job data of type {type(job_data)}."
+        )
 
     status_str = job_data["status"]
     vendor_job_id = job_data["vendorJobId"]
@@ -168,7 +153,9 @@ def job_wrapper(qbraid_job_id: str):
     devices_entrypoints = _get_entrypoints("qbraid.devices")
     ep = vendor + ".job"
     job_wrapper_class = devices_entrypoints[ep].load()
-    return job_wrapper_class(qbraid_job_id, vendor_job_id=vendor_job_id, device=qbraid_device, status=status_str)
+    return job_wrapper_class(
+        qbraid_job_id, vendor_job_id=vendor_job_id, device=qbraid_device, status=status_str
+    )
 
 
 def _print_progress(start: float, count: int) -> None:
@@ -208,6 +195,141 @@ def refresh_devices() -> None:
             session.put("/lab/update-device", data={"qbraid_id": qbraid_id, "status": status})
         count += 1
     clear_output(wait=True)
+
+
+def get_jobs(filters: Optional[dict] = None) -> Any:
+    """Displays a list of quantum jobs submitted by user, tabulated by job ID,
+    the date/time it was submitted, and status. You can specify filters to
+    narrow the search by supplying a dictionary containing the desired criteria.
+
+    **Request Syntax:**
+
+    .. code-block:: python
+
+        get_jobs(
+            filters={
+                'qbraidJobId': 'string',
+                'vendorJobId': 'string',
+                'qbraidDeviceId: 'string',
+                'circuitNumQubits': 123,
+                'circuitDepth': 123,
+                'shots': 123,
+                'status': 'string',
+                'numResults': 123
+            }
+        )
+
+    **Filters:**
+
+        * **qbraidJobId** (str): The qBraid ID of the quantum job
+        * **vendorJobId** (str): The Job ID assigned by the software provider to
+            whom the job was submitted
+        * **qbraidDeviceId** (str): The qBraid ID of the device used in the job
+        * **circuitNumQubits** (int): The number of qubits in the quantum circuit
+            used in the job
+        * **circuitDepth** (int): The depth the quantum circuit used in the job
+        * **shots** (int): Number of shots used in the job
+        * **status** (str): The status of the job
+        * **numResults** (int): Maximum number of results to display.
+            Defaults to 10 if not specified.
+
+    Args:
+        filters: A dictionary containing any filters to be applied.
+
+    """
+    from qbraid.devices import is_status_final  # pylint: disable=import-outside-toplevel
+
+    query = {} if filters is None else filters
+
+    session = QbraidSession()
+    jobs = session.post("/get-user-jobs", json=query).json()
+
+    job_data = []
+    for document in jobs:
+        job_id = document["qbraidJobId"]
+        timestamp = document["timeStamps"]["jobStarted"]
+        status = document["status"]
+        if not is_status_final(status):
+            qbraid_job = job_wrapper(job_id)
+            status = qbraid_job.status()
+        job_data.append([job_id, timestamp, status])
+
+    num_jobs = len(job_data)
+    max_results = 10
+    if "numResults" in query:
+        max_results = query["numResults"]
+
+    if num_jobs == 0:  # Design choice whether to display anything here or not
+        if len(query) == 0:
+            msg = f"No jobs found for user {os.getenv('JUPYTERHUB_USER')}"
+        else:
+            msg = "No jobs found matching given criteria"
+    elif num_jobs < max_results:
+        msg = f"Displaying {num_jobs}/{num_jobs} jobs found matching query"
+    elif len(query) > 0:
+        msg = f"Displaying {num_jobs} most recent jobs found matching query"
+    else:
+        msg = f"Displaying {num_jobs} most recent jobs"
+
+    # pylint: disable=consider-using-f-string
+    if not running_in_jupyter():
+        if num_jobs == 0:
+            print(msg)
+        else:
+            print("{:<50} {:<25} {:<15}".format("Job ID", "Submitted", "Status"))
+            for job_id, timestamp, status in job_data:
+                print("{:<50} {:<25} {:<25}".format(job_id, timestamp, status))
+            print()
+            print(msg)
+        return None
+
+    html = """<h3>Quantum Jobs</h3><table><tr>
+    <th style='text-align:left'>Job ID</th>
+    <th style='text-align:left'>Submitted</th>
+    <th style='text-align:left'>Status</th></tr>
+    """
+
+    # import numpy as np
+
+    # status_test = [
+    #     "INITIALIZING",
+    #     "QUEUED",
+    #     "VALIDATING",
+    #     "RUNNING",
+    #     "CANCELLING",
+    #     "CANCELLED",
+    #     "COMPLETED",
+    #     "FAILED",
+    #     "UNKNOWN"
+    # ]
+
+    for job_id, timestamp, status_str in job_data:
+
+        # index = np.random.randint(0, len(status_test))
+        # status_str = status_test[index]
+
+        if status_str == "COMPLETED":
+            color = "green"
+        elif status_str == "FAILED":
+            color = "red"
+        elif status_str in ["INITIALIZING", "QUEUED", "VALIDATING", "RUNNING"]:
+            color = "blue"
+        else:
+            color = "grey"
+
+        status = f"<span style='color:{color}'>{status_str}</span>"
+
+        html += f"""<tr>
+        <td style='text-align:left'>{job_id}</td>
+        <td style='text-align:left'>{timestamp}</td>
+        <td style='text-align:left'>{status}</td></tr>
+        """
+
+    html += f"<tr><td colspan='4'; style='text-align:right'>{msg}</td></tr>"
+
+    html += "</table>"
+
+    return display(HTML(html))
 
 
 def _get_device_data(query):
@@ -253,7 +375,7 @@ def _get_device_data(query):
     return device_data, int(lag_minutes)
 
 
-def get_devices(filters: Optional[dict] = None, refresh: bool = False) -> Union[None, dict]:
+def get_devices(filters: Optional[dict] = None, refresh: bool = False) -> Union[Any, dict]:
     """Displays a list of all supported devices matching given filters, tabulated by provider,
     name, and qBraid ID. Each device also has a status given by a solid green bubble or a hollow
     red bubble, indicating that the device is online or offline, respectively. You can narrow your
@@ -315,7 +437,7 @@ def get_devices(filters: Optional[dict] = None, refresh: bool = False) -> Union[
     .. __: https://docs.mongodb.com/manual/reference/operator/query/#query-selectors
 
     Args:
-        filters: a dictionary containing any filters to be applied.
+        filters: A dictionary containing any filters to be applied.
         refresh: If True, calls :func:`~qbraid.refresh_devices` before execution.
 
     """

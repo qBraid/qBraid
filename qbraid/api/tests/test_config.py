@@ -76,10 +76,11 @@ def test_verify_config():
 def test_api_error():
     with pytest.raises(RequestsApiError):
         session = QbraidSession()
-        session.request('POST', 'not a url')
+        session.request("POST", "not a url")
 
 
 set_config()
+
 
 @pytest.mark.parametrize("config", config_lst)
 def test_get_config(config):
