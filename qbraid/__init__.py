@@ -41,11 +41,6 @@ from ._about import about
 from ._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
 from ._version import __version__
 from .exceptions import PackageValueError, ProgramTypeError, QbraidError
-from .top_level import (
-    circuit_wrapper,
-    device_wrapper,
-    get_devices,
-    get_jobs,
-    job_wrapper,
-    refresh_devices,
-)
+from .get_devices import get_devices, refresh_devices
+from .get_jobs import get_jobs
+from .wrappers import circuit_wrapper, device_wrapper, job_wrapper
