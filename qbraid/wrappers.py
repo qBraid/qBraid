@@ -78,17 +78,14 @@ def device_wrapper(qbraid_device_id: str):
         qbraid_device_id = ibmq_least_busy_qpu()
 
     session = QbraidSession()
-    device_info = session.get(
+    device_lst = session.get(
         "/public/lab/get-devices", params={"qbraid_id": qbraid_device_id}
     ).json()
 
-    if isinstance(device_info, list):
-        if len(device_info) == 0:
-            raise QbraidError(f"{qbraid_device_id} is not a valid device ID.")
-        device_info = device_info[0]
-
-    if device_info is None:
+    if len(device_lst) == 0:
         raise QbraidError(f"{qbraid_device_id} is not a valid device ID.")
+
+    device_info = device_lst[0]
 
     devices_entrypoints = _get_entrypoints("qbraid.devices")
 
@@ -113,21 +110,14 @@ def job_wrapper(qbraid_job_id: str):
 
     """
     session = QbraidSession()
-    job_data = session.post(
+    job_lst = session.post(
         "/get-user-jobs", json={"qbraidJobId": qbraid_job_id, "numResults": 1}
     ).json()
 
-    if isinstance(job_data, list):
-        if len(job_data) == 0:
-            raise QbraidError(f"{qbraid_job_id} is not a valid job ID.")
-        if len(job_data) > 1:
-            raise QbraidError(f"Job retrieval error: job ID '{qbraid_job_id}' is not unique.")
-        job_data = job_data[0]
+    if len(job_lst) == 0:
+        raise QbraidError(f"{qbraid_job_id} is not a valid job ID.")
 
-    if not isinstance(job_data, dict):
-        raise QbraidError(
-            f"Expected job data of type 'dict', but instead got job data of type {type(job_data)}."
-        )
+    job_data = job_lst[0]
 
     status_str = job_data["status"]
     vendor_job_id = job_data["vendorJobId"]

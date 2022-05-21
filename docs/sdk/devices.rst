@@ -74,13 +74,22 @@ Device status labels can be manually refreshed by setting ``refresh=True``:
     get_devices(refresh=True)
 
 
-If run in the Python Shell, device data is returned in dictionary format:
+If run in the Python Shell, device data is returned in a similar format.
 
 .. code-block:: python
 
     >>> from qbraid import get_devices
-    >>> get_devices(filters={"provider": "OQC"})
-    {'OQC': {'aws_oqc_lucy': {'name': 'Lucy', 'status': 'ONLINE'}}}
+    >>> get_devices(filters={"vendor": "AWS", "type": "QPU"}, refresh=True)
+    Device status updated 0 minutes ago
+
+    Device ID                           Status
+    ---------                           ------
+    aws_dwave_advantage_system4         ONLINE
+    aws_dwave_2000Q_6                   ONLINE
+    aws_ionq                            ONLINE
+    aws_oqc_lucy                        ONLINE
+    aws_rigetti_aspen_11                OFFLINE
+    aws_rigetti_aspen_m_1               ONLINE
 
 
 Each supported device is associated with its own qBraid ID. The next section will cover

@@ -45,9 +45,29 @@ unique job ID.
     >>> qjob.id
     aws_oqc_lucy-exampleuser-qjob-xxxxxxxxxxxxxxxxxxxx
 
-This job ID can be used to reinstantiate a qBraid ``JobLikeWrapper``
-object at a later time or in a seperate program, with no loss of
-information.
+
+You can use the ``get_jobs`` function to a return a list of your previously
+submitted quantum jobs, along with the status of each. A number of filtering options
+are available to help narrow your search. Query syntax is equivalent to that
+of the ``get_devices`` `unified device search <./devices.html#unified-device-search>`_.
+By default, ``get_jobs`` returns the 10 most recently submitted jobs matching your search.
+
+
+.. code-block:: python
+
+    >>> from qbraid import get_jobs
+    >>> get_jobs(filters={"qbraidDeviceId": "aws_oqc_lucy"})
+    Displaying 10 most recent jobs matching query:
+
+    Job ID                                                  Submitted                 Status
+    ------                                                  ---------                 ------
+    aws_oqc_lucy-exampleuser-qjob-xxxxxxxxxxxxxxxxxxxx      2023-05-21T21:13:48.220Z  RUNNING
+    aws_oqc_lucy-exampleuser-qjob-yyyyyyyyyyyyyyyyyyyy      2023-04-15T11:09:56.783Z  COMPLETED
+    ...
+
+
+This job ID can be used to reinstantiate a qBraid ``JobLikeWrapper`` object at any
+time, and even in a seperate program, with no loss of information.
 
 .. code-block:: python
 

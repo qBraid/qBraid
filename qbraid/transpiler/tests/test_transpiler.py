@@ -189,7 +189,7 @@ def cirq_gate_test_circuit(test_gate, nqubits):
 
     circuit = CirqCircuit()
     q2, q1, q0 = [cirq.LineQubit(i) for i in range(3)]
-    mapping = {q2: 0, q1: 1, q0: 2}
+    # mapping = {q2: 0, q1: 1, q0: 2}
 
     if nqubits == 1:
         input_qubits = [q0]
