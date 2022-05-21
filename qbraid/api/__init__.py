@@ -27,7 +27,7 @@
    .. rubric:: Methods
 
    .. autosummary::
-  
+
       ~QbraidSession.__init__
       ~QbraidSession.close
       ~QbraidSession.delete

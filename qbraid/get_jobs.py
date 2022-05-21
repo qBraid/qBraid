@@ -19,7 +19,7 @@ def _display_jobs_basic(data, msg):
     if len(data) == 0:
         print(msg)
     else:
-        print(f"\n{msg}:\n")
+        print(f"{msg}:\n")
         print("{:<55} {:<25} {:<15}".format("Job ID", "Submitted", "Status"))
         print("{:<55} {:<25} {:<15}".format("-" * 6, "-" * 9, "-" * 6))
         for job_id, timestamp, status in data:
@@ -30,7 +30,7 @@ def _display_jobs_jupyter(data, msg):
 
     clear_output(wait=True)
 
-    html = """<h3>Quantum Jobs1</h3><table><tr>
+    html = """<h3>Quantum Jobs</h3><table><tr>
     <th style='text-align:left'>qBraid ID</th>
     <th style='text-align:left'>Submitted</th>
     <th style='text-align:left'>Status</th></tr>

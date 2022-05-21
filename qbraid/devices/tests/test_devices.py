@@ -1,6 +1,7 @@
 """
 Unit tests for the qbraid device layer.
 """
+from typing import Any
 
 import cirq
 import numpy as np
@@ -59,8 +60,32 @@ inputs_cirq_dw = ["google_cirq_sparse_sim", "google_cirq_dm_sim"]
 inputs_qiskit_dw = device_wrapper_inputs("IBM")
 
 
-def test_device_wrapper_error():
-    """Test raising circuit wrapper error"""
+def test_job_wrapper_vendor_error():
+    """Test raising job wrapper error due to unsupported job vendor"""
+    device = device_wrapper("google_cirq_dm_sim")
+    circuit = random_circuit("cirq")
+    job = device.run(circuit)
+    with pytest.raises(QbraidError):
+        job_wrapper(job.id)
+
+
+def test_job_wrapper_type():
+    """Test that job wrapper creates object of original job type"""
+    device = device_wrapper("aws_dm_sim")
+    circuit = random_circuit("qiskit")
+    job_0 = device.run(circuit, shots=10)
+    job_1 = job_wrapper(job_0.id)
+    assert type(job_0) == type(job_1)
+
+
+def test_job_wrapper_id_error():
+    """Test raising job wrapper error due to invalid job ID."""
+    with pytest.raises(QbraidError):
+        job_wrapper("Id123")
+
+
+def test_device_wrapper_id_error():
+    """Test raising device wrapper error due to invalid device ID."""
     with pytest.raises(QbraidError):
         device_wrapper("Id123")
 
@@ -83,6 +108,7 @@ def test_init_braket_dwave_sampler(device_id):
     qbraid_device = device_wrapper(device_id)
     vendor_sampler = qbraid_device.get_sampler()
     # assert isinstance(vendor_sampler, EmbeddingComposite)
+    assert isinstance(vendor_sampler, Any)
 
 
 @pytest.mark.parametrize("device_id", inputs_cirq_dw)
