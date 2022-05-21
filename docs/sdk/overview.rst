@@ -103,7 +103,7 @@ Compare the results:
 .. code-block:: python
 
    >>> print("{:<20} {:<20}".format('Device','Counts'))
-   >>> for i, job in enumerate(jobs):
+   ... for i, job in enumerate(jobs):
    ... result = job.result()
    ... counts = result.measurement_counts()
    ... print("{:<20} {:<20}".format(qbraid_ids[i],str(counts)))
