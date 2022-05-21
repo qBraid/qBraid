@@ -41,14 +41,21 @@ get started using the SDK.
 Usage
 ------
 
-Construct a quantum program:
+Construct a quantum program of any supported program type:
 
 .. code-block:: python
-
+   
+   >>> from qbraid import SUPPORTED_PROGRAM_TYPES
    >>> from qbraid.interface import random_circuit
+   >>> SUPPORTED_PROGRAM_TYPES
+   {'cirq': 'Circuit',
+    'pyquil': 'Program',
+    'qiskit': 'QuantumCircuit',
+    'braket': 'Circuit',
+    'pennylane': 'QuantumTape'}
    >>> circuit = random_circuit("qiskit", num_qubits=2, measure=True)
 
-Search for quantum backend(s) on which to your execute program:
+Search for quantum backend(s) on which to execute your program:
 
 .. code-block:: python
 
