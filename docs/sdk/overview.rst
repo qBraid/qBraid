@@ -53,7 +53,7 @@ Construct a quantum program of any supported program type:
     'qiskit': 'QuantumCircuit',
     'braket': 'Circuit',
     'pennylane': 'QuantumTape'}
-   >>> circuit = random_circuit("qiskit", num_qubits=2, measure=True)
+   >>> circuit = random_circuit("qiskit", num_qubits=1, measure=True)
 
 Search for quantum backend(s) on which to execute your program:
 
