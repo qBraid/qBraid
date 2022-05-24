@@ -2,7 +2,7 @@
 
 import os
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional  # pylint: disable=unused-import
+from typing import TYPE_CHECKING  # pylint: disable=unused-import
 
 from .session import QbraidSession
 
@@ -10,11 +10,22 @@ if TYPE_CHECKING:
     import qbraid
 
 
+def _braket_proxy():
+    home = os.getenv("HOME")
+    proxy = f"{home}/.qbraid/environments/qbraid_sdk_9j9sjy/qbraid/botocore/proxy"
+    if os.path.isfile(proxy):
+        with open(proxy) as f:
+            firstline = f.readline().rstrip()
+            if firstline == 'active = true':
+                return True
+    return False
+
+
 def init_job(
     vendor_job_id: str,
     device: "qbraid.devices.DeviceLikeWrapper",
     circuit: "qbraid.transpiler.QuantumProgramWrapper",
-    shots: int,
+    shots: int
 ) -> str:
     """Initialize data dictionary for new qbraid job and
     create associated MongoDB job document.
@@ -29,11 +40,11 @@ def init_job(
         The qbraid job ID associated with this job
 
     """
-    from qbraid.devices.enums import JobStatus  # pylint: disable=import-outside-toplevel
-
     session = QbraidSession()
 
-    status = JobStatus.INITIALIZING
+    if device.vendor == 'AWS' and _braket_proxy():
+        job = session.post("/get-user-jobs", json={"vendorJobId": vendor_job_id}).json()[0]
+        return job["qbraidJobId"]
 
     init_data = {
         "qbraidJobId": "",
@@ -43,13 +54,14 @@ def init_job(
         "circuitDepth": circuit.depth,
         "shots": shots,
         "createdAt": datetime.utcnow(),
-        "status": status.raw(),
+        "status": "TBD",
+        "qbraidStatus": "INITIALIZING"
     }
     init_data["email"] = os.getenv("JUPYTERHUB_USER")
     return session.post("/init-job", data=init_data).json()
 
 
-def get_job_data(qbraid_job_id: str, status: "Optional[qbraid.devices.JobStatus]" = None) -> dict:
+def get_job_data(qbraid_job_id: str, update: dict = None) -> dict:
     """Update a new MongoDB job document.
 
     Args:
@@ -62,8 +74,9 @@ def get_job_data(qbraid_job_id: str, status: "Optional[qbraid.devices.JobStatus]
     """
     session = QbraidSession()
     body = {"qbraidJobId": qbraid_job_id}
-    if status:
-        body["status"] = status.raw()
+    if update is not None and "status" in update and "qbraidStatus" in update:
+        body["status"] = update["status"]
+        body["qbraidStatus"] = update["qbraidStatus"]
     metadata = session.put("/update-job", data=body).json()[0]
     metadata.pop("_id", None)
     metadata.pop("user", None)
