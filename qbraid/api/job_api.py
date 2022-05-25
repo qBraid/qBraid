@@ -1,4 +1,4 @@
-"""Module for interacting with qbraid job API"""
+"""Module for interacting with qBraid Jobs API"""
 
 import os
 from datetime import datetime
@@ -11,12 +11,14 @@ if TYPE_CHECKING:
 
 
 def _braket_proxy():
+    """Returns True if running qBraid Lab and the Amazon Braket
+    Botocore proxy is enabled. Otherwise, returns False."""
     home = os.getenv("HOME")
     proxy = f"{home}/.qbraid/environments/qbraid_sdk_9j9sjy/qbraid/botocore/proxy"
     if os.path.isfile(proxy):
-        with open(proxy) as f:
+        with open(proxy) as f:  # pylint: disable=unspecified-encoding
             firstline = f.readline().rstrip()
-            if firstline == 'active = true':
+            if firstline == "active = true":
                 return True
     return False
 
@@ -25,7 +27,7 @@ def init_job(
     vendor_job_id: str,
     device: "qbraid.devices.DeviceLikeWrapper",
     circuit: "qbraid.transpiler.QuantumProgramWrapper",
-    shots: int
+    shots: int,
 ) -> str:
     """Initialize data dictionary for new qbraid job and
     create associated MongoDB job document.
@@ -42,10 +44,19 @@ def init_job(
     """
     session = QbraidSession()
 
-    if device.vendor == 'AWS' and _braket_proxy():
+    # If running in qBraid Lab and the Amazon Braket Botocore proxy is
+    # enabled, a MongoDB document has already been created for this job. So,
+    # instead of creating a new job document, we instead query the user jobs
+    # for the ``vendorJobId`` (for Amazon Braket this is the QuantumTask arn),
+    # and return the correspondong ``qbraidJobId``.
+    if device.vendor == "AWS" and _braket_proxy():
         job = session.post("/get-user-jobs", json={"vendorJobId": vendor_job_id}).json()[0]
         return job["qbraidJobId"]
 
+    # Create a new MongoDB document for the user job.  The qBraid API creates
+    # a unique Job ID, which is collected in the response. We use dummy variables
+    # for each of the status fields, which will be updated via the ``get_job_data``
+    # function upon instantiation of the ``JobLikeWrapper`` object.
     init_data = {
         "qbraidJobId": "",
         "vendorJobId": vendor_job_id,
@@ -55,7 +66,7 @@ def init_job(
         "shots": shots,
         "createdAt": datetime.utcnow(),
         "status": "TBD",
-        "qbraidStatus": "INITIALIZING"
+        "qbraidStatus": "INITIALIZING",
     }
     init_data["email"] = os.getenv("JUPYTERHUB_USER")
     return session.post("/init-job", data=init_data).json()

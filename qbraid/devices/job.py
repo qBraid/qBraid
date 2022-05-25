@@ -3,7 +3,7 @@
 import logging
 from abc import ABC, abstractmethod
 from time import sleep, time
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 from qbraid import device_wrapper
 from qbraid.api import get_job_data
