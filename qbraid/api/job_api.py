@@ -1,13 +1,26 @@
-"""Module for interacting with qbraid job API"""
+"""Module for interacting with qBraid Jobs API"""
 
 import os
 from datetime import datetime
-from typing import TYPE_CHECKING, Optional  # pylint: disable=unused-import
+from typing import TYPE_CHECKING  # pylint: disable=unused-import
 
 from .session import QbraidSession
 
 if TYPE_CHECKING:
     import qbraid
+
+
+def _braket_proxy():
+    """Returns True if running qBraid Lab and the Amazon Braket
+    Botocore proxy is enabled. Otherwise, returns False."""
+    home = os.getenv("HOME")
+    proxy = f"{home}/.qbraid/environments/qbraid_sdk_9j9sjy/qbraid/botocore/proxy"
+    if os.path.isfile(proxy):
+        with open(proxy) as f:  # pylint: disable=unspecified-encoding
+            firstline = f.readline().rstrip()
+            if firstline == "active = true":
+                return True
+    return False
 
 
 def init_job(
@@ -29,12 +42,21 @@ def init_job(
         The qbraid job ID associated with this job
 
     """
-    from qbraid.devices.enums import JobStatus  # pylint: disable=import-outside-toplevel
-
     session = QbraidSession()
 
-    status = JobStatus.INITIALIZING
+    # If running in qBraid Lab and the Amazon Braket Botocore proxy is
+    # enabled, a MongoDB document has already been created for this job. So,
+    # instead of creating a new job document, we instead query the user jobs
+    # for the ``vendorJobId`` (for Amazon Braket this is the QuantumTask arn),
+    # and return the correspondong ``qbraidJobId``.
+    if device.vendor == "AWS" and _braket_proxy():
+        job = session.post("/get-user-jobs", json={"vendorJobId": vendor_job_id}).json()[0]
+        return job["qbraidJobId"]
 
+    # Create a new MongoDB document for the user job.  The qBraid API creates
+    # a unique Job ID, which is collected in the response. We use dummy variables
+    # for each of the status fields, which will be updated via the ``get_job_data``
+    # function upon instantiation of the ``JobLikeWrapper`` object.
     init_data = {
         "qbraidJobId": "",
         "vendorJobId": vendor_job_id,
@@ -43,13 +65,14 @@ def init_job(
         "circuitDepth": circuit.depth,
         "shots": shots,
         "createdAt": datetime.utcnow(),
-        "status": status.raw(),
+        "status": "TBD",
+        "qbraidStatus": "INITIALIZING",
     }
     init_data["email"] = os.getenv("JUPYTERHUB_USER")
     return session.post("/init-job", data=init_data).json()
 
 
-def get_job_data(qbraid_job_id: str, status: "Optional[qbraid.devices.JobStatus]" = None) -> dict:
+def get_job_data(qbraid_job_id: str, update: dict = None) -> dict:
     """Update a new MongoDB job document.
 
     Args:
@@ -62,8 +85,9 @@ def get_job_data(qbraid_job_id: str, status: "Optional[qbraid.devices.JobStatus]
     """
     session = QbraidSession()
     body = {"qbraidJobId": qbraid_job_id}
-    if status:
-        body["status"] = status.raw()
+    if update is not None and "status" in update and "qbraidStatus" in update:
+        body["status"] = update["status"]
+        body["qbraidStatus"] = update["qbraidStatus"]
     metadata = session.put("/update-job", data=body).json()[0]
     metadata.pop("_id", None)
     metadata.pop("user", None)

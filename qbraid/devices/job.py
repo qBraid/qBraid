@@ -3,7 +3,7 @@
 import logging
 from abc import ABC, abstractmethod
 from time import sleep, time
-from typing import TYPE_CHECKING, Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 from qbraid import device_wrapper
 from qbraid.api import get_job_data
@@ -77,10 +77,10 @@ class JobLikeWrapper(ABC):
     def _get_vendor_jlo(self):
         """Return the job like object that is being wrapped."""
 
-    def _status(self) -> JobStatus:
+    def _status(self) -> Tuple[JobStatus, str]:
         vendor_status = self._get_status()
         try:
-            return self._status_map[vendor_status]
+            return self._status_map[vendor_status], vendor_status
         except KeyError:
             logging.warning(
                 "Expected %s job status matching one of %s but instead got '%s'.",
@@ -88,26 +88,28 @@ class JobLikeWrapper(ABC):
                 str(list(self._status_map.keys())),
                 vendor_status,
             )
-            return JobStatus.UNKNOWN
+            return JobStatus.UNKNOWN, vendor_status
 
     def status(self) -> JobStatus:
         """Return the status of the job / task , among the values of ``JobStatus``."""
-        current_status = self._status()
-        if current_status != self._cache_status:
-            _ = get_job_data(self.id, status=current_status)
-        return current_status
+        qbraid_status, vendor_status = self._status()
+        if qbraid_status != self._cache_status:
+            update = {"status": vendor_status, "qbraidStatus": qbraid_status.raw()}
+            _ = get_job_data(self.id, update=update)
+        return qbraid_status
 
     @abstractmethod
     def _get_status(self) -> str:
-        """Status method helper function. Uses vendor_jlo to get status of the job / task, casts
+        """Status method helper function. Uses ``vendor_jlo`` to get status of the job / task, casts
         as string if necessary, returns result."""
 
     def metadata(self) -> Dict[str, Any]:
         """Return the metadata regarding the job."""
-        status = self._status()
-        if not self._cache_metadata or status != self._cache_status:
-            self._cache_metadata = get_job_data(self.id, status=status)
-            self._cache_status = status_from_raw(self._cache_metadata["status"])
+        qbraid_status, vendor_status = self._status()
+        if not self._cache_metadata or qbraid_status != self._cache_status:
+            update = {"status": vendor_status, "qbraidStatus": qbraid_status.raw()}
+            self._cache_metadata = get_job_data(self.id, update=update)
+            self._cache_status = status_from_raw(self._cache_metadata["qbraidStatus"])
         return self._cache_metadata
 
     def wait_for_final_state(self, timeout=None, wait=5) -> None:
