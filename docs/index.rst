@@ -74,7 +74,7 @@ Documentation
    </div>
    
    <div class="column">
-      <a href="cli/overview.html">
+      <a href="cli/qbraid.html">
          <div class="card">
             <h3>CLI</h3>
             <img src="_static/cards/terminal.png" alt="terminal" style="width:60px;height:60px;">
@@ -134,8 +134,10 @@ Documentation
    :caption: CLI Reference
    :hidden:
 
-   cli/overview
-   cli/commands
+   cli/qbraid
+   cli/envs
+   cli/jobs
+   cli/kernels
 
 
 .. Indices and Tables
