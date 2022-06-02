@@ -31,9 +31,7 @@ IBMQ_CONFIGS = [
     ("token", "IBMQ API Token", None, True, "ibmq", qiskitrc_path),
     ("url", "", ibmq_account_url, False, "ibmq", qiskitrc_path),
     ("verify", "", "True", False, "ibmq", qiskitrc_path),
-    ("group", "Group name (optional)", "open", False, "IBM", qbraid_config_path),
-    ("project", "Project name (optional)", "main", False, "IBM", qbraid_config_path),
-    ("verify", "", "True", False, "IBM", qbraid_config_path),
+    ("default_provider", "IBMQ hub/group/name", "ibm-q/open/main", False, "ibmq", qiskitrc_path),
 ]
 
 QBRAID_CONFIGS = [

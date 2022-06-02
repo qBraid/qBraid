@@ -29,18 +29,13 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         if self._obj_ref == "IBMQ":
             if not IBMQ.active_account():
                 IBMQ.load_account()
-                # token = config_user.get_config("token", "ibmq", filepath=qiskitrc_path)
-                # base_url = config_user.get_config("url", "default")
-                # api_url = f"{base_url}/ibm-routes?route="
-                # IBMQ.enable_account(token, api_url)
-            # provider = IBMQ.get_provider(hub="ibm-q", group="open", project="main")
-            group = get_config("group", "IBM")
-            project = get_config("project", "IBM")
+            provider = get_config("default_provider", "ibmq", filepath=qiskitrc_path)
+            hub, group, project = provider.split("/")
             try:
-                provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
+                provider = IBMQ.get_provider(hub=hub, group=group, project=project)
             except IBMQProviderError:
                 IBMQ.load_account()
-                provider = IBMQ.get_provider(hub="ibm-q", group=group, project=project)
+                provider = IBMQ.get_provider(hub=hub, group=group, project=project)
             return provider.get_backend(self._obj_arg)
         if self._obj_ref == "Aer":
             return Aer.get_backend(self._obj_arg)

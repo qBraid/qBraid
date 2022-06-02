@@ -3,8 +3,8 @@ import warnings
 
 import urllib3
 
-from .api.session import QbraidSession
 from ._version import __version__
+from .api.session import QbraidSession
 
 
 def _check_version():
