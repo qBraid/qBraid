@@ -14,7 +14,10 @@ def _braket_proxy():
     """Returns True if running qBraid Lab and the Amazon Braket
     Botocore proxy is enabled. Otherwise, returns False."""
     home = os.getenv("HOME")
-    proxy = f"{home}/.qbraid/environments/qbraid_sdk_9j9sjy/qbraid/botocore/proxy"
+    lab_envs = f"{home}/.qbraid/environments"
+    lab_slug = "qbraid_sdk_9j9sjy"
+    package = "botocore"
+    proxy = f"{lab_envs}/{lab_slug}/qbraid/{package}/proxy"
     if os.path.isfile(proxy):
         with open(proxy) as f:  # pylint: disable=unspecified-encoding
             firstline = f.readline().rstrip()

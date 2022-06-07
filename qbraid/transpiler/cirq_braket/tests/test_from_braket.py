@@ -14,8 +14,7 @@ from qbraid.transpiler.cirq_braket.convert_from_braket import from_braket
 
 def test_from_braket_bell_circuit():
     """Test converting bell circuit"""
-    # pylint: disable-next=no-member
-    braket_circuit = BKCircuit().h(0).cnot(0, 1)
+    braket_circuit = BKCircuit().h(0).cnot(0, 1)  # pylint: disable=no-member
     cirq_circuit = from_braket(braket_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
@@ -52,8 +51,7 @@ def test_from_braket_parameterized_single_qubit_gates(qubit_index):
         braket_gates.Rz,
         braket_gates.PhaseShift,
     ]
-    # pylint: disable-next=no-member
-    angles = np.random.RandomState(11).random(len(pgates))
+    angles = np.random.RandomState(11).random(len(pgates))  # pylint: disable=no-member
     instructions = [Instruction(rot(a), target=qubit_index) for rot, a in zip(pgates, angles)]
     for instr in instructions:
         braket_circuit.add_instruction(instr)
@@ -92,8 +90,7 @@ def test_from_braket_parameterized_two_qubit_gates():
         braket_gates.ZZ,
         braket_gates.XY,
     ]
-    # pylint: disable-next=no-member
-    angles = np.random.RandomState(2).random(len(pgates))
+    angles = np.random.RandomState(2).random(len(pgates))  # pylint: disable=no-member
     instructions = [Instruction(rot(a), target=[0, 1]) for rot, a in zip(pgates, angles)]
     for instr in instructions:
         braket_circuit.add_instruction(instr)

@@ -7,6 +7,7 @@ from requests import RequestException, Response, Session
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
+from .config_specs import qbraid_api_url
 from .config_user import get_config
 from .exceptions import RequestsApiError
 
@@ -108,8 +109,7 @@ class QbraidSession(Session):
 
     """
 
-    # pylint: disable-next=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         base_url: Optional[str] = None,
         user_email: Optional[str] = None,
@@ -143,7 +143,7 @@ class QbraidSession(Session):
     def base_url(self, value: Optional[str]) -> None:
         """Set the qbraid api url."""
         url = value if value else _get_config("url")
-        self._base_url = url if url else ""
+        self._base_url = url if url else qbraid_api_url
 
     @property
     def user_email(self) -> Optional[str]:

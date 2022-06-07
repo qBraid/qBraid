@@ -5,5 +5,4 @@ prune qbraid/algorithms/
 prune qbraid/applications/
 prune qbraid/circuits/
 prune qbraid/operators/
-prune qbraid/scripts/
 prune docs/build/

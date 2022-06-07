@@ -31,7 +31,6 @@ class U2Gate(Gate):
 
         super()
 
-    # pylint: disable-next=no-self-use
     def _num_qubits_(self) -> int:
         return 1
 
@@ -75,7 +74,6 @@ class U3Gate(Gate):
 
         super()
 
-    # pylint: disable-next=no-self-use
     def _num_qubits_(self) -> int:
         return 1
 
@@ -118,7 +116,6 @@ class RZZGate(Gate):
 
         super()
 
-    # pylint: disable-next=no-self-use
     def _num_qubits_(self) -> int:
         return 2
 

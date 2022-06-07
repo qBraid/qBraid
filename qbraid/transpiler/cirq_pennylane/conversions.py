@@ -54,7 +54,7 @@ def from_pennylane(tape: QuantumTape) -> Circuit:
     for index, wire in enumerate(wires):
         if wire != index:
             raise UnsupportedQuantumTapeError(
-                "The wire labels of the tape must contiguously pack 0 " "to n-1, for n wires."
+                "The wire labels of the tape must contiguously pack 0 to n-1, for n wires."
             )
 
     if len(tape.measurements) > 0:

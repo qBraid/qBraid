@@ -1,6 +1,6 @@
 """Module for Cirq device-like object wrappers."""
 
-# pylint: disable=unused-argument,unused-import,no-self-use
+# pylint: disable=unused-argument,unused-import
 
 from qbraid.devices.device import DeviceLikeWrapper
 

@@ -24,8 +24,7 @@ omit = [
   "**/qbraid/algorithms/*",
   "**/qbraid/applications/*",
   "**/qbraid/circuits/*",
-  "**/qbraid/operators/*",
-  "**/qbraid/scripts/*"
+  "**/qbraid/operators/*"
 ]
 
 [tool.coverage.paths]
