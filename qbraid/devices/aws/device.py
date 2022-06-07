@@ -50,8 +50,9 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             return DeviceStatus.OFFLINE
         return DeviceStatus.ONLINE
 
-    # pylint: disable-next=unused-argument,no-self-use
-    def get_sampler(self, braket_default: Optional[bool] = False, embedding: Optional[bool] = True):
+    def get_sampler(  # pylint: disable=unused-argument
+        self, braket_default: Optional[bool] = False, embedding: Optional[bool] = True
+    ):
         """Returns BraketSampler created from device. Only compatible with D-Wave devices.
 
         Args:

@@ -108,8 +108,7 @@ class QbraidSession(Session):
 
     """
 
-    # pylint: disable-next=too-many-arguments
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         base_url: Optional[str] = None,
         user_email: Optional[str] = None,

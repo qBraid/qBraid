@@ -1,6 +1,6 @@
 """JobLikeWrapper Class"""
 
-# pylint: disable=invalid-name,no-self-use
+# pylint: disable=invalid-name
 
 from abc import ABC, abstractmethod
 from typing import Any, Dict

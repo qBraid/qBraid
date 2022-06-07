@@ -1,7 +1,6 @@
 """Module to retrieve the least busy IBMQ QPU"""
 
 import os
-from typing import Optional
 
 from qiskit import IBMQ
 from qiskit.providers.ibmq import IBMQProviderError, least_busy
@@ -24,6 +23,6 @@ def ibmq_least_busy_qpu() -> str:
         provider = IBMQ.get_provider(hub=hub, group=group, project=project)
     backends = provider.backends(filters=lambda x: not x.configuration().simulator)
     backend_obj = least_busy(backends)
-    ibm_id = backend_obj.__str__()
+    ibm_id = str(backend_obj)
     qbraid_device_id = ibm_id[:3] + "_" + ibm_id[3:]
     return qbraid_device_id

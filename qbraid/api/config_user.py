@@ -42,8 +42,7 @@ def compat_input(prompt: str, is_secret: bool) -> str:
     return raw_input()
 
 
-# pylint: disable-next=too-many-arguments
-def set_config(
+def set_config(  # pylint: disable=too-many-arguments
     config_name: str,
     prompt_text: str,
     default_val: Optional[str],
@@ -74,20 +73,20 @@ def set_config(
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
     config = configparser.ConfigParser()
     config.read(filepath)
-    current_value = None
-    if section in config.sections():
-        if config_name in config[section]:
-            current_value = config[section][config_name]
-            if current_value not in ["", "None", None] and update is False:
-                return 0
-    else:
+    current_val = None
+    if section not in config.sections():
         config.add_section(section)
-    if len(prompt_text) == 0:
-        new_value = default_val
     else:
-        display_value = default_val if current_value is None else current_value
-        new_value = get_value(display_value, is_secret, prompt_text)
-    config_val = default_val if new_value not in ["", "None", None] else new_value
+        if config_name in config[section]:
+            current_val = config[section][config_name]
+            if current_val not in ["", "None", None] and update is False:
+                return 0
+    if len(prompt_text) == 0:
+        config_val = default_val
+    else:
+        display_val = current_val if current_val not in ["", "None", None] else default_val
+        new_val = get_value(display_val, is_secret, prompt_text)
+        config_val = new_val if new_val not in ["", "None", None] else display_val
     config.set(section, config_name, str(config_val))
     try:
         with open(filepath, "w", encoding="utf-8") as cfgfile:
@@ -128,9 +127,14 @@ def verify_config(vendor: str) -> int:
         file_dict = CONFIG_PATHS[vendor]
         for file in file_dict:
             filepath = file_dict[file]
-            if get_config("verify", vendor, filepath=filepath) != "True":
-                for prompt in prompt_lst:
+            for prompt in prompt_lst:
+                name = prompt[0]
+                section = prompt[4]
+                value = get_config(name, section, filepath=filepath)
+                if value == -1:
                     set_config(*prompt)
+                elif value in ["", "None"]:
+                    set_config(*prompt, update=True)
     return 0
 
 

@@ -37,8 +37,7 @@ class C(Gate):
             tensor[active] = sub_tensor
         return tensor.reshape((np.prod(qid_shape, dtype=np.int64).item(),) * 2)
 
-    # pylint: disable-next=unused-argument
-    def to_matrix(self, *args, **kwargs) -> np.ndarray:
+    def to_matrix(self, *args, **kwargs) -> np.ndarray:  # pylint: disable=unused-argument
         """Returns a matrix representation of the quantum operator
 
         Returns:

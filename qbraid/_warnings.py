@@ -3,11 +3,11 @@ import warnings
 
 import urllib3
 
-from ._version import __version__
-from .api.session import QbraidSession
-
 
 def _check_version():
+
+    from ._version import __version__
+    from .api.session import QbraidSession
 
     session = QbraidSession()
     version_api = session.get("/public/lab/get-sdk-version", params={}).json()
