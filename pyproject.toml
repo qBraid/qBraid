@@ -21,10 +21,7 @@ filterwarnings = [
 parallel = true
 source = ["qbraid"]
 omit = [
-  "**/qbraid/algorithms/*",
-  "**/qbraid/applications/*",
-  "**/qbraid/circuits/*",
-  "**/qbraid/operators/*"
+  "**/qbraid/_archive/*"
 ]
 
 [tool.coverage.paths]
