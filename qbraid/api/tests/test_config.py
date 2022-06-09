@@ -12,7 +12,7 @@ from qbraid.api.config_specs import (
     qbraidrc_path,
     qiskitrc_path,
 )
-from qbraid.api.config_user import get_config, mask_value, verify_config
+from qbraid.api.config_user import _mask_value, get_config, update_config, verify_config
 from qbraid.api.exceptions import ConfigError, RequestsApiError
 from qbraid.api.session import QbraidSession
 
@@ -61,17 +61,39 @@ def set_config():
             config.write(cfgfile)
 
 
-def test_mask_value():
-    mask = mask_value("abc123")
-    assert mask == "******abc123"
+def test_update_config():
+    # remove qbraidrc file if it already exists
+    try:
+        os.remove(qbraidrc_path)
+    except FileNotFoundError:
+        pass
+    # test returning -1 when config doesn't exists
+    assert get_config("refresh-token", "default") == -1
+    # updating config with no input sets them to None
+    update_config("QBRAID", exists=False)
+    assert get_config("refresh-token", "default") == "None"
+    # remove qbraidrc file again and set correct config
+    os.remove(qbraidrc_path)
+    set_config()
+    assert get_config("refresh-token", "default") == os.getenv("REFRESH")
+
+
+@pytest.mark.parametrize("testdata", [("abc123", "******abc123"), (None, "None")])
+def test_mask_value(testdata):
+    """Test applying mask to user prompt value."""
+    value, expected = testdata
+    mask = _mask_value(value)
+    assert mask == expected
 
 
 def test_verify_config():
+    """Test raising error when verifying invalid qbraid config."""
     with pytest.raises(ConfigError):
         verify_config("QBRAID")
 
 
 def test_api_error():
+    """Test raising error when making invalid API request."""
     with pytest.raises(RequestsApiError):
         session = QbraidSession()
         session.request("POST", "not a url")
@@ -82,6 +104,7 @@ set_config()
 
 @pytest.mark.parametrize("config", config_lst)
 def test_get_config(config):
+    """Test getting config value."""
     name = config[0]
     value = config[1]
     section = config[2]
@@ -91,6 +114,7 @@ def test_get_config(config):
 
 
 def test_qbraid_session_from_config():
+    """Test initializing QbraidSession with attributes auto-set from config values."""
     email = get_config("email", "default")
     refresh = get_config("refresh-token", "default")
     session = QbraidSession()
@@ -100,6 +124,7 @@ def test_qbraid_session_from_config():
 
 
 def test_qbraid_session_from_args():
+    """Test initializing QbraidSession with attributes set from user-provided values."""
     email = "test"
     refresh = "123"
     session = QbraidSession(user_email=email, refresh_token=refresh)

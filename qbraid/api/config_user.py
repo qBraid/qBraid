@@ -13,7 +13,7 @@ raw_input = input
 secret_input = getpass
 
 
-def mask_value(value: str) -> str:
+def _mask_value(value: Optional[str]) -> str:
     """Replaces all but last four characters of token ``value`` with *'s"""
     if value is None:
         return "None"
@@ -24,16 +24,16 @@ def mask_value(value: str) -> str:
     return ("*" * len_stars) + value[-len_hint:]
 
 
-def get_value(display_value: str, is_secret: bool, prompt_text: str) -> str:
+def _get_value(display_value: str, is_secret: bool, prompt_text: str) -> str:
     """Applies mask to ``display_value`` and prompts user"""
-    display_value = mask_value(display_value) if is_secret else display_value
-    response = compat_input(f"{prompt_text} [{display_value}]: ", is_secret)
+    display_value = _mask_value(display_value) if is_secret else display_value
+    response = _compat_input(f"{prompt_text} [{display_value}]: ", is_secret)
     if not response:
         response = None
     return response
 
 
-def compat_input(prompt: str, is_secret: bool) -> str:
+def _compat_input(prompt: str, is_secret: bool) -> str:
     """Prompts user for value"""
     if is_secret:
         return secret_input(prompt=prompt)
@@ -42,7 +42,7 @@ def compat_input(prompt: str, is_secret: bool) -> str:
     return raw_input()
 
 
-def set_config(  # pylint: disable=too-many-arguments
+def _set_config(  # pylint: disable=too-many-arguments
     config_name: str,
     prompt_text: str,
     default_val: Optional[str],
@@ -85,7 +85,7 @@ def set_config(  # pylint: disable=too-many-arguments
         config_val = default_val
     else:
         display_val = current_val if current_val not in ["", "None", None] else default_val
-        new_val = get_value(display_val, is_secret, prompt_text)
+        new_val = _get_value(display_val, is_secret, prompt_text)
         config_val = new_val if new_val not in ["", "None", None] else display_val
     config.set(section, config_name, str(config_val))
     try:
@@ -132,9 +132,9 @@ def verify_config(vendor: str) -> int:
                 section = prompt[4]
                 value = get_config(name, section, filepath=filepath)
                 if value == -1:
-                    set_config(*prompt)
+                    _set_config(*prompt)
                 elif value in ["", "None"]:
-                    set_config(*prompt, update=True)
+                    _set_config(*prompt, update=True)
     return 0
 
 
@@ -163,7 +163,7 @@ def get_config(config_name: str, section: str, filepath: Optional[str] = None) -
     return -1
 
 
-def update_config(vendor: str, update=True) -> int:
+def update_config(vendor: str, exists=True) -> int:
     """Update the config associated with given vendor
 
     Args:
@@ -178,5 +178,5 @@ def update_config(vendor: str, update=True) -> int:
     """
     prompt_lst = VENDOR_CONFIGS[vendor]
     for prompt in prompt_lst:
-        set_config(*prompt, update=update)
+        _set_config(*prompt, update=exists)
     return 0

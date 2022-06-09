@@ -102,13 +102,13 @@ def test_init_braket_device_wrapper(device_id):
         assert isinstance(vendor_device, AwsDevice)
 
 
-@pytest.mark.skip(reason="Skipping b/c EmbeddingComposite not installed")
-@pytest.mark.parametrize("device_id", inputs_braket_sampler)
-def test_init_braket_dwave_sampler(device_id):
-    qbraid_device = device_wrapper(device_id)
-    vendor_sampler = qbraid_device.get_sampler()
-    # assert isinstance(vendor_sampler, EmbeddingComposite)
-    assert isinstance(vendor_sampler, Any)
+# @pytest.mark.skip(reason="Skipping b/c EmbeddingComposite not installed")
+# @pytest.mark.parametrize("device_id", inputs_braket_sampler)
+# def test_init_braket_dwave_sampler(device_id):
+#     qbraid_device = device_wrapper(device_id)
+#     vendor_sampler = qbraid_device.get_sampler()
+#     # assert isinstance(vendor_sampler, EmbeddingComposite)
+#     assert isinstance(vendor_sampler, Any)
 
 
 @pytest.mark.parametrize("device_id", inputs_cirq_dw)
@@ -249,15 +249,15 @@ def test_device_num_qubits():
     assert simulator_device.num_qubits is None
 
 
-@pytest.mark.skip(reason="Skipping b/c takes long time to finish")
-@pytest.mark.parametrize("device_id", ["aws_sv_sim", "ibm_q_qasm_sim"])
-def test_job_wrapper_ibmq(device_id):
-    circuit = random_circuit("qiskit", num_qubits=1, depth=3, measure=True)
-    qbraid_device = device_wrapper(device_id)
-    qbraid_job = qbraid_device.run(circuit, shots=10)
-    qbraid_job.wait_for_final_state()
-    retrieved_job = job_wrapper(qbraid_job.id)
-    assert qbraid_job.status() == retrieved_job.status()
+# @pytest.mark.skip(reason="Skipping b/c takes long time to finish")
+# @pytest.mark.parametrize("device_id", ["aws_sv_sim", "ibm_q_qasm_sim"])
+# def test_job_wrapper_ibmq(device_id):
+#     circuit = random_circuit("qiskit", num_qubits=1, depth=3, measure=True)
+#     qbraid_device = device_wrapper(device_id)
+#     qbraid_job = qbraid_device.run(circuit, shots=10)
+#     qbraid_job.wait_for_final_state()
+#     retrieved_job = job_wrapper(qbraid_job.id)
+#     assert qbraid_job.status() == retrieved_job.status()
 
 
 def test_job_wrapper_error():

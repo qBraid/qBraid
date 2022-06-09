@@ -120,15 +120,15 @@ def _rotation_of_pi_over_7(num_qubits):
     return matrix
 
 
-@pytest.mark.skip(reason="Unsupported gates become unitaries.")
-def test_from_braket_raises_on_unsupported_gates():
-    """Test that converting circuit with unsupported gate raises error"""
-    for num_qubits in range(1, 5):
-        braket_circuit = BKCircuit()
-        instr = Instruction(
-            braket_gates.Unitary(_rotation_of_pi_over_7(num_qubits)),
-            target=list(range(num_qubits)),
-        )
-        braket_circuit.add_instruction(instr)
-        with pytest.raises(ValueError):
-            from_braket(braket_circuit)
+# @pytest.mark.skip(reason="Unsupported gates become unitaries.")
+# def test_from_braket_raises_on_unsupported_gates():
+#     """Test that converting circuit with unsupported gate raises error"""
+#     for num_qubits in range(1, 5):
+#         braket_circuit = BKCircuit()
+#         instr = Instruction(
+#             braket_gates.Unitary(_rotation_of_pi_over_7(num_qubits)),
+#             target=list(range(num_qubits)),
+#         )
+#         braket_circuit.add_instruction(instr)
+#         with pytest.raises(ValueError):
+#             from_braket(braket_circuit)

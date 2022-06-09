@@ -10,6 +10,7 @@ import pytest
 
 from qbraid import __version__
 from qbraid._about import about
+from qbraid._warnings import _warn_new_version
 from qbraid.display_utils import running_in_jupyter, update_progress_bar
 from qbraid.exceptions import PackageValueError
 from qbraid.get_devices import get_devices
@@ -17,12 +18,32 @@ from qbraid.get_jobs import get_jobs
 
 # pylint: disable=missing-function-docstring,redefined-outer-name
 
+check_version_data = [
+    # local, API, warn
+    ("0.1.0", "0.1.1", True),
+    ("1.0.7", "1.0.8", True),
+    ("1.3.2", "2.0.6", True),
+    ("0.1.0", "0.1.0", False),
+    ("0.2.4.dev1", "0.2.4", False),
+    ("0.1.0", "0.1.0.dev0", False),
+    ("0.1.6.dev2", "0.1.6.dev5", False),
+    ("0.1.6.dev5", "0.1.6.dev2", False),
+]
+
 
 def test_about(capfd):
     about()
     out, err = capfd.readouterr()
     assert __version__ in out
     assert len(err) == 0
+
+
+@pytest.mark.parametrize("test_data", check_version_data)
+def test_check_version(test_data):
+    """Test function that compares local/api package versions to determine if
+    update is needed."""
+    local, api, warn_bool = test_data
+    assert warn_bool == _warn_new_version(local, api)
 
 
 def test_package_value_error():
