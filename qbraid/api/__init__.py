@@ -11,7 +11,6 @@
    ibmq_least_busy_qpu
    update_config
    get_config
-   set_config
    verify_config
    init_job
    get_job_data
@@ -62,7 +61,7 @@
 """
 # pylint: skip-file
 
-from .config_user import get_config, set_config, update_config, verify_config
+from .config_user import get_config, update_config, verify_config
 from .exceptions import ApiError, AuthError, ConfigError, RequestsApiError
 from .job_api import get_job_data, init_job
 from .least_busy import ibmq_least_busy_qpu

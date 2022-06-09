@@ -2,7 +2,7 @@
 
 import os
 from datetime import datetime
-from typing import TYPE_CHECKING  # pylint: disable=unused-import
+from typing import TYPE_CHECKING
 
 from .session import QbraidSession
 
@@ -23,6 +23,7 @@ def _braket_proxy():
             firstline = f.readline().rstrip()
             if firstline == "active = true":
                 return True
+            print(firstline)
     return False
 
 
