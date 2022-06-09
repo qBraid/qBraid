@@ -23,7 +23,6 @@ def _braket_proxy():
             firstline = f.readline().rstrip()
             if firstline == "active = true":
                 return True
-            print(firstline)
     return False
 
 
