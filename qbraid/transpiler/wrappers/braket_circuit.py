@@ -1,5 +1,7 @@
-"""BraketCircuitWrapper Class"""
+"""
+Module defining BraketCircuitWrapper Class
 
+"""
 from braket.circuits.circuit import Circuit as BKCircuit
 
 from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper

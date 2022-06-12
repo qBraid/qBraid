@@ -1,8 +1,8 @@
 """
 Module to retrieve, update, and display information about devices
 supported by the qBraid SDK.
-"""
 
+"""
 # pylint: disable=consider-using-f-string
 
 # from time import time

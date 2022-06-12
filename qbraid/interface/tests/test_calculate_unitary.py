@@ -1,7 +1,7 @@
 """
 Unit tests for the qbraid unitary interfacing
-"""
 
+"""
 from itertools import chain, combinations
 
 import numpy as np

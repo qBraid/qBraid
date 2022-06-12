@@ -1,5 +1,7 @@
-"""Exceptions for errors raised while processing a device."""
+"""
+Module defining exceptions for errors raised while processing a device.
 
+"""
 from qbraid.exceptions import QbraidError
 
 

@@ -1,5 +1,7 @@
-"""pyQuil programs used for testing"""
+"""
+Module containing pyQuil programs used for testing
 
+"""
 from pyquil import Program
 from pyquil.gates import CNOT, H
 

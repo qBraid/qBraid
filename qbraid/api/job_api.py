@@ -1,5 +1,7 @@
-"""Module for interacting with qBraid Jobs API"""
+"""
+Module for interacting with the qBraid Jobs API.
 
+"""
 import os
 from datetime import datetime
 from typing import TYPE_CHECKING
@@ -17,13 +19,14 @@ def _braket_proxy():
     lab_envs = f"{home}/.qbraid/environments"
     lab_slug = "qbraid_sdk_9j9sjy"
     package = "botocore"
+
+    # Location of Amazon Braket proxy file for SDK environment in qBraid Lab.
     proxy = f"{lab_envs}/{lab_slug}/qbraid/{package}/proxy"
     if os.path.isfile(proxy):
         with open(proxy) as f:  # pylint: disable=unspecified-encoding
             firstline = f.readline().rstrip()
-            if firstline == "active = true":
+            if firstline == "active = true":  # check if proxy is active or not
                 return True
-            print(firstline)
     return False
 
 
@@ -48,8 +51,13 @@ def init_job(
     """
     session = QbraidSession()
 
-    # If running in qBraid Lab and the Amazon Braket Botocore proxy is
-    # enabled, a MongoDB document has already been created for this job. So,
+    # One of the features of qBraid Quantum Jobs is the ability to send
+    # jobs without any credentials using the qBraid Lab platform. In short,
+    # the qBraid CLI allows you to enable/disable API proxies for environments
+    # that use IBMQ and/or Amazon Braket (Botocore). A ``qbraid`` directory
+    # exists for each such environment that contains information about how to
+    # toggle the proxies, along with their status. If the Amazon Braket Botocore
+    # proxy is enabled, a MongoDB document has already been created for this job. So,
     # instead of creating a new job document, we instead query the user jobs
     # for the ``vendorJobId`` (for Amazon Braket this is the QuantumTask arn),
     # and return the correspondong ``qbraidJobId``.
@@ -69,10 +77,10 @@ def init_job(
         "circuitDepth": circuit.depth,
         "shots": shots,
         "createdAt": datetime.utcnow(),
-        "status": "TBD",
+        "status": "UNKNOWN",  # this will be set after we get back the job ID and check status
         "qbraidStatus": "INITIALIZING",
     }
-    init_data["email"] = os.getenv("JUPYTERHUB_USER")
+    init_data["email"] = os.getenv("JUPYTERHUB_USER")  # this env variable exists in Lab by default.
     return session.post("/init-job", data=init_data).json()
 
 
@@ -89,6 +97,7 @@ def get_job_data(qbraid_job_id: str, update: dict = None) -> dict:
     """
     session = QbraidSession()
     body = {"qbraidJobId": qbraid_job_id}
+    # Two status variables so we can track both qBraid and vendor status.
     if update is not None and "status" in update and "qbraidStatus" in update:
         body["status"] = update["status"]
         body["qbraidStatus"] = update["qbraidStatus"]

@@ -1,4 +1,7 @@
-"""Exceptions for errors raised while handling circuits."""
+"""
+Module defining exceptions for errors raised while handling circuits.
+
+"""
 
 from qbraid.exceptions import QbraidError
 

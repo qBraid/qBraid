@@ -1,5 +1,7 @@
-"""Module for Braket custom gates"""
+"""
+Module for Braket custom gates
 
+"""
 import itertools
 
 import braket.ir.jaqcd as ir

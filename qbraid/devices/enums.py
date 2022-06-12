@@ -1,4 +1,7 @@
-"""This module defines all :mod:`~qbraid.devices` enumerated types."""
+"""
+Module defining all :mod:`~qbraid.devices` enumerated types.
+
+"""
 import enum
 from typing import Union
 

@@ -1,4 +1,7 @@
-"""Module for emitting and disabling warnings at top level."""
+"""
+Module for emitting and disabling warnings at top level.
+
+"""
 import warnings
 
 import urllib3

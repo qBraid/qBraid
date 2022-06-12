@@ -1,5 +1,7 @@
-"""Braket tools"""
+"""
+Module containing Braket tools
 
+"""
 import numpy as np
 from braket.circuits import Circuit as BKCircuit
 from braket.circuits import Instruction

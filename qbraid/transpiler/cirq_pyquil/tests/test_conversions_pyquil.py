@@ -13,7 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Tests conversions to/from pyQuil circuits."""
+"""
+Unt tests for conversions to/from pyQuil circuits.
+
+"""
 import numpy as np
 from pyquil import Program
 from pyquil.gates import CNOT, CZ, RZ, H, X, Y, Z

@@ -1,5 +1,7 @@
-"""Cirq utility module"""
+"""
+Module containing Cirq utility functions
 
+"""
 from copy import deepcopy
 from typing import List, Tuple, Union, cast
 
@@ -19,6 +21,8 @@ from cirq import (
 )
 
 QUBIT = Union[LineQubit, GridQubit, NamedQubit, Qid]
+
+# TODO: Identify and remove any of these functions which are not needed/used
 
 
 def _simplify_gate_exponent(gate: EigenGate) -> EigenGate:

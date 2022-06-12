@@ -1,5 +1,7 @@
-"""Module for calculating unitary of quantum circuit/program"""
+"""
+Module for calculating unitary of quantum circuit/program
 
+"""
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import numpy as np

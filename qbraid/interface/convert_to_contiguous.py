@@ -1,5 +1,7 @@
-"""Module for converting quantum circuit/program to use contiguous qubit indexing"""
+"""
+Module for converting quantum circuit/program to use contiguous qubit indexing
 
+"""
 from typing import TYPE_CHECKING, Any, Callable
 
 from qbraid._typing import QPROGRAM

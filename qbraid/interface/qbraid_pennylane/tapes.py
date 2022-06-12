@@ -1,5 +1,7 @@
-"""Pennylane quantum tapes used for testing"""
+"""
+Module containing Pennylane quantum tapes used for testing
 
+"""
 import pennylane as qml
 from pennylane.tape import QuantumTape
 

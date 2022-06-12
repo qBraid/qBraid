@@ -1,5 +1,7 @@
-"""Cirq circuits used for testing"""
+"""
+Module containing Cirq circuits used for testing
 
+"""
 import numpy as np
 from cirq import (
     CNOT,

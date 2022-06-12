@@ -1,5 +1,7 @@
-"""ResultWrapper Class"""
+"""
+Module defining abstract ResultWrapper Class
 
+"""
 from abc import ABC, abstractmethod
 
 from qiskit.visualization import plot_histogram

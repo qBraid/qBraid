@@ -1,5 +1,7 @@
-"""BraketResultWrapper Class"""
+"""
+Module defining BraketResultWrapper Class
 
+"""
 import numpy as np
 
 from qbraid.devices.result import ResultWrapper
@@ -13,10 +15,13 @@ class BraketResultWrapper(ResultWrapper):
         shots > 0. The qubits in `measurements` are the ones in
         `GateModelQuantumTaskResult.measured_qubits`.
 
+        TODO: Make doc-string consistent with parent.
+
         """
         return np.flip(self.vendor_rlo.measurements, 1)
 
     def measurement_counts(self):
+        """Returns the histogram data of the run"""
         braket_counts = dict(self.vendor_rlo.measurement_counts)
         qbraid_counts = {}
         for key in braket_counts:

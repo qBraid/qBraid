@@ -1,5 +1,7 @@
-"""Qiskit tools"""
+"""
+Module containing Qiskit tools
 
+"""
 import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.quantum_info import Operator

@@ -1,3 +1,8 @@
+"""
+Module that stores dictionaires containing info on how to prompt
+and/or set necessary configs for each vendor.
+
+"""
 # pylint: skip-file
 
 import os

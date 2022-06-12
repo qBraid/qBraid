@@ -1,5 +1,7 @@
-"""BraketLocalSimulatorWrapper Class"""
+"""
+Module defining BraketLocalSimulatorWrapper Class
 
+"""
 from typing import TYPE_CHECKING
 
 from braket.devices import LocalSimulator
@@ -54,6 +56,7 @@ class BraketLocalSimulatorWrapper(DeviceLikeWrapper):
         local_quantum_task = self.vendor_dlo.run(run_input, *args, **kwargs)
         return BraketLocalQuantumTaskWrapper(self, local_quantum_task)
 
-    def estimate_cost(self, circuit: "braket.circuits.Circuit", shots: int = 1024) -> int:
+    def estimate_cost(self, circuit: "braket.circuits.Circuit", shots: int = 1024):
         """Estimate the cost of running a circuit on the device."""
-        print("It is free to run on your local simulator on qBraid.")
+        # TODO: Connect/ensure consistency with the cost estimator in the API.
+        return 0.0

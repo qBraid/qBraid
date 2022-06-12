@@ -1,3 +1,8 @@
+"""
+Unit tests related to setting, updating, and verifying
+custom user configurations and required run-command pre-sets.
+
+"""
 import configparser
 import os
 
@@ -16,11 +21,15 @@ from qbraid.api.config_user import _mask_value, get_config, update_config, verif
 from qbraid.api.exceptions import ConfigError, RequestsApiError
 from qbraid.api.session import QbraidSession
 
+# These environment variables don't actually exist in qBraid Lab, but instead
+# are set and used for convenience for local development and testing.
 aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
 ibmq_token = os.getenv("IBMQ_TOKEN")
-qbraid_user = os.getenv("JUPYTERHUB_USER")
 qbraid_token = os.getenv("REFRESH")
+
+# This is the only environment variable that actually exists in qBraid Lab
+qbraid_user = os.getenv("JUPYTERHUB_USER")
 
 config_lst = [
     # (config_name, config_value, section, filepath)
@@ -35,6 +44,7 @@ config_lst = [
     ["url", ibmq_account_url, "ibmq", qiskitrc_path],
     ["verify", "True", "ibmq", qiskitrc_path],
     ["default_provider", "ibm-q/open/main", "ibmq", qiskitrc_path],
+    # In qBraid Lab, the qbraidrc file is automatically generated through the API
     ["email", qbraid_user, "default", qbraidrc_path],
     ["url", qbraid_api_url, "default", qbraidrc_path],
     ["refresh-token", qbraid_token, "default", qbraidrc_path],
@@ -43,7 +53,10 @@ config_lst = [
 
 def set_config():
     """Set config inside testing virtual environments with default values
-    hard-coded and secret values read from environment variables."""
+    hard-coded and secret values read from environment variables.
+
+    Note: this function is used in lieu of :func:`~qbraid.api.config_user._set_config`
+    to by-pass the user prompt, and directly set the configs to be used to testing."""
     for c in config_lst:
         config_name = c[0]
         config_value = c[1]
@@ -62,6 +75,7 @@ def set_config():
 
 
 def test_update_config():
+    """Test updating user config."""
     # remove qbraidrc file if it already exists
     try:
         os.remove(qbraidrc_path)
@@ -99,7 +113,7 @@ def test_api_error():
         session.request("POST", "not a url")
 
 
-set_config()
+set_config()  # TODO: double-check that this isn't redundant with ``test_update_cofig``
 
 
 @pytest.mark.parametrize("config", config_lst)

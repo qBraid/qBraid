@@ -6,6 +6,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+"""
+Unit tests for Cirq Qasm Parser
+
+"""
 # pylint: skip-file
 
 import cirq

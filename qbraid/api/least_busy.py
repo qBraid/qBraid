@@ -1,5 +1,7 @@
-"""Module to retrieve the least busy IBMQ QPU"""
+"""
+Module to retrieve the least busy IBMQ QPU.
 
+"""
 import os
 
 from qiskit import IBMQ

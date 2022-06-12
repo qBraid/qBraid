@@ -13,7 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Unit tests for converting Qiskit circuits to Cirq circuits."""
+"""
+Unit tests for converting Qiskit circuits to Cirq circuits.
+
+"""
 import numpy as np
 import pytest
 from qiskit import QuantumCircuit

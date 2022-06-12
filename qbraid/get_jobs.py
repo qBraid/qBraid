@@ -1,8 +1,8 @@
 """
 Module to retrieve, update, and display information about quantum
 jobs submitted through the qBraid SDK.
-"""
 
+"""
 # pylint: disable=consider-using-f-string
 
 import os

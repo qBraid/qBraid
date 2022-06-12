@@ -15,10 +15,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""NB: Copied in large part from rigetti/forest-benchmarking (Apache-2.0)
-and modified to test a larger gateset.
 """
+Unit tests for pyquil compiler
 
+NB: Copied in large part from rigetti/forest-benchmarking (Apache-2.0)
+and modified to test a larger gateset.
+
+"""
 import inspect
 import itertools
 import random

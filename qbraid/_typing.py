@@ -13,12 +13,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Defines input / output types for a quantum backend:
+"""
+Module defining input / output types for a quantum backend:
 
   * SUPPORTED_PROGRAM_TYPES: Dict mapping all supported packages
        with which the qbraid.transpiler can interface to string rep of
        the its corrensponding quantum circuit / program type
   * QPROGRAM: Type alias defining all supported quantum circuit / program types
+
 """
 from typing import Union
 

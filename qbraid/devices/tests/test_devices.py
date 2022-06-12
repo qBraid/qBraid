@@ -1,7 +1,8 @@
 """
 Unit tests for the qbraid device layer.
+
 """
-from typing import Any
+# from typing import Any
 
 import cirq
 import numpy as np
@@ -92,6 +93,7 @@ def test_device_wrapper_id_error():
 
 @pytest.mark.parametrize("device_id", inputs_braket_dw)
 def test_init_braket_device_wrapper(device_id):
+    """Test device wrapper for ids of devices available through Amazon Braket."""
     qbraid_device = device_wrapper(device_id)
     vendor_device = qbraid_device.vendor_dlo
     if device_id == "aws_braket_default_sim":
@@ -113,6 +115,7 @@ def test_init_braket_device_wrapper(device_id):
 
 @pytest.mark.parametrize("device_id", inputs_cirq_dw)
 def test_init_cirq_device_wrapper(device_id):
+    """Test device wrapper for ids of devices available through Cirq."""
     qbraid_device = device_wrapper(device_id)
     vendor_device = qbraid_device.vendor_dlo
     assert isinstance(qbraid_device, CirqSimulatorWrapper)
@@ -121,6 +124,7 @@ def test_init_cirq_device_wrapper(device_id):
 
 @pytest.mark.parametrize("device_id", inputs_qiskit_dw)
 def test_init_qiskit_device_wrapper(device_id):
+    """Test device wrapper for ids of devices available through Qiskit."""
     qbraid_device = device_wrapper(device_id)
     vendor_device = qbraid_device.vendor_dlo
     if device_id[4:9] == "basic":
@@ -137,6 +141,7 @@ Coverage: all vendors, one device from each provider (calls to QPU's take time)
 
 
 def braket_circuit():
+    """Returns low-depth, one-qubit Braket circuit to be used for testing."""
     circuit = BraketCircuit()
     circuit.h(0)
     circuit.ry(0, np.pi / 2)
@@ -144,6 +149,8 @@ def braket_circuit():
 
 
 def cirq_circuit(meas=True):
+    """Returns Low-depth, one-qubit Cirq circuit to be used for testing.
+    If ``meas=True``, applies measurement operation to end of circuit."""
     q0 = cirq.GridQubit(0, 0)
 
     def basic_circuit():
@@ -158,6 +165,8 @@ def cirq_circuit(meas=True):
 
 
 def qiskit_circuit(meas=True):
+    """Returns Low-depth, one-qubit Qiskit circuit to be used for testing.
+    If ``meas=True``, applies measurement operation to end of circuit."""
     circuit = QiskitCircuit(1, 1) if meas else QiskitCircuit(1)
     circuit.h(0)
     circuit.ry(np.pi / 2, 0)
@@ -166,8 +175,12 @@ def qiskit_circuit(meas=True):
     return circuit
 
 
-circuits_braket_run = [braket_circuit(), cirq_circuit(False), qiskit_circuit(False)]
-circuits_cirq_run = [cirq_circuit(), qiskit_circuit()]
+circuits_braket_run = [
+    braket_circuit(),
+    cirq_circuit(False),
+    qiskit_circuit(False),
+]  # circuits w/out measurement operation
+circuits_cirq_run = [cirq_circuit(), qiskit_circuit()]  # circuit w/ measurement operation
 circuits_qiskit_run = circuits_cirq_run
 inputs_cirq_run = ["google_cirq_dm_sim"]
 inputs_qiskit_run = ["ibm_basicaer_qasm_sim", "ibm_aer_default_sim"]
@@ -177,6 +190,7 @@ inputs_braket_run = ["aws_sv_sim", "aws_braket_default_sim"]
 @pytest.mark.parametrize("circuit", circuits_qiskit_run)
 @pytest.mark.parametrize("device_id", inputs_qiskit_run)
 def test_run_qiskit_device_wrapper(device_id, circuit):
+    """Test run method from wrapped Qiskit backends"""
     qbraid_device = device_wrapper(device_id)
     qbraid_job = qbraid_device.run(circuit, shots=10)
     vendor_job = qbraid_job.vendor_jlo
@@ -193,6 +207,7 @@ def test_run_qiskit_device_wrapper(device_id, circuit):
 @pytest.mark.parametrize("circuit", circuits_cirq_run)
 @pytest.mark.parametrize("device_id", inputs_cirq_run)
 def test_run_cirq_device_wrapper(device_id, circuit):
+    """Test run method of wrapped Cirq devices"""
     qbraid_device = device_wrapper(device_id)
     qbraid_job = qbraid_device.run(circuit, shots=10)
     qbraid_result = qbraid_job.result()
@@ -204,6 +219,7 @@ def test_run_cirq_device_wrapper(device_id, circuit):
 @pytest.mark.parametrize("circuit", circuits_braket_run)
 @pytest.mark.parametrize("device_id", inputs_braket_run)
 def test_run_braket_device_wrapper(device_id, circuit):
+    """Test run method of wrapped Braket devices"""
     qbraid_device = device_wrapper(device_id)
     qbraid_job = qbraid_device.run(circuit, shots=10)
     vendor_job = qbraid_job.vendor_jlo
@@ -219,6 +235,7 @@ def test_run_braket_device_wrapper(device_id, circuit):
 
 @pytest.mark.parametrize("device_id", ["aws_dm_sim", "aws_sv_sim"])
 def test_run_braket_device_wrapper_no_shots(device_id):
+    """Test run method of wrapped Braket devices, with no value given for shots arg."""
     circuit = BraketCircuit().h(0).cnot(0, 1)
     if device_id == "aws_dm_sim":
         circuit.expectation(observable=BraketObservable.Z(), target=0)
@@ -234,6 +251,8 @@ def test_run_braket_device_wrapper_no_shots(device_id):
 
 
 def test_circuit_too_many_qubits():
+    """Test that run method raises exception when input circuit
+    num qubits exceeds that of wrapped Qiskit device."""
     two_qubit_circuit = QiskitCircuit(2)
     two_qubit_circuit.h([0, 1])
     two_qubit_circuit.cx(0, 1)
@@ -243,6 +262,7 @@ def test_circuit_too_many_qubits():
 
 
 def test_device_num_qubits():
+    """Test device wrapper num qubits method"""
     one_qubit_device = device_wrapper("ibm_q_armonk")
     assert one_qubit_device.num_qubits == 1
     simulator_device = device_wrapper("aws_braket_default_sim")
@@ -261,6 +281,7 @@ def test_device_num_qubits():
 
 
 def test_job_wrapper_error():
+    """Test that job wrapper raises exception for invalid job id."""
     with pytest.raises(QbraidError):
         job_wrapper("google-test")
 
@@ -269,6 +290,7 @@ def test_job_wrapper_error():
 # https://api-staging-1.qbraid.com/api/public/lab/get-devices?qbraid_id=google_cirq_dm_sim
 @pytest.mark.parametrize("device_id", ["ibm_q_sv_sim", "aws_dm_sim", "google_cirq_dm_sim"])
 def test_result_wrapper_measurements(device_id):
+    """Test result wrapper measurements method."""
     circuit = random_circuit("qiskit", num_qubits=3, depth=3, measure=True)
     sim = device_wrapper(device_id).run(circuit, shots=10)
     qbraid_result = sim.result()
@@ -280,6 +302,7 @@ def test_result_wrapper_measurements(device_id):
 # @pytest.mark.skip(reason="JSONDecodeError")
 @pytest.mark.parametrize("device_id", ["aws_tn_sim", "aws_dm_sim", "aws_sv_sim"])
 def test_cost_estimator(device_id):
+    """Test cost estimators"""
     circuit = BraketCircuit().h(0).cnot(0, 1)
     device = device_wrapper(device_id)
     estimate = device.estimate_cost(circuit, shots=10)

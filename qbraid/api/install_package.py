@@ -1,5 +1,7 @@
-"""Module to pip install"""
+"""
+Module for executing a pip install of a package programmatically.
 
+"""
 # import logging
 # import subprocess
 # import sys

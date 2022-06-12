@@ -12,9 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# pylint: skip-file
+"""
+Module defining utility classes for representing QASM.
 
-"""Utility classes for representing QASM."""
+"""
+# pylint: skip-file
 
 import re
 from typing import TYPE_CHECKING, Callable, Dict, Optional, Set, Tuple, Union

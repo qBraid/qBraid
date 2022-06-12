@@ -1,7 +1,7 @@
 """
 Unit tests for converting Cirq circuits to Braket circuits
-"""
 
+"""
 import numpy as np
 import pytest
 from cirq import Circuit, LineQubit, ops, testing

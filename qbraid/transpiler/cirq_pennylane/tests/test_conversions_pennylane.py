@@ -13,8 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Unit tests for Pennylane <-> Cirq conversions."""
+"""
+Unit tests for Pennylane <-> Cirq conversions.
 
+"""
 import cirq
 import numpy as np
 import pennylane as qml

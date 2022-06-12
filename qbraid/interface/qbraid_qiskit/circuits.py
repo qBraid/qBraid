@@ -1,5 +1,7 @@
-"""Qiskit quantum circuits used for testing"""
+"""
+Module containing Qiskit quantum circuits used for testing
 
+"""
 import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.circuit.exceptions import CircuitError

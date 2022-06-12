@@ -1,5 +1,7 @@
-"""Module for Cirq gate dictionary used for testing"""
+"""
+Module for Cirq gate dictionary used for testing
 
+"""
 import numpy as np
 from cirq.ops import MeasurementGate
 from cirq.ops.common_gates import (

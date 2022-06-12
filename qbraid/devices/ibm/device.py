@@ -1,7 +1,10 @@
-"""QiskitBackendWrapper Class"""
+"""
+Module defining QiskitBackendWrapper Class
 
+"""
 import os
 
+# TODO: See if we can neatly condense these imports
 from qiskit import IBMQ, Aer, assemble
 from qiskit import transpile as qiskit_transpile
 from qiskit.providers.backend import Backend as QiskitBackend
@@ -106,11 +109,13 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         else:
             shots = self.vendor_dlo.options.get("shots")
         if self._obj_ref == "Aer":
+            # TODO: Add comments about how assemble is being used
             qobj = assemble(run_input, memory=True, **kwargs)
             qiskit_job = self.vendor_dlo.run(qobj)
             qiskit_job_id = qiskit_job.job_id()
         else:
             memory = True if "memory" not in kwargs else kwargs.pop("memory")
+            # TODO: Add comments about how IBMQJobManager is being used
             job_manager = IBMQJobManager()  # assemble included in run method
             job_set = job_manager.run([run_input], backend=self.vendor_dlo, memory=memory, **kwargs)
             qiskit_job = job_set.jobs()[0]
@@ -122,7 +127,5 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         return qbraid_job
 
     def estimate_cost(self, circuit, shots=1024):
-        """Estimate the cost of running a circuit on the device."""
-        # print("qBraid currently offers only free devices.")
-        # print("Please contact rickyyoung@qbraid.com for more information.")
+        """Estimate the cost of running a circuit on the device (TODO)."""
         raise NotImplementedError
