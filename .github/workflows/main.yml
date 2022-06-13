@@ -23,7 +23,7 @@ jobs:
       run: |
         python -m pip install -U pip setuptools ipython
         python -m pip install tox
-    - name: Run tox
+    - name: Tests, docs, linters
       run: 
         tox
       env:
