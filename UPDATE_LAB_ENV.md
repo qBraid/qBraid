@@ -83,7 +83,7 @@ sudo python3 admin-threaded-copy.py /filesystem/home/[userdir]/.qbraid/environme
 
 There are a few important things to note when carrying out the step above:
 
-1. The copy script requires that the target directory already exists. So, shown above, you must create the new empty slug directory *first*, before executing the copy script.
+1. The copy script requires that the target directory already exists. So, as shown above, you must create the new empty slug directory *first*, before executing the copy script.
 
 2. The script will fail if either of the source or target directory end with a forward-slash. In other words, each directory location should end with `qbraid_sdk_9j9sjy`, not `qbraid_sdk_9j9sjy/`.
 
