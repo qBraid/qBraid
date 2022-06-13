@@ -1,5 +1,7 @@
-"""PennylaneQTapeWrapper Class"""
+"""
+Module defining PennylaneQTapeWrapper Class
 
+"""
 from pennylane.tape import QuantumTape
 
 from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper

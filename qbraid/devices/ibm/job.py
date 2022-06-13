@@ -1,5 +1,7 @@
-"""QiskitJobWrapper Class"""
+"""
+Module defining QiskitJobWrapper Class
 
+"""
 import logging
 
 from qiskit.providers.exceptions import JobError as QiskitJobError

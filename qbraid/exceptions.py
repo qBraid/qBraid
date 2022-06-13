@@ -1,5 +1,7 @@
-"""Exceptions for errors raised by qBraid."""
+"""
+Module defining exceptions for errors raised by qBraid.
 
+"""
 from ._typing import SUPPORTED_PROGRAM_TYPES
 
 # Supported quantum frontend packages.

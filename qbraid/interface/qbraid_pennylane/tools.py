@@ -1,5 +1,7 @@
-"""Pennylane tools"""
+"""
+Module containing Pennylane tools
 
+"""
 import numpy as np
 import pennylane as qml
 from pennylane.tape import QuantumTape

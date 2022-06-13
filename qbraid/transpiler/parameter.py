@@ -1,4 +1,9 @@
-"""Paramater Module"""
+"""
+Module defining Paramater Module
+
+TODO: Check for usage and consider removing
+
+"""
 
 
 class ParamID:

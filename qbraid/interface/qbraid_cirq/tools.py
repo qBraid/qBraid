@@ -1,5 +1,7 @@
-"""Cirq tools"""
+"""
+Module containing Cirq tools
 
+"""
 from typing import List, Sequence, Union
 
 import numpy as np

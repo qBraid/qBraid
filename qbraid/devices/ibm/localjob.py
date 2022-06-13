@@ -1,5 +1,7 @@
-"""QiskitJobWrapper Class"""
+"""
+Module defining QiskitJobWrapper Class
 
+"""
 from qbraid.devices.ibm import QiskitResultWrapper
 from qbraid.devices.localjob import LocalJobWrapper
 

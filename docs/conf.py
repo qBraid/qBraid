@@ -99,7 +99,7 @@ html_static_path = ["_static"]
 html_favicon = "_static/favicon.ico"
 html_show_sphinx = False
 
-html_css_files = ['css/s4defs-roles.css']
+html_css_files = ["css/s4defs-roles.css"]
 
 # -- More customizations ----------------------------------------------------
 

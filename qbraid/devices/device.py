@@ -1,5 +1,7 @@
-"""DeviceLikeWrapper Class"""
+"""
+Module defining abstract DeviceLikeWrapper Class
 
+"""
 # pylint:disable=invalid-name
 
 from abc import ABC, abstractmethod
@@ -144,8 +146,16 @@ class DeviceLikeWrapper(ABC):
     def run(
         self, run_input: "qbraid.QPROGRAM", *args, **kwargs
     ) -> "Union[qbraid.devices.JobLikeWrapper, qbraid.devices.LocalJobWrapper]":
-        """Abstract run method."""
+        """Abstract run method.
+
+        TODO: Add support for passing list of circuits / quantum programs as ``run_input``.
+
+        """
 
     @abstractmethod
-    def estimate_cost(self, circuit, shots=1024):
-        """Abstract estimate_cost method."""
+    def estimate_cost(self, circuit, shots=1024) -> float:
+        """Abstract estimate_cost method.
+
+        TODO: Should return number of qBraid credits (not print).
+
+        """

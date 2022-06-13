@@ -1,5 +1,3 @@
-"""Module for converting Cirq circuits to Braket circuits"""
-
 # Copyright (C) 2021 Unitary Fund
 #
 # This program is free software: you can redistribute it and/or modify
@@ -15,6 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+"""
+Module for converting Cirq circuits to Braket circuits
+
+"""
 from typing import Dict, List
 
 import numpy as np

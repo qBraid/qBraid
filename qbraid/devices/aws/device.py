@@ -1,5 +1,7 @@
-"""BraketDeviceWrapper Class"""
+"""
+Module defining BraketDeviceWrapper Class
 
+"""
 import math
 import warnings
 from typing import TYPE_CHECKING, Optional
@@ -68,6 +70,10 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             DeviceError: If not a D-Wave annealing device.
 
         """
+        # TODO: Decide whether or not we want to support this method. This method is
+        # implemented but notvin-use because of the size of the extra dependencies it
+        # requires i.e. dwave and braket.ocean_plugin
+
         # pylint: disable=import-outside-toplevel
         # if self.provider != "D-Wave":
         #     raise DeviceError("Sampler only available for D-Wave (annealing) devices")
@@ -122,7 +128,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             job_id, vendor_job_id=vendor_job_id, device=self, vendor_jlo=aws_quantum_task
         )
 
-    def estimate_cost(self, circuit: "braket.circuits.Circuit", shots=1024) -> float:
+    def estimate_cost(self, circuit: "braket.circuits.Circuit", shots=1024):
         """Estimate the cost of running a quantum task on this device.
 
         Args:
@@ -136,6 +142,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             he estimated cost of running the circuit on the device.
 
         """
+        # TODO: Connect/ensure consistency with the cost estimator in the API.
         if circuit is None:
             raise DeviceError("Circuit must be specified")
         _, qbraid_circuit = self._compat_run_input(circuit)
@@ -152,5 +159,4 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         # QPUs
         else:
             estimate = price * shots + task_price
-        print(f"Your estimated cost is {estimate}")
         return estimate

@@ -13,7 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Functions for converting to/from Cirq's circuit representation."""
+"""
+Module containing functions for converting to/from Cirq's circuit representation.
+
+"""
 from typing import TYPE_CHECKING, Any, Callable, Tuple
 
 from cirq import Circuit

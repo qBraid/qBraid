@@ -13,8 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Functions to convert between Cirq's circuit representation and
-Qiskit's circuit representation.
+"""
+Module containing functions to convert between Cirq's circuit
+representation and Qiskit's circuit representation.
+
 """
 import copy
 from typing import Any, List, Optional, Tuple

@@ -1,7 +1,7 @@
 """
 Unit tests for converting Braket circuits to Cirq circuits
-"""
 
+"""
 import numpy as np
 import pytest
 from braket.circuits import Circuit as BKCircuit

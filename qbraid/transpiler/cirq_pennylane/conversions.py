@@ -13,10 +13,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Functions to convert between Cirq's circuit representation and
-Pennylane's circuit representation.
 """
+Module containing functions to convert between Cirq's circuit
+representation and Pennylane's circuit representation.
 
+"""
 from cirq import Circuit
 from pennylane import from_qasm as pennylane_from_qasm
 from pennylane.tape import QuantumTape

@@ -1,5 +1,7 @@
-"""JobLikeWrapper Class"""
+"""
+Module defining abstract LocalJobWrapper Class
 
+"""
 # pylint: disable=invalid-name
 
 from abc import ABC, abstractmethod

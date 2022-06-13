@@ -1,5 +1,7 @@
-"""Module for Cirq custom gates to aid the transpiler and qasm parser"""
+"""
+Module for Cirq custom gates to aid the transpiler and qasm parser
 
+"""
 # pylint: disable=unused-argument
 
 import fractions

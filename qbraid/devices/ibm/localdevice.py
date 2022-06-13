@@ -1,5 +1,7 @@
-"""QiskitSimulatorWrapper Class"""
+"""
+Module defining QiskitSimulatorWrapper Class
 
+"""
 from qiskit import BasicAer
 from qiskit import transpile as qiskit_transpile
 
@@ -52,4 +54,4 @@ class QiskitBasicAerWrapper(DeviceLikeWrapper):
 
     def estimate_cost(self, circuit, shots=1024):
         """Estimate the cost of running a circuit on the device."""
-        print("It is free to run on your local simulator on qBraid.")
+        return 0.0

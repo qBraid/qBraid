@@ -1,7 +1,11 @@
-"""CirqEngineJobWrapper Class"""
+"""
+Module defining CirqEngineJobWrapper Class.
 
-# https://github.com/quantumlib/Cirq/blob/master/cirq-google/cirq_google/engine/engine_job.py
+See `cirq-google/`__.
 
+.. __: https://github.com/quantumlib/Cirq/blob/master/cirq-google/cirq_google/engine/engine_job.py
+
+"""
 # from cirq_google.engine.engine_job import EngineJob
 
 from qbraid.devices.job import JobLikeWrapper

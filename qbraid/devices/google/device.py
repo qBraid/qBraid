@@ -1,5 +1,7 @@
-"""Module for Cirq device-like object wrappers."""
+"""
+Module defining CirqEngineWrapper Class
 
+"""
 # pylint: disable=unused-argument,unused-import
 
 from qbraid.devices.device import DeviceLikeWrapper
@@ -9,11 +11,15 @@ from .result import CirqResultWrapper
 
 
 class CirqEngineWrapper(DeviceLikeWrapper):
-    """Wrapper class for Google Cirq ``Engine`` objects. NOTE: Right now the CirqEngine only
-    allows privelaged access, so this class has not been tested and is still in development."""
+    """Wrapper class for Google Cirq ``Engine`` objects.
+
+    NOTE: Right now the CirqEngine only allows privelaged access, so this class
+    has not been tested and is still in development.
+
+    """
 
     def _get_device(self):
-        """Initialize a Google credentialed device."""
+        """Initialize a Google credentialed device (TODO)."""
         return NotImplementedError  # privelaged access
 
     def _vendor_compat_run_input(self, run_input):
@@ -21,7 +27,7 @@ class CirqEngineWrapper(DeviceLikeWrapper):
 
     @property
     def status(self):
-        """Return the status of this Device.
+        """Return the status of this Device. (TODO).
 
         Returns:
             str: The status of this Device
@@ -29,7 +35,7 @@ class CirqEngineWrapper(DeviceLikeWrapper):
         return NotImplementedError
 
     def run(self, run_input, *args, **kwargs):
-        """Runs the supplied Circuit via Quantum Engine.
+        """Runs the supplied Circuit via Quantum Engine (TODO).
 
         Args:
             run_input: The Circuit to execute. If a circuit is provided, a moment by moment
@@ -49,7 +55,7 @@ class CirqEngineWrapper(DeviceLikeWrapper):
         return NotImplementedError
 
     def run_sweep(self, run_input, *args, **kwargs):
-        """Runs the supplied Circuit via Quantum Engine.Creates
+        """Runs the supplied Circuit via Quantum Engine.Creates (TODO)
 
         In contrast to run, this runs across multiple parameter sweeps, and does not block until
         a result is returned.
@@ -73,7 +79,5 @@ class CirqEngineWrapper(DeviceLikeWrapper):
         return NotImplementedError
 
     def estimate_cost(self, circuit, shots=1024):
-        """Estimate the cost of running the supplied circuit."""
-        # print("qBraid currently offers only free devices.")
-        # print("Please contact rickyyoung@qbraid.com for more information.")
+        """Estimate the cost of running the supplied circuit (TODO)."""
         return NotImplementedError

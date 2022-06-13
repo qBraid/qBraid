@@ -1,8 +1,8 @@
 """
 Module containing top-level qbraid wrapper functionality. Each of these
 functions utilize entrypoints via ``pkg_resources``.
-"""
 
+"""
 import pkg_resources
 
 from ._typing import QPROGRAM

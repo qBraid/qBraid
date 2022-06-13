@@ -1,5 +1,7 @@
-"""JobLikeWrapper Class"""
+"""
+Module defining abstract JobLikeWrapper Class
 
+"""
 import logging
 from abc import ABC, abstractmethod
 from time import sleep, time
@@ -17,6 +19,9 @@ if TYPE_CHECKING:
 
 
 def _set_init_status(status: Optional[Union[str, JobStatus]]) -> JobStatus:
+    """Returns `JobStatus` object with which to initialize job. If no value
+    provided or conversion from string fails, returns `JobStatus.UNKNOWN`.
+    """
     if isinstance(status, JobStatus):
         return status
     if isinstance(status, str):

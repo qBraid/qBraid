@@ -1,5 +1,7 @@
-"""BraketQuantumtaskWrapper Class"""
+"""
+Module defining BraketQuantumtaskWrapper Class
 
+"""
 from typing import TYPE_CHECKING
 
 from qbraid.devices.localjob import LocalJobWrapper

@@ -2,7 +2,6 @@
 Unit tests for qbraid top-level functionality
 
 """
-
 import sys
 from unittest.mock import Mock
 

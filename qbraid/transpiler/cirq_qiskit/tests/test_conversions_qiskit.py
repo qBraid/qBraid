@@ -13,7 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Unit tests for conversions between Cirq circuits and Qiskit circuits."""
+"""
+Unit tests for conversions between Cirq circuits and Qiskit circuits.
+
+"""
 import copy
 
 import cirq

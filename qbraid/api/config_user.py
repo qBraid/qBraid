@@ -1,5 +1,7 @@
-"""Module for creating and modifying user config files"""
+"""
+Module for creating and modifying user config files.
 
+"""
 import configparser
 import os
 import sys

@@ -1,5 +1,7 @@
-"""Module for Cirq device-like object wrappers."""
+"""
+Module defining CirqSimulatorWrapper Class
 
+"""
 import warnings
 
 from cirq import DensityMatrixSimulator, Simulator, measure
@@ -65,4 +67,4 @@ class CirqSimulatorWrapper(DeviceLikeWrapper):
 
     def estimate_cost(self, circuit, shots=1024):
         """Estimate the cost of running a circuit on the device."""
-        print("It is free to run on your local simulator on qBraid.")
+        return 0.0

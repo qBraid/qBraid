@@ -1,10 +1,15 @@
+"""
+Unit tests for functions that utilize, interact with,
+or relate to qBraid Quantum Jobs.
+
+"""
 import os
 
 from qbraid.api.job_api import _braket_proxy
 
 
 def test_check_braket_proxy():
-    """Test checking whether braket proxy is active."""
+    """Test function that checks whether braket proxy is active."""
     home = os.getenv("HOME")
     lab_envs = f"{home}/.qbraid/environments"
     lab_slug = "qbraid_sdk_9j9sjy"

@@ -1,5 +1,7 @@
-"""Module for exceptions raised while interacting with the qbraid API"""
+"""
+Module for exceptions raised while interacting with the qbraid API.
 
+"""
 from qbraid.exceptions import QbraidError
 
 

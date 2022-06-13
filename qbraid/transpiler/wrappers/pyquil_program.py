@@ -1,5 +1,7 @@
-"""PyQuilProgramWrapper Class"""
+"""
+Module defining PyQuilProgramWrapper Class
 
+"""
 from pyquil import Program
 
 from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper

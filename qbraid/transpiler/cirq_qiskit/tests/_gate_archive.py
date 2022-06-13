@@ -1,3 +1,7 @@
+"""
+Module for Qiskit gate dictionary used for testing
+
+"""
 from qiskit.circuit.library import standard_gates as sg
 from qiskit.circuit.library.standard_gates import *
 from qiskit.circuit.measure import Measure

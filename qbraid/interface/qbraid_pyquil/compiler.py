@@ -15,13 +15,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Provides a utility basic_compile to allow for running on QCS without
-using quilc, as quilc will optimize away unitary folding.
+"""
+Module that provides a utility basic_compile to allow for running on
+QCS without using quilc, as quilc will optimize away unitary folding.
 
 NB: Copied in large part from rigetti/forest-benchmarking (Apache-2.0)
 and modified to support a larger gateset (e.g. CPHASE).
-"""
 
+"""
 from math import pi
 from typing import Any, Union, cast
 

@@ -1,5 +1,7 @@
-"""Utility module for displaying data to user"""
+"""
+Module for utility functions used in displaying data to user
 
+"""
 import sys
 from typing import Optional
 

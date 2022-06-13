@@ -1,5 +1,7 @@
-"""QiskitCircuitWrapper Class"""
+"""
+Module defining QiskitCircuitWrapper Class
 
+"""
 from cirq import Circuit
 
 # Currently not used because support parameterized circuits

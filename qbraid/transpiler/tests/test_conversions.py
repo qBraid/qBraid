@@ -13,7 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Tests for circuit conversions."""
+"""
+Unit tests for circuit conversions.
+
+"""
 import cirq
 import pennylane as qml
 import pytest

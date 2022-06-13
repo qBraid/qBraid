@@ -1,5 +1,7 @@
-"""CirqCircuitWrapper Class"""
+"""
+Module defining CirqCircuitWrapper Class
 
+"""
 # pylint: disable=invalid-name
 
 from cirq.circuits import Circuit

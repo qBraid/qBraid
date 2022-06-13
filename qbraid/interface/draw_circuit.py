@@ -1,5 +1,7 @@
-"""Module for drawing quantum circuit diagrams"""
+"""
+Module for drawing quantum circuit diagrams
 
+"""
 from typing import TYPE_CHECKING
 
 from qbraid.exceptions import ProgramTypeError

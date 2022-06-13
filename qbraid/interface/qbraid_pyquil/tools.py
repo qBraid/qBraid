@@ -1,5 +1,7 @@
-"""pyQuil tools"""
+"""
+Module containing pyQuil tools
 
+"""
 import numpy as np
 from pyquil import Program
 from pyquil.simulation.tools import program_unitary

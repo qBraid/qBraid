@@ -1,5 +1,7 @@
-"""Module containing quantum programs used for testing"""
+"""
+Module containing quantum programs used for testing
 
+"""
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 import numpy as np

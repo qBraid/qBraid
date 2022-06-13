@@ -13,8 +13,10 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-"""Functions to convert between Cirq's circuit representation and
-pyQuil's circuit representation (Quil programs).
+"""
+Module containing functions to convert between Cirq's circuit
+representation and pyQuil's circuit representation (Quil programs).
+
 """
 from cirq import Circuit, LineQubit
 from cirq.contrib.quil_import import circuit_from_quil

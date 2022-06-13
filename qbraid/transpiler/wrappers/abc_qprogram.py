@@ -1,5 +1,7 @@
-"""QuantumProgramWrapper Class"""
+"""
+Module defining QuantumProgramWrapper Class
 
+"""
 from typing import TYPE_CHECKING, List, Optional
 
 from qbraid._typing import SUPPORTED_PROGRAM_TYPES

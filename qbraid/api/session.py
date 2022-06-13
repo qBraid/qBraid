@@ -1,5 +1,10 @@
-"""Module for making requests to the qbraid api"""
+"""
+Module for making requests to the qBraid API.
 
+Code annotated with `Credit: Qiskit IBMQ` took direct
+inspiration from `qiskit.providers.ibmq.api.session`.
+
+"""
 import logging
 from typing import Any, Optional
 
@@ -11,6 +16,7 @@ from .config_specs import qbraid_api_url
 from .config_user import get_config
 from .exceptions import RequestsApiError
 
+# Credit: Qiskit IBMQ
 STATUS_FORCELIST = (
     500,  # General server error
     502,  # Bad Gateway
@@ -37,8 +43,11 @@ class PostForcelistRetry(Retry):
     is on the :py:const:`~qbraid.api.session.STATUS_FORCELIST`. While ``POST`` requests are
     recommended not to be retried due to not being idempotent, retrying on specific 5xx errors
     through the qBraid API is safe.
+
+    Credit: Qiskit IBMQ
     """
 
+    # TODO: Add tests for this method.
     def increment(  # type: ignore[no-untyped-def]
         self,
         method=None,
@@ -188,6 +197,9 @@ class QbraidSession(Session):
         self, retries_total: int, retries_connect: int, backoff_factor: float
     ) -> None:
         """Set the session retry policy.
+
+        Credit: Qiskit IBMQ
+
         Args:
             retries_total: Number of total retries for the requests.
             retries_connect: Number of connect retries for the requests.
@@ -206,6 +218,9 @@ class QbraidSession(Session):
 
     def request(self, method: str, url: str, **kwargs: Any) -> Response:  # type: ignore[override]
         """Construct, prepare, and send a ``Request``.
+
+        Credit: Qiskit IBMQ
+
         Args:
             method: Method for the new request (e.g. ``POST``).
             url: URL for the new request.
