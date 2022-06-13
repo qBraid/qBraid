@@ -74,7 +74,7 @@ If needed, you can check the version of the existing SDK package by inspecting i
 cat qbraid_sdk_9j9sjy/pyenv/lib/python3.9/site-packages/qbraid/_version.py
 ```
 
-Next, copy over the new SDK directory from your lab account environments directory to the global environments directory. You can use the `admin-threaded-copy.py` python script to speed up to the process:
+Next, copy over the new SDK directory from your lab account environments directory to the global environments directory. You can use the `admin-threaded-copy.py` python script to speed up the process:
 
 ```shell
 mkdir qbraid_sdk_9j9sjy
