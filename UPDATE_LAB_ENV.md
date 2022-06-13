@@ -56,38 +56,38 @@ qbraid.__version__
 
 ## Update environment directory in EFS
 
-`ssh` into the EFS filesystem, navigate to the global environment directory:
+`ssh` into the EFS filesystem, and navigate to the global environment directory:
 
 ```shell
 cd /filesystem/global/environments
 ```
 
-Archive the existing SDK package directory by appending the old version number e.g. "x.y.z" to the end of the slug (make sure to remove the periods):
+Archive the existing SDK package directory by appending the old version number e.g. `x.y.z` to the end of the slug (make sure to remove the periods):
 
 ```shell
 mv qbraid_sdk_9j9sjy qbraid_sdk_9j9sjy_[xyz]
 ```
 
-You can get the version of the existing SDK package by inspecting its `_version.py` file:
+If needed, you can check the version of the existing SDK package by inspecting its `_version.py` file:
 
 ```bash
 cat qbraid_sdk_9j9sjy/pyenv/lib/python3.9/site-packages/qbraid/_version.py
 ```
 
-Use the `admin-threaded-copy.py` script to copy over the new SDK version from your lab account:
+Next, copy over the new SDK directory from your lab account environments directory to the global environments directory. You can use the `admin-threaded-copy.py` python script to speed up to the process:
 
 ```shell
 mkdir qbraid_sdk_9j9sjy
 sudo python3 admin-threaded-copy.py /filesystem/home/[userdir]/.qbraid/environments/qbraid_sdk_9j9sjy /filesystem/global/environments/qbraid_sdk_9j9sjy
 ```
 
-A couple import thinks to note for step above:
+There are a few important things to note when carrying out the step above:
 
-1. The copy script requires that the target directory already exists. So, as shown above, you must create the new empty slug directory before executing the copy script.
+1. The copy script requires that the target directory already exists. So, shown above, you must create the new empty slug directory *first*, before executing the copy script.
 
-2. The script will fail if either of the source or target directory end with a forward-slash. Each directory location should end with `qbraid_sdk_9j9sjy`, not `qbraid_sdk_9j9sjy/`.
+2. The script will fail if either of the source or target directory end with a forward-slash. In other words, each directory location should end with `qbraid_sdk_9j9sjy`, not `qbraid_sdk_9j9sjy/`.
 
-3. If the email associated with your account is exampleuser@gmail.com, then the value `userdir` above will be `exampleuser-40gmail-2ecom`. Notice how `@` is mapped to `-40`, And `.` is mapped to `-2e`. Similar mappings exist for a number of other values, so keep that in mind when specifying the directory associated with your account.
+3. If the email associated with your account is exampleuser@gmail.com, then the value `userdir` in the filepath above will be `exampleuser-40gmail-2ecom`. Notice how `@` is mapped to `-40`, And `.` is mapped to `-2e`. Similar mappings exist for a number of other values, so keep that in mind when specifying the directory associated with your account.
 
 ## Verify successful update in Lab
 
