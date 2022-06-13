@@ -21,7 +21,13 @@ filterwarnings = [
 parallel = true
 source = ["qbraid"]
 omit = [
-  "**/qbraid/_archive/*"
+  "**/qbraid/_archive/*",
+  "**/qbraid/api/install_package.py",
+  "**/qbraid/devices/google/device.py",
+  "**/qbraid/devices/google/job.py",
+  "**/qbraid/transpiler/cirq_utils/qasm_output.py",
+  "**/qbraid/transpiler/*/_gate_archive.py",
+  "**/qbraid/transpiler/parameter.py"
 ]
 
 [tool.coverage.paths]
@@ -54,14 +60,14 @@ exclude = '''
   | \.__pycache__
   | \.tox
   | \.venv
-  | tutorials
   | dist
+  | qbraid/_archive
 )/
 '''
 
 [tool.pylint.'MESSAGES CONTROL']
 max-line-length = 100
-disable = "C0103, R0801, R0902, R0903, R0911, R0912, R0914, W0212"
+disable = "C0103, C3001, E0401, E1101, R0801, R0902, R0903, R0911, R0912, R0914, W0212, W0511"
 
 [tool.isort]
 profile = "hug"
