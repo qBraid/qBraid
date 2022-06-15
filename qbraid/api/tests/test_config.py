@@ -20,6 +20,7 @@ from qbraid.api.config_specs import (
 from qbraid.api.config_user import _mask_value, get_config, update_config, verify_config
 from qbraid.api.exceptions import ConfigError, RequestsApiError
 from qbraid.api.session import QbraidSession
+from qbraid.api.ibmq_api import ibmq_get_provider
 
 # These environment variables don't actually exist in qBraid Lab, but instead
 # are set and used for convenience for local development and testing.
@@ -145,3 +146,11 @@ def test_qbraid_session_from_args():
     headers = session.headers
     assert headers["email"] == email
     assert headers["refresh-token"] == refresh
+
+
+def test_ibmq_get_provider():
+    """Test getting IBMQ provider from qiskitrc"""
+    from qiskit.providers.ibmq import AccountProvider
+
+    provider = ibmq_get_provider()
+    assert isinstance(provider, AccountProvider)
