@@ -11,6 +11,7 @@ from braket.circuits.unitary_calculation import calculate_unitary
 def _unitary_from_braket(circuit: BKCircuit) -> np.ndarray:
     """Return the unitary of a Braket circuit."""
     return calculate_unitary(circuit.qubit_count, circuit.instructions)
+    # return circuit.to_unitary()
 
 
 def _contiguous_expansion(circuit: BKCircuit) -> BKCircuit:

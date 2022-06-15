@@ -13,8 +13,7 @@ if __name__ == "__main__":
     qc.measure(0, 0)
 
     provider = ibmq_get_provider()
-    backend = provider.get_backend('ibmq_armonk')
+    backend = provider.get_backend("ibmq_armonk")
     transpiled = transpile(qc, backend=backend)
     job = backend.run(transpiled)
     print(job.status())
-

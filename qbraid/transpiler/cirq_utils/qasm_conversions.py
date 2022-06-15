@@ -55,9 +55,10 @@ def _to_qasm_output(
     circuit: circuits.Circuit,
     header: Optional[str] = None,
     precision: int = 10,
-    qubit_order: "cirq.QubitOrderOrList" = ops.QubitOrder.DEFAULT,
-) -> QasmOutput:
+    qubit_order: 'cirq.QubitOrderOrList' = ops.QubitOrder.DEFAULT,
+) -> 'cirq.QasmOutput':
     """Returns a QASM object equivalent to the circuit.
+
     Args:
         header: A multi-line string that is placed in a comment at the top
             of the QASM. Defaults to a cirq version specifier.
@@ -66,16 +67,14 @@ def _to_qasm_output(
             register.
     """
     if header is None:
-        header = (
-            f"Generated from Cirq v{cirq._version.__version__}"  # pylint: disable=protected-access
-        )
+        header = f'Generated from Cirq v{cirq._version.__version__}'
     qubits = ops.QubitOrder.as_qubit_order(qubit_order).order_for(circuit.all_qubits())
     return QasmOutput(
         operations=circuit.all_operations(),
         qubits=qubits,
         header=header,
         precision=precision,
-        version="2.0",
+        version='2.0',
     )
 
 
@@ -86,6 +85,7 @@ def circuit_to_qasm(
     qubit_order: "cirq.QubitOrderOrList" = ops.QubitOrder.DEFAULT,
 ) -> QASMType:
     """Converts a `cirq.Circuit` to an OpenQASM string.
+
     Args:
         circuit: cirq Circuit object
         header: A multi-line string that is placed in a comment at the top of the QASM.
@@ -99,8 +99,10 @@ def circuit_to_qasm(
 
 def circuit_from_qasm(qasm: str) -> circuits.Circuit:
     """Parses an OpenQASM string to `cirq.Circuit`.
+    
     Args:
         qasm: The OpenQASM string
+
     Returns:
         The parsed circuit
     """

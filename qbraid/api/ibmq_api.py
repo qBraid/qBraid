@@ -11,7 +11,7 @@ from .config_user import get_config, verify_config
 
 
 def ibmq_get_provider() -> AccountProvider:
-    """Get IBMQ AccountProvider""" 
+    """Get IBMQ AccountProvider"""
     verify_config("IBM")
     # token = get_config("token", "ibmq", filepath=qiskitrc_path)
     default = get_config("default_provider", "ibmq", filepath=qiskitrc_path)
