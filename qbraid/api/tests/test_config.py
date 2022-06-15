@@ -19,8 +19,8 @@ from qbraid.api.config_specs import (
 )
 from qbraid.api.config_user import _mask_value, get_config, update_config, verify_config
 from qbraid.api.exceptions import ConfigError, RequestsApiError
-from qbraid.api.session import QbraidSession
 from qbraid.api.ibmq_api import ibmq_get_provider
+from qbraid.api.session import QbraidSession
 
 # These environment variables don't actually exist in qBraid Lab, but instead
 # are set and used for convenience for local development and testing.

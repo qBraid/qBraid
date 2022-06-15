@@ -17,6 +17,7 @@ This module contains the classes used to run quantum circuits on devices availab
    BraketResultWrapper
 
 """
+# isort: skip_file
 # pylint: skip-file
 from .result import BraketResultWrapper
 from .device import BraketDeviceWrapper

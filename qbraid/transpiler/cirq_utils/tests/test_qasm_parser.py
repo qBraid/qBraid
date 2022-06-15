@@ -16,7 +16,9 @@
 Unit tests for Cirq Qasm Parser
 
 """
+# isort: skip_file
 # pylint: skip-file
+# fmt: off
 
 import numpy as np
 import pytest

@@ -14,7 +14,6 @@ from braket.devices import LocalSimulator as AwsSimulator
 from braket.tasks.quantum_task import QuantumTask as BraketQuantumTask
 from cirq.sim.simulator_base import SimulatorBase as CirqSimulator
 from cirq.study.result import Result as CirqResult
-
 # from dwave.system.composites import EmbeddingComposite
 from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.providers.backend import Backend as QiskitBackend

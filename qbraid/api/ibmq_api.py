@@ -5,9 +5,9 @@ Module for top-level interfacing with the IBMQ API
 from qiskit import IBMQ
 from qiskit.providers.ibmq import AccountProvider, IBMQError, least_busy
 
-from .exceptions import AuthError
 from .config_specs import qiskitrc_path
 from .config_user import get_config, verify_config
+from .exceptions import AuthError
 
 
 def ibmq_get_provider() -> AccountProvider:

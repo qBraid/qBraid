@@ -64,6 +64,6 @@
 
 from .config_user import get_config, update_config, verify_config
 from .exceptions import ApiError, AuthError, ConfigError, RequestsApiError
-from .job_api import get_job_data, init_job
 from .ibmq_api import ibmq_get_provider, ibmq_least_busy_qpu
+from .job_api import get_job_data, init_job
 from .session import QbraidSession
