@@ -13,14 +13,13 @@
 # limitations under the License.
 # isort: skip_file
 # pylint: skip-file
+# flake8: noqa
 # fmt: off
 
 """
 Module defining utility classes for representing QASM.
 
 """
-# pylint: skip-file
-
 import re
 from typing import TYPE_CHECKING, Callable, Dict, Optional, Set, Tuple, Union
 

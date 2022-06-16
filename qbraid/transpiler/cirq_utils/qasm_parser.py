@@ -13,8 +13,13 @@
 # limitations under the License.
 # isort: skip_file
 # pylint: skip-file
+# flake8: noqa
 # fmt: off
 
+"""
+Module defining qBraid Cirq QASM parser.
+
+"""
 import functools
 import operator
 from typing import Any, Callable, cast, Dict, Iterable, List, Optional, Sequence, Union
@@ -64,11 +69,11 @@ class Qasm:
 
 class QasmGateStatement:
     """Specifies how to convert a call to an OpenQASM gate
-    to a list of `cirq.GateOperation`s.
+    to a list of 'cirq.GateOperation's.
 
     Has the responsibility to validate the arguments
     and parameters of the call and to generate a list of corresponding
-    `cirq.GateOperation`s in the `on` method.
+    'cirq.GateOperation's in the 'on' method.
     """
 
     def __init__(

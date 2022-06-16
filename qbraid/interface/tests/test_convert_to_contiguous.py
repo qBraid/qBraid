@@ -3,13 +3,26 @@ Unit tests for the qbraid convert_to_contiguous interfacing
 
 """
 import cirq
+import numpy as np
 from braket.circuits import Circuit as BraketCircuit
 
 from qbraid.interface.calculate_unitary import circuits_allclose
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
 
 
-def test_make_contiguous():
+def test_convert_braket_bell():
+    """Test convert_to_contigious on bell circuit"""
+    circuit = BraketCircuit().h(0).cnot(0, 1)  # pylint: disable=no-member
+    h_gate = np.sqrt(1 / 2) * np.array([[1, 1], [1, -1]])
+    h_gate_kron = np.kron(np.eye(2), h_gate)
+    cnot_gate = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
+    u_expected = np.einsum("ij,jk->ki", h_gate_kron, cnot_gate)
+    contig_circuit = convert_to_contiguous(circuit)
+    u_test = contig_circuit.as_unitary()
+    assert np.allclose(u_expected, u_test)
+
+
+def test_compare_conversion_braket_cirq():
     """Test unitary equivalance after converting to contiguous qubits"""
     # pylint: disable=no-member
     braket_circuit = BraketCircuit()

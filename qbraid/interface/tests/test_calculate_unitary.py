@@ -6,11 +6,9 @@ from itertools import chain, combinations
 
 import numpy as np
 import pytest
-from braket.circuits import Circuit as BraketCircuit
-from braket.circuits import Instruction as BraketInstruction
-from braket.circuits import gates as braket_gates
+from braket.circuits import Circuit, Instruction, gates
 
-from qbraid.interface.calculate_unitary import to_unitary
+from qbraid.interface.calculate_unitary import to_unitary, unitary_to_little_endian
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
 
 
@@ -35,7 +33,7 @@ def generate_test_data(input_gate_set, contiguous=True):
     """Generate test data"""
     testdata = []
     gate_set = input_gate_set.copy()
-    gate_set.append(braket_gates.I)
+    gate_set.append(gates.I)
     nqubits = len(input_gate_set)
     subsets = get_subsets(nqubits)
     for ss in subsets:
@@ -53,42 +51,34 @@ def generate_test_data(input_gate_set, contiguous=True):
     return testdata
 
 
-def unitary_test_helper(bk_instrs, u_expected):
-    """Returns True if Braket instructions are equivalent to expected unitary"""
-    circuit = BraketCircuit()
+def make_circuit(bk_instrs):
+    """Constructs Braket circuit from list of instructions"""
+    circuit = Circuit()
     for instr in bk_instrs:
         Gate, index = instr
-        circuit.add_instruction(BraketInstruction(Gate(), target=index))
-    contig_circuit = convert_to_contiguous(circuit, expansion=True)
-    u_test = to_unitary(contig_circuit)
-    return np.allclose(u_expected, u_test)
+        circuit.add_instruction(Instruction(Gate(), target=index))
+    return convert_to_contiguous(circuit, expansion=True)
 
 
-test_gate_set = [braket_gates.X, braket_gates.Y, braket_gates.Z]
+test_gate_set = [gates.X, gates.Y, gates.Z]
 test_data_contiguous_qubits = generate_test_data(test_gate_set)
 test_data_non_contiguous_qubits = generate_test_data(test_gate_set, contiguous=False)
+test_data = test_data_contiguous_qubits + test_data_non_contiguous_qubits
 
 
-def test_bell_circuit():
-    """Test convert_to_contigious on bell circuit"""
-    circuit = BraketCircuit().h(0).cnot(0, 1)  # pylint: disable=no-member
-    h_gate = np.sqrt(1 / 2) * np.array([[1, 1], [1, -1]])
-    h_gate_kron = np.kron(np.eye(2), h_gate)
-    cnot_gate = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
-    u_expected = np.einsum("ij,jk->ki", h_gate_kron, cnot_gate)
-    contig_circuit = convert_to_contiguous(circuit)
-    u_test = to_unitary(contig_circuit)
+@pytest.mark.parametrize("bk_instrs,u_expected", test_data)
+def test_unitary_calc(bk_instrs, u_expected):
+    """Test calculating unitary of circuits using both contiguous and
+    non-contiguous qubit indexing."""
+    circuit = make_circuit(bk_instrs)
+    u_test = to_unitary(circuit)
     assert np.allclose(u_expected, u_test)
 
 
-@pytest.mark.parametrize("bk_instrs,u_expected", test_data_contiguous_qubits)
-def test_continguous_qubits_unitary_calc(bk_instrs, u_expected):
-    """Test unitary calc for instructions with contiguous qubit indexing"""
-    assert unitary_test_helper(bk_instrs, u_expected)
-
-
-# @pytest.mark.skip(reason="https://github.com/aws/amazon-braket-sdk-python/issues/295")
-@pytest.mark.parametrize("bk_instrs,u_expected", test_data_non_contiguous_qubits)
-def test_non_continguous_qubits_unitary_calc(bk_instrs, u_expected):
-    """Test unitary calc for instructions with non-contiguous qubit indexing"""
-    assert unitary_test_helper(bk_instrs, u_expected)
+@pytest.mark.parametrize("bk_instrs,u_expected", test_data)
+def test_convert_be_to_le(bk_instrs, u_expected):
+    """Test converting big-endian unitary to little-endian unitary."""
+    circuit = make_circuit(bk_instrs)
+    u_big = circuit.to_unitary()
+    u_test = unitary_to_little_endian(u_big)
+    assert np.allclose(u_expected, u_test)

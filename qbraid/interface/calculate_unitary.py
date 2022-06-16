@@ -106,3 +106,28 @@ def circuits_allclose(
     except AssertionError:
         return False
     return True
+
+
+def unitary_to_little_endian(matrix: np.ndarray) -> np.ndarray:
+    """Converts unitary calculated using big-endian system to its
+    equivalent form in a little-endian system.
+
+    Args:
+        matrix: big-endian unitary
+
+    Raises:
+        ValueError: If input matrix is not unitary
+
+    Returns:
+        little-endian unitary
+
+    """
+    rank = len(matrix)
+    if not np.allclose(np.eye(rank), matrix.dot(matrix.T.conj())):
+        raise ValueError("Input matrix must be unitary.")
+    num_qubits = int(np.log2(rank))
+    tensor_be = matrix.reshape([2] * 2 * num_qubits)
+    indicies_in = list(reversed(range(num_qubits)))
+    indicies_out = [i + num_qubits for i in indicies_in]
+    tensor_le = np.einsum(tensor_be, indicies_in + indicies_out)
+    return tensor_le.reshape([rank, rank])
