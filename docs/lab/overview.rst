@@ -13,12 +13,25 @@ Overview
    </p>
 
 
-Features
-----------
+Environment Manager
+--------------------
 
-- `Environment Manager <environments.html>`_
-- `Notebooks <notebooks.html>`_
+The qBraid Lab Environment Manager is a robust package and virtual environment management system
+provided to qBrad end-users through a simple, intuitive graphical user interface.
 
+To expand the Environment Manager sidebar, click on **Envs** in the upper-right of the Lab console.
+**My Environments** are your currently installed environments. The qBraid Default environment and
+Microsoft Q# environment are installed by default.
+
+- `Install environment <env-install.html>`_
+- `Create environment <env-create.html>`_
+- `Manage kernels <kernel-manage.html>`_
+
+
+Integrations
+-------------
+
+- `Connect to VS Code <vscode.html>`_
 
 .. seealso::
    

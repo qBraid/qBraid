@@ -103,8 +103,9 @@ Documentation
    :hidden:
 
    lab/overview
-   lab/environments
-   lab/notebooks
+   lab/env-install
+   lab/env-create
+   lab/kernel-manage
    lab/vscode
 
 .. toctree::
