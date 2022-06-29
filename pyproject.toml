@@ -62,6 +62,7 @@ exclude = '''
   | \.venv
   | dist
   | qbraid/_archive
+  | qbraid/transpiler/cirq_utils/qasm_parser.py
 )/
 '''
 

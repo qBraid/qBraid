@@ -15,6 +15,7 @@ This module contains the classes used to run quantum circuits on devices availab
    CirqResultWrapper
 
 """
+# isort: skip_file
 # pylint: skip-file
 from .result import CirqResultWrapper
 from .localjob import CirqLocalJobWrapper

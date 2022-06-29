@@ -2,17 +2,12 @@
 Module defining QiskitBackendWrapper Class
 
 """
-import os
-
-# TODO: See if we can neatly condense these imports
-from qiskit import IBMQ, Aer, assemble
-from qiskit import transpile as qiskit_transpile
+from qiskit import Aer, assemble, transpile
 from qiskit.providers.backend import Backend as QiskitBackend
-from qiskit.providers.ibmq import IBMQProviderError
 from qiskit.providers.ibmq.managed import IBMQJobManager
 from qiskit.utils.quantum_instance import QuantumInstance
 
-from qbraid.api.config_user import get_config
+from qbraid.api.ibmq_api import ibmq_get_provider
 from qbraid.api.job_api import init_job
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
@@ -21,8 +16,6 @@ from qbraid.devices.exceptions import DeviceError
 from .job import QiskitJobWrapper
 from .result import QiskitResultWrapper
 
-qiskitrc_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
-
 
 class QiskitBackendWrapper(DeviceLikeWrapper):
     """Wrapper class for IBM Qiskit ``Backend`` objects."""
@@ -30,23 +23,14 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
     def _get_device(self) -> QiskitBackend:
         """Initialize an IBM device."""
         if self._obj_ref == "IBMQ":
-            if not IBMQ.active_account():
-                IBMQ.load_account()
-            provider = get_config("default_provider", "ibmq", filepath=qiskitrc_path)
-            hub, group, project = provider.split("/")
-            try:
-                provider = IBMQ.get_provider(hub=hub, group=group, project=project)
-            except IBMQProviderError:
-                IBMQ.load_account()
-                provider = IBMQ.get_provider(hub=hub, group=group, project=project)
+            provider = ibmq_get_provider()
             return provider.get_backend(self._obj_arg)
         if self._obj_ref == "Aer":
             return Aer.get_backend(self._obj_arg)
-        # IBMQ.disable_account()
         raise DeviceError(f"obj_ref {self._obj_ref} not found.")
 
     def _vendor_compat_run_input(self, run_input):
-        return qiskit_transpile(run_input, self.vendor_dlo)
+        return transpile(run_input, self.vendor_dlo)
 
     @property
     def status(self):
@@ -114,9 +98,8 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             qiskit_job = self.vendor_dlo.run(qobj)
             qiskit_job_id = qiskit_job.job_id()
         else:
-            memory = True if "memory" not in kwargs else kwargs.pop("memory")
-            # TODO: Add comments about how IBMQJobManager is being used
             job_manager = IBMQJobManager()  # assemble included in run method
+            memory = True if "memory" not in kwargs else kwargs.pop("memory")
             job_set = job_manager.run([run_input], backend=self.vendor_dlo, memory=memory, **kwargs)
             qiskit_job = job_set.jobs()[0]
             qiskit_job_id = job_set.job_set_id()

@@ -1,3 +1,7 @@
-# pylint: skip-file
+"""
+Module containing version information
 
-__version__ = "0.1.1"
+Version number (major.minor.patch[-label])
+
+"""
+__version__ = "0.1.1.dev0"
