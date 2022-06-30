@@ -8,13 +8,13 @@ Manage qBraid Quantum Jobs.
 Commands
 ---------
 +---------------------------------------+---------------------------------------------------+
-| ``qbraid jobs disable``               | Disable qBraid Quantum Jobs.                      |
-+---------------------------------------+---------------------------------------------------+
-| ``qbraid jobs enable``                | Enable qBraid Quantum Jobs.                       |
+| ``qbraid jobs list``                  | Get list of qBraid Quantum Jobs.                  |
 +---------------------------------------+---------------------------------------------------+
 | ``qbraid jobs get-credits``           | Get number of qBraid credits remaining.           |
 +---------------------------------------+---------------------------------------------------+
-| ``qbraid jobs list``                  | Get list of qBraid Quantum Jobs.                  |
+| ``qbraid jobs enable``                | Enable qBraid Quantum Jobs.                       |
++---------------------------------------+---------------------------------------------------+
+| ``qbraid jobs disable``               | Disable qBraid Quantum Jobs.                      |
 +---------------------------------------+---------------------------------------------------+
 
 .. toctree::

@@ -22,13 +22,13 @@ Examples
 .. code-block:: console
 
     $ qbraid jobs enable -n qbraid_sdk
-    You are now submitting jobs with qBraid Quantum Jobs.
-    Every job you run will be taken care of with our API, so no access keys are necessary. 
+    Successfully enabled qBraid Quantum Jobs in the qbraid_sdk environment.
+    Every AWS job you run will now be submitted through the qBraid API, so no access keys/tokens are necessary. 
 
     To disable, run: `qbraid jobs disable -n qbraid_sdk`
 
 
-qBraid environments with support for quantum jobs include ``aws_braket`` and ``qbraid_sdk``.
+qBraid environments with support for quantum jobs include ``amazon_braket`` and ``qbraid_sdk``.
 
 .. seealso::
 

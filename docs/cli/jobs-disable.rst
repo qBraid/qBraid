@@ -27,7 +27,7 @@ Examples
     To re-enable, run: `qbraid jobs enable -n qbraid_sdk`
 
 
-qBraid environments with support for quantum jobs include ``aws_braket`` and ``qbraid_sdk``.
+qBraid environments with support for quantum jobs include ``amazon_braket`` and ``qbraid_sdk``.
 
 
 .. seealso::

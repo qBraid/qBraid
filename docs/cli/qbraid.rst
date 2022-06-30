@@ -19,7 +19,7 @@ qbraid
    </p>
 
 
-**Version 0.1.0**
+**Version 0.1.2**
 
 The qBraid CLI is available exclusively through `qBraid Lab <https://lab.qbraid.com>`_.
 Login (or create an account) and then open Termainal to get started using the CLI.

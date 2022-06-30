@@ -14,6 +14,8 @@ Arguments
 +-----------------------------------------+---------------------------------------------------+
 | ``qbraid envs pennylane``               | Manage Pennylane environment.                     |
 +-----------------------------------------+---------------------------------------------------+
+| ``qbraid envs perceval``                | Manage Quandela Perceval environment.             |
++-----------------------------------------+---------------------------------------------------+
 | ``qbraid envs pulser``                  | Manage Pulser environment.                        |
 +-----------------------------------------+---------------------------------------------------+
 | ``qbraid envs pyquil``                  | Manage pyQuil environment.                        |
@@ -23,6 +25,8 @@ Arguments
 | ``qbraid envs qbraid_sdk``              | Manage qBraid SDK environment.                    |
 +-----------------------------------------+---------------------------------------------------+
 | ``qbraid envs qiskit``                  | Manage Qiskit environment.                        |
++-----------------------------------------+---------------------------------------------------+
+| ``qbraid envs qiskit_txtbk``            | Manage Qiskit Textbook environment.               |
 +-----------------------------------------+---------------------------------------------------+
 | ``qbraid envs qsharp``                  | Manage Microsoft Q# environment.                  |
 +-----------------------------------------+---------------------------------------------------+
@@ -44,10 +48,13 @@ Commands
 +-----------------------------------------+---------------------------------------------------+
 | ``qbraid envs <environment> uninstall`` | Uninstall qBraid environment.                     |
 +-----------------------------------------+---------------------------------------------------+
+| ``qbraid envs <environment> upgrade``   | Upgrade packages in qBraid environment.           |
++-----------------------------------------+---------------------------------------------------+
 
 .. toctree::
    :maxdepth: 1
 
-   envs-env-activate
    envs-env-pip
+   envs-env-activate
    envs-env-uninstall
+   envs-env-upgrade
