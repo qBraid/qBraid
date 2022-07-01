@@ -1,16 +1,17 @@
-<a href="https://qbraid.com/">
-    <img src="/docs/_static/qbraid-sdk.png"
-         alt="qbraid logo"
-         width="300px"
-         align="center">
-</a>
-
+# qBraid-SDK
 [![CI](https://github.com/qBraid/qBraid/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/qBraid/qBraid/actions/workflows/main.yml)
 [![codecov](https://codecov.io/gh/qBraid/qBraid/branch/main/graph/badge.svg?token=1UTM0XZB7A)](https://codecov.io/gh/qBraid/qBraid)
 [![Documentation Status](https://readthedocs.com/projects/qbraid-qbraid/badge/?version=latest&token=429dfd5a6bf3702e241c1dfe5f336a7d43629848878bd9cbbc19ba66f01e1eea)](https://qbraid-qbraid.readthedocs-hosted.com/en/latest/?badge=latest)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 The qBraid-SDK is a highly-extensible, hardware-agnostic sdk/toolkit for running quantum programs.
+
+<a href="https://qbraid.com/">
+    <img src="/docs/_static/logo.png"
+         alt="qbraid logo"
+         width="250px"
+         align="right">
+</a>
 
 ## Installation
 You can install from source by cloning this repository and running a pip install command in the
