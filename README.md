@@ -1,8 +1,8 @@
 <a href="https://qbraid.com/">
     <img src="/docs/_static/qbraid-sdk.png"
          alt="qbraid logo"
-         width="250px"
-         align="left">
+         width="300px"
+         align="center">
 </a>
 
 [![CI](https://github.com/qBraid/qBraid/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/qBraid/qBraid/actions/workflows/main.yml)
