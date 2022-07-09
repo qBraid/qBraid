@@ -22,7 +22,6 @@ parallel = true
 source = ["qbraid"]
 omit = [
   "**/qbraid/_archive/*",
-  "**/qbraid/transpiler/cirq_utils/qasm_output.py",
   "**/qbraid/transpiler/*/_gate_archive.py"
 ]
 

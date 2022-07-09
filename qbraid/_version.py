@@ -4,4 +4,4 @@ Module containing version information
 Version number (major.minor.patch[-label])
 
 """
-__version__ = "0.1.2"
+__version__ = "0.1.3"

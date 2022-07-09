@@ -2,8 +2,6 @@
 Unit tests for the qbraid device layer.
 
 """
-# from typing import Any
-
 import cirq
 import numpy as np
 import pytest
@@ -14,8 +12,6 @@ from braket.devices import LocalSimulator as AwsSimulator
 from braket.tasks.quantum_task import QuantumTask as BraketQuantumTask
 from cirq.sim.simulator_base import SimulatorBase as CirqSimulator
 from cirq.study.result import Result as CirqResult
-
-# from dwave.system.composites import EmbeddingComposite
 from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.job import Job as QiskitJob
@@ -277,8 +273,6 @@ def test_job_wrapper_error():
         job_wrapper("google-test")
 
 
-# TODO 502 Server Error: Bad Gateway for url:
-# https://api-staging-1.qbraid.com/api/public/lab/get-devices?qbraid_id=google_cirq_dm_sim
 @pytest.mark.parametrize("device_id", ["ibm_q_sv_sim", "aws_dm_sim", "google_cirq_dm_sim"])
 def test_result_wrapper_measurements(device_id):
     """Test result wrapper measurements method."""
@@ -290,7 +284,6 @@ def test_result_wrapper_measurements(device_id):
     assert measurements.shape == (10, 3)
 
 
-# @pytest.mark.skip(reason="JSONDecodeError")
 @pytest.mark.parametrize("device_id", ["aws_tn_sim", "aws_dm_sim", "aws_sv_sim"])
 def test_cost_estimator(device_id):
     """Test cost estimators"""

@@ -4,8 +4,9 @@ Module for Qiskit gate dictionary used for testing
 """
 from qiskit.circuit.library import standard_gates as sg
 from qiskit.circuit.library.standard_gates import *
-from qiskit.circuit.measure import Measure
-from qiskit.extensions.unitary import UnitaryGate
+
+# from qiskit.circuit.measure import Measure
+# from qiskit.extensions.unitary import UnitaryGate
 
 qiskit_gates = {
     "H": sg.h.HGate,
@@ -46,8 +47,8 @@ qiskit_gates = {
     "RZZ": sg.rzz.RZZGate,
     "CU1": sg.u1.CU1Gate,
     "RCCX": sg.x.RCCXGate,
-    "RC3X": sg.x.RC3XGate,
     "CCX": sg.x.CCXGate,
-    "Unitary": UnitaryGate,
-    "MEASURE": Measure,
+    # "RC3X": sg.x.RC3XGate,
+    # "Unitary": UnitaryGate,
+    # "MEASURE": Measure,
 }
