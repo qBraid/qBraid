@@ -154,7 +154,7 @@ def test_get_devices_results(capfd):
     So, for a query returning ``x`` results, we expect ``5+x`` total lines from stdout.
     """
     _mock_ipython(MockIPython(None))
-    get_devices(filters={"qbraid_id": "ibm_q_armonk"})
+    get_devices(filters={"qbraid_id": "ibm_q_belem"})
     num_results = 1  # searching by device id will return one result
     lines_expected = 5 + num_results
     out, err = capfd.readouterr()
@@ -176,7 +176,7 @@ def test_get_devices_refresh_results(capfd):
     So for a query returning ``x`` results, we expect ``6+x`` total lines from stdout.
     """
     _mock_ipython(MockIPython(None))
-    get_devices(filters={"qbraid_id": "ibm_q_armonk"}, refresh=True)
+    get_devices(filters={"qbraid_id": "ibm_q_belem"}, refresh=True)
     num_results = 1  # searching by device id will return one result
     lines_expected = 6 + num_results
     out, err = capfd.readouterr()
