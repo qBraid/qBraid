@@ -104,15 +104,6 @@ def test_init_braket_device_wrapper(device_id):
         assert isinstance(vendor_device, AwsDevice)
 
 
-# @pytest.mark.skip(reason="Skipping b/c EmbeddingComposite not installed")
-# @pytest.mark.parametrize("device_id", inputs_braket_sampler)
-# def test_init_braket_dwave_sampler(device_id):
-#     qbraid_device = device_wrapper(device_id)
-#     vendor_sampler = qbraid_device.get_sampler()
-#     # assert isinstance(vendor_sampler, EmbeddingComposite)
-#     assert isinstance(vendor_sampler, Any)
-
-
 @pytest.mark.parametrize("device_id", inputs_cirq_dw)
 def test_init_cirq_device_wrapper(device_id):
     """Test device wrapper for ids of devices available through Cirq."""

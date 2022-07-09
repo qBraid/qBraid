@@ -22,12 +22,8 @@ parallel = true
 source = ["qbraid"]
 omit = [
   "**/qbraid/_archive/*",
-  "**/qbraid/api/install_package.py",
-  "**/qbraid/devices/google/device.py",
-  "**/qbraid/devices/google/job.py",
   "**/qbraid/transpiler/cirq_utils/qasm_output.py",
-  "**/qbraid/transpiler/*/_gate_archive.py",
-  "**/qbraid/transpiler/parameter.py"
+  "**/qbraid/transpiler/*/_gate_archive.py"
 ]
 
 [tool.coverage.paths]
@@ -37,12 +33,6 @@ source = ["qbraid", ".tox/*/lib/python*/site-packages/qbraid"]
 show_missing = true
 skip_covered = true
 ignore_errors = true
-# exclude_lines = [
-#     "*raise AssertionError*",
-#     "*raise NotImplementedError*",
-#     "*return NotImplemented*",
-#     "*raise*$",
-#     ]
 
 [tool.coverage.html]
 directory = "build/coverage"
@@ -68,7 +58,7 @@ exclude = '''
 
 [tool.pylint.'MESSAGES CONTROL']
 max-line-length = 100
-disable = "C0103, C3001, E0401, E1101, R0801, R0902, R0903, R0911, R0912, R0914, W0212, W0511"
+disable = "C0103, E0401, R0801, R0902, R0903, R0911, R0912, R0914, W0212, W0511"
 
 [tool.isort]
 profile = "hug"

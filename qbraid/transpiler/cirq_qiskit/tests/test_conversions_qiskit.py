@@ -154,13 +154,9 @@ def test_transform_qregs_one_qubit_ops(nqubits, with_ops, measure):
     new_qregs = [qiskit.QuantumRegister(1) for _ in range(nqubits)]
     _transform_registers(circ, new_qregs=new_qregs)
 
-    cirq1 = from_qiskit(orig)
-    cirq2 = from_qiskit(circ)
-
     assert circ.qregs == new_qregs
     assert circ.cregs == orig.cregs
-    assert _equal(cirq2, cirq1)
-    assert np.allclose(cirq2.unitary(), cirq1.unitary())
+    assert _equal(from_qiskit(circ), from_qiskit(orig))
 
 
 @pytest.mark.parametrize("new_reg_sizes", [[1], [1, 2], [2, 1], [1, 1, 1]])
@@ -197,12 +193,8 @@ def test_transform_qregs_random_circuit(new_reg_sizes, measure):
     new_qregs = [qiskit.QuantumRegister(s) for s in new_reg_sizes]
     _transform_registers(circ, new_qregs=new_qregs)
 
-    cirq1 = from_qiskit(orig)
-    cirq2 = from_qiskit(circ)
-
     assert circ.qregs == new_qregs
-    assert _equal(cirq2, cirq1)
-    assert np.allclose(cirq2.unitary(), cirq1.unitary())
+    assert _equal(from_qiskit(circ), from_qiskit(orig))
 
 
 def test_transform_qregs_no_new_qregs():
@@ -223,8 +215,6 @@ def test_transform_registers_too_few_qubits():
 def test_transform_registers_adds_idle_qubits():
     """Tests transforming registers in a circuit with n qubits to a circuit
     with m > n qubits.
-
-    TODO: Fix circuit.num_qubits == 4 != 5
     """
     qreg = qiskit.QuantumRegister(1)
     creg = qiskit.ClassicalRegister(1)
@@ -239,7 +229,7 @@ def test_transform_registers_adds_idle_qubits():
     _transform_registers(circuit, new_qregs=[qreg, qiskit.QuantumRegister(4)])
 
     assert len(circuit.qregs) == 2
-    # assert circuit.num_qubits == 5
+    assert circuit.num_qubits == 5
     assert circuit.data == old_data
 
 

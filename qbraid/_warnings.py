@@ -14,6 +14,7 @@ def _warn_new_version(local: str, api: str) -> bool:
     local_vlst = local.split(".")
     api_vlst = api.split(".")
 
+    # pylint: disable-next=unnecessary-lambda-assignment
     check_patch = lambda x: int(local_vlst[x]) < int(api_vlst[x])
 
     for i in range(3):

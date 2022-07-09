@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+
 # isort: skip_file
 # pylint: skip-file
 # flake8: noqa
@@ -123,8 +124,6 @@ def to_qasm(circuit: cirq.Circuit) -> QASMType:
     Returns:
         QASMType: QASM string equivalent to the input Cirq circuit.
     """
-    # Simplify exponents of gates. For example, H**-1 is simplified to H.
-    # _simplify_circuit_exponents(circuit)
     return circuit.to_qasm()
 
 

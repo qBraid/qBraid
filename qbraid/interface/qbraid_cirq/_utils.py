@@ -1,112 +1,25 @@
+# Copyright (C) 2020 Unitary Fund
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 """
 Module containing Cirq utility functions
 
 """
 from copy import deepcopy
-from typing import List, Tuple, Union, cast
 
-from cirq import (
-    Circuit,
-    CircuitDag,
-    EigenGate,
-    Gate,
-    GateOperation,
-    GridQubit,
-    LineQubit,
-    MeasurementGate,
-    Moment,
-    NamedQubit,
-    Operation,
-    Qid,
-)
-
-QUBIT = Union[LineQubit, GridQubit, NamedQubit, Qid]
-
-# TODO: Identify and remove any of these functions which are not needed/used
-
-
-def _simplify_gate_exponent(gate: EigenGate) -> EigenGate:
-    """Returns the input gate with a simplified exponent if possible,
-    otherwise the input gate is returned without any change.
-
-    The input gate is not mutated.
-
-    Args:
-        gate: The input gate to simplify.
-
-    Returns: The simplified gate.
-    """
-    # Try to simplify the gate exponent to 1
-    if hasattr(gate, "_with_exponent") and gate == gate._with_exponent(1):
-        return gate._with_exponent(1)
-    return gate
-
-
-def _simplify_circuit_exponents(circuit: Circuit) -> None:
-    """Simplifies the gate exponents of the input circuit if possible,
-    mutating the input circuit.
-
-    Args:
-        circuit: The circuit to simplify.
-    """
-    # Iterate over moments
-    for moment_idx, moment in enumerate(circuit):
-        simplified_operations = []
-        # Iterate over operations in moment
-        for opr in moment:
-
-            if not isinstance(opr, GateOperation):
-                simplified_operations.append(opr)
-                continue
-
-            if isinstance(opr.gate, EigenGate):
-                simplified_gate: Gate = _simplify_gate_exponent(opr.gate)
-            else:
-                simplified_gate = opr.gate
-
-            simplified_operation = opr.with_gate(simplified_gate)
-            simplified_operations.append(simplified_operation)
-        # Mutate the input circuit
-        circuit[moment_idx] = Moment(simplified_operations)
-
-
-def _is_measurement(opr: Operation) -> bool:
-    """Returns true if the operation's gate is a measurement, else False.
-
-    Args:
-        op: Gate operation.
-    """
-    return isinstance(opr.gate, MeasurementGate)
-
-
-def _pop_measurements(
-    circuit: Circuit,
-) -> List[Tuple[int, Operation]]:
-    """Removes all measurements from a circuit.
-
-    Args:
-        circuit: A quantum circuit as a :class:`cirq.Circuit` object.
-
-    Returns:
-        measurements: List of measurements in the circuit.
-    """
-    measurements = list(circuit.findall_operations(_is_measurement))
-    circuit.batch_remove(measurements)
-    return measurements
-
-
-def _append_measurements(circuit: Circuit, measurements: List[Tuple[int, Operation]]) -> None:
-    """Appends all measurements into the final moment of the circuit.
-
-    Args:
-        circuit: a quantum circuit as a :class:`cirq.Circuit`.
-        measurements: measurements to perform.
-    """
-    new_measurements: List[Tuple[int, Operation]] = []
-    for _, value in enumerate(measurements):
-        # Make sure the moment to insert into is the last in the circuit
-        new_measurements.append((len(circuit) + 1, value[1]))
-    circuit.batch_insert(new_measurements)
+from cirq import Circuit, MeasurementGate
 
 
 def _equal(
@@ -131,11 +44,10 @@ def _equal(
         else the two are not equal.
         If True, the qubits of both circuits must have a well-defined ordering.
     """
-    if circuit_one is circuit_two:
-        return True
-
-    circuit_one = deepcopy(circuit_one)
-    circuit_two = deepcopy(circuit_two)
+    # Make a deepcopy only if it's necessary
+    if not (require_qubit_equality and require_measurement_equality):
+        circuit_one = deepcopy(circuit_one)
+        circuit_two = deepcopy(circuit_two)
 
     if not require_qubit_equality:
         # Transform the qubits of circuit one to those of circuit two
@@ -154,11 +66,4 @@ def _equal(
                 for moment, op, _ in circ.findall_operations_with_gate_type(MeasurementGate)
             ]
             circ.batch_remove(measurements)
-
-            for _, value in enumerate(measurements):
-                gate = cast(MeasurementGate, value[1].gate)
-                gate.key = ""
-
-            circ.batch_insert(measurements)
-
-    return CircuitDag.from_circuit(circuit_one) == CircuitDag.from_circuit(circuit_two)
+    return circuit_one == circuit_two
