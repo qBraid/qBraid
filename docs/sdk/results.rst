@@ -27,7 +27,7 @@ measurement counts.
 
     shots = 2**10
     
-    qdevice = device_wrapper('ibm_q_armonk')
+    qdevice = device_wrapper('ibm_q_belem')
     qjob = ibmq_device.run(circuit, shots=shots)
     qjob.wait_for_final_state()
     

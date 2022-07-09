@@ -7,13 +7,13 @@ and/or set necessary configs for each vendor.
 
 import os
 
-qbraid_config_path = os.path.join(os.path.expanduser("~"), ".qbraid", "config")
 aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
 aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
 qiskitrc_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
-ibmq_account_url = "https://auth.quantum-computing.ibm.com/api"
-
+qbraid_config_path = os.path.join(os.path.expanduser("~"), ".qbraid", "config")
 qbraidrc_path = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
+
+ibmq_account_url = "https://auth.quantum-computing.ibm.com/api"
 
 # qbraid_api_url = "http://localhost:3001/api"
 # qbraid_api_url = "https://api-staging.qbraid.com/api"

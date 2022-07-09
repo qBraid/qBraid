@@ -70,7 +70,7 @@ Search for quantum backend(s) on which to execute your program:
    google_cirq_dm_sim                  ONLINE
    
    >>> ibmq_least_busy_qpu()
-   ibm_q_armonk
+   ibm_q_belem
 
 Apply the device wrapper and send your quantum jobs:
 
@@ -78,7 +78,7 @@ Apply the device wrapper and send your quantum jobs:
 
    >>> from qbraid import device_wrapper
    >>> jobs  = []
-   >>> qbraid_ids = ['aws_dm_sim', 'google_cirq_dm_sim', 'ibm_q_armonk']
+   >>> qbraid_ids = ['aws_dm_sim', 'google_cirq_dm_sim', 'ibm_q_belem']
    >>> for device in qbraid_ids:
    ... qdevice = device_wrapper(device)
    ... qjob = qdevice.run(circuit, shots=1024)
@@ -94,7 +94,7 @@ List your submitted jobs and view their status:
 
    Job ID                                              Submitted                  Status
    ------                                              ---------                  ------
-   ibm_q_armonk-exampleuser-qjob-xxxxxxx...            2023-05-21T21:13:48.220Z   RUNNING
+   ibm_q_belem-exampleuser-qjob-xxxxxxx...             2023-05-21T21:13:48.220Z   RUNNING
    google_cirq_dm_sim-exampleuser-qjob-yyyyyyy...      2023-05-21T21:13:47.220Z   COMPLETED
    aws_dm_sim-exampleuser-qjob-zzzzzzz...              2023-05-21T21:13:47.220Z   COMPLETED
 
@@ -110,7 +110,7 @@ Compare the results:
    Device               Counts              
    aws_dm_sim           {'0': 477, '1': 547}
    google_cirq_dm_sim   {'0': 534, '1': 490}
-   ibm_q_armonk         {'0': 550, '1': 474}
+   ibm_q_belem          {'0': 550, '1': 474}
 
 
 Supported Frontends

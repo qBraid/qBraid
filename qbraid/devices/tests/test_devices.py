@@ -253,18 +253,18 @@ def test_run_braket_device_wrapper_no_shots(device_id):
 def test_circuit_too_many_qubits():
     """Test that run method raises exception when input circuit
     num qubits exceeds that of wrapped Qiskit device."""
-    two_qubit_circuit = QiskitCircuit(2)
+    two_qubit_circuit = QiskitCircuit(6)
     two_qubit_circuit.h([0, 1])
-    two_qubit_circuit.cx(0, 1)
-    one_qubit_device = device_wrapper("ibm_q_armonk")
+    two_qubit_circuit.cx(0, 5)
+    one_qubit_device = device_wrapper("ibm_q_belem")
     with pytest.raises(DeviceError):
         one_qubit_device.run(two_qubit_circuit)
 
 
 def test_device_num_qubits():
     """Test device wrapper num qubits method"""
-    one_qubit_device = device_wrapper("ibm_q_armonk")
-    assert one_qubit_device.num_qubits == 1
+    five_qubit_device = device_wrapper("ibm_q_belem")
+    assert five_qubit_device.num_qubits == 5
     simulator_device = device_wrapper("aws_braket_default_sim")
     assert simulator_device.num_qubits is None
 
