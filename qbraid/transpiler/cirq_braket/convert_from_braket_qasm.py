@@ -1,4 +1,7 @@
-"""Module for converting Braket circuits to Cirq circuit via OpenQASM"""
+"""
+Module for converting Braket circuits to Cirq circuit via OpenQASM
+
+"""
 
 import numpy as np
 from braket.circuits import Circuit as BKCircuit
