@@ -8,7 +8,7 @@ import os
 
 import pytest
 
-from qbraid.api.config_specs import (
+from qbraid.api.config_data import (
     aws_config_path,
     aws_cred_path,
     ibmq_account_url,

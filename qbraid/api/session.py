@@ -21,7 +21,7 @@ from requests import RequestException, Response, Session
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-from .config_specs import qbraid_api_url
+from .config_data import qbraid_api_url
 from .config_user import get_config
 from .exceptions import RequestsApiError
 
