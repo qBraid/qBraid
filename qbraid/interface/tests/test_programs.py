@@ -5,6 +5,7 @@ Unit tests for equivalence of interfacing quantum programs
 import pytest
 
 from qbraid.interface.calculate_unitary import circuits_allclose
+from qbraid.interface.draw_circuit import ProgramTypeError, draw
 from qbraid.interface.programs import bell_data, random_circuit, shared15_data
 
 
@@ -46,3 +47,21 @@ def test_random(package):
     except Exception:
         assert False
     assert True
+
+
+@pytest.mark.parametrize("draw_data", [("braket", 67), ("cirq", 42), ("qiskit", 80)])
+def test_draw(capfd, draw_data):
+    """Test that draw function standard output is of the expected length."""
+    package, num_out = draw_data
+    map, _ = bell_data()
+    program = map[package]()
+    draw(program)
+    out, err = capfd.readouterr()
+    assert len(err) == 0
+    assert len(out) == num_out
+
+
+def test_draw_raises():
+    """Test that non-supported package raises error"""
+    with pytest.raises(ProgramTypeError):
+        draw("bad_input")

@@ -3,7 +3,6 @@ Module defining BraketQuantumtaskWrapper Class
 
 """
 import logging
-from typing import TYPE_CHECKING
 
 from braket.aws import AwsQuantumTask
 
@@ -11,9 +10,6 @@ from qbraid.devices.enums import JOB_FINAL
 from qbraid.devices.job import JobLikeWrapper
 
 from .result import BraketResultWrapper
-
-if TYPE_CHECKING:
-    import asyncio
 
 
 class BraketQuantumTaskWrapper(JobLikeWrapper):
@@ -37,12 +33,6 @@ class BraketQuantumTaskWrapper(JobLikeWrapper):
         if self.status() not in JOB_FINAL:
             logging.info("Result will be available when job has reached final state.")
         return BraketResultWrapper(self.vendor_jlo.result())
-
-    def async_result(self) -> "asyncio.Task":
-        """asyncio.Task: Get the quantum task result asynchronously."""
-        # TODO: Implement or remove
-        # return self.vendor_jlo.async_result()
-        raise NotImplementedError
 
     def cancel(self) -> None:
         """Cancel the quantum task."""

@@ -5,7 +5,7 @@ Module for top-level interfacing with the IBMQ API
 from qiskit import IBMQ
 from qiskit.providers.ibmq import AccountProvider, IBMQError, least_busy
 
-from .config_specs import qiskitrc_path
+from .config_data import qiskitrc_path
 from .config_user import get_config, verify_config
 from .exceptions import AuthError
 
@@ -30,6 +30,6 @@ def ibmq_least_busy_qpu() -> str:
     provider = ibmq_get_provider()
     backends = provider.backends(simulator=False, operational=True)
     backend_obj = least_busy(backends)
-    ibm_id = str(backend_obj)
-    qbraid_device_id = ibm_id[:3] + "_" + ibm_id[3:]
-    return qbraid_device_id
+    ibm_id = str(backend_obj)  # QPU name of form `ibm_*` or `ibmq_*`
+    _, name = ibm_id.split("_")
+    return f"ibm_q_{name}"

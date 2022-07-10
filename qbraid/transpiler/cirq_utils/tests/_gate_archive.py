@@ -3,7 +3,6 @@ Module for Cirq gate dictionary used for testing
 
 """
 import numpy as np
-from cirq.ops import MeasurementGate
 from cirq.ops.common_gates import (
     CXPowGate,
     CZPowGate,
@@ -17,6 +16,8 @@ from cirq.ops.common_gates import (
     rz,
 )
 from cirq.ops.identity import IdentityGate
+
+# from cirq.ops import MeasurementGate
 from cirq.ops.matrix_gates import MatrixGate
 from cirq.ops.swap_gates import ISwapPowGate, SwapPowGate
 from cirq.ops.three_qubit_gates import CCXPowGate, CCZPowGate
@@ -47,9 +48,8 @@ cirq_gates = {
     "CPhase": cphase,
     "CCZ": CCZPowGate,
     "CCX": CCXPowGate,
-    "MEASURE": MeasurementGate,
     "U3": U3Gate,
-    "Unitary": MatrixGate,
+    # "MEASURE": MeasurementGate,
 }
 
 
@@ -98,20 +98,15 @@ def create_cirq_gate(data):
     elif gate_type in "CCX":
         return cirq_gates[gate_type]()
 
-    # measure
-    elif gate_type == "MEASURE":
-        return "CirqMeasure"  # cirq_gates[gate_type](data["params"][0])
-
     # custom gates
     elif gate_type == "U3":
         return U3Gate(*params)
 
     elif gate_type == "Unitary" or matrix is not None:
         n_qubits = int(np.log2(len(matrix)))
-        unitary_gate = cirq_gates[gate_type](matrix)
+        unitary_gate = MatrixGate(matrix)
         _give_cirq_gate_name(unitary_gate, "U", n_qubits)
         return unitary_gate
 
-    # error
     else:
         raise ValueError(f"Gate of type {gate_type} not supported for Cirq testing.")

@@ -4,7 +4,7 @@ Module defining BraketDeviceWrapper Class
 """
 import math
 import warnings
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from braket.aws import AwsDevice
 
@@ -51,50 +51,6 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         if self.vendor_dlo.status == "OFFLINE":
             return DeviceStatus.OFFLINE
         return DeviceStatus.ONLINE
-
-    def get_sampler(  # pylint: disable=unused-argument
-        self, braket_default: Optional[bool] = False, embedding: Optional[bool] = True
-    ):
-        """Returns BraketSampler created from device. Only compatible with D-Wave devices.
-
-        Args:
-            braket_default: If True, returns default BraketSampler. Defaults to
-                False, returning BraketDWaveSampler.
-            embedding: If True, uses EmbeddingComposite to automatically map the
-                problem to the structure of the solver. If False, returns as sampler as-is.
-
-        Returns:
-            Sampler derived from device
-
-        Raises:
-            DeviceError: If not a D-Wave annealing device.
-
-        """
-        # TODO: Decide whether or not we want to support this method. This method is
-        # implemented but notvin-use because of the size of the extra dependencies it
-        # requires i.e. dwave and braket.ocean_plugin
-
-        # pylint: disable=import-outside-toplevel
-        # if self.provider != "D-Wave":
-        #     raise DeviceError("Sampler only available for D-Wave (annealing) devices")
-        # try:
-        #     from braket.ocean_plugin import BraketDWaveSampler, BraketSampler
-        # except ModuleNotFoundError:
-        #     install_package.install("amazon-braket-ocean-plugin")
-        #     from braket.ocean_plugin import BraketDWaveSampler, BraketSampler
-        # if braket_default:
-        #     sampler = BraketSampler(self._s3_location, self._arn)
-        # else:
-        #     sampler = BraketDWaveSampler(self._s3_location, self._arn)
-        # if embedding:
-        #     try:
-        #         from dwave.system.composites import EmbeddingComposite
-        #     except ModuleNotFoundError:
-        #         install_package.install("dwave-ocean-sdk")
-        #         from dwave.system.composites import EmbeddingComposite
-        #     return EmbeddingComposite(sampler)
-        # return sampler
-        return NotImplemented
 
     def run(
         self, run_input: "braket.circuits.Circuit", *args, **kwargs

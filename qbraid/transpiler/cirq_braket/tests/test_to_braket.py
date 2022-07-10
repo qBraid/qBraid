@@ -76,27 +76,6 @@ def test_to_braket_three_qubit_gates():
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
-def _rotation_of_pi_over_7(num_qubits):
-    matrix = np.identity(2**num_qubits)
-    matrix[0:2, 0:2] = [
-        [np.cos(np.pi / 7), np.sin(np.pi / 7)],
-        [-np.sin(np.pi / 7), np.cos(np.pi / 7)],
-    ]
-    return matrix
-
-
-# @pytest.mark.skip(reason="Unsupported gates become unitaries.")
-# def test_to_braket_raises_on_unsupported_gates():
-#     """Test that converting circuit with unsupported gate raises error"""
-#     for num_qubits in range(3, 5):
-#         print(num_qubits)
-#         qubits = [LineQubit(int(qubit)) for qubit in range(num_qubits)]
-#         op = ops.MatrixGate(_rotation_of_pi_over_7(num_qubits)).on(*qubits)
-#         circuit = Circuit(op)
-#         with pytest.raises(ValueError):
-#             to_braket(circuit)
-
-
 def test_to_braket_common_one_qubit_gates():
     """These gates should stay the same (i.e., not get decomposed) when
     converting Cirq -> Braket.
@@ -202,10 +181,5 @@ def test_50_random_circuits(num_qubits):
         )
         braket_circuit = to_braket(cirq_circuit)
         if not circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True):
-            print()
-            print(cirq_circuit)
-            print()
-            print(braket_circuit)
-            print()
             assert False
     assert True

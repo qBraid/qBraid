@@ -54,9 +54,9 @@ def _map_bit_index(bit_index: int, new_register_sizes: List[int]) -> Tuple[int, 
 
     # Could be faster via bisection.
     register_index = None
-    for count, bit_index_iter in enumerate(max_indices_in_registers):
-        if bit_index <= bit_index_iter:
-            register_index = count
+    for i, max_register_index in enumerate(max_indices_in_registers):
+        if bit_index <= max_register_index:
+            register_index = i
             break
     assert register_index is not None
 
@@ -138,8 +138,8 @@ def _transform_registers(
     Raises:
         ValueError:
             * If the input circuit has more than one quantum register.
-            * If the number of qubits in the new quantum registers does not
-            match the number of qubits in the circuit.
+            * If the number of qubits in the new quantum registers is
+            greater than the number of qubits in the circuit.
     """
     if new_qregs is None:
         return
@@ -151,7 +151,7 @@ def _transform_registers(
         )
 
     qreg_sizes = [qreg.size for qreg in new_qregs]
-    nqubits_in_circuit = sum(qreg.size for qreg in circuit.qregs)
+    nqubits_in_circuit = circuit.num_qubits
 
     if len(qreg_sizes) and sum(qreg_sizes) < nqubits_in_circuit:
         raise ValueError(
@@ -167,14 +167,16 @@ def _transform_registers(
     circuit._qubit_set = set()
     circuit.qregs = []
     circuit._data = []
+    circuit._qubit_indices = {}
     circuit.add_register(*new_qregs)
 
     # Map the qubits in operations to the new qubits.
     new_ops = []
     for op in data:
-        gate, qubits, cbits = op
-        new_qubits = _map_qubits(qubits, qreg_sizes, new_qregs)
-        new_ops.append((gate, new_qubits, cbits))
+        gate, old_qubits, clbits = op
+        qubits = _map_qubits(old_qubits, qreg_sizes, new_qregs)
+        circ_instr = qiskit.circuit.CircuitInstruction(operation=gate, qubits=qubits, clbits=clbits)
+        new_ops.append(circ_instr)
 
     circuit._data = new_ops
 

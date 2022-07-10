@@ -2,7 +2,7 @@
 Module for Braket gate dictionary used for testing
 
 """
-from braket.circuits.gates import (
+from braket.circuits.gates import (  # Unitary,
     CY,
     CZ,
     XX,
@@ -25,7 +25,6 @@ from braket.circuits.gates import (
     Swap,
     T,
     Ti,
-    Unitary,
     V,
     Vi,
     X,
@@ -71,5 +70,5 @@ braket_gates = {
     # multi-qubit
     "CCX": CCNot,
     # unitary
-    "Unitary": Unitary,
+    # "Unitary": Unitary,
 }

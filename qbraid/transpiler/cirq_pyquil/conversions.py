@@ -19,7 +19,7 @@ representation and pyQuil's circuit representation (Quil programs).
 
 """
 from cirq import Circuit, LineQubit
-from cirq.contrib.quil_import import circuit_from_quil
+from cirq_rigetti.quil_input import circuit_from_quil
 from pyquil import Program
 
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous

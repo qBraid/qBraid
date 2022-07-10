@@ -17,12 +17,10 @@ Transpiler  (:mod:`qbraid.transpiler`)
    PyQuilProgramWrapper
    QiskitCircuitWrapper
    CircuitConversionError
-   ParamID
 
 """
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
-from qbraid.transpiler.parameter import ParamID
 from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper
 from qbraid.transpiler.wrappers.braket_circuit import BraketCircuitWrapper
 from qbraid.transpiler.wrappers.cirq_circuit import CirqCircuitWrapper

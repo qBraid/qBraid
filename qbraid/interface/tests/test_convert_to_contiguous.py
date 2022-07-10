@@ -47,6 +47,8 @@ def test_compare_conversion_braket_cirq():
     assert braket_compat_circuit.qubit_count == 3
 
     cirq_compat_circuit = convert_to_contiguous(cirq_circuit)
-    assert len(cirq_circuit.all_qubits()) == 3
 
     assert circuits_allclose(braket_compat_circuit, cirq_compat_circuit, strict_gphase=True)
+
+    cirq_expanded_circuit = convert_to_contiguous(cirq_circuit, expansion=True)
+    assert len(cirq_expanded_circuit.all_qubits()) == 5

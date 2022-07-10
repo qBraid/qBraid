@@ -17,10 +17,9 @@ class QuantumProgramWrapper:
     """Abstract class for qbraid program wrapper objects.
 
     Note: The program wrapper object keeps track of abstract parameters and qubits using an
-    intermediate representation. Qubits are stored simplhy as integers, and abstract parameters
-    are stored as a :class:`~qbraid.transpiler.parameter.ParamID`, which stores an index in
-    addition to a name. All other objects are transpiled directly when the
-    :meth:`~qbraid.transpiler.QuantumProgramtWrapper.transpile` method is called.
+    intermediate representation. Qubits are stored simplhy as integers. All other objects are
+    transpiled directly when the :meth:`~qbraid.transpiler.QuantumProgramtWrapper.transpile`
+    method is called.
 
     """
 
