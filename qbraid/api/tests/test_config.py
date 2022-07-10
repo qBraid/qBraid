@@ -17,7 +17,8 @@ from qbraid.api.config_data import (
     qbraidrc_path,
     qiskitrc_path,
 )
-from qbraid.api.config_user import _mask_value, get_config, update_config, verify_config
+from qbraid.api.config_prompt import _mask_value
+from qbraid.api.config_user import get_config, update_config, verify_config
 from qbraid.api.exceptions import ConfigError, RequestsApiError
 from qbraid.api.ibmq_api import ibmq_get_provider
 from qbraid.api.session import QbraidSession
