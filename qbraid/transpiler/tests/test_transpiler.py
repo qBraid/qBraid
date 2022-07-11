@@ -14,20 +14,45 @@ from qiskit import QuantumRegister as QiskitQuantumRegister
 from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 
 from qbraid import QbraidError, circuit_wrapper
+from qbraid.exceptions import PackageValueError
 from qbraid.interface import convert_to_contiguous, to_unitary
 from qbraid.interface.programs import bell_data, shared15_data
 from qbraid.transpiler.cirq_braket.tests._gate_archive import braket_gates
 from qbraid.transpiler.cirq_qiskit.tests._gate_archive import qiskit_gates
 from qbraid.transpiler.cirq_utils.tests._gate_archive import cirq_gates, create_cirq_gate
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 TEST_15, UNITARY_15 = shared15_data()
 TEST_BELL, UNITARY_BELL = bell_data()
+
+
+def test_circuit_wrapper_properties():
+    circuit = TEST_BELL["braket"]()
+    qbraid_circuit = circuit_wrapper(circuit)
+    assert True
 
 
 def test_circuit_wrapper_error():
     """Test raising circuit wrapper error"""
     with pytest.raises(QbraidError):
         circuit_wrapper("Not a circuit")
+
+
+def test_transpile_package_error():
+    """Test raising circuit wrapper error"""
+    circuit = TEST_BELL["braket"]()
+    wrapped = circuit_wrapper(circuit)
+    with pytest.raises(PackageValueError):
+        wrapped.transpile("Not a package")
+
+
+def test_transpile_program_error():
+    """Test raising circuit wrapper error"""
+    circuit = TEST_BELL["braket"]()
+    wrapped = circuit_wrapper(circuit)
+    wrapped._program = None
+    with pytest.raises(CircuitConversionError):
+        wrapped.transpile("qiskit")
 
 
 def shared_gates_test_data(package):

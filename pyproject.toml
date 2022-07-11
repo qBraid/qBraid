@@ -33,6 +33,12 @@ source = ["qbraid", ".tox/*/lib/python*/site-packages/qbraid"]
 show_missing = true
 skip_covered = true
 ignore_errors = true
+exclude_lines = [
+  "raise NotImplementedError",
+  "def __repr__",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
 
 [tool.coverage.html]
 directory = "build/coverage"
