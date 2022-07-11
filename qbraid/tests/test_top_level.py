@@ -13,7 +13,7 @@ from qbraid._warnings import _warn_new_version
 from qbraid.display_utils import running_in_jupyter, update_progress_bar
 from qbraid.exceptions import PackageValueError
 from qbraid.get_devices import get_devices
-from qbraid.get_jobs import get_jobs
+from qbraid.get_jobs import _display_jobs_jupyter, get_jobs
 
 # pylint: disable=missing-function-docstring,redefined-outer-name
 
@@ -27,6 +27,19 @@ check_version_data = [
     ("0.1.0", "0.1.0.dev0", False),
     ("0.1.6.dev2", "0.1.6.dev5", False),
     ("0.1.6.dev5", "0.1.6.dev2", False),
+]
+
+
+job_status_list = [
+    "INITIALIZING",
+    "QUEUED",
+    "VALIDATING",
+    "RUNNING",
+    "CANCELLING",
+    "CANCELLED",
+    "COMPLETED",
+    "FAILED",
+    "UNKNOWN",
 ]
 
 
@@ -120,6 +133,22 @@ def test_get_jobs_results(capfd):
     out, err = capfd.readouterr()
     lines_out = len(out.split("\n"))
     assert lines_out == lines_expected
+    assert len(err) == 0
+
+
+def test_display_jobs_in_jupyter(capfd):
+    _mock_ipython(MockIPython("non-empty kernel"))
+    data = []
+    for index, value in enumerate(job_status_list):
+        job_id = f"job_{index}"
+        timestamp = f"timestamp_{index}"
+        status_str = value
+        job_tuple = (job_id, timestamp, status_str)
+        data.append(job_tuple)
+    msg = "test123"
+    _display_jobs_jupyter(data, msg)
+    out, err = capfd.readouterr()
+    assert "IPython.core.display.HTML object" in out
     assert len(err) == 0
 
 

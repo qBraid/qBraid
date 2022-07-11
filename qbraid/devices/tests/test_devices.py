@@ -25,6 +25,7 @@ from qbraid.devices.aws import (
     BraketLocalSimulatorWrapper,
     BraketQuantumTaskWrapper,
 )
+from qbraid.devices.enums import is_status_final
 from qbraid.devices.google import CirqResultWrapper, CirqSimulatorWrapper
 from qbraid.devices.ibm import (
     QiskitBackendWrapper,
@@ -73,6 +74,7 @@ def test_job_wrapper_type():
     job_0 = device.run(circuit, shots=10)
     job_1 = job_wrapper(job_0.id)
     assert type(job_0) == type(job_1)
+    assert job_0.vendor_job_id == job_1.metadata()["vendorJobId"]
 
 
 def test_job_wrapper_id_error():
@@ -121,6 +123,15 @@ def test_init_qiskit_device_wrapper(device_id):
     assert isinstance(vendor_device, QiskitBackend)
 
 
+def test_device_wrapper_properties():
+    device_id = "google_cirq_dm_sim"
+    wrapper = device_wrapper(device_id)
+    assert wrapper.provider == "Google"
+    assert wrapper.name == "Cirq Density Matrix Simulator"
+    assert str(wrapper) == "Google Google Cirq Density Matrix Simulator device wrapper"
+    assert repr(wrapper) == "<CirqSimulatorWrapper(Google:'Cirq Density Matrix Simulator')>"
+
+
 """
 Device wrapper tests: run method
 Coverage: all vendors, one device from each provider (calls to QPU's take time)
@@ -167,6 +178,7 @@ circuits_braket_run = [
     cirq_circuit(False),
     qiskit_circuit(False),
 ]  # circuits w/out measurement operation
+
 circuits_cirq_run = [cirq_circuit(), qiskit_circuit()]  # circuit w/ measurement operation
 circuits_qiskit_run = circuits_cirq_run
 inputs_cirq_run = ["google_cirq_dm_sim"]
@@ -256,21 +268,20 @@ def test_device_num_qubits():
     assert simulator_device.num_qubits is None
 
 
-# @pytest.mark.skip(reason="Skipping b/c takes long time to finish")
-# @pytest.mark.parametrize("device_id", ["aws_sv_sim", "ibm_q_qasm_sim"])
-# def test_job_wrapper_ibmq(device_id):
-#     circuit = random_circuit("qiskit", num_qubits=1, depth=3, measure=True)
-#     qbraid_device = device_wrapper(device_id)
-#     qbraid_job = qbraid_device.run(circuit, shots=10)
-#     qbraid_job.wait_for_final_state()
-#     retrieved_job = job_wrapper(qbraid_job.id)
-#     assert qbraid_job.status() == retrieved_job.status()
-
-
 def test_job_wrapper_error():
     """Test that job wrapper raises exception for invalid job id."""
     with pytest.raises(QbraidError):
         job_wrapper("google-test")
+
+
+def test_wait_for_final_state():
+    """Test function that returns after job is complete"""
+    device = device_wrapper("aws_dm_sim")
+    circuit = random_circuit("qiskit")
+    job = device.run(circuit, shots=10)
+    job.wait_for_final_state()
+    status = job.status()
+    assert is_status_final(status)
 
 
 @pytest.mark.parametrize("device_id", ["ibm_q_sv_sim", "aws_dm_sim", "google_cirq_dm_sim"])
@@ -279,8 +290,9 @@ def test_result_wrapper_measurements(device_id):
     circuit = random_circuit("qiskit", num_qubits=3, depth=3, measure=True)
     sim = device_wrapper(device_id).run(circuit, shots=10)
     qbraid_result = sim.result()
-    assert isinstance(qbraid_result, ResultWrapper)
+    counts = qbraid_result.measurement_counts()
     measurements = qbraid_result.measurements()
+    assert isinstance(counts, dict)
     assert measurements.shape == (10, 3)
 
 

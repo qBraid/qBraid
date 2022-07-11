@@ -5,6 +5,7 @@ Unit tests for enums defined in the qbraid device layer.
 import pytest
 
 from qbraid.devices.enums import JobStatus, is_status_final, status_from_raw
+from qbraid.devices.job import _set_init_status
 
 status_data = [
     (JobStatus.INITIALIZING, False),
@@ -50,3 +51,11 @@ def test_status_from_raw_error(status):
     """Test raising exception while converting invalid str status representation."""
     with pytest.raises(ValueError):
         status_from_raw(status)
+
+
+@pytest.mark.parametrize(
+    "status_tuple", [(JobStatus.QUEUED, JobStatus.QUEUED), ("BadValue", JobStatus.UNKNOWN)]
+)
+def test_set_init_status(status_tuple):
+    status_input, status_expected = status_tuple
+    assert _set_init_status(status_input) == status_expected
