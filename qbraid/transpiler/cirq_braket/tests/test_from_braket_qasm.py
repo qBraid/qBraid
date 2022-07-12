@@ -11,10 +11,7 @@ from braket.circuits import gates as braket_gates
 
 from qbraid.interface import circuits_allclose
 from qbraid.interface.calculate_unitary import to_unitary
-from qbraid.transpiler.cirq_braket.convert_from_braket_qasm import (
-    from_braket,
-    unitary_braket_instruction,
-)
+from qbraid.transpiler.cirq_braket.convert_from_braket_qasm import from_braket
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
@@ -141,15 +138,3 @@ def test_from_braket_raises_on_unsupported_gates():
         braket_circuit.add_instruction(instr)
         with pytest.raises(CircuitConversionError):
             from_braket(braket_circuit)
-
-
-def test_unitary_braket_instruction():
-    """Test converting Braket instruction to instruction using unitary gate."""
-    instr_cnot_01 = Instruction(braket_gates.CNot(), target=[0, 1])
-    instr_cnot_10 = Instruction(braket_gates.CNot(), target=[1, 0])
-    instr_cnot_u = unitary_braket_instruction(instr_cnot_10)
-    circuit_expected = BKCircuit().add_instruction(instr_cnot_01)
-    circuit_test = BKCircuit().add_instruction(instr_cnot_u)
-    u_expected = to_unitary(circuit_expected)
-    u_test = to_unitary(circuit_test)
-    assert np.allclose(u_expected, u_test)

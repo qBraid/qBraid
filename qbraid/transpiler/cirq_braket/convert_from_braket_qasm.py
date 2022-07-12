@@ -3,14 +3,11 @@ Module for converting Braket circuits to Cirq circuit via OpenQASM
 
 """
 
-import numpy as np
 from braket.circuits import Circuit as BKCircuit
-from braket.circuits import Instruction as BKInstruction
-from braket.circuits import gates as braket_gates
 from cirq import Circuit
 from cirq.contrib.qasm_import.exception import QasmException
 
-from qbraid.interface import convert_to_contiguous, to_unitary
+from qbraid.interface import convert_to_contiguous
 from qbraid.transpiler.cirq_utils import from_qasm
 from qbraid.transpiler.exceptions import CircuitConversionError
 
@@ -94,34 +91,6 @@ def to_qasm(circuit: BKCircuit) -> QASMType:
         code += ";\n"
 
     return code
-
-
-def _gate_to_matrix_braket(gate: braket_gates.Unitary) -> np.ndarray:
-    matrix = gate.to_matrix()
-    unitary_gate = braket_gates.Unitary(matrix)
-    nqubits = int(np.log2(len(matrix)))
-    qubits = list(range(nqubits)) if nqubits > 1 else 0
-    circuit = BKCircuit([BKInstruction(unitary_gate, qubits)])
-    return to_unitary(circuit)
-
-
-def unitary_braket_instruction(instr: BKInstruction) -> BKInstruction:
-    """Converts a Braket instruction to a unitary gate instruction.
-
-    Args:
-        instr: Braket instruction to convert.
-
-    Raises:
-        CircuitConversionError: If the instruction cannot be converted
-    """
-    gate = instr.operator
-
-    try:
-        matrix = _gate_to_matrix_braket(gate)
-        gate_name = "U" if gate.name is None else gate.name
-        return BKInstruction(braket_gates.Unitary(matrix, display_name=gate_name), instr.target)
-    except (ValueError, TypeError) as err:
-        raise CircuitConversionError(f"Unable to convert the instruction {instr}.") from err
 
 
 def from_braket(circuit: BKCircuit) -> Circuit:
