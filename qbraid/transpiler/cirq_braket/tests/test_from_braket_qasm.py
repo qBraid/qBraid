@@ -10,7 +10,6 @@ from braket.circuits import Instruction
 from braket.circuits import gates as braket_gates
 
 from qbraid.interface import circuits_allclose
-from qbraid.interface.calculate_unitary import to_unitary
 from qbraid.transpiler.cirq_braket.convert_from_braket_qasm import from_braket
 from qbraid.transpiler.exceptions import CircuitConversionError
 
