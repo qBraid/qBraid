@@ -35,9 +35,10 @@ skip_covered = true
 ignore_errors = true
 exclude_lines = [
   "raise NotImplementedError",
+  "return NotImplemented",
   "def __repr__",
   "if __name__ == .__main__.:",
-  "if TYPE_CHECKING:",
+  "if TYPE_CHECKING:"
 ]
 
 [tool.coverage.html]
