@@ -114,13 +114,13 @@ def test_from_braket_three_qubit_gates():
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
-def _rotation_of_pi_over_7(num_qubits):
-    matrix = np.identity(2**num_qubits)
-    matrix[0:2, 0:2] = [
-        [np.cos(np.pi / 7), np.sin(np.pi / 7)],
-        [-np.sin(np.pi / 7), np.cos(np.pi / 7)],
-    ]
-    return matrix
+# def _rotation_of_pi_over_7(num_qubits):
+#     matrix = np.identity(2**num_qubits)
+#     matrix[0:2, 0:2] = [
+#         [np.cos(np.pi / 7), np.sin(np.pi / 7)],
+#         [-np.sin(np.pi / 7), np.cos(np.pi / 7)],
+#     ]
+#     return matrix
 
 
 # @pytest.mark.skip(reason="Unsupported gates become unitaries.")
