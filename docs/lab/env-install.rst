@@ -3,16 +3,9 @@
 Install environment
 ====================
 
-In the Environment Manager sidebar, click **Add** to view the environments available to install.
+1. In the Environment Manager sidebar, click **Add** to view the environments available to install.
 
-.. image:: ../_static/lab-files/env_add.png
-    :align: center
-    :width: 800px
-    :target: javascript:void(0);
-
-|
-
-Choose an environment, expand its pannel, and click **Install**.
+2. Choose an environment, expand its pannel, and click **Install**.
 
 .. image:: ../_static/lab-files/env_install.png
     :align: center
@@ -21,7 +14,7 @@ Choose an environment, expand its pannel, and click **Install**.
   
 |
 
-Once the installation has started, the pannel is moved to the **My Environments** tab.
+3. Once the installation has started, the pannel is moved to the **My Environments** tab.
 Click **Browse Environments** to return to the **My Environments** tab and view its progress.
 
 .. image:: ../_static/lab-files/env_installing.png
@@ -31,8 +24,9 @@ Click **Browse Environments** to return to the **My Environments** tab and view 
   
 |
 
-When the installation is complete, the environment panel's action button will switch from
-**Installing...** to **Activate**.
+4. When the installation is complete, the environment panel's action button will switch from
+**Installing...** to **Activate**. Clicking **Activate** creates a new ipykernel, see
+`Manage kernels <kernel-manage.html>`_ for more.
 
 .. image:: ../_static/lab-files/kernel_activate.png
     :align: center
@@ -41,4 +35,4 @@ When the installation is complete, the environment panel's action button will sw
   
 |
 
-To uninstall an environment, click on **More**, and then **Uninstall**.
+To uninstall the environment, click on **More**, and then **Uninstall**.
