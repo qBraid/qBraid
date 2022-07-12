@@ -27,7 +27,7 @@ from braket.circuits import gates as braket_gates
 from pyquil import Program, gates
 
 from qbraid._typing import SUPPORTED_PROGRAM_TYPES
-from qbraid.exceptions import ProgramTypeError
+from qbraid.exceptions import PackageValueError, ProgramTypeError
 from qbraid.interface.qbraid_cirq._utils import _equal
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 
@@ -70,7 +70,7 @@ def test_to_cirq(circuit):
     assert input_type in circuit.__module__
 
 
-@pytest.mark.parametrize("item", ("circuit", 1, None))
+@pytest.mark.parametrize("item", ["circuit", 1, None])
 def test_to_cirq_bad_types(item):
     with pytest.raises(ProgramTypeError):
         convert_to_cirq(item)
@@ -82,3 +82,9 @@ def test_from_cirq(to_type):
     circuit, input_type = convert_to_cirq(converted_circuit)
     assert _equal(circuit, cirq_circuit)
     assert input_type == to_type
+
+
+@pytest.mark.parametrize("item", ["package", 1, None])
+def test_from_cirq_bad_package(item):
+    with pytest.raises(PackageValueError):
+        convert_from_cirq(cirq_circuit, item)
