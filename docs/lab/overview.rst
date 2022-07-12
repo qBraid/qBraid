@@ -33,6 +33,12 @@ Integrations
 
 - `Connect to VS Code <vscode.html>`_
 
+
+Account
+--------
+
+- `Add access key <add-access-key.html>`_
+
 .. seealso::
    
    For information on the JupyterLab interface, see `JupyterLab Documentaion <https://jupyterlab.readthedocs.io/>`_.

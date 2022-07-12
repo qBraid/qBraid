@@ -107,6 +107,7 @@ Documentation
    lab/env-create
    lab/kernel-manage
    lab/vscode
+   lab/add-access-key
 
 .. toctree::
    :maxdepth: 1
