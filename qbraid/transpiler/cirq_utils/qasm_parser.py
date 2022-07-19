@@ -22,9 +22,10 @@ Module defining qBraid Cirq QASM parser.
 """
 import functools
 import operator
-from typing import Any, Callable, cast, Dict, Iterable, List, Optional, Sequence, Union
+from typing import Any, Callable, cast, Dict, Iterable, List, Optional, Union, TYPE_CHECKING
 
 import numpy as np
+# import sympy
 from ply import yacc
 
 from cirq import ops, Circuit, NamedQubit, CX
@@ -49,6 +50,9 @@ QasmLexer.tokens = [
     "ARROW",
 ]
 
+if TYPE_CHECKING:
+    import cirq
+
 
 class Qasm:
     """Qasm stores the final result of the Qasm parsing."""
@@ -69,11 +73,10 @@ class Qasm:
 
 class QasmGateStatement:
     """Specifies how to convert a call to an OpenQASM gate
-    to a list of 'cirq.GateOperation's.
-
+    to a list of `cirq.GateOperation`s.
     Has the responsibility to validate the arguments
     and parameters of the call and to generate a list of corresponding
-    'cirq.GateOperation's in the 'on' method.
+    `cirq.GateOperation`s in the `on` method.
     """
 
     def __init__(
@@ -84,7 +87,6 @@ class QasmGateStatement:
         num_args: int,
     ):
         """Initializes a Qasm gate statement.
-
         Args:
             qasm_gate: The symbol of the QASM gate.
             cirq_gate: The gate class on the cirq side.
@@ -140,7 +142,10 @@ class QasmGateStatement:
         # used as arguments, we generate reg_size GateOperations via iterating
         # through each qubit of the registers 0 to n-1 and use the same one
         # qubit from the "single-qubit registers" for each operation.
-        op_qubits = cast(Sequence[Sequence[ops.Qid]], functools.reduce(np.broadcast, args))
+        op_qubits = functools.reduce(
+            cast(Callable[[List['cirq.Qid'], List['cirq.Qid']], List['cirq.Qid']], np.broadcast),
+            args,
+        )
         for qubits in op_qubits:
             if isinstance(qubits, ops.Qid):
                 yield final_gate.on(qubits)
@@ -152,9 +157,7 @@ class QasmGateStatement:
 
 class QasmParser:
     """Parser for QASM strings.
-
     Example:
-
         qasm = "OPENQASM 2.0; qreg q1[2]; CX q1[0], q1[1];"
         parsedQasm = QasmParser().parse(qasm)
     """
@@ -192,7 +195,7 @@ class QasmParser:
     basic_gates: Dict[str, QasmGateStatement] = {
         'CX': QasmGateStatement(qasm_gate='CX', cirq_gate=CX, num_params=0, num_args=2),
         'U': QasmGateStatement(
-            qasm_gate="U",
+            qasm_gate='U',
             num_params=3,
             num_args=1,
             # QasmUGate expects half turns
@@ -202,22 +205,22 @@ class QasmParser:
 
     qelib_gates = {
         'rx': QasmGateStatement(
-            qasm_gate='rx', cirq_gate=(lambda params: ops.rx(params[0])), num_params=1, num_args=1,
+            qasm_gate='rx', cirq_gate=(lambda params: ops.rx(params[0])), num_params=1, num_args=1
         ),
         'sx': QasmGateStatement(
-            qasm_gate='sx', num_params=0, num_args=1, cirq_gate=ops.XPowGate(exponent=0.5),
+            qasm_gate='sx', num_params=0, num_args=1, cirq_gate=ops.XPowGate(exponent=0.5)
         ),
         'sxdg': QasmGateStatement(
-            qasm_gate='sxdg', num_params=0, num_args=1, cirq_gate=ops.XPowGate(exponent=-0.5),
+            qasm_gate='sxdg', num_params=0, num_args=1, cirq_gate=ops.XPowGate(exponent=-0.5)
         ),
         'ry': QasmGateStatement(
-            qasm_gate='ry', cirq_gate=(lambda params: ops.ry(params[0])), num_params=1, num_args=1,
+            qasm_gate='ry', cirq_gate=(lambda params: ops.ry(params[0])), num_params=1, num_args=1
         ),
         'rz': QasmGateStatement(
-            qasm_gate='rz', cirq_gate=(lambda params: ops.rz(params[0])), num_params=1, num_args=1,
+            qasm_gate='rz', cirq_gate=(lambda params: ops.rz(params[0])), num_params=1, num_args=1
         ),
         'id': QasmGateStatement(
-            qasm_gate='id', cirq_gate=ops.IdentityGate(1), num_params=0, num_args=1,
+            qasm_gate='id', cirq_gate=ops.IdentityGate(1), num_params=0, num_args=1
         ),
         'u1': QasmGateStatement(
             qasm_gate='u1',
@@ -243,7 +246,7 @@ class QasmParser:
             num_args=1,
             cirq_gate=(
                 lambda params: QasmUGate(
-                    params[0] / np.pi, (params[1] / np.pi) - 0.5, (-params[1] / np.pi) + 0.5,
+                    params[0] / np.pi, (params[1] / np.pi) - 0.5, (-params[1] / np.pi) + 0.5
                 )
             ),
         ),
@@ -255,11 +258,11 @@ class QasmParser:
         't': QasmGateStatement(qasm_gate='t', num_params=0, num_args=1, cirq_gate=ops.T),
         'cx': QasmGateStatement(qasm_gate='cx', cirq_gate=CX, num_params=0, num_args=2),
         'cy': QasmGateStatement(
-            qasm_gate='cy', cirq_gate=ops.ControlledGate(ops.Y), num_params=0, num_args=2,
+            qasm_gate='cy', cirq_gate=ops.ControlledGate(ops.Y), num_params=0, num_args=2
         ),
         'cz': QasmGateStatement(qasm_gate='cz', cirq_gate=ops.CZ, num_params=0, num_args=2),
         'ch': QasmGateStatement(
-            qasm_gate='ch', cirq_gate=ops.ControlledGate(ops.H), num_params=0, num_args=2,
+            qasm_gate='ch', cirq_gate=ops.ControlledGate(ops.H), num_params=0, num_args=2
         ),
         'swap': QasmGateStatement(qasm_gate='swap', cirq_gate=ops.SWAP, num_params=0, num_args=2),
         'cswap': QasmGateStatement(
@@ -309,13 +312,9 @@ class QasmParser:
     all_gates = {**basic_gates, **qelib_gates}
 
     tokens = QasmLexer.tokens
-    start = "start"
+    start = 'start'
 
-    precedence = (
-        ('left','+', '-'),
-        ('left', '*', '/'),
-        ('right', '^'),
-    )
+    precedence = (('left', '+', '-'), ('left', '*', '/'), ('right', '^'))
 
     def p_start(self, p):
         """start : qasm"""
@@ -324,13 +323,7 @@ class QasmParser:
     def p_qasm_format_only(self, p):
         """qasm : format"""
         self.supported_format = True
-        p[0] = Qasm(
-            self.supported_format,
-            self.qelibinc,
-            self.qregs,
-            self.cregs,
-            self.circuit,
-        )
+        p[0] = Qasm(self.supported_format, self.qelibinc, self.qregs, self.cregs, self.circuit)
 
     def p_qasm_no_format_specified_error(self, p):
         """qasm : QELIBINC
@@ -341,13 +334,7 @@ class QasmParser:
     def p_qasm_include(self, p):
         """qasm : qasm QELIBINC"""
         self.qelibinc = True
-        p[0] = Qasm(
-            self.supported_format,
-            self.qelibinc,
-            self.qregs,
-            self.cregs,
-            self.circuit,
-        )
+        p[0] = Qasm(self.supported_format, self.qelibinc, self.qregs, self.cregs, self.circuit)
 
     def p_qasm_circuit(self, p):
         """qasm : qasm circuit"""
@@ -410,11 +397,7 @@ class QasmParser:
         self._resolve_gate_operation(args=p[5], gate=p[1], p=p, params=p[3])
 
     def _resolve_gate_operation(
-        self,
-        args: List[List[ops.Qid]],
-        gate: str,
-        p: Any,
-        params: List[float],
+        self, args: List[List[ops.Qid]], gate: str, p: Any, params: List[float]
     ):
         gate_set = self.basic_gates if not self.qelibinc else self.all_gates
         if gate not in gate_set.keys():
@@ -577,11 +560,19 @@ class QasmParser:
         ]
 
     # if operations
-    # if : IF '(' carg NE NATURAL_NUMBER ')' ID qargs
+    # if : IF '(' carg EQ NATURAL_NUMBER ')' ID qargs
 
     # def p_if(self, p):
-    #     """if : IF '(' carg NE NATURAL_NUMBER ')' gate_op"""
-    #     p[0] = [ops.ClassicallyControlledOperation(conditions=p[3], sub_operation=tuple(p[7])[0])]
+    #     """if : IF '(' carg EQ NATURAL_NUMBER ')' gate_op"""
+    #     # We have to split the register into bits (since that's what measurement does above),
+    #     # and create one condition per bit, checking against that part of the binary value.
+    #     conditions = []
+    #     for i, key in enumerate(p[3]):
+    #         v = (p[5] >> i) & 1
+    #         conditions.append(sympy.Eq(sympy.Symbol(key), v))
+    #     p[0] = [
+    #         ops.ClassicallyControlledOperation(conditions=conditions, sub_operation=tuple(p[7])[0])
+    #     ]
 
     def p_error(self, p):
         if p is None:
