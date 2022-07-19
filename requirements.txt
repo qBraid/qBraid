@@ -1,4 +1,4 @@
-amazon-braket-sdk==1.25.2
+amazon-braket-sdk==1.26.1
 cirq==0.15.0
 numpy==1.23.1
 PennyLane==0.24.0
