@@ -3,6 +3,8 @@ requires = ["setuptools>=61", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-x --ignore-glob=**/qbraid/_archive/*"
 log_cli = false
 log_cli_level = "CRITICAL"
 log_cli_format = "%(message)s"
@@ -10,8 +12,14 @@ log_file = "pytest.log"
 log_file_level = "WARNING"
 log_file_format = "%(asctime)s [%(levelname)8s] %(message)s (%(filename)s:%(lineno)s)"
 log_file_date_format = "%Y-%m-%d %H:%M:%S"
+testpaths = [
+  "qbraid/api",
+  "qbraid/interface",
+  "qbraid/transpiler",
+  "qbraid/devices",
+  "qbraid/tests",
+]
 filterwarnings = [
-    "ignore::UserWarning",
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
     "ignore::urllib3.exceptions.InsecureRequestWarning",
@@ -61,6 +69,7 @@ exclude = '''
   | dist
   | qbraid/_archive
   | qbraid/transpiler/cirq_utils/qasm_parser.py
+  | qbraid/transpiler/cirq_utils/tests/test_qasm_parser.py
 )/
 '''
 
