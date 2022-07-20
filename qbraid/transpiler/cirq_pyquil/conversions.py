@@ -1,25 +1,12 @@
-# Copyright (C) 2020 Unitary Fund
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
-
 """
 Module containing functions to convert between Cirq's circuit
 representation and pyQuil's circuit representation (Quil programs).
 
 """
 from cirq import Circuit, LineQubit
+from cirq.ops import QubitOrder
 from cirq_rigetti.quil_input import circuit_from_quil
+from cirq_rigetti.quil_output import QuilOutput
 from pyquil import Program
 
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
@@ -36,13 +23,18 @@ def to_quil(circuit: Circuit) -> QuilType:
     Returns:
         QuilType: Quil string equivalent to the input Cirq circuit.
     """
-    max_qubit = max(circuit.all_qubits())
+    input_qubits = circuit.all_qubits()
+    max_qubit = max(input_qubits)
     # if we are using LineQubits, keep the qubit labeling the same
     if isinstance(max_qubit, LineQubit):
         qubit_range = max_qubit.x + 1
-        return circuit.to_quil(qubit_order=LineQubit.range(qubit_range))
+        qubit_order = LineQubit.range(qubit_range)
     # otherwise, use the default ordering (starting from zero)
-    return circuit.to_quil()
+    else:
+        qubit_order = QubitOrder.DEFAULT
+    qubits = QubitOrder.as_qubit_order(qubit_order).order_for(input_qubits)
+    operations = circuit.all_operations()
+    return str(QuilOutput(operations, qubits))
 
 
 def to_pyquil(circuit: Circuit, compat=True) -> Program:
