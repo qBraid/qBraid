@@ -29,6 +29,7 @@ from cirq import protocols
 
 from qbraid.interface import convert_to_contiguous, to_unitary
 from qbraid.transpiler.cirq_utils.custom_gates import matrix_gate
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 
 def _gate_to_matrix_braket(gate: braket_gates.Unitary) -> np.ndarray:
@@ -38,6 +39,25 @@ def _gate_to_matrix_braket(gate: braket_gates.Unitary) -> np.ndarray:
     qubits = list(range(nqubits)) if nqubits > 1 else 0
     circuit = BKCircuit([BKInstruction(unitary_gate, qubits)])
     return to_unitary(circuit)
+
+
+def unitary_braket_instruction(instr: BKInstruction) -> BKInstruction:
+    """Converts a Braket instruction to a unitary gate instruction.
+
+    Args:
+        instr: Braket instruction to convert.
+
+    Raises:
+        CircuitConversionError: If the instruction cannot be converted
+    """
+    gate = instr.operator
+
+    try:
+        matrix = _gate_to_matrix_braket(gate)
+        gate_name = "U" if gate.name is None else gate.name
+        return BKInstruction(braket_gates.Unitary(matrix, display_name=gate_name), instr.target)
+    except (ValueError, TypeError) as err:
+        raise CircuitConversionError(f"Unable to convert the instruction {instr}.") from err
 
 
 def from_braket(circuit: BKCircuit) -> Circuit:
