@@ -9,6 +9,7 @@ from cirq_rigetti.quil_output import QuilOutput
 from pyquil import Program
 
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
+from qbraid.interface.qbraid_cirq.tools import _convert_to_line_qubits
 
 QuilType = str
 
@@ -22,16 +23,13 @@ def to_quil(circuit: Circuit) -> QuilType:
     Returns:
         QuilType: Quil string equivalent to the input Cirq circuit.
     """
+    circuit = _convert_to_line_qubits(circuit)
     operations = circuit.all_operations()
     qubits = circuit.all_qubits()
-    max_qubit = max(circuit.all_qubits())
-    # if we are using LineQubits, keep the qubit labeling the same
-    if isinstance(max_qubit, LineQubit):
-        qubit_range = max_qubit.x + 1
-        qubits = LineQubit.range(qubit_range)
-    # otherwise, use the default ordering (starting from zero)
+    max_qubit = max(qubits)
+    qubit_range = max_qubit.x + 1
+    qubits = LineQubit.range(qubit_range)
     output = QuilOutput(operations, qubits)
-    # program = Program(str(output))
     return str(output)
 
 
