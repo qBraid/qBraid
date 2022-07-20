@@ -91,8 +91,7 @@ class QasmGateStatement:
             qasm_gate: The symbol of the QASM gate.
             cirq_gate: The gate class on the cirq side.
             num_params: The number of params taken by this gate.
-            num_args: The number of qubits (used in validation) this
-                gate takes.
+            num_args: The number of qubits (used in validation) this gate takes.
         """
         self.qasm_gate = qasm_gate
         self.cirq_gate = cirq_gate
