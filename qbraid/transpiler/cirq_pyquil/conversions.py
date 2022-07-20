@@ -4,12 +4,12 @@ representation and pyQuil's circuit representation (Quil programs).
 
 """
 from cirq import Circuit, LineQubit
+from cirq.ops import QubitOrder
 from cirq_rigetti.quil_input import circuit_from_quil
 from cirq_rigetti.quil_output import QuilOutput
 from pyquil import Program
 
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
-from qbraid.interface.qbraid_cirq.tools import _convert_to_line_qubits
 
 QuilType = str
 
@@ -23,14 +23,18 @@ def to_quil(circuit: Circuit) -> QuilType:
     Returns:
         QuilType: Quil string equivalent to the input Cirq circuit.
     """
-    circuit = _convert_to_line_qubits(circuit)
+    input_qubits = circuit.all_qubits()
+    max_qubit = max(input_qubits)
+    # if we are using LineQubits, keep the qubit labeling the same
+    if isinstance(max_qubit, LineQubit):
+        qubit_range = max_qubit.x + 1
+        qubit_order = LineQubit.range(qubit_range)
+    # otherwise, use the default ordering (starting from zero)
+    else:
+        qubit_order = QubitOrder.DEFAULT
+    qubits = QubitOrder.as_qubit_order(qubit_order).order_for(input_qubits)
     operations = circuit.all_operations()
-    qubits = circuit.all_qubits()
-    max_qubit = max(qubits)
-    qubit_range = max_qubit.x + 1
-    qubits = LineQubit.range(qubit_range)
-    output = QuilOutput(operations, qubits)
-    return str(output)
+    return str(QuilOutput(operations, qubits))
 
 
 def to_pyquil(circuit: Circuit, compat=True) -> Program:
