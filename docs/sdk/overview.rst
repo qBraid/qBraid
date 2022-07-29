@@ -34,7 +34,7 @@ Installation
 -------------
 
 The qBraid SDK is available exclusively through `qBraid Lab <https://lab.qbraid.com>`_.
-Login (or create an account) and then follow the steps in `Install environment <../lab/env-install.html>`_
+Login (or create an account) and then follow the steps in `Install environment <../lab/environments.html#install-environment>`_
 to get started using the SDK.
 
 

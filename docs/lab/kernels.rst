@@ -1,7 +1,10 @@
-.. _lab_kernel_manage:
+.. _lab_kernels:
 
-Manage kernels
-===============
+Kernels
+========
+
+The IPython kernel is the Python execution backend for Jupyter.
+
 
 Add/remove kernels
 -------------------

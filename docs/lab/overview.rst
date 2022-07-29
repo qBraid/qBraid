@@ -9,36 +9,48 @@ Overview
       <span style="color:#808080"> | Lab</span>
    </h1>
    <p style="text-align:center;font-style:italic;color:#808080">
-      A web-based IDE cross JupyterLab interface, highly-optimized for quantum computing.
+      A web-based IDE optimized for quantum computing.
    </p>
 
 
-Environment Manager
---------------------
+`qBraid Lab <https://lab.qbraid.com>`_ is a web-based IDE cross JupyterLab interface that provides
+software tools for researchers and developers in quantum, as well as access to quantum hardware.
 
-The qBraid Lab Environment Manager is a robust package and virtual environment management system
-provided to qBrad end-users through a simple, intuitive graphical user interface.
+Account
+--------
 
-To expand the Environment Manager sidebar, click on **Envs** in the upper-right of the Lab console.
-**My Environments** are your currently installed environments. The qBraid Default environment and
-Microsoft Q# environment are installed by default.
+- `Add access key <account.html#add-access-key>`_
 
-- `Install environment <env-install.html>`_
-- `Create environment <env-create.html>`_
-- `Manage kernels <kernel-manage.html>`_
+
+Environments
+-------------
+
+- `Install environment <environments.html#install-environment>`_
+- `Create environment <environments.html#create-environment>`_
+
+
+Kernels
+--------
+
+- `Add/remove kernels <kernels.html#add-remove-kernels>`_
+- `Switch notebook kernel <kernels.html#switch-notebook-kernel>`_
 
 
 Integrations
 -------------
 
-- `Connect to VS Code <vscode.html>`_
+- `Visual Studio Code <integrations.html#visual-studio-code>`_
 
 
-Account
---------
+System Info
+------------
 
-- `Add access key <add-access-key.html>`_
+- `Operating System <system.html#operating-system>`_
+- `Software <system.html#gnu-packages>`_
+
 
 .. seealso::
    
-   For information on the JupyterLab interface, see `JupyterLab Documentaion <https://jupyterlab.readthedocs.io/>`_.
+   - `Project Jupyter <https://docs.jupyter.org/en/latest/#jupyter-project-documentation>`_
+   - `JupyterLab <https://jupyterlab.readthedocs.io/en/stable/>`_
+   - `Jupyter Notebook <https://jupyter-notebook.readthedocs.io/en/latest/notebook.html>`_

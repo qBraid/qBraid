@@ -103,11 +103,11 @@ Documentation
    :hidden:
 
    lab/overview
-   lab/env-install
-   lab/env-create
-   lab/kernel-manage
-   lab/vscode
-   lab/add-access-key
+   lab/account
+   lab/environments
+   lab/kernels
+   lab/integrations
+   lab/system
 
 .. toctree::
    :maxdepth: 1

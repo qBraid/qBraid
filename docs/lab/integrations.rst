@@ -1,14 +1,25 @@
-.. _lab_vscode:
+.. _lab_integrations:
 
-Connect to VS Code
-===================
+Integrations
+=============
 
-In this guide, you will learn how to `connect`_ your qBraid Lab account to `Visual Studio Code`_.
-This will enable `running Jupyter Notebooks`_ in VS Code on your local machine while still accessing the
-pre-packaged environments, compute resources, and other softwares and API's available only through qBraid Lab.
+Visual Studio Code
+-------------------
+
+.. image:: ../_static/connect-vscode/vscode_graphic.png
+    :align: center
+    :width: 700px
+    :target: javascript:void(0);
+
+|
+
+`Connecting`_ your qBraid Lab account to `Visual Studio Code`_ enables `running Jupyter Notebooks`_
+on your local machine while still accessing the pre-packaged environments, compute resources, and
+other softwares and API's available through qBraid Lab.
+
 
 Get access token
------------------
+^^^^^^^^^^^^^^^^^
 
 1. Log in to `lab.qbraid.com <https://lab.qbraid.com>`_.
 
@@ -51,7 +62,7 @@ qBraid Lab account, and revoke it from the same page when you are no longer usin
 
 
 Connect VS Code to Lab
-------------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 
 1. Open the command palette in VS Code (``Cmd+Shift+P`` on MacOS, ``Ctrl+Shift+P`` elsewhere).
 
@@ -105,10 +116,9 @@ Your Lab username is generated from the email address associated with your qBrai
 
 .. seealso::
     
-    For more on connecting to a JupyterHub from Visual Studio Code, see `this Jupyter Blog`_.
+    - `Jupyter Blog <https://blog.jupyter.org/connect-to-a-jupyterhub-from-visual-studio-code-ed7ed3a31bcb>`_
 
 .. _Visual Studio Code: https://code.visualstudio.com/
 .. _running Jupyter Notebooks: https://code.visualstudio.com/docs/datascience/jupyter-notebooks
-.. _this Jupyter Blog: https://blog.jupyter.org/connect-to-a-jupyterhub-from-visual-studio-code-ed7ed3a31bcb
-.. _connect: https://code.visualstudio.com/docs/datascience/jupyter-notebooks#_connect-to-a-remote-jupyter-server
+.. _Connecting: https://code.visualstudio.com/docs/datascience/jupyter-notebooks#_connect-to-a-remote-jupyter-server
 
