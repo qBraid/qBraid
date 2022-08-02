@@ -46,7 +46,7 @@ System Info
 ------------
 
 - `Operating System <system.html#operating-system>`_
-- `Software <system.html#gnu-packages>`_
+- `Pre-Installed Software <system.html#gnu-packages>`_
 
 
 .. seealso::
