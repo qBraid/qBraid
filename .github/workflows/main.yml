@@ -11,7 +11,6 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.9']
-    environment: unit-tests
 
     steps:
     - uses: actions/checkout@v1
@@ -23,9 +22,10 @@ jobs:
       run: |
         python -m pip install -U pip setuptools ipython
         python -m pip install tox
-    - name: Tests, docs, linters
+    - name: Tests
       run: 
-        tox
+        tox -e unit-tests
+        tox -e linters
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
