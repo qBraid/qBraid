@@ -23,7 +23,7 @@ jobs:
         python -m pip install -U pip setuptools ipython
         python -m pip install tox
     - name: Tests
-      run: 
+      run: |
         tox -e unit-tests
         tox -e linters
       env:
