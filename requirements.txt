@@ -1,6 +1,6 @@
 amazon-braket-sdk==1.27.1
 cirq==1.0.0
-numpy==1.23.1
+numpy==1.23.2
 PennyLane==0.24.0
 PennyLane-qiskit==0.24.0
 pyquil==3.1.0
