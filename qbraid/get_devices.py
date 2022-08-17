@@ -37,6 +37,7 @@ def refresh_devices():
             status = device.status.name
             session.put("/lab/update-device", data={"qbraid_id": qbraid_id, "status": status})
         count += 1
+    update_progress_bar(1)
     print()
 
 
