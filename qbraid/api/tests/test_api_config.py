@@ -131,22 +131,18 @@ def test_get_config(config):
 
 def test_qbraid_session_from_config():
     """Test initializing QbraidSession with attributes auto-set from config values."""
-    email = get_config("email", "default")
-    refresh = get_config("refresh-token", "default")
+    user_email = get_config("email", "default")
+    refresh_token = get_config("refresh-token", "default")
     session = QbraidSession()
-    headers = session.headers
-    assert headers["email"] == email
-    assert headers["refresh-token"] == refresh
+    res = session.get("/identity")
+    assert user_email == res.json()["email"]
 
 
 def test_qbraid_session_from_args():
     """Test initializing QbraidSession with attributes set from user-provided values."""
-    email = "test"
-    refresh = "123"
-    session = QbraidSession(user_email=email, refresh_token=refresh)
-    headers = session.headers
-    assert headers["email"] == email
-    assert headers["refresh-token"] == refresh
+    id_token = "test123"
+    session = QbraidSession(id_token=id_token)
+    assert session.id_token == id_token
 
 
 def test_ibmq_get_provider():
