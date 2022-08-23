@@ -196,18 +196,19 @@ def test_get_devices_refresh_results(capfd):
     """Test ``get_devices`` stdout for results > 0, with refresh.
     When results returned, output format is as follows:
     (1) Progress bar
-    (2) Message
-    (3) Section titles
-    (4) Underline titles
-    (5+x) ``x`` lines of results
-    (6+x) Empty line
+    (2) Empty line
+    (3) Message
+    (4) Empty line
+    (5) Section titles
+    (6) Underline titles
+    (7+x) ``x`` lines of results
 
     So for a query returning ``x`` results, we expect ``6+x`` total lines from stdout.
     """
     _mock_ipython(MockIPython(None))
     get_devices(filters={"qbraid_id": "ibm_q_belem"}, refresh=True)
     num_results = 1  # searching by device id will return one result
-    lines_expected = 6 + num_results
+    lines_expected = 7 + num_results
     out, err = capfd.readouterr()
     lines_out = len(out.split("\n"))
     assert lines_out == lines_expected

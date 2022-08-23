@@ -1,4 +1,4 @@
-name: CI
+name: Docs
 
 on:
   pull_request:
@@ -22,20 +22,12 @@ jobs:
       run: |
         python -m pip install -U pip setuptools ipython
         python -m pip install tox
-    - name: Tests
-      run: |
-        tox -e unit-tests
-        tox -e linters
+    - name: Build docs
+      run: 
+        tox -e docs
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         IBMQ_TOKEN: ${{ secrets.IBMQ_TOKEN }}
         JUPYTERHUB_USER: ${{ secrets.JUPYTERHUB_USER }}
         REFRESH: ${{ secrets.REFRESH }}
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        fail_ci_if_error: false
-        files: ./build/coverage/coverage.xml
-        verbose: true
