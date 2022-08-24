@@ -4,5 +4,5 @@ numpy==1.23.2
 PennyLane==0.25.1
 PennyLane-qiskit==0.24.0
 pyquil==3.2.1
-qiskit==0.37.1
+qiskit==0.37.2
 requests==2.28.1
