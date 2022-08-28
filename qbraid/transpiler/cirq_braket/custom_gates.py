@@ -3,11 +3,15 @@ Module for Braket custom gates
 
 """
 import itertools
+from typing import Any, List
 
 import braket.ir.jaqcd as ir
 import numpy as np
-from braket.circuits import Gate, Instruction, circuit
-from braket.circuits.qubit_set import QubitSet
+from braket.circuits import Gate, Instruction, QubitSet, circuit
+from braket.circuits.gates import Unitary, format_complex
+from braket.circuits.serialization import OpenQASMSerializationProperties
+
+# pylint: disable=missing-function-docstring
 
 
 class C(Gate):
@@ -31,7 +35,7 @@ class C(Gate):
         qid_shape = (2,) * self.qubit_count
         control_values = ((1,),) * self._num_controls
         sub_n = len(qid_shape) - self._num_controls
-        tensor = np.eye(np.prod(qid_shape, dtype=np.int64).item(), dtype=sub_matrix.dtype)
+        tensor = np.eye(np.prod(qid_shape, dtype=np.int64).item(), dtype=complex)
         tensor.shape = qid_shape * 2
         sub_tensor = sub_matrix.reshape(qid_shape[self._num_controls :] * 2)
         for control_vals in itertools.product(*control_values):
@@ -48,27 +52,27 @@ class C(Gate):
         sub_matrix = self.sub_gate.to_matrix()
         return self._extend_matrix(sub_matrix)
 
-    def to_ir(self, target: QubitSet):
-        """Returns IR object of quantum operator and target
+    def adjoint(self) -> List[Gate]:
+        return [Unitary(self.to_matrix().conj().T, display_name=f"({self.ascii_symbols})^†")]
 
-        Args:
-            target (QubitSet): target qubit(s)
-        Returns:
-            IR object of the quantum operator and target
-        """
+    def _to_jaqcd(self, target: QubitSet) -> Any:
         return ir.Unitary.construct(
             targets=list(target),
-            matrix=C._transform_matrix_to_ir(self.to_matrix()),
+            matrix=Unitary._transform_matrix_to_ir(self.to_matrix()),
         )
 
-    def __eq__(self, other):
-        if isinstance(other, C):
-            return self.matrix_equivalence(other)
-        return NotImplemented
+    def _to_openqasm(  # pylint: disable=unused-argument
+        self, target: QubitSet, serialization_properties: OpenQASMSerializationProperties, **kwargs
+    ) -> str:
+        qubits = [serialization_properties.format_target(int(qubit)) for qubit in target]
+        formatted_matrix = np.array2string(
+            self.to_matrix(),
+            separator=", ",
+            formatter={"all": lambda x: format_complex(x)},  # pylint: disable=unnecessary-lambda
+            threshold=float("inf"),
+        ).replace("\n", "")
 
-    @staticmethod
-    def _transform_matrix_to_ir(matrix: np.ndarray):
-        return [[[element.real, element.imag] for element in row] for row in matrix.tolist()]
+        return f"#pragma braket unitary({formatted_matrix}) {', '.join(qubits)}"
 
     @staticmethod
     @circuit.subroutine(register=True)
