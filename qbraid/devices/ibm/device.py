@@ -3,6 +3,7 @@ Module defining QiskitBackendWrapper Class
 
 """
 from qiskit import Aer, assemble, transpile
+from qiskit.providers import QiskitBackendNotFoundError
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.ibmq.managed import IBMQJobManager
 from qiskit.utils.quantum_instance import QuantumInstance
@@ -22,11 +23,14 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
 
     def _get_device(self) -> QiskitBackend:
         """Initialize an IBM device."""
-        if self._obj_ref == "IBMQ":
-            provider = ibmq_get_provider()
-            return provider.get_backend(self._obj_arg)
-        if self._obj_ref == "Aer":
-            return Aer.get_backend(self._obj_arg)
+        try:
+            if self._obj_ref == "IBMQ":
+                provider = ibmq_get_provider()
+                return provider.get_backend(self._obj_arg)
+            if self._obj_ref == "Aer":
+                return Aer.get_backend(self._obj_arg)
+        except QiskitBackendNotFoundError as err:
+            raise DeviceError(f"Device not found.") from err
         raise DeviceError(f"obj_ref {self._obj_ref} not found.")
 
     def _vendor_compat_run_input(self, run_input):

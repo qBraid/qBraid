@@ -33,9 +33,13 @@ def refresh_devices():
         update_progress_bar(progress)
         if document["statusRefresh"] is not None:  # None => internally not available at moment
             qbraid_id = document["qbraid_id"]
-            device = device_wrapper(qbraid_id)
-            status = device.status.name
-            session.put("/lab/update-device", data={"qbraid_id": qbraid_id, "status": status})
+            try:
+                device = device_wrapper(qbraid_id)
+                status = device.status.name
+                session.put("/lab/update-device", data={"qbraid_id": qbraid_id, "status": status})
+            except Exception:  # qbraid.devices.DeviceError
+                pass
+
         count += 1
     update_progress_bar(1)
     print()

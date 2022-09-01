@@ -36,7 +36,10 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
 
     def _get_device(self):
         """Initialize an AWS device."""
-        return AwsDevice(self._obj_arg)
+        try:
+            return AwsDevice(self._obj_arg)
+        except ValueError as err:
+            raise DeviceError("Device not found") from err
 
     def _vendor_compat_run_input(self, run_input):
         return run_input
