@@ -19,7 +19,7 @@ qbraid
    </p>
 
 
-**Version 0.1.2**
+**Version 0.1.5**
 
 The qBraid CLI is available exclusively through `qBraid Lab <https://lab.qbraid.com>`_.
 Login (or create an account) and then open Termainal to get started using the CLI.
@@ -32,21 +32,15 @@ Login (or create an account) and then open Termainal to get started using the CL
 .. code-block:: console
 
    $ qbraid
-   Welcome to the qBraid CLI!
-   ---------------------------
-   Use `qbraid -h` to see available commands.
+   -------------------------------
+   * Welcome to the qBraid CLI! *
+   -------------------------------
 
-           ____            _     _  
-      __ _| __ ) _ __ __ _(_) __| | 
-     / _  |  _ \|  __/ _  | |/ _  | 
-    | (_| | |_) | | | (_| | | (_| | 
-     \__  |____/|_|  \__ _|_|\__ _| 
-        |_|                         
+   - Use `qbraid -h` to see available commands.
 
+   - Use `qbraid --version` to display the current version.
 
-   Use `qbraid --version` to display the current version.
-
-   Reference Docs: https://qbraid-qbraid.readthedocs-hosted.com/en/latest/cli/overview.html
+   Reference Docs: https://qbraid-qbraid.readthedocs-hosted.com/en/latest/cli/qbraid.html
 
 Commands
 ---------

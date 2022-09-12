@@ -8,6 +8,7 @@ from braket.devices import LocalSimulator
 
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
+from qbraid.devices.exceptions import DeviceError
 
 from .localjob import BraketLocalQuantumTaskWrapper
 
@@ -22,7 +23,10 @@ class BraketLocalSimulatorWrapper(DeviceLikeWrapper):
 
     def _get_device(self):
         """Initialize an AWS local simulator."""
-        return LocalSimulator(backend=self._obj_arg)
+        try:
+            return LocalSimulator(backend=self._obj_arg)
+        except ValueError as err:
+            raise DeviceError("Device not found.") from err
 
     def _vendor_compat_run_input(self, run_input):
         return run_input

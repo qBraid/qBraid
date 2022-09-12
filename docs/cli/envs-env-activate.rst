@@ -18,12 +18,9 @@ Examples
     $ which python
     /opt/conda/bin/python
     $ qbraid envs qbraid_sdk activate
-    Activate qbraid_sdk in your shell using:
+    Activating qbraid_sdk environment... 
 
-    source /home/jovyan/.qbraid/environments/qbraid_sdk_9j9sjy/pyenv/bin/activate
-
-    Once activated (pyenv), use `deactivate` to deactivate the enviornment.
-    $ source /home/jovyan/.qbraid/environments/qbraid_sdk_9j9sjy/pyenv/bin/activate
+    Once active, use `deactivate` to deactivate the environment.
     $ which python
     /home/jovyan/.qbraid/environments/qbraid_sdk_9j9sjy/pyenv/bin/python
 

@@ -3,7 +3,8 @@ Module defining BraketDeviceWrapper Class
 
 """
 import math
-import warnings
+
+# import warnings
 from typing import TYPE_CHECKING
 
 from braket.aws import AwsDevice
@@ -36,7 +37,10 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
 
     def _get_device(self):
         """Initialize an AWS device."""
-        return AwsDevice(self._obj_arg)
+        try:
+            return AwsDevice(self._obj_arg)
+        except ValueError as err:
+            raise DeviceError("Device not found") from err
 
     def _vendor_compat_run_input(self, run_input):
         return run_input
@@ -69,15 +73,16 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
 
         """
         run_input, qbraid_circuit = self._compat_run_input(run_input)
-        if "shots" not in kwargs and not run_input.result_types:
-            warnings.warn(
-                "No result types specified for circuit and shots=0. See "
-                "`braket.circuit.result_types`. Defaulting to shots=1024 and continuing run.",
-                UserWarning,
-            )
-            kwargs["shots"] = 1024
+        # if "shots" not in kwargs and not run_input.result_types:
+        #     warnings.warn(
+        #         "No result types specified for circuit and shots=0. See "
+        #         "`braket.circuit.result_types`. Defaulting to shots=1024 and continuing run.",
+        #         UserWarning,
+        #     )
+        #     kwargs["shots"] = 1024
         aws_quantum_task = self.vendor_dlo.run(run_input, self._s3_location, *args, **kwargs)
-        shots = aws_quantum_task.metadata()["shots"]
+        metadata = aws_quantum_task.metadata()
+        shots = 0 if "shots" not in metadata else metadata["shots"]
         vendor_job_id = aws_quantum_task.metadata()["quantumTaskArn"]
         job_id = init_job(vendor_job_id, self, qbraid_circuit, shots)
         return BraketQuantumTaskWrapper(
