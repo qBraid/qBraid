@@ -37,7 +37,7 @@ def refresh_devices():
                 device = device_wrapper(qbraid_id)
                 status = device.status.name
                 session.put("/lab/update-device", data={"qbraid_id": qbraid_id, "status": status})
-            except Exception:  # qbraid.devices.DeviceError
+            except Exception:  # pylint: disable=broad-except
                 pass
 
         count += 1

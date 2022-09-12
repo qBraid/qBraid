@@ -115,12 +115,12 @@ def test_api_error():
         session.request("POST", "not a url")
 
 
-set_config()  # TODO: double-check that this isn't redundant with ``test_update_cofig``
-
-
 @pytest.mark.parametrize("config", config_lst)
 def test_get_config(config):
     """Test getting config value."""
+    # remove qbraidrc file again and set correct config
+    os.remove(qbraidrc_path)
+    set_config()
     name = config[0]
     value = config[1]
     section = config[2]
@@ -132,7 +132,6 @@ def test_get_config(config):
 def test_qbraid_session_from_config():
     """Test initializing QbraidSession with attributes auto-set from config values."""
     user_email = get_config("email", "default")
-    refresh_token = get_config("refresh-token", "default")
     session = QbraidSession()
     res = session.get("/identity")
     assert user_email == res.json()["email"]

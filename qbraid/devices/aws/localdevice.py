@@ -26,7 +26,7 @@ class BraketLocalSimulatorWrapper(DeviceLikeWrapper):
         try:
             return LocalSimulator(backend=self._obj_arg)
         except ValueError as err:
-            raise DeviceError(f"Device not found.") from err
+            raise DeviceError("Device not found.") from err
 
     def _vendor_compat_run_input(self, run_input):
         return run_input
