@@ -22,4 +22,4 @@ Examples
     qiskit
     amazon_braket
     qbraid_sdk
-    Use `qbraid envs <environment> -h` to see available commands.
+    Use `qbraid envs -h` to see available commands.

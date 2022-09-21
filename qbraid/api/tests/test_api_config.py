@@ -76,20 +76,25 @@ def set_config():
             config.write(cfgfile)
 
 
-def test_update_config():
-    """Test updating user config."""
+def test_verify_config():
+    """Test raising error when verifying invalid qbraid config."""
     # remove qbraidrc file if it already exists
     try:
         os.remove(qbraidrc_path)
     except FileNotFoundError:
         pass
+    with pytest.raises(ConfigError):
+        verify_config("QBRAID")
+
+
+def test_update_config():
+    """Test updating user config."""
     # test returning -1 when config doesn't exists
     assert get_config("refresh-token", "default") == -1
     # updating config with no input sets them to None
     update_config("QBRAID", exists=False)
     assert get_config("refresh-token", "default") == "None"
-    # remove qbraidrc file again and set correct config
-    os.remove(qbraidrc_path)
+    # set correct config
     set_config()
     assert get_config("refresh-token", "default") == os.getenv("REFRESH")
 
@@ -100,12 +105,6 @@ def test_mask_value(testdata):
     value, expected = testdata
     mask = _mask_value(value)
     assert mask == expected
-
-
-def test_verify_config():
-    """Test raising error when verifying invalid qbraid config."""
-    with pytest.raises(ConfigError):
-        verify_config("QBRAID")
 
 
 def test_api_error():
@@ -119,7 +118,7 @@ def test_api_error():
 def test_get_config(config):
     """Test getting config value."""
     # remove qbraidrc file again and set correct config
-    os.remove(qbraidrc_path)
+    # os.remove(qbraidrc_path)
     set_config()
     name = config[0]
     value = config[1]
@@ -131,8 +130,14 @@ def test_get_config(config):
 
 def test_qbraid_session_from_config():
     """Test initializing QbraidSession with attributes auto-set from config values."""
+    print("\nSESSION FROM CONFIG CHECK 1:")
+    with open(qbraidrc_path, "r") as f:
+        print(f.read())
     user_email = get_config("email", "default")
     session = QbraidSession()
+    print("\nSESSION FROM CONFIG CHECK 2:")
+    with open(qbraidrc_path, "r") as f:
+        print(f.read())
     res = session.get("/identity")
     assert user_email == res.json()["email"]
 
