@@ -1,13 +1,19 @@
 .. _cli_envs_activate:
 
-qbraid envs <environment> activate
-===================================
+qbraid envs activate
+======================
 
 Activate qBraid environment.
 
 .. code-block:: bash
 
-    qbraid envs <environment> activate
+    qbraid envs activate [env_name]
+
+
+Positional Arguments
+---------------------
+
+``env_name`` : Name of environment. Values from: ``qbraid envs list``.
 
 
 Examples

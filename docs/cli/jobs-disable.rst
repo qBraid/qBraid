@@ -7,13 +7,13 @@ Disable qBraid Quantum Jobs.
 
 .. code-block:: bash
 
-    qbraid jobs disable --name
+    qbraid jobs disable [env_name]
 
 
-Required Parameters
---------------------
+Positional Arguments
+---------------------
 
-``--name -n`` : Name of qBraid virtual environment.
+``env_name`` : Name of environment. Values from: ``qbraid envs list``.
 
 
 Examples
@@ -21,10 +21,10 @@ Examples
 
 .. code-block:: console
 
-    $ qbraid jobs disable -n qbraid_sdk
+    $ qbraid jobs disable qbraid_sdk
     Disable successful. You are now submitting quantum jobs with your own AWS credentials.
 
-    To re-enable, run: `qbraid jobs enable -n qbraid_sdk`
+    To re-enable, run: `qbraid jobs enable qbraid_sdk`
 
 
 qBraid environments with support for quantum jobs include ``amazon_braket`` and ``qbraid_sdk``.
@@ -33,3 +33,4 @@ qBraid environments with support for quantum jobs include ``amazon_braket`` and 
 .. seealso::
 
     - :ref:`qbraid jobs enable<cli_jobs_enable>`
+    - :ref:`qbraid envs list<cli_envs_list>`

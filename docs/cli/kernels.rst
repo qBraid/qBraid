@@ -23,7 +23,6 @@ Examples
     Available kernels:
         iqsharp                      /home/jovyan/.local/share/jupyter/kernels/iqsharp
         python3_aws_braket_kwx6dl    /home/jovyan/.local/share/jupyter/kernels/python3_aws_braket_kwx6dl
-        python3_qbraid               /home/jovyan/.local/share/jupyter/kernels/python3_qbraid
         python3_qbraid_sdk_9j9sjy    /home/jovyan/.local/share/jupyter/kernels/python3_qbraid_sdk_9j9sjy
         python3                      /opt/conda/share/jupyter/kernels/python3
 
