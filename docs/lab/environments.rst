@@ -4,7 +4,7 @@ Environments
 =============
 
 The qBraid Lab Environment Manager is a robust package and virtual environment management system
-provided to qBrad end-users through a simple, intuitive graphical user interface.
+provided to qBraid end-users through a simple, intuitive graphical user interface.
 
 To expand the Environment Manager sidebar, click on **Envs** in the upper-right of the Lab console.
 **My Environments** are your currently installed environments. The qBraid Default environment and
@@ -85,3 +85,7 @@ Click on **More** to verify/view the list of installed packages.
     :target: javascript:void(0);
 
 |
+
+.. seealso::
+    
+    - `Install & manage quantum software in the cloud on qBraid | Demo <https://youtu.be/LyavbzSkvRo>`_
