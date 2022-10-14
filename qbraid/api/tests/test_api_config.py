@@ -130,6 +130,8 @@ def test_get_config(config):
 
 def test_qbraid_session_from_config():
     """Test initializing QbraidSession with attributes auto-set from config values."""
+    os.remove(qbraidrc_path)
+    set_config()
     print("\nSESSION FROM CONFIG CHECK 1:")
     with open(qbraidrc_path, "r") as f:
         print(f.read())
