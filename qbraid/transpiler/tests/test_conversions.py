@@ -18,15 +18,16 @@ Unit tests for circuit conversions.
 
 """
 import cirq
-import pennylane as qml
 import pytest
 import qiskit
-from braket.circuits import Circuit as BKCircuit
-from braket.circuits import Instruction
+from braket.circuits import Circuit as BraketCircuit
+from braket.circuits import Instruction as BraketInstruction
 from braket.circuits import gates as braket_gates
-from pyquil import Program, gates
+from pennylane.tape import QuantumTape as PennylaneTape
+from pyquil import Program as pyQuilProgram
+from pyquil import gates as pyquil_gates
 
-from qbraid._typing import SUPPORTED_PROGRAM_TYPES
+from qbraid._qprogram import SUPPORTED_FRONTENDS
 from qbraid.exceptions import PackageValueError, ProgramTypeError
 from qbraid.interface.qbraid_cirq._utils import _equal
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
@@ -44,22 +45,22 @@ qiskit_circuit.h(qiskit_qreg[0])
 qiskit_circuit.cnot(*qiskit_qreg)
 
 # pyQuil Bell circuit.
-pyquil_circuit = Program(gates.H(0), gates.CNOT(0, 1))
+pyquil_circuit = pyQuilProgram(pyquil_gates.H(0), pyquil_gates.CNOT(0, 1))
 
 # Braket Bell circuit.
-braket_circuit = BKCircuit(
+braket_circuit = BraketCircuit(
     [
-        Instruction(braket_gates.H(), 0),
-        Instruction(braket_gates.CNot(), [0, 1]),
+        BraketInstruction(braket_gates.H(), 0),
+        BraketInstruction(braket_gates.CNot(), [0, 1]),
     ]
 )
 
 circuit_types = {
     "cirq": cirq.Circuit,
     "qiskit": qiskit.QuantumCircuit,
-    "pyquil": Program,
-    "braket": BKCircuit,
-    "pennylane": qml.tape.QuantumTape,
+    "pyquil": pyQuilProgram,
+    "braket": BraketCircuit,
+    "pennylane": PennylaneTape,
 }
 
 
@@ -76,7 +77,7 @@ def test_to_cirq_bad_types(item):
         convert_to_cirq(item)
 
 
-@pytest.mark.parametrize("to_type", SUPPORTED_PROGRAM_TYPES.keys())
+@pytest.mark.parametrize("to_type", SUPPORTED_FRONTENDS)
 def test_from_cirq(to_type):
     converted_circuit = convert_from_cirq(cirq_circuit, to_type)
     circuit, input_type = convert_to_cirq(converted_circuit)

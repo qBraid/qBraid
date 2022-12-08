@@ -4,7 +4,7 @@ Module defining QuantumProgramWrapper Class
 """
 from typing import TYPE_CHECKING, List, Optional
 
-from qbraid._typing import SUPPORTED_PROGRAM_TYPES
+from qbraid._qprogram import SUPPORTED_FRONTENDS
 from qbraid.exceptions import PackageValueError
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
@@ -23,7 +23,7 @@ class QuantumProgramWrapper:
 
     """
 
-    def __init__(self, program: "qbraid.QPROGRAM"):
+    def __init__(self, program: "qbraid.QUANTUM_PROGRAM"):
 
         self._program = program
         self._qubits = []
@@ -35,7 +35,7 @@ class QuantumProgramWrapper:
         self._package = None
 
     @property
-    def program(self) -> "qbraid.QPROGRAM":
+    def program(self) -> "qbraid.QUANTUM_PROGRAM":
         """Return the underlying quantum program that has been wrapped."""
         return self._program
 
@@ -74,27 +74,27 @@ class QuantumProgramWrapper:
         """Return the original package of the wrapped circuit."""
         return self._package
 
-    def transpile(self, conversion_type: str) -> "qbraid.QPROGRAM":
+    def transpile(self, conversion_type: str) -> "qbraid.QUANTUM_PROGRAM":
         r"""Transpile a qbraid quantum program wrapper object to quantum
         program object of type specified by ``conversion_type``.
 
         Args:
             conversion_type: a supported quantum frontend package.
-                Must be one of :data:`~qbraid.SUPPORTED_PROGRAM_TYPES`.
+                Must be one of :data:`~qbraid.SUPPORTED_FRONTENDS`.
 
         Raises:
             PackageValueError: If ``conversion_type`` is not one of
-                :data:`~qbraid.SUPPORTED_PROGRAM_TYPES`.
+                :data:`~qbraid.SUPPORTED_FRONTENDS`.
             CircuitConversionError: If the input quantum program could not be
                 converted to a program of type ``conversion_type``.
 
         Returns:
-            :data:`~qbraid.QPROGRAM`: supported quantum program object
+            :data:`~qbraid.QUANTUM_PROGRAM`: supported quantum program object
 
         """
         if conversion_type == self.package:
             return self.program
-        if conversion_type in SUPPORTED_PROGRAM_TYPES:
+        if conversion_type in SUPPORTED_FRONTENDS:
             try:
                 cirq_circuit, _ = convert_to_cirq(self.program)
             except Exception as err:
@@ -103,7 +103,7 @@ class QuantumProgramWrapper:
                     "This may be because the program contains custom gates or "
                     f"Pragmas (pyQuil). \n\nProvided program has type {type(self.program)} "
                     f"and is:\n\n{self.program}\n\nQuantum program types supported by the "
-                    f"qbraid.transpiler are \n{SUPPORTED_PROGRAM_TYPES}."
+                    f"qbraid.transpiler are \n{SUPPORTED_FRONTENDS}."
                 ) from err
             try:
                 converted_program = convert_from_cirq(cirq_circuit, conversion_type)

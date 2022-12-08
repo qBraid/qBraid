@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 import numpy as np
 
-from qbraid._typing import QPROGRAM, SUPPORTED_PROGRAM_TYPES
+from qbraid._qprogram import QUANTUM_PROGRAM, SUPPORTED_FRONTENDS
 from qbraid.exceptions import PackageValueError
 
 from .calculate_unitary import to_unitary
 
-QROGRAM_TEST_TYPE = Tuple[Dict[str, Callable[[Any], QPROGRAM]], np.ndarray]
+QROGRAM_TEST_TYPE = Tuple[Dict[str, Callable[[Any], QUANTUM_PROGRAM]], np.ndarray]
 
 if TYPE_CHECKING:
     import qbraid
@@ -55,7 +55,7 @@ def shared15_data() -> QROGRAM_TEST_TYPE:
 
 def random_circuit(
     package: str, num_qubits: Optional[int] = None, depth: Optional[int] = None, **kwargs
-) -> "qbraid.QPROGRAM":
+) -> "qbraid.QUANTUM_PROGRAM":
     """Generate random circuit of arbitrary size and form.
 
     Args:
@@ -72,7 +72,7 @@ def random_circuit(
         :data:`~qbraid.QPROGRAM`: randomly generated quantum circuit/program
 
     """
-    if package not in SUPPORTED_PROGRAM_TYPES:
+    if package not in SUPPORTED_FRONTENDS:
         raise PackageValueError(package)
     num_qubits = np.random.randint(1, 4) if num_qubits is None else num_qubits
     depth = np.random.randint(1, 4) if depth is None else depth

@@ -8,7 +8,6 @@ from unittest.mock import Mock
 import pytest
 
 from qbraid import __version__
-from qbraid._about import about
 from qbraid._warnings import _warn_new_version
 from qbraid.display_utils import running_in_jupyter, update_progress_bar
 from qbraid.exceptions import PackageValueError
@@ -41,13 +40,6 @@ job_status_list = [
     "FAILED",
     "UNKNOWN",
 ]
-
-
-def test_about(capfd):
-    about()
-    out, err = capfd.readouterr()
-    assert __version__ in out
-    assert len(err) == 0
 
 
 @pytest.mark.parametrize("test_data", check_version_data)
