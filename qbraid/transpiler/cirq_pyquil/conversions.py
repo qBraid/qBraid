@@ -1,3 +1,17 @@
+# Copyright 2023 qBraid
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Module containing functions to convert between Cirq's circuit
 representation and pyQuil's circuit representation (Quil programs).
@@ -11,31 +25,6 @@ from pyquil import Program
 
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
 
-QuilType = str
-
-
-def to_quil(circuit: Circuit) -> QuilType:
-    """Returns a Quil string representing the input Cirq circuit.
-
-    Args:
-        circuit: Cirq circuit to convert to a Quil string.
-
-    Returns:
-        QuilType: Quil string equivalent to the input Cirq circuit.
-    """
-    input_qubits = circuit.all_qubits()
-    max_qubit = max(input_qubits)
-    # if we are using LineQubits, keep the qubit labeling the same
-    if isinstance(max_qubit, LineQubit):
-        qubit_range = max_qubit.x + 1
-        qubit_order = LineQubit.range(qubit_range)
-    # otherwise, use the default ordering (starting from zero)
-    else:
-        qubit_order = QubitOrder.DEFAULT
-    qubits = QubitOrder.as_qubit_order(qubit_order).order_for(input_qubits)
-    operations = circuit.all_operations()
-    return str(QuilOutput(operations, qubits))
-
 
 def to_pyquil(circuit: Circuit, compat=True) -> Program:
     """Returns a pyQuil Program equivalent to the input Cirq circuit.
@@ -48,7 +37,19 @@ def to_pyquil(circuit: Circuit, compat=True) -> Program:
     """
     if compat:
         circuit = convert_to_contiguous(circuit, rev_qubits=True)
-    return Program(to_quil(circuit))
+    input_qubits = circuit.all_qubits()
+    max_qubit = max(input_qubits)
+    # if we are using LineQubits, keep the qubit labeling the same
+    if isinstance(max_qubit, LineQubit):
+        qubit_range = max_qubit.x + 1
+        qubit_order = LineQubit.range(qubit_range)
+    # otherwise, use the default ordering (starting from zero)
+    else:
+        qubit_order = QubitOrder.DEFAULT
+    qubits = QubitOrder.as_qubit_order(qubit_order).order_for(input_qubits)
+    operations = circuit.all_operations()
+    quil_str = str(QuilOutput(operations, qubits))
+    return Program(quil_str)
 
 
 def from_pyquil(program: Program, compat=True) -> Circuit:
@@ -60,19 +61,7 @@ def from_pyquil(program: Program, compat=True) -> Circuit:
     Returns:
         Cirq circuit representation equivalent to the input pyQuil Program.
     """
-    circuit = from_quil(program.out())
+    circuit = circuit_from_quil(program.out())
     if compat:
         circuit = convert_to_contiguous(circuit, rev_qubits=True)
     return circuit
-
-
-def from_quil(quil: QuilType) -> Circuit:
-    """Returns a Cirq circuit equivalent to the input Quil string.
-
-    Args:
-        quil: Quil string to convert to a Cirq circuit.
-
-    Returns:
-        Cirq circuit representation equivalent to the input Quil string.
-    """
-    return circuit_from_quil(quil)

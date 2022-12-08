@@ -1,8 +1,23 @@
+# Copyright 2023 qBraid
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Unit tests for the qbraid transpiler.
 
 """
 import cirq
+import qiskit
 import numpy as np
 import pytest
 from braket.circuits import Circuit as BraketCircuit
@@ -12,18 +27,83 @@ from cirq import Circuit as CirqCircuit
 from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit import QuantumRegister as QiskitQuantumRegister
 from qiskit.circuit.quantumregister import Qubit as QiskitQubit
+from pennylane.tape import QuantumTape as PennylaneTape
+from pyquil import Program as pyQuilProgram
+from pyquil import gates as pyquil_gates
 
 from qbraid import QbraidError, circuit_wrapper
-from qbraid.exceptions import PackageValueError
+from qbraid._qprogram import SUPPORTED_FRONTENDS
+from qbraid.exceptions import PackageValueError, ProgramTypeError
 from qbraid.interface import convert_to_contiguous, to_unitary
+from qbraid.interface.qbraid_cirq._utils import _equal
 from qbraid.interface.programs import bell_data, shared15_data
 from qbraid.transpiler.cirq_braket.tests._gate_archive import braket_gates
 from qbraid.transpiler.cirq_qiskit.tests._gate_archive import qiskit_gates
 from qbraid.transpiler.cirq_utils.tests._gate_archive import cirq_gates, create_cirq_gate
+from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
+
 
 TEST_15, UNITARY_15 = shared15_data()
 TEST_BELL, UNITARY_BELL = bell_data()
+
+# Cirq Bell circuit.
+cirq_qreg = cirq.LineQubit.range(2)
+cirq_qreg_rev = list(reversed(cirq_qreg))
+cirq_circuit = cirq.Circuit(cirq.ops.H.on(cirq_qreg[0]), cirq.ops.CNOT.on(*cirq_qreg))
+cirq_circuit_rev = cirq.Circuit(cirq.ops.H.on(cirq_qreg_rev[0]), cirq.ops.CNOT.on(*cirq_qreg_rev))
+
+# Qiskit Bell circuit.
+qiskit_qreg = qiskit.QuantumRegister(2)
+qiskit_circuit = qiskit.QuantumCircuit(qiskit_qreg)
+qiskit_circuit.h(qiskit_qreg[0])
+qiskit_circuit.cnot(*qiskit_qreg)
+
+# pyQuil Bell circuit.
+pyquil_circuit = pyQuilProgram(pyquil_gates.H(0), pyquil_gates.CNOT(0, 1))
+
+# Braket Bell circuit.
+braket_circuit = BraketCircuit(
+    [
+        BraketInstruction(braket_gates.H(), 0),
+        BraketInstruction(braket_gates.CNot(), [0, 1]),
+    ]
+)
+
+circuit_types = {
+    "cirq": cirq.Circuit,
+    "qiskit": qiskit.QuantumCircuit,
+    "pyquil": pyQuilProgram,
+    "braket": BraketCircuit,
+    "pennylane": PennylaneTape,
+}
+
+
+@pytest.mark.parametrize("circuit", (qiskit_circuit, pyquil_circuit, braket_circuit))
+def test_to_cirq(circuit):
+    converted_circuit, input_type = convert_to_cirq(circuit)
+    assert _equal(converted_circuit, cirq_circuit) or _equal(converted_circuit, cirq_circuit_rev)
+    assert input_type in circuit.__module__
+
+
+@pytest.mark.parametrize("item", ["circuit", 1, None])
+def test_to_cirq_bad_types(item):
+    with pytest.raises(ProgramTypeError):
+        convert_to_cirq(item)
+
+
+@pytest.mark.parametrize("to_type", SUPPORTED_FRONTENDS)
+def test_from_cirq(to_type):
+    converted_circuit = convert_from_cirq(cirq_circuit, to_type)
+    circuit, input_type = convert_to_cirq(converted_circuit)
+    assert _equal(circuit, cirq_circuit)
+    assert input_type == to_type
+
+
+@pytest.mark.parametrize("item", ["package", 1, None])
+def test_from_cirq_bad_package(item):
+    with pytest.raises(PackageValueError):
+        convert_from_cirq(cirq_circuit, item)
 
 
 def test_circuit_wrapper_properties():

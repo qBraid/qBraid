@@ -1,17 +1,16 @@
-# Copyright (C) 2021 Unitary Fund
+# Copyright 2023 qBraid
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module for converting Braket circuits to Cirq circuits
@@ -48,12 +47,12 @@ def to_braket(circuit: Circuit) -> BKCircuit:
     braket_int_qubits = list(reversed(cirq_int_qubits))
     qubit_mapping = {x: braket_int_qubits[x] for x in range(len(braket_int_qubits))}
     return BKCircuit(
-        _translate_cirq_operation_to_braket_instruction(opr, qubit_mapping)
+        _to_braket_instruction(opr, qubit_mapping)
         for opr in compat_circuit.all_operations()
     )
 
 
-def _translate_cirq_operation_to_braket_instruction(
+def _to_braket_instruction(
     opr: cirq_ops.Operation,
     qubit_mapping: Dict[int, int],
 ) -> List[BKInstruction]:
@@ -72,10 +71,10 @@ def _translate_cirq_operation_to_braket_instruction(
 
     if nqubits == 1:
         target = qubits[0]
-        return _translate_one_qubit_cirq_operation_to_braket_instruction(opr, target)
+        return _to_one_qubit_braket_instruction(opr, target)
 
     if nqubits == 2:
-        return _translate_two_qubit_cirq_operation_to_braket_instruction(opr, qubits)
+        return _to_two_qubit_braket_instruction(opr, qubits)
 
     if nqubits == 3:
         if opr == cirq_ops.TOFFOLI.on(*opr.qubits):
@@ -83,7 +82,7 @@ def _translate_cirq_operation_to_braket_instruction(
         if opr == cirq_ops.FREDKIN.on(*opr.qubits):
             return [BKInstruction(braket_gates.CSwap(), qubits)]
         if isinstance(opr.gate, cirq_ops.ControlledGate):
-            sub_gate_instr = _translate_two_qubit_cirq_operation_to_braket_instruction(
+            sub_gate_instr = _to_two_qubit_braket_instruction(
                 opr.gate.sub_gate, qubits[1:]
             )
             sub_gate = sub_gate_instr[0].operator
@@ -107,7 +106,7 @@ def _translate_cirq_operation_to_braket_instruction(
     return None  # type: ignore[return-value]  # pragma: no cover
 
 
-def _translate_one_qubit_cirq_operation_to_braket_instruction(
+def _to_one_qubit_braket_instruction(
     opr: Union[np.ndarray, cirq_ops.Gate, cirq_ops.Operation],
     target: int,
     name: str = None,
@@ -190,10 +189,10 @@ def _translate_one_qubit_cirq_operation_to_braket_instruction(
         return []
 
     matrix = protocols.unitary(gate)
-    return _translate_one_qubit_cirq_operation_to_braket_instruction(matrix, target, name=str(gate))
+    return _to_one_qubit_braket_instruction(matrix, target, name=str(gate))
 
 
-def _translate_two_qubit_cirq_operation_to_braket_instruction(
+def _to_two_qubit_braket_instruction(
     opr: Union[cirq_ops.Gate, cirq_ops.Operation],
     qubits: List[int],
 ) -> List[BKInstruction]:
@@ -245,7 +244,7 @@ def _translate_two_qubit_cirq_operation_to_braket_instruction(
     if isinstance(gate, cirq_ops.ZZPowGate):
         return [BKInstruction(braket_gates.ZZ(gate.exponent * np.pi), [q1, q2])]
     if isinstance(gate, cirq_ops.ControlledGate):
-        sub_gate_instr = _translate_one_qubit_cirq_operation_to_braket_instruction(
+        sub_gate_instr = _to_one_qubit_braket_instruction(
             gate.sub_gate, q2
         )
         sub_gate = sub_gate_instr[0].operator
@@ -263,8 +262,8 @@ def _translate_two_qubit_cirq_operation_to_braket_instruction(
     B1, B2 = kak.single_qubit_operations_after
 
     return [
-        *_translate_one_qubit_cirq_operation_to_braket_instruction(A1, q1),
-        *_translate_one_qubit_cirq_operation_to_braket_instruction(A2, q2),
+        *_to_one_qubit_braket_instruction(A1, q1),
+        *_to_one_qubit_braket_instruction(A2, q2),
         BKInstruction(braket_gates.Rx(0.5 * np.pi), q1),
         BKInstruction(braket_gates.CNot(), [q1, q2]),
         BKInstruction(braket_gates.Rx(a * np.pi), q1),
@@ -273,6 +272,6 @@ def _translate_two_qubit_cirq_operation_to_braket_instruction(
         BKInstruction(braket_gates.Rx(-0.5 * np.pi), q2),
         BKInstruction(braket_gates.Rz(c * np.pi), q2),
         BKInstruction(braket_gates.CNot(), [q1, q2]),
-        *_translate_one_qubit_cirq_operation_to_braket_instruction(B1, q1),
-        *_translate_one_qubit_cirq_operation_to_braket_instruction(B2, q2),
+        *_to_one_qubit_braket_instruction(B1, q1),
+        *_to_one_qubit_braket_instruction(B2, q2),
     ]

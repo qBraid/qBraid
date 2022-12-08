@@ -1,17 +1,16 @@
-# Copyright (C) 2021 Unitary Fund
+# Copyright 2023 qBraid
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Unit tests for Pennylane <-> Cirq conversions.
@@ -102,57 +101,3 @@ def test_non_consecutive_wires_error():
         match="contiguously pack",
     ):
         from_pennylane(tape)
-
-
-# @pytest.mark.skip(reason="failing after package upgrades")
-# def test_integration():
-#     n_wires = 4
-
-#     gates = [
-#         qml.PauliX,
-#         qml.PauliY,
-#         qml.PauliZ,
-#         qml.S,
-#         qml.T,
-#         qml.RX,
-#         qml.RY,
-#         qml.RZ,
-#         qml.Hadamard,
-#         qml.Rot,
-#         qml.CRot,
-#         qml.Toffoli,
-#         qml.SWAP,
-#         qml.CSWAP,
-#         qml.U1,
-#         qml.U2,
-#         qml.U3,
-#         qml.CRX,
-#         qml.CRY,
-#         qml.CRZ,
-#     ]
-
-#     layers = 3
-#     np.random.seed(1967)
-#     gates_per_layers = [np.random.permutation(gates) for _ in range(layers)]
-
-#     with qml.tape.QuantumTape() as tape:
-#         np.random.seed(1967)
-#         for gates in gates_per_layers:
-#             for gate in gates:
-#                 params = list(np.pi * np.random.rand(gate.num_params))
-#                 rnd_wires = np.random.choice(range(n_wires), size=gate.num_wires, replace=False)
-#                 gate(
-#                     *params,
-#                     wires=[
-#                         int(w) for w in rnd_wires
-#                     ],  # make sure we do not address wires as 0-d arrays
-#                 )
-
-#     base_circ = from_pennylane(tape)
-#     tape_recovered = to_pennylane(base_circ)
-#     circ_recovered = from_pennylane(tape_recovered)
-
-#     u_1 = cirq.unitary(base_circ)
-#     u_2 = cirq.unitary(circ_recovered)
-
-#     assert np.allclose(u_1, u_2)

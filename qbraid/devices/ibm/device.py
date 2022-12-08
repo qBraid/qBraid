@@ -1,3 +1,17 @@
+# Copyright 2023 qBraid
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Module defining QiskitBackendWrapper Class
 
@@ -97,7 +111,6 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         else:
             shots = self.vendor_dlo.options.get("shots")
         if self._obj_ref == "Aer":
-            # TODO: Add comments about how assemble is being used
             qobj = assemble(run_input, memory=True, **kwargs)
             qiskit_job = self.vendor_dlo.run(qobj)
             qiskit_job_id = qiskit_job.job_id()
@@ -112,7 +125,3 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
             qbraid_job_id, vendor_job_id=qiskit_job_id, device=self, vendor_jlo=qiskit_job
         )
         return qbraid_job
-
-    def estimate_cost(self, circuit, shots=1024):
-        """Estimate the cost of running a circuit on the device (TODO)."""
-        raise NotImplementedError
