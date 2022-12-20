@@ -161,6 +161,4 @@ class DeviceLikeWrapper(ABC):
     def run(
         self, run_input: "qbraid.QPROGRAM", *args, **kwargs
     ) -> "Union[qbraid.devices.JobLikeWrapper, qbraid.devices.LocalJobWrapper]":
-        """Abstract run method.
-
-        """
+        """Abstract run method."""

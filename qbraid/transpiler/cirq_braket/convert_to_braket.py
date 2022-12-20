@@ -47,8 +47,7 @@ def to_braket(circuit: Circuit) -> BKCircuit:
     braket_int_qubits = list(reversed(cirq_int_qubits))
     qubit_mapping = {x: braket_int_qubits[x] for x in range(len(braket_int_qubits))}
     return BKCircuit(
-        _to_braket_instruction(opr, qubit_mapping)
-        for opr in compat_circuit.all_operations()
+        _to_braket_instruction(opr, qubit_mapping) for opr in compat_circuit.all_operations()
     )
 
 
@@ -82,9 +81,7 @@ def _to_braket_instruction(
         if opr == cirq_ops.FREDKIN.on(*opr.qubits):
             return [BKInstruction(braket_gates.CSwap(), qubits)]
         if isinstance(opr.gate, cirq_ops.ControlledGate):
-            sub_gate_instr = _to_two_qubit_braket_instruction(
-                opr.gate.sub_gate, qubits[1:]
-            )
+            sub_gate_instr = _to_two_qubit_braket_instruction(opr.gate.sub_gate, qubits[1:])
             sub_gate = sub_gate_instr[0].operator
             return [BKInstruction(BKControl(sub_gate, qubits), qubits)]
         try:
@@ -244,9 +241,7 @@ def _to_two_qubit_braket_instruction(
     if isinstance(gate, cirq_ops.ZZPowGate):
         return [BKInstruction(braket_gates.ZZ(gate.exponent * np.pi), [q1, q2])]
     if isinstance(gate, cirq_ops.ControlledGate):
-        sub_gate_instr = _to_one_qubit_braket_instruction(
-            gate.sub_gate, q2
-        )
+        sub_gate_instr = _to_one_qubit_braket_instruction(gate.sub_gate, q2)
         sub_gate = sub_gate_instr[0].operator
         return [BKInstruction(BKControl(sub_gate, [0, 1]), [q1, q2])]
 

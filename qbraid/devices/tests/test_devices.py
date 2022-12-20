@@ -290,4 +290,3 @@ def test_result_wrapper_measurements(device_id):
     measurements = qbraid_result.measurements()
     assert isinstance(counts, dict)
     assert measurements.shape == (10, 3)
-

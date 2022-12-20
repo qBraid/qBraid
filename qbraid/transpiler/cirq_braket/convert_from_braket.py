@@ -73,8 +73,7 @@ def from_braket(circuit: BKCircuit) -> Circuit:
     cirq_qubits = [LineQubit(x) for x in range(len(BK_qubits))]
     qubit_mapping = {x: cirq_qubits[x] for x in range(len(cirq_qubits))}
     return Circuit(
-        _from_braket_instruction(instr, qubit_mapping)
-        for instr in compat_circuit.instructions
+        _from_braket_instruction(instr, qubit_mapping) for instr in compat_circuit.instructions
     )
 
 

@@ -22,6 +22,7 @@ from pyquil.gates import CNOT, CZ, RZ, H, X, Y, Z
 
 from qbraid.transpiler.cirq_pyquil.conversions import from_pyquil, to_pyquil
 
+
 def test_to_from_pyquil():
     p = Program()
     p += X(0)
@@ -50,6 +51,7 @@ def test_to_from_pyquil_parameterized():
     p_test = to_pyquil(from_pyquil(p, compat=False), compat=False)
     assert p.out() == p_test.out()
 
+
 QUIL_STRING = """
 I 0
 I 1
@@ -73,6 +75,7 @@ XY(pi/2) 0 1
 CCNOT 0 1 2
 CSWAP 0 1 2
 """
+
 
 def test_to_from_pyquil_quil_string():
     """PHASE, PSWAP, S, T, declaration, and measurement don't convert back

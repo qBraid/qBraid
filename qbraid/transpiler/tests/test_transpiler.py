@@ -17,32 +17,32 @@ Unit tests for the qbraid transpiler.
 
 """
 import cirq
-import qiskit
 import numpy as np
 import pytest
+import qiskit
 from braket.circuits import Circuit as BraketCircuit
 from braket.circuits import Gate as BraketGate
 from braket.circuits import Instruction as BraketInstruction
 from braket.circuits import gates as braket_gates
 from cirq import Circuit as CirqCircuit
+from pyquil import Program as pyQuilProgram
+from pyquil import gates as pyquil_gates
 from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit import QuantumRegister as QiskitQuantumRegister
 from qiskit.circuit.quantumregister import Qubit as QiskitQubit
-from pyquil import Program as pyQuilProgram
-from pyquil import gates as pyquil_gates
 
 from qbraid import QbraidError, circuit_wrapper
 from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.exceptions import PackageValueError, ProgramTypeError
 from qbraid.interface import convert_to_contiguous, to_unitary
-from qbraid.interface.qbraid_cirq._utils import _equal
 from qbraid.interface.programs import bell_data, shared15_data
+from qbraid.interface.qbraid_cirq._utils import _equal
 from qbraid.transpiler.cirq_braket.tests._gate_archive import braket_gates as braket_gates_dict
 from qbraid.transpiler.cirq_qiskit.tests._gate_archive import qiskit_gates as qiskit_gates_dict
-from qbraid.transpiler.cirq_utils.tests._gate_archive import cirq_gates as cirq_gates_dict, create_cirq_gate
+from qbraid.transpiler.cirq_utils.tests._gate_archive import cirq_gates as cirq_gates_dict
+from qbraid.transpiler.cirq_utils.tests._gate_archive import create_cirq_gate
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
-
 
 TEST_15, UNITARY_15 = shared15_data()
 TEST_BELL, UNITARY_BELL = bell_data()
@@ -74,7 +74,7 @@ circuit_types = {
     "cirq": cirq.Circuit,
     "qiskit": qiskit.QuantumCircuit,
     "pyquil": pyQuilProgram,
-    "braket": BraketCircuit
+    "braket": BraketCircuit,
 }
 
 
