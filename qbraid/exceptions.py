@@ -17,7 +17,7 @@ Module defining exceptions for errors raised by qBraid.
 
 """
 
-from ._qprogram import SUPPORTED_FRONTENDS
+from ._qprogram import QPROGRAM_LIBS
 
 
 class QbraidError(Exception):
@@ -30,7 +30,7 @@ class PackageValueError(QbraidError):
     def __init__(self, package):
         msg = (
             f"Quantum frontend module {package} is not supported.\n"
-            f"Frontends supported by qBraid are: {SUPPORTED_FRONTENDS}"
+            f"Frontends supported by qBraid are: {QPROGRAM_LIBS}"
         )
         super().__init__(msg)
 

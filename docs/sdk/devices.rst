@@ -164,25 +164,23 @@ using any qbraid-supported frontend to the ``run`` method of the wrapped device.
 
 .. code-block:: python
 
-    import pennylane as qml
+    from cirq import Circuit, LineQubit, ops
 
     def circuit1():
-        with qml.tape.QuantumTape() as tape:
-            qml.Hadamard(wires=0)
-            qml.CNOT(wires=[0, 1])
-        return tape
-
+        q0, q1 = LineQubit.range(2)
+        circuit = Circuit(ops.H(q0), ops.CNOT(q0, q1))
+        return circuit
 
 .. code-block:: python
 
     >>> qiskit_circuit = circuit0()
-    >>> pennylane_circuit = circuit1()
+    >>> cirq_circuit = circuit1()
     >>> qjob0 = qdevice.run(qiskit_circuit)
-    >>> qjob1 = qdevice.run(pennylane_circuit)
+    >>> qjob1 = qdevice.run(cirq_circuit)
 
 
-Above, I defined two quantum programs, one using qiskit and the other using pennylane,
-and executed each on Oxford Quantum Circuit's Lucy QPU, made available through Amazon Braket.
+Above, I defined two quantum programs, one using qiskit and the other using cirq, and
+executed each on Oxford Quantum Circuit's Lucy QPU, made available through Amazon Braket.
 
 
 Example Flow: Least Busy QPU
@@ -225,7 +223,7 @@ Summary
 --------
 
 The device layer of the qBraid SDK enables users to execute quantum circuits of
-any ``qbraid.SUPPORTED_PROGRAM_TYPES`` on any simulator or QPU returned by
+any ``qbraid.QPROGRAM_TYPES`` on any simulator or QPU returned by
 ``qbraid.get_devices``. Filter your search to the specifications of your task,
 identify a device, and execute your program through a consistent three-step protocol:
 

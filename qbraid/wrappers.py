@@ -19,7 +19,7 @@ functions utilize entrypoints via ``pkg_resources``.
 """
 import pkg_resources
 
-from ._qprogram import QUANTUM_PROGRAM
+from ._qprogram import QPROGRAM
 from .api import QbraidSession, ibmq_least_busy_qpu
 from .exceptions import QbraidError
 
@@ -29,7 +29,7 @@ def _get_entrypoints(group: str):
     return {entry.name: entry for entry in pkg_resources.iter_entry_points(group)}
 
 
-def circuit_wrapper(program: QUANTUM_PROGRAM):
+def circuit_wrapper(program: QPROGRAM):
     """Apply qbraid quantum program wrapper to a supported quantum program.
 
     This function is used to create a qBraid :class:`~qbraid.transpiler.QuantumProgramWrapper`

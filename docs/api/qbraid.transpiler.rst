@@ -11,11 +11,6 @@ qbraid.transpiler
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.transpiler.cirq_pennylane
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 .. automodule:: qbraid.transpiler.cirq_pyquil
    :members:
    :undoc-members:

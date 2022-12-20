@@ -12,26 +12,23 @@ Program Types
 --------------
 
 Supported frontend program types include `Qiskit QuantumCircuit <QiskitQuantumCircuit>`_,
-`Braket Circuit <BraketCircuit>`_, `Cirq Circuit <CirqCircuit>`_,
-`Pennylane QuantumTape <PennylaneQuantumTape>`_, and `pyQuil Program <pyQuilProgram>`_:
+`Braket Circuit <BraketCircuit>`_, `Cirq Circuit <CirqCircuit>`_, and `pyQuil Program <pyQuilProgram>`_:
 
 .. code-block:: python
     
-    >>> from qbraid import SUPPORTED_PROGRAM_TYPES
-    >>> for _, (k, v) in enumerate(SUPPORTED_PROGRAM_TYPES.items()):
-    ...     print(k,v)
+    >>> from qbraid import QPROGRAM_TYPES
+    >>> for k in QPROGRAM_TYPES:
+    ...     print(k)
     ...
-    cirq Circuit
-    pyquil Program
-    qiskit QuantumCircuit
-    braket Circuit
-    pennylane QuantumTape
+    braket.circuits.circuit.Circuit
+    cirq.circuits.circuit.Circuit
+    qiskit.circuit.quantumcircuit.QuantumCircuit
+    pyquil.quil.Program
 
 
 .. _QiskitQuantumCircuit: https://qiskit.org/documentation/stubs/qiskit.circuit.QuantumCircuit.html
 .. _BraketCircuit: https://docs.aws.amazon.com/braket/latest/developerguide/braket-constructing-circuit.html
 .. _CirqCircuit: https://quantumai.google/reference/python/cirq/circuits/Circuit
-.. _PennylaneQuantumTape: https://pennylane.readthedocs.io/en/stable/code/api/pennylane.tape.QuantumTape.html
 .. _pyQuilProgram: https://pyquil-docs.rigetti.com/en/stable/basics.html
 
 
@@ -88,7 +85,7 @@ Transpiler
 -----------
 
 Now, we can use the ``qbraid.transpiler.QuantumProgramWrapper.transpile`` method to convert to wrapped circuit into
-any other supported program type. Simply pass in the name of the target package from one of ``qbraid.SUPPORTED_PROGRAM_TYPES``.
+any other supported program type. Simply pass in the name of the target package from one of ``qbraid.QPROGRAM_TYPES``.
 For example, use input ``"braket"`` to return a ``braket.circuits.circuit.Circuit``:
 
 .. code-block:: python
@@ -104,14 +101,14 @@ For example, use input ``"braket"`` to return a ``braket.circuits.circuit.Circui
     T  : |0|1|
 
 
-This time, using the same origin circuit wrapper, we'll input ``"pennylane"`` to return a ``pennylane.tape.tape.QuantumTape``:
+This time, using the same origin circuit wrapper, we'll input ``"pyquil"`` to return a ``pyquil.quil.Program``:
 
 .. code-block:: python
 
-    >>> pennylane_circuit = qprogram.transpile("pennylane")
-    >>> print(pennylane_circuit.draw())
-    1: ──H──╭C──┤  
-    0: ─────╰X──┤ 
+    >>> pyquil_program = qprogram.transpile("pyquil")
+    >>> print(pyquil_program)
+    H 0
+    CNOT 0 1
 
 
 Interface

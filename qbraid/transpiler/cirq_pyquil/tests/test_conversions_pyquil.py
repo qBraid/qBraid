@@ -22,39 +22,24 @@ from pyquil.gates import CNOT, CZ, RZ, H, X, Y, Z
 
 from qbraid.transpiler.cirq_pyquil.conversions import from_pyquil, to_pyquil
 
-
-def _from_to_pyquil_out(p):
-    circuit = from_pyquil(p, compat=False)
-    program = to_pyquil(circuit, compat=False)
-    return program.out()
-
-
-def test_to_pyquil_from_pyquil_simple():
+def test_to_from_pyquil():
     p = Program()
     p += X(0)
     p += Y(1)
     p += Z(2)
     p += CNOT(0, 1)
     p += CZ(1, 2)
-    assert p.out() == _from_to_pyquil_out(p)
+    p_test = to_pyquil(from_pyquil(p, compat=False), compat=False)
+    assert p.out() == p_test.out()
 
 
-def maxcut_qaoa_program(gamma: float) -> Program:
-    """
-    Generates a 2Q MAXCUT QAOA circuit with beta = pi/8 and with the provided
-    gamma.
-
-    Args:
-        gamma: One of the two variational parameters (the other is fixed).
-    Returns:
-        A 2Q MAXCUT QAOA circuit with fixed beta and gamma.
-    """
+def test_to_from_pyquil_parameterized():
     q0, q1 = (0, 1)
     p = Program()
     p += H(q0)
     p += H(q1)
     p += CNOT(q0, q1)
-    p += RZ(2 * gamma, q1)
+    p += RZ(2 * np.pi, q1)
     p += CNOT(q0, q1)
     p += H(q0)
     p += H(q1)
@@ -62,15 +47,10 @@ def maxcut_qaoa_program(gamma: float) -> Program:
     p += RZ(np.pi / 4, q1)
     p += H(q0)
     p += H(q1)
-    return p
+    p_test = to_pyquil(from_pyquil(p, compat=False), compat=False)
+    assert p.out() == p_test.out()
 
-
-def test_to_pyquil_from_pyquil_parameterized():
-    p = maxcut_qaoa_program(np.pi)
-    assert p.out() == _from_to_pyquil_out(p)
-
-
-MEASURELESS_QUIL_PROGRAM = """
+QUIL_STRING = """
 I 0
 I 1
 I 2
@@ -94,20 +74,21 @@ CCNOT 0 1 2
 CSWAP 0 1 2
 """
 
-
-def test_to_pyquil_from_pyquil_almost_all_gates():
+def test_to_from_pyquil_quil_string():
     """PHASE, PSWAP, S, T, declaration, and measurement don't convert back
     and forth perfectly (in terms of labels -- the program unitaries and
     number of measurements are equivalent)."""
-    p = Program(MEASURELESS_QUIL_PROGRAM)
-    assert p.out() == _from_to_pyquil_out(p)
+    p = Program(QUIL_STRING)
+    p_test = to_pyquil(from_pyquil(p, compat=False), compat=False)
+    assert p.out() == p_test.out()
 
 
-def test_to_pyquil_from_pyquil_not_starting_at_zero():
+def test_to_pyquil_from_pyquil_no_zero_qubit():
     p = Program()
     p += X(10)
     p += Y(11)
     p += Z(12)
     p += CNOT(10, 11)
     p += CZ(11, 12)
-    assert p.out() == _from_to_pyquil_out(p)
+    p_test = to_pyquil(from_pyquil(p, compat=False), compat=False)
+    assert p.out() == p_test.out()

@@ -24,7 +24,6 @@ from cirq import Circuit
 
 from qbraid.exceptions import PackageValueError, ProgramTypeError
 from qbraid.transpiler.cirq_braket import from_braket, to_braket
-from qbraid.transpiler.cirq_pennylane import from_pennylane, to_pennylane
 from qbraid.transpiler.cirq_pyquil import from_pyquil, to_pyquil
 from qbraid.transpiler.cirq_qiskit import from_qiskit, to_qiskit
 from qbraid.transpiler.exceptions import CircuitConversionError
@@ -33,11 +32,11 @@ if TYPE_CHECKING:
     import qbraid
 
 
-def convert_to_cirq(program: "qbraid.QUANTUM_PROGRAM") -> Tuple[Circuit, str]:
+def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple[Circuit, str]:
     """Converts any valid input quantum program to a Cirq circuit.
 
     Args:
-        program (:data:`~qbraid.QUANTUM_PROGRAM`): A qbraid-supported quantum program object.
+        program (:data:`~qbraid.QPROGRAM`): A qbraid-supported quantum program object.
 
     Raises:
         ProgramTypeError: If the input quantum program is not supported.
@@ -63,9 +62,6 @@ def convert_to_cirq(program: "qbraid.QUANTUM_PROGRAM") -> Tuple[Circuit, str]:
         if "braket" in package:
             return from_braket(program), "braket"
 
-        if "pennylane" in package:
-            return from_pennylane(program), "pennylane"
-
         if isinstance(program, Circuit):
             return program, "cirq"
 
@@ -77,7 +73,7 @@ def convert_to_cirq(program: "qbraid.QUANTUM_PROGRAM") -> Tuple[Circuit, str]:
     raise ProgramTypeError(program)
 
 
-def convert_from_cirq(circuit: Circuit, frontend: str) -> "qbraid.QUANTUM_PROGRAM":
+def convert_from_cirq(circuit: Circuit, frontend: str) -> "qbraid.QPROGRAM":
     """Converts a Cirq circuit to a type specified by the conversion type.
 
     Args:
@@ -89,7 +85,7 @@ def convert_from_cirq(circuit: Circuit, frontend: str) -> "qbraid.QUANTUM_PROGRA
         CircuitConversionError: If the input quantum program could not be converted.
 
     Returns:
-        :data:`~qbraid.QUANTUM_PROGRAM`: A ``conversion_type`` quantum circuit / program.
+        :data:`~qbraid.QPROGRAM`: A ``conversion_type`` quantum circuit / program.
     """
     try:
         if frontend == "qiskit":
@@ -100,9 +96,6 @@ def convert_from_cirq(circuit: Circuit, frontend: str) -> "qbraid.QUANTUM_PROGRA
 
         if frontend == "braket":
             return to_braket(circuit)
-
-        if frontend == "pennylane":
-            return to_pennylane(circuit)
 
         if frontend == "cirq":
             return circuit

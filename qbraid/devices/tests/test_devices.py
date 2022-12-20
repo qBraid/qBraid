@@ -291,11 +291,3 @@ def test_result_wrapper_measurements(device_id):
     assert isinstance(counts, dict)
     assert measurements.shape == (10, 3)
 
-
-@pytest.mark.parametrize("device_id", ["aws_tn_sim", "aws_dm_sim", "aws_sv_sim"])
-def test_cost_estimator(device_id):
-    """Test cost estimators"""
-    circuit = BraketCircuit().h(0).cnot(0, 1)
-    device = device_wrapper(device_id)
-    estimate = device.estimate_cost(circuit, shots=10)
-    assert isinstance(estimate, float)

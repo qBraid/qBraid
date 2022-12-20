@@ -27,7 +27,6 @@ Transpiler  (:mod:`qbraid.transpiler`)
    QuantumProgramWrapper
    BraketCircuitWrapper
    CirqCircuitWrapper
-   PennylaneQTapeWrapper
    PyQuilProgramWrapper
    QiskitCircuitWrapper
    CircuitConversionError
@@ -38,6 +37,5 @@ from qbraid.transpiler.exceptions import CircuitConversionError
 from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper
 from qbraid.transpiler.wrappers.braket_circuit import BraketCircuitWrapper
 from qbraid.transpiler.wrappers.cirq_circuit import CirqCircuitWrapper
-from qbraid.transpiler.wrappers.pennylane_qtape import PennylaneQTapeWrapper
 from qbraid.transpiler.wrappers.pyquil_program import PyQuilProgramWrapper
 from qbraid.transpiler.wrappers.qiskit_circuit import QiskitCircuitWrapper

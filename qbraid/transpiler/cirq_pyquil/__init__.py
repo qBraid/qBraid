@@ -23,7 +23,6 @@ pyQuil Conversions  (:mod:`qbraid.transpiler.cirq_pyquil`)
    :toctree: ../stubs/
 
    from_pyquil
-   from_quil
    to_pyquil
 
 """

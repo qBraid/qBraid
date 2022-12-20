@@ -128,29 +128,6 @@ def test_from_braket_three_qubit_gates():
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
-# def _rotation_of_pi_over_7(num_qubits):
-#     matrix = np.identity(2**num_qubits)
-#     matrix[0:2, 0:2] = [
-#         [np.cos(np.pi / 7), np.sin(np.pi / 7)],
-#         [-np.sin(np.pi / 7), np.cos(np.pi / 7)],
-#     ]
-#     return matrix
-
-
-# @pytest.mark.skip(reason="Unsupported gates become unitaries.")
-# def test_from_braket_raises_on_unsupported_gates():
-#     """Test that converting circuit with unsupported gate raises error"""
-#     for num_qubits in range(1, 5):
-#         braket_circuit = BKCircuit()
-#         instr = Instruction(
-#             braket_gates.Unitary(_rotation_of_pi_over_7(num_qubits)),
-#             target=list(range(num_qubits)),
-#         )
-#         braket_circuit.add_instruction(instr)
-#         with pytest.raises(ValueError):
-#             from_braket(braket_circuit)
-
-
 def test_unitary_braket_instruction():
     """Test converting Braket instruction to instruction using unitary gate."""
     instr_cnot_01 = Instruction(braket_gates.CNot(), target=[0, 1])

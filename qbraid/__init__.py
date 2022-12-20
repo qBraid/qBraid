@@ -22,7 +22,7 @@ This top level module contains the main qBraid public functionality.
 Data Types
 -----------
 
-.. autodata:: QUANTUM_PROGRAM
+.. autodata:: QPROGRAM
    :annotation: = Type alias defining all supported quantum circuit / program types
 
 Functions
@@ -50,7 +50,7 @@ Exceptions
 
 """
 from . import _warnings
-from ._qprogram import QUANTUM_PROGRAM
+from ._qprogram import QPROGRAM, QPROGRAM_LIBS, QPROGRAM_TYPES
 from ._version import __version__
 from .exceptions import PackageValueError, ProgramTypeError, QbraidError
 from .get_devices import get_devices, refresh_devices

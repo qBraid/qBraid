@@ -1,3 +1,17 @@
+# Copyright 2023 qBraid
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Module containing quantum programs used for testing
 
@@ -6,12 +20,12 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 import numpy as np
 
-from qbraid._qprogram import QUANTUM_PROGRAM, SUPPORTED_FRONTENDS
+from qbraid._qprogram import QPROGRAM, QPROGRAM_LIBS
 from qbraid.exceptions import PackageValueError
 
 from .calculate_unitary import to_unitary
 
-QROGRAM_TEST_TYPE = Tuple[Dict[str, Callable[[Any], QUANTUM_PROGRAM]], np.ndarray]
+QROGRAM_TEST_TYPE = Tuple[Dict[str, Callable[[Any], QPROGRAM]], np.ndarray]
 
 if TYPE_CHECKING:
     import qbraid
@@ -23,7 +37,6 @@ def bell_data() -> QROGRAM_TEST_TYPE:
     """Returns bell circuit/program in each supported package."""
     from qbraid.interface.qbraid_braket.circuits import braket_bell
     from qbraid.interface.qbraid_cirq.circuits import cirq_bell
-    from qbraid.interface.qbraid_pennylane.tapes import pennylane_bell
     from qbraid.interface.qbraid_pyquil.programs import pyquil_bell
     from qbraid.interface.qbraid_qiskit.circuits import qiskit_bell
 
@@ -32,7 +45,6 @@ def bell_data() -> QROGRAM_TEST_TYPE:
     circuits = {
         "braket": braket_bell,
         "cirq": cirq_bell,
-        "pennylane": pennylane_bell,
         "pyquil": pyquil_bell,
         "qiskit": qiskit_bell,
     }
@@ -55,7 +67,7 @@ def shared15_data() -> QROGRAM_TEST_TYPE:
 
 def random_circuit(
     package: str, num_qubits: Optional[int] = None, depth: Optional[int] = None, **kwargs
-) -> "qbraid.QUANTUM_PROGRAM":
+) -> "qbraid.QPROGRAM":
     """Generate random circuit of arbitrary size and form.
 
     Args:
@@ -72,7 +84,7 @@ def random_circuit(
         :data:`~qbraid.QPROGRAM`: randomly generated quantum circuit/program
 
     """
-    if package not in SUPPORTED_FRONTENDS:
+    if package not in QPROGRAM_LIBS:
         raise PackageValueError(package)
     num_qubits = np.random.randint(1, 4) if num_qubits is None else num_qubits
     depth = np.random.randint(1, 4) if depth is None else depth
