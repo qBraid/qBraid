@@ -20,13 +20,12 @@ jobs:
         python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        python -m pip install -U pip setuptools ipython
+        python -m pip install -U pip build wheel setuptools ipython
         python -m pip install tox
     - name: Tests
       run: |
-        python -m pip install -e .
-        tox -e unit-tests
-        tox -e linters
+        tox -e unit-tests -v
+        tox -e linters -v
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
