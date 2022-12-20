@@ -1,3 +1,17 @@
+# Copyright 2023 qBraid
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Module for calculating unitary of quantum circuit/program
 
@@ -53,14 +67,12 @@ def to_unitary(program: "qbraid.QPROGRAM", ensure_contiguous: Optional[bool] = F
         from qbraid.interface.qbraid_braket.tools import _unitary_from_braket
 
         to_unitary_function = _unitary_from_braket
+
     elif "pyquil" in package:
         from qbraid.interface.qbraid_pyquil.tools import _unitary_from_pyquil
 
         to_unitary_function = _unitary_from_pyquil
-    elif "pennylane" in package:
-        from qbraid.interface.qbraid_pennylane.tools import _unitary_from_pennylane
 
-        to_unitary_function = _unitary_from_pennylane
     else:
         raise ProgramTypeError(program)
 

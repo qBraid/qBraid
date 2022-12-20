@@ -45,14 +45,13 @@ Construct a quantum program of any supported program type:
 
 .. code-block:: python
    
-   >>> from qbraid import SUPPORTED_PROGRAM_TYPES
+   >>> from qbraid import QPROGRAM_TYPES
    >>> from qbraid.interface import random_circuit
-   >>> SUPPORTED_PROGRAM_TYPES
+   >>> QPROGRAM_TYPES
    {'cirq': 'Circuit',
     'pyquil': 'Program',
     'qiskit': 'QuantumCircuit',
-    'braket': 'Circuit',
-    'pennylane': 'QuantumTape'}
+    'braket': 'Circuit'}
    >>> circuit = random_circuit("qiskit", num_qubits=1, measure=True)
 
 Search for quantum backend(s) on which to execute your program:
@@ -116,11 +115,11 @@ Compare the results:
 Supported Frontends
 ^^^^^^^^^^^^^^^^^^^^
 
-+-------------+-------------+------------+-------------+-------------+
-|  Cirq_      |  Braket_    |  Qiskit_   |  pyQuil_    |  Pennylane_ |
-+=============+=============+============+=============+=============+
-| |cirq|      | |braket|    | |qiskit|   | |pyquil|    | |pennylane| |
-+-------------+-------------+------------+-------------+-------------+
++-------------+-------------+------------+-------------+
+|  Cirq_      |  Braket_    |  Qiskit_   |  pyQuil_    |  
++=============+=============+============+=============+
+| |cirq|      | |braket|    | |qiskit|   | |pyquil|    | 
++-------------+-------------+------------+-------------+
 
 
 .. |cirq| image:: ../_static/pkg-logos/cirq.png
@@ -143,10 +142,10 @@ Supported Frontends
    :width: 90%
    :target: pyQuil_
 
-.. |pennylane| image:: ../_static/pkg-logos/xanadu.png
-   :align: middle
-   :width: 90%
-   :target: Pennylane_
+.. .. |pennylane| image:: ../_static/pkg-logos/xanadu.png
+..    :align: middle
+..    :width: 90%
+..    :target: Pennylane_
 
 .. _Cirq: https://quantumai.google/cirq
 .. _Braket: https://aws.amazon.com/braket

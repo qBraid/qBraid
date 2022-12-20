@@ -1,10 +1,24 @@
+# Copyright 2023 qBraid
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Module defining QuantumProgramWrapper Class
 
 """
 from typing import TYPE_CHECKING, List, Optional
 
-from qbraid._typing import SUPPORTED_PROGRAM_TYPES
+from qbraid._qprogram import QPROGRAM_LIBS, QPROGRAM_TYPES
 from qbraid.exceptions import PackageValueError
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
@@ -80,11 +94,11 @@ class QuantumProgramWrapper:
 
         Args:
             conversion_type: a supported quantum frontend package.
-                Must be one of :data:`~qbraid.SUPPORTED_PROGRAM_TYPES`.
+                Must be one of :data:`~qbraid.QPROGRAM_LIBS`.
 
         Raises:
             PackageValueError: If ``conversion_type`` is not one of
-                :data:`~qbraid.SUPPORTED_PROGRAM_TYPES`.
+                :data:`~qbraid.QPROGRAM_LIBS`.
             CircuitConversionError: If the input quantum program could not be
                 converted to a program of type ``conversion_type``.
 
@@ -94,7 +108,7 @@ class QuantumProgramWrapper:
         """
         if conversion_type == self.package:
             return self.program
-        if conversion_type in SUPPORTED_PROGRAM_TYPES:
+        if conversion_type in QPROGRAM_LIBS:
             try:
                 cirq_circuit, _ = convert_to_cirq(self.program)
             except Exception as err:
@@ -103,7 +117,7 @@ class QuantumProgramWrapper:
                     "This may be because the program contains custom gates or "
                     f"Pragmas (pyQuil). \n\nProvided program has type {type(self.program)} "
                     f"and is:\n\n{self.program}\n\nQuantum program types supported by the "
-                    f"qbraid.transpiler are \n{SUPPORTED_PROGRAM_TYPES}."
+                    f"qbraid.transpiler are \n{QPROGRAM_TYPES}."
                 ) from err
             try:
                 converted_program = convert_from_cirq(cirq_circuit, conversion_type)

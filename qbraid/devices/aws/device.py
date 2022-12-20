@@ -1,10 +1,22 @@
+# Copyright 2023 qBraid
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Module defining BraketDeviceWrapper Class
 
 """
 import math
-
-# import warnings
 from typing import TYPE_CHECKING
 
 from braket.aws import AwsDevice
@@ -73,13 +85,6 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
 
         """
         run_input, qbraid_circuit = self._compat_run_input(run_input)
-        # if "shots" not in kwargs and not run_input.result_types:
-        #     warnings.warn(
-        #         "No result types specified for circuit and shots=0. See "
-        #         "`braket.circuit.result_types`. Defaulting to shots=1024 and continuing run.",
-        #         UserWarning,
-        #     )
-        #     kwargs["shots"] = 1024
         aws_quantum_task = self.vendor_dlo.run(run_input, self._s3_location, *args, **kwargs)
         metadata = aws_quantum_task.metadata()
         shots = 0 if "shots" not in metadata else metadata["shots"]
@@ -88,36 +93,3 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         return BraketQuantumTaskWrapper(
             job_id, vendor_job_id=vendor_job_id, device=self, vendor_jlo=aws_quantum_task
         )
-
-    def estimate_cost(self, circuit: "braket.circuits.Circuit", shots=1024):
-        """Estimate the cost of running a quantum task on this device.
-
-        Args:
-            circuit: The circuit to run on the device. Can be a Braket, Qiskit, or Cirq circuit.
-            shots (int, optional): Number of shots to run on device. Defaults to 1024.
-
-        Raises:
-            DeviceError: Throws error if circuit is not specified.
-
-        Returns:
-            he estimated cost of running the circuit on the device.
-
-        """
-        # TODO: Connect/ensure consistency with the cost estimator in the API.
-        if circuit is None:
-            raise DeviceError("Circuit must be specified")
-        _, qbraid_circuit = self._compat_run_input(circuit)
-        estimate = 0
-        task_price = 0.3
-        device = self._get_device()
-        device_prop_dict = device.properties.dict()
-        price = device_prop_dict["service"]["deviceCost"]["price"]
-        # Simulators
-        if device.name in ["SV1", "DM1"]:
-            estimate = price * qbraid_circuit.num_qubits + math.exp(shots / 1000)
-        elif device.name == "TN1":
-            estimate = price * qbraid_circuit.num_qubits + math.exp(shots / 1000)
-        # QPUs
-        else:
-            estimate = price * shots + task_price
-        return estimate

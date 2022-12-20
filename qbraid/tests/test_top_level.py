@@ -1,3 +1,17 @@
+# Copyright 2023 qBraid
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Unit tests for qbraid top-level functionality
 
@@ -8,7 +22,6 @@ from unittest.mock import Mock
 import pytest
 
 from qbraid import __version__
-from qbraid._about import about
 from qbraid._warnings import _warn_new_version
 from qbraid.display_utils import running_in_jupyter, update_progress_bar
 from qbraid.exceptions import PackageValueError
@@ -41,13 +54,6 @@ job_status_list = [
     "FAILED",
     "UNKNOWN",
 ]
-
-
-def test_about(capfd):
-    about()
-    out, err = capfd.readouterr()
-    assert __version__ in out
-    assert len(err) == 0
 
 
 @pytest.mark.parametrize("test_data", check_version_data)

@@ -1,17 +1,16 @@
-# Copyright (C) 2021 Unitary Fund
+# Copyright 2023 qBraid
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module for converting Cirq circuits to Braket circuits
@@ -74,12 +73,11 @@ def from_braket(circuit: BKCircuit) -> Circuit:
     cirq_qubits = [LineQubit(x) for x in range(len(BK_qubits))]
     qubit_mapping = {x: cirq_qubits[x] for x in range(len(cirq_qubits))}
     return Circuit(
-        _translate_braket_instruction_to_cirq_operation(instr, qubit_mapping)
-        for instr in compat_circuit.instructions
+        _from_braket_instruction(instr, qubit_mapping) for instr in compat_circuit.instructions
     )
 
 
-def _translate_braket_instruction_to_cirq_operation(
+def _from_braket_instruction(
     instr: BKInstruction, qubit_mapping: Dict[int, LineQubit]
 ) -> List[cirq_ops.Operation]:
     """Converts the braket instruction to an equivalent Cirq operation or list
@@ -97,10 +95,10 @@ def _translate_braket_instruction_to_cirq_operation(
     qubits = [qubit_mapping[x] for x in BK_qubits]
 
     if nqubits == 1:
-        return _translate_one_qubit_braket_instruction_to_cirq_operation(instr, qubits)
+        return _from_one_qubit_braket_instruction(instr, qubits)
 
     if nqubits == 2:
-        return _translate_two_qubit_braket_instruction_to_cirq_operation(instr, qubits)
+        return _from_two_qubit_braket_instruction(instr, qubits)
 
     if nqubits == 3:
         if isinstance(instr.operator, braket_gates.CCNot):
@@ -120,7 +118,7 @@ def _translate_braket_instruction_to_cirq_operation(
     )
 
 
-def _translate_one_qubit_braket_instruction_to_cirq_operation(
+def _from_one_qubit_braket_instruction(
     instr: BKInstruction, qubits: List[LineQubit]
 ) -> List[cirq_ops.Operation]:
     """Converts the one-qubit braket instruction to Cirq.
@@ -175,7 +173,7 @@ def _translate_one_qubit_braket_instruction_to_cirq_operation(
         raise ValueError(f"Unable to convert the instruction {instr} to Cirq.") from err
 
 
-def _translate_two_qubit_braket_instruction_to_cirq_operation(
+def _from_two_qubit_braket_instruction(
     instr: BKInstruction, qubits: List[LineQubit]
 ) -> List[cirq_ops.Operation]:
     """Converts the two-qubit braket instruction to Cirq.

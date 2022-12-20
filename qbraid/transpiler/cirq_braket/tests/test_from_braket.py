@@ -1,3 +1,17 @@
+# Copyright 2023 qBraid
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Unit tests for converting Braket circuits to Cirq circuits
 
@@ -112,29 +126,6 @@ def test_from_braket_three_qubit_gates():
         braket_circuit.add_instruction(instr)
     cirq_circuit = from_braket(braket_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
-
-
-# def _rotation_of_pi_over_7(num_qubits):
-#     matrix = np.identity(2**num_qubits)
-#     matrix[0:2, 0:2] = [
-#         [np.cos(np.pi / 7), np.sin(np.pi / 7)],
-#         [-np.sin(np.pi / 7), np.cos(np.pi / 7)],
-#     ]
-#     return matrix
-
-
-# @pytest.mark.skip(reason="Unsupported gates become unitaries.")
-# def test_from_braket_raises_on_unsupported_gates():
-#     """Test that converting circuit with unsupported gate raises error"""
-#     for num_qubits in range(1, 5):
-#         braket_circuit = BKCircuit()
-#         instr = Instruction(
-#             braket_gates.Unitary(_rotation_of_pi_over_7(num_qubits)),
-#             target=list(range(num_qubits)),
-#         )
-#         braket_circuit.add_instruction(instr)
-#         with pytest.raises(ValueError):
-#             from_braket(braket_circuit)
 
 
 def test_unitary_braket_instruction():

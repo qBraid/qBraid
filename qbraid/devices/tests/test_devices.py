@@ -1,3 +1,17 @@
+# Copyright 2023 qBraid
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Unit tests for the qbraid device layer.
 
@@ -7,7 +21,6 @@ import numpy as np
 import pytest
 from braket.aws import AwsDevice
 from braket.circuits import Circuit as BraketCircuit
-from braket.circuits import Observable as BraketObservable
 from braket.devices import LocalSimulator as AwsSimulator
 from braket.tasks.quantum_task import QuantumTask as BraketQuantumTask
 from cirq.sim.simulator_base import SimulatorBase as CirqSimulator
@@ -18,7 +31,7 @@ from qiskit.providers.job import Job as QiskitJob
 
 from qbraid import QbraidError, device_wrapper, job_wrapper
 from qbraid.api import QbraidSession
-from qbraid.devices import DeviceError, JobError, ResultWrapper
+from qbraid.devices import DeviceError, JobError
 from qbraid.devices.aws import (
     BraketDeviceWrapper,
     BraketLocalQuantumTaskWrapper,
@@ -232,23 +245,6 @@ def test_run_braket_device_wrapper(device_id, circuit):
         assert isinstance(vendor_job, BraketQuantumTask)
 
 
-# @pytest.mark.parametrize("device_id", ["aws_dm_sim", "aws_sv_sim"])
-# def test_run_braket_device_wrapper_no_shots(device_id):
-#     """Test run method of wrapped Braket devices, with no value given for shots arg."""
-#     circuit = BraketCircuit().h(0).cnot(0, 1)
-#     if device_id == "aws_dm_sim":
-#         circuit.expectation(observable=BraketObservable.Z(), target=0)
-#     elif device_id == "aws_sv_sim":
-#         circuit.amplitude(state=["01", "10"])
-#     else:
-#         assert False
-#     qbraid_device = device_wrapper(device_id)
-#     qbraid_job = qbraid_device.run(circuit)  # Note: shots kwarg not provided
-#     vendor_job = qbraid_job.vendor_jlo
-#     assert isinstance(qbraid_job, BraketQuantumTaskWrapper)
-#     assert isinstance(vendor_job, BraketQuantumTask)
-
-
 def test_circuit_too_many_qubits():
     """Test that run method raises exception when input circuit
     num qubits exceeds that of wrapped Qiskit device."""
@@ -294,12 +290,3 @@ def test_result_wrapper_measurements(device_id):
     measurements = qbraid_result.measurements()
     assert isinstance(counts, dict)
     assert measurements.shape == (10, 3)
-
-
-@pytest.mark.parametrize("device_id", ["aws_tn_sim", "aws_dm_sim", "aws_sv_sim"])
-def test_cost_estimator(device_id):
-    """Test cost estimators"""
-    circuit = BraketCircuit().h(0).cnot(0, 1)
-    device = device_wrapper(device_id)
-    estimate = device.estimate_cost(circuit, shots=10)
-    assert isinstance(estimate, float)

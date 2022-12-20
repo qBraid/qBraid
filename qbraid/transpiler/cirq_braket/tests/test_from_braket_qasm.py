@@ -1,3 +1,17 @@
+# Copyright 2023 qBraid
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Unit tests for converting Braket circuits to Cirq circuits via OpenQASM
 
@@ -78,30 +92,6 @@ def test_from_braket_non_parameterized_two_qubit_gates():
         braket_circuit.add_instruction(instr)
     cirq_circuit = from_braket(braket_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
-
-
-# @pytest.mark.skip(reason="Not implemented")
-# def test_from_braket_parameterized_two_qubit_gates():
-#     """Test converting circuit containing parameterized two-qubit gates."""
-#     braket_circuit = BKCircuit()
-#     pgates = [
-#         braket_gates.CPhaseShift,
-#         braket_gates.CPhaseShift00,
-#         braket_gates.CPhaseShift01,
-#         braket_gates.CPhaseShift10,
-#         braket_gates.PSwap,
-#         braket_gates.XX,
-#         braket_gates.YY,
-#         braket_gates.ZZ,
-#         braket_gates.XY,
-#     ]
-#     # pylint: disable-next=no-member
-#     angles = np.random.RandomState(2).random(len(pgates))
-#     instructions = [Instruction(rot(a), target=[0, 1]) for rot, a in zip(pgates, angles)]
-#     for instr in instructions:
-#         braket_circuit.add_instruction(instr)
-#     cirq_circuit = from_braket(braket_circuit)
-#     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
 def test_from_braket_three_qubit_gates():

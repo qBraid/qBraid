@@ -1,12 +1,23 @@
+# Copyright 2023 qBraid
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Module for Qiskit gate dictionary used for testing
 
 """
 from qiskit.circuit.library import standard_gates as sg
 from qiskit.circuit.library.standard_gates import *
-
-# from qiskit.circuit.measure import Measure
-# from qiskit.extensions.unitary import UnitaryGate
 
 qiskit_gates = {
     "H": sg.h.HGate,
@@ -48,7 +59,4 @@ qiskit_gates = {
     "CU1": sg.u1.CU1Gate,
     "RCCX": sg.x.RCCXGate,
     "CCX": sg.x.CCXGate,
-    # "RC3X": sg.x.RC3XGate,
-    # "Unitary": UnitaryGate,
-    # "MEASURE": Measure,
 }

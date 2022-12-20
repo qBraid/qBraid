@@ -1,11 +1,25 @@
+# Copyright 2023 qBraid
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+# pylint: disable=consider-using-f-string
+
 """
 Module to retrieve, update, and display information about devices
 supported by the qBraid SDK.
 
 """
-# pylint: disable=consider-using-f-string
 
-# from time import time
 from datetime import datetime
 from typing import Optional
 
@@ -23,13 +37,8 @@ def refresh_devices():
     devices = session.get("/public/lab/get-devices", params={}).json()
     count = 0
     num_devices = len(devices)  # i.e. number of iterations
-    # time_estimate = num_devices * 1.1  # estimated time for ~0.9 iters/s
-    # start = time()
     for document in devices:
         progress = count / num_devices
-        # elapsed_sec = int(time_estimate - (time() - start))
-        # stamp = f"{max(1, elapsed_sec)}s" if count > 0 else "1m"
-        # time_step = f"{stamp} remaining"
         update_progress_bar(progress)
         if document["statusRefresh"] is not None:  # None => internally not available at moment
             qbraid_id = document["qbraid_id"]
