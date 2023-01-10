@@ -106,6 +106,7 @@ Documentation
    lab/account
    lab/environments
    lab/kernels
+   lab/codesnippets
    lab/integrations
    lab/system
 
