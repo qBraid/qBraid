@@ -15,6 +15,7 @@ Commands
 | ``qbraid envs uninstall``             | Uninstall qBraid environment.                     |
 +---------------------------------------+---------------------------------------------------+
 
+
 .. toctree::
    :maxdepth: 1
 
