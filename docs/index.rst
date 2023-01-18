@@ -107,6 +107,7 @@ Documentation
    lab/environments
    lab/kernels
    lab/codesnippets
+   lab/quantumjobs
    lab/integrations
    lab/system
 
