@@ -25,15 +25,11 @@ def _warn_new_version(local: str, api: str) -> bool:
     """Returns True if you should warn user about updated package version,
     False otherwise."""
 
-    local_vlst = local.split(".")
-    api_vlst = api.split(".")
+    v_local = int("".join(local.split(".")[:3]))
+    v_api = int("".join(api.split(".")[:3]))
 
-    # pylint: disable-next=unnecessary-lambda-assignment
-    check_patch = lambda x: int(local_vlst[x]) < int(api_vlst[x])
-
-    for i in range(3):
-        if check_patch(i):
-            return True
+    if v_local < v_api:
+        return True
     return False
 
 

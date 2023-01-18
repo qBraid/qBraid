@@ -40,6 +40,7 @@ check_version_data = [
     ("0.1.0", "0.1.0.dev0", False),
     ("0.1.6.dev2", "0.1.6.dev5", False),
     ("0.1.6.dev5", "0.1.6.dev2", False),
+    ("0.2.0", "0.1.4", False),
 ]
 
 

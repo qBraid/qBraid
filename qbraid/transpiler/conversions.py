@@ -21,6 +21,7 @@ Module containing functions for converting to/from Cirq's circuit representation
 from typing import TYPE_CHECKING, Tuple
 
 from cirq import Circuit
+from cirq.contrib.qasm_import import circuit_from_qasm
 
 from qbraid.exceptions import PackageValueError, ProgramTypeError
 from qbraid.transpiler.cirq_braket import from_braket, to_braket
@@ -73,7 +74,7 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple[Circuit, str]:
     raise ProgramTypeError(program)
 
 
-def convert_from_cirq(circuit: Circuit, frontend: str) -> "qbraid.QPROGRAM":
+def _convert_from_cirq(circuit: Circuit, frontend: str) -> "qbraid.QPROGRAM":
     """Converts a Cirq circuit to a type specified by the conversion type.
 
     Args:
@@ -106,3 +107,24 @@ def convert_from_cirq(circuit: Circuit, frontend: str) -> "qbraid.QPROGRAM":
         ) from err
 
     raise PackageValueError(frontend)
+
+
+def convert_from_cirq(circuit: Circuit, frontend: str) -> "qbraid.QPROGRAM":
+    """Converts a Cirq circuit to a type specified by the conversion type.
+
+    Args:
+        circuit: Cirq circuit to convert.
+        frontend: String specifier for the converted circuit type.
+
+    Raises:
+        ProgramTypeError: If the input quantum program is not supported.
+        CircuitConversionError: If the input quantum program could not be converted.
+
+    Returns:
+        :data:`~qbraid.QPROGRAM`: A ``conversion_type`` quantum circuit / program.
+    """
+    try:
+        return _convert_from_cirq(circuit, frontend)
+    except CircuitConversionError:
+        circuit_flat = circuit_from_qasm(circuit.to_qasm())  # flatten circuit
+        return _convert_from_cirq(circuit_flat, frontend)
