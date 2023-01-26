@@ -23,8 +23,8 @@ Examples
 
     $ which python
     /opt/conda/bin/python
-    $ qbraid envs qbraid_sdk activate
-    Activating qbraid_sdk environment... 
+    $ qbraid envs activate qbraid_sdk
+    Activating qbraid_sdk environment...
 
     Once active, use `deactivate` to deactivate the environment.
     $ which python
@@ -33,4 +33,5 @@ Examples
 
 .. seealso::
 
-    - :ref:`qbraid envs list<cli_envs_list>`
+    - `Commands:`
+    - \- :ref:`qbraid envs list<cli_envs_list>`

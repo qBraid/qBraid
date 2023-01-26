@@ -52,32 +52,38 @@ To uninstall the environment, click on **More**, and then **Uninstall**.
 Create environment
 -------------------
 
-1. In the Environment Manager sidebar, click **Add**, and then click **New Environment**.
-
-2. Give your custom environment a name, description, and optionally specify a path to
-a ``requirements.txt`` file in your lab filesystem.
-
 .. image:: ../_static/lab-files/env_create.png
-    :align: center
-    :width: 800px
+    :align: right
+    :width: 300px
     :target: javascript:void(0);
 
-|
+\1. In the Environment Manager sidebar, click **Add**, then click **New Environment**.
+
+\2. Give your custom environment a name, description, add tags, upload a logo,
+and specify any packages to install using a ``requirements.txt`` format.
+
+.. |progress| image:: ../_static/lab-files/custom_installing.png
+    :width: 44%
+    :target: javascript:void(0);
 
 After clicking **Create**, a new environment panel is created for your custom environment.
+You can view the environment's install progress by returning to **My Environments**.
 
-3. Once the environment has been created and any ``requirements.txt`` installations have finished,
+|progress|
+
+.. image:: ../_static/lab-files/custom_pkgs.png
+    :align: right 
+    :width: 300px
+    :target: javascript:void(0);
+
+\3. Once the environment has been created and any package installations have finished,
 the environment panel's action button will switch from **Installing...** to **Activate**, and
 the installed packages number will be updated.
 
-.. image:: ../_static/lab-files/custom_pkgs.png
-    :align: center
-    :width: 800px
-    :target: javascript:void(0);
-
-|
-
-Click on **More** to verify/view the list of installed packages.
+\4. Click on **More** to verify/view the environment's list of installed packages. You can use
+the search bar or scroll through the Python package (pip) list to find the exact versions of all
+packages and package dependecies that were installed. From the **More** pop-out, you can also
+install additional packages, remove packages, add/delete tags, and edit the environment's description.
 
 .. image:: ../_static/lab-files/env_more.png
     :align: center

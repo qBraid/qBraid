@@ -32,5 +32,6 @@ qBraid environments with support for quantum jobs include ``amazon_braket`` and 
 
 .. seealso::
 
-    - :ref:`qbraid jobs enable<cli_jobs_enable>`
-    - :ref:`qbraid envs list<cli_envs_list>`
+    - `Commands:`
+    - \- :ref:`qbraid jobs enable<cli_jobs_enable>`
+    - \- :ref:`qbraid envs list<cli_envs_list>`

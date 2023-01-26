@@ -16,37 +16,32 @@ Overview
 `qBraid Lab <https://lab.qbraid.com>`_ is a web-based IDE cross JupyterLab interface that provides
 software tools for researchers and developers in quantum, as well as access to quantum hardware.
 
-Account
---------
+- `Account <account.html>`_
+   - `Add access key <account.html#add-access-key>`_
 
-- `Add access key <account.html#add-access-key>`_
+- `Environments <environments.html>`_
+   - `Install environment <environments.html#install-environment>`_
+   - `Create environment <environments.html#create-environment>`_
 
+- `Kernels <kernels.html>`_
+   - `Add/remove kernels <kernels.html#add-remove-kernels>`_
+   - `Switch notebook kernel <kernels.html#switch-notebook-kernel>`_
 
-Environments
--------------
+- `Quantum Jobs <quantumjobs.html>`_
+   - `Credits <quantumjobs.html#credits>`_
+   - `Which environments? <quantumjobs.html#which-environments>`_
+   - `Enable/disable <quantumjobs.html#enable-disable>`_
+   - `Manage <quantumjobs.html#manage>`_
 
-- `Install environment <environments.html#install-environment>`_
-- `Create environment <environments.html#create-environment>`_
+- `Integrations <integrations.html>`_
+   - `Visual Studio Code <integrations.html#visual-studio-code>`_
 
+- `System Info <system.html>`_
+   - `Operating System <system.html#operating-system>`_
+   - `Pre-Installed Software <system.html#gnu-packages>`_
 
-Kernels
---------
-
-- `Add/remove kernels <kernels.html#add-remove-kernels>`_
-- `Switch notebook kernel <kernels.html#switch-notebook-kernel>`_
-
-
-Integrations
--------------
-
-- `Visual Studio Code <integrations.html#visual-studio-code>`_
-
-
-System Info
-------------
-
-- `Operating System <system.html#operating-system>`_
-- `Pre-Installed Software <system.html#gnu-packages>`_
+- `Troubleshooting <troubleshoot.html>`_
+   - `Server errors <troubleshoot.html#server-errors>`_
 
 
 .. seealso::

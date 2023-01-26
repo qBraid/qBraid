@@ -28,9 +28,9 @@ Examples
     To disable, run: `qbraid jobs disable qbraid_sdk`
 
 
-qBraid environments with support for quantum jobs include ``amazon_braket`` and ``qbraid_sdk``.
-
 .. seealso::
 
-    - :ref:`qbraid jobs disable<cli_jobs_disable>`
-    - :ref:`qbraid envs list<cli_envs_list>`
+    - `Commands:`
+    - \- :ref:`qbraid jobs disable<cli_jobs_disable>`
+    - \- :ref:`qbraid jobs add<cli_jobs_add>`
+    - \- :ref:`qbraid envs list<cli_envs_list>`

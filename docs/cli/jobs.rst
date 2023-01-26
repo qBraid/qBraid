@@ -12,6 +12,8 @@ Commands
 +---------------------------------------+---------------------------------------------------+
 | ``qbraid jobs get-credits``           | Get number of qBraid credits remaining.           |
 +---------------------------------------+---------------------------------------------------+
+| ``qbraid jobs add``                   | Add qBraid Quantum Jobs to environment.           |
++---------------------------------------+---------------------------------------------------+
 | ``qbraid jobs enable``                | Enable qBraid Quantum Jobs.                       |
 +---------------------------------------+---------------------------------------------------+
 | ``qbraid jobs disable``               | Disable qBraid Quantum Jobs.                      |
@@ -20,6 +22,7 @@ Commands
 .. toctree::
    :maxdepth: 1
 
+   jobs-add
    jobs-disable
    jobs-enable
    jobs-get-credits
