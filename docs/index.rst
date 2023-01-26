@@ -108,6 +108,7 @@ Documentation
    lab/kernels
    lab/integrations
    lab/system
+   lab/faq
 
 .. toctree::
    :maxdepth: 1
