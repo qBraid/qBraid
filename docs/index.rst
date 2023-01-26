@@ -106,9 +106,10 @@ Documentation
    lab/account
    lab/environments
    lab/kernels
+   lab/quantumjobs
    lab/integrations
    lab/system
-   lab/faq
+   lab/troubleshoot
 
 .. toctree::
    :maxdepth: 1

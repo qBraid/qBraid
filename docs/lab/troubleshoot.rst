@@ -1,10 +1,10 @@
-.. _lab_faq:
+.. _lab_troubleshoot:
 
-FAQ
-=====
+Troubleshooting
+================
 
-How to fix server error?
--------------------------
+Server errors
+--------------
 
 If your error is one of the following,
 
@@ -14,7 +14,7 @@ If your error is one of the following,
 - Service unavailable or unreachable
 - File Save Error
 
-you need to restart your qBraid Lab server. For these types of errors, *refreshing the page won't work*.
+you need to restart your qBraid Lab server. For these types of errors, refreshing the page won't work.
 Instead, you need to pull down a new Lab image, which can only be done from the qBraid Hub Control Panel:
 
 Go to **File** > **Hub Control Panel**, or type https://lab.qbraid.com/hub/home directly into your
