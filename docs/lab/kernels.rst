@@ -12,7 +12,7 @@ Add/remove kernels
 Under **My Environments**, choose the environment, and expand its pannel.
 Click **Activate** to activate the environment and create an associated ipykernel.
 
-.. image:: ../_static/lab-files/kernel_activate.png
+.. image:: ../_static/kernels/kernel_activate.png
     :align: center
     :width: 800px
     :target: javascript:void(0);
@@ -22,7 +22,7 @@ Click **Activate** to activate the environment and create an associated ipykerne
 Once active, click **Deactivate** to deactivate an environment, and remove its ipykernel
 from the launcher.
 
-.. image:: ../_static/lab-files/kernel_deactivate.png
+.. image:: ../_static/kernels/kernel_deactivate.png
     :align: center
     :width: 800px
     :target: javascript:void(0);
@@ -38,7 +38,7 @@ activated environment will automatically launch a Jupyter notebook (``.ipynb`` f
 using that kernel. In the upper-right of the newly created notebook, you can see
 which kernel is in use.
 
-.. image:: ../_static/lab-files/kernel_nb.png
+.. image:: ../_static/kernels/kernel_nb.png
     :align: center
     :width: 800px
     :target: javascript:void(0);
@@ -48,7 +48,7 @@ which kernel is in use.
 Clicking on the name of the current kernel, as circled above, will open the kernel selector, and allow you
 switch to any other active kernel.
 
-.. image:: ../_static/lab-files/kernel_switch.png
+.. image:: ../_static/kernels/kernel_switch.png
     :align: center
     :width: 800px
     :target: javascript:void(0);

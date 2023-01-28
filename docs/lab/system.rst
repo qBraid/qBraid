@@ -3,7 +3,7 @@
 System Info
 ============
 
-.. image:: ../_static/lab-files/os.png
+.. image:: ../_static/integrations/os.png
     :align: right
     :width: 200px
     :target: javascript:void(0);

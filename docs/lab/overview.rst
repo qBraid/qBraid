@@ -22,6 +22,7 @@ software tools for researchers and developers in quantum, as well as access to q
 - `Environments <environments.html>`_
    - `Install environment <environments.html#install-environment>`_
    - `Create environment <environments.html#create-environment>`_
+   - `Install new package <environments.html#create-environment>`_
 
 - `Kernels <kernels.html>`_
    - `Add/remove kernels <kernels.html#add-remove-kernels>`_
