@@ -44,9 +44,22 @@ While running a notebook, if you get a ``ModuleNotFoundError`` after an import s
 see `Switch notebook kernel <kernels.html#switch-notebook-kernel>`_.
 
 2. If you are using the correct kernel, the package you are trying to import may not be installed
-in that environment.
+in that environment. See `Install new package <environments.html#install-new-package>`_.
 
+NoRegionError
+--------------
 
+If you are running an Amazon Braket notebook and get a ``NoRegionError``, it's likely that you have not enabled Quantum Jobs. Run
+
+.. code-block::
+
+  $ qbraid jobs enable amazon_braket
+  
+ and restart your kernel, and try running the notebook again. 
+
+ .. seealso::
+   
+    -  _`Quantum Jobs <quantumjobs.html>`_
 
 
 
