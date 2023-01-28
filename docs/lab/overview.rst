@@ -22,7 +22,7 @@ software tools for researchers and developers in quantum, as well as access to q
 - `Environments <environments.html>`_
    - `Install environment <environments.html#install-environment>`_
    - `Create environment <environments.html#create-environment>`_
-   - `Install new package <environments.html#create-environment>`_
+   - `Install new package <environments.html#install-new-package>`_
 
 - `Kernels <kernels.html>`_
    - `Add/remove kernels <kernels.html#add-remove-kernels>`_
@@ -42,7 +42,9 @@ software tools for researchers and developers in quantum, as well as access to q
    - `Pre-Installed Software <system.html#gnu-packages>`_
 
 - `Troubleshooting <troubleshoot.html>`_
-   - `Server errors <troubleshoot.html#server-errors>`_
+   - `Error launching Lab <troubleshoot.html#error-launching-lab>`_
+   - `Lab server errors <troubleshoot.html#lab-server-errors>`_
+   - `ModuleNotFoundError <troubleshoot.html#modulenotfounderror>`_
 
 
 .. seealso::
