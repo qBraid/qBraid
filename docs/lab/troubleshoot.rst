@@ -55,7 +55,7 @@ If you are running an Amazon Braket notebook and get a ``NoRegionError``, it's l
 
   $ qbraid jobs enable amazon_braket
   
- and restart your kernel, and try running the notebook again. 
+and restart your kernel, and try running the notebook again. 
 
  .. seealso::
    
