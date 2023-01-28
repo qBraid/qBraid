@@ -135,7 +135,7 @@ click **Add**.
     :target: javascript:void(0);
 
 
-While installing, the environment action button will turn indicate **Installing...**. Once complete, Lab will send a notification
+While installing, the environment action button will indicate **Installing...**. Once complete, Lab will send a notification
 similar to the following:
 
 .. image:: ../_static/environments/env_pkg_install.png
