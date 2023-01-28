@@ -140,7 +140,7 @@ similar to the following:
 
 .. image:: ../_static/environments/env_pkg_install.png
     :align: center
-    :width: 600px
+    :width: 500px
     :target: javascript:void(0);
 
 
