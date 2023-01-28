@@ -6,7 +6,7 @@ Integrations
 Visual Studio Code
 -------------------
 
-.. image:: ../_static/connect-vscode/vscode_graphic.png
+.. image:: ../_static/integrations/vscode_graphic.png
     :align: center
     :width: 700px
     :target: javascript:void(0);
@@ -25,7 +25,7 @@ Get access token
 
 2. Access your *Control Panel* by clicking **File** --> **Hub Control Panel**.
 
-.. image:: ../_static/connect-vscode/0_file_control_panel.png
+.. image:: ../_static/integrations/0_file_control_panel.png
     :align: center
     :width: 400px
     :target: javascript:void(0);
@@ -34,7 +34,7 @@ Get access token
 
 3. Navitage to the 'Token' page by clicking **Token** in the top bar.
 
-.. image:: ../_static/connect-vscode/1_top_bar_token.png
+.. image:: ../_static/integrations/1_top_bar_token.png
     :align: center
     :width: 200px
     :target: javascript:void(0);
@@ -43,7 +43,7 @@ Get access token
 
 4. Type in a description for the new token you want, and click **Request new API Token**.
 
-.. image:: ../_static/connect-vscode/2_request_token.png
+.. image:: ../_static/integrations/2_request_token.png
     :align: center
     :width: 500px
     :target: javascript:void(0);
@@ -53,7 +53,7 @@ Get access token
 5. Copy your token and keep it somewhere safe. You should treat this like a password to your
 qBraid Lab account, and revoke it from the same page when you are no longer using it.
 
-.. image:: ../_static/connect-vscode/3_copy_token.png
+.. image:: ../_static/integrations/3_copy_token.png
     :align: center
     :width: 500px
     :target: javascript:void(0);
@@ -68,14 +68,14 @@ Connect VS Code to Lab
 
 2. Select **Jupyter: Specify Jupyter Server for Connections**, and then select **Existing**.
 
-.. image:: ../_static/connect-vscode/4_jupyter_server.png
+.. image:: ../_static/integrations/4_jupyter_server.png
     :align: center
     :width: 600px
     :target: javascript:void(0);
 
 |
 
-.. image:: ../_static/connect-vscode/5_existing_uri.png
+.. image:: ../_static/integrations/5_existing_uri.png
     :align: center
     :width: 600px
     :target: javascript:void(0);
@@ -84,7 +84,7 @@ Connect VS Code to Lab
 
 3. Construct your notebook server URL with the following template: ``https://lab.qbraid.com/user/<your-lab-username>/?token=<your-token>``.
 
-.. image:: ../_static/connect-vscode/6_example_user.png
+.. image:: ../_static/integrations/6_example_user.png
     :align: center
     :width: 600px
     :target: javascript:void(0);
@@ -100,14 +100,14 @@ Your Lab username is generated from the email address associated with your qBrai
 
 4. Create or open a new notebook, and select a notebook kernel from any of your installed and active qBraid Lab environments.
 
-.. image:: ../_static/connect-vscode/7_notebook_kernel.png
+.. image:: ../_static/integrations/7_notebook_kernel.png
     :align: center
     :width: 600px
     :target: javascript:void(0);
 
 |
 
-.. image:: ../_static/connect-vscode/8_select_kernel.png
+.. image:: ../_static/integrations/8_select_kernel.png
     :align: center
     :width: 600px
     :target: javascript:void(0);

@@ -21,7 +21,7 @@ using the `CLI <../cli/jobs-get-credits.html>`_:
     $ qbraid jobs get-credits
 
 
-.. image:: ../_static/lab-files/jobs_tag.png
+.. image:: ../_static/jobs/jobs_tag.png
     :align: right
     :width: 325px
     :target: javascript:void(0);
@@ -83,7 +83,7 @@ that Quantum Jobs are enabled. In the example below, a two-qubit bell circuit pr
 From the Quantum Jobs sidebar, you can view the details of your submitted jobs, monitor the status of each job, and track your credits.
 In this example, the job cost ~130 qBraid credits, equivalent to $1.30 USD.
 
-.. image:: ../_static/lab-files/jobs_ionq.png
+.. image:: ../_static/jobs/jobs_ionq.png
     :align: center
     :width: 800px
     :target: javascript:void(0);

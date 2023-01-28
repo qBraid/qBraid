@@ -11,7 +11,7 @@ Add access key
 Use the following steps to redeem qBraid credits and/or gain access to premium features
 of qBraid Lab using an access key or promotional code:
 
-.. image:: ../_static/lab-files/account_profile.png
+.. image:: ../_static/account/account_profile.png
     :align: right
     :width: 100px
     :target: javascript:void(0);
@@ -22,14 +22,14 @@ of qBraid Lab using an access key or promotional code:
 
 3. Open the **Account Details** tab.
 
-.. image:: ../_static/lab-files/account_details.png
+.. image:: ../_static/account/account_details.png
     :align: left
     :width: 300px
     :target: javascript:void(0);
 
 |
 
-.. |submit| image:: ../_static/lab-files/account_access_key.png
+.. |submit| image:: ../_static/account/account_access_key.png
     :width: 80%
     :target: javascript:void(0);
 

@@ -3,14 +3,29 @@
 Troubleshooting
 ================
 
-Server errors
---------------
+If you encounter an error that isn't included on this page or if the solution provided doesn't work, please
+`reach out to us on Discord <https://discord.gg/gwBebaBZZX>`_, email us at request@qbraid.com, or
+`open a bug report <https://github.com/qbraid/community/issues/new?assignees=&labels=bug&template=bug_report.md>`_.
 
-If your error is one of the following,
+Error launching Lab
+---------------------
+
+If you get one of the following errors while launching Lab,
 
 - 400: Bad Request
 - 500: Internal Server Error
+- 503: Service Unavailable
 - Spawn failed
+
+your qBraid Lab server failed to start. Follow the prompts on the screen, or if none are given,
+return to https://account.qbraid.com, and click **Launch Lab** to try again.
+
+
+Lab server errors
+------------------
+
+If you get one of the following errors from inside Lab, 
+
 - Service unavailable or unreachable
 - File Save Error
 
@@ -20,5 +35,19 @@ Instead, you need to pull down a new Lab image, which can only be done from the 
 Go to **File** > **Hub Control Panel**, or type https://lab.qbraid.com/hub/home directly into your
 browser. From there, click **Stop My Server** > **Start My Server** > **Launch Server**, and wait for Lab to reload.
 
-If restarting your server doesn't fix the problem, `reach out to us on Discord <https://discord.gg/gwBebaBZZX>`_, email us at
-request@qbraid.com, or `open a bug report <https://github.com/qbraid/community/issues/new?assignees=&labels=bug&template=bug_report.md>`_.
+ModuleNotFoundError
+--------------------
+
+While running a notebook, if you get a ``ModuleNotFoundError`` after an import statement:
+
+1. Check to make sure you are using the correct notebook kernel for your environment,
+see `Switch notebook kernel <kernels.html#switch-notebook-kernel>`_.
+
+2. If you are using the correct kernel, the package you are trying to import may not be installed
+in that environment.
+
+
+
+
+
+
