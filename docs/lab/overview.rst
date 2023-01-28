@@ -45,6 +45,7 @@ software tools for researchers and developers in quantum, as well as access to q
    - `Error launching Lab <troubleshoot.html#error-launching-lab>`_
    - `Lab server errors <troubleshoot.html#lab-server-errors>`_
    - `ModuleNotFoundError <troubleshoot.html#modulenotfounderror>`_
+   - `NoRegionError <troubleshoot.html#noregionerror>`_
 
 
 .. seealso::
