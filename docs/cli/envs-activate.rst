@@ -33,5 +33,4 @@ Examples
 
 .. seealso::
 
-    - `Commands:`
-    - \- :ref:`qbraid envs list<cli_envs_list>`
+    - :ref:`qbraid envs list<cli_envs_list>`

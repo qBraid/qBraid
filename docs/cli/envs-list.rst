@@ -33,6 +33,5 @@ Quantum jobs can be added to an environment using the command ``qbraid jobs add`
 
 .. seealso::
 
-    - `Commands:`
-    - \- :ref:`qbraid jobs<cli_jobs>`
+    - :ref:`qbraid jobs<cli_jobs>`
 

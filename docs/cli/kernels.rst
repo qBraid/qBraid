@@ -28,5 +28,4 @@ Examples
 
 .. seealso::
 
-    - `References:`
-    - \- `jupyter_client docs <https://jupyter-client.readthedocs.io/en/stable/api/kernelspec.html>`_
+    - `jupyter_client docs <https://jupyter-client.readthedocs.io/en/stable/api/kernelspec.html>`_

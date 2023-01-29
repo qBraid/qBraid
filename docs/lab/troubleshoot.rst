@@ -12,10 +12,10 @@ Error launching Lab
 
 If you get one of the following errors while launching Lab,
 
-- 400: Bad Request
-- 500: Internal Server Error
-- 503: Service Unavailable
-- Spawn failed
+- ``400: Bad Request``
+- ``500: Internal Server Error``
+- ``503: Service Unavailable``
+- ``Spawn failed``
 
 your qBraid Lab server failed to start. Follow the prompts on the screen, or if none are given,
 return to https://account.qbraid.com, and click **Launch Lab** to try again.
@@ -26,8 +26,8 @@ Lab server errors
 
 If you get one of the following errors from inside Lab, 
 
-- Service unavailable or unreachable
-- File Save Error
+- ``Service unavailable or unreachable``
+- ``File Save Error``
 
 you need to restart your qBraid Lab server. For these types of errors, refreshing the page won't work.
 Instead, you need to pull down a new Lab image, which can only be done from the qBraid Hub Control Panel:
@@ -53,13 +53,13 @@ If you are running an Amazon Braket notebook and get a ``NoRegionError``, it's l
 
 .. code-block::
 
-  $ qbraid jobs enable amazon_braket
+  $ qbraid jobs enable [env_name]
   
-and restart your kernel, and try running the notebook again. 
+and restart your kernel, and try running the notebook again. If you are using the Amazon Braket environment, ``env_name`` is simply ``amazon_braket``.
 
- .. seealso::
-   
-    -  _`Quantum Jobs <quantumjobs.html>`_
+.. seealso::
+
+    -  `Quantum Jobs <quantumjobs.html>`_
 
 
 

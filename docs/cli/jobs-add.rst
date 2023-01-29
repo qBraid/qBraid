@@ -45,6 +45,5 @@ Examples
 
 .. seealso::
 
-    - `Commands:`
-    - \- :ref:`qbraid jobs enable<cli_jobs_enable>`
-    - \- :ref:`qbraid envs list<cli_envs_list>`
+    - :ref:`qbraid jobs enable<cli_jobs_enable>`
+    - :ref:`qbraid envs list<cli_envs_list>`

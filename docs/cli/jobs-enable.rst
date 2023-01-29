@@ -30,7 +30,6 @@ Examples
 
 .. seealso::
 
-    - `Commands:`
-    - \- :ref:`qbraid jobs disable<cli_jobs_disable>`
-    - \- :ref:`qbraid jobs add<cli_jobs_add>`
-    - \- :ref:`qbraid envs list<cli_envs_list>`
+    - :ref:`qbraid jobs disable<cli_jobs_disable>`
+    - :ref:`qbraid jobs add<cli_jobs_add>`
+    - :ref:`qbraid envs list<cli_envs_list>`

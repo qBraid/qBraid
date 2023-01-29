@@ -22,6 +22,5 @@ Examples
 
 .. seealso::
 
-    - `Commands:`
-    - \- :ref:`qbraid jobs enable<cli_jobs_enable>`
-    - \- :ref:`qbraid jobs disable<cli_jobs_disable>`
+    - :ref:`qbraid jobs enable<cli_jobs_enable>`
+    - :ref:`qbraid jobs disable<cli_jobs_disable>`
