@@ -35,7 +35,6 @@ class LocalJobWrapper(ABC):
     """
 
     def __init__(self, device, vendor_jlo):
-
         self.device = device
         self.vendor_jlo = vendor_jlo
 

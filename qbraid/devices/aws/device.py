@@ -16,7 +16,6 @@
 Module defining BraketDeviceWrapper Class
 
 """
-import math
 from typing import TYPE_CHECKING
 
 from braket.aws import AwsDevice

@@ -83,7 +83,6 @@ def to_qasm(circuit: BKCircuit) -> QASMType:
     circuit_instr = circuit.instructions
     # Building the QASM codelines by applying gates one at a time
     for ins in circuit_instr:
-
         # Appending the gate name
         if ins.operator.name.lower() not in gates:
             code += ins.operator.name.lower()

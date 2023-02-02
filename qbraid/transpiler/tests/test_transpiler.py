@@ -268,7 +268,6 @@ def qiskit_gate_test_circuit(test_gate, nqubits):
 
 
 def cirq_gate_test_circuit(test_gate, nqubits):
-
     circuit = CirqCircuit()
     q2, q1, q0 = [cirq.LineQubit(i) for i in range(3)]
 

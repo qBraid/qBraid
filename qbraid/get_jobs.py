@@ -42,7 +42,6 @@ def _display_jobs_basic(data, msg):
 
 
 def _display_jobs_jupyter(data, msg):
-
     clear_output(wait=True)
 
     html = """<h3>Quantum Jobs</h3><table><tr>
@@ -52,7 +51,6 @@ def _display_jobs_jupyter(data, msg):
     """
 
     for job_id, timestamp, status_str in data:
-
         if status_str == "COMPLETED":
             color = "green"
         elif status_str == "FAILED":

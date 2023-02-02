@@ -109,7 +109,6 @@ def _display_basic(data, msg):
 
 
 def _display_jupyter(data, msg, align=None):
-
     clear_output(wait=True)
 
     align = "right" if align is None else align

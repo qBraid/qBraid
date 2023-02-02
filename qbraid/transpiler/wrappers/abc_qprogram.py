@@ -38,7 +38,6 @@ class QuantumProgramWrapper:
     """
 
     def __init__(self, program: "qbraid.QPROGRAM"):
-
         self._program = program
         self._qubits = []
         self._num_qubits = 0
