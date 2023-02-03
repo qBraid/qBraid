@@ -125,7 +125,7 @@ def _to_one_qubit_braket_instruction(
         name: Optional unitary gate display name for `opr` of type `np.ndarray`
     """
     if isinstance(opr, np.ndarray):
-        gate_name = "U" if name is None else name
+        gate_name = "U" if name is None or "QasmUGate" in name else name
         return [BKInstruction(braket_gates.Unitary(opr, display_name=gate_name), target)]
 
     # Check common single-qubit gates.

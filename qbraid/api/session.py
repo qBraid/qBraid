@@ -136,7 +136,6 @@ class QbraidSession(Session):
         retries_connect: int = 3,
         backoff_factor: float = 0.5,
     ) -> None:
-
         super().__init__()
 
         self.base_url = base_url
