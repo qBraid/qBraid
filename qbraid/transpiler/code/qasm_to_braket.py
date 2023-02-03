@@ -5,9 +5,6 @@ Module for converting QASM code to Amazon Braket code
 
 from typing import Optional
 
-import numpy as np
-from cirq.testing import random_circuit
-
 # pylint: disable=unspecified-encoding,consider-using-with
 
 python_code = [
@@ -82,14 +79,7 @@ def qasm_to_braket_code(
     elif qasm_str is not None:
         qasm_code = qasm_str.split("\n")
     else:
-        kwargs = {
-            "qubits": np.random.randint(8, 11),
-            "n_moments": np.random.randint(8, 11),
-            "op_density": np.random.randint(80, 100) / 100,
-            "random_state": np.random.randint(1, 11),
-        }
-        cirq_circuit = random_circuit(**kwargs)
-        qasm_code = cirq_circuit.to_qasm().split("\n")
+        raise ValueError("Must specify a value for qasm_str or qasm_file")
 
     if output_file is None:
         output_file = "braket_out.py"
