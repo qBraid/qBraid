@@ -16,17 +16,6 @@ python_code = [
     "circuit = Circuit()\n",
 ]
 
-test_code = """
-import qbraid
-from qbraid.interface import convert_to_contiguous, circuits_allclose
-cirq_circuit = qbraid.circuit_wrapper(circuit).transpile("cirq")
-cirq_flipped = convert_to_contiguous(cirq_circuit, rev_qubits=True)
-all_close = circuits_allclose(circuit, cirq_circuit)
-all_close_flipped = circuits_allclose(circuit, cirq_flipped)
-passed = all_close or all_close_flipped
-print(passed)
-"""
-
 
 def u3_decomposition(theta, phi, lam, q):
     """Decompose QASM u3 into gates supported by Amazon Braket"""
@@ -73,7 +62,6 @@ def qasm_to_braket_code(
     qasm_str: Optional[str] = None,
     output_file: Optional[str] = None,
     print_circuit: bool = False,
-    test_equal: bool = False,
 ):
     """Convert QASM string/file to Python file with circuit implemented using Amazon Braket.
 
@@ -82,7 +70,6 @@ def qasm_to_braket_code(
         qasm_str: input raw QASM string
         output_file: path to output Python file
         print_circuit: If True, adds line to print Amazon Braket circuit
-        test_equal: If True, adds code to test input/output circuit equivalence
 
     Returns:
         None
@@ -117,9 +104,6 @@ def qasm_to_braket_code(
 
     if print_circuit:
         python_code.append("\nprint(circuit)\n")
-
-    if test_equal:
-        python_code.append(test_code)
 
     #  writing to file
     braket_out = open(output_file, "w")
