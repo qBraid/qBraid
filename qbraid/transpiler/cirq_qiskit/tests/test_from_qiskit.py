@@ -60,43 +60,6 @@ def test_common_gates_from_qiskit():
     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
-def test_u1_gate_from_qiskit():
-    qiskit_circuit = QuantumCircuit(1)
-    qiskit_circuit.u1(np.pi / 8, 0)
-    cirq_circuit = from_qiskit(qiskit_circuit)
-    assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
-
-
-def test_u2_gate_from_qiskit():
-    qiskit_circuit = QuantumCircuit(1)
-    qiskit_circuit.u2(np.pi / 8, np.pi / 4, 0)
-    cirq_circuit = from_qiskit(qiskit_circuit)
-    assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
-
-
-def test_u3_gate_from_qiskit():
-    qiskit_circuit = QuantumCircuit(1)
-    qiskit_circuit.u3(np.pi / 8, np.pi / 4, np.pi / 2, 0)
-    cirq_circuit = from_qiskit(qiskit_circuit)
-    assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
-
-
-@pytest.mark.parametrize("qubits", ([0, 1], [1, 0]))
-def test_cu1_gate_from_qiskit(qubits):
-    qiskit_circuit = QuantumCircuit(2)
-    qiskit_circuit.cu1(np.pi / 8, *qubits)
-    cirq_circuit = from_qiskit(qiskit_circuit)
-    assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
-
-
-@pytest.mark.parametrize("qubits", ([0, 1], [1, 0]))
-def test_cu3_gate_from_qiskit(qubits):
-    qiskit_circuit = QuantumCircuit(2)
-    qiskit_circuit.cu3(np.pi / 8, np.pi / 4, np.pi / 2, *qubits)
-    cirq_circuit = from_qiskit(qiskit_circuit)
-    assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
-
-
 @pytest.mark.parametrize("qubits", ([0, 1], [1, 0]))
 def test_crz_gate_from_qiskit(qubits):
     qiskit_circuit = QuantumCircuit(2)
@@ -120,3 +83,42 @@ def test_iswap_gate_from_qiskit():
     qiskit_circuit.iswap(0, 1)
     cirq_circuit = from_qiskit(qiskit_circuit)
     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
+
+
+# u1,u2,u3 gates deprecated for qiskit>0.40.0
+
+# def test_u1_gate_from_qiskit():
+#     qiskit_circuit = QuantumCircuit(1)
+#     qiskit_circuit.u1(np.pi / 8, 0)
+#     cirq_circuit = from_qiskit(qiskit_circuit)
+#     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
+
+
+# def test_u2_gate_from_qiskit():
+#     qiskit_circuit = QuantumCircuit(1)
+#     qiskit_circuit.u2(np.pi / 8, np.pi / 4, 0)
+#     cirq_circuit = from_qiskit(qiskit_circuit)
+#     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
+
+
+# def test_u3_gate_from_qiskit():
+#     qiskit_circuit = QuantumCircuit(1)
+#     qiskit_circuit.u3(np.pi / 8, np.pi / 4, np.pi / 2, 0)
+#     cirq_circuit = from_qiskit(qiskit_circuit)
+#     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
+
+
+# @pytest.mark.parametrize("qubits", ([0, 1], [1, 0]))
+# def test_cu1_gate_from_qiskit(qubits):
+#     qiskit_circuit = QuantumCircuit(2)
+#     qiskit_circuit.cu1(np.pi / 8, *qubits)
+#     cirq_circuit = from_qiskit(qiskit_circuit)
+#     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
+
+
+# @pytest.mark.parametrize("qubits", ([0, 1], [1, 0]))
+# def test_cu3_gate_from_qiskit(qubits):
+#     qiskit_circuit = QuantumCircuit(2)
+#     qiskit_circuit.cu3(np.pi / 8, np.pi / 4, np.pi / 2, *qubits)
+#     cirq_circuit = from_qiskit(qiskit_circuit)
+#     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)

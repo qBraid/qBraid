@@ -73,12 +73,16 @@ def set_config():
 
     Note: this function is used in lieu of :func:`~qbraid.api.config_user._set_config`
     to by-pass the user prompt, and directly set the configs to be used to testing."""
+    for file in [aws_config_path,aws_cred_path, qbraid_config_path, qbraidrc_path, qiskitrc_path]:
+        try:
+            os.remove(file)
+        except FileNotFoundError:
+            pass
     for c in config_lst:
         config_name = c[0]
         config_value = c[1]
         section = c[2]
         filepath = c[3]
-        # print(f"{config_name}: {config_value}")
         if not os.path.isfile(filepath):
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
         config = configparser.ConfigParser()
@@ -131,8 +135,6 @@ def test_api_error():
 @pytest.mark.parametrize("config", config_lst)
 def test_get_config(config):
     """Test getting config value."""
-    # remove qbraidrc file again and set correct config
-    # os.remove(qbraidrc_path)
     set_config()
     name = config[0]
     value = config[1]
@@ -154,21 +156,14 @@ def test_qbraid_session_from_config():
     user_email = get_config("email", "default")
     session = QbraidSession()
     assert session.user_email == user_email
-    # res = session.get("/identity")
-    # assert user_email == res.json()["email"]
+    res = session.get("/identity")
+    assert user_email == res.json()["email"]
 
 
 def test_ibmq_get_provider():
     """Test getting IBMQ provider from qiskitrc"""
     from qiskit.providers.ibmq import AccountProvider
-    print("before set config:")
-    with open(qiskitrc_path, "r") as f:
-        print(f.read())
+
     set_config()
-    print()
-    print("after set config:")
-    with open(qiskitrc_path, "r") as f:
-        print(f.read())
-    print()
     provider = ibmq_get_provider()
     assert isinstance(provider, AccountProvider)
