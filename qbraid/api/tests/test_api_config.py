@@ -153,6 +153,7 @@ def test_qbraid_session_from_args():
 
 def test_qbraid_session_from_config():
     """Test initializing QbraidSession with attributes auto-set from config values."""
+    set_config()
     user_email = get_config("email", "default")
     session = QbraidSession()
     assert session.user_email == user_email
