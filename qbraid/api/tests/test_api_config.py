@@ -151,12 +151,8 @@ def test_qbraid_session_from_args():
 
 def test_qbraid_session_from_config():
     """Test initializing QbraidSession with attributes auto-set from config values."""
-    with open(qbraidrc_path, "r") as f:
-        print(f.read())
     user_email = get_config("email", "default")
     session = QbraidSession()
-    print(f"session.user_email {session.user_email}")
-    print(f"config user_email: {user_email}")
     assert session.user_email == user_email
     # res = session.get("/identity")
     # assert user_email == res.json()["email"]
@@ -165,6 +161,14 @@ def test_qbraid_session_from_config():
 def test_ibmq_get_provider():
     """Test getting IBMQ provider from qiskitrc"""
     from qiskit.providers.ibmq import AccountProvider
-
+    print("before set config:")
+    with open(qiskitrc_path, "r") as f:
+        print(f.read())
+    set_config()
+    print()
+    print("after set config:")
+    with open(qiskitrc_path, "r") as f:
+        print(f.read())
+    print()
     provider = ibmq_get_provider()
     assert isinstance(provider, AccountProvider)
