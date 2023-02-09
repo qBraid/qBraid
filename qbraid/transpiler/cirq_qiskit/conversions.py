@@ -58,7 +58,7 @@ def from_qiskit(circuit: qiskit.QuantumCircuit) -> cirq.Circuit:
             except ValueError:
                 pass
             line_str_out = "// " + line_str
-        elif line_str[0:2] == "cu":
+        elif line_str[0:3] == "cu(":
             cu_gate = line_args[0]
             q0, q1 = line_args[1].strip(";").split(",")
             params_lst = get_param(cu_gate).split(",")
