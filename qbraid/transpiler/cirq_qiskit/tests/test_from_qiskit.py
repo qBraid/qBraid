@@ -85,40 +85,51 @@ def test_iswap_gate_from_qiskit():
     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
-# u1,u2,u3 gates deprecated for qiskit>0.40.0
+cry = """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[3];
+cry(5.518945082555831) q[2],q[1];
+"""
 
-# def test_u1_gate_from_qiskit():
-#     qiskit_circuit = QuantumCircuit(1)
-#     qiskit_circuit.u1(np.pi / 8, 0)
-#     cirq_circuit = from_qiskit(qiskit_circuit)
-#     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
+u = """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[1];
+u(5.75740842861076,5.870881397684582,1.8535618384181967) q[0];
+"""
 
+rzx = """
+OPENQASM 2.0;
+include "qelib1.inc";
+gate rzx(param0) q0,q1 { h q1; cx q0,q1; rz(3.4192513265994435) q1; cx q0,q1; h q1; }
+qreg q[2];
+rzx(3.4192513265994435) q[1],q[0];
+"""
 
-# def test_u2_gate_from_qiskit():
-#     qiskit_circuit = QuantumCircuit(1)
-#     qiskit_circuit.u2(np.pi / 8, np.pi / 4, 0)
-#     cirq_circuit = from_qiskit(qiskit_circuit)
-#     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
+ccz = """
+OPENQASM 2.0;
+include "qelib1.inc";
+gate rzx(param0) q0,q1 { h q1; cx q0,q1; rz(-pi/4) q1; cx q0,q1; h q1; }
+gate rzx(param0) q0,q1 { h q1; cx q0,q1; rz(pi/4) q1; cx q0,q1; h q1; }
+gate ecr q0,q1 { rzx(pi/4) q0,q1; x q0; rzx(-pi/4) q0,q1; }
+gate rzx_6320157840(param0) q0,q1 { h q1; cx q0,q1; rz(2.3200048200765524) q1; cx q0,q1; h q1; }
+qreg q[3];
+ecr q[2],q[0];
+ccz q[0],q[2],q[1];
+rzx_6320157840(2.3200048200765524) q[2],q[1];
+"""
 
+rccx = """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[3];
+rccx q[1],q[2],q[0];
+"""
 
-# def test_u3_gate_from_qiskit():
-#     qiskit_circuit = QuantumCircuit(1)
-#     qiskit_circuit.u3(np.pi / 8, np.pi / 4, np.pi / 2, 0)
-#     cirq_circuit = from_qiskit(qiskit_circuit)
-#     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
-
-
-# @pytest.mark.parametrize("qubits", ([0, 1], [1, 0]))
-# def test_cu1_gate_from_qiskit(qubits):
-#     qiskit_circuit = QuantumCircuit(2)
-#     qiskit_circuit.cu1(np.pi / 8, *qubits)
-#     cirq_circuit = from_qiskit(qiskit_circuit)
-#     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
-
-
-# @pytest.mark.parametrize("qubits", ([0, 1], [1, 0]))
-# def test_cu3_gate_from_qiskit(qubits):
-#     qiskit_circuit = QuantumCircuit(2)
-#     qiskit_circuit.cu3(np.pi / 8, np.pi / 4, np.pi / 2, *qubits)
-#     cirq_circuit = from_qiskit(qiskit_circuit)
-#     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
+csx = """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[3];
+csx q[0],q[2];
+"""

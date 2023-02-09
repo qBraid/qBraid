@@ -240,6 +240,12 @@ class QasmParser:
             num_params=3,
             num_args=1,
         ),
+        'u': QasmGateStatement(
+            qasm_gate='u',
+            cirq_gate=(lambda params: qbraid_cirq_gates.U3Gate(*params)),
+            num_params=3,
+            num_args=1,
+        ),
         'r': QasmGateStatement(
             qasm_gate='r',
             num_params=2,
@@ -277,6 +283,15 @@ class QasmParser:
             num_params=1,
             num_args=2,
         ),
+        'cry': QasmGateStatement(
+            qasm_gate='cry',
+            cirq_gate=(lambda params: ops.ControlledGate(ops.ry(params[0]))),
+            num_params=1,
+            num_args=2
+        ),
+        'csx': QasmGateStatement(
+            qasm_gate='csx', num_params=0, num_args=2, cirq_gate=ops.ControlledGate(ops.XPowGate(exponent=0.5))
+        ),
         'cu1': QasmGateStatement(
             qasm_gate='cu1',
             cirq_gate=(lambda params: ops.ControlledGate(ops.ZPowGate(exponent=params[0] / np.pi))),
@@ -285,6 +300,12 @@ class QasmParser:
         ),
         'cu3': QasmGateStatement(
             qasm_gate='cu3',
+            cirq_gate=(lambda params: ops.ControlledGate(qbraid_cirq_gates.U3Gate(*params))),
+            num_params=3,
+            num_args=2,
+        ),
+        'cu': QasmGateStatement(
+            qasm_gate='cu',
             cirq_gate=(lambda params: ops.ControlledGate(qbraid_cirq_gates.U3Gate(*params))),
             num_params=3,
             num_args=2,
