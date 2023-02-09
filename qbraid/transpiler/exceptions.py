@@ -22,3 +22,7 @@ from qbraid.exceptions import QbraidError
 
 class CircuitConversionError(QbraidError):
     """Base class for errors raised while converting a circuit."""
+
+
+class QasmError(QbraidError):
+    """For errors raised while converting circuits to/from QASM."""

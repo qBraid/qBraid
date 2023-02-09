@@ -27,7 +27,7 @@ from cirq import ops as cirq_ops
 from cirq import protocols
 
 from qbraid.interface import convert_to_contiguous, to_unitary
-from qbraid.transpiler.cirq_utils.custom_gates import matrix_gate
+from qbraid.transpiler.custom_gates import matrix_gate
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 

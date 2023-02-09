@@ -31,7 +31,7 @@ source = ["qbraid"]
 omit = [
   "**/qbraid/_archive/*",
   "**/qbraid/transpiler/*/_gate_archive.py",
-  "**/qbraid/transpiler/cirq_utils/qasm_output.py",
+  "**/qbraid/transpiler/cirq_qasm/qasm_output.py",
   "**/qbraid/api/config_prompt.py"
 ]
 
@@ -68,8 +68,8 @@ exclude = '''
   | \.venv
   | dist
   | qbraid/_archive
-  | qbraid/transpiler/cirq_utils/qasm_parser.py
-  | qbraid/transpiler/cirq_utils/tests/test_qasm_parser.py
+  | qbraid/transpiler/cirq_qasm/qasm_parser.py
+  | qbraid/transpiler/cirq_qasm/tests/test_qasm_parser.py
 )/
 '''
 

@@ -27,8 +27,9 @@ from typing import Optional
 import cirq
 from cirq import circuits, ops
 
-from qbraid.transpiler.cirq_utils.qasm_output import QasmOutput
-from qbraid.transpiler.cirq_utils.qasm_parser import QasmParser
+import qbraid
+from qbraid.transpiler.cirq_qasm.qasm_output import QasmOutput
+from qbraid.transpiler.cirq_qasm.qasm_parser import QasmParser
 
 QASMType = str
 
@@ -72,7 +73,7 @@ def _to_qasm_output(
             register.
     """
     if header is None:
-        header = f'Generated from Cirq v{cirq._version.__version__}'
+        header = f'Generated from qBraid v{qbraid._version.__version__}'
     qubits = ops.QubitOrder.as_qubit_order(qubit_order).order_for(circuit.all_qubits())
     return QasmOutput(
         operations=circuit.all_operations(),

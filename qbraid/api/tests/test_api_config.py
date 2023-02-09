@@ -73,7 +73,7 @@ def set_config():
 
     Note: this function is used in lieu of :func:`~qbraid.api.config_user._set_config`
     to by-pass the user prompt, and directly set the configs to be used to testing."""
-    for file in [aws_config_path,aws_cred_path, qbraid_config_path, qbraidrc_path, qiskitrc_path]:
+    for file in [aws_config_path, aws_cred_path, qbraid_config_path, qbraidrc_path, qiskitrc_path]:
         try:
             os.remove(file)
         except FileNotFoundError:

@@ -22,7 +22,7 @@ from cirq import Circuit
 from cirq.contrib.qasm_import.exception import QasmException
 
 from qbraid.interface import convert_to_contiguous
-from qbraid.transpiler.cirq_utils import from_qasm
+from qbraid.transpiler.cirq_qasm import from_qasm
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 QASMType = str

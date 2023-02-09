@@ -16,7 +16,7 @@
 Unit tests for qasm utility functions
 
 """
-from qbraid.transpiler.cirq_utils.qasm_conversions import _remove_qasm_barriers
+from qbraid.transpiler.cirq_qasm.qasm_conversions import _remove_qasm_barriers
 
 
 def test_remove_qasm_barriers():
