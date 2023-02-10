@@ -21,7 +21,7 @@ qbraid.transpiler
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.transpiler.cirq_utils
+.. automodule:: qbraid.transpiler.cirq_qasm
    :members:
    :undoc-members:
    :show-inheritance:

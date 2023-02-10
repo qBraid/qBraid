@@ -35,7 +35,7 @@ from cirq.ops.matrix_gates import MatrixGate
 from cirq.ops.swap_gates import ISwapPowGate, SwapPowGate
 from cirq.ops.three_qubit_gates import CCXPowGate, CCZPowGate
 
-from qbraid.transpiler.cirq_utils.custom_gates import U3Gate, _give_cirq_gate_name
+from qbraid.transpiler.custom_gates import U3Gate, _give_cirq_gate_name
 
 cirq_gates = {
     "H": HPowGate,

@@ -1,3 +1,17 @@
+# Copyright 2023 qBraid
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Module containing functions to convert between Cirq's circuit
 representation and Qiskit's circuit representation.
@@ -8,8 +22,8 @@ import qiskit
 
 from qbraid.interface import convert_to_contiguous
 from qbraid.interface.qbraid_cirq.tools import _convert_to_line_qubits
-from qbraid.transpiler.cirq_utils import from_qasm, to_qasm
-from qbraid.transpiler.cirq_utils.custom_gates import _map_zpow_and_unroll
+from qbraid.transpiler.cirq_qasm import from_qasm, to_qasm
+from qbraid.transpiler.custom_gates import _map_zpow_and_unroll
 
 
 def to_qiskit(circuit: cirq.Circuit) -> qiskit.QuantumCircuit:
@@ -37,28 +51,6 @@ def from_qiskit(circuit: qiskit.QuantumCircuit) -> cirq.Circuit:
     Returns:
         Cirq circuit representation equivalent to the input Qiskit circuit.
     """
-    gate_defs = {}
-    qasm_lst_out = []
     qasm_str = circuit.qasm()
-    qasm_lst = qasm_str.split("\n")
-    for _, qasm_line in enumerate(qasm_lst):
-        line_str = qasm_line
-        line_args = line_str.split(" ")
-        if line_args[0] == "gate":
-            gate = line_args[1]
-            qs = line_args[2].split(",")
-            instr = line_str.split("{")[1].strip("}").strip()
-            gate_defs[gate] = (qs, instr)
-            line_str_out = "// " + line_str
-        elif line_args[0] in gate_defs:
-            qs, instr = gate_defs[line_args[0]]
-            map_qs = line_args[1].strip(";").split(",")
-            for i, qs_i in enumerate(qs):
-                instr = instr.replace(qs_i, map_qs[i])
-            line_str_out = instr
-        else:
-            line_str_out = line_str
-        qasm_lst_out.append(line_str_out)
-    qasm_str_def = "\n".join(qasm_lst_out)
-    cirq_circuit = from_qasm(qasm_str_def)
+    cirq_circuit = from_qasm(qasm_str)
     return _convert_to_line_qubits(cirq_circuit, rev_qubits=True)

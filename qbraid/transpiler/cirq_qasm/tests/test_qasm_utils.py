@@ -16,7 +16,13 @@
 Unit tests for qasm utility functions
 
 """
-from qbraid.transpiler.cirq_utils.qasm_conversions import _remove_qasm_barriers
+import pytest
+from qiskit import QuantumCircuit
+
+from qbraid.interface import circuits_allclose
+from qbraid.interface.qbraid_cirq.tools import _convert_to_line_qubits
+from qbraid.transpiler.cirq_qasm.qasm_conversions import _remove_qasm_barriers, from_qasm
+from qbraid.transpiler.cirq_qasm.qasm_preprocess import convert_to_supported_qasm
 
 
 def test_remove_qasm_barriers():

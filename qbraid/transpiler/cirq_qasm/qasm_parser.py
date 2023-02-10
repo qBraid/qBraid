@@ -34,7 +34,7 @@ from cirq.circuits.qasm_output import QasmUGate
 from cirq.contrib.qasm_import._lexer import QasmLexer
 from cirq.contrib.qasm_import.exception import QasmException
 
-import qbraid.transpiler.cirq_utils.custom_gates as qbraid_cirq_gates
+import qbraid.transpiler.custom_gates as qbraid_cirq_gates
 
 # Redefined lexer tokens (4/7/21) to surpress warning:
 # Token ['IF', 'NE'] defined, but not used
@@ -74,10 +74,10 @@ class Qasm:
 
 class QasmGateStatement:
     """Specifies how to convert a call to an OpenQASM gate
-    to a list of `cirq.GateOperation`s.
+    to a list of cirq.GateOperation's.
     Has the responsibility to validate the arguments
     and parameters of the call and to generate a list of corresponding
-    `cirq.GateOperation`s in the `on` method.
+    cirq.GateOperation's in the 'on' method.
     """
 
     def __init__(
@@ -207,6 +207,9 @@ class QasmParser:
         'rx': QasmGateStatement(
             qasm_gate='rx', cirq_gate=(lambda params: ops.rx(params[0])), num_params=1, num_args=1
         ),
+        'crx': QasmGateStatement(
+            qasm_gate='crx', cirq_gate=(lambda params: ops.ControlledGate(ops.rx(params[0]))), num_params=1, num_args=2
+        ),
         'sx': QasmGateStatement(
             qasm_gate='sx', num_params=0, num_args=1, cirq_gate=ops.XPowGate(exponent=0.5)
         ),
@@ -240,6 +243,12 @@ class QasmParser:
             num_params=3,
             num_args=1,
         ),
+        'u': QasmGateStatement(
+            qasm_gate='u',
+            cirq_gate=(lambda params: qbraid_cirq_gates.U3Gate(*params)),
+            num_params=3,
+            num_args=1,
+        ),
         'r': QasmGateStatement(
             qasm_gate='r',
             num_params=2,
@@ -255,12 +264,14 @@ class QasmParser:
         'z': QasmGateStatement(qasm_gate='z', num_params=0, num_args=1, cirq_gate=ops.Z),
         'h': QasmGateStatement(qasm_gate='h', num_params=0, num_args=1, cirq_gate=ops.H),
         's': QasmGateStatement(qasm_gate='s', num_params=0, num_args=1, cirq_gate=ops.S),
+        'cs': QasmGateStatement(qasm_gate='cs', num_params=0, num_args=2, cirq_gate=ops.ControlledGate(ops.S)),
         't': QasmGateStatement(qasm_gate='t', num_params=0, num_args=1, cirq_gate=ops.T),
         'cx': QasmGateStatement(qasm_gate='cx', cirq_gate=CX, num_params=0, num_args=2),
         'cy': QasmGateStatement(
             qasm_gate='cy', cirq_gate=ops.ControlledGate(ops.Y), num_params=0, num_args=2
         ),
         'cz': QasmGateStatement(qasm_gate='cz', cirq_gate=ops.CZ, num_params=0, num_args=2),
+        'ccz': QasmGateStatement(qasm_gate='ccz', cirq_gate=ops.CCZ, num_params=0, num_args=3),
         'ch': QasmGateStatement(
             qasm_gate='ch', cirq_gate=ops.ControlledGate(ops.H), num_params=0, num_args=2
         ),
@@ -270,12 +281,25 @@ class QasmParser:
         ),
         'ccx': QasmGateStatement(qasm_gate='ccx', num_params=0, num_args=3, cirq_gate=ops.CCX),
         'sdg': QasmGateStatement(qasm_gate='sdg', num_params=0, num_args=1, cirq_gate=ops.S**-1),
+        'csdg': QasmGateStatement(qasm_gate='csdg', num_params=0, num_args=2, cirq_gate=ops.ControlledGate(ops.S**-1)),
         'tdg': QasmGateStatement(qasm_gate='tdg', num_params=0, num_args=1, cirq_gate=ops.T**-1),
         'crz': QasmGateStatement(
             qasm_gate='crz',
             cirq_gate=(lambda params: ops.ControlledGate(ops.rz(params[0]))),
             num_params=1,
             num_args=2,
+        ),
+        'cry': QasmGateStatement(
+            qasm_gate='cry',
+            cirq_gate=(lambda params: ops.ControlledGate(ops.ry(params[0]))),
+            num_params=1,
+            num_args=2
+        ),
+        'csx': QasmGateStatement(
+            qasm_gate='csx', num_params=0, num_args=2, cirq_gate=ops.ControlledGate(ops.XPowGate(exponent=0.5))
+        ),
+        'c3sx': QasmGateStatement(
+            qasm_gate='c3sx', num_params=0, num_args=4, cirq_gate=ops.ControlledGate(ops.ControlledGate(ops.ControlledGate(ops.XPowGate(exponent=0.5))))
         ),
         'cu1': QasmGateStatement(
             qasm_gate='cu1',
@@ -285,6 +309,12 @@ class QasmParser:
         ),
         'cu3': QasmGateStatement(
             qasm_gate='cu3',
+            cirq_gate=(lambda params: ops.ControlledGate(qbraid_cirq_gates.U3Gate(*params))),
+            num_params=3,
+            num_args=2,
+        ),
+        'cu': QasmGateStatement(
+            qasm_gate='cu',
             cirq_gate=(lambda params: ops.ControlledGate(qbraid_cirq_gates.U3Gate(*params))),
             num_params=3,
             num_args=2,

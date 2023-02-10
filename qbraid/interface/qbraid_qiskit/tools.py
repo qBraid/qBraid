@@ -16,11 +16,27 @@
 Module containing Qiskit tools
 
 """
+from collections import OrderedDict
+
 import numpy as np
 from qiskit import QuantumCircuit
+from qiskit.converters import circuit_to_dag, dag_to_circuit
 from qiskit.quantum_info import Operator
 
 
 def _unitary_from_qiskit(circuit: QuantumCircuit) -> np.ndarray:
     """Return the unitary of a Qiskit quantum circuit."""
     return Operator(circuit).data
+
+
+def _convert_to_contiguous_qiskit(circuit: QuantumCircuit) -> QuantumCircuit:
+    dag = circuit_to_dag(circuit)
+
+    idle_wires = list(dag.idle_wires())
+    for w in idle_wires:
+        dag._remove_idle_wire(w)
+        dag.qubits.remove(w)
+
+    dag.qregs = OrderedDict()
+
+    return dag_to_circuit(dag)
