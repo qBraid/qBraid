@@ -30,6 +30,7 @@ from cirq import circuits, ops
 import qbraid
 from qbraid.transpiler.cirq_qasm.qasm_output import QasmOutput
 from qbraid.transpiler.cirq_qasm.qasm_parser import QasmParser
+from qbraid.transpiler.cirq_qasm.qasm_preprocess import convert_to_supported_qasm
 
 QASMType = str
 
@@ -138,4 +139,5 @@ def from_qasm(qasm: QASMType) -> cirq.Circuit:
         Cirq circuit representation equivalent to the input QASM string.
     """
     qasm = _remove_qasm_barriers(qasm)
+    qasm = convert_to_supported_qasm(qasm)
     return circuit_from_qasm(qasm)

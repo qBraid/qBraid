@@ -19,8 +19,9 @@ Unit tests for converting Qiskit circuits to Cirq circuits.
 import numpy as np
 import pytest
 from qiskit import QuantumCircuit
+from qiskit.circuit.random import random_circuit
 
-from qbraid.interface import circuits_allclose
+from qbraid.interface import circuits_allclose, convert_to_contiguous
 from qbraid.transpiler.cirq_qiskit.conversions import from_qiskit
 
 
@@ -85,51 +86,27 @@ def test_iswap_gate_from_qiskit():
     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
-cry = """
-OPENQASM 2.0;
-include "qelib1.inc";
-qreg q[3];
-cry(5.518945082555831) q[2],q[1];
-"""
+def test_qiskit_roundtrip():
+    qiskit_circuit = QuantumCircuit(3)
+    qiskit_circuit.ccz(0, 1, 2)
+    qiskit_circuit.ecr(1, 2)
+    qiskit_circuit.cs(2, 0)
+    cirq_circuit = from_qiskit(qiskit_circuit)
+    assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=False)
 
-u = """
-OPENQASM 2.0;
-include "qelib1.inc";
-qreg q[1];
-u(5.75740842861076,5.870881397684582,1.8535618384181967) q[0];
-"""
 
-rzx = """
-OPENQASM 2.0;
-include "qelib1.inc";
-gate rzx(param0) q0,q1 { h q1; cx q0,q1; rz(3.4192513265994435) q1; cx q0,q1; h q1; }
-qreg q[2];
-rzx(3.4192513265994435) q[1],q[0];
-"""
+def test_qiskit_roundtrip_noncontig():
+    qiskit_circuit = QuantumCircuit(4)
+    qiskit_circuit.ccz(0, 1, 2)
+    qiskit_circuit.ecr(1, 2)
+    qiskit_circuit.cs(2, 0)
+    cirq_circuit = from_qiskit(qiskit_circuit)
+    qiskit_contig = convert_to_contiguous(qiskit_circuit)
+    assert circuits_allclose(qiskit_contig, cirq_circuit, strict_gphase=False)
 
-ccz = """
-OPENQASM 2.0;
-include "qelib1.inc";
-gate rzx(param0) q0,q1 { h q1; cx q0,q1; rz(-pi/4) q1; cx q0,q1; h q1; }
-gate rzx(param0) q0,q1 { h q1; cx q0,q1; rz(pi/4) q1; cx q0,q1; h q1; }
-gate ecr q0,q1 { rzx(pi/4) q0,q1; x q0; rzx(-pi/4) q0,q1; }
-gate rzx_6320157840(param0) q0,q1 { h q1; cx q0,q1; rz(2.3200048200765524) q1; cx q0,q1; h q1; }
-qreg q[3];
-ecr q[2],q[0];
-ccz q[0],q[2],q[1];
-rzx_6320157840(2.3200048200765524) q[2],q[1];
-"""
 
-rccx = """
-OPENQASM 2.0;
-include "qelib1.inc";
-qreg q[3];
-rccx q[1],q[2],q[0];
-"""
-
-csx = """
-OPENQASM 2.0;
-include "qelib1.inc";
-qreg q[3];
-csx q[0],q[2];
-"""
+def test_100_random_qiskit():
+    for _ in range(100):
+        qiskit_circuit = random_circuit(4, 1)
+        cirq_circuit = from_qiskit(qiskit_circuit)
+        assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=False)

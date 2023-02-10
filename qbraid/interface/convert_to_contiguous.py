@@ -54,13 +54,14 @@ def convert_to_contiguous(program: "qbraid.QPROGRAM", **kwargs) -> "qbraid.QPROG
 
     # pylint: disable=import-outside-toplevel
 
-    if "qiskit" in package:
-        return program
-
     if "pyquil" in package:
         return program
 
-    if "cirq" in package:
+    if "qiskit" in package:
+        from qbraid.interface.qbraid_qiskit.tools import _convert_to_contiguous_qiskit
+
+        conversion_function = _convert_to_contiguous_qiskit
+    elif "cirq" in package:
         from qbraid.interface.qbraid_cirq.tools import _convert_to_contiguous_cirq
 
         conversion_function = _convert_to_contiguous_cirq

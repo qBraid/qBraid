@@ -19,9 +19,19 @@ Unit tests for the qbraid convert_to_contiguous interfacing
 import cirq
 import numpy as np
 from braket.circuits import Circuit as BraketCircuit
+from qiskit import QuantumCircuit
 
 from qbraid.interface.calculate_unitary import circuits_allclose
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
+
+
+def test_remove_idle_qubits_qiskit():
+    """Test convert_to_contigious on qiskit circuit"""
+    circuit = QuantumCircuit(3)
+    circuit.h(0)
+    circuit.cx(0, 1)
+    contig_circuit = convert_to_contiguous(circuit)
+    assert contig_circuit.num_qubits == 2
 
 
 def test_convert_braket_bell():

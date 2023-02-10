@@ -2,10 +2,20 @@
 Module for preprocessing qasm string to before it is passed to parser.
 
 """
+from typing import Optional
+
 from qbraid.transpiler.exceptions import QasmError
 
+GATE_DEFS = {
+    "rccx": (
+        ["q0", "q1", "q2"],
+        "u2(0,pi) q2; u1(pi/4) q2; cx q1,q2; u1(-pi/4) q2; "
+        "cx q0,q2; u1(pi/4) q2; cx q1,q2; u1(-pi/4) q2; u2(0,pi) q2;",
+    )
+}
 
-def _get_param(instr: str):
+
+def _get_param(instr: str) -> Optional[str]:
     try:
         return instr[instr.index("(") + 1 : instr.index(")")]
     except ValueError:
@@ -32,6 +42,24 @@ def _decompose_cu_instr(instr: str) -> str:
     return instr_out
 
 
+def _decompose_rxx_instr(instr: str) -> str:
+    try:
+        rxx_gate, qs = instr.split(" ")
+        q0, q1 = qs.strip(";").split(",")
+        theta = _get_param(rxx_gate)
+    except (AttributeError, ValueError) as err:
+        raise QasmError from err
+    instr_out = "// RXXGate\n"
+    instr_out = f"h {q0};\n"
+    instr_out += f"h {q1};\n"
+    instr_out += f"cx {q0},{q1};\n"
+    instr_out += f"rz({theta}) {q1};\n"
+    instr_out += f"cx {q0},{q1};\n"
+    instr_out += f"h {q1};\n"
+    instr_out += f"h {q0};\n"
+    return instr_out
+
+
 def _replace_gate_defs(qasm_line: str, gate_defs: dict) -> str:
     for g in gate_defs:
         instr_lst = qasm_line.split(";")
@@ -39,7 +67,7 @@ def _replace_gate_defs(qasm_line: str, gate_defs: dict) -> str:
         for instr in instr_lst:
             line_args = instr.split(" ")
             qasm_gate = line_args[0]
-            if g != qasm_gate:
+            if g != qasm_gate and qasm_gate not in gate_defs:
                 param = _get_param(qasm_gate)
                 if param is not None:
                     qasm_gate = qasm_gate.replace(param, "param0")
@@ -55,18 +83,22 @@ def _replace_gate_defs(qasm_line: str, gate_defs: dict) -> str:
                 instr_lst_out.append(instr)
         instr_lst_out_strip = [x.strip() for x in instr_lst_out]
         qasm_line = ";".join(instr_lst_out_strip) + ";"
+        qasm_line = qasm_line.replace(";;", ";")
     return qasm_line
 
 
 def convert_to_supported_qasm(qasm_str: str) -> str:
-    """Returns a copy of the input QASM compatible with the :class:`~qbraid.transpiler.cirq_qasm.qasm_parser.QasmParser`.
-    Conversion includes deconstruction of custom defined gates, and decomposition of unsupported gates/operations."""
-    gate_defs = {}
+    """Returns a copy of the input QASM compatible with the
+    :class:`~qbraid.transpiler.cirq_qasm.qasm_parser.QasmParser`.
+    Conversion includes deconstruction of custom defined gates, and
+    decomposition of unsupported gates/operations."""
+    gate_defs = GATE_DEFS
     qasm_lst_out = []
     qasm_lst = qasm_str.split("\n")
 
     for _, qasm_line in enumerate(qasm_lst):
         line_str = qasm_line
+        len_line = len(line_str)
         line_args = line_str.split(" ")
         # add custom gates to gate_defs dict
         if line_args[0] == "gate":
@@ -81,8 +113,11 @@ def convert_to_supported_qasm(qasm_str: str) -> str:
                 gate_defs[match_gate] = (qs, instr)
             line_str_out = "// " + line_str
         # decompose cu gate into supported gates
-        elif line_str[0:3] == "cu(":
+        elif len_line > 3 and line_str[0:3] == "cu(":
             line_str_out = _decompose_cu_instr(line_str)
+        # decompose rxx gate into supported gates
+        elif len_line > 4 and line_str[0:4] == "rxx(":
+            line_str_out = _decompose_rxx_instr(line_str)
         # swap out instructions for gates found in gate_defs
         elif line_args[0] in gate_defs:
             qs, instr = gate_defs[line_args[0]]
