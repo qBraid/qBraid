@@ -41,7 +41,7 @@ from qbraid.api.session import QbraidSession
 # are set and used for convenience for local development and testing.
 aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
-ibmq_token = os.getenv("IBMQ_TOKEN")
+ibmq_token = os.getenv("QISKIT_IBM_TOKEN")
 qbraid_token = os.getenv("REFRESH")
 
 # This is the only environment variable that actually exists in qBraid Lab
