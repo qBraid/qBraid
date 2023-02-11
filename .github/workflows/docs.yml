@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10']
+        python-version: ['3.9']
 
     steps:
     - uses: actions/checkout@v1
@@ -28,6 +28,6 @@ jobs:
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        IBMQ_TOKEN: ${{ secrets.IBMQ_TOKEN }}
+        QISKIT_IBM_TOKEN: ${{ secrets.QISKIT_IBM_TOKEN }}
         JUPYTERHUB_USER: ${{ secrets.JUPYTERHUB_USER }}
         REFRESH: ${{ secrets.REFRESH }}
