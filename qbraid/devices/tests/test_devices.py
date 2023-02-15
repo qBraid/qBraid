@@ -290,3 +290,9 @@ def test_result_wrapper_measurements(device_id):
     measurements = qbraid_result.measurements()
     assert isinstance(counts, dict)
     assert measurements.shape == (10, 3)
+
+
+def test_aws_device_available():
+    """Test BraketDeviceWrapper avaliable output identical"""
+    device = device_wrapper("aws_dm_sim")
+    assert device.is_available[0] == device._get_device().is_available
