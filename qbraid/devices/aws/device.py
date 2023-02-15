@@ -100,7 +100,9 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
     @property
     def properties(self) -> DeviceCapabilities:
         """DeviceCapabilities: Return the device properties
+
         Please see `braket.device_schema` in amazon-braket-schemas-python_
+
         .. _amazon-braket-schemas-python: https://github.com/aws/amazon-braket-schemas-python"""
         return BraketSchemaBase.parse_raw_schema(self._properties)
 
@@ -108,8 +110,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
     def is_available(self) -> Union[str, bool]:
         """Returns true if the device is currently available, and the available time.
         Returns:
-            str: Return device available time.
-            bool: Return if the device is currently available.
+            Union[str, bool]: Return device currently available and available time.
         """
         if self.status != DeviceStatus.ONLINE:
             return False
