@@ -18,7 +18,7 @@ Module defining BraketDeviceWrapper Class
 """
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Tuple
 
 from braket.aws import AwsDevice
 from braket.aws.aws_session import AwsSession
@@ -93,7 +93,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         Returns:
             The status of this Device
         """
-        if self.vendor_dlo.status == "OFFLINE":
+        if self.vendor_dlo.status in ["OFFLINE", "RETIRED"]:
             return DeviceStatus.OFFLINE
         return DeviceStatus.ONLINE
 
@@ -107,13 +107,14 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         return BraketSchemaBase.parse_raw_schema(self._properties)
 
     @property
-    def is_available(self) -> Union[str, bool]:
+    def is_available(self) -> Tuple[bool, str]:
         """Returns true if the device is currently available, and the available time.
+
         Returns:
-            Union[str, bool]: Return device currently available and available time.
+            Tuple[bool, str]: Return device currently available and available time.
         """
         if self.status != DeviceStatus.ONLINE:
-            return False
+            return False, "00:00:00"
 
         is_available_result = False
         day = 0
@@ -167,10 +168,12 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
                 td = timedelta(
                     hours=start_time.hour, minutes=start_time.minute, seconds=start_time.second
                 ) - timedelta(hours=end_time.hour, minutes=end_time.minute, seconds=end_time.second)
-                hours = td.seconds // 3600
+                hours = 24 * day + td.seconds // 3600
                 minutes = (td.seconds // 60) % 60
                 seconds = td.seconds - hours * 3600 - minutes * 60
-                return f"{day}days {hours}hours {minutes}minutes {seconds}seconds"
+                time_lst = [hours, minutes, seconds]
+                time_str_lst = [str(x) if x >= 10 else f"0{x}" for x in time_lst]
+                return ":".join(time_str_lst)
 
             if execution_window.executionDay in ordered_days:
                 day = (ordered_days.index(execution_window.executionDay) - weekday) % 6
@@ -181,13 +184,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
 
             is_available_result = is_available_result or (matched_day and matched_time)
 
-            avaliable = (
-                f"Available time remain:{available_time}"
-                if is_available_result
-                else f"Next available in:{available_time}"
-            )
-
-        return is_available_result, avaliable
+        return is_available_result, available_time
 
     def run(
         self, run_input: "braket.circuits.Circuit", *args, **kwargs

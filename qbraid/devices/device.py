@@ -23,7 +23,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Union  # pylint: disable=unused-import
 
 from qbraid import circuit_wrapper
-from qbraid.api.config_user import verify_config
+# from qbraid.api.config_user import verify_config
 
 from .exceptions import DeviceError
 
@@ -57,8 +57,8 @@ class DeviceLikeWrapper(ABC):
         self._obj_arg = self._info.pop("objArg")
         self._qubits = self._info["numberQubits"]
         self.requires_cred = self._info.pop("requiresCred")
-        if self.requires_cred:
-            verify_config(self.vendor)
+        # if self.requires_cred:
+        #     verify_config(self.vendor)
         self.vendor_dlo = self._get_device()
 
     def _compat_run_input(self, run_input: "qbraid.QPROGRAM") -> "qbraid.QPROGRAM":
