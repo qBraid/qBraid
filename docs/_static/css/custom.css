@@ -1,0 +1,64 @@
+/* custom themeing */
+.wy-body-for-nav {
+  --bg-color0: #fff;
+  --bg-color1: #fbfafc;
+
+  --layout-color0: rgb(231, 231, 231);
+  --layout-color1: rgb(152, 64, 210);
+
+  --active-gradient1: linear-gradient(
+    rgb(135, 0, 202) -41.11%,
+    rgba(216, 164, 250, 0.92) 197.13%
+  );
+
+  --shadow-1: rgb(0 0 0 / 7%);
+
+  --font-color0: #000;
+  --font-color1: #3d3d3d;
+  --font-color2: #8e8e8e;
+  --font-color3: #cacaca;
+  --font-color4: #ffffff;
+}
+
+.wy-side-nav-search {
+  background-color: var(--bg-color0);
+  color: var(--font-color0);
+}
+
+.wy-nav-side {
+  background-color: var(--bg-color0);
+  box-shadow: var(--shadow-1) 0px 10px 55px;
+}
+
+/* Left Navbar */
+.wy-side-nav-search > a {
+  color: var(--font-color0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wy-side-nav-search > a::before {
+  content: "";
+  background-image: url(../logo.png);
+  background-size: contain;
+  background-repeat: no-repeat;
+  width: 28px;
+  height: 28px;
+}
+
+/* left nav bar list item */
+.wy-menu-vertical a {
+  color: var(--font-color1);
+}
+
+.wy-menu-vertical a:hover {
+  background-image: var(--active-gradient1);
+  color: var(--font-color4);
+}
+
+.wy-nav-content {
+  background-color: var(--bg-color1);
+  max-width: 100dvw;
+  max-width: 100vw;
+}
