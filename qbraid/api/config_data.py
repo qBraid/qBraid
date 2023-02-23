@@ -48,7 +48,7 @@ AWS_CONFIGS = [
 
 IBMQ_CONFIGS = [
     # (config_name, prompt_text, default_value, is_secret, section, filepath)
-    ("token", "IBMQ API Token", None, True, "ibmq", qiskitrc_path),
+    ("token", "Qiskit IBM Token", os.getenv("QISKIT_IBM_TOKEN"), True, "ibmq", qiskitrc_path),
     ("url", "", ibmq_account_url, False, "ibmq", qiskitrc_path),
     ("verify", "", "True", False, "ibmq", qiskitrc_path),
     ("default_provider", "IBMQ hub/group/name", "ibm-q/open/main", False, "ibmq", qiskitrc_path),
