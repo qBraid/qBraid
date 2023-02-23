@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 from braket.circuits import Circuit as BKCircuit
 from braket.circuits import Instruction
-from braket.circuits import gates as braket_gates
+from braket.circuits import gates as braket_gates, noises as braket_noise_gate
 
 from qbraid.interface import circuits_allclose, to_unitary
 from qbraid.transpiler.cirq_braket.convert_from_braket import (
@@ -138,3 +138,43 @@ def test_unitary_braket_instruction():
     u_expected = to_unitary(circuit_expected)
     u_test = to_unitary(circuit_test)
     assert np.allclose(u_expected, u_test)
+
+def test_single_probability_noise_gate():
+    """Testing converting circuits containing one-probability noise gates"""
+    braket_circuit = BKCircuit()
+    pgates = [
+        braket_noise_gate.BitFlip,
+        braket_noise_gate.PhaseFlip,
+        braket_noise_gate.Depolarizing,
+        braket_noise_gate.AmplitudeDamping,
+        braket_noise_gate.PhaseDamping,
+        braket_noise_gate.PhaseDamping,
+    ]
+    probs = np.random.rand(len(pgates))  # pylint: disable=no-member
+    instructions = [Instruction(rot(p), target=[0]) for rot, p in zip(pgates, probs)]
+    for instr in instructions:
+        braket_circuit.add_instruction(instr)
+    cirq_circuit = from_braket(braket_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+
+def test_kraus_gates():
+    """Testing converting Kraus noise gates"""
+    K0 = np.sqrt(0.8) * np.eye(4)
+    K1 = np.sqrt(0.2) * np.kron(np.array([[0, 1], [1, 0]]), np.array([[0, 1], [1, 0]]))
+    braket_circuit = BKCircuit().kraus(targets=(0,1), matrices=[K0, K1])
+    cirq_circuit = from_braket(braket_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+
+def test_GeneralizedAmplitudeDampingChannel_gate():
+    """Testing converting Kraus noise gates"""
+    probs = np.random.rand(2)
+    braket_circuit = BKCircuit().generalized_amplitude_damping(target=0, gamma=probs[0], probability = probs[1])
+    cirq_circuit = from_braket(braket_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+
+def test_DepolarizingChannel_gate():
+    probs = np.random.rand(1)
+    braket_circuit = BKCircuit().two_qubit_depolarizing(target1 = 0, target2 = 1, probability=probs[0])
+    cirq_circuit = from_braket(braket_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+    
