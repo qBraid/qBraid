@@ -18,7 +18,7 @@ Module defining BraketDeviceWrapper Class
 """
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Tuple
 
 from braket.aws import AwsDevice
 from braket.aws.aws_session import AwsSession
@@ -77,6 +77,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         self._populate_properties(self._aws_session)
 
     def _populate_properties(self, session: AwsSession) -> None:
+        # pylint: disable=attribute-defined-outside-init
         metadata = session.get_device(self._arn)
         self._name = metadata.get("deviceName")
         self._status = metadata.get("deviceStatus")
@@ -93,7 +94,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         Returns:
             The status of this Device
         """
-        if self.vendor_dlo.status == "OFFLINE":
+        if self.vendor_dlo.status in ["OFFLINE", "RETIRED"]:
             return DeviceStatus.OFFLINE
         return DeviceStatus.ONLINE
 
@@ -107,19 +108,25 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         return BraketSchemaBase.parse_raw_schema(self._properties)
 
     @property
-    def is_available(self) -> Union[str, bool]:
+    def is_available(self) -> Tuple[bool, str]:
         """Returns true if the device is currently available, and the available time.
+
         Returns:
-            Union[str, bool]: Return device currently available and available time.
+            Tuple[bool, str]: Current device availability and hr/min/sec until next available.
         """
-        if self.status != DeviceStatus.ONLINE:
-            return False
 
         is_available_result = False
+        available_time = None
+
+        device = self.vendor_dlo
+
+        if device.status != "ONLINE":
+            return is_available_result, ""
+
         day = 0
 
         current_datetime_utc = datetime.utcnow()
-        for execution_window in self.properties.service.executionWindows:
+        for execution_window in device.properties.service.executionWindows:
             weekday = current_datetime_utc.weekday()
             current_time_utc = current_datetime_utc.time().replace(microsecond=0)
 
@@ -163,31 +170,48 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
                 )
             )
 
-            def time_subtract(start_time, end_time):
-                td = timedelta(
-                    hours=start_time.hour, minutes=start_time.minute, seconds=start_time.second
-                ) - timedelta(hours=end_time.hour, minutes=end_time.minute, seconds=end_time.second)
-                hours = td.seconds // 3600
-                minutes = (td.seconds // 60) % 60
-                seconds = td.seconds - hours * 3600 - minutes * 60
-                return f"{day}days {hours}hours {minutes}minutes {seconds}seconds"
-
             if execution_window.executionDay in ordered_days:
                 day = (ordered_days.index(execution_window.executionDay) - weekday) % 6
-            if matched_time:
-                available_time = time_subtract(execution_window.windowEndHour, current_time_utc)
+
+            start_time = execution_window.windowStartHour
+            end_time = current_time_utc
+
+            if day == 0:
+                day_factor = day
+            elif start_time.hour < end_time.hour:
+                day_factor = day - 1
+            elif start_time.hour == end_time.hour:
+                if start_time.minute < end_time.minute:
+                    day_factor = day - 1
+                elif start_time.minute == end_time.minute:
+                    if start_time.second <= end_time.second:
+                        day_factor = day - 1
             else:
-                available_time = time_subtract(execution_window.windowStartHour, current_time_utc)
+                day_factor = day
+
+            td = timedelta(
+                hours=start_time.hour,
+                minutes=start_time.minute,
+                seconds=start_time.second,
+            ) - timedelta(hours=end_time.hour, minutes=end_time.minute, seconds=end_time.second)
+            days_seconds = 86400 * day_factor
+            available_time_secs = td.seconds + days_seconds
+
+            if available_time is None or available_time_secs < available_time:
+                available_time = available_time_secs
 
             is_available_result = is_available_result or (matched_day and matched_time)
 
-            avaliable = (
-                f"Available time remain:{available_time}"
-                if is_available_result
-                else f"Next available in:{available_time}"
-            )
+        if available_time is None:
+            return is_available_result, ""
 
-        return is_available_result, avaliable
+        hours = available_time // 3600
+        minutes = (available_time // 60) % 60
+        seconds = available_time - hours * 3600 - minutes * 60
+        time_lst = [hours, minutes, seconds]
+        time_str_lst = [str(x) if x >= 10 else f"0{x}" for x in time_lst]
+        available_time_hms = ":".join(time_str_lst)
+        return is_available_result, available_time_hms
 
     def run(
         self, run_input: "braket.circuits.Circuit", *args, **kwargs
