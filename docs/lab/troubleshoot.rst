@@ -41,7 +41,7 @@ ModuleNotFoundError
 While running a notebook, if you get a ``ModuleNotFoundError`` after an import statement:
 
 1. Check to make sure you are using the correct notebook kernel for your environment,
-see `Switch notebook kernel <kernels.html#switch-notebook-kernel>`_.
+see `Switch notebook kernel <notebooks.html#switch-notebook-kernel>`_.
 
 2. If you are using the correct kernel, the package you are trying to import may not be installed
 in that environment. See `Install new package <environments.html#install-new-package>`_.
