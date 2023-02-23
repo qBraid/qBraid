@@ -295,4 +295,6 @@ def test_result_wrapper_measurements(device_id):
 def test_aws_device_available():
     """Test BraketDeviceWrapper avaliable output identical"""
     device = device_wrapper("aws_dm_sim")
-    assert device.is_available[0] == device._get_device().is_available
+    is_available_bool, is_available_time = device.is_available
+    assert is_available_bool == device._get_device().is_available
+    assert len(is_available_time.split(":")) == 3

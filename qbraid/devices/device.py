@@ -23,9 +23,11 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Union  # pylint: disable=unused-import
 
 from qbraid import circuit_wrapper
-# from qbraid.api.config_user import verify_config
 
 from .exceptions import DeviceError
+
+# from qbraid.api.config_user import verify_config
+
 
 if TYPE_CHECKING:
     import qbraid

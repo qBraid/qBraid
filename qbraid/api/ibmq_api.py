@@ -19,12 +19,13 @@ Module for top-level interfacing with the IBMQ API
 # from typing import Optional
 # from qiskit_ibm_provider import IBMProvider
 # from qiskit_ibm_provider.accounts import AccountNotFoundError
+# from .config_user import get_config, verify_config
 
 from qiskit import IBMQ
 from qiskit.providers.ibmq import AccountProvider, IBMQError, least_busy
 
 from .config_data import qiskitrc_path
-from .config_user import get_config, verify_config
+from .config_user import get_config
 from .exceptions import AuthError
 
 # def ibmq_get_provider(token: Optional[str] = None) -> IBMProvider:
@@ -43,7 +44,7 @@ from .exceptions import AuthError
 
 def ibmq_get_provider() -> AccountProvider:
     """Get IBMQ AccountProvider"""
-    verify_config("IBM")
+    # verify_config("IBM")
     # token = get_config("token", "ibmq", filepath=qiskitrc_path)
     default = get_config("default_provider", "ibmq", filepath=qiskitrc_path)
     hub, group, project = default.split("/")
