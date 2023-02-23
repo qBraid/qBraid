@@ -98,7 +98,8 @@ Documentation
    lab/overview
    lab/account
    lab/environments
-   lab/kernels
+   lab/files
+   lab/notebooks
    lab/quantumjobs
    lab/integrations
    lab/system
