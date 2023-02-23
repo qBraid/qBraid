@@ -24,9 +24,14 @@ software tools for researchers and developers in quantum, as well as access to q
    - `Create environment <environments.html#create-environment>`_
    - `Install new package <environments.html#install-new-package>`_
 
-- `Kernels <kernels.html>`_
-   - `Add/remove kernels <kernels.html#add-remove-kernels>`_
-   - `Switch notebook kernel <kernels.html#switch-notebook-kernel>`_
+- `File Browser  <files.html>`_
+   - `Open files <files.html#open-files>`_
+
+- `Notebooks <notebooks.html>`_
+   - `Add/remove kernels <notebooks.html#add-remove-kernels>`_
+   - `Create notebook <notebooks.html#create-notebook>`_
+   - `Switch notebook kernel <notebooks.html#switch-notebook-kernel>`_
+   - `Share noteboook <notebooks.html#share-notebook>`_
 
 - `Quantum Jobs <quantumjobs.html>`_
    - `Credits <quantumjobs.html#credits>`_
