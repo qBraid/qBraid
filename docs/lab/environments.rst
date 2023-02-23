@@ -41,9 +41,9 @@ Click **Browse Environments** to return to the **My Environments** tab and view 
 
 4. When the installation is complete, the environment panel's action button will switch from
 **Installing...** to **Activate**. Clicking **Activate** creates a new ipykernel, see
-`Kernels <kernels.html>`_ for more.
+`Add/remove kernels <notebooks.html#add-remove-kernels>`_ for more.
 
-.. image:: ../_static/kernels/kernel_activate.png
+.. image:: ../_static/notebooks/kernel_activate.png
     :align: center
     :width: 800px
     :target: javascript:void(0);
