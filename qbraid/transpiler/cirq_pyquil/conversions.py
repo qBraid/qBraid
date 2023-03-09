@@ -24,6 +24,7 @@ from cirq_rigetti.quil_output import QuilOutput
 from pyquil import Program
 
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 
 def to_pyquil(circuit: Circuit, compat=True) -> Program:
@@ -48,8 +49,12 @@ def to_pyquil(circuit: Circuit, compat=True) -> Program:
         qubit_order = QubitOrder.DEFAULT
     qubits = QubitOrder.as_qubit_order(qubit_order).order_for(input_qubits)
     operations = circuit.all_operations()
-    quil_str = str(QuilOutput(operations, qubits))
-    return Program(quil_str)
+    try:
+        quil_str = str(QuilOutput(operations, qubits))
+        return Program(quil_str)
+    except ValueError as err:
+        raise CircuitConversionError(f"cirq's qasm doesn't support {err[32:]} yet.")
+    
 
 
 def from_pyquil(program: Program, compat=True) -> Circuit:
@@ -61,7 +66,10 @@ def from_pyquil(program: Program, compat=True) -> Circuit:
     Returns:
         Cirq circuit representation equivalent to the input pyQuil Program.
     """
-    circuit = circuit_from_quil(program.out())
-    if compat:
-        circuit = convert_to_contiguous(circuit, rev_qubits=True)
-    return circuit
+    try:
+        circuit = circuit_from_quil(program.out())
+        if compat:
+            circuit = convert_to_contiguous(circuit, rev_qubits=True)
+        return circuit
+    except:
+        raise CircuitConversionError(f"Qbraid doens't support pyquil noise gate yet.")

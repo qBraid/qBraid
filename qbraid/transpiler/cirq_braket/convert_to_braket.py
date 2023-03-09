@@ -195,6 +195,16 @@ def _to_one_qubit_braket_instruction(
     if isinstance(gate, cirq_ops.AmplitudeDampingChannel):
         return [BKInstruction(braket_noise_gate.AmplitudeDamping(opr.gate._gamma), target)]
 
+    if isinstance(gate, cirq_ops.GeneralizedAmplitudeDampingChannel):
+        return [
+            BKInstruction(
+                braket_noise_gate.GeneralizedAmplitudeDamping(
+                    gamma=opr.gate._gamma, probability=opr.gate._p
+                ),
+                target,
+            )
+        ]
+
     if isinstance(gate, cirq_ops.PhaseDampingChannel):
         return [BKInstruction(braket_noise_gate.PhaseDamping(opr.gate._gamma), target)]
 

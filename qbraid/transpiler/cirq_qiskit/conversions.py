@@ -24,6 +24,7 @@ from qbraid.interface import convert_to_contiguous
 from qbraid.interface.qbraid_cirq.tools import _convert_to_line_qubits
 from qbraid.transpiler.cirq_qasm import from_qasm, to_qasm
 from qbraid.transpiler.custom_gates import _map_zpow_and_unroll
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 
 def to_qiskit(circuit: cirq.Circuit) -> qiskit.QuantumCircuit:
@@ -37,9 +38,12 @@ def to_qiskit(circuit: cirq.Circuit) -> qiskit.QuantumCircuit:
     Returns:
         Qiskit.QuantumCircuit object equivalent to the input Cirq circuit.
     """
-    contig_circuit = convert_to_contiguous(circuit, rev_qubits=True)
-    compat_circuit = _map_zpow_and_unroll(contig_circuit)
-    return qiskit.QuantumCircuit.from_qasm_str(to_qasm(compat_circuit))
+    try:
+        contig_circuit = convert_to_contiguous(circuit, rev_qubits=True)
+        compat_circuit = _map_zpow_and_unroll(contig_circuit)
+        return qiskit.QuantumCircuit.from_qasm_str(to_qasm(compat_circuit))
+    except ValueError:
+        raise CircuitConversionError(f"cirq's qasm doesn't support qasm3 yet.")
 
 
 def from_qiskit(circuit: qiskit.QuantumCircuit) -> cirq.Circuit:
@@ -51,6 +55,9 @@ def from_qiskit(circuit: qiskit.QuantumCircuit) -> cirq.Circuit:
     Returns:
         Cirq circuit representation equivalent to the input Qiskit circuit.
     """
-    qasm_str = circuit.qasm()
-    cirq_circuit = from_qasm(qasm_str)
-    return _convert_to_line_qubits(cirq_circuit, rev_qubits=True)
+    try:
+        qasm_str = circuit.qasm()
+        cirq_circuit = from_qasm(qasm_str)
+        return _convert_to_line_qubits(cirq_circuit, rev_qubits=True)
+    except:
+        raise CircuitConversionError(f"cirq's qasm doesn't support qasm3 yet.")

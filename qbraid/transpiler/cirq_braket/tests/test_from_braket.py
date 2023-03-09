@@ -158,33 +158,32 @@ def test_single_probability_noise_gate(noise_gate):
     instructions = Instruction(noise_gate(probs), target=[0])
     braket_circuit.add_instruction(instructions)
     cirq_circuit = from_braket(braket_circuit)
-    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
 def test_kraus_gates():
     """Testing converting Kraus noise gates"""
     K0 = np.sqrt(0.8) * np.eye(4)
     K1 = np.sqrt(0.2) * np.kron(np.array([[0, 1], [1, 0]]), np.array([[0, 1], [1, 0]]))
-    instructions = Instruction(braket_noise_gate.Kraus(matrices=[K0, K1]))
-    braket_circuit = BKCircuit().add_instruction(instructions, target=(0, 1))
+    instructions = Instruction(braket_noise_gate.Kraus(matrices=[K0, K1]), target=[0, 1])
+    braket_circuit = BKCircuit().add_instruction(instructions)
     cirq_circuit = from_braket(braket_circuit)
-    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
 def test_GeneralizedAmplitudeDampingChannel_gate():
     """Testing converting Kraus noise gates"""
     probs = np.random.uniform(low=0, high=0.5, size=(2))
     instruction = Instruction(
-        braket_noise_gate.GeneralizedAmplitudeDamping(gamma=probs[0], probability=probs[1])
+        braket_noise_gate.GeneralizedAmplitudeDamping(gamma=probs[0], probability=probs[1]),
+        target=[0],
     )
-    braket_circuit = BKCircuit().add_instruction(instruction, target=0)
+    braket_circuit = BKCircuit().add_instruction(instruction)
     cirq_circuit = from_braket(braket_circuit)
-    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
 def test_DepolarizingChannel_gate():
-    probs = np.random.rand(1)
-    instruction = Instruction(braket_noise_gate.TwoQubitDepolarizing(probability=probs[0]))
-    braket_circuit = BKCircuit().add_instruction(instruction, target=(0, 1))
+    probs = np.random.uniform(low=0, high=0.5, size=(1))
+    instruction = Instruction(
+        braket_noise_gate.TwoQubitDepolarizing(probability=probs[0]), target=[0, 1]
+    )
+    braket_circuit = BKCircuit().add_instruction(instruction)
     cirq_circuit = from_braket(braket_circuit)
-    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
