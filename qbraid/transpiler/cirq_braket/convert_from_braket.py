@@ -90,39 +90,37 @@ def _from_braket_instruction(
 
     Raises:
         ValueError: If the instruction cannot be converted to Cirq.
+        CircuitConversionError: If error raise during conversion.
     """
     nqubits = len(instr.target)
     BK_qubits = [int(q) for q in instr.target]
     qubits = [qubit_mapping[x] for x in BK_qubits]
 
-    if not instr.operator.__module__ in (
-        braket_gates.__name__,
-        braket_noise_gate.__name__,
-    ) or isinstance(instr.operator, braket_gates.PulseGate):
+    try:
+        if nqubits == 1:
+            return _from_one_qubit_braket_instruction(instr, qubits)
+
+        if nqubits == 2:
+            return _from_two_qubit_braket_instruction(instr, qubits)
+
+        if nqubits == 3:
+            if isinstance(instr.operator, braket_gates.CCNot):
+                return [cirq_ops.TOFFOLI.on(*qubits)]
+            if isinstance(instr.operator, braket_gates.CSwap):
+                return [cirq_ops.FREDKIN.on(*qubits)]
+            try:
+                matrix = _gate_to_matrix_braket(instr.operator)
+                return [cirq_ops.MatrixGate(matrix).on(*qubits)]
+            except (ValueError, TypeError) as err:
+                raise ValueError(f"Unable to convert the instruction {instr} to Cirq.") from err
+
+        # Unknown instructions.
+        raise ValueError(
+            f"Unable to convert to Cirq due to unrecognized \
+            instruction: {instr}."
+        )
+    except:
         raise CircuitConversionError(f"Qbraid doesn't support {instr.operator}")
-
-    if nqubits == 1:
-        return _from_one_qubit_braket_instruction(instr, qubits)
-
-    if nqubits == 2:
-        return _from_two_qubit_braket_instruction(instr, qubits)
-
-    if nqubits == 3:
-        if isinstance(instr.operator, braket_gates.CCNot):
-            return [cirq_ops.TOFFOLI.on(*qubits)]
-        if isinstance(instr.operator, braket_gates.CSwap):
-            return [cirq_ops.FREDKIN.on(*qubits)]
-        try:
-            matrix = _gate_to_matrix_braket(instr.operator)
-            return [cirq_ops.MatrixGate(matrix).on(*qubits)]
-        except (ValueError, TypeError) as err:
-            raise ValueError(f"Unable to convert the instruction {instr} to Cirq.") from err
-
-    # Unknown instructions.
-    raise ValueError(
-        f"Unable to convert to Cirq due to unrecognized \
-        instruction: {instr}."
-    )
 
 
 def _from_one_qubit_braket_instruction(

@@ -29,6 +29,7 @@ from qbraid.transpiler.cirq_braket.convert_from_braket import (
     from_braket,
     unitary_braket_instruction,
 )
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 
 def test_from_braket_bell_circuit():
@@ -205,3 +206,23 @@ def test_DepolarizingChannel_gate():
     assert type(Gate) == cirq_ops.common_channels.DepolarizingChannel
     assert Gate.p == probs
     assert Gate.n_qubits == 2
+
+
+def test_raise_error_message():
+    with pytest.raises(CircuitConversionError):
+        from braket.pulse.pulse_sequence import PulseSequence
+        from braket.pulse import Frame, Port
+
+        pre_fram = Frame(
+            frame_id="predefined_frame_1",
+            frequency=2e9,
+            port=Port(port_id="device_port_x0", dt=1e-9, properties={}),
+            phase=0,
+            is_predefined=True,
+        )
+        pulse_seq = PulseSequence().set_frequency(pre_fram, 6e6)
+
+        test_case = BKCircuit().add_instruction(
+            Instruction(braket_gates.PulseGate(pulse_seq, 1), [0])
+        )
+        from_braket(test_case)

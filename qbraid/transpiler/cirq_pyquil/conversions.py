@@ -53,7 +53,7 @@ def to_pyquil(circuit: Circuit, compat=True) -> Program:
         quil_str = str(QuilOutput(operations, qubits))
         return Program(quil_str)
     except ValueError as err:
-        raise CircuitConversionError(f"cirq's qasm doesn't support {err[32:]} yet.")
+        raise CircuitConversionError(f"cirq's qasm doesn't support {err.args[0][32:]} yet.")
 
 
 def from_pyquil(program: Program, compat=True) -> Circuit:

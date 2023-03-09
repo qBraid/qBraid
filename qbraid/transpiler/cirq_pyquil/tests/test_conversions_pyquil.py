@@ -17,10 +17,15 @@ Unt tests for conversions to/from pyQuil circuits.
 
 """
 import numpy as np
+import pytest
 from pyquil import Program
-from pyquil.gates import CNOT, CZ, RZ, H, X, Y, Z
+from pyquil.gates import CNOT, CZ, RZ, H, X, Y, Z, RX
+from pyquil.noise import _get_program_gates, _decoherence_noise_model, apply_noise_model
+from cirq import LineQubit, Circuit
+from cirq import ops as cirq_ops
 
 from qbraid.transpiler.cirq_pyquil.conversions import from_pyquil, to_pyquil
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 
 def test_to_from_pyquil():
@@ -95,3 +100,19 @@ def test_to_pyquil_from_pyquil_no_zero_qubit():
     p += CZ(11, 12)
     p_test = to_pyquil(from_pyquil(p, compat=False), compat=False)
     assert p.out() == p_test.out()
+
+
+def test_raise_error_to_pyquil():
+    with pytest.raises(CircuitConversionError):
+        q0 = LineQubit(0)
+        circuit = Circuit(cirq_ops.bit_flip(p=0.2).on(q0), cirq_ops.measure(q0, key="result"))
+        to_pyquil(circuit)
+
+
+def test_raise_error_from_pyquil():
+    with pytest.raises(CircuitConversionError):
+        p = Program()
+        p += RX(-np.pi / 2, 0)
+        noise_model = _decoherence_noise_model(_get_program_gates(p))
+        p = apply_noise_model(p, noise_model)
+        from_pyquil(p, compat=False)

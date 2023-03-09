@@ -23,6 +23,7 @@ from qiskit.circuit.random import random_circuit
 
 from qbraid.interface import circuits_allclose, convert_to_contiguous
 from qbraid.transpiler.cirq_qiskit.conversions import from_qiskit
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 
 def test_bell_state_from_qiskit():
@@ -110,3 +111,10 @@ def test_100_random_qiskit():
         qiskit_circuit = random_circuit(4, 1)
         cirq_circuit = from_qiskit(qiskit_circuit)
         assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=False)
+
+
+def test_error_output():
+    with pytest.raises(CircuitConversionError):
+        qiskit_circuit = QuantumCircuit(1)
+        qiskit_circuit.delay(300, 0)
+        cirq_circuit = from_qiskit(qiskit_circuit)
