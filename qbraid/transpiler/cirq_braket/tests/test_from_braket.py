@@ -31,7 +31,6 @@ from qbraid.transpiler.cirq_braket.convert_from_braket import (
 )
 
 
-
 def test_from_braket_bell_circuit():
     """Test converting bell circuit"""
     braket_circuit = BKCircuit().h(0).cnot(0, 1)  # pylint: disable=no-member
