@@ -189,14 +189,11 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
             else:
                 day_factor = day
 
-            td = (
-                timedelta(
-                    hours=start_time.hour,
-                    minutes=start_time.minute,
-                    seconds=start_time.second,
-                )
-                - timedelta(hours=end_time.hour, minutes=end_time.minute, seconds=end_time.second)
-            )
+            td = timedelta(
+                hours=start_time.hour,
+                minutes=start_time.minute,
+                seconds=start_time.second,
+            ) - timedelta(hours=end_time.hour, minutes=end_time.minute, seconds=end_time.second)
             days_seconds = 86400 * day_factor
             available_time_secs = td.seconds + days_seconds
 
