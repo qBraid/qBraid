@@ -95,10 +95,14 @@ def _from_braket_instruction(
     BK_qubits = [int(q) for q in instr.target]
     qubits = [qubit_mapping[x] for x in BK_qubits]
 
-    if not instr.operator.__module__ in (
-        braket_gates.__name__,
-        braket_noise_gate.__name__,
-    ) or isinstance(instr.operator, braket_gates.PulseGate):
+    if (
+        not instr.operator.__module__
+        in (
+            braket_gates.__name__,
+            braket_noise_gate.__name__,
+        )
+        or isinstance(instr.operator, braket_gates.PulseGate)
+    ):
         raise CircuitConversionError(f"Qbraid doesn't support {instr.operator}")
 
     if nqubits == 1:

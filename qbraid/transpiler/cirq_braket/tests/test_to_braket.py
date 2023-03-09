@@ -198,6 +198,7 @@ def test_50_random_circuits(num_qubits):
             assert False
     assert True
 
+
 @pytest.mark.parametrize(
     "common_gate",
     [
