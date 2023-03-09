@@ -113,7 +113,7 @@ def test_100_random_qiskit():
         assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=False)
 
 
-def test_error_output():
+def test_raise_error():
     with pytest.raises(CircuitConversionError):
         qiskit_circuit = QuantumCircuit(1)
         qiskit_circuit.delay(300, 0)

@@ -208,7 +208,7 @@ def test_DepolarizingChannel_gate():
     assert Gate.n_qubits == 2
 
 
-def test_raise_error_message():
+def test_raise_error():
     with pytest.raises(CircuitConversionError):
         from braket.pulse.pulse_sequence import PulseSequence
         from braket.pulse import Frame, Port
