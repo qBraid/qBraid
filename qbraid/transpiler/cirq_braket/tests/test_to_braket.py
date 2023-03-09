@@ -206,22 +206,34 @@ def test_50_random_circuits(num_qubits):
         (ops.BitFlipChannel, braket_noise_gate.BitFlip),
         (ops.PhaseFlipChannel, braket_noise_gate.PhaseFlip),
         (ops.DepolarizingChannel, braket_noise_gate.Depolarizing),
+    ],
+)
+def test_to_braket_single_probability_noise_gate(noise_gate, target_gate):
+    """Test transpile single arg noise braket"""
+    probs = np.random.uniform(low=0, high=0.5)
+    cirq_circuit = Circuit(noise_gate(probs).on(*LineQubit.range(1)))
+    braket_circuit = to_braket(cirq_circuit)
+    Gate = braket_circuit.instructions[0].operator
+    assert type(Gate) == target_gate
+    assert Gate.qubit_count == 1
+    assert Gate.probability == probs
+
+@pytest.mark.parametrize(
+    "noise_gate, target_gate",
+    [
         (ops.AmplitudeDampingChannel, braket_noise_gate.AmplitudeDamping),
         (ops.PhaseDampingChannel, braket_noise_gate.PhaseDamping),
     ],
 )
-def test_to_braket_single_noise_gate(noise_gate, target_gate):
+def test_to_braket_single_gamma_noise_gate(noise_gate, target_gate):
     """Test transpile single arg noise braket"""
     probs = np.random.uniform(low=0, high=0.5)
-    cirq_circuit = Circuit(ops.PhaseDampingChannel(probs).on(*LineQubit.range(1)))
+    cirq_circuit = Circuit(noise_gate(probs).on(*LineQubit.range(1)))
     braket_circuit = to_braket(cirq_circuit)
     Gate = braket_circuit.instructions[0].operator
-    assert type(Gate) == braket_noise_gate.PhaseDamping
+    assert type(Gate) == target_gate
     assert Gate.qubit_count == 1
-    try:
-        assert Gate.probability == probs
-    except:
-        assert Gate.gamma == probs
+    assert Gate.gamma == probs
 
 
 def test_to_braket_GeneralizedAmplitudeDampingChannel():

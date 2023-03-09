@@ -149,8 +149,6 @@ def test_unitary_braket_instruction():
         (braket_noise_gate.BitFlip, cirq_ops.BitFlipChannel),
         (braket_noise_gate.PhaseFlip, cirq_ops.PhaseFlipChannel),
         (braket_noise_gate.Depolarizing, cirq_ops.DepolarizingChannel),
-        (braket_noise_gate.AmplitudeDamping, cirq_ops.AmplitudeDampingChannel),
-        (braket_noise_gate.PhaseDamping, cirq_ops.PhaseDampingChannel),
     ],
 )
 def test_single_probability_noise_gate(noise_gate, target_gate):
@@ -162,11 +160,25 @@ def test_single_probability_noise_gate(noise_gate, target_gate):
     cirq_circuit = from_braket(braket_circuit)
     Gate = list(cirq_circuit.all_operations())[0].gate
     assert type(Gate) == target_gate
-    try:
-        assert Gate.p == probs
-    except:
-        assert Gate.gamma == probs
-
+    assert Gate.p == probs
+        
+@pytest.mark.parametrize(
+    "noise_gate, target_gate",
+    [
+        (braket_noise_gate.AmplitudeDamping, cirq_ops.AmplitudeDampingChannel),
+        (braket_noise_gate.PhaseDamping, cirq_ops.PhaseDampingChannel),
+    ],
+)
+def test_single_gamma_noise_gate(noise_gate, target_gate):
+    """Testing converting circuits containing one-probability noise gates"""
+    braket_circuit = BKCircuit()
+    probs = np.random.uniform(low=0, high=0.5)  # pylint: disable=no-member
+    instructions = Instruction(noise_gate(probs), target=[0])
+    braket_circuit.add_instruction(instructions)
+    cirq_circuit = from_braket(braket_circuit)
+    Gate = list(cirq_circuit.all_operations())[0].gate
+    assert type(Gate) == target_gate
+    assert Gate.gamma == probs
 
 def test_kraus_gates():
     """Testing converting Kraus noise gates"""
