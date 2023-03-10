@@ -271,9 +271,7 @@ def _to_two_qubit_braket_instruction(
         sub_gate = sub_gate_instr[0].operator
         return [BKInstruction(BKControl(sub_gate, [0, 1]), [q1, q2])]
     if isinstance(gate, cirq_ops.DepolarizingChannel):
-        return BKInstruction(
-            braket_noise_gate.TwoQubitDepolarizing(opr.gate.p, n_qubits=2), [q1, q2]
-        )
+        return BKInstruction(braket_noise_gate.TwoQubitDepolarizing(opr.gate.p), [q1, q2])
     if isinstance(gate, cirq_ops.KrausChannel):
         return BKInstruction(braket_noise_gate.Kraus(matrices=opr.gate._kraus_ops), [q1, q2])
 

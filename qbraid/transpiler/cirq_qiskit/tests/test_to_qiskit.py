@@ -16,20 +16,21 @@
 Unit tests for conversions between Cirq circuits and Qiskit circuits.
 
 """
-import cirq
 import numpy as np
 import pytest
+from cirq import LineQubit, Circuit, ops, testing
 
 from qbraid.interface import circuits_allclose
 from qbraid.transpiler.cirq_qiskit.conversions import to_qiskit
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 
 def test_bell_state_to_qiskit():
-    """Tests cirq.Circuit --> qiskit.QuantumCircuit --> cirq.Circuit
+    """Tests Circuit --> qiskit.QuantumCircuit --> Circuit
     with a Bell state circuit.
     """
-    qreg = cirq.LineQubit.range(2)
-    cirq_circuit = cirq.Circuit([cirq.ops.H.on(qreg[0]), cirq.ops.CNOT.on(qreg[0], qreg[1])])
+    qreg = LineQubit.range(2)
+    cirq_circuit = Circuit([ops.H.on(qreg[0]), ops.CNOT.on(qreg[0], qreg[1])])
     qiskit_circuit = to_qiskit(cirq_circuit)
     print()
     print(cirq_circuit)
@@ -42,7 +43,7 @@ def test_bell_state_to_qiskit():
 @pytest.mark.parametrize("num_qubits", [1, 2, 3, 4, 5])
 def test_random_circuit_to_qiskit(num_qubits):
     for i in range(10):
-        cirq_circuit = cirq.testing.random_circuit(
+        cirq_circuit = testing.random_circuit(
             qubits=num_qubits,
             n_moments=np.random.randint(1, 6),
             op_density=1,
@@ -55,3 +56,10 @@ def test_random_circuit_to_qiskit(num_qubits):
             assert False
         else:
             assert True
+
+
+def test_raise_error():
+    with pytest.raises(CircuitConversionError):
+        probs = np.random.uniform(low=0, high=0.5)
+        cirq_circuit = Circuit(ops.PhaseDampingChannel(probs).on(*LineQubit.range(1)))
+        to_qiskit(cirq_circuit)

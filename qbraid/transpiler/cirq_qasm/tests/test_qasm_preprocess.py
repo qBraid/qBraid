@@ -42,7 +42,8 @@ rxx(5.603791034636421) q[2],q[0];
 
 qasm_lst = [qasm_0]
 
-@pytest.mark.parametrize('qasm_str', qasm_lst)
+
+@pytest.mark.parametrize("qasm_str", qasm_lst)
 def test_preprocess_qasm(qasm_str):
     qiskit_circuit = QuantumCircuit().from_qasm_str(qasm_str)
     supported_qasm = convert_to_supported_qasm(qasm_str)
