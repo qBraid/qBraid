@@ -18,7 +18,7 @@ Unit tests for conversions between Cirq circuits and Qiskit circuits.
 """
 import numpy as np
 import pytest
-from cirq import LineQubit, Circuit, ops, testing
+from cirq import Circuit, LineQubit, ops, testing
 
 from qbraid.interface import circuits_allclose
 from qbraid.transpiler.cirq_qiskit.conversions import to_qiskit
