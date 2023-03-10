@@ -22,6 +22,7 @@ import numpy as np
 from braket.circuits import Circuit as BKCircuit
 from braket.circuits import Instruction as BKInstruction
 from braket.circuits import gates as braket_gates
+from braket.circuits import noises as braket_noise_gate
 from cirq import Circuit, LineQubit
 from cirq import ops as cirq_ops
 from cirq import protocols
@@ -89,33 +90,37 @@ def _from_braket_instruction(
 
     Raises:
         ValueError: If the instruction cannot be converted to Cirq.
+        CircuitConversionError: If error raise during conversion.
     """
     nqubits = len(instr.target)
     BK_qubits = [int(q) for q in instr.target]
     qubits = [qubit_mapping[x] for x in BK_qubits]
 
-    if nqubits == 1:
-        return _from_one_qubit_braket_instruction(instr, qubits)
+    try:
+        if nqubits == 1:
+            return _from_one_qubit_braket_instruction(instr, qubits)
 
-    if nqubits == 2:
-        return _from_two_qubit_braket_instruction(instr, qubits)
+        if nqubits == 2:
+            return _from_two_qubit_braket_instruction(instr, qubits)
 
-    if nqubits == 3:
-        if isinstance(instr.operator, braket_gates.CCNot):
-            return [cirq_ops.TOFFOLI.on(*qubits)]
-        if isinstance(instr.operator, braket_gates.CSwap):
-            return [cirq_ops.FREDKIN.on(*qubits)]
-        try:
-            matrix = _gate_to_matrix_braket(instr.operator)
-            return [cirq_ops.MatrixGate(matrix).on(*qubits)]
-        except (ValueError, TypeError) as err:
-            raise ValueError(f"Unable to convert the instruction {instr} to Cirq.") from err
+        if nqubits == 3:
+            if isinstance(instr.operator, braket_gates.CCNot):
+                return [cirq_ops.TOFFOLI.on(*qubits)]
+            if isinstance(instr.operator, braket_gates.CSwap):
+                return [cirq_ops.FREDKIN.on(*qubits)]
+            try:
+                matrix = _gate_to_matrix_braket(instr.operator)
+                return [cirq_ops.MatrixGate(matrix).on(*qubits)]
+            except (ValueError, TypeError) as err:
+                raise ValueError(f"Unable to convert the instruction {instr} to Cirq.") from err
 
-    # Unknown instructions.
-    raise ValueError(
-        f"Unable to convert to Cirq due to unrecognized \
-        instruction: {instr}."
-    )
+        # Unknown instructions.
+        raise ValueError(
+            f"Unable to convert to Cirq due to unrecognized \
+            instruction: {instr}."
+        )
+    except:
+        raise CircuitConversionError(f"Qbraid doesn't support {instr.operator}")
 
 
 def _from_one_qubit_braket_instruction(
@@ -165,6 +170,22 @@ def _from_one_qubit_braket_instruction(
         return [cirq_ops.rz(gate.angle).on(*qubits)]
     if isinstance(gate, braket_gates.PhaseShift):
         return [cirq_ops.Z.on(*qubits) ** (gate.angle / np.pi)]
+
+    # One-qubit Noise gates.
+    if isinstance(gate, braket_noise_gate.BitFlip):
+        return [cirq_ops.BitFlipChannel(gate.probability).on(*qubits)]
+    if isinstance(gate, braket_noise_gate.PhaseFlip):
+        return [cirq_ops.PhaseFlipChannel(gate.probability).on(*qubits)]
+    if isinstance(gate, braket_noise_gate.Depolarizing):
+        return [cirq_ops.DepolarizingChannel(gate.probability).on(*qubits)]
+    if isinstance(gate, braket_noise_gate.AmplitudeDamping):
+        return [cirq_ops.AmplitudeDampingChannel(gate.gamma).on(*qubits)]
+    if isinstance(gate, braket_noise_gate.GeneralizedAmplitudeDamping):
+        return [
+            cirq_ops.GeneralizedAmplitudeDampingChannel(gate.probability, gate.gamma).on(*qubits)
+        ]
+    if isinstance(gate, braket_noise_gate.PhaseDamping):
+        return [cirq_ops.PhaseDampingChannel(gate.gamma).on(*qubits)]
 
     try:
         matrix = _gate_to_matrix_braket(gate)
@@ -240,6 +261,12 @@ def _from_two_qubit_braket_instruction(
         return [cirq_ops.ZZPowGate(exponent=gate.angle / np.pi, global_shift=-0.5).on(*qubits)]
     if isinstance(gate, braket_gates.XY):
         return [cirq_ops.ISwapPowGate(exponent=gate.angle / np.pi).on(*qubits)]
+
+    # Two-qubit noise gates.
+    if isinstance(gate, braket_noise_gate.Kraus):
+        return [cirq_ops.KrausChannel(gate._matrices).on(*qubits)]
+    if isinstance(gate, braket_noise_gate.TwoQubitDepolarizing):
+        return [cirq_ops.DepolarizingChannel(gate.probability, n_qubits=2).on(*qubits)]
 
     try:
         matrix = _gate_to_matrix_braket(gate)

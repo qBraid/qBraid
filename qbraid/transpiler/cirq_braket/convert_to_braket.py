@@ -22,6 +22,7 @@ import numpy as np
 from braket.circuits import Circuit as BKCircuit
 from braket.circuits import Instruction as BKInstruction
 from braket.circuits import gates as braket_gates
+from braket.circuits import noises as braket_noise_gate
 from cirq import Circuit
 from cirq import ops as cirq_ops
 from cirq import protocols
@@ -182,6 +183,31 @@ def _to_one_qubit_braket_instruction(
     if isinstance(gate, cirq_ops.IdentityGate):
         return [BKInstruction(braket_gates.I(), target)]
 
+    if isinstance(gate, cirq_ops.BitFlipChannel):
+        return [BKInstruction(braket_noise_gate.BitFlip(opr.gate._p), target)]
+
+    if isinstance(gate, cirq_ops.PhaseFlipChannel):
+        return [BKInstruction(braket_noise_gate.PhaseFlip(opr.gate._p), target)]
+
+    if isinstance(gate, cirq_ops.DepolarizingChannel):
+        return [BKInstruction(braket_noise_gate.Depolarizing(opr.gate._p), target)]
+
+    if isinstance(gate, cirq_ops.AmplitudeDampingChannel):
+        return [BKInstruction(braket_noise_gate.AmplitudeDamping(opr.gate._gamma), target)]
+
+    if isinstance(gate, cirq_ops.GeneralizedAmplitudeDampingChannel):
+        return [
+            BKInstruction(
+                braket_noise_gate.GeneralizedAmplitudeDamping(
+                    gamma=opr.gate._gamma, probability=opr.gate._p
+                ),
+                target,
+            )
+        ]
+
+    if isinstance(gate, cirq_ops.PhaseDampingChannel):
+        return [BKInstruction(braket_noise_gate.PhaseDamping(opr.gate._gamma), target)]
+
     if isinstance(gate, cirq_ops.MeasurementGate):
         return []
 
@@ -244,6 +270,10 @@ def _to_two_qubit_braket_instruction(
         sub_gate_instr = _to_one_qubit_braket_instruction(gate.sub_gate, q2)
         sub_gate = sub_gate_instr[0].operator
         return [BKInstruction(BKControl(sub_gate, [0, 1]), [q1, q2])]
+    if isinstance(gate, cirq_ops.DepolarizingChannel):
+        return BKInstruction(braket_noise_gate.TwoQubitDepolarizing(opr.gate.p), [q1, q2])
+    if isinstance(gate, cirq_ops.KrausChannel):
+        return BKInstruction(braket_noise_gate.Kraus(matrices=opr.gate._kraus_ops), [q1, q2])
 
     # Arbitrary two-qubit unitary decomposition.
     kak = kak_decomposition(protocols.unitary(opr))
