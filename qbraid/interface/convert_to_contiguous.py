@@ -69,6 +69,9 @@ def convert_to_contiguous(program: "qbraid.QPROGRAM", **kwargs) -> "qbraid.QPROG
         from qbraid.interface.qbraid_braket.tools import _convert_to_contiguous_braket
 
         conversion_function = _convert_to_contiguous_braket
+    elif "pytket" in package:
+        #from qbraid.interface.qbraid_pytket.tools import _convert_to_contiguous_pytket
+        return program
     else:
         raise ProgramTypeError(program)
 

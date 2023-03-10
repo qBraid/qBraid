@@ -19,10 +19,7 @@ Module for converting Cirq circuits to Braket circuits
 from typing import Dict, List
 
 import numpy as np
-from braket.circuits import Circuit as BKCircuit
-from braket.circuits import Instruction as BKInstruction
-from braket.circuits import gates as braket_gates
-from braket.circuits import noises as braket_noise_gate
+from pytket.circuit import OpType, QubitRegister, BitRegister, Circuit
 from cirq import Circuit, LineQubit
 from cirq import ops as cirq_ops
 from cirq import protocols
@@ -30,16 +27,6 @@ from cirq import protocols
 from qbraid.interface import convert_to_contiguous, to_unitary
 from qbraid.transpiler.custom_gates import matrix_gate
 from qbraid.transpiler.exceptions import CircuitConversionError
-
-
-def _gate_to_matrix_braket(gate: braket_gates.Unitary) -> np.ndarray:
-    matrix = gate.to_matrix()
-    unitary_gate = braket_gates.Unitary(matrix)
-    nqubits = int(np.log2(len(matrix)))
-    qubits = list(range(nqubits)) if nqubits > 1 else 0
-    circuit = BKCircuit([BKInstruction(unitary_gate, qubits)])
-    return to_unitary(circuit)
-
 
 def unitary_braket_instruction(instr: BKInstruction) -> BKInstruction:
     """Converts a Braket instruction to a unitary gate instruction.
