@@ -161,7 +161,8 @@ def test_single_probability_noise_gate(noise_gate, target_gate):
     Gate = list(cirq_circuit.all_operations())[0].gate
     assert type(Gate) == target_gate
     assert Gate.p == probs
-        
+
+
 @pytest.mark.parametrize(
     "noise_gate, target_gate",
     [
@@ -179,6 +180,7 @@ def test_single_gamma_noise_gate(noise_gate, target_gate):
     Gate = list(cirq_circuit.all_operations())[0].gate
     assert type(Gate) == target_gate
     assert Gate.gamma == probs
+
 
 def test_kraus_gates():
     """Testing converting Kraus noise gates"""
@@ -222,8 +224,8 @@ def test_DepolarizingChannel_gate():
 
 def test_raise_error():
     with pytest.raises(CircuitConversionError):
-        from braket.pulse.pulse_sequence import PulseSequence
         from braket.pulse import Frame, Port
+        from braket.pulse.pulse_sequence import PulseSequence
 
         pre_fram = Frame(
             frame_id="predefined_frame_1",
