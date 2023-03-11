@@ -76,7 +76,9 @@ Update `qbraid/api/config_data.py` to the desired API url, e.g.
 qbraid_api_url = "https://api-staging-1.qbraid.com/api"
 ```
 
-and make sure your IP Address is white-listed on MongoDB. To allow authenticated requests you must populate your `~/.qbraidrc` file with your qBraid account email and refresh token. Tox does this programmatically via the `set_config()` function in `qbraid/api/tests/test_api_config.py` using inhereted environments variables `JUPYTERHUB_USER` and `REFRESH`. To get your refresh token:
+and make sure your IP Address is white-listed on MongoDB.
+
+To allow authenticated requests you must populate your `~/.qbraidrc` file with your qBraid account email and refresh token. Tox does this programmatically via the `set_config()` function in `qbraid/api/tests/test_api_config.py` using inhereted environments variables `JUPYTERHUB_USER` and `REFRESH`. To get your refresh token:
 
 - Login to account.qbraid.com and open DevTools
 - Go to Application -> Storage -> Cookies -> https://account.qbraid.com
