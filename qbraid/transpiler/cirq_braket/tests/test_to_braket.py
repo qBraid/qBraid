@@ -18,8 +18,8 @@ Unit tests for converting Cirq circuits to Braket circuits
 """
 import numpy as np
 import pytest
-from cirq import Circuit, LineQubit, ops, testing
 from braket.circuits import noises as braket_noise_gate
+from cirq import Circuit, LineQubit, ops, testing
 
 from qbraid.interface import circuits_allclose, to_unitary
 from qbraid.transpiler.cirq_braket.convert_to_braket import to_braket
@@ -217,6 +217,7 @@ def test_to_braket_single_probability_noise_gate(noise_gate, target_gate):
     assert type(Gate) == target_gate
     assert Gate.qubit_count == 1
     assert Gate.probability == probs
+
 
 @pytest.mark.parametrize(
     "noise_gate, target_gate",

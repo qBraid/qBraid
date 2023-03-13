@@ -18,11 +18,11 @@ Unt tests for conversions to/from pyQuil circuits.
 """
 import numpy as np
 import pytest
-from pyquil import Program
-from pyquil.gates import CNOT, CZ, RZ, H, X, Y, Z, RX
-from pyquil.noise import _get_program_gates, _decoherence_noise_model, apply_noise_model
-from cirq import LineQubit, Circuit
+from cirq import Circuit, LineQubit
 from cirq import ops as cirq_ops
+from pyquil import Program
+from pyquil.gates import CNOT, CZ, RX, RZ, H, X, Y, Z
+from pyquil.noise import _decoherence_noise_model, _get_program_gates, apply_noise_model
 
 from qbraid.transpiler.cirq_pyquil.conversions import from_pyquil, to_pyquil
 from qbraid.transpiler.exceptions import CircuitConversionError
