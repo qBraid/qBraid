@@ -119,8 +119,10 @@ def _from_braket_instruction(
             f"Unable to convert to Cirq due to unrecognized \
             instruction: {instr}."
         )
-    except:
-        raise CircuitConversionError(f"Qbraid doesn't support {instr.operator}")
+    except Exception as err:
+        raise CircuitConversionError(
+            f"qBraid transpiler doesn't support operator {instr.operator}"
+        ) from err
 
 
 def _from_one_qubit_braket_instruction(

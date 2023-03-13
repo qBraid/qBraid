@@ -33,8 +33,8 @@ from qbraid.api.config_data import (
 )
 from qbraid.api.config_prompt import _mask_value
 from qbraid.api.config_user import get_config, update_config, verify_config
-from qbraid.api.exceptions import ConfigError, RequestsApiError
-from qbraid.api.ibmq_api import ibmq_get_provider
+from qbraid.api.exceptions import AuthError, ConfigError, RequestsApiError
+from qbraid.api.ibmq_api import ibm_provider, ibmq_get_provider
 from qbraid.api.session import QbraidSession
 
 # These environment variables don't actually exist in qBraid Lab, but instead
@@ -173,3 +173,18 @@ def test_ibmq_get_provider():
     set_config()
     provider = ibmq_get_provider()
     assert isinstance(provider, AccountProvider)
+
+
+def test_ibm_provider():
+    """Test getting IBMQ provider using qiskit_ibm_provider package."""
+    from qiskit_ibm_provider import IBMProvider
+
+    provider = ibm_provider(token=ibmq_token)
+    assert isinstance(provider, IBMProvider)
+
+
+def test_ibm_provider_bad_token():
+    """Test getting IBMQ provider using qiskit_ibm_provider package."""
+
+    with pytest.raises(AuthError):
+        ibm_provider()

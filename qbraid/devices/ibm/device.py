@@ -16,7 +16,9 @@
 Module defining QiskitBackendWrapper Class
 
 """
-from qiskit import Aer, assemble, transpile
+from qiskit import Aer, transpile
+
+# from qiskit import assemble
 from qiskit.providers import QiskitBackendNotFoundError
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.ibmq.managed import IBMQJobManager
@@ -111,8 +113,10 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         else:
             shots = self.vendor_dlo.options.get("shots")
         if self._obj_ref == "Aer":
-            qobj = assemble(run_input, memory=True, **kwargs)
-            qiskit_job = self.vendor_dlo.run(qobj)
+            # Using a qobj for run() is deprecated as of qiskit-aer 0.9.0 Transpiled circuits
+            # should now be passed directly using `backend.run(circuits, **run_options)`.
+            # qobj = assemble(run_input, memory=True, **kwargs)
+            qiskit_job = self.vendor_dlo.run(run_input, **kwargs)
             qiskit_job_id = qiskit_job.job_id()
         else:
             job_manager = IBMQJobManager()  # assemble included in run method

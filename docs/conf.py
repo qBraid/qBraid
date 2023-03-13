@@ -37,10 +37,10 @@ extensions = [
     "sphinx.ext.autodoc",
     "sphinx_autodoc_typehints",
     "sphinx.ext.autosummary",
-    "sphinx.ext.viewcode",
     "sphinx.ext.todo",
     "sphinx.ext.mathjax",
     "sphinx.ext.coverage",
+    # "sphinx.ext.viewcode", # Hide source code link
 ]
 
 # set_type_checking_flag = True

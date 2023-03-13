@@ -28,7 +28,7 @@ from .localjob import QiskitBasicAerJobWrapper
 
 
 class QiskitBasicAerWrapper(DeviceLikeWrapper):
-    """Wrapper class for Amazon Braket ``LocalSimulator`` objects."""
+    """Wrapper class for Qiskit ``BasicAer`` objects."""
 
     def _get_device(self):
         """Initialize an IBM simulator."""
