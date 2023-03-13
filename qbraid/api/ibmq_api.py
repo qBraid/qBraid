@@ -16,45 +16,59 @@
 Module for top-level interfacing with the IBMQ API
 
 """
-# from typing import Optional
-# from qiskit_ibm_provider import IBMProvider
-# from qiskit_ibm_provider.accounts import AccountNotFoundError
-# from .config_user import get_config, verify_config
+import os
+from typing import Optional
 
 from qiskit import IBMQ
-from qiskit.providers.ibmq import AccountProvider, IBMQError, least_busy
+from qiskit.providers.ibmq import AccountProvider, IBMQError, IBMQProviderError, least_busy
+from qiskit_ibm_provider import IBMProvider
+from qiskit_ibm_provider.accounts import AccountNotFoundError
 
 from .config_data import qiskitrc_path
 from .config_user import get_config
 from .exceptions import AuthError
 
-# def ibmq_get_provider(token: Optional[str] = None) -> IBMProvider:
-#     """Get IBMQ AccountProvider"""
-#     if token is None:
-#         try:
-#             return IBMProvider()
-#         except AccountNotFoundError:
-#             verify_config("IBM")
-#             return IBMProvider()
-#     try:
-#         return IBMProvider(token=token)
-#     except Exception as err:
-#         raise AuthError from err
+
+def ibm_provider(token: Optional[str] = None) -> IBMProvider:
+    """Get IBMQ AccountProvider"""
+    try:
+        if token is None:
+            return IBMProvider()
+        return IBMProvider(token=token)
+    except (AccountNotFoundError, Exception) as err:
+        raise AuthError from err
 
 
 def ibmq_get_provider() -> AccountProvider:
     """Get IBMQ AccountProvider"""
-    # verify_config("IBM")
-    # token = get_config("token", "ibmq", filepath=qiskitrc_path)
-    default = get_config("default_provider", "ibmq", filepath=qiskitrc_path)
-    hub, group, project = default.split("/")
     if IBMQ.active_account():
-        IBMQ.disable_account()
-    try:
+        return IBMQ.get_provider()
+    defaults = "ibm-q", "open", "main"
+    default_provider = get_config("default_provider", "ibmq", filepath=qiskitrc_path)
+    if default_provider == -1:
+        hub, group, project = defaults
+    else:
+        try:
+            hub, group, project = default_provider.split("/")
+        except (AttributeError, ValueError):
+            hub, group, project = defaults
+    if len(IBMQ.stored_account()) > 0:
         IBMQ.load_account()
-        return IBMQ.get_provider(hub=hub, group=group, project=project)
-    except IBMQError as err:
-        raise AuthError from err
+        try:
+            return IBMQ.get_provider()
+        except IBMQProviderError:
+            try:
+                return IBMQ.get_provider(hub=hub, group=group, project=project)
+            except IBMQError as err:
+                raise AuthError from err
+    token = os.getenv("QISKIT_IBM_TOKEN")
+    if token is not None:
+        try:
+            IBMQ.save_account(token, hub=hub, group=group, project=project)
+            return ibmq_get_provider()
+        except IBMQError as err:
+            raise AuthError from err
+    raise AuthError("Failed to initialize IBMQ provider.")
 
 
 def ibmq_least_busy_qpu() -> str:
