@@ -27,6 +27,7 @@ from qbraid.exceptions import PackageValueError, ProgramTypeError
 from qbraid.transpiler.cirq_braket import from_braket, to_braket
 from qbraid.transpiler.cirq_pyquil import from_pyquil, to_pyquil
 from qbraid.transpiler.cirq_qiskit import from_qiskit, to_qiskit
+from qbraid.transpiler.cirq_pytket import from_pytket, to_pytket
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 if TYPE_CHECKING:
@@ -63,6 +64,9 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple[Circuit, str]:
         if "braket" in package:
             return from_braket(program), "braket"
 
+        if "pytket" in package:
+            return from_pytket(program), "pytket"
+
         if isinstance(program, Circuit):
             return program, "cirq"
 
@@ -97,6 +101,9 @@ def _convert_from_cirq(circuit: Circuit, frontend: str) -> "qbraid.QPROGRAM":
 
         if frontend == "braket":
             return to_braket(circuit)
+
+        if frontend == "pytket":
+            return to_pytket(circuit)
 
         if frontend == "cirq":
             return circuit

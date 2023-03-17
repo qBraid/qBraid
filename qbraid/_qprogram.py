@@ -26,11 +26,12 @@ from braket.circuits import Circuit as _BraketCircuit
 from cirq import Circuit as _CirqCircuit
 from pyquil import Program as _pyQuilProgram
 from qiskit import QuantumCircuit as _QiskitCircuit
+from pytket.circuit import Circuit as _PytketCircuit
 
 # Supported quantum programs.
-QPROGRAM = Union[_BraketCircuit, _CirqCircuit, _QiskitCircuit, _pyQuilProgram]
+QPROGRAM = Union[_BraketCircuit, _CirqCircuit, _QiskitCircuit, _pyQuilProgram, _PytketCircuit]
 
-_PROGRAMS = [_BraketCircuit, _CirqCircuit, _QiskitCircuit, _pyQuilProgram]
+_PROGRAMS = [_BraketCircuit, _CirqCircuit, _QiskitCircuit, _pyQuilProgram, _PytketCircuit]
 
 # pylint: disable-next=bad-str-strip-call
 QPROGRAM_TYPES = [str(x).strip("<class").strip(">").strip(" ").strip("'") for x in _PROGRAMS]

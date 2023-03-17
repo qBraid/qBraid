@@ -26,5 +26,5 @@ Braket Conversions  (:mod:`qbraid.transpiler.cirq_pytket`)
    to_pytket
 
 """
-from qbraid.transpiler.cirq_pytket.convert_from_pytket import from_pytket
-from qbraid.transpiler.cirq_pytket.convert_to_pytket import to_pytket
+from qbraid.transpiler.cirq_pytket.convert_pytket_qasm import from_pytket
+from qbraid.transpiler.cirq_pytket.convert_pytket_qasm import to_pytket

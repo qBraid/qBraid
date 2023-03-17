@@ -30,12 +30,14 @@ def test_bell():
     cirq_bell = map["cirq"]()
     pyquil_bell = map["pyquil"]()
     qiskit_bell = map["qiskit"]()
+    pytket_bell = map["pytket"]()
 
     eq1 = circuits_allclose(braket_bell, cirq_bell, strict_gphase=True)
     eq2 = circuits_allclose(cirq_bell, pyquil_bell, strict_gphase=True)
     eq3 = circuits_allclose(pyquil_bell, qiskit_bell, strict_gphase=True)
+    eq4 = circuits_allclose(qiskit_bell, pytket_bell, strict_gphase=True)
 
-    assert eq1 and eq2 and eq3
+    assert eq1 and eq2 and eq3 and eq4
 
 
 def test_shared15():
@@ -44,11 +46,13 @@ def test_shared15():
     braket_shared15 = map["braket"]()
     cirq_shared15 = map["cirq"]()
     qiskit_shared15 = map["qiskit"]()
+    pytket_shared15 = map["pytket"]()
 
     eq1 = circuits_allclose(braket_shared15, cirq_shared15, strict_gphase=True)
     eq2 = circuits_allclose(cirq_shared15, qiskit_shared15, strict_gphase=True)
+    eq3 = circuits_allclose(qiskit_shared15, pytket_shared15, strict_gphase=True)
 
-    assert eq1 and eq2
+    assert eq1 and eq2 and eq3
 
 
 @pytest.mark.parametrize("package", ["braket", "cirq", "qiskit"])

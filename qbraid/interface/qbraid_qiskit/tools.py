@@ -30,6 +30,7 @@ def _unitary_from_qiskit(circuit: QuantumCircuit) -> np.ndarray:
 
 
 def _convert_to_contiguous_qiskit(circuit: QuantumCircuit) -> QuantumCircuit:
+    """delete qubit with no gate"""
     dag = circuit_to_dag(circuit)
 
     idle_wires = list(dag.idle_wires())

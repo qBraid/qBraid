@@ -72,7 +72,10 @@ def to_unitary(program: "qbraid.QPROGRAM", ensure_contiguous: Optional[bool] = F
         from qbraid.interface.qbraid_pyquil.tools import _unitary_from_pyquil
 
         to_unitary_function = _unitary_from_pyquil
+    elif "pytket" in package:
+        from qbraid.interface.qbraid_pytket.tools import _unitary_from_pytket
 
+        to_unitary_function = _unitary_from_pytket
     else:
         raise ProgramTypeError(program)
 

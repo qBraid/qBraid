@@ -29,6 +29,7 @@ class ContiguousConversionError(QbraidError):
     """Class for exceptions raised while converting a circuit to use contiguous qubits/indices"""
 
 
+# todo: move to qbraid.passes
 def convert_to_contiguous(program: "qbraid.QPROGRAM", **kwargs) -> "qbraid.QPROGRAM":
     """Checks whether the quantum program uses contiguous qubits/indices,
     and if not, adds identity gates to vacant registers as needed.
@@ -70,8 +71,9 @@ def convert_to_contiguous(program: "qbraid.QPROGRAM", **kwargs) -> "qbraid.QPROG
 
         conversion_function = _convert_to_contiguous_braket
     elif "pytket" in package:
-        #from qbraid.interface.qbraid_pytket.tools import _convert_to_contiguous_pytket
-        return program
+        from qbraid.interface.qbraid_pytket.tools import _convert_to_contiguous_pytket
+
+        conversion_function = _convert_to_contiguous_pytket
     else:
         raise ProgramTypeError(program)
 
