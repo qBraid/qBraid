@@ -41,7 +41,7 @@ def test_bell_state_to_pytket():
 
 
 @pytest.mark.parametrize("num_qubits", [1, 2, 3, 4, 5])
-def test_random_circuit_to_qiskit(num_qubits):
+def test_random_circuit_to_pytket(num_qubits):
     for i in range(10):
         cirq_circuit = testing.random_circuit(
             qubits=num_qubits,

@@ -14,7 +14,7 @@
 
 """
 Module containing functions to convert between Cirq's circuit
-representation and Qiskit's circuit representation.
+representation and pytket's circuit representation.
 
 """
 from cirq import Circuit, ops as cirq_ops, protocols
@@ -29,7 +29,7 @@ from qbraid.transpiler.exceptions import CircuitConversionError
 
 
 def to_pytket(circuit: Circuit) -> TKCircuit:
-    """Returns a Qiskit circuit equivalent to the input Cirq circuit. Note
+    """Returns a pytket circuit equivalent to the input Cirq circuit. Note
     that the output circuit registers may not match the input circuit
     registers.
 

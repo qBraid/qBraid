@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Unit tests for converting Qiskit circuits to Cirq circuits.
+Unit tests for converting pytket circuits to Cirq circuits.
 
 """
 import numpy as np

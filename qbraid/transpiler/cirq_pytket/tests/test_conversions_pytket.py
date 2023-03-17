@@ -34,13 +34,13 @@ def test_bell_state_to_from_circuits():
     """
     qreg = LineQubit.range(2)
     cirq_circuit = Circuit([ops.H.on(qreg[0]), ops.CNOT.on(qreg[0], qreg[1])])
-    qiskit_circuit = to_pytket(cirq_circuit)  # Qiskit from Cirq
-    circuit_cirq = from_pytket(qiskit_circuit)  # Cirq from Qiskit
+    qiskit_circuit = to_pytket(cirq_circuit)  # pytket from Cirq
+    circuit_cirq = from_pytket(qiskit_circuit)  # Cirq from pytket
     assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
 
 
 def test_random_circuit_to_from_circuits():
-    """Tests cirq.Circuit --> qiskit.QuantumCircuit --> cirq.Circuit
+    """Tests cirq.Circuit --> pytket.circuit.Circuit --> cirq.Circuit
     with a random two-qubit circuit.
     """
     cirq_circuit = testing.random_circuit(qubits=2, n_moments=10, op_density=0.99, random_state=1)
@@ -66,7 +66,7 @@ def test_convert_with_barrier(as_qasm):
 
 @pytest.mark.parametrize("as_qasm", (True, False))
 def test_convert_with_multiple_barriers(as_qasm):
-    """Tests converting a Qiskit circuit with barriers to a Cirq circuit."""
+    """Tests converting a pytket circuit with barriers to a Cirq circuit."""
     n = 1
     num_ops = 10
 
