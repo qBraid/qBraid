@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Unit tests for conversions between Cirq circuits and Qiskit circuits.
+Unit tests for conversions between Cirq circuits and pytket circuits.
 
 """
 import numpy as np
@@ -29,7 +29,7 @@ from qbraid.transpiler.cirq_pytket.convert_pytket_qasm import from_pytket, to_py
 
 
 def test_bell_state_to_from_circuits():
-    """Tests cirq.Circuit --> qiskit.QuantumCircuit --> cirq.Circuit
+    """Tests cirq.Circuit --> pytket.circuit.Circuit --> cirq.Circuit
     with a Bell state circuit.
     """
     qreg = LineQubit.range(2)

@@ -1,5 +1,5 @@
 """
-Module containing pyQuil programs used for testing
+Module containing pytket programs used for testing
 
 """
 from qbraid.interface.qbraid_pytket.tools import _convert_to_contiguous_pytket

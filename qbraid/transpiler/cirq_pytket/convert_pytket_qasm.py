@@ -34,7 +34,7 @@ def to_pytket(circuit: Circuit) -> TKCircuit:
     registers.
 
     Args:
-        circuit: Cirq circuit to convert to a Qiskit circuit.
+        circuit: Cirq circuit to convert to a pytket circuit.
 
     Returns:
         PyTket.QuantumCircuit object equivalent to the input Cirq circuit.
@@ -48,13 +48,13 @@ def to_pytket(circuit: Circuit) -> TKCircuit:
 
 
 def from_pytket(circuit: TKCircuit) -> Circuit:
-    """Returns a Cirq circuit equivalent to the input Pytket circuit.
+    """Returns a Cirq circuit equivalent to the input pytket circuit.
 
     Args:
-        circuit: Ptket circuit to convert to a Cirq circuit.
+        circuit: pytket circuit to convert to a Cirq circuit.
 
     Returns:
-        Cirq circuit representation equivalent to the input Pytket circuit.
+        Cirq circuit representation equivalent to the input pytket circuit.
     """
     try:
         qasm_str = circuit_to_qasm_str(circuit)
