@@ -16,8 +16,7 @@ def _gate_to_matrix_pytket(
     gates: Optional[Union[List[TKInstruction], TKInstruction]], flat: bool = False
 ) -> np.ndarray:
     """Return the unitary of the Command"""
-    if isinstance(list, type(gates)):
-        gates = [gates]
+    gates = gates if (list == type(gates)) else [gates]
     a = list(map(max, [gate.qubits for gate in gates]))
     circuit = TKCircuit(max(a).index[0] + 1)
     for gate in gates:
