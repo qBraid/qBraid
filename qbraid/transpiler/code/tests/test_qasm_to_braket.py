@@ -53,7 +53,7 @@ def test_qasm_to_braket_code_from_str(capfd):
 
     os.system(f"{sys.executable} {output_file}")
     out, err = capfd.readouterr()
-    assert out == "True\r\n"
+    assert out == "True\n"
     assert len(err) == 0
     os.remove(output_file)
 
@@ -73,7 +73,7 @@ def test_qasm_to_braket_code_from_file(capfd):
 
     os.system(f"{sys.executable} {output_file}")
     out, err = capfd.readouterr()
-    assert out == "True\r\n"
+    assert out == "True\n"
     assert len(err) == 0
     os.remove(output_file)
 
@@ -89,7 +89,7 @@ def test_qasm_to_braket_code_print_circuit(capfd):
 
     os.system(f"{sys.executable} {output_file}")
     out, err = capfd.readouterr()
-    assert len(out) == 5062
+    assert len(out) == 5051
     assert len(err) == 0
     os.remove(output_file)
 
