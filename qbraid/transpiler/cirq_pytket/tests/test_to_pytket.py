@@ -50,12 +50,7 @@ def test_random_circuit_to_pytket(num_qubits):
             random_state=np.random.randint(1, 10),
         )
         pytket_circuit = to_pytket(cirq_circuit)
-        equal = circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
-        if not equal:
-            print(pytket_circuit)
-            assert False
-        else:
-            assert True
+        assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
 
 
 def test_raise_error():

@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Module defining BraketCircuitWrapper Class
+Module defining PytketCircuitWrapper Class
 
 """
 from pytket.circuit import Circuit as TKCircuit

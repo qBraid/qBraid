@@ -29,6 +29,7 @@ Transpiler  (:mod:`qbraid.transpiler`)
    CirqCircuitWrapper
    PyQuilProgramWrapper
    QiskitCircuitWrapper
+   PytketCircuitWrapper
    CircuitConversionError
    QasmError
 

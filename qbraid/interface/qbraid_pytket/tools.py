@@ -4,6 +4,7 @@ Module containing pyQuil tools
 """
 import numpy as np
 from pytket.circuit import Circuit as TKCircuit, Command as TKInstruction
+from typing import List, Union, Optional
 
 
 def _unitary_from_pytket(circuit: TKCircuit) -> np.ndarray:
@@ -11,12 +12,20 @@ def _unitary_from_pytket(circuit: TKCircuit) -> np.ndarray:
     return circuit.get_unitary()
 
 
-def _gate_to_matrix_pytket(gate: TKInstruction) -> np.ndarray:
+def _gate_to_matrix_pytket(
+    gates: Optional[Union[List[TKInstruction], TKInstruction]], flat: bool = False
+) -> np.ndarray:
     """Return the unitary of the Command"""
-    gate_op = gate.op
-    TK_circuit = TKCircuit(gate_op.n_qubits)
-    TK_circuit.add_gate(gate_op.type, gate_op.params, gate.qubits)
-    return TK_circuit.get_unitary()
+    if isinstance(list, type(gates)):
+        gates = [gates]
+    a = list(map(max, [gate.qubits for gate in gates]))
+    circuit = TKCircuit(max(a).index[0] + 1)
+    for gate in gates:
+        gate_op = gate.op
+        circuit.add_gate(gate_op.type, gate_op.params, gate.qubits)
+    if flat:
+        circuit.remove_blank_wires()
+    return circuit.get_unitary()
 
 
 def _convert_to_contiguous_pytket(circuit: TKCircuit, rev_qubits=False) -> TKCircuit:
