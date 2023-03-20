@@ -61,6 +61,20 @@ and restart your kernel, and try running the notebook again. If you are using th
 
     -  `Quantum Jobs <quantumjobs.html>`_
 
+Extension sidebar errors
+--------------------------
 
+Under rare circumstances, you may load qBraid Lab to find that Code Snippets, Quantum Devices, or another extension does not show up in the sidebar,
+or that an extension only displays a solid grey, red, or other color when expanded, like below:
 
+..  image:: ../_static/errors/sidebar_glitch.png
+    :width: 60%
+    :target: javascript:void(0);
 
+Most often, this means that your cookies were not correctly passed from your Account page to your Lab page. To fix this error, open `account.qbraid.com <https://account.qbraid.com>`_,
+from a new tab or window, login back in, and click **Launch Lab**. Once Lab reloads, all of your extensions should be visible again.
+
+.. note::
+  For certain browser types (e.g. Safari) these steps may not resolve the error. In this case, please reach out to us via `Discord <https://discord.gg/gwBebaBZZX>`_,
+  `email <request@qbraid.com>`_, or `GitHub <https://github.com/qbraid/community/issues/new?assignees=&labels=bug&template=bug_report.md>`_ for further instructions and
+  assistance.
