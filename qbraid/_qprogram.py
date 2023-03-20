@@ -25,8 +25,8 @@ from typing import Union
 from braket.circuits import Circuit as _BraketCircuit
 from cirq import Circuit as _CirqCircuit
 from pyquil import Program as _pyQuilProgram
-from qiskit import QuantumCircuit as _QiskitCircuit
 from pytket.circuit import Circuit as _PytketCircuit
+from qiskit import QuantumCircuit as _QiskitCircuit
 
 # Supported quantum programs.
 QPROGRAM = Union[_BraketCircuit, _CirqCircuit, _QiskitCircuit, _pyQuilProgram, _PytketCircuit]
