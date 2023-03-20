@@ -21,6 +21,7 @@ from itertools import chain, combinations
 import numpy as np
 import pytest
 from braket.circuits import Circuit, Instruction, gates
+from pytket.circuit import Circuit as TKCircuit, OpType
 
 from qbraid.interface.calculate_unitary import to_unitary, unitary_to_little_endian
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
@@ -96,3 +97,19 @@ def test_convert_be_to_le(bk_instrs, u_expected):
     u_big = circuit.to_unitary()
     u_test = unitary_to_little_endian(u_big)
     assert np.allclose(u_expected, u_test)
+
+
+@pytest.mark.parametrize("flat", [True, False])
+@pytest.mark.parametrize("list_type", [True, False])
+def test_gate_to_matrix_pytket(flat, list_type):
+    c = TKCircuit(10, 2, name="example")
+    c.CU1(np.pi / 2, 2, 3)
+    from qbraid.interface.qbraid_pytket.tools import _gate_to_matrix_pytket
+
+    c_unitary = _gate_to_matrix_pytket(
+        gates=c.get_commands()[0] if list_type else c.get_commands(), flat=flat
+    )
+    if flat:
+        assert c_unitary.shape[0] == 2**2
+    else:
+        assert c_unitary.shape[0] == 2**4

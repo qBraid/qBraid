@@ -20,6 +20,7 @@ import cirq
 import numpy as np
 import pytest
 import qiskit
+import pytket
 from braket.circuits import Circuit as BraketCircuit
 from braket.circuits import Gate as BraketGate
 from braket.circuits import Instruction as BraketInstruction
@@ -70,15 +71,23 @@ braket_circuit = BraketCircuit(
     ]
 )
 
+# pytket Bell Circuit
+pytket_circuit = pytket.Circuit(2)
+pytket_circuit.H(0)
+pytket_circuit.CX(0, 1)
+
 circuit_types = {
     "cirq": cirq.Circuit,
     "qiskit": qiskit.QuantumCircuit,
     "pyquil": pyQuilProgram,
     "braket": BraketCircuit,
+    "pytket": pytket.Circuit,
 }
 
 
-@pytest.mark.parametrize("circuit", (qiskit_circuit, pyquil_circuit, braket_circuit))
+@pytest.mark.parametrize(
+    "circuit", (qiskit_circuit, pyquil_circuit, braket_circuit, pytket_circuit)
+)
 def test_to_cirq(circuit):
     converted_circuit, input_type = convert_to_cirq(circuit)
     assert _equal(converted_circuit, cirq_circuit) or _equal(converted_circuit, cirq_circuit_rev)
@@ -143,42 +152,13 @@ def bell_test_data(package):
 
 
 # Define circuits and unitaries
-qbraid_braket_shared = shared_gates_test_data("braket")
-qbraid_cirq_shared = shared_gates_test_data("cirq")
-qbraid_qiskit_shared = shared_gates_test_data("qiskit")
-
-qbraid_braket_bell = bell_test_data("braket")
-qbraid_cirq_bell = bell_test_data("cirq")
-qbraid_pyquil_bell = bell_test_data("pyquil")
-qbraid_qiskit_bell = bell_test_data("qiskit")
+target_packages = ["cirq", "qiskit", "braket", "pyquil", "pytket"]
+data_test_15 = [shared_gates_test_data(name) for name in target_packages[:3]]
+data_test_bell = [bell_test_data(name) for name in target_packages]
 
 
-data_test_15 = [
-    (qbraid_braket_shared, "cirq"),
-    (qbraid_braket_shared, "qiskit"),
-    (qbraid_qiskit_shared, "braket"),
-    (qbraid_qiskit_shared, "cirq"),
-    (qbraid_cirq_shared, "braket"),
-    (qbraid_cirq_shared, "qiskit"),
-]
-
-data_test_bell = [
-    (qbraid_braket_bell, "cirq"),
-    (qbraid_braket_bell, "qiskit"),
-    (qbraid_braket_bell, "pyquil"),
-    (qbraid_qiskit_bell, "braket"),
-    (qbraid_qiskit_bell, "cirq"),
-    (qbraid_qiskit_bell, "pyquil"),
-    (qbraid_cirq_bell, "braket"),
-    (qbraid_cirq_bell, "qiskit"),
-    (qbraid_cirq_bell, "pyquil"),
-    (qbraid_pyquil_bell, "braket"),
-    (qbraid_pyquil_bell, "cirq"),
-    (qbraid_pyquil_bell, "qiskit"),
-]
-
-
-@pytest.mark.parametrize("qbraid_circuit,target_package", data_test_15)
+@pytest.mark.parametrize("qbraid_circuit", data_test_15)
+@pytest.mark.parametrize("target_package", target_packages[:3])
 def test_15(qbraid_circuit, target_package):
     """Tests transpiling circuits composed of gate types that share explicit support across
     multiple qbraid tranpsiler supported packages (qiskit, cirq, braket).
@@ -188,7 +168,8 @@ def test_15(qbraid_circuit, target_package):
     cirq.testing.assert_allclose_up_to_global_phase(transpiled_unitary, UNITARY_15, atol=1e-7)
 
 
-@pytest.mark.parametrize("qbraid_circuit,target_package", data_test_bell)
+@pytest.mark.parametrize("qbraid_circuit", data_test_bell)
+@pytest.mark.parametrize("target_package", target_packages)
 def test_bell(qbraid_circuit, target_package):
     """Tests transpiling bell circuits."""
     transpiled_circuit = qbraid_circuit.transpile(target_package)

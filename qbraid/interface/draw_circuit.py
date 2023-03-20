@@ -33,7 +33,7 @@ def draw(program: "qbraid.QPROGRAM") -> None:
     Raises:
         ProgramTypeError: If quantum program is not of a supported type
     """
-
+    # todo: visualization from supportive framework
     try:
         package = program.__module__
     except AttributeError as err:
