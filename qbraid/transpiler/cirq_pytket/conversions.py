@@ -37,7 +37,7 @@ def to_pytket(circuit: Circuit) -> TKCircuit:
         circuit: Cirq circuit to convert to a pytket circuit.
 
     Returns:
-        PyTket.QuantumCircuit object equivalent to the input Cirq circuit.
+        Pytket circuit object equivalent to the input Cirq circuit.
     """
     try:
         contig_circuit = convert_to_contiguous(circuit, rev_qubits=False)

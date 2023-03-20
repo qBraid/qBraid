@@ -12,7 +12,8 @@ Program Types
 --------------
 
 Supported frontend program types include `Qiskit QuantumCircuit <QiskitQuantumCircuit>`_,
-`Braket Circuit <BraketCircuit>`_, `Cirq Circuit <CirqCircuit>`_, and `pyQuil Program <pyQuilProgram>`_:
+`Braket Circuit <BraketCircuit>`_, `Cirq Circuit <CirqCircuit>`_, `PyQuil Program <PyQuilProgram>`_
+and `PyTKET Circuit <PyTKETCircuit>`_:
 
 .. code-block:: python
     
@@ -24,12 +25,14 @@ Supported frontend program types include `Qiskit QuantumCircuit <QiskitQuantumCi
     cirq.circuits.circuit.Circuit
     qiskit.circuit.quantumcircuit.QuantumCircuit
     pyquil.quil.Program
+    pytket._tket.circuit.Circuit
 
 
 .. _QiskitQuantumCircuit: https://qiskit.org/documentation/stubs/qiskit.circuit.QuantumCircuit.html
 .. _BraketCircuit: https://docs.aws.amazon.com/braket/latest/developerguide/braket-constructing-circuit.html
 .. _CirqCircuit: https://quantumai.google/reference/python/cirq/circuits/Circuit
-.. _pyQuilProgram: https://pyquil-docs.rigetti.com/en/stable/basics.html
+.. _PyQuilProgram: https://pyquil-docs.rigetti.com/en/stable/basics.html
+.. _PyTKETCircuit: https://cqcl.github.io/tket/pytket/api/circuit_class.html
 
 
 Circuit Wrapper
@@ -85,8 +88,8 @@ Transpiler
 -----------
 
 Now, we can use the ``qbraid.transpiler.QuantumProgramWrapper.transpile`` method to convert to wrapped circuit into
-any other supported program type. Simply pass in the name of the target package from one of ``qbraid.QPROGRAM_TYPES``.
-For example, use input ``"braket"`` to return a ``braket.circuits.circuit.Circuit``:
+any other supported program type. Simply pass in the name of the target package from one of ``qbraid.QPROGRAM_LIBS``.
+For example, use input ``"braket"`` to return a ``braket.circuits.Circuit``:
 
 .. code-block:: python
 
@@ -121,7 +124,7 @@ Random circuits
 ^^^^^^^^^^^^^^^^^
 
 The ``random_circuit`` function creates a random circuit of any supported frontend program type. Here, we've created a
-random ``cirq.circuits.circuit.Circuit`` with four qubits and depth four.
+random ``cirq.Circuit`` with four qubits and depth four.
 
 .. code-block:: python
 
@@ -152,7 +155,7 @@ supported program type.
     >>> cirq_unitary.shape
     (16, 16)
 
-We can now apply the circuit wrapper to the random Cirq circuit above, and use the transpiler to return the equivalent ``pyquil.quil.Program``:
+We can now apply the circuit wrapper to the random Cirq circuit above, and use the transpiler to return the equivalent ``pyquil.Program``:
 
 .. code-block:: python
     

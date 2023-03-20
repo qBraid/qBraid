@@ -24,7 +24,7 @@ from pytket.qasm import circuit_to_qasm_str
 
 from qbraid.interface import circuits_allclose
 from qbraid.interface.qbraid_cirq._utils import _equal
-from qbraid.transpiler.cirq_pytket.convert_pytket_qasm import from_pytket, to_pytket
+from qbraid.transpiler.cirq_pytket.conversions import from_pytket, to_pytket
 from qbraid.transpiler.cirq_qasm import from_qasm
 
 

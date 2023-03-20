@@ -17,7 +17,7 @@ def pytket_bell() -> TKCircuit:
 
 
 def pytket_shared15():
-    """Returns qiskit `QuantumCircuit` for qBraid `TestSharedGates`."""
+    """Returns pytket `Circuit` for qBraid `TestSharedGates`."""
 
     circuit = TKCircuit(4)
 
