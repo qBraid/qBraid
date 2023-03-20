@@ -3,7 +3,7 @@
 Environments
 =============
 
-The qBraid Lab Environment Manager is a robust package and virtual environment management system
+The `qBraid Lab Environment Manager <https://youtu.be/LyavbzSkvRo>`_ is a robust package and virtual environment management system
 provided to qBraid end-users through a simple, intuitive graphical user interface.
 
 To expand the Environment Manager sidebar, click on **Envs** in the upper-right of the Lab console.
@@ -102,23 +102,8 @@ Install new package
 
 There are three ways to install a new package into an environment on qBraid:
 
-1. IPython magic command
-^^^^^^^^^^^^^^^^^^^^^^^^^
 
-From inside a notebook, run your pip command using the "magic" ``%`` operator to install
-the desired package(s) within the current kernel:
-
-.. code-block:: python
-
-    %pip install [pkgs]
-
-
-.. seealso::
-    
-    - `IPython Built-in magic commands (pip) <https://ipython.readthedocs.io/en/stable/interactive/magics.html#magic-pip>`_.
-
-
-2. Add a package button
+1. Add a package button
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Open the Environment Manager (``ENVS``) sidebar, and find the environment into which you want to install the package.
@@ -126,7 +111,7 @@ Expand the environment panel using the carrot drop-down, and then click **More**
 
 At the bottom of the Python packages list, click **Add a package**. Type in the *exact* name of the package you wish to install
 into the "Add package..." search bar, and then hit ``Enter`` (or click the search icon on the right). This will do a direct search
-through `PyPI <https://pypi.org/>`_, and return the latest version available to install. To accept, click on the packge, and then
+through `PyPI <https://pypi.org/>`_, and return the *latest* version available to install. To accept, click on the packge, and then
 click **Add**.
 
 .. image:: ../_static/environments/env_add_package.png
@@ -142,6 +127,26 @@ similar to the following:
     :align: center
     :width: 500px
     :target: javascript:void(0);
+
+.. note::
+    Currently, the "Add package" feature only supports installing the latest i.e. most up-to-date package version found in PyPI.
+    To install an older version of a package, use either of the two command-based options given below.
+
+
+2. IPython magic command
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+From inside a notebook, run your pip command using the "magic" ``%`` operator to install
+the desired package(s) within the current kernel:
+
+.. code-block:: python
+
+    %pip install [pkgs]
+
+
+.. seealso::
+    
+    - `IPython Built-in magic commands (pip) <https://ipython.readthedocs.io/en/stable/interactive/magics.html#magic-pip>`_.
 
 
 3. Directly from terminal

@@ -2,9 +2,10 @@
 Module containing pytket programs used for testing
 
 """
-from qbraid.interface.qbraid_pytket.tools import _convert_to_contiguous_pytket
-from pytket.circuit import Circuit as TKCircuit
 import numpy as np
+from pytket.circuit import Circuit as TKCircuit
+
+from qbraid.interface.qbraid_pytket.tools import _convert_to_contiguous_pytket
 
 
 def pytket_bell() -> TKCircuit:
@@ -16,7 +17,7 @@ def pytket_bell() -> TKCircuit:
 
 
 def pytket_shared15():
-    """Returns qiskit `QuantumCircuit` for qBraid `TestSharedGates`."""
+    """Returns pytket `Circuit` for qBraid `TestSharedGates`."""
 
     circuit = TKCircuit(4)
 

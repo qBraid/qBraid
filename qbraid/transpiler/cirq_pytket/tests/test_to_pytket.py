@@ -21,7 +21,7 @@ import pytest
 from cirq import Circuit, LineQubit, ops, testing
 
 from qbraid.interface import circuits_allclose
-from qbraid.transpiler.cirq_pytket.convert_pytket_qasm import to_pytket
+from qbraid.transpiler.cirq_pytket.conversions import to_pytket
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 

@@ -2,9 +2,11 @@
 Module containing pyQuil tools
 
 """
+from typing import List, Optional, Union
+
 import numpy as np
-from pytket.circuit import Circuit as TKCircuit, Command as TKInstruction
-from typing import List, Union, Optional
+from pytket.circuit import Circuit as TKCircuit
+from pytket.circuit import Command as TKInstruction
 
 
 def _unitary_from_pytket(circuit: TKCircuit) -> np.ndarray:

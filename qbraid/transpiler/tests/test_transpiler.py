@@ -19,8 +19,8 @@ Unit tests for the qbraid transpiler.
 import cirq
 import numpy as np
 import pytest
-import qiskit
 import pytket
+import qiskit
 from braket.circuits import Circuit as BraketCircuit
 from braket.circuits import Gate as BraketGate
 from braket.circuits import Instruction as BraketInstruction

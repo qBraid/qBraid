@@ -17,9 +17,9 @@ Module containing functions to convert between Cirq's circuit
 representation and pytket's circuit representation.
 
 """
-from cirq import Circuit, ops as cirq_ops, protocols
+from cirq import Circuit
 from pytket.circuit import Circuit as TKCircuit
-from pytket.qasm import circuit_to_qasm_str, circuit_from_qasm_str
+from pytket.qasm import circuit_from_qasm_str, circuit_to_qasm_str
 
 from qbraid.interface import convert_to_contiguous
 from qbraid.interface.qbraid_cirq.tools import _convert_to_line_qubits
@@ -37,7 +37,7 @@ def to_pytket(circuit: Circuit) -> TKCircuit:
         circuit: Cirq circuit to convert to a pytket circuit.
 
     Returns:
-        PyTket.QuantumCircuit object equivalent to the input Cirq circuit.
+        Pytket circuit object equivalent to the input Cirq circuit.
     """
     try:
         contig_circuit = convert_to_contiguous(circuit, rev_qubits=False)

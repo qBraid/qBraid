@@ -11,6 +11,8 @@ System Info
 qBraid Lab uses a Linux-based OS. It provides terminals with full support for bash shells, and comes with a number of
 the most relevant software packages, programs, and tools pre-installed to help optimize the quantum developer's workflow.
 
+To discuss projects with specific system requirements, `contact us <https://qbraid.com/contact-us/>`_.
+
 .. seealso::
 
     - `Jupyter Docker Stacks <https://github.com/jupyter/docker-stacks>`_
@@ -73,3 +75,8 @@ Cross-platform Tools
 - `Azure CLI <https://docs.microsoft.com/en-us/cli/azure/>`_
 - `Azure CLI quantum extension <https://docs.microsoft.com/en-us/cli/azure/quantum?view=azure-cli-latest>`_
 - `Microsoft .NET CLI <https://docs.microsoft.com/en-us/dotnet/core/tools/>`_
+
+
+.. note::
+    Support for the above-listed frameworks, libraries, and cross-platform tools may vary based on your qBraid subscription tier.
+    Visit `account.qbraid.com/billing <https://account.qbraid.com/billing>`_ to learn more.

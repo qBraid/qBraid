@@ -21,7 +21,8 @@ from itertools import chain, combinations
 import numpy as np
 import pytest
 from braket.circuits import Circuit, Instruction, gates
-from pytket.circuit import Circuit as TKCircuit, OpType
+from pytket.circuit import Circuit as TKCircuit
+from pytket.circuit import OpType
 
 from qbraid.interface.calculate_unitary import to_unitary, unitary_to_little_endian
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous

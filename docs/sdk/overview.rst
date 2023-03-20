@@ -11,7 +11,7 @@ Overview
       <span style="color:#808080"> | SDK</span>
    </h1>
    <p style="text-align:center;font-style:italic;color:#808080">
-      A Python toolkit for building and executing quantum programs.
+      A Python toolkit for cross-framework abstraction, transpilation, and execution of quantum programs.
    </p>
 
 :Release: |release|
@@ -45,13 +45,10 @@ Construct a quantum program of any supported program type:
 
 .. code-block:: python
    
-   >>> from qbraid import QPROGRAM_TYPES
+   >>> from qbraid import QPROGRAM_LIBS
    >>> from qbraid.interface import random_circuit
-   >>> QPROGRAM_TYPES
-   {'cirq': 'Circuit',
-    'pyquil': 'Program',
-    'qiskit': 'QuantumCircuit',
-    'braket': 'Circuit'}
+   >>> QPROGRAM_LIBS
+   ['braket', 'cirq', 'qiskit', 'pyquil', 'pytket']
    >>> circuit = random_circuit("qiskit", num_qubits=1, measure=True)
 
 Search for quantum backend(s) on which to execute your program:
@@ -115,32 +112,37 @@ Compare the results:
 Supported Frontends
 ^^^^^^^^^^^^^^^^^^^^
 
-+-------------+-------------+------------+-------------+
-|  Cirq_      |  Braket_    |  Qiskit_   |  pyQuil_    |  
-+=============+=============+============+=============+
-| |cirq|      | |braket|    | |qiskit|   | |pyquil|    | 
-+-------------+-------------+------------+-------------+
++-------------+-------------+------------+-------------+-------------+
+|  Cirq_      |  Braket_    |  Qiskit_   |  PyQuil_    |  PyTKET_    |
++=============+=============+============+=============+=============+
+| |cirq|      | |braket|    | |qiskit|   | |pyquil|    | |pytket|    |
++-------------+-------------+------------+-------------+-------------+
 
 
 .. |cirq| image:: ../_static/pkg-logos/cirq.png
    :align: middle
-   :width: 90%
+   :width: 70%
    :target: Cirq_
 
 .. |braket| image:: ../_static/pkg-logos/braket.png
    :align: middle
-   :width: 90%
+   :width: 70%
    :target: Braket_
 
 .. |qiskit| image:: ../_static/pkg-logos/qiskit.png
    :align: middle
-   :width: 90%
+   :width: 70%
    :target: Qiskit_
 
 .. |pyquil| image:: ../_static/pkg-logos/pyquil.png
    :align: middle
-   :width: 90%
-   :target: pyQuil_
+   :width: 70%
+   :target: PyQuil_
+
+.. |pytket| image:: ../_static/pkg-logos/pytket.png
+   :align: middle
+   :width: 70%
+   :target: PyTKET_
 
 .. .. |pennylane| image:: ../_static/pkg-logos/xanadu.png
 ..    :align: middle
@@ -150,6 +152,7 @@ Supported Frontends
 .. _Cirq: https://quantumai.google/cirq
 .. _Braket: https://aws.amazon.com/braket
 .. _Qiskit: https://qiskit.org
-.. _pyQuil: https://www.rigetti.com/applications/pyquil
+.. _PyQuil: https://www.rigetti.com/applications/pyquil
+.. _PyTKET: https://cqcl.github.io/tket/pytket/api/
 .. _Pennylane: https://pennylane.ai
-.. _qBraid: https://qbraid.com/home.html
+.. _qBraid: https://qbraid.com/

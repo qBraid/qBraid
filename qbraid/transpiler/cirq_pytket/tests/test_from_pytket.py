@@ -18,14 +18,16 @@ Unit tests for converting pytket circuits to Cirq circuits.
 """
 import numpy as np
 import pytest
-from cirq import Circuit, ops, protocols, LineQubit
-from pytket.circuit import Circuit as TKCircuit, OpType
+
+# from cirq import Circuit, LineQubit, ops, protocols
+from pytket.circuit import Circuit as TKCircuit
+
+# from pytket.circuit import OpType
 from pytket.qasm import circuit_to_qasm_str
 
-from qbraid.transpiler.cirq_pytket.convert_pytket_qasm import from_pytket
-from qbraid.interface import circuits_allclose, convert_to_contiguous
+from qbraid.interface import circuits_allclose, convert_to_contiguous, random_circuit
+from qbraid.transpiler.cirq_pytket.conversions import from_pytket
 from qbraid.transpiler.exceptions import CircuitConversionError
-from qbraid.interface import random_circuit
 
 
 def test_bell_state_from_qiskit():

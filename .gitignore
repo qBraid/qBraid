@@ -131,3 +131,7 @@ dmypy.json
 .pyre/
 *.DS_Store
 
+# Testing
+p0.prof
+None/
+

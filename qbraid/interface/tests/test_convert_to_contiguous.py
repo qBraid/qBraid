@@ -16,11 +16,11 @@
 Unit tests for the qbraid convert_to_contiguous interfacing
 
 """
-from cirq import LineQubit, Circuit, X, Y, Z
 import numpy as np
 from braket.circuits import Circuit as BKCircuit
-from qiskit import QuantumCircuit
+from cirq import Circuit, LineQubit, X, Y, Z
 from pytket.circuit import Circuit as TKCircuit
+from qiskit import QuantumCircuit
 
 from qbraid.interface.calculate_unitary import circuits_allclose
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
