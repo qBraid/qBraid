@@ -81,8 +81,7 @@ def get_config(config_name: str, section: str, filepath: Optional[str] = None) -
 
     """
     if not filepath:
-        filename = "qbraidrc" if section == "default" else "config"
-        filepath = CONFIG_PATHS["QBRAID"][filename]
+        filepath = CONFIG_PATHS["QBRAID"]["qbraidrc"]
     if os.path.isfile(filepath):
         config = configparser.ConfigParser()
         config.read(filepath)

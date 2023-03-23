@@ -26,13 +26,12 @@ from qbraid.api.config_data import (
     aws_config_path,
     aws_cred_path,
     ibmq_account_url,
-    qbraid_api_url,
-    qbraid_config_path,
     qbraidrc_path,
     qiskitrc_path,
 )
 from qbraid.api.config_prompt import _mask_value
 from qbraid.api.config_user import get_config, update_config, verify_config
+from qbraid.api.configure import configure
 from qbraid.api.exceptions import AuthError, ConfigError, RequestsApiError
 from qbraid.api.ibmq_api import ibm_provider, ibmq_get_provider
 from qbraid.api.session import QbraidSession
@@ -53,17 +52,10 @@ config_lst = [
     ["aws_secret_access_key", aws_secret_access_key, "default", aws_cred_path],
     ["region", "us-east-1", "default", aws_config_path],
     ["output", "json", "default", aws_config_path],
-    ["s3_bucket", "amazon-braket-qbraid-test", "AWS", qbraid_config_path],
-    ["s3_folder", "qbraid-sdk-output", "AWS", qbraid_config_path],
-    ["verify", "True", "AWS", qbraid_config_path],
     ["token", ibmq_token, "ibmq", qiskitrc_path],
     ["url", ibmq_account_url, "ibmq", qiskitrc_path],
     ["verify", "True", "ibmq", qiskitrc_path],
     ["default_provider", "ibm-q/open/main", "ibmq", qiskitrc_path],
-    # In qBraid Lab, the qbraidrc file is automatically generated through the API
-    ["email", qbraid_user, "default", qbraidrc_path],
-    ["url", qbraid_api_url, "default", qbraidrc_path],
-    ["refresh-token", qbraid_token, "default", qbraidrc_path],
 ]
 
 
@@ -73,7 +65,7 @@ def set_config():
 
     Note: this function is used in lieu of :func:`~qbraid.api.config_user._set_config`
     to by-pass the user prompt, and directly set the configs to be used to testing."""
-    for file in [aws_config_path, aws_cred_path, qbraid_config_path, qbraidrc_path, qiskitrc_path]:
+    for file in [aws_config_path, aws_cred_path, qiskitrc_path]:
         try:
             os.remove(file)
         except FileNotFoundError:
@@ -113,7 +105,7 @@ def test_update_config():
     update_config("QBRAID", exists=False)
     assert get_config("refresh-token", "default") == "None"
     # set correct config
-    set_config()
+    configure(api_token=qbraid_token)
     assert get_config("refresh-token", "default") == os.getenv("REFRESH")
 
 
@@ -153,24 +145,17 @@ def test_qbraid_session_from_args():
 
 def test_qbraid_session_from_config():
     """Test initializing QbraidSession with attributes auto-set from config values."""
-    set_config()
     try:
         QbraidSession()
     except Exception:
         assert False
     assert True
-    # user_email = get_config("email", "default")
-    # session = QbraidSession()
-    # assert session.user_email == user_email
-    # res = session.get("/identity")
-    # assert user_email == res.json()["email"]
 
 
 def test_ibmq_get_provider():
     """Test getting IBMQ provider from qiskitrc"""
     from qiskit.providers.ibmq import AccountProvider
 
-    set_config()
     provider = ibmq_get_provider()
     assert isinstance(provider, AccountProvider)
 

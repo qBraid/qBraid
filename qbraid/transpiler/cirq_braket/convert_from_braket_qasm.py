@@ -61,6 +61,9 @@ def to_qasm(circuit: BKCircuit) -> QASMType:
         cx q[1],q[2];
 
     """
+    # OpenQASM 3.0 conversion
+    # from braket.circuits.serialization import IRType
+    # return circuit.to_ir(IRType.OPENQASM).source
 
     # A mapping from Amazon Braket gates to QASM gates
     gates = {
