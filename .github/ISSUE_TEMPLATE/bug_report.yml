@@ -10,9 +10,9 @@ body:
   - type: textarea
     attributes:
       label: Environment
-    value: |
-      - **Python version**:
-      - **Operating system**:
+      value: |
+        - **Python version**:
+        - **Operating system**:
     validations:
       required: true
   
