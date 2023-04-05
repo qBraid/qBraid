@@ -64,7 +64,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         self.refresh_metadata()
 
     def _qbraid_s3_folder(self):
-        email = get_config("email", "default")
+        email = get_config("email")
         if email == -1:
             email = os.getenv("JUPYTERHUB_USER")
         if email is None:

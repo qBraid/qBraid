@@ -26,9 +26,6 @@ from qbraid import circuit_wrapper
 
 from .exceptions import DeviceError
 
-# from qbraid.api.config_user import verify_config
-
-
 if TYPE_CHECKING:
     import qbraid
 
@@ -59,8 +56,6 @@ class DeviceLikeWrapper(ABC):
         self._obj_arg = self._info.pop("objArg")
         self._qubits = self._info["numberQubits"]
         self.requires_cred = self._info.pop("requiresCred")
-        # if self.requires_cred:
-        #     verify_config(self.vendor)
         self.vendor_dlo = self._get_device()
 
     def _compat_run_input(self, run_input: "qbraid.QPROGRAM") -> "qbraid.QPROGRAM":

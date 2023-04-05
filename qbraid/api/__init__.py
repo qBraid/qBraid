@@ -28,7 +28,6 @@
    ibmq_least_busy_qpu
    update_config
    get_config
-   verify_config
    configure
    init_job
    get_job_data
@@ -77,7 +76,7 @@
       ~QbraidSession.refresh_token
 
 """
-from .config_user import get_config, update_config, verify_config
+from .config_user import get_config, update_config
 from .configure import configure
 from .exceptions import ApiError, AuthError, ConfigError, RequestsApiError
 from .ibmq_api import ibmq_get_provider, ibmq_least_busy_qpu

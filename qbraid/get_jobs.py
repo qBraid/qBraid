@@ -134,7 +134,10 @@ def get_jobs(filters: Optional[dict] = None):
         update_progress_bar(progress)
         job_id = document["qbraidJobId"]
         timestamp = document["timeStamps"]["jobStarted"]
-        status = document["status"]
+        try:
+            status = document["status"]
+        except KeyError:
+            status = "UNKNOWN"
         if not is_status_final(status):
             qbraid_job = job_wrapper(job_id)
             qbraid_device = qbraid_job.device

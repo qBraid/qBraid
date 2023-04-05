@@ -30,9 +30,9 @@ from qbraid.api.config_data import (
     qiskitrc_path,
 )
 from qbraid.api.config_prompt import _mask_value
-from qbraid.api.config_user import get_config, update_config, verify_config
+from qbraid.api.config_user import get_config, update_config
 from qbraid.api.configure import configure
-from qbraid.api.exceptions import AuthError, ConfigError, RequestsApiError
+from qbraid.api.exceptions import AuthError, RequestsApiError
 from qbraid.api.ibmq_api import ibm_provider, ibmq_get_provider
 from qbraid.api.session import QbraidSession
 
@@ -86,27 +86,17 @@ def set_config():
             config.write(cfgfile)
 
 
-def test_verify_config():
-    """Test raising error when verifying invalid qbraid config."""
-    # remove qbraidrc file if it already exists
-    try:
-        os.remove(qbraidrc_path)
-    except FileNotFoundError:
-        pass
-    with pytest.raises(ConfigError):
-        verify_config("QBRAID")
-
-
 def test_update_config():
     """Test updating user config."""
-    # test returning -1 when config doesn't exists
-    assert get_config("refresh-token", "default") == -1
+    os.remove(qbraidrc_path)
+    # test returning None when config doesn't exists
+    assert get_config("refresh-token", "default") is None
     # updating config with no input sets them to None
     update_config("QBRAID", exists=False)
-    assert get_config("refresh-token", "default") == "None"
+    assert get_config("refresh-token") is None
     # set correct config
     configure(api_token=qbraid_token)
-    assert get_config("refresh-token", "default") == os.getenv("REFRESH")
+    assert get_config("refresh-token") == os.getenv("REFRESH")
 
 
 @pytest.mark.parametrize("testdata", [("abc123", "******abc123"), (None, "None")])
@@ -154,7 +144,10 @@ def test_qbraid_session_from_config():
 
 def test_ibmq_get_provider():
     """Test getting IBMQ provider from qiskitrc"""
-    from qiskit.providers.ibmq import AccountProvider
+    from qiskit.providers.ibmq import IBMQ, AccountProvider
+
+    if IBMQ.active_account():
+        IBMQ.delete_account()
 
     provider = ibmq_get_provider()
     assert isinstance(provider, AccountProvider)
