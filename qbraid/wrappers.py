@@ -133,10 +133,14 @@ def job_wrapper(qbraid_job_id: str):
 
     job_data = job_lst[0]
 
-    status_str = job_data["status"]
-    vendor_job_id = job_data["vendorJobId"]
     qbraid_device_id = job_data["qbraidDeviceId"]
     qbraid_device = device_wrapper(qbraid_device_id)
+
+    try:
+        status_str = job_data["status"]
+    except KeyError:
+        status_str = "UNKNOWN"
+    vendor_job_id = job_data["vendorJobId"]
     vendor = qbraid_device.vendor.lower()
     if vendor == "google":
         raise QbraidError(f"API job retrieval not supported for {qbraid_device.id}")

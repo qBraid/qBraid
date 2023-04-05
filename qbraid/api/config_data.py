@@ -25,7 +25,6 @@ import os
 aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
 aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
 qiskitrc_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
-qbraid_config_path = os.path.join(os.path.expanduser("~"), ".qbraid", "config")
 qbraidrc_path = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
 
 ibmq_account_url = "https://auth.quantum-computing.ibm.com/api"
@@ -41,9 +40,6 @@ AWS_CONFIGS = [
     ("aws_secret_access_key", "AWS Secret Access Key", None, True, "default", aws_cred_path),
     ("region", "Region name (optional)", "us-east-1", False, "default", aws_config_path),
     ("output", "Output format (optional)", "json", False, "default", aws_config_path),
-    ("s3_bucket", "S3 Bucket", None, False, "AWS", qbraid_config_path),
-    ("s3_folder", "S3 Bucket Folder", None, False, "AWS", qbraid_config_path),
-    ("verify", "", "True", False, "AWS", qbraid_config_path),
 ]
 
 IBMQ_CONFIGS = [
@@ -71,5 +67,5 @@ VENDOR_CONFIGS = {
 CONFIG_PATHS = {
     "AWS": {"config": aws_config_path, "credentials": aws_cred_path},
     "IBM": {"qiskitrc": qiskitrc_path},
-    "QBRAID": {"config": qbraid_config_path, "qbraidrc": qbraidrc_path},
+    "QBRAID": {"qbraidrc": qbraidrc_path},
 }

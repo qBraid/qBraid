@@ -16,6 +16,7 @@
 Module defining BraketDeviceWrapper Class
 
 """
+import os
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import TYPE_CHECKING, Tuple
@@ -39,6 +40,10 @@ if TYPE_CHECKING:
     import qbraid
 
 
+def _email_converter(email):
+    return email.replace("-", "-2d").replace(".", "-2e").replace("@", "-40").replace("_", "-5f")
+
+
 class AwsDeviceType(str, Enum):
     """Possible AWS device types"""
 
@@ -53,12 +58,20 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         """Create a BraketDeviceWrapper."""
 
         super().__init__(**kwargs)
-        bucket = get_config("s3_bucket", "AWS")
-        folder = get_config("s3_folder", "AWS")
-        self._s3_location = (bucket, folder)
         self._arn = self._obj_arg
+        self._default_s3_folder = self._qbraid_s3_folder()
         self._aws_session = self._get_device()._aws_session
         self.refresh_metadata()
+
+    def _qbraid_s3_folder(self):
+        email = get_config("email")
+        if email == -1:
+            email = os.getenv("JUPYTERHUB_USER")
+        if email is None:
+            return None
+        folder = _email_converter(email)
+        bucket = "amazon-braket-qbraid-jobs"
+        return (bucket, folder)
 
     def _get_device(self):
         """Initialize an AWS device."""
@@ -230,7 +243,9 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
 
         """
         run_input, qbraid_circuit = self._compat_run_input(run_input)
-        aws_quantum_task = self.vendor_dlo.run(run_input, self._s3_location, *args, **kwargs)
+        if "s3_destination_folder" not in kwargs:
+            kwargs["s3_destination_folder"] = self._default_s3_folder
+        aws_quantum_task = self.vendor_dlo.run(run_input, *args, **kwargs)
         metadata = aws_quantum_task.metadata()
         shots = 0 if "shots" not in metadata else metadata["shots"]
         vendor_job_id = aws_quantum_task.metadata()["quantumTaskArn"]

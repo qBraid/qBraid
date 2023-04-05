@@ -45,7 +45,7 @@ def ibmq_get_provider() -> AccountProvider:
         return IBMQ.get_provider()
     defaults = "ibm-q", "open", "main"
     default_provider = get_config("default_provider", "ibmq", filepath=qiskitrc_path)
-    if default_provider == -1:
+    if default_provider is None:
         hub, group, project = defaults
     else:
         try:

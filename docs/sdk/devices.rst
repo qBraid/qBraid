@@ -60,14 +60,16 @@ Or to find all backends available through qiskit that don't require a credential
 
 If run in Jupyter, the call above will return a display table similar to the following:
 
-.. raw:: html
-    
-    <p>
-        <img src="../_static/sdk-files/get_devices.png" alt="get_devices" style="width: 80%">
-    </p>
+.. image:: ../_static/sdk-files/get_devices.png
+    :align: center
+    :width: 900px
+    :target: javascript:void(0);
 
-In the lower-right of the table is the time ellapsed since the last device status update.
-Device status labels can be manually refreshed by setting ``refresh=True``:
+As seen above, qBraid Lab has a built-in Quantum Devices sidebar extension that returns the
+same data as the ``get_devices`` function in an intuitive UI with custom search and filters.
+
+In the lower-right of the table IPython table is the time ellapsed since the last device status
+update. Device status labels can be manually refreshed by setting ``refresh=True``:
 
 .. code-block:: python
 
@@ -84,13 +86,12 @@ If run in the Python Shell, device data is returned in a similar format.
 
     Device ID                           Status
     ---------                           ------
-    aws_dwave_advantage_system4         ONLINE
-    aws_dwave_2000Q_6                   ONLINE
     aws_ionq                            ONLINE
     aws_oqc_lucy                        ONLINE
-    aws_rigetti_aspen_11                OFFLINE
-    aws_rigetti_aspen_m_1               ONLINE
-
+    aws_quera_aquila                    ONLINE
+    aws_rigetti_aspen_m2                OFFLINE
+    aws_rigetti_aspen_m3                ONLINE
+    aws_xanadu_borealis                 ONLINE
 
 Each supported device is associated with its own qBraid ID. The next section will cover
 how this value is used to wrap the quantum backends / device objects of various types.

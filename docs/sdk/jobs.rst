@@ -84,4 +84,13 @@ Once the quantum job is complete, use the ``result`` method to gather the result
     <JobStatus.COMPLETED: 6>
     >>> qresult = qjob.result()
 
+
+Jobs submitted through the SDK are organized in the qBraid Lab Quantum Jobs Sidebar:
+
+.. image:: ../_static/jobs/jobs_sdk.png
+    :align: center
+    :width: 900px
+    :target: javascript:void(0);
+
+
 The next module will go in depth on qBraid SDK quantum results.
