@@ -88,7 +88,10 @@ def set_config():
 
 def test_update_config():
     """Test updating user config."""
-    os.remove(qbraidrc_path)
+    try:
+        os.remove(qbraidrc_path)
+    except FileNotFoundError:
+        pass
     # test returning None when config doesn't exists
     assert get_config("refresh-token", "default") is None
     # updating config with no input sets them to None
