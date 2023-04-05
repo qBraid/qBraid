@@ -1,0 +1,36 @@
+name: Bug report
+description: report a bug
+labels: ["type: bug"]
+
+body:
+  - type: markdown
+    attributes:
+      value: Please make sure check exist issues, to avoid duplicate issue.
+
+  - type: textarea
+    attributes:
+      label: Environment
+      value: |
+        - **Python version**:
+        - **Operating system**:
+    validations:
+      required: true
+  
+  - type: textarea
+    attributes:
+      label: What happened?
+      description: A short description what is wrong in word and how we can reproduce the error in code.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: What is the expected outcome?
+      description: Descripe what should be the outcome result.
+    validations:
+      required: true
+
+  - type: textarea
+    attributes:
+      label: Any suggestion?
+      description: Not required, but please don't hesitate to give any suggestions how a contributor should fix this or anything we should aware of.

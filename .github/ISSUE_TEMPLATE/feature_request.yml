@@ -1,0 +1,20 @@
+name: Feature request
+description: Suggest an new feature 💡!
+labels: ["type: feature request"]
+
+body:
+  - type: markdown
+    attributes:
+      value: Please make sure to check exist issues, to avoid duplicate issue.
+
+  - type: textarea
+    attributes:
+      label: What should we have?
+    validations:
+      required: true
+  
+  - type: textarea
+    attributes:
+      label: Implementation
+      description: |
+        Do you have an idea for how this could be implemented? Please include those details here.
