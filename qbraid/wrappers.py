@@ -20,7 +20,7 @@ functions utilize entrypoints via ``pkg_resources``.
 import pkg_resources
 
 from ._qprogram import QPROGRAM
-from .api import QbraidSession, ibmq_least_busy_qpu
+from .api import QbraidSession
 from .exceptions import QbraidError
 
 
@@ -88,9 +88,6 @@ def device_wrapper(qbraid_device_id: str):
         :class:`~qbraid.QbraidError`: If ``qbraid_id`` is not a valid device reference.
 
     """
-    if qbraid_device_id == "ibm_q_least_busy_qpu":
-        qbraid_device_id = ibmq_least_busy_qpu()
-
     session = QbraidSession()
     device_lst = session.get(
         "/public/lab/get-devices", params={"qbraid_id": qbraid_device_id}

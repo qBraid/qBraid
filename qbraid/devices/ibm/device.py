@@ -17,14 +17,12 @@ Module defining QiskitBackendWrapper Class
 
 """
 from qiskit import Aer, transpile
-
-# from qiskit import assemble
 from qiskit.providers import QiskitBackendNotFoundError
 from qiskit.providers.backend import Backend as QiskitBackend
 from qiskit.providers.ibmq.managed import IBMQJobManager
 from qiskit.utils.quantum_instance import QuantumInstance
+from qiskit_ibm_provider import IBMProvider
 
-from qbraid.api.ibmq_api import ibmq_get_provider
 from qbraid.api.job_api import init_job
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
@@ -41,7 +39,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         """Initialize an IBM device."""
         try:
             if self._obj_ref == "IBMQ":
-                provider = ibmq_get_provider()
+                provider = IBMProvider()
                 return provider.get_backend(self._obj_arg)
             if self._obj_ref == "Aer":
                 return Aer.get_backend(self._obj_arg)

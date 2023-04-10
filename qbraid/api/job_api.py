@@ -29,14 +29,12 @@ if TYPE_CHECKING:
 def _braket_proxy():
     """Returns True if running qBraid Lab and the Amazon Braket
     Botocore proxy is enabled. Otherwise, returns False."""
-    home = os.getenv("HOME")
-    package = "botocore"
-    slug = "qbraid_sdk_9j9sjy"
-    proxy = f"{home}/.qbraid/environments/{slug}/qbraid/{package}/proxy"
+    qbraid_envs_path = os.path.join(os.path.expanduser("~"), ".qbraid", "environments")
+    slug_dir_proxy_file = os.path.join(qbraid_envs_path, "qbraid_sdk_9j9sjy", "qbraid", "proxy")
 
     # Location of Amazon Braket proxy file for SDK environment in qBraid Lab.
-    if os.path.isfile(proxy):
-        with open(proxy) as f:  # pylint: disable=unspecified-encoding
+    if os.path.isfile(slug_dir_proxy_file):
+        with open(slug_dir_proxy_file) as f:  # pylint: disable=unspecified-encoding
             firstline = f.readline().rstrip()
             if firstline == "active = true":  # check if proxy is active or not
                 return True

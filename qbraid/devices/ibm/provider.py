@@ -16,17 +16,14 @@
 Module for top-level interfacing with the IBMQ API
 
 """
-import os
 from typing import Optional
 
 from qiskit import IBMQ
-from qiskit.providers.ibmq import AccountProvider, IBMQError, IBMQProviderError, least_busy
+from qiskit.providers.ibmq import AccountProvider, IBMQError, least_busy
 from qiskit_ibm_provider import IBMProvider
 from qiskit_ibm_provider.accounts import AccountNotFoundError
 
-from .config_data import qiskitrc_path
-from .config_user import get_config
-from .exceptions import AuthError
+from qbraid.api.exceptions import AuthError
 
 
 def ibm_provider(token: Optional[str] = None) -> IBMProvider:
@@ -39,36 +36,12 @@ def ibm_provider(token: Optional[str] = None) -> IBMProvider:
         raise AuthError from err
 
 
-def ibmq_get_provider() -> AccountProvider:
+def ibmq_get_provider(**kwargs) -> AccountProvider:
     """Get IBMQ AccountProvider"""
-    if IBMQ.active_account():
-        return IBMQ.get_provider()
-    defaults = "ibm-q", "open", "main"
-    default_provider = get_config("default_provider", "ibmq", filepath=qiskitrc_path)
-    if default_provider is None:
-        hub, group, project = defaults
-    else:
-        try:
-            hub, group, project = default_provider.split("/")
-        except (AttributeError, ValueError):
-            hub, group, project = defaults
-    if len(IBMQ.stored_account()) > 0:
-        IBMQ.load_account()
-        try:
-            return IBMQ.get_provider()
-        except IBMQProviderError:
-            try:
-                return IBMQ.get_provider(hub=hub, group=group, project=project)
-            except IBMQError as err:
-                raise AuthError from err
-    token = os.getenv("QISKIT_IBM_TOKEN")
-    if token is not None:
-        try:
-            IBMQ.save_account(token, hub=hub, group=group, project=project)
-            return ibmq_get_provider()
-        except IBMQError as err:
-            raise AuthError from err
-    raise AuthError("Failed to initialize IBMQ provider.")
+    try:
+        return IBMQ.get_provider(**kwargs)
+    except IBMQError as err:
+        raise AuthError from err
 
 
 def ibmq_least_busy_qpu() -> str:

@@ -16,7 +16,6 @@
 Module defining BraketDeviceWrapper Class
 
 """
-import os
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import TYPE_CHECKING, Tuple
@@ -26,7 +25,7 @@ from braket.aws.aws_session import AwsSession
 from braket.device_schema import DeviceCapabilities, ExecutionDay
 from braket.schema_common import BraketSchemaBase
 
-from qbraid.api.config_user import get_config
+from qbraid.api import QbraidSession
 from qbraid.api.job_api import init_job
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
@@ -38,10 +37,6 @@ if TYPE_CHECKING:
     import braket
 
     import qbraid
-
-
-def _email_converter(email):
-    return email.replace("-", "-2d").replace(".", "-2e").replace("@", "-40").replace("_", "-5f")
 
 
 class AwsDeviceType(str, Enum):
@@ -64,13 +59,11 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         self.refresh_metadata()
 
     def _qbraid_s3_folder(self):
-        email = get_config("email")
-        if email == -1:
-            email = os.getenv("JUPYTERHUB_USER")
-        if email is None:
-            return None
-        folder = _email_converter(email)
+        session = QbraidSession()
         bucket = "amazon-braket-qbraid-jobs"
+        folder = session._email_converter()
+        if folder is None:
+            return None
         return (bucket, folder)
 
     def _get_device(self):
