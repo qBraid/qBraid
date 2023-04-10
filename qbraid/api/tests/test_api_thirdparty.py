@@ -44,9 +44,9 @@ def test_check_braket_proxy():
 def test_get_session_values():
     fake_user_email = "test@email.com"
     fake_refresh_token = "2030dksc2lkjlkjll"
-    session = QbraidSession(user_email=fake_user_email, id_token=fake_refresh_token)
+    session = QbraidSession(user_email=fake_user_email, refresh_token=fake_refresh_token)
     assert session.user_email == fake_user_email
-    assert session.id_token == fake_refresh_token
+    assert session.refresh_token == fake_refresh_token
 
 
 @pytest.mark.parametrize("retry_data", [("POST", 200, False, 8), ("GET", 500, True, 3)])

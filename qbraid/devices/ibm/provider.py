@@ -36,17 +36,9 @@ def ibm_provider(token: Optional[str] = None) -> IBMProvider:
         raise AuthError from err
 
 
-def ibmq_get_provider(**kwargs) -> AccountProvider:
-    """Get IBMQ AccountProvider"""
-    try:
-        return IBMQ.get_provider(**kwargs)
-    except IBMQError as err:
-        raise AuthError from err
-
-
 def ibmq_least_busy_qpu() -> str:
     """Return the qBraid ID of the least busy IBMQ QPU."""
-    provider = ibmq_get_provider()
+    provider = ibm_provider()
     backends = provider.backends(simulator=False, operational=True)
     backend_obj = least_busy(backends)
     ibm_id = str(backend_obj)  # QPU name of form `ibm_*` or `ibmq_*`

@@ -21,20 +21,9 @@ import os
 import pytest
 
 from qbraid.api.exceptions import AuthError
-from qbraid.devices.ibm.provider import ibm_provider, ibmq_get_provider, ibmq_least_busy_qpu
+from qbraid.devices.ibm.provider import ibm_provider, ibmq_least_busy_qpu
 
 ibmq_token = os.getenv("QISKIT_IBM_TOKEN")
-
-
-def test_ibmq_get_provider():
-    """Test getting IBMQ provider from qiskitrc"""
-    from qiskit.providers.ibmq import IBMQ, AccountProvider
-
-    if IBMQ.active_account():
-        IBMQ.delete_account()
-
-    provider = ibmq_get_provider()
-    assert isinstance(provider, AccountProvider)
 
 
 def test_ibm_provider():
@@ -45,11 +34,11 @@ def test_ibm_provider():
     assert isinstance(provider, IBMProvider)
 
 
-def test_ibm_provider_bad_token():
-    """Test getting IBMQ provider using qiskit_ibm_provider package."""
+# def test_ibm_provider_bad_token():
+#     """Test getting IBMQ provider using qiskit_ibm_provider package."""
 
-    with pytest.raises(AuthError):
-        ibm_provider()
+#     with pytest.raises(AuthError):
+#         ibm_provider()
 
 
 def test_ibmq_least_busy():

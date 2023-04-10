@@ -94,10 +94,9 @@ def test_qbraid_session_from_args():
     del session
 
 
-def test_qbraid_session_from_config():
-    """Test initializing QbraidSession with attributes auto-set from config values."""
-    try:
-        QbraidSession()
-    except Exception:
-        assert False
-    assert True
+def test_qbraid_session_save_config():
+    """Test initializing QbraidSession without args and then saving config."""
+    session = QbraidSession()
+    session.save_config(user_email=qbraid_user, refresh_token=qbraid_token)
+    assert session.get_config_variable("email") == qbraid_user
+    assert session.get_config_variable("refresh-token") == qbraid_token
