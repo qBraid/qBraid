@@ -18,9 +18,6 @@ Unit tests for working with IBM provider
 """
 import os
 
-import pytest
-
-from qbraid.api.exceptions import AuthError
 from qbraid.devices.ibm.provider import ibm_provider, ibmq_least_busy_qpu
 
 ibmq_token = os.getenv("QISKIT_IBM_TOKEN")
@@ -32,13 +29,6 @@ def test_ibm_provider():
 
     provider = ibm_provider(token=ibmq_token)
     assert isinstance(provider, IBMProvider)
-
-
-# def test_ibm_provider_bad_token():
-#     """Test getting IBMQ provider using qiskit_ibm_provider package."""
-
-#     with pytest.raises(AuthError):
-#         ibm_provider()
 
 
 def test_ibmq_least_busy():

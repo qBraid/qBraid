@@ -45,7 +45,7 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
                 return Aer.get_backend(self._obj_arg)
         except QiskitBackendNotFoundError as err:
             raise DeviceError("Device not found.") from err
-        raise DeviceError(f"obj_ref {self._obj_ref} not found.")
+        raise DeviceError(f"Device {self._obj_ref} not found.")
 
     def _vendor_compat_run_input(self, run_input):
         return transpile(run_input, self.vendor_dlo)
@@ -60,13 +60,13 @@ class QiskitBackendWrapper(DeviceLikeWrapper):
         if self.id == "ibm_q_bogota":
             return DeviceStatus.OFFLINE
         backend_status = self.vendor_dlo.status()
-        if not backend_status.operational:
+        if not backend_status.operational or backend_status.status_msg != "active":
             return DeviceStatus.OFFLINE
         return DeviceStatus.ONLINE
 
     def pending_jobs(self):
         """Return the number of jobs in the queue for the ibm backend"""
-        return self.vendor_dlo.status().to_dict()["pending_jobs"]
+        return self.vendor_dlo.status().pending_jobs
 
     def execute(self, run_input, *args, **kwargs):
         """Runs circuit(s) on qiskit backend via :meth:`~qiskit.utils.QuantumInstance.execute`.
