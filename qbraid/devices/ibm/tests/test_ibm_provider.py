@@ -24,9 +24,6 @@ from qbraid.devices.ibm.provider import ibm_least_busy_qpu, ibm_provider
 
 ibmq_token = os.getenv("QISKIT_IBM_TOKEN")
 
-provider = IBMProvider(token=ibmq_token)
-provider.save_account()
-
 
 def test_ibm_provider():
     """Test getting IBMQ provider using qiskit_ibm_provider package."""

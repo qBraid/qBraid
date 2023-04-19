@@ -21,6 +21,7 @@ import configparser
 import os
 
 import pytest
+from qiskit_ibm_provider import IBMProvider
 
 from qbraid.api.exceptions import RequestsApiError
 from qbraid.api.session import QbraidSession
@@ -58,6 +59,10 @@ def set_config():
     hard-coded and secret values read from environment variables.
 
     Note: this function is used for testing purposes only."""
+
+    provider = IBMProvider()
+    provider.save_account(token=ibmq_token)
+
     for file in [aws_config_path, aws_cred_path, qiskitrc_path]:
         try:
             os.remove(file)
@@ -77,6 +82,9 @@ def set_config():
         config.set(section, config_name, str(config_value))
         with open(filepath, "w", encoding="utf-8") as cfgfile:
             config.write(cfgfile)
+
+
+set_config()
 
 
 def test_api_error():
