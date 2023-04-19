@@ -21,7 +21,7 @@ import numpy as np
 from qbraid.devices.result import ResultWrapper
 
 
-class BraketResultWrapper(ResultWrapper):
+class AwsGateModelResultWrapper(ResultWrapper):
     """Wrapper class for Amazon Braket result objects."""
 
     def measurements(self):
@@ -42,14 +42,3 @@ class BraketResultWrapper(ResultWrapper):
             str_key = "".join(reversed([str(i) for i in key]))
             qbraid_counts[str_key] = braket_counts[key]
         return qbraid_counts
-
-    def data(self):
-        """Return the raw data associated with the run/job."""
-        try:
-            return self.vendor_rlo.data()
-        except AttributeError as err:
-            raise AttributeError(
-                "This method is only available for 'AnnealingQuantumTaskResult' wrapper objects. "
-                "Available methods for 'GateModelQuantumTaskResult' wrapper objects include "
-                "'measurements' and 'measurement_counts'."
-            ) from err

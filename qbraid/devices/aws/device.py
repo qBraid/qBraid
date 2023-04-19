@@ -16,7 +16,6 @@
 Module defining BraketDeviceWrapper Class
 
 """
-import os
 from datetime import datetime, timedelta
 from enum import Enum
 from typing import TYPE_CHECKING, Tuple
@@ -26,22 +25,18 @@ from braket.aws.aws_session import AwsSession
 from braket.device_schema import DeviceCapabilities, ExecutionDay
 from braket.schema_common import BraketSchemaBase
 
-from qbraid.api.config_user import get_config
+from qbraid.api import QbraidSession
 from qbraid.api.job_api import init_job
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
 from qbraid.devices.exceptions import DeviceError
 
-from .job import BraketQuantumTaskWrapper
+from .job import AwsQuantumTaskWrapper
 
 if TYPE_CHECKING:
     import braket
 
     import qbraid
-
-
-def _email_converter(email):
-    return email.replace("-", "-2d").replace(".", "-2e").replace("@", "-40").replace("_", "-5f")
 
 
 class AwsDeviceType(str, Enum):
@@ -51,32 +46,30 @@ class AwsDeviceType(str, Enum):
     QPU = "QPU"
 
 
-class BraketDeviceWrapper(DeviceLikeWrapper):
+class AwsDeviceWrapper(DeviceLikeWrapper):
     """Wrapper class for Amazon Braket ``Device`` objects."""
 
     def __init__(self, **kwargs):
-        """Create a BraketDeviceWrapper."""
+        """Create a AwsDeviceWrapper."""
 
         super().__init__(**kwargs)
-        self._arn = self._obj_arg
+        self._arn = self.vendor_device_id
         self._default_s3_folder = self._qbraid_s3_folder()
         self._aws_session = self._get_device()._aws_session
         self.refresh_metadata()
 
     def _qbraid_s3_folder(self):
-        email = get_config("email")
-        if email == -1:
-            email = os.getenv("JUPYTERHUB_USER")
-        if email is None:
-            return None
-        folder = _email_converter(email)
+        session = QbraidSession()
         bucket = "amazon-braket-qbraid-jobs"
+        folder = session._email_converter()
+        if folder is None:
+            return None
         return (bucket, folder)
 
     def _get_device(self):
         """Initialize an AWS device."""
         try:
-            return AwsDevice(self._obj_arg)
+            return AwsDevice(self.vendor_device_id)
         except ValueError as err:
             raise DeviceError("Device not found") from err
 
@@ -107,7 +100,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         Returns:
             The status of this Device
         """
-        if self.vendor_dlo.status in ["OFFLINE", "RETIRED"]:
+        if self.vendor_dlo.status != "ONLINE":
             return DeviceStatus.OFFLINE
         return DeviceStatus.ONLINE
 
@@ -250,6 +243,6 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         shots = 0 if "shots" not in metadata else metadata["shots"]
         vendor_job_id = aws_quantum_task.metadata()["quantumTaskArn"]
         job_id = init_job(vendor_job_id, self, qbraid_circuit, shots)
-        return BraketQuantumTaskWrapper(
+        return AwsQuantumTaskWrapper(
             job_id, vendor_job_id=vendor_job_id, device=self, vendor_jlo=aws_quantum_task
         )

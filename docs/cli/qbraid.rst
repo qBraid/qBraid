@@ -19,7 +19,7 @@ qbraid
    </p>
 
 
-**Version 0.2.1**
+**Version 0.3.0**
 
 Commands
 ---------
@@ -91,4 +91,3 @@ by disabling quantum jobs:
 .. code-block:: console
 
    $ qbraid jobs disable custom_env  # toggle quantum jobs off
-

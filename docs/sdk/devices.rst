@@ -22,19 +22,18 @@ each device, i.e. ``ONLINE`` or ``OFFLINE``.
     get_devices()
 
 There a number of query options available to help filter your search. For example, to find
-simulators containing keyword "State" available through AWS or IBM:
+state vector simulators available through AWS or IBM:
 
 .. code-block:: python
 
     get_devices(
         filters={
-            "type": "Simulator",
-            "name": {"$regex": "State"},
+            "qbraid_id": {"$regex": "sv"},
             "vendor": {"$in": ["AWS", "IBM"]},
         }
     )
 
-To search for all gate-based QPUs with at least 5 qubits that are online:
+To search for all gate-based QPUs with at least 7 qubits:
 
 .. code-block:: python
 
@@ -42,19 +41,19 @@ To search for all gate-based QPUs with at least 5 qubits that are online:
         filters={
             "paradigm": "gate-based",
             "type": "QPU",
-            "numberQubits": {"$gte": 5},
-            "status": "ONLINE",
+            "numberQubits": {"$gte": 7},
         }
     )
 
-Or to find all backends available through qiskit that don't require a credential:
+Or to find all qiskit backends that are online and have less than 50 pending jobs:
 
 .. code-block:: python
 
     get_devices(
         filters={
             "runPackage": "qiskit",
-            "requiresCred": "false",
+            "pendingJobs": {"$lte": 50},
+            "status": "ONLINE",
         }
     )
 
@@ -134,7 +133,7 @@ wrapped device object directly, and more.
     'provider': 'OQC',
     'paradigm': 'gate-based',
     'type': 'QPU',
-    'typeQubits': 'superconducting',
+    'architecture': 'superconducting',
     'location': 'London, England',
     'vendor': 'AWS',
     'runPackage': 'braket',
@@ -188,13 +187,13 @@ Example Flow: Least Busy QPU
 ------------------------------
 
 In this section, we'll piece together a workflow example, starting by using the
-``ibmq_least_busy_qpu`` function to get the ``qbraid_id`` of the IBMQ QPU with the
+``ibm_least_busy_qpu`` function to get the ``qbraid_id`` of the IBMQ QPU with the
 least number of queued quantum jobs.
 
 .. code-block:: python
 
-    >>> from qbraid.api import ibmq_least_busy_qpu
-    >>> qbraid_id = ibmq_least_busy_qpu()
+    >>> from qbraid.api import ibm_least_busy_qpu
+    >>> qbraid_id = ibm_least_busy_qpu()
     >>> qdevice = device_wrapper(qbraid_id)
     >>> qdevice.name
     'IBMQ Belem'

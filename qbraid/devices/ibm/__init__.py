@@ -27,15 +27,14 @@ This module contains the classes used to run quantum circuits on devices availab
 .. autosummary::
    :toctree: ../stubs/
 
-   QiskitBackendWrapper
-   QiskitBasicAerWrapper
-   QiskitJobWrapper
-   QiskitBasicAerJobWrapper
-   QiskitResultWrapper
+   ibm_provider
+   ibm_least_busy_qpu
+   IBMBackendWrapper
+   IBMJobWrapper
+   IBMResultWrapper
 
 """
-from .result import QiskitResultWrapper
-from .device import QiskitBackendWrapper
-from .job import QiskitJobWrapper
-from .localdevice import QiskitBasicAerWrapper
-from .localjob import QiskitBasicAerJobWrapper
+from .result import IBMResultWrapper
+from .device import IBMBackendWrapper
+from .job import IBMJobWrapper
+from .provider import ibm_provider, ibm_least_busy_qpu

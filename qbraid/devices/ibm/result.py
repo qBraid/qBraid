@@ -13,7 +13,7 @@
 # limitations under the License.
 
 """
-Module defining QiskitResultWrapper Class
+Module defining IBMResultWrapper Class
 
 """
 import numpy as np
@@ -21,7 +21,7 @@ import numpy as np
 from qbraid.devices.result import ResultWrapper
 
 
-class QiskitResultWrapper(ResultWrapper):
+class IBMResultWrapper(ResultWrapper):
     """Qiskit ``Result`` wrapper class."""
 
     def measurements(self):

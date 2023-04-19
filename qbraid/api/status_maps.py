@@ -19,7 +19,7 @@ supported front-end.
 """
 from qbraid.devices.enums import JobStatus
 
-BraketQuantumTask = {
+AwsQuantumTask = {
     "CREATED": JobStatus.INITIALIZING,
     "QUEUED": JobStatus.QUEUED,
     "RUNNING": JobStatus.RUNNING,
@@ -29,7 +29,7 @@ BraketQuantumTask = {
     "FAILED": JobStatus.FAILED,
 }
 
-QiskitJob = {
+IBMJob = {
     "JobStatus.INITIALIZING": JobStatus.INITIALIZING,
     "JobStatus.QUEUED": JobStatus.QUEUED,
     "JobStatus.VALIDATING": JobStatus.VALIDATING,
@@ -39,18 +39,4 @@ QiskitJob = {
     "JobStatus.ERROR": JobStatus.FAILED,
 }
 
-CirqGoogleEngine = {
-    "Status.STATE_UNSPECIFIED": JobStatus.INITIALIZING,
-    "Status.READY": JobStatus.QUEUED,
-    "Status.RUNNING": JobStatus.RUNNING,
-    "Status.CANCELLING": JobStatus.CANCELLING,
-    "Status.CANCELLED": JobStatus.CANCELLED,
-    "Status.SUCCESS": JobStatus.COMPLETED,
-    "Status.FAILURE": JobStatus.FAILED,
-}
-
-STATUS_MAP = {
-    "AWS": BraketQuantumTask,
-    "IBM": QiskitJob,
-    "Google": CirqGoogleEngine,
-}
+STATUS_MAP = {"AWS": AwsQuantumTask, "IBM": IBMJob}
