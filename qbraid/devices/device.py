@@ -20,7 +20,7 @@ Module defining abstract DeviceLikeWrapper Class
 """
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Union  # pylint: disable=unused-import
+from typing import TYPE_CHECKING  # pylint: disable=unused-import
 
 from qbraid import circuit_wrapper
 
@@ -42,19 +42,14 @@ class DeviceLikeWrapper(ABC):
             provider (str): The company to which the device belongs
             vendor (str): The company who's software is used to access the device
             runPackage (str): The software package used to access the device
-            objRef (str): Used internally to indicate the name of the object in run_package
-                that corresponds to the device
-            objArg (str): Used internally to indicate any arguments that need to be provided
-                to the run_package object specified by ``objRef``
-            requiresCred (bool): whether or not this device requires credentials for access
+            objArg (str): The vendor device id/arn to supply as argument to the vendor device-like object
             type (str): The type of the device, "QPU" or "Simulator"
-            numberQubits (int): The number of qubits in the device (if QPU)
+            numberQubits (int): The number of qubits in the device (if applicable)
 
         """
         self._info = kwargs
-        self._obj_ref = self._info.pop("objRef")
-        self._obj_arg = self._info.pop("objArg")
         self._qubits = self._info["numberQubits"]
+        self.vendor_device_id = self._info.pop("objArg")
         self.vendor_dlo = self._get_device()
 
     def _compat_run_input(self, run_input: "qbraid.QPROGRAM") -> "qbraid.QPROGRAM":
@@ -154,7 +149,5 @@ class DeviceLikeWrapper(ABC):
         """Abstract init device method."""
 
     @abstractmethod
-    def run(
-        self, run_input: "qbraid.QPROGRAM", *args, **kwargs
-    ) -> "Union[qbraid.devices.JobLikeWrapper, qbraid.devices.LocalJobWrapper]":
+    def run(self, run_input: "qbraid.QPROGRAM", *args, **kwargs) -> "qbraid.devices.JobLikeWrapper":
         """Abstract run method."""

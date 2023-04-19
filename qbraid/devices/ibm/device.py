@@ -37,7 +37,7 @@ class IBMBackendWrapper(DeviceLikeWrapper):
         """Initialize an IBM device."""
         try:
             provider = IBMProvider()
-            return provider.get_backend(self._obj_arg)
+            return provider.get_backend(self.vendor_device_id)
         except QiskitBackendNotFoundError as err:
             raise DeviceError("Device not found.") from err
 
@@ -97,14 +97,14 @@ class IBMBackendWrapper(DeviceLikeWrapper):
             qbraid.devices.ibm.IBMJobWrapper: The job like object for the run.
 
         """
-        run_input, qbraid_circuit = self._compat_run_input(run_input)
-        if "shots" in kwargs:
-            shots = kwargs.get("shots")
-        else:
-            shots = self.vendor_dlo.options.get("shots")
         backend = self.vendor_dlo
+        run_input, qbraid_circuit = self._compat_run_input(run_input)
+        shots = backend.options.get("shots") if "shots" not in kwargs else kwargs.pop("shots")
+        memory = (
+            True if "memory" not in kwargs else kwargs.pop("memory")
+        )  # Needed to get measurements
         transpiled = transpile(run_input, backend=backend)
-        qiskit_job = backend.run(transpiled, **kwargs)
+        qiskit_job = backend.run(transpiled, shots=shots, memory=memory, **kwargs)
         qiskit_job_id = qiskit_job.job_id()
         qbraid_job_id = init_job(qiskit_job_id, self, qbraid_circuit, shots)
         qbraid_job = IBMJobWrapper(

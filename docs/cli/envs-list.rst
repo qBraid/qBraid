@@ -21,7 +21,7 @@ Examples
     qsharp                         /opt/.qbraid/environments/qsharp_b54crn
     default                  jobs  /opt/.qbraid/environments/qbraid_000000
     amazon_braket            jobs  /home/jovyan/.qbraid/environments/aws_braket_kwx6dl
-    qiskit                         /home/jovyan/.qbraid/environments/qiskit_9y9siy
+    qiskit                   jobs  /home/jovyan/.qbraid/environments/qiskit_9y9siy
     qbraid_sdk               jobs  /home/jovyan/.qbraid/environments/qbraid_sdk_9j9sjy
 
 

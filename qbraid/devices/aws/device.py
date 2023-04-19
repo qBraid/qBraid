@@ -53,7 +53,7 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
         """Create a AwsDeviceWrapper."""
 
         super().__init__(**kwargs)
-        self._arn = self._obj_arg
+        self._arn = self.vendor_device_id
         self._default_s3_folder = self._qbraid_s3_folder()
         self._aws_session = self._get_device()._aws_session
         self.refresh_metadata()
@@ -69,7 +69,7 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
     def _get_device(self):
         """Initialize an AWS device."""
         try:
-            return AwsDevice(self._obj_arg)
+            return AwsDevice(self.vendor_device_id)
         except ValueError as err:
             raise DeviceError("Device not found") from err
 

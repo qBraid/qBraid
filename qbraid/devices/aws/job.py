@@ -21,6 +21,7 @@ import logging
 from braket.aws import AwsQuantumTask
 
 from qbraid.devices.enums import JOB_FINAL
+from qbraid.devices.exceptions import JobStateError
 from qbraid.devices.job import JobLikeWrapper
 
 from .result import AwsGateModelResultWrapper
@@ -50,4 +51,7 @@ class AwsQuantumTaskWrapper(JobLikeWrapper):
 
     def cancel(self) -> None:
         """Cancel the quantum task."""
+        status = self.status()
+        if status in JOB_FINAL:
+            raise JobStateError(f"Cannot cancel quantum job in the {status} state.")
         return self.vendor_jlo.cancel()

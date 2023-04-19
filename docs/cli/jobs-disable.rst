@@ -22,12 +22,12 @@ Examples
 .. code-block:: console
 
     $ qbraid jobs disable qbraid_sdk
-    Disable successful. You are now submitting quantum jobs with your own AWS credentials.
+    Disable successful. You are now submitting quantum jobs with your own AWS + IBM credentials.
 
     To re-enable, run: `qbraid jobs enable qbraid_sdk`
 
 
-qBraid environments with support for quantum jobs include ``amazon_braket`` and ``qbraid_sdk``.
+qBraid environments with support for quantum jobs include ``amazon_braket``, ``qiskit``, and ``qbraid_sdk``.
 
 
 .. seealso::

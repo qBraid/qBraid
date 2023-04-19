@@ -30,6 +30,7 @@ Devices API
    DeviceStatus
    DeviceType
    JobError
+   JobStateError
    JobLikeWrapper
    JobStatus
    ResultWrapper
@@ -39,6 +40,6 @@ Devices API
 """
 from .device import DeviceLikeWrapper
 from .enums import DeviceStatus, DeviceType, JobStatus, is_status_final
-from .exceptions import DeviceError, JobError
+from .exceptions import DeviceError, JobError, JobStateError
 from .job import JobLikeWrapper
 from .result import ResultWrapper
