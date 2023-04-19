@@ -22,12 +22,12 @@ import pytest
 # from cirq import Circuit, LineQubit, ops, protocols
 from pytket.circuit import Circuit as TKCircuit
 
-# from pytket.circuit import OpType
-from pytket.qasm import circuit_to_qasm_str
-
-from qbraid.interface import circuits_allclose, convert_to_contiguous, random_circuit
+from qbraid.interface import circuits_allclose, random_circuit
 from qbraid.transpiler.cirq_pytket.conversions import from_pytket
 from qbraid.transpiler.exceptions import CircuitConversionError
+
+# from pytket.circuit import OpType
+# from pytket.qasm import circuit_to_qasm_str
 
 
 def test_bell_state_from_qiskit():

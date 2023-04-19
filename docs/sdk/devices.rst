@@ -188,13 +188,13 @@ Example Flow: Least Busy QPU
 ------------------------------
 
 In this section, we'll piece together a workflow example, starting by using the
-``ibmq_least_busy_qpu`` function to get the ``qbraid_id`` of the IBMQ QPU with the
+``ibm_least_busy_qpu`` function to get the ``qbraid_id`` of the IBMQ QPU with the
 least number of queued quantum jobs.
 
 .. code-block:: python
 
-    >>> from qbraid.api import ibmq_least_busy_qpu
-    >>> qbraid_id = ibmq_least_busy_qpu()
+    >>> from qbraid.api import ibm_least_busy_qpu
+    >>> qbraid_id = ibm_least_busy_qpu()
     >>> qdevice = device_wrapper(qbraid_id)
     >>> qdevice.name
     'IBMQ Belem'

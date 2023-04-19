@@ -18,7 +18,7 @@ Unit tests for working with IBM provider
 """
 import os
 
-from qbraid.devices.ibm.provider import ibm_provider, ibmq_least_busy_qpu
+from qbraid.devices.ibm.provider import ibm_least_busy_qpu, ibm_provider
 
 ibmq_token = os.getenv("QISKIT_IBM_TOKEN")
 
@@ -33,5 +33,5 @@ def test_ibm_provider():
 
 def test_ibmq_least_busy():
     """Test returning qbraid ID of least busy IBMQ QPU."""
-    qbraid_id = ibmq_least_busy_qpu()
+    qbraid_id = ibm_least_busy_qpu()
     assert qbraid_id[:6] == "ibm_q_"

@@ -31,7 +31,7 @@ from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
 from qbraid.devices.exceptions import DeviceError
 
-from .job import BraketQuantumTaskWrapper
+from .job import AwsQuantumTaskWrapper
 
 if TYPE_CHECKING:
     import braket
@@ -46,11 +46,11 @@ class AwsDeviceType(str, Enum):
     QPU = "QPU"
 
 
-class BraketDeviceWrapper(DeviceLikeWrapper):
+class AwsDeviceWrapper(DeviceLikeWrapper):
     """Wrapper class for Amazon Braket ``Device`` objects."""
 
     def __init__(self, **kwargs):
-        """Create a BraketDeviceWrapper."""
+        """Create a AwsDeviceWrapper."""
 
         super().__init__(**kwargs)
         self._arn = self._obj_arg
@@ -100,7 +100,7 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         Returns:
             The status of this Device
         """
-        if self.vendor_dlo.status in ["OFFLINE", "RETIRED"]:
+        if self.vendor_dlo.status != "ONLINE":
             return DeviceStatus.OFFLINE
         return DeviceStatus.ONLINE
 
@@ -243,6 +243,6 @@ class BraketDeviceWrapper(DeviceLikeWrapper):
         shots = 0 if "shots" not in metadata else metadata["shots"]
         vendor_job_id = aws_quantum_task.metadata()["quantumTaskArn"]
         job_id = init_job(vendor_job_id, self, qbraid_circuit, shots)
-        return BraketQuantumTaskWrapper(
+        return AwsQuantumTaskWrapper(
             job_id, vendor_job_id=vendor_job_id, device=self, vendor_jlo=aws_quantum_task
         )

@@ -18,8 +18,7 @@ Module for top-level interfacing with the IBMQ API
 """
 from typing import Optional
 
-from qiskit import IBMQ
-from qiskit.providers.ibmq import AccountProvider, IBMQError, least_busy
+from qiskit.providers.ibmq import least_busy
 from qiskit_ibm_provider import IBMProvider
 from qiskit_ibm_provider.accounts import AccountNotFoundError
 
@@ -36,7 +35,7 @@ def ibm_provider(token: Optional[str] = None) -> IBMProvider:
         raise AuthError from err
 
 
-def ibmq_least_busy_qpu() -> str:
+def ibm_least_busy_qpu() -> str:
     """Return the qBraid ID of the least busy IBMQ QPU."""
     provider = ibm_provider()
     backends = provider.backends(simulator=False, operational=True)

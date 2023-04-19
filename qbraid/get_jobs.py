@@ -140,12 +140,8 @@ def get_jobs(filters: Optional[dict] = None):
             status = "UNKNOWN"
         if not is_status_final(status):
             qbraid_job = job_wrapper(job_id)
-            qbraid_device = qbraid_job.device
-            if qbraid_device.requires_cred:
-                status_obj = qbraid_job.status()
-                status = status_obj.raw()
-            else:
-                status = "COMPLETED"
+            status_obj = qbraid_job.status()
+            status = status_obj.raw()
         job_data.append([job_id, timestamp, status])
 
     if num_jobs == 0:  # Design choice whether to display anything here or not

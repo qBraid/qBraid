@@ -55,7 +55,6 @@ class DeviceLikeWrapper(ABC):
         self._obj_ref = self._info.pop("objRef")
         self._obj_arg = self._info.pop("objArg")
         self._qubits = self._info["numberQubits"]
-        self.requires_cred = self._info.pop("requiresCred")
         self.vendor_dlo = self._get_device()
 
     def _compat_run_input(self, run_input: "qbraid.QPROGRAM") -> "qbraid.QPROGRAM":

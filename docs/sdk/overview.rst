@@ -56,7 +56,7 @@ Search for quantum backend(s) on which to execute your program:
 .. code-block:: python
 
    >>> from qbraid import get_devices
-   >>> from qbraid.api import ibmq_least_busy_qpu
+   >>> from qbraid.api import ibm_least_busy_qpu
    >>> get_devices(filters={"name": {"$regex": "Density Matrix"}})
    Device status updated 0 minutes ago
 
@@ -65,7 +65,7 @@ Search for quantum backend(s) on which to execute your program:
    aws_dm_sim                          ONLINE    
    google_cirq_dm_sim                  ONLINE
    
-   >>> ibmq_least_busy_qpu()
+   >>> ibm_least_busy_qpu()
    ibm_q_belem
 
 Apply the device wrapper and send your quantum jobs:
