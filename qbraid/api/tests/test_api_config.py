@@ -60,8 +60,7 @@ def set_config():
 
     Note: this function is used for testing purposes only."""
 
-    provider = IBMProvider()
-    provider.save_account(token=ibmq_token)
+    IBMProvider.save_account(token=ibmq_token)
 
     for file in [aws_config_path, aws_cred_path, qiskitrc_path]:
         try:
