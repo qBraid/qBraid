@@ -26,13 +26,13 @@ if TYPE_CHECKING:
     import qbraid
 
 
-def _braket_proxy():
-    """Returns True if running qBraid Lab and the Amazon Braket
-    Botocore proxy is enabled. Otherwise, returns False."""
+def _qbraid_jobs_enabled():
+    """Returns True if running qBraid Lab and qBraid Quantum Jobs
+    proxy is enabled. Otherwise, returns False."""
     qbraid_envs_path = os.path.join(os.path.expanduser("~"), ".qbraid", "environments")
     slug_dir_proxy_file = os.path.join(qbraid_envs_path, "qbraid_sdk_9j9sjy", "qbraid", "proxy")
 
-    # Location of Amazon Braket proxy file for SDK environment in qBraid Lab.
+    # Location of proxy file for SDK environment in qBraid Lab.
     if os.path.isfile(slug_dir_proxy_file):
         with open(slug_dir_proxy_file) as f:  # pylint: disable=unspecified-encoding
             firstline = f.readline().rstrip()
@@ -67,12 +67,12 @@ def init_job(
     # the qBraid CLI allows you to enable/disable API proxies for environments
     # that use IBMQ and/or Amazon Braket (Botocore). A ``qbraid`` directory
     # exists for each such environment that contains information about how to
-    # toggle the proxies, along with their status. If the Amazon Braket Botocore
+    # toggle the proxies, along with their status. If the qBraid Quantum Jobs
     # proxy is enabled, a MongoDB document has already been created for this job. So,
     # instead of creating a new job document, we instead query the user jobs
     # for the ``vendorJobId`` (for Amazon Braket this is the QuantumTask arn),
     # and return the correspondong ``qbraidJobId``.
-    if device.vendor == "AWS" and _braket_proxy():
+    if _qbraid_jobs_enabled():
         job = session.post("/get-user-jobs", json={"vendorJobId": vendor_job_id}).json()[0]
         return job["qbraidJobId"]
 

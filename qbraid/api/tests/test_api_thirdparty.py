@@ -21,7 +21,7 @@ import os
 
 import pytest
 
-from qbraid.api.job_api import _braket_proxy
+from qbraid.api.job_api import _qbraid_jobs_enabled
 from qbraid.api.session import STATUS_FORCELIST, PostForcelistRetry, QbraidSession
 
 
@@ -33,11 +33,11 @@ def test_check_braket_proxy():
     os.makedirs(proxy_dir, exist_ok=True)
     if os.path.exists(proxy_file):
         os.remove(proxy_file)
-    assert _braket_proxy() is False
+    assert _qbraid_jobs_enabled() is False
     outF = open(proxy_file, "w")
     outF.writelines("active = true\n")
     outF.close()
-    assert _braket_proxy() is True
+    assert _qbraid_jobs_enabled() is True
     os.remove(proxy_file)
 
 
