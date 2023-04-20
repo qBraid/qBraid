@@ -13,59 +13,51 @@
 # limitations under the License.
 
 """
-Module defining QiskitJobWrapper Class
+Module defining IBMJobWrapper Class
 
 """
 import logging
 
-from qiskit.providers.exceptions import JobError as QiskitJobError
-from qiskit.providers.ibmq import IBMQBackend
-from qiskit.providers.ibmq.managed import IBMQJobManager
+from qiskit_ibm_provider import IBMBackend
 
 from qbraid.devices.enums import JOB_FINAL
-from qbraid.devices.exceptions import JobError
+from qbraid.devices.exceptions import JobError, JobStateError
 from qbraid.devices.job import JobLikeWrapper
 
-from .result import QiskitResultWrapper
+from .result import IBMResultWrapper
 
 
-class QiskitJobWrapper(JobLikeWrapper):
+class IBMJobWrapper(JobLikeWrapper):
     """Wrapper class for IBM Qiskit ``Job`` objects."""
 
     def __init__(self, job_id: str, **kwargs):
-        """Create a ``QiskitJobWrapper`` object."""
+        """Create a ``IBMJobWrapper`` object."""
         super().__init__(job_id, **kwargs)
 
     def _get_vendor_jlo(self):
         """Return the job like object that is being wrapped."""
-        if not isinstance(self.device.vendor_dlo, IBMQBackend):
+        if not isinstance(self.device.vendor_dlo, IBMBackend):
             raise JobError(
                 f"Retrieving previously submitted job not supported for {self.device.id}."
             )
-        job_manager = IBMQJobManager()
-        job_set_id = self.vendor_job_id
-        provider = self.device.vendor_dlo.provider()
-        job_set = job_manager.retrieve_job_set(job_set_id=job_set_id, provider=provider)
-        jobs = job_set.jobs()  # ATM len(jobs) always 1 b/c qbraid run method takes single circuit
-        return jobs[0]
+        job_id = self.vendor_job_id
+        backend = self.device.vendor_dlo
+        provider = backend.provider
+        return provider.backend.retrieve_job(job_id)
 
     def _get_status(self):
         """Returns status from Qiskit Job object."""
         return str(self.vendor_jlo.status())
 
-    def submit(self):
-        """Submit the job to the backend for execution."""
-        try:
-            return self.vendor_jlo.submit()
-        except QiskitJobError as err:
-            raise JobError from err
-
     def result(self):
         """Return the results of the job."""
         if self.status() not in JOB_FINAL:
             logging.info("Result will be available when job has reached final state.")
-        return QiskitResultWrapper(self.vendor_jlo.result())
+        return IBMResultWrapper(self.vendor_jlo.result())
 
     def cancel(self):
         """Attempt to cancel the job."""
+        status = self.status()
+        if status in JOB_FINAL:
+            raise JobStateError(f"Cannot cancel quantum job in the {status} state.")
         return self.vendor_jlo.cancel()

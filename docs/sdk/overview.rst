@@ -56,17 +56,18 @@ Search for quantum backend(s) on which to execute your program:
 .. code-block:: python
 
    >>> from qbraid import get_devices
-   >>> from qbraid.api import ibmq_least_busy_qpu
-   >>> get_devices(filters={"name": {"$regex": "Density Matrix"}})
+   >>> from qbraid.api import ibm_least_busy_qpu
+   >>> get_devices(filters={"architecture": {"$regex": "superconducting"}, "vendor": "AWS"})
    Device status updated 0 minutes ago
 
    Device ID                           Status     
-   ---------                           ------    
-   aws_dm_sim                          ONLINE    
-   google_cirq_dm_sim                  ONLINE
+   ---------                           ------
+   aws_oqc_lucy                        ONLINE        
+   aws_rigetti_aspen_m2                OFFLINE
+   aws_rigetti_aspen_m3                ONLINE
    
-   >>> ibmq_least_busy_qpu()
-   ibm_q_belem
+   >>> ibm_least_busy_qpu()
+   ibm_q_perth
 
 Apply the device wrapper and send your quantum jobs:
 
@@ -74,10 +75,10 @@ Apply the device wrapper and send your quantum jobs:
 
    >>> from qbraid import device_wrapper
    >>> jobs  = []
-   >>> qbraid_ids = ['aws_dm_sim', 'google_cirq_dm_sim', 'ibm_q_belem']
+   >>> qbraid_ids = ['aws_oqc_lucy', 'ibm_q_perth']
    >>> for device in qbraid_ids:
    ... qdevice = device_wrapper(device)
-   ... qjob = qdevice.run(circuit, shots=1024)
+   ... qjob = qdevice.run(circuit, shots=1000)
    ... jobs.append(qjob)
 
 List your submitted jobs and view their status:
@@ -85,14 +86,13 @@ List your submitted jobs and view their status:
 .. code-block:: python
 
    >>> from qbraid import get_jobs
-   >>> get_jobs(filters={"numResults": 3})
-   Displaying 3 most recent jobs matching query:
+   >>> get_jobs(filters={"numResults": 2})
+   Displaying 2 most recent jobs matching query:
 
    Job ID                                              Submitted                  Status
    ------                                              ---------                  ------
-   ibm_q_belem-exampleuser-qjob-xxxxxxx...             2023-05-21T21:13:48.220Z   RUNNING
-   google_cirq_dm_sim-exampleuser-qjob-yyyyyyy...      2023-05-21T21:13:47.220Z   COMPLETED
-   aws_dm_sim-exampleuser-qjob-zzzzzzz...              2023-05-21T21:13:47.220Z   COMPLETED
+   aws_oqc_lucy-exampleuser-qjob-zzzzzzz...            2023-05-21T21:13:47.220Z   QUEUED
+   ibm_q_perth-exampleuser-qjob-xxxxxxx...             2023-05-21T21:13:48.220Z   RUNNING
 
 Compare the results:
 
@@ -104,9 +104,8 @@ Compare the results:
    ... counts = result.measurement_counts()
    ... print("{:<20} {:<20}".format(qbraid_ids[i],str(counts)))
    Device               Counts              
-   aws_dm_sim           {'0': 477, '1': 547}
-   google_cirq_dm_sim   {'0': 534, '1': 490}
-   ibm_q_belem          {'0': 550, '1': 474}
+   aws_oqc_lucy         {'0': 477, '1': 547}
+   ibm_q_perth          {'0': 550, '1': 474}
 
 
 Supported Frontends

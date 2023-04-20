@@ -1,103 +1,37 @@
-# This code is part of Qiskit.
+# Copyright 2023 qBraid
 #
-# (C) Copyright IBM 2018, 2019.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
 #
-# This code is licensed under the Apache License, Version 2.0. You may
-# obtain a copy of this license in the LICENSE.txt file in the root directory
-# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+#     http://www.apache.org/licenses/LICENSE-2.0
 #
-# Any modifications or derivative works of this code must retain this
-# copyright notice, and modified files need to carry a notice indicating
-# that they have been altered from the originals.
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
 
 """
 Module for making requests to the qBraid API.
 
 """
+import configparser
 import logging
+import os
 from typing import Any, Optional
 
 from requests import RequestException, Response, Session
 from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
-from .config_data import qbraid_api_url
-from .config_user import get_config
-from .exceptions import RequestsApiError
+from .exceptions import AuthError, ConfigError, RequestsApiError
+from .retry import STATUS_FORCELIST, PostForcelistRetry
 
-# Credit: Qiskit IBMQ
-STATUS_FORCELIST = (
-    500,  # General server error
-    502,  # Bad Gateway
-    503,  # Service Unavailable
-    504,  # Gateway Timeout
-    520,  # Cloudflare general error
-    522,  # Cloudflare connection timeout
-    524,  # Cloudflare Timeout
-)
+DEFAULT_ENDPOINT_URL = "https://api-staging-1.qbraid.com/api"
+DEFAULT_CONFIG_PATH = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
+DEFAULT_CONFIG_SECTION = "default"
 
 logger = logging.getLogger(__name__)
-
-
-class PostForcelistRetry(Retry):
-    """Custom :py:class:`urllib3.Retry` class that performs retry on ``POST`` errors in the
-    force list. Retrying of ``POST`` requests are allowed *only* when the status code returned
-    is on the :py:const:`~qbraid.api.session.STATUS_FORCELIST`. While ``POST`` requests are
-    recommended not to be retried due to not being idempotent, retrying on specific 5xx errors
-    through the qBraid API is safe.
-
-    Credit: Qiskit IBMQ
-    """
-
-    def increment(  # type: ignore[no-untyped-def]
-        self,
-        method=None,
-        url=None,
-        response=None,
-        error=None,
-        _pool=None,
-        _stacktrace=None,
-    ):
-        """Overwrites parent class increment method for logging."""
-        if logger.getEffectiveLevel() is logging.DEBUG:
-            status = data = headers = None
-            if response:
-                status = response.status
-                data = response.data
-                headers = response.headers
-            logger.debug(
-                "Retrying method=%s, url=%s, status=%s, error=%s, data=%s, headers=%s",
-                method,
-                url,
-                status,
-                error,
-                data,
-                headers,
-            )
-        return super().increment(
-            method=method,
-            url=url,
-            response=response,
-            error=error,
-            _pool=_pool,
-            _stacktrace=_stacktrace,
-        )
-
-    def is_retry(self, method: str, status_code: int, has_retry_after: bool = False) -> bool:
-        """Indicate whether the request should be retried.
-
-        Args:
-            method: Request method.
-            status_code: Status code.
-            has_retry_after: Whether retry has been done before.
-
-        Returns:
-            ``True`` if the request should be retried, ``False`` otherwise.
-        """
-        if method.upper() == "POST" and status_code in self.status_forcelist:
-            return True
-
-        return super().is_retry(method, status_code, has_retry_after)
 
 
 class QbraidSession(Session):
@@ -111,7 +45,6 @@ class QbraidSession(Session):
     Args:
         base_url: Base URL for the session's requests.
         user_email: JupyterHub User.
-        id_token: Authenticated qBraid id-token.
         refresh_token: Authenticated qBraid refresh-token.
         retries_total: Number of total retries for the requests.
         retries_connect: Number of connect retries for the requests.
@@ -123,7 +56,6 @@ class QbraidSession(Session):
         self,
         base_url: Optional[str] = None,
         user_email: Optional[str] = None,
-        id_token: Optional[str] = None,
         refresh_token: Optional[str] = None,
         retries_total: int = 5,
         retries_connect: int = 3,
@@ -133,7 +65,6 @@ class QbraidSession(Session):
 
         self.base_url = base_url
         self.user_email = user_email
-        self.id_token = id_token
         self.refresh_token = refresh_token
         self.verify = False
 
@@ -151,8 +82,8 @@ class QbraidSession(Session):
     @base_url.setter
     def base_url(self, value: Optional[str]) -> None:
         """Set the qbraid api url."""
-        url = value if value else get_config("url")
-        self._base_url = url if url else qbraid_api_url
+        url = value if value else self.get_config_variable("url")
+        self._base_url = url if url else DEFAULT_ENDPOINT_URL
 
     @property
     def user_email(self) -> Optional[str]:
@@ -162,23 +93,10 @@ class QbraidSession(Session):
     @user_email.setter
     def user_email(self, value: Optional[str]) -> None:
         """Set the session user email."""
-        user_email = value if value else get_config("email")
-        self._user_email = user_email
+        user_email = value if value else self.get_config_variable("email")
+        self._user_email = user_email if user_email else os.getenv("JUPYTERHUB_USER")
         if user_email:
             self.headers.update({"email": user_email})  # type: ignore[attr-defined]
-
-    @property
-    def id_token(self) -> Optional[str]:
-        """Return the session id token."""
-        return self._id_token
-
-    @id_token.setter
-    def id_token(self, value: Optional[str]) -> None:
-        """Set the session id token."""
-        id_token = value if value else get_config("id-token")
-        self._id_token = id_token
-        if id_token:
-            self.headers.update({"id-token": id_token})  # type: ignore[attr-defined]
 
     @property
     def refresh_token(self) -> Optional[str]:
@@ -188,17 +106,81 @@ class QbraidSession(Session):
     @refresh_token.setter
     def refresh_token(self, value: Optional[str]) -> None:
         """Set the session refresh token."""
-        refresh_token = value if value else get_config("refresh-token")
+        refresh_token = value if value else self.get_config_variable("refresh-token")
         self._refresh_token = refresh_token
         if refresh_token:
             self.headers.update({"refresh-token": refresh_token})  # type: ignore[attr-defined]
+
+    def get_config_variable(self, config_name: str) -> Optional[str]:
+        """Returns the config value of specified config.
+
+        Args:
+            config_name: The name of the config
+        """
+        filepath = DEFAULT_CONFIG_PATH
+        if os.path.isfile(filepath):
+            config = configparser.ConfigParser()
+            config.read(filepath)
+            section = DEFAULT_CONFIG_SECTION
+            if section in config.sections():
+                if config_name in config[section]:
+                    return config[section][config_name]
+        return None
+
+    def save_config(
+        self,
+        user_email: Optional[str] = None,
+        refresh_token: Optional[str] = None,
+        base_url: Optional[str] = None,
+    ) -> None:
+        """Create qbraidrc file. In qBraid Lab, qbraidrc is automatically present in filesystem.
+
+        Args:
+            user_email:  JupyterHub User.
+            refresh_token: Authenticated qBraid refresh-token.
+            base_url: Base URL for the session's requests.
+        """
+        self.user_email = user_email if user_email else self.user_email
+        self.refresh_token = refresh_token if refresh_token else self.refresh_token
+        self.base_url = base_url if base_url else self.base_url
+
+        res = self.get("/identity")
+
+        if res.status_code != 200 or self.user_email != res.json()["email"]:
+            raise AuthError("Invalid qBraid API credentials")
+
+        try:
+            filepath = DEFAULT_CONFIG_PATH
+            if not os.path.isfile(filepath):
+                os.makedirs(os.path.dirname(filepath), exist_ok=True)
+            config = configparser.ConfigParser()
+            config.read(filepath)
+            section = DEFAULT_CONFIG_SECTION
+            if section not in config.sections():
+                config.add_section(section)
+            config.set(section, "email", self.user_email)
+            config.set(section, "refresh-token", self.refresh_token)
+            config.set(section, "url", self.base_url)
+            with open(filepath, "w", encoding="utf-8") as cfgfile:
+                config.write(cfgfile)
+        except Exception as err:
+            raise ConfigError from err
+
+    def _email_converter(self) -> Optional[str]:
+        """Convert email to compatible string format"""
+        if not self.user_email:
+            return None
+        return (
+            self.user_email.replace("-", "-2d")
+            .replace(".", "-2e")
+            .replace("@", "-40")
+            .replace("_", "-5f")
+        )
 
     def _initialize_retry(
         self, retries_total: int, retries_connect: int, backoff_factor: float
     ) -> None:
         """Set the session retry policy.
-
-        Credit: Qiskit IBMQ
 
         Args:
             retries_total: Number of total retries for the requests.
@@ -218,8 +200,6 @@ class QbraidSession(Session):
 
     def request(self, method: str, url: str, **kwargs: Any) -> Response:  # type: ignore[override]
         """Construct, prepare, and send a ``Request``.
-
-        Credit: Qiskit IBMQ
 
         Args:
             method: Method for the new request (e.g. ``POST``).
@@ -252,9 +232,6 @@ class QbraidSession(Session):
                 except Exception:  # pylint: disable=broad-except
                     # the response did not contain the expected json.
                     message += f". {ex.response.text}"
-
-            if self.id_token:
-                message = message.replace(self.id_token, "...")
 
             if self.refresh_token:
                 message = message.replace(self.refresh_token, "...")

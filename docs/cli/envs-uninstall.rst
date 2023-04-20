@@ -26,7 +26,7 @@ Examples
     #
     qsharp                         /opt/.qbraid/environments/qsharp_b54crn
     default                  jobs  /opt/.qbraid/environments/qbraid_000000
-    qiskit                         /home/jovyan/.qbraid/environments/qiskit_9y9siy
+    qiskit                   jobs  /home/jovyan/.qbraid/environments/qiskit_9y9siy
     $ qbraid envs uninstall qiskit
     $ qbraid envs list
     # installed environments:

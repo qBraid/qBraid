@@ -25,3 +25,7 @@ class DeviceError(QbraidError):
 
 class JobError(QbraidError):
     """Base class for errors raised by Jobs."""
+
+
+class JobStateError(JobError):
+    """Class for errors raised due to the state of a quantum job"""

@@ -164,7 +164,7 @@ will *not* persist between sessions. Instead, use the qBraid CLI to list your en
    qsharp                         /opt/.qbraid/environments/qsharp_b54crn
    default                  jobs  /opt/.qbraid/environments/qbraid_000000
    qbraid_sdk               jobs  /home/jovyan/.qbraid/environments/qbraid_sdk_9j9sjy
-   qiskit                         /home/jovyan/.qbraid/environments/qiskit_9y9siy
+   qiskit                   jobs  /home/jovyan/.qbraid/environments/qiskit_9y9siy
 
 
 activate an environment, and perform your pip installs from there. For example, installing pytket into the qiskit environment:
@@ -175,3 +175,32 @@ activate an environment, and perform your pip installs from there. For example, 
    $ python -m pip install pytket
    $ deactivate
 
+
+How environments work
+----------------------
+
+qBraid environments are simply `Python virtual environments <https://docs.python.org/3/library/venv.html>`_ in disguise.
+There are two directories where qBraid environment can be found. One at the system level, and one at the local / user level:
+
+.. code-block:: console
+
+   $ echo $QBRAID_USR_ENVS
+   /home/jovyan/.qbraid/environments
+   $ echo $QBRAID_SYS_ENVS
+   /opt/.qbraid/environments
+
+The environments at the the system level are reset each time you launch Lab, so any changes made to these environments will not persist between sessions.
+The user level environments are yours to modify: any and all changes you make to these environments will still be there the next time to launch Lab.
+The qBraid CLI provides convenient short-cuts to activate and install pacakages into your qBraid environments, however all of the traditional commands
+to activate and manipulate Python venvs still apply. For example, you can activate an environment using the
+`source command <https://docs.python.org/3/library/venv.html#how-venvs-work>`_:
+
+.. code-block:: console
+
+   $ source $QBRAID_USR_ENVS/<slug>/pyenv/bin/activate
+
+If you're working in terminal, you don't specifically need to activate a qBraid environment, as you can just specify the full path to that environment's
+Python interpreter when invoking Python, e.g. ``/<path-to-venv>/bin/python``. The same is true for ``pip`` commands. So if you are attempting to install
+new packages into a qBraid environment from terminal or inside a notebook, make sure to use the full pip path, or use one of the `three approaches
+detailed above <environments.html#install-new-package>`_. Simply running ``pip install ...`` will default to
+``/opt/conda/bin/pip``, which will cause dependency conflicts, and the installed packages will be overridden the next time you launch lab.

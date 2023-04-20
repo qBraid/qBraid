@@ -6,6 +6,14 @@ qbraid.devices.ibm package
 Submodules
 ----------
 
+qbraid.devices.ibm.provider module
+----------------------------------
+
+.. automodule:: qbraid.devices.ibm.provider
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 qbraid.devices.ibm.device module
 --------------------------------
 

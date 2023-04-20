@@ -4,17 +4,19 @@ Quantum Jobs
 =============
 
 qBraid Quantum Jobs give Lab users direct access to all `Amazon Braket supported devices <https://docs.aws.amazon.com/braket/latest/developerguide/braket-devices.html>`_
-with no additional access keys required. This includes access to six QPU devices from IonQ, Oxford Quantum Circuits, QuEra, Rigetti, and Xanadu, and three on-demand simulators.
+and `IBM Quantum open systems <https://www.ibm.com/quantum/access-plans>`_ with no additional access keys required. This includes access to 15 QPU devices from
+IonQ, Oxford Quantum Circuits, QuEra, Rigetti, Xanadu, and IBM, as well as 8 on-demand simulators from AWS and IBM.
 
 Credits
 --------
 
 Each time you run a program on a QPU or on-demand simulator using qBraid Quantum Jobs, credits are subtracted from your account according to the cost of the job.
-The cost is calculated using the per-shot and per-task fee from `Amazon Braket pricing <https://aws.amazon.com/braket/pricing/>`_, with no mark-up.
+The cost is calculated using the per-shot / per-task / per-second fee(s) from `Amazon Braket pricing <https://aws.amazon.com/braket/pricing/>`_ or
+`Qiskit Runtime pricing <https://www.ibm.com/quantum/access-plans>`_, with no mark-up.
 
 Each qBraid credit is worth $.01 USD, so an Amazon Braket task costing $3.80 would subtract 380 credits from your qBraid balance. Credits can be `purchased <https://account.qbraid.com/billing.>`_
-from your account page, or `redeemed <account.html#add-access-key>`_ using an access key. You can check your current credit balance on your `account page <https://account.qbraid.com/billing.>`_, in the ``QJOBS`` sidebar on Lab, or
-using the `CLI <../cli/jobs-get-credits.html>`_:
+from your account page, or `redeemed <account.html#add-access-key>`_ using an access key. You can check your current credit balance on your `account page <https://account.qbraid.com/billing.>`_,
+in the ``QJOBS`` sidebar on Lab, or using the `CLI <../cli/jobs-get-credits.html>`_:
 
 .. code-block::
 
@@ -44,10 +46,11 @@ Green or red highlighting over the ``jobs`` keyword (not pictured) indicates whe
     #
     qsharp                         /opt/.qbraid/environments/qsharp_b54crn
     default                  jobs  /opt/.qbraid/environments/qbraid_000000
+    qiskit                   jobs  /home/jovyan/.qbraid/environments/qiskit_9y9siy
     amazon_braket            jobs  /home/jovyan/.qbraid/environments/aws_braket_kwx6dl
     custom_env                     /home/jovyan/.qbraid/environments/custom_env_lj3zlt
 
-qBraid Quantum Jobs are not limited to environments with pre-configured support. You can `add <../cli/jobs-add.html>`_ Quantum Jobs to any environment that has Amazon Braket installed:
+qBraid Quantum Jobs are not limited to environments with pre-configured support. You can `add <../cli/jobs-add.html>`_ Quantum Jobs to any environment that has Amazon Braket or Qiskit installed:
 
 .. code-block::
 
@@ -65,14 +68,14 @@ To use Quantum Jobs in an environment, they must be `enabled <../cli/jobs-enable
 
 You can also enable Quantum Jobs from inside a notebook using the ``!`` operator. This extra character, put at the beginning of the command, indicates that what you've entered is a bash command and not Python code.
 
-To `disable <../cli/jobs-disable.html>`_ Quantum Jobs, and run programs using your own AWS credentials, enter
+To `disable <../cli/jobs-disable.html>`_ Quantum Jobs and run programs using your own AWS / IBM credentials, enter
 
 .. code-block::
 
     $ qbraid jobs disable [env_name]
-    $ aws configure
 
-and follow instructions `Quick configuration with aws configure <https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html#cli-configure-quickstart-config>`_.
+To reset your AWS credentials, follow instructions `Quick configuration with aws configure <https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html#cli-configure-quickstart-config>`_.
+To reset your IBM credentials, follow instructions `Qiskit IBM Quantum Provider setup <https://github.com/Qiskit/qiskit-ibm-provider#provider-setup>`_.
 
  
 Manage
@@ -101,6 +104,8 @@ At any time, it's now incredibly easy to retrieve the Job ID, recreate the ``Aws
     task.result()
     ...
 
+On qBraid, the devices you can access are not restricted by your choice of programming framework. Target any of our 20+ supported QPUs and simulators
+from Qiskit, Amazon Braket, Cirq, pyQuil, or OpenQASM using the `qBraid SDK <../sdk/devices.html>`_.
 
 .. seealso::
 

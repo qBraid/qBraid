@@ -21,31 +21,17 @@ import numpy as np
 import pytest
 from braket.aws import AwsDevice
 from braket.circuits import Circuit as BraketCircuit
-from braket.devices import LocalSimulator as AwsSimulator
-from braket.tasks.quantum_task import QuantumTask as BraketQuantumTask
-from cirq.sim.simulator_base import SimulatorBase as CirqSimulator
-from cirq.study.result import Result as CirqResult
+from braket.tasks.quantum_task import QuantumTask as AwsQuantumTask
 from qiskit import QuantumCircuit as QiskitCircuit
-from qiskit.providers.backend import Backend as QiskitBackend
-from qiskit.providers.job import Job as QiskitJob
+from qiskit_ibm_provider import IBMBackend, IBMJob
 
 from qbraid import QbraidError, device_wrapper, job_wrapper
 from qbraid.api import QbraidSession
-from qbraid.devices import DeviceError, JobError
-from qbraid.devices.aws import (
-    BraketDeviceWrapper,
-    BraketLocalQuantumTaskWrapper,
-    BraketLocalSimulatorWrapper,
-    BraketQuantumTaskWrapper,
-)
+from qbraid.devices import DeviceError
+from qbraid.devices.aws import AwsDeviceWrapper, AwsQuantumTaskWrapper
 from qbraid.devices.enums import is_status_final
-from qbraid.devices.google import CirqResultWrapper, CirqSimulatorWrapper
-from qbraid.devices.ibm import (
-    QiskitBackendWrapper,
-    QiskitBasicAerJobWrapper,
-    QiskitBasicAerWrapper,
-    QiskitJobWrapper,
-)
+from qbraid.devices.exceptions import JobStateError
+from qbraid.devices.ibm import IBMBackendWrapper, IBMJobWrapper, ibm_least_busy_qpu
 from qbraid.interface import random_circuit
 
 
@@ -66,18 +52,7 @@ Coverage: all vendors, all available devices
 """
 
 inputs_braket_dw = device_wrapper_inputs("AWS")
-inputs_braket_sampler = ["aws_dwave_2000Q_6", "aws_dwave_advantage_system1"]
-inputs_cirq_dw = ["google_cirq_sparse_sim", "google_cirq_dm_sim"]
 inputs_qiskit_dw = device_wrapper_inputs("IBM")
-
-
-def test_job_wrapper_vendor_error():
-    """Test raising job wrapper error due to unsupported job vendor"""
-    device = device_wrapper("google_cirq_dm_sim")
-    circuit = random_circuit("cirq")
-    job = device.run(circuit)
-    with pytest.raises(QbraidError):
-        job_wrapper(job.id)
 
 
 def test_job_wrapper_type():
@@ -107,21 +82,8 @@ def test_init_braket_device_wrapper(device_id):
     """Test device wrapper for ids of devices available through Amazon Braket."""
     qbraid_device = device_wrapper(device_id)
     vendor_device = qbraid_device.vendor_dlo
-    if device_id == "aws_braket_default_sim":
-        assert isinstance(qbraid_device, BraketLocalSimulatorWrapper)
-        assert isinstance(vendor_device, AwsSimulator)
-    else:
-        assert isinstance(qbraid_device, BraketDeviceWrapper)
-        assert isinstance(vendor_device, AwsDevice)
-
-
-@pytest.mark.parametrize("device_id", inputs_cirq_dw)
-def test_init_cirq_device_wrapper(device_id):
-    """Test device wrapper for ids of devices available through Cirq."""
-    qbraid_device = device_wrapper(device_id)
-    vendor_device = qbraid_device.vendor_dlo
-    assert isinstance(qbraid_device, CirqSimulatorWrapper)
-    assert isinstance(vendor_device, CirqSimulator)
+    assert isinstance(qbraid_device, AwsDeviceWrapper)
+    assert isinstance(vendor_device, AwsDevice)
 
 
 @pytest.mark.parametrize("device_id", inputs_qiskit_dw)
@@ -129,20 +91,23 @@ def test_init_qiskit_device_wrapper(device_id):
     """Test device wrapper for ids of devices available through Qiskit."""
     qbraid_device = device_wrapper(device_id)
     vendor_device = qbraid_device.vendor_dlo
-    if device_id[4:9] == "basic":
-        assert isinstance(qbraid_device, QiskitBasicAerWrapper)
-    else:
-        assert isinstance(qbraid_device, QiskitBackendWrapper)
-    assert isinstance(vendor_device, QiskitBackend)
+    assert isinstance(qbraid_device, IBMBackendWrapper)
+    assert isinstance(vendor_device, IBMBackend)
 
 
 def test_device_wrapper_properties():
-    device_id = "google_cirq_dm_sim"
+    device_id = "aws_oqc_lucy"
     wrapper = device_wrapper(device_id)
-    assert wrapper.provider == "Google"
-    assert wrapper.name == "Cirq Density Matrix Simulator"
-    assert str(wrapper) == "Google Google Cirq Density Matrix Simulator device wrapper"
-    assert repr(wrapper) == "<CirqSimulatorWrapper(Google:'Cirq Density Matrix Simulator')>"
+    assert wrapper.provider == "OQC"
+    assert wrapper.name == "Lucy"
+    assert str(wrapper) == "AWS OQC Lucy device wrapper"
+    assert repr(wrapper) == "<AwsDeviceWrapper(OQC:'Lucy')>"
+
+
+def test_wrap_least_busy():
+    device_id = ibm_least_busy_qpu()
+    qbraid_device = device_wrapper(device_id)
+    assert isinstance(qbraid_device, IBMBackendWrapper)
 
 
 """
@@ -194,9 +159,8 @@ circuits_braket_run = [
 
 circuits_cirq_run = [cirq_circuit(), qiskit_circuit()]  # circuit w/ measurement operation
 circuits_qiskit_run = circuits_cirq_run
-inputs_cirq_run = ["google_cirq_dm_sim"]
-inputs_qiskit_run = ["ibm_basicaer_qasm_sim", "ibm_aer_default_sim"]
-inputs_braket_run = ["aws_sv_sim", "aws_braket_default_sim"]
+inputs_qiskit_run = ["ibm_q_qasm_sim"]
+inputs_braket_run = ["aws_sv_sim"]
 
 
 @pytest.mark.parametrize("circuit", circuits_qiskit_run)
@@ -206,26 +170,8 @@ def test_run_qiskit_device_wrapper(device_id, circuit):
     qbraid_device = device_wrapper(device_id)
     qbraid_job = qbraid_device.run(circuit, shots=10)
     vendor_job = qbraid_job.vendor_jlo
-    if device_id[4:9] == "basic":
-        assert isinstance(qbraid_job, QiskitBasicAerJobWrapper)
-        with pytest.raises(JobError):
-            qbraid_job.cancel()
-    else:
-        assert isinstance(qbraid_job, QiskitJobWrapper)
-        qbraid_job.cancel()
-    assert isinstance(vendor_job, QiskitJob)
-
-
-@pytest.mark.parametrize("circuit", circuits_cirq_run)
-@pytest.mark.parametrize("device_id", inputs_cirq_run)
-def test_run_cirq_device_wrapper(device_id, circuit):
-    """Test run method of wrapped Cirq devices"""
-    qbraid_device = device_wrapper(device_id)
-    qbraid_job = qbraid_device.run(circuit, shots=10)
-    qbraid_result = qbraid_job.result()
-    vendor_result = qbraid_result.vendor_rlo
-    assert isinstance(qbraid_result, CirqResultWrapper)
-    assert isinstance(vendor_result, CirqResult)
+    assert isinstance(qbraid_job, IBMJobWrapper)
+    assert isinstance(vendor_job, IBMJob)
 
 
 @pytest.mark.parametrize("circuit", circuits_braket_run)
@@ -235,14 +181,26 @@ def test_run_braket_device_wrapper(device_id, circuit):
     qbraid_device = device_wrapper(device_id)
     qbraid_job = qbraid_device.run(circuit, shots=10)
     vendor_job = qbraid_job.vendor_jlo
-    if device_id == "aws_braket_default_sim":
-        assert isinstance(qbraid_job, BraketLocalQuantumTaskWrapper)
-        assert isinstance(vendor_job, BraketQuantumTask)
-        with pytest.raises(JobError):
-            qbraid_job.cancel()
-    else:
-        assert isinstance(qbraid_job, BraketQuantumTaskWrapper)
-        assert isinstance(vendor_job, BraketQuantumTask)
+    assert isinstance(qbraid_job, AwsQuantumTaskWrapper)
+    assert isinstance(vendor_job, AwsQuantumTask)
+
+
+@pytest.mark.parametrize("device_id", ["aws_sv_sim", "ibm_q_sv_sim"])
+def test_cancel_completed_error(device_id):
+    """Test that cancelling a job that has already reached its
+    final state raises an error."""
+    import time
+
+    circuit = circuits_cirq_run[0]
+    qbraid_device = device_wrapper(device_id)
+    qbraid_job = qbraid_device.run(circuit, shots=10)
+    status_final = False
+    while not status_final:
+        time.sleep(2)
+        status = qbraid_job.status()
+        status_final = is_status_final(status)
+    with pytest.raises(JobStateError):
+        qbraid_job.cancel()
 
 
 def test_circuit_too_many_qubits():
@@ -260,14 +218,6 @@ def test_device_num_qubits():
     """Test device wrapper num qubits method"""
     five_qubit_device = device_wrapper("ibm_q_belem")
     assert five_qubit_device.num_qubits == 5
-    simulator_device = device_wrapper("aws_braket_default_sim")
-    assert simulator_device.num_qubits is None
-
-
-def test_job_wrapper_error():
-    """Test that job wrapper raises exception for invalid job id."""
-    with pytest.raises(QbraidError):
-        job_wrapper("google-test")
 
 
 def test_wait_for_final_state():
@@ -280,7 +230,7 @@ def test_wait_for_final_state():
     assert is_status_final(status)
 
 
-@pytest.mark.parametrize("device_id", ["ibm_q_sv_sim", "aws_dm_sim", "google_cirq_dm_sim"])
+@pytest.mark.parametrize("device_id", ["ibm_q_sv_sim", "aws_sv_sim"])
 def test_result_wrapper_measurements(device_id):
     """Test result wrapper measurements method."""
     circuit = random_circuit("qiskit", num_qubits=3, depth=3, measure=True)

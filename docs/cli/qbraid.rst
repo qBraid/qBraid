@@ -19,7 +19,7 @@ qbraid
    </p>
 
 
-**Version 0.2.1**
+**Version 0.3.0**
 
 Commands
 ---------
@@ -48,7 +48,7 @@ Login (or create an account) and then open Termainal to get started using the CL
 
    - Use `qbraid --version` to display the current version.
 
-   Reference Docs: https://qbraid-qbraid.readthedocs-hosted.com/en/latest/cli/qbraid.html
+   Reference Docs: https://docs.qbraid.com/en/latest/cli/qbraid.html
 
 **List environments** installed in your qBraid Lab instance using:
 
@@ -91,4 +91,3 @@ by disabling quantum jobs:
 .. code-block:: console
 
    $ qbraid jobs disable custom_env  # toggle quantum jobs off
-

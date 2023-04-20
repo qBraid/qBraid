@@ -21,20 +21,15 @@ import configparser
 import os
 
 import pytest
+from qiskit_ibm_provider import IBMProvider
 
-from qbraid.api.config_data import (
-    aws_config_path,
-    aws_cred_path,
-    ibmq_account_url,
-    qbraidrc_path,
-    qiskitrc_path,
-)
-from qbraid.api.config_prompt import _mask_value
-from qbraid.api.config_user import get_config, update_config
-from qbraid.api.configure import configure
-from qbraid.api.exceptions import AuthError, RequestsApiError
-from qbraid.api.ibmq_api import ibm_provider, ibmq_get_provider
+from qbraid.api.exceptions import RequestsApiError
 from qbraid.api.session import QbraidSession
+
+aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
+aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
+qiskitrc_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
+qbraidrc_path = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
 
 # These environment variables don't actually exist in qBraid Lab, but instead
 # are set and used for convenience for local development and testing.
@@ -53,7 +48,7 @@ config_lst = [
     ["region", "us-east-1", "default", aws_config_path],
     ["output", "json", "default", aws_config_path],
     ["token", ibmq_token, "ibmq", qiskitrc_path],
-    ["url", ibmq_account_url, "ibmq", qiskitrc_path],
+    ["url", "https://auth.quantum-computing.ibm.com/api", "ibmq", qiskitrc_path],
     ["verify", "True", "ibmq", qiskitrc_path],
     ["default_provider", "ibm-q/open/main", "ibmq", qiskitrc_path],
 ]
@@ -63,8 +58,10 @@ def set_config():
     """Set config inside testing virtual environments with default values
     hard-coded and secret values read from environment variables.
 
-    Note: this function is used in lieu of :func:`~qbraid.api.config_user._set_config`
-    to by-pass the user prompt, and directly set the configs to be used to testing."""
+    Note: this function is used for testing purposes only."""
+
+    IBMProvider.save_account(token=ibmq_token, overwrite=True)
+
     for file in [aws_config_path, aws_cred_path, qiskitrc_path]:
         try:
             os.remove(file)
@@ -86,28 +83,7 @@ def set_config():
             config.write(cfgfile)
 
 
-def test_update_config():
-    """Test updating user config."""
-    try:
-        os.remove(qbraidrc_path)
-    except FileNotFoundError:
-        pass
-    # test returning None when config doesn't exists
-    assert get_config("refresh-token", "default") is None
-    # updating config with no input sets them to None
-    update_config("QBRAID", exists=False)
-    assert get_config("refresh-token") is None
-    # set correct config
-    configure(api_token=qbraid_token)
-    assert get_config("refresh-token") == os.getenv("REFRESH")
-
-
-@pytest.mark.parametrize("testdata", [("abc123", "******abc123"), (None, "None")])
-def test_mask_value(testdata):
-    """Test applying mask to user prompt value."""
-    value, expected = testdata
-    mask = _mask_value(value)
-    assert mask == expected
+set_config()
 
 
 def test_api_error():
@@ -117,55 +93,17 @@ def test_api_error():
         session.request("POST", "not a url")
 
 
-@pytest.mark.parametrize("config", config_lst)
-def test_get_config(config):
-    """Test getting config value."""
-    set_config()
-    name = config[0]
-    value = config[1]
-    section = config[2]
-    path = config[3]
-    get_value = get_config(name, section, filepath=path)
-    assert value == get_value
-
-
 def test_qbraid_session_from_args():
     """Test initializing QbraidSession with attributes set from user-provided values."""
-    id_token = "test123"
-    session = QbraidSession(id_token=id_token)
-    assert session.id_token == id_token
+    refresh_token = "test123"
+    session = QbraidSession(refresh_token=refresh_token)
+    assert session.refresh_token == refresh_token
+    del session
 
 
-def test_qbraid_session_from_config():
-    """Test initializing QbraidSession with attributes auto-set from config values."""
-    try:
-        QbraidSession()
-    except Exception:
-        assert False
-    assert True
-
-
-def test_ibmq_get_provider():
-    """Test getting IBMQ provider from qiskitrc"""
-    from qiskit.providers.ibmq import IBMQ, AccountProvider
-
-    if IBMQ.active_account():
-        IBMQ.delete_account()
-
-    provider = ibmq_get_provider()
-    assert isinstance(provider, AccountProvider)
-
-
-def test_ibm_provider():
-    """Test getting IBMQ provider using qiskit_ibm_provider package."""
-    from qiskit_ibm_provider import IBMProvider
-
-    provider = ibm_provider(token=ibmq_token)
-    assert isinstance(provider, IBMProvider)
-
-
-def test_ibm_provider_bad_token():
-    """Test getting IBMQ provider using qiskit_ibm_provider package."""
-
-    with pytest.raises(AuthError):
-        ibm_provider()
+def test_qbraid_session_save_config():
+    """Test initializing QbraidSession without args and then saving config."""
+    session = QbraidSession()
+    session.save_config(user_email=qbraid_user, refresh_token=qbraid_token)
+    assert session.get_config_variable("email") == qbraid_user
+    assert session.get_config_variable("refresh-token") == qbraid_token

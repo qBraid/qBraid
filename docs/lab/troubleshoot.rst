@@ -78,3 +78,19 @@ from a new tab or window, login back in, and click **Launch Lab**. Once Lab relo
   For certain browser types (e.g. Safari) these steps may not resolve the error. In this case, please reach out to us via `Discord <https://discord.gg/gwBebaBZZX>`_,
   `email <request@qbraid.com>`_, or `GitHub <https://github.com/qbraid/community/issues/new?assignees=&labels=bug&template=bug_report.md>`_ for further instructions and
   assistance.
+
+OpenSSL AttributeError
+-----------------------
+
+Depending on the environment you're using, executing
+
+.. code-block:: python
+
+  from braket.aws import AwsDevice
+
+may raise ``AttributeError: module 'lib' has no attribute 'OpenSSL_add_all_algorithms'``. If this happens to you, don't worry! This is simply a result
+of an outdated ``pyOpenSSL`` version. Upgrade to the latest version and the problem should be resolved:
+
+.. code-block::
+
+  pip install --upgrade pyOpenSSL

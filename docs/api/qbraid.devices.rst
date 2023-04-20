@@ -11,11 +11,6 @@ qbraid.devices
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.devices.google
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 .. automodule:: qbraid.devices.ibm
    :members:
    :undoc-members:

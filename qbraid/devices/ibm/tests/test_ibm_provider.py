@@ -12,26 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# isort: skip_file
-# pylint: skip-file
+"""
+Unit tests for working with IBM provider
 
 """
-==================================================
-AWS Devices Interface (:mod:`qbraid.devices.aws`)
-==================================================
+import os
 
-.. currentmodule:: qbraid.devices.aws
+from qiskit_ibm_provider import IBMProvider
 
-This module contains the classes used to run quantum circuits on devices available through AWS.
+from qbraid.devices.ibm.provider import ibm_least_busy_qpu, ibm_provider
 
-.. autosummary::
-   :toctree: ../stubs/
+ibmq_token = os.getenv("QISKIT_IBM_TOKEN")
 
-   AwsDeviceWrapper
-   AwsQuantumTaskWrapper
-   AwsGateModelResultWrapper
 
-"""
-from .result import AwsGateModelResultWrapper
-from .device import AwsDeviceWrapper
-from .job import AwsQuantumTaskWrapper
+def test_ibm_provider():
+    """Test getting IBMQ provider using qiskit_ibm_provider package."""
+    provider = ibm_provider(token=ibmq_token)
+    assert isinstance(provider, IBMProvider)
+
+
+def test_ibm_least_busy():
+    """Test returning qbraid ID of least busy IBMQ QPU."""
+    qbraid_id = ibm_least_busy_qpu()
+    assert qbraid_id[:6] == "ibm_q_"

@@ -47,23 +47,20 @@ the ``vendor_rlo`` attribute:
 .. code-block:: python
 
     >>> type(qresult_ibmq)
-    qbraid.devices.ibm.result.QiskitResultWrapper
+    qbraid.devices.ibm.result.IBMResultWrapper
     >>> type(qresult_ibmq.vendor_rlo)
     qiskit.result.result.Result
 
 
-Now, let's execute the same one-qubit qiskit circuit on density-matrix simulators
-provided by Google and AWS:
+Now, let's execute the same one-qubit qiskit circuit on a density-matrix simulator
+provided AWS:
 
 .. code-block:: python
 
-    google_device = device_wrapper('google_cirq_dm_sim')
     aws_device = device_wrapper('aws_dm_sim')
 
-    google_job = google_device.run(circuit, shots=shots)
     aws_job = aws_device.run(circuit, shots=shots)
 
-    qresult_google = google_job.result()
     qresult_aws = aws_job.result()
 
 Using the qBraid quantum wrapper flow, result data will be returned with consistent
@@ -73,8 +70,6 @@ typing, formatting, and qubit indexing for every supported backend.
 
     >>> qresult_ibmq.measurement_counts()
     {'0': 139, '1': 885}
-    >>> qresult_google.measurement_counts()
-    {'0': 161, '1': 863}
     >>> qresult_aws.measurement_counts()
     {'0': 136, '1': 888}
 

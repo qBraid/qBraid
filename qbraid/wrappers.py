@@ -20,7 +20,7 @@ functions utilize entrypoints via ``pkg_resources``.
 import pkg_resources
 
 from ._qprogram import QPROGRAM
-from .api import QbraidSession, ibmq_least_busy_qpu
+from .api import QbraidSession
 from .exceptions import QbraidError
 
 
@@ -88,9 +88,6 @@ def device_wrapper(qbraid_device_id: str):
         :class:`~qbraid.QbraidError`: If ``qbraid_id`` is not a valid device reference.
 
     """
-    if qbraid_device_id == "ibm_q_least_busy_qpu":
-        qbraid_device_id = ibmq_least_busy_qpu()
-
     session = QbraidSession()
     device_lst = session.get(
         "/public/lab/get-devices", params={"qbraid_id": qbraid_device_id}
@@ -106,9 +103,7 @@ def device_wrapper(qbraid_device_id: str):
     del device_info["_id"]  # unecessary for sdk
     del device_info["statusRefresh"]
     vendor = device_info["vendor"].lower()
-    code = device_info.pop("_code")
-    spec = ".local" if code == 0 else ".remote"
-    ep = vendor + spec
+    ep = f"{vendor}.device"
     device_wrapper_class = devices_entrypoints[ep].load()
     return device_wrapper_class(**device_info)
 
@@ -142,10 +137,8 @@ def job_wrapper(qbraid_job_id: str):
         status_str = "UNKNOWN"
     vendor_job_id = job_data["vendorJobId"]
     vendor = qbraid_device.vendor.lower()
-    if vendor == "google":
-        raise QbraidError(f"API job retrieval not supported for {qbraid_device.id}")
     devices_entrypoints = _get_entrypoints("qbraid.devices")
-    ep = vendor + ".job"
+    ep = f"{vendor}.job"
     job_wrapper_class = devices_entrypoints[ep].load()
     return job_wrapper_class(
         qbraid_job_id, vendor_job_id=vendor_job_id, device=qbraid_device, status=status_str

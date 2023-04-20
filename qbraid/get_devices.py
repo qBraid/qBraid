@@ -156,12 +156,11 @@ def get_devices(filters: Optional[dict] = None, refresh: bool = False):
         get_devices(
             filters={
                 'name': 'string',
-                'vendor': 'AWS'|'IBM'|'Google',
-                'provider: 'AWS'|'IBM'|'Google'|'D-Wave'|'IonQ'|'Rigetti'|'OQC',
+                'vendor': 'AWS'|'IBM',
+                'provider: 'AWS'|'IBM'|'IonQ'|'Rigetti'|'OQC'|'QuEra'|'Xanadu',
                 'type': 'QPU' | 'Simulator',
                 'numberQubits': 123,
-                'paradigm': 'gate-based'|'quantum-annealer',
-                'requiresCred': True|False,
+                'paradigm': 'gate-based'|'quantum-annealer'|'AHS'|'continuous-variable',
                 'status': 'ONLINE'|'OFFLINE'
             }
         )
@@ -174,7 +173,6 @@ def get_devices(filters: Optional[dict] = None, refresh: bool = False):
         * **type** (str): If the device is a quantum simulator or hardware
         * **numberQubits** (int): The number of qubits in quantum device
         * **paradigm** (str): The quantum model through which the device operates
-        * **requiresCred** (bool): Whether the device requires credentialed access
         * **status** (str): Availability of device
 
     **Examples:**
@@ -185,7 +183,7 @@ def get_devices(filters: Optional[dict] = None, refresh: bool = False):
 
         # Search for gate-based devices provided by Google that are online/available
         get_devices(
-            filters={"paradigm": "gate-based", "provider": "Google", "status": "ONLINE"}
+            filters={"paradigm": "gate-based", "provider": "IBM", "status": "ONLINE"}
         )
 
         # Search for QPUs with at least 5 qubits that are available through AWS or IBM
@@ -193,9 +191,9 @@ def get_devices(filters: Optional[dict] = None, refresh: bool = False):
             filters={"type": "QPU", "numberQubits": {"$gte": 5}, "vendor": {"$in": ["AWS", "IBM"]}}
         )
 
-        # Search for open-access simulators that have "Unitary" contained in their name
+        # Search for state vector simulators by filtering for device ID's containing string "sv".
         get_devices(
-            filters={"type": "Simulator", "name": {"$regex": "Unitary"}, "requiresCred": False}
+            filters={"type": "Simulator", "qbraid_id": {"$regex": "sv"}}
         )
 
     For a complete list of search operators, see `Query Selectors`__. To refresh the device

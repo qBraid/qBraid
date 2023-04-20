@@ -24,11 +24,6 @@
 .. autosummary::
    :toctree: ../stubs/
 
-   ibmq_get_provider
-   ibmq_least_busy_qpu
-   update_config
-   get_config
-   configure
    init_job
    get_job_data
    ApiError
@@ -49,6 +44,7 @@
       ~QbraidSession.delete
       ~QbraidSession.get
       ~QbraidSession.get_adapter
+      ~QbraidSession.get_config_variable
       ~QbraidSession.get_redirect_target
       ~QbraidSession.head
       ~QbraidSession.merge_environment_settings
@@ -63,6 +59,7 @@
       ~QbraidSession.rebuild_proxies
       ~QbraidSession.request
       ~QbraidSession.resolve_redirects
+      ~QbraidSession.save_config
       ~QbraidSession.send
       ~QbraidSession.should_strip_auth
 
@@ -72,13 +69,9 @@
 
       ~QbraidSession.base_url
       ~QbraidSession.user_email
-      ~QbraidSession.id_token
       ~QbraidSession.refresh_token
 
 """
-from .config_user import get_config, update_config
-from .configure import configure
 from .exceptions import ApiError, AuthError, ConfigError, RequestsApiError
-from .ibmq_api import ibmq_get_provider, ibmq_least_busy_qpu
 from .job_api import get_job_data, init_job
 from .session import QbraidSession

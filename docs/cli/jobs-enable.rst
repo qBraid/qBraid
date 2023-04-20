@@ -23,7 +23,7 @@ Examples
 
     $ qbraid jobs enable qbraid_sdk
     Successfully enabled qBraid Quantum Jobs in the qbraid_sdk environment.
-    Every AWS job you run will now be submitted through the qBraid API, so no access keys/tokens are necessary. 
+    Every AWS + IBM job you run will now be submitted through the qBraid API, so no access keys/tokens are necessary. 
 
     To disable, run: `qbraid jobs disable qbraid_sdk`
 
