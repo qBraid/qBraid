@@ -195,10 +195,12 @@ def test_cancel_completed_error(device_id):
     qbraid_device = device_wrapper(device_id)
     qbraid_job = qbraid_device.run(circuit, shots=10)
     status_final = False
-    while not status_final:
+    count = 0
+    while not status_final and count < 10:
         time.sleep(2)
         status = qbraid_job.status()
         status_final = is_status_final(status)
+        count += 1
     with pytest.raises(JobStateError):
         qbraid_job.cancel()
 
