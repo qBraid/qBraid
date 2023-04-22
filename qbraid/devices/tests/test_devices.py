@@ -159,7 +159,7 @@ circuits_braket_run = [
 
 circuits_cirq_run = [cirq_circuit(), qiskit_circuit()]  # circuit w/ measurement operation
 circuits_qiskit_run = circuits_cirq_run
-inputs_qiskit_run = ["ibm_q_qasm_sim"]
+inputs_qiskit_run = ["ibm_q_qasm_simulator"]
 inputs_braket_run = ["aws_sv_sim"]
 
 
@@ -185,7 +185,7 @@ def test_run_braket_device_wrapper(device_id, circuit):
     assert isinstance(vendor_job, AwsQuantumTask)
 
 
-@pytest.mark.parametrize("device_id", ["aws_sv_sim", "ibm_q_sv_sim"])
+@pytest.mark.parametrize("device_id", ["aws_sv_sim", "ibm_q_simulator_statevector"])
 def test_cancel_completed_error(device_id):
     """Test that cancelling a job that has already reached its
     final state raises an error."""
@@ -232,7 +232,7 @@ def test_wait_for_final_state():
     assert is_status_final(status)
 
 
-@pytest.mark.parametrize("device_id", ["ibm_q_sv_sim", "aws_sv_sim"])
+@pytest.mark.parametrize("device_id", ["ibm_q_simulator_statevector", "aws_sv_sim"])
 def test_result_wrapper_measurements(device_id):
     """Test result wrapper measurements method."""
     circuit = random_circuit("qiskit", num_qubits=3, depth=3, measure=True)

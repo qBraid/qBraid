@@ -102,6 +102,7 @@ def device_wrapper(qbraid_device_id: str):
 
     del device_info["_id"]  # unecessary for sdk
     del device_info["statusRefresh"]
+    del device_info["objRef"]
     vendor = device_info["vendor"].lower()
     ep = f"{vendor}.device"
     device_wrapper_class = devices_entrypoints[ep].load()
@@ -128,8 +129,11 @@ def job_wrapper(qbraid_job_id: str):
 
     job_data = job_lst[0]
 
-    qbraid_device_id = job_data["qbraidDeviceId"]
-    qbraid_device = device_wrapper(qbraid_device_id)
+    try:
+        qbraid_device_id = job_data["qbraidDeviceId"]
+        qbraid_device = device_wrapper(qbraid_device_id)
+    except (KeyError, QbraidError):
+        qbraid_device = None
 
     try:
         status_str = job_data["status"]
