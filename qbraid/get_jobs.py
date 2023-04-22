@@ -135,7 +135,7 @@ def get_jobs(filters: Optional[dict] = None):
         job_id = document["qbraidJobId"]
         timestamp = document["timeStamps"]["jobStarted"]
         try:
-            status = document["status"]
+            status = document["qbraidStatus"]
         except KeyError:
             status = "UNKNOWN"
         if not is_status_final(status):

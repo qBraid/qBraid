@@ -21,14 +21,14 @@ each device, i.e. ``ONLINE`` or ``OFFLINE``.
 
     get_devices()
 
-There a number of query options available to help filter your search. For example, to find
-state vector simulators available through AWS or IBM:
+There a number of query options available to help filter your search.
+For example, to find simulators available through AWS or IBM:
 
 .. code-block:: python
 
     get_devices(
         filters={
-            "qbraid_id": {"$regex": "sv"},
+            "qbraid_id": {"$regex": "sim"},
             "vendor": {"$in": ["AWS", "IBM"]},
         }
     )

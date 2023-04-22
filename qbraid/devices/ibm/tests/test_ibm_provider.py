@@ -22,11 +22,10 @@ from qiskit_ibm_provider import IBMProvider
 
 from qbraid.devices.ibm.provider import ibm_least_busy_qpu, ibm_provider
 
-ibmq_token = os.getenv("QISKIT_IBM_TOKEN")
-
 
 def test_ibm_provider():
     """Test getting IBMQ provider using qiskit_ibm_provider package."""
+    ibmq_token = os.getenv("QISKIT_IBM_TOKEN", None)
     provider = ibm_provider(token=ibmq_token)
     assert isinstance(provider, IBMProvider)
 

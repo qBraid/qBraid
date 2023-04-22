@@ -10,6 +10,8 @@ To expand the Environment Manager sidebar, click on **Envs** in the upper-right 
 **My Environments** are your currently installed environments. The qBraid Default environment and
 Microsoft Q# environment are installed by default.
 
+Have an idea for a new qBraid environment? Or want your own project featured? Fill out our `New Environment Request Form <https://forms.gle/a4v7Kdn7G7bs9jYD8>`_.
+
  .. seealso::
    
     - `Install & manage quantum software in the cloud on qBraid | Demo <https://youtu.be/LyavbzSkvRo>`_
@@ -94,6 +96,25 @@ install additional packages, remove packages, add/delete tags, and edit the envi
     :width: 800px
     :target: javascript:void(0);
 
+|
+
+Share environment
+-------------------
+
+In qBraid Lab, you can share your custom environments with other users. This will make your
+environment visible under their **Add** environment list. They can then install it, and
+run code using an exact copy of your environment. This includes support for quantum
+jobs and any additional configurations.
+
+To share a custom environment, first click the **More** button in the drop-down to open the environment editor.
+Then, under 'Share Environment' , enter the qBraid user email, and click **Share**.
+
+
+.. image:: ../_static/environments/env_share.png
+    :align: center
+    :width: 600px
+    :target: javascript:void(0);
+  
 |
 
 
