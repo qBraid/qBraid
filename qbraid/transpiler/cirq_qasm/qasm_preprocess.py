@@ -1,7 +1,22 @@
+# Copyright 2023 qBraid
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
 """
 Module for preprocessing qasm string to before it is passed to parser.
 
 """
+import re
 from typing import Optional
 
 from qbraid.transpiler.exceptions import QasmError
@@ -87,6 +102,26 @@ def _replace_gate_defs(qasm_line: str, gate_defs: dict) -> str:
     return qasm_line
 
 
+def _remove_barriers(qasm_str: str) -> str:
+    """Returns a copy of the input QASM with all barriers removed.
+
+    Args:
+        qasm_str: QASM to remove barriers from.
+    """
+    quoted_re = r"(?:\"[^\"]*?\")"
+    # Statements separated by semicolons
+    statement_re = r"((?:[^;{}\"]*?" + quoted_re + r"?)*[;{}])?"
+    # Comments begin with a pair of forward slashes and end with a new line
+    comment_re = r"(\n?//[^\n]*(?:\n|$))?"
+    statements_comments = re.findall(statement_re + comment_re, qasm_str)
+    lines = []
+    # Language is case sensitive. Whitespace is ignored
+    for statement, comment in statements_comments:
+        if re.match(r"^\s*barrier(?:(?:\s+)|(?:;))", statement) is None:
+            lines.append(statement + comment)
+    return "".join(lines)
+
+
 def convert_to_supported_qasm(qasm_str: str) -> str:
     """Returns a copy of the input QASM compatible with the
     :class:`~qbraid.transpiler.cirq_qasm.qasm_parser.QasmParser`.
@@ -94,6 +129,7 @@ def convert_to_supported_qasm(qasm_str: str) -> str:
     decomposition of unsupported gates/operations."""
     gate_defs = GATE_DEFS
     qasm_lst_out = []
+    qasm_str = _remove_barriers(qasm_str)
     qasm_lst = qasm_str.split("\n")
 
     for _, qasm_line in enumerate(qasm_lst):

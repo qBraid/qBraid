@@ -112,10 +112,12 @@ def _from_braket_instruction(
                 matrix = _gate_to_matrix_braket(instr.operator)
                 return [cirq_ops.MatrixGate(matrix).on(*qubits)]
             except (ValueError, TypeError) as err:
-                raise ValueError(f"Unable to convert the instruction {instr} to Cirq.") from err
+                raise CircuitConversionError(
+                    f"Unable to convert the instruction {instr} to Cirq."
+                ) from err
 
         # Unknown instructions.
-        raise ValueError(
+        raise CircuitConversionError(
             f"Unable to convert to Cirq due to unrecognized \
             instruction: {instr}."
         )
@@ -128,7 +130,7 @@ def _from_braket_instruction(
 def _from_one_qubit_braket_instruction(
     instr: BKInstruction, qubits: List[LineQubit]
 ) -> List[cirq_ops.Operation]:
-    """Converts the one-qubit braket instruction to Cirq.
+    """Converts the one-qubit Braket instruction to Cirq operation(s).
 
     Args:
         instr: One-qubit Braket instruction to convert.

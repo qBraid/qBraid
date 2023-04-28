@@ -84,6 +84,7 @@ def init_job(
         "qbraidJobId": "",
         "vendorJobId": vendor_job_id,
         "qbraidDeviceId": device.id,
+        "vendorDeviceId": device.vendor_device_id,
         "circuitNumQubits": circuit.num_qubits,
         "circuitDepth": circuit.depth,
         "shots": shots,

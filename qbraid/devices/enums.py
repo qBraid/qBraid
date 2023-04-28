@@ -16,29 +16,25 @@
 Module defining all :mod:`~qbraid.devices` enumerated types.
 
 """
-import enum
+from enum import Enum
 from typing import Union
 
 
-class DeviceType(enum.IntEnum):
-    """Class for the types of devies.
+class DeviceType(str, Enum):
+    """Class for possible device types.
 
     Attributes:
-        LOCALSIM (int): local simulator
-        REMOTESIM (int): remote simulator
-        QPUGATE (int): gate-baed qpu
-        QPUANN (int): quantum annealer
+        SIMULATOR (str): the device is a simulator
+        QPU (str): the device is a QPU
 
     """
 
-    LOCALSIM = 0
-    REMOTESIM = 2
-    QPUGATE = 1
-    QPUANN = 3
+    SIMULATOR = "SIMULATOR"
+    QPU = "QPU"
 
 
-class DeviceStatus(enum.IntEnum):
-    """Class for the status of devies.
+class DeviceStatus(int, Enum):
+    """Class for the status of devices.
 
     Attributes:
         ONLINE (int): the device is online
@@ -50,32 +46,32 @@ class DeviceStatus(enum.IntEnum):
     OFFLINE = 1
 
 
-class JobStatus(enum.IntEnum):
+class JobStatus(str, Enum):
     """Class for the status of processes (i.e. jobs / quantum tasks) resulting from any
     :meth:`~qbraid.devices.DeviceLikeWrapper.run` method.
 
     Attributes:
-        INITIALIZING (int): job is being initialized
-        QUEUED (int): job is queued
-        VALIDATING (int): job is being validated
-        RUNNING (int): job is actively running
-        CANCELLING (int): job is being cancelled
-        CANCELLED (int): job has been cancelled
-        COMPLETED (int): job has successfully run
-        FAILED (int): job failed / incurred error
-        UNKNOWN (int): vendor-supplied job status not recognized
+        INITIALIZING (str): job is being initialized
+        QUEUED (str): job is queued
+        VALIDATING (str): job is being validated
+        RUNNING (str): job is actively running
+        CANCELLING (str): job is being cancelled
+        CANCELLED (str): job has been cancelled
+        COMPLETED (str): job has successfully run
+        FAILED (str): job failed / incurred error
+        UNKNOWN (str): vendor-supplied job status not recognized
 
     """
 
-    INITIALIZING = 0
-    QUEUED = 1
-    VALIDATING = 2
-    RUNNING = 3
-    CANCELLING = 4
-    CANCELLED = 5
-    COMPLETED = 6
-    FAILED = 7
-    UNKNOWN = 8
+    INITIALIZING = "job is being initialized"
+    QUEUED = "job is queued"
+    VALIDATING = "job is being validated"
+    RUNNING = "job is actively running"
+    CANCELLING = "job is being cancelled"
+    CANCELLED = "job has been cancelled"
+    COMPLETED = "job has successfully run"
+    FAILED = "job failed / incurred error"
+    UNKNOWN = "vendor-supplied job status not recognized"
 
     def raw(self):
         """Returns raw status string"""
@@ -97,16 +93,13 @@ def status_from_raw(status_str: str) -> JobStatus:
 def is_status_final(status: Union[str, JobStatus]) -> bool:
     """Returns True if job is in final state. False otherwise."""
     if isinstance(status, str):
+        if status in JOB_FINAL:
+            return True
         for job_status in JOB_FINAL:
             if job_status.raw() == status:
                 return True
-    elif isinstance(status, JobStatus):
-        for job_status in JOB_FINAL:
-            if job_status == status:
-                return True
-    else:
-        raise TypeError(
-            f"Expected status of type 'str' or 'JobStatus' \
-            but instead got status of type {type(status)}."
-        )
-    return False
+        return False
+    raise TypeError(
+        f"Expected status of type 'str' or 'JobStatus' \
+        but instead got status of type {type(status)}."
+    )
