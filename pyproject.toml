@@ -4,7 +4,6 @@ build-backend = "setuptools.build_meta"
 
 [tool.pytest.ini_options]
 minversion = "6.0"
-addopts = "-x --ignore-glob=**/qbraid/_archive/*"
 log_cli = false
 log_cli_level = "CRITICAL"
 log_cli_format = "%(message)s"
@@ -29,10 +28,7 @@ filterwarnings = [
 parallel = true
 source = ["qbraid"]
 omit = [
-  "**/qbraid/_archive/*",
-  "**/qbraid/transpiler/*/_gate_archive.py",
-  "**/qbraid/transpiler/cirq_qasm/qasm_output.py",
-  "**/qbraid/api/config_prompt.py"
+  "**/qbraid/transpiler/*/_gate_archive.py"
 ]
 
 [tool.coverage.paths]
@@ -67,7 +63,6 @@ exclude = '''
   | \.tox
   | \.venv
   | dist
-  | qbraid/_archive
   | qbraid/transpiler/cirq_qasm/qasm_parser.py
   | qbraid/transpiler/cirq_qasm/tests/test_qasm_parser.py
 )/
@@ -80,7 +75,3 @@ disable = "C0103, E0401, R0801, R0902, R0903, R0911, R0912, R0914, W0212, W0511"
 [tool.isort]
 profile = "hug"
 skip_glob = "**/qbraid/devices/*/__init__.py"
-
-
-
-

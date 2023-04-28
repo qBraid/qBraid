@@ -42,7 +42,7 @@ class DeviceLikeWrapper(ABC):
             provider (str): The company to which the device belongs
             vendor (str): The company who's software is used to access the device
             runPackage (str): The software package used to access the device
-            objArg (str): The vendor device id/arn to supply as argument to the vendor device-like object
+            objArg (str): The vendor device id/arn to supply as arg to vendor device-like object
             type (str): The type of the device, "QPU" or "Simulator"
             numberQubits (int): The number of qubits in the device (if applicable)
 
