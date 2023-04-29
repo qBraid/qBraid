@@ -24,6 +24,7 @@ from qbraid.transpiler.cirq_braket import from_braket, to_braket
 from qbraid.transpiler.cirq_pyquil import from_pyquil, to_pyquil
 from qbraid.transpiler.cirq_pytket import from_pytket, to_pytket
 from qbraid.transpiler.cirq_qiskit import from_qiskit, to_qiskit
+from qbraid.transpiler.cirq_qasm import from_qasm, to_qasm
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 if TYPE_CHECKING:
@@ -44,11 +45,13 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple[Circuit, str]:
         A Tuple containing the Cirq circuit equivalent to input circuit and the
             input quantum program type.
     """
-
-    try:
-        package = program.__module__
-    except AttributeError as err:
-        raise ProgramTypeError(program) from err
+    if isinstance(program, str):
+        package = "qasm"
+    else:
+        try:
+            package = program.__module__
+        except AttributeError as err:
+            raise ProgramTypeError(program) from err
 
     try:
         if "qiskit" in package:
@@ -62,6 +65,9 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple[Circuit, str]:
 
         if "pytket" in package:
             return from_pytket(program), "pytket"
+
+        if "qasm" in package:
+            return from_qasm(program), "pytket"
 
         if isinstance(program, Circuit):
             return program, "cirq"

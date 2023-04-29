@@ -18,6 +18,7 @@ from qbraid._qprogram import QPROGRAM_LIBS, QPROGRAM_TYPES
 from qbraid.exceptions import PackageValueError
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.interface.draw_circuit import circuit_drawer
 
 if TYPE_CHECKING:
     import qbraid
@@ -125,3 +126,8 @@ class QuantumProgramWrapper:
             return converted_program
 
         raise PackageValueError(conversion_type)
+
+    def draw(self, package: str = "cirq", output: Optional[str] = None, **kwrags):
+        """draw circuit"""
+
+        return circuit_drawer(self.transpile(package), output, **kwrags)

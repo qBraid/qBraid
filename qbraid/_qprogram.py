@@ -25,9 +25,12 @@ from pytket.circuit import Circuit as _PytketCircuit
 from qiskit import QuantumCircuit as _QiskitCircuit
 
 # Supported quantum programs.
-QPROGRAM = Union[_BraketCircuit, _CirqCircuit, _QiskitCircuit, _pyQuilProgram, _PytketCircuit, str]
+QASMType = str
+QPROGRAM = Union[
+    _BraketCircuit, _CirqCircuit, _QiskitCircuit, _pyQuilProgram, _PytketCircuit, QASMType
+]
 
-_PROGRAMS = [_BraketCircuit, _CirqCircuit, _QiskitCircuit, _pyQuilProgram, _PytketCircuit, str]
+_PROGRAMS = [_BraketCircuit, _CirqCircuit, _QiskitCircuit, _pyQuilProgram, _PytketCircuit, QASMType]
 
 # pylint: disable-next=bad-str-strip-call
 QPROGRAM_TYPES = [str(x).strip("<class").strip(">").strip(" ").strip("'") for x in _PROGRAMS]

@@ -52,13 +52,16 @@ def circuit_wrapper(program: QPROGRAM):
         :class:`~qbraid.QbraidError`: If the input circuit is not a supported quantum program.
 
     """
-    try:
-        package = program.__module__.split(".")[0]
-    except AttributeError as err:
-        raise QbraidError(
-            f"Error applying circuit wrapper to quantum program \
-            of type {type(program)}"
-        ) from err
+    if isinstance(program, str):
+        package = "qasm"
+    else:
+        try:
+            package = program.__module__.split(".")[0]
+        except AttributeError as err:
+            raise QbraidError(
+                f"Error applying circuit wrapper to quantum program \
+                of type {type(program)}"
+            ) from err
 
     ep = package.lower()
 
