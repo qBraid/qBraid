@@ -26,6 +26,7 @@ from qbraid.interface.qbraid_qasm.tools import qasm_qubits, qasm_num_qubits
 from qbraid.transpiler.cirq_qasm.qasm_conversions import from_qasm
 from cirq.circuits import Circuit
 
+
 class QasmCircuitWrapper(QuantumProgramWrapper):
     """Wrapper class for Cirq ``Circuit`` objects."""
 

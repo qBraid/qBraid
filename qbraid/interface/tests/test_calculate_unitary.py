@@ -115,5 +115,6 @@ def test_gate_to_matrix_pytket(flat, list_type):
 def test_qasm_depth():
     from qbraid.interface.qbraid_qasm.circuits import qasm_bell, qasm_shared15
     from qbraid.interface.qbraid_qasm.tools import qasm_depth
+
     assert qasm_depth(qasm_bell()) == 2
     assert qasm_depth(qasm_shared15()) == 22
