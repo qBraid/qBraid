@@ -44,10 +44,13 @@ def convert_to_contiguous(program: "qbraid.QPROGRAM", **kwargs) -> "qbraid.QPROG
     """
     conversion_function: Callable[[Any], QPROGRAM]
 
-    try:
-        package = program.__module__
-    except AttributeError as err:
-        raise ProgramTypeError(program) from err
+    if isinstance(program, str):
+        package = "qasm"
+    else:
+        try:
+            package = program.__module__
+        except AttributeError as err:
+            raise ProgramTypeError(program) from err
 
     # pylint: disable=import-outside-toplevel
 
@@ -70,6 +73,9 @@ def convert_to_contiguous(program: "qbraid.QPROGRAM", **kwargs) -> "qbraid.QPROG
         from qbraid.interface.qbraid_pytket.tools import _convert_to_contiguous_pytket
 
         conversion_function = _convert_to_contiguous_pytket
+    elif "qasm" in package:
+        from qbraid.interface.qbraid_qasm.tools import _convert_to_contiguous_qasm
+        conversion_function = _convert_to_contiguous_qasm
     else:
         raise ProgramTypeError(program)
 

@@ -27,13 +27,15 @@ def test_bell():
     pyquil_bell = map["pyquil"]()
     qiskit_bell = map["qiskit"]()
     pytket_bell = map["pytket"]()
+    qasm_bell = map["qasm"]()
 
     eq1 = circuits_allclose(braket_bell, cirq_bell, strict_gphase=True)
     eq2 = circuits_allclose(cirq_bell, pyquil_bell, strict_gphase=True)
     eq3 = circuits_allclose(pyquil_bell, qiskit_bell, strict_gphase=True)
     eq4 = circuits_allclose(qiskit_bell, pytket_bell, strict_gphase=True)
+    eq5 = circuits_allclose(pytket_bell, qasm_bell, strict_gphase=True)
 
-    assert eq1 and eq2 and eq3 and eq4
+    assert eq1 and eq2 and eq3 and eq4 and eq5
 
 
 def test_shared15():
@@ -43,10 +45,12 @@ def test_shared15():
     cirq_shared15 = map["cirq"]()
     qiskit_shared15 = map["qiskit"]()
     pytket_shared15 = map["pytket"]()
+    qasm_shared15 = map["qasm"]()
 
     eq1 = circuits_allclose(braket_shared15, cirq_shared15, strict_gphase=True)
     eq2 = circuits_allclose(cirq_shared15, qiskit_shared15, strict_gphase=True)
     eq3 = circuits_allclose(qiskit_shared15, pytket_shared15, strict_gphase=True)
+    eq4 = circuits_allclose(pytket_shared15, qasm_shared15, strict_gphase=True)
 
     assert eq1 and eq2 and eq3
 

@@ -30,10 +30,13 @@ def draw(program: "qbraid.QPROGRAM") -> None:
         ProgramTypeError: If quantum program is not of a supported type
     """
     # todo: visualization from supportive framework
-    try:
-        package = program.__module__
-    except AttributeError as err:
-        raise ProgramTypeError(program) from err
+    if isinstance(program, str):
+        package = "qasm"
+    else:
+        try:
+            package = program.__module__
+        except AttributeError as err:
+            raise ProgramTypeError(program) from err
 
     if "qiskit" in package:
         print(program.draw())
