@@ -15,7 +15,7 @@ Unit tests for equivalence of interfacing quantum programs
 import pytest
 
 from qbraid.interface.calculate_unitary import circuits_allclose
-from qbraid.interface.draw_circuit import ProgramTypeError, circuit_drawer
+from qbraid.interface.draw_circuit import VisualizationError, circuit_drawer
 from qbraid.interface.programs import bell_data, random_circuit, shared15_data
 
 
@@ -52,7 +52,7 @@ def test_shared15():
     eq3 = circuits_allclose(qiskit_shared15, pytket_shared15, strict_gphase=True)
     eq4 = circuits_allclose(pytket_shared15, qasm_shared15, strict_gphase=True)
 
-    assert eq1 and eq2 and eq3
+    assert eq1 and eq2 and eq3 and eq4
 
 
 @pytest.mark.parametrize("package", ["braket", "cirq", "qiskit"])
@@ -67,5 +67,5 @@ def test_random(package):
 
 def test_draw_raises():
     """Test that non-supported package raises error"""
-    with pytest.raises(ProgramTypeError):
+    with pytest.raises(VisualizationError):
         circuit_drawer("bad_input")
