@@ -67,7 +67,7 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple[Circuit, str]:
             return from_pytket(program), "pytket"
 
         if "qasm" in package:
-            return from_qasm(program), "pytket"
+            return from_qasm(program), "qasm"
 
         if isinstance(program, Circuit):
             return program, "cirq"
@@ -106,6 +106,9 @@ def _convert_from_cirq(circuit: Circuit, frontend: str) -> "qbraid.QPROGRAM":
 
         if frontend == "pytket":
             return to_pytket(circuit)
+
+        if frontend == "qasm":
+            return to_qasm(circuit)
 
         if frontend == "cirq":
             return circuit

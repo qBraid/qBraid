@@ -49,7 +49,7 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
 
             return print(AsciiCircuitDiagram.build_diagram(program))
         else:
-            raise VisualizationError("The only valid option for braket are" "ascii")
+            raise VisualizationError('The only valid option for braket are "ascii"')
 
     elif "cirq" in package:
         if output == None or output == "text":
@@ -63,7 +63,9 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
 
             return circuit_to_svg(program)
         else:
-            raise VisualizationError("The only valid option for cirq are" "text, svg, svf_source")
+            raise VisualizationError(
+                'The only valid option for cirq are "text", "svg", "svf_source"'
+            )
 
     elif "pyquil" in package:
         if output == None or output == "text":
@@ -73,7 +75,7 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
 
             return display(program, **kwargs)
         else:
-            raise VisualizationError("The only valid option for pyquil are" "text, latex")
+            raise VisualizationError('The only valid option for pyquil are "text", "latex"')
 
     elif "pytket" in package:
         if output == None or output == "jupyter":
@@ -90,11 +92,13 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
             return render_circuit_as_html(program, **kwargs)
         else:
             raise VisualizationError(
-                "The only valid option for pytket are" "jupyter, view_browser, html"
+                'The only valid option for pytket are "jupyter", "view_browser", "html"'
             )
 
     else:
-        raise ProgramTypeError(program)
+        raise VisualizationError(
+            'The only valid option for circuit_drawer are "qiskit", "braket", "cirq", "pyquil", "pytket"'
+        )
 
 
 # todo: plot_histogram, plot_state, device_drawer
