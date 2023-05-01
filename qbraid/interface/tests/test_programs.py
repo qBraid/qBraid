@@ -15,7 +15,7 @@ Unit tests for equivalence of interfacing quantum programs
 import pytest
 
 from qbraid.interface.calculate_unitary import circuits_allclose
-from qbraid.interface.draw_circuit import VisualizationError, circuit_drawer
+from qbraid.interface.draw import VisualizationError, circuit_drawer
 from qbraid.interface.programs import bell_data, random_circuit, shared15_data
 
 

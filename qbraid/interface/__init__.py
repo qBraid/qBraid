@@ -35,5 +35,5 @@ from .calculate_unitary import (
     unitary_to_little_endian,
 )
 from .convert_to_contiguous import ContiguousConversionError, convert_to_contiguous
-from .draw_circuit import circuit_drawer
+from .draw import circudt_drawer
 from .programs import random_circuit
