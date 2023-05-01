@@ -18,6 +18,8 @@ import pkg_resources
 from ._qprogram import QPROGRAM
 from .api import QbraidSession
 from .exceptions import QbraidError
+from qbraid.transpiler.cirq_qasm.qasm_parser import QasmParser
+from cirq.contrib.qasm_import.exception import QasmException
 
 
 def _get_entrypoints(group: str):
@@ -53,7 +55,11 @@ def circuit_wrapper(program: QPROGRAM):
 
     """
     if isinstance(program, str):
-        package = "qasm"
+        try:
+            QasmParser().parse(program)
+            package = "qasm"
+        except QasmException:
+            raise QbraidError("Qbraid currently only support qasm string.")
     else:
         try:
             package = program.__module__.split(".")[0]

@@ -26,6 +26,8 @@ from qbraid.transpiler.cirq_pytket import from_pytket, to_pytket
 from qbraid.transpiler.cirq_qiskit import from_qiskit, to_qiskit
 from qbraid.transpiler.cirq_qasm import from_qasm, to_qasm
 from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler.cirq_qasm.qasm_parser import QasmParser
+from cirq.contrib.qasm_import.exception import QasmException
 
 if TYPE_CHECKING:
     import qbraid
@@ -46,7 +48,11 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple[Circuit, str]:
             input quantum program type.
     """
     if isinstance(program, str):
-        package = "qasm"
+        try:
+            QasmParser().parse(program)
+            package = "qasm"
+        except QasmException:
+            raise CircuitConversionError("Qbraid only support qasm string.")
     else:
         try:
             package = program.__module__

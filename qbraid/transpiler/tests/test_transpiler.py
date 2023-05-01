@@ -90,9 +90,15 @@ def test_to_cirq(circuit):
     assert input_type in circuit.__module__
 
 
-@pytest.mark.parametrize("item", ["circuit", 1, None])
+@pytest.mark.parametrize("item", [1, None])
 def test_to_cirq_bad_types(item):
     with pytest.raises(ProgramTypeError):
+        convert_to_cirq(item)
+
+
+@pytest.mark.parametrize("item", ["DECLARE ro BIT[1]", "circuit"])
+def test_to_cirq_bad_string(item):
+    with pytest.raises(CircuitConversionError):
         convert_to_cirq(item)
 
 
