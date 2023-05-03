@@ -23,7 +23,7 @@ Interface (:mod:`qbraid.interface`)
    convert_to_contiguous
    circuits_allclose
    random_circuit
-   draw
+   circuit_drawer
    ContiguousConversionError
    UnitaryCalculationError
 
@@ -35,5 +35,5 @@ from .calculate_unitary import (
     unitary_to_little_endian,
 )
 from .convert_to_contiguous import ContiguousConversionError, convert_to_contiguous
-from .draw import circudt_drawer
+from .draw import circuit_drawer
 from .programs import random_circuit
