@@ -16,12 +16,20 @@
 Module for top-level interfacing with the IBMQ API
 
 """
+import re
 from typing import Optional
 
 from qiskit_ibm_provider import IBMProvider, least_busy
 from qiskit_ibm_provider.accounts import AccountNotFoundError
 
 from qbraid.api.exceptions import AuthError
+
+
+def ibm_to_qbraid_id(name: str) -> str:
+    """Converts IBM device name to qBraid device ID"""
+    if name.startswith("ibm") or name.startswith("ibmq_"):
+        return re.sub(r"^(ibm)(q)?_(.*)", r"\1_q_\3", name)
+    return "ibm_q_" + name
 
 
 def ibm_provider(token: Optional[str] = None) -> IBMProvider:

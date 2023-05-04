@@ -23,7 +23,7 @@ from braket.aws import AwsDevice
 from braket.circuits import Circuit as BraketCircuit
 from braket.tasks.quantum_task import QuantumTask as AwsQuantumTask
 from qiskit import QuantumCircuit as QiskitCircuit
-from qiskit_ibm_provider import IBMBackend, IBMJob
+from qiskit_ibm_provider import IBMBackend, IBMJob, IBMProvider
 
 from qbraid import QbraidError, device_wrapper, job_wrapper
 from qbraid.api import QbraidSession
@@ -31,7 +31,12 @@ from qbraid.devices import DeviceError
 from qbraid.devices.aws import AwsDeviceWrapper, AwsQuantumTaskWrapper
 from qbraid.devices.enums import is_status_final
 from qbraid.devices.exceptions import JobStateError
-from qbraid.devices.ibm import IBMBackendWrapper, IBMJobWrapper, ibm_least_busy_qpu
+from qbraid.devices.ibm import (
+    IBMBackendWrapper,
+    IBMJobWrapper,
+    ibm_least_busy_qpu,
+    ibm_to_qbraid_id,
+)
 from qbraid.interface import random_circuit
 
 
@@ -46,13 +51,21 @@ def device_wrapper_inputs(vendor: str):
     return input_list
 
 
+def ibm_devices():
+    provider = IBMProvider()
+    backends = provider.backends()
+    qbraid_devices = device_wrapper_inputs("IBM")
+    ibm_devices = [ibm_to_qbraid_id(backend.name) for backend in backends]
+    return [dev for dev in qbraid_devices if dev in ibm_devices]
+
+
 """
 Device wrapper tests: initialization
 Coverage: all vendors, all available devices
 """
 
 inputs_braket_dw = device_wrapper_inputs("AWS")
-inputs_qiskit_dw = device_wrapper_inputs("IBM")
+inputs_qiskit_dw = ibm_devices()
 
 
 def test_job_wrapper_type():

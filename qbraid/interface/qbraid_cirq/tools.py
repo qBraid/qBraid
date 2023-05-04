@@ -19,7 +19,7 @@ Module containing Cirq tools
 from typing import List, Sequence, Union
 
 import numpy as np
-from cirq import Circuit, GridQubit, I, LineQubit, NamedQubit, Qid
+from cirq import Circuit, GridQubit, I, LineQubit, NamedQubit, Qid, ops
 
 QUBIT = Union[LineQubit, GridQubit, NamedQubit, Qid]
 
@@ -143,3 +143,10 @@ def _convert_to_contiguous_cirq(circuit: Circuit, rev_qubits=False, expansion=Fa
     if expansion:
         return _contiguous_expansion(circuit)
     return _contiguous_compression(circuit, rev_qubits=rev_qubits)
+
+
+def is_measurement_gate(op):
+    """Returns whether Cirq gate/operation is MeasurementGate."""
+    return isinstance(op, ops.MeasurementGate) or isinstance(
+        getattr(op, "gate", None), ops.MeasurementGate
+    )

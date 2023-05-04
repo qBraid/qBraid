@@ -18,9 +18,24 @@ Unit tests for working with IBM provider
 """
 import os
 
+import pytest
 from qiskit_ibm_provider import IBMProvider
 
-from qbraid.devices.ibm.provider import ibm_least_busy_qpu, ibm_provider
+from qbraid.devices.ibm.provider import ibm_least_busy_qpu, ibm_provider, ibm_to_qbraid_id
+
+backend_id_data = [
+    ("ibm_nairobi", "ibm_q_nairobi"),
+    ("ibmq_belem", "ibm_q_belem"),
+    ("simulator_extended_stabilizer", "ibm_q_simulator_extended_stabilizer"),
+]
+
+
+@pytest.mark.parametrize("data", backend_id_data)
+def test_get_qbraid_id(data):
+    """Test converting backend name to qbraid_id."""
+    original, expected = data
+    result = ibm_to_qbraid_id(original)
+    assert result == expected
 
 
 def test_ibm_provider():

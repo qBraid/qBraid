@@ -29,6 +29,7 @@ This module contains the classes used to run quantum circuits on devices availab
 
    ibm_provider
    ibm_least_busy_qpu
+   ibm_to_qbraid_id
    IBMBackendWrapper
    IBMJobWrapper
    IBMResultWrapper
@@ -37,4 +38,4 @@ This module contains the classes used to run quantum circuits on devices availab
 from .result import IBMResultWrapper
 from .device import IBMBackendWrapper
 from .job import IBMJobWrapper
-from .provider import ibm_provider, ibm_least_busy_qpu
+from .provider import ibm_provider, ibm_least_busy_qpu, ibm_to_qbraid_id

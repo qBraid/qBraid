@@ -194,7 +194,7 @@ def test_kraus_gates():
     assert np.allclose(Gate._kraus_ops, [K0, K1])
 
 
-def test_GeneralizedAmplitudeDampingChannel_gate():
+def test_generalized_amplitude_damping_channel_gate():
     """Testing converting Kraus noise gates"""
     probs = np.random.uniform(low=0, high=0.5, size=(2))
     instruction = Instruction(
@@ -209,7 +209,7 @@ def test_GeneralizedAmplitudeDampingChannel_gate():
     assert Gate.p == probs[1]
 
 
-def test_DepolarizingChannel_gate():
+def test_depolarizing_channel_gate():
     probs = np.random.uniform(low=0, high=0.5, size=(1))
     instruction = Instruction(
         braket_noise_gate.TwoQubitDepolarizing(probability=probs[0]), target=[0, 1]
