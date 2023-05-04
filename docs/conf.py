@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath("../../qbraid"))
 # -- Project information -----------------------------------------------------
 
 project = "qBraid"
-copyright = "2022, qBraid Development Team"
+copyright = "2023, qBraid Development Team"
 author = "qBraid Development Team"
 
 # The full version, including alpha/beta/rc tags

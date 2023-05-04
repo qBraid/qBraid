@@ -21,7 +21,7 @@ import pytest
 from braket.circuits import noises as braket_noise_gate
 from cirq import Circuit, LineQubit, ops, testing
 
-from qbraid.interface import circuits_allclose, to_unitary
+from qbraid.interface import circuits_allclose
 from qbraid.transpiler.cirq_braket.convert_to_braket import to_braket
 
 
