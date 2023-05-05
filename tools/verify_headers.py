@@ -25,7 +25,7 @@ RESET = "\033[0m"
 header = """# Copyright (C) 2023 qBraid
 #
 # This file is part of the qBraid-SDK
-# 
+#
 # The qBraid-SDK is free software released under the GNU General Public License v3
 # or later. You can redistribute and/or modify it under the terms of the GPL v3.
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
@@ -127,6 +127,7 @@ if __name__ == "__main__":
             num_failed = len(failed_headers)
             s1, s2 = ("", "s") if num_failed == 1 else ("s", "")
             sys.stderr.write(f"\n{num_failed} file header{s1} need{s2} updating.\n")
+            sys.exit(1)
         else:
             print("All file header checks passed!")
 
