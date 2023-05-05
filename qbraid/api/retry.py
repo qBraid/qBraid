@@ -2,12 +2,12 @@
 # Copyright (C) IBM
 #
 # This file is part of the qBraid-SDK.
-# 
+#
 # The qBraid-SDK is free software released under the GNU General Public License v3
 # or later. This specific file, adapted from Qiskit, is dual-licensed under both the
 # Apache License, Version 2.0, and the GPL v3. You may not use this file except in
 # compliance with the applicable license. You may obtain a copy of the Apache License at
-# 
+#
 # http://www.apache.org/licenses/LICENSE-2.0
 #
 # This file includes code adapted from Qiskit (https://github.com/Qiskit/qiskit-ibm-provider)
