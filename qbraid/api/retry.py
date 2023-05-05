@@ -1,17 +1,21 @@
-# This code is part of Qiskit.
+# Copyright (C) 2023 qBraid
+# Copyright (C) IBM
 #
-# (C) Copyright IBM 2018, 2019.
+# This file is part of the qBraid-SDK.
 #
-# This code is licensed under the Apache License, Version 2.0. You may
-# obtain a copy of this license in the LICENSE.txt file in the root directory
-# of this source tree or at http://www.apache.org/licenses/LICENSE-2.0.
+# The qBraid-SDK is free software released under the GNU General Public License v3
+# or later. This specific file, adapted from Qiskit, is dual-licensed under both the
+# Apache License, Version 2.0, and the GPL v3. You may not use this file except in
+# compliance with the applicable license. You may obtain a copy of the Apache License at
 #
-# Any modifications or derivative works of this code must retain this
-# copyright notice, and modified files need to carry a notice indicating
-# that they have been altered from the originals.
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# This file includes code adapted from Qiskit (https://github.com/Qiskit/qiskit-ibm-provider)
+# with modifications by qBraid. The original copyright notice is included above.
+# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module containing custom ``urllib3.Retry`` class, inspired by Qiskit IBMQ
+Module containing custom ``urllib3.Retry`` class
 
 """
 
