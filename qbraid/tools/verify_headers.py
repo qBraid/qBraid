@@ -26,39 +26,41 @@ header = '''# Copyright (C) 2023 qBraid
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 '''
 
-companies = [
-    "Unitary Fund",
-    "IBM",
-    "The Cirq Developers",
+skip_files = [
+    "qbraid/api/retry.py",
+    "qbraid/transpiler/cirq_braket/convert_from_braket.py",
+    "qbraid/transpiler/cirq_braket/convert_to_braket.py",
+    "qbraid/transpiler/cirq_braket/tests/test_from_braket.py",
+    "qbraid/transpiler/cirq_braket/tests/test_to_braket.py",
+    "qbraid/transpiler/cirq_qasm/qasm_parser.py",
+    "qbraid/transpiler/cirq_qasm/tests/test_qasm_parser.py",
 ]
 
 def header_exists(file_path):
-    with open(file_path, 'r') as f:
+    with open(file_path, 'r', encoding='ISO-8859-1') as f:
         content = f.read()
     return content.startswith(header)
 
-def starts_with_skip_header(content):
-    lines = content.splitlines()
-    if len(lines) < 2:
-        return False
+def should_skip(file_path):
+    rel_path = os.path.relpath(file_path, project_directory)
+    if rel_path in skip_files:
+        return True
 
-    first_line = lines[0]
-    second_line = lines[1]
-    qbraid_copyright = "# Copyright (C) 2023 qBraid"
-    company_copyright = re.compile(r"# Copyright \(C\) \[(.+)\]")
-
-    match = company_copyright.match(second_line)
-    if match and first_line == qbraid_copyright:
-        company = match.group(1)
-        return company in companies
+    if os.path.basename(file_path) == '__init__.py':
+        with open(file_path, 'r', encoding='ISO-8859-1') as f:
+            content = f.read()
+        return not content.strip()
 
     return False
 
 def replace_or_add_header(file_path):
-    with open(file_path, 'r') as f:
+    if should_skip(file_path):
+        return
+
+    with open(file_path, 'r', encoding='ISO-8859-1') as f:
         content = f.read()
 
-    if header_exists(file_path) or starts_with_skip_header(content):
+    if header_exists(file_path):
         return
 
     lines = content.splitlines()
@@ -70,10 +72,12 @@ def replace_or_add_header(file_path):
         else:
             break
 
-    new_content_lines = [header.rstrip('\r\n')] + lines[len(comment_lines):]
+    extra_lines = [l for l in comment_lines if l.startswith(('isort', 'pylint', 'flake8', 'fmt'))]
+
+    new_content_lines = [header.rstrip('\r\n')] + extra_lines + lines[len(comment_lines):]
     new_content = '\n'.join(new_content_lines)
 
-    with open(file_path, 'w') as f:
+    with open(file_path, 'w', encoding='ISO-8859-1') as f:
         f.write(new_content)
 
 def process_files_in_directory(directory):
@@ -85,7 +89,7 @@ def process_files_in_directory(directory):
 
 if __name__ == '__main__':
     script_directory = os.path.dirname(os.path.abspath(__file__))
-    project_directory = os.path.abspath(os.path.join(script_directory, '..', '..'))
+    project_directory = os.path.abspath(os.path.join(script_directory, '..'))
     process_files_in_directory(project_directory)
     print("Header added or replaced in all .py files in the specified directory and sub-directories, if applicable.")
 
