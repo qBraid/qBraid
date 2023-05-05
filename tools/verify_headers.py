@@ -1,7 +1,7 @@
 # Copyright (C) 2023 qBraid
 #
 # This file is part of the qBraid-SDK
-# 
+#
 # The qBraid-SDK is free software released under the GNU General Public License v3
 # or later. You can redistribute and/or modify it under the terms of the GPL v3.
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
@@ -26,13 +26,13 @@ header = """# Copyright (C) 2023 qBraid
 """
 
 skip_files = [
-    "qbraid/api/retry.py",
-    "qbraid/transpiler/cirq_braket/convert_from_braket.py",
-    "qbraid/transpiler/cirq_braket/convert_to_braket.py",
-    "qbraid/transpiler/cirq_braket/tests/test_from_braket.py",
-    "qbraid/transpiler/cirq_braket/tests/test_to_braket.py",
-    "qbraid/transpiler/cirq_qasm/qasm_parser.py",
-    "qbraid/transpiler/cirq_qasm/tests/test_qasm_parser.py",
+    "api/retry.py",
+    "transpiler/cirq_braket/convert_from_braket.py",
+    "transpiler/cirq_braket/convert_to_braket.py",
+    "transpiler/cirq_braket/tests/test_from_braket.py",
+    "transpiler/cirq_braket/tests/test_to_braket.py",
+    "transpiler/cirq_qasm/qasm_parser.py",
+    "transpiler/cirq_qasm/tests/test_qasm_parser.py",
 ]
 
 
@@ -44,15 +44,12 @@ def header_exists(file_path):
 
 def should_skip(file_path):
     rel_path = os.path.relpath(file_path, project_directory)
-    
-    if rel_path.startswith("qbraid/"):
-        rel_path = rel_path[len("qbraid/"):]
 
     if rel_path in skip_files:
         return True
 
-    if os.path.basename(file_path) == '__init__.py':
-        with open(file_path, 'r', encoding='ISO-8859-1') as f:
+    if os.path.basename(file_path) == "__init__.py":
+        with open(file_path, "r", encoding="ISO-8859-1") as f:
             content = f.read()
         return not content.strip()
 
