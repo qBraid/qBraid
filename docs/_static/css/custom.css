@@ -60,6 +60,10 @@
   height: 28px;
 }
 
+.wy-side-nav-search>div.version {
+  color: var(--font-color2) !important;
+}
+
 .wy-menu-vertical li.current > a,
 .wy-menu-vertical li.on a {
   background-image: var(--active-gradient0);
