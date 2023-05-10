@@ -29,6 +29,8 @@ pip install qbraid
 
 ## Quickstart
 
+For more in-depth examples, see [user guide](https://docs.qbraid.com/en/latest/sdk/overview.html) and [demo notebooks](https://github.com/qBraid/qbraid-lab-demo).
+
 ### Transpiler
 
 Construct a quantum program of any supported program type, 
