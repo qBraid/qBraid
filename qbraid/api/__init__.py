@@ -26,6 +26,7 @@
    AuthError
    ConfigError
    RequestsApiError
+   PostForcelistRetry
 
 .. autoclass:: QbraidSession
 
@@ -70,4 +71,5 @@
 """
 from .exceptions import ApiError, AuthError, ConfigError, RequestsApiError
 from .job_api import get_job_data, init_job
+from .retry import PostForcelistRetry
 from .session import QbraidSession

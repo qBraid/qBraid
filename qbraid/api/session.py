@@ -23,7 +23,7 @@ from requests.adapters import HTTPAdapter
 from .exceptions import AuthError, ConfigError, RequestsApiError
 from .retry import STATUS_FORCELIST, PostForcelistRetry
 
-DEFAULT_ENDPOINT_URL = "https://api-staging-1.qbraid.com/api"
+DEFAULT_ENDPOINT_URL = "https://api.qbraid.com/api"
 DEFAULT_CONFIG_PATH = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
 DEFAULT_CONFIG_SECTION = "default"
 
@@ -40,7 +40,7 @@ class QbraidSession(Session):
 
     Args:
         base_url: Base URL for the session's requests.
-        user_email: JupyterHub User.
+        user_email: qBraid / JupyterHub User.
         refresh_token: Authenticated qBraid refresh-token.
         retries_total: Number of total retries for the requests.
         retries_connect: Number of connect retries for the requests.
@@ -103,7 +103,7 @@ class QbraidSession(Session):
     def refresh_token(self, value: Optional[str]) -> None:
         """Set the session refresh token."""
         refresh_token = value if value else self.get_config_variable("refresh-token")
-        self._refresh_token = refresh_token
+        self._refresh_token = refresh_token if refresh_token else os.getenv("REFRESH")
         if refresh_token:
             self.headers.update({"refresh-token": refresh_token})  # type: ignore[attr-defined]
 

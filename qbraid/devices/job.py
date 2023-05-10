@@ -19,10 +19,10 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 from qbraid import device_wrapper
 from qbraid.api import get_job_data
-from qbraid.api.status_maps import STATUS_MAP
 
 from .enums import JOB_FINAL, JobStatus, status_from_raw
 from .exceptions import JobError
+from .status_maps import STATUS_MAP
 
 if TYPE_CHECKING:
     import qbraid
