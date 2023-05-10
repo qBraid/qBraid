@@ -19,23 +19,94 @@ The qBraid-SDK is a Python toolkit for cross-framework abstraction, transpilatio
 
 ## Installation
 
-For the best experience, install the qBraid-SDK environment on [qBraid Lab](https://lab.qbraid.com). Login (or create an account) and then follow the steps in [Install environment](https://docs.qbraid.com/en/latest/lab/environments.html#install-environment) to get started using the SDK.
+For the best experience, install the qBraid-SDK environment on [qBraid Lab](https://lab.qbraid.com). Login (or create an account) and then follow the steps to [install an environment](https://docs.qbraid.com/en/latest/lab/environments.html#install-environment).
 
-Installation of the qBraid-SDK, as well as all dependencies, can also be done using pip:
-
-```bash
-pip install -i https://test.pypi.org/simple/ qbraid
-```
-
-To install the qBraid-SDK from source, clone this repository and run a pip install command in the project's root directory:
+The qBraid-SDK, and all of its dependencies, can also be installed using pip:
 
 ```bash
-git clone https://github.com/qbraid/qBraid.git
-cd qBraid
-python3 -m pip install -e .
+pip install qbraid
 ```
 
-## Account / API Setup
+## Quickstart
+
+### Transpiler
+
+Construct a quantum program of any supported program type, 
+
+```python
+>>> from qbraid import QPROGRAM_LIBS
+>>> QPROGRAM_LIBS
+['braket', 'cirq', 'qiskit', 'pyquil', 'pytket']
+```
+
+and use the `circuit_wrapper()` to convert to any other supported program type:
+
+```python
+>>> from qbraid import circuit_wrapper
+>>> from qbraid.interface import random_circuit
+>>> qiskit_circuit = random_circuit("qiskit")
+>>> cirq_circuit = circuit_wrapper(qiskit_circuit).transpile("cirq")
+>>> print(qiskit_circuit)
+          ┌────────────┐
+q_0: ──■──┤ Rz(5.3683) ├
+     ┌─┴─┐└─────┬──────┘
+q_1: ┤ X ├──────■───────
+     └───┘              
+>>> print(cirq_circuit)
+0: ───X───@───────────
+      │   │
+1: ───@───Rz(1.71π)───
+```
+
+### Devices & Jobs
+
+Search for quantum backend(s) on which to execute your program.
+
+```python
+>>> from qbraid import get_devices
+>>> get_devices()
+Device status updated 0 minutes ago
+
+Device ID                           Status
+---------                           ------
+aws_oqc_lucy                        ONLINE
+aws_rigetti_aspen_m2                OFFLINE
+aws_rigetti_aspen_m3                ONLINE
+ibm_q_perth                         ONLINE
+...
+
+```
+
+Apply the `device_wrapper()`, and send quantum jobs to any supported backend, from any supported program type:
+
+```python
+>>> from qbraid import device_wrapper, get_jobs
+>>> aws_device = device_wrapper("aws_oqc_lucy")
+>>> ibm_device = device_wrapper("ibm_q_perth")
+>>> aws_job = aws_device.run(qiskit_circuit, shots=1000)
+>>> ibm_job = ibm_device.run(cirq_circuit, shots=1000)
+>>> get_jobs()
+Displaying 2 most recent jobs:
+
+Job ID                                              Submitted                  Status
+------                                              ---------                  ------
+aws_oqc_lucy-exampleuser-qjob-zzzzzzz...            2023-05-21T21:13:47.220Z   QUEUED
+ibm_q_perth-exampleuser-qjob-xxxxxxx...             2023-05-21T21:13:48.220Z   RUNNING
+...
+```
+
+Compare results in a consistent, unified format:
+
+```python
+>>> aws_result = aws_job.result()
+>>> ibm_result = ibm_job.result()
+>>> aws_result.measurement_counts()
+{'0': 477, '1': 547}
+>>> ibm_result.measurement_counts()
+{'0': 550, '1': 474}
+```
+
+## Local Setup
 
 To use the qBraid-SDK locally (outside of qBraid Lab), you must add your account credentials:
 
@@ -44,7 +115,7 @@ To use the qBraid-SDK locally (outside of qBraid Lab), you must add your account
 - Login to your account and open DevTools / inspector window (MacOS: Option-Command-I)
 - Go to Application -> Storage -> Cookies -> https://account.qbraid.com
 - The value corresponding to `REFRESH` is your API refresh token.
-  Note, your refresh token is updated monthly.
+  Note, this token is updated monthly.
 3. Take your account email and refresh token from step 2, and save it by calling `QbraidSession.save_config()`:
 
 ```python
@@ -54,22 +125,7 @@ session = QbraidSession(user_email='USER_EMAIL', refresh_token='REFRESH_TOKEN')
 session.save_config()
 ```
 
-The command above stores your credentials locally in a configuration file called `qbraidrc` in `$HOME/.qbraid`, where `$HOME` is your home directory. Once saved you can then connect to the qBraid API and leverage functions such as `get_devices()`:
-
-```python
->>> from qbraid import get_devices
->>> get_devices()
-Device status updated 0 minutes ago
-
-Device ID                           Status
----------                           ------
-aws_ionq                            ONLINE
-aws_oqc_lucy                        ONLINE
-aws_quera_aquila                    ONLINE
-aws_rigetti_aspen_m2                OFFLINE
-aws_rigetti_aspen_m3                ONLINE
-...
-```
+The command above stores your credentials locally in a configuration file called `qbraidrc` in `$HOME/.qbraid`, where `$HOME` is your home directory. Once saved you can then connect to the qBraid API and leverage functions such as `get_devices()` and `get_jobs()`.
 
 ### Load Account from Environment Variables
 
