@@ -13,7 +13,7 @@ Module to map qbraid status to equivalent status of each
 supported front-end.
 
 """
-from qbraid.devices.enums import JobStatus
+from .enums import JobStatus
 
 AwsQuantumTask = {
     "CREATED": JobStatus.INITIALIZING,
