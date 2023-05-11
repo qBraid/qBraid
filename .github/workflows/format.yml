@@ -1,0 +1,29 @@
+name: Formatting check
+
+on:
+    pull_request:
+        branches: main
+
+jobs:
+  black:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+
+      - name: Install dependencies
+        run: pip install black
+
+      - uses: actions/checkout@v2
+
+      - name: Run Black
+        run: |
+          black qbraid/ --check
+          black tools/ --check
+
+      - name: Verify headers
+        run: |
+          python tools/verify_headers.py qbraid

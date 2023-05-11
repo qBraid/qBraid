@@ -50,14 +50,14 @@ and use the `circuit_wrapper()` to convert to any other supported program type:
 >>> cirq_circuit = circuit_wrapper(qiskit_circuit).transpile("cirq")
 >>> print(qiskit_circuit)
           ┌────────────┐
-q_0: ──■──┤ Rz(5.3683) ├
-     ┌─┴─┐└─────┬──────┘
-q_1: ┤ X ├──────■───────
-     └───┘              
+q_0: ──■──┤ Rx(3.0353) ├
+     ┌─┴─┐└───┬────┬───┘
+q_1: ┤ H ├────┤ √X ├────
+     └───┘    └────┘    
 >>> print(cirq_circuit)
-0: ───X───@───────────
-      │   │
-1: ───@───Rz(1.71π)───
+0: ───H───X^0.5────────
+      │
+1: ───@───Rx(0.966π)───
 ```
 
 ### Devices & Jobs
@@ -103,9 +103,9 @@ Compare results in a consistent, unified format:
 >>> aws_result = aws_job.result()
 >>> ibm_result = ibm_job.result()
 >>> aws_result.measurement_counts()
-{'0': 477, '1': 547}
+{'00': 483, '01': 14, '10': 486, '11': 17}
 >>> ibm_result.measurement_counts()
-{'0': 550, '1': 474}
+{'00': 496, '01': 12, '10': 479, '11': 13}
 ```
 
 ## Local Setup
@@ -153,9 +153,9 @@ The API reference can be found on [Read the Docs](https://docs.qbraid.com/en/lat
 To generate the API reference documentation locally:
 
 ```bash
-pip install tox
+pip install tox<4
 tox -e docs
-``` 
+```
 
 Alternatively:
 ```bash
@@ -187,6 +187,7 @@ reflected in subsequent builds, run `make clean html`, which will force a full r
 To run all unit tests:
 
 ```bash
+pip install tox<4
 tox -e unit-tests
 ```
 

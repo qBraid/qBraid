@@ -17,6 +17,28 @@ from abc import ABC, abstractmethod
 from qiskit.visualization import plot_histogram
 
 
+def _format_counts(raw_counts: dict) -> dict:
+    """Formats, sorts, and adds missing bit indicies to counts dictionary
+
+    For example:
+
+    .. code-block:: python
+
+        >>> counts
+        {'1 1': 13, '0 0': 46, '1 0': 79}
+        >>> _format_counts(counts)
+        {'00': 46, '01': 0, '10': 79, '11': 13}
+
+    """
+    # Remove spaces from keys
+    counts = {key.replace(" ", ""): value for key, value in raw_counts.items()}
+
+    # Create the sorted dictionary, filling in missing keys with 0
+    num_bits = max(len(key) for key in counts)
+    all_keys = [format(i, "0" + str(num_bits) + "b") for i in range(2**num_bits)]
+    return {key: counts.get(key, 0) for key in sorted(all_keys)}
+
+
 class ResultWrapper(ABC):
     """Abstract interface for result-like classes.
 
@@ -33,8 +55,13 @@ class ResultWrapper(ABC):
         """Return measurements as list"""
 
     @abstractmethod
+    def raw_counts(self):
+        """Returns raw histogram data of the run"""
+
     def measurement_counts(self):
-        """Returns the histogram data of the run"""
+        """Returns the sorted histogram data of the run"""
+        raw_counts = self.raw_counts()
+        return _format_counts(raw_counts)
 
     def plot_counts(self):
         """Plot histogram of measurement counts"""

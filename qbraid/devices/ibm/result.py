@@ -29,6 +29,6 @@ class IBMResultWrapper(ResultWrapper):
             qbraid_meas.append(lst_shot)
         return np.array(qbraid_meas)
 
-    def measurement_counts(self):
+    def raw_counts(self):
         """Returns the histogram data of the run"""
         return self.vendor_rlo.get_counts()

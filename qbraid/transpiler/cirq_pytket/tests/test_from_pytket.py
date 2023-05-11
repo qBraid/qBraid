@@ -8,13 +8,14 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# fmt: off
+
 """
 Unit tests for converting pytket circuits to Cirq circuits.
 
 """
 import numpy as np
 import pytest
-
 # from cirq import Circuit, LineQubit, ops, protocols
 from pytket.circuit import Circuit as TKCircuit
 
