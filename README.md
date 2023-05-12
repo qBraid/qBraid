@@ -3,6 +3,7 @@
 [![CI](https://github.com/qBraid/qBraid/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/qBraid/qBraid/actions/workflows/main.yml)
 [![codecov](https://codecov.io/gh/qBraid/qBraid/branch/main/graph/badge.svg?token=1UTM0XZB7A)](https://codecov.io/gh/qBraid/qBraid)
 [![Documentation Status](https://readthedocs.com/projects/qbraid-qbraid/badge/?version=latest)](https://docs.qbraid.com/en/latest/?badge=latest)
+[![PyPI version](https://img.shields.io/pypi/v/qbraid.svg?color=blue)](https://pypi.org/project/qbraid/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 The qBraid-SDK is a Python toolkit for cross-framework abstraction, transpilation, and execution of quantum programs.
@@ -180,14 +181,11 @@ Use the badge in your project's `README.rst`:
 
 ## Contributing
 
-Interested in contributing code, or making a PR? See [CONTRIBUTING.md](CONTRIBUTING.md)
-
-For feature requests and bug reports: [Submit an issue](https://github.com/qBraid/qBraid/issues). For discussions,
-and specific questions about the qBraid SDK, qBraid Lab, or other topics, [join our discord community](https://discord.gg/gwBebaBZZX).
-For questions that are more suited for a forum, use the `qbraid` tag on [Stack Exchange](https://quantumcomputing.stackexchange.com/). 
-
-Want your open-source project featured as its own runtime environment on qBraid Lab? Fill out our [New Environment Request Form](https://forms.gle/a4v7Kdn7G7bs9jYD8)
-
+- Interested in contributing code, or making a PR? See [CONTRIBUTING.md](CONTRIBUTING.md)
+- For feature requests and bug reports: [Submit an issue](https://github.com/qBraid/qBraid/issues)
+- For discussions, and specific questions about the qBraid SDK, qBraid Lab, or other topics, [join our discord community](https://discord.gg/gwBebaBZZX)
+- For questions that are more suited for a forum, use the `qbraid` tag on [Stack Exchange](https://quantumcomputing.stackexchange.com/)
+- Want your open-source project featured as its own runtime environment on qBraid Lab? Fill out our [New Environment Request Form](https://forms.gle/a4v7Kdn7G7bs9jYD8)
 
 ## License
 
