@@ -30,7 +30,7 @@ class AwsGateModelResultWrapper(ResultWrapper):
         """
         return np.flip(self.vendor_rlo.measurements, 1)
 
-    def measurement_counts(self):
+    def raw_counts(self):
         """Returns the histogram data of the run"""
         braket_counts = dict(self.vendor_rlo.measurement_counts)
         qbraid_counts = {}

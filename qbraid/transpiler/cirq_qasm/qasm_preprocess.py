@@ -122,7 +122,12 @@ def convert_to_supported_qasm(qasm_str: str) -> str:
     """Returns a copy of the input QASM compatible with the
     :class:`~qbraid.transpiler.cirq_qasm.qasm_parser.QasmParser`.
     Conversion includes deconstruction of custom defined gates, and
-    decomposition of unsupported gates/operations."""
+    decomposition of unsupported gates/operations.
+    
+    TODO: Breaks for qiskit>=0.43.0. Updates to helper functions
+    and support for new gates needed for latest qiskit version.
+    
+    """
     gate_defs = GATE_DEFS
     qasm_lst_out = []
     qasm_str = _remove_barriers(qasm_str)

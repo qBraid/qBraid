@@ -41,11 +41,9 @@ qasm_lst = [qasm_0]
 
 @pytest.mark.parametrize("qasm_str", qasm_lst)
 def test_preprocess_qasm(qasm_str):
+    """Test converting qasm string to format supported by Cirq parser"""
     qiskit_circuit = QuantumCircuit().from_qasm_str(qasm_str)
     supported_qasm = convert_to_supported_qasm(qasm_str)
-    print(qasm_str)
-    print()
-    print(supported_qasm)
     cirq_circuit = from_qasm(supported_qasm)
     cirq_circuit_compat = _convert_to_line_qubits(cirq_circuit, rev_qubits=True)
     assert circuits_allclose(cirq_circuit_compat, qiskit_circuit)
@@ -151,5 +149,89 @@ measure b[2] -> ans[2];
 measure b[3] -> ans[3];
 measure cout[0] -> ans[4];
 // quantum ripple-carry adder from Cuccaro et al, quant-ph/0410184
+"""
+    )
+
+
+@pytest.mark.skip("Conversion test for when update to qiskit>=0.43.0")
+def test_convert_qasm_one_param():
+    """Test converting qasm string from one-parameter gate"""
+    assert (
+        convert_to_supported_qasm(
+            """
+OPENQASM 2.0;
+include "qelib1.inc";
+gate ryy(param0) q0,q1 { rx(pi/2) q0; rx(pi/2) q1; cx q0,q1; rz(param0) q1; cx q0,q1; rx(-pi/2) q0; rx(-pi/2) q1; }
+qreg q[2];
+ryy(2.0425171585294746) q[1],q[0];
+"""
+        )
+        == """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[2];
+rx(pi/2) q[1];
+rx(pi/2) q[0];
+cx q[1],q[0];
+rz(2.0425171585294746) q[0];
+cx q[1],q[0];
+rx(-pi/2) q[1];
+rx(-pi/2) q[0];
+"""
+    )
+
+
+@pytest.mark.skip("Conversion test for when update to qiskit>=0.43.0")
+def test_convert_qasm_two_param():
+    """Test converting qasm string from two-parameter gate"""
+    assert (
+        convert_to_supported_qasm(
+            """
+OPENQASM 2.0;
+include "qelib1.inc";
+gate xx_minus_yy(param0,param1) q0,q1 { rz(-1.0*param1) q1; ry(param0/2) q0; }
+qreg q[2];
+xx_minus_yy(2.00367210595874,5.07865952845335) q[0],q[1];
+"""
+        )
+        == """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[2];
+rz(-5.07865952845335) q[1];
+ry(1.00367210595874) q[0];
+"""
+    )
+
+
+@pytest.mark.skip("Conversion test for when update to qiskit>=0.43.0")
+def test_convert_qasm_recursive_gate_def():
+    """Test converting qasm string from gate defined in terms of another gate"""
+    assert (
+        convert_to_supported_qasm(
+            """
+OPENQASM 2.0;
+include "qelib1.inc";
+gate rzx(param0) q0,q1 { h q1; cx q0,q1; rz(param0) q1; cx q0,q1; h q1; }
+gate ecr q0,q1 { rzx(pi/4) q0,q1; x q0; rzx(-pi/4) q0,q1; }
+qreg q[2];
+ecr q[0],q[1];
+"""
+        )
+        == """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[2];
+h q[1];
+cx q[0],q[1];
+rz(pi/4) q[1];
+cx q[0],q[1];
+h q[1];
+x q[0];
+h q[1];
+cx q[0],q[1];
+rz(-pi/4) q[1];
+cx q[0],q[1];
+h q[1];
 """
     )
