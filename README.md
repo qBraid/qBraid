@@ -8,21 +8,22 @@
 
 The qBraid-SDK is a Python toolkit for cross-framework abstraction, transpilation, and execution of quantum programs.
 
-[<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/qBraid/qBraid.git)
-
-
 ## Features
+
 
 - Unified quantum frontend interface. **Transpile** quantum circuits between supported packages. Leverage the capabilities of multiple frontends through **simple, consistent protocols**.
 - Build once, target many. **Create** quantum programs using your preferred circuit-building package, and **execute** on any backend that interfaces with a supported frontend.
 - Benchmark, compare, interpret results. Built-in **compatible** post-processing enables comparing results between runs and **across backends**.
 
-
 ## Installation & Setup
+
+<img align="right" width="300" alt="qbraid-sdk-env" src="https://github.com/qBraid/qBraid/assets/46977852/669bd6f3-bbef-428c-9b59-b421c940262e">
 
 For the best experience, install the qBraid-SDK environment on [lab.qbraid.com](https://lab.qbraid.com). Login (or [create an account](https://account.qbraid.com)) and follow the steps to [install an environment](https://docs.qbraid.com/en/latest/lab/environments.html#install-environment).
 
 Using the SDK on qBraid Lab means direct, pre-configured access to all [Amazon Braket supported devices](https://docs.aws.amazon.com/braket/latest/developerguide/braket-devices.html) and [IBM Quantum open systems](https://www.ibm.com/quantum/access-plans) with no additional access keys or API tokens required. See [qBraid Quantum Jobs](https://docs.qbraid.com/en/latest/lab/quantumjobs.html) for more.
+
+### Local install
 
 The qBraid-SDK, and all of its dependencies, can also be installed using pip:
 
