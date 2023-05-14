@@ -84,6 +84,7 @@ def test_remove_blank_wires_pytket():
     contig_circuit = convert_to_contiguous(circuit)
     assert contig_circuit.n_qubits == 2
 
+
 def test_unitary_raises():
     with pytest.raises(ProgramTypeError):
         convert_to_contiguous(None)

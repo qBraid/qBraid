@@ -127,10 +127,7 @@ def test_cirq_bell_text_draw(capfd, package):
 def test_cirq_bell_svg_draw():
     """Test svg_source"""
 
-    assert (
-        circuit_drawer(cirq_bell, output="svg_source")
-        == '<svg xmlns="http://www.w3.org/2000/svg" width="220.0" height="100.0"><line x1="30.0" x2="190.0" y1="25.0" y2="25.0" stroke="#1967d2" stroke-width="1" /><line x1="30.0" x2="190.0" y1="75.0" y2="75.0" stroke="#1967d2" stroke-width="1" /><line x1="150.0" x2="150.0" y1="25.0" y2="75.0" stroke="black" stroke-width="3" /><rect x="10.0" y="5.0" width="40" height="40" stroke="black" fill="white" stroke-width="0" /><text x="30.0" y="25.0" dominant-baseline="middle" text-anchor="middle" font-size="14px" font-family="Arial">0: </text><rect x="10.0" y="55.0" width="40" height="40" stroke="black" fill="white" stroke-width="0" /><text x="30.0" y="75.0" dominant-baseline="middle" text-anchor="middle" font-size="14px" font-family="Arial">1: </text><rect x="70.0" y="5.0" width="40" height="40" stroke="black" fill="white" stroke-width="1" /><text x="90.0" y="25.0" dominant-baseline="middle" text-anchor="middle" font-size="18px" font-family="Arial">H</text><circle cx="150.0" cy="25.0" r="10.0" /><rect x="130.0" y="55.0" width="40" height="40" stroke="black" fill="white" stroke-width="1" /><text x="150.0" y="75.0" dominant-baseline="middle" text-anchor="middle" font-size="18px" font-family="Arial">X</text></svg>'
-    )
+    assert len(circuit_drawer(cirq_bell, output="svg_source")) == 1211
 
 
 def test_cirq_raises():

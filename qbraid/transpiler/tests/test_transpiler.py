@@ -120,7 +120,8 @@ def test_circuit_wrapper_error():
     """Test raising circuit wrapper error"""
     with pytest.raises(QbraidError):
         circuit_wrapper("Not a circuit")
-    
+
+
 def test_circuit_wrapper_error():
     """Test raising circuit wrapper error"""
     with pytest.raises(QbraidError):
