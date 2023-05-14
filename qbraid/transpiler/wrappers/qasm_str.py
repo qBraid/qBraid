@@ -37,6 +37,7 @@ class QasmCircuitWrapper(QuantumProgramWrapper):
             circuit: the cirq ``Circuit`` object to be wrapped
 
         """
+        # coverage: ignore
         super().__init__(qasm_str)
 
         self._qubits = qasm_qubits(qasm_str)

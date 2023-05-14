@@ -20,6 +20,8 @@ from qiskit import QuantumCircuit
 
 from qbraid.interface.calculate_unitary import circuits_allclose
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
+from qbraid.exceptions import ProgramTypeError
+import pytest
 
 
 def test_remove_idle_qubits_qiskit():
@@ -81,3 +83,7 @@ def test_remove_blank_wires_pytket():
     circuit.CX(0, 1)
     contig_circuit = convert_to_contiguous(circuit)
     assert contig_circuit.n_qubits == 2
+
+def test_unitary_raises():
+    with pytest.raises(ProgramTypeError):
+        convert_to_contiguous(None)
