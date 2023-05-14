@@ -29,7 +29,6 @@ parallel = true
 source = ["qbraid"]
 omit = [
   "**/qbraid/transpiler/*/_gate_archive.py"
-  "**/qbraid/transpiler/*/_gate_archive.py"
 ]
 
 [tool.coverage.paths]

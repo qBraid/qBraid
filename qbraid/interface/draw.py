@@ -57,6 +57,7 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
         elif output == "svg":
             from cirq.contrib.svg import SVGCircuit
 
+            # coverage: ignore
             return SVGCircuit(program)
         elif output == "svg_source":
             from cirq.contrib.svg import circuit_to_svg
@@ -73,6 +74,7 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
         elif output == "latex":
             from pyquil.latex import display
 
+            # coverage: ignore
             return display(program, **kwargs)
         else:
             raise VisualizationError('The only valid option for pyquil are "text", "latex"')
@@ -81,14 +83,17 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
         if output == None or output == "jupyter":
             from pytket.circuit.display import render_circuit_jupyter
 
+            # coverage: ignore
             return render_circuit_jupyter(program)  # Render interactive display
         elif output == "view_browser":
             from pytket.circuit.display import view_browser
 
+            # coverage: ignore
             return view_browser(program, **kwargs)
         elif output == "html":
             from pytket.circuit.display import render_circuit_as_html
 
+            # coverage: ignore
             return render_circuit_as_html(program, **kwargs)
         else:
             raise VisualizationError(

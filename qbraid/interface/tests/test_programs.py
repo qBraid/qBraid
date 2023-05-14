@@ -17,17 +17,27 @@ import pytest
 from qbraid.interface.calculate_unitary import circuits_allclose
 from qbraid.interface.draw import VisualizationError, circuit_drawer
 from qbraid.interface.programs import bell_data, random_circuit, shared15_data
+from qbraid.exceptions import ProgramTypeError
+from qbraid import circuit_wrapper
+
+map, _ = bell_data()
+braket_bell = map["braket"]()
+cirq_bell = map["cirq"]()
+pyquil_bell = map["pyquil"]()
+qiskit_bell = map["qiskit"]()
+pytket_bell = map["pytket"]()
+qasm_bell = map["qasm"]()
+
+map, _ = shared15_data()
+braket_shared15 = map["braket"]()
+cirq_shared15 = map["cirq"]()
+qiskit_shared15 = map["qiskit"]()
+pytket_shared15 = map["pytket"]()
+qasm_shared15 = map["qasm"]()
 
 
 def test_bell():
     """Test the equality of bell circuits"""
-    map, _ = bell_data()
-    braket_bell = map["braket"]()
-    cirq_bell = map["cirq"]()
-    pyquil_bell = map["pyquil"]()
-    qiskit_bell = map["qiskit"]()
-    pytket_bell = map["pytket"]()
-    qasm_bell = map["qasm"]()
 
     eq1 = circuits_allclose(braket_bell, cirq_bell, strict_gphase=True)
     eq2 = circuits_allclose(cirq_bell, pyquil_bell, strict_gphase=True)
@@ -40,12 +50,6 @@ def test_bell():
 
 def test_shared15():
     """Test the equality of shared gates circuits"""
-    map, _ = shared15_data()
-    braket_shared15 = map["braket"]()
-    cirq_shared15 = map["cirq"]()
-    qiskit_shared15 = map["qiskit"]()
-    pytket_shared15 = map["pytket"]()
-    qasm_shared15 = map["qasm"]()
 
     eq1 = circuits_allclose(braket_shared15, cirq_shared15, strict_gphase=True)
     eq2 = circuits_allclose(cirq_shared15, qiskit_shared15, strict_gphase=True)
@@ -69,3 +73,94 @@ def test_draw_raises():
     """Test that non-supported package raises error"""
     with pytest.raises(VisualizationError):
         circuit_drawer("bad_input")
+
+
+def test_draw_program_raises():
+    with pytest.raises(ProgramTypeError):
+        circuit_drawer(None)
+
+
+def test_qiskit_draw():
+    expected = """          ┌───┐
+q_0: ─────┤ X ├
+     ┌───┐└─┬─┘
+q_1: ┤ H ├──■──
+     └───┘     """
+    result = circuit_drawer(qiskit_bell, output="text")
+    assert result.__str__() == expected
+
+
+@pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm"])
+def test_braket_bell_draw(capfd, package):
+    """Test that draw function standard output is of the expected length."""
+    circuit_wrapper(eval(f"{package}_bell")).draw(package="braket", output="ascii")
+
+    out, err = capfd.readouterr()
+    print(out, err)
+    assert len(err) == 0
+    assert len(out) == 67
+
+
+# todo: shared15 draw testcase, after fixing circuit decomposition problem from cirq
+
+
+def test_braket_raises():
+    """Test that non-supported output raises error"""
+    with pytest.raises(VisualizationError):
+        circuit_drawer(braket_bell, output="bad_input")
+
+
+@pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm"])
+def test_cirq_bell_text_draw(capfd, package):
+    """Test that draw function standard output is of the expected length."""
+    circuit_wrapper(eval(f"{package}_bell")).draw(package="cirq", output="text")
+
+    out, err = capfd.readouterr()
+    print(out, err)
+    assert len(err) == 0
+    if package == "pytket" or package == "qasm":  # todo: there is "q_n" represent number of qubit
+        assert len(out) == 48
+    else:
+        assert len(out) == 42
+
+
+def test_cirq_bell_svg_draw():
+    """Test svg_source"""
+
+    assert (
+        circuit_drawer(cirq_bell, output="svg_source")
+        == '<svg xmlns="http://www.w3.org/2000/svg" width="220.0" height="100.0"><line x1="30.0" x2="190.0" y1="25.0" y2="25.0" stroke="#1967d2" stroke-width="1" /><line x1="30.0" x2="190.0" y1="75.0" y2="75.0" stroke="#1967d2" stroke-width="1" /><line x1="150.0" x2="150.0" y1="25.0" y2="75.0" stroke="black" stroke-width="3" /><rect x="10.0" y="5.0" width="40" height="40" stroke="black" fill="white" stroke-width="0" /><text x="30.0" y="25.0" dominant-baseline="middle" text-anchor="middle" font-size="14px" font-family="Arial">0: </text><rect x="10.0" y="55.0" width="40" height="40" stroke="black" fill="white" stroke-width="0" /><text x="30.0" y="75.0" dominant-baseline="middle" text-anchor="middle" font-size="14px" font-family="Arial">1: </text><rect x="70.0" y="5.0" width="40" height="40" stroke="black" fill="white" stroke-width="1" /><text x="90.0" y="25.0" dominant-baseline="middle" text-anchor="middle" font-size="18px" font-family="Arial">H</text><circle cx="150.0" cy="25.0" r="10.0" /><rect x="130.0" y="55.0" width="40" height="40" stroke="black" fill="white" stroke-width="1" /><text x="150.0" y="75.0" dominant-baseline="middle" text-anchor="middle" font-size="18px" font-family="Arial">X</text></svg>'
+    )
+
+
+def test_cirq_raises():
+    with pytest.raises(VisualizationError):
+        circuit_drawer(cirq_bell, output="bad_input")
+
+
+# def test_pyquil_draw():
+
+
+@pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm"])
+def test_pyquil_bell_draw(capfd, package):
+    """Test that draw function standard output is of the expected length."""
+    circuit_wrapper(eval(f"{package}_bell")).draw(package="pyquil", output="text")
+
+    out, err = capfd.readouterr()
+    print(out, err)
+    assert len(err) == 0
+    assert len(out) == 14
+
+
+def test_pyquil_raises():
+    with pytest.raises(VisualizationError):
+        circuit_drawer(pyquil_bell, output="bad_input")
+
+
+def test_pytket_draw():
+    assert len(circuit_drawer(pytket_bell, output="html")) == 1872
+
+
+def test_pytket_raises():
+    with pytest.raises(VisualizationError):
+        circuit_drawer(pytket_bell, output="bad_input")

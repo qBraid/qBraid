@@ -22,6 +22,7 @@ from pytket.circuit import OpType
 
 from qbraid.interface.calculate_unitary import to_unitary, unitary_to_little_endian
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
+from qbraid.exceptions import ProgramTypeError
 
 
 def get_subsets(nqubits):
@@ -118,3 +119,8 @@ def test_qasm_depth():
 
     assert qasm_depth(qasm_bell()) == 2
     assert qasm_depth(qasm_shared15()) == 22
+
+
+def test_unitary_raises():
+    with pytest.raises(ProgramTypeError):
+        to_unitary(None)
