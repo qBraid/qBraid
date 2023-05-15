@@ -2,7 +2,7 @@
 sympy
 pytest
 coverage
-tox<4
+tox<5
 ipython
 
 # docs
