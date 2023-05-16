@@ -9,7 +9,7 @@ ipython
 sphinx
 sphinx-autodoc-typehints
 sphinx-rtd-theme
-docutils<0.17
+docutils<0.21
 
 # linters
 isort
