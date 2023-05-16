@@ -44,10 +44,13 @@ def to_unitary(program: "qbraid.QPROGRAM", ensure_contiguous: Optional[bool] = F
     """
     to_unitary_function: Callable[[Any], np.ndarray]
 
-    try:
-        package = program.__module__
-    except AttributeError as err:
-        raise ProgramTypeError(program) from err
+    if isinstance(program, str):
+        package = "qasm"
+    else:
+        try:
+            package = program.__module__
+        except AttributeError as err:
+            raise ProgramTypeError(program) from err
 
     # pylint: disable=import-outside-toplevel
 
@@ -72,6 +75,10 @@ def to_unitary(program: "qbraid.QPROGRAM", ensure_contiguous: Optional[bool] = F
         from qbraid.interface.qbraid_pytket.tools import _unitary_from_pytket
 
         to_unitary_function = _unitary_from_pytket
+    elif "qasm" in package:
+        from qbraid.interface.qbraid_qasm.tools import _unitary_from_qasm
+
+        to_unitary_function = _unitary_from_qasm
     else:
         raise ProgramTypeError(program)
 

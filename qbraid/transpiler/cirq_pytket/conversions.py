@@ -43,7 +43,7 @@ def to_pytket(circuit: Circuit) -> TKCircuit:
         raise CircuitConversionError("Cirq qasm converter doesn't yet support qasm3.") from err
 
 
-def from_pytket(circuit: TKCircuit) -> Circuit:
+def from_pytket(circuit: TKCircuit, compat=False) -> Circuit:
     """Returns a Cirq circuit equivalent to the input pytket circuit.
 
     Args:
@@ -55,6 +55,8 @@ def from_pytket(circuit: TKCircuit) -> Circuit:
     try:
         qasm_str = circuit_to_qasm_str(circuit)
         cirq_circuit = from_qasm(qasm_str)
-        return _convert_to_line_qubits(cirq_circuit, rev_qubits=False)
+        if compat:
+            cirq_circuit = convert_to_contiguous(cirq_circuit, rev_qubits=True)
+        return cirq_circuit
     except Exception as err:
         raise CircuitConversionError("Cirq qasm converter doesn't yet support qasm3.") from err
