@@ -4,6 +4,7 @@
 [![codecov](https://codecov.io/gh/qBraid/qBraid/branch/main/graph/badge.svg?token=1UTM0XZB7A)](https://codecov.io/gh/qBraid/qBraid)
 [![Documentation Status](https://readthedocs.com/projects/qbraid-qbraid/badge/?version=latest)](https://docs.qbraid.com/en/latest/?badge=latest)
 [![PyPI version](https://img.shields.io/pypi/v/qbraid.svg?color=blue)](https://pypi.org/project/qbraid/)
+[![License](https://img.shields.io/github/license/qBraid/qbraid.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 The qBraid-SDK is a Python toolkit for cross-framework abstraction,
@@ -24,7 +25,7 @@ transpilation, and execution of quantum programs.
 
 ## Installation & Setup
 
-<img align="right" width="300" alt="qbraid-sdk-env" src="https://github.com/qBraid/qBraid/assets/46977852/669bd6f3-bbef-428c-9b59-b421c940262e">
+<img align="right" width="300" alt="qbraid-sdk-env" src="https://github.com/qBraid/qBraid/assets/46977852/c82d61b4-2518-4c7e-8f48-05106afa708e">
 
 For the best experience, install the qBraid-SDK environment on
 [lab.qbraid.com](https://lab.qbraid.com). Login (or
@@ -144,8 +145,7 @@ Compare results in a consistent, unified format:
 ```
 
 ## Local account setup
-<img mg align="right" width="350" alt="api_key" src="https://github.com/qBraid/qBraid/assets/32727721/d087c404-e9c7-4a0b-b2a5-a58f2e483cce">
-
+<img mg align="right" width="350" alt="api_key" src="https://github.com/qBraid/qBraid/assets/46977852/86235d04-4b12-40e0-befe-1eeacaac9104">
 
 To use the qBraid-SDK locally (outside of qBraid Lab), you must add your account
 credentials:
