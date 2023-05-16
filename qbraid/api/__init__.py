@@ -66,8 +66,8 @@
 
       ~QbraidSession.base_url
       ~QbraidSession.user_email
+      ~QbraidSession.api_key
       ~QbraidSession.refresh_token
-      ~QbraidSession.api_token
 
 """
 from .exceptions import ApiError, AuthError, ConfigError, RequestsApiError

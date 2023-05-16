@@ -41,6 +41,7 @@ class QbraidSession(Session):
     Args:
         base_url: Base URL for the session's requests.
         user_email: qBraid / JupyterHub User.
+        api_key: Authenticated qBraid API key.
         refresh_token: Authenticated qBraid refresh-token.
         retries_total: Number of total retries for the requests.
         retries_connect: Number of connect retries for the requests.
@@ -51,7 +52,7 @@ class QbraidSession(Session):
     def __init__(  # pylint: disable=too-many-arguments
         self,
         base_url: Optional[str] = None,
-        user_email: Optional[str] = None,
+        user_email: str = None,
         api_key: Optional[str] = None,
         refresh_token: Optional[str] = None,
         retries_total: int = 5,
@@ -98,12 +99,12 @@ class QbraidSession(Session):
 
     @property
     def api_key(self) -> Optional[str]:
-        """Return the session refresh token."""
+        """Return the api key."""
         return self._api_key
 
     @api_key.setter
     def api_key(self, value: Optional[str]) -> None:
-        """Set the session refresh token."""
+        """Set the api key."""
         api_key = value if value else self.get_config_variable("api-key")
         self._api_key = api_key if api_key else os.getenv("QBRAID_API_KEY")
         if api_key:
