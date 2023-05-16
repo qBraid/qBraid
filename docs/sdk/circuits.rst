@@ -11,9 +11,9 @@ other circuit-based convenience features.
 Program Types
 --------------
 
-Supported frontend program types include `Qiskit QuantumCircuit <QiskitQuantumCircuit>`_,
-`Braket Circuit <BraketCircuit>`_, `Cirq Circuit <CirqCircuit>`_, `PyQuil Program <PyQuilProgram>`_
-and `PyTKET Circuit <PyTKETCircuit>`_:
+Supported frontend program types include `Qiskit <QiskitQuantumCircuit>`_,
+`Amazon Braket <BraketCircuit>`_, `Cirq <CirqCircuit>`_, `PyQuil <PyQuilProgram>`_,
+`PyTKET <PyTKETCircuit>`_, and `OpenQASM <OpenQASMString>`_:
 
 .. code-block:: python
     
@@ -26,6 +26,7 @@ and `PyTKET Circuit <PyTKETCircuit>`_:
     qiskit.circuit.quantumcircuit.QuantumCircuit
     pyquil.quil.Program
     pytket._tket.circuit.Circuit
+    qasm
 
 
 .. _QiskitQuantumCircuit: https://qiskit.org/documentation/stubs/qiskit.circuit.QuantumCircuit.html
@@ -33,6 +34,7 @@ and `PyTKET Circuit <PyTKETCircuit>`_:
 .. _CirqCircuit: https://quantumai.google/reference/python/cirq/circuits/Circuit
 .. _PyQuilProgram: https://pyquil-docs.rigetti.com/en/stable/basics.html
 .. _PyTKETCircuit: https://cqcl.github.io/tket/pytket/api/circuit_class.html
+.. _OpenQASMString: https://openqasm.com/language/index.html
 
 
 Circuit Wrapper

@@ -38,72 +38,62 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
         except AttributeError as err:
             raise ProgramTypeError(program) from err
 
+    # pylint: disable=import-outside-toplevel
+
     if "qiskit" in package:
         from qiskit.visualization import circuit_drawer as qiskit_drawer
 
         return qiskit_drawer(program, output=output, **kwargs)
 
-    elif "braket" in package:
-        if output == None or output == "ascii":
+    if "braket" in package:
+        if output in (None, "ascii"):
             from braket.circuits.ascii_circuit_diagram import AsciiCircuitDiagram
 
             return print(AsciiCircuitDiagram.build_diagram(program))
-        else:
-            raise VisualizationError('The only valid option for braket are "ascii"')
+        raise VisualizationError('The only valid option for braket are "ascii"')
 
-    elif "cirq" in package:
-        if output == None or output == "text":
-            print(program.to_text_diagram(**kwargs))
-        elif output == "svg":
+    if "cirq" in package:
+        if output in (None, "text"):
+            return print(program.to_text_diagram(**kwargs))
+        if output == "svg":
             from cirq.contrib.svg import SVGCircuit
 
             # coverage: ignore
             return SVGCircuit(program)
-        elif output == "svg_source":
+        if output == "svg_source":
             from cirq.contrib.svg import circuit_to_svg
 
             return circuit_to_svg(program)
-        else:
-            raise VisualizationError(
-                'The only valid option for cirq are "text", "svg", "svf_source"'
-            )
+        raise VisualizationError('The only valid option for cirq are "text", "svg", "svf_source"')
 
-    elif "pyquil" in package:
-        if output == None or output == "text":
+    if "pyquil" in package:
+        if output is None or output == "text":
             return print(program)
-        elif output == "latex":
+        if output == "latex":
             from pyquil.latex import display
 
             # coverage: ignore
             return display(program, **kwargs)
-        else:
-            raise VisualizationError('The only valid option for pyquil are "text", "latex"')
+        raise VisualizationError('The only valid option for pyquil are "text", "latex"')
 
-    elif "pytket" in package:
-        if output == None or output == "jupyter":
+    if "pytket" in package:
+        if output in (None, "jupyter"):
             from pytket.circuit.display import render_circuit_jupyter
 
             # coverage: ignore
             return render_circuit_jupyter(program)  # Render interactive display
-        elif output == "view_browser":
+        if output == "view_browser":
             from pytket.circuit.display import view_browser
 
             # coverage: ignore
             return view_browser(program, **kwargs)
-        elif output == "html":
+        if output == "html":
             from pytket.circuit.display import render_circuit_as_html
 
             # coverage: ignore
             return render_circuit_as_html(program, **kwargs)
-        else:
-            raise VisualizationError(
-                'The only valid option for pytket are "jupyter", "view_browser", "html"'
-            )
-
-    else:
         raise VisualizationError(
-            'The only valid option for circuit_drawer are "qiskit", "braket", "cirq", "pyquil", "pytket"'
+            'The only valid option for pytket are "jupyter", "view_browser", "html"'
         )
 
-
-# todo: plot_histogram, plot_state, device_drawer
+    raise ProgramTypeError(package)

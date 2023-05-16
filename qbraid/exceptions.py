@@ -40,6 +40,4 @@ class ProgramTypeError(QbraidError):
 
 
 class VisualizationError(QbraidError):
-    """For visualization error."""
-
-    pass
+    """Class for errors raised when using visualization features."""

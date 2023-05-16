@@ -35,8 +35,8 @@ def bell_data() -> QROGRAM_TEST_TYPE:
     from qbraid.interface.qbraid_cirq.circuits import cirq_bell
     from qbraid.interface.qbraid_pyquil.programs import pyquil_bell
     from qbraid.interface.qbraid_pytket.circuits import pytket_bell
-    from qbraid.interface.qbraid_qiskit.circuits import qiskit_bell
     from qbraid.interface.qbraid_qasm.circuits import qasm_bell
+    from qbraid.interface.qbraid_qiskit.circuits import qiskit_bell
 
     unitary = to_unitary(cirq_bell())
 
@@ -57,8 +57,8 @@ def shared15_data() -> QROGRAM_TEST_TYPE:
     from qbraid.interface.qbraid_braket.circuits import braket_shared15
     from qbraid.interface.qbraid_cirq.circuits import cirq_shared15
     from qbraid.interface.qbraid_pytket.circuits import pytket_shared15
-    from qbraid.interface.qbraid_qiskit.circuits import qiskit_shared15
     from qbraid.interface.qbraid_qasm.circuits import qasm_shared15
+    from qbraid.interface.qbraid_qiskit.circuits import qiskit_shared15
 
     unitary = to_unitary(cirq_shared15())
 
