@@ -152,7 +152,7 @@ def test_pyquil_raises():
 
 
 def test_pytket_draw():
-    assert len(circuit_drawer(pytket_bell, output="html")) == 1922 
+    assert len(circuit_drawer(pytket_bell, output="html")) == 1922
 
 
 def test_pytket_raises():
