@@ -2,7 +2,7 @@ name: Formatting check
 
 on:
     pull_request:
-        branches: main
+        branches: ['main']
 
 jobs:
   black:

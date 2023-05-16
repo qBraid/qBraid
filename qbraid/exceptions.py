@@ -37,3 +37,9 @@ class ProgramTypeError(QbraidError):
     def __init__(self, program):
         msg = f"Quantum program of type {type(program)} is not supported."
         super().__init__(msg)
+
+
+class VisualizationError(QbraidError):
+    """For visualization error."""
+
+    pass
