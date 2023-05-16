@@ -23,7 +23,7 @@ from requests.adapters import HTTPAdapter
 from .exceptions import AuthError, ConfigError, RequestsApiError
 from .retry import STATUS_FORCELIST, PostForcelistRetry
 
-DEFAULT_ENDPOINT_URL = "http://api.qbraid.com/api"
+DEFAULT_ENDPOINT_URL = "https://api.qbraid.com/api"
 DEFAULT_CONFIG_PATH = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
 DEFAULT_CONFIG_SECTION = "default"
 
