@@ -51,8 +51,8 @@ class QbraidSession(Session):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        base_url: Optional[str] = None,
         user_email: str = None,
+        base_url: Optional[str] = None,
         api_key: Optional[str] = None,
         refresh_token: Optional[str] = None,
         retries_total: int = 5,
