@@ -15,7 +15,7 @@ Module for making requests to the qBraid API.
 import configparser
 import logging
 import os
-from typing import Any, Optional
+from typing import Any, Optional, Required
 
 from requests import RequestException, Response, Session
 from requests.adapters import HTTPAdapter
@@ -140,7 +140,7 @@ class QbraidSession(Session):
 
     def save_config(
         self,
-        user_email: Optional[str] = None,
+        user_email: str,
         api_key: Optional[str] = None,
         refresh_token: Optional[str] = None,
         base_url: Optional[str] = None,
@@ -159,6 +159,8 @@ class QbraidSession(Session):
         self.base_url = base_url if base_url else self.base_url
 
         res = self.get("/identity")
+        if not self.user_email:
+            raise AuthError("Missing email")
         if res.status_code != 200 or self.user_email != res.json()["email"]:
             raise AuthError("Invalid qBraid API credentials")
 
