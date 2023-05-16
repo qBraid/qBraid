@@ -15,7 +15,7 @@ Module for making requests to the qBraid API.
 import configparser
 import logging
 import os
-from typing import Any, Optional, Required
+from typing import Any, Optional
 
 from requests import RequestException, Response, Session
 from requests.adapters import HTTPAdapter
