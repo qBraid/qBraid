@@ -6,22 +6,35 @@
 [![PyPI version](https://img.shields.io/pypi/v/qbraid.svg?color=blue)](https://pypi.org/project/qbraid/)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-The qBraid-SDK is a Python toolkit for cross-framework abstraction, transpilation, and execution of quantum programs.
+The qBraid-SDK is a Python toolkit for cross-framework abstraction,
+transpilation, and execution of quantum programs.
 
 ## Features
 
-
-- Unified quantum frontend interface. **Transpile** quantum circuits between supported packages. Leverage the capabilities of multiple frontends through **simple, consistent protocols**.
-- Build once, target many. **Create** quantum programs using your preferred circuit-building package, and **execute** on any backend that interfaces with a supported frontend.
-- Benchmark, compare, interpret results. Built-in **compatible** post-processing enables comparing results between runs and **across backends**.
+- Unified quantum frontend interface. **Transpile** quantum circuits between
+  supported packages. Leverage the capabilities of multiple frontends through
+  **simple, consistent protocols**.
+- Build once, target many. **Create** quantum programs using your preferred
+  circuit-building package, and **execute** on any backend that interfaces with
+  a supported frontend.
+- Benchmark, compare, interpret results. Built-in **compatible** post-processing
+  enables comparing results between runs and **across backends**.
 
 ## Installation & Setup
 
 <img align="right" width="300" alt="qbraid-sdk-env" src="https://github.com/qBraid/qBraid/assets/46977852/669bd6f3-bbef-428c-9b59-b421c940262e">
 
-For the best experience, install the qBraid-SDK environment on [lab.qbraid.com](https://lab.qbraid.com). Login (or [create an account](https://account.qbraid.com)) and follow the steps to [install an environment](https://docs.qbraid.com/en/latest/lab/environments.html#install-environment).
+For the best experience, install the qBraid-SDK environment on
+[lab.qbraid.com](https://lab.qbraid.com). Login (or
+[create an account](https://account.qbraid.com)) and follow the steps to
+[install an environment](https://docs.qbraid.com/en/latest/lab/environments.html#install-environment).
 
-Using the SDK on qBraid Lab means direct, pre-configured access to all [Amazon Braket supported devices](https://docs.aws.amazon.com/braket/latest/developerguide/braket-devices.html) and [IBM Quantum open systems](https://www.ibm.com/quantum/access-plans) with no additional access keys or API tokens required. See [qBraid Quantum Jobs](https://docs.qbraid.com/en/latest/lab/quantumjobs.html) for more.
+Using the SDK on qBraid Lab means direct, pre-configured access to all
+[Amazon Braket supported devices](https://docs.aws.amazon.com/braket/latest/developerguide/braket-devices.html)
+and [IBM Quantum open systems](https://www.ibm.com/quantum/access-plans) with no
+additional access keys or API tokens required. See
+[qBraid Quantum Jobs](https://docs.qbraid.com/en/latest/lab/quantumjobs.html)
+for more.
 
 ### Local install
 
@@ -31,11 +44,16 @@ The qBraid-SDK, and all of its dependencies, can also be installed using pip:
 pip install qbraid
 ```
 
-If using locally, follow linked instructions to configure your [qBraid](#local-account-setup), [AWS](https://github.com/aws/amazon-braket-sdk-python#boto3-and-setting-up-aws-credentials), and [IBMQ](https://github.com/Qiskit/qiskit-ibm-provider#provider-setup) credentials.
+If using locally, follow linked instructions to configure your
+[qBraid](#local-account-setup),
+[AWS](https://github.com/aws/amazon-braket-sdk-python#boto3-and-setting-up-aws-credentials),
+and [IBMQ](https://github.com/Qiskit/qiskit-ibm-provider#provider-setup)
+credentials.
 
 ## Documentation & Tutorials
 
-qBraid documentation is available at [docs.qbraid.com](https://docs.qbraid.com/en/latest/).
+qBraid documentation is available at
+[docs.qbraid.com](https://docs.qbraid.com/en/latest/).
 
 See also:
 
@@ -47,7 +65,7 @@ See also:
 
 ### Transpiler
 
-Construct a quantum program of any supported program type, 
+Construct a quantum program of any supported program type,
 
 ```python
 >>> from qbraid import QPROGRAM_LIBS
@@ -67,7 +85,7 @@ and use the `circuit_wrapper()` to convert to any other supported program type:
 q_0: ──■──┤ Rx(3.0353) ├
      ┌─┴─┐└───┬────┬───┘
 q_1: ┤ H ├────┤ √X ├────
-     └───┘    └────┘    
+     └───┘    └────┘
 >>> print(cirq_circuit)
 0: ───H───X^0.5────────
       │
@@ -93,7 +111,8 @@ ibm_q_perth                         ONLINE
 
 ```
 
-Apply the `device_wrapper()`, and send quantum jobs to any supported backend, from any supported program type:
+Apply the `device_wrapper()`, and send quantum jobs to any supported backend,
+from any supported program type:
 
 ```python
 >>> from qbraid import device_wrapper, get_jobs
@@ -123,33 +142,42 @@ Compare results in a consistent, unified format:
 ```
 
 ## Local account setup
+<img mg align="right" width="418" alt="api_key" src="https://github.com/qBraid/qBraid/assets/32727721/d087c404-e9c7-4a0b-b2a5-a58f2e483cce">
 
-To use the qBraid-SDK locally (outside of qBraid Lab), you must add your account credentials:
 
-1. Create a qBraid account or log in to your existing account by visiting https://account.qbraid.com
-2. Copy your API (refresh) token from your qBraid account page:
-- Login to your account and open DevTools / inspector window (MacOS: Option-Command-I)
-- Go to Application -> Storage -> Cookies -> https://account.qbraid.com
-- The value corresponding to `REFRESH` is your API refresh token.
-  Note, this token is updated monthly.
-3. Take your account email and refresh token from step 2, and save it by calling `QbraidSession.save_config()`:
+To use the qBraid-SDK locally (outside of qBraid Lab), you must add your account
+credentials:
+
+1. Create a qBraid account or log in to your existing account by visiting
+   https://account.qbraid.com
+2. Copy your API Key token from your qBraid account page:
+
+- Go to https://account.qbraid.com
+- The value corresponding to `Your API Key for qBraid SDK` is your API key.
+
+3. Take your api key and the email you use for your qBraid account from step 2, and save it by calling
+   `QbraidSession.save_config()`:
 
 ```python
 from qbraid.api import QbraidSession
 
-session = QbraidSession(user_email='USER_EMAIL', refresh_token='REFRESH_TOKEN')
+session = QbraidSession(user_email='USER_EMAIL', api_key='API_KEY')
 session.save_config()
 ```
 
-The command above stores your credentials locally in a configuration file called `qbraidrc` in `$HOME/.qbraid`, where `$HOME` is your home directory. Once saved you can then connect to the qBraid API and leverage functions such as `get_devices()` and `get_jobs()`.
+The command above stores your credentials locally in a configuration file called
+`qbraidrc` in `$HOME/.qbraid`, where `$HOME` is your home directory. Once saved
+you can then connect to the qBraid API and leverage functions such as
+`get_devices()` and `get_jobs()`.
 
 ### Load Account from Environment Variables
 
-Alternatively, the qBraid-SDK can discover credentials from environment variables:
+Alternatively, the qBraid-SDK can discover credentials from environment
+variables:
 
 ```bash
 export JUPYTERHUB_USER='USER_EMAIL'
-export REFRESH='REFRESH_TOKEN'
+export QBRAID_API_KEY='QBRAID_API_KEY'
 ```
 
 Then instantiate the session without any arguments
@@ -162,7 +190,11 @@ session = QbraidSession()
 
 ## Launch on qBraid
 
-The "Launch on qBraid" button (below) can be added to any public GitHub repository. Clicking on it automaically opens qBraid Lab, and performs a `git clone` of the project repo into your account's home directory. Copy the code below, and replace `YOUR-USERNAME` and `YOUR-REPOSITORY` with your GitHub info.
+The "Launch on qBraid" button (below) can be added to any public GitHub
+repository. Clicking on it automaically opens qBraid Lab, and performs a
+`git clone` of the project repo into your account's home directory. Copy the
+code below, and replace `YOUR-USERNAME` and `YOUR-REPOSITORY` with your GitHub
+info.
 
 [<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/qBraid/qBraid.git)
 
@@ -182,11 +214,17 @@ Use the badge in your project's `README.rst`:
 
 ## Contributing
 
-- Interested in contributing code, or making a PR? See [CONTRIBUTING.md](CONTRIBUTING.md)
-- For feature requests and bug reports: [Submit an issue](https://github.com/qBraid/qBraid/issues)
-- For discussions, and specific questions about the qBraid SDK, qBraid Lab, or other topics, [join our discord community](https://discord.gg/gwBebaBZZX)
-- For questions that are more suited for a forum, use the `qbraid` tag on [Stack Exchange](https://quantumcomputing.stackexchange.com/)
-- Want your open-source project featured as its own runtime environment on qBraid Lab? Fill out our [New Environment Request Form](https://forms.gle/a4v7Kdn7G7bs9jYD8)
+- Interested in contributing code, or making a PR? See
+  [CONTRIBUTING.md](CONTRIBUTING.md)
+- For feature requests and bug reports:
+  [Submit an issue](https://github.com/qBraid/qBraid/issues)
+- For discussions, and specific questions about the qBraid SDK, qBraid Lab, or
+  other topics, [join our discord community](https://discord.gg/gwBebaBZZX)
+- For questions that are more suited for a forum, use the `qbraid` tag on
+  [Stack Exchange](https://quantumcomputing.stackexchange.com/)
+- Want your open-source project featured as its own runtime environment on
+  qBraid Lab? Fill out our
+  [New Environment Request Form](https://forms.gle/a4v7Kdn7G7bs9jYD8)
 
 ## License
 
