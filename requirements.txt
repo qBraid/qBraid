@@ -2,7 +2,7 @@ amazon-braket-sdk~=1.38.0
 cirq~=1.1.0
 numpy>=1.17,<1.24
 pyquil~=3.4.1
-pytket<1.13.2
+pytket<1.15.1
 qiskit<0.43.0
 qiskit-ibm-provider<0.5.3
 requests~=2.30.0
