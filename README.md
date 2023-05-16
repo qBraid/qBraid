@@ -144,7 +144,7 @@ Compare results in a consistent, unified format:
 ```
 
 ## Local account setup
-<img mg align="right" width="418" alt="api_key" src="https://github.com/qBraid/qBraid/assets/32727721/d087c404-e9c7-4a0b-b2a5-a58f2e483cce">
+<img mg align="right" width="350" alt="api_key" src="https://github.com/qBraid/qBraid/assets/32727721/d087c404-e9c7-4a0b-b2a5-a58f2e483cce">
 
 
 To use the qBraid-SDK locally (outside of qBraid Lab), you must add your account
@@ -152,11 +152,10 @@ credentials:
 
 1. Create a qBraid account or log in to your existing account by visiting
    [account.qbraid.com](https://account.qbraid.com/v2)
-2. Copy your API Key token from your qBraid account page:
+2. Copy your API Key token from the left side of
+    your [account page](https://account.qbraid.com/v2):
 
-- On the left side of [your account page](https://account.qbraid.com/v2), find and copy your API key.
-
-3. Take your api key and from step 2, and save it by calling
+3. Save your API key from step 2 by calling
    `QbraidSession.save_config()`:
 
 ```python

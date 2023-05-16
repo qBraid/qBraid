@@ -14,3 +14,4 @@ jobs:
         uses: githubocto/repo-visualizer@0.9.1
         with:
           excluded_paths: "docs,.github,.gitignore,.env_example,.readthedocs.yaml,tox.ini"
+          branch: repo-visualizer-diagram
