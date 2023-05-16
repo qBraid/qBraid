@@ -14,11 +14,11 @@ Unit tests for equivalence of interfacing quantum programs
 """
 import pytest
 
-from qbraid.interface.calculate_unitary import circuits_allclose
-from qbraid.interface.draw import VisualizationError, circuit_drawer
-from qbraid.interface.programs import bell_data, random_circuit, shared15_data
-from qbraid.exceptions import ProgramTypeError
 from qbraid import circuit_wrapper
+from qbraid.exceptions import ProgramTypeError, VisualizationError
+from qbraid.interface.calculate_unitary import circuits_allclose
+from qbraid.interface.draw import circuit_drawer
+from qbraid.interface.programs import bell_data, random_circuit, shared15_data
 
 map, _ = bell_data()
 braket_bell = map["braket"]()
@@ -71,7 +71,7 @@ def test_random(package):
 
 def test_draw_raises():
     """Test that non-supported package raises error"""
-    with pytest.raises(VisualizationError):
+    with pytest.raises(ProgramTypeError):
         circuit_drawer("bad_input")
 
 

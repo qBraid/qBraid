@@ -72,7 +72,7 @@ Construct a quantum program of any supported program type,
 ```python
 >>> from qbraid import QPROGRAM_LIBS
 >>> QPROGRAM_LIBS
-['braket', 'cirq', 'qiskit', 'pyquil', 'pytket']
+['braket', 'cirq', 'qiskit', 'pyquil', 'pytket', 'qasm']
 ```
 
 and use the `circuit_wrapper()` to convert to any other supported program type:
@@ -151,26 +151,24 @@ To use the qBraid-SDK locally (outside of qBraid Lab), you must add your account
 credentials:
 
 1. Create a qBraid account or log in to your existing account by visiting
-   https://account.qbraid.com
+   [account.qbraid.com](https://account.qbraid.com/v2)
 2. Copy your API Key token from your qBraid account page:
 
-- Go to https://account.qbraid.com
-- The value corresponding to `Your API Key for qBraid SDK` is your API key.
+- On the left side of [your account page](https://account.qbraid.com/v2), find and copy your API key.
 
-3. Take your api key and the email you use for your qBraid account from step 2, and save it by calling
+3. Take your api key and from step 2, and save it by calling
    `QbraidSession.save_config()`:
 
 ```python
 from qbraid.api import QbraidSession
 
-session = QbraidSession(user_email='USER_EMAIL', api_key='API_KEY')
+session = QbraidSession(api_key='API_KEY')
 session.save_config()
 ```
 
-The command above stores your credentials locally in a configuration file called
-`qbraidrc` in `$HOME/.qbraid`, where `$HOME` is your home directory. Once saved
-you can then connect to the qBraid API and leverage functions such as
-`get_devices()` and `get_jobs()`.
+The command above stores your credentials locally in a configuration file `~/.qbraid/qbraidrc`,
+where `~` corresponds to your home (`$HOME`) directory. Once saved, you can then connect to the
+qBraid API and leverage functions such as `get_devices()` and `get_jobs()`.
 
 ### Load Account from Environment Variables
 

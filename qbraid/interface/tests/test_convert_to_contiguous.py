@@ -13,15 +13,15 @@ Unit tests for the qbraid convert_to_contiguous interfacing
 
 """
 import numpy as np
+import pytest
 from braket.circuits import Circuit as BKCircuit
 from cirq import Circuit, LineQubit, X, Y, Z
 from pytket.circuit import Circuit as TKCircuit
 from qiskit import QuantumCircuit
 
+from qbraid.exceptions import ProgramTypeError
 from qbraid.interface.calculate_unitary import circuits_allclose
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
-from qbraid.exceptions import ProgramTypeError
-import pytest
 
 
 def test_remove_idle_qubits_qiskit():

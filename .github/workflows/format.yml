@@ -9,21 +9,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - uses: actions/checkout@v3
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.9
-
       - name: Install dependencies
-        run: pip install black
-
-      - uses: actions/checkout@v2
-
-      - name: Run Black
         run: |
-          black qbraid/ --check
-          black tools/ --check
-
-      - name: Verify headers
+          python -m pip install -U pip setuptools ipython
+          python -m pip install 'tox<4'
+      - name: Check isort, pylint, black, headers
         run: |
-          python tools/verify_headers.py qbraid
+          tox -e format-check

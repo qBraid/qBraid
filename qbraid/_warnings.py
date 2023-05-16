@@ -55,4 +55,4 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-_check_version()
+# _check_version()

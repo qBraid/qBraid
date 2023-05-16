@@ -33,9 +33,24 @@ Features
 Installation
 -------------
 
-The qBraid SDK is available exclusively through `qBraid Lab <https://lab.qbraid.com>`_.
-Login (or create an account) and then follow the steps in `Install environment <../lab/environments.html#install-environment>`_
-to get started using the SDK.
+For the best experience, install the qBraid SDK on `lab.qbraid.com <https://lab.qbraid.com>`_.
+Login (or create an account) on `account.qbraid.com <https://account.qbraid.com/v2>`_ and then
+follow the steps to `install an environment <../lab/environments.html#install-environment>`_.
+Using the SDK on qBraid Lab means direct, pre-configured access to all
+`Amazon Braket supported devices <https://docs.aws.amazon.com/braket/latest/developerguide/braket-devices.html>`_
+and `IBM Quantum open systems <https://www.ibm.com/quantum/access-plans>`_
+with *no additional access keys or API tokens required*. See `qBraid Quantum Jobs <../lab/quantumjobs.html>`_ for more.
+
+The qBraid-SDK, and all of its dependencies, can also be installed using `pip <https://pypi.org/project/qbraid/>`_:
+
+.. code-block:: bash
+
+   pip install qbraid
+
+
+If using locally, follow linked instructions to configure your `qBraid <https://github.com/qBraid/qBraid#local-account-setup>`_,
+`AWS <https://github.com/aws/amazon-braket-sdk-python#boto3-and-setting-up-aws-credentials>`_,
+and `IBMQ <https://github.com/Qiskit/qiskit-ibm-provider#provider-setup>`_ credentials.
 
 
 Usage
@@ -48,7 +63,7 @@ Construct a quantum program of any supported program type:
    >>> from qbraid import QPROGRAM_LIBS
    >>> from qbraid.interface import random_circuit
    >>> QPROGRAM_LIBS
-   ['braket', 'cirq', 'qiskit', 'pyquil', 'pytket']
+   ['braket', 'cirq', 'qiskit', 'pyquil', 'pytket', 'qasm']
    >>> circuit = random_circuit("qiskit", num_qubits=1, measure=True)
 
 Search for quantum backend(s) on which to execute your program:
@@ -111,11 +126,11 @@ Compare the results:
 Supported Frontends
 ^^^^^^^^^^^^^^^^^^^^
 
-+-------------+-------------+------------+-------------+-------------+
-|  Cirq_      |  Braket_    |  Qiskit_   |  PyQuil_    |  PyTKET_    |
-+=============+=============+============+=============+=============+
-| |cirq|      | |braket|    | |qiskit|   | |pyquil|    | |pytket|    |
-+-------------+-------------+------------+-------------+-------------+
++-------------+-------------+------------+-------------+-------------+-------------+
+|  Cirq_      |  Braket_    |  Qiskit_   |  PyQuil_    |  PyTKET_    |  QASM_      |
++=============+=============+============+=============+=============+=============+
+| |cirq|      | |braket|    | |qiskit|   | |pyquil|    | |pytket|    | |qasm|      |
++-------------+-------------+------------+-------------+-------------+-------------+
 
 
 .. |cirq| image:: ../_static/pkg-logos/cirq.png
@@ -143,6 +158,11 @@ Supported Frontends
    :width: 70%
    :target: PyTKET_
 
+.. |qasm| image:: ../_static/pkg-logos/qasm.png
+   :align: middle
+   :width: 70%
+   :target: QASM_
+
 .. .. |pennylane| image:: ../_static/pkg-logos/xanadu.png
 ..    :align: middle
 ..    :width: 90%
@@ -153,5 +173,5 @@ Supported Frontends
 .. _Qiskit: https://qiskit.org
 .. _PyQuil: https://www.rigetti.com/applications/pyquil
 .. _PyTKET: https://cqcl.github.io/tket/pytket/api/
+.. _QASM: https://openqasm.com/
 .. _Pennylane: https://pennylane.ai
-.. _qBraid: https://qbraid.com/

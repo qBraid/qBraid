@@ -20,9 +20,9 @@ from braket.circuits import Circuit, Instruction, gates
 from pytket.circuit import Circuit as TKCircuit
 from pytket.circuit import OpType
 
+from qbraid.exceptions import ProgramTypeError
 from qbraid.interface.calculate_unitary import to_unitary, unitary_to_little_endian
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
-from qbraid.exceptions import ProgramTypeError
 
 
 def get_subsets(nqubits):
