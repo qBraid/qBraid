@@ -18,6 +18,8 @@ import pkg_resources
 from ._qprogram import QPROGRAM
 from .api import QbraidSession
 from .exceptions import QbraidError
+from qbraid.transpiler.cirq_qasm.qasm_parser import QasmParser
+from cirq.contrib.qasm_import.exception import QasmException
 
 
 def _get_entrypoints(group: str):
@@ -52,13 +54,20 @@ def circuit_wrapper(program: QPROGRAM):
         :class:`~qbraid.QbraidError`: If the input circuit is not a supported quantum program.
 
     """
-    try:
-        package = program.__module__.split(".")[0]
-    except AttributeError as err:
-        raise QbraidError(
-            f"Error applying circuit wrapper to quantum program \
-            of type {type(program)}"
-        ) from err
+    if isinstance(program, str):
+        try:
+            QasmParser().parse(program)
+            package = "qasm"
+        except QasmException:
+            raise QbraidError("Qbraid currently only support qasm string.")
+    else:
+        try:
+            package = program.__module__.split(".")[0]
+        except AttributeError as err:
+            raise QbraidError(
+                f"Error applying circuit wrapper to quantum program \
+                of type {type(program)}"
+            ) from err
 
     ep = package.lower()
 

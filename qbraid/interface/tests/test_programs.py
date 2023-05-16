@@ -15,40 +15,48 @@ Unit tests for equivalence of interfacing quantum programs
 import pytest
 
 from qbraid.interface.calculate_unitary import circuits_allclose
-from qbraid.interface.draw_circuit import ProgramTypeError, draw
+from qbraid.interface.draw import VisualizationError, circuit_drawer
 from qbraid.interface.programs import bell_data, random_circuit, shared15_data
+from qbraid.exceptions import ProgramTypeError
+from qbraid import circuit_wrapper
+
+map, _ = bell_data()
+braket_bell = map["braket"]()
+cirq_bell = map["cirq"]()
+pyquil_bell = map["pyquil"]()
+qiskit_bell = map["qiskit"]()
+pytket_bell = map["pytket"]()
+qasm_bell = map["qasm"]()
+
+map, _ = shared15_data()
+braket_shared15 = map["braket"]()
+cirq_shared15 = map["cirq"]()
+qiskit_shared15 = map["qiskit"]()
+pytket_shared15 = map["pytket"]()
+qasm_shared15 = map["qasm"]()
 
 
 def test_bell():
     """Test the equality of bell circuits"""
-    map, _ = bell_data()
-    braket_bell = map["braket"]()
-    cirq_bell = map["cirq"]()
-    pyquil_bell = map["pyquil"]()
-    qiskit_bell = map["qiskit"]()
-    pytket_bell = map["pytket"]()
 
     eq1 = circuits_allclose(braket_bell, cirq_bell, strict_gphase=True)
     eq2 = circuits_allclose(cirq_bell, pyquil_bell, strict_gphase=True)
     eq3 = circuits_allclose(pyquil_bell, qiskit_bell, strict_gphase=True)
     eq4 = circuits_allclose(qiskit_bell, pytket_bell, strict_gphase=True)
+    eq5 = circuits_allclose(pytket_bell, qasm_bell, strict_gphase=True)
 
-    assert eq1 and eq2 and eq3 and eq4
+    assert eq1 and eq2 and eq3 and eq4 and eq5
 
 
 def test_shared15():
     """Test the equality of shared gates circuits"""
-    map, _ = shared15_data()
-    braket_shared15 = map["braket"]()
-    cirq_shared15 = map["cirq"]()
-    qiskit_shared15 = map["qiskit"]()
-    pytket_shared15 = map["pytket"]()
 
     eq1 = circuits_allclose(braket_shared15, cirq_shared15, strict_gphase=True)
     eq2 = circuits_allclose(cirq_shared15, qiskit_shared15, strict_gphase=True)
     eq3 = circuits_allclose(qiskit_shared15, pytket_shared15, strict_gphase=True)
+    eq4 = circuits_allclose(pytket_shared15, qasm_shared15, strict_gphase=True)
 
-    assert eq1 and eq2 and eq3
+    assert eq1 and eq2 and eq3 and eq4
 
 
 @pytest.mark.parametrize("package", ["braket", "cirq", "qiskit"])
@@ -61,19 +69,92 @@ def test_random(package):
     assert True
 
 
-@pytest.mark.parametrize("draw_data", [("braket", 67), ("cirq", 42), ("qiskit", 80)])
-def test_draw(capfd, draw_data):
-    """Test that draw function standard output is of the expected length."""
-    package, num_out = draw_data
-    map, _ = bell_data()
-    program = map[package]()
-    draw(program)
-    out, err = capfd.readouterr()
-    assert len(err) == 0
-    assert len(out) == num_out
-
-
 def test_draw_raises():
     """Test that non-supported package raises error"""
+    with pytest.raises(VisualizationError):
+        circuit_drawer("bad_input")
+
+
+def test_draw_program_raises():
     with pytest.raises(ProgramTypeError):
-        draw("bad_input")
+        circuit_drawer(None)
+
+
+def test_qiskit_draw():
+    expected = """          ┌───┐
+q_0: ─────┤ X ├
+     ┌───┐└─┬─┘
+q_1: ┤ H ├──■──
+     └───┘     """
+    result = circuit_drawer(qiskit_bell, output="text")
+    assert result.__str__() == expected
+
+
+@pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm"])
+def test_braket_bell_draw(capfd, package):
+    """Test that draw function standard output is of the expected length."""
+    circuit_wrapper(eval(f"{package}_bell")).draw(package="braket", output="ascii")
+
+    out, err = capfd.readouterr()
+    print(out, err)
+    assert len(err) == 0
+    assert len(out) == 67
+
+
+# todo: shared15 draw testcase, after fixing circuit decomposition problem from cirq
+
+
+def test_braket_raises():
+    """Test that non-supported output raises error"""
+    with pytest.raises(VisualizationError):
+        circuit_drawer(braket_bell, output="bad_input")
+
+
+@pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm"])
+def test_cirq_bell_text_draw(capfd, package):
+    """Test that draw function standard output is of the expected length."""
+    circuit_wrapper(eval(f"{package}_bell")).draw(package="cirq", output="text")
+
+    out, err = capfd.readouterr()
+    print(out, err)
+    assert len(err) == 0
+    if package == "pytket" or package == "qasm":  # todo: there is "q_n" represent number of qubit
+        assert len(out) == 48
+    else:
+        assert len(out) == 42
+
+
+def test_cirq_bell_svg_draw():
+    """Test svg_source"""
+
+    assert len(circuit_drawer(cirq_bell, output="svg_source")) == 1211
+
+
+def test_cirq_raises():
+    with pytest.raises(VisualizationError):
+        circuit_drawer(cirq_bell, output="bad_input")
+
+
+@pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm"])
+def test_pyquil_bell_draw(capfd, package):
+    """Test that draw function standard output is of the expected length."""
+    circuit_wrapper(eval(f"{package}_bell")).draw(package="pyquil", output="text")
+
+    out, err = capfd.readouterr()
+    print(out, err)
+    assert len(err) == 0
+    assert len(out) == 14
+
+
+def test_pyquil_raises():
+    with pytest.raises(VisualizationError):
+        circuit_drawer(pyquil_bell, output="bad_input")
+
+
+def test_pytket_draw():
+    assert len(circuit_drawer(pytket_bell, output="html")) == 1922
+
+
+def test_pytket_raises():
+    with pytest.raises(VisualizationError):
+        circuit_drawer(pytket_bell, output="bad_input")
