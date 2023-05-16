@@ -80,7 +80,7 @@ def replace_or_add_header(file_path, fix=False):
             break
 
     new_content_lines = [header.rstrip("\r\n")] + lines[first_skipped_line:]
-    new_content = "\n".join(new_content_lines)
+    new_content = "\n".join(new_content_lines) + "\n"
 
     with open(file_path, "w", encoding="ISO-8859-1") as f:
         f.write(new_content)
