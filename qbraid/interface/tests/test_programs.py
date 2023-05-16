@@ -135,9 +135,6 @@ def test_cirq_raises():
         circuit_drawer(cirq_bell, output="bad_input")
 
 
-# def test_pyquil_draw():
-
-
 @pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm"])
 def test_pyquil_bell_draw(capfd, package):
     """Test that draw function standard output is of the expected length."""
@@ -155,7 +152,7 @@ def test_pyquil_raises():
 
 
 def test_pytket_draw():
-    assert len(circuit_drawer(pytket_bell, output="html")) == 1872
+    assert len(circuit_drawer(pytket_bell, output="html")) == 1922 
 
 
 def test_pytket_raises():

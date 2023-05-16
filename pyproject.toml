@@ -63,9 +63,8 @@ exclude = '''
   | \.tox
   | \.venv
   | dist
-  | qbraid/_archive
-  | qbraid/transpiler/cirq_qasm/qasm_parser.py
-  | qbraid/transpiler/cirq_qasm/tests/test_qasm_parser.py
+  | qbraid/transpiler/cirq_qasm
+  | qbraid/transpiler/cirq_pytket/tests/test_from_pytket.py
 )/
 '''
 
