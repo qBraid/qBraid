@@ -95,7 +95,7 @@ class QbraidSession(Session):
         self._user_email = user_email if user_email else os.getenv("JUPYTERHUB_USER")
         if user_email:
             self.headers.update({"email": user_email})  # type: ignore[attr-defined]
-    
+
     @property
     def api_key(self) -> Optional[str]:
         """Return the session refresh token."""
@@ -141,7 +141,7 @@ class QbraidSession(Session):
     def save_config(
         self,
         user_email: Optional[str] = None,
-        api_key : Optional[str] = None,
+        api_key: Optional[str] = None,
         refresh_token: Optional[str] = None,
         base_url: Optional[str] = None,
     ) -> None:

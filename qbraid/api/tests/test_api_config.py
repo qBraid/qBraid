@@ -97,11 +97,13 @@ def test_qbraid_session_from_args():
     assert session.refresh_token == refresh_token
     del session
 
+
 def test_qbraid_session_api_key():
     """Test initializing QbraidSession without args and then saving config."""
     session = QbraidSession()
-    session.save_config(api_key=api_key,user_email=qbraid_user)
+    session.save_config(api_key=api_key, user_email=qbraid_user)
     assert session.get_config_variable("api-key") == api_key
+
 
 def test_qbraid_session_save_config():
     """Test initializing QbraidSession without args and then saving config."""
