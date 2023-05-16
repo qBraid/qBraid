@@ -14,12 +14,13 @@ functions utilize entrypoints via ``pkg_resources``.
 
 """
 import pkg_resources
+from cirq.contrib.qasm_import.exception import QasmException
+
+from qbraid.transpiler.cirq_qasm.qasm_parser import QasmParser
 
 from ._qprogram import QPROGRAM
 from .api import QbraidSession
 from .exceptions import QbraidError
-from qbraid.transpiler.cirq_qasm.qasm_parser import QasmParser
-from cirq.contrib.qasm_import.exception import QasmException
 
 
 def _get_entrypoints(group: str):
@@ -58,8 +59,8 @@ def circuit_wrapper(program: QPROGRAM):
         try:
             QasmParser().parse(program)
             package = "qasm"
-        except QasmException:
-            raise QbraidError("Qbraid currently only support qasm string.")
+        except QasmException as err:
+            raise QbraidError("Qbraid currently only support qasm string.") from err
     else:
         try:
             package = program.__module__.split(".")[0]

@@ -18,7 +18,6 @@ from pytket.circuit import Circuit as TKCircuit
 from pytket.qasm import circuit_from_qasm_str, circuit_to_qasm_str
 
 from qbraid.interface import convert_to_contiguous
-from qbraid.interface.qbraid_cirq.tools import _convert_to_line_qubits
 from qbraid.transpiler.cirq_qasm import from_qasm, to_qasm
 from qbraid.transpiler.custom_gates import _map_zpow_and_unroll
 from qbraid.transpiler.exceptions import CircuitConversionError

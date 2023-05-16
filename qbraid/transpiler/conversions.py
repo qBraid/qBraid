@@ -18,16 +18,16 @@ from typing import TYPE_CHECKING, Tuple
 
 from cirq import Circuit
 from cirq.contrib.qasm_import import circuit_from_qasm
+from cirq.contrib.qasm_import.exception import QasmException
 
 from qbraid.exceptions import PackageValueError, ProgramTypeError
 from qbraid.transpiler.cirq_braket import from_braket, to_braket
 from qbraid.transpiler.cirq_pyquil import from_pyquil, to_pyquil
 from qbraid.transpiler.cirq_pytket import from_pytket, to_pytket
-from qbraid.transpiler.cirq_qiskit import from_qiskit, to_qiskit
 from qbraid.transpiler.cirq_qasm import from_qasm, to_qasm
-from qbraid.transpiler.exceptions import CircuitConversionError
 from qbraid.transpiler.cirq_qasm.qasm_parser import QasmParser
-from cirq.contrib.qasm_import.exception import QasmException
+from qbraid.transpiler.cirq_qiskit import from_qiskit, to_qiskit
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 if TYPE_CHECKING:
     import qbraid
@@ -51,8 +51,8 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple[Circuit, str]:
         try:
             QasmParser().parse(program)
             package = "qasm"
-        except QasmException:
-            raise CircuitConversionError("Qbraid only support qasm string.")
+        except QasmException as err:
+            raise CircuitConversionError("Qbraid only support qasm string.") from err
     else:
         try:
             package = program.__module__

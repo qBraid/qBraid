@@ -9,13 +9,15 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module containing pyQuil tools
+Module containing OpenQasm tools
 
 """
-from typing import List, Optional, Union
+import re
 
 import numpy as np
-import re
+from cirq.circuits import Circuit
+
+from qbraid.transpiler.cirq_qasm.qasm_conversions import from_qasm, to_qasm
 
 QASMType = str
 
@@ -34,19 +36,15 @@ def qasm_num_qubits(qasmstr: str) -> QASMType:
     return q_num
 
 
-from qbraid.transpiler.cirq_qasm.qasm_conversions import from_qasm, to_qasm
-
-
 def qasm_depth(qasmstr: str) -> QASMType:
     """calculate number of depth"""
-    from cirq.circuits import Circuit
-
     circuit = from_qasm(qasmstr)
     return len(Circuit(circuit.all_operations()))
 
 
 def _convert_to_contiguous_qasm(qasmstr: str, rev_qubits=False) -> QASMType:
     """delete qubit with no gate and optional reverse circuit"""
+    # pylint: disable=import-outside-toplevel
     from qbraid.interface.qbraid_cirq.tools import _convert_to_contiguous_cirq
 
     circuit = to_qasm(_convert_to_contiguous_cirq(from_qasm(qasmstr), rev_qubits=rev_qubits))

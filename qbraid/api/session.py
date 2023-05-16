@@ -39,10 +39,10 @@ class QbraidSession(Session):
     convenience in the sdk.
 
     Args:
-        base_url: Base URL for the session's requests.
         user_email: qBraid / JupyterHub User.
         api_key: Authenticated qBraid API key.
         refresh_token: Authenticated qBraid refresh-token.
+        base_url: Base URL for the session's requests.
         retries_total: Number of total retries for the requests.
         retries_connect: Number of connect retries for the requests.
         backoff_factor: Backoff factor between retry attempts.
@@ -51,20 +51,20 @@ class QbraidSession(Session):
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
-        user_email: str = None,
-        base_url: Optional[str] = None,
+        user_email: Optional[str] = None,
         api_key: Optional[str] = None,
         refresh_token: Optional[str] = None,
+        base_url: Optional[str] = None,
         retries_total: int = 5,
         retries_connect: int = 3,
         backoff_factor: float = 0.5,
     ) -> None:
         super().__init__()
 
-        self.base_url = base_url
         self.user_email = user_email
         self.api_key = api_key
         self.refresh_token = refresh_token
+        self.base_url = base_url
         self.verify = False
 
         self._initialize_retry(retries_total, retries_connect, backoff_factor)
@@ -81,8 +81,8 @@ class QbraidSession(Session):
     @base_url.setter
     def base_url(self, value: Optional[str]) -> None:
         """Set the qbraid api url."""
-        url = value if value else self.get_config_variable("url")
-        self._base_url = url if url else DEFAULT_ENDPOINT_URL
+        url = value or self.get_config_variable("url")
+        self._base_url = url or DEFAULT_ENDPOINT_URL
 
     @property
     def user_email(self) -> Optional[str]:
@@ -92,8 +92,8 @@ class QbraidSession(Session):
     @user_email.setter
     def user_email(self, value: Optional[str]) -> None:
         """Set the session user email."""
-        user_email = value if value else self.get_config_variable("email")
-        self._user_email = user_email if user_email else os.getenv("JUPYTERHUB_USER")
+        user_email = value or self.get_config_variable("email")
+        self._user_email = user_email or os.getenv("JUPYTERHUB_USER")
         if user_email:
             self.headers.update({"email": user_email})  # type: ignore[attr-defined]
 
@@ -105,8 +105,8 @@ class QbraidSession(Session):
     @api_key.setter
     def api_key(self, value: Optional[str]) -> None:
         """Set the api key."""
-        api_key = value if value else self.get_config_variable("api-key")
-        self._api_key = api_key if api_key else os.getenv("QBRAID_API_KEY")
+        api_key = value or self.get_config_variable("api-key")
+        self._api_key = api_key or os.getenv("QBRAID_API_KEY")
         if api_key:
             self.headers.update({"api-key": api_key})  # type: ignore[attr-defined]
 
@@ -118,8 +118,8 @@ class QbraidSession(Session):
     @refresh_token.setter
     def refresh_token(self, value: Optional[str]) -> None:
         """Set the session refresh token."""
-        refresh_token = value if value else self.get_config_variable("refresh-token")
-        self._refresh_token = refresh_token if refresh_token else os.getenv("REFRESH")
+        refresh_token = value or self.get_config_variable("refresh-token")
+        self._refresh_token = refresh_token or os.getenv("REFRESH")
         if refresh_token:
             self.headers.update({"refresh-token": refresh_token})  # type: ignore[attr-defined]
 
@@ -141,7 +141,7 @@ class QbraidSession(Session):
 
     def save_config(
         self,
-        user_email: str,
+        user_email: Optional[str] = None,
         api_key: Optional[str] = None,
         refresh_token: Optional[str] = None,
         base_url: Optional[str] = None,
@@ -154,16 +154,31 @@ class QbraidSession(Session):
             refresh_token: Authenticated qBraid refresh-token.
             base_url: Base URL for the session's requests.
         """
-        self.user_email = user_email if user_email else self.user_email
-        self.api_key = api_key if api_key else self.api_key
-        self.refresh_token = refresh_token if refresh_token else self.refresh_token
-        self.base_url = base_url if base_url else self.base_url
+        self.user_email = user_email or self.user_email
+        self.api_key = api_key or self.api_key
+        self.refresh_token = refresh_token or self.refresh_token
+        self.base_url = base_url or self.base_url
 
-        res = self.get("/identity")
-        if not self.user_email:
-            raise AuthError("Missing email")
-        if res.status_code != 200 or self.user_email != res.json()["email"]:
-            raise AuthError("Invalid qBraid API credentials")
+        try:
+            res = self.get("/identity")
+        except RequestsApiError as err:
+            raise AuthError from err
+
+        res_json = res.json()
+
+        if res.status_code != 200:
+            raise AuthError(f"{res.status_code} Client Error: Invalid qBraid API credentials")
+
+        res_email = res_json.get("email")
+
+        if self.user_email:
+            if self.user_email != res_email:
+                raise AuthError(
+                    f"Credential mismatch: Session initialized for '{self.user_email}', \
+                        but API key corresponds to '{res_email}'."
+                )
+        else:
+            self.user_email = res_email
 
         try:
             filepath = DEFAULT_CONFIG_PATH

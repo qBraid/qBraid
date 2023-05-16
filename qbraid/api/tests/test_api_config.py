@@ -19,7 +19,7 @@ import os
 import pytest
 from qiskit_ibm_provider import IBMProvider
 
-from qbraid.api.exceptions import RequestsApiError
+from qbraid.api.exceptions import AuthError, RequestsApiError
 from qbraid.api.session import QbraidSession
 
 aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
@@ -32,11 +32,11 @@ qbraidrc_path = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
 aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
 aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
 ibmq_token = os.getenv("QISKIT_IBM_TOKEN")
-qbraid_token = os.getenv("REFRESH")
+qbraid_refresh_token = os.getenv("REFRESH")
+qbraid_api_key = os.getenv("QBRAID_API_KEY")
 
 # This is the only environment variable that actually exists in qBraid Lab
 qbraid_user = os.getenv("JUPYTERHUB_USER")
-api_key = os.getenv("QBRAID_API_KEY")
 
 config_lst = [
     # (config_name, config_value, section, filepath)
@@ -101,13 +101,20 @@ def test_qbraid_session_from_args():
 def test_qbraid_session_api_key():
     """Test initializing QbraidSession without args and then saving config."""
     session = QbraidSession()
-    session.save_config(api_key=api_key, user_email=qbraid_user)
-    assert session.get_config_variable("api-key") == api_key
+    session.save_config(api_key=qbraid_api_key, user_email=qbraid_user)
+    assert session.get_config_variable("api-key") == qbraid_api_key
 
 
 def test_qbraid_session_save_config():
     """Test initializing QbraidSession without args and then saving config."""
     session = QbraidSession()
-    session.save_config(user_email=qbraid_user, refresh_token=qbraid_token)
+    session.save_config(user_email=qbraid_user, refresh_token=qbraid_refresh_token)
     assert session.get_config_variable("email") == qbraid_user
-    assert session.get_config_variable("refresh-token") == qbraid_token
+    assert session.get_config_variable("refresh-token") == qbraid_refresh_token
+
+
+def test_qbraid_session_credential_mismatch_error():
+    """Test initializing QbraidSession with mismatched email and apiKey."""
+    session = QbraidSession(api_key=qbraid_api_key, user_email="fakeuser@email.com")
+    with pytest.raises(AuthError):
+        session.save_config()
