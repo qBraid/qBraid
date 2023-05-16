@@ -9,6 +9,8 @@
 The qBraid-SDK is a Python toolkit for cross-framework abstraction,
 transpilation, and execution of quantum programs.
 
+[<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/qBraid/qBraid.git)
+
 ## Features
 
 - Unified quantum frontend interface. **Transpile** quantum circuits between
@@ -150,11 +152,10 @@ credentials:
 
 1. Create a qBraid account or log in to your existing account by visiting
    [account.qbraid.com](https://account.qbraid.com/v2)
-2. Copy your API Key token from your qBraid account page:
+2. Copy your API Key token from the left side of
+    your [account page](https://account.qbraid.com/v2):
 
-- On the left side of [your account page](https://account.qbraid.com/v2), find and copy your API key.
-
-3. Take your api key and from step 2, and save it by calling
+3. Save your API key from step 2 by calling
    `QbraidSession.save_config()`:
 
 ```python
