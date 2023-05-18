@@ -20,7 +20,9 @@ Braket Conversions  (:mod:`qbraid.transpiler.cirq_braket`)
 
    from_braket
    to_braket
+   braket_to_qasm3
 
 """
 from qbraid.transpiler.cirq_braket.convert_from_braket import from_braket
+from qbraid.transpiler.cirq_braket.convert_from_braket_qasm import braket_to_qasm3
 from qbraid.transpiler.cirq_braket.convert_to_braket import to_braket

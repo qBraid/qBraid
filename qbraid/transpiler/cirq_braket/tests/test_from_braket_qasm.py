@@ -20,7 +20,7 @@ from braket.circuits import Instruction
 from braket.circuits import gates as braket_gates
 
 from qbraid.interface import circuits_allclose
-from qbraid.transpiler.cirq_braket.convert_from_braket_qasm import from_braket
+from qbraid.transpiler.cirq_braket.convert_from_braket_qasm import braket_to_qasm3, from_braket
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
@@ -123,3 +123,18 @@ def test_from_braket_raises_on_unsupported_gates():
         braket_circuit.add_instruction(instr)
         with pytest.raises(CircuitConversionError):
             from_braket(braket_circuit)
+
+
+def test_braket_to_qasm3__bell_circuit():
+    """Test converting braket bell circuit to OpenQASM 3.0 string"""
+    qasm_expected = """
+OPENQASM 3.0;
+bit[2] b;
+qubit[2] q;
+h q[0];
+cnot q[0], q[1];
+b[0] = measure q[0];
+b[1] = measure q[1];
+"""
+    bell = BKCircuit().h(0).cnot(0, 1)
+    assert qasm_expected.strip("\n") == braket_to_qasm3(bell)
