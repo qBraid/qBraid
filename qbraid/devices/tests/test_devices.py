@@ -41,9 +41,12 @@ def device_wrapper_inputs(vendor: str):
     session = QbraidSession()
     devices = session.get("/public/lab/get-devices", params={}).json()
     input_list = []
+    deprecated = ["aws_ionq"]
     for document in devices:
         if document["vendor"] == vendor:
-            input_list.append(document["qbraid_id"])
+            qbraid_id = document["qbraid_id"]
+            if qbraid_id not in deprecated:
+                input_list.append(qbraid_id)
     return input_list
 
 

@@ -19,7 +19,11 @@ from qiskit import QuantumCircuit
 from qbraid.interface import circuits_allclose
 from qbraid.interface.qbraid_cirq.tools import _convert_to_line_qubits
 from qbraid.transpiler.cirq_qasm.qasm_conversions import from_qasm
-from qbraid.transpiler.cirq_qasm.qasm_preprocess import _remove_barriers, convert_to_supported_qasm
+from qbraid.transpiler.cirq_qasm.qasm_preprocess import (
+    _convert_to_supported_qasm,
+    _remove_barriers,
+    convert_to_supported_qasm,
+)
 
 qasm_0 = """OPENQASM 2.0;
 include "qelib1.inc";
@@ -37,6 +41,12 @@ rxx(5.603791034636421) q[2],q[0];
 """
 
 qasm_lst = [qasm_0]
+
+def strings_equal(s1, s2):
+    """Check if two strings are equal, ignoring spaces and newlines."""
+    s1_clean = s1.replace(" ", "").replace("\n", "")
+    s2_clean = s2.replace(" ", "").replace("\n", "")
+    return s1_clean == s2_clean
 
 
 @pytest.mark.parametrize("qasm_str", qasm_lst)
@@ -153,20 +163,17 @@ measure cout[0] -> ans[4];
     )
 
 
-@pytest.mark.skip("Conversion test for when update to qiskit>=0.43.0")
 def test_convert_qasm_one_param():
     """Test converting qasm string from one-parameter gate"""
-    assert (
-        convert_to_supported_qasm(
-            """
+
+    qasm_in = """
 OPENQASM 2.0;
 include "qelib1.inc";
 gate ryy(param0) q0,q1 { rx(pi/2) q0; rx(pi/2) q1; cx q0,q1; rz(param0) q1; cx q0,q1; rx(-pi/2) q0; rx(-pi/2) q1; }
 qreg q[2];
 ryy(2.0425171585294746) q[1],q[0];
 """
-        )
-        == """
+    expected_out = """
 OPENQASM 2.0;
 include "qelib1.inc";
 qreg q[2];
@@ -178,38 +185,84 @@ cx q[1],q[0];
 rx(-pi/2) q[1];
 rx(-pi/2) q[0];
 """
-    )
+    qasm_out = _convert_to_supported_qasm(qasm_in)
+    print(qasm_out)
+    assert strings_equal(qasm_out, expected_out)
 
 
-@pytest.mark.skip("Conversion test for when update to qiskit>=0.43.0")
 def test_convert_qasm_two_param():
     """Test converting qasm string from two-parameter gate"""
-    assert (
-        convert_to_supported_qasm(
-            """
+
+    qasm_in = """
 OPENQASM 2.0;
 include "qelib1.inc";
 gate xx_minus_yy(param0,param1) q0,q1 { rz(-1.0*param1) q1; ry(param0/2) q0; }
 qreg q[2];
 xx_minus_yy(2.00367210595874,5.07865952845335) q[0],q[1];
 """
-        )
-        == """
+    expected_out = """
 OPENQASM 2.0;
 include "qelib1.inc";
 qreg q[2];
-rz(-5.07865952845335) q[1];
-ry(1.00367210595874) q[0];
+rz(-1.0*5.07865952845335) q[1];
+ry(2.00367210595874/2) q[0];
 """
-    )
+    qasm_out = _convert_to_supported_qasm(qasm_in)
+    assert strings_equal(qasm_out, expected_out)
 
 
-@pytest.mark.skip("Conversion test for when update to qiskit>=0.43.0")
+def test_convert_qasm_three_qubit_gate():
+    """Test converting qasm string that uses three qubit gate"""
+
+    qasm_in = """
+OPENQASM 2.0;
+include "qelib1.inc";
+gate ryy(param0) q0,q1,q2 { rx(pi/2) q0; rx(pi/2) q1; cx q0,q2; rz(param0) q1; cx q0,q1; rx(-pi/2) q2; rx(-pi/2) q1; }
+qreg q[3];
+ryy(2.0425171585294746) q[1],q[0],q[2];
+"""
+    expected_out = """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[3];
+rx(pi/2) q[1];
+rx(pi/2) q[0];
+cx q[1],q[2];
+rz(2.0425171585294746) q[0];
+cx q[1],q[0];
+rx(-pi/2) q[2];
+rx(-pi/2) q[0];
+"""
+    qasm_out = _convert_to_supported_qasm(qasm_in)
+    assert strings_equal(qasm_out, expected_out)
+
+
+def test_convert_qasm_non_param_gate_def():
+    """Test converting qasm string from non-parameterized gate def"""
+
+    qasm_in = """
+OPENQASM 2.0;
+include "qelib1.inc";
+gate ecr q0,q1 { rzx(pi/4) q0,q1; x q0; rzx(-pi/4) q0,q1; }
+qreg q[2];
+ecr q[0],q[1];
+"""
+    expected_out = """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[2];
+rzx(pi/4) q[0],q[1];
+x q[0];
+rzx(-pi/4) q[0],q[1];
+"""
+    qasm_out = _convert_to_supported_qasm(qasm_in)
+    assert strings_equal(qasm_out, expected_out)
+
+
 def test_convert_qasm_recursive_gate_def():
     """Test converting qasm string from gate defined in terms of another gate"""
-    assert (
-        convert_to_supported_qasm(
-            """
+
+    qasm_in = """
 OPENQASM 2.0;
 include "qelib1.inc";
 gate rzx(param0) q0,q1 { h q1; cx q0,q1; rz(param0) q1; cx q0,q1; h q1; }
@@ -217,8 +270,7 @@ gate ecr q0,q1 { rzx(pi/4) q0,q1; x q0; rzx(-pi/4) q0,q1; }
 qreg q[2];
 ecr q[0],q[1];
 """
-        )
-        == """
+    expected_out = """
 OPENQASM 2.0;
 include "qelib1.inc";
 qreg q[2];
@@ -234,4 +286,5 @@ rz(-pi/4) q[1];
 cx q[0],q[1];
 h q[1];
 """
-    )
+    qasm_out = _convert_to_supported_qasm(qasm_in)
+    assert strings_equal(qasm_out, expected_out)
