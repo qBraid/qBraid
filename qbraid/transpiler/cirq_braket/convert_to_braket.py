@@ -201,7 +201,8 @@ def _to_one_qubit_braket_instruction(
             return [BKInstruction(braket_noise_gate.PhaseDamping(operation.gate._gamma), target)]
 
         matrix = protocols.unitary(gate)
-        return _to_one_qubit_braket_instruction(matrix, target, gate_name=str(gate))
+        gate_name = "U" if isinstance(gate, cirq_ops.MatrixGate) else str(gate)
+        return _to_one_qubit_braket_instruction(matrix, target, gate_name=gate_name)
 
     if isinstance(operation, np.ndarray):
         return instruction_from_matrix(operation, target, gate_name)

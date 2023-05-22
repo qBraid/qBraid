@@ -20,6 +20,7 @@ Interface (:mod:`qbraid.interface`)
 
    to_unitary
    unitary_to_little_endian
+   random_unitary_matrix
    convert_to_contiguous
    circuits_allclose
    random_circuit
@@ -31,6 +32,7 @@ Interface (:mod:`qbraid.interface`)
 from .calculate_unitary import (
     UnitaryCalculationError,
     circuits_allclose,
+    random_unitary_matrix,
     to_unitary,
     unitary_to_little_endian,
 )

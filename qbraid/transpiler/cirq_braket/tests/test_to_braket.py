@@ -20,7 +20,7 @@ import pytest
 from braket.circuits import noises as braket_noise_gate
 from cirq import Circuit, LineQubit, ops, testing
 
-from qbraid.interface import circuits_allclose
+from qbraid.interface import circuits_allclose, random_unitary_matrix
 from qbraid.transpiler.cirq_braket.convert_to_braket import to_braket
 
 
@@ -281,3 +281,10 @@ def test_to_braket_kraus_gates():
     assert type(Gate) == braket_noise_gate.Kraus
     assert Gate.qubit_count == 2
     assert np.allclose(Gate._matrices, [K0, K1])
+
+
+def test_braket_unitary_display_name():
+    """Test braket unitary gate uses correct display name"""
+    unitary = random_unitary_matrix(2)
+    braket_circuit = to_braket(Circuit(ops.MatrixGate(unitary).on(LineQubit(0))))
+    assert braket_circuit.instructions[0].operator.ascii_symbols[0] == "U"
