@@ -149,3 +149,19 @@ def unitary_to_little_endian(matrix: np.ndarray) -> np.ndarray:
     indicies_out = [i + num_qubits for i in indicies_in]
     tensor_le = np.einsum(tensor_be, indicies_in + indicies_out)
     return tensor_le.reshape([rank, rank])
+
+
+def random_unitary_matrix(dim: int) -> np.ndarray:
+    """Create a random (complex) unitary matrix of order `dim`
+
+    Args:
+        dim: integer square matrix dimension
+
+    Returns:
+        random unitary matrix of shape dim x dim
+    """
+    # Create a random complex matrix of size dim x dim
+    matrix = np.random.randn(dim, dim) + 1j * np.random.randn(dim, dim)
+    # Use the QR decomposition to get a random unitary matrix
+    unitary, _ = np.linalg.qr(matrix)
+    return unitary
