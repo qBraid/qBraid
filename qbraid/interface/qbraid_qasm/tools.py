@@ -130,7 +130,6 @@ def convert_to_qasm_3(qasm_2_str: str):
     Args:
         qasm_2_str (str): QASM 2.0 string
     """
-
     try:
         # use inbuilt method to check validity
         _ = QuantumCircuit.from_qasm_str(qasm_2_str)
