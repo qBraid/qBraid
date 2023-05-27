@@ -4,13 +4,12 @@ on:
   push:
     branches: ['main']
   pull_request_target:
-    types: [labeled]
+    branches: ['main']
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'safe to test')
     strategy:
       matrix:
         python-version: ['3.9', '3.10']
