@@ -1,20 +1,4 @@
-"""
-Script to generate random OpenQASM 3.0 programs from restricted gate set
-
-"""
-
 import numpy as np
-
-def random_circuit(num_qubits: int, num_instructions: int) -> Circuit:
-    gate_set = [I(), X(), Y(), Z(), H(), S(), Si(), V(), Vi()]
-    gate_set += [Rx(0.5), Ry(0.5), Rz(0.5), GPi(0.5), GPi2(0.5)]
-
-    circ = Circuit()
-    for _ in range(num_instructions):
-        q = random.choice(range(num_qubits))
-        gate = random.choice(gate_set)
-        circ.add(Instruction(gate, [q]))
-    return circ
 
 two_qubit_gates = [
     "m"
@@ -123,7 +107,7 @@ def get_available_pos(gate, reg_idxes, mat, num_qubits, num_bits):
 
     return column_idx, reg_idxes[0]*3
 
-def display_circuit(fname):
+def draw_circuit(fname):
     """
     Prints out the circuit gates after parsing
     """
