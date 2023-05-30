@@ -12,6 +12,7 @@
 Module containing OpenQasm tools
 
 """
+import os
 import re
 
 import numpy as np
@@ -104,13 +105,11 @@ def _change_to_qasm_3(line: str) -> QASMType:
     Returns:
         str: corresponding openqasm 3 line
     """
-    # if openqasm header
     line = line.lstrip()
     if line.startswith("OPENQASM"):
-        return "OPENQASM 3.0;\n"
-    # standard gate header
+        return ""
     if "qelib1.inc" in line:
-        return 'include "stdgates.inc";\n'
+        return ""
     if line.startswith("qreg"):
         return _build_qasm_3_reg(line, qreg_type=True)
     if line.startswith("creg"):
@@ -120,7 +119,6 @@ def _change_to_qasm_3(line: str) -> QASMType:
     if line.startswith("opaque"):
         # as opaque is ignored by openqasm 3 add it as a comment
         return "// " + line + "\n"
-
     return line + "\n"
 
 
@@ -136,9 +134,20 @@ def convert_to_qasm_3(qasm_2_str: str):
     except Exception as e:
         raise ValueError("Invalid QASM 2.0 string") from e
 
-    qasm_3_str = ""
+    #  a newline separated qasm 2 string
+    # formatted_qasm_2 = circuit.qasm()
+    qasm_3_str = """OPENQASM 3.0;
+    include 'stdgates.inc';"""
 
-    # safe to assume that we have a newline separated string
+    # add the gate from qelib1.inc not present in the
+    # stdgates.inc file
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    with open(
+        os.path.join(current_dir, "qasm_lib/qelib_qasm3.qasm"), mode="r", encoding="utf-8"
+    ) as gate_defs:
+        for line in gate_defs:
+            qasm_3_str += line
+
     for line in qasm_2_str.splitlines():
         line = _change_to_qasm_3(line)
         qasm_3_str += line
