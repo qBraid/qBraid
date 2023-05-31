@@ -40,17 +40,17 @@ gate cu3(theta,phi,lambda) c, t
 }
 
 // two-qubit XX rotation
-gate rxx(theta) a, b
-{
-  u3(pi/2, theta, 0) a;
-  h b;
-  cx a,b;
-  u1(-theta) b;
-  cx a,b;
-  h b;
-  // why type error?
-  // u2(-pi, pi-theta) b;
-}
+// gate rxx(theta) a, b
+// {
+//   u3(pi/2, theta, 0) a;
+//   h b;
+//   cx a,b;
+//   u1(-theta) b;
+//   cx a,b;
+//   h b;
+//   ******** why type error ********
+//   // u2(-pi, pi-theta) b;
+// }
 
 // two-qubit ZZ rotation
 gate rzz(theta) a,b
