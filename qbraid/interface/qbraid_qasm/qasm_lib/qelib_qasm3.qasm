@@ -3,11 +3,10 @@
 // QASM 3 equivalent definitions of qelib1.inc gates
 
 // idle gate (identity) with length gamma*sqglen
-gate u0(gamma) q { U(0,0,0) q; }
-
-
+gate u0(gamma) q { u3(0,0,0) q; }
+ 
 // generic single qubit gate
-gate u(theta,phi,lambda) q { U(theta,phi,lambda) q; }
+gate u(theta,phi,lambda) q { u3(theta,phi,lambda) q; }
 
 
 // inverse sqrt(X)
@@ -19,11 +18,11 @@ gate csx a, b {ctrl @ sx a, b;}
 // controlled phase rotation 
 gate cu1 (lambda) a, b{  
   
-  u1(lambda/2) a;
+  u3(0,0,lambda/2) a;
   cx a,b;
-  u1(-lambda/2) b;
+  u3(0,0,-lambda/2) b;
   cx a,b;
-  u1(lambda/2) b; 
+  u3(0,0,lambda/2) b; 
   
 }
 
@@ -31,8 +30,8 @@ gate cu1 (lambda) a, b{
 gate cu3(theta,phi,lambda) c, t
 {
   // implements controlled-U(theta,phi,lambda) with  target t and control c
-  u1((lambda+phi)/2) c;
-  u1((lambda-phi)/2) t;
+  u3(0,0,(lambda+phi)/2) c;
+  u3(0,0,(lambda-phi)/2) t;
   cx c,t;
   u3(-theta/2,0,-(phi+lambda)/2) t;
   cx c,t;
@@ -56,7 +55,7 @@ gate cu3(theta,phi,lambda) c, t
 gate rzz(theta) a,b
 {
   cx a,b;
-  u1(theta) b;
+  u3(0,0,theta) b;
   cx a,b;
 }
 
@@ -64,13 +63,13 @@ gate rzz(theta) a,b
 gate rccx a,b,c
 {
   u2(0,pi) c;
-  u1(pi/4) c;
+  u3(0,0,pi/4) c;
   cx b, c;
-  u1(-pi/4) c;
+  u3(0,0,-pi/4) c;
   cx a, c;
-  u1(pi/4) c;
+  u3(0,0,pi/4) c;
   cx b, c;
-  u1(-pi/4) c;
+  u3(0,0,-pi/4) c;
   u2(0,pi) c;
 }
 
@@ -78,22 +77,22 @@ gate rccx a,b,c
 gate rc3x a,b,c,d
 {
   u2(0,pi) d;
-  u1(pi/4) d;
+  u3(0,0,pi/4) d;
   cx c,d;
-  u1(-pi/4) d;
+  u3(0,0,-pi/4) d;
   u2(0,pi) d;
   cx a,d;
-  u1(pi/4) d;
+  u3(0,0,pi/4) d;
   cx b,d;
-  u1(-pi/4) d;
+  u3(0,0,-pi/4) d;
   cx a,d;
-  u1(pi/4) d;
+  u3(0,0,pi/4) d;
   cx b,d;
-  u1(-pi/4) d;
+  u3(0,0,-pi/4) d;
   u2(0,pi) d;
-  u1(pi/4) d;
+  u3(0,0,pi/4) d;
   cx c,d;
-  u1(-pi/4) d;
+  u3(0,0,-pi/4) d;
   u2(0,pi) d;
 }
 
