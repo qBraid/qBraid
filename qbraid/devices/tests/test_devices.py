@@ -70,9 +70,8 @@ Device wrapper tests: initialization
 Coverage: all vendors, all available devices
 """
 
-if not skip_remote_tests:
-    inputs_braket_dw = device_wrapper_inputs("AWS")
-    inputs_qiskit_dw = ibm_devices()
+inputs_braket_dw = [] if skip_remote_tests else device_wrapper_inputs("AWS")
+inputs_qiskit_dw = [] if skip_remote_tests else ibm_devices()
 
 
 def test_job_wrapper_type():
