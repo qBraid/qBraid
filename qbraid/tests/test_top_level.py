@@ -12,6 +12,7 @@
 Unit tests for qbraid top-level functionality
 
 """
+import os
 import sys
 from unittest.mock import Mock
 
@@ -25,6 +26,10 @@ from qbraid.get_devices import get_devices
 from qbraid.get_jobs import _display_jobs_jupyter, get_jobs
 
 # pylint: disable=missing-function-docstring,redefined-outer-name
+
+# Skip tests if IBM/AWS account auth/creds not configured
+skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
+REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM/AWS storage"
 
 check_version_data = [
     # local, API, warn
@@ -195,6 +200,7 @@ def test_get_devices_results(capfd):
     assert len(err) == 0
 
 
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_get_devices_refresh_results(capfd):
     """Test ``get_devices`` stdout for results > 0, with refresh.
     When results returned, output format is as follows:
