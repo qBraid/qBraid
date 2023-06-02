@@ -29,7 +29,7 @@ from qbraid.get_jobs import _display_jobs_jupyter, get_jobs
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
-REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM/AWS storage"
+REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM/AWS storage)"
 
 check_version_data = [
     # local, API, warn

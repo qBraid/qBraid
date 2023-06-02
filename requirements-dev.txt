@@ -4,7 +4,7 @@ pytest
 coverage
 tox<4
 ipython
-qiskit-terra[qasm3-import]
+qiskit-qasm3-import
 
 # docs
 sphinx
