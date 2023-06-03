@@ -103,7 +103,7 @@ def create_cirq_gate(data):
         return cirq_gates[gate_type](exponent=1.0)
 
     # multi-qubit
-    elif gate_type in "CCX":
+    elif gate_type in ("CCX", "CCZ"):
         return cirq_gates[gate_type]()
 
     # custom gates
