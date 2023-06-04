@@ -44,7 +44,7 @@ class DeviceLikeWrapper(ABC):
 
         """
         self._info = kwargs
-        self._qubits = self._info["numberQubits"]
+        self._qubits = self._info.get("numberQubits")
         self.vendor_device_id = self._info.pop("objArg")
         self.vendor_dlo = self._get_device()
 

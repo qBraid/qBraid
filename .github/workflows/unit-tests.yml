@@ -1,8 +1,7 @@
-name: CI
+name: Unit tests
 
 on:
-  push:
-    branches: ['main']
+  pull_request_target:
   workflow_dispatch:
 
 jobs:
@@ -10,7 +9,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.10']
+        python-version: ['3.9', '3.10']
 
     steps:
     - uses: actions/checkout@v3
@@ -27,17 +26,6 @@ jobs:
       run: |
         tox -e unit-tests
       env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        QISKIT_IBM_TOKEN: ${{ secrets.QISKIT_IBM_TOKEN }}
         JUPYTERHUB_USER: ${{ secrets.JUPYTERHUB_USER }}
         QBRAID_API_KEY: ${{ secrets.QBRAID_API_KEY }}
         REFRESH: ${{ secrets.REFRESH }}
-        QBRAID_RUN_REMOTE_TESTS: True
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v3
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
-        fail_ci_if_error: false
-        files: ./build/coverage/coverage.xml
-        verbose: true
