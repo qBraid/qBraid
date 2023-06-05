@@ -26,7 +26,11 @@ QASMType = str
 
 def qasm_qubits(qasmstr: str) -> QASMType:
     """get number of qasm qubits"""
-    return [text.replace("\n", "") for text in re.findall(r"\bqreg\s\S+\s+\b", qasmstr)]
+
+    return [
+        text.replace("\n", "")
+        for text in re.findall(r"(\bqreg\s\S+\s+\b)|(qubit\[(\d+))\]", qasmstr)
+    ]
 
 
 def qasm_num_qubits(qasmstr: str) -> QASMType:
