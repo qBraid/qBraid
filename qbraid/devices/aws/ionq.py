@@ -8,6 +8,7 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 import pytket
+from braket.circuits import Circuit
 from pytket._tket.circuit._library import _TK1_to_RzRx  # type: ignore
 from pytket.passes import RebaseCustom
 from pytket.predicates import (
@@ -65,7 +66,16 @@ ionq_rebase_pass = RebaseCustom(
 )  # tk1_replacement
 
 
-def braket_ionq_compilation(circuit):
+def braket_ionq_compilation(circuit: Circuit) -> Circuit:
+    """
+    Compiles a Braket circuit to a Braket circuit that can run on IonQ Harmony.
+
+    Args:
+        circuit (Circuit): The input Braket circuit to be compiled.
+
+    Returns:
+        Circuit: The compiled Braket circuit that can run on IonQ Harmony.
+    """
     tk_circuit = qbraid.circuit_wrapper(circuit).transpile("pytket")
     cu = CompilationUnit(tk_circuit, preds)
     ionq_rebase_pass.apply(cu)
