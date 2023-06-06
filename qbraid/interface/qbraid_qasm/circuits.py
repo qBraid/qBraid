@@ -145,7 +145,7 @@ include "stdgates.inc";
             gate_specs = gate_specs[:max_index]
             slack = num_qubits - cumulative_qubits[max_index - 1]
             if slack:
-                gates = (create_gateset_qasm(max_operands=1),)
+                gates = create_gateset_qasm(max_operands=1)
                 slack_gates = rng.choice(gates, size=slack)
                 gate_specs = np.hstack((gate_specs, slack_gates))
 

@@ -29,7 +29,9 @@ def qasm_qubits(qasmstr: str) -> QASMType:
 
     return [
         text.replace("\n", "")
-        for text in re.findall(r"(\bqreg\s\S+\s+\b)|(qubit\[(\d+))\]", qasmstr)
+        for match in re.findall(r"(\bqreg\s\S+\s+\b)|(qubit\[(\d+)\])", qasmstr)
+        for text in match
+        if text != "" and len(text) >= 2
     ]
 
 
