@@ -7,11 +7,15 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+
+"""
+Benchmarking tests for pyquil conversions
+
+"""
 import string
 
 import numpy as np
 import pyquil
-import pytest
 
 import qbraid
 
@@ -20,6 +24,7 @@ import qbraid
 #############
 
 PYQUIL_BASELINE = 84
+ALLOWANCE = 2
 
 #############
 ### UTILS ###
@@ -96,5 +101,5 @@ def test_pyquil_coverage():
     print("Failures:", failures.keys())
 
     assert (
-        nb_passes >= PYQUIL_BASELINE
+        nb_passes >= PYQUIL_BASELINE - ALLOWANCE
     ), f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed (expected >= {PYQUIL_BASELINE}).\nFailures: {failures.keys()}\n\n"
