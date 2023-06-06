@@ -29,7 +29,7 @@ from qbraid.get_jobs import _display_jobs_jupyter, get_jobs
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
-REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM/AWS storage)"
+REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of qBraid/AWS/IBM storage)"
 
 check_version_data = [
     # local, API, warn
@@ -110,6 +110,7 @@ def test_ipython_imported_and_in_jupyter():
     assert running_in_jupyter()
 
 
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_get_jobs_no_results(capfd):
     """Test ``get_jobs`` stdout for results == 0.
     When no results are found, a single line is printed.
@@ -121,6 +122,7 @@ def test_get_jobs_no_results(capfd):
     assert len(err) == 0
 
 
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_get_jobs_results(capfd):
     """Test ``get_jobs`` stdout for results > 0.
     When results returned, output format is as follows:
@@ -144,6 +146,7 @@ def test_get_jobs_results(capfd):
     assert len(err) == 0
 
 
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_display_jobs_in_jupyter(capfd):
     _mock_ipython(MockIPython("non-empty kernel"))
     data = []
@@ -160,6 +163,7 @@ def test_display_jobs_in_jupyter(capfd):
     assert len(err) == 0
 
 
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_get_jobs_in_jupyter(capfd):
     _mock_ipython(MockIPython("non-empty kernel"))
     get_jobs()

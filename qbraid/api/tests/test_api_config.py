@@ -40,6 +40,7 @@ qbraid_user = os.getenv("JUPYTERHUB_USER")
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
+REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of qBraid storage)"
 
 config_lst = [
     # (config_name, config_value, section, filepath)
@@ -102,6 +103,7 @@ def test_qbraid_session_from_args():
     del session
 
 
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_qbraid_session_api_key():
     """Test initializing QbraidSession without args and then saving config."""
     session = QbraidSession()
@@ -109,6 +111,7 @@ def test_qbraid_session_api_key():
     assert session.get_config_variable("api-key") == qbraid_api_key
 
 
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_qbraid_session_save_config():
     """Test initializing QbraidSession without args and then saving config."""
     session = QbraidSession()
