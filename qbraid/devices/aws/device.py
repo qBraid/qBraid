@@ -23,6 +23,7 @@ from braket.schema_common import BraketSchemaBase
 
 from qbraid.api import QbraidSession
 from qbraid.api.job_api import init_job
+from qbraid.devices.aws.ionq import braket_ionq_compilation
 from qbraid.devices.device import DeviceLikeWrapper
 from qbraid.devices.enums import DeviceStatus
 from qbraid.devices.exceptions import DeviceError
@@ -232,6 +233,10 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
 
         """
         run_input, qbraid_circuit = self._compat_run_input(run_input)
+
+        if self.__provider_name == "IonQ" and self._name == "Harmony":
+            run_input = braket_ionq_compilation(run_input)
+
         if "s3_destination_folder" not in kwargs:
             kwargs["s3_destination_folder"] = self._default_s3_folder
         aws_quantum_task = self.vendor_dlo.run(run_input, *args, **kwargs)
