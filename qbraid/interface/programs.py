@@ -97,7 +97,11 @@ def random_circuit(
         raise PackageValueError(package)
     num_qubits = np.random.randint(1, 4) if num_qubits is None else num_qubits
     depth = np.random.randint(1, 4) if depth is None else depth
-    if package == "qiskit":
+    if package == "qasm":
+        from qbraid.interface.qbraid_qasm.circuits import _qasm_random
+
+        rand_circuit = _qasm_random(num_qubits, depth, **kwargs)
+    elif package == "qiskit":
         from qbraid.interface.qbraid_qiskit.circuits import _qiskit_random
 
         rand_circuit = _qiskit_random(num_qubits, depth, **kwargs)
