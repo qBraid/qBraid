@@ -234,7 +234,7 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
         """
         run_input, qbraid_circuit = self._compat_run_input(run_input)
 
-        if self.__provider_name == "IonQ" and self._name == "Harmony":
+        if self._provider_name == "IonQ" and self._name == "Harmony":
             run_input = braket_ionq_compilation(run_input)
 
         if "s3_destination_folder" not in kwargs:
