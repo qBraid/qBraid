@@ -1,9 +1,7 @@
 import numpy as np
+import re
 
-two_qubit_gates = [
-    "m"
-]
-one_qubit_gates = [
+one_reg_gates= [
     "i",
     "x",
     "y",
@@ -20,163 +18,259 @@ one_qubit_gates = [
     "gpi2"
 ]
 
-def parse_idx(expr):
-    """
-    Simple helper method to get the index contained between square brackets
-    """
-    return expr[expr.find("[")+1 : expr.find("]")]
+two_reg_gates = [
+    "cx"
+]
 
-def parse_open_qasm(fname):
+q_c_reg_gates = [
+    "m"
+]
+
+all_gates = one_reg_gates + two_reg_gates + q_c_reg_gates
+
+def is_valid_gate(line):
     """
-    Assumes first three lines contain:
-        Line 1: the OPENQASM version number
-        Line 2: the classical register
-        Line 3: the qubit register
-    This should be updated for robustness later
+    Checks if input string line is a valid OPENQASM gate
+    """
+    if len(line) < 2:
+        return False 
+    elif len(line) > 2 and line[:2] == "//":
+        return False 
+    elif len(line) > 7 and line[:7] == "include":
+        return False 
+    elif len(line) > 8 and line[:8] == "OPENQASM":
+        return False 
+    return True
+
+def parse_gate_type(line, all_gates):
+    params = None
+    if "measure" in line:
+        return ("m", params)
+
+    gate_type = line.split(" ")[0]
+    if "(" in gate_type:
+        params = re.search(r"\(.*\)", gate_type)
+        if params is not None:
+            params = params[0][1:-1]
+        gate_type = gate_type[:gate_type.find("(")]
+
+    if gate_type not in all_gates: 
+        return (None, None)
+    return (gate_type, params) 
+
+class Gate:
+    def __init__(self, line, num_qregs, num_cregs):
+        """
+        param line: input string containing information about the gate
+        """
+
+        assert is_valid_gate(line), "Invalid gate: " + str(line)
+
+        self.gate_type, self.params = parse_gate_type(line, all_gates)
+
+        assert self.gate_type is not None, "Gate is not found in list of possible gates"
+
+        self.num_qregs = num_qregs
+        self.num_cregs = num_cregs
+        self.qregs = self.parse_qregs(line)
+        self.cregs = self.parse_cregs(line)
+
+    def parse_qregs(self, line):
+        matches = re.findall(r"q\[.*?\]", line)
+        qregs = []
+        for match in matches:
+            qregs.append(int(match[2:-1]))
+        return qregs 
+
+    def parse_cregs(self, line):
+        matches = re.findall(r"b\[.*?\]", line)
+        cregs = []
+        for match in matches:
+            cregs.append(int(match[2:-1]))
+        return cregs 
+
+    def get_height(self):
+        if self.gate_type in one_reg_gates:
+            return 1
+        elif self.gate_type in two_reg_gates:
+            return max(self.qregs) - min(self.qregs) + 1
+        elif self.gate_type in q_c_reg_gates:
+            return self.num_qregs - min(self.qregs) + max(self.cregs) + 1
+        return -1
     
-    Args:
-        fname: File containing the OpenQASM 3.0 code to parse
-    
-    Returns:
-        A tuple containing the classical and qubit registers
-    """
-    with open(fname) as f:
-        line1, line2, line3 = f.readline(), f.readline(), f.readline()
-        num_bits = int(parse_idx(line2)) # number of classical registers
-        num_qubits = int(parse_idx(line3)) # number of qubit registers
-
-        c_regs = ["c" + str(i) for i in range(num_bits)] # classical registers
-        q_regs = [[]] * num_qubits # qubit registers
-
-        for line in f: # Iterate over file
-            line = line.strip().split() # Process the line into the correct format
-            nargs = len(line) # Get the number of gate
-
-            if nargs == 2: # Single qubit gate
-                gate = line[0] # Get the gate
-                
-                params = ""
-                if gate.find("(") != -1: # Check if gate has params
-                    params = gate[gate.find("("):] # Store params
-                    gate = gate[:gate.find("(")] # Get the gate without params
-
-                qreg = int(parse_idx(line[1])) # The qubit register the gate acts on
-
-                if gate in one_qubit_gates: # Ensure gate is valid
-                    q_regs[qreg] = q_regs[qreg] + [gate + params] # Update qubit register
-
-            elif nargs == 4: # Gate applied to multiple qubits
-                if line[1] == "=": # Measurement operation
-                    qreg = int(parse_idx(line[3])) # Index of qubit register to measure
-                    creg = int(parse_idx(line[0])) # Index of classical bit to store measurement in
-                    q_regs[qreg] = q_regs[qreg] + ['m' + str(creg)] # Add gate to correct register
-
-    return c_regs, q_regs
-
-def get_available_pos(gate, reg_idxes, mat, num_qubits, num_bits):
-    """
-    Gets the correct x and y coordinates to insert the gate
-    x and y refer to the top left corner of the gate
-    """
-    
-    if gate.find("(") != -1: # Parameterized gate
-        gate = gate[:gate.find("(")] # Get just the name of the gate, not the parameters
+    def apply_gate_at_pos(self, gate_str, mat, pos):
         
-    if gate not in one_qubit_gates: # Additional logic is necessary to write across multiple lines
-        
-        # Case for measurement gate
-        if gate[0] == "m" and gate[1:].isdigit():
+        mat[pos, :] = ["|"] + ["-"] * (len(gate_str) + 2) + ["|"]
+        mat[pos + 1, :] = ["|"] + [" "] + [c for c in gate_str] + [" "] + ["|"]
+        mat[pos + 2, :] = ["|"] + ["-"] * (len(gate_str) + 2) + ["|"]
+
+        return mat
+
+    def get_width(self):
+        gate_str = self.gate_type
+
+        if self.params is not None:
+            gate_str += "(" + self.params + ")"
+
+        return len(gate_str) + 4
+
+    def mat(self):
+        height = self.get_height()
+        gate_str = self.gate_type
+        mat = np.array([])
+
+        if self.params is not None:
+            gate_str += "(" + self.params + ")"
+
+        if height == 1:
+            mat = np.empty((3 * height, len(gate_str) + 4), dtype="str")
+            mat = self.apply_gate_at_pos(gate_str, mat, 0)
+
+        elif gate_str == "m":
+            mat = np.empty((3 * height, len(gate_str) + 4), dtype="str")
+            mat = self.apply_gate_at_pos(gate_str, mat, 0)
             
+            c_reg_line = [" "] * int((len(gate_str) + 4)/2) + ["║"] + [" "] * int((len(gate_str) + 4)/2)
+            mat[3:3*height - 1, :] = [c_reg_line] * (3 * height - 4) 
+            mat[3*height - 1, :] = [" "] * (len(gate_str) + 4)
 
-            reg_idxes = range(reg_idxes[0], (num_qubits+int(gate[1:]))) # Register indexes that need to be written over
+        elif gate_str == "cx":
+            mat = np.empty((3 * height, len(gate_str) + 4), dtype="str")
+            parity_check = 1 - (len(gate_str) % 2)
+            q_reg_line = [" "] * int((len(gate_str) + 4)/2 - parity_check) + ["|"] + [" "] * int((len(gate_str) + 4)/2)
+            mat[1:, :] = [q_reg_line] * ((3 * height) - 1) 
 
-    # Column counter to insert the gate, start at the far right and work backwards
-    column_idx = len(mat[0])
+            if self.qregs[0] < self.qregs[1]:
+                mat[0, :] = [" "] * ((len(gate_str) + 4))
+                mat[1, :] = ["-"] * int((len(gate_str) + 4)/2 - parity_check) + ["■"] + [" "] * int((len(gate_str) + 4)/2)
+                mat = self.apply_gate_at_pos(gate_str, mat, (3 * height) - 3)
+            else:
+                mat[(3 * height) - 1, :] = [" "] * ((len(gate_str) + 4))
+                mat[(3 * height) - 2, :] = ["-"] * int((len(gate_str) + 4)/2 - parity_check) + ["■"] + [" "] * int((len(gate_str) + 4)/2)
+                mat = self.apply_gate_at_pos(gate_str, mat, 0)
+            
+        return mat 
+
+def add_gate(circuit, g):
+    pos = circuit.shape[1] - 1
     collision = False
-    while column_idx != 0: # Can't go farther left
-        for idx in range(len(reg_idxes)): # Check each register the gate will be overwriting
-            if mat[reg_idxes[idx] * 3 + 1][column_idx-1] != ' ': # If not empty, then collision occurs
+    reg_idxes = range(3*min(g.qregs), 3*(g.get_height()+min(g.qregs)))
+    while not collision and pos > 0:
+        for reg_idx in reg_idxes:
+            if circuit[reg_idx][pos] != " ":
                 collision = True
-                column_idx += 3 # Move the gate three spaces to the right to avoid overwriting previous gates
                 break
-                
-        if collision:
-            break
+        pos -= 1
+
+    if pos != 0:
+        pos += 3
+
+    while pos + g.get_width() >= circuit.shape[1]:
+        # Expand circuit
+        circuit = np.concatenate([circuit, np.full((circuit.shape[0], circuit.shape[1]), " ", dtype=str)], axis=1)
+
+    circuit[reg_idxes, pos:pos+g.get_width()] = g.mat() 
+
+    return circuit, pos
         
-        column_idx -= 1
 
-    return column_idx, reg_idxes[0]*3
+def get_circuit_height(qasm_str):
 
-def draw_circuit(fname):
-    """
-    Prints out the circuit gates after parsing
-    """
-    c_regs, q_regs = parse_open_qasm(fname)
-    num_bits = len(c_regs)
-    
-    min_gate_width = 5
-    
-    total_gates_width = sum([sum([len(gate) + min_gate_width for gate in reg]) for reg in q_regs])*3
-    mat = np.full((3*(len(q_regs) + num_bits), total_gates_width), ' ', dtype=str)
-    
-    num_gates = sum([len(reg) for reg in q_regs])
-    longest_gate_sequence = max([len(reg) for reg in q_regs])
-    
-    for column in range(longest_gate_sequence):
-        for reg_idx in range(len(q_regs)):
-            if len(q_regs[reg_idx]) <= column:
-                continue
-            gate = q_regs[reg_idx][column]
-            x, y = get_available_pos(gate, [reg_idx], mat, len(q_regs), num_bits)
-            sep_dist = 3
-            if x > 2:
-                
-                for idx in range(mat.shape[1]-1, 0, -1):
-                    if mat[y+1, idx] == '|':
-                        sep_dist = max(sep_dist, x - idx - 1)
-                        break
-                        
-                mat[y+1, x-sep_dist:x] = ['-']*sep_dist
-                
-            mat[y:y+3,x] = ['|']*3
-            mat[y, x+1:x+len(gate)+3] = ['-']*(len(gate)+2)
-            mat[y+1, x+1:x+len(gate)+3] = [' '] + [c for c in gate] + [' ']
-            mat[y+2, x+1:x+len(gate)+3] = ['-']*(len(gate)+2)
-            mat[y:y+3,x+len(gate)+3] = ['|']*3
-            
-            if gate[0] in two_qubit_gates:
-                mat[y+3:(len(q_regs)+int(gate[1:]))*3+1, x+int(len(gate)/2)+1] = ['‖'] * ((len(q_regs)+int(gate[1:]))*3+1-y-3)
-    
-    for bit in range(num_bits):
-        mat[-2-(bit*3), :] = ['='] * mat.shape[1]
-    
-    total_circuit_len = 0
-    for reg in mat:
-        for char_idx in range(len(reg)):
-            if reg[char_idx] != ' ' and reg[char_idx] != '=':
-                total_circuit_len = max(total_circuit_len, char_idx)
-    
-    mat[:, total_circuit_len + 1:] = ''
-    
+    num_qregs = 0
+    num_cregs = 0
+    for line in qasm_str.split("\n"):
+        if re.match(r"qreg q\[.*\]", line):
+            num_qregs = int(re.match(r"qreg q\[.*\]", line)[0][7:-1])
+            continue
+        elif re.match(r"creg q\[.*\]", line):
+            num_cregs = int(re.match(r"creg q\[.*\]", line)[0][7:-1])
+            continue
+        elif re.match(r"qubit\[.*\]", line):
+            num_qregs = int(re.match(r"qubit\[.*\]", line)[0][6:-1])
+            continue
+        elif re.match(r"bit\[.*\]", line):
+            num_cregs = int(re.match(r"bit\[.*\]", line)[0][4:-1])
+            continue
+
+    return num_qregs, num_cregs
+
+def get_collision_before_pos(circuit, x, y):
+    while circuit[y, x] == ' ' and x > 0:
+        x -= 1
+    return x
+
+def add_wires(circuit, g, pos):
+    if pos == 0:
+        return circuit
+    height = g.get_height()
+    for qreg in g.qregs:
+        y = qreg * 3 + 1
+        collision_pos = get_collision_before_pos(circuit, pos - 1, y)
+        circuit[y, collision_pos + 1:pos] = ["-"] * (pos - collision_pos - 1)
+
+    return circuit
+
+def add_cregs(circuit, num_cregs):
+
+    for bit in range(num_cregs):
+        x = circuit.shape[1]
+        y = -2 - (bit * 3) 
+        while circuit[y][x - 1] == ' ' and x > 0:
+            x -= 1
+        x += 1
+        circuit[y, :x] = ['='] * x
+
+    return circuit
+
+def draw_circuit(qasm_str):
+    num_qregs, num_cregs = get_circuit_height(qasm_str)
+    height = (num_qregs + num_cregs) * 3
+    circuit = np.full((height, 50), " ", dtype=str)
+
+    for line in qasm_str.split("\n"):
+
+        valid = is_valid_gate(line)
+        gate_type, _ = parse_gate_type(line, one_reg_gates + two_reg_gates + q_c_reg_gates)
+        if valid and gate_type is not None: 
+            g = Gate(line, num_qregs, num_cregs)
+            circuit, pos = add_gate(circuit, g)
+            circuit = add_wires(circuit, g, pos)
+
+    circuit = add_cregs(circuit, num_cregs)
+
     padding = 5
     
     str_out = ""
     reg_idx = 0
     is_q_reg = True
-    for row_idx in range(len(mat)):
+    for row_idx in range(len(circuit)):
         if row_idx % 3 == 1:
-            if reg_idx < len(q_regs) and is_q_reg:
-                str_out += ("q" + str(reg_idx)).ljust(padding, ' ')
+            if reg_idx < num_qregs and is_q_reg:
+                str_out += ("q" + str(reg_idx)).ljust(padding, '-')
             elif is_q_reg:
                 reg_idx = 0
                 is_q_reg = False
-                str_out += "".join(c_regs[reg_idx]).ljust(padding, ' ')
-            else:
-                str_out += "".join(c_regs[reg_idx]).ljust(padding, ' ')
+
+            if not is_q_reg:
+                str_out += ("c" + str(reg_idx)).ljust(padding, '=')
             reg_idx += 1
         else:
             str_out += ' ' * padding
-        # str_out += "".join(header[row_idx])
-        str_out += ''.join(mat[row_idx]) + "\n"
+        str_out += ''.join(circuit[row_idx]) + "\n"
     
     return str_out
+
+circ_str = """
+OPENQASM 3.0;
+bit[2] b;
+qubit[3] q;
+cx q[2], q[1];
+gpi2(0.5) q[2];
+h q[1];
+y q[2];
+cx q[1], q[2];
+rx(0.5) q[1];
+b[0] = measure q[2];
+b[1] = measure q[1];"""
+
+print(draw_circuit(circ_str))
