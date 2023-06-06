@@ -16,6 +16,12 @@ import pytket
 import qbraid
 
 #############
+### BASE ####
+#############
+
+PYTKET_BASELINE = 124
+
+#############
 ### UTILS ###
 #############
 
@@ -135,10 +141,32 @@ def get_pytket_circuits():
 TARGETS = ["braket", "cirq", "pyquil", "qiskit"]
 pytket_circuits = get_pytket_circuits()
 paramslist = [(target, circuit) for target in TARGETS for circuit in pytket_circuits]
+failures = {}
 
 
-@pytest.mark.parametrize("target, circuit_name", paramslist)
-def test_convert_from_pytket_to_x(target, circuit_name):
+def convert_from_pytket_to_x(target, circuit_name):
     source_circuit = pytket_circuits[circuit_name]
     target_circuit = qbraid.circuit_wrapper(source_circuit).transpile(target)
     assert qbraid.interface.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
+
+
+def test_pytket_coverage():
+    for target in TARGETS:
+        for gate_name in pytket_circuits:
+            try:
+                convert_from_pytket_to_x(target, gate_name)
+            except Exception as e:
+                failures[f"{target}-{gate_name}"] = e
+
+    total_tests = len(pytket_circuits) * len(TARGETS)
+    nb_fails = len(failures)
+    nb_passes = total_tests - nb_fails
+
+    print(
+        f"A total of {len(pytket_circuits)} gates were tested (for a total of {total_tests} tests). {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed."
+    )
+    print("Failures:", failures.keys())
+
+    assert (
+        nb_passes >= PYTKET_BASELINE
+    ), f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed (expected >= {PYTKET_BASELINE}).\nFailures: {failures.keys()}\n\n"

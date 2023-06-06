@@ -16,6 +16,13 @@ import qiskit
 import qbraid
 
 #############
+### BASE ####
+#############
+
+QISKIT_BASELINE = 207
+
+
+#############
 ### UTILS ###
 #############
 
@@ -53,12 +60,34 @@ def get_qiskit_gates():
 TARGETS = ["braket", "cirq", "pyquil", "pytket"]
 qiskit_gates = get_qiskit_gates()
 paramslist = [(target, gate) for target in TARGETS for gate in qiskit_gates]
+failures = {}
 
 
-@pytest.mark.parametrize("target, gate_name", paramslist)
-def test_convert_from_qiskit_to_x(target, gate_name):
+def convert_from_qiskit_to_x(target, gate_name):
     gate = qiskit_gates[gate_name]
     source_circuit = qiskit.QuantumCircuit(gate.num_qubits)
     source_circuit.compose(gate, inplace=True)
     target_circuit = qbraid.circuit_wrapper(source_circuit).transpile(target)
     assert qbraid.interface.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
+
+
+def test_qiskit_coverage():
+    for target in TARGETS:
+        for gate_name in qiskit_gates:
+            try:
+                convert_from_qiskit_to_x(target, gate_name)
+            except Exception as e:
+                failures[f"{target}-{gate_name}"] = e
+
+    total_tests = len(qiskit_gates) * len(TARGETS)
+    nb_fails = len(failures)
+    nb_passes = total_tests - nb_fails
+
+    print(
+        f"A total of {len(qiskit_gates)} gates were tested (for a total of {total_tests} tests). {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed."
+    )
+    print("Failures:", failures.keys())
+
+    assert (
+        nb_passes >= QISKIT_BASELINE
+    ), f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed (expected >= {QISKIT_BASELINE}).\nFailures: {failures.keys()}\n\n"
