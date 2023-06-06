@@ -1,7 +1,8 @@
-name: Unit tests
+name: Unit tests (local)
 
 on:
-  pull_request_target:
+  pull_request:
+    branches: ['main']
   workflow_dispatch:
 
 jobs:
@@ -25,7 +26,3 @@ jobs:
     - name: Tests
       run: |
         tox -e unit-tests
-      env:
-        JUPYTERHUB_USER: ${{ secrets.JUPYTERHUB_USER }}
-        QBRAID_API_KEY: ${{ secrets.QBRAID_API_KEY }}
-        REFRESH: ${{ secrets.REFRESH }}

@@ -219,8 +219,10 @@ Use the badge in your project's `README.rst`:
   [Submit an issue](https://github.com/qBraid/qBraid/issues)
 - For discussions, and specific questions about the qBraid SDK, qBraid Lab, or
   other topics, [join our discord community](https://discord.gg/gwBebaBZZX)
-- For questions that are more suited for a forum, use the `qbraid` tag on
-  [Stack Exchange](https://quantumcomputing.stackexchange.com/)
+- For questions that are more suited for a forum, post to
+  [Quantum Computing Stack Exchange](https://quantumcomputing.stackexchange.com/)
+  with the [`qbraid`](https://quantumcomputing.stackexchange.com/questions/tagged/qbraid) tag.
+  
 - Want your open-source project featured as its own runtime environment on
   qBraid Lab? Fill out our
   [New Environment Request Form](https://forms.gle/a4v7Kdn7G7bs9jYD8)
