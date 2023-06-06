@@ -7,6 +7,9 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+"""
+Module defining Utility functions to be able to run IonQ device from AWS
+"""
 import pytket
 from braket.circuits import Circuit
 from pytket._tket.circuit._library import _TK1_to_RzRx  # type: ignore
