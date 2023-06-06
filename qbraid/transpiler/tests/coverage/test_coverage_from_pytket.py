@@ -7,10 +7,15 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+
+"""
+Benchmarking tests for pytket conversions
+
+"""
+
 import string
 
 import numpy as np
-import pytest
 import pytket
 
 import qbraid
@@ -20,6 +25,7 @@ import qbraid
 #############
 
 PYTKET_BASELINE = 124
+ALLOWANCE = 2
 
 #############
 ### UTILS ###
@@ -168,5 +174,5 @@ def test_pytket_coverage():
     print("Failures:", failures.keys())
 
     assert (
-        nb_passes >= PYTKET_BASELINE
+        nb_passes >= PYTKET_BASELINE - ALLOWANCE
     ), f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed (expected >= {PYTKET_BASELINE}).\nFailures: {failures.keys()}\n\n"

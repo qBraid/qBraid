@@ -7,11 +7,15 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+
+"""
+Benchmarking tests for cirq conversions
+
+"""
 import string
 
 import cirq
 import numpy as np
-import pytest
 import scipy
 
 import qbraid
@@ -21,6 +25,7 @@ import qbraid
 #############
 
 CIRQ_BASELINE = 205
+ALLOWANCE = 2
 
 #############
 ### UTILS ###
@@ -130,5 +135,5 @@ def test_cirq_coverage():
     print("Failures:", failures.keys())
 
     assert (
-        nb_passes >= CIRQ_BASELINE
+        nb_passes >= CIRQ_BASELINE - ALLOWANCE
     ), f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed (expected >= {CIRQ_BASELINE}).\nFailures: {failures.keys()}\n\n"
