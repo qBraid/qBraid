@@ -48,22 +48,34 @@ def _check_output(output, expected):
     assert actual_circuit == expected_circuit
 
 
-def test__qasm_random():
-    """test random circuit"""
+@pytest.mark.parametrize(
+    "num_qubits, depth, max_operands, seed, measure",
+    [
+        (
+            None,
+            None,
+            None,
+            None,
+            False,
+        ),  # Test case 1: Generate random circuit with default parameters
+        (3, 3, 3, 42, False),  # Test case 2: Generate random circuit with specified parameters
+        (None, None, None, None, True),  # Test case 3: Generate random circuit with measurement
+    ],
+)
+def test_qasm_random(num_qubits, depth, max_operands, seed, measure):
+    """Test random circuit generation using _qasm_random"""
 
-    # Test case 1: Generate a random circuit with default parameters
-    circuit = _qasm_random()
+    circuit = _qasm_random(
+        num_qubits=num_qubits, depth=depth, max_operands=max_operands, seed=seed, measure=measure
+    )
+
     assert qasm_num_qubits(circuit) >= 1
+    if num_qubits is not None:
+        assert qasm_num_qubits(circuit) == num_qubits
 
-    # Test case 2: Generate a random circuit with specified parameters
-    circuit = _qasm_random(num_qubits=3, depth=3, max_operands=3, seed=42)
-    assert qasm_num_qubits(circuit) == 3
 
-    # Test case 3: Generate a random circuit with measurement
-    circuit = _qasm_random(measure=True)
-    assert qasm_num_qubits(circuit) >= 1
-
-    # Test case 3: Generate a random circuit with measurement
+def test_qasm_random_with_known_seed():
+    # Test case 4: Generate a random circuit with measurement with known Seed and compare with expected output
     circuit = _qasm_random(num_qubits=3, depth=3, max_operands=3, seed=42, measure=True)
     assert qasm_num_qubits(circuit) == 3
 
