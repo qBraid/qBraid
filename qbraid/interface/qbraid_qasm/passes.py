@@ -7,23 +7,36 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
-
-"""
-Module for preprocessing qasm string to before it is passed to parser.
-
-"""
 import re
 from typing import Optional
 
+from qiskit import QuantumCircuit
+from qiskit.circuit.random import random_circuit
+
+from qbraid.interface import circuits_allclose
+from qbraid.interface.qbraid_cirq.tools import _convert_to_line_qubits
+from qbraid.transpiler.cirq_qasm.qasm_parser import QasmParser
 from qbraid.transpiler.exceptions import QasmError
 
-GATE_DEFS = {
-    "rccx": (
-        ["q0", "q1", "q2"],
-        "u2(0,pi) q2; u1(pi/4) q2; cx q1,q2; u1(-pi/4) q2; "
-        "cx q0,q2; u1(pi/4) q2; cx q1,q2; u1(-pi/4) q2; u2(0,pi) q2;",
-    )
-}
+
+def _remove_barriers(qasm_str: str) -> str:
+    """Returns a copy of the input QASM with all barriers removed.
+
+    Args:
+        qasm_str: QASM to remove barriers from.
+    """
+    quoted_re = r"(?:\"[^\"]*?\")"
+    # Statements separated by semicolons
+    statement_re = r"((?:[^;{}\"]*?" + quoted_re + r"?)*[;{}])?"
+    # Comments begin with a pair of forward slashes and end with a new line
+    comment_re = r"(\n?//[^\n]*(?:\n|$))?"
+    statements_comments = re.findall(statement_re + comment_re, qasm_str)
+    lines = []
+    # Language is case sensitive. Whitespace is ignored
+    for statement, comment in statements_comments:
+        if re.match(r"^\s*barrier(?:(?:\s+)|(?:;))", statement) is None:
+            lines.append(statement + comment)
+    return "".join(lines)
 
 
 def _get_param(instr: str) -> Optional[str]:
@@ -33,8 +46,23 @@ def _get_param(instr: str) -> Optional[str]:
         return None
 
 
+def remove_spaces_in_parentheses(expression):
+    # Find all parenthesized parts of the input.
+    parenthesized_parts = re.findall(r'\(.*?\)', expression)
+
+    for part in parenthesized_parts:
+        # For each parenthesized part, remove all the spaces.
+        cleaned_part = part.replace(' ', '')
+
+        # Replace the original part in the expression with the cleaned part.
+        expression = expression.replace(part, cleaned_part)
+
+    return expression
+
+
 def _decompose_cu_instr(instr: str) -> str:
     try:
+        instr = remove_spaces_in_parentheses(instr)
         cu_gate, qs = instr.split(" ")
         q0, q1 = qs.strip(";").split(",")
         params_lst = _get_param(cu_gate).split(",")
@@ -71,109 +99,46 @@ def _decompose_rxx_instr(instr: str) -> str:
     return instr_out
 
 
-def _replace_gate_defs(qasm_line: str, gate_defs: dict) -> str:
-    for g in gate_defs:
-        instr_lst = qasm_line.split(";")
-        instr_lst_out = []
-        for instr in instr_lst:
-            line_args = instr.split(" ")
-            qasm_gate = line_args[0]
-            if g != qasm_gate and qasm_gate not in gate_defs:
-                param = _get_param(qasm_gate)
-                if param is not None:
-                    qasm_gate = qasm_gate.replace(param, "param0")
-                    if g != qasm_gate:
-                        qasm_gate = qasm_gate.replace("param0", "param0,param1")
-            if g == qasm_gate:
-                qs, instr_def = gate_defs[g]
-                map_qs = line_args[1].split(",")
-                for i, qs_i in enumerate(qs):
-                    instr_def = instr_def.replace(qs_i, map_qs[i])
-                instr = instr_def
-            if len(instr) > 0:
-                instr_lst_out.append(instr)
-        instr_lst_out_strip = [x.strip() for x in instr_lst_out]
-        qasm_line = ";".join(instr_lst_out_strip) + ";"
-        qasm_line = qasm_line.replace(";;", ";")
-    return qasm_line
+def _decompose_rccx_instr(instr: str) -> str:
+    try:
+        _, qs = instr.split(" ")
+        a, b, c = qs.strip(";").split(",")
+    except (AttributeError, ValueError) as err:
+        raise QasmError from err
+    instr_out = "// relative-phase CCX\n"
+    instr_out = f"u2(0,pi) {c};\n"
+    instr_out += f"u1(pi/4) {c};\n"
+    instr_out += f"cx {b},{c};\n"
+    instr_out += f"u1(-pi/4) {c};\n"
+    instr_out += f"cx {a},{c};\n"
+    instr_out += f"u1(pi/4) {c};\n"
+    instr_out += f"cx {b},{c};\n"
+    instr_out += f"u1(-pi/4) {c};\n"
+    instr_out += f"u2(0,pi) {c};\n"
+    return instr_out
 
 
-def _remove_barriers(qasm_str: str) -> str:
-    """Returns a copy of the input QASM with all barriers removed.
-
-    Args:
-        qasm_str: QASM to remove barriers from.
-    """
-    quoted_re = r"(?:\"[^\"]*?\")"
-    # Statements separated by semicolons
-    statement_re = r"((?:[^;{}\"]*?" + quoted_re + r"?)*[;{}])?"
-    # Comments begin with a pair of forward slashes and end with a new line
-    comment_re = r"(\n?//[^\n]*(?:\n|$))?"
-    statements_comments = re.findall(statement_re + comment_re, qasm_str)
-    lines = []
-    # Language is case sensitive. Whitespace is ignored
-    for statement, comment in statements_comments:
-        if re.match(r"^\s*barrier(?:(?:\s+)|(?:;))", statement) is None:
-            lines.append(statement + comment)
-    return "".join(lines)
-
-
-def convert_to_supported_qasm(qasm_str: str) -> str:
-    """Returns a copy of the input QASM compatible with the
-    :class:`~qbraid.transpiler.cirq_qasm.qasm_parser.QasmParser`.
-    Conversion includes deconstruction of custom defined gates, and
-    decomposition of unsupported gates/operations.
-
-    TODO: Breaks for qiskit>=0.43.0. Updates to helper functions
-    and support for new gates needed for latest qiskit version.
-
-    """
-    gate_defs = GATE_DEFS
-    qasm_lst_out = []
-    qasm_str = _remove_barriers(qasm_str)
-    qasm_lst = qasm_str.split("\n")
-
-    for _, qasm_line in enumerate(qasm_lst):
-        line_str = qasm_line
-        len_line = len(line_str)
-        line_args = line_str.split(" ")
-        # add custom gates to gate_defs dict
-        if line_args[0] == "gate":
-            gate = line_args[1]
-            qs = line_args[2].split(",")
-            instr = line_str.split("{")[1].strip("}").strip()
-            gate_defs[gate] = (qs, instr)
-            param_var = _get_param(gate)
-            param_def = _get_param(instr)
-            if all(v is not None for v in [param_var, param_def]):
-                match_gate = gate.replace(param_var, param_def)
-                gate_defs[match_gate] = (qs, instr)
-            line_str_out = "// " + line_str
-        # decompose cu gate into supported gates
-        elif len_line > 3 and line_str[0:3] == "cu(":
-            line_str_out = _decompose_cu_instr(line_str)
-        # decompose rxx gate into supported gates
-        elif len_line > 4 and line_str[0:4] == "rxx(":
-            line_str_out = _decompose_rxx_instr(line_str)
-        # swap out instructions for gates found in gate_defs
-        elif line_args[0] in gate_defs:
-            qs, instr = gate_defs[line_args[0]]
-            map_qs = line_args[1].strip(";").split(",")
-            for i, qs_i in enumerate(qs):
-                instr = instr.replace(qs_i, map_qs[i])
-            line_str_out = instr
-        else:
-            line_str_out = line_str
-        # find and replace any remaining instructions matching gates_defs.
-        # Necessary bc initial swap does not recurse for gates defined in
-        # terms of other gate(s) in gate_defs.
-        if line_str_out[0:2] != "//" and len(line_str_out) > 0:
-            line_str_out = _replace_gate_defs(line_str_out, gate_defs)
-
-        qasm_lst_out.append(line_str_out)
-
-    qasm_str_def = "\n".join(qasm_lst_out)
-    return qasm_str_def
+def _decompose_c3sqrtx_instr(instr: str) -> str:
+    try:
+        _, qs = instr.split(" ")
+        a, b, c, d = qs.strip(";").split(",")
+    except (AttributeError, ValueError) as err:
+        raise QasmError from err
+    instr_out = "// 3-controlled sqrt(X) gate\n"
+    instr_out = f"h {d}; cu1(pi/8) {a},{d}; h {d};\n"
+    instr_out += f"cx {a},{b};\n"
+    instr_out = f"h {d}; cu1(-pi/8) {b},{d}; h {d};\n"
+    instr_out += f"cx {a},{b};\n"
+    instr_out = f"h {d}; cu1(pi/8) {b},{d}; h {d};\n"
+    instr_out += f"cx {b},{c};\n"
+    instr_out = f"h {d}; cu1(-pi/8) {c},{d}; h {d};\n"
+    instr_out += f"cx {a},{c};\n"
+    instr_out = f"h {d}; cu1(pi/8) {c},{d}; h {d};\n"
+    instr_out += f"cx {b},{c};\n"
+    instr_out = f"h {d}; cu1(-pi/8) {c},{d}; h {d};\n"
+    instr_out += f"cx {a},{c};\n"
+    instr_out = f"h {d}; cu1(pi/8) {c},{d}; h {d};\n"
+    return instr_out
 
 
 def _format_qasm_string(qasm_string, skip_pattern):
@@ -262,7 +227,7 @@ def _convert_to_supported_qasm(qasm_str):
     """
     # temp hack to fix 'r' replacing last char of 'ecr'
     qasm_str = qasm_str.replace("ecr", "ecr_")
-    
+
     input_str = _remove_barriers(qasm_str)
 
     lines = input_str.strip("\n").split("\n")
@@ -286,3 +251,108 @@ def _convert_to_supported_qasm(qasm_str):
         lines.pop(gate_line_idx)
 
     return "\n".join(lines)
+
+
+def convert_to_supported_qasm(qasm_str: str) -> str:
+    qasm_lst_out = []
+    qasm = _convert_to_supported_qasm(qasm_str)
+    qasm_lst = qasm.split("\n")
+
+    for _, qasm_line in enumerate(qasm_lst):
+        line_str = qasm_line
+        len_line = len(line_str)
+        # decompose cu gate into supported gates
+        if len_line > 3 and line_str[0:3] == "cu(":
+            line_str_out = _decompose_cu_instr(line_str)
+        # decompose rxx gate into supported gates
+        elif len_line > 4 and line_str[0:4] == "rxx(":
+            line_str_out = _decompose_rxx_instr(line_str)
+        elif len_line > 4 and line_str[0:4] == "rccx":
+            line_str_out = _decompose_rccx_instr(line_str)
+        elif len_line > 7 and line_str[0:7] == "c3sqrtx":
+            line_str_out = _decompose_c3sqrtx_instr(line_str)
+        else:
+            line_str_out = line_str
+
+        qasm_lst_out.append(line_str_out)
+
+    qasm_str_def = "\n".join(qasm_lst_out)
+    return qasm_str_def
+
+
+def test_circuit_equality():
+    count = 0
+    errors = []
+    non_equal_circuits = []
+
+    total = 50
+    for _ in range(total):
+        try:
+            qiskit_circuit = random_circuit(num_qubits=4, depth=1)
+            qasm = qiskit_circuit.qasm()
+            qasm_out = convert_to_supported_qasm(qasm)
+            cirq_circuit = _convert_to_line_qubits(
+                QasmParser().parse(qasm_out).circuit, rev_qubits=True
+            )
+            equal = circuits_allclose(qiskit_circuit, cirq_circuit)
+            if not equal:
+                print(qiskit_circuit)
+                print(cirq_circuit)
+
+            if not equal:
+                non_equal_circuits.append((qasm, qasm_out))
+            else:
+                count += 1
+
+        except Exception as err:
+            errors.append((qasm, qasm_out, err))
+
+    print(f"Passed {count}/{total} tests")
+
+    if non_equal_circuits:
+        print(f"\n{len(non_equal_circuits)} non-equal circuits found:")
+        for qasm, qasm_out in non_equal_circuits:
+            print(f"\nQASM:\n{qasm}\n\nQASM_OUT:\n{qasm_out}\n\nNot Equal")
+
+    if errors:
+        print(f"\n{len(errors)} errors occurred:")
+        for qasm, qasm_out, err in errors:
+            print(f"\nQASM:\n{qasm}\n\nQASM_OUT:\n{qasm_out}\n\nError: {err}")
+
+
+qasm_0 = """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[2];
+cu(5.64196838664496,3.6007731777948906,3.730884212463305, 5.683833391913177) q[1],q[0];
+"""
+
+qasm_1 = """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[3];
+rccx q[1],q[2],q[0];
+"""
+
+qasm_2 = """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[4];
+c3sqrtx q[3],q[1],q[2],q[0];
+"""
+
+qasm = qasm_2
+qasm_out = convert_to_supported_qasm(qasm)
+print(qasm)
+print()
+print(qasm_out)
+qiskit_circuit = QuantumCircuit.from_qasm_str(qasm_out)
+print(qiskit_circuit)
+print()
+cirq_circuit = _convert_to_line_qubits(QasmParser().parse(qasm_out).circuit, rev_qubits=True)
+print(cirq_circuit)
+print()
+equal = circuits_allclose(qiskit_circuit, cirq_circuit)
+print(f"equal: {equal}")
+
+# test_circuit_equality()

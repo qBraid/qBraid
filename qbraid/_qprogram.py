@@ -18,20 +18,36 @@ Module defining input / output types for a quantum backend:
 """
 from typing import Union
 
-from braket.circuits import Circuit as _BraketCircuit
-from cirq import Circuit as _CirqCircuit
-from pyquil import Program as _pyQuilProgram
-from pytket.circuit import Circuit as _PytketCircuit
-from qiskit import QuantumCircuit as _QiskitCircuit
+import braket.circuits
+import cirq
+import pyquil
+import pytket.circuit
+import qiskit
 
 # Supported quantum programs.
 QASMType = str
-QPROGRAM = Union[_BraketCircuit, _CirqCircuit, _QiskitCircuit, _pyQuilProgram, _PytketCircuit]
 
-_PROGRAMS = [_BraketCircuit, _CirqCircuit, _QiskitCircuit, _pyQuilProgram, _PytketCircuit]
+QPROGRAM = Union[
+    braket.circuits.Circuit,
+    cirq.Circuit,
+    qiskit.QuantumCircuit,
+    pyquil.Program,
+    pytket.circuit.Circuit,
+    QASMType,
+]
+
+_PROGRAMS = [
+    braket.circuits.Circuit,
+    cirq.Circuit,
+    qiskit.QuantumCircuit,
+    pyquil.Program,
+    pytket.circuit.Circuit,
+]
+
 
 # pylint: disable-next=bad-str-strip-call
-QPROGRAM_TYPES = [str(x).strip("<class").strip(">").strip(" ").strip("'") for x in _PROGRAMS]
-QPROGRAM_TYPES.append("qasm")
+_PROGRAM_TYPES = [str(x).strip("<class").strip(">").strip(" ").strip("'") for x in _PROGRAMS]
+QPROGRAM_TYPES = _PROGRAMS + [QASMType]
 
-QPROGRAM_LIBS = [x.split(".")[0] for x in QPROGRAM_TYPES]
+_PROGRAM_LIBS = [x.split(".")[0] for x in _PROGRAM_TYPES]
+QPROGRAM_LIBS = _PROGRAM_LIBS + ["qasm2", "qasm3"]
