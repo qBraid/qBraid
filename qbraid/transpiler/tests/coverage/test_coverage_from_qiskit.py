@@ -40,6 +40,8 @@ def generate_params(varnames):
             params[ra] = np.random.rand() * 2 * np.pi
     if "num_ctrl_qubits" in varnames:
         params["num_ctrl_qubits"] = np.random.randint(1, 7)
+    if "phase" in varnames:
+        params["phase"] = np.random.rand() * 2 * np.pi
     return params
 
 

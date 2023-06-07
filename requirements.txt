@@ -4,5 +4,5 @@ numpy>=1.17
 pyquil>=3.5.4,<3.6.0
 pytket~=1.15.0
 qiskit~=0.43.0
-qiskit-ibm-provider~=0.5.3
+qiskit-ibm-provider~=0.6.0
 requests~=2.31.0

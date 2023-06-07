@@ -63,6 +63,7 @@ def _decompose_cu_instr(instr: str) -> str:
 def _decompose_rxx_instr(instr: str) -> str:
     """two-qubit XX rotation"""
     try:
+        instr = instr.replace(", ", ",")
         rxx_gate, qs = instr.split(" ")
         a, b = qs.strip(";").split(",")
         theta = _get_param(rxx_gate)
