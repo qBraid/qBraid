@@ -123,7 +123,7 @@ def convert_to_supported_qasm(qasm_str):
     """
     # temp hack to fix 'r' replacing last char of 'ecr'
     qasm_str = qasm_str.replace("ecr", "ecr_")
-    
+
     input_str = _remove_barriers(qasm_str)
 
     lines = input_str.strip("\n").split("\n")
@@ -150,5 +150,3 @@ def convert_to_supported_qasm(qasm_str):
     qasm_out = replace_qelib1_defs(qasm)
 
     return qasm_out
-
-

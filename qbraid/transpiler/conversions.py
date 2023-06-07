@@ -24,7 +24,6 @@ from qbraid.transpiler.cirq_braket import from_braket, to_braket
 from qbraid.transpiler.cirq_pyquil import from_pyquil, to_pyquil
 from qbraid.transpiler.cirq_pytket import from_pytket, to_pytket
 from qbraid.transpiler.cirq_qasm import from_qasm, to_qasm
-from qbraid.transpiler.cirq_qasm.qasm_conversions import from_qasm
 from qbraid.transpiler.cirq_qiskit import from_qiskit, to_qiskit
 from qbraid.transpiler.exceptions import CircuitConversionError
 
