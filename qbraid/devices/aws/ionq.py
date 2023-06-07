@@ -11,6 +11,7 @@
 Module defining Utility functions to be able to run IonQ device from AWS
 """
 import pytket
+import pytket.extensions.braket
 from braket.circuits import Circuit
 from pytket._tket.circuit._library import _TK1_to_RzRx  # type: ignore
 from pytket.passes import RebaseCustom
@@ -23,8 +24,6 @@ from pytket.predicates import (
     NoMidMeasurePredicate,
     NoSymbolsPredicate,
 )
-
-import qbraid
 
 HARMONY_MAX_QUBITS = 11
 
@@ -69,7 +68,7 @@ ionq_rebase_pass = RebaseCustom(
 )  # tk1_replacement
 
 
-def braket_ionq_compilation(circuit: Circuit) -> Circuit:
+def braket_ionq_compilation(circuit) -> Circuit:
     """
     Compiles a Braket circuit to a Braket circuit that can run on IonQ Harmony.
 
@@ -79,8 +78,13 @@ def braket_ionq_compilation(circuit: Circuit) -> Circuit:
     Returns:
         Circuit: The compiled Braket circuit that can run on IonQ Harmony.
     """
-    tk_circuit = qbraid.circuit_wrapper(circuit).transpile("pytket")
+    if isinstance(circuit, Circuit):
+        tk_circuit = pytket.extensions.braket.braket_convert.braket_to_tk(circuit)
+    else:
+        tk_circuit = circuit
+
     cu = CompilationUnit(tk_circuit, preds)
     ionq_rebase_pass.apply(cu)
     assert cu.check_all_predicates()
-    return qbraid.circuit_wrapper(tk_circuit).transpile("braket")
+    compiled, _, _ = pytket.extensions.braket.braket_convert.tk_to_braket(cu.circuit)
+    return compiled

@@ -19,6 +19,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING  # pylint: disable=unused-import
 
 from qbraid import circuit_wrapper
+from qbraid.devices.aws.ionq import braket_ionq_compilation
 
 from .exceptions import DeviceError
 
@@ -69,8 +70,15 @@ class DeviceLikeWrapper(ABC):
                 f"Number of qubits in circuit ({qbraid_circuit.num_qubits}) exceeds "
                 f"number of qubits in device ({self.num_qubits})."
             )
-        if input_run_package != device_run_package:
-            run_input = qbraid_circuit.transpile(device_run_package)
+
+        if self._info["provider"] == "IonQ" and self._info["name"] == "Harmony":
+            if input_run_package not in ["pytket", "braket"]:
+                run_input = qbraid_circuit.transpile(device_run_package)
+            run_input = braket_ionq_compilation(run_input)
+        else:
+            if input_run_package != device_run_package:
+                run_input = qbraid_circuit.transpile(device_run_package)
+
         compat_run_input = self._vendor_compat_run_input(run_input)
         return compat_run_input, qbraid_circuit
 
