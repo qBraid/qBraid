@@ -25,19 +25,19 @@ if TYPE_CHECKING:
 
 
 class UnitaryCalculationError(QbraidError):
-    """Class for exceptions raised during unitary calculation"""
+    """Exception raised during unitary calculation"""
 
 
 def to_unitary(program: "qbraid.QPROGRAM", ensure_contiguous: Optional[bool] = False) -> np.ndarray:
-    """Calculates the unitary of any valid input quantum program.
+    """Calculate the unitary of a quantum program.
 
     Args:
-        program (:data:`~qbraid.QPROGRAM`): Any quantum program object supported by qBraid.
-        ensure_contiguous: If True, calculates unitary using contiguous qubit indexing
+        program: Quantum program object supported by qBraid.
+        ensure_contiguous: Calculate unitary using contiguous qubit indexing if True.
 
     Raises:
         ProgramTypeError: If the input quantum program is not supported.
-        UnitaryCalculationError: If the programs unitary could not be calculated.
+        UnitaryCalculationError: If the program's unitary could not be calculated.
 
     Returns:
         Matrix representation of the input quantum program.
@@ -101,18 +101,16 @@ def circuits_allclose(
     strict_gphase: Optional[bool] = False,
     **kwargs,
 ) -> bool:
-    """Check if quantum program unitaries are equivalent.
+    """Check if two quantum programs have equivalent unitaries.
 
     Args:
-        circuit0 (:data:`~qbraid.QPROGRAM`): First quantum program to compare
-        circuit1 (:data:`~qbraid.QPROGRAM`): Second quantum program to compare
-        index_contig: If True, calculates circuit unitaries using contiguous qubit indexing.
-        stric_gphase: If False, disregards global phase when verifying
-            equivalance of the input circuit's unitaries.
+        circuit0: First quantum program to compare.
+        circuit1: Second quantum program to compare.
+        index_contig: Calculate circuit unitaries using contiguous qubit indexing if True.
+        strict_gphase: Consider global phase when verifying equivalance if False.
 
     Returns:
-        True if the input circuits pass unitary equality check
-
+        True if the input circuits pass the unitary equality check.
     """
     unitary0 = to_unitary(circuit0, ensure_contiguous=index_contig)
     unitary1 = to_unitary(circuit1, ensure_contiguous=index_contig)
@@ -127,18 +125,16 @@ def circuits_allclose(
 
 
 def unitary_to_little_endian(matrix: np.ndarray) -> np.ndarray:
-    """Converts unitary calculated using big-endian system to its
-    equivalent form in a little-endian system.
+    """Convert a big-endian unitary matrix to little-endian.
 
     Args:
-        matrix: big-endian unitary
+        matrix: Big-endian unitary matrix.
 
     Raises:
-        ValueError: If input matrix is not unitary
+        ValueError: If the input matrix is not unitary.
 
     Returns:
-        little-endian unitary
-
+        Little-endian unitary matrix.
     """
     rank = len(matrix)
     if not np.allclose(np.eye(rank), matrix.dot(matrix.T.conj())):
@@ -152,13 +148,13 @@ def unitary_to_little_endian(matrix: np.ndarray) -> np.ndarray:
 
 
 def random_unitary_matrix(dim: int) -> np.ndarray:
-    """Create a random (complex) unitary matrix of order `dim`
+    """Create a random complex unitary matrix of given dimension.
 
     Args:
-        dim: integer square matrix dimension
+        dim: Dimension of the square matrix.
 
     Returns:
-        random unitary matrix of shape dim x dim
+        Random unitary matrix of shape dim x dim.
     """
     # Create a random complex matrix of size dim x dim
     matrix = np.random.randn(dim, dim) + 1j * np.random.randn(dim, dim)

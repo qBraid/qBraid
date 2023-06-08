@@ -23,21 +23,37 @@ def _equal(
     require_qubit_equality: bool = False,
     require_measurement_equality: bool = False,
 ) -> bool:
-    """Returns True if the circuits are equal, else False.
+    
+    """Compare two Cirq circuits for equality.
 
     Args:
-        circuit_one: Input circuit to compare to circuit_two.
-        circuit_two: Input circuit to compare to circuit_one.
-        require_qubit_equality: Requires that the qubits be equal
-            in the two circuits.
-        require_measurement_equality: Requires that measurements are equal on
-            the two circuits, meaning that measurement keys are equal.
+        circuit_one: The first circuit to compare.
+        circuit_two: The second circuit to compare.
+        require_qubit_equality: If True, the qubits in both circuits must be equal.
+        require_measurement_equality: If True, the measurements in both circuits must be equal.
 
-    Note:
-        If set(circuit_one.all_qubits()) = {LineQubit(0)},
-        then set(circuit_two_all_qubits()) must be {LineQubit(0)},
-        else the two are not equal.
-        If True, the qubits of both circuits must have a well-defined ordering.
+    Returns:
+        A boolean value indicating whether the two circuits are equal.
+
+    Notes:
+        - If `require_qubit_equality` is True, the qubits in both circuits must have the same
+          elements, but their order can differ.
+        - If `require_measurement_equality` is True, the measurements in both circuits must be
+          equal, meaning their measurement keys must match.
+        - If `require_qubit_equality` is False, the qubits of `circuit_one` are transformed to
+          match the qubits of `circuit_two`. This assumes that the qubits have a well-defined
+          ordering in both circuits.
+        - If `require_measurement_equality` is False, all measurements are removed from both
+          circuits before the comparison.
+
+    Example:
+        circuit1 = Circuit()
+        circuit2 = Circuit()
+
+        # Compare the circuits for equality, requiring qubit and measurement equality
+        result = _equal(circuit1, circuit2, require_qubit_equality=True,
+                        require_measurement_equality=True)
+        print(result)  # True if the circuits are equal, False otherwise
     """
     # Make a deepcopy only if it's necessary
     if not (require_qubit_equality and require_measurement_equality):
