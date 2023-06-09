@@ -81,8 +81,13 @@ def init_job(
         "vendorJobId": vendor_job_id,
         "qbraidDeviceId": device.id,
         "vendorDeviceId": device.vendor_device_id,
-        "circuitNumQubits": [circuit.num_qubits for circuit in circuits],
-        "circuitDepth": [circuit.depth for circuit in circuits],
+        "circuitNumQubits": circuits[0].num_qubits,
+        "circuitDepth": circuits[0].depth,
+        # NOTE : To be updated once the API schema is updated, see
+        #        discussion at -
+        #        https://github.com/qBraid/qBraid/pull/246#discussion_r1223385470
+        # "circuitNumQubits": [circuit.num_qubits for circuit in circuits],
+        # "circuitDepth": [circuit.depth for circuit in circuits],
         "shots": shots,
         "createdAt": datetime.utcnow(),
         "status": "UNKNOWN",  # this will be set after we get back the job ID and check status

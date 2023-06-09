@@ -14,7 +14,9 @@ Unit tests for post-processing of measurement results.
 """
 import pytest
 
+from qbraid import device_wrapper
 from qbraid.devices.result import _format_counts
+from qbraid.interface import random_circuit
 
 
 @pytest.mark.parametrize(
@@ -41,3 +43,37 @@ def test_format_counts(counts_raw, expected_out):
     counts_out = _format_counts(counts_raw)
     assert counts_out == expected_out  # check equivalance
     assert list(counts_out.items()) == list(expected_out.items())  # check ordering of keys
+
+
+@pytest.mark.skip(
+    reason="init-job endpoint error, see https://github.com/qBraid/qBraid/pull/246#pullrequestreview-1470511967"
+)
+@pytest.mark.parametrize("device_id", ["ibm_q_simulator_statevector", "aws_sv_sim"])
+def test_result_wrapper_measurements(device_id):
+    """Test result wrapper measurements method."""
+    circuit = random_circuit("qiskit", num_qubits=3, depth=3, measure=True)
+    sim = device_wrapper(device_id).run(circuit, shots=10)
+    qbraid_result = sim.result()
+    counts = qbraid_result.measurement_counts()
+    measurements = qbraid_result.measurements()
+    assert isinstance(counts, dict)
+    assert measurements.shape == (10, 3)
+
+
+@pytest.mark.skip(
+    reason="init-job endpoint error, see https://github.com/qBraid/qBraid/pull/246#pullrequestreview-1470511967"
+)
+@pytest.mark.parametrize("device_id", ["ibm_q_qasm_simulator", "ibm_q_simulator_statevector"])
+def test_result_wrapper_batch_measurements(device_id):
+    """Test result wrapper measurements method for circuit batch."""
+    circuit = random_circuit("qiskit", num_qubits=3, depth=3, measure=True)
+    sim = device_wrapper(device_id).run_batch([circuit, circuit, circuit], shots=10)
+    qbraid_result = sim.result()
+    counts = qbraid_result.measurement_counts()
+    measurements = qbraid_result.measurements()
+
+    assert isinstance(counts, list)
+    for count in counts:
+        assert isinstance(count, dict)
+
+    assert measurements.shape == (3, 10, 3)

@@ -280,34 +280,6 @@ def test_wait_for_final_state():
     assert is_status_final(status)
 
 
-@pytest.mark.parametrize("device_id", ["ibm_q_simulator_statevector", "aws_sv_sim"])
-def test_result_wrapper_measurements(device_id):
-    """Test result wrapper measurements method."""
-    circuit = random_circuit("qiskit", num_qubits=3, depth=3, measure=True)
-    sim = device_wrapper(device_id).run(circuit, shots=10)
-    qbraid_result = sim.result()
-    counts = qbraid_result.measurement_counts()
-    measurements = qbraid_result.measurements()
-    assert isinstance(counts, dict)
-    assert measurements.shape == (10, 3)
-
-
-@pytest.mark.parametrize("device_id", ["ibm_q_qasm_simulator", "ibm_q_simulator_statevector"])
-def test_result_wrapper_batch_measurements(device_id):
-    """Test result wrapper measurements method for circuit batch."""
-    circuit = random_circuit("qiskit", num_qubits=3, depth=3, measure=True)
-    sim = device_wrapper(device_id).run_batch([circuit, circuit, circuit], shots=10)
-    qbraid_result = sim.result()
-    counts = qbraid_result.measurement_counts()
-    measurements = qbraid_result.measurements()
-
-    assert isinstance(counts, list)
-    for count in counts:
-        assert isinstance(count, dict)
-
-    assert measurements.shape == (3, 10, 3)
-
-
 def test_aws_device_available():
     """Test BraketDeviceWrapper avaliable output identical"""
     device = device_wrapper("aws_dm_sim")
