@@ -8,7 +8,7 @@ your current working directory is the qBraid repo root.
 
 ## Pull request checklist
 
-1. `tox -e unit-tests`: All unit tests are passing. New + modified code has corresponding unit tests and satisfy `codecov` checks.
+1. `tox -e unit-tests`: All unit tests are passing. New + modified code has corresponding unit tests and satisfy `codecov` checks. To run remote tests (i.e. those requiring qBraid/AWS/IBM credentials), set environment variable `QBRAID_RUN_REMOTE_TESTS=True`.
 2. `tox -e docs`: Doc builds are passing. New + modified code has appropriate docstrings and tree stubs are updated, if applicable.
 3. `tox -e linters`: Code passes linters and formatters checks. Any exceptions or updates to code style configs are documented.
 4. `python tools/verify_headers.py`: New files have appropriate licensing headers. Running headers script passes checks.

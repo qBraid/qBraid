@@ -1,4 +1,4 @@
-name: Docs
+name: Unit tests (local)
 
 on:
   pull_request:
@@ -8,18 +8,21 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10']
 
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python
+    - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v4
       with:
-        python-version: 3.9
+        python-version: ${{ matrix.python-version }}
         cache: pip
     - name: Install dependencies
       run: |
         python -m pip install -U pip setuptools ipython
         python -m pip install 'tox<4'
-    - name: Build docs
+    - name: Tests
       run: |
-        tox -e docs
+        tox -e unit-tests

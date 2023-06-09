@@ -12,6 +12,8 @@
 Unit tests for the qbraid device layer.
 
 """
+import os
+
 import cirq
 import numpy as np
 import pytest
@@ -34,6 +36,11 @@ from qbraid.devices.ibm import (
     ibm_to_qbraid_id,
 )
 from qbraid.interface import random_circuit
+
+# Skip tests if IBM/AWS account auth/creds not configured
+skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
+REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM/AWS storage)"
+pytestmark = pytest.mark.skipif(skip_remote_tests, reason=REASON)
 
 
 def device_wrapper_inputs(vendor: str):
@@ -63,8 +70,8 @@ Device wrapper tests: initialization
 Coverage: all vendors, all available devices
 """
 
-inputs_braket_dw = device_wrapper_inputs("AWS")
-inputs_qiskit_dw = ibm_devices()
+inputs_braket_dw = [] if skip_remote_tests else device_wrapper_inputs("AWS")
+inputs_qiskit_dw = [] if skip_remote_tests else ibm_devices()
 
 
 def test_job_wrapper_type():
