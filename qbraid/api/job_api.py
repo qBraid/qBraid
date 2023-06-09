@@ -81,19 +81,20 @@ def init_job(
         "vendorJobId": vendor_job_id,
         "qbraidDeviceId": device.id,
         "vendorDeviceId": device.vendor_device_id,
-        "circuitNumQubits": circuits[0].num_qubits,
-        "circuitDepth": circuits[0].depth,
-        # NOTE : To be updated once the API schema is updated, see
-        #        discussion at -
-        #        https://github.com/qBraid/qBraid/pull/246#discussion_r1223385470
-        # "circuitNumQubits": [circuit.num_qubits for circuit in circuits],
-        # "circuitDepth": [circuit.depth for circuit in circuits],
+        "circuitNumQubits": circuits[0].num_qubits if len(circuits) > 1 else -1,
+        "circuitDepth": circuits[0].depth if len(circuits) > 1 else -1,
+        "circuitBatchNumQubits": [circuit.num_qubits for circuit in circuits],
+        "circuitBatchDepth": [circuit.depth for circuit in circuits],
         "shots": shots,
         "createdAt": datetime.utcnow(),
         "status": "UNKNOWN",  # this will be set after we get back the job ID and check status
         "qbraidStatus": "INITIALIZING",
     }
-    init_data["email"] = os.getenv("JUPYTERHUB_USER")  # this env variable exists in Lab by default.
+    user_email = os.getenv("JUPYTERHUB_USER")  # this env variable exists in Lab by default.
+    if not user_email:  # if not in Lab, try to get it from the session
+        user_email = session.user_email
+    init_data["email"] = user_email
+
     return session.post("/init-job", data=init_data).json()
 
 
