@@ -19,9 +19,9 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING  # pylint: disable=unused-import
 
 from qbraid import circuit_wrapper
-from qbraid.devices.ionq import braket_ionq_compilation
 
 from .exceptions import DeviceError
+from .ionq import braket_ionq_compilation
 
 if TYPE_CHECKING:
     import qbraid

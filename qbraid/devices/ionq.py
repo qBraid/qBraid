@@ -10,6 +10,8 @@
 """
 Module defining Utility functions to be able to run IonQ device from AWS
 """
+from typing import Union
+
 import pytket
 import pytket.extensions.braket
 from braket.circuits import Circuit
@@ -24,6 +26,8 @@ from pytket.predicates import (
     NoMidMeasurePredicate,
     NoSymbolsPredicate,
 )
+
+from ..wrappers import circuit_wrapper
 
 HARMONY_MAX_QUBITS = 11
 
@@ -68,18 +72,42 @@ ionq_rebase_pass = RebaseCustom(
 )  # tk1_replacement
 
 
-def braket_ionq_compilation(circuit) -> Circuit:
+def braket_ionq_compilation(circuit: Union[Circuit, pytket.circuit.Circuit]) -> Circuit:
     """
     Compiles a Braket circuit to a Braket circuit that can run on IonQ Harmony.
 
     Args:
-        circuit (Circuit): The input Braket circuit to be compiled.
+        circuit (Union[braket.circuits.Circuit, pytket.circuit.Circuit]):
+            The input Braket or PyTKET circuit to be compiled.
 
     Returns:
-        Circuit: The compiled Braket circuit that can run on IonQ Harmony.
+        braket.circuits.Circuit: The compiled Braket circuit that can run on IonQ Harmony.
+
+    Notes:
+        - If the input circuit is a braket Circuit, the function
+          transpiles it to a ``pytket.circuit.Circuit`` before compilation.
+        - The circuit is transpiled using qBraid's transpiler, if it contains
+          any of the following gates::
+
+                CPhaseShift00
+                CPhaseShift01
+                CPhaseShift10
+                CV
+                ECR
+                GPi
+                GPi2
+                MS
+                PSwap
+                Unitary
+
+        - Otherwise, the circuit is transpiled using ``pytket-braket``'s ``braket_to_tk``.
+
     """
     if isinstance(circuit, Circuit):
-        tk_circuit = pytket.extensions.braket.braket_convert.braket_to_tk(circuit)
+        try:
+            tk_circuit = pytket.extensions.braket.braket_convert.braket_to_tk(circuit)
+        except NotImplementedError:
+            tk_circuit = circuit_wrapper(circuit).transpile("pytket")
     else:
         tk_circuit = circuit
 

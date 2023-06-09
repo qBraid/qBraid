@@ -57,21 +57,16 @@ def get_braket_gates():
 braket_gates = get_braket_gates()
 
 
-def test_braket_ionq_compilation():
-    BASELINE = 27
-    failures = {}
-    for gate_name, gate in braket_gates.items():
-        if gate.qubit_count == 1:
-            source_circuit = braket.circuits.Circuit([braket.circuits.Instruction(gate, 0)])
-        else:
-            source_circuit = braket.circuits.Circuit(
-                [braket.circuits.Instruction(gate, range(gate.qubit_count))]
-            )
-        try:
-            braket_ionq_compilation(
-                source_circuit
-            )  # the function already has an assertion which checks that the predicates are satistfied
-        except Exception as e:
-            failures[gate_name] = e
+@pytest.mark.parametrize("gate_name", braket_gates)
+def test_braket_ionq_compilation(gate_name):
+    gate = braket_gates[gate_name]
+    if gate.qubit_count == 1:
+        source_circuit = braket.circuits.Circuit([braket.circuits.Instruction(gate, 0)])
+    else:
+        source_circuit = braket.circuits.Circuit(
+            [braket.circuits.Instruction(gate, range(gate.qubit_count))]
+        )
 
-    assert (len(braket_gates) - len(failures)) >= BASELINE
+        braket_ionq_compilation(
+            source_circuit
+        )  # the function already has an assertion which checks that the predicates are satistfied
