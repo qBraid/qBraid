@@ -12,8 +12,9 @@
 Unit tests for post-processing of measurement results.
 
 """
-import pytest
 import os
+
+import pytest
 
 from qbraid import device_wrapper
 from qbraid.devices.result import _format_counts
