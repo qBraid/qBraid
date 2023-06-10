@@ -363,7 +363,7 @@ def draw_circuit(qasm_str):
         else:
             line += " " * padding
         line += "".join(circuit[row_idx]).rstrip() + "\n"
-        if row_idx != circuit.shape[0] - 1:
+        if line.strip() != "":
             out += line
 
     return out[:-1]
