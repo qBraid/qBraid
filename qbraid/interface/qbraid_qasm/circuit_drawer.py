@@ -296,11 +296,18 @@ def get_collision_before_pos(circuit, x, y):
     return x
 
 
-def add_wires(circuit, g, pos):
+def add_wires(circuit, g, num_qregs, pos):
     """Adds wires to connect gates"""
     if pos == 0:
         return circuit
-    for y in range(3 * min(g.qregs) + 1, 3 * max(g.qregs) + 4, 3):
+
+    start_wire = min(g.qregs)
+    end_wire = max(g.qregs)
+    if g.gate_type == "m":
+        end_wire = num_qregs
+    for y in range(3 * start_wire + 1, 3 * end_wire + 4, 3):
+        while circuit[y, pos] == " ":
+            pos += 1
         collision_pos = get_collision_before_pos(circuit, pos - 1, y)
         circuit[y, collision_pos + 1 : pos] = ["-"] * (pos - collision_pos - 1)
 
@@ -332,7 +339,7 @@ def draw_circuit(qasm_str):
         if valid and gate_type is not None:
             g = Gate(line, num_qregs, num_cregs)
             circuit, pos = add_gate(circuit, g)
-            circuit = add_wires(circuit, g, pos)
+            circuit = add_wires(circuit, g, num_qregs, pos)
 
     circuit = add_cregs(circuit, num_cregs)
 
@@ -355,16 +362,8 @@ def draw_circuit(qasm_str):
             reg_idx += 1
         else:
             line += " " * padding
-        line += "".join(circuit[row_idx]) + "\n"
-        out += line
+        line += "".join(circuit[row_idx]).rstrip() + "\n"
+        if row_idx != circuit.shape[0] - 1:
+            out += line
 
-    return out
-
-
-qasm3_str = """
-bit[3] c;
-qubit[6] q;
-x q[0];
-y q[0];
-z q[0];"""
-print(draw_circuit(qasm3_str))
+    return out[:-1]
