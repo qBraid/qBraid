@@ -13,10 +13,15 @@ Unit tests for post-processing of measurement results.
 
 """
 import pytest
+import os
 
 from qbraid import device_wrapper
 from qbraid.devices.result import _format_counts
 from qbraid.interface import random_circuit
+
+# Skip tests if IBM/AWS account auth/creds not configured
+skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
+REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM/AWS storage)"
 
 
 @pytest.mark.parametrize(
@@ -45,9 +50,7 @@ def test_format_counts(counts_raw, expected_out):
     assert list(counts_out.items()) == list(expected_out.items())  # check ordering of keys
 
 
-@pytest.mark.skip(
-    reason="init-job endpoint error, see https://github.com/qBraid/qBraid/pull/246#pullrequestreview-1470511967"
-)
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 @pytest.mark.parametrize("device_id", ["ibm_q_simulator_statevector", "aws_sv_sim"])
 def test_result_wrapper_measurements(device_id):
     """Test result wrapper measurements method."""
@@ -60,9 +63,7 @@ def test_result_wrapper_measurements(device_id):
     assert measurements.shape == (10, 3)
 
 
-@pytest.mark.skip(
-    reason="init-job endpoint error, see https://github.com/qBraid/qBraid/pull/246#pullrequestreview-1470511967"
-)
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 @pytest.mark.parametrize("device_id", ["ibm_q_qasm_simulator", "ibm_q_simulator_statevector"])
 def test_result_wrapper_batch_measurements(device_id):
     """Test result wrapper measurements method for circuit batch."""
