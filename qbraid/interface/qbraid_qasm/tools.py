@@ -20,6 +20,7 @@ from cirq.circuits import Circuit
 from qiskit.circuit import QuantumCircuit
 
 from qbraid.transpiler.cirq_qasm.qasm_conversions import from_qasm, to_qasm
+from qbraid.transpiler.cirq_qasm.qelib1_defs import _decompose_rxx_instr
 
 QASMType = str
 
@@ -120,6 +121,10 @@ def _change_to_qasm_3(line: str) -> QASMType:
         return _build_qasm_3_reg(line, qreg_type=True)
     if line.startswith("creg"):
         return _build_qasm_3_reg(line, qreg_type=False)
+    if line.startswith("u("):
+        return line.replace("u(", "U(")
+    if line.startswith("rxx("):
+        return _decompose_rxx_instr(line)
     if line.startswith("measure"):
         return _build_qasm_3_measure(line)
     if line.startswith("opaque"):
@@ -143,7 +148,7 @@ def convert_to_qasm_3(qasm_2_str: str):
     #  a newline separated qasm 2 string
     # formatted_qasm_2 = circuit.qasm()
     qasm_3_str = """OPENQASM 3.0;
-    include 'stdgates.inc';"""
+include 'stdgates.inc';"""
 
     # add the gate from qelib1.inc not present in the
     # stdgates.inc file

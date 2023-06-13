@@ -19,11 +19,7 @@ from qiskit import QuantumCircuit
 from qbraid.interface import circuits_allclose
 from qbraid.interface.qbraid_cirq.tools import _convert_to_line_qubits
 from qbraid.transpiler.cirq_qasm.qasm_conversions import from_qasm
-from qbraid.transpiler.cirq_qasm.qasm_preprocess import (
-    _convert_to_supported_qasm,
-    _remove_barriers,
-    convert_to_supported_qasm,
-)
+from qbraid.transpiler.cirq_qasm.qasm_preprocess import _remove_barriers, convert_to_supported_qasm
 
 qasm_0 = """OPENQASM 2.0;
 include "qelib1.inc";
@@ -40,7 +36,19 @@ csx q[0],q[1];
 rxx(5.603791034636421) q[2],q[0];
 """
 
-qasm_lst = [qasm_0]
+qasm_1 = """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[5];
+rccx q[1],q[2],q[0];
+cu(5.64,3.60,3.73, 5.68) q[1],q[0];
+c3x q[1],q[3],q[0],q[2];
+c3sqrtx q[3],q[1],q[2],q[0];
+c4x q[2],q[0],q[1],q[4],q[3];
+rc3x q[1],q[2],q[0],q[3];
+"""
+
+qasm_lst = [qasm_0, qasm_1]
 
 def strings_equal(s1, s2):
     """Check if two strings are equal, ignoring spaces and newlines."""
@@ -185,7 +193,7 @@ cx q[1],q[0];
 rx(-pi/2) q[1];
 rx(-pi/2) q[0];
 """
-    qasm_out = _convert_to_supported_qasm(qasm_in)
+    qasm_out = convert_to_supported_qasm(qasm_in)
     print(qasm_out)
     assert strings_equal(qasm_out, expected_out)
 
@@ -207,7 +215,7 @@ qreg q[2];
 rz(-1.0*5.07865952845335) q[1];
 ry(2.00367210595874/2) q[0];
 """
-    qasm_out = _convert_to_supported_qasm(qasm_in)
+    qasm_out = convert_to_supported_qasm(qasm_in)
     assert strings_equal(qasm_out, expected_out)
 
 
@@ -233,7 +241,7 @@ cx q[1],q[0];
 rx(-pi/2) q[2];
 rx(-pi/2) q[0];
 """
-    qasm_out = _convert_to_supported_qasm(qasm_in)
+    qasm_out = convert_to_supported_qasm(qasm_in)
     assert strings_equal(qasm_out, expected_out)
 
 
@@ -255,7 +263,7 @@ rzx(pi/4) q[0],q[1];
 x q[0];
 rzx(-pi/4) q[0],q[1];
 """
-    qasm_out = _convert_to_supported_qasm(qasm_in)
+    qasm_out = convert_to_supported_qasm(qasm_in)
     assert strings_equal(qasm_out, expected_out)
 
 
@@ -286,5 +294,5 @@ rz(-pi/4) q[1];
 cx q[0],q[1];
 h q[1];
 """
-    qasm_out = _convert_to_supported_qasm(qasm_in)
+    qasm_out = convert_to_supported_qasm(qasm_in)
     assert strings_equal(qasm_out, expected_out)
