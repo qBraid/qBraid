@@ -232,6 +232,7 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
 
         """
         run_input, qbraid_circuit = self._compat_run_input(run_input)
+
         if "s3_destination_folder" not in kwargs:
             kwargs["s3_destination_folder"] = self._default_s3_folder
         aws_quantum_task = self.vendor_dlo.run(run_input, *args, **kwargs)
