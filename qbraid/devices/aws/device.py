@@ -239,7 +239,7 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
         metadata = aws_quantum_task.metadata()
         shots = 0 if "shots" not in metadata else metadata["shots"]
         vendor_job_id = aws_quantum_task.metadata()["quantumTaskArn"]
-        job_id = init_job(vendor_job_id, self, qbraid_circuit, shots)
+        job_id = init_job(vendor_job_id, self, [qbraid_circuit], shots)
         return AwsQuantumTaskWrapper(
             job_id, vendor_job_id=vendor_job_id, device=self, vendor_jlo=aws_quantum_task
         )

@@ -40,7 +40,7 @@ def _qbraid_jobs_enabled():
 def init_job(
     vendor_job_id: str,
     device: "qbraid.devices.DeviceLikeWrapper",
-    circuit: "qbraid.transpiler.QuantumProgramWrapper",
+    circuits: "qbraid.transpiler.QuantumProgramWrapper",
     shots: int,
 ) -> str:
     """Initialize data dictionary for new qbraid job and
@@ -49,7 +49,7 @@ def init_job(
     Args:
         vendor_job_id: Job ID provided by device vendor
         device: Wrapped quantum device
-        circuit: Wrapped quantum circuit
+        circuit: Wrapped quantum circuit list
         shots: Number of shots
 
     Returns:
@@ -81,14 +81,20 @@ def init_job(
         "vendorJobId": vendor_job_id,
         "qbraidDeviceId": device.id,
         "vendorDeviceId": device.vendor_device_id,
-        "circuitNumQubits": circuit.num_qubits,
-        "circuitDepth": circuit.depth,
+        "circuitNumQubits": circuits[0].num_qubits if len(circuits) == 1 else None,
+        "circuitDepth": circuits[0].depth if len(circuits) == 1 else None,
+        "circuitBatchNumQubits": [circuit.num_qubits for circuit in circuits],
+        "circuitBatchDepth": [circuit.depth for circuit in circuits],
         "shots": shots,
         "createdAt": datetime.utcnow(),
         "status": "UNKNOWN",  # this will be set after we get back the job ID and check status
         "qbraidStatus": "INITIALIZING",
     }
-    init_data["email"] = os.getenv("JUPYTERHUB_USER")  # this env variable exists in Lab by default.
+    user_email = os.getenv("JUPYTERHUB_USER")  # this env variable exists in Lab by default.
+    if not user_email:  # if not in Lab, try to get it from the session
+        user_email = session.user_email
+    init_data["email"] = user_email
+
     return session.post("/init-job", data=init_data).json()
 
 

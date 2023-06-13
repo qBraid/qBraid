@@ -20,13 +20,23 @@ from qbraid.devices.result import ResultWrapper
 class IBMResultWrapper(ResultWrapper):
     """Qiskit ``Result`` wrapper class."""
 
+    def _format_measurements(self, memory_list):
+        """Format the measurements into int for the given memory list"""
+        formatted_meas = []
+        for str_shot in memory_list:
+            lst_shot = [int(x) for x in list(str_shot)]
+            formatted_meas.append(lst_shot)
+        return formatted_meas
+
     def measurements(self):
         """Return measurements as list"""
-        qiskit_meas = self.vendor_rlo.get_memory()
-        qbraid_meas = []
-        for str_shot in qiskit_meas:
-            lst_shot = [int(x) for x in list(str_shot)]
-            qbraid_meas.append(lst_shot)
+        num_circuits = len(self.vendor_rlo.results)
+        qiskit_meas = [self.vendor_rlo.get_memory(i) for i in range(num_circuits)]
+        qbraid_meas = [self._format_measurements(qiskit_meas[i]) for i in range(num_circuits)]
+
+        if num_circuits == 1:
+            qbraid_meas = qbraid_meas[0]
+
         return np.array(qbraid_meas)
 
     def raw_counts(self):
