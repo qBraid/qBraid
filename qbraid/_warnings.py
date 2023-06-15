@@ -35,8 +35,8 @@ def _check_version():
 
     # pylint: disable=import-outside-toplevel
     from ._version import __version__ as version_local
-    from .api.session import QbraidSession
     from .api.job_api import _running_in_lab
+    from .api.session import QbraidSession
 
     if not _running_in_lab():
         return
