@@ -16,20 +16,10 @@ import string
 
 import braket
 import numpy as np
+import pytest
 import scipy
 
 import qbraid
-
-#############
-### BASE ####
-#############
-
-BRAKET_BASELINE = 129
-ALLOWANCE = 2
-
-#############
-### UTILS ###
-#############
 
 
 def generate_params(varnames):
@@ -65,10 +55,8 @@ def get_braket_gates():
 ### TESTS ###
 #############
 
-TARGETS = ["cirq", "pyquil", "pytket", "qiskit"]
+TARGETS = [("cirq", 1.0), ("pyquil", 1.0), ("pytket", 1.0), ("qiskit", 1.0)]
 braket_gates = get_braket_gates()
-paramslist = [(target, gate) for target in TARGETS for gate in braket_gates]
-failures = {}
 
 
 def convert_from_braket_to_x(target, gate_name):
@@ -85,23 +73,22 @@ def convert_from_braket_to_x(target, gate_name):
     assert qbraid.interface.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
 
 
-def test_braket_coverage():
-    for target in TARGETS:
-        for gate_name in braket_gates:
-            try:
-                convert_from_braket_to_x(target, gate_name)
-            except Exception as e:
-                failures[f"{target}-{gate_name}"] = e
+@pytest.mark.parametrize(("target", "baseline"), TARGETS)
+def test_braket_coverage(target, baseline):
+    ACCURACY_BASELINE = baseline
+    ALLOWANCE = 0.01
+    failures = {}
+    for gate_name in braket_gates:
+        try:
+            convert_from_braket_to_x(target, gate_name)
+        except Exception as e:
+            failures[f"{target}-{gate_name}"] = e
 
-    total_tests = len(braket_gates) * len(TARGETS)
+    total_tests = len(braket_gates)
     nb_fails = len(failures)
     nb_passes = total_tests - nb_fails
-
-    print(
-        f"A total of {len(braket_gates)} gates were tested (for a total of {total_tests} tests). {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed."
-    )
-    print("Failures:", failures.keys())
+    accuracy = float(nb_passes) / float(total_tests)
 
     assert (
-        nb_passes >= BRAKET_BASELINE - ALLOWANCE
-    ), f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed (expected >= {BRAKET_BASELINE}).\nFailures: {failures.keys()}\n\n"
+        nb_passes >= ACCURACY_BASELINE - ALLOWANCE
+    ), f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed (expected >= {ACCURACY_BASELINE}).\nFailures: {failures.keys()}\n\n"

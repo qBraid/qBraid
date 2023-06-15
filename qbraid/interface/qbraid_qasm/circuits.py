@@ -23,12 +23,12 @@ QASMType = str
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
 
-def qasm_bell() -> QASMType:
+def qasm2_bell() -> QASMType:
     """Returns QASM2 bell circuit"""
     return open(os.path.join(current_dir, "bell.qasm"), mode="r", encoding="utf-8").read()
 
 
-def qasm_shared15():
+def qasm2_shared15():
     """Returns QASM2 for qBraid `TestSharedGates`."""
     return open(os.path.join(current_dir, "shared_15.qasm"), mode="r", encoding="utf-8").read()
 
@@ -84,7 +84,7 @@ def create_gateset_qasm(max_operands) -> np.ndarray:
     return gates
 
 
-def _qasm_random(
+def _qasm3_random(
     num_qubits: Optional[int] = None,
     depth: Optional[int] = None,
     max_operands: Optional[int] = None,

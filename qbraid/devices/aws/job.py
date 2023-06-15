@@ -37,8 +37,7 @@ class AwsQuantumTaskWrapper(JobLikeWrapper):
 
     def _get_status(self):
         """Returns status from Braket QuantumTask object metadata."""
-        # return self.vendor_jlo.state()
-        return self.vendor_jlo.metadata()["status"]
+        return self.vendor_jlo.state()
 
     def result(self) -> AwsGateModelResultWrapper:
         """Return the results of the job."""

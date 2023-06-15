@@ -133,7 +133,7 @@ def _change_to_qasm_3(line: str) -> QASMType:
     return line + "\n"
 
 
-def convert_to_qasm_3(qasm_2_str: str):
+def convert_to_qasm3(qasm_2_str: str):
     """Convert a QASM 2.0 string to QASM 3.0 string
 
     Args:

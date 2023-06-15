@@ -16,9 +16,9 @@ from qiskit.circuit import QuantumCircuit
 from qiskit.qasm3 import loads
 
 from qbraid.interface import circuits_allclose, random_circuit
-from qbraid.interface.qbraid_qasm.circuits import _qasm_random, qasm_bell, qasm_shared15
+from qbraid.interface.qbraid_qasm.circuits import _qasm3_random, qasm2_bell, qasm2_shared15
 from qbraid.interface.qbraid_qasm.tools import (
-    convert_to_qasm_3,
+    convert_to_qasm3,
     qasm_depth,
     qasm_num_qubits,
     qasm_qubits,
@@ -28,19 +28,19 @@ from qbraid.interface.qbraid_qasm.tools import (
 def test_qasm_qubits():
     """test calculate qasm qubit"""
 
-    assert qasm_qubits(qasm_bell()) == ["qreg q[2];"]
-    assert qasm_qubits(qasm_shared15()) == ["qreg q[4];"]
+    assert qasm_qubits(qasm2_bell()) == ["qreg q[2];"]
+    assert qasm_qubits(qasm2_shared15()) == ["qreg q[4];"]
 
 
 def test_qasm_num_qubits():
-    assert qasm_num_qubits(qasm_bell()) == 2
-    assert qasm_num_qubits(qasm_shared15()) == 4
+    assert qasm_num_qubits(qasm2_bell()) == 2
+    assert qasm_num_qubits(qasm2_shared15()) == 4
 
 
 def test_qasm_depth():
     """test calcualte qasm depth"""
-    assert qasm_depth(qasm_bell()) == 2
-    assert qasm_depth(qasm_shared15()) == 22
+    assert qasm_depth(qasm2_bell()) == 2
+    assert qasm_depth(qasm2_shared15()) == 22
 
 
 def _check_output(output, expected):
@@ -63,10 +63,10 @@ def _check_output(output, expected):
         (None, None, None, None, True),  # Test case 3: Generate random circuit with measurement
     ],
 )
-def test_qasm_random(num_qubits, depth, max_operands, seed, measure):
+def test_qasm3_random(num_qubits, depth, max_operands, seed, measure):
     """Test random circuit generation using _qasm_random"""
 
-    circuit = _qasm_random(
+    circuit = _qasm3_random(
         num_qubits=num_qubits, depth=depth, max_operands=max_operands, seed=seed, measure=measure
     )
 
@@ -75,9 +75,9 @@ def test_qasm_random(num_qubits, depth, max_operands, seed, measure):
         assert qasm_num_qubits(circuit) == num_qubits
 
 
-def test_qasm_random_with_known_seed():
+def test_qasm3_random_with_known_seed():
     # Test case 4: Generate a random circuit with measurement with known Seed and compare with expected output
-    circuit = _qasm_random(num_qubits=3, depth=3, max_operands=3, seed=42, measure=True)
+    circuit = _qasm3_random(num_qubits=3, depth=3, max_operands=3, seed=42, measure=True)
     assert qasm_num_qubits(circuit) == 3
 
     out__expected = """
@@ -106,7 +106,7 @@ c[2] = measure q[2];
     _check_output(circuit, out__expected)
 
 
-def test_convert_to_qasm_3():
+def test_convert_to_qasm3():
     """test the conversion of qasm 2 to 3"""
     lib_dir = os.path.dirname(os.path.dirname(__file__)) + "/qasm_lib"
     gate_def_qasm3 = open(
@@ -129,7 +129,7 @@ def test_convert_to_qasm_3():
     bit[1] c;
     bit[12] bits;"""
 
-    _check_output(convert_to_qasm_3(test_qregs), test_qregs_expected)
+    _check_output(convert_to_qasm3(test_qregs), test_qregs_expected)
 
     # 2. Measure statement conversion
     test_measure = """
@@ -150,7 +150,7 @@ def test_convert_to_qasm_3():
     c = measure q;
     c[1] = measure q[0];
     """
-    _check_output(convert_to_qasm_3(test_measure), test_measure_expected)
+    _check_output(convert_to_qasm3(test_measure), test_measure_expected)
 
     # 3. Opaque comment conversion
     test_opaque = """
@@ -170,7 +170,7 @@ def test_convert_to_qasm_3():
     // opaque custom_gate (a,b,c) p,q,r;
     """
 
-    _check_output(convert_to_qasm_3(test_opaque), test_opaque_expected)
+    _check_output(convert_to_qasm3(test_opaque), test_opaque_expected)
 
     # 4. std header change
     test_header = """
@@ -185,7 +185,7 @@ def test_convert_to_qasm_3():
     {gate_def_qasm3}
     qubit[1] q;
     """
-    _check_output(convert_to_qasm_3(test_header), test_header_expected)
+    _check_output(convert_to_qasm3(test_header), test_header_expected)
 
     # 5. Unsupported gate conversion
     test_unsupported = """
@@ -221,7 +221,7 @@ def test_convert_to_qasm_3():
     c3sqrtx q[0], q[1], q[2], q[3];
     c4x q[0], q[1], q[2], q[3], q[4];
     """
-    _check_output(convert_to_qasm_3(test_unsupported), test_unsupported_expected)
+    _check_output(convert_to_qasm3(test_unsupported), test_unsupported_expected)
 
 
 def _generate_valid_qasm_strings(seed=42, gates_to_skip=None, num_circuits=100):
@@ -258,7 +258,7 @@ def _generate_valid_qasm_strings(seed=42, gates_to_skip=None, num_circuits=100):
 @pytest.mark.parametrize("qasm2_str", _generate_valid_qasm_strings(gates_to_skip=["r"]))
 def test_random_conversion_to_qasm3(qasm2_str):
     """test random gates conversion"""
-    qasm3_str = convert_to_qasm_3(qasm2_str)
+    qasm3_str = convert_to_qasm3(qasm2_str)
     circuit_orig = QuantumCircuit.from_qasm_str(qasm2_str)
     circuit_test = loads(qasm3_str)
 
@@ -292,7 +292,7 @@ def test_u0_gate_conversion():
     u0(0.5) q[0];
     """
 
-    _check_output(convert_to_qasm_3(test_u0), test_u0_expected)
+    _check_output(convert_to_qasm3(test_u0), test_u0_expected)
 
 
 def test_rxx_gate_conversion():
@@ -331,4 +331,4 @@ def test_rxx_gate_conversion():
     h q[0];
     """
 
-    _check_output(convert_to_qasm_3(test_rxx), test_rxx_expected)
+    _check_output(convert_to_qasm3(test_rxx), test_rxx_expected)
