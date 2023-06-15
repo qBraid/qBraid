@@ -45,7 +45,7 @@ def to_unitary(program: "qbraid.QPROGRAM", ensure_contiguous: Optional[bool] = F
     to_unitary_function: Callable[[Any], np.ndarray]
 
     if isinstance(program, str):
-        package = "qasm"
+        package = "qasm2"
     else:
         try:
             package = program.__module__
@@ -75,7 +75,7 @@ def to_unitary(program: "qbraid.QPROGRAM", ensure_contiguous: Optional[bool] = F
         from qbraid.interface.qbraid_pytket.tools import _unitary_from_pytket
 
         to_unitary_function = _unitary_from_pytket
-    elif "qasm" in package:
+    elif "qasm2" in package:
         from qbraid.interface.qbraid_qasm.tools import _unitary_from_qasm
 
         to_unitary_function = _unitary_from_qasm

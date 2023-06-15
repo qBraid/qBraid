@@ -73,7 +73,7 @@ Construct a quantum program of any supported program type,
 ```python
 >>> from qbraid import QPROGRAM_LIBS
 >>> QPROGRAM_LIBS
-['braket', 'cirq', 'qiskit', 'pyquil', 'pytket', 'qasm']
+['braket', 'cirq', 'qiskit', 'pyquil', 'pytket', 'qasm2']
 ```
 
 and use the `circuit_wrapper()` to convert to any other supported program type:

@@ -16,19 +16,9 @@ import string
 
 import numpy as np
 import pyquil
+import pytest
 
 import qbraid
-
-#############
-### BASE ####
-#############
-
-PYQUIL_BASELINE = 84
-ALLOWANCE = 2
-
-#############
-### UTILS ###
-#############
 
 
 def generate_params(varnames):
@@ -69,10 +59,8 @@ def get_pyquil_gates():
 ### TESTS ###
 #############
 
-TARGETS = ["braket", "cirq", "pytket", "qiskit"]
+TARGETS = [("braket", 0.77), ("cirq", 0.77), ("pytket", 0.77), ("qiskit", 0.77)]
 pyquil_gates = get_pyquil_gates()
-paramslist = [(target, gate) for target in TARGETS for gate in pyquil_gates]
-failures = {}
 
 
 def convert_from_pyquil_to_x(target, gate_name):
@@ -83,23 +71,22 @@ def convert_from_pyquil_to_x(target, gate_name):
     assert qbraid.interface.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
 
 
-def test_pyquil_coverage():
-    for target in TARGETS:
-        for gate_name in pyquil_gates:
-            try:
-                convert_from_pyquil_to_x(target, gate_name)
-            except Exception as e:
-                failures[f"{target}-{gate_name}"] = e
+@pytest.mark.parametrize(("target", "baseline"), TARGETS)
+def test_pyquil_coverage(target, baseline):
+    ACCURACY_BASELINE = baseline
+    ALLOWANCE = 0.01
+    failures = {}
+    for gate_name in pyquil_gates:
+        try:
+            convert_from_pyquil_to_x(target, gate_name)
+        except Exception as e:
+            failures[f"{target}-{gate_name}"] = e
 
-    total_tests = len(pyquil_gates) * len(TARGETS)
+    total_tests = len(pyquil_gates)
     nb_fails = len(failures)
     nb_passes = total_tests - nb_fails
-
-    print(
-        f"A total of {len(pyquil_gates)} gates were tested (for a total of {total_tests} tests). {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed."
-    )
-    print("Failures:", failures.keys())
+    accuracy = float(nb_passes) / float(total_tests)
 
     assert (
-        nb_passes >= PYQUIL_BASELINE - ALLOWANCE
-    ), f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed (expected >= {PYQUIL_BASELINE}).\nFailures: {failures.keys()}\n\n"
+        accuracy >= ACCURACY_BASELINE - ALLOWANCE
+    ), f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed (expected >= {ACCURACY_BASELINE}).\nFailures: {failures.keys()}\n\n"

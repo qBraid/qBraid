@@ -17,6 +17,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING
 
 from .session import QbraidSession
+from qbraid.display_utils import running_in_lab
 
 if TYPE_CHECKING:
     import qbraid
@@ -25,15 +26,14 @@ if TYPE_CHECKING:
 def _qbraid_jobs_enabled():
     """Returns True if running qBraid Lab and qBraid Quantum Jobs
     proxy is enabled. Otherwise, returns False."""
-    qbraid_envs_path = os.path.join(os.path.expanduser("~"), ".qbraid", "environments")
-    slug_dir_proxy_file = os.path.join(qbraid_envs_path, "qbraid_sdk_9j9sjy", "qbraid", "proxy")
-
-    # Location of proxy file for SDK environment in qBraid Lab.
-    if os.path.isfile(slug_dir_proxy_file):
-        with open(slug_dir_proxy_file) as f:  # pylint: disable=unspecified-encoding
+    slug_path = os.path.join(
+        os.path.expanduser("~"), ".qbraid", "environments", "qbraid_sdk_9j9sjy"
+    )
+    proxy_file = os.path.join(slug_path, "qbraid", "proxy")
+    if os.path.isfile(proxy_file):
+        with open(proxy_file) as f:  # pylint: disable=unspecified-encoding
             firstline = f.readline().rstrip()
-            if firstline == "active = true":  # check if proxy is active or not
-                return True
+            return "active = true" in firstline  # check if proxy is active or not
     return False
 
 
@@ -68,7 +68,7 @@ def init_job(
     # instead of creating a new job document, we instead query the user jobs
     # for the ``vendorJobId`` (for Amazon Braket this is the QuantumTask arn),
     # and return the correspondong ``qbraidJobId``.
-    if _qbraid_jobs_enabled():
+    if running_in_lab() and _qbraid_jobs_enabled():
         job = session.post("/get-user-jobs", json={"vendorJobId": vendor_job_id}).json()[0]
         return job["qbraidJobId"]
 
@@ -81,19 +81,19 @@ def init_job(
         "vendorJobId": vendor_job_id,
         "qbraidDeviceId": device.id,
         "vendorDeviceId": device.vendor_device_id,
-        "circuitNumQubits": circuits[0].num_qubits if len(circuits) == 1 else None,
-        "circuitDepth": circuits[0].depth if len(circuits) == 1 else None,
-        "circuitBatchNumQubits": [circuit.num_qubits for circuit in circuits],
-        "circuitBatchDepth": [circuit.depth for circuit in circuits],
         "shots": shots,
         "createdAt": datetime.utcnow(),
         "status": "UNKNOWN",  # this will be set after we get back the job ID and check status
-        "qbraidStatus": "INITIALIZING",
+        "qbraidStatus": "INITIALIZING",  # TODO use qbraid Enums for status values
+        "email": os.getenv("JUPYTERHUB_USER") or session.user_email,
     }
-    user_email = os.getenv("JUPYTERHUB_USER")  # this env variable exists in Lab by default.
-    if not user_email:  # if not in Lab, try to get it from the session
-        user_email = session.user_email
-    init_data["email"] = user_email
+
+    if len(circuits) == 1:
+        init_data["circuitNumQubits"] = circuits[0].num_qubits
+        init_data["circuitDepth"]: circuits[0].depth
+    else:
+        init_data["circuitBatchNumQubits"] = ([circuit.num_qubits for circuit in circuits],)
+        init_data["circuitBatchDepth"] = [circuit.depth for circuit in circuits]
 
     return session.post("/init-job", data=init_data).json()
 

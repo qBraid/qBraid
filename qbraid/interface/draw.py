@@ -31,7 +31,14 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
     """
     # todo: visualization from supportive framework
     if isinstance(program, str):
-        package = "qasm"
+        if "OPENQASM 2.0" in program:
+            package = "qasm2"
+        elif "OPENQASM 3.0" in program:
+            package = "qasm3"
+        else:
+            raise ProgramTypeError(
+                "Quantum program is of type string, but does not represent a valid OpenQASM program."
+            )
     else:
         try:
             package = program.__module__
@@ -95,5 +102,18 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
         raise VisualizationError(
             'The only valid option for pytket are "jupyter", "view_browser", "html"'
         )
+
+    if package == "qasm3":
+        from .qbraid_qasm.circuit_drawer import draw_circuit
+
+        # coverage: ignore
+        return print(draw_circuit(program))
+
+    if package == "qasm2":
+        from .qbraid_qasm.tools import convert_to_qasm3
+
+        # coverage: ignore
+        qasm3_str = convert_to_qasm3(program)
+        return print(draw_circuit(qasm3_str))
 
     raise ProgramTypeError(package)

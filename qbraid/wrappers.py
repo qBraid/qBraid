@@ -58,9 +58,11 @@ def circuit_wrapper(program: QPROGRAM):
     if isinstance(program, str):
         try:
             QasmParser().parse(program)
-            package = "qasm"
+            package = "qasm2"
         except QasmException as err:
-            raise QbraidError("Qbraid currently only support qasm string.") from err
+            raise QbraidError(
+                "Quantum program is of type string, but does not represent a valid OpenQASM 2 string."
+            ) from err
     else:
         try:
             package = program.__module__.split(".")[0]

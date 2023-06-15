@@ -26,14 +26,14 @@ cirq_bell = map["cirq"]()
 pyquil_bell = map["pyquil"]()
 qiskit_bell = map["qiskit"]()
 pytket_bell = map["pytket"]()
-qasm_bell = map["qasm"]()
+qasm_bell = map["qasm2"]()
 
 map, _ = shared15_data()
 braket_shared15 = map["braket"]()
 cirq_shared15 = map["cirq"]()
 qiskit_shared15 = map["qiskit"]()
 pytket_shared15 = map["pytket"]()
-qasm_shared15 = map["qasm"]()
+qasm_shared15 = map["qasm2"]()
 
 
 def test_bell():
@@ -90,7 +90,7 @@ q_1: ┤ H ├──■──
     assert result.__str__() == expected
 
 
-@pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm"])
+@pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm2"])
 def test_braket_bell_draw(capfd, package):
     """Test that draw function standard output is of the expected length."""
     circuit_wrapper(eval(f"{package}_bell")).draw(package="braket", output="ascii")
@@ -110,7 +110,7 @@ def test_braket_raises():
         circuit_drawer(braket_bell, output="bad_input")
 
 
-@pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm"])
+@pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm2"])
 def test_cirq_bell_text_draw(capfd, package):
     """Test that draw function standard output is of the expected length."""
     circuit_wrapper(eval(f"{package}_bell")).draw(package="cirq", output="text")
@@ -118,7 +118,7 @@ def test_cirq_bell_text_draw(capfd, package):
     out, err = capfd.readouterr()
     print(out, err)
     assert len(err) == 0
-    if package == "pytket" or package == "qasm":  # todo: there is "q_n" represent number of qubit
+    if package == "pytket" or package == "qasm2":  # todo: there is "q_n" represent number of qubit
         assert len(out) == 48
     else:
         assert len(out) == 42
@@ -135,7 +135,7 @@ def test_cirq_raises():
         circuit_drawer(cirq_bell, output="bad_input")
 
 
-@pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm"])
+@pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm2"])
 def test_pyquil_bell_draw(capfd, package):
     """Test that draw function standard output is of the expected length."""
     circuit_wrapper(eval(f"{package}_bell")).draw(package="pyquil", output="text")

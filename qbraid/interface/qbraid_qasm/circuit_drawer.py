@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Takes in OpenQASM3 code and outputs an ASCII circuit representation
+Takes in OpenQASM 3 code and outputs an ASCII circuit representation
 
 """
 

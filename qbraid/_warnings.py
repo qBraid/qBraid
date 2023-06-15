@@ -36,6 +36,10 @@ def _check_version():
     # pylint: disable=import-outside-toplevel
     from ._version import __version__ as version_local
     from .api.session import QbraidSession
+    from .display_utils import running_in_lab
+
+    if not running_in_lab():
+        return
 
     session = QbraidSession()
     version_api = session.get("/public/lab/get-sdk-version", params={}).json()
@@ -53,6 +57,7 @@ warnings.filterwarnings("ignore", category=SyntaxWarning)
 warnings.filterwarnings("ignore", category=UserWarning, message="Setuptools is replacing distutils")
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
+warnings.filterwarnings("ignore", category=RuntimeWarning, module="numpy")
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-# _check_version()
+_check_version()

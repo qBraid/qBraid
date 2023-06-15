@@ -12,6 +12,7 @@
 Module for utility functions used in displaying data to user
 
 """
+import os
 import sys
 from typing import Optional
 
@@ -60,3 +61,12 @@ def running_in_jupyter():
         in_ipython_kernel = getattr(ip, "kernel", None) is not None
 
     return in_ipython_kernel
+
+
+def running_in_lab():
+    """Checks if you are running qBraid-SDK in qBraid Lab environment."""
+    slug_path = os.path.join(
+        os.path.expanduser("~"), ".qbraid", "environments", "qbraid_sdk_9j9sjy"
+    )
+    python_exe = os.path.join(slug_path, "pyenv", "bin", "python")
+    return sys.executable == python_exe
