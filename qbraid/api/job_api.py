@@ -13,23 +13,38 @@ Module for interacting with the qBraid Jobs API.
 
 """
 import os
+import sys
 from datetime import datetime
 from typing import TYPE_CHECKING
 
 from .session import QbraidSession
-from qbraid.display_utils import running_in_lab
 
 if TYPE_CHECKING:
     import qbraid
 
+SLUG = "qbraid_sdk_9j9sjy"  # qBraid Lab environment ID.
+ENVS_PATH = os.getenv("QBRAID_USR_ENVS") or os.path.join(
+    os.path.expanduser("~"), ".qbraid", "environments"
+)
+SLUG_PATH = os.path.join(ENVS_PATH, SLUG)
+
+
+def _running_in_lab():
+    """Checks if you are running qBraid-SDK in qBraid Lab environment.
+
+    See https://docs.qbraid.com/en/latest/lab/environments.html
+    """
+    python_exe = os.path.join(SLUG_PATH, "pyenv", "bin", "python")
+    return sys.executable == python_exe
+
 
 def _qbraid_jobs_enabled():
     """Returns True if running qBraid Lab and qBraid Quantum Jobs
-    proxy is enabled. Otherwise, returns False."""
-    slug_path = os.path.join(
-        os.path.expanduser("~"), ".qbraid", "environments", "qbraid_sdk_9j9sjy"
-    )
-    proxy_file = os.path.join(slug_path, "qbraid", "proxy")
+    proxy is enabled. Otherwise, returns False.
+
+    See https://docs.qbraid.com/en/latest/lab/quantumjobs.html
+    """
+    proxy_file = os.path.join(SLUG_PATH, "qbraid", "proxy")
     if os.path.isfile(proxy_file):
         with open(proxy_file) as f:  # pylint: disable=unspecified-encoding
             firstline = f.readline().rstrip()
@@ -59,23 +74,18 @@ def init_job(
     session = QbraidSession()
 
     # One of the features of qBraid Quantum Jobs is the ability to send
-    # jobs without any credentials using the qBraid Lab platform. In short,
-    # the qBraid CLI allows you to enable/disable API proxies for environments
-    # that use IBMQ and/or Amazon Braket (Botocore). A ``qbraid`` directory
-    # exists for each such environment that contains information about how to
-    # toggle the proxies, along with their status. If the qBraid Quantum Jobs
-    # proxy is enabled, a MongoDB document has already been created for this job. So,
-    # instead of creating a new job document, we instead query the user jobs
-    # for the ``vendorJobId`` (for Amazon Braket this is the QuantumTask arn),
-    # and return the correspondong ``qbraidJobId``.
-    if running_in_lab() and _qbraid_jobs_enabled():
+    # jobs without any credentials using the qBraid Lab platform. If the
+    # qBraid Quantum Jobs proxy is enabled, a document has already been
+    # created for this job. So, instead creating a duplicate, we query the
+    # user jobs for the `vendorJobId` and return the correspondong `qbraidJobId`.
+    if _running_in_lab() and _qbraid_jobs_enabled():
         job = session.post("/get-user-jobs", json={"vendorJobId": vendor_job_id}).json()[0]
         return job["qbraidJobId"]
 
-    # Create a new MongoDB document for the user job.  The qBraid API creates
-    # a unique Job ID, which is collected in the response. We use dummy variables
-    # for each of the status fields, which will be updated via the ``get_job_data``
-    # function upon instantiation of the ``JobLikeWrapper`` object.
+    # Create a new document for the user job. The qBraid API creates a unique
+    # Job ID, which is collected in the response. We use dummy variables for
+    # each of the status fields, which will be updated via the `get_job_data`
+    # function upon instantiation of the `JobLikeWrapper` object.
     init_data = {
         "qbraidJobId": "",
         "vendorJobId": vendor_job_id,

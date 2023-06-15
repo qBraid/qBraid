@@ -20,7 +20,7 @@ import pytest
 
 from qbraid import __version__
 from qbraid._warnings import _warn_new_version
-from qbraid.display_utils import running_in_jupyter, running_in_lab, update_progress_bar
+from qbraid.display_utils import running_in_jupyter, update_progress_bar
 from qbraid.exceptions import PackageValueError
 from qbraid.get_devices import get_devices
 from qbraid.get_jobs import _display_jobs_jupyter, get_jobs
@@ -89,10 +89,6 @@ def test_update_progress_bar_halted(capfd):
     out, err = capfd.readouterr()
     assert out == expected_out
     assert len(err) == 0
-
-
-def test_running_in_lab():
-    assert not running_in_lab()
 
 
 def test_running_in_jupyter():

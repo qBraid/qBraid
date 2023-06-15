@@ -36,9 +36,9 @@ def _check_version():
     # pylint: disable=import-outside-toplevel
     from ._version import __version__ as version_local
     from .api.session import QbraidSession
-    from .display_utils import running_in_lab
+    from .api.job_api import _running_in_lab
 
-    if not running_in_lab():
+    if not _running_in_lab():
         return
 
     session = QbraidSession()
@@ -53,6 +53,7 @@ def _check_version():
         )
 
 
+# coverage: ignore
 warnings.filterwarnings("ignore", category=SyntaxWarning)
 warnings.filterwarnings("ignore", category=UserWarning, message="Setuptools is replacing distutils")
 warnings.filterwarnings("ignore", category=DeprecationWarning)
