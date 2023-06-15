@@ -61,7 +61,7 @@ def circuit_wrapper(program: QPROGRAM):
             package = "qasm2"
         except QasmException as err:
             raise QbraidError(
-                "Quantum program is of type string, but does not represent a valid OpenQASM 2 string."
+                "Input of type string must represent a valid OpenQASM 2 program."
             ) from err
     else:
         try:

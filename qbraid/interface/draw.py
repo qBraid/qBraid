@@ -37,7 +37,7 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
             package = "qasm3"
         else:
             raise ProgramTypeError(
-                "Quantum program is of type string, but does not represent a valid OpenQASM program."
+                "Input of type string must represent a valid OpenQASM program."
             )
     else:
         try:

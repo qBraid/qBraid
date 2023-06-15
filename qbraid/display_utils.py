@@ -12,7 +12,6 @@
 Module for utility functions used in displaying data to user
 
 """
-import os
 import sys
 from typing import Optional
 
