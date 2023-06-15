@@ -3,8 +3,6 @@ name: CI
 on:
   push:
     branches: ['main']
-  pull_request:
-    branches: ['main']
   workflow_dispatch:
 
 jobs:
@@ -12,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.9', '3.10']
+        python-version: ['3.10']
 
     steps:
     - uses: actions/checkout@v3
@@ -33,8 +31,9 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         QISKIT_IBM_TOKEN: ${{ secrets.QISKIT_IBM_TOKEN }}
         JUPYTERHUB_USER: ${{ secrets.JUPYTERHUB_USER }}
-        REFRESH: ${{ secrets.REFRESH }}
         QBRAID_API_KEY: ${{ secrets.QBRAID_API_KEY }}
+        REFRESH: ${{ secrets.REFRESH }}
+        QBRAID_RUN_REMOTE_TESTS: True
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v3
       with:

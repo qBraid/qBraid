@@ -14,6 +14,7 @@ Module for converting Braket circuits to Cirq circuit via OpenQASM
 """
 
 from braket.circuits import Circuit as BKCircuit
+from braket.circuits.serialization import IRType
 from cirq import Circuit
 from cirq.contrib.qasm_import.exception import QasmException
 
@@ -25,15 +26,11 @@ QASMType = str
 
 
 def to_qasm(circuit: BKCircuit) -> QASMType:
-    """Converts a `braket.circuits.Circuit` to an OpenQASM string.
+    """Converts a `braket.circuits.Circuit` to an OpenQASM 2.0 string.
+    *DEPRECATAION NOTICE*: incomplete function, to be removed in next release.
 
-    Args:
-        circuit: Amazon Braket quantum circuit
+    .. code-block:: python
 
-    Returns:
-        The OpenQASM string equivalent to the circuit
-
-    Example:
         >>> from braket.circuits import Circuit
         >>> circuit = Circuit().h(0).cnot(0,1).cnot(1,2)
         >>> print(circuit)
@@ -56,11 +53,13 @@ def to_qasm(circuit: BKCircuit) -> QASMType:
         cx q[0],q[1];
         cx q[1],q[2];
 
-    """
-    # OpenQASM 3.0 conversion
-    # from braket.circuits.serialization import IRType
-    # return circuit.to_ir(IRType.OPENQASM).source
+    Args:
+        circuit: Amazon Braket quantum circuit
 
+    Returns:
+        The OpenQASM string equivalent to the circuit
+
+    """
     # A mapping from Amazon Braket gates to QASM gates
     gates = {
         "cnot": "cx",
@@ -103,6 +102,50 @@ def to_qasm(circuit: BKCircuit) -> QASMType:
         code += ";\n"
 
     return code
+
+
+def braket_to_qasm3(circuit: BKCircuit) -> QASMType:
+    """Converts a ``braket.circuits.Circuit`` to an OpenQASM 3.0 string.
+
+    .. code-block:: python
+
+        >>> from braket.circuits import Circuit
+        >>> circuit = Circuit().h(0).cnot(0,1).cnot(1,2)
+        >>> print(circuit)
+        T  : |0|1|2|
+
+        q0 : -H-C---
+                |
+        q1 : ---X-C-
+                  |
+        q2 : -----X-
+
+        T  : |0|1|2|
+        >>> print(circuit_to_qasm3(circuit))
+        OPENQASM 3.0;
+        bit[3] b;
+        qubit[3] q;
+        h q[0];
+        cnot q[0], q[1];
+        cnot q[1], q[2];
+        b[0] = measure q[0];
+        b[1] = measure q[1];
+        b[2] = measure q[2];
+
+    Args:
+        circuit: Amazon Braket quantum circuit
+
+    Returns:
+        The OpenQASM 3.0 string equivalent to the circuit
+
+    Raises:
+        CircuitConversionError: If braket to qasm conversion fails
+
+    """
+    try:
+        return circuit.to_ir(IRType.OPENQASM).source
+    except Exception as err:
+        raise CircuitConversionError("Error converting braket circuit to qasm3 string") from err
 
 
 def from_braket(circuit: BKCircuit) -> Circuit:

@@ -232,13 +232,14 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
 
         """
         run_input, qbraid_circuit = self._compat_run_input(run_input)
+
         if "s3_destination_folder" not in kwargs:
             kwargs["s3_destination_folder"] = self._default_s3_folder
         aws_quantum_task = self.vendor_dlo.run(run_input, *args, **kwargs)
         metadata = aws_quantum_task.metadata()
         shots = 0 if "shots" not in metadata else metadata["shots"]
         vendor_job_id = aws_quantum_task.metadata()["quantumTaskArn"]
-        job_id = init_job(vendor_job_id, self, qbraid_circuit, shots)
+        job_id = init_job(vendor_job_id, self, [qbraid_circuit], shots)
         return AwsQuantumTaskWrapper(
             job_id, vendor_job_id=vendor_job_id, device=self, vendor_jlo=aws_quantum_task
         )

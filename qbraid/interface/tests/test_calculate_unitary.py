@@ -18,10 +18,13 @@ import numpy as np
 import pytest
 from braket.circuits import Circuit, Instruction, gates
 from pytket.circuit import Circuit as TKCircuit
-from pytket.circuit import OpType
 
 from qbraid.exceptions import ProgramTypeError
-from qbraid.interface.calculate_unitary import to_unitary, unitary_to_little_endian
+from qbraid.interface.calculate_unitary import (
+    random_unitary_matrix,
+    to_unitary,
+    unitary_to_little_endian,
+)
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
 
 
@@ -124,3 +127,8 @@ def test_qasm_depth():
 def test_unitary_raises():
     with pytest.raises(ProgramTypeError):
         to_unitary(None)
+
+
+def test_random_unitary():
+    matrix = random_unitary_matrix(2)
+    assert np.allclose(matrix @ matrix.conj().T, np.eye(2))

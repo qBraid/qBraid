@@ -18,14 +18,12 @@ from typing import TYPE_CHECKING, Tuple
 
 from cirq import Circuit
 from cirq.contrib.qasm_import import circuit_from_qasm
-from cirq.contrib.qasm_import.exception import QasmException
 
 from qbraid.exceptions import PackageValueError, ProgramTypeError
 from qbraid.transpiler.cirq_braket import from_braket, to_braket
 from qbraid.transpiler.cirq_pyquil import from_pyquil, to_pyquil
 from qbraid.transpiler.cirq_pytket import from_pytket, to_pytket
 from qbraid.transpiler.cirq_qasm import from_qasm, to_qasm
-from qbraid.transpiler.cirq_qasm.qasm_parser import QasmParser
 from qbraid.transpiler.cirq_qiskit import from_qiskit, to_qiskit
 from qbraid.transpiler.exceptions import CircuitConversionError
 
@@ -49,10 +47,10 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple[Circuit, str]:
     """
     if isinstance(program, str):
         try:
-            QasmParser().parse(program)
-            package = "qasm"
-        except QasmException as err:
-            raise CircuitConversionError("Qbraid only support qasm string.") from err
+            from_qasm(program)
+            package = "qasm2"
+        except Exception as err:
+            raise CircuitConversionError("Invalid OpenQASM 2.0 program.") from err
     else:
         try:
             package = program.__module__
@@ -72,8 +70,11 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple[Circuit, str]:
         if "pytket" in package:
             return from_pytket(program), "pytket"
 
-        if "qasm" in package:
-            return from_qasm(program), "qasm"
+        if "qasm2" in package:
+            return from_qasm(program), "qasm2"
+
+        if "qasm3" in package:
+            raise NotImplementedError
 
         if isinstance(program, Circuit):
             return program, "cirq"
@@ -113,8 +114,11 @@ def _convert_from_cirq(circuit: Circuit, frontend: str) -> "qbraid.QPROGRAM":
         if frontend == "pytket":
             return to_pytket(circuit)
 
-        if frontend == "qasm":
+        if frontend == "qasm2":
             return to_qasm(circuit)
+
+        if frontend == "qasm3":
+            raise NotImplementedError
 
         if frontend == "cirq":
             return circuit

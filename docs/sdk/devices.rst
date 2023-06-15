@@ -85,7 +85,7 @@ If run in the Python Shell, device data is returned in a similar format.
 
     Device ID                           Status
     ---------                           ------
-    aws_ionq                            ONLINE
+    aws_ionq_aria1                      ONLINE
     aws_oqc_lucy                        ONLINE
     aws_quera_aquila                    ONLINE
     aws_rigetti_aspen_m2                OFFLINE
