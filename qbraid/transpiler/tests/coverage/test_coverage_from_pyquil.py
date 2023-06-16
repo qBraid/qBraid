@@ -21,7 +21,8 @@ import pytest
 import qbraid
 
 
-def generate_params(varnames):
+def generate_params(varnames, seed=0):
+    np.random.seed(seed)
     params = {}
     rot_args = ["angle", "phi", "lam", "gamma"]
     for ra in rot_args:
