@@ -21,6 +21,8 @@ import pytket
 
 import qbraid
 
+np.random.seed(0)
+
 # TODO: Investigate generating params dynamically.
 # Difficult because pytket methods are wrapped around C++ code.
 gates_param_map = {

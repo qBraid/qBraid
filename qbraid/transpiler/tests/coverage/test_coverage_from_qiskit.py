@@ -21,7 +21,8 @@ import qiskit
 import qbraid
 
 
-def generate_params(varnames):
+def generate_params(varnames, seed=0):
+    np.random.seed(seed)
     params = {}
     rot_args = ["theta", "phi", "lam", "gamma"]
     for ra in rot_args:
@@ -53,7 +54,7 @@ def get_qiskit_gates():
 ### TESTS ###
 #############
 
-TARGETS = [("braket", 0.96), ("cirq", 0.96), ("pyquil", 0.75), ("pytket", 0.74)]
+TARGETS = [("braket", 0.98), ("cirq", 0.98), ("pyquil", 0.81), ("pytket", 0.98)]
 qiskit_gates = get_qiskit_gates()
 
 

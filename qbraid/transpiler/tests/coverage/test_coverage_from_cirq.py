@@ -22,7 +22,8 @@ import scipy
 import qbraid
 
 
-def generate_params(varnames):
+def generate_params(varnames, seed=0):
+    np.random.seed(seed)
     params = {}
     # Generating angles
     for ra in ["rads", "theta", "phi"]:
