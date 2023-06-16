@@ -5,6 +5,7 @@ coverage
 tox<4
 ipython
 qiskit-qasm3-import
+qiskit-braket-provider
 
 # docs
 sphinx
