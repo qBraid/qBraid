@@ -20,6 +20,7 @@ import qiskit
 
 import qbraid
 
+
 def generate_params(varnames, seed=0):
     np.random.seed(seed)
     params = {}
