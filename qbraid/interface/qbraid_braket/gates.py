@@ -22,6 +22,7 @@ from braket.circuits import Gate
 
 
 def generate_params(varnames: List[str], seed: Optional[int] = None):
+    """Returns a dictionary of random parameters for a given list of variable names"""
     if seed is not None:
         np.random.seed(seed)
     params = {}
@@ -32,6 +33,7 @@ def generate_params(varnames: List[str], seed: Optional[int] = None):
 
 
 def get_braket_gates(seed: Optional[int] = None):
+    """Returns a dictionary of all braket gates with random parameters"""
     braket_gates = {attr: None for attr in dir(Gate) if attr[0] in string.ascii_uppercase}
     for gate in ["C", "PulseGate"]:
         braket_gates.pop(gate, None)
@@ -47,3 +49,8 @@ def get_braket_gates(seed: Optional[int] = None):
             braket_gates[gate] = getattr(Gate, gate)(**params)
 
     return {k: v for k, v in braket_gates.items() if v is not None}
+
+
+gates = get_braket_gates()
+
+print(gates)
