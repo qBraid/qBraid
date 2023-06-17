@@ -79,7 +79,6 @@ single_qubit_gates = [
     "z",
 ]
 
-
 q_c_reg_gates = ["m"]
 
 all_gates = single_qubit_gates + multi_qubit_gates + controlled_gates + q_c_reg_gates
@@ -242,8 +241,8 @@ class Gate:
         return mat
 
 
-def add_gate(circuit, g):
-    """Adds a gate to the circuit"""
+def get_collision(circuit, g):
+    """Gets the collision position of a gate"""
     pos = circuit.shape[1] - 1
     collision = False
     reg_idxes = range(3 * min(g.qregs), 3 * (g.get_height() + min(g.qregs)))
@@ -259,6 +258,12 @@ def add_gate(circuit, g):
     if pos != 0:
         pos += 3
 
+    return pos, reg_idxes
+
+
+def add_gate(circuit, g, pos, reg_idxes):
+    """Adds a gate to the circuit"""
+
     while pos + g.get_width() >= circuit.shape[1]:
         circuit = np.concatenate(
             [circuit, np.full((circuit.shape[0], circuit.shape[1]), " ", dtype=str)], axis=1
@@ -266,7 +271,23 @@ def add_gate(circuit, g):
 
     circuit[reg_idxes, pos : pos + g.get_width()] = g.mat()
 
-    return circuit, pos
+    return circuit
+
+
+def add_moment(circuit, moment):
+    """Adds a moment to the circuit"""
+    collisions = [get_collision(circuit, g)[0] for g in moment]
+    pos = max(collisions)
+    widths = [g.get_width() for g in moment]
+    max_w = max(widths)
+
+    for g in moment:
+        _, reg_idxes = get_collision(circuit, g)
+        centered_moment_pos = pos + int((max_w - g.get_width()) / 2)
+        circuit = add_gate(circuit, g, centered_moment_pos, reg_idxes)
+        circuit = add_wires(circuit, g, g.num_qregs, centered_moment_pos)
+
+    return circuit
 
 
 def get_circuit_height(qasm_str):
@@ -323,7 +344,9 @@ def add_cregs(circuit, num_cregs, end_pos):
 
     return circuit
 
+
 def extend_qregs(circuit, num_qregs, end_pos):
+    """Extends the quantum registers to the end of the circuit"""
     for qreg in range(num_qregs):
         eol_regex = re.search(r"(\S)\s*$", "".join(circuit[3 * qreg + 1]))
         eol_pos = eol_regex.regs[1][1]
@@ -332,22 +355,73 @@ def extend_qregs(circuit, num_qregs, end_pos):
     return circuit
 
 
+def can_add_gate(m_qregs, m_cregs, gate):
+    """Checks if a gate can be added to a moment"""
+    if len(gate.qregs) != 0:
+        min_qreg = min(gate.qregs)
+        max_qreg = max(gate.qregs) if gate.gate_type not in q_c_reg_gates else gate.num_qregs
+        for qreg in range(min_qreg, max_qreg + 1):
+            if qreg in m_qregs:
+                return False
+
+    if len(gate.cregs) != 0:
+        min_creg = min(gate.cregs) if gate.gate_type not in q_c_reg_gates else 0
+        max_creg = max(gate.cregs)
+        for creg in range(min_creg, max_creg + 1):
+            if creg in m_cregs:
+                return False
+
+    return True
+
+
+def get_moments(gates):
+    """Splits up the circuit into moments"""
+    moments = []
+    while gates != []:
+        gate = gates.pop(0)
+        moment = [gate]
+        m_qregs = list(gate.qregs)
+        m_cregs = list(gate.cregs)
+        gate_idx = 0
+        while gate_idx < len(gates):
+            gate = gates[gate_idx]
+            if can_add_gate(m_qregs, m_cregs, gate):
+                moment.append(gates.pop(gate_idx))
+                gate_idx -= 1
+
+            for qreg in gate.qregs:
+                m_qregs.append(qreg)
+            for creg in gate.cregs:
+                m_cregs.append(creg)
+
+            gate_idx += 1
+        moments.append(moment)
+    return moments
+
+
 def draw_circuit(qasm_str):
     """Iterates over the input string and returns the gates"""
     num_qregs, num_cregs = get_circuit_height(qasm_str)
     height = (num_qregs + num_cregs) * 3
     circuit = np.full((height, 50), " ", dtype=str)
 
+    gates = []
     for line in qasm_str.split("\n"):
         valid = is_valid_gate(line)
         gate_type, _ = parse_gate_type(line, all_gates)
         if valid and gate_type is not None:
             g = Gate(line, num_qregs, num_cregs)
-            circuit, pos = add_gate(circuit, g)
-            circuit = add_wires(circuit, g, num_qregs, pos)
+            gates.append(g)
+
+    moments = get_moments(gates)
+    for moment in moments:
+        circuit = add_moment(circuit, moment)
+
+    #    circuit, pos = add_gate(circuit, g)
+    #    circuit = add_wires(circuit, g, num_qregs, pos)
 
     end_pos = circuit.shape[1]
-    while np.all(circuit[:, end_pos -1] == [" "] * circuit.shape[0]):
+    while np.all(circuit[:, end_pos - 1] == [" "] * circuit.shape[0]):
         end_pos -= 1
     end_pos += 1
 
