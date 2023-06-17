@@ -225,9 +225,10 @@ class Gate:
                 mat = np.empty((3 * height, 3), dtype="str")
                 mat[0, :] = [" "] * 3
                 mat[1, :] = ["-", "X", " "]
-                mat[2 : 3 * height - 2, :] = [" ", "|", " "] * ((3 * height - 3) - 2)
+                mat[2 : 3 * height - 2, :] = [[" ", "|", " "]] * (3 * height - 4)
                 mat[3 * height - 2, :] = ["-", "X", " "]
                 mat[3 * height - 1, :] = [" "] * 3
+                mat[range(1, 3 * height, 3), 0] = ["-"] * height
 
             else:
                 mat = np.full((3 * height, len(gate_str) + 4), " ", dtype="str")
@@ -273,6 +274,7 @@ def get_circuit_height(qasm_str):
     num_qregs = 0
     num_cregs = 0
     for line in qasm_str.split("\n"):
+        line = line.strip()
         if re.match(r"qreg q\[.*\]", line):
             num_qregs = int(re.match(r"qreg q\[.*\]", line)[0][7:-1])
             continue
@@ -334,6 +336,7 @@ def draw_circuit(qasm_str):
     circuit = np.full((height, 50), " ", dtype=str)
 
     for line in qasm_str.split("\n"):
+        line = line.strip()
         valid = is_valid_gate(line)
         gate_type, _ = parse_gate_type(line, all_gates)
         if valid and gate_type is not None:
