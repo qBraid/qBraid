@@ -76,8 +76,34 @@ qasm_str_2_output = "\n".join(
     ]
 )
 
+qasm_str_3 = "\n".join(
+    [
+        "OPENQASM 3;",
+        'include "stdgates.inc";',
+        "qubit[3] _all_qubits;",
+        "let q = _all_qubits[0:2];",
+        "swap q[0], q[2];",
+        "swap q[1], q[2];",
+        "swap q[2], q[0];",
+        "swap q[2], q[1];",
+    ]
+)
+
+qasm_str_3_output = "\n".join(
+    [
+        "q0----X-------X",
+        "      |       |",
+        "      |       |",
+        "q1----|---X---|---X",
+        "      |   |   |   |",
+        "      |   |   |   |",
+        "q2----X---X---X---X",
+    ]
+)
+
 
 def test_circuit_drawer():
     """Tests the qasm circuit drawer"""
     assert draw_circuit(qasm_str_1) == qasm_str_1_output
     assert draw_circuit(qasm_str_2) == qasm_str_2_output
+    assert draw_circuit(qasm_str_3) == qasm_str_3_output
