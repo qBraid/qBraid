@@ -49,8 +49,3 @@ def get_braket_gates(seed: Optional[int] = None):
             braket_gates[gate] = getattr(Gate, gate)(**params)
 
     return {k: v for k, v in braket_gates.items() if v is not None}
-
-
-gates = get_braket_gates()
-
-print(gates)
