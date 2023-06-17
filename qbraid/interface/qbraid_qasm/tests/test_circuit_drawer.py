@@ -8,6 +8,13 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+"""
+Unit tests for OpenQASM 3 circuit drawer
+
+"""
+
+import pytest
+
 from qbraid.interface.qbraid_qasm.circuit_drawer import draw_circuit
 
 qasm_str_1 = "\n".join(
@@ -102,8 +109,14 @@ qasm_str_3_output = "\n".join(
 )
 
 
-def test_circuit_drawer():
+@pytest.mark.parametrize(
+    ("qasm_str", "expected_output"),
+    [
+        (qasm_str_1, qasm_str_1_output),
+        (qasm_str_2, qasm_str_2_output),
+        (qasm_str_3, qasm_str_3_output),
+    ],
+)
+def test_circuit_drawer(qasm_str, expected_output):
     """Tests the qasm circuit drawer"""
-    assert draw_circuit(qasm_str_1) == qasm_str_1_output
-    assert draw_circuit(qasm_str_2) == qasm_str_2_output
-    assert draw_circuit(qasm_str_3) == qasm_str_3_output
+    assert draw_circuit(qasm_str) == expected_output
