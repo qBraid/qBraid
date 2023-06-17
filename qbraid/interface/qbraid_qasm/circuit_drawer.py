@@ -274,7 +274,6 @@ def get_circuit_height(qasm_str):
     num_qregs = 0
     num_cregs = 0
     for line in qasm_str.split("\n"):
-        line = line.strip()
         if re.match(r"qreg q\[.*\]", line):
             num_qregs = int(re.match(r"qreg q\[.*\]", line)[0][7:-1])
             continue
@@ -316,15 +315,19 @@ def add_wires(circuit, g, num_qregs, pos):
     return circuit
 
 
-def add_cregs(circuit, num_cregs):
+def add_cregs(circuit, num_cregs, end_pos):
     """Adds classical registers to the circuit"""
     for bit in range(num_cregs):
-        x = circuit.shape[1]
         y = -2 - (bit * 3)
-        while circuit[y][x - 1] == " " and x > 0:
-            x -= 1
-        x += 1
-        circuit[y, :x] = ["="] * x
+        circuit[y, :end_pos] = ["="] * end_pos
+
+    return circuit
+
+def extend_qregs(circuit, num_qregs, end_pos):
+    for qreg in range(num_qregs):
+        eol_regex = re.search(r"(\S)\s*$", "".join(circuit[3 * qreg + 1]))
+        eol_pos = eol_regex.regs[1][1]
+        circuit[3 * qreg + 1, eol_pos:end_pos] = ["-"] * (end_pos - eol_pos)
 
     return circuit
 
@@ -336,7 +339,6 @@ def draw_circuit(qasm_str):
     circuit = np.full((height, 50), " ", dtype=str)
 
     for line in qasm_str.split("\n"):
-        line = line.strip()
         valid = is_valid_gate(line)
         gate_type, _ = parse_gate_type(line, all_gates)
         if valid and gate_type is not None:
@@ -344,7 +346,13 @@ def draw_circuit(qasm_str):
             circuit, pos = add_gate(circuit, g)
             circuit = add_wires(circuit, g, num_qregs, pos)
 
-    circuit = add_cregs(circuit, num_cregs)
+    end_pos = circuit.shape[1]
+    while np.all(circuit[:, end_pos -1] == [" "] * circuit.shape[0]):
+        end_pos -= 1
+    end_pos += 1
+
+    circuit = add_cregs(circuit, num_cregs, end_pos)
+    circuit = extend_qregs(circuit, num_qregs, end_pos)
 
     padding = 5
 
