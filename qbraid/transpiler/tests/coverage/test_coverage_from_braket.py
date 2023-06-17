@@ -12,52 +12,14 @@
 Benchmarking tests for braket conversions
 
 """
-import string
-
 import braket
-import numpy as np
 import pytest
-import scipy
 
 import qbraid
-
-
-def generate_params(varnames, seed=0):
-    np.random.seed(seed)
-    params = {}
-    for v in varnames:
-        if v.startswith("angle"):
-            params[v] = np.random.rand() * 2 * np.pi
-    return params
-
-
-def get_braket_gates():
-    braket_gates = {
-        attr: None for attr in dir(braket.circuits.Gate) if attr[0] in string.ascii_uppercase
-    }
-
-    for gate in ["C", "PulseGate"]:
-        braket_gates.pop(gate)
-
-    for gate in braket_gates:
-        if gate == "Unitary":
-            n = np.random.randint(1, 4)
-            unitary = scipy.stats.unitary_group.rvs(2**n)
-            braket_gates[gate] = getattr(braket.circuits.Gate, gate)(matrix=unitary)
-        else:
-            params = generate_params(
-                getattr(braket.circuits.Gate, gate).__init__.__code__.co_varnames
-            )
-            braket_gates[gate] = getattr(braket.circuits.Gate, gate)(**params)
-    return {k: v for k, v in braket_gates.items() if v is not None}
-
-
-#############
-### TESTS ###
-#############
+from qbraid.interface.qbraid_braket.gates import get_braket_gates
 
 TARGETS = [("cirq", 1.0), ("pyquil", 1.0), ("pytket", 1.0), ("qiskit", 1.0)]
-braket_gates = get_braket_gates()
+braket_gates = get_braket_gates(seed=0)
 
 
 def convert_from_braket_to_x(target, gate_name):
