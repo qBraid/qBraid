@@ -12,41 +12,11 @@
 Benchmarking accuracy of qiskit to braket conversions
 
 """
-import string
-
-import numpy as np
 import qiskit
 import qiskit_braket_provider
 
 import qbraid
-
-
-def generate_params(varnames, seed=0):
-    np.random.seed(seed)
-    params = {
-        ra: np.random.rand() * 2 * np.pi
-        for ra in ["theta", "phi", "lam", "gamma"]
-        if ra in varnames
-    }
-    if "num_ctrl_qubits" in varnames:
-        params["num_ctrl_qubits"] = np.random.randint(1, 7)
-    if "phase" in varnames:
-        params["phase"] = np.random.rand() * 2 * np.pi
-    return params
-
-
-def get_qiskit_gates():
-    qiskit_gates = {
-        attr: None
-        for attr in dir(qiskit.circuit.library.standard_gates)
-        if attr[0] in string.ascii_uppercase
-    }
-    for gate in qiskit_gates:
-        params = generate_params(
-            getattr(qiskit.circuit.library.standard_gates, gate).__init__.__code__.co_varnames
-        )
-        qiskit_gates[gate] = getattr(qiskit.circuit.library.standard_gates, gate)(**params)
-    return {k: v for k, v in qiskit_gates.items() if v is not None}
+from qbraid.interface.qbraid_qiskit.gates import get_qiskit_gates
 
 
 def execute_test(conversion_function, qiskit_circuit):
@@ -61,7 +31,7 @@ def execute_test(conversion_function, qiskit_circuit):
     return 0
 
 
-qiskit_gates = get_qiskit_gates()
+qiskit_gates = get_qiskit_gates(seed=0)
 qbraid_failed, qiskit_failed = 0, 0
 
 for gate_name, gate in qiskit_gates.items():

@@ -7,52 +7,16 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
-import string
 
+"""
+Unit tests for converting braket circuit to use only ionq supprted gates
+
+"""
 import braket
-import numpy as np
 import pytest
-import scipy
 
 from qbraid.devices.ionq import braket_ionq_compilation
-
-#############
-### UTILS ###
-#############
-
-
-def generate_params(varnames):
-    params = {}
-    for v in varnames:
-        if v.startswith("angle"):
-            params[v] = np.random.rand() * 2 * np.pi
-    return params
-
-
-def get_braket_gates():
-    braket_gates = {
-        attr: None for attr in dir(braket.circuits.Gate) if attr[0] in string.ascii_uppercase
-    }
-    for gate in ["C", "PulseGate"]:
-        braket_gates.pop(gate)
-
-    for gate in braket_gates:
-        if gate == "Unitary":
-            n = np.random.randint(1, 4)
-            unitary = scipy.stats.unitary_group.rvs(2**n)
-            braket_gates[gate] = getattr(braket.circuits.Gate, gate)(matrix=unitary)
-        else:
-            params = generate_params(
-                getattr(braket.circuits.Gate, gate).__init__.__code__.co_varnames
-            )
-            braket_gates[gate] = getattr(braket.circuits.Gate, gate)(**params)
-
-    return {k: v for k, v in braket_gates.items() if v is not None}
-
-
-#############
-### TESTS ###
-#############
+from qbraid.interface.qbraid_braket.gates import get_braket_gates
 
 braket_gates = get_braket_gates()
 
