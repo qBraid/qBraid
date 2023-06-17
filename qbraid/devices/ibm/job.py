@@ -15,6 +15,7 @@ Module defining IBMJobWrapper Class
 import logging
 
 from qiskit_ibm_provider import IBMBackend
+from qiskit_ibm_provider.job.exceptions import IBMJobInvalidStateError
 
 from qbraid.devices.enums import JOB_FINAL
 from qbraid.devices.exceptions import JobError, JobStateError
@@ -56,4 +57,7 @@ class IBMJobWrapper(JobLikeWrapper):
         status = self.status()
         if status in JOB_FINAL:
             raise JobStateError(f"Cannot cancel quantum job in the {status} state.")
-        return self.vendor_jlo.cancel()
+        try:
+            return self.vendor_jlo.cancel()
+        except IBMJobInvalidStateError as err:
+            raise JobStateError from err

@@ -45,7 +45,7 @@ def convert_to_contiguous(program: "qbraid.QPROGRAM", **kwargs) -> "qbraid.QPROG
     conversion_function: Callable[[Any], QPROGRAM]
 
     if isinstance(program, str):
-        package = "qasm"
+        package = "qasm2"
     else:
         try:
             package = program.__module__
@@ -73,7 +73,7 @@ def convert_to_contiguous(program: "qbraid.QPROGRAM", **kwargs) -> "qbraid.QPROG
         from qbraid.interface.qbraid_pytket.tools import _convert_to_contiguous_pytket
 
         conversion_function = _convert_to_contiguous_pytket
-    elif "qasm" in package:
+    elif "qasm2" in package:
         from qbraid.interface.qbraid_qasm.tools import _convert_to_contiguous_qasm
 
         conversion_function = _convert_to_contiguous_qasm

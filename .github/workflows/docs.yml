@@ -8,16 +8,13 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.9']
 
     steps:
     - uses: actions/checkout@v3
-    - name: Set up Python ${{ matrix.python-version }}
+    - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ matrix.python-version }}
+        python-version: 3.9
         cache: pip
     - name: Install dependencies
       run: |
@@ -26,10 +23,3 @@ jobs:
     - name: Build docs
       run: |
         tox -e docs
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        QISKIT_IBM_TOKEN: ${{ secrets.QISKIT_IBM_TOKEN }}
-        JUPYTERHUB_USER: ${{ secrets.JUPYTERHUB_USER }}
-        REFRESH: ${{ secrets.REFRESH }}
-        QBRAID_API_KEY: ${{ secrets.QBRAID_API_KEY }}

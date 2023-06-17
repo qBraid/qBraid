@@ -61,9 +61,13 @@ class ResultWrapper(ABC):
     def measurement_counts(self):
         """Returns the sorted histogram data of the run"""
         raw_counts = self.raw_counts()
-        return _format_counts(raw_counts)
+        if isinstance(raw_counts, dict):
+            return _format_counts(raw_counts)
+        return [_format_counts(counts) for counts in raw_counts]
 
     def plot_counts(self):
         """Plot histogram of measurement counts"""
         counts = self.measurement_counts()
-        return plot_histogram(counts)
+        if isinstance(counts, dict):
+            return plot_histogram(counts)
+        return [plot_histogram(count) for count in counts]

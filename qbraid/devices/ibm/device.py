@@ -102,7 +102,47 @@ class IBMBackendWrapper(DeviceLikeWrapper):
         transpiled = transpile(run_input, backend=backend)
         qiskit_job = backend.run(transpiled, shots=shots, memory=memory, **kwargs)
         qiskit_job_id = qiskit_job.job_id()
-        qbraid_job_id = init_job(qiskit_job_id, self, qbraid_circuit, shots)
+        qbraid_job_id = init_job(qiskit_job_id, self, [qbraid_circuit], shots)
+        qbraid_job = IBMJobWrapper(
+            qbraid_job_id, vendor_job_id=qiskit_job_id, device=self, vendor_jlo=qiskit_job
+        )
+        return qbraid_job
+
+    def run_batch(self, run_input, **kwargs):
+        """Runs circuit(s) on qiskit backend via :meth:`~qiskit.execute`
+
+        Uses the :meth:`~qiskit.execute` method to create a :class:`~qiskit.providers.Job` object,
+        applies a :class:`~qbraid.devices.ibm.IBMJobWrapper`, and return the result.
+
+        Args:
+            run_input: A circuit object list to run on the wrapped device.
+
+        Keyword Args:
+            shots (int): The number of times to run the task on the device. Default is 1024.
+
+
+        Returns:
+            qbraid.devices.ibm.IBMJobWrapper: The job like object for the run.
+
+        """
+        backend = self.vendor_dlo
+        qbraid_circuit_batch = []
+        run_input_batch = []
+        for circuit in run_input:
+            run_input, qbraid_circuit = self._compat_run_input(circuit)
+            run_input_batch.append(run_input)
+            qbraid_circuit_batch.append(qbraid_circuit)
+
+        shots = backend.options.get("shots") if "shots" not in kwargs else kwargs.pop("shots")
+        memory = (
+            True if "memory" not in kwargs else kwargs.pop("memory")
+        )  # Needed to get measurements
+        transpiled = transpile(run_input_batch, backend=backend)
+        qiskit_job = backend.run(transpiled, shots=shots, memory=memory, **kwargs)
+        qiskit_job_id = qiskit_job.job_id()
+
+        # to change to batch
+        qbraid_job_id = init_job(qiskit_job_id, self, qbraid_circuit_batch, shots)
         qbraid_job = IBMJobWrapper(
             qbraid_job_id, vendor_job_id=qiskit_job_id, device=self, vendor_jlo=qiskit_job
         )

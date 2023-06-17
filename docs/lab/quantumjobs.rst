@@ -105,7 +105,7 @@ At any time, it's now incredibly easy to retrieve the Job ID, recreate the ``Aws
     ...
 
 On qBraid, the devices you can access are not restricted by your choice of programming framework. Target any of our 20+ supported QPUs and simulators
-from Qiskit, Amazon Braket, Cirq, pyQuil, or OpenQASM using the `qBraid SDK <../sdk/devices.html>`_.
+from Qiskit, Amazon Braket, Cirq, pyQuil, or OpenQASM 2 using the `qBraid SDK <../sdk/devices.html>`_.
 
 .. seealso::
 

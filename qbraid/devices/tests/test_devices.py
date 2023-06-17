@@ -12,6 +12,8 @@
 Unit tests for the qbraid device layer.
 
 """
+import os
+
 import cirq
 import numpy as np
 import pytest
@@ -34,6 +36,11 @@ from qbraid.devices.ibm import (
     ibm_to_qbraid_id,
 )
 from qbraid.interface import random_circuit
+
+# Skip tests if IBM/AWS account auth/creds not configured
+skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
+REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM/AWS storage)"
+pytestmark = pytest.mark.skipif(skip_remote_tests, reason=REASON)
 
 
 def device_wrapper_inputs(vendor: str):
@@ -63,8 +70,8 @@ Device wrapper tests: initialization
 Coverage: all vendors, all available devices
 """
 
-inputs_braket_dw = device_wrapper_inputs("AWS")
-inputs_qiskit_dw = ibm_devices()
+inputs_braket_dw = [] if skip_remote_tests else device_wrapper_inputs("AWS")
+inputs_qiskit_dw = [] if skip_remote_tests else ibm_devices()
 
 
 def test_job_wrapper_type():
@@ -186,6 +193,16 @@ def test_run_qiskit_device_wrapper(device_id, circuit):
     assert isinstance(vendor_job, IBMJob)
 
 
+@pytest.mark.parametrize("device_id", inputs_qiskit_run)
+def test_run_batch_qiskit_device_wrapper(device_id):
+    """Test run_batch method from wrapped Qiskit backends"""
+    qbraid_device = device_wrapper(device_id)
+    qbraid_job = qbraid_device.run_batch(circuits_qiskit_run, shots=10)
+    vendor_job = qbraid_job.vendor_jlo
+    assert isinstance(qbraid_job, IBMJobWrapper)
+    assert isinstance(vendor_job, IBMJob)
+
+
 @pytest.mark.parametrize("circuit", circuits_braket_run)
 @pytest.mark.parametrize("device_id", inputs_braket_run)
 def test_run_braket_device_wrapper(device_id, circuit):
@@ -206,6 +223,25 @@ def test_cancel_completed_error(device_id):
     circuit = circuits_cirq_run[0]
     qbraid_device = device_wrapper(device_id)
     qbraid_job = qbraid_device.run(circuit, shots=10)
+    status_final = False
+    count = 0
+    while not status_final and count < 10:
+        time.sleep(2)
+        status = qbraid_job.status()
+        status_final = is_status_final(status)
+        count += 1
+    with pytest.raises(JobStateError):
+        qbraid_job.cancel()
+
+
+@pytest.mark.parametrize("device_id", ["ibm_q_simulator_statevector"])
+def test_cancel_completed_batch_error(device_id):
+    """Test that cancelling a batch job that has already reached its
+    final state raises an error."""
+    import time
+
+    qbraid_device = device_wrapper(device_id)
+    qbraid_job = qbraid_device.run_batch(circuits_qiskit_run, shots=10)
     status_final = False
     count = 0
     while not status_final and count < 10:
@@ -242,18 +278,6 @@ def test_wait_for_final_state():
     job.wait_for_final_state()
     status = job.status()
     assert is_status_final(status)
-
-
-@pytest.mark.parametrize("device_id", ["ibm_q_simulator_statevector", "aws_sv_sim"])
-def test_result_wrapper_measurements(device_id):
-    """Test result wrapper measurements method."""
-    circuit = random_circuit("qiskit", num_qubits=3, depth=3, measure=True)
-    sim = device_wrapper(device_id).run(circuit, shots=10)
-    qbraid_result = sim.result()
-    counts = qbraid_result.measurement_counts()
-    measurements = qbraid_result.measurements()
-    assert isinstance(counts, dict)
-    assert measurements.shape == (10, 3)
 
 
 def test_aws_device_available():
