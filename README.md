@@ -6,7 +6,6 @@
 [![PyPI version](https://img.shields.io/pypi/v/qbraid.svg?color=blue)](https://pypi.org/project/qbraid/)
 [![Downloads](https://img.shields.io/pypi/dm/qbraid.svg?color=blue)](https://pypi.org/project/qbraid/)
 [![License](https://img.shields.io/github/license/qBraid/qbraid.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Discord](https://img.shields.io/discord/771898982564626445.svg?color=pink)](https://discord.gg/TPBU2sa8Et)
 
 The qBraid-SDK is a Python toolkit for cross-framework abstraction,
