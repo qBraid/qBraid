@@ -2,7 +2,7 @@
 sympy
 pytest
 coverage
-tox<4
+tox>=4.2
 ipython
 qiskit-qasm3-import
 qiskit-braket-provider
