@@ -19,25 +19,40 @@ software tools for researchers and developers in quantum, as well as access to q
 - `Account <account.html>`_
    - `Add access key <account.html#add-access-key>`_
 
-- `Environments <environments.html>`_
-   - `Install environment <environments.html#install-environment>`_
-   - `Create environment <environments.html#create-environment>`_
-   - `Install new package <environments.html#install-new-package>`_
+- `Getting Started <getting_started.html>`_
+   - `Built-in extensions <getting_started.html#built-in-extensions>`_
 
 - `File Browser  <files.html>`_
    - `Open files <files.html#open-files>`_
 
+- `Environments <environments.html>`_
+   - `Install environment <environments.html#install-environment>`_
+   - `Create environment <environments.html#create-environment>`_
+   - `Share environment <environments.html#share-environment>`_
+   - `Uninstall environment <environments.html#uninstall-environment>`_
+   - `Install new package <environments.html#install-new-package>`_
+
+- `Kernels <kernels.html>`_
+   - `Add/remove kernels <kernels.html#add-remove-kernels>`_
+
 - `Notebooks <notebooks.html>`_
-   - `Add/remove kernels <notebooks.html#add-remove-kernels>`_
    - `Create notebook <notebooks.html#create-notebook>`_
    - `Switch notebook kernel <notebooks.html#switch-notebook-kernel>`_
    - `Share noteboook <notebooks.html#share-notebook>`_
 
-- `Quantum Jobs <quantumjobs.html>`_
-   - `Credits <quantumjobs.html#credits>`_
-   - `Which environments? <quantumjobs.html#which-environments>`_
-   - `Enable/disable <quantumjobs.html#enable-disable>`_
-   - `Manage <quantumjobs.html#manage>`_
+- `Quantum Devices <quantum_devices.html>`_
+   - `Device Status <quantum_devices.html#device-status>`_
+
+- `Quantum Jobs <quantum_jobs.html>`_
+   - `Credits <quantum_jobs.html#credits>`_
+   - `Which environments? <quantum_jobs.html#which-environments>`_
+   - `Enable/disable <quantum_jobs.html#enable-disable>`_
+   - `Manage <quantum_jobs.html#manage>`_
+
+- `Code Snippets <code_snippets.html>`_
+   - `Basic usage <code_snippets.html#basic-usage>`_
+   - `Create <code_snippets.html#create>`_
+   - `Share <code_snippets.html#share>`_
 
 - `Integrations <integrations.html>`_
    - `Visual Studio Code <integrations.html#visual-studio-code>`_

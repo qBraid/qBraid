@@ -34,3 +34,7 @@ of qBraid Lab using an access key or promotional code:
 .. seealso::
     
     - `Using access codes to connect to quantum devices on qBraid | Demo <https://youtu.be/K4vb2fzmSZQ>`_
+
+
+Organizations
+---------------
