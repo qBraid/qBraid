@@ -98,7 +98,6 @@ Documentation
    lab/overview
    lab/account
    lab/getting_started
-   lab/files
    lab/environments
    lab/kernels
    lab/notebooks

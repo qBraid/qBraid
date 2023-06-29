@@ -22,9 +22,6 @@ software tools for researchers and developers in quantum, as well as access to q
 - `Getting Started <getting_started.html>`_
    - `Built-in extensions <getting_started.html#built-in-extensions>`_
 
-- `File Browser  <files.html>`_
-   - `Open files <files.html#open-files>`_
-
 - `Environments <environments.html>`_
    - `Install environment <environments.html#install-environment>`_
    - `Create environment <environments.html#create-environment>`_
