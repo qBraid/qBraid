@@ -3,15 +3,15 @@
 Getting Started
 ================
 
-This section will walk you through the basics of using the lab interface.
+This section will walk you through the basics of using the Lab interface and managing your server instance.
 
 
-Launching Lab
----------------
+Launch Lab
+------------
 
 Use the drop-down at the top of your `account page <https://account.qbraid.com>`_ to select a Lab image. All users
-have access to the "Free" tier image, which includes 2 virtual CPUs and 4 GB of RAM. Paid subscription tiers include
-compute options ranging up to 10 virtual CPUs, GPU images, and application specific
+have access to the "Free" tier image, which includes 2 virtual CPUs and 4 GB of RAM. `Paid subscription tiers <https://www.qbraid.com/products>`_
+include compute options ranging up to 10 virtual CPUs, GPU images, and application specific
 images such as `Bloqade <https://queracomputing.github.io/Bloqade.jl/dev/>`_. Once you have selected an image, click **Launch Lab**.
 
 
@@ -22,7 +22,7 @@ images such as `Bloqade <https://queracomputing.github.io/Bloqade.jl/dev/>`_. On
   
 |
 
-Depending on its size, pulling an image may take up to 5 minutes the first time. Although, the next time you launch Lab, it will load much more quickly.
+Depending on its size, pulling an image may take up to 5 minutes the first time. The next time you launch Lab, it will load much more quickly.
 
 
 .. image:: ../_static/getting_started/loading.png
@@ -33,12 +33,34 @@ Depending on its size, pulling an image may take up to 5 minutes the first time.
 |
 
 
+Lab interface
+--------------
+
+Once your image is pulled, you will be taken to the qBraid Lab interface. Here are a few helpful resources to get started:
+
+1. Interactive tour: Click **Start Tour** (bottom right) to begin a guided tour of all of the Lab extensions and their key features.
+
+2. qBraid tutorials: The `qbraid-tutorials` directory (left-sidebar **FILES** tab) contains examples and tutorials for a wide range
+different quantum software packages. Many of the notebooks contain qBraid instructions and are runnable using the `Python 3 [Default]` environment.
+
+3. qBraid Docs: The **Quantum Docs** extension (bottom middle of Launcher, under **Other**) contains a collection of direct links to
+documentation pages for many of the most popular quantum software packages.
+
+4. Help drop-down: The top-bar menu **Help** drop-down contains links to more qBraid user guides, demos, and reference materials.
+
+
 .. image:: ../_static/getting_started/launcher.png
     :align: center
     :width: 800px
     :target: javascript:void(0);
   
 |
+
+Lab server
+-----------
+
+ The Hub Control Panel is the user interface that provides users with control and management over their individual server instances in the qBraid Lab system.
+ To access the control panel, go to **File** > **Hub Control Panel**, or navigate to `<https://lab.qbraid.com/hub/home>`_ directly from your browser.
 
 .. image:: ../_static/getting_started/file_hub.png
     :align: center
@@ -47,12 +69,17 @@ Depending on its size, pulling an image may take up to 5 minutes the first time.
   
 |
 
+From here, you can perform a number of important actions including **Logout** and **Stop My Server**. Stopping your server instance
+will not delete your server, but will stop it from running. Once your server is stopped, you can restart it by clicking **Start My Server**.
+
 .. image:: ../_static/getting_started/hub_home.png
     :align: center
     :width: 800px
     :target: javascript:void(0);
   
 |
+
+You can then restart Lab using the same image you used previously, or you can select a new image to launch.
 
 .. image:: ../_static/getting_started/hub.png
     :align: center
