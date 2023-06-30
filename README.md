@@ -145,7 +145,7 @@ Compare results in a consistent, unified format:
 ```
 
 ## Local account setup
-<img mg align="right" width="350" alt="api_key" src="https://github.com/qBraid/qBraid/assets/46977852/86235d04-4b12-40e0-befe-1eeacaac9104">
+<img mg align="right" width="350" alt="api_key" src="https://github.com/qBraid/qBraid/assets/46977852/c13d6035-194b-4520-84c1-e57e7f9f4340">
 
 To use the qBraid-SDK locally (outside of qBraid Lab), you must add your account
 credentials:
