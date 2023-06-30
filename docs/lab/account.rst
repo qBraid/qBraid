@@ -38,3 +38,7 @@ of qBraid Lab using an access key or promotional code:
 
 Organizations
 ---------------
+
+.. seealso::
+
+    - `<https://account.qbraid.com/organization>`_
