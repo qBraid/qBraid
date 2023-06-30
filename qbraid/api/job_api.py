@@ -42,7 +42,7 @@ def _qbraid_jobs_enabled():
     """Returns True if running qBraid Lab and qBraid Quantum Jobs
     proxy is enabled. Otherwise, returns False.
 
-    See https://docs.qbraid.com/en/latest/lab/quantumjobs.html
+    See https://docs.qbraid.com/en/latest/lab/quantum_jobs.html
     """
     proxy_file = os.path.join(SLUG_PATH, "qbraid", "proxy")
     if os.path.isfile(proxy_file):
