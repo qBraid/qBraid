@@ -97,10 +97,11 @@ Documentation
 
    lab/overview
    lab/account
+   lab/getting_started
    lab/environments
-   lab/files
+   lab/kernels
    lab/notebooks
-   lab/quantumjobs
+   lab/quantum_jobs
    lab/integrations
    lab/system
    lab/troubleshoot

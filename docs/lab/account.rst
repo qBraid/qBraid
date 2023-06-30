@@ -8,8 +8,8 @@ To use qBraid Lab, you must first sign in or create an account at `account.qbrai
 Add access key
 ---------------
 
-.. |accountProfile| image:: ../_static/account/account_profile_details.png
-    :width: 50%
+.. |accountManage| image:: ../_static/account/account_manage.png
+    :width: 80%
     :target: javascript:void(0);
 
 .. |submit| image:: ../_static/account/account_access_key.png
@@ -21,13 +21,11 @@ of qBraid Lab using an access key or promotional code:
 
 1. Sign in to `account.qbraid.com <https://account.qbraid.com>`_.
 
-2. Click on the account icon in the top right, and select **Profile**.
+2. On the left side of the page, inside the **Plan** info card, click **Manage**.
 
-3. Open the **Account Details** tab.
+|accountManage|
 
-|accountProfile|
-
-4. Scroll down to **Add an Access Key**, enter your key or promo-code, and click **Submit**.
+3. Scroll down to **Access Key**, enter your key or promo-code, and click **Submit**.
 
 |submit|
 
@@ -36,3 +34,7 @@ of qBraid Lab using an access key or promotional code:
 .. seealso::
     
     - `Using access codes to connect to quantum devices on qBraid | Demo <https://youtu.be/K4vb2fzmSZQ>`_
+
+
+Organizations
+---------------

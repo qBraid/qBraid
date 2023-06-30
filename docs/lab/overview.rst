@@ -19,28 +19,39 @@ software tools for researchers and developers in quantum, as well as access to q
 - `Account <account.html>`_
    - `Add access key <account.html#add-access-key>`_
 
+- `Getting Started <getting_started.html>`_
+   - `Launch Lab <getting_started.html#launch-lab>`_
+   - `Lab interface <getting_started.html#lab-interface>`_
+   - `Lab server <getting_started.html#lab-server>`_
+
 - `Environments <environments.html>`_
    - `Install environment <environments.html#install-environment>`_
    - `Create environment <environments.html#create-environment>`_
+   - `Share environment <environments.html#share-environment>`_
+   - `Uninstall environment <environments.html#uninstall-environment>`_
    - `Install new package <environments.html#install-new-package>`_
 
-- `File Browser  <files.html>`_
-   - `Open files <files.html#open-files>`_
+- `Kernels <kernels.html>`_
+   - `Add/remove kernels <kernels.html#add-remove-kernels>`_
 
 - `Notebooks <notebooks.html>`_
-   - `Add/remove kernels <notebooks.html#add-remove-kernels>`_
    - `Create notebook <notebooks.html#create-notebook>`_
    - `Switch notebook kernel <notebooks.html#switch-notebook-kernel>`_
    - `Share noteboook <notebooks.html#share-notebook>`_
 
-- `Quantum Jobs <quantumjobs.html>`_
-   - `Credits <quantumjobs.html#credits>`_
-   - `Which environments? <quantumjobs.html#which-environments>`_
-   - `Enable/disable <quantumjobs.html#enable-disable>`_
-   - `Manage <quantumjobs.html#manage>`_
+- `Quantum Jobs <quantum_jobs.html>`_
+   - `Credits <quantum_jobs.html#credits>`_
+   - `Which environments? <quantum_jobs.html#which-environments>`_
+   - `Enable/disable <quantum_jobs.html#enable-disable>`_
+   - `Manage <quantum_jobs.html#manage>`_
 
 - `Integrations <integrations.html>`_
    - `Visual Studio Code <integrations.html#visual-studio-code>`_
+   - `JupyterLab Extensions <integrations.html#jupyerlab-extensions>`_
+   - `Git <integrations.html#git>`_
+   - `Resource Usage <integrations.html#resource-usage>`_
+   - `Omnisearch <integrations.html#omnisearch>`_
+   - `Quantum Docs <integrations.html#quantum-docs>`_
 
 - `System Info <system.html>`_
    - `Operating System <system.html#operating-system>`_

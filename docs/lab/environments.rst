@@ -7,10 +7,8 @@ The `qBraid Lab Environment Manager <https://youtu.be/LyavbzSkvRo>`_ is a robust
 provided to qBraid end-users through a simple, intuitive graphical user interface.
 
 To expand the Environment Manager sidebar, click on **Envs** in the upper-right of the Lab console.
-**My Environments** are your currently installed environments. The qBraid Default environment and
-Microsoft Q# environment are installed by default.
-
-Have an idea for a new qBraid environment? Or want your own project featured? Fill out our `New Environment Request Form <https://forms.gle/a4v7Kdn7G7bs9jYD8>`_.
+**My Environments** are your currently installed environments. The qBraid Default environment is pre-installed for all users.
+For `Standard/Pro users <https://account.qbraid.com/subscription>`_, the Microsoft Q# environment also comes pre-installed.
 
  .. seealso::
    
@@ -42,17 +40,7 @@ Click **Browse Environments** to return to the **My Environments** tab and view 
 |
 
 4. When the installation is complete, the environment panel's action button will switch from
-**Installing...** to **Activate**. Clicking **Activate** creates a new ipykernel, see
-`Add/remove kernels <notebooks.html#add-remove-kernels>`_ for more.
-
-.. image:: ../_static/notebooks/kernel_activate.png
-    :align: center
-    :width: 800px
-    :target: javascript:void(0);
-  
-|
-
-To uninstall the environment, click on **More**, and then **Uninstall**.
+**Installing...** to **Activate**.
 
 
 Create environment
@@ -98,6 +86,7 @@ install additional packages, remove packages, add/delete tags, and edit the envi
 
 |
 
+
 Share environment
 -------------------
 
@@ -112,7 +101,27 @@ Then, under 'Share Environment' , enter the qBraid user email, and click **Share
 
 .. image:: ../_static/environments/env_share.png
     :align: center
-    :width: 600px
+    :width: 500px
+    :target: javascript:void(0);
+  
+|
+
+
+Uninstall environment
+----------------------
+
+To uninstall an environment, click on **More**, and then **Uninstall**.
+
+
+Activate environment (kernel)
+------------------------------
+
+1. Clicking **Activate** creates a new ipykernel, see
+`Add/remove kernels <kernels.html#add-remove-kernels>`_ for more.
+
+.. image:: ../_static/notebooks/kernel_activate.png
+    :align: center
+    :width: 800px
     :target: javascript:void(0);
   
 |
@@ -185,7 +194,7 @@ will *not* persist between sessions. Instead, use the qBraid CLI to list your en
    qsharp                         /opt/.qbraid/environments/qsharp_b54crn
    default                  jobs  /opt/.qbraid/environments/qbraid_000000
    qbraid_sdk               jobs  /home/jovyan/.qbraid/environments/qbraid_sdk_9j9sjy
-   qiskit                   jobs  /home/jovyan/.qbraid/environments/qiskit_9y9siy
+   qiskit                         /home/jovyan/.qbraid/environments/qiskit_9y9siy
 
 
 activate an environment, and perform your pip installs from there. For example, installing pytket into the qiskit environment:
@@ -197,8 +206,8 @@ activate an environment, and perform your pip installs from there. For example, 
    $ deactivate
 
 
-How environments work
-----------------------
+Access/usage from command-line 
+--------------------------------
 
 qBraid environments are simply `Python virtual environments <https://docs.python.org/3/library/venv.html>`_ in disguise.
 There are two directories where qBraid environment can be found. One at the system level, and one at the local / user level:
@@ -225,3 +234,8 @@ Python interpreter when invoking Python, e.g. ``/<path-to-venv>/bin/python``. Th
 new packages into a qBraid environment from terminal or inside a notebook, make sure to use the full pip path, or use one of the `three approaches
 detailed above <environments.html#install-new-package>`_. Simply running ``pip install ...`` will default to
 ``/opt/conda/bin/pip``, which will cause dependency conflicts, and the installed packages will be overridden the next time you launch lab.
+
+
+.. seealso::
+
+    - Have an idea for a new qBraid environment? Or want your own project featured? Fill out our `New Environment Request Form <https://forms.gle/a4v7Kdn7G7bs9jYD8>`_.

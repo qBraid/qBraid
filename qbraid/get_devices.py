@@ -67,14 +67,13 @@ def _get_device_data(query):
         raise ApiError(devices)
     device_data = []
     tot_dev = 0
-    tot_lag = 0
+    min_lag = 1e7
     for document in devices:
         qbraid_id = document["qbraid_id"]
         name = document["name"]
         provider = document["provider"]
         status_refresh = document["statusRefresh"]
         timestamp = datetime.utcnow()
-        lag = 0
         if status_refresh is not None:
             format_datetime = str(status_refresh)[:10].split("-") + str(status_refresh)[
                 11:19
@@ -82,14 +81,14 @@ def _get_device_data(query):
             format_datetime_int = [int(x) for x in format_datetime]
             mk_datime = datetime(*format_datetime_int)
             lag = (timestamp - mk_datime).seconds
+            min_lag = min(lag, min_lag)
         status = document["status"]
         tot_dev += 1
-        tot_lag += lag
         device_data.append([provider, name, qbraid_id, status])
     if tot_dev == 0:
         return [], 0  # No results matching given criteria
     device_data.sort()
-    lag_minutes, _ = divmod(tot_lag / tot_dev, 60)
+    lag_minutes, _ = divmod(min_lag, 60)
     return device_data, int(lag_minutes)
 
 
