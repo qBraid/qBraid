@@ -101,7 +101,7 @@ Then, under 'Share Environment' , enter the qBraid user email, and click **Share
 
 .. image:: ../_static/environments/env_share.png
     :align: center
-    :width: 600px
+    :width: 500px
     :target: javascript:void(0);
   
 |

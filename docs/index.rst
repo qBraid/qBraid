@@ -101,9 +101,7 @@ Documentation
    lab/environments
    lab/kernels
    lab/notebooks
-   lab/quantum_devices
    lab/quantum_jobs
-   lab/code_snippets
    lab/integrations
    lab/system
    lab/troubleshoot

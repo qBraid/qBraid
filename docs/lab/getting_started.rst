@@ -17,7 +17,7 @@ images such as `Bloqade <https://queracomputing.github.io/Bloqade.jl/dev/>`_. On
 
 .. image:: ../_static/getting_started/launch_lab.png
     :align: center
-    :width: 800px
+    :width: 900px
     :target: javascript:void(0);
   
 |
@@ -38,20 +38,15 @@ Lab interface
 
 Once your image is pulled, you will be taken to the qBraid Lab interface. Here are a few helpful resources to get started:
 
-1. Interactive tour: Click **Start Tour** (bottom right) to begin a guided tour of all of the Lab extensions and their key features.
-
-2. qBraid tutorials: The `qbraid-tutorials` directory (left-sidebar **FILES** tab) contains examples and tutorials for a wide range
-different quantum software packages. Many of the notebooks contain qBraid instructions and are runnable using the `Python 3 [Default]` environment.
-
-3. qBraid Docs: The **Quantum Docs** extension (bottom middle of Launcher, under **Other**) contains a collection of direct links to
-documentation pages for many of the most popular quantum software packages.
-
-4. Help drop-down: The top-bar menu **Help** drop-down contains links to more qBraid user guides, demos, and reference materials.
+* Interactive tour: Click **Start Tour** (bottom right) to begin a guided tour of all of the Lab extensions and their key features.
+* qBraid tutorials: The ``qbraid-tutorials`` directory (left-sidebar **FILES** tab) contains examples and tutorials for a wide range different quantum software packages. Many of the notebooks contain qBraid instructions and are runnable using the ``Python 3 [Default]`` environment.
+* qBraid Docs: The **Quantum Docs** extension (bottom middle of Launcher, under **Other**) contains a collection of direct links to documentation pages for many of the most popular quantum software packages.
+* Help drop-down: The top-bar menu **Help** drop-down contains links to more qBraid user guides, demos, and reference materials.
 
 
 .. image:: ../_static/getting_started/launcher.png
     :align: center
-    :width: 800px
+    :width: 900px
     :target: javascript:void(0);
   
 |
@@ -64,7 +59,7 @@ Lab server
 
 .. image:: ../_static/getting_started/file_hub.png
     :align: center
-    :width: 800px
+    :width: 400px
     :target: javascript:void(0);
   
 |

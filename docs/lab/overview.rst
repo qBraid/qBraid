@@ -20,7 +20,9 @@ software tools for researchers and developers in quantum, as well as access to q
    - `Add access key <account.html#add-access-key>`_
 
 - `Getting Started <getting_started.html>`_
-   - `Built-in extensions <getting_started.html#built-in-extensions>`_
+   - `Launch Lab <getting_started.html#launch-lab>`_
+   - `Lab interface <getting_started.html#lab-interface>`_
+   - `Lab server <getting_started.html#lab-server>`_
 
 - `Environments <environments.html>`_
    - `Install environment <environments.html#install-environment>`_
@@ -37,22 +39,19 @@ software tools for researchers and developers in quantum, as well as access to q
    - `Switch notebook kernel <notebooks.html#switch-notebook-kernel>`_
    - `Share noteboook <notebooks.html#share-notebook>`_
 
-- `Quantum Devices <quantum_devices.html>`_
-   - `Device Status <quantum_devices.html#device-status>`_
-
 - `Quantum Jobs <quantum_jobs.html>`_
    - `Credits <quantum_jobs.html#credits>`_
    - `Which environments? <quantum_jobs.html#which-environments>`_
    - `Enable/disable <quantum_jobs.html#enable-disable>`_
    - `Manage <quantum_jobs.html#manage>`_
 
-- `Code Snippets <code_snippets.html>`_
-   - `Basic usage <code_snippets.html#basic-usage>`_
-   - `Create <code_snippets.html#create>`_
-   - `Share <code_snippets.html#share>`_
-
 - `Integrations <integrations.html>`_
    - `Visual Studio Code <integrations.html#visual-studio-code>`_
+   - `JupyterLab Extensions <integrations.html#jupyerlab-extensions>`_
+   - `Git <integrations.html#git>`_
+   - `Resource Usage <integrations.html#resource-usage>`_
+   - `Omnisearch <integrations.html#omnisearch>`_
+   - `Quantum Docs <integrations.html#quantum-docs>`_
 
 - `System Info <system.html>`_
    - `Operating System <system.html#operating-system>`_
