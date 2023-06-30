@@ -36,7 +36,7 @@ For the best experience, install the qBraid-SDK environment on
 Using the SDK on qBraid Lab means direct, pre-configured access to all
 [Amazon Braket supported devices](https://docs.aws.amazon.com/braket/latest/developerguide/braket-devices.html)
 with no additional access keys or API tokens required. See
-[qBraid Quantum Jobs](https://docs.qbraid.com/en/latest/lab/quantumjobs.html)
+[qBraid Quantum Jobs](https://docs.qbraid.com/en/latest/lab/quantum_jobs.html)
 for more.
 
 ### Local install
@@ -145,7 +145,7 @@ Compare results in a consistent, unified format:
 ```
 
 ## Local account setup
-<img mg align="right" width="350" alt="api_key" src="https://github.com/qBraid/qBraid/assets/46977852/86235d04-4b12-40e0-befe-1eeacaac9104">
+<img mg align="right" width="350" alt="api_key" src="https://github.com/qBraid/qBraid/assets/46977852/c13d6035-194b-4520-84c1-e57e7f9f4340">
 
 To use the qBraid-SDK locally (outside of qBraid Lab), you must add your account
 credentials:
