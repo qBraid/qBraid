@@ -48,7 +48,7 @@ Green or red highlighting over the ``jobs`` keyword (not pictured) indicates whe
     amazon_braket            jobs  /home/jovyan/.qbraid/environments/aws_braket_kwx6dl
     custom_env                     /home/jovyan/.qbraid/environments/custom_env_lj3zlt
 
-qBraid Quantum Jobs are not limited to environments with pre-configured support. You can `add <../cli/jobs-add.html>`_ Quantum Jobs to any environment that has Amazon Braket or Qiskit installed:
+qBraid Quantum Jobs are not limited to environments with pre-configured support. You can `add <../cli/jobs-add.html>`_ Quantum Jobs to any environment that has Amazon Braket installed:
 
 .. code-block::
 
@@ -58,7 +58,27 @@ qBraid Quantum Jobs are not limited to environments with pre-configured support.
 Enable/disable
 ---------------
 
-To use Quantum Jobs in an environment, they must be `enabled <../cli/jobs-enable.html>`_:
+To use Quantum Jobs in an environment, they must be enabled. This can be done using
+the Quantum Jobs toggle in the Environment Manager, or using the qBraid CLI.
+
+Quantum Jobs Toggle
+^^^^^^^^^^^^^^^^^^^^^
+
+To enable/disable Quantum Jobs from the Environment Manager, simply click the environment's **More** button,
+and then flip the Quantum Jobs Toggle (located under the **General Info** section). Flipped to the *left* means
+quantum jobs are *disabled*; flipped to the *right* means quantum jobs are *enabled*.
+
+.. image:: ../_static/jobs/jobs_toggle.png
+    :width: 70%
+    :alt: Quantum Jobs toggle
+    :target: javascript:void(0);
+
+|
+
+CLI Command
+^^^^^^^^^^^^^
+
+To enable Quantum Jobs from Terminal, use the qBraid CLI `jobs enable <../cli/jobs-enable.html>`_ command:
 
 .. code-block::
 
@@ -74,20 +94,22 @@ To `disable <../cli/jobs-disable.html>`_ Quantum Jobs and run programs using you
 
 To reset your AWS credentials, follow instructions `Quick configuration with aws configure <https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-quickstart.html#cli-configure-quickstart-config>`_.
 
- 
+
+.. image:: ../_static/jobs/jobs_batch.png
+    :align: right
+    :width: 350px
+    :alt: IonQ Aria-1 Batch Job
+    :target: javascript:void(0);
+
 Manage
 -------
 
 Before executing/submitting your quantum program, make sure that your notebook kernel matches the correct environment, and
-that Quantum Jobs are enabled. In the example below, a two-qubit bell circuit program was submitted to IonQ using 100 shots.
-From the Quantum Jobs sidebar, you can view the details of your submitted jobs, monitor the status of each job, and track your credits.
-In this example, the job cost ~130 qBraid credits, equivalent to $1.30 USD.
+that Quantum Jobs are enabled. From the Quantum Jobs sidebar, you can view the details of your submitted jobs, monitor the
+status of each job, and track your credits.
 
-.. image:: ../_static/jobs/jobs_ionq.png
-    :align: center
-    :width: 800px
-    :target: javascript:void(0);
-
+In the example to the right, a batch of 3 quantum jobs were submitted to IonQ Aria-1 device. Each job used 500 shots,
+so the cost was ~4590 qBraid credits, equivalent to $45.90 USD.
 
 At any time, it's now incredibly easy to retrieve the Job ID, recreate the ``AwsQuantumTask`` object in a new program, and get the results:
 
@@ -102,7 +124,20 @@ At any time, it's now incredibly easy to retrieve the Job ID, recreate the ``Aws
     ...
 
 On qBraid, the devices you can access are not restricted by your choice of programming framework. Target any of our 20+ supported QPUs and simulators
-from Qiskit, Amazon Braket, Cirq, pyQuil, or OpenQASM 2 using the `qBraid SDK <../sdk/devices.html>`_.
+from Qiskit, Amazon Braket, Cirq, PyQuil, or OpenQASM 2 using the `qBraid SDK <../sdk/devices.html>`_.
+
+Cancel/delete jobs
+--------------------
+
+You can cancel and delete jobs using the Quantum Jobs sidebar. You can only delete jobs that have reached a
+final state, and can only cancel jobs that have not yet reached a final state (e.g. ``COMPLETED`` or ``FAILED``).
+
+.. image:: ../_static/jobs/jobs_cancel_delete.png
+    :width: 80%
+    :alt: Cancel delete jobs
+    :target: javascript:void(0);
+
+|
 
 .. seealso::
 

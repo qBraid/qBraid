@@ -28,8 +28,10 @@ software tools for researchers and developers in quantum, as well as access to q
    - `Install environment <environments.html#install-environment>`_
    - `Create environment <environments.html#create-environment>`_
    - `Share environment <environments.html#share-environment>`_
-   - `Uninstall environment <environments.html#uninstall-environment>`_
+   - `Uninstall / cancel install environment <environments.html#uninstall-cancel-install-environment>`_
    - `Install new package <environments.html#install-new-package>`_
+   - `Activate environment (kernel) <environments.html#activate-environment-kernel>`_
+   - `Command-line usage <environments.html#command-line-usage>`_
 
 - `Kernels <kernels.html>`_
    - `Add/remove kernels <kernels.html#add-remove-kernels>`_
@@ -38,6 +40,9 @@ software tools for researchers and developers in quantum, as well as access to q
    - `Create notebook <notebooks.html#create-notebook>`_
    - `Switch notebook kernel <notebooks.html#switch-notebook-kernel>`_
    - `Share noteboook <notebooks.html#share-notebook>`_
+
+- `Quantum Devices <quantum_devices.html>`_
+   - `Quantum Devices Sidebar <quantum_devices.html#quantum-devices-sidebar>`_
 
 - `Quantum Jobs <quantum_jobs.html>`_
    - `Credits <quantum_jobs.html#credits>`_
