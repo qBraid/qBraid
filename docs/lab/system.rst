@@ -77,6 +77,30 @@ Cross-platform Tools
 - `Microsoft .NET CLI <https://docs.microsoft.com/en-us/dotnet/core/tools/>`_
 
 
++------------------+-------------+
+| Python           | 3.9.12      |
++------------------+-------------+
+| pip              | 23.1.2      |
++------------------+-------------+
+| conda            | 4.12.0      |
++------------------+-------------+
+| jupyterlab       | 3.5.3       |
++------------------+-------------+
+| node             | 17.9.0      |
++------------------+-------------+
++------------------+-------------+
+| GPU architecture | Turing      |
++------------------+-------------+
+| CUDA             | 11.4        |
++------------------+-------------+
+| CPU architecture | x86_64      |
++------------------+-------------+
+| Operating System | Linux       |
++------------------+-------------+
+| Driver           | 470.182.03  |
++------------------+-------------+
+
+
 .. note::
     Support for the above-listed frameworks, libraries, and cross-platform tools may vary based on your qBraid subscription tier.
     Visit `account.qbraid.com/billing <https://account.qbraid.com/billing>`_ to learn more.

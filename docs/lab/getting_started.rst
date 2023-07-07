@@ -54,8 +54,8 @@ Once your image is pulled, you will be taken to the qBraid Lab interface. Here a
 Lab server
 -----------
 
- The Hub Control Panel is the user interface that provides users with control and management over their individual server instances in the qBraid Lab system.
- To access the control panel, go to **File** > **Hub Control Panel**, or navigate to `<https://lab.qbraid.com/hub/home>`_ directly from your browser.
+The Hub Control Panel is the user interface that provides users with control and management over their individual server instances in the qBraid Lab system.
+To access the control panel, go to **File** > **Hub Control Panel**, or navigate to `<https://lab.qbraid.com/hub/home>`_ directly from your browser.
 
 From here, you can perform a number of important actions including **Logout** and **Stop My Server**. Stopping your server instance
 will not delete your server, but will stop it from running. Once your server is stopped, you can restart it by clicking **Start My Server**.
