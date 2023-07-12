@@ -52,6 +52,7 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 build/coverage/*
+qbraid/transpiler/code/tests/_braket_out_*.py
 
 # Translations
 *.mo
