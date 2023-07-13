@@ -3,9 +3,7 @@
         "requirements.txt",
         "requirements-dev.txt"
     ],
-    "extra_dependencies": [
-        "numpy==1.*,<1.24"
-    ],
+    "extra_dependencies": [],
     "language": {
         "name": "python",
         "versions": ["3.10"]
