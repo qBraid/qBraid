@@ -24,6 +24,7 @@ Operating System
 
 - `Amazon Linux 2 <https://aws.amazon.com/amazon-linux-2/>`_
 - `Ubuntu 20.04.4 LTS (Focal Fossa) <https://releases.ubuntu.com/20.04/>`_
+- Architecture : `x86_64 <https://en.wikipedia.org/wiki/X86-64>`_
 
 
 GNU Packages
@@ -77,25 +78,18 @@ Cross-platform Tools
 - `Microsoft .NET CLI <https://docs.microsoft.com/en-us/dotnet/core/tools/>`_
 
 
+
+GPUs
+------
+
 +------------------+-------------+
-| Python           | 3.9.12      |
+| Provider         | NVIDIA      |
 +------------------+-------------+
-| pip              | 23.1.2      |
+| Architecture     | Turing      |
 +------------------+-------------+
-| conda            | 4.12.0      |
+| Name             | Telsa T4    |
 +------------------+-------------+
-| jupyterlab       | 3.5.3       |
-+------------------+-------------+
-| node             | 17.9.0      |
-+------------------+-------------+
-+------------------+-------------+
-| GPU architecture | Turing      |
-+------------------+-------------+
-| CUDA             | 11.4        |
-+------------------+-------------+
-| CPU architecture | x86_64      |
-+------------------+-------------+
-| Operating System | Linux       |
+| CUDA             | 11.5        |
 +------------------+-------------+
 | Driver           | 470.182.03  |
 +------------------+-------------+
