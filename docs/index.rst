@@ -103,6 +103,7 @@ Documentation
    lab/notebooks
    lab/quantum_devices
    lab/quantum_jobs
+   lab/gpu
    lab/integrations
    lab/system
    lab/troubleshoot

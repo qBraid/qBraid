@@ -24,6 +24,7 @@ Operating System
 
 - `Amazon Linux 2 <https://aws.amazon.com/amazon-linux-2/>`_
 - `Ubuntu 20.04.4 LTS (Focal Fossa) <https://releases.ubuntu.com/20.04/>`_
+- Architecture : `x86_64 <https://en.wikipedia.org/wiki/X86-64>`_
 
 
 GNU Packages
@@ -75,6 +76,23 @@ Cross-platform Tools
 - `Azure CLI <https://docs.microsoft.com/en-us/cli/azure/>`_
 - `Azure CLI quantum extension <https://docs.microsoft.com/en-us/cli/azure/quantum?view=azure-cli-latest>`_
 - `Microsoft .NET CLI <https://docs.microsoft.com/en-us/dotnet/core/tools/>`_
+
+
+
+GPUs
+------
+
++------------------+-------------+
+| Provider         | NVIDIA      |
++------------------+-------------+
+| Architecture     | Turing      |
++------------------+-------------+
+| Name             | Telsa T4    |
++------------------+-------------+
+| CUDA             | 11.5        |
++------------------+-------------+
+| Driver           | 470.182.03  |
++------------------+-------------+
 
 
 .. note::

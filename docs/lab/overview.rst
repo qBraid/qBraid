@@ -50,6 +50,11 @@ software tools for researchers and developers in quantum, as well as access to q
    - `Enable/disable <quantum_jobs.html#enable-disable>`_
    - `Manage <quantum_jobs.html#manage>`_
 
+- `GPUs <gpu.html>`_
+   - `Launch GPU instance <gpu.html#launch-gpu-instance>`_
+   - `Configuration <gpu.html#configuration>`_
+   - `GPU-enabled environments <gpu.html#gpu-enabled-environments>`_
+
 - `Integrations <integrations.html>`_
    - `Visual Studio Code <integrations.html#visual-studio-code>`_
    - `JupyterLab Extensions <integrations.html#jupyerlab-extensions>`_
