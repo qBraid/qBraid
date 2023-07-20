@@ -103,8 +103,12 @@ A ``lightning.gpu`` device can be loaded using:
 
 The above device will allow all operations to be performed on the pre-configured CUDA capable GPU. If not
 used inside the qBraid GPU instance, or if the cuQuantum libraries are not installed in the given environment,
-the device will fall-back to ``lightning.qubit`` and perform all simulation on the CPU. For more, see
-`Pennylane-Lightning-GPU device usage <https://docs.pennylane.ai/projects/lightning-gpu/en/latest/devices.html>`_.
+the device will fall-back to ``lightning.qubit`` and perform all simulation on the CPU.
+
+.. seealso::
+    
+    - `Pennylane-Lightning-GPU device usage <https://docs.pennylane.ai/projects/lightning-gpu/en/latest/devices.html>`_
+    - `qBraid Lab Demo Pennylane-Lightning-GPU <https://github.com/qBraid/qbraid-lab-demo/blob/main/qbraid_lab/gpu/lightning_gpu_benchmark.ipynb>`_
 
 
 Qiskit Aer
@@ -138,7 +142,7 @@ Here is a basic example:
     circ.measure_all()
 
     # Construct an ideal simulator
-    aersim = AerSimulator(device='GPU')
+    aersim = AerSimulator(method='statevector', device='GPU')
 
     # Perform an ideal simulation
     result_ideal = qiskit.execute(circ, aersim).result()
