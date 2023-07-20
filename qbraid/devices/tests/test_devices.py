@@ -13,6 +13,7 @@ Unit tests for the qbraid device layer.
 
 """
 import os
+import time
 
 import cirq
 import numpy as np
