@@ -157,7 +157,7 @@ class QbraidSession(Session):
                     return config[section][config_name]
         return None
 
-    def save_config(
+    def save_config(  # pylint: disable=too-many-arguments
         self,
         user_email: Optional[str] = None,
         api_key: Optional[str] = None,
