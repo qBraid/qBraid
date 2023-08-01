@@ -53,6 +53,7 @@ class QbraidSession(Session):
         self,
         user_email: Optional[str] = None,
         api_key: Optional[str] = None,
+        id_token: Optional[str] = None,
         refresh_token: Optional[str] = None,
         base_url: Optional[str] = None,
         retries_total: int = 5,
@@ -63,6 +64,7 @@ class QbraidSession(Session):
 
         self.user_email = user_email
         self.api_key = api_key
+        self.id_token = id_token
         self.refresh_token = refresh_token
         self.base_url = base_url
         self.verify = False
@@ -111,6 +113,19 @@ class QbraidSession(Session):
             self.headers.update({"api-key": api_key})  # type: ignore[attr-defined]
 
     @property
+    def id_token(self) -> Optional[str]:
+        """Return the session id token."""
+        return self._id_token
+
+    @id_token.setter
+    def id_token(self, value: Optional[str]) -> None:
+        """Set the session id token."""
+        id_token = value or self.get_config_variable("id-token")
+        self._refresh_token = id_token or os.getenv("ID_TOKEN")
+        if id_token:
+            self.headers.update({"id-token": id_token})  # type: ignore[attr-defined]
+
+    @property
     def refresh_token(self) -> Optional[str]:
         """Return the session refresh token."""
         return self._refresh_token
@@ -143,6 +158,7 @@ class QbraidSession(Session):
         self,
         user_email: Optional[str] = None,
         api_key: Optional[str] = None,
+        id_token: Optional[str] = None,
         refresh_token: Optional[str] = None,
         base_url: Optional[str] = None,
     ) -> None:
@@ -151,11 +167,13 @@ class QbraidSession(Session):
         Args:
             user_email:  JupyterHub User.
             api_key: Authenticated qBraid api-key.
+            id_token: Authenticated qBraid id-token.
             refresh_token: Authenticated qBraid refresh-token.
             base_url: Base URL for the session's requests.
         """
         self.user_email = user_email or self.user_email
         self.api_key = api_key or self.api_key
+        self.id_token = refresh_token or self.id_token
         self.refresh_token = refresh_token or self.refresh_token
         self.base_url = base_url or self.base_url
 
@@ -193,6 +211,8 @@ class QbraidSession(Session):
                 config.set(section, "email", self.user_email)
             if self.api_key:
                 config.set(section, "api-key", self.api_key)
+            if self.id_token:
+                config.set(section, "id-token", self.id_token)
             if self.refresh_token:
                 config.set(section, "refresh-token", self.refresh_token)
             if self.base_url:
