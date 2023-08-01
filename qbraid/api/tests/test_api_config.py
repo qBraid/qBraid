@@ -20,7 +20,7 @@ import pytest
 from qiskit_ibm_provider import IBMProvider
 
 from qbraid.api.exceptions import AuthError, RequestsApiError
-from qbraid.api.session import QbraidSession
+from qbraid.api.session import DEFAULT_CONFIG_PATH, QbraidSession
 
 aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
 aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
@@ -84,6 +84,20 @@ def set_config():
             config.write(cfgfile)
 
 
+def _remove_id_token_qbraidrc():
+    """Remove id-token from qbraidrc file."""
+    try:
+        with open(DEFAULT_CONFIG_PATH, "r") as file:
+            lines = file.readlines()
+
+        with open(DEFAULT_CONFIG_PATH, "w") as file:
+            for line in lines:
+                if not line.startswith("id-token"):
+                    file.write(line)
+    except FileNotFoundError:
+        pass
+
+
 if not skip_remote_tests:
     set_config()
 
@@ -101,6 +115,20 @@ def test_qbraid_session_from_args():
     session = QbraidSession(refresh_token=refresh_token)
     assert session.refresh_token == refresh_token
     del session
+
+
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+def test_qbraid_config_overwrite_with_id_token():
+    """Test setting/saving id-token and then test overwritting config value"""
+    dummy_id_token = "alice123"
+    dummy_id_token_overwrite = "bob456"
+    session = QbraidSession(id_token=dummy_id_token)
+    assert session.id_token == dummy_id_token
+    session.save_config()
+    assert session.get_config_variable("id-token") == dummy_id_token
+    session.save_config(id_token=dummy_id_token_overwrite)
+    assert session.get_config_variable("id-token") == dummy_id_token_overwrite
+    _remove_id_token_qbraidrc()
 
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
