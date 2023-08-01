@@ -20,7 +20,7 @@ import pytest
 from qiskit_ibm_provider import IBMProvider
 
 from qbraid.api.exceptions import AuthError, RequestsApiError
-from qbraid.api.session import QbraidSession, DEFAULT_CONFIG_PATH
+from qbraid.api.session import DEFAULT_CONFIG_PATH, QbraidSession
 
 aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
 aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
