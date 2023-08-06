@@ -12,21 +12,21 @@
 
 
 """
-Module defining Qasm2CircuitWrapper Class
+Module defining Qasm3CircuitWrapper Class
 
 """
-from qbraid.interface.qbraid_qasm.tools import qasm_depth, qasm_num_qubits, qasm_qubits
+from qbraid.interface.qbraid_qasm.tools import qasm3_depth, qasm_num_qubits, qasm_qubits
 from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper
 
 
-class QasmCircuitWrapper(QuantumProgramWrapper):
-    """Wrapper class for OpenQASM 2 strings."""
+class Qasm3CircuitWrapper(QuantumProgramWrapper):
+    """Wrapper class for OpenQASM 3 strings."""
 
     def __init__(self, qasm_str: str):
-        """Create a QasmCircuitWrapper
+        """Create a Qasm3CircuitWrapper
 
         Args:
-            circuit: the OpenQASM 2 string to be wrapped
+            circuit: the OpenQASM 3 string to be wrapped
 
         """
         # coverage: ignore
@@ -34,6 +34,6 @@ class QasmCircuitWrapper(QuantumProgramWrapper):
 
         self._qubits = qasm_qubits(qasm_str)
         self._num_qubits = qasm_num_qubits(qasm_str)
-        self._depth = qasm_depth(qasm_str)
-        self._package = "qasm2"
+        self._depth = qasm3_depth(qasm_str)
+        self._package = "qasm3"
         self._program_type = "str"

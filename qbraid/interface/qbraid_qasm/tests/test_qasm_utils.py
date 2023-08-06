@@ -11,14 +11,16 @@
 import logging
 import os
 
+import numpy as np
 import pytest
 from qiskit.circuit import QuantumCircuit
-from qiskit.qasm3 import loads
+from qiskit.qasm3 import dumps, loads
 
 from qbraid.interface import circuits_allclose, random_circuit
 from qbraid.interface.qbraid_qasm.circuits import _qasm3_random, qasm2_bell, qasm2_shared15
 from qbraid.interface.qbraid_qasm.tools import (
     convert_to_qasm3,
+    qasm3_depth,
     qasm_depth,
     qasm_num_qubits,
     qasm_qubits,
@@ -26,21 +28,37 @@ from qbraid.interface.qbraid_qasm.tools import (
 
 
 def test_qasm_qubits():
-    """test calculate qasm qubit"""
+    """Test getting QASM qubits"""
 
     assert qasm_qubits(qasm2_bell()) == ["qreg q[2];"]
     assert qasm_qubits(qasm2_shared15()) == ["qreg q[4];"]
 
 
 def test_qasm_num_qubits():
+    """Test calculating number of qubits in qasm2 circuit"""
     assert qasm_num_qubits(qasm2_bell()) == 2
     assert qasm_num_qubits(qasm2_shared15()) == 4
 
 
+def test_qasm3_num_qubits():
+    """Test calculating number of qubits in qasm3 circuit"""
+    num_qubits = np.random.randint(2, 10)
+    qiskit_circuit = random_circuit("qiskit", num_qubits=num_qubits)
+    qasm3_str = dumps(qiskit_circuit)
+    assert qasm_num_qubits(qasm3_str) == num_qubits
+
+
 def test_qasm_depth():
-    """test calcualte qasm depth"""
+    """Test calculating qasm depth of qasm2 circuit"""
     assert qasm_depth(qasm2_bell()) == 2
     assert qasm_depth(qasm2_shared15()) == 22
+
+
+def test_qasm3_depth():
+    """Test calculating qasm depth of qasm3 circuit"""
+    depth = np.random.randint(2, 10)
+    qasm3_str = _qasm3_random(depth=depth, seed=42)
+    assert qasm3_depth(qasm3_str) == depth
 
 
 def _check_output(output, expected):
