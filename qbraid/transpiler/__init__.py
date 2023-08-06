@@ -27,6 +27,7 @@ Transpiler  (:mod:`qbraid.transpiler`)
    QiskitCircuitWrapper
    PytketCircuitWrapper
    QasmCircuitWrapper
+   Qasm3CircuitWrapper
    CircuitConversionError
    QasmError
 
@@ -39,4 +40,5 @@ from qbraid.transpiler.wrappers.cirq_circuit import CirqCircuitWrapper
 from qbraid.transpiler.wrappers.pyquil_program import PyQuilProgramWrapper
 from qbraid.transpiler.wrappers.pytket_circuit import PytketCircuitWrapper
 from qbraid.transpiler.wrappers.qasm_str import QasmCircuitWrapper
+from qbraid.transpiler.wrappers.qasm3_str import Qasm3CircuitWrapper
 from qbraid.transpiler.wrappers.qiskit_circuit import QiskitCircuitWrapper
