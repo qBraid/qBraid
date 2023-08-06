@@ -14,10 +14,10 @@ Module containing OpenQasm tools
 """
 import os
 import re
+from collections import defaultdict
+from typing import List
 
 import numpy as np
-from cirq.circuits import Circuit
-from qiskit.circuit import QuantumCircuit
 
 from qbraid.transpiler.cirq_qasm.qasm_conversions import from_qasm, to_qasm
 from qbraid.transpiler.cirq_qasm.qelib1_defs import _decompose_rxx_instr
@@ -25,9 +25,15 @@ from qbraid.transpiler.cirq_qasm.qelib1_defs import _decompose_rxx_instr
 QASMType = str
 
 
-def qasm_qubits(qasmstr: str) -> QASMType:
-    """get number of qasm qubits"""
+def qasm_qubits(qasmstr: str) -> List[QASMType]:
+    """Get number of qasm qubits.
 
+    Args:
+        qasmstr (str): OpenQASM 2 or OpenQASM 3 string
+
+    Returns:
+        List of qubits in the circuit
+    """
     return [
         text.replace("\n", "")
         for match in re.findall(r"(\bqreg\s\S+\s+\b)|(qubit\[(\d+)\])", qasmstr)
@@ -36,8 +42,8 @@ def qasm_qubits(qasmstr: str) -> QASMType:
     ]
 
 
-def qasm_num_qubits(qasmstr: str) -> QASMType:
-    """calculate number of qubits"""
+def qasm_num_qubits(qasmstr: str) -> int:
+    """Calculate number of qubits."""
     q_num = 0
 
     for num in qasm_qubits(qasmstr):
@@ -45,14 +51,39 @@ def qasm_num_qubits(qasmstr: str) -> QASMType:
     return q_num
 
 
-def qasm_depth(qasmstr: str) -> QASMType:
-    """calculate number of depth"""
-    circuit = from_qasm(qasmstr)
-    return len(Circuit(circuit.all_operations()))
+def qasm_depth(qasmstr: str) -> int:
+    """Calculates circuit depth of OpenQASM 2 string"""
+    lines = qasmstr.splitlines()
+
+    gate_lines = [
+        s for s in lines if s.strip() and not s.startswith(("OPENQASM", "include", "qreg", "//"))
+    ]
+
+    counts_dict = defaultdict(int)
+
+    for s in gate_lines:
+        matches = set(map(int, re.findall(r"q\[(\d+)\]", s)))
+
+        # Calculate max depth among the qubits in the current line.
+        max_depth = max(counts_dict[f"q[{i}]"] for i in matches)
+
+        # Update depths for all qubits in the current line.
+        for i in matches:
+            counts_dict[f"q[{i}]"] = max_depth + 1
+
+    return max(counts_dict.values()) if counts_dict else 0
+
+
+def qasm3_depth(qasmstr: str) -> int:
+    """Calculates circuit depth of OpenQASM 3 string"""
+    # pylint: disable=import-outside-toplevel
+    from qiskit.qasm3 import loads
+
+    return loads(qasmstr).depth()
 
 
 def _convert_to_contiguous_qasm(qasmstr: str, rev_qubits=False) -> QASMType:
-    """delete qubit with no gate and optional reverse circuit"""
+    """Delete qubit with no gate and optional reverse circuit"""
     # pylint: disable=import-outside-toplevel
     from qbraid.interface.qbraid_cirq.tools import _convert_to_contiguous_cirq
 
@@ -133,21 +164,24 @@ def _change_to_qasm_3(line: str) -> QASMType:
     return line + "\n"
 
 
-def convert_to_qasm3(qasm_2_str: str):
+def convert_to_qasm3(qasm2_str: str):
     """Convert a QASM 2.0 string to QASM 3.0 string
 
     Args:
-        qasm_2_str (str): QASM 2.0 string
+        qasm2_str (str): QASM 2.0 string
     """
+    # pylint: disable=import-outside-toplevel
+    from qiskit import QuantumCircuit
+
     try:
         # use inbuilt method to check validity
-        _ = QuantumCircuit.from_qasm_str(qasm_2_str)
+        _ = QuantumCircuit.from_qasm_str(qasm2_str)
     except Exception as e:
         raise ValueError("Invalid QASM 2.0 string") from e
 
     #  a newline separated qasm 2 string
-    # formatted_qasm_2 = circuit.qasm()
-    qasm_3_str = """OPENQASM 3.0;
+    # formatted_qasm2 = circuit.qasm()
+    qasm3_str = """OPENQASM 3.0;
 include 'stdgates.inc';"""
 
     # add the gate from qelib1.inc not present in the
@@ -157,9 +191,9 @@ include 'stdgates.inc';"""
         os.path.join(current_dir, "qasm_lib/qelib_qasm3.qasm"), mode="r", encoding="utf-8"
     ) as gate_defs:
         for line in gate_defs:
-            qasm_3_str += line
+            qasm3_str += line
 
-    for line in qasm_2_str.splitlines():
+    for line in qasm2_str.splitlines():
         line = _change_to_qasm_3(line)
-        qasm_3_str += line
-    return qasm_3_str
+        qasm3_str += line
+    return qasm3_str

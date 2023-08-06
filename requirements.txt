@@ -6,4 +6,5 @@ pytket~=1.17.1
 pytket-braket~=0.29.0
 qiskit-terra>=0.24.0
 qiskit-ibm-provider>=0.5.3
+qiskit-qasm3-import~=0.2.0
 requests~=2.31.0
