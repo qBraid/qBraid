@@ -14,7 +14,7 @@ Module defining BraketDeviceWrapper Class
 """
 from datetime import datetime, timedelta
 from enum import Enum
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING, List, Tuple
 
 from braket.aws import AwsDevice
 from braket.aws.aws_session import AwsSession
@@ -215,11 +215,9 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
         available_time_hms = ":".join(time_str_lst)
         return is_available_result, available_time_hms
 
-    def run(
-        self, run_input: "braket.circuits.Circuit", *args, **kwargs
-    ) -> "qbraid.device.aws.BraketQuantumTaskWrapper":
-        """Run a quantum task specification on this quantum device. A task can be a circuit or an
-        annealing problem.
+    def run(self, run_input, *args, **kwargs) -> "qbraid.device.aws.BraketQuantumTaskWrapper":
+        """Run a quantum task specification on this quantum device. Task must represent a
+        quantum circuit, annealing problems not supported.
 
         Args:
             run_input: Specification of a task to run on device.
@@ -238,8 +236,47 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
         aws_quantum_task = self.vendor_dlo.run(run_input, *args, **kwargs)
         metadata = aws_quantum_task.metadata()
         shots = 0 if "shots" not in metadata else metadata["shots"]
-        vendor_job_id = aws_quantum_task.metadata()["quantumTaskArn"]
+        vendor_job_id = metadata["quantumTaskArn"]
         job_id = init_job(vendor_job_id, self, [qbraid_circuit], shots)
         return AwsQuantumTaskWrapper(
             job_id, vendor_job_id=vendor_job_id, device=self, vendor_jlo=aws_quantum_task
         )
+
+    def run_batch(self, run_input, **kwargs) -> List["qbraid.device.aws.BraketQuantumTaskWrapper"]:
+        """Run batch of quantum tasks on this quantum device.
+
+        Args:
+            run_input: A circuit object list to run on the wrapped device.
+
+        Keyword Args:
+            shots (int): The number of times to run the task on the device. Default is 1024.
+
+        Returns:
+            List of AwsQuantumTaskWrapper objects for the run.
+
+        """
+        device = self.vendor_dlo
+        qbraid_circuit_batch = []
+        run_input_batch = []
+        for circuit in run_input:
+            run_input, qbraid_circuit = self._compat_run_input(circuit)
+            run_input_batch.append(run_input)
+            qbraid_circuit_batch.append(qbraid_circuit)
+
+        if "s3_destination_folder" not in kwargs:
+            kwargs["s3_destination_folder"] = self._default_s3_folder
+        aws_quantum_task_batch = device.run_batch(run_input_batch, **kwargs)
+        aws_quantum_tasks = aws_quantum_task_batch.tasks
+        aws_quantum_task_wrapper_list = []
+        for index, aws_quantum_task in enumerate(aws_quantum_tasks):
+            qbraid_circuit = qbraid_circuit_batch[index]
+            metadata = aws_quantum_task.metadata()
+            shots = 0 if "shots" not in metadata else metadata["shots"]
+            vendor_job_id = metadata["quantumTaskArn"]
+            job_id = init_job(vendor_job_id, self, [qbraid_circuit], shots)
+            aws_quantum_task_wrapper_list.append(
+                AwsQuantumTaskWrapper(
+                    job_id, vendor_job_id=vendor_job_id, device=self, vendor_jlo=aws_quantum_task
+                )
+            )
+        return aws_quantum_task_wrapper_list
