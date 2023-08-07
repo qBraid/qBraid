@@ -268,9 +268,8 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
         aws_quantum_task_batch = device.run_batch(run_input_batch, **kwargs)
         aws_quantum_tasks = aws_quantum_task_batch.tasks
         aws_quantum_task_wrapper_list = []
-        for i in range(len(aws_quantum_tasks)):
-            aws_quantum_task = aws_quantum_tasks[i]
-            qbraid_circuit = qbraid_circuit_batch[i]
+        for index, aws_quantum_task in enumerate(aws_quantum_tasks):
+            qbraid_circuit = qbraid_circuit_batch[index]
             metadata = aws_quantum_task.metadata()
             shots = 0 if "shots" not in metadata else metadata["shots"]
             vendor_job_id = metadata["quantumTaskArn"]
