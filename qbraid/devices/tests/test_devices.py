@@ -215,6 +215,15 @@ def test_run_braket_device_wrapper(device_id, circuit):
     assert isinstance(vendor_job, AwsQuantumTask)
 
 
+def test_run_batch_braket_device_wrapper():
+    """Test run_batch method of wrapped Braket devices"""
+    qbraid_device = device_wrapper("aws_sv_sim")
+    qbraid_job_list = qbraid_device.run_batch(circuits_braket_run, shots=10)
+    qbraid_job = qbraid_job_list[0]
+    assert len(qbraid_job_list) == len(circuits_braket_run)
+    assert isinstance(qbraid_job, AwsQuantumTaskWrapper)
+
+
 @pytest.mark.parametrize("device_id", ["ibm_q_simulator_statevector"])
 def test_cancel_completed_batch_error(device_id):
     """Test that cancelling a batch job that has already reached its
