@@ -13,7 +13,7 @@ Program Types
 
 Supported frontend program types include `Qiskit <QiskitQuantumCircuit>`_,
 `Amazon Braket <BraketCircuit>`_, `Cirq <CirqCircuit>`_, `PyQuil <PyQuilProgram>`_,
-`PyTKET <PyTKETCircuit>`_, and `OpenQASM 2 <OpenQASMString>`_:
+`PyTKET <PyTKETCircuit>`_, and `OpenQASM <OpenQASMString>`_:
 
 .. code-block:: python
     
@@ -27,6 +27,7 @@ Supported frontend program types include `Qiskit <QiskitQuantumCircuit>`_,
     pyquil.quil.Program
     pytket._tket.circuit.Circuit
     qasm2
+    qasm3
 
 
 .. _QiskitQuantumCircuit: https://qiskit.org/documentation/stubs/qiskit.circuit.QuantumCircuit.html

@@ -15,9 +15,14 @@ Module containing Qiskit tools
 from collections import OrderedDict
 
 import numpy as np
+from openqasm3.parser import QASM3ParsingError, parse
 from qiskit import QuantumCircuit
 from qiskit.converters import circuit_to_dag, dag_to_circuit
+from qiskit.qasm import QasmError
+from qiskit.qasm3 import dumps, loads
 from qiskit.quantum_info import Operator
+
+QASMType = str
 
 
 def _unitary_from_qiskit(circuit: QuantumCircuit) -> np.ndarray:
@@ -25,8 +30,14 @@ def _unitary_from_qiskit(circuit: QuantumCircuit) -> np.ndarray:
     return Operator(circuit).data
 
 
+def _unitary_from_qasm3(qasmstr: QASMType) -> np.ndarray:
+    """Return the unitary of the QASM 3 string"""
+    circuit = loads(qasmstr)
+    return _unitary_from_qiskit(circuit)
+
+
 def _convert_to_contiguous_qiskit(circuit: QuantumCircuit) -> QuantumCircuit:
-    """delete qubit with no gate"""
+    """Delete qubit(s) with no gate, if any exist."""
     dag = circuit_to_dag(circuit)
 
     idle_wires = list(dag.idle_wires())
@@ -37,3 +48,28 @@ def _convert_to_contiguous_qiskit(circuit: QuantumCircuit) -> QuantumCircuit:
     dag.qregs = OrderedDict()
 
     return dag_to_circuit(dag)
+
+
+def _convert_to_contiguous_qasm3(qasmstr: QASMType) -> QASMType:
+    """Delete qubit(s) with no gate, if any exist."""
+    circuit = loads(qasmstr)
+    circuit_contig = _convert_to_contiguous_qiskit(circuit)
+    return dumps(circuit_contig)
+
+
+def is_valid_qasm(qasm_str: str) -> bool:
+    """Returns whether the input string represents a
+    valid OpenQASM program.
+
+    TODO: Verify that all exceptions that are caught"""
+    parsers = {"OPENQASM 2.0": QuantumCircuit.from_qasm_str, "OPENQASM 3.0": parse}
+
+    for version, parser in parsers.items():
+        if version in qasm_str:
+            try:
+                parser(qasm_str)
+                return True
+            except (QasmError, QASM3ParsingError):
+                return False
+
+    return False

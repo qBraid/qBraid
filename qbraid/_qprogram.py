@@ -50,4 +50,4 @@ _PROGRAM_TYPES = [str(x).strip("<class").strip(">").strip(" ").strip("'") for x 
 QPROGRAM_TYPES = _PROGRAMS + [QASMType]
 
 _PROGRAM_LIBS = [x.split(".")[0] for x in _PROGRAM_TYPES]
-QPROGRAM_LIBS = _PROGRAM_LIBS + ["qasm2"]
+QPROGRAM_LIBS = _PROGRAM_LIBS + ["qasm2", "qasm3"]

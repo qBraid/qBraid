@@ -18,8 +18,11 @@ from typing import TYPE_CHECKING, Tuple
 
 from cirq import Circuit
 from cirq.contrib.qasm_import import circuit_from_qasm
+from qiskit.qasm3 import loads as qiskit_from_qasm3
 
 from qbraid.exceptions import PackageValueError, ProgramTypeError
+from qbraid.interface.qbraid_qasm.tools import convert_to_qasm3
+from qbraid.interface.qbraid_qiskit.tools import is_valid_qasm
 from qbraid.transpiler.cirq_braket import from_braket, to_braket
 from qbraid.transpiler.cirq_pyquil import from_pyquil, to_pyquil
 from qbraid.transpiler.cirq_pytket import from_pytket, to_pytket
@@ -46,11 +49,15 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple[Circuit, str]:
             input quantum program type.
     """
     if isinstance(program, str):
-        try:
-            from_qasm(program)
+        if "OPENQASM 2.0" in program:
             package = "qasm2"
-        except Exception as err:
-            raise CircuitConversionError("Invalid OpenQASM 2.0 program.") from err
+        elif "OPENQASM 3.0" in program:
+            package = "qasm3"
+        else:
+            raise ProgramTypeError("Input of type string must represent a valid OpenQASM program.")
+        if not is_valid_qasm(program):
+            raise CircuitConversionError("Invalid OpenQASM program.")
+
     else:
         try:
             package = program.__module__
@@ -70,11 +77,12 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple[Circuit, str]:
         if "pytket" in package:
             return from_pytket(program), "pytket"
 
-        if "qasm2" in package:
-            return from_qasm(program), "qasm2"
+        if package == "qasm2":
+            return from_qasm(program), package
 
-        if "qasm3" in package:
-            raise NotImplementedError
+        if package == "qasm3":
+            qiskit_circuit = qiskit_from_qasm3(program)
+            return from_qiskit(qiskit_circuit), package
 
         if isinstance(program, Circuit):
             return program, "cirq"
@@ -118,7 +126,8 @@ def _convert_from_cirq(circuit: Circuit, frontend: str) -> "qbraid.QPROGRAM":
             return to_qasm(circuit)
 
         if frontend == "qasm3":
-            raise NotImplementedError
+            qasm2_str = to_qasm(circuit)
+            return convert_to_qasm3(qasm2_str)
 
         if frontend == "cirq":
             return circuit
