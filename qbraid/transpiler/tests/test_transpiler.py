@@ -98,6 +98,12 @@ def test_to_cirq_bad_types(item):
 
 @pytest.mark.parametrize("item", ["DECLARE ro BIT[1]", "circuit"])
 def test_to_cirq_bad_string(item):
+    with pytest.raises(ProgramTypeError):
+        convert_to_cirq(item)
+
+
+@pytest.mark.parametrize("item", ["OPENQASM 2.0; bad operation", "OPENQASM 3.0; bad operation"])
+def test_to_cirq_bad_openqasm_program(item):
     with pytest.raises(CircuitConversionError):
         convert_to_cirq(item)
 
@@ -106,6 +112,8 @@ def test_to_cirq_bad_string(item):
 def test_from_cirq(to_type):
     converted_circuit = convert_from_cirq(cirq_circuit, to_type)
     circuit, input_type = convert_to_cirq(converted_circuit)
+    if to_type == "qasm3":
+        circuit = convert_to_contiguous(circuit, rev_qubits=True)
     assert _equal(circuit, cirq_circuit)
     assert input_type == to_type
 

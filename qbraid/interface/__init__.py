@@ -25,6 +25,7 @@ Interface (:mod:`qbraid.interface`)
    circuits_allclose
    random_circuit
    circuit_drawer
+   is_valid_qasm
    ContiguousConversionError
    UnitaryCalculationError
 
@@ -39,3 +40,4 @@ from .calculate_unitary import (
 from .convert_to_contiguous import ContiguousConversionError, convert_to_contiguous
 from .draw import circuit_drawer
 from .programs import random_circuit
+from .qbraid_qiskit.tools import is_valid_qasm

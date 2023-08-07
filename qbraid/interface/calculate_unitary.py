@@ -45,7 +45,12 @@ def to_unitary(program: "qbraid.QPROGRAM", ensure_contiguous: Optional[bool] = F
     to_unitary_function: Callable[[Any], np.ndarray]
 
     if isinstance(program, str):
-        package = "qasm2"
+        if "OPENQASM 2.0" in program:
+            package = "qasm2"
+        elif "OPENQASM 3.0" in program:
+            package = "qasm3"
+        else:
+            raise ProgramTypeError("Input of type string must represent a valid OpenQASM program.")
     else:
         try:
             package = program.__module__
@@ -75,10 +80,14 @@ def to_unitary(program: "qbraid.QPROGRAM", ensure_contiguous: Optional[bool] = F
         from qbraid.interface.qbraid_pytket.tools import _unitary_from_pytket
 
         to_unitary_function = _unitary_from_pytket
-    elif "qasm2" in package:
+    elif package == "qasm2":
         from qbraid.interface.qbraid_qasm.tools import _unitary_from_qasm
 
         to_unitary_function = _unitary_from_qasm
+    elif package == "qasm3":
+        from qbraid.interface.qbraid_qiskit.tools import _unitary_from_qasm3
+
+        to_unitary_function = _unitary_from_qasm3
     else:
         raise ProgramTypeError(program)
 
