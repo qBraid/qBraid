@@ -26,11 +26,13 @@ jobs:
           python3 -m pip install build
 
       - name: Build binary wheel + source tarball
+        id: build-dev
         run: |
             export QBRAID_PRE_RELEASE_VERSION=$(tools/stamp_dev_version.sh)
             [[ "$QBRAID_PRE_RELEASE_VERSION" =~ .*dev.* ]] && echo "Deploying dev version '$QBRAID_PRE_RELEASE_VERSION'" || (echo "not dev version"; exit 1)
-            
-            python3 -m build
+            out_dir="${PWD}/dist"
+            tools/create_dev_build.sh "${out_dir}" $QBRAID_PRE_RELEASE_VERSION
+            echo "dir=$out_dir" >> $GITHUB_OUTPUT
 
       - name: Publish package to TestPyPI
         uses: pypa/gh-action-pypi-publish@release/v1
@@ -38,4 +40,4 @@ jobs:
           user: __token__
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           repository-url: https://test.pypi.org/legacy/
-          packages-dir: /tmp/qbraid/dist
+          packages-dir: ${{ steps.build-dev.outputs.dir }}

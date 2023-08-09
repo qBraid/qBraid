@@ -12,15 +12,15 @@
 
 ################################################################################
 # Description:
-#   `version_stamp.sh`: A script to append a timestamp to the version number
-#   in the `_version.py` file if the version ends in "dev".
+# Script to append a timestamp to the version number
+# in the `_version.py` file if the version ends in "dev".
 #
-#   This assists in distinguishing between different development builds 
-#   based on the time of their creation.
+# This assists in distinguishing between different development builds 
+# based on the time of their creation.
 #
 # Example Usage:
-#   ./version_stamp.sh
-#   
+#   ./stamp_dev_version.sh
+#
 #   Given `_version.py` content: 
 #   version = "1.0.0dev"
 #
