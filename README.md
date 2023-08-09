@@ -145,7 +145,7 @@ Compare results in a consistent, unified format:
 ```
 
 ## Local account setup
-<img align="right" width="325" alt="api_key" src="https://github.com/qBraid/qBraid/assets/46977852/c13d6035-194b-4520-84c1-e57e7f9f4340">
+<img align="right" width="300" alt="api_key" src="https://github.com/qBraid/qBraid/assets/46977852/c13d6035-194b-4520-84c1-e57e7f9f4340">
 
 To use the qBraid-SDK locally (outside of qBraid Lab), you must add your account
 credentials:
@@ -195,7 +195,7 @@ repository. Clicking on it automaically opens qBraid Lab, and performs a
 code below, and replace `YOUR-USERNAME` and `YOUR-REPOSITORY` with your GitHub
 info.
 
-[<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="140">](https://account.qbraid.com?gitHubUrl=https://github.com/qBraid/qBraid.git)
+[<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/qBraid/qBraid.git)
 
 Use the badge in your project's `README.md`:
 
