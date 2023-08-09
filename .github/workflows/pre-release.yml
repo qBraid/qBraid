@@ -1,0 +1,41 @@
+name: Pre-release qbraid to PyPi
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  pypi-publish:
+    name: Build dist & upload to TestPyPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install build
+
+      - name: Build binary wheel + source tarball
+        run: |
+            export QBRAID_PRE_RELEASE_VERSION=$(tools/stamp_dev_version.sh)
+            [[ "$QBRAID_PRE_RELEASE_VERSION" =~ .*dev.* ]] && echo "Deploying dev version '$QBRAID_PRE_RELEASE_VERSION'" || (echo "not dev version"; exit 1)
+            
+            python3 -m build
+
+      - name: Publish package to TestPyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+          repository-url: https://test.pypi.org/legacy/
+          packages-dir: /tmp/qbraid/dist
