@@ -104,7 +104,7 @@ def test_to_cirq_bad_string(item):
 
 @pytest.mark.parametrize("item", ["OPENQASM 2.0; bad operation", "OPENQASM 3.0; bad operation"])
 def test_to_cirq_bad_openqasm_program(item):
-    with pytest.raises(CircuitConversionError):
+    with pytest.raises(ProgramTypeError):
         convert_to_cirq(item)
 
 

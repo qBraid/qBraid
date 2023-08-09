@@ -14,9 +14,8 @@ functions utilize entrypoints via ``pkg_resources``.
 
 """
 import pkg_resources
-from cirq.contrib.qasm_import.exception import QasmException
 
-from qbraid.transpiler.cirq_qasm.qasm_parser import QasmParser
+from qbraid.transpiler.qasm_checks import get_qasm_version
 
 from ._qprogram import QPROGRAM
 from .api import QbraidSession
@@ -56,13 +55,8 @@ def circuit_wrapper(program: QPROGRAM):
 
     """
     if isinstance(program, str):
-        try:
-            QasmParser().parse(program)
-            package = "qasm2"
-        except QasmException as err:
-            raise QbraidError(
-                "Input of type string must represent a valid OpenQASM 2 program."
-            ) from err
+        package = get_qasm_version(program)
+
     else:
         try:
             package = program.__module__.split(".")[0]

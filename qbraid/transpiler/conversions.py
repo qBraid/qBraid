@@ -22,13 +22,13 @@ from qiskit.qasm3 import loads as qiskit_from_qasm3
 
 from qbraid.exceptions import PackageValueError, ProgramTypeError
 from qbraid.interface.qbraid_qasm.tools import convert_to_qasm3
-from qbraid.interface.qbraid_qiskit.tools import is_valid_qasm
 from qbraid.transpiler.cirq_braket import from_braket, to_braket
 from qbraid.transpiler.cirq_pyquil import from_pyquil, to_pyquil
 from qbraid.transpiler.cirq_pytket import from_pytket, to_pytket
 from qbraid.transpiler.cirq_qasm import from_qasm, to_qasm
 from qbraid.transpiler.cirq_qiskit import from_qiskit, to_qiskit
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler.exceptions import CircuitConversionError, QasmError
+from qbraid.transpiler.qasm_checks import get_qasm_version
 
 if TYPE_CHECKING:
     import qbraid
@@ -49,14 +49,12 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple[Circuit, str]:
             input quantum program type.
     """
     if isinstance(program, str):
-        if "OPENQASM 2.0" in program:
-            package = "qasm2"
-        elif "OPENQASM 3.0" in program:
-            package = "qasm3"
-        else:
-            raise ProgramTypeError("Input of type string must represent a valid OpenQASM program.")
-        if not is_valid_qasm(program):
-            raise CircuitConversionError("Invalid OpenQASM program.")
+        try:
+            package = get_qasm_version(program)
+        except QasmError as err:
+            raise ProgramTypeError(
+                "Input of type string must represent a valid OpenQASM program."
+            ) from err
 
     else:
         try:

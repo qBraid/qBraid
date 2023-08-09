@@ -20,6 +20,7 @@ Transpiler  (:mod:`qbraid.transpiler`)
 
    convert_from_cirq
    convert_to_cirq
+   get_qasm_version
    QuantumProgramWrapper
    BraketCircuitWrapper
    CirqCircuitWrapper
@@ -34,6 +35,7 @@ Transpiler  (:mod:`qbraid.transpiler`)
 """
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError, QasmError
+from qbraid.transpiler.qasm_checks import get_qasm_version
 from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper
 from qbraid.transpiler.wrappers.braket_circuit import BraketCircuitWrapper
 from qbraid.transpiler.wrappers.cirq_circuit import CirqCircuitWrapper
