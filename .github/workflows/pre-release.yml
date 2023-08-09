@@ -4,11 +4,10 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
   pypi-publish:
-    name: Build dist & upload to TestPyPI
+    name: Build dist & upload to PyPI
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -34,10 +33,9 @@ jobs:
             tools/create_dev_build.sh $QBRAID_PRE_RELEASE_VERSION "${out_dir}"
             echo "dir=$out_dir" >> $GITHUB_OUTPUT
 
-      - name: Publish package to TestPyPI
+      - name: Publish package to PyPI
         uses: pypa/gh-action-pypi-publish@release/v1
         with:
           user: __token__
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-          repository-url: https://test.pypi.org/legacy/
+          password: ${{ secrets.PYPI_API_TOKEN }}
           packages-dir: ${{ steps.build-dev.outputs.dir }}
