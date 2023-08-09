@@ -106,10 +106,28 @@ def test_init_braket_device_wrapper(device_id):
     assert isinstance(vendor_device, AwsDevice)
 
 
+def test_device_wrapper_from_braket_arn():
+    """Test creating device wrapper from Amazon Braket device ARN."""
+    aws_device_arn = "arn:aws:braket:::device/quantum-simulator/amazon/sv1"
+    qbraid_device = device_wrapper(aws_device_arn)
+    vendor_device = qbraid_device.vendor_dlo
+    assert isinstance(qbraid_device, AwsDeviceWrapper)
+    assert isinstance(vendor_device, AwsDevice)
+
+
 @pytest.mark.parametrize("device_id", inputs_qiskit_dw)
 def test_init_qiskit_device_wrapper(device_id):
     """Test device wrapper for ids of devices available through Qiskit."""
     qbraid_device = device_wrapper(device_id)
+    vendor_device = qbraid_device.vendor_dlo
+    assert isinstance(qbraid_device, IBMBackendWrapper)
+    assert isinstance(vendor_device, IBMBackend)
+
+
+def test_device_wrapper_from_qiskit_id():
+    """Test creating device wrapper from Qiskit device ID."""
+    qiskit_device_id = "ibmq_belem"
+    qbraid_device = device_wrapper(qiskit_device_id)
     vendor_device = qbraid_device.vendor_dlo
     assert isinstance(qbraid_device, IBMBackendWrapper)
     assert isinstance(vendor_device, IBMBackend)
