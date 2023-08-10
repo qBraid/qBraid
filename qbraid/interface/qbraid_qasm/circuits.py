@@ -25,7 +25,6 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 
 def qasm2_bell() -> QASMType:
     """Returns OpenQASM2 bell circuit"""
-    # return open(os.path.join(current_dir, "bell.qasm"), mode="r", encoding="utf-8").read()
     return open(
         os.path.join(current_dir, "qasm_lib", "bell_qasm2.qasm"), mode="r", encoding="utf-8"
     ).read()
@@ -33,7 +32,6 @@ def qasm2_bell() -> QASMType:
 
 def qasm2_shared15() -> QASMType:
     """Returns OpenQASM2 15 gate test circuit."""
-    # return open(os.path.join(current_dir, "shared_15.qasm"), mode="r", encoding="utf-8").read()
     return open(
         os.path.join(current_dir, "qasm_lib", "shared15_qasm2.qasm"), mode="r", encoding="utf-8"
     ).read()
