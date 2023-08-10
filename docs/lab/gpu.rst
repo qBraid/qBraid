@@ -9,7 +9,7 @@ GPUs
     :alt: qBraid NVIDIA cuQuantum
     :target: javascript:void(0);
 
-The qBraid Lab GPU server provides access to an NVIDIA Tesla V100 GPU, and is tailored for researchers and developers requiring
+The qBraid Lab GPU server provides access to an NVIDIA Tesla V100s GPU, and is tailored for researchers and developers requiring
 enhanced computational capabilities. This high-performance Lab instance allows users to leverage GPU accelerated circuit simulation,
 to explore quantum machine learning applications with GPU-enabled quantum gradients, and more. For *exclusive early access*, join our
 `pre-launch waitlist <https://form.typeform.com/to/uRGyqJST?utm_source=xxxxx&utm_medium=xxxxx&utm_campaign=xxxxx&utm_term=xxxxx&utm_content=xxxxx&typeform-source=docs>`_.
@@ -53,7 +53,7 @@ qBraid Lab GPUs instances are configured with the following specification:
 +------------------+-------------+
 | GPU Architecture | Volta       |
 +------------------+-------------+
-| GPU Name         | Telsa V100  |
+| GPU Name         | Telsa V100s |
 +------------------+-------------+
 | CUDA             | 11.5        |
 +------------------+-------------+
