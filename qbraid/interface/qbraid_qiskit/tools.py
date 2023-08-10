@@ -23,6 +23,21 @@ from qiskit.quantum_info import Operator
 QASMType = str
 
 
+def reverse_qubit_ordering(circuit: QuantumCircuit) -> QuantumCircuit:
+    """Reverses the qubit ordering of a Qiskit circuit."""
+    num_qubits = circuit.num_qubits
+    reversed_circuit = QuantumCircuit(num_qubits)
+
+    for inst, qargs, _ in circuit.data:
+        # Find the index of the qubit within the circuit using the `find_bit` method
+        qubit_indices = [circuit.qubits.index(qubit) for qubit in qargs]
+        # Reverse the qubit indices for the instruction
+        reversed_qargs = [num_qubits - 1 - idx for idx in qubit_indices]
+        reversed_circuit.append(inst, reversed_qargs)
+
+    return reversed_circuit
+
+
 def _unitary_from_qiskit(circuit: QuantumCircuit) -> np.ndarray:
     """Return the unitary of a Qiskit quantum circuit."""
     return Operator(circuit).data
@@ -31,11 +46,15 @@ def _unitary_from_qiskit(circuit: QuantumCircuit) -> np.ndarray:
 def _unitary_from_qasm3(qasmstr: QASMType) -> np.ndarray:
     """Return the unitary of the QASM 3 string"""
     circuit = loads(qasmstr)
-    return _unitary_from_qiskit(circuit)
+    circuit_rev = reverse_qubit_ordering(circuit)
+    return _unitary_from_qiskit(circuit_rev)
 
 
-def _convert_to_contiguous_qiskit(circuit: QuantumCircuit) -> QuantumCircuit:
+def _convert_to_contiguous_qiskit(circuit: QuantumCircuit, rev_qubits=False) -> QuantumCircuit:
     """Delete qubit(s) with no gate, if any exist."""
+    if rev_qubits:
+        circuit = reverse_qubit_ordering(circuit)
+
     dag = circuit_to_dag(circuit)
 
     idle_wires = list(dag.idle_wires())
@@ -48,8 +67,8 @@ def _convert_to_contiguous_qiskit(circuit: QuantumCircuit) -> QuantumCircuit:
     return dag_to_circuit(dag)
 
 
-def _convert_to_contiguous_qasm3(qasmstr: QASMType) -> QASMType:
+def _convert_to_contiguous_qasm3(qasmstr: QASMType, rev_qubits=False) -> QASMType:
     """Delete qubit(s) with no gate, if any exist."""
     circuit = loads(qasmstr)
-    circuit_contig = _convert_to_contiguous_qiskit(circuit)
+    circuit_contig = _convert_to_contiguous_qiskit(circuit, rev_qubits=rev_qubits)
     return dumps(circuit_contig)

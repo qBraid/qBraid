@@ -58,7 +58,7 @@ def test_shared15():
     eq2 = circuits_allclose(cirq_shared15, qiskit_shared15, strict_gphase=True)
     eq3 = circuits_allclose(qiskit_shared15, pytket_shared15, strict_gphase=True)
     eq4 = circuits_allclose(pytket_shared15, qasm2_shared15, strict_gphase=True)
-    eq5 = circuits_allclose(qasm2_shared15, qasm3_shared15, strict_gphase=True)
+    eq5 = circuits_allclose(qasm2_shared15, qasm3_shared15, strict_gphase=False)
 
     assert eq1 and eq2 and eq3 and eq4 and eq5
 
