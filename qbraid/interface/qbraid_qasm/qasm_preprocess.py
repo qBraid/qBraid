@@ -14,7 +14,7 @@ Module for preprocessing qasm string to before it is passed to parser.
 """
 import re
 
-from qbraid.transpiler.cirq_qasm.qelib1_defs import replace_qelib1_defs
+from qbraid.interface.qbraid_qasm.qelib1_defs import replace_qelib1_defs
 
 
 def _remove_barriers(qasm_str: str) -> str:

@@ -17,7 +17,12 @@ from qiskit.circuit import QuantumCircuit
 from qiskit.qasm3 import dumps, loads
 
 from qbraid.interface import circuits_allclose, random_circuit
-from qbraid.interface.qbraid_qasm.circuits import _qasm3_random, qasm2_bell, qasm2_shared15
+from qbraid.interface.qbraid_qasm.circuits import (
+    _qasm3_random,
+    qasm2_bell,
+    qasm2_raw_shared15,
+    qasm2_shared15,
+)
 from qbraid.interface.qbraid_qasm.tools import (
     convert_to_qasm3,
     qasm3_depth,
@@ -51,7 +56,8 @@ def test_qasm3_num_qubits():
 def test_qasm_depth():
     """Test calculating qasm depth of qasm2 circuit"""
     assert qasm_depth(qasm2_bell()) == 2
-    assert qasm_depth(qasm2_shared15()) == 22
+    assert qasm_depth(qasm2_shared15()) == 11
+    assert qasm_depth(qasm2_raw_shared15()) == 22
 
 
 def test_qasm3_depth():

@@ -38,8 +38,8 @@ def get_qasm_version(qasm_str: str) -> str:
 
     QasmVersion = namedtuple("QasmVersion", ["version_str", "parser", "package_name"])
     versions = [
-        QasmVersion("OPENQASM 2.0", QuantumCircuit.from_qasm_str, "qasm2"),
-        QasmVersion("OPENQASM 3.0", parse, "qasm3"),
+        QasmVersion("OPENQASM 2", QuantumCircuit.from_qasm_str, "qasm2"),
+        QasmVersion("OPENQASM 3", parse, "qasm3"),
     ]
 
     for version in versions:

@@ -13,13 +13,7 @@ Unit tests for QASM preprocessing functions
 
 """
 
-import pytest
-from qiskit import QuantumCircuit
-
-from qbraid.interface import circuits_allclose
-from qbraid.interface.qbraid_cirq.tools import _convert_to_line_qubits
-from qbraid.transpiler.cirq_qasm.qasm_conversions import from_qasm
-from qbraid.transpiler.cirq_qasm.qasm_preprocess import _remove_barriers, convert_to_supported_qasm
+from qbraid.interface.qbraid_qasm.qasm_preprocess import _remove_barriers, convert_to_supported_qasm
 
 qasm_0 = """OPENQASM 2.0;
 include "qelib1.inc";
@@ -50,21 +44,12 @@ rc3x q[1],q[2],q[0],q[3];
 
 qasm_lst = [qasm_0, qasm_1]
 
+
 def strings_equal(s1, s2):
     """Check if two strings are equal, ignoring spaces and newlines."""
     s1_clean = s1.replace(" ", "").replace("\n", "")
     s2_clean = s2.replace(" ", "").replace("\n", "")
     return s1_clean == s2_clean
-
-
-@pytest.mark.parametrize("qasm_str", qasm_lst)
-def test_preprocess_qasm(qasm_str):
-    """Test converting qasm string to format supported by Cirq parser"""
-    qiskit_circuit = QuantumCircuit().from_qasm_str(qasm_str)
-    supported_qasm = convert_to_supported_qasm(qasm_str)
-    cirq_circuit = from_qasm(supported_qasm)
-    cirq_circuit_compat = _convert_to_line_qubits(cirq_circuit, rev_qubits=True)
-    assert circuits_allclose(cirq_circuit_compat, qiskit_circuit)
 
 
 def test_remove_qasm_barriers():

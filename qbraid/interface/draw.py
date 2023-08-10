@@ -31,9 +31,9 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
     """
     # todo: visualization from supportive framework
     if isinstance(program, str):
-        if "OPENQASM 2.0" in program:
+        if "OPENQASM 2" in program:
             package = "qasm2"
-        elif "OPENQASM 3.0" in program:
+        elif "OPENQASM 3" in program:
             package = "qasm3"
         else:
             raise ProgramTypeError("Input of type string must represent a valid OpenQASM program.")
