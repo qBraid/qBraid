@@ -24,13 +24,40 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 
 
 def qasm2_bell() -> QASMType:
-    """Returns QASM2 bell circuit"""
-    return open(os.path.join(current_dir, "bell.qasm"), mode="r", encoding="utf-8").read()
+    """Returns OpenQASM2 bell circuit"""
+    # return open(os.path.join(current_dir, "bell.qasm"), mode="r", encoding="utf-8").read()
+    return open(
+        os.path.join(current_dir, "qasm_lib", "bell_qasm2.qasm"), mode="r", encoding="utf-8"
+    ).read()
 
 
-def qasm2_shared15():
-    """Returns QASM2 for qBraid `TestSharedGates`."""
-    return open(os.path.join(current_dir, "shared_15.qasm"), mode="r", encoding="utf-8").read()
+def qasm2_shared15() -> QASMType:
+    """Returns OpenQASM2 15 gate test circuit."""
+    # return open(os.path.join(current_dir, "shared_15.qasm"), mode="r", encoding="utf-8").read()
+    return open(
+        os.path.join(current_dir, "qasm_lib", "shared15_qasm2.qasm"), mode="r", encoding="utf-8"
+    ).read()
+
+
+def qasm2_raw_shared15() -> QASMType:
+    """Returns OpenQASM2 15 gate test circuit with no gate defs."""
+    return open(
+        os.path.join(current_dir, "qasm_lib", "shared15_raw_qasm2.qasm"), mode="r", encoding="utf-8"
+    ).read()
+
+
+def qasm3_bell() -> QASMType:
+    """Returns OpenQASM3 bell circuit"""
+    return open(
+        os.path.join(current_dir, "qasm_lib", "bell_qasm3.qasm"), mode="r", encoding="utf-8"
+    ).read()
+
+
+def qasm3_shared15() -> QASMType:
+    """Returns OpenQASM3 15 gate test circuit."""
+    return open(
+        os.path.join(current_dir, "qasm_lib", "shared15_qasm3.qasm"), mode="r", encoding="utf-8"
+    ).read()
 
 
 def create_gateset_qasm(max_operands) -> np.ndarray:

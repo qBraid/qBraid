@@ -57,7 +57,7 @@ def shared15_data() -> QROGRAM_TEST_TYPE:
     from qbraid.interface.qbraid_braket.circuits import braket_shared15
     from qbraid.interface.qbraid_cirq.circuits import cirq_shared15
     from qbraid.interface.qbraid_pytket.circuits import pytket_shared15
-    from qbraid.interface.qbraid_qasm.circuits import qasm2_shared15
+    from qbraid.interface.qbraid_qasm.circuits import qasm2_raw_shared15
     from qbraid.interface.qbraid_qiskit.circuits import qiskit_shared15
 
     unitary = to_unitary(cirq_shared15())
@@ -67,7 +67,7 @@ def shared15_data() -> QROGRAM_TEST_TYPE:
         "cirq": cirq_shared15,
         "qiskit": qiskit_shared15,
         "pytket": pytket_shared15,
-        "qasm2": qasm2_shared15,
+        "qasm2": qasm2_raw_shared15,
     }
 
     return circuits, unitary

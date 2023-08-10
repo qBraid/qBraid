@@ -21,11 +21,3 @@ qbraid.transpiler.cirq_qasm.qasm_parser module
    :members:
    :undoc-members:
    :show-inheritance:
-
-qbraid.transpiler.cirq_qasm.qasm_preprocess module
----------------------------------------------------
-
-.. automodule:: qbraid.transpiler.cirq_qasm.qasm_preprocess
-   :members:
-   :undoc-members:
-   :show-inheritance:
