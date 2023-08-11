@@ -15,8 +15,9 @@ Module for interacting with the qBraid Jobs API.
 import os
 import sys
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
+from .exceptions import ApiError
 from .session import QbraidSession
 
 if TYPE_CHECKING:
@@ -29,7 +30,7 @@ ENVS_PATH = os.getenv("QBRAID_USR_ENVS") or os.path.join(
 SLUG_PATH = os.path.join(ENVS_PATH, SLUG)
 
 
-def _running_in_lab():
+def _running_in_lab() -> bool:
     """Checks if you are running qBraid-SDK in qBraid Lab environment.
 
     See https://docs.qbraid.com/en/latest/lab/environments.html
@@ -38,17 +39,22 @@ def _running_in_lab():
     return sys.executable == python_exe
 
 
-def _qbraid_jobs_enabled():
+def _qbraid_jobs_enabled(vendor: Optional[str] = None) -> bool:
     """Returns True if running qBraid Lab and qBraid Quantum Jobs
     proxy is enabled. Otherwise, returns False.
 
     See https://docs.qbraid.com/en/latest/lab/quantum_jobs.html
     """
+    # currently quantum jobs only supported for AWS
+    if vendor and vendor != "aws":
+        return False
+
     proxy_file = os.path.join(SLUG_PATH, "qbraid", "proxy")
     if os.path.isfile(proxy_file):
         with open(proxy_file) as f:  # pylint: disable=unspecified-encoding
             firstline = f.readline().rstrip()
             return "active = true" in firstline  # check if proxy is active or not
+
     return False
 
 
@@ -73,14 +79,18 @@ def init_job(
     """
     session = QbraidSession()
 
+    vendor = device.vendor.lower()
     # One of the features of qBraid Quantum Jobs is the ability to send
     # jobs without any credentials using the qBraid Lab platform. If the
     # qBraid Quantum Jobs proxy is enabled, a document has already been
     # created for this job. So, instead creating a duplicate, we query the
     # user jobs for the `vendorJobId` and return the correspondong `qbraidJobId`.
-    if _running_in_lab() and _qbraid_jobs_enabled():
-        job = session.post("/get-user-jobs", json={"vendorJobId": vendor_job_id}).json()[0]
-        return job["qbraidJobId"]
+    if _running_in_lab() and _qbraid_jobs_enabled(vendor):
+        try:
+            job = session.post("/get-user-jobs", json={"vendorJobId": vendor_job_id}).json()[0]
+            return job["qbraidJobId"]
+        except IndexError as err:
+            raise ApiError(f"{device.vendor} job {vendor_job_id} not found") from err
 
     # Create a new document for the user job. The qBraid API creates a unique
     # Job ID, which is collected in the response. We use dummy variables for

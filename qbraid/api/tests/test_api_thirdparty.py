@@ -38,6 +38,8 @@ def test_check_quantum_jobs_enabled():
     outF.writelines("active = true\n")
     outF.close()
     assert _qbraid_jobs_enabled() is True
+    assert _qbraid_jobs_enabled(vendor="aws") is True
+    assert _qbraid_jobs_enabled(vendor="ibm") is False
     os.remove(proxy_file)
 
 
