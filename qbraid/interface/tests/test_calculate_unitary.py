@@ -26,6 +26,7 @@ from qbraid.interface.calculate_unitary import (
     unitary_to_little_endian,
 )
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
+from qbraid.interface.qbraid_pyquil.tools import kronecker_product_factor_permutation
 
 
 def get_subsets(nqubits):
@@ -124,3 +125,18 @@ def test_unitary_raises():
 def test_random_unitary():
     matrix = random_unitary_matrix(2)
     assert np.allclose(matrix @ matrix.conj().T, np.eye(2))
+
+
+def test_kronecker_product_factor_permutation():
+    U = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+
+    expected_output = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 1, 0, 0], [0, 0, 1, 0]])
+
+    assert np.allclose(kronecker_product_factor_permutation(U), expected_output)
+
+
+def test_kronecker_product_factor_permutation_invalid_input():
+    """Test raising ValueError for non-square matrix of size not 2^N"""
+    invalid_matrix = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+    with pytest.raises(ValueError):
+        kronecker_product_factor_permutation(invalid_matrix)

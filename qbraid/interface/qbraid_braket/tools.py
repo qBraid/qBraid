@@ -19,7 +19,7 @@ from braket.circuits import Instruction
 
 def _unitary_from_braket(circuit: BKCircuit) -> np.ndarray:
     """Return the little-endian unitary of a Braket circuit."""
-    return circuit.as_unitary()
+    return circuit.to_unitary()
 
 
 def _contiguous_expansion(circuit: BKCircuit) -> BKCircuit:

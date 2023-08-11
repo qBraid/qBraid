@@ -75,7 +75,7 @@ def cirq_shared15():
     """Returns cirq `Circuit` for qBraid `TestSharedGates`."""
 
     circuit = Circuit()
-    q3, q2, q1, q0 = LineQubit.range(4)
+    q0, q1, q2, q3 = LineQubit.range(4)
 
     cirq_shared_gates = [
         H(q0),

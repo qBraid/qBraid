@@ -40,14 +40,15 @@ def reverse_qubit_ordering(circuit: QuantumCircuit) -> QuantumCircuit:
 
 def _unitary_from_qiskit(circuit: QuantumCircuit) -> np.ndarray:
     """Return the unitary of a Qiskit quantum circuit."""
-    return Operator(circuit).data
+    rev_circuit = reverse_qubit_ordering(circuit)
+    return Operator(rev_circuit).data
 
 
 def _unitary_from_qasm3(qasmstr: QASMType) -> np.ndarray:
     """Return the unitary of the QASM 3 string"""
     circuit = loads(qasmstr)
-    circuit_rev = reverse_qubit_ordering(circuit)
-    return _unitary_from_qiskit(circuit_rev)
+    # circuit_rev = reverse_qubit_ordering(circuit)
+    return _unitary_from_qiskit(circuit)
 
 
 def _convert_to_contiguous_qiskit(circuit: QuantumCircuit, rev_qubits=False) -> QuantumCircuit:
