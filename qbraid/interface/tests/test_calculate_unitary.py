@@ -89,6 +89,7 @@ def test_unitary_calc(bk_instrs, u_expected):
     non-contiguous qubit indexing."""
     circuit = make_circuit(bk_instrs)
     u_test = to_unitary(circuit)
+    u_expected = unitary_to_little_endian(u_expected)
     assert np.allclose(u_expected, u_test)
 
 
@@ -128,11 +129,13 @@ def test_random_unitary():
 
 
 def test_kronecker_product_factor_permutation():
-    U = np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]])
+    circuit = Circuit().h(0).cnot(0, 1)
+    circuit_rev = Circuit().h(1).cnot(1, 0)
 
-    expected_output = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 1, 0, 0], [0, 0, 1, 0]])
+    unitary = circuit.to_unitary()
+    unitary_rev = circuit_rev.to_unitary()
 
-    assert np.allclose(kronecker_product_factor_permutation(U), expected_output)
+    assert np.allclose(kronecker_product_factor_permutation(unitary), unitary_rev)
 
 
 def test_kronecker_product_factor_permutation_invalid_input():
