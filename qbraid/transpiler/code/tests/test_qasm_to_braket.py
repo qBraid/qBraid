@@ -85,7 +85,7 @@ def test_qasm_to_braket_code_print_circuit(capfd):
 
     os.system(f"{sys.executable} {output_file}")
     out, err = capfd.readouterr()
-    assert len(out) == 5051
+    assert len(out) == 4631
     assert len(err) == 0
     os.remove(output_file)
 

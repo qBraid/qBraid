@@ -160,7 +160,7 @@ def from_braket(circuit: BKCircuit) -> Circuit:
     Raises:
         CircuitConversionError: if circuit could not be converted
     """
-    compat_circuit = convert_to_contiguous(circuit, rev_qubits=True)
+    compat_circuit = convert_to_contiguous(circuit)
     qasm_str = to_qasm(compat_circuit)
     try:
         return from_qasm(qasm_str)

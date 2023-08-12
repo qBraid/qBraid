@@ -33,7 +33,7 @@ def to_pyquil(circuit: Circuit, compat=True) -> Program:
         pyquil.Program object equivalent to the input Cirq circuit.
     """
     if compat:
-        circuit = convert_to_contiguous(circuit, rev_qubits=True)
+        circuit = convert_to_contiguous(circuit)
     input_qubits = circuit.all_qubits()
     max_qubit = max(input_qubits)
     # if we are using LineQubits, keep the qubit labeling the same
@@ -66,7 +66,7 @@ def from_pyquil(program: Program, compat=True) -> Circuit:
     try:
         circuit = circuit_from_quil(program.out())
         if compat:
-            circuit = convert_to_contiguous(circuit, rev_qubits=True)
+            circuit = convert_to_contiguous(circuit)
         return circuit
     except Exception as err:
         raise CircuitConversionError(

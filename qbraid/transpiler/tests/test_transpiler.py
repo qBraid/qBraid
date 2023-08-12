@@ -113,7 +113,7 @@ def test_from_cirq(to_type):
     converted_circuit = convert_from_cirq(cirq_circuit, to_type)
     circuit, input_type = convert_to_cirq(converted_circuit)
     if to_type == "qasm3":
-        circuit = convert_to_contiguous(circuit, rev_qubits=True)
+        circuit = convert_to_contiguous(circuit)
     assert _equal(circuit, cirq_circuit)
     assert input_type == to_type
 
@@ -266,7 +266,7 @@ def qiskit_gate_test_circuit(test_gate, nqubits):
 
 def cirq_gate_test_circuit(test_gate, nqubits):
     circuit = CirqCircuit()
-    q2, q1, q0 = [cirq.LineQubit(i) for i in range(3)]
+    q0, q1, q2 = [cirq.LineQubit(i) for i in range(3)]
 
     if nqubits == 1:
         input_qubits = [q0]

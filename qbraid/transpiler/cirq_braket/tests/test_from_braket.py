@@ -133,8 +133,7 @@ def test_from_braket_three_qubit_gates():
 def test_unitary_braket_instruction():
     """Test converting Braket instruction to instruction using unitary gate."""
     instr_cnot_01 = Instruction(braket_gates.CNot(), target=[0, 1])
-    instr_cnot_10 = Instruction(braket_gates.CNot(), target=[1, 0])
-    instr_cnot_u = unitary_braket_instruction(instr_cnot_10)
+    instr_cnot_u = unitary_braket_instruction(instr_cnot_01)
     circuit_expected = BKCircuit().add_instruction(instr_cnot_01)
     circuit_test = BKCircuit().add_instruction(instr_cnot_u)
     u_expected = to_unitary(circuit_expected)

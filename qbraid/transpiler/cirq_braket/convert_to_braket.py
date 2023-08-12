@@ -29,6 +29,7 @@ from cirq.linalg.decompositions import kak_decomposition
 
 from qbraid.interface import convert_to_contiguous
 from qbraid.interface.qbraid_cirq.tools import _int_from_qubit, is_measurement_gate
+from qbraid.transpiler.cirq_braket.custom_gates import C as BKControl
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
@@ -43,7 +44,7 @@ def to_braket(circuit: Circuit) -> BKCircuit:
     """
     compat_circuit = convert_to_contiguous(circuit)
     cirq_int_qubits = range(len(compat_circuit.all_qubits()))
-    braket_int_qubits = list(reversed(cirq_int_qubits))
+    braket_int_qubits = list(cirq_int_qubits)
     qubit_mapping = {x: braket_int_qubits[x] for x in cirq_int_qubits}
     return BKCircuit(
         _to_braket_instruction(operation, qubit_mapping)
@@ -88,7 +89,8 @@ def _to_braket_instruction(
         if isinstance(operation.gate, cirq_ops.ControlledGate):
             sub_gate_instr = _to_two_qubit_braket_instruction(operation.gate.sub_gate, qubits[1:])
             sub_gate = sub_gate_instr[0].operator
-            return [BKInstruction(sub_gate, target=qubits[1:], control=qubits[:1])]
+            # return [BKInstruction(sub_gate, target=qubits[1:], control=qubits[:1])]
+            return [BKInstruction(BKControl(sub_gate, qubits), qubits)]
 
         try:
             matrix = protocols.unitary(operation)
@@ -259,8 +261,8 @@ def _to_two_qubit_braket_instruction(
     if isinstance(gate, cirq_ops.ControlledGate):
         sub_gate_instr = _to_one_qubit_braket_instruction(gate.sub_gate, q2)
         sub_gate = sub_gate_instr[0].operator
-        return [BKInstruction(sub_gate, target=q2, control=q1)]
-        # return [BKInstruction(BKControl(sub_gate, [0, 1]), [q1, q2])]
+        # return [BKInstruction(sub_gate, target=q2, control=q1)]
+        return [BKInstruction(BKControl(sub_gate, [0, 1]), [q1, q2])]
     if isinstance(gate, cirq_ops.DepolarizingChannel):
         return BKInstruction(braket_noise_gate.TwoQubitDepolarizing(operation.gate.p), [q1, q2])
     if isinstance(gate, cirq_ops.KrausChannel):
