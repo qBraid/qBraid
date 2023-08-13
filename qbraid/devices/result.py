@@ -19,7 +19,7 @@ from qiskit.visualization import plot_histogram
 
 def _format_counts(raw_counts: dict, removeZeros = True) -> dict:
     """Formats, sorts, and adds missing bit indicies to counts dictionary
-
+    Can pass in a 'removeZeros' parameter to decide whether to plot the non-zero counts
     For example:
 
     .. code-block:: python
