@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 from qiskit.visualization import plot_histogram
 
 
-def _format_counts(raw_counts: dict) -> dict:
+def _format_counts(raw_counts: dict, removeZeros = True) -> dict:
     """Formats, sorts, and adds missing bit indicies to counts dictionary
 
     For example:
@@ -30,13 +30,29 @@ def _format_counts(raw_counts: dict) -> dict:
         {'00': 46, '01': 0, '10': 79, '11': 13}
 
     """
+    #method to remove all zero count results
+    def remove_zero_values(dictionary):
+        keys_to_remove = [key for key, value in dictionary.items() if value == 0]
+        
+        for key in keys_to_remove:
+            del dictionary[key]
+        
+        return dictionary
+
+
     # Remove spaces from keys
     counts = {key.replace(" ", ""): value for key, value in raw_counts.items()}
 
     # Create the sorted dictionary, filling in missing keys with 0
     num_bits = max(len(key) for key in counts)
     all_keys = [format(i, "0" + str(num_bits) + "b") for i in range(2**num_bits)]
-    return {key: counts.get(key, 0) for key in sorted(all_keys)}
+
+    #removing zero value counts
+    final_counts = {key: counts.get(key, 0) for key in sorted(all_keys)}
+    if removeZeros:
+        final_counts = remove_zero_values(final_counts)
+    
+    return final_counts
 
 
 class ResultWrapper(ABC):
