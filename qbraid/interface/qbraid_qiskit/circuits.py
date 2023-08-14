@@ -46,8 +46,8 @@ def _qiskit_random(num_qubits: int, depth: int, **kwargs) -> QuantumCircuit:
 def qiskit_bell() -> QuantumCircuit:
     """Returns Qiskit bell circuit"""
     circuit = QuantumCircuit(2)
-    circuit.h(1)
-    circuit.cx(1, 0)
+    circuit.h(0)
+    circuit.cx(0, 1)
     return circuit
 
 

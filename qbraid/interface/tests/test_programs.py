@@ -19,6 +19,7 @@ from qbraid.exceptions import ProgramTypeError, VisualizationError
 from qbraid.interface.calculate_unitary import circuits_allclose
 from qbraid.interface.draw import circuit_drawer
 from qbraid.interface.programs import bell_data, random_circuit, shared15_data
+from qbraid.interface.qbraid_qiskit.tools import reverse_qubit_ordering
 
 map, _ = bell_data()
 braket_bell = map["braket"]()
@@ -90,7 +91,7 @@ q_0: ─────┤ X ├
      ┌───┐└─┬─┘
 q_1: ┤ H ├──■──
      └───┘     """
-    result = circuit_drawer(qiskit_bell, output="text")
+    result = circuit_drawer(reverse_qubit_ordering(qiskit_bell), output="text")
     assert result.__str__() == expected
 
 

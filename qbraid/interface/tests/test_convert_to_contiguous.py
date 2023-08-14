@@ -56,9 +56,9 @@ def test_compare_conversion_braket_cirq():
     assert braket_circuit.qubit_count == 3
 
     cirq_circuit = Circuit()
-    q0 = LineQubit(4)
+    q0 = LineQubit(0)
     q2 = LineQubit(2)
-    q4 = LineQubit(0)
+    q4 = LineQubit(4)
     cirq_circuit.append(X(q0))
     cirq_circuit.append(Y(q2))
     cirq_circuit.append(Z(q4))

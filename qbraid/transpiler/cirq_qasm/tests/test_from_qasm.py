@@ -63,5 +63,5 @@ def test_preprocess_qasm(qasm_str):
     qiskit_circuit = QuantumCircuit().from_qasm_str(qasm_str)
     supported_qasm = convert_to_supported_qasm(qasm_str)
     cirq_circuit = from_qasm(supported_qasm)
-    cirq_circuit_compat = _convert_to_line_qubits(cirq_circuit, rev_qubits=True)
+    cirq_circuit_compat = _convert_to_line_qubits(cirq_circuit)
     assert circuits_allclose(cirq_circuit_compat, qiskit_circuit)
