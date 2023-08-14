@@ -1,5 +1,5 @@
 amazon-braket-sdk~=1.53.3
-cirq~=1.3.0.dev20230808184014
+cirq~=1.3.0.dev20230811174803
 numpy>=1.17,<1.24
 pyquil>=3.5.4,<3.6.0
 pytket~=1.18.0
