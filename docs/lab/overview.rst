@@ -55,6 +55,11 @@ software tools for researchers and developers in quantum, as well as access to q
    - `Configuration <gpu.html#configuration>`_
    - `GPU-enabled environments <gpu.html#gpu-enabled-environments>`_
 
+- `Julia <julia.html>`_
+   - `Bloqade Lab Image <julia.html#bloqade-lab-image>`_
+   - `Julia Configuration <julia.html#configuration>`_
+   - `IJulia Troubleshooting <julia.html#troubleshooting>`_
+
 - `Integrations <integrations.html>`_
    - `Visual Studio Code <integrations.html#visual-studio-code>`_
    - `JupyterLab Extensions <integrations.html#jupyerlab-extensions>`_
