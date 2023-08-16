@@ -29,7 +29,7 @@ REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM/AWS sto
     "counts_raw, expected_out, remove_zeros",
     [
         ({" 1": 0, "0": 550}, {"0": 550}, True),
-         ({"10": 479, "1 1": 13, "0 0 ": 496}, {"00": 496, "10": 479, "11": 13}, True),
+        ({"10": 479, "1 1": 13, "0 0 ": 496}, {"00": 496, "10": 479, "11": 13}, True),
         ({" 1": 474, "0": 550}, {"0": 550, "1": 474}, False),
         ({"10": 479, "1 1": 13, "0 0 ": 496}, {"00": 496, "01": 0, "10": 479, "11": 13}, False),
         (
@@ -44,7 +44,7 @@ REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM/AWS sto
                 "110": 139,
                 "111": 594,
             },
-            False
+            False,
         ),
     ],
 )
