@@ -50,6 +50,9 @@ software tools for researchers and developers in quantum, as well as access to q
    - `Enable/disable <quantum_jobs.html#enable-disable>`_
    - `Manage <quantum_jobs.html#manage>`_
 
+- `Code Snippets <code_snippets.html>`_
+   - `Key Features <code_snippets.html#key-features>`_
+
 - `GPUs <gpu.html>`_
    - `Launch GPU instance <gpu.html#launch-gpu-instance>`_
    - `Configuration <gpu.html#configuration>`_
