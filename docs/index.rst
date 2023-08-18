@@ -103,6 +103,7 @@ Documentation
    lab/notebooks
    lab/quantum_devices
    lab/quantum_jobs
+   lab/code_snippets
    lab/gpu
    lab/julia
    lab/integrations
