@@ -26,9 +26,9 @@ from qbraid.interface.qbraid_qasm.circuits import (
 from qbraid.interface.qbraid_qasm.tools import (
     convert_to_qasm3,
     qasm3_depth,
+    qasm_3_num_qubits,
     qasm_depth,
     qasm_num_qubits,
-    qasm_3_num_qubits,
     qasm_qubits,
 )
 
