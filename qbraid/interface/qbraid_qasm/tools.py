@@ -36,18 +36,38 @@ def qasm_qubits(qasmstr: str) -> List[QASMType]:
     """
     return [
         text.replace("\n", "")
-        for match in re.findall(r"(\bqreg\s\S+\s+\b)|(qubit\[(\d+)\])", qasmstr)
+        for match in re.findall(r"(\bqreg\s\S+\s+\b)|(qubit\[(\d+)\])|(\bqubit\b)", qasmstr)
         for text in match
         if text != "" and len(text) >= 2
     ]
 
 
 def qasm_num_qubits(qasmstr: str) -> int:
-    """Calculate number of qubits."""
+    """Calculate number of qubits in a qasm2 string."""
     q_num = 0
 
     for num in qasm_qubits(qasmstr):
+        # split is needed as the name may contain
+        # a number
+        num = num.split("[")[1]
         q_num += int(re.search(r"\d+", num).group())
+    return q_num
+
+
+def qasm_3_num_qubits(qasmstr: str) -> int:
+    """Calculate number of qubits in a qasm3 string"""
+    q_num = 0
+    for bit_line in qasm_qubits(qasmstr):
+        if bit_line != "qubit":
+            # multiple qubits
+
+            # split is needed as the name may contain
+            # a number
+            bit_line = bit_line.split("[")[1]
+            q_num += int(re.search(r"\d+", bit_line).group())
+        else:
+            # single qubit
+            q_num += 1
     return q_num
 
 
