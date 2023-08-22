@@ -18,4 +18,23 @@ from setuptools import setup
 with open("qbraid/_version.py") as f:
     version = f.readlines()[-1].split()[-1].strip("\"'")
 
-setup(version=version)
+setup(
+    version=version,
+    extras_require={ 
+        # Install all optional dependencies
+        'all':['dependency'],
+        #Bra-ket
+        'amazon-braket': ['amazon-braket-sdk'],
+        #Pyquill
+        'rigetti':['pyquill'],
+        #Pytket
+        'pytket-all': ['pytket','pytket-braket'],
+        'pytket':['pytket'],
+        'pytket-braket':['pytket-braket'],
+        #Qiskit
+        'qiskit-all': ['qiskit','qiskit-ibm-provider','qiskit-qasm3-import'],
+        'qiskit':['qiskit'],
+        'qiskit-ibm-provider':['qiskit-ibm-provider'],
+        'qiskit-qasm3-import':['qiskit-qasm3-import']
+    }
+)
