@@ -184,14 +184,67 @@ Jupyter Notebook Extension for monitoring your own Resource Usage.
 
 
 
-Omnisearch
------------
-
-qBraid top-bar extension providing polyglot search (StackExchange, GitHub, Google).
-
-
 Quantum Docs
 -------------
 
 qBraid extension containing links to software documentation across quantum computing ecosystem.
 
+.. image:: ../_static/quantum_docs/docs_launcher.png
+    :width: 90%
+    :alt: Quantum Docs Widget
+    :target: javascript:void(0);
+  
+|
+
+.. image:: ../_static/quantum_docs/docs_menu.png
+    :width: 90%
+    :alt: Quantum Docs Menu
+    :target: javascript:void(0);
+  
+|
+
+.. image:: ../_static/quantum_docs/docs_quera.png
+    :width: 90%
+    :alt: QuEra Quantum Docs page
+    :target: javascript:void(0);
+  
+|
+
+Omnisearch
+-----------
+
+qBraid top-bar extension providing polyglot search (GitHub, StackExchange, Google, ChatGPT).
+
+.. image:: ../_static/omnisearch/omni_launcher.png
+    :width: 90%
+    :alt: Omnisearch from Launcher
+    :target: javascript:void(0);
+  
+|
+
+Omnisearch: GitHub
+^^^^^^^^^^^^^^^^^^^
+
+.. image:: ../_static/omnisearch/omni_github.png
+    :width: 90%
+    :alt: Omnisearch GitHub integration
+    :target: javascript:void(0);
+  
+|
+
+Omnisearch: ChatGPT
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. image:: ../_static/omnisearch/omni_gpt_add.png
+    :width: 90%
+    :alt: Omnisearch add ChatGPT
+    :target: javascript:void(0);
+  
+|
+
+.. image:: ../_static/omnisearch/omni_gpt_chat.png
+    :width: 90%
+    :alt: Omnisearch ChatGPT integration
+    :target: javascript:void(0);
+  
+|
