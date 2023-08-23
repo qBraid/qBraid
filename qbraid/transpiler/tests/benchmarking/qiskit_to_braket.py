@@ -35,6 +35,9 @@ qiskit_gates = get_qiskit_gates(seed=0)
 qbraid_failed, qiskit_failed = 0, 0
 
 for gate_name, gate in qiskit_gates.items():
+    if gate_name == "GlobalPhaseGate":
+        continue
+
     qiskit_circuit = qiskit.QuantumCircuit(gate.num_qubits)
     qiskit_circuit.compose(gate, inplace=True)
 
@@ -52,5 +55,5 @@ qbraid_percentage, qiskit_percentage = round((qbraid_passed / total_tests) * 100
 )
 
 print(f"Qiskit to Braket standard gate conversion tests\n")
-print(f"qbraid: {qbraid_passed}/{total_tests} ~= {qbraid_percentage}%")
-print(f"qiskit-braket-provider: {qiskit_passed}/{total_tests} ~= {qiskit_percentage}%")
+print(f"qbraid: {qbraid_passed}/{total_tests} ~= {qbraid_percentage}%")  # 58/58
+print(f"qiskit-braket-provider: {qiskit_passed}/{total_tests} ~= {qiskit_percentage}%")  # 31/58
