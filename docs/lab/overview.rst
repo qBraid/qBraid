@@ -13,8 +13,25 @@ Overview
    </p>
 
 
-`qBraid Lab <https://lab.qbraid.com>`_ is a web-based IDE cross JupyterLab interface that provides
-software tools for researchers and developers in quantum, as well as access to quantum hardware.
+`qBraid Lab <https://lab.qbraid.com>`_ is a web-based JupyterLab deployment providing curated software tools for
+for researchers and developers in quantum computing.
+
+- Hosts **30+** configurable quantum software environments in **Python**, **Julia**, **C++**, and **Q#**.
+- Integrates with **GitHub**, **VSCode**, **ChatGPT**, and more.
+- **Collaborative tools** enable sharing notebooks, environments, and code snippets.
+- Provides direct access to a robust suite of computing resources, encompassing scalable **CPUs**, **GPUs**, and **QPUs**.
+
+.. image:: ../_static/getting_started/launcher.png
+    :width: 90%
+    :alt: Lab interface
+    :target: javascript:void(0);
+  
+|
+
+
+User Guide
+-----------
+
 
 - `Account <account.html>`_
    - `Add access key <account.html#add-access-key>`_
@@ -68,8 +85,8 @@ software tools for researchers and developers in quantum, as well as access to q
    - `JupyterLab Extensions <integrations.html#jupyerlab-extensions>`_
    - `Git <integrations.html#git>`_
    - `Resource Usage <integrations.html#resource-usage>`_
-   - `Omnisearch <integrations.html#omnisearch>`_
    - `Quantum Docs <integrations.html#quantum-docs>`_
+   - `Omnisearch <integrations.html#omnisearch>`_
 
 - `System Info <system.html>`_
    - `Operating System <system.html#operating-system>`_

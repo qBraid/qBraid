@@ -16,8 +16,8 @@ from pyquil import Program
 from pyquil.simulation.tools import program_unitary
 
 
-def kronecker_product_factor_permutation(matrix: np.ndarray) -> np.ndarray:
-    """Permutes the Kronecker (tensor) product factors of the given matrix.
+def rev_qubits_unitary(matrix: np.ndarray) -> np.ndarray:
+    """Peforms Kronecker (tensor) product factor permutation of given matrix
     In other words, this function returns a matrix equivalent to that computed
     from a quantum circuit if its qubit indicies were reversed.
 
@@ -61,4 +61,4 @@ def _unitary_from_pyquil(program: Program) -> np.ndarray:
     """Return the unitary of a pyQuil program."""
     n_qubits = len(program.get_qubits())
     unitary = program_unitary(program, n_qubits=n_qubits)
-    return kronecker_product_factor_permutation(unitary)
+    return rev_qubits_unitary(unitary)

@@ -15,11 +15,11 @@ qbraid
       <span style="color:#808080"> | CLI</span>
    </h1>
    <p style="text-align:center;font-style:italic;color:#808080">
-      A Command Line Interface for interacting with all parts of the qBraid platform.
+      Universal Command Line Interface for interacting with all parts of the qBraid platform.
    </p>
 
 
-**Version 0.3.0**
+**Version 0.4.1**
 
 Commands
 ---------
