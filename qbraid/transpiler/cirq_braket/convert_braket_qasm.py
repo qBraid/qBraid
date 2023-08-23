@@ -15,6 +15,7 @@ Module for converting Braket circuits to Cirq circuit via OpenQASM
 
 from braket.circuits import Circuit as BKCircuit
 from braket.circuits.serialization import IRType
+from braket.ir.openqasm import Program as OpenQasmProgram
 from cirq import Circuit
 from cirq.contrib.qasm_import.exception import QasmException
 
@@ -123,14 +124,14 @@ def braket_to_qasm3(circuit: BKCircuit) -> QASMType:
         T  : |0|1|2|
         >>> print(circuit_to_qasm3(circuit))
         OPENQASM 3.0;
-        bit[3] b;
-        qubit[3] q;
-        h q[0];
-        cnot q[0], q[1];
-        cnot q[1], q[2];
-        b[0] = measure q[0];
-        b[1] = measure q[1];
-        b[2] = measure q[2];
+        bit[3] __bits__;
+        qubit[3] __qubits__;
+        h __qubits__[0];
+        cnot __qubits__[0], __qubits__[1];
+        cnot __qubits__[1], __qubits__[2];
+        __bits__[0] = measure __qubits__[0];
+        __bits__[1] = measure __qubits__[1];
+        __bits__[2] = measure __qubits__[2];
 
     Args:
         circuit: Amazon Braket quantum circuit
@@ -146,6 +147,26 @@ def braket_to_qasm3(circuit: BKCircuit) -> QASMType:
         return circuit.to_ir(IRType.OPENQASM).source
     except Exception as err:
         raise CircuitConversionError("Error converting braket circuit to qasm3 string") from err
+
+
+def braket_from_qasm3(qasm_str: QASMType) -> BKCircuit:
+    """Converts an OpenQASM 3.0 string to a ``braket.circuits.Circuit``.
+
+    Args:
+        circuit: OpenQASM 3 string
+
+    Returns:
+        The Amazon Braket circuit equivalent to the input OpenQASM 3.0 string
+
+    Raises:
+        CircuitConversionError: If qasm to braket conversion fails
+
+    """
+    try:
+        program = OpenQasmProgram(source=qasm_str)
+        return BKCircuit.from_ir(source=program.source, inputs=program.inputs)
+    except Exception as err:
+        raise CircuitConversionError("Error converting qasm3 string to braket circuit") from err
 
 
 def from_braket(circuit: BKCircuit) -> Circuit:
