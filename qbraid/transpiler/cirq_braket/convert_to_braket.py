@@ -29,7 +29,6 @@ from cirq.linalg.decompositions import kak_decomposition
 
 from qbraid.interface import convert_to_contiguous
 from qbraid.interface.qbraid_cirq.tools import _int_from_qubit, is_measurement_gate
-from qbraid.transpiler.cirq_braket.custom_gates import C as BKControl
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
