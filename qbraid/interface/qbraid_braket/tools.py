@@ -53,8 +53,15 @@ def _contiguous_compression(circuit: BKCircuit, rev_qubits=False) -> BKCircuit:
         qubit_map[int(qubit)] = index
     contig_circuit = BKCircuit()
     for instr in circuit.instructions:
-        contig_qubits = [qubit_map[int(qubit)] for qubit in list(instr.target)]
-        contig_instr = Instruction(instr.operator, target=contig_qubits)
+        contig_target = [qubit_map[int(qubit)] for qubit in list(instr.target)]
+        contig_control = [qubit_map[int(qubit)] for qubit in list(instr.control)]
+        contig_instr = Instruction(
+            instr.operator,
+            target=contig_target,
+            control=contig_control,
+            control_state=instr.control_state,
+            power=instr.power,
+        )
         contig_circuit.add_instruction(contig_instr)
     return contig_circuit
 

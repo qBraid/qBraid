@@ -89,8 +89,8 @@ def _to_braket_instruction(
         if isinstance(operation.gate, cirq_ops.ControlledGate):
             sub_gate_instr = _to_two_qubit_braket_instruction(operation.gate.sub_gate, qubits[1:])
             sub_gate = sub_gate_instr[0].operator
-            # return [BKInstruction(sub_gate, target=qubits[1:], control=qubits[:1])]
-            return [BKInstruction(BKControl(sub_gate, qubits), qubits)]
+            return [BKInstruction(sub_gate, target=qubits[1:], control=qubits[:1])]
+            # return [BKInstruction(BKControl(sub_gate, qubits), qubits)]
 
         try:
             matrix = protocols.unitary(operation)
@@ -261,8 +261,8 @@ def _to_two_qubit_braket_instruction(
     if isinstance(gate, cirq_ops.ControlledGate):
         sub_gate_instr = _to_one_qubit_braket_instruction(gate.sub_gate, q2)
         sub_gate = sub_gate_instr[0].operator
-        # return [BKInstruction(sub_gate, target=q2, control=q1)]
-        return [BKInstruction(BKControl(sub_gate, [0, 1]), [q1, q2])]
+        return [BKInstruction(sub_gate, target=q2, control=q1)]
+        # return [BKInstruction(BKControl(sub_gate, [0, 1]), [q1, q2])]
     if isinstance(gate, cirq_ops.DepolarizingChannel):
         return BKInstruction(braket_noise_gate.TwoQubitDepolarizing(operation.gate.p), [q1, q2])
     if isinstance(gate, cirq_ops.KrausChannel):
