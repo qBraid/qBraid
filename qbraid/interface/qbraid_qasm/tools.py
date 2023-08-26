@@ -66,7 +66,14 @@ def qasm_depth(qasm_str: str) -> int:
         matches = []
         if len(raw_matches) == 0:
             try:
-                op = s.split(" ")[-1].strip(";")
+                if s.startswith("measure"):
+                    match = re.search(r"measure (\w+) -> .+", s)
+                    if match:
+                        op = match.group(1)
+                    else:
+                        continue
+                else:
+                    op = s.split(" ")[-1].strip(";")
                 for qubit in all_qubits:
                     qubit_name = qubit.split("[")[0]
                     if op == qubit_name:
@@ -80,15 +87,18 @@ def qasm_depth(qasm_str: str) -> int:
             for match in raw_matches:
                 var_name = match[0]
                 n = int(match[1])
-                matches.append(f"{var_name}[{n}]")
+                qubit = f"{var_name}[{n}]"
+                if qubit in all_qubits and qubit in depth_counts:
+                    matches.append(qubit)
 
         if s.startswith("if"):
             match = re.search(r"if\((\w+)==\d+\)", s)
             if match:
                 creg = match.group(1)
                 if creg in track_measured:
-                    qubit_measured = track_measured[creg]
-                    max_measured = depth_counts[qubit_measured]
+                    meas_qubits, meas_depth = track_measured[creg]
+                    max_measured = max(max(depth_counts[q] for q in meas_qubits), meas_depth)
+                    track_measured[creg] = meas_qubits, max_measured + 1
                     qubit = matches[0]
                     depth_counts[qubit] = max(max_measured, depth_counts[qubit]) + 1
                     continue
@@ -96,19 +106,17 @@ def qasm_depth(qasm_str: str) -> int:
         # Calculate max depth among the qubits in the current line.
         max_depth = 0
         for qubit in matches:
-            if qubit in all_qubits and qubit in depth_counts:
-                max_depth = max(max_depth, depth_counts[qubit])
+            max_depth = max(max_depth, depth_counts[qubit])
 
         # Update depths for all qubits in the current line.
         for qubit in matches:
-            if qubit in all_qubits and qubit in depth_counts:
-                depth_counts[qubit] = max_depth + 1
+            depth_counts[qubit] = max_depth + 1
 
         if s.startswith("measure"):
             match = re.search(r"measure .+ -> (\w+)", s)
             if match:
                 creg = match.group(1)
-                track_measured[creg] = matches[0]
+                track_measured[creg] = matches, max_depth + 1
 
     return _get_max_count(depth_counts)
 
