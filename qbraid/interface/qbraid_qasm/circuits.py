@@ -18,22 +18,21 @@ QASMType = str
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
 
+def _read_qasm_file(filename: str) -> QASMType:
+    """Reads a qasm file from the qasm_lib directory"""
+    return open(os.path.join(current_dir, "qasm_lib", filename), mode="r", encoding="utf-8").read()
+
+
 def qasm2_bell() -> QASMType:
     """Returns OpenQASM2 bell circuit"""
-    return open(
-        os.path.join(current_dir, "qasm_lib", "bell_qasm2.qasm"), mode="r", encoding="utf-8"
-    ).read()
+    return _read_qasm_file("bell.qasm")
 
 
 def qasm2_shared15() -> QASMType:
     """Returns OpenQASM2 15 gate test circuit."""
-    return open(
-        os.path.join(current_dir, "qasm_lib", "shared15_qasm2.qasm"), mode="r", encoding="utf-8"
-    ).read()
+    return _read_qasm_file("shared15.qasm")
 
 
 def qasm2_raw_shared15() -> QASMType:
-    """Returns OpenQASM2 15 gate test circuit with no gate defs."""
-    return open(
-        os.path.join(current_dir, "qasm_lib", "shared15_raw_qasm2.qasm"), mode="r", encoding="utf-8"
-    ).read()
+    """Returns OpenQASM 2 15 gate test circuit with no gate defs."""
+    return _read_qasm_file("shared15_decomp.qasm")

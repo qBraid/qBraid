@@ -13,72 +13,104 @@ Module containing OpenQASM 2 tools
 
 """
 import re
-from collections import defaultdict
 from typing import List
 
 import numpy as np
 
-from qbraid.interface.qbraid_qasm.qasm_preprocess import convert_to_supported_qasm
-
 QASMType = str
 
 
-def qasm_qubits(qasmstr: str) -> List[QASMType]:
-    """Get number of qasm qubits.
+def qasm_qubits(qasm_str: QASMType) -> List[str]:
+    """Use regex to extract all qreg definitions from the string"""
+    matches = re.findall(r"qreg (\w+)\[(\d+)\];", qasm_str)
 
-    Args:
-        qasmstr (str): OpenQASM 2 string
+    result = []
+    for match in matches:
+        var_name = match[0]
+        n = int(match[1])
+        result.extend([f"{var_name}[{i}]" for i in range(n)])
 
-    Returns:
-        List of qubits in the circuit
-    """
-    return [
-        text.replace("\n", "")
-        for match in re.findall(r"(\bqreg\s\S+\s+\b)|(qubit\[(\d+)\])", qasmstr)
-        for text in match
-        if text != "" and len(text) >= 2
-    ]
+    return result
 
 
 def qasm_num_qubits(qasmstr: str) -> int:
     """Calculate number of qubits in a qasm2 string."""
-    q_num = 0
-
-    for num in qasm_qubits(qasmstr):
-        # split is needed as the name may contain
-        # a number
-        num = num.split("[")[1]
-        q_num += int(re.search(r"\d+", num).group())
-    return q_num
+    return len(qasm_qubits(qasmstr))
 
 
-def qasm_depth(qasmstr: str) -> int:
+def _get_max_count(counts_dict):
+    return max(counts_dict.values()) if counts_dict else 0
+
+
+def qasm_depth(qasm_str: str) -> int:
     """Calculates circuit depth of OpenQASM 2 string"""
-    qasm_input = convert_to_supported_qasm(qasmstr)
-    lines = qasm_input.splitlines()
+    lines = qasm_str.splitlines()
 
-    gate_lines = [
-        s
-        for s in lines
-        if s.strip() and not s.startswith(("OPENQASM", "include", "qreg", "creg", "gate", "//"))
-    ]
+    # Keywords marking lines to ommit from depth calculation.
+    not_counted = ("OPENQASM", "include", "qreg", "creg", "gate", "opaque", "//")
+    gate_lines = [s for s in lines if s.strip() and not s.startswith(not_counted)]
 
-    counts_dict = defaultdict(int)
+    all_qubits = qasm_qubits(qasm_str)
+    depth_counts = {qubit: 0 for qubit in all_qubits}
 
-    for s in gate_lines:
-        matches = set(map(int, re.findall(r"q\[(\d+)\]", s)))
+    track_measured = {}
 
-        if len(matches) == 0:
+    for _, s in enumerate(gate_lines):
+        if s.startswith("barrier"):
+            max_depth = _get_max_count(depth_counts)
+            depth_counts = {key: max_depth for key in depth_counts.keys()}
             continue
 
+        raw_matches = re.findall(r"(\w+)\[(\d+)\]", s)
+
+        matches = []
+        if len(raw_matches) == 0:
+            try:
+                op = s.split(" ")[-1].strip(";")
+                for qubit in all_qubits:
+                    qubit_name = qubit.split("[")[0]
+                    if op == qubit_name:
+                        matches.append(qubit)
+            except Exception:
+                continue
+
+            if len(matches) == 0:
+                continue
+        else:
+            for match in raw_matches:
+                var_name = match[0]
+                n = int(match[1])
+                matches.append(f"{var_name}[{n}]")
+
+        if s.startswith("if"):
+            match = re.search(r"if\((\w+)==\d+\)", s)
+            if match:
+                creg = match.group(1)
+                if creg in track_measured:
+                    qubit_measured = track_measured[creg]
+                    max_measured = depth_counts[qubit_measured]
+                    qubit = matches[0]
+                    depth_counts[qubit] = max(max_measured, depth_counts[qubit]) + 1
+                    continue
+
         # Calculate max depth among the qubits in the current line.
-        max_depth = max(counts_dict[f"q[{i}]"] for i in matches)
+        max_depth = 0
+        for qubit in matches:
+            if qubit in all_qubits and qubit in depth_counts:
+                max_depth = max(max_depth, depth_counts[qubit])
 
         # Update depths for all qubits in the current line.
-        for i in matches:
-            counts_dict[f"q[{i}]"] = max_depth + 1
+        for qubit in matches:
+            if qubit in all_qubits and qubit in depth_counts:
+                depth_counts[qubit] = max_depth + 1
 
-    return max(counts_dict.values()) if counts_dict else 0
+        if s.startswith("measure"):
+            match = re.search(r"measure .+ -> (\w+)", s)
+            if match:
+                creg = match.group(1)
+                track_measured[creg] = matches[0]
+
+    return _get_max_count(depth_counts)
 
 
 def _convert_to_contiguous_qasm(qasmstr: str, rev_qubits=False) -> QASMType:
