@@ -22,11 +22,11 @@ from pytket.circuit import Circuit as TKCircuit
 from qbraid.exceptions import ProgramTypeError
 from qbraid.interface.calculate_unitary import (
     random_unitary_matrix,
+    rev_qubits_unitary,
     to_unitary,
     unitary_to_little_endian,
 )
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
-from qbraid.interface.qbraid_pyquil.tools import rev_qubits_unitary
 
 
 def get_subsets(nqubits):

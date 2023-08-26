@@ -39,14 +39,12 @@ def reverse_qubit_ordering(circuit: QuantumCircuit) -> QuantumCircuit:
 
 def _unitary_from_qiskit(circuit: QuantumCircuit) -> np.ndarray:
     """Return the unitary of a Qiskit quantum circuit."""
-    rev_circuit = reverse_qubit_ordering(circuit)
-    return Operator(rev_circuit).data
+    return Operator(circuit).data
 
 
 def _convert_to_contiguous_qiskit(circuit: QuantumCircuit, rev_qubits=False) -> QuantumCircuit:
     """Delete qubit(s) with no gate, if any exist."""
-    if rev_qubits:
-        circuit = reverse_qubit_ordering(circuit)
+    circuit = reverse_qubit_ordering(circuit) if rev_qubits else circuit
 
     dag = circuit_to_dag(circuit)
 
