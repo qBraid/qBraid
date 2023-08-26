@@ -179,7 +179,6 @@ rx(-pi/2) q[1];
 rx(-pi/2) q[0];
 """
     qasm_out = convert_to_supported_qasm(qasm_in)
-    print(qasm_out)
     assert strings_equal(qasm_out, expected_out)
 
 

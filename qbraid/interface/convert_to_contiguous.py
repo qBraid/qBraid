@@ -83,7 +83,7 @@ def convert_to_contiguous(program: "qbraid.QPROGRAM", **kwargs) -> "qbraid.QPROG
 
         conversion_function = _convert_to_contiguous_qasm
     elif package == "qasm3":
-        from qbraid.interface.qbraid_qiskit.tools import _convert_to_contiguous_qasm3
+        from qbraid.interface.qbraid_qasm3.tools import _convert_to_contiguous_qasm3
 
         conversion_function = _convert_to_contiguous_qasm3
     else:

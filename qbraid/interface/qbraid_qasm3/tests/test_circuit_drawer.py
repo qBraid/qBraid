@@ -15,7 +15,7 @@ Unit tests for OpenQASM 3 circuit drawer
 
 import pytest
 
-from qbraid.interface.qbraid_qasm.circuit_drawer import draw_circuit
+from qbraid.interface.qbraid_qasm3.circuit_drawer import draw_circuit
 
 qasm_str_1 = "\n".join(
     [

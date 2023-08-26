@@ -85,7 +85,7 @@ def to_unitary(program: "qbraid.QPROGRAM", ensure_contiguous: Optional[bool] = F
 
         to_unitary_function = _unitary_from_qasm
     elif package == "qasm3":
-        from qbraid.interface.qbraid_qiskit.tools import _unitary_from_qasm3
+        from qbraid.interface.qbraid_qasm3.tools import _unitary_from_qasm3
 
         to_unitary_function = _unitary_from_qasm3
     else:

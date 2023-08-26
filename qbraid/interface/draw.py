@@ -102,13 +102,13 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
         )
 
     if package == "qasm3":
-        from .qbraid_qasm.circuit_drawer import draw_circuit
+        from qbraid.interface.qbraid_qasm3.circuit_drawer import draw_circuit
 
         # coverage: ignore
         return print(draw_circuit(program))
 
     if package == "qasm2":
-        from .qbraid_qasm.tools import convert_to_qasm3
+        from qbraid.interface.qbraid_qasm3.tools import convert_to_qasm3
 
         # coverage: ignore
         qasm3_str = convert_to_qasm3(program)
