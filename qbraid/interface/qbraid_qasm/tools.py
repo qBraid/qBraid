@@ -60,14 +60,16 @@ def qasm_depth(qasmstr: str) -> int:
     gate_lines = [
         s
         for s in lines
-        if s.strip()
-        and not s.startswith(("OPENQASM", "include", "qreg", "gate", "measure", "if", "//"))
+        if s.strip() and not s.startswith(("OPENQASM", "include", "qreg", "creg", "gate", "//"))
     ]
 
     counts_dict = defaultdict(int)
 
     for s in gate_lines:
         matches = set(map(int, re.findall(r"q\[(\d+)\]", s)))
+
+        if len(matches) == 0:
+            continue
 
         # Calculate max depth among the qubits in the current line.
         max_depth = max(counts_dict[f"q[{i}]"] for i in matches)
