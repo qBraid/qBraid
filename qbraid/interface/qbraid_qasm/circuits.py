@@ -17,6 +17,7 @@ import os
 QASMType = str
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
+
 def qasm2_bell() -> QASMType:
     """Returns OpenQASM2 bell circuit"""
     return open(
