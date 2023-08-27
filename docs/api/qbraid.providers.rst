@@ -1,5 +1,5 @@
 qbraid.providers
-===============
+==================
 
 .. automodule:: qbraid.providers
    :members:

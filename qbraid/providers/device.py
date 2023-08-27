@@ -19,10 +19,11 @@ import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING  # pylint: disable=unused-import
 
-from qbraid import circuit_wrapper, QPROGRAM_LIBS
+from qbraid import circuit_wrapper
 from qbraid.exceptions import QbraidError
+from qbraid.transpiler.exceptions import CircuitConversionError
 
-from .exceptions import DeviceError, RuntimeError
+from .exceptions import ProgramValidationError, QbraidRuntimeError
 
 if TYPE_CHECKING:
     import qbraid
@@ -50,56 +51,88 @@ class DeviceLikeWrapper(ABC):
         self.vendor_device_id = self._info.pop("objArg")
         self.vendor_dlo = self._get_device()
 
-
-    def _verify_run(self, run_input: "qbraid.QPROGRAM") -> "qbraid.transpiler.QuantumProgramWrapper":
+    def verify_run(self, run_input: "qbraid.QPROGRAM") -> None:
         """Checks device is online and that circuit num qubits <= device num qubits.
 
-        Returns:
-            :class:`~qbraid.transpiler.QuantumProgramWrapper`: qBraid quantum program IR i.e. wrapped circuit object
-
         Raises:
-            RuntimeError: If error applying circuit wrapper or circuit number of qubits exceeds device number qubits
+            QbraidRuntimeError: If error applying circuit wrapper or circuit number of
+                qubits exceeds device number qubits
 
         """
         if self.status.value == 1:
             warnings.warn(
-                f"Device is currently offline. Depending on the provider queueing system, submitting this job may result in an exception or a long wait time.",
+                "Device is currently offline. Depending on the provider queueing system, "
+                "submitting this job may result in an exception or a long wait time.",
                 UserWarning,
             )
 
         try:
             qbraid_circuit = circuit_wrapper(run_input)
         except QbraidError as err:
-            raise RuntimeError from err
-        
+            raise ProgramValidationError from err
+
         if self.num_qubits and qbraid_circuit.num_qubits > self.num_qubits:
-            raise RuntimeError(
+            raise ProgramValidationError(
                 f"Number of qubits in circuit ({qbraid_circuit.num_qubits}) exceeds "
                 f"number of qubits in device ({self.num_qubits})."
             )
-        
-        return qbraid_circuit
-        
 
-    
-    def _transpile(self, qbraid_ir: "qbraid.transpiler.QuantumProgramWrapper") -> "qbraid.QPROGRAM":
-        """Checks if ``run_input`` is compatible with device and calls transpiler if necessary.
+    def transpile(self, run_input: "qbraid.QPROGRAM") -> "qbraid.QPROGRAM":
+        """Convert circuit to package compatible with target device and pass through any
+        provider transpile methods to match topology of device and/or optimize as applicable.
 
         Returns:
-            :data:`~qbraid.QPROGRAM`: The run_input e.g. a circuit object, possibly transpiled
+            :data:`~qbraid.QPROGRAM`: Transpiled quantum program (circuit) object
 
         Raises:
-            RuntimeError: If circuit conversion fails
+            QbraidRuntimeError: If circuit conversion fails
 
         """
-        run_package = self.info["runPackage"]
-        return qbraid_ir.transpile(run_package)
+        device_run_package = self.info["runPackage"]
+        input_run_package = run_input.__module__.split(".")[0]
+        if input_run_package != device_run_package:
+            qbraid_circuit = circuit_wrapper(run_input)
+            try:
+                run_input = qbraid_circuit.transpile(device_run_package)
+            except CircuitConversionError as err:
+                raise QbraidRuntimeError from err
+        return self._transpile(run_input)
 
-        compat_run_input = self._vendor_compat_run_input(run_input)
-        return compat_run_input, qbraid_circuit
+    def compile(self, run_input: "qbraid.QPROGRAM") -> "qbraid.QPROGRAM":
+        """Compile run input.
+
+        Returns:
+            :data:`~qbraid.QPROGRAM`: Compiled quantum program (circuit) object
+
+        Raises:
+            QbraidRuntimeError: If circuit conversion fails
+
+        """
+        return self._compile(run_input)
+
+    def process_run_input(
+        self, run_input: "qbraid.QPROGRAM"
+    ) -> "qbraid.transpiler.QuantumProgramWrapper":
+        """Process quantum program before passing to device run method.
+
+        Returns:
+            :class:`~qbraid.transpiler.QuantumProgramWrapper`: qBraid wrapped quantum program object
+
+        Raises:
+            QbraidRuntimeError: If error processing run input
+
+        """
+        self.verify_run(run_input)
+        transpiled = self.transpile(run_input)
+        compiled = self._compile(transpiled)
+        return circuit_wrapper(compiled)
 
     @abstractmethod
-    def _vendor_compat_run_input(self, run_input):
+    def _transpile(self, run_input):
+        """Applies any software/device specific modifications to run input."""
+
+    @abstractmethod
+    def _compile(self, run_input):
         """Applies any software/device specific modifications to run input."""
 
     @property
@@ -169,5 +202,7 @@ class DeviceLikeWrapper(ABC):
         """Abstract init device method."""
 
     @abstractmethod
-    def run(self, run_input: "qbraid.QPROGRAM", *args, **kwargs) -> "qbraid.providers.JobLikeWrapper":
+    def run(
+        self, run_input: "qbraid.QPROGRAM", *args, **kwargs
+    ) -> "qbraid.providers.JobLikeWrapper":
         """Abstract run method."""

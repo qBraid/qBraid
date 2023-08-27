@@ -8,37 +8,27 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# fmt: off
-
 """
 Unit tests for converting pytket circuits to Cirq circuits.
 
 """
 import numpy as np
 import pytest
-# from cirq import Circuit, LineQubit, ops, protocols
 from pytket.circuit import Circuit as TKCircuit
 
 from qbraid.interface import circuits_allclose, random_circuit
 from qbraid.transpiler.cirq_pytket.conversions import from_pytket
 from qbraid.transpiler.exceptions import CircuitConversionError
 
-# from pytket.circuit import OpType
-# from pytket.qasm import circuit_to_qasm_str
-
 
 def test_bell_state_from_qiskit():
     """Tests pytket.circuit.Circuit --> cirq.Circuit
-    with a Bell state circuit.
-    """
+    with a Bell state circuit."""
     pytket_circuit = TKCircuit(2)
     pytket_circuit.H(0)
     pytket_circuit.CX(0, 1)
     cirq_circuit = from_pytket(pytket_circuit)
     assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
-
-
-# todo: pytket_shared15
 
 
 @pytest.mark.parametrize("qubits", ([0, 1], [1, 0]))
@@ -58,9 +48,6 @@ def test_rzz_gate_from_pytket(qubits, theta):
     assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
 
 
-# todo: iswap gate, roundtrip, noncontig
-
-
 def test_100_random_pytket():
     for _ in range(100):
         pytket_circuit = random_circuit("pytket", 4, 1)
@@ -72,4 +59,4 @@ def test_raise_error():
     with pytest.raises(CircuitConversionError):
         pytket_circuit = TKCircuit(2)
         pytket_circuit.ISWAPMax(0, 1)
-        cirq_circuit = from_pytket(pytket_circuit)
+        from_pytket(pytket_circuit)

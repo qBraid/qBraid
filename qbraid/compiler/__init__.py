@@ -15,5 +15,7 @@ Compiler  (:mod:`qbraid.compiler`)
 
 .. currentmodule:: qbraid.compiler
 
-"""
+.. autosummary::
+   :toctree: ../stubs/
 
+"""

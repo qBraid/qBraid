@@ -15,6 +15,7 @@ testpaths = [
   "qbraid/api",
   "qbraid/interface",
   "qbraid/transpiler",
+  "qbraid/compiler",
   "qbraid/providers",
   "qbraid/tests",
 ]
@@ -64,7 +65,6 @@ exclude = '''
   | \.venv
   | dist
   | qbraid/transpiler/cirq_qasm
-  | qbraid/transpiler/cirq_pytket/tests/test_from_pytket.py
 )/
 '''
 

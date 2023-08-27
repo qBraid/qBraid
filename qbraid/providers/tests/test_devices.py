@@ -26,17 +26,16 @@ from qiskit_ibm_provider import IBMBackend, IBMJob, IBMProvider
 
 from qbraid import QbraidError, device_wrapper, job_wrapper
 from qbraid.api import QbraidSession
-from qbraid.providers import DeviceError
+from qbraid.interface import random_circuit
 from qbraid.providers.aws import AwsDeviceWrapper, AwsQuantumTaskWrapper
 from qbraid.providers.enums import is_status_final
-from qbraid.providers.exceptions import JobStateError
+from qbraid.providers.exceptions import DeviceError, JobStateError, ProgramValidationError
 from qbraid.providers.ibm import (
     IBMBackendWrapper,
     IBMJobWrapper,
     ibm_least_busy_qpu,
     ibm_to_qbraid_id,
 )
-from qbraid.interface import random_circuit
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
@@ -286,7 +285,7 @@ def test_circuit_too_many_qubits():
     two_qubit_circuit.h([0, 1])
     two_qubit_circuit.cx(0, 5)
     one_qubit_device = device_wrapper("ibm_q_belem")
-    with pytest.raises(DeviceError):
+    with pytest.raises(ProgramValidationError):
         one_qubit_device.run(two_qubit_circuit)
 
 

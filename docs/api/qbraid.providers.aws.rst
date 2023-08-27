@@ -1,13 +1,13 @@
 :orphan:
 
 qbraid.providers.aws package
-==========================
+==============================
 
 Submodules
 ----------
 
 qbraid.providers.aws.device module
---------------------------------
+------------------------------------
 
 .. automodule:: qbraid.providers.aws.device
    :members:
@@ -15,7 +15,7 @@ qbraid.providers.aws.device module
    :show-inheritance:
 
 qbraid.providers.aws.job module
------------------------------
+---------------------------------
 
 .. automodule:: qbraid.providers.aws.job
    :members:
@@ -23,7 +23,7 @@ qbraid.providers.aws.job module
    :show-inheritance:
 
 qbraid.providers.aws.result module
---------------------------------
+------------------------------------
 
 .. automodule:: qbraid.providers.aws.result
    :members:

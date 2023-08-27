@@ -14,7 +14,6 @@ Module defining IBMBackendWrapper Class
 """
 from qiskit import transpile
 from qiskit.providers import QiskitBackendNotFoundError
-from qiskit.utils.quantum_instance import QuantumInstance
 from qiskit_ibm_provider import IBMBackend, IBMProvider
 
 from qbraid.api.job_api import init_job
@@ -23,7 +22,6 @@ from qbraid.providers.enums import DeviceStatus
 from qbraid.providers.exceptions import DeviceError
 
 from .job import IBMJobWrapper
-from .result import IBMResultWrapper
 
 
 class IBMBackendWrapper(DeviceLikeWrapper):
@@ -37,8 +35,11 @@ class IBMBackendWrapper(DeviceLikeWrapper):
         except QiskitBackendNotFoundError as err:
             raise DeviceError("Device not found.") from err
 
-    def _vendor_compat_run_input(self, run_input):
-        return transpile(run_input, self.vendor_dlo)
+    def _transpile(self, run_input):
+        return transpile(run_input, backend=self.vendor_dlo)
+
+    def _compile(self, run_input):
+        return run_input
 
     @property
     def status(self):
@@ -55,26 +56,6 @@ class IBMBackendWrapper(DeviceLikeWrapper):
     def pending_jobs(self):
         """Return the number of jobs in the queue for the ibm backend"""
         return self.vendor_dlo.status().pending_jobs
-
-    def execute(self, run_input, *args, **kwargs):
-        """Runs circuit(s) on qiskit backend via :meth:`~qiskit.utils.QuantumInstance.execute`.
-
-        Creates a :class:`~qiskit.utils.QuantumInstance`, invokes its ``execute`` method,
-        applies a IBMResultWrapper, and returns the result.
-
-        Args:
-            run_input: An individual or a list of circuit objects to run on the wrapped device.
-            kwargs: Any kwarg options to pass to the device for the run.
-
-        Returns:
-            qbraid.providers.ibm.IBMResultWrapper: The result like object for the run.
-
-        """
-        run_input, _ = self._compat_run_input(run_input)
-        quantum_instance = QuantumInstance(self.vendor_dlo, *args, **kwargs)
-        qiskit_result = quantum_instance.execute(run_input)
-        qbraid_result = IBMResultWrapper(qiskit_result)
-        return qbraid_result
 
     def run(self, run_input, *args, **kwargs):
         """Runs circuit(s) on qiskit backend via :meth:`~qiskit.execute`
@@ -93,13 +74,13 @@ class IBMBackendWrapper(DeviceLikeWrapper):
 
         """
         backend = self.vendor_dlo
-        run_input, qbraid_circuit = self._compat_run_input(run_input)
+        qbraid_circuit = self.process_run_input(run_input)
+        run_input = qbraid_circuit._program
         shots = backend.options.get("shots") if "shots" not in kwargs else kwargs.pop("shots")
         memory = (
             True if "memory" not in kwargs else kwargs.pop("memory")
         )  # Needed to get measurements
-        transpiled = transpile(run_input, backend=backend)
-        qiskit_job = backend.run(transpiled, shots=shots, memory=memory, **kwargs)
+        qiskit_job = backend.run(run_input, shots=shots, memory=memory, **kwargs)
         qiskit_job_id = qiskit_job.job_id()
         qbraid_job_id = init_job(qiskit_job_id, self, [qbraid_circuit], shots)
         qbraid_job = IBMJobWrapper(
@@ -127,7 +108,8 @@ class IBMBackendWrapper(DeviceLikeWrapper):
         qbraid_circuit_batch = []
         run_input_batch = []
         for circuit in run_input:
-            run_input, qbraid_circuit = self._compat_run_input(circuit)
+            qbraid_circuit = self.process_run_input(circuit)
+            run_input = qbraid_circuit._program
             run_input_batch.append(run_input)
             qbraid_circuit_batch.append(qbraid_circuit)
 
@@ -135,8 +117,7 @@ class IBMBackendWrapper(DeviceLikeWrapper):
         memory = (
             True if "memory" not in kwargs else kwargs.pop("memory")
         )  # Needed to get measurements
-        transpiled = transpile(run_input_batch, backend=backend)
-        qiskit_job = backend.run(transpiled, shots=shots, memory=memory, **kwargs)
+        qiskit_job = backend.run(run_input_batch, shots=shots, memory=memory, **kwargs)
         qiskit_job_id = qiskit_job.job_id()
 
         # to change to batch

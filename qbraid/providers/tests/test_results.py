@@ -17,8 +17,8 @@ import os
 import pytest
 
 from qbraid import device_wrapper
-from qbraid.providers.result import _format_counts
 from qbraid.interface import random_circuit
+from qbraid.providers.result import _format_counts
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None

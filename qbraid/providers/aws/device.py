@@ -21,6 +21,7 @@ from braket.aws.aws_session import AwsSession
 from braket.device_schema import DeviceCapabilities, ExecutionDay
 from braket.schema_common import BraketSchemaBase
 
+from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.api import QbraidSession
 from qbraid.api.job_api import init_job
 from qbraid.providers.device import DeviceLikeWrapper
@@ -69,16 +70,17 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
         except ValueError as err:
             raise DeviceError("Device not found") from err
 
+    def _transpile(self, run_input):
+        """Transpile a circuit for the device."""
+        return run_input
+
     def _compile(self, run_input):
         """Compile a circuit for the device."""
-        return NotImplemented
-        # if self.provider.lower() == "ionq" and "pytket" in QPROGRAM_LIBS:
-        #     if input_run_package not in ["pytket", "braket"]:
-        #         run_input = qbraid_circuit.transpile(device_run_package)
-        #     run_input = braket_ionq_compile(run_input)
+        if self.provider.lower() == "ionq" and "pytket" in QPROGRAM_LIBS:
+            # pylint: disable=import-outside-toplevel
+            from qbraid.compiler.braket.ionq import braket_ionq_compile
 
-
-    def _vendor_compat_run_input(self, run_input):
+            run_input = braket_ionq_compile(run_input)
         return run_input
 
     def refresh_metadata(self) -> None:
@@ -238,7 +240,8 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
             The job like object for the run.
 
         """
-        run_input, qbraid_circuit = self._compat_run_input(run_input)
+        qbraid_circuit = self.process_run_input(run_input)
+        run_input = qbraid_circuit._program
 
         if "s3_destination_folder" not in kwargs:
             kwargs["s3_destination_folder"] = self._default_s3_folder
@@ -268,7 +271,8 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
         qbraid_circuit_batch = []
         run_input_batch = []
         for circuit in run_input:
-            run_input, qbraid_circuit = self._compat_run_input(circuit)
+            qbraid_circuit = self.process_run_input(circuit)
+            run_input = qbraid_circuit._program
             run_input_batch.append(run_input)
             qbraid_circuit_batch.append(qbraid_circuit)
 

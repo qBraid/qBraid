@@ -1,13 +1,13 @@
 :orphan:
 
 qbraid.providers.ibm package
-==========================
+==============================
 
 Submodules
 ----------
 
 qbraid.providers.ibm.provider module
-----------------------------------
+--------------------------------------
 
 .. automodule:: qbraid.providers.ibm.provider
    :members:
@@ -15,7 +15,7 @@ qbraid.providers.ibm.provider module
    :show-inheritance:
 
 qbraid.providers.ibm.device module
---------------------------------
+-----------------------------------
 
 .. automodule:: qbraid.providers.ibm.device
    :members:
@@ -23,7 +23,7 @@ qbraid.providers.ibm.device module
    :show-inheritance:
 
 qbraid.providers.ibm.job module
------------------------------
+---------------------------------
 
 .. automodule:: qbraid.providers.ibm.job
    :members:
@@ -31,7 +31,7 @@ qbraid.providers.ibm.job module
    :show-inheritance:
 
 qbraid.providers.ibm.result module
---------------------------------
+------------------------------------
 
 .. automodule:: qbraid.providers.ibm.result
    :members:

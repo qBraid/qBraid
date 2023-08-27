@@ -29,15 +29,21 @@ Devices API
    JobStateError
    JobLikeWrapper
    JobStatus
+   ProgramValidationError
+   QbraidRuntimeError
    ResultWrapper
    is_status_final
-   braket_ionq_compilation
 
 
 """
 from .device import DeviceLikeWrapper
 from .enums import DeviceStatus, DeviceType, JobStatus, is_status_final
-from .exceptions import DeviceError, JobError, JobStateError
-from ..compiler.ionq.ionq import braket_ionq_compilation
+from .exceptions import (
+    DeviceError,
+    JobError,
+    JobStateError,
+    ProgramValidationError,
+    QbraidRuntimeError,
+)
 from .job import JobLikeWrapper
 from .result import ResultWrapper
