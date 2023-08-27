@@ -12,18 +12,13 @@
 Module for performing QASM program checks before conversion
 
 """
-from collections import namedtuple
-
 from openqasm3.parser import QASM3ParsingError, parse
-from qiskit import QuantumCircuit
-from qiskit.qasm import QasmError as QiskitQasmError
 
 from qbraid.transpiler.exceptions import QasmError
 
 
 def get_qasm_version(qasm_str: str) -> str:
     """Gets OpenQASM program version, either qasm2 or qasm3.
-    TODO: Verify that all exceptions that are caught
 
     Args:
         qasm_str: An OpenQASM program string
@@ -35,19 +30,9 @@ def get_qasm_version(qasm_str: str) -> str:
         :class:`~qbraid.QasmError`: If string does not represent a valid OpenQASAM program.
 
     """
-
-    QasmVersion = namedtuple("QasmVersion", ["version_str", "parser", "package_name"])
-    versions = [
-        QasmVersion("OPENQASM 2", QuantumCircuit.from_qasm_str, "qasm2"),
-        QasmVersion("OPENQASM 3", parse, "qasm3"),
-    ]
-
-    for version in versions:
-        if version.version_str in qasm_str:
-            try:
-                version.parser(qasm_str)
-                return version.package_name
-            except (QiskitQasmError, QASM3ParsingError) as err:
-                raise QasmError("Failed to parse OpenQASM program.") from err
-
-    raise QasmError("Invalid OpenQASM program.")
+    try:
+        program = parse(qasm_str)
+        verion = int(float(program.version))
+        return f"qasm{verion}"
+    except QASM3ParsingError as err:
+        raise QasmError("Failed to parse OpenQASM program.") from err

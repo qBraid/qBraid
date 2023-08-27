@@ -13,10 +13,11 @@ Module containing OpenQASM 3 tools
 
 """
 import os
-import re
 from typing import List
 
 import numpy as np
+from openqasm3.ast import QubitDeclaration
+from openqasm3.parser import parse
 from qiskit.qasm3 import dumps, loads
 
 from qbraid.interface.qbraid_qiskit.tools import _convert_to_contiguous_qiskit, _unitary_from_qiskit
@@ -33,29 +34,24 @@ def qasm3_qubits(qasmstr: str) -> List[QASMType]:
     Returns:
         List of qubits in the circuit
     """
-    return [
-        text.replace("\n", "")
-        for match in re.findall(r"(qubit\[(\d+)\])|(\bqubit\b)", qasmstr)
-        for text in match
-        if text != "" and len(text) >= 2
-    ]
+    program = parse(qasmstr)
+
+    qubits = []
+    for statement in program.statements:
+        if isinstance(statement, QubitDeclaration):
+            qubits.append((statement.qubit.name, statement.size.value))
+    return qubits
 
 
 def qasm3_num_qubits(qasmstr: str) -> int:
     """Calculate number of qubits in a qasm3 string"""
-    q_num = 0
-    for bit_line in qasm3_qubits(qasmstr):
-        if bit_line != "qubit":
-            # multiple qubits
+    program = parse(qasmstr)
 
-            # split is needed as the name may contain
-            # a number
-            bit_line = bit_line.split("[")[1]
-            q_num += int(re.search(r"\d+", bit_line).group())
-        else:
-            # single qubit
-            q_num += 1
-    return q_num
+    num_qubits = 0
+    for statement in program.statements:
+        if isinstance(statement, QubitDeclaration):
+            num_qubits += statement.size.value
+    return num_qubits
 
 
 def qasm3_depth(qasmstr: str) -> int:
