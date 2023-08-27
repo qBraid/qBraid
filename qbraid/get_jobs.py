@@ -135,9 +135,12 @@ def get_jobs(filters: Optional[dict] = None):
         except KeyError:
             status = "UNKNOWN"
         if not is_status_final(status):
-            qbraid_job = job_wrapper(job_id)
-            status_obj = qbraid_job.status()
-            status = status_obj.raw()
+            try:
+                qbraid_job = job_wrapper(job_id)
+                status_obj = qbraid_job.status()
+                status = status_obj.raw()
+            except Exception: # pylint: disable=broad-except
+                pass
         job_data.append([job_id, timestamp, status])
 
     if num_jobs == 0:  # Design choice whether to display anything here or not
