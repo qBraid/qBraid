@@ -17,7 +17,6 @@ from collections import OrderedDict
 import numpy as np
 from qiskit import QuantumCircuit
 from qiskit.converters import circuit_to_dag, dag_to_circuit
-from qiskit.qasm3 import dumps, loads
 from qiskit.quantum_info import Operator
 
 QASMType = str
@@ -40,21 +39,12 @@ def reverse_qubit_ordering(circuit: QuantumCircuit) -> QuantumCircuit:
 
 def _unitary_from_qiskit(circuit: QuantumCircuit) -> np.ndarray:
     """Return the unitary of a Qiskit quantum circuit."""
-    rev_circuit = reverse_qubit_ordering(circuit)
-    return Operator(rev_circuit).data
-
-
-def _unitary_from_qasm3(qasmstr: QASMType) -> np.ndarray:
-    """Return the unitary of the QASM 3 string"""
-    circuit = loads(qasmstr)
-    # circuit_rev = reverse_qubit_ordering(circuit)
-    return _unitary_from_qiskit(circuit)
+    return Operator(circuit).data
 
 
 def _convert_to_contiguous_qiskit(circuit: QuantumCircuit, rev_qubits=False) -> QuantumCircuit:
     """Delete qubit(s) with no gate, if any exist."""
-    if rev_qubits:
-        circuit = reverse_qubit_ordering(circuit)
+    circuit = reverse_qubit_ordering(circuit) if rev_qubits else circuit
 
     dag = circuit_to_dag(circuit)
 
@@ -66,10 +56,3 @@ def _convert_to_contiguous_qiskit(circuit: QuantumCircuit, rev_qubits=False) -> 
     dag.qregs = OrderedDict()
 
     return dag_to_circuit(dag)
-
-
-def _convert_to_contiguous_qasm3(qasmstr: QASMType, rev_qubits=False) -> QASMType:
-    """Delete qubit(s) with no gate, if any exist."""
-    circuit = loads(qasmstr)
-    circuit_contig = _convert_to_contiguous_qiskit(circuit, rev_qubits=rev_qubits)
-    return dumps(circuit_contig)

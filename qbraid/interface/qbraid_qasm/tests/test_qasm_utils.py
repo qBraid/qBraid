@@ -8,36 +8,27 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-import logging
-import os
+"""
+Unit tests for OpenQASM 2 utility functions.
 
-import numpy as np
+"""
+
 import pytest
-from qiskit.circuit import QuantumCircuit
-from qiskit.qasm3 import dumps, loads
 
-from qbraid.interface import circuits_allclose, random_circuit
 from qbraid.interface.qbraid_qasm.circuits import (
-    _qasm3_random,
+    _read_qasm_file,
     qasm2_bell,
     qasm2_raw_shared15,
     qasm2_shared15,
 )
-from qbraid.interface.qbraid_qasm.tools import (
-    convert_to_qasm3,
-    qasm3_depth,
-    qasm_3_num_qubits,
-    qasm_depth,
-    qasm_num_qubits,
-    qasm_qubits,
-)
+from qbraid.interface.qbraid_qasm.tools import qasm_depth, qasm_num_qubits, qasm_qubits
 
 
 def test_qasm_qubits():
     """Test getting QASM qubits"""
 
-    assert qasm_qubits(qasm2_bell()) == ["qreg q[2];"]
-    assert qasm_qubits(qasm2_shared15()) == ["qreg q[4];"]
+    assert qasm_qubits(qasm2_bell()) == ["q[0]", "q[1]"]
+    assert qasm_qubits(qasm2_shared15()) == ["q[0]", "q[1]", "q[2]", "q[3]"]
 
 
 def test_qasm_num_qubits():
@@ -46,326 +37,148 @@ def test_qasm_num_qubits():
     assert qasm_num_qubits(qasm2_shared15()) == 4
 
 
-def test_qasm3_num_qubits():
-    """Test calculating number of qubits in qasm3 circuit"""
-    num_qubits = np.random.randint(2, 10)
-    qiskit_circuit = random_circuit("qiskit", num_qubits=num_qubits)
-    qasm3_str = dumps(qiskit_circuit)
-    assert qasm_3_num_qubits(qasm3_str) == num_qubits
+QASM_DEPTH_DATA = [
+    (qasm2_bell(), 2),
+    (qasm2_shared15(), 7),
+    (qasm2_raw_shared15(), 22),
+    (_read_qasm_file("qtp.qasm"), 9),
+    (
+        """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[2];
+h q[0];
+barrier q;
+h q[1];
+        """,
+        2,
+    ),
+    (
+        """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[2];
+creg c0[1];
+creg c1[1];
+h q[0];
+h q[1];
+measure q[0] -> c0[0];
+if(c0==0) x q[1];
+        """,
+        3,
+    ),
+    (
+        """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[2];
+creg c0[1];
+creg c1[1];
+h q;
+measure q[0] -> c0[0];
+if(c0==0) x q[1];
+if(c0==0) measure q[1] -> c1[0];
+        """,
+        4,
+    ),
+    (
+        """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[3];
+qreg a[2];
+creg c[3];
+creg syn[2];
+gate syndrome d1,d2,d3,a1,a2
+{
+cx d1,a1; cx d2,a1;
+cx d2,a2; cx d3,a2;
+}
+x q[0];
+barrier q;
+syndrome q[0],q[1],q[2],a[0],a[1];
+measure a -> syn;
+if(syn==1) x q[0];
+if(syn==2) x q[2];
+if(syn==3) x q[1];
+measure q -> c;
+        """,
+        7,
+    ),
+    (
+        """
+OPENQASM 2.0;
+include "qelib1.inc";
+gate majority a,b,c
+{
+cx c,b;
+cx c,a;
+ccx a,b,c;
+}
+gate unmaj a,b,c
+{
+ccx a,b,c;
+cx c,a;
+cx a,b;
+}
+qreg cin[1];
+qreg a[4];
+qreg b[4];
+qreg cout[1];
+creg ans[5];
+x a[0];
+x b;
+majority cin[0],b[0],a[0];
+majority a[0],b[1],a[1];
+majority a[1],b[2],a[2];
+majority a[2],b[3],a[3];
+cx a[3],cout[0];
+unmaj a[2],b[3],a[3];
+unmaj a[1],b[2],a[2];
+unmaj a[0],b[1],a[1];
+unmaj cin[0],b[0],a[0];
+measure b[0] -> ans[0];
+measure b[1] -> ans[1];
+measure b[2] -> ans[2];
+measure b[3] -> ans[3];
+measure cout[0] -> ans[4];
+        """,
+        11,
+    ),
+    (
+        """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[4];
+creg c[4];
+h q;
+barrier q;
+h q[0];
+measure q[0] -> c[0];
+if(c==1) u1(pi/2) q[1];
+h q[1];
+measure q[1] -> c[1];
+if(c==1) u1(pi/4) q[2];
+if(c==2) u1(pi/2) q[2];
+if(c==3) u1(pi/2+pi/4) q[2];
+h q[2];
+measure q[2] -> c[2];
+if(c==1) u1(pi/8) q[3];
+if(c==2) u1(pi/4) q[3];
+if(c==3) u1(pi/4+pi/8) q[3];
+if(c==4) u1(pi/2) q[3];
+if(c==5) u1(pi/2+pi/8) q[3];
+if(c==6) u1(pi/2+pi/4) q[3];
+if(c==7) u1(pi/2+pi/4+pi/8) q[3];
+h q[3];
+measure q[3] -> c[3];
+        """,
+        20,
+    ),
+]
 
 
-def test_qasm_depth():
-    """Test calculating qasm depth of qasm2 circuit"""
-    assert qasm_depth(qasm2_bell()) == 2
-    assert qasm_depth(qasm2_shared15()) == 11
-    assert qasm_depth(qasm2_raw_shared15()) == 22
-
-
-def test_qasm3_depth():
-    """Test calculating qasm depth of qasm3 circuit"""
-    depth = np.random.randint(2, 10)
-    qasm3_str = _qasm3_random(depth=depth, seed=42)
-    assert qasm3_depth(qasm3_str) == depth
-
-
-@pytest.mark.skip(reason="QASM3ImporterError")
-def test_qasm3_depth_alternate_qubit_syntax():
-    """Test calculating qasm depth of qasm3 circuit"""
-    qasm3_str = """OPENQASM 3.0;
-bit[1] __bits__;
-qubit[1] __qubits__;
-h __qubits__[0];
-__bits__[0] = measure __qubits__[0];"""
-    assert qasm3_depth(qasm3_str) == 1
-
-
-def _check_output(output, expected):
-    actual_circuit = loads(output)
-    expected_circuit = loads(expected)
-    assert actual_circuit == expected_circuit
-
-
-@pytest.mark.parametrize(
-    "num_qubits, depth, max_operands, seed, measure",
-    [
-        (
-            None,
-            None,
-            None,
-            None,
-            False,
-        ),  # Test case 1: Generate random circuit with default parameters
-        (3, 3, 3, 42, False),  # Test case 2: Generate random circuit with specified parameters
-        (None, None, None, None, True),  # Test case 3: Generate random circuit with measurement
-    ],
-)
-def test_qasm3_random(num_qubits, depth, max_operands, seed, measure):
-    """Test random circuit generation using _qasm_random"""
-
-    circuit = _qasm3_random(
-        num_qubits=num_qubits, depth=depth, max_operands=max_operands, seed=seed, measure=measure
-    )
-    print(circuit)
-    assert qasm_3_num_qubits(circuit) >= 1
-    if num_qubits is not None:
-        assert qasm_3_num_qubits(circuit) == num_qubits
-
-
-def test_qasm3_random_with_known_seed():
-    # Test case 4: Generate a random circuit with measurement with known Seed and compare with expected output
-    circuit = _qasm3_random(num_qubits=3, depth=3, max_operands=3, seed=42, measure=True)
-    print(circuit)
-    assert qasm_3_num_qubits(circuit) == 3
-
-    out__expected = """
-// Random Circuit generated by qBraid
-OPENQASM 3.0;
-include "stdgates.inc";
-/*
-    seed = 42
-    num_qubits = 3
-    depth = 3
-    max_operands = 3
-*/
-qubit[3] q;
-bit[3] c;
-y q[0];
-crx(5.3947298351621535) q[1],q[2];
-cz q[0],q[2];
-t q[1];
-cp(0.8049616944763924) q[1],q[2];
-u1(2.829858307545725) q[0];
-c[0] = measure q[0];
-c[1] = measure q[1];
-c[2] = measure q[2];
-
-"""
-    _check_output(circuit, out__expected)
-
-
-def test_convert_to_qasm3():
-    """test the conversion of qasm 2 to 3"""
-    lib_dir = os.path.dirname(os.path.dirname(__file__)) + "/qasm_lib"
-    gate_def_qasm3 = open(
-        os.path.join(lib_dir, "qelib_qasm3.qasm"), mode="r", encoding="utf-8"
-    ).read()
-
-    # 1. qubit statement conversion
-    test_qregs = """OPENQASM 2.0;
-    include "qelib1.inc";
-    qreg q[1] ;
-    qreg qubits  [10]   ;
-    creg c[1];
-    creg bits   [12]   ;
-    """
-    test_qregs_expected = f"""OPENQASM 3.0;
-    include "stdgates.inc";
-    {gate_def_qasm3}
-    qubit[1] q;
-    qubit[10] qubits;
-    bit[1] c;
-    bit[12] bits;"""
-
-    _check_output(convert_to_qasm3(test_qregs), test_qregs_expected)
-
-    # 2. Measure statement conversion
-    test_measure = """
-    OPENQASM 2.0;
-    include "qelib1.inc";
-    qreg q[2];
-    creg c[2];
-    measure q->c;
-    measure q[0] -> c[1];
-    """
-
-    test_measure_expected = f"""
-    OPENQASM 3.0;
-    include "stdgates.inc";
-    {gate_def_qasm3}
-    qubit[2] q;
-    bit[2] c;
-    c = measure q;
-    c[1] = measure q[0];
-    """
-    _check_output(convert_to_qasm3(test_measure), test_measure_expected)
-
-    # 3. Opaque comment conversion
-    test_opaque = """
-    OPENQASM 2.0;
-    include "qelib1.inc";
-    qreg q[2];
-    creg c[2];
-    opaque custom_gate (a,b,c) p,q,r;
-    """
-
-    test_opaque_expected = f"""
-    OPENQASM 3.0;
-    include "stdgates.inc";
-    {gate_def_qasm3}
-    qubit[2] q;
-    bit[2] c;
-    // opaque custom_gate (a,b,c) p,q,r;
-    """
-
-    _check_output(convert_to_qasm3(test_opaque), test_opaque_expected)
-
-    # 4. std header change
-    test_header = """
-    OPENQASM 2.0;
-    include "qelib1.inc";
-    qreg q[1];
-    """
-
-    test_header_expected = f"""
-    OPENQASM 3.0;
-    include "stdgates.inc";
-    {gate_def_qasm3}
-    qubit[1] q;
-    """
-    _check_output(convert_to_qasm3(test_header), test_header_expected)
-
-    # 5. Unsupported gate conversion
-    test_unsupported = """
-    OPENQASM 2.0;
-    include "qelib1.inc";
-    qreg q[5];
-    u(1,2,3) q[0];
-    sxdg q[0];
-    csx q[0], q[1];
-    cu1(0.5) q[0], q[1];
-    cu3(1,2,3) q[0], q[1];
-    rzz(0.5) q[0], q[1];
-    rccx q[0], q[1], q[2];
-    rc3x q[0], q[1], q[2], q[3];
-    c3x q[0], q[1], q[2], q[3];
-    c3sqrtx q[0], q[1], q[2], q[3];
-    c4x q[0], q[1], q[2], q[3], q[4];
-    """
-    test_unsupported_expected = f"""
-    OPENQASM 3.0;   
-    include "stdgates.inc";
-    {gate_def_qasm3}
-    qubit[5] q;
-    U(1,2,3) q[0];
-    sxdg q[0];
-    csx q[0], q[1];
-    cu1(0.5) q[0], q[1];
-    cu3(1,2,3) q[0], q[1];
-    rzz(0.5) q[0], q[1];
-    rccx q[0], q[1], q[2];
-    rc3x q[0], q[1], q[2], q[3];
-    c3x q[0], q[1], q[2], q[3];
-    c3sqrtx q[0], q[1], q[2], q[3];
-    c4x q[0], q[1], q[2], q[3], q[4];
-    """
-    _check_output(convert_to_qasm3(test_unsupported), test_unsupported_expected)
-
-
-def _generate_valid_qasm_strings(seed=42, gates_to_skip=None, num_circuits=100):
-    """Returns a list of 100 random qasm2 strings
-    which do not contain any of the gates in gates_to_skip
-
-    Current list of invalid gates is ["u", "cu1", "cu2", "cu3", "rxx"]
-    For the motivation, see discussion
-                   - https://github.com/Qiskit/qiskit-qasm3-import/issues/12
-                   - https://github.com/Qiskit/qiskit-qasm3-import/issues/11#issuecomment-1568505732
-    """
-    if gates_to_skip is None:
-        gates_to_skip = []
-
-    qasm_strings = []
-    while len(qasm_strings) < num_circuits:
-        try:
-            circuit_random = random_circuit("qiskit", seed=seed)
-            qasm_str = circuit_random.qasm()
-            circuit_from_qasm = QuantumCircuit.from_qasm_str(qasm_str)
-        except Exception as e:
-            logging.error("Invalid QASM generated by random_circuit: %s", e)
-            continue
-
-        for gate in gates_to_skip:
-            if len(circuit_from_qasm.get_instructions(gate)) > 0:
-                break
-        else:
-            qasm_strings.append(qasm_str)
-
-    return qasm_strings
-
-
-@pytest.mark.parametrize("qasm2_str", _generate_valid_qasm_strings(gates_to_skip=["r"]))
-def test_random_conversion_to_qasm3(qasm2_str):
-    """test random gates conversion"""
-    qasm3_str = convert_to_qasm3(qasm2_str)
-    circuit_orig = QuantumCircuit.from_qasm_str(qasm2_str)
-    circuit_test = loads(qasm3_str)
-
-    # ensure that the conversion is correct
-    assert circuits_allclose(circuit_orig, circuit_test)
-
-
-@pytest.mark.skip(reason="Qiskit terra bug")
-def test_u0_gate_conversion():
-    """test u0 gate conversion
-    Separate test due to bug in terra ,
-    see https://github.com/Qiskit/qiskit-terra/issues/10184
-    """
-
-    lib_dir = os.path.dirname(os.path.dirname(__file__)) + "/qasm_lib"
-    gate_def_qasm3 = open(
-        os.path.join(lib_dir, "qelib_qasm3.qasm"), mode="r", encoding="utf-8"
-    ).read()
-
-    test_u0 = """
-    OPENQASM 2.0;
-    include "qelib1.inc";
-    qreg q[1];
-    u0(0.5) q[0];"""
-
-    test_u0_expected = f"""
-    OPENQASM 3.0;
-    include "stdgates.inc";
-    {gate_def_qasm3}
-    qubit[1] q;
-    u0(0.5) q[0];
-    """
-
-    _check_output(convert_to_qasm3(test_u0), test_u0_expected)
-
-
-def test_rxx_gate_conversion():
-    """test rxx gate conversion
-    Separate test due to bug in qasm3 lib,
-    see https://github.com/Qiskit/qiskit-qasm3-import/issues/11
-
-    Once resolved, add definition to -
-        ``qbraid/interface/qbraid_qasm/qasm_lib/lib/qelib_qasm3.qasm``
-    """
-
-    lib_dir = os.path.dirname(os.path.dirname(__file__)) + "/qasm_lib"
-    gate_def_qasm3 = open(
-        os.path.join(lib_dir, "qelib_qasm3.qasm"), mode="r", encoding="utf-8"
-    ).read()
-
-    test_rxx = """
-    OPENQASM 2.0;
-    include "qelib1.inc";
-    qreg q[3];
-    rxx(0.5) q[0], q[1];"""
-
-    test_rxx_expected = f"""
-    OPENQASM 3.0;
-    include "stdgates.inc";
-    {gate_def_qasm3}
-    qubit[3] q;
-
-    // rxx gate
-    h q[0];
-    h q[1];
-    cx q[0],q[1];
-    rz(0.5) q[1];
-    cx q[0],q[1];
-    h q[1];
-    h q[0];
-    """
-
-    _check_output(convert_to_qasm3(test_rxx), test_rxx_expected)
+@pytest.mark.parametrize("qasm_str, expected_depth", QASM_DEPTH_DATA)
+def test_qasm_depth(qasm_str, expected_depth):
+    """Test calculating depth of circuit represented by qasm2 string"""
+    assert qasm_depth(qasm_str) == expected_depth

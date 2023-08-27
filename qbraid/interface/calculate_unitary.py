@@ -28,6 +28,47 @@ class UnitaryCalculationError(QbraidError):
     """Class for exceptions raised during unitary calculation"""
 
 
+def rev_qubits_unitary(matrix: np.ndarray) -> np.ndarray:
+    """Peforms Kronecker (tensor) product factor permutation of given matrix.
+    Returns a matrix equivalent to that computed from a quantum circuit if its
+    qubit indicies were reversed.
+
+    Args:
+        matrix (np.ndarray): The input matrix, assumed to be a 2^N x 2^N square matrix
+                             where N is an integer.
+
+    Returns:
+        np.ndarray: The matrix with permuted Kronecker product factors.
+
+    Raises:
+        ValueError: If the input matrix is not square or its size is not a power of 2.
+    """
+    if matrix.shape[0] != matrix.shape[1] or (matrix.shape[0] & (matrix.shape[0] - 1)) != 0:
+        raise ValueError("Input matrix must be a square matrix of size 2^N for some integer N.")
+
+    # Determine the number of qubits from the matrix size
+    num_qubits = int(np.log2(matrix.shape[0]))
+
+    # Create an empty matrix of the same size
+    permuted_matrix = np.zeros((2**num_qubits, 2**num_qubits), dtype=complex)
+
+    for i in range(2**num_qubits):
+        for j in range(2**num_qubits):
+            # pylint: disable=consider-using-generator
+            # Convert indices to binary representations (qubit states)
+            bits_i = [((i >> bit) & 1) for bit in range(num_qubits)]
+            bits_j = [((j >> bit) & 1) for bit in range(num_qubits)]
+
+            # Reverse the bits
+            reversed_i = sum([bit << (num_qubits - 1 - k) for k, bit in enumerate(bits_i)])
+            reversed_j = sum([bit << (num_qubits - 1 - k) for k, bit in enumerate(bits_j)])
+
+            # Update the new matrix
+            permuted_matrix[reversed_i, reversed_j] = matrix[i, j]
+
+    return permuted_matrix
+
+
 def to_unitary(program: "qbraid.QPROGRAM", ensure_contiguous: Optional[bool] = False) -> np.ndarray:
     """Calculates the unitary of any valid input quantum program.
 
@@ -57,11 +98,16 @@ def to_unitary(program: "qbraid.QPROGRAM", ensure_contiguous: Optional[bool] = F
         except AttributeError as err:
             raise ProgramTypeError(program) from err
 
+    # whether calculated unitary requires permutation
+    # to match qBraid qubit ordering convention
+    permute = False
+
     # pylint: disable=import-outside-toplevel
 
     if "qiskit" in package:
         from qbraid.interface.qbraid_qiskit.tools import _unitary_from_qiskit
 
+        permute = True
         to_unitary_function = _unitary_from_qiskit
     elif "cirq" in package:
         from qbraid.interface.qbraid_cirq.tools import _unitary_from_cirq
@@ -75,6 +121,7 @@ def to_unitary(program: "qbraid.QPROGRAM", ensure_contiguous: Optional[bool] = F
     elif "pyquil" in package:
         from qbraid.interface.qbraid_pyquil.tools import _unitary_from_pyquil
 
+        permute = True
         to_unitary_function = _unitary_from_pyquil
     elif "pytket" in package:
         from qbraid.interface.qbraid_pytket.tools import _unitary_from_pytket
@@ -85,8 +132,9 @@ def to_unitary(program: "qbraid.QPROGRAM", ensure_contiguous: Optional[bool] = F
 
         to_unitary_function = _unitary_from_qasm
     elif package == "qasm3":
-        from qbraid.interface.qbraid_qiskit.tools import _unitary_from_qasm3
+        from qbraid.interface.qbraid_qasm3.tools import _unitary_from_qasm3
 
+        permute = True
         to_unitary_function = _unitary_from_qasm3
     else:
         raise ProgramTypeError(program)
@@ -95,12 +143,13 @@ def to_unitary(program: "qbraid.QPROGRAM", ensure_contiguous: Optional[bool] = F
 
     try:
         unitary = to_unitary_function(program_input)
+        compat_unitary = rev_qubits_unitary(unitary) if permute else unitary
     except Exception as err:
         raise UnitaryCalculationError(
             "Unitary could not be calculated from given quantum program."
         ) from err
 
-    return unitary
+    return compat_unitary
 
 
 def circuits_allclose(

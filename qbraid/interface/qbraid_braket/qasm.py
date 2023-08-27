@@ -9,26 +9,27 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for converting Braket circuits to Cirq circuit via OpenQASM
+Module for converting Braket circuits to/from OpenQASM
 
 """
 
-from braket.circuits import Circuit as BKCircuit
+from braket.circuits import Circuit
 from braket.circuits.serialization import IRType
 from braket.ir.openqasm import Program as OpenQasmProgram
-from cirq import Circuit
-from cirq.contrib.qasm_import.exception import QasmException
 
-from qbraid.interface import convert_to_contiguous
-from qbraid.transpiler.cirq_qasm import from_qasm
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.exceptions import QbraidError
+
+
+class BraketQasmConversionError(QbraidError):
+    """Class for errors raised while making Braket/OpenQASM conversions."""
+
 
 QASMType = str
 
 
-def to_qasm(circuit: BKCircuit) -> QASMType:
+def braket_to_qasm(circuit: Circuit) -> QASMType:
     """Converts a `braket.circuits.Circuit` to an OpenQASM 2.0 string.
-    *DEPRECATAION NOTICE*: incomplete function, to be removed in next release.
+    *DEPRECATAION NOTICE*: incomplete function.
 
     .. code-block:: python
 
@@ -105,7 +106,7 @@ def to_qasm(circuit: BKCircuit) -> QASMType:
     return code
 
 
-def braket_to_qasm3(circuit: BKCircuit) -> QASMType:
+def braket_to_qasm3(circuit: Circuit) -> QASMType:
     """Converts a ``braket.circuits.Circuit`` to an OpenQASM 3.0 string.
 
     .. code-block:: python
@@ -146,10 +147,10 @@ def braket_to_qasm3(circuit: BKCircuit) -> QASMType:
     try:
         return circuit.to_ir(IRType.OPENQASM).source
     except Exception as err:
-        raise CircuitConversionError("Error converting braket circuit to qasm3 string") from err
+        raise BraketQasmConversionError("Error converting braket circuit to qasm3 string") from err
 
 
-def braket_from_qasm3(qasm_str: QASMType) -> BKCircuit:
+def braket_from_qasm3(qasm_str: QASMType) -> Circuit:
     """Converts an OpenQASM 3.0 string to a ``braket.circuits.Circuit``.
 
     Args:
@@ -164,26 +165,6 @@ def braket_from_qasm3(qasm_str: QASMType) -> BKCircuit:
     """
     try:
         program = OpenQasmProgram(source=qasm_str)
-        return BKCircuit.from_ir(source=program.source, inputs=program.inputs)
+        return Circuit.from_ir(source=program.source, inputs=program.inputs)
     except Exception as err:
-        raise CircuitConversionError("Error converting qasm3 string to braket circuit") from err
-
-
-def from_braket(circuit: BKCircuit) -> Circuit:
-    """Returns a Cirq circuit equivalent to the input Braket circuit.
-
-    Note: The returned Cirq circuit acts on cirq.LineQubit's with indices equal
-    to the qubit indices of the Braket circuit.
-
-    Args:
-        circuit: Braket circuit to convert to a Cirq circuit.
-
-    Raises:
-        CircuitConversionError: if circuit could not be converted
-    """
-    compat_circuit = convert_to_contiguous(circuit)
-    qasm_str = to_qasm(compat_circuit)
-    try:
-        return from_qasm(qasm_str)
-    except QasmException as err:
-        raise CircuitConversionError("Error converting qasm string to Cirq circuit") from err
+        raise BraketQasmConversionError("Error converting qasm3 string to braket circuit") from err

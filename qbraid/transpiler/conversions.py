@@ -21,7 +21,7 @@ from cirq.contrib.qasm_import import circuit_from_qasm
 from qiskit.qasm3 import loads as qiskit_from_qasm3
 
 from qbraid.exceptions import PackageValueError, ProgramTypeError
-from qbraid.interface.qbraid_qasm.tools import convert_to_qasm3
+from qbraid.interface.qbraid_qasm3.tools import convert_to_qasm3
 from qbraid.transpiler.cirq_braket import from_braket, to_braket
 from qbraid.transpiler.cirq_pyquil import from_pyquil, to_pyquil
 from qbraid.transpiler.cirq_pytket import from_pytket, to_pytket
