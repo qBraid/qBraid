@@ -15,11 +15,10 @@ functions utilize entrypoints via ``pkg_resources``.
 """
 import pkg_resources
 
-from qbraid.transpiler.qasm_checks import get_qasm_version
-
 from ._qprogram import QPROGRAM
 from .api import QbraidSession
 from .exceptions import QbraidError
+from .qasm_checks import get_qasm_version
 
 
 def _get_entrypoints(group: str):

@@ -17,12 +17,7 @@ from braket.circuits import Circuit
 from braket.circuits.serialization import IRType
 from braket.ir.openqasm import Program as OpenQasmProgram
 
-from qbraid.exceptions import QbraidError
-
-
-class BraketQasmConversionError(QbraidError):
-    """Class for errors raised while making Braket/OpenQASM conversions."""
-
+from qbraid.exceptions import QasmError
 
 QASMType = str
 
@@ -147,7 +142,7 @@ def braket_to_qasm3(circuit: Circuit) -> QASMType:
     try:
         return circuit.to_ir(IRType.OPENQASM).source
     except Exception as err:
-        raise BraketQasmConversionError("Error converting braket circuit to qasm3 string") from err
+        raise QasmError("Error converting braket circuit to qasm3 string") from err
 
 
 def braket_from_qasm3(qasm_str: QASMType) -> Circuit:
@@ -167,4 +162,4 @@ def braket_from_qasm3(qasm_str: QASMType) -> Circuit:
         program = OpenQasmProgram(source=qasm_str)
         return Circuit.from_ir(source=program.source, inputs=program.inputs)
     except Exception as err:
-        raise BraketQasmConversionError("Error converting qasm3 string to braket circuit") from err
+        raise QasmError("Error converting qasm3 string to braket circuit") from err

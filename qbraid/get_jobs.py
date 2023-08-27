@@ -139,7 +139,7 @@ def get_jobs(filters: Optional[dict] = None):
                 qbraid_job = job_wrapper(job_id)
                 status_obj = qbraid_job.status()
                 status = status_obj.raw()
-            except Exception: # pylint: disable=broad-except
+            except Exception:  # pylint: disable=broad-except
                 pass
         job_data.append([job_id, timestamp, status])
 
