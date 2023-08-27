@@ -33,7 +33,7 @@ def qasm_qubits(qasm_str: QASMType) -> List[str]:
     return result
 
 
-def qasm_num_qubits(qasmstr: str) -> int:
+def qasm_num_qubits(qasmstr: QASMType) -> int:
     """Calculate number of qubits in a qasm2 string."""
     return len(qasm_qubits(qasmstr))
 
@@ -42,7 +42,8 @@ def _get_max_count(counts_dict):
     return max(counts_dict.values()) if counts_dict else 0
 
 
-def qasm_depth(qasm_str: str) -> int:
+# pylint: disable=too-many-statements
+def qasm_depth(qasm_str: QASMType) -> int:
     """Calculates circuit depth of OpenQASM 2 string"""
     lines = qasm_str.splitlines()
 
@@ -78,6 +79,7 @@ def qasm_depth(qasm_str: str) -> int:
                     qubit_name = qubit.split("[")[0]
                     if op == qubit_name:
                         matches.append(qubit)
+            # pylint: disable=broad-exception-caught
             except Exception:
                 continue
 
@@ -121,19 +123,18 @@ def qasm_depth(qasm_str: str) -> int:
     return _get_max_count(depth_counts)
 
 
-def _convert_to_contiguous_qasm(qasmstr: str, rev_qubits=False) -> QASMType:
+def _convert_to_contiguous_qasm(qasm_str: QASMType, rev_qubits=False) -> QASMType:
     """Delete qubit with no gate and optional reverse circuit"""
     # pylint: disable=import-outside-toplevel
     from qbraid.interface.qbraid_cirq.tools import _convert_to_contiguous_cirq
     from qbraid.transpiler.cirq_qasm.qasm_conversions import from_qasm, to_qasm
 
-    circuit = to_qasm(_convert_to_contiguous_cirq(from_qasm(qasmstr), rev_qubits=rev_qubits))
-    return circuit
+    return to_qasm(_convert_to_contiguous_cirq(from_qasm(qasm_str), rev_qubits=rev_qubits))
 
 
-def _unitary_from_qasm(qasmstr: QASMType) -> np.ndarray:
+def _unitary_from_qasm(qasm_str: QASMType) -> np.ndarray:
     """Return the unitary of the QASM"""
     # pylint: disable=import-outside-toplevel
     from qbraid.transpiler.cirq_qasm.qasm_conversions import from_qasm
 
-    return from_qasm(qasmstr).unitary()
+    return from_qasm(qasm_str).unitary()
