@@ -38,6 +38,6 @@ Devices API
 from .device import DeviceLikeWrapper
 from .enums import DeviceStatus, DeviceType, JobStatus, is_status_final
 from .exceptions import DeviceError, JobError, JobStateError
-from .ionq import braket_ionq_compilation
+from ..compiler.ionq.ionq import braket_ionq_compilation
 from .job import JobLikeWrapper
 from .result import ResultWrapper

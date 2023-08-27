@@ -19,6 +19,10 @@ class DeviceError(QbraidError):
     """Base class for errors raised while processing a device."""
 
 
+class Runtime(QbraidError):
+    """Base class for errors raised while submitting a quantum job."""
+
+
 class JobError(QbraidError):
     """Base class for errors raised by Jobs."""
 

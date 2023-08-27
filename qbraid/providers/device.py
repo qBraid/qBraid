@@ -15,13 +15,14 @@ Module defining abstract DeviceLikeWrapper Class
 
 """
 
+import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING  # pylint: disable=unused-import
 
-from qbraid import circuit_wrapper
+from qbraid import circuit_wrapper, QPROGRAM_LIBS
+from qbraid.exceptions import QbraidError
 
-from .exceptions import DeviceError
-from .ionq import braket_ionq_compilation
+from .exceptions import DeviceError, RuntimeError
 
 if TYPE_CHECKING:
     import qbraid
@@ -49,35 +50,50 @@ class DeviceLikeWrapper(ABC):
         self.vendor_device_id = self._info.pop("objArg")
         self.vendor_dlo = self._get_device()
 
-    def _compat_run_input(self, run_input: "qbraid.QPROGRAM") -> "qbraid.QPROGRAM":
+
+    def _verify_run(self, run_input: "qbraid.QPROGRAM") -> "qbraid.transpiler.QuantumProgramWrapper":
+        """Checks device is online and that circuit num qubits <= device num qubits.
+
+        Returns:
+            :class:`~qbraid.transpiler.QuantumProgramWrapper`: qBraid quantum program IR i.e. wrapped circuit object
+
+        Raises:
+            RuntimeError: If error applying circuit wrapper or circuit number of qubits exceeds device number qubits
+
+        """
+        if self.status.value == 1:
+            warnings.warn(
+                f"Device is currently offline. Depending on the provider queueing system, submitting this job may result in an exception or a long wait time.",
+                UserWarning,
+            )
+
+        try:
+            qbraid_circuit = circuit_wrapper(run_input)
+        except QbraidError as err:
+            raise RuntimeError from err
+        
+        if self.num_qubits and qbraid_circuit.num_qubits > self.num_qubits:
+            raise RuntimeError(
+                f"Number of qubits in circuit ({qbraid_circuit.num_qubits}) exceeds "
+                f"number of qubits in device ({self.num_qubits})."
+            )
+        
+        return qbraid_circuit
+        
+
+    
+    def _transpile(self, qbraid_ir: "qbraid.transpiler.QuantumProgramWrapper") -> "qbraid.QPROGRAM":
         """Checks if ``run_input`` is compatible with device and calls transpiler if necessary.
 
         Returns:
             :data:`~qbraid.QPROGRAM`: The run_input e.g. a circuit object, possibly transpiled
 
         Raises:
-            DeviceError: If devices is offline or if the number of qubits used in the circuit
-                exceeds the number of qubits supported by the device.
+            RuntimeError: If circuit conversion fails
 
         """
-        if self.status.value == 1:
-            raise DeviceError("Device is currently offline.")
-        device_run_package = self.info["runPackage"]
-        input_run_package = run_input.__module__.split(".")[0]
-        qbraid_circuit = circuit_wrapper(run_input)
-        if self.num_qubits and qbraid_circuit.num_qubits > self.num_qubits:
-            raise DeviceError(
-                f"Number of qubits in circuit ({qbraid_circuit.num_qubits}) exceeds "
-                f"number of qubits in device ({self.num_qubits})."
-            )
-
-        if self._info["provider"] == "IonQ" and self._info["name"] == "Harmony":
-            if input_run_package not in ["pytket", "braket"]:
-                run_input = qbraid_circuit.transpile(device_run_package)
-            run_input = braket_ionq_compilation(run_input)
-        else:
-            if input_run_package != device_run_package:
-                run_input = qbraid_circuit.transpile(device_run_package)
+        run_package = self.info["runPackage"]
+        return qbraid_ir.transpile(run_package)
 
         compat_run_input = self._vendor_compat_run_input(run_input)
         return compat_run_input, qbraid_circuit

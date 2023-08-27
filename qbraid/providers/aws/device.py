@@ -69,6 +69,15 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
         except ValueError as err:
             raise DeviceError("Device not found") from err
 
+    def _compile(self, run_input):
+        """Compile a circuit for the device."""
+        return NotImplemented
+        # if self.provider.lower() == "ionq" and "pytket" in QPROGRAM_LIBS:
+        #     if input_run_package not in ["pytket", "braket"]:
+        #         run_input = qbraid_circuit.transpile(device_run_package)
+        #     run_input = braket_ionq_compile(run_input)
+
+
     def _vendor_compat_run_input(self, run_input):
         return run_input
 

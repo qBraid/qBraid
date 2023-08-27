@@ -7,8 +7,10 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+
 """
-Module defining Utility functions to be able to run IonQ device from AWS
+Module for converting generic quantum circuits to basis gate set compatible with IonQ devices.
+
 """
 from typing import Union
 
@@ -27,7 +29,7 @@ from pytket.predicates import (
     NoSymbolsPredicate,
 )
 
-from ..wrappers import circuit_wrapper
+from qbraid.wrappers import circuit_wrapper
 
 HARMONY_MAX_QUBITS = 11
 
@@ -72,7 +74,7 @@ ionq_rebase_pass = RebaseCustom(
 )  # tk1_replacement
 
 
-def braket_ionq_compilation(circuit: Union[Circuit, pytket.circuit.Circuit]) -> Circuit:
+def braket_ionq_compile(circuit: Union[Circuit, pytket.circuit.Circuit]) -> Circuit:
     """
     Compiles a Braket circuit to a Braket circuit that can run on IonQ Harmony.
 
