@@ -13,8 +13,9 @@ Module defining abstract ResultWrapper Class
 
 """
 from abc import ABC, abstractmethod
+from typing import Optional
 
-from qiskit.visualization import plot_histogram
+import matplotlib.pyplot as plt
 
 
 def _format_counts(raw_counts: dict, remove_zeros=True) -> dict:
@@ -80,9 +81,44 @@ class ResultWrapper(ABC):
             return _format_counts(raw_counts, remove_zeros)
         return [_format_counts(counts) for counts in raw_counts]
 
-    def plot_counts(self, remove_zeros=True):
-        """Plot histogram of measurement counts"""
+    def plot_counts(
+        self,
+        title: Optional[str] = None,
+        x_label: Optional[str] = None,
+        y_label: Optional[str] = None,
+        remove_zeros: bool = True,
+    ):
+        """Plots histogram of measurement counts against quantum states.
+
+        Args:
+            title: Title for the plot. Defaults to None.
+            x_label: Label for the x-axis. Defaults to None.
+            y_label: Label for the y-axis. Defaults to "Count".
+            remove_zeros: Whether to remove zero count results. Defaults to True.
+
+        """
         counts = self.measurement_counts(remove_zeros)
-        if isinstance(counts, dict):
-            return plot_histogram(counts)
-        return [plot_histogram(count) for count in counts]
+
+        if isinstance(counts, list):
+            raise NotImplementedError("Plotting counts for batch jobs is not yet supported")
+
+        # Extract states and their counts
+        states = list(counts.keys())
+        counts = list(counts.values())
+        y_label = "Count" if not y_label else y_label
+
+        # Plot
+        plt.bar(states, counts, color="royalblue")
+
+        if x_label:
+            plt.xlabel(x_label)
+        plt.ylabel(y_label)
+
+        if title:
+            plt.title(title)
+
+        plt.xticks(rotation=45)
+        plt.grid(axis="y")
+
+        plt.tight_layout()
+        plt.show()
