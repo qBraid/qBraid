@@ -15,8 +15,6 @@ Module defining abstract ResultWrapper Class
 from abc import ABC, abstractmethod
 from typing import Optional
 
-import matplotlib.pyplot as plt
-
 
 def _format_counts(raw_counts: dict, remove_zeros=True) -> dict:
     """Formats, sorts, and adds missing bit indicies to counts dictionary
@@ -97,6 +95,9 @@ class ResultWrapper(ABC):
             remove_zeros: Whether to remove zero count results. Defaults to True.
 
         """
+        # pylint: disable=import-outside-toplevel
+        import matplotlib.pyplot as plt
+
         counts = self.measurement_counts(remove_zeros)
 
         if isinstance(counts, list):
