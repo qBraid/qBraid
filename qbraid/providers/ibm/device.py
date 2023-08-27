@@ -18,9 +18,9 @@ from qiskit.utils.quantum_instance import QuantumInstance
 from qiskit_ibm_provider import IBMBackend, IBMProvider
 
 from qbraid.api.job_api import init_job
-from qbraid.devices.device import DeviceLikeWrapper
-from qbraid.devices.enums import DeviceStatus
-from qbraid.devices.exceptions import DeviceError
+from qbraid.providers.device import DeviceLikeWrapper
+from qbraid.providers.enums import DeviceStatus
+from qbraid.providers.exceptions import DeviceError
 
 from .job import IBMJobWrapper
 from .result import IBMResultWrapper
@@ -67,7 +67,7 @@ class IBMBackendWrapper(DeviceLikeWrapper):
             kwargs: Any kwarg options to pass to the device for the run.
 
         Returns:
-            qbraid.devices.ibm.IBMResultWrapper: The result like object for the run.
+            qbraid.providers.ibm.IBMResultWrapper: The result like object for the run.
 
         """
         run_input, _ = self._compat_run_input(run_input)
@@ -80,7 +80,7 @@ class IBMBackendWrapper(DeviceLikeWrapper):
         """Runs circuit(s) on qiskit backend via :meth:`~qiskit.execute`
 
         Uses the :meth:`~qiskit.execute` method to create a :class:`~qiskit.providers.Job` object,
-        applies a :class:`~qbraid.devices.ibm.IBMJobWrapper`, and return the result.
+        applies a :class:`~qbraid.providers.ibm.IBMJobWrapper`, and return the result.
 
         Args:
             run_input: A circuit object to run on the wrapped device.
@@ -89,7 +89,7 @@ class IBMBackendWrapper(DeviceLikeWrapper):
             shots (int): The number of times to run the task on the device. Default is 1024.
 
         Returns:
-            qbraid.devices.ibm.IBMJobWrapper: The job like object for the run.
+            qbraid.providers.ibm.IBMJobWrapper: The job like object for the run.
 
         """
         backend = self.vendor_dlo
@@ -111,7 +111,7 @@ class IBMBackendWrapper(DeviceLikeWrapper):
         """Runs circuit(s) on qiskit backend via :meth:`~qiskit.execute`
 
         Uses the :meth:`~qiskit.execute` method to create a :class:`~qiskit.providers.Job` object,
-        applies a :class:`~qbraid.devices.ibm.IBMJobWrapper`, and return the result.
+        applies a :class:`~qbraid.providers.ibm.IBMJobWrapper`, and return the result.
 
         Args:
             run_input: A circuit object list to run on the wrapped device.
@@ -120,7 +120,7 @@ class IBMBackendWrapper(DeviceLikeWrapper):
             shots (int): The number of times to run the task on the device. Default is 1024.
 
         Returns:
-            qbraid.devices.ibm.IBMJobWrapper: The job like object for the run.
+            qbraid.providers.ibm.IBMJobWrapper: The job like object for the run.
 
         """
         backend = self.vendor_dlo

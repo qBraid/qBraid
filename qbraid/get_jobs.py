@@ -109,7 +109,7 @@ def get_jobs(filters: Optional[dict] = None):
         filters: A dictionary containing any filters to be applied.
 
     """
-    from qbraid.devices import is_status_final  # pylint: disable=import-outside-toplevel
+    from qbraid.providers import is_status_final  # pylint: disable=import-outside-toplevel
 
     query = {} if filters is None else filters
 

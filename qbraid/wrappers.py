@@ -83,7 +83,7 @@ def device_wrapper(device_id: str):
         device_id: unique ID specifying a supported quantum hardware device/simulator
 
     Returns:
-        :class:`~qbraid.devices.DeviceLikeWrapper`: A wrapped quantum device-like object
+        :class:`~qbraid.providers.DeviceLikeWrapper`: A wrapped quantum device-like object
 
     Raises:
         :class:`~qbraid.QbraidError`: If ``device_id`` is not a valid device reference.
@@ -103,7 +103,7 @@ def device_wrapper(device_id: str):
 
     device_info = device_lst[0]
 
-    devices_entrypoints = _get_entrypoints("qbraid.devices")
+    devices_entrypoints = _get_entrypoints("qbraid.providers")
 
     del device_info["_id"]  # unecessary for sdk
     del device_info["statusRefresh"]
@@ -121,7 +121,7 @@ def job_wrapper(qbraid_job_id: str):
         qbraid_job_id: qBraid Job ID
 
     Returns:
-        :class:`~qbraid.devices.job.JobLikeWrapper`: A wrapped quantum job-like object
+        :class:`~qbraid.providers.job.JobLikeWrapper`: A wrapped quantum job-like object
 
     """
     session = QbraidSession()
@@ -146,7 +146,7 @@ def job_wrapper(qbraid_job_id: str):
         status_str = "UNKNOWN"
     vendor_job_id = job_data["vendorJobId"]
     vendor = qbraid_device.vendor.lower()
-    devices_entrypoints = _get_entrypoints("qbraid.devices")
+    devices_entrypoints = _get_entrypoints("qbraid.providers")
     ep = f"{vendor}.job"
     job_wrapper_class = devices_entrypoints[ep].load()
     return job_wrapper_class(

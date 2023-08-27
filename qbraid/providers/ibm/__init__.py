@@ -13,10 +13,10 @@
 
 """
 ==================================================
-IBM Devices Interface (:mod:`qbraid.devices.ibm`)
+IBM Devices Interface (:mod:`qbraid.providers.ibm`)
 ==================================================
 
-.. currentmodule:: qbraid.devices.ibm
+.. currentmodule:: qbraid.providers.ibm
 
 This module contains the classes used to run quantum circuits on devices available through IBM.
 

@@ -15,7 +15,7 @@ Unit tests for converting braket circuit to use only ionq supprted gates
 import braket
 import pytest
 
-from qbraid.devices.ionq import braket_ionq_compilation
+from qbraid.providers.ionq import braket_ionq_compilation
 from qbraid.interface.qbraid_braket.gates import get_braket_gates
 
 braket_gates = get_braket_gates()

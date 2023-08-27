@@ -14,8 +14,8 @@ Unit tests for enums defined in the qbraid device layer.
 """
 import pytest
 
-from qbraid.devices.enums import JobStatus, is_status_final, status_from_raw
-from qbraid.devices.job import _set_init_status
+from qbraid.providers.enums import JobStatus, is_status_final, status_from_raw
+from qbraid.providers.job import _set_init_status
 
 status_data = [
     (JobStatus.INITIALIZING, False),

@@ -17,7 +17,7 @@ import os
 import pytest
 from qiskit_ibm_provider import IBMProvider
 
-from qbraid.devices.ibm.provider import ibm_least_busy_qpu, ibm_provider, ibm_to_qbraid_id
+from qbraid.providers.ibm.provider import ibm_least_busy_qpu, ibm_provider, ibm_to_qbraid_id
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None

@@ -1,31 +1,31 @@
 :orphan:
 
-qbraid.devices.aws package
+qbraid.providers.aws package
 ==========================
 
 Submodules
 ----------
 
-qbraid.devices.aws.device module
+qbraid.providers.aws.device module
 --------------------------------
 
-.. automodule:: qbraid.devices.aws.device
+.. automodule:: qbraid.providers.aws.device
    :members:
    :undoc-members:
    :show-inheritance:
 
-qbraid.devices.aws.job module
+qbraid.providers.aws.job module
 -----------------------------
 
-.. automodule:: qbraid.devices.aws.job
+.. automodule:: qbraid.providers.aws.job
    :members:
    :undoc-members:
    :show-inheritance:
 
-qbraid.devices.aws.result module
+qbraid.providers.aws.result module
 --------------------------------
 
-.. automodule:: qbraid.devices.aws.result
+.. automodule:: qbraid.providers.aws.result
    :members:
    :undoc-members:
    :show-inheritance:

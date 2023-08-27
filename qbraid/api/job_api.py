@@ -60,7 +60,7 @@ def _qbraid_jobs_enabled(vendor: Optional[str] = None) -> bool:
 
 def init_job(
     vendor_job_id: str,
-    device: "qbraid.devices.DeviceLikeWrapper",
+    device: "qbraid.providers.DeviceLikeWrapper",
     circuits: "qbraid.transpiler.QuantumProgramWrapper",
     shots: int,
 ) -> str:

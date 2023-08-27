@@ -14,7 +14,7 @@ Module defining IBMResultWrapper Class
 """
 import numpy as np
 
-from qbraid.devices.result import ResultWrapper
+from qbraid.providers.result import ResultWrapper
 
 
 class IBMResultWrapper(ResultWrapper):

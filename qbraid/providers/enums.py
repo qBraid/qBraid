@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining all :mod:`~qbraid.devices` enumerated types.
+Module defining all :mod:`~qbraid.providers` enumerated types.
 
 """
 from enum import Enum
@@ -44,7 +44,7 @@ class DeviceStatus(int, Enum):
 
 class JobStatus(str, Enum):
     """Class for the status of processes (i.e. jobs / quantum tasks) resulting from any
-    :meth:`~qbraid.devices.DeviceLikeWrapper.run` method.
+    :meth:`~qbraid.providers.DeviceLikeWrapper.run` method.
 
     Attributes:
         INITIALIZING (str): job is being initialized

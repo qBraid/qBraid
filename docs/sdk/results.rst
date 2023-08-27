@@ -47,7 +47,7 @@ the ``vendor_rlo`` attribute:
 .. code-block:: python
 
     >>> type(qresult_ibmq)
-    qbraid.devices.ibm.result.IBMResultWrapper
+    qbraid.providers.ibm.result.IBMResultWrapper
     >>> type(qresult_ibmq.vendor_rlo)
     qiskit.result.result.Result
 

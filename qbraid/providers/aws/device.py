@@ -23,9 +23,9 @@ from braket.schema_common import BraketSchemaBase
 
 from qbraid.api import QbraidSession
 from qbraid.api.job_api import init_job
-from qbraid.devices.device import DeviceLikeWrapper
-from qbraid.devices.enums import DeviceStatus
-from qbraid.devices.exceptions import DeviceError
+from qbraid.providers.device import DeviceLikeWrapper
+from qbraid.providers.enums import DeviceStatus
+from qbraid.providers.exceptions import DeviceError
 
 from .job import AwsQuantumTaskWrapper
 
@@ -90,7 +90,7 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
         self._ports = None
 
     @property
-    def status(self) -> "qbraid.devices.DeviceStatus":
+    def status(self) -> "qbraid.providers.DeviceStatus":
         """Return the status of this Device.
 
         Returns:

@@ -10,10 +10,10 @@
 
 """
 ====================================
- Devices (:mod:`qbraid.devices`)
+ Devices (:mod:`qbraid.providers`)
 ====================================
 
-.. currentmodule:: qbraid.devices
+.. currentmodule:: qbraid.providers
 
 Devices API
 ------------

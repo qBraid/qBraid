@@ -1,39 +1,39 @@
 :orphan:
 
-qbraid.devices.ibm package
+qbraid.providers.ibm package
 ==========================
 
 Submodules
 ----------
 
-qbraid.devices.ibm.provider module
+qbraid.providers.ibm.provider module
 ----------------------------------
 
-.. automodule:: qbraid.devices.ibm.provider
+.. automodule:: qbraid.providers.ibm.provider
    :members:
    :undoc-members:
    :show-inheritance:
 
-qbraid.devices.ibm.device module
+qbraid.providers.ibm.device module
 --------------------------------
 
-.. automodule:: qbraid.devices.ibm.device
+.. automodule:: qbraid.providers.ibm.device
    :members:
    :undoc-members:
    :show-inheritance:
 
-qbraid.devices.ibm.job module
+qbraid.providers.ibm.job module
 -----------------------------
 
-.. automodule:: qbraid.devices.ibm.job
+.. automodule:: qbraid.providers.ibm.job
    :members:
    :undoc-members:
    :show-inheritance:
 
-qbraid.devices.ibm.result module
+qbraid.providers.ibm.result module
 --------------------------------
 
-.. automodule:: qbraid.devices.ibm.result
+.. automodule:: qbraid.providers.ibm.result
    :members:
    :undoc-members:
    :show-inheritance:

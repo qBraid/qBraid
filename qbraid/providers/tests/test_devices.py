@@ -26,11 +26,11 @@ from qiskit_ibm_provider import IBMBackend, IBMJob, IBMProvider
 
 from qbraid import QbraidError, device_wrapper, job_wrapper
 from qbraid.api import QbraidSession
-from qbraid.devices import DeviceError
-from qbraid.devices.aws import AwsDeviceWrapper, AwsQuantumTaskWrapper
-from qbraid.devices.enums import is_status_final
-from qbraid.devices.exceptions import JobStateError
-from qbraid.devices.ibm import (
+from qbraid.providers import DeviceError
+from qbraid.providers.aws import AwsDeviceWrapper, AwsQuantumTaskWrapper
+from qbraid.providers.enums import is_status_final
+from qbraid.providers.exceptions import JobStateError
+from qbraid.providers.ibm import (
     IBMBackendWrapper,
     IBMJobWrapper,
     ibm_least_busy_qpu,

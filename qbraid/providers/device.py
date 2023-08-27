@@ -138,7 +138,7 @@ class DeviceLikeWrapper(ABC):
 
     @property
     @abstractmethod
-    def status(self) -> "qbraid.devices.DeviceStatus":
+    def status(self) -> "qbraid.providers.DeviceStatus":
         """Return device status."""
 
     def __str__(self):
@@ -153,5 +153,5 @@ class DeviceLikeWrapper(ABC):
         """Abstract init device method."""
 
     @abstractmethod
-    def run(self, run_input: "qbraid.QPROGRAM", *args, **kwargs) -> "qbraid.devices.JobLikeWrapper":
+    def run(self, run_input: "qbraid.QPROGRAM", *args, **kwargs) -> "qbraid.providers.JobLikeWrapper":
         """Abstract run method."""

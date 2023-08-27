@@ -17,7 +17,7 @@ target backend, the procedure was as follows:
     >>> qdevice = device_wrapper(qbraid_id)
     >>> qjob = qdevice.run(circuit)
     >>> type(qjob)
-    qbraid.devices.aws.job.BraketQuantumTaskWrapper
+    qbraid.providers.aws.job.BraketQuantumTaskWrapper
 
 Invoking the ``run`` method of a qBraid ``DeviceLikeWrapper`` returns a qBraid
 ``JobLikeWrapper``. Through a unified set of methods and attributes, this class

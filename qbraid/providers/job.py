@@ -49,7 +49,7 @@ class JobLikeWrapper(ABC):
         self,
         job_id: str,
         vendor_job_id: Optional[str] = None,
-        device: "Optional[qbraid.devices.DeviceLikeWrapper]" = None,
+        device: "Optional[qbraid.providers.DeviceLikeWrapper]" = None,
         vendor_jlo: Optional[Any] = None,
         status: Optional[Union[str, JobStatus]] = None,
     ):
@@ -75,7 +75,7 @@ class JobLikeWrapper(ABC):
         return self._vendor_job_id
 
     @property
-    def device(self) -> "qbraid.devices.DeviceLikeWrapper":
+    def device(self) -> "qbraid.providers.DeviceLikeWrapper":
         """Returns the qbraid DeviceLikeWrapper object associated with this job."""
         if self._device is None:
             self._device = device_wrapper(self.id.split(":")[0])
@@ -148,7 +148,7 @@ class JobLikeWrapper(ABC):
             status = self.status()
 
     @abstractmethod
-    def result(self) -> "qbraid.devices.ResultWrapper":
+    def result(self) -> "qbraid.providers.ResultWrapper":
         """Return the results of the job."""
 
     @abstractmethod

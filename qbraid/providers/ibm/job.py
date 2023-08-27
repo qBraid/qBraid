@@ -17,9 +17,9 @@ import logging
 from qiskit_ibm_provider import IBMBackend
 from qiskit_ibm_provider.job.exceptions import IBMJobInvalidStateError
 
-from qbraid.devices.enums import JOB_FINAL
-from qbraid.devices.exceptions import JobError, JobStateError
-from qbraid.devices.job import JobLikeWrapper
+from qbraid.providers.enums import JOB_FINAL
+from qbraid.providers.exceptions import JobError, JobStateError
+from qbraid.providers.job import JobLikeWrapper
 
 from .result import IBMResultWrapper
 

@@ -17,7 +17,7 @@ import os
 import pytest
 
 from qbraid import device_wrapper
-from qbraid.devices.result import _format_counts
+from qbraid.providers.result import _format_counts
 from qbraid.interface import random_circuit
 
 # Skip tests if IBM/AWS account auth/creds not configured

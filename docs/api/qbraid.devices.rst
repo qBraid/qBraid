@@ -1,17 +1,17 @@
-qbraid.devices
+qbraid.providers
 ===============
 
-.. automodule:: qbraid.devices
+.. automodule:: qbraid.providers
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.devices.aws
+.. automodule:: qbraid.providers.aws
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.devices.ibm
+.. automodule:: qbraid.providers.ibm
    :members:
    :undoc-members:
    :show-inheritance:
