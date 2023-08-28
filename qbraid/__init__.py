@@ -43,12 +43,20 @@ Exceptions
    QbraidError
    PackageValueError
    ProgramTypeError
+   VisualizationError
+   QasmError
 
 """
 from . import _warnings
 from ._qprogram import QPROGRAM, QPROGRAM_LIBS, QPROGRAM_TYPES
 from ._version import __version__
-from .exceptions import PackageValueError, ProgramTypeError, QbraidError
+from .exceptions import (
+    PackageValueError,
+    ProgramTypeError,
+    QasmError,
+    QbraidError,
+    VisualizationError,
+)
 from .get_devices import get_devices, refresh_devices
 from .get_jobs import get_jobs
 from .wrappers import circuit_wrapper, device_wrapper, job_wrapper

@@ -15,7 +15,8 @@ testpaths = [
   "qbraid/api",
   "qbraid/interface",
   "qbraid/transpiler",
-  "qbraid/devices",
+  "qbraid/compiler",
+  "qbraid/providers",
   "qbraid/tests",
 ]
 filterwarnings = [
@@ -64,7 +65,6 @@ exclude = '''
   | \.venv
   | dist
   | qbraid/transpiler/cirq_qasm
-  | qbraid/transpiler/cirq_pytket/tests/test_from_pytket.py
 )/
 '''
 
@@ -74,4 +74,4 @@ disable = "C0103, E0401, R0801, R0902, R0903, R0911, R0912, R0914, W0212, W0511"
 
 [tool.isort]
 profile = "hug"
-skip_glob = "**/qbraid/devices/*/__init__.py"
+skip_glob = "**/qbraid/providers/*/__init__.py"

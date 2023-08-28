@@ -14,7 +14,7 @@ Module defining QuantumProgramWrapper Class
 """
 from typing import TYPE_CHECKING, List, Optional
 
-from qbraid._qprogram import QPROGRAM_LIBS, QPROGRAM_TYPES
+from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.exceptions import PackageValueError
 from qbraid.interface.draw import circuit_drawer
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
@@ -109,18 +109,16 @@ class QuantumProgramWrapper:
                 cirq_circuit, _ = convert_to_cirq(self.program)
             except Exception as err:
                 raise CircuitConversionError(
-                    "Quantum program could not be converted to a Cirq circuit. "
-                    "This may be because the program contains custom gates or "
-                    f"Pragmas (pyQuil). \n\nProvided program has type {type(self.program)} "
-                    f"and is:\n\n{self.program}\n\nQuantum program types supported by the "
-                    f"qbraid.transpiler are \n{QPROGRAM_TYPES}."
+                    "Quantum program could not be converted to Cirq. "
+                    "This may be because the program contains gates or operations"
+                    "not yet supported by the qBraid transpiler."
                 ) from err
             try:
                 converted_program = convert_from_cirq(cirq_circuit, conversion_type)
             except Exception as err:
                 raise CircuitConversionError(
-                    f"Circuit could not be converted from a Cirq type to a "
-                    f"circuit of type {conversion_type}."
+                    f"Circuit could not be converted from Cirq to "
+                    f"program of type {conversion_type}."
                 ) from err
 
             return converted_program

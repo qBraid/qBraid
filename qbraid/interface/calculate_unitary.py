@@ -17,8 +17,9 @@ from typing import TYPE_CHECKING, Any, Callable, Optional
 import numpy as np
 from cirq.testing import assert_allclose_up_to_global_phase
 
-from qbraid.exceptions import ProgramTypeError, QbraidError
+from qbraid.exceptions import ProgramTypeError, QasmError, QbraidError
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
+from qbraid.qasm_checks import get_qasm_version
 
 if TYPE_CHECKING:
     import qbraid
@@ -86,12 +87,12 @@ def to_unitary(program: "qbraid.QPROGRAM", ensure_contiguous: Optional[bool] = F
     to_unitary_function: Callable[[Any], np.ndarray]
 
     if isinstance(program, str):
-        if "OPENQASM 2" in program:
-            package = "qasm2"
-        elif "OPENQASM 3" in program:
-            package = "qasm3"
-        else:
-            raise ProgramTypeError("Input of type string must represent a valid OpenQASM program.")
+        try:
+            package = get_qasm_version(program)
+        except QasmError as err:
+            raise ProgramTypeError(
+                "Input of type string must represent a valid OpenQASM program."
+            ) from err
     else:
         try:
             package = program.__module__

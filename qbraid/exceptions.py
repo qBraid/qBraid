@@ -41,3 +41,7 @@ class ProgramTypeError(QbraidError):
 
 class VisualizationError(QbraidError):
     """Class for errors raised when using visualization features."""
+
+
+class QasmError(QbraidError):
+    """For errors raised while processing OpenQASM programs."""

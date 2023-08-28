@@ -19,7 +19,10 @@ jobs submitted through the qBraid SDK.
 import os
 from typing import Optional
 
-from IPython.display import HTML, clear_output, display
+try:
+    from IPython.display import HTML, clear_output, display
+except ImportError:
+    pass
 
 from .api import QbraidSession
 from .display_utils import running_in_jupyter, update_progress_bar
@@ -109,7 +112,7 @@ def get_jobs(filters: Optional[dict] = None):
         filters: A dictionary containing any filters to be applied.
 
     """
-    from qbraid.devices import is_status_final  # pylint: disable=import-outside-toplevel
+    from qbraid.providers import is_status_final  # pylint: disable=import-outside-toplevel
 
     query = {} if filters is None else filters
 
@@ -135,9 +138,12 @@ def get_jobs(filters: Optional[dict] = None):
         except KeyError:
             status = "UNKNOWN"
         if not is_status_final(status):
-            qbraid_job = job_wrapper(job_id)
-            status_obj = qbraid_job.status()
-            status = status_obj.raw()
+            try:
+                qbraid_job = job_wrapper(job_id)
+                status_obj = qbraid_job.status()
+                status = status_obj.raw()
+            except Exception:  # pylint: disable=broad-except
+                pass
         job_data.append([job_id, timestamp, status])
 
     if num_jobs == 0:  # Design choice whether to display anything here or not

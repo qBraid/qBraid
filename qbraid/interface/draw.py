@@ -14,7 +14,8 @@ Module for drawing quantum circuit diagrams
 """
 from typing import TYPE_CHECKING
 
-from qbraid.exceptions import ProgramTypeError, VisualizationError
+from qbraid.exceptions import ProgramTypeError, QasmError, VisualizationError
+from qbraid.qasm_checks import get_qasm_version
 
 if TYPE_CHECKING:
     import qbraid
@@ -29,14 +30,13 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
     Raises:
         ProgramTypeError: If quantum program is not of a supported type
     """
-    # todo: visualization from supportive framework
     if isinstance(program, str):
-        if "OPENQASM 2" in program:
-            package = "qasm2"
-        elif "OPENQASM 3" in program:
-            package = "qasm3"
-        else:
-            raise ProgramTypeError("Input of type string must represent a valid OpenQASM program.")
+        try:
+            package = get_qasm_version(program)
+        except QasmError as err:
+            raise ProgramTypeError(
+                "Input of type string must represent a valid OpenQASM program."
+            ) from err
     else:
         try:
             package = program.__module__

@@ -34,8 +34,8 @@ from qbraid.interface.qbraid_qasm3.tools import (
 def test_qasm_qubits():
     """Test getting QASM qubits"""
 
-    assert qasm3_qubits(qasm3_bell()) == ["qubit[2]"]
-    assert qasm3_qubits(qasm3_shared15()) == ["qubit[4]"]
+    assert qasm3_qubits(qasm3_bell()) == [("q", 2)]
+    assert qasm3_qubits(qasm3_shared15()) == [("q", 4)]
 
 
 def test_qasm3_num_qubits():
