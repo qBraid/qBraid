@@ -23,7 +23,6 @@ from braket.schema_common import BraketSchemaBase
 
 from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.api import QbraidSession
-from qbraid.api.job_api import init_job
 from qbraid.providers.device import DeviceLikeWrapper
 from qbraid.providers.enums import DeviceStatus
 from qbraid.providers.exceptions import DeviceError
@@ -31,8 +30,6 @@ from qbraid.providers.exceptions import DeviceError
 from .job import AwsQuantumTaskWrapper
 
 if TYPE_CHECKING:
-    import braket
-
     import qbraid
 
 
@@ -249,7 +246,7 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
         metadata = aws_quantum_task.metadata()
         shots = 0 if "shots" not in metadata else metadata["shots"]
         vendor_job_id = metadata["quantumTaskArn"]
-        job_id = init_job(vendor_job_id, self, [qbraid_circuit], shots)
+        job_id = self._init_job(vendor_job_id, [qbraid_circuit], shots)
         return AwsQuantumTaskWrapper(
             job_id, vendor_job_id=vendor_job_id, device=self, vendor_jlo=aws_quantum_task
         )
@@ -286,7 +283,7 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
             metadata = aws_quantum_task.metadata()
             shots = 0 if "shots" not in metadata else metadata["shots"]
             vendor_job_id = metadata["quantumTaskArn"]
-            job_id = init_job(vendor_job_id, self, [qbraid_circuit], shots)
+            job_id = self._init_job(vendor_job_id, [qbraid_circuit], shots)
             aws_quantum_task_wrapper_list.append(
                 AwsQuantumTaskWrapper(
                     job_id, vendor_job_id=vendor_job_id, device=self, vendor_jlo=aws_quantum_task

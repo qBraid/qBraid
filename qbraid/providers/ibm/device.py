@@ -16,7 +16,6 @@ from qiskit import transpile
 from qiskit.providers import QiskitBackendNotFoundError
 from qiskit_ibm_provider import IBMBackend, IBMProvider
 
-from qbraid.api.job_api import init_job
 from qbraid.providers.device import DeviceLikeWrapper
 from qbraid.providers.enums import DeviceStatus
 from qbraid.providers.exceptions import DeviceError
@@ -82,7 +81,7 @@ class IBMBackendWrapper(DeviceLikeWrapper):
         )  # Needed to get measurements
         qiskit_job = backend.run(run_input, shots=shots, memory=memory, **kwargs)
         qiskit_job_id = qiskit_job.job_id()
-        qbraid_job_id = init_job(qiskit_job_id, self, [qbraid_circuit], shots)
+        qbraid_job_id = self._init_job(qiskit_job_id, [qbraid_circuit], shots)
         qbraid_job = IBMJobWrapper(
             qbraid_job_id, vendor_job_id=qiskit_job_id, device=self, vendor_jlo=qiskit_job
         )
@@ -121,7 +120,7 @@ class IBMBackendWrapper(DeviceLikeWrapper):
         qiskit_job_id = qiskit_job.job_id()
 
         # to change to batch
-        qbraid_job_id = init_job(qiskit_job_id, self, qbraid_circuit_batch, shots)
+        qbraid_job_id = self._init_job(qiskit_job_id, qbraid_circuit_batch, shots)
         qbraid_job = IBMJobWrapper(
             qbraid_job_id, vendor_job_id=qiskit_job_id, device=self, vendor_jlo=qiskit_job
         )

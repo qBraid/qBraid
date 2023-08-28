@@ -1,10 +1,13 @@
 # core dependencies
-cirq~=1.3.0.dev20230818204552
+cirq-core~=1.3.0.dev20230825224332
+openqasm3[parser]>=0.4.0,<0.5.0
 numpy>=1.17,<1.24
 requests~=2.31.0
+ply>=3.6
 
 # optional dependencies
 amazon-braket-sdk~=1.54.1
+cirq-rigetti~=1.3.0.dev20230825224332
 pyquil>=3.5.4,<3.6.0
 pytket~=1.18.0
 pytket-braket~=0.29.0

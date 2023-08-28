@@ -19,8 +19,6 @@ supported by the qBraid SDK.
 from datetime import datetime
 from typing import Optional
 
-from IPython.display import HTML, clear_output, display
-
 from .api import ApiError, QbraidSession
 from .display_utils import running_in_jupyter, update_progress_bar
 from .wrappers import device_wrapper
@@ -104,6 +102,9 @@ def _display_basic(data, msg):
 
 
 def _display_jupyter(data, msg, align=None):
+    # pylint: disable=import-outside-toplevel
+    from IPython.display import HTML, clear_output, display
+
     clear_output(wait=True)
 
     align = "right" if align is None else align

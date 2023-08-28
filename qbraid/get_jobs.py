@@ -19,8 +19,6 @@ jobs submitted through the qBraid SDK.
 import os
 from typing import Optional
 
-from IPython.display import HTML, clear_output, display
-
 from .api import QbraidSession
 from .display_utils import running_in_jupyter, update_progress_bar
 from .wrappers import job_wrapper
@@ -38,6 +36,9 @@ def _display_jobs_basic(data, msg):
 
 
 def _display_jobs_jupyter(data, msg):
+    # pylint: disable=import-outside-toplevel
+    from IPython.display import HTML, clear_output, display
+
     clear_output(wait=True)
 
     html = """<h3>Quantum Jobs</h3><table><tr>
