@@ -9,9 +9,14 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for Qiskit gate dictionary used for testing
+Module for generating dictionary of all qiskit gates for testing/benchmarking
 
 """
+
+import string
+from typing import List, Optional
+
+import numpy as np
 from qiskit.circuit.library import standard_gates as sg
 from qiskit.circuit.library.standard_gates import *
 
@@ -56,3 +61,31 @@ qiskit_gates = {
     "RCCX": sg.x.RCCXGate,
     "CCX": sg.x.CCXGate,
 }
+
+
+def generate_params(varnames: List[str], seed: Optional[int] = None):
+    """Returns a dictionary of random parameters for a given list of variable names"""
+    if seed is not None:
+        np.random.seed(seed)
+    params = {
+        ra: np.random.rand() * 2 * np.pi
+        for ra in ["theta", "phi", "lam", "gamma"]
+        if ra in varnames
+    }
+    if "num_ctrl_qubits" in varnames:
+        params["num_ctrl_qubits"] = np.random.randint(1, 7)
+    if "phase" in varnames:
+        params["phase"] = np.random.rand() * 2 * np.pi
+    return params
+
+
+def get_qiskit_gates(seed: Optional[int] = None):
+    """Returns a dictionary of all qiskit gates with random parameters"""
+    qiskit_gates = {attr: None for attr in dir(sg) if attr[0] in string.ascii_uppercase}
+    for gate in qiskit_gates:
+        varnames = [
+            v for v in getattr(sg, gate).__init__.__code__.co_varnames if v != "self"
+        ]
+        params = generate_params(varnames, seed=seed)
+        qiskit_gates[gate] = getattr(sg, gate)(**params)
+    return {k: v for k, v in qiskit_gates.items() if v is not None}

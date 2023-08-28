@@ -163,7 +163,7 @@ def convert_to_qasm3(qasm2_str: str):
     # add the gate from qelib1.inc not present in the stdgates.inc file
     current_dir = os.path.dirname(os.path.abspath(__file__))
     with open(
-        os.path.join(current_dir, "qasm_lib/qelib_qasm3.qasm"), mode="r", encoding="utf-8"
+        os.path.join(current_dir, "qelib_qasm3.qasm"), mode="r", encoding="utf-8"
     ) as gate_defs:
         for line in gate_defs:
             qasm3_str += line

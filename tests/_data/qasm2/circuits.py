@@ -20,7 +20,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 
 def _read_qasm_file(filename: str) -> QASMType:
     """Reads a qasm file from the qasm_lib directory"""
-    return open(os.path.join(current_dir, "qasm_lib", filename), mode="r", encoding="utf-8").read()
+    return open(os.path.join(current_dir, filename), mode="r", encoding="utf-8").read()
 
 
 def qasm2_bell() -> QASMType:

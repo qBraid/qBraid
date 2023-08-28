@@ -12,7 +12,6 @@
 Module containing qasm programs used for testing
 
 """
-import os
 from typing import Optional
 
 import numpy as np
@@ -20,22 +19,6 @@ import numpy as np
 from qbraid.exceptions import QbraidError
 
 QASMType = str
-current_dir = os.path.dirname(os.path.abspath(__file__))
-
-
-def _read_qasm_file(filename: str) -> QASMType:
-    """Reads a qasm file from the qasm_lib directory"""
-    return open(os.path.join(current_dir, "qasm_lib", filename), mode="r", encoding="utf-8").read()
-
-
-def qasm3_bell() -> QASMType:
-    """Returns OpenQASM3 bell circuit"""
-    return _read_qasm_file("bell.qasm")
-
-
-def qasm3_shared15() -> QASMType:
-    """Returns OpenQASM3 15 gate test circuit."""
-    return _read_qasm_file("shared15.qasm")
 
 
 def create_gateset_qasm(max_operands) -> np.ndarray:
