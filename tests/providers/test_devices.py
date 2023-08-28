@@ -29,7 +29,7 @@ from qbraid.api import QbraidSession
 from qbraid.interface import random_circuit
 from qbraid.providers.aws import AwsDeviceWrapper, AwsQuantumTaskWrapper
 from qbraid.providers.enums import is_status_final
-from qbraid.providers.exceptions import DeviceError, JobStateError, ProgramValidationError
+from qbraid.providers.exceptions import JobStateError, ProgramValidationError
 from qbraid.providers.ibm import (
     IBMBackendWrapper,
     IBMJobWrapper,

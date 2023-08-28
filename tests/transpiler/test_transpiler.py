@@ -34,10 +34,9 @@ from qbraid.exceptions import PackageValueError, ProgramTypeError
 from qbraid.interface import convert_to_contiguous, to_unitary
 from qbraid.interface.programs import bell_data, shared15_data
 from qbraid.interface.qbraid_cirq._utils import _equal
-from qbraid.transpiler.cirq_braket.tests._gate_archive import braket_gates as braket_gates_dict
-from qbraid.transpiler.cirq_qasm.tests._gate_archive import cirq_gates as cirq_gates_dict
-from qbraid.transpiler.cirq_qasm.tests._gate_archive import create_cirq_gate
-from qbraid.transpiler.cirq_qiskit.tests._gate_archive import qiskit_gates as qiskit_gates_dict
+from .cirq_braket._gate_archive import braket_gates as braket_gates_dict
+from .cirq_qasm._gate_archive import cirq_gates as cirq_gates_dict, create_cirq_gate
+from .cirq_qiskit._gate_archive import qiskit_gates as qiskit_gates_dict
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
 
