@@ -103,9 +103,9 @@ def _display_basic(data, msg):
 
 def _display_jupyter(data, msg, align=None):
     # pylint: disable=import-outside-toplevel
-    from IPython.display import HTML, clear_output, display
+    from IPython import display
 
-    clear_output(wait=True)
+    display.clear_output(wait=True)
 
     align = "right" if align is None else align
 
@@ -136,7 +136,7 @@ def _display_jupyter(data, msg, align=None):
 
     html += "</table>"
 
-    return display(HTML(html))
+    return display.display(display.HTML(html))
 
 
 def get_devices(filters: Optional[dict] = None, refresh: bool = False):

@@ -37,9 +37,9 @@ def _display_jobs_basic(data, msg):
 
 def _display_jobs_jupyter(data, msg):
     # pylint: disable=import-outside-toplevel
-    from IPython.display import HTML, clear_output, display
+    from IPython import display
 
-    clear_output(wait=True)
+    display.clear_output(wait=True)
 
     html = """<h3>Quantum Jobs</h3><table><tr>
     <th style='text-align:left'>qBraid ID</th>
@@ -69,7 +69,7 @@ def _display_jobs_jupyter(data, msg):
 
     html += "</table>"
 
-    return display(HTML(html))
+    return display.display(display.HTML(html))
 
 
 def get_jobs(filters: Optional[dict] = None):
