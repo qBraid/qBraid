@@ -15,10 +15,6 @@ Module defining input / output types for a quantum backend:
 
   * QPROGRAM_LIBS: List of all supported quantum software libraries / packages
 
-
-As we are using here dynamic imports, we'll see the ide will visualize that none of the
-libraries have been import, as we'll import them dynamically in the execution.
-
 """
 from importlib import import_module
 from types import ModuleType
@@ -28,6 +24,8 @@ import cirq
 
 __NON_OPTIONAL_PROGRAMS: list = [cirq.Circuit]
 
+# As we are using here dynamic imports, we'll see the ide will visualize that none of the
+# libraries have been import, as we'll import them dynamically in the execution.
 
 def __dynamic_importer(opt_modules: List[str]) -> list:
     imported: list = __NON_OPTIONAL_PROGRAMS
