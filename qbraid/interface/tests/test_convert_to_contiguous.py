@@ -56,9 +56,9 @@ def test_compare_conversion_braket_cirq():
     assert braket_circuit.qubit_count == 3
 
     cirq_circuit = Circuit()
-    q0 = LineQubit(4)
+    q0 = LineQubit(0)
     q2 = LineQubit(2)
-    q4 = LineQubit(0)
+    q4 = LineQubit(4)
     cirq_circuit.append(X(q0))
     cirq_circuit.append(Y(q2))
     cirq_circuit.append(Z(q4))
@@ -75,6 +75,13 @@ def test_compare_conversion_braket_cirq():
 
     cirq_expanded_circuit = convert_to_contiguous(cirq_circuit, expansion=True)
     assert len(cirq_expanded_circuit.all_qubits()) == 5
+
+
+def test_braket_control_modifier():
+    """Test that converting braket circuits to contiguous qubits works with control modifiers"""
+    circuit = BKCircuit().y(target=0, control=1)
+    contrig_circuit = convert_to_contiguous(circuit)
+    assert circuit.qubit_count == contrig_circuit.qubit_count
 
 
 def test_remove_blank_wires_pytket():

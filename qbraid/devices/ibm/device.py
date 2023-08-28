@@ -88,7 +88,6 @@ class IBMBackendWrapper(DeviceLikeWrapper):
         Keyword Args:
             shots (int): The number of times to run the task on the device. Default is 1024.
 
-
         Returns:
             qbraid.devices.ibm.IBMJobWrapper: The job like object for the run.
 
@@ -119,7 +118,6 @@ class IBMBackendWrapper(DeviceLikeWrapper):
 
         Keyword Args:
             shots (int): The number of times to run the task on the device. Default is 1024.
-
 
         Returns:
             qbraid.devices.ibm.IBMJobWrapper: The job like object for the run.

@@ -4,8 +4,9 @@
 [![codecov](https://codecov.io/gh/qBraid/qBraid/branch/main/graph/badge.svg?token=1UTM0XZB7A)](https://codecov.io/gh/qBraid/qBraid)
 [![Documentation Status](https://readthedocs.com/projects/qbraid-qbraid/badge/?version=latest)](https://docs.qbraid.com/en/latest/?badge=latest)
 [![PyPI version](https://img.shields.io/pypi/v/qbraid.svg?color=blue)](https://pypi.org/project/qbraid/)
+[![Downloads](https://img.shields.io/pypi/dm/qbraid.svg?color=blue)](https://pypi.org/project/qbraid/)
 [![License](https://img.shields.io/github/license/qBraid/qbraid.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Discord](https://img.shields.io/discord/771898982564626445.svg?color=pink)](https://discord.gg/TPBU2sa8Et)
 
 The qBraid-SDK is a Python toolkit for cross-framework abstraction,
 transpilation, and execution of quantum programs.
@@ -34,9 +35,8 @@ For the best experience, install the qBraid-SDK environment on
 
 Using the SDK on qBraid Lab means direct, pre-configured access to all
 [Amazon Braket supported devices](https://docs.aws.amazon.com/braket/latest/developerguide/braket-devices.html)
-and [IBM Quantum open systems](https://www.ibm.com/quantum/access-plans) with no
-additional access keys or API tokens required. See
-[qBraid Quantum Jobs](https://docs.qbraid.com/en/latest/lab/quantumjobs.html)
+with no additional access keys or API tokens required. See
+[qBraid Quantum Jobs](https://docs.qbraid.com/en/latest/lab/quantum_jobs.html)
 for more.
 
 ### Local install
@@ -73,7 +73,7 @@ Construct a quantum program of any supported program type,
 ```python
 >>> from qbraid import QPROGRAM_LIBS
 >>> QPROGRAM_LIBS
-['braket', 'cirq', 'qiskit', 'pyquil', 'pytket', 'qasm']
+['braket', 'cirq', 'qiskit', 'pyquil', 'pytket', 'qasm2', 'qasm3']
 ```
 
 and use the `circuit_wrapper()` to convert to any other supported program type:
@@ -90,9 +90,9 @@ q_0: ──■──┤ Rx(3.0353) ├
 q_1: ┤ H ├────┤ √X ├────
      └───┘    └────┘
 >>> print(cirq_circuit)
-0: ───H───X^0.5────────
+0: ───@───Rx(0.966π)───
       │
-1: ───@───Rx(0.966π)───
+1: ───H───X^0.5────────
 ```
 
 ### Devices & Jobs
@@ -145,15 +145,15 @@ Compare results in a consistent, unified format:
 ```
 
 ## Local account setup
-<img mg align="right" width="350" alt="api_key" src="https://github.com/qBraid/qBraid/assets/46977852/86235d04-4b12-40e0-befe-1eeacaac9104">
+<img align="right" width="300" alt="api_key" src="https://github.com/qBraid/qBraid/assets/46977852/c13d6035-194b-4520-84c1-e57e7f9f4340">
 
 To use the qBraid-SDK locally (outside of qBraid Lab), you must add your account
 credentials:
 
 1. Create a qBraid account or log in to your existing account by visiting
-   [account.qbraid.com](https://account.qbraid.com/v2)
+   [account.qbraid.com](https://account.qbraid.com/)
 2. Copy your API Key token from the left side of
-    your [account page](https://account.qbraid.com/v2):
+    your [account page](https://account.qbraid.com/):
 
 3. Save your API key from step 2 by calling
    `QbraidSession.save_config()`:
@@ -218,7 +218,7 @@ Use the badge in your project's `README.rst`:
 - For feature requests and bug reports:
   [Submit an issue](https://github.com/qBraid/qBraid/issues)
 - For discussions, and specific questions about the qBraid SDK, qBraid Lab, or
-  other topics, [join our discord community](https://discord.gg/gwBebaBZZX)
+  other topics, [join our discord community](https://discord.gg/TPBU2sa8Et)
 - For questions that are more suited for a forum, post to
   [Quantum Computing Stack Exchange](https://quantumcomputing.stackexchange.com/)
   with the [`qbraid`](https://quantumcomputing.stackexchange.com/questions/tagged/qbraid) tag.

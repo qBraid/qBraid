@@ -45,7 +45,12 @@ def convert_to_contiguous(program: "qbraid.QPROGRAM", **kwargs) -> "qbraid.QPROG
     conversion_function: Callable[[Any], QPROGRAM]
 
     if isinstance(program, str):
-        package = "qasm"
+        if "OPENQASM 2" in program:
+            package = "qasm2"
+        elif "OPENQASM 3" in program:
+            package = "qasm3"
+        else:
+            raise ProgramTypeError("Input of type string must represent a valid OpenQASM program.")
     else:
         try:
             package = program.__module__
@@ -73,10 +78,14 @@ def convert_to_contiguous(program: "qbraid.QPROGRAM", **kwargs) -> "qbraid.QPROG
         from qbraid.interface.qbraid_pytket.tools import _convert_to_contiguous_pytket
 
         conversion_function = _convert_to_contiguous_pytket
-    elif "qasm" in package:
+    elif package == "qasm2":
         from qbraid.interface.qbraid_qasm.tools import _convert_to_contiguous_qasm
 
         conversion_function = _convert_to_contiguous_qasm
+    elif package == "qasm3":
+        from qbraid.interface.qbraid_qasm3.tools import _convert_to_contiguous_qasm3
+
+        conversion_function = _convert_to_contiguous_qasm3
     else:
         raise ProgramTypeError(program)
 

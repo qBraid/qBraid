@@ -3,56 +3,95 @@
 Environments
 =============
 
-The `qBraid Lab Environment Manager <https://youtu.be/LyavbzSkvRo>`_ is a robust package and virtual environment management system
-provided to qBraid end-users through a simple, intuitive graphical user interface.
+The `qBraid Lab Environment Manager <https://youtu.be/LyavbzSkvRo>`_ is a streamlined quantum software package and
+virtual environment management system provided to qBraid end-users through a simple, intuitive graphical user interface.
+It offers curated development environments in Python, Julia, C++, and Q# over a range of quantum applications, is highly
+customizable, and facilitates direct connections to quantum hardware.
 
 To expand the Environment Manager sidebar, click on **Envs** in the upper-right of the Lab console.
-**My Environments** are your currently installed environments. The qBraid Default environment and
-Microsoft Q# environment are installed by default.
+**My Environments** are your currently installed environments. The qBraid Default Python environment
+is pre-installed for all users. For `Standard/Pro users <https://account.qbraid.com/subscription>`_,
+a number of other environments are also available pre-installed. These include Microsoft QDK (Q#),
+the Intel® Quantum SDK (C++), Bloqade (Julia), cuQuantum (CUDA), and more.
 
-Have an idea for a new qBraid environment? Or want your own project featured? Fill out our `New Environment Request Form <https://forms.gle/a4v7Kdn7G7bs9jYD8>`_.
+Key Features
+------------
+
+- **Pre-Packaged Environments**: 
+
+    qBraid Lab provides a suite of 30+ pre-packaged virtual environments dedicated to popular quantum software packages.
+    These include but are not limited to Qiskit, Cirq, Amazon Braket, Pennylane, PyQuil, TensorFlow Quantum, and more.
+    Each environment incorporates not only the primary packages but also recommended add-ons and configurations. Environments
+    are pre-configured to function out-of-the-box, eliminating the hassle of manual installations and potential dependency conflicts.
+
+- **Comprehensive Environment Search**:
+
+    Locate and install the ideal environment for your project by searching by name, description, tag, or package. This
+    intuitive search feature ensures you find an environment tailored to your use case.
+
+- **Version Management**:
+
+    Stay updated without the hassle. Minor software updates are reflected in the pre-packaged environments, which users
+    can reinstall to access. For significant or breaking updates, entirely new environments are made available, preserving
+    the integrity of projects relying on earlier versions.
+
+- **Customize and Share**:
+
+    Customize pre-packaged environments by installing or upgrading packages, or create your own custom environments that
+    can be shared directly with other qBraid Lab users.
+
+- **Detailed Dependency Overview**:
+
+    Each environment showcases a complete list of its packages, akin to a `pip freeze`. Users can browse and search through
+    these packages pre- and post-installation, making it easy to keep track of the tools at their disposal. This package list
+    is dynamically updated to mirror any user-driven changes.
+
+- **Direct Hardware Connectivity**:
+
+    Environments marked with the ``quantum-jobs`` tag can be used to connect directly to a range of QPU devices from leading
+    providers, including IonQ, Oxford Quantum Circuits, QuEra, Rigetti, and AWS on-demand simulators, with no additional
+    access keys required.
+
+- **Command-Line Interface**:
+
+    For those who prefer terminal-based interactions, qBraid Lab provides a command-line interface that mirrors the
+    functionalities of the GUI-based Environment Manager. Users can activate environments, manage kernels, install new
+    packages, enable quantum jobs, and much more directly from their terminal.
+
 
  .. seealso::
    
     - `Install & manage quantum software in the cloud on qBraid | Demo <https://youtu.be/LyavbzSkvRo>`_
+    - `New Environment Request Form <https://forms.gle/a4v7Kdn7G7bs9jYD8>`_
+    - `qBraid GPU pre-launch waitlist <https://tinyurl.com/4metnzpb>`_
 
 
 Install environment
 --------------------
 
-1. In the Environment Manager sidebar, click **Add** to view the environments available to install.
+\1. In the Environment Manager sidebar, click **Add** to view the environments available to install.
 
-2. Choose an environment, expand its pannel, and click **Install**.
+\2. Choose an environment, expand its pannel, and click **Install**.
 
 .. image:: ../_static/environments/env_install.png
-    :align: center
-    :width: 800px
+    :width: 90%
+    :alt: Install environment
     :target: javascript:void(0);
   
 |
 
-3. Once the installation has started, the pannel is moved to the **My Environments** tab.
+\3. Once the installation has started, the pannel is moved to the **My Environments** tab.
 Click **Browse Environments** to return to the **My Environments** tab and view its progress.
 
 .. image:: ../_static/environments/env_installing.png
-    :align: center
-    :width: 800px
+    :width: 90%
+    :alt: Installing environment progress bar
     :target: javascript:void(0);
   
 |
 
-4. When the installation is complete, the environment panel's action button will switch from
-**Installing...** to **Activate**. Clicking **Activate** creates a new ipykernel, see
-`Add/remove kernels <notebooks.html#add-remove-kernels>`_ for more.
-
-.. image:: ../_static/notebooks/kernel_activate.png
-    :align: center
-    :width: 800px
-    :target: javascript:void(0);
-  
-|
-
-To uninstall the environment, click on **More**, and then **Uninstall**.
+\4. When the installation is complete, the environment panel's action button will switch from
+**Installing...** to **Activate**.
 
 
 Create environment
@@ -61,6 +100,7 @@ Create environment
 .. image:: ../_static/environments/env_create.png
     :align: right
     :width: 300px
+    :alt: Create custom environment
     :target: javascript:void(0);
 
 \1. In the Environment Manager sidebar, click **Add**, then click **New Environment**.
@@ -69,18 +109,14 @@ Create environment
 and specify any packages to install using a ``requirements.txt`` format.
 
 .. |progress| image:: ../_static/environments/env_custom_installing.png
-    :width: 44%
+    :width: 70%
+    :alt: Installing custom environment progress
     :target: javascript:void(0);
 
 After clicking **Create**, a new environment panel is created for your custom environment.
 You can view the environment's install progress by returning to **My Environments**.
 
 |progress|
-
-.. image:: ../_static/environments/env_custom_pkgs.png
-    :align: right 
-    :width: 300px
-    :target: javascript:void(0);
 
 \3. Once the environment has been created and any package installations have finished,
 the environment panel's action button will switch from **Installing...** to **Activate**, and
@@ -91,28 +127,45 @@ the search bar or scroll through the Python package (pip) list to find the exact
 packages and package dependecies that were installed. From the **More** pop-out, you can also
 install additional packages, remove packages, add/delete tags, and edit the environment's description.
 
-.. image:: ../_static/environments/env_more.png
-    :align: center
-    :width: 800px
-    :target: javascript:void(0);
-
-|
 
 Share environment
 -------------------
+
+.. image:: ../_static/environments/env_share.png
+    :align: right
+    :width: 600px
+    :alt: Share environment
+    :target: javascript:void(0);
 
 In qBraid Lab, you can share your custom environments with other users. This will make your
 environment visible under their **Add** environment list. They can then install it, and
 run code using an exact copy of your environment. This includes support for quantum
 jobs and any additional configurations.
 
+Although modifications to pre-packaged environments can't be directly shared, you can export a ``requirements.txt`` from
+any environment to use in creating a new custom environment "copy", which can then be shared with other users.
+
 To share a custom environment, first click the **More** button in the drop-down to open the environment editor.
 Then, under 'Share Environment' , enter the qBraid user email, and click **Share**.
 
+When you share an environment on qBraid, you're creating a snapshot of your Python virtual environment with its specific configurations
+and installed packages. This snapshot is uploaded to the qBraid cloud, creating a static version accessible to other users. This shared
+version remains unchanged, even if you make updates to your local environment. To reflect any changes, you'd need to re-share and overwrite
+the existing version in the cloud.
 
-.. image:: ../_static/environments/env_share.png
-    :align: center
-    :width: 600px
+Overwriting a globally shared environment doesn't affect versions that other users have already downloaded. Instead, an indicator notifies
+them of the availability of an updated version. Currently, users must manually check for this indicator. Also, before installing an updated
+version, users must uninstall their current one as maintaining multiple versions of a shared environment isn't supported. Sharing or overwriting
+globally doesn't impact your local environment.
+
+Uninstall / cancel install environment
+---------------------------------------
+
+To uninstall an environment or cancel the installation of an environment, click on **More**, and then **Uninstall** or **Cancel Installation**.
+
+.. image:: ../_static/environments/env_cancel_uninstall.png
+    :width: 100%
+    :alt: Cancel installation or uninstall environment
     :target: javascript:void(0);
   
 |
@@ -136,22 +189,12 @@ through `PyPI <https://pypi.org/>`_, and return the *latest* version available t
 click **Add**.
 
 .. image:: ../_static/environments/env_add_package.png
-    :align: center
-    :width: 800px
+    :width: 100%
+    :alt: Add package to environment
     :target: javascript:void(0);
 
 
-While installing, the environment action button will indicate **Installing...**. Once complete, Lab will send a notification
-similar to the following:
-
-.. image:: ../_static/environments/env_pkg_install.png
-    :align: center
-    :width: 500px
-    :target: javascript:void(0);
-
-.. note::
-    Currently, the "Add package" feature only supports installing the latest i.e. most up-to-date package version found in PyPI.
-    To install an older version of a package, use either of the two command-based options given below.
+While installing, the environment action button will indicate **Installing...**. Once complete, Lab will notify with a pop-up.
 
 
 2. IPython magic command
@@ -185,7 +228,7 @@ will *not* persist between sessions. Instead, use the qBraid CLI to list your en
    qsharp                         /opt/.qbraid/environments/qsharp_b54crn
    default                  jobs  /opt/.qbraid/environments/qbraid_000000
    qbraid_sdk               jobs  /home/jovyan/.qbraid/environments/qbraid_sdk_9j9sjy
-   qiskit                   jobs  /home/jovyan/.qbraid/environments/qiskit_9y9siy
+   qiskit                         /home/jovyan/.qbraid/environments/qiskit_9y9siy
 
 
 activate an environment, and perform your pip installs from there. For example, installing pytket into the qiskit environment:
@@ -197,8 +240,21 @@ activate an environment, and perform your pip installs from there. For example, 
    $ deactivate
 
 
-How environments work
-----------------------
+Activate environment (kernel)
+------------------------------
+
+Clicking **Activate** creates a new ipykernel, see `Add/remove kernels <kernels.html#add-remove-kernels>`_ for more.
+
+.. image:: ../_static/notebooks/kernel_activate.png
+    :width: 90%
+    :alt: Activate environment kernel
+    :target: javascript:void(0);
+  
+|
+
+
+Command-line usage 
+--------------------
 
 qBraid environments are simply `Python virtual environments <https://docs.python.org/3/library/venv.html>`_ in disguise.
 There are two directories where qBraid environment can be found. One at the system level, and one at the local / user level:

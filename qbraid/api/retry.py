@@ -55,6 +55,7 @@ class PostForcelistRetry(Retry):
     ):
         """Overwrites parent class increment method for logging."""
         if logger.getEffectiveLevel() is logging.DEBUG:
+            # coverage: ignore
             status = data = headers = None
             if response:
                 status = response.status

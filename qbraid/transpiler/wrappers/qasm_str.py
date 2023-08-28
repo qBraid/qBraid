@@ -15,22 +15,18 @@
 Module defining Qasm2CircuitWrapper Class
 
 """
-
-from cirq.circuits import Circuit
-
-from qbraid.interface.qbraid_qasm.tools import qasm_num_qubits, qasm_qubits
-from qbraid.transpiler.cirq_qasm.qasm_conversions import from_qasm
+from qbraid.interface.qbraid_qasm.tools import qasm_depth, qasm_num_qubits, qasm_qubits
 from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper
 
 
 class QasmCircuitWrapper(QuantumProgramWrapper):
-    """Wrapper class for Cirq ``Circuit`` objects."""
+    """Wrapper class for OpenQASM 2 strings."""
 
     def __init__(self, qasm_str: str):
-        """Create a CirqCircuitWrapper
+        """Create a QasmCircuitWrapper
 
         Args:
-            circuit: the cirq ``Circuit`` object to be wrapped
+            circuit: the OpenQASM 2 string to be wrapped
 
         """
         # coverage: ignore
@@ -38,6 +34,6 @@ class QasmCircuitWrapper(QuantumProgramWrapper):
 
         self._qubits = qasm_qubits(qasm_str)
         self._num_qubits = qasm_num_qubits(qasm_str)
-        self._depth = len(Circuit(from_qasm(qasm_str).all_operations()))
-        self._package = "openqasm"
+        self._depth = qasm_depth(qasm_str)
+        self._package = "qasm2"
         self._program_type = "str"

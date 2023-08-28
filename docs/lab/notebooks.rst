@@ -10,32 +10,6 @@ qBraid Lab provides an interface to create and interact with Jupyter Notebooks, 
 and integrations to enhance the quantum developer's experience.
 
 
-Add/remove kernels
--------------------
-
-The IPython kernel is the Python execution backend for Jupyter.
-
-Under **My Environments**, choose the environment, and expand its pannel.
-Click **Activate** to activate the environment and create an associated ipykernel.
-
-.. image:: ../_static/notebooks/kernel_activate.png
-    :align: center
-    :width: 800px
-    :target: javascript:void(0);
-
-|
-
-Once active, click **Deactivate** to deactivate an environment, and remove its ipykernel
-from the launcher.
-
-.. image:: ../_static/notebooks/kernel_deactivate.png
-    :align: center
-    :width: 800px
-    :target: javascript:void(0);
-
-|
-
-
 Create notebook
 ----------------
 
@@ -50,8 +24,8 @@ Switch notebook kernel
 In the upper-right of any open notebook, you can see which kernel is in use.
 
 .. image:: ../_static/notebooks/kernel_nb.png
-    :align: center
-    :width: 800px
+    :width: 80%
+    :alt: Notebook kernel
     :target: javascript:void(0);
 
 |
@@ -60,8 +34,8 @@ Clicking on the name of the current kernel, as circled above, will open the kern
 switch to any other active kernel.
 
 .. image:: ../_static/notebooks/kernel_switch.png
-    :align: center
-    :width: 800px
+    :width: 80%
+    :alt: Switch notebook kernel
     :target: javascript:void(0);
 
 |
@@ -72,12 +46,17 @@ Share notebook
 
 .. |share| image:: ../_static/notebooks/share_notebook.png
     :width: 50%
+    :alt: Share notebook
     :target: javascript:void(0);
 
 Collaborate and share your work with other qBraid users via the "Share notebook" feature:
 
-1. Open the notebook that you would like to share (see `Open files <files.html#open-files>`_).
-2. Click **File** > **Share Notebook**.
+.. note::
+
+    Sharing notebooks is available only in the Standard/Pro tiers. See `subscriptions <https://www.qbraid.com/pricing>`_ for more information.
+
+1. Open the notebook that you would like to share (see `Opening files <https://jupyterlab.readthedocs.io/en/latest/user/files.html#opening-filess>`_).
+2. Click **File** > **Share Notebook**
 3. Enter the email address associated with the account of any another qBraid user, and click **Share**.
 
 |share|

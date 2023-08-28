@@ -192,7 +192,7 @@ least number of queued quantum jobs.
 
 .. code-block:: python
 
-    >>> from qbraid.api import ibm_least_busy_qpu
+    >>> from qbraid.devices.ibm import ibm_least_busy_qpu
     >>> qbraid_id = ibm_least_busy_qpu()
     >>> qdevice = device_wrapper(qbraid_id)
     >>> qdevice.name

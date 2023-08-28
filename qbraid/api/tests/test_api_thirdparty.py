@@ -17,12 +17,16 @@ import os
 
 import pytest
 
-from qbraid.api.job_api import _qbraid_jobs_enabled
+from qbraid.api.job_api import _qbraid_jobs_enabled, _running_in_lab
 from qbraid.api.session import STATUS_FORCELIST, PostForcelistRetry, QbraidSession
 
 
-def test_check_braket_proxy():
-    """Test function that checks whether braket proxy is active."""
+def test_running_in_lab():
+    assert not _running_in_lab()
+
+
+def test_check_quantum_jobs_enabled():
+    """Test function that checks whether quantum jobs is enabled in qBraid Lab."""
     qbraid_envs_path = os.path.join(os.path.expanduser("~"), ".qbraid", "environments")
     proxy_dir = os.path.join(qbraid_envs_path, "qbraid_sdk_9j9sjy", "qbraid")
     proxy_file = os.path.join(proxy_dir, "proxy")
@@ -34,6 +38,8 @@ def test_check_braket_proxy():
     outF.writelines("active = true\n")
     outF.close()
     assert _qbraid_jobs_enabled() is True
+    assert _qbraid_jobs_enabled(vendor="aws") is True
+    assert _qbraid_jobs_enabled(vendor="ibm") is False
     os.remove(proxy_file)
 
 

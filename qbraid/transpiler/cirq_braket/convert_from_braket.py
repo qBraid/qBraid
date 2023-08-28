@@ -68,9 +68,8 @@ def from_braket(circuit: BKCircuit) -> Circuit:
     Args:
         circuit: Braket circuit to convert to a Cirq circuit.
     """
-    compat_circuit = convert_to_contiguous(circuit, rev_qubits=True)
-    BK_qubits = [int(q) for q in compat_circuit.qubits]
-    cirq_qubits = [LineQubit(x) for x in range(len(BK_qubits))]
+    compat_circuit = convert_to_contiguous(circuit)
+    cirq_qubits = [LineQubit(x) for x in range(len(compat_circuit.qubits))]
     qubit_mapping = {x: cirq_qubits[x] for x in range(len(cirq_qubits))}
     return Circuit(
         _from_braket_instruction(instr, qubit_mapping) for instr in compat_circuit.instructions

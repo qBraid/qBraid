@@ -1,0 +1,41 @@
+name: Pre-release qbraid to PyPi
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  pypi-publish:
+    name: Build dist & upload to PyPI
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install build
+
+      - name: Build binary wheel + source tarball
+        id: build-dev
+        run: |
+            export QBRAID_PRE_RELEASE_VERSION=$(tools/stamp_dev_version.sh)
+            [[ "$QBRAID_PRE_RELEASE_VERSION" =~ .*dev.* ]] && echo "Deploying dev version '$QBRAID_PRE_RELEASE_VERSION'" || (echo "not dev version"; exit 0)
+            out_dir="${PWD}/dist"
+            tools/create_dev_build.sh $QBRAID_PRE_RELEASE_VERSION "${out_dir}"
+            echo "dir=$out_dir" >> $GITHUB_OUTPUT
+
+      - name: Publish package to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_API_TOKEN }}
+          packages-dir: ${{ steps.build-dev.outputs.dir }}

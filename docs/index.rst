@@ -97,10 +97,15 @@ Documentation
 
    lab/overview
    lab/account
+   lab/getting_started
    lab/environments
-   lab/files
+   lab/kernels
    lab/notebooks
-   lab/quantumjobs
+   lab/quantum_devices
+   lab/quantum_jobs
+   lab/code_snippets
+   lab/gpu
+   lab/julia
    lab/integrations
    lab/system
    lab/troubleshoot

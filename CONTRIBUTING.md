@@ -28,7 +28,7 @@ python3 -m pip install -e .
 To generate the API reference documentation locally:
 
 ```bash
-pip install 'tox<4'
+pip install 'tox'
 tox -e docs
 ```
 
@@ -73,7 +73,7 @@ the `reST` syntax mentioned (linked) above.
 To run all unit tests:
 
 ```bash
-pip install 'tox<4'
+pip install 'tox'
 tox -e unit-tests
 ```
 

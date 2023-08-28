@@ -16,23 +16,15 @@ Benchmarking tests for pytket conversions
 import string
 
 import numpy as np
+import pytest
 import pytket
 
 import qbraid
 
-#############
-### BASE ####
-#############
+np.random.seed(0)
 
-PYTKET_BASELINE = 124
-ALLOWANCE = 2
-
-#############
-### UTILS ###
-#############
-
-# I didn't find a way to generate the params
-# dynamically because pytket method are wrapper around C++ code
+# TODO: Investigate generating params dynamically.
+# Difficult because pytket methods are wrapped around C++ code.
 gates_param_map = {
     "H": {"qubit": 0},
     "S": {"qubit": 0},
@@ -144,10 +136,8 @@ def get_pytket_circuits():
 ### TESTS ###
 #############
 
-TARGETS = ["braket", "cirq", "pyquil", "qiskit"]
+TARGETS = [("braket", 0.64), ("cirq", 0.64), ("pyquil", 0.56), ("qiskit", 0.64)]
 pytket_circuits = get_pytket_circuits()
-paramslist = [(target, circuit) for target in TARGETS for circuit in pytket_circuits]
-failures = {}
 
 
 def convert_from_pytket_to_x(target, circuit_name):
@@ -156,23 +146,22 @@ def convert_from_pytket_to_x(target, circuit_name):
     assert qbraid.interface.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
 
 
-def test_pytket_coverage():
-    for target in TARGETS:
-        for gate_name in pytket_circuits:
-            try:
-                convert_from_pytket_to_x(target, gate_name)
-            except Exception as e:
-                failures[f"{target}-{gate_name}"] = e
+@pytest.mark.parametrize(("target", "baseline"), TARGETS)
+def test_pytket_coverage(target, baseline):
+    ACCURACY_BASELINE = baseline
+    ALLOWANCE = 0.01
+    failures = {}
+    for gate_name in pytket_circuits:
+        try:
+            convert_from_pytket_to_x(target, gate_name)
+        except Exception as e:
+            failures[f"{target}-{gate_name}"] = e
 
-    total_tests = len(pytket_circuits) * len(TARGETS)
+    total_tests = len(pytket_circuits)
     nb_fails = len(failures)
     nb_passes = total_tests - nb_fails
-
-    print(
-        f"A total of {len(pytket_circuits)} gates were tested (for a total of {total_tests} tests). {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed."
-    )
-    print("Failures:", failures.keys())
+    accuracy = float(nb_passes) / float(total_tests)
 
     assert (
-        nb_passes >= PYTKET_BASELINE - ALLOWANCE
-    ), f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed (expected >= {PYTKET_BASELINE}).\nFailures: {failures.keys()}\n\n"
+        accuracy >= ACCURACY_BASELINE - ALLOWANCE
+    ), f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed (expected >= {ACCURACY_BASELINE}).\nFailures: {failures.keys()}\n\n"

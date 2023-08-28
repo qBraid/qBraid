@@ -35,11 +35,11 @@ def to_qiskit(circuit: cirq.Circuit) -> qiskit.QuantumCircuit:
         Qiskit.QuantumCircuit object equivalent to the input Cirq circuit.
     """
     try:
-        contig_circuit = convert_to_contiguous(circuit, rev_qubits=True)
+        contig_circuit = convert_to_contiguous(circuit)
         compat_circuit = _map_zpow_and_unroll(contig_circuit)
         return qiskit.QuantumCircuit.from_qasm_str(to_qasm(compat_circuit))
     except ValueError as err:
-        raise CircuitConversionError("Cirq qasm converter doesn't yet support qasm3.") from err
+        raise CircuitConversionError from err
 
 
 def from_qiskit(circuit: qiskit.QuantumCircuit) -> cirq.Circuit:
@@ -54,6 +54,6 @@ def from_qiskit(circuit: qiskit.QuantumCircuit) -> cirq.Circuit:
     try:
         qasm_str = circuit.qasm()
         cirq_circuit = from_qasm(qasm_str)
-        return _convert_to_line_qubits(cirq_circuit, rev_qubits=True)
+        return _convert_to_line_qubits(cirq_circuit)
     except Exception as err:
-        raise CircuitConversionError("Cirq qasm converter doesn't yet support qasm3.") from err
+        raise CircuitConversionError from err

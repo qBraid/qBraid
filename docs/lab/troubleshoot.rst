@@ -59,7 +59,7 @@ and restart your kernel, and try running the notebook again. If you are using th
 
 .. seealso::
 
-    -  `Quantum Jobs <quantumjobs.html>`_
+    -  `Quantum Jobs <quantum_jobs.html>`_
 
 Extension sidebar errors
 --------------------------

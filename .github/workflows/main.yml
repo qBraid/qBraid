@@ -22,7 +22,7 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install -U pip setuptools ipython
-        python -m pip install 'tox<4'
+        python -m pip install tox
     - name: Tests
       run: |
         tox -e unit-tests

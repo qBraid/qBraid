@@ -18,7 +18,7 @@ from braket.circuits import Circuit as BKCircuit
 
 def braket_bell() -> BKCircuit:
     """Returns Braket bell circuit"""
-    circuit = BKCircuit().h(1).cnot(1, 0)
+    circuit = BKCircuit().h(0).cnot(0, 1)
     return circuit
 
 

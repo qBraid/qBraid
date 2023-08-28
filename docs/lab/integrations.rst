@@ -122,3 +122,129 @@ Your Lab username is generated from the email address associated with your qBrai
 .. _running Jupyter Notebooks: https://code.visualstudio.com/docs/datascience/jupyter-notebooks
 .. _Connecting: https://code.visualstudio.com/docs/datascience/jupyter-notebooks#_connect-to-a-remote-jupyter-server
 
+
+JupyterLab extensions
+----------------------
+
+JupyterLab native (built-in) extensions.
+
+
+Filebrowser
+^^^^^^^^^^^^^
+
+.. image:: ../_static/notebooks/file_browser.png
+    :align: right
+    :width: 150px
+    :target: javascript:void(0);
+
+The file browser and Files menu enable you to work with files and directories on your system. This includes opening, creating, deleting,
+renaming, downloading, copying, and sharing files and directories. To open the file browser, click on the **FILES** tab in the left sidebar
+(or use shortcut ``Cmd+Shift+F``).
+
+The file system can be navigated by double-clicking on folders in the listing or clicking on the folders at the top of the directory listing.
+To open any file, double-click on its name, or drag the file into the main work area to create a new tab.
+
+
+Table Of Contents (TOC)
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+Table of Contents extension for JupyterLab.
+
+
+Metadata
+^^^^^^^^^^
+
+Linked data exploration in JupyterLab.
+
+.. seealso::
+
+    - `JupyterLab: Working with Files <https://jupyterlab.readthedocs.io/en/stable/user/files.html>`_
+    - `jupyterlab-toc <https://jupyterlab.readthedocs.io/en/latest/user/toc.html>`_
+    - `jupyterlab-metadata-service <https://github.com/jupyterlab/jupyterlab-metadata-service>`_
+
+
+Git
+----
+
+A Git extension for JupyterLab.
+
+.. seealso::
+    
+    - `jupyterlab-git <https://github.com/jupyterlab/jupyterlab-git>`_
+
+
+Resource Usage
+---------------
+
+Jupyter Notebook Extension for monitoring your own Resource Usage.
+
+.. seealso::
+    
+    - `jupyter-resource-usage <https://github.com/jupyter-server/jupyter-resource-usage>`_
+
+
+
+Quantum Docs
+-------------
+
+qBraid extension containing links to software documentation across quantum computing ecosystem.
+
+.. image:: ../_static/quantum_docs/docs_launcher.png
+    :width: 90%
+    :alt: Quantum Docs Widget
+    :target: javascript:void(0);
+  
+|
+
+.. image:: ../_static/quantum_docs/docs_menu.png
+    :width: 90%
+    :alt: Quantum Docs Menu
+    :target: javascript:void(0);
+  
+|
+
+.. image:: ../_static/quantum_docs/docs_quera.png
+    :width: 90%
+    :alt: QuEra Quantum Docs page
+    :target: javascript:void(0);
+  
+|
+
+Omnisearch
+-----------
+
+qBraid top-bar extension providing polyglot search (GitHub, StackExchange, Google, ChatGPT).
+
+.. image:: ../_static/omnisearch/omni_launcher.png
+    :width: 90%
+    :alt: Omnisearch from Launcher
+    :target: javascript:void(0);
+  
+|
+
+Omnisearch: GitHub
+^^^^^^^^^^^^^^^^^^^
+
+.. image:: ../_static/omnisearch/omni_github.png
+    :width: 90%
+    :alt: Omnisearch GitHub integration
+    :target: javascript:void(0);
+  
+|
+
+Omnisearch: ChatGPT
+^^^^^^^^^^^^^^^^^^^^^^
+
+.. image:: ../_static/omnisearch/omni_gpt_add.png
+    :width: 90%
+    :alt: Omnisearch add ChatGPT
+    :target: javascript:void(0);
+  
+|
+
+.. image:: ../_static/omnisearch/omni_gpt_chat.png
+    :width: 90%
+    :alt: Omnisearch ChatGPT integration
+    :target: javascript:void(0);
+  
+|

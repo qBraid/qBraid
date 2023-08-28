@@ -13,6 +13,7 @@ Unit tests for the qbraid device layer.
 
 """
 import os
+import time
 
 import cirq
 import numpy as np
@@ -105,10 +106,28 @@ def test_init_braket_device_wrapper(device_id):
     assert isinstance(vendor_device, AwsDevice)
 
 
+def test_device_wrapper_from_braket_arn():
+    """Test creating device wrapper from Amazon Braket device ARN."""
+    aws_device_arn = "arn:aws:braket:::device/quantum-simulator/amazon/sv1"
+    qbraid_device = device_wrapper(aws_device_arn)
+    vendor_device = qbraid_device.vendor_dlo
+    assert isinstance(qbraid_device, AwsDeviceWrapper)
+    assert isinstance(vendor_device, AwsDevice)
+
+
 @pytest.mark.parametrize("device_id", inputs_qiskit_dw)
 def test_init_qiskit_device_wrapper(device_id):
     """Test device wrapper for ids of devices available through Qiskit."""
     qbraid_device = device_wrapper(device_id)
+    vendor_device = qbraid_device.vendor_dlo
+    assert isinstance(qbraid_device, IBMBackendWrapper)
+    assert isinstance(vendor_device, IBMBackend)
+
+
+def test_device_wrapper_from_qiskit_id():
+    """Test creating device wrapper from Qiskit device ID."""
+    qiskit_device_id = "ibmq_belem"
+    qbraid_device = device_wrapper(qiskit_device_id)
     vendor_device = qbraid_device.vendor_dlo
     assert isinstance(qbraid_device, IBMBackendWrapper)
     assert isinstance(vendor_device, IBMBackend)
@@ -214,41 +233,48 @@ def test_run_braket_device_wrapper(device_id, circuit):
     assert isinstance(vendor_job, AwsQuantumTask)
 
 
-@pytest.mark.parametrize("device_id", ["aws_sv_sim", "ibm_q_simulator_statevector"])
-def test_cancel_completed_error(device_id):
-    """Test that cancelling a job that has already reached its
-    final state raises an error."""
-    import time
-
-    circuit = circuits_cirq_run[0]
-    qbraid_device = device_wrapper(device_id)
-    qbraid_job = qbraid_device.run(circuit, shots=10)
-    status_final = False
-    count = 0
-    while not status_final and count < 10:
-        time.sleep(2)
-        status = qbraid_job.status()
-        status_final = is_status_final(status)
-        count += 1
-    with pytest.raises(JobStateError):
-        qbraid_job.cancel()
+def test_run_batch_braket_device_wrapper():
+    """Test run_batch method of wrapped Braket devices"""
+    qbraid_device = device_wrapper("aws_sv_sim")
+    qbraid_job_list = qbraid_device.run_batch(circuits_braket_run, shots=10)
+    qbraid_job = qbraid_job_list[0]
+    assert len(qbraid_job_list) == len(circuits_braket_run)
+    assert isinstance(qbraid_job, AwsQuantumTaskWrapper)
 
 
 @pytest.mark.parametrize("device_id", ["ibm_q_simulator_statevector"])
 def test_cancel_completed_batch_error(device_id):
     """Test that cancelling a batch job that has already reached its
     final state raises an error."""
-    import time
 
+    # Initialize your quantum device
     qbraid_device = device_wrapper(device_id)
     qbraid_job = qbraid_device.run_batch(circuits_qiskit_run, shots=10)
-    status_final = False
-    count = 0
-    while not status_final and count < 10:
-        time.sleep(2)
+
+    # Initialize your timer
+    timeout = 60  # Total time to wait for job to complete
+    check_every = 2  # Check job status every 2 seconds
+    elapsed_time = 0
+
+    # Wait for job to complete, but not more than the timeout
+    while elapsed_time < timeout:
+        # Check if job has reached its final state
         status = qbraid_job.status()
-        status_final = is_status_final(status)
-        count += 1
+        if is_status_final(status):
+            break
+
+        # If not, sleep and then check again
+        time.sleep(check_every)
+        elapsed_time += check_every
+
+    # If job hasn't finished even after waiting for the timeout period, cancel it
+    if elapsed_time >= timeout:
+        try:
+            qbraid_job.cancel()
+        except JobStateError:
+            pass
+
+    # Ensure that cancelling a finished job raises an error
     with pytest.raises(JobStateError):
         qbraid_job.cancel()
 

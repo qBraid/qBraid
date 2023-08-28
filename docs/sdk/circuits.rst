@@ -26,7 +26,8 @@ Supported frontend program types include `Qiskit <QiskitQuantumCircuit>`_,
     qiskit.circuit.quantumcircuit.QuantumCircuit
     pyquil.quil.Program
     pytket._tket.circuit.Circuit
-    qasm
+    qasm2
+    qasm3
 
 
 .. _QiskitQuantumCircuit: https://qiskit.org/documentation/stubs/qiskit.circuit.QuantumCircuit.html

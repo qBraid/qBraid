@@ -22,6 +22,7 @@ from pytket.circuit import Circuit as TKCircuit
 from qbraid.exceptions import ProgramTypeError
 from qbraid.interface.calculate_unitary import (
     random_unitary_matrix,
+    rev_qubits_unitary,
     to_unitary,
     unitary_to_little_endian,
 )
@@ -88,6 +89,7 @@ def test_unitary_calc(bk_instrs, u_expected):
     non-contiguous qubit indexing."""
     circuit = make_circuit(bk_instrs)
     u_test = to_unitary(circuit)
+    u_expected = unitary_to_little_endian(u_expected)
     assert np.allclose(u_expected, u_test)
 
 
@@ -116,14 +118,6 @@ def test_gate_to_matrix_pytket(flat, list_type):
         assert c_unitary.shape[0] == 2**4
 
 
-def test_qasm_depth():
-    from qbraid.interface.qbraid_qasm.circuits import qasm_bell, qasm_shared15
-    from qbraid.interface.qbraid_qasm.tools import qasm_depth
-
-    assert qasm_depth(qasm_bell()) == 2
-    assert qasm_depth(qasm_shared15()) == 22
-
-
 def test_unitary_raises():
     with pytest.raises(ProgramTypeError):
         to_unitary(None)
@@ -132,3 +126,20 @@ def test_unitary_raises():
 def test_random_unitary():
     matrix = random_unitary_matrix(2)
     assert np.allclose(matrix @ matrix.conj().T, np.eye(2))
+
+
+def test_kronecker_product_factor_permutation():
+    circuit = Circuit().h(0).cnot(0, 1)
+    circuit_rev = Circuit().h(1).cnot(1, 0)
+
+    unitary = circuit.to_unitary()
+    unitary_rev = circuit_rev.to_unitary()
+
+    assert np.allclose(rev_qubits_unitary(unitary), unitary_rev)
+
+
+def test_kronecker_product_factor_permutation_invalid_input():
+    """Test raising ValueError for non-square matrix of size not 2^N"""
+    invalid_matrix = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
+    with pytest.raises(ValueError):
+        rev_qubits_unitary(invalid_matrix)

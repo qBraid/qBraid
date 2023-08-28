@@ -19,6 +19,7 @@ from qbraid.exceptions import ProgramTypeError, VisualizationError
 from qbraid.interface.calculate_unitary import circuits_allclose
 from qbraid.interface.draw import circuit_drawer
 from qbraid.interface.programs import bell_data, random_circuit, shared15_data
+from qbraid.interface.qbraid_qiskit.tools import reverse_qubit_ordering
 
 map, _ = bell_data()
 braket_bell = map["braket"]()
@@ -26,14 +27,16 @@ cirq_bell = map["cirq"]()
 pyquil_bell = map["pyquil"]()
 qiskit_bell = map["qiskit"]()
 pytket_bell = map["pytket"]()
-qasm_bell = map["qasm"]()
+qasm2_bell = map["qasm2"]()
+qasm3_bell = map["qasm3"]()
 
 map, _ = shared15_data()
 braket_shared15 = map["braket"]()
 cirq_shared15 = map["cirq"]()
 qiskit_shared15 = map["qiskit"]()
 pytket_shared15 = map["pytket"]()
-qasm_shared15 = map["qasm"]()
+qasm2_shared15 = map["qasm2"]()
+qasm3_shared15 = map["qasm3"]()
 
 
 def test_bell():
@@ -43,9 +46,10 @@ def test_bell():
     eq2 = circuits_allclose(cirq_bell, pyquil_bell, strict_gphase=True)
     eq3 = circuits_allclose(pyquil_bell, qiskit_bell, strict_gphase=True)
     eq4 = circuits_allclose(qiskit_bell, pytket_bell, strict_gphase=True)
-    eq5 = circuits_allclose(pytket_bell, qasm_bell, strict_gphase=True)
+    eq5 = circuits_allclose(pytket_bell, qasm2_bell, strict_gphase=True)
+    eq6 = circuits_allclose(qasm2_bell, qasm3_bell, strict_gphase=True)
 
-    assert eq1 and eq2 and eq3 and eq4 and eq5
+    assert eq1 and eq2 and eq3 and eq4 and eq5 and eq6
 
 
 def test_shared15():
@@ -54,9 +58,10 @@ def test_shared15():
     eq1 = circuits_allclose(braket_shared15, cirq_shared15, strict_gphase=True)
     eq2 = circuits_allclose(cirq_shared15, qiskit_shared15, strict_gphase=True)
     eq3 = circuits_allclose(qiskit_shared15, pytket_shared15, strict_gphase=True)
-    eq4 = circuits_allclose(pytket_shared15, qasm_shared15, strict_gphase=True)
+    eq4 = circuits_allclose(pytket_shared15, qasm2_shared15, strict_gphase=True)
+    eq5 = circuits_allclose(qasm2_shared15, qasm3_shared15, strict_gphase=False)
 
-    assert eq1 and eq2 and eq3 and eq4
+    assert eq1 and eq2 and eq3 and eq4 and eq5
 
 
 @pytest.mark.parametrize("package", ["braket", "cirq", "qiskit"])
@@ -86,11 +91,11 @@ q_0: ─────┤ X ├
      ┌───┐└─┬─┘
 q_1: ┤ H ├──■──
      └───┘     """
-    result = circuit_drawer(qiskit_bell, output="text")
+    result = circuit_drawer(reverse_qubit_ordering(qiskit_bell), output="text")
     assert result.__str__() == expected
 
 
-@pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm"])
+@pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm2"])
 def test_braket_bell_draw(capfd, package):
     """Test that draw function standard output is of the expected length."""
     circuit_wrapper(eval(f"{package}_bell")).draw(package="braket", output="ascii")
@@ -110,7 +115,7 @@ def test_braket_raises():
         circuit_drawer(braket_bell, output="bad_input")
 
 
-@pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm"])
+@pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm2"])
 def test_cirq_bell_text_draw(capfd, package):
     """Test that draw function standard output is of the expected length."""
     circuit_wrapper(eval(f"{package}_bell")).draw(package="cirq", output="text")
@@ -118,7 +123,7 @@ def test_cirq_bell_text_draw(capfd, package):
     out, err = capfd.readouterr()
     print(out, err)
     assert len(err) == 0
-    if package == "pytket" or package == "qasm":  # todo: there is "q_n" represent number of qubit
+    if package == "pytket" or package == "qasm2":  # todo: there is "q_n" represent number of qubit
         assert len(out) == 48
     else:
         assert len(out) == 42
@@ -135,7 +140,7 @@ def test_cirq_raises():
         circuit_drawer(cirq_bell, output="bad_input")
 
 
-@pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm"])
+@pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm2"])
 def test_pyquil_bell_draw(capfd, package):
     """Test that draw function standard output is of the expected length."""
     circuit_wrapper(eval(f"{package}_bell")).draw(package="pyquil", output="text")

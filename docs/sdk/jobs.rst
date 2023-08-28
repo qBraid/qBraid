@@ -87,9 +87,9 @@ Once the quantum job is complete, use the ``result`` method to gather the result
 
 Jobs submitted through the SDK are organized in the qBraid Lab Quantum Jobs Sidebar:
 
-.. image:: ../_static/jobs/jobs_sdk.png
-    :align: center
-    :width: 900px
+.. image:: ../_static/jobs/jobs.png
+    :width: 90%
+    :alt: Quantum Jobs sidebar
     :target: javascript:void(0);
 
 

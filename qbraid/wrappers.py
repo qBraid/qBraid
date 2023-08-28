@@ -14,9 +14,8 @@ functions utilize entrypoints via ``pkg_resources``.
 
 """
 import pkg_resources
-from cirq.contrib.qasm_import.exception import QasmException
 
-from qbraid.transpiler.cirq_qasm.qasm_parser import QasmParser
+from qbraid.transpiler.qasm_checks import get_qasm_version
 
 from ._qprogram import QPROGRAM
 from .api import QbraidSession
@@ -56,11 +55,8 @@ def circuit_wrapper(program: QPROGRAM):
 
     """
     if isinstance(program, str):
-        try:
-            QasmParser().parse(program)
-            package = "qasm"
-        except QasmException as err:
-            raise QbraidError("Qbraid currently only support qasm string.") from err
+        package = get_qasm_version(program)
+
     else:
         try:
             package = program.__module__.split(".")[0]
@@ -81,26 +77,30 @@ def circuit_wrapper(program: QPROGRAM):
     raise QbraidError(f"Error applying circuit wrapper to quantum program of type {type(program)}")
 
 
-def device_wrapper(qbraid_device_id: str):
+def device_wrapper(device_id: str):
     """Apply qbraid device wrapper to device from a supported device provider.
 
     Args:
-        qbraid_device_id: unique ID specifying a supported quantum hardware device/simulator
+        device_id: unique ID specifying a supported quantum hardware device/simulator
 
     Returns:
         :class:`~qbraid.devices.DeviceLikeWrapper`: A wrapped quantum device-like object
 
     Raises:
-        :class:`~qbraid.QbraidError`: If ``qbraid_id`` is not a valid device reference.
+        :class:`~qbraid.QbraidError`: If ``device_id`` is not a valid device reference.
 
     """
     session = QbraidSession()
-    device_lst = session.get(
-        "/public/lab/get-devices", params={"qbraid_id": qbraid_device_id}
-    ).json()
+    api_endpoint = "/public/lab/get-devices"
+    params_list = [{"qbraid_id": device_id}, {"objArg": device_id}]
 
-    if len(device_lst) == 0:
-        raise QbraidError(f"{qbraid_device_id} is not a valid device ID.")
+    for params in params_list:
+        device_lst = session.get(api_endpoint, params=params).json()
+        if device_lst:
+            break
+
+    if not device_lst:
+        raise QbraidError(f"{device_id} is not a valid device ID.")
 
     device_info = device_lst[0]
 
