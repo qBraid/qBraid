@@ -16,6 +16,7 @@ import braket
 import pytest
 
 import qbraid
+
 from ..._data.braket.gates import get_braket_gates
 
 TARGETS = [("cirq", 1.0), ("pyquil", 1.0), ("pytket", 1.0), ("qiskit", 1.0)]

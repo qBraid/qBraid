@@ -18,8 +18,9 @@ import sys
 
 import pytest
 
-from ..._data.cirq.circuits import cirq_shared15
 from qbraid.transpiler.code.qasm_to_braket import qasm_to_braket_code
+
+from ..._data.cirq.circuits import cirq_shared15
 
 test_code = """
 import qbraid

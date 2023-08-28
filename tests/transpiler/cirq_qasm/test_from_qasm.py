@@ -50,6 +50,7 @@ rc3x q[1],q[2],q[0],q[3];
 
 qasm_lst = [qasm_0, qasm_1]
 
+
 def strings_equal(s1, s2):
     """Check if two strings are equal, ignoring spaces and newlines."""
     s1_clean = s1.replace(" ", "").replace("\n", "")

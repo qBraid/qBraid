@@ -16,7 +16,7 @@ from copy import deepcopy
 from typing import List, Sequence, Union
 
 import numpy as np
-from cirq import Circuit, GridQubit, I, LineQubit, NamedQubit, Qid, ops, MeasurementGate 
+from cirq import Circuit, GridQubit, I, LineQubit, MeasurementGate, NamedQubit, Qid, ops
 
 QUBIT = Union[LineQubit, GridQubit, NamedQubit, Qid]
 

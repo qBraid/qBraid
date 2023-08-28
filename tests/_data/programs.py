@@ -17,7 +17,6 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Tuple
 import numpy as np
 
 from qbraid._qprogram import QPROGRAM
-
 from qbraid.interface.calculate_unitary import to_unitary
 
 QROGRAM_TEST_TYPE = Tuple[Dict[str, Callable[[Any], QPROGRAM]], np.ndarray]
@@ -26,8 +25,8 @@ from .braket.circuits import braket_bell, braket_shared15
 from .cirq.circuits import cirq_bell, cirq_shared15
 from .pyquil.programs import pyquil_bell
 from .pytket.circuits import pytket_bell, pytket_shared15
-from .qasm3.circuits import qasm3_bell, qasm3_shared15
 from .qasm2.circuits import qasm2_bell, qasm2_cirq_shared15
+from .qasm3.circuits import qasm3_bell, qasm3_shared15
 from .qiskit.circuits import qiskit_bell, qiskit_shared15
 
 

@@ -83,9 +83,7 @@ def get_qiskit_gates(seed: Optional[int] = None):
     """Returns a dictionary of all qiskit gates with random parameters"""
     qiskit_gates = {attr: None for attr in dir(sg) if attr[0] in string.ascii_uppercase}
     for gate in qiskit_gates:
-        varnames = [
-            v for v in getattr(sg, gate).__init__.__code__.co_varnames if v != "self"
-        ]
+        varnames = [v for v in getattr(sg, gate).__init__.__code__.co_varnames if v != "self"]
         params = generate_params(varnames, seed=seed)
         qiskit_gates[gate] = getattr(sg, gate)(**params)
     return {k: v for k, v in qiskit_gates.items() if v is not None}
