@@ -30,7 +30,7 @@ from qbraid.interface.qbraid_qasm3.tools import (
     qasm3_qubits,
 )
 
-from ..._data.qasm3.circuits import qasm3_bell, qasm3_shared15
+from .._data.qasm3.circuits import qasm3_bell, qasm3_shared15
 
 
 def test_qasm_qubits():
@@ -130,9 +130,9 @@ c[2] = measure q[2];
 
 def test_convert_to_qasm3():
     """Test the conversion of qasm 2 to 3"""
-    lib_dir = os.path.dirname(os.path.dirname(__file__)) + "/qasm_lib"
+    lib_dir = os.path.dirname(os.path.dirname(__file__))
     gate_def_qasm3 = open(
-        os.path.join(lib_dir, "qelib_qasm3.qasm"), mode="r", encoding="utf-8"
+        os.path.join(lib_dir, "_data", "qasm3", "qelib_qasm3.qasm"), mode="r", encoding="utf-8"
     ).read()
 
     # 1. qubit statement conversion
@@ -295,9 +295,9 @@ def test_u0_gate_conversion():
     see https://github.com/Qiskit/qiskit-terra/issues/10184
     """
 
-    lib_dir = os.path.dirname(os.path.dirname(__file__)) + "/qasm_lib"
+    lib_dir = os.path.dirname(os.path.dirname(__file__))
     gate_def_qasm3 = open(
-        os.path.join(lib_dir, "qelib_qasm3.qasm"), mode="r", encoding="utf-8"
+        os.path.join(lib_dir, "_data", "qasm3", "qelib_qasm3.qasm"), mode="r", encoding="utf-8"
     ).read()
 
     test_u0 = """
@@ -323,12 +323,12 @@ def test_rxx_gate_conversion():
     see https://github.com/Qiskit/qiskit-qasm3-import/issues/11
 
     Once resolved, add definition to -
-        ``qbraid/interface/qbraid_qasm/qasm_lib/lib/qelib_qasm3.qasm``
+        ``qbraid/interface/qbraid_qasm3/qelib_qasm3.qasm``
     """
 
-    lib_dir = os.path.dirname(os.path.dirname(__file__)) + "/qasm_lib"
+    lib_dir = os.path.dirname(os.path.dirname(__file__))
     gate_def_qasm3 = open(
-        os.path.join(lib_dir, "qelib_qasm3.qasm"), mode="r", encoding="utf-8"
+        os.path.join(lib_dir, "_data", "qasm3", "qelib_qasm3.qasm"), mode="r", encoding="utf-8"
     ).read()
 
     test_rxx = """

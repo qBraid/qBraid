@@ -16,7 +16,7 @@ import braket
 import pytest
 
 from qbraid.compiler.braket.ionq import braket_ionq_compile
-from qbraid.interface.qbraid_braket.gates import get_braket_gates
+from .._data.braket.gates import get_braket_gates
 
 braket_gates = get_braket_gates()
 

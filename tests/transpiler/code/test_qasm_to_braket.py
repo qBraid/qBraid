@@ -56,7 +56,7 @@ def test_qasm_to_braket_code_from_str(capfd):
 
 def test_qasm_to_braket_code_from_file(capfd):
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    input_file = os.path.join(current_dir, "..", "..", "_data", "qasm2", "shared15_cirq.qasm")
+    input_file = os.path.join(current_dir, "shared15.qasm")
     output_file = os.path.join(current_dir, "_braket_out_1.py")
     if os.path.isfile(output_file):
         os.remove(output_file)

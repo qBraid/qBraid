@@ -32,13 +32,14 @@ from qbraid import QbraidError, circuit_wrapper
 from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.exceptions import PackageValueError, ProgramTypeError
 from qbraid.interface import convert_to_contiguous, to_unitary
-from qbraid.interface.random_circuit import bell_data, shared15_data
 from qbraid.interface.qbraid_cirq.tools import _equal
 from .._data.braket.gates import braket_gates as braket_gates_dict
 from .._data.cirq.gates import cirq_gates as cirq_gates_dict, create_cirq_gate
 from .._data.qiskit.gates import qiskit_gates as qiskit_gates_dict
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
+
+from .._data.programs import bell_data, shared15_data
 
 TEST_15, UNITARY_15 = shared15_data()
 TEST_BELL, UNITARY_BELL = bell_data()

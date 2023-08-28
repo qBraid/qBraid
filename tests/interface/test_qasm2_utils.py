@@ -15,7 +15,7 @@ Unit tests for OpenQASM 2 utility functions.
 
 import pytest
 
-from ..._data.qasm2.circuits import (
+from .._data.qasm2.circuits import (
     _read_qasm_file,
     qasm2_bell,
     qasm2_cirq_shared15,

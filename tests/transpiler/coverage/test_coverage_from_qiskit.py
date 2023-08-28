@@ -12,14 +12,11 @@
 Benchmarking tests for qiskit conversions
 
 """
-import string
-
-import numpy as np
 import pytest
 import qiskit
 
 import qbraid
-from qbraid.interface.qbraid_qiskit.gates import get_qiskit_gates
+from ..._data.qiskit.gates import get_qiskit_gates
 
 TARGETS = [("braket", 0.98), ("cirq", 0.98), ("pyquil", 0.81), ("pytket", 0.98)]
 qiskit_gates = get_qiskit_gates(seed=0)
