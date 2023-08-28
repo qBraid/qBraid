@@ -33,6 +33,6 @@ def qasm2_shared15() -> QASMType:
     return _read_qasm_file("shared15.qasm")
 
 
-def qasm2_raw_shared15() -> QASMType:
+def qasm2_cirq_shared15() -> QASMType:
     """Returns OpenQASM 2 15 gate test circuit with no gate defs."""
-    return _read_qasm_file("shared15_decomp.qasm")
+    return _read_qasm_file("shared15_cirq.qasm")

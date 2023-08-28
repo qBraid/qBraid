@@ -18,7 +18,7 @@ import sys
 
 import pytest
 
-from qbraid.interface.qbraid_cirq.circuits import cirq_shared15
+from ..._data.cirq.circuits import cirq_shared15
 from qbraid.transpiler.code.qasm_to_braket import qasm_to_braket_code
 
 test_code = """
@@ -56,7 +56,7 @@ def test_qasm_to_braket_code_from_str(capfd):
 
 def test_qasm_to_braket_code_from_file(capfd):
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    input_file = os.path.join(current_dir, "shared_15.qasm")
+    input_file = os.path.join(current_dir, "..", "..", "_data", "qasm2", "shared15_cirq.qasm")
     output_file = os.path.join(current_dir, "_braket_out_1.py")
     if os.path.isfile(output_file):
         os.remove(output_file)

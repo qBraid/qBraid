@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module containing qasm programs used for testing
+Module for generating random OpenQASM 3 programs
 
 """
 from typing import Optional

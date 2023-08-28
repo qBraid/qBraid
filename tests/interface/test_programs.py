@@ -17,9 +17,11 @@ import pytest
 from qbraid import circuit_wrapper
 from qbraid.exceptions import ProgramTypeError, VisualizationError
 from qbraid.interface.calculate_unitary import circuits_allclose
-from qbraid.interface.draw import circuit_drawer
-from qbraid.interface.programs import bell_data, random_circuit, shared15_data
+from qbraid.interface.circuit_drawer import circuit_drawer
+from qbraid.interface.random_circuit import random_circuit
 from qbraid.interface.qbraid_qiskit.tools import reverse_qubit_ordering
+
+from .._data.programs import bell_data, shared15_data
 
 map, _ = bell_data()
 braket_bell = map["braket"]()

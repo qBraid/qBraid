@@ -28,17 +28,12 @@ def test_bell_state_to_qiskit():
     qreg = LineQubit.range(2)
     cirq_circuit = Circuit([ops.H.on(qreg[0]), ops.CNOT.on(qreg[0], qreg[1])])
     qiskit_circuit = to_qiskit(cirq_circuit)
-    print()
-    print(cirq_circuit)
-    print()
-    print(qiskit_circuit)
-    print()
     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
 @pytest.mark.parametrize("num_qubits", [1, 2, 3, 4, 5])
 def test_random_circuit_to_qiskit(num_qubits):
-    for i in range(10):
+    for _ in range(10):
         cirq_circuit = testing.random_circuit(
             qubits=num_qubits,
             n_moments=np.random.randint(1, 6),
@@ -46,12 +41,7 @@ def test_random_circuit_to_qiskit(num_qubits):
             random_state=np.random.randint(1, 10),
         )
         qiskit_circuit = to_qiskit(cirq_circuit)
-        equal = circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
-        if not equal:
-            print(qiskit_circuit)
-            assert False
-        else:
-            assert True
+        assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
 def test_raise_error():

@@ -28,11 +28,6 @@ def test_bell_state_to_pytket():
     qreg = LineQubit.range(2)
     cirq_circuit = Circuit([ops.H.on(qreg[0]), ops.CNOT.on(qreg[0], qreg[1])])
     pytket_circuit = to_pytket(cirq_circuit)
-    print()
-    print(cirq_circuit)
-    print()
-    print(pytket_circuit)
-    print()
     assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
 
 

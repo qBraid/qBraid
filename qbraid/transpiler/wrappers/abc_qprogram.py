@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.exceptions import PackageValueError
-from qbraid.interface.draw import circuit_drawer
+from qbraid.interface.circuit_drawer import circuit_drawer
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
 

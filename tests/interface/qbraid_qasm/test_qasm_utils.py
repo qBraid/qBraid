@@ -15,10 +15,10 @@ Unit tests for OpenQASM 2 utility functions.
 
 import pytest
 
-from qbraid.interface.qbraid_qasm.circuits import (
+from ..._data.qasm2.circuits import (
     _read_qasm_file,
     qasm2_bell,
-    qasm2_raw_shared15,
+    qasm2_cirq_shared15,
     qasm2_shared15,
 )
 from qbraid.interface.qbraid_qasm.tools import qasm_depth, qasm_num_qubits, qasm_qubits
@@ -40,7 +40,7 @@ def test_qasm_num_qubits():
 QASM_DEPTH_DATA = [
     (qasm2_bell(), 2),
     (qasm2_shared15(), 7),
-    (qasm2_raw_shared15(), 22),
+    (qasm2_cirq_shared15(), 22),
     (_read_qasm_file("qtp.qasm"), 9),
     (
         """

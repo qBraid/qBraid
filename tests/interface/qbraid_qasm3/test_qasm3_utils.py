@@ -22,13 +22,15 @@ from qiskit.circuit import QuantumCircuit
 from qiskit.qasm3 import dumps, loads
 
 from qbraid.interface import circuits_allclose, random_circuit
-from qbraid.interface.qbraid_qasm3.circuits import _qasm3_random, qasm3_bell, qasm3_shared15
+from qbraid.interface.qbraid_qasm3.random_circuit import _qasm3_random
 from qbraid.interface.qbraid_qasm3.tools import (
     convert_to_qasm3,
     qasm3_depth,
     qasm3_num_qubits,
     qasm3_qubits,
 )
+
+from ..._data.qasm3.circuits import qasm3_bell, qasm3_shared15
 
 
 def test_qasm_qubits():
