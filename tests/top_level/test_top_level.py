@@ -253,7 +253,3 @@ class MockIPython:
 
     def __init__(self, kernel):
         self.kernel = kernel
-
-
-for m in sys.modules:
-    print(m)
