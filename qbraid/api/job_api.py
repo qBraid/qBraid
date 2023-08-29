@@ -16,8 +16,6 @@ import os
 import sys
 from typing import Optional
 
-from .session import QbraidSession
-
 SLUG = "qbraid_sdk_9j9sjy"  # qBraid Lab environment ID.
 ENVS_PATH = os.getenv("QBRAID_USR_ENVS") or os.path.join(
     os.path.expanduser("~"), ".qbraid", "environments"
@@ -51,26 +49,3 @@ def _qbraid_jobs_enabled(vendor: Optional[str] = None) -> bool:
             return "active = true" in firstline  # check if proxy is active or not
 
     return False
-
-
-def get_job_data(qbraid_job_id: str, update: dict = None) -> dict:
-    """Update a new MongoDB job document.
-
-    Args:
-        qbraid_job_id: The qbraid job ID associated with the job
-        status: Job status update
-
-    Returns:
-        The metadata associated with this job
-
-    """
-    session = QbraidSession()
-    body = {"qbraidJobId": qbraid_job_id}
-    # Two status variables so we can track both qBraid and vendor status.
-    if update is not None and "status" in update and "qbraidStatus" in update:
-        body["status"] = update["status"]
-        body["qbraidStatus"] = update["qbraidStatus"]
-    metadata = session.put("/update-job", data=body).json()[0]
-    metadata.pop("_id", None)
-    metadata.pop("user", None)
-    return metadata
