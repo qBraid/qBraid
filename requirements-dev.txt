@@ -1,6 +1,6 @@
 # integrations
 amazon-braket-sdk~=1.54.2
-cirq-rigetti~=1.3.0.dev20230828201413
+cirq-rigetti~=1.3.0.dev20230829003813
 pyquil>=3.5.4,<3.6.0
 pytket~=1.18.0
 pytket-braket~=0.29.0

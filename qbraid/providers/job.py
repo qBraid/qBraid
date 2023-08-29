@@ -18,7 +18,7 @@ from time import sleep, time
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
 from qbraid import device_wrapper
-from qbraid.api import get_job_data
+from qbraid.api import QbraidSession
 
 from .enums import JOB_FINAL, JobStatus, status_from_raw
 from .exceptions import JobError
@@ -70,7 +70,7 @@ class JobLikeWrapper(ABC):
     def vendor_job_id(self) -> str:
         """Returns the ID assigned by the device vendor"""
         if self._vendor_job_id is None:
-            self._cache_metadata = get_job_data(self.id)
+            self._cache_metadata = self._get_job_data(self.id)
             self._vendor_job_id = self._cache_metadata["vendorJobId"]
         return self._vendor_job_id
 
@@ -87,6 +87,27 @@ class JobLikeWrapper(ABC):
         if self._vendor_jlo is None:
             self._vendor_jlo = self._get_vendor_jlo()
         return self._vendor_jlo
+
+    def _get_job_data(self, update: Optional[dict] = None) -> dict:
+        """Retreives job metadata and optionally updates document.
+
+        Args:
+            update: Dictionary containing fields to update in job document.
+
+        Returns:
+            The metadata associated with this job
+
+        """
+        session = QbraidSession()
+        body = {"qbraidJobId": self.id}
+        # Two status variables so we can track both qBraid and vendor status.
+        if update is not None and "status" in update and "qbraidStatus" in update:
+            body["status"] = update["status"]
+            body["qbraidStatus"] = update["qbraidStatus"]
+        metadata = session.put("/update-job", data=body).json()[0]
+        metadata.pop("_id", None)
+        metadata.pop("user", None)
+        return metadata
 
     @abstractmethod
     def _get_vendor_jlo(self):
@@ -110,7 +131,7 @@ class JobLikeWrapper(ABC):
         qbraid_status, vendor_status = self._status()
         if qbraid_status != self._cache_status:
             update = {"status": vendor_status, "qbraidStatus": qbraid_status.raw()}
-            _ = get_job_data(self.id, update=update)
+            _ = self._get_job_data(update=update)
         return qbraid_status
 
     @abstractmethod
@@ -123,7 +144,7 @@ class JobLikeWrapper(ABC):
         qbraid_status, vendor_status = self._status()
         if not self._cache_metadata or qbraid_status != self._cache_status:
             update = {"status": vendor_status, "qbraidStatus": qbraid_status.raw()}
-            self._cache_metadata = get_job_data(self.id, update=update)
+            self._cache_metadata = self._get_job_data(update=update)
             self._cache_status = status_from_raw(self._cache_metadata["qbraidStatus"])
         return self._cache_metadata
 
