@@ -14,10 +14,10 @@ qbraid.interface.qbraid_qasm3.circuit_drawer module
    :undoc-members:
    :show-inheritance:
 
-qbraid.interface.qbraid_qasm3.circuits module
+qbraid.interface.qbraid_qasm3.random_circuit module
 ------------------------------------------------------
 
-.. automodule:: qbraid.interface.qbraid_qasm3.circuits
+.. automodule:: qbraid.interface.qbraid_qasm3.random_circuit
    :members:
    :undoc-members:
    :show-inheritance:
