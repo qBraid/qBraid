@@ -38,6 +38,6 @@ from .calculate_unitary import (
     to_unitary,
     unitary_to_little_endian,
 )
+from .circuit_drawer import circuit_drawer
 from .convert_to_contiguous import ContiguousConversionError, convert_to_contiguous
-from .draw import circuit_drawer
-from .programs import random_circuit
+from .random_circuit import random_circuit
