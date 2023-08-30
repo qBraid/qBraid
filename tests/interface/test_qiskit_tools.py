@@ -19,20 +19,17 @@ from qbraid.interface.qbraid_qiskit.tools import reverse_qubit_ordering
 
 
 def test_reverse_qubit_ordering():
-    # Create a sample circuit
+    """Test reversing ordering of qubits in qiskit circuit"""
     circ = QuantumCircuit(3)
     circ.h(0)
     circ.cx(0, 2)
 
-    # Get the reversed circuit
     reversed_circ = reverse_qubit_ordering(circ)
 
-    # Expected reversed circuit
     expected_circ = QuantumCircuit(3)
     expected_circ.h(2)
     expected_circ.cx(2, 0)
 
-    # Check if the two circuits are equivalent
     assert (
         reversed_circ == expected_circ
     ), "The reversed circuit does not match the expected output."

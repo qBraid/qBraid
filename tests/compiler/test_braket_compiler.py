@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for converting braket circuit to use only ionq supprted gates
+Unit tests for Amazon Braket circuit compilation
 
 """
 import braket
@@ -24,6 +24,7 @@ braket_gates = get_braket_gates()
 
 @pytest.mark.parametrize("gate_name", braket_gates)
 def test_braket_ionq_compilation(gate_name):
+    """Test converting Amazon Braket circuit to use only IonQ supprted gates"""
     gate = braket_gates[gate_name]
     if gate.qubit_count == 1:
         source_circuit = braket.circuits.Circuit([braket.circuits.Instruction(gate, 0)])
@@ -32,6 +33,5 @@ def test_braket_ionq_compilation(gate_name):
             [braket.circuits.Instruction(gate, range(gate.qubit_count))]
         )
 
-        braket_ionq_compile(
-            source_circuit
-        )  # the function already has an assertion which checks that the predicates are satistfied
+        braket_circuit = braket_ionq_compile(source_circuit)
+        assert isinstance(braket_circuit, braket.circuits.Circuit)

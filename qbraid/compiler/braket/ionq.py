@@ -29,6 +29,7 @@ from pytket.predicates import (
     NoSymbolsPredicate,
 )
 
+from qbraid.compiler.exceptions import CompilerError
 from qbraid.wrappers import circuit_wrapper
 
 HARMONY_MAX_QUBITS = 11
@@ -115,6 +116,7 @@ def braket_ionq_compile(circuit: Union[Circuit, pytket.circuit.Circuit]) -> Circ
 
     cu = CompilationUnit(tk_circuit, preds)
     ionq_rebase_pass.apply(cu)
-    assert cu.check_all_predicates()
+    if not cu.check_all_predicates():
+        raise CompilerError("Circuit cannot be compiled to IonQ Harmony.")
     compiled, _, _ = pytket.extensions.braket.braket_convert.tk_to_braket(cu.circuit)
     return compiled

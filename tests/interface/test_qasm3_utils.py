@@ -32,6 +32,11 @@ from qbraid.interface.qbraid_qasm3.tools import (
 
 from .._data.qasm3.circuits import qasm3_bell, qasm3_shared15
 
+lib_dir = os.path.dirname(os.path.dirname(__file__))
+qasm3_lib = os.path.join(lib_dir, "_data", "qasm3", "qelib_qasm3.qasm")
+with open(qasm3_lib, mode="r", encoding="utf-8") as file:
+    gate_def_qasm3 = file.read()
+
 
 def test_qasm_qubits():
     """Test getting QASM qubits"""
@@ -98,7 +103,7 @@ def test_qasm3_random(num_qubits, depth, max_operands, seed, measure):
 
 
 def test_qasm3_random_with_known_seed():
-    # Test case 4: Generate a random circuit with measurement with known Seed and compare with expected output
+    """Test generating random OpenQASM 3 circuit from known seed"""
     circuit = _qasm3_random(num_qubits=3, depth=3, max_operands=3, seed=42, measure=True)
     assert qasm3_num_qubits(circuit) == 3
 
@@ -128,122 +133,117 @@ c[2] = measure q[2];
     _check_output(circuit, out__expected)
 
 
-def test_convert_to_qasm3():
-    """Test the conversion of qasm 2 to 3"""
-    lib_dir = os.path.dirname(os.path.dirname(__file__))
-    gate_def_qasm3 = open(
-        os.path.join(lib_dir, "_data", "qasm3", "qelib_qasm3.qasm"), mode="r", encoding="utf-8"
-    ).read()
+QASM_TEST_DATA = [
+    (
+        """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[1] ;
+qreg qubits  [10]   ;
+creg c[1];
+creg bits   [12]   ;
+        """,
+        f"""
+OPENQASM 3.0;
+include "stdgates.inc";
+{gate_def_qasm3}
+qubit[1] q;
+qubit[10] qubits;
+bit[1] c;
+bit[12] bits;
+        """,
+    ),
+    (
+        """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[2];
+creg c[2];
+measure q->c;
+measure q[0] -> c[1];
+        """,
+        f"""
+OPENQASM 3.0;
+include "stdgates.inc";
+{gate_def_qasm3}
+qubit[2] q;
+bit[2] c;
+c = measure q;
+c[1] = measure q[0];
+        """,
+    ),
+    (
+        """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[2];
+creg c[2];
+opaque custom_gate (a,b,c) p,q,r;
+        """,
+        f"""
+OPENQASM 3.0;
+include "stdgates.inc";
+{gate_def_qasm3}
+qubit[2] q;
+bit[2] c;
+// opaque custom_gate (a,b,c) p,q,r;
+        """,
+    ),
+    (
+        """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[1];
+        """,
+        f"""
+OPENQASM 3.0;
+include "stdgates.inc";
+{gate_def_qasm3}
+qubit[1] q;
+        """,
+    ),
+    (
+        """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[5];
+u(1,2,3) q[0];
+sxdg q[0];
+csx q[0], q[1];
+cu1(0.5) q[0], q[1];
+cu3(1,2,3) q[0], q[1];
+rzz(0.5) q[0], q[1];
+rccx q[0], q[1], q[2];
+rc3x q[0], q[1], q[2], q[3];
+c3x q[0], q[1], q[2], q[3];
+c3sqrtx q[0], q[1], q[2], q[3];
+c4x q[0], q[1], q[2], q[3], q[4];
+        """,
+        f"""
+OPENQASM 3.0;   
+include "stdgates.inc";
+{gate_def_qasm3}
+qubit[5] q;
+U(1,2,3) q[0];
+sxdg q[0];
+csx q[0], q[1];
+cu1(0.5) q[0], q[1];
+cu3(1,2,3) q[0], q[1];
+rzz(0.5) q[0], q[1];
+rccx q[0], q[1], q[2];
+rc3x q[0], q[1], q[2], q[3];
+c3x q[0], q[1], q[2], q[3];
+c3sqrtx q[0], q[1], q[2], q[3];
+c4x q[0], q[1], q[2], q[3], q[4];
+        """,
+    ),
+]
 
-    # 1. qubit statement conversion
-    test_qregs = """OPENQASM 2.0;
-    include "qelib1.inc";
-    qreg q[1] ;
-    qreg qubits  [10]   ;
-    creg c[1];
-    creg bits   [12]   ;
-    """
-    test_qregs_expected = f"""OPENQASM 3.0;
-    include "stdgates.inc";
-    {gate_def_qasm3}
-    qubit[1] q;
-    qubit[10] qubits;
-    bit[1] c;
-    bit[12] bits;"""
 
-    _check_output(convert_to_qasm3(test_qregs), test_qregs_expected)
-
-    # 2. Measure statement conversion
-    test_measure = """
-    OPENQASM 2.0;
-    include "qelib1.inc";
-    qreg q[2];
-    creg c[2];
-    measure q->c;
-    measure q[0] -> c[1];
-    """
-
-    test_measure_expected = f"""
-    OPENQASM 3.0;
-    include "stdgates.inc";
-    {gate_def_qasm3}
-    qubit[2] q;
-    bit[2] c;
-    c = measure q;
-    c[1] = measure q[0];
-    """
-    _check_output(convert_to_qasm3(test_measure), test_measure_expected)
-
-    # 3. Opaque comment conversion
-    test_opaque = """
-    OPENQASM 2.0;
-    include "qelib1.inc";
-    qreg q[2];
-    creg c[2];
-    opaque custom_gate (a,b,c) p,q,r;
-    """
-
-    test_opaque_expected = f"""
-    OPENQASM 3.0;
-    include "stdgates.inc";
-    {gate_def_qasm3}
-    qubit[2] q;
-    bit[2] c;
-    // opaque custom_gate (a,b,c) p,q,r;
-    """
-
-    _check_output(convert_to_qasm3(test_opaque), test_opaque_expected)
-
-    # 4. std header change
-    test_header = """
-    OPENQASM 2.0;
-    include "qelib1.inc";
-    qreg q[1];
-    """
-
-    test_header_expected = f"""
-    OPENQASM 3.0;
-    include "stdgates.inc";
-    {gate_def_qasm3}
-    qubit[1] q;
-    """
-    _check_output(convert_to_qasm3(test_header), test_header_expected)
-
-    # 5. Unsupported gate conversion
-    test_unsupported = """
-    OPENQASM 2.0;
-    include "qelib1.inc";
-    qreg q[5];
-    u(1,2,3) q[0];
-    sxdg q[0];
-    csx q[0], q[1];
-    cu1(0.5) q[0], q[1];
-    cu3(1,2,3) q[0], q[1];
-    rzz(0.5) q[0], q[1];
-    rccx q[0], q[1], q[2];
-    rc3x q[0], q[1], q[2], q[3];
-    c3x q[0], q[1], q[2], q[3];
-    c3sqrtx q[0], q[1], q[2], q[3];
-    c4x q[0], q[1], q[2], q[3], q[4];
-    """
-    test_unsupported_expected = f"""
-    OPENQASM 3.0;   
-    include "stdgates.inc";
-    {gate_def_qasm3}
-    qubit[5] q;
-    U(1,2,3) q[0];
-    sxdg q[0];
-    csx q[0], q[1];
-    cu1(0.5) q[0], q[1];
-    cu3(1,2,3) q[0], q[1];
-    rzz(0.5) q[0], q[1];
-    rccx q[0], q[1], q[2];
-    rc3x q[0], q[1], q[2], q[3];
-    c3x q[0], q[1], q[2], q[3];
-    c3sqrtx q[0], q[1], q[2], q[3];
-    c4x q[0], q[1], q[2], q[3], q[4];
-    """
-    _check_output(convert_to_qasm3(test_unsupported), test_unsupported_expected)
+@pytest.mark.parametrize("test_input, expected_output", QASM_TEST_DATA)
+def test_convert_to_qasm3_parametrized(test_input, expected_output):
+    """Test the conversion of OpenQASM 2 to 3"""
+    _check_output(convert_to_qasm3(test_input), expected_output)
 
 
 def _generate_valid_qasm_strings(seed=42, gates_to_skip=None, num_circuits=100):
@@ -264,7 +264,7 @@ def _generate_valid_qasm_strings(seed=42, gates_to_skip=None, num_circuits=100):
             circuit_random = random_circuit("qiskit", seed=seed)
             qasm_str = circuit_random.qasm()
             circuit_from_qasm = QuantumCircuit.from_qasm_str(qasm_str)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             logging.error("Invalid QASM generated by random_circuit: %s", e)
             continue
 
@@ -295,11 +295,6 @@ def test_u0_gate_conversion():
     see https://github.com/Qiskit/qiskit-terra/issues/10184
     """
 
-    lib_dir = os.path.dirname(os.path.dirname(__file__))
-    gate_def_qasm3 = open(
-        os.path.join(lib_dir, "_data", "qasm3", "qelib_qasm3.qasm"), mode="r", encoding="utf-8"
-    ).read()
-
     test_u0 = """
     OPENQASM 2.0;
     include "qelib1.inc";
@@ -318,18 +313,7 @@ def test_u0_gate_conversion():
 
 
 def test_rxx_gate_conversion():
-    """test rxx gate conversion
-    Separate test due to bug in qasm3 lib,
-    see https://github.com/Qiskit/qiskit-qasm3-import/issues/11
-
-    Once resolved, add definition to -
-        ``qbraid/interface/qbraid_qasm3/qelib_qasm3.qasm``
-    """
-
-    lib_dir = os.path.dirname(os.path.dirname(__file__))
-    gate_def_qasm3 = open(
-        os.path.join(lib_dir, "_data", "qasm3", "qelib_qasm3.qasm"), mode="r", encoding="utf-8"
-    ).read()
+    """Test rxx gate conversion"""
 
     test_rxx = """
     OPENQASM 2.0;

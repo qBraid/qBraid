@@ -23,22 +23,22 @@ from qbraid.interface.random_circuit import random_circuit
 
 from .._data.programs import bell_data, shared15_data
 
-map, _ = bell_data()
-braket_bell = map["braket"]()
-cirq_bell = map["cirq"]()
-pyquil_bell = map["pyquil"]()
-qiskit_bell = map["qiskit"]()
-pytket_bell = map["pytket"]()
-qasm2_bell = map["qasm2"]()
-qasm3_bell = map["qasm3"]()
+bell_map, _ = bell_data()
+braket_bell = bell_map["braket"]()
+cirq_bell = bell_map["cirq"]()
+pyquil_bell = bell_map["pyquil"]()
+qiskit_bell = bell_map["qiskit"]()
+pytket_bell = bell_map["pytket"]()
+qasm2_bell = bell_map["qasm2"]()
+qasm3_bell = bell_map["qasm3"]()
 
-map, _ = shared15_data()
-braket_shared15 = map["braket"]()
-cirq_shared15 = map["cirq"]()
-qiskit_shared15 = map["qiskit"]()
-pytket_shared15 = map["pytket"]()
-qasm2_shared15 = map["qasm2"]()
-qasm3_shared15 = map["qasm3"]()
+shared15_map, _ = shared15_data()
+braket_shared15 = shared15_map["braket"]()
+cirq_shared15 = shared15_map["cirq"]()
+qiskit_shared15 = shared15_map["qiskit"]()
+pytket_shared15 = shared15_map["pytket"]()
+qasm2_shared15 = shared15_map["qasm2"]()
+qasm3_shared15 = shared15_map["qasm3"]()
 
 
 def test_bell():
@@ -71,7 +71,7 @@ def test_random(package):
     """Test generating random circuits"""
     try:
         random_circuit(package)
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         assert False
     assert True
 
@@ -83,27 +83,29 @@ def test_draw_raises():
 
 
 def test_draw_program_raises():
+    """Test that non-supported package raises error"""
     with pytest.raises(ProgramTypeError):
         circuit_drawer(None)
 
 
 def test_qiskit_draw():
+    """Test draw function standard output for qiskit bell circuit."""
     expected = """          ┌───┐
 q_0: ─────┤ X ├
      ┌───┐└─┬─┘
 q_1: ┤ H ├──■──
      └───┘     """
     result = circuit_drawer(reverse_qubit_ordering(qiskit_bell), output="text")
-    assert result.__str__() == expected
+    assert str(result) == expected
 
 
 @pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm2"])
 def test_braket_bell_draw(capfd, package):
-    """Test that draw function standard output is of the expected length."""
+    """Test using Amazon Braket to draw using ascii output is of the expected length."""
+    # pylint: disable=eval-used
     circuit_wrapper(eval(f"{package}_bell")).draw(package="braket", output="ascii")
 
     out, err = capfd.readouterr()
-    print(out, err)
     assert len(err) == 0
     assert len(out) == 67
 
@@ -112,56 +114,59 @@ def test_braket_bell_draw(capfd, package):
 
 
 def test_braket_raises():
-    """Test that non-supported output raises error"""
+    """Test that drawing braket circuit with non-supported output raises error"""
     with pytest.raises(VisualizationError):
         circuit_drawer(braket_bell, output="bad_input")
 
 
 @pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm2"])
 def test_cirq_bell_text_draw(capfd, package):
-    """Test that draw function standard output is of the expected length."""
+    """Test using Cirq to draw circuit using text output is of the expected length."""
+    # pylint: disable=eval-used
     circuit_wrapper(eval(f"{package}_bell")).draw(package="cirq", output="text")
 
     out, err = capfd.readouterr()
-    print(out, err)
     assert len(err) == 0
-    if package == "pytket" or package == "qasm2":  # todo: there is "q_n" represent number of qubit
+    if package in ["pytket", "qasm2"]:  # todo: there is "q_n" represent number of qubit
         assert len(out) == 48
     else:
         assert len(out) == 42
 
 
 def test_cirq_bell_svg_draw():
-    """Test svg_source"""
-
+    """Test drawing Cirq circuit using SVG source output"""
     assert len(circuit_drawer(cirq_bell, output="svg_source")) == 1211
 
 
 def test_cirq_raises():
+    """Test that drawing Cirq circuit with non-supported output raises error"""
     with pytest.raises(VisualizationError):
         circuit_drawer(cirq_bell, output="bad_input")
 
 
 @pytest.mark.parametrize("package", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm2"])
 def test_pyquil_bell_draw(capfd, package):
-    """Test that draw function standard output is of the expected length."""
+    """Test using pyquil to draw circuit using text output is of the expected length."""
+    # pylint: disable=eval-used
     circuit_wrapper(eval(f"{package}_bell")).draw(package="pyquil", output="text")
 
     out, err = capfd.readouterr()
-    print(out, err)
     assert len(err) == 0
     assert len(out) == 14
 
 
 def test_pyquil_raises():
+    """Test that drawing pyQuil program with non-supported output raises error"""
     with pytest.raises(VisualizationError):
         circuit_drawer(pyquil_bell, output="bad_input")
 
 
 def test_pytket_draw():
+    """Test draw function html output for pytket bell circuit."""
     assert len(circuit_drawer(pytket_bell, output="html")) == 2381
 
 
 def test_pytket_raises():
+    """Test that drawing pytket circuit with non-supported output raises error"""
     with pytest.raises(VisualizationError):
         circuit_drawer(pytket_bell, output="bad_input")

@@ -27,23 +27,27 @@ from qbraid.interface.calculate_unitary import (
     unitary_to_little_endian,
 )
 from qbraid.interface.convert_to_contiguous import convert_to_contiguous
+from qbraid.interface.qbraid_pytket.tools import _gate_to_matrix_pytket
 
 
 def get_subsets(nqubits):
     """Return list of all combinations up to number nqubits"""
     qubits = list(range(0, nqubits))
-    combos = lambda x: combinations(qubits, x)
+
+    def combos(x):
+        return combinations(qubits, x)
+
     all_subsets = chain(*map(combos, range(0, len(qubits) + 1)))
     return list(all_subsets)[1:]
 
 
-def calculate_expected(gates):
+def calculate_expected(gates_set):
     """Calculated expected unitary"""
-    if len(gates) == 1:
-        return gates[0]
-    if len(gates) == 2:
-        return np.kron(gates[1], gates[0])
-    return np.kron(calculate_expected(gates[2:]), np.kron(gates[1], gates[0]))
+    if len(gates_set) == 1:
+        return gates_set[0]
+    if len(gates_set) == 2:
+        return np.kron(gates_set[1], gates_set[0])
+    return np.kron(calculate_expected(gates_set[2:]), np.kron(gates_set[1], gates_set[0]))
 
 
 def generate_test_data(input_gate_set, contiguous=True):
@@ -105,9 +109,9 @@ def test_convert_be_to_le(bk_instrs, u_expected):
 @pytest.mark.parametrize("flat", [True, False])
 @pytest.mark.parametrize("list_type", [True, False])
 def test_gate_to_matrix_pytket(flat, list_type):
+    """Test converting pytket gates to matrix"""
     c = TKCircuit(10, 2, name="example")
     c.CU1(np.pi / 2, 2, 3)
-    from qbraid.interface.qbraid_pytket.tools import _gate_to_matrix_pytket
 
     c_unitary = _gate_to_matrix_pytket(
         gates=c.get_commands()[0] if list_type else c.get_commands(), flat=flat
@@ -119,16 +123,20 @@ def test_gate_to_matrix_pytket(flat, list_type):
 
 
 def test_unitary_raises():
+    """Test raising ProgramTypeError for non-Circuit input"""
     with pytest.raises(ProgramTypeError):
         to_unitary(None)
 
 
 def test_random_unitary():
+    """Test generating random unitary"""
     matrix = random_unitary_matrix(2)
     assert np.allclose(matrix @ matrix.conj().T, np.eye(2))
 
 
 def test_kronecker_product_factor_permutation():
+    """Test calculating unitary permutation representing
+    circuits with reversed qubits"""
     circuit = Circuit().h(0).cnot(0, 1)
     circuit_rev = Circuit().h(1).cnot(1, 0)
 

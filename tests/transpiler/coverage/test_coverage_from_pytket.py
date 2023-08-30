@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Benchmarking tests for pytket conversions
+Benchmarking tests for PyTKET conversions
 
 """
 
@@ -121,14 +121,17 @@ gates_param_map = {
 
 
 def get_pytket_circuits():
+    """Construct a dictionary of PyTKET circuits over all supported gates
+    using random parameters as applicable.
+    """
     pytket_gates = {attr: None for attr in dir(pytket.Circuit) if attr[0] in string.ascii_uppercase}
     for gate in pytket_gates:
         try:
             if gates_param_map[gate] is None:
                 continue
             pytket_gates[gate] = getattr(pytket.Circuit(3, 1), gate)(**gates_param_map[gate])
-        except Exception as e:
-            print(e)
+        except Exception:  # pylint: disable=broad-exception-caught
+            continue
     return {k: v for k, v in pytket_gates.items() if v is not None}
 
 
@@ -141,6 +144,9 @@ pytket_circuits = get_pytket_circuits()
 
 
 def convert_from_pytket_to_x(target, circuit_name):
+    """Construct a PyTKET circuit with the given gate, transpile it to
+    target program type, and check equivalence.
+    """
     source_circuit = pytket_circuits[circuit_name]
     target_circuit = qbraid.circuit_wrapper(source_circuit).transpile(target)
     assert qbraid.interface.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
@@ -148,13 +154,16 @@ def convert_from_pytket_to_x(target, circuit_name):
 
 @pytest.mark.parametrize(("target", "baseline"), TARGETS)
 def test_pytket_coverage(target, baseline):
+    """Test converting PyTKET circuits to supported target program type over
+    all PyTKET gates and check against baseline expecte accuracy.
+    """
     ACCURACY_BASELINE = baseline
     ALLOWANCE = 0.01
     failures = {}
     for gate_name in pytket_circuits:
         try:
             convert_from_pytket_to_x(target, gate_name)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             failures[f"{target}-{gate_name}"] = e
 
     total_tests = len(pytket_circuits)
@@ -162,6 +171,8 @@ def test_pytket_coverage(target, baseline):
     nb_passes = total_tests - nb_fails
     accuracy = float(nb_passes) / float(total_tests)
 
-    assert (
-        accuracy >= ACCURACY_BASELINE - ALLOWANCE
-    ), f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed (expected >= {ACCURACY_BASELINE}).\nFailures: {failures.keys()}\n\n"
+    assert accuracy >= ACCURACY_BASELINE - ALLOWANCE, (
+        f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed "
+        f"({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed "
+        f"(expected >= {ACCURACY_BASELINE}).\nFailures: {failures.keys()}\n\n"
+    )
