@@ -133,10 +133,8 @@ def _convert_from_cirq(circuit: "cirq.Circuit", frontend: str) -> "qbraid.QPROGR
             if circuits_allclose(circuit, program):
                 return program
 
-            cirq_decomp = from_qasm(circuit.to_qasm())
+            cirq_decomp = from_qasm(to_qasm(circuit))
             return to_pyquil(cirq_decomp)
-
-            return to_pyquil(circuit)
 
         if frontend == "braket":
             from qbraid.transpiler.cirq_braket import to_braket
