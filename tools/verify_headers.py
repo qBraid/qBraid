@@ -38,9 +38,11 @@ skip_files = [
     "qbraid/transpiler/cirq_braket/convert_from_braket.py",
     "qbraid/transpiler/cirq_braket/convert_to_braket.py",
     "qbraid/transpiler/cirq_qasm/qasm_parser.py",
+    "qbraid/transpiler/cirq_pyquil/quil_output.py",
     "tests/transpiler/cirq_braket/test_from_braket.py",
     "tests/transpiler/cirq_braket/test_to_braket.py",
     "tests/transpiler/cirq_qasm/test_qasm_parser.py",
+    "tests/transpiler/cirq_quil/test_quil_output.py",
 ]
 
 failed_headers = []

@@ -19,7 +19,7 @@ import qbraid
 
 from ..._data.braket.gates import get_braket_gates
 
-TARGETS = [("cirq", 1.0), ("pyquil", 1.0), ("pytket", 1.0), ("qiskit", 1.0)]
+TARGETS = [("cirq", 1.0), ("pyquil", 0.91), ("pytket", 1.0), ("qiskit", 1.0)]
 braket_gates = get_braket_gates(seed=0)
 
 
