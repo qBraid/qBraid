@@ -23,6 +23,7 @@ from qbraid.transpiler.conversions import convert_from_cirq
 
 @pytest.mark.parametrize("frontend", QPROGRAM_LIBS)
 def test_convert_circuit_operation_from_cirq(frontend):
+    """Test converting Cirq FrozenCircuit operation to OpenQASM"""
     q = cirq.NamedQubit("q")
     cirq_circuit = cirq.Circuit(
         cirq.Y(q), cirq.CircuitOperation(cirq.FrozenCircuit(cirq.X(q)), repetitions=5), cirq.Z(q)

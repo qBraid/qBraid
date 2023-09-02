@@ -20,14 +20,15 @@ import qbraid
 from .._data.qiskit.gates import get_qiskit_gates
 
 
-def execute_test(conversion_function, qiskit_circuit):
+def execute_test(conversion_function, input_circuit):
+    """Execute conversion, test equality, and return 1 if it fails, 0 otherwise"""
     try:
-        braket_circuit = conversion_function(qiskit_circuit)
+        output_circuit = conversion_function(input_circuit)
         if not qbraid.interface.circuits_allclose(
-            qiskit_circuit, braket_circuit, strict_gphase=False
+            input_circuit, output_circuit, strict_gphase=False
         ):
             return 1
-    except Exception:
+    except Exception:  # pylint: disable=broad-exception-caught
         return 1
     return 0
 
@@ -55,6 +56,6 @@ qbraid_percentage, qiskit_percentage = round((qbraid_passed / total_tests) * 100
     (qiskit_passed / total_tests) * 100, 2
 )
 
-print(f"Qiskit to Braket standard gate conversion tests\n")
+print("Qiskit to Braket standard gate conversion tests\n")
 print(f"qbraid: {qbraid_passed}/{total_tests} ~= {qbraid_percentage}%")  # 58/58
 print(f"qiskit-braket-provider: {qiskit_passed}/{total_tests} ~= {qiskit_percentage}%")  # 31/58

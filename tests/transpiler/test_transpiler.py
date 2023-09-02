@@ -48,20 +48,20 @@ TEST_BELL, UNITARY_BELL = bell_data()
 # Cirq Bell circuit.
 cirq_qreg = cirq.LineQubit.range(2)
 cirq_qreg_rev = list(reversed(cirq_qreg))
-cirq_circuit = cirq.Circuit(cirq.ops.H.on(cirq_qreg[0]), cirq.ops.CNOT.on(*cirq_qreg))
-cirq_circuit_rev = cirq.Circuit(cirq.ops.H.on(cirq_qreg_rev[0]), cirq.ops.CNOT.on(*cirq_qreg_rev))
+cirq_bell = cirq.Circuit(cirq.ops.H.on(cirq_qreg[0]), cirq.ops.CNOT.on(*cirq_qreg))
+cirq_bell_rev = cirq.Circuit(cirq.ops.H.on(cirq_qreg_rev[0]), cirq.ops.CNOT.on(*cirq_qreg_rev))
 
 # Qiskit Bell circuit.
 qiskit_qreg = qiskit.QuantumRegister(2)
-qiskit_circuit = qiskit.QuantumCircuit(qiskit_qreg)
-qiskit_circuit.h(qiskit_qreg[0])
-qiskit_circuit.cnot(*qiskit_qreg)
+qiskit_bell = qiskit.QuantumCircuit(qiskit_qreg)
+qiskit_bell.h(qiskit_qreg[0])
+qiskit_bell.cnot(*qiskit_qreg)
 
 # pyQuil Bell circuit.
-pyquil_circuit = pyQuilProgram(pyquil_gates.H(0), pyquil_gates.CNOT(0, 1))
+pyquil_bell = pyQuilProgram(pyquil_gates.H(0), pyquil_gates.CNOT(0, 1))
 
 # Braket Bell circuit.
-braket_circuit = BraketCircuit(
+braket_bell = BraketCircuit(
     [
         BraketInstruction(braket_gates.H(), 0),
         BraketInstruction(braket_gates.CNot(), [0, 1]),
@@ -69,9 +69,9 @@ braket_circuit = BraketCircuit(
 )
 
 # pytket Bell Circuit
-pytket_circuit = pytket.Circuit(2)
-pytket_circuit.H(0)
-pytket_circuit.CX(0, 1)
+pytket_bell = pytket.Circuit(2)
+pytket_bell.H(0)
+pytket_bell.CX(0, 1)
 
 circuit_types = {
     "cirq": cirq.Circuit,
@@ -82,59 +82,54 @@ circuit_types = {
 }
 
 
-@pytest.mark.parametrize(
-    "circuit", (qiskit_circuit, pyquil_circuit, braket_circuit, pytket_circuit)
-)
+@pytest.mark.parametrize("circuit", (qiskit_bell, pyquil_bell, braket_bell, pytket_bell))
 def test_to_cirq(circuit):
+    """Test coverting circuits to Cirq."""
     converted_circuit, input_type = convert_to_cirq(circuit)
-    assert _equal(converted_circuit, cirq_circuit) or _equal(converted_circuit, cirq_circuit_rev)
+    assert _equal(converted_circuit, cirq_bell) or _equal(converted_circuit, cirq_bell_rev)
     assert input_type in circuit.__module__
 
 
 @pytest.mark.parametrize("item", [1, None])
 def test_to_cirq_bad_types(item):
+    """Test raising ProgramTypeError converting circuit of non-supported type"""
     with pytest.raises(ProgramTypeError):
         convert_to_cirq(item)
 
 
-@pytest.mark.parametrize("item", ["DECLARE ro BIT[1]", "circuit"])
-def test_to_cirq_bad_string(item):
-    with pytest.raises(ProgramTypeError):
-        convert_to_cirq(item)
-
-
-@pytest.mark.parametrize("item", ["OPENQASM 2.0; bad operation", "OPENQASM 3.0; bad operation"])
+@pytest.mark.parametrize(
+    "item",
+    ["OPENQASM 2.0; bad operation", "OPENQASM 3.0; bad operation", "DECLARE ro BIT[1]", "circuit"],
+)
 def test_to_cirq_bad_openqasm_program(item):
+    """Test raising ProgramTypeError converting invalid OpenQASM program string"""
     with pytest.raises(ProgramTypeError):
         convert_to_cirq(item)
 
 
 @pytest.mark.parametrize("to_type", QPROGRAM_LIBS)
 def test_from_cirq(to_type):
-    converted_circuit = convert_from_cirq(cirq_circuit, to_type)
+    """Test converting Cirq circuits to other supported types."""
+    converted_circuit = convert_from_cirq(cirq_bell, to_type)
     circuit, input_type = convert_to_cirq(converted_circuit)
     if to_type == "qasm3":
         circuit = convert_to_contiguous(circuit)
-    assert _equal(circuit, cirq_circuit)
+    assert _equal(circuit, cirq_bell)
     assert input_type == to_type
 
 
 @pytest.mark.parametrize("item", ["package", 1, None])
 def test_from_cirq_bad_package(item):
+    """Test raising PackageValueError converting circuit to non-supported package"""
     with pytest.raises(PackageValueError):
-        convert_from_cirq(cirq_circuit, item)
+        convert_from_cirq(cirq_bell, item)
 
 
-def test_circuit_wrapper_error():
+@pytest.mark.parametrize("program", ["Not a circuit", None])
+def test_circuit_wrapper_error(program):
     """Test raising circuit wrapper error"""
     with pytest.raises(QbraidError):
-        circuit_wrapper("Not a circuit")
-
-
-def test_circuit_wrapper_error():
-    """Test raising circuit wrapper error"""
-    with pytest.raises(QbraidError):
-        circuit_wrapper(None)
+        circuit_wrapper(program)
 
 
 def test_transpile_package_error():
@@ -195,40 +190,43 @@ def test_bell(qbraid_circuit, target_package):
 
 
 def nqubits_nparams(gate):
+    """Return number of qubits and parameters for a given gate."""
     if gate in ["H", "X", "Y", "Z", "S", "Sdg", "T", "Tdg", "I", "SX", "SXdg"]:
         return 1, 0
-    elif gate in ["Phase", "RX", "RY", "RZ", "U1", "HPow", "XPow", "YPow", "ZPow"]:
+    if gate in ["Phase", "RX", "RY", "RZ", "U1", "HPow", "XPow", "YPow", "ZPow"]:
         return 1, 1
-    elif gate in ["R", "U2"]:
+    if gate in ["R", "U2"]:
         return 1, 2
-    elif gate in ["U", "U3"]:
+    if gate in ["U", "U3"]:
         return 1, 3
-    elif gate in ["CX", "CSX", "CH", "DCX", "Swap", "iSwap", "CY", "CZ"]:
+    if gate in ["CX", "CSX", "CH", "DCX", "Swap", "iSwap", "CY", "CZ"]:
         return 2, 0
-    elif gate in ["RXX", "RXY", "RZX", "RYY", "CU1", "CRY", "RZZ", "CRZ", "CRX", "pSwap", "CPhase"]:
+    if gate in ["RXX", "RXY", "RZX", "RYY", "CU1", "CRY", "RZZ", "CRZ", "CRX", "pSwap", "CPhase"]:
         return 2, 1
-    elif gate in ["CCX", "RCCX"]:
+    if gate in ["CCX", "RCCX"]:
         return 3, 0
-    elif gate in ["CCZ"]:
+    if gate in ["CCZ"]:
         return 3, 1
-    else:
-        raise ValueError(f"Gate {gate} not accounted for")
+    raise ValueError(f"Gate {gate} not accounted for")
 
 
 def assign_params(init_gate1, init_gate2, nparams):
+    """Generate and assign random parameters to gates."""
     params = np.random.random_sample(nparams) * np.pi
     return init_gate1(*params), init_gate2(*params)
 
 
-def assign_params_cirq(gate_str, init_gate2, nparams):
+def assign_params_cirq(gate_str, init_gate, nparams):
+    """Generate and assign random parameters to custom Cirq gate."""
     params = np.random.random_sample(nparams) * np.pi
     cirq_data = {"type": gate_str, "params": params, "matrix": None}
     new_cirq_gate = create_cirq_gate(cirq_data)
-    return new_cirq_gate, init_gate2(*params)
+    return new_cirq_gate, init_gate(*params)
 
 
 def braket_gate_test_circuit(test_gate, nqubits, only_test_gate=False):
-    qubits = [i for i in range(nqubits)] if nqubits > 1 else 0
+    """Construct general Braket circuit with inserted test gate."""
+    qubits = list(range(nqubits)) if nqubits > 1 else 0
 
     gates_qubits = [
         (BraketGate.H(), 0),
@@ -251,6 +249,7 @@ def braket_gate_test_circuit(test_gate, nqubits, only_test_gate=False):
 
 
 def qiskit_gate_test_circuit(test_gate, nqubits):
+    """Construct general Qiskit circuit with inserted test gate."""
     qreg = QiskitQuantumRegister(3, name="q")
     circuit = QiskitCircuit(qreg)
     circuit.h([0, 1, 2])
@@ -266,6 +265,7 @@ def qiskit_gate_test_circuit(test_gate, nqubits):
 
 
 def cirq_gate_test_circuit(test_gate, nqubits):
+    """Construct general Cirq circuit with inserted test gate."""
     circuit = CirqCircuit()
     q0, q1, q2 = [cirq.LineQubit(i) for i in range(3)]
 
@@ -309,6 +309,7 @@ intersect_braket_qiskit.remove("RYY")
 
 @pytest.mark.parametrize("gate_str", intersect_braket_qiskit)
 def test_gate_intersect_braket_qiskit(gate_str):
+    """Test transpiling circuits with gates that are supported by both Braket and Qiskit."""
     braket_init_gate = braket_gates_dict[gate_str]
     qiskit_init_gate = qiskit_gates_dict[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
@@ -326,6 +327,7 @@ def test_gate_intersect_braket_qiskit(gate_str):
 
 @pytest.mark.parametrize("gate_str", intersect_qiskit_cirq)
 def test_gate_intersect_qiskit_cirq(gate_str):
+    """Test transpiling circuits with gates that are supported by both Qiskit and Cirq."""
     qiskit_init_gate = qiskit_gates_dict[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
     cirq_gate, qiskit_gate = assign_params_cirq(gate_str, qiskit_init_gate, nparams)
@@ -342,6 +344,7 @@ def test_gate_intersect_qiskit_cirq(gate_str):
 
 @pytest.mark.parametrize("gate_str", intersect_cirq_braket)
 def test_gate_intersect_braket_cirq(gate_str):
+    """Test transpiling circuits with gates that are supported by both Braket and Cirq."""
     braket_init_gate = braket_gates_dict[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
     cirq_gate, braket_gate = assign_params_cirq(gate_str, braket_init_gate, nparams)
@@ -368,6 +371,7 @@ NOT_SUPPORTED = ["RCCX", "RXX", "RYY", "RZX", "CSX", "CRX", "CRY", "U"]
 
 @pytest.mark.parametrize("gate_str", yes_braket_no_qiskit)
 def test_yes_braket_no_qiskit(gate_str):
+    """Test transpiling circuits with gates that are supported by Braket but not Qiskit."""
     braket_init_gate = braket_gates_dict[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
     params = np.random.random_sample(nparams) * np.pi
@@ -380,6 +384,7 @@ def test_yes_braket_no_qiskit(gate_str):
 
 @pytest.mark.parametrize("gate_str", yes_qiskit_no_braket)
 def test_yes_qiskit_no_braket(gate_str):
+    """Test transpiling circuits with gates that are supported by Qiskit but not Braket."""
     qiskit_init_gate = qiskit_gates_dict[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
     params = np.random.random_sample(nparams) * np.pi
@@ -395,6 +400,7 @@ def test_yes_qiskit_no_braket(gate_str):
 
 @pytest.mark.parametrize("gate_str", yes_qiskit_no_cirq)
 def test_yes_qiskit_no_cirq(gate_str):
+    """Test transpiling circuits with gates that are supported by Qiskit but not Cirq."""
     qiskit_init_gate = qiskit_gates_dict[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
     params = np.random.random_sample(nparams) * np.pi
@@ -410,6 +416,7 @@ def test_yes_qiskit_no_cirq(gate_str):
 
 @pytest.mark.parametrize("gate_str", yes_braket_no_cirq)
 def test_yes_braket_no_cirq(gate_str):
+    """Test transpiling circuits with gates that are supported by Braket but not Cirq."""
     braket_init_gate = braket_gates_dict[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
     params = np.random.random_sample(nparams) * np.pi
@@ -422,8 +429,9 @@ def test_yes_braket_no_cirq(gate_str):
 
 @pytest.mark.parametrize("gate_str", yes_cirq_no_qiskit)
 def test_yes_cirq_no_qiskit(gate_str):
+    """Test transpiling circuits with gates that are supported by Cirq but not Qiskit."""
     cirq_init_gate = cirq_gates_dict[gate_str]
-    nqubits, nparams = nqubits_nparams(gate_str)
+    nqubits, _ = nqubits_nparams(gate_str)
     exp = np.random.random()
     cirq_gate = cirq_init_gate(exponent=exp)
     cirq_u, qbraid_cirq_circ = cirq_gate_test_circuit(cirq_gate, nqubits)
@@ -434,6 +442,7 @@ def test_yes_cirq_no_qiskit(gate_str):
 
 @pytest.mark.parametrize("gate_str", yes_cirq_no_braket)
 def test_yes_cirq_no_braket(gate_str):
+    """Test transpiling circuits with gates that are supported by Cirq but not Braket."""
     cirq_init_gate = cirq_gates_dict[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
     if gate_str == "U3":
@@ -449,6 +458,7 @@ def test_yes_cirq_no_braket(gate_str):
 
 
 def test_braket_transpile_ccnot():
+    """Test transpiling CCNOT circuit from Braket to Qiskit."""
     braket_circuit = BraketCircuit()
     braket_circuit.ccnot(2, 0, 1)
     braket_circuit.ccnot(3, 1, 0)
@@ -462,6 +472,7 @@ def test_braket_transpile_ccnot():
 
 
 def test_non_contiguous_qubits_braket():
+    """Test transpiling Braket circuit with non-contiguous qubit indexing to Cirq and Qiskit."""
     braket_circuit = BraketCircuit()
     braket_circuit.h(0)
     braket_circuit.cnot(0, 2)
@@ -478,6 +489,7 @@ def test_non_contiguous_qubits_braket():
 
 
 def test_non_contiguous_qubits_cirq():
+    """Test transpiling Cirq circuit with non-contiguous qubit indexing to Qiskit and Braket."""
     cirq_circuit = CirqCircuit()
     q0 = cirq.LineQubit(4)
     q2 = cirq.LineQubit(2)

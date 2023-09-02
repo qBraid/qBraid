@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for the qbraid convert_to_contiguous interfacing
+Unit tests for converting circuits to use contiguous qubit indexing
 
 """
 import numpy as np
@@ -85,6 +85,7 @@ def test_braket_control_modifier():
 
 
 def test_remove_blank_wires_pytket():
+    """Test wires with no operations from pytket circuit"""
     circuit = TKCircuit(3)
     circuit.H(0)
     circuit.CX(0, 1)
@@ -93,5 +94,6 @@ def test_remove_blank_wires_pytket():
 
 
 def test_unitary_raises():
+    """Test that convert_to_contiguous raises an error when passed a non-circuit object"""
     with pytest.raises(ProgramTypeError):
         convert_to_contiguous(None)

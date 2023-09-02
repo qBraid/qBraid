@@ -20,6 +20,7 @@ from cirq import Circuit
 from cirq.contrib.qasm_import import circuit_from_qasm
 
 from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError
+from qbraid.interface.calculate_unitary import circuits_allclose
 from qbraid.qasm_checks import get_qasm_version
 from qbraid.transpiler.cirq_qasm import from_qasm, to_qasm
 from qbraid.transpiler.exceptions import CircuitConversionError
@@ -128,7 +129,12 @@ def _convert_from_cirq(circuit: "cirq.Circuit", frontend: str) -> "qbraid.QPROGR
         if frontend == "pyquil":
             from qbraid.transpiler.cirq_pyquil import to_pyquil
 
-            return to_pyquil(circuit)
+            program = to_pyquil(circuit)
+            if circuits_allclose(circuit, program):
+                return program
+
+            cirq_decomp = from_qasm(to_qasm(circuit))
+            return to_pyquil(cirq_decomp)
 
         if frontend == "braket":
             from qbraid.transpiler.cirq_braket import to_braket

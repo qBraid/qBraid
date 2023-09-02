@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Benchmarking tests for pyquil conversions
+Benchmarking tests for pyQuil conversions
 
 """
 import string
@@ -22,6 +22,7 @@ import qbraid
 
 
 def generate_params(varnames, seed=0):
+    """Generate random parameters to help construct PyQuil test gates"""
     np.random.seed(seed)
     params = {}
     rot_args = ["angle", "phi", "lam", "gamma"]
@@ -44,16 +45,19 @@ def generate_params(varnames, seed=0):
 
 
 def get_pyquil_gates():
-    pyquil_gates = {attr: None for attr in dir(pyquil.gates) if attr[0] in string.ascii_uppercase}
+    """Construct a dictionary of all pyQuil gates and assign random parameters as applicable"""
+    pyquil_gate_dict = {
+        attr: None for attr in dir(pyquil.gates) if attr[0] in string.ascii_uppercase
+    }
 
-    for gate in pyquil_gates:
+    for gate in pyquil_gate_dict:
         try:
             params = generate_params(getattr(pyquil.gates, gate).__code__.co_varnames)
-            pyquil_gates[gate] = getattr(pyquil.gates, gate)(**params)
-        except Exception as e:
+            pyquil_gate_dict[gate] = getattr(pyquil.gates, gate)(**params)
+        except Exception:  # pylint: disable=broad-exception-caught
             continue
 
-    return {k: v for k, v in pyquil_gates.items() if v is not None}
+    return {k: v for k, v in pyquil_gate_dict.items() if v is not None}
 
 
 #############
@@ -65,6 +69,9 @@ pyquil_gates = get_pyquil_gates()
 
 
 def convert_from_pyquil_to_x(target, gate_name):
+    """Construct a pyQuil programs with the given gate, transpile it to
+    target program type, and check equivalence.
+    """
     gate = pyquil_gates[gate_name]
     source_circuit = pyquil.Program()
     source_circuit += gate
@@ -74,13 +81,16 @@ def convert_from_pyquil_to_x(target, gate_name):
 
 @pytest.mark.parametrize(("target", "baseline"), TARGETS)
 def test_pyquil_coverage(target, baseline):
+    """Test converting pyQuil programs to supported target program type over
+    all pyQuil gates and check against baseline expecte accuracy.
+    """
     ACCURACY_BASELINE = baseline
     ALLOWANCE = 0.01
     failures = {}
     for gate_name in pyquil_gates:
         try:
             convert_from_pyquil_to_x(target, gate_name)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             failures[f"{target}-{gate_name}"] = e
 
     total_tests = len(pyquil_gates)
@@ -88,6 +98,8 @@ def test_pyquil_coverage(target, baseline):
     nb_passes = total_tests - nb_fails
     accuracy = float(nb_passes) / float(total_tests)
 
-    assert (
-        accuracy >= ACCURACY_BASELINE - ALLOWANCE
-    ), f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed (expected >= {ACCURACY_BASELINE}).\nFailures: {failures.keys()}\n\n"
+    assert accuracy >= ACCURACY_BASELINE - ALLOWANCE, (
+        f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed "
+        f"({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed "
+        f"(expected >= {ACCURACY_BASELINE}).\nFailures: {failures.keys()}\n\n"
+    )

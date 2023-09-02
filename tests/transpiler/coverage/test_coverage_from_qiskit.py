@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Benchmarking tests for qiskit conversions
+Benchmarking tests for Qiskit conversions
 
 """
 import pytest
@@ -24,6 +24,9 @@ qiskit_gates = get_qiskit_gates(seed=0)
 
 
 def convert_from_qiskit_to_x(target, gate_name):
+    """Construct a Qiskit circuit with the given gate, transpile it to
+    target program type, and check equivalence.
+    """
     gate = qiskit_gates[gate_name]
     source_circuit = qiskit.QuantumCircuit(gate.num_qubits)
     source_circuit.compose(gate, inplace=True)
@@ -33,13 +36,16 @@ def convert_from_qiskit_to_x(target, gate_name):
 
 @pytest.mark.parametrize(("target", "baseline"), TARGETS)
 def test_qiskit_coverage(target, baseline):
+    """Test converting Qiskit circuits to supported target program type over
+    all Qiskit standard gates and check against baseline expecte accuracy.
+    """
     ACCURACY_BASELINE = baseline
     ALLOWANCE = 0.01
     failures = {}
     for gate_name in qiskit_gates:
         try:
             convert_from_qiskit_to_x(target, gate_name)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             failures[f"{target}-{gate_name}"] = e
 
     total_tests = len(qiskit_gates)
@@ -47,6 +53,8 @@ def test_qiskit_coverage(target, baseline):
     nb_passes = total_tests - nb_fails
     accuracy = float(nb_passes) / float(total_tests)
 
-    assert (
-        accuracy >= ACCURACY_BASELINE - ALLOWANCE
-    ), f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed (expected >= {ACCURACY_BASELINE}).\nFailures: {failures.keys()}\n\n"
+    assert accuracy >= ACCURACY_BASELINE - ALLOWANCE, (
+        f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed "
+        f"({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed "
+        f"(expected >= {ACCURACY_BASELINE}).\nFailures: {failures.keys()}\n\n"
+    )

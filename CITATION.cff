@@ -1,24 +1,58 @@
 cff-version: 1.2.0
-title: 'qBraid-SDK: An Open-source Toolkit for Quantum Computing'
+title: >-
+  qBraid-SDK: Python toolkit for cross-framework abstraction
+  of quantum programs.
 message: >-
   If you use this software, please cite it using the
   metadata from this file.
 type: software
 authors:
-  - given-names: Ryan
+  - given-names: Ryan James
     family-names: Hill
-    email: ryanhill@qbraid.com
+    affiliation: qBraid Co.
+  - given-names: Ricky
+    family-names: Young
+    affiliation: qBraid Co.
+  - given-names: Erik
+    family-names: Weis
+  - given-names: Tan
+    family-names: Jun Liang
+  - given-names: Graeme
+    family-names: Jacobson
+  - given-names: Harshit
+    family-names: Gupta
+  - given-names: Mohamed Messaoud
+    family-names: Louamri
+  - given-names: Caleb
+    family-names: McIrvin
+  - given-names: Swaraj
+    family-names: Purohit
+  - given-names: Jason
+    family-names: Necaise
+  - given-names: Enrique Anguiano
+    family-names: Vara
+  - given-names: Pronil
+    family-names: Chakraborty
+  - given-names: Jiaju
+    family-names: Liu
+  - given-names: Andrea Wei
+    family-names: Coladangelo
+    affiliation: University of Washington
+  - given-names: Pranav
+    family-names: Kakhandiki
+    affiliation: Cornell University
+  - given-names: Kanav
+    family-names: Setia
     affiliation: qBraid Co.
 repository-code: 'https://github.com/qBraid/qBraid'
 url: 'https://www.qbraid.com'
-abstract: >-
-  A Python toolkit for cross-framework abstraction,
-  transpilation, and execution of quantum programs.
+repository-artifact: 'https://github.com/qBraid/qBraid/releases/tag/v0.4.5'
 keywords:
   - python
   - quantum-computing
   - transpiler
   - openqasm
 license: GPL-3.0
-version: 0.4.3
-date-released: '2023-08-07'
+commit: 8bc6dfae1f7b0bc73365436f1c8c2c50172fb1d4
+version: 0.4.5
+date-released: '2023-08-27'

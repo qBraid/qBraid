@@ -35,6 +35,7 @@ print(passed)
 
 
 def test_qasm_to_braket_code_from_str(capfd):
+    """Test converting OpenQASM 2 code to Amazon Braket code from a string"""
     cirq_circuit = cirq_shared15()
     qasm_str = cirq_circuit.to_qasm()
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -44,9 +45,8 @@ def test_qasm_to_braket_code_from_str(capfd):
     qasm_to_braket_code(qasm_str=qasm_str, output_file=output_file)
 
     # write test code to output file
-    braket_out = open(output_file, "a")
-    braket_out.writelines(test_code)
-    braket_out.close()
+    with open(output_file, "a", encoding="utf-8") as f:
+        f.writelines(test_code)
 
     os.system(f"{sys.executable} {output_file}")
     out, err = capfd.readouterr()
@@ -56,6 +56,7 @@ def test_qasm_to_braket_code_from_str(capfd):
 
 
 def test_qasm_to_braket_code_from_file(capfd):
+    """Test converting OpenQASM 2 code to Amazon Braket code from a file"""
     current_dir = os.path.dirname(os.path.abspath(__file__))
     input_file = os.path.join(current_dir, "shared15.qasm")
     output_file = os.path.join(current_dir, "_braket_out_1.py")
@@ -64,9 +65,8 @@ def test_qasm_to_braket_code_from_file(capfd):
     qasm_to_braket_code(qasm_file=input_file, output_file=output_file)
 
     # write test code to output file
-    braket_out = open(output_file, "a")
-    braket_out.writelines(test_code)
-    braket_out.close()
+    with open(output_file, "a", encoding="utf-8") as f:
+        f.writelines(test_code)
 
     os.system(f"{sys.executable} {output_file}")
     out, err = capfd.readouterr()
@@ -76,6 +76,7 @@ def test_qasm_to_braket_code_from_file(capfd):
 
 
 def test_qasm_to_braket_code_print_circuit(capfd):
+    """Test converting OpenQASM 2 code to Amazon Braket code and printing circuit"""
     cirq_circuit_1 = cirq_shared15()
     qasm_str_1 = cirq_circuit_1.to_qasm()
     current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -92,5 +93,6 @@ def test_qasm_to_braket_code_print_circuit(capfd):
 
 
 def test_qasm_to_braket_code_raises_error():
+    """Test that qasm_to_braket_code raises error when no input is provided"""
     with pytest.raises(ValueError):
         qasm_to_braket_code()

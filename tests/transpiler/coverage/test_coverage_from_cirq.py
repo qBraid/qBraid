@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Benchmarking tests for cirq conversions
+Benchmarking tests for Cirq conversions
 
 """
 import string
@@ -23,6 +23,7 @@ import qbraid
 
 
 def generate_params(varnames, seed=0):
+    """Generate random parameters to help construct Cirq test gates"""
     np.random.seed(seed)
     params = {}
     # Generating angles
@@ -53,41 +54,45 @@ def generate_params(varnames, seed=0):
 
 
 def get_cirq_gates():
+    """Construct a dictionary of all Cirq gates and assign random parameters as applicable"""
     qubits = cirq.LineQubit.range(7)
 
-    cirq_gates = {
+    cirq_gate_dict = {
         attr: None
         for attr in dir(cirq.ops)
         if attr[0] in string.ascii_uppercase
         if (
-            isinstance(getattr(cirq.ops, attr), cirq.value.abc_alt.ABCMetaImplementAnyOneOf)
-            or isinstance(getattr(cirq.ops, attr), cirq.Gate)
+            isinstance(
+                getattr(cirq.ops, attr), (cirq.Gate, cirq.value.abc_alt.ABCMetaImplementAnyOneOf)
+            )
         )
     }
-    for gate in cirq_gates:
+    for gate in cirq_gate_dict:
         try:
             params = generate_params(getattr(cirq.ops, gate).__init__.__code__.co_varnames)
-        except:
+        except Exception:  # pylint: disable=broad-exception-caught
             continue
 
         if not isinstance(getattr(cirq.ops, gate), cirq.Gate):
             try:
-                cirq_gates[gate] = getattr(cirq.ops, gate)(**params)
-            except Exception as e:
+                cirq_gate_dict[gate] = getattr(cirq.ops, gate)(**params)
+            except Exception:  # pylint: disable=broad-exception-caught
                 continue
 
-    for gate in cirq_gates:
-        if cirq_gates.get(gate):
-            cirq_gates[gate] = cirq_gates[gate](*qubits[: cirq_gates[gate].num_qubits()])
+    for gate in cirq_gate_dict:
+        if cirq_gate_dict.get(gate):
+            cirq_gate_dict[gate] = cirq_gate_dict[gate](
+                *qubits[: cirq_gate_dict[gate].num_qubits()]
+            )
         else:
             try:
-                cirq_gates[gate] = getattr(cirq.ops, gate)(
+                cirq_gate_dict[gate] = getattr(cirq.ops, gate)(
                     *qubits[: getattr(cirq.ops, gate).num_qubits()]
                 )
-            except Exception as e:
+            except Exception:  # pylint: disable=broad-exception-caught
                 continue
 
-    return {k: v for k, v in cirq_gates.items() if v is not None}
+    return {k: v for k, v in cirq_gate_dict.items() if v is not None}
 
 
 #############
@@ -99,6 +104,9 @@ cirq_gates = get_cirq_gates()
 
 
 def convert_from_cirq_to_x(target, gate_name):
+    """Construct a Cirq circuit with the given gate, transpile it to
+    target program type, and check equivalence.
+    """
     gate = cirq_gates[gate_name]
     source_circuit = cirq.Circuit()
     source_circuit.append(gate)
@@ -108,13 +116,16 @@ def convert_from_cirq_to_x(target, gate_name):
 
 @pytest.mark.parametrize(("target", "baseline"), TARGETS)
 def test_cirq_coverage(target, baseline):
+    """Test converting Cirq circuits to supported target program type over
+    all Cirq gates and check against baseline expecte accuracy.
+    """
     ACCURACY_BASELINE = baseline
     ALLOWANCE = 0.01
     failures = {}
     for gate_name in cirq_gates:
         try:
             convert_from_cirq_to_x(target, gate_name)
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-exception-caught
             failures[f"{target}-{gate_name}"] = e
 
     total_tests = len(cirq_gates)
@@ -122,6 +133,8 @@ def test_cirq_coverage(target, baseline):
     nb_passes = total_tests - nb_fails
     accuracy = float(nb_passes) / float(total_tests)
 
-    assert (
-        accuracy >= ACCURACY_BASELINE - ALLOWANCE
-    ), f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed ({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed (expected >= {ACCURACY_BASELINE}).\nFailures: {failures.keys()}\n\n"
+    assert accuracy >= ACCURACY_BASELINE - ALLOWANCE, (
+        f"The coverage threshold was not met. {nb_fails}/{total_tests} tests failed "
+        f"({nb_fails / (total_tests):.2%}) and {nb_passes}/{total_tests} passed "
+        f"(expected >= {ACCURACY_BASELINE}).\nFailures: {failures.keys()}\n\n"
+    )
