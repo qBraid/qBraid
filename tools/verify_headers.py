@@ -42,7 +42,7 @@ skip_files = [
     "tests/transpiler/cirq_braket/test_from_braket.py",
     "tests/transpiler/cirq_braket/test_to_braket.py",
     "tests/transpiler/cirq_qasm/test_qasm_parser.py",
-    "tests/transpiler/cirq_quil/test_quil_output.py",
+    "tests/transpiler/cirq_pyquil/test_quil_output.py",
 ]
 
 failed_headers = []
