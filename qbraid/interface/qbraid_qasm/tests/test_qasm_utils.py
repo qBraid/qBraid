@@ -30,6 +30,7 @@ from qbraid.interface.qbraid_qasm.tools import (
     qasm_depth,
     qasm_num_qubits,
     qasm_qubits,
+    convert_to_contiguous_qasm3,
 )
 
 
@@ -130,6 +131,31 @@ c[2] = measure q[2];
 
 """
     _check_output(circuit, out__expected)
+
+
+def test_convert_to_contiguous_qasm_3():
+    """Test conversion of qasm3 to contiguous qasm3"""
+    qasm_test = """
+    OPENQASM 3.0;
+    gate custom q1, q2, q3{
+        x q1;
+        y q2;
+        z q3;
+    }
+    qreg q1[2];
+    qubit[2] q2;
+    qubit[3] q3;
+    qubit q4;
+    
+    x q1[0];
+    y q2[0];
+    z q3;
+    """
+
+    qasm_expected = qasm_test + """i q1[1];\ni q2[1];\ni q4[0];\n"""
+
+    print(convert_to_contiguous_qasm3(qasm_test))
+    assert convert_to_contiguous_qasm3(qasm_test) == qasm_expected
 
 
 def test_convert_to_qasm3():
