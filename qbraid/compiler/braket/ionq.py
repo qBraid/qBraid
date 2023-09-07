@@ -17,7 +17,13 @@ from typing import Union
 import pytket
 import pytket.extensions.braket
 from braket.circuits import Circuit
-from pytket._tket.circuit._library import _TK1_to_RzRx  # type: ignore
+
+try:
+    from pytket.circuit_library import _TK1_to_RzRx  # type: ignore
+except (ModuleNotFoundError, ImportError):
+    # pytket <= 1.18
+    from pytket._tket.circuit._library import _TK1_to_RzRx  # type: ignore
+
 from pytket.passes import RebaseCustom
 from pytket.predicates import (
     CompilationUnit,

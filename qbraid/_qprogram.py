@@ -57,7 +57,7 @@ def __get_class(module: str):
         case "pyquil":
             return pyquil.Program  # type: ignore
         case "pytket":
-            return pytket.circuit.Circuit  # type: ignore
+            return pytket._tket.circuit.Circuit  # type: ignore
         case _:
             pass
 
