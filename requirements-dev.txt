@@ -8,23 +8,13 @@ qiskit~=0.44.1
 qiskit-ibm-provider~=0.7.0
 qiskit-qasm3-import~=0.2.0
 
-# benchmarking
-qiskit-braket-provider
+# visualization
+matplotlib
+ipython
+# pylatex
+# qiskit[visualization]
 
 # testing
 sympy
 pytest
 coverage
-tox>=4.2
-ipython
-
-# docs
-sphinx
-sphinx-autodoc-typehints
-sphinx-rtd-theme
-docutils<0.17
-
-# linters
-isort
-pylint
-black

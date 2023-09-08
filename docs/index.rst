@@ -130,7 +130,9 @@ Documentation
    api/qbraid.api
    api/qbraid.interface
    api/qbraid.transpiler
+   api/qbraid.compiler
    api/qbraid.providers
+   api/qbraid.visualization
 
 .. toctree::
    :maxdepth: 1
