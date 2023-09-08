@@ -19,7 +19,10 @@ supported by the qBraid SDK.
 from datetime import datetime
 from typing import Optional
 
-from IPython.display import HTML, clear_output, display
+try:
+    from IPython.display import HTML, clear_output, display
+except ImportError:
+    pass
 
 from .api import ApiError, QbraidSession
 from .display_utils import running_in_jupyter, update_progress_bar

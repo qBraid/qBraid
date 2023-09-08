@@ -3,14 +3,61 @@
 Environments
 =============
 
-The `qBraid Lab Environment Manager <https://youtu.be/LyavbzSkvRo>`_ is a robust package and virtual environment management system
-provided to qBraid end-users through a simple, intuitive graphical user interface.
+The `qBraid Lab Environment Manager <https://youtu.be/LyavbzSkvRo>`_ is a streamlined quantum software package and
+virtual environment management system provided to qBraid end-users through a simple, intuitive graphical user interface.
+It offers curated development environments in Python, Julia, C++, and Q# over a range of quantum applications, is highly
+customizable, and facilitates direct connections to quantum hardware.
 
 To expand the Environment Manager sidebar, click on **Envs** in the upper-right of the Lab console.
 **My Environments** are your currently installed environments. The qBraid Default Python environment
 is pre-installed for all users. For `Standard/Pro users <https://account.qbraid.com/subscription>`_,
 a number of other environments are also available pre-installed. These include Microsoft QDK (Q#),
 the Intel® Quantum SDK (C++), Bloqade (Julia), cuQuantum (CUDA), and more.
+
+Key Features
+------------
+
+- **Pre-Packaged Environments**: 
+
+    qBraid Lab provides a suite of 30+ pre-packaged virtual environments dedicated to popular quantum software packages.
+    These include but are not limited to Qiskit, Cirq, Amazon Braket, Pennylane, PyQuil, TensorFlow Quantum, and more.
+    Each environment incorporates not only the primary packages but also recommended add-ons and configurations. Environments
+    are pre-configured to function out-of-the-box, eliminating the hassle of manual installations and potential dependency conflicts.
+
+- **Comprehensive Environment Search**:
+
+    Locate and install the ideal environment for your project by searching by name, description, tag, or package. This
+    intuitive search feature ensures you find an environment tailored to your use case.
+
+- **Version Management**:
+
+    Stay updated without the hassle. Minor software updates are reflected in the pre-packaged environments, which users
+    can reinstall to access. For significant or breaking updates, entirely new environments are made available, preserving
+    the integrity of projects relying on earlier versions.
+
+- **Customize and Share**:
+
+    Customize pre-packaged environments by installing or upgrading packages, or create your own custom environments that
+    can be shared directly with other qBraid Lab users.
+
+- **Detailed Dependency Overview**:
+
+    Each environment showcases a complete list of its packages, akin to a `pip freeze`. Users can browse and search through
+    these packages pre- and post-installation, making it easy to keep track of the tools at their disposal. This package list
+    is dynamically updated to mirror any user-driven changes.
+
+- **Direct Hardware Connectivity**:
+
+    Environments marked with the ``quantum-jobs`` tag can be used to connect directly to a range of QPU devices from leading
+    providers, including IonQ, Oxford Quantum Circuits, QuEra, Rigetti, and AWS on-demand simulators, with no additional
+    access keys required.
+
+- **Command-Line Interface**:
+
+    For those who prefer terminal-based interactions, qBraid Lab provides a command-line interface that mirrors the
+    functionalities of the GUI-based Environment Manager. Users can activate environments, manage kernels, install new
+    packages, enable quantum jobs, and much more directly from their terminal.
+
 
  .. seealso::
    
@@ -95,9 +142,11 @@ environment visible under their **Add** environment list. They can then install 
 run code using an exact copy of your environment. This includes support for quantum
 jobs and any additional configurations.
 
+Although modifications to pre-packaged environments can't be directly shared, you can export a ``requirements.txt`` from
+any environment to use in creating a new custom environment "copy", which can then be shared with other users.
+
 To share a custom environment, first click the **More** button in the drop-down to open the environment editor.
 Then, under 'Share Environment' , enter the qBraid user email, and click **Share**.
-
 
 When you share an environment on qBraid, you're creating a snapshot of your Python virtual environment with its specific configurations
 and installed packages. This snapshot is uploaded to the qBraid cloud, creating a static version accessible to other users. This shared
@@ -108,7 +157,6 @@ Overwriting a globally shared environment doesn't affect versions that other use
 them of the availability of an updated version. Currently, users must manually check for this indicator. Also, before installing an updated
 version, users must uninstall their current one as maintaining multiple versions of a shared environment isn't supported. Sharing or overwriting
 globally doesn't impact your local environment.
-
 
 Uninstall / cancel install environment
 ---------------------------------------

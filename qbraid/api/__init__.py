@@ -20,8 +20,6 @@
 .. autosummary::
    :toctree: ../stubs/
 
-   init_job
-   get_job_data
    ApiError
    AuthError
    ConfigError
@@ -71,6 +69,5 @@
 
 """
 from .exceptions import ApiError, AuthError, ConfigError, RequestsApiError
-from .job_api import get_job_data, init_job
 from .retry import PostForcelistRetry
 from .session import QbraidSession

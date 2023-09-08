@@ -9,6 +9,6 @@
         "versions": ["3.10"]
     },
     "tests_command": [
-        "pytest qbraid/api qbraid/interface qbraid/transpiler qbraid/devices qbraid/tests"
+        "pytest tests"
     ]
 }

@@ -30,3 +30,8 @@ qbraid.interface
    :members:
    :undoc-members:
    :show-inheritance:
+
+.. automodule:: qbraid.interface.qbraid_qasm3
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -15,7 +15,7 @@
 Module defining Qasm3CircuitWrapper Class
 
 """
-from qbraid.interface.qbraid_qasm.tools import qasm3_depth, qasm_3_num_qubits, qasm_qubits
+from qbraid.interface.qbraid_qasm3.tools import qasm3_depth, qasm3_num_qubits, qasm3_qubits
 from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper
 
 
@@ -32,8 +32,8 @@ class Qasm3CircuitWrapper(QuantumProgramWrapper):
         # coverage: ignore
         super().__init__(qasm_str)
 
-        self._qubits = qasm_qubits(qasm_str)
-        self._num_qubits = qasm_3_num_qubits(qasm_str)
+        self._qubits = qasm3_qubits(qasm_str)
+        self._num_qubits = qasm3_num_qubits(qasm_str)
         self._depth = qasm3_depth(qasm_str)
         self._package = "qasm3"
         self._program_type = "str"

@@ -15,7 +15,8 @@ Module for converting quantum circuit/program to use contiguous qubit indexing
 from typing import TYPE_CHECKING, Any, Callable
 
 from qbraid._qprogram import QPROGRAM
-from qbraid.exceptions import ProgramTypeError, QbraidError
+from qbraid.exceptions import ProgramTypeError, QasmError, QbraidError
+from qbraid.qasm_checks import get_qasm_version
 
 if TYPE_CHECKING:
     import qbraid
@@ -45,12 +46,12 @@ def convert_to_contiguous(program: "qbraid.QPROGRAM", **kwargs) -> "qbraid.QPROG
     conversion_function: Callable[[Any], QPROGRAM]
 
     if isinstance(program, str):
-        if "OPENQASM 2" in program:
-            package = "qasm2"
-        elif "OPENQASM 3" in program:
-            package = "qasm3"
-        else:
-            raise ProgramTypeError("Input of type string must represent a valid OpenQASM program.")
+        try:
+            package = get_qasm_version(program)
+        except QasmError as err:
+            raise ProgramTypeError(
+                "Input of type string must represent a valid OpenQASM program."
+            ) from err
     else:
         try:
             package = program.__module__
@@ -83,7 +84,7 @@ def convert_to_contiguous(program: "qbraid.QPROGRAM", **kwargs) -> "qbraid.QPROG
 
         conversion_function = _convert_to_contiguous_qasm
     elif package == "qasm3":
-        from qbraid.interface.qbraid_qiskit.tools import _convert_to_contiguous_qasm3
+        from qbraid.interface.qbraid_qasm3.tools import _convert_to_contiguous_qasm3
 
         conversion_function = _convert_to_contiguous_qasm3
     else:

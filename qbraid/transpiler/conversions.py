@@ -18,23 +18,20 @@ from typing import TYPE_CHECKING, Tuple
 
 from cirq import Circuit
 from cirq.contrib.qasm_import import circuit_from_qasm
-from qiskit.qasm3 import loads as qiskit_from_qasm3
 
-from qbraid.exceptions import PackageValueError, ProgramTypeError
-from qbraid.interface.qbraid_qasm.tools import convert_to_qasm3
-from qbraid.transpiler.cirq_braket import from_braket, to_braket
-from qbraid.transpiler.cirq_pyquil import from_pyquil, to_pyquil
-from qbraid.transpiler.cirq_pytket import from_pytket, to_pytket
+from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError
+from qbraid.interface.calculate_unitary import circuits_allclose
+from qbraid.qasm_checks import get_qasm_version
 from qbraid.transpiler.cirq_qasm import from_qasm, to_qasm
-from qbraid.transpiler.cirq_qiskit import from_qiskit, to_qiskit
-from qbraid.transpiler.exceptions import CircuitConversionError, QasmError
-from qbraid.transpiler.qasm_checks import get_qasm_version
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 if TYPE_CHECKING:
+    import cirq
+
     import qbraid
 
 
-def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple[Circuit, str]:
+def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple["cirq.Circuit", str]:
     """Converts any valid input quantum program to a Cirq circuit.
 
     Args:
@@ -62,24 +59,38 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple[Circuit, str]:
         except AttributeError as err:
             raise ProgramTypeError(program) from err
 
+    # pylint: disable=import-outside-toplevel
+
     try:
         if "qiskit" in package:
+            from qbraid.transpiler.cirq_qiskit import from_qiskit
+
             return from_qiskit(program), "qiskit"
 
         if "pyquil" in package:
+            from qbraid.transpiler.cirq_pyquil import from_pyquil
+
             return from_pyquil(program), "pyquil"
 
         if "braket" in package:
+            from qbraid.transpiler.cirq_braket import from_braket
+
             return from_braket(program), "braket"
 
         if "pytket" in package:
+            from qbraid.transpiler.cirq_pytket import from_pytket
+
             return from_pytket(program), "pytket"
 
         if package == "qasm2":
             return from_qasm(program), package
 
         if package == "qasm3":
-            qiskit_circuit = qiskit_from_qasm3(program)
+            from qiskit.qasm3 import loads
+
+            from qbraid.transpiler.cirq_qiskit import from_qiskit
+
+            qiskit_circuit = loads(program)
             return from_qiskit(qiskit_circuit), package
 
         if isinstance(program, Circuit):
@@ -93,7 +104,7 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple[Circuit, str]:
     raise ProgramTypeError(program)
 
 
-def _convert_from_cirq(circuit: Circuit, frontend: str) -> "qbraid.QPROGRAM":
+def _convert_from_cirq(circuit: "cirq.Circuit", frontend: str) -> "qbraid.QPROGRAM":
     """Converts a Cirq circuit to a type specified by the conversion type.
 
     Args:
@@ -107,23 +118,40 @@ def _convert_from_cirq(circuit: Circuit, frontend: str) -> "qbraid.QPROGRAM":
     Returns:
         :data:`~qbraid.QPROGRAM`: A ``conversion_type`` quantum circuit / program.
     """
+    # pylint: disable=import-outside-toplevel
+
     try:
         if frontend == "qiskit":
+            from qbraid.transpiler.cirq_qiskit import to_qiskit
+
             return to_qiskit(circuit)
 
         if frontend == "pyquil":
-            return to_pyquil(circuit)
+            from qbraid.transpiler.cirq_pyquil import to_pyquil
+
+            program = to_pyquil(circuit)
+            if circuits_allclose(circuit, program):
+                return program
+
+            cirq_decomp = from_qasm(to_qasm(circuit))
+            return to_pyquil(cirq_decomp)
 
         if frontend == "braket":
+            from qbraid.transpiler.cirq_braket import to_braket
+
             return to_braket(circuit)
 
         if frontend == "pytket":
+            from qbraid.transpiler.cirq_pytket import to_pytket
+
             return to_pytket(circuit)
 
         if frontend == "qasm2":
             return to_qasm(circuit)
 
         if frontend == "qasm3":
+            from qbraid.interface.qbraid_qasm3.tools import convert_to_qasm3
+
             qasm2_str = to_qasm(circuit)
             return convert_to_qasm3(qasm2_str)
 
@@ -138,7 +166,7 @@ def _convert_from_cirq(circuit: Circuit, frontend: str) -> "qbraid.QPROGRAM":
     raise PackageValueError(frontend)
 
 
-def convert_from_cirq(circuit: Circuit, frontend: str) -> "qbraid.QPROGRAM":
+def convert_from_cirq(circuit: "cirq.Circuit", frontend: str) -> "qbraid.QPROGRAM":
     """Converts a Cirq circuit to a type specified by the conversion type.
 
     Args:
