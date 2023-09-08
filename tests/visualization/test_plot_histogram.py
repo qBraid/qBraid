@@ -15,7 +15,25 @@ Unit tests for the qbraid visualization plot histogram function
 
 import pytest
 
-from qbraid.visualization import plot_histogram
+from qbraid.visualization.plot_histogram import _counts_to_decimal, plot_histogram
+
+
+def test_counts_to_decimal_normal_case():
+    counts_dict = {"00": 10, "01": 15, "10": 20, "11": 5}
+    expected_output = {"00": 0.2, "01": 0.3, "10": 0.4, "11": 0.1}
+    assert _counts_to_decimal(counts_dict) == expected_output
+
+
+def test_counts_to_decimal_with_zero_total_count():
+    counts_dict = {"00": 0, "01": 0, "10": 0, "11": 0}
+    with pytest.raises(ValueError, match="Total count cannot be zero."):
+        _counts_to_decimal(counts_dict)
+
+
+def test_counts_to_decimal_with_non_integer_values():
+    counts_dict = {"00": "ten", "01": 15, "10": 20, "11": 5}
+    with pytest.raises(TypeError, match="Counts values must be integers."):
+        _counts_to_decimal(counts_dict)
 
 
 def test_plot_histogram_single_dict():

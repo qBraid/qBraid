@@ -21,6 +21,40 @@ from matplotlib import colormaps
 # pylint: disable=too-many-arguments
 
 
+def _counts_to_decimal(counts: dict) -> dict:
+    """
+    Converts a dictionary of counts to decimal form.
+
+    Args:
+        counts_dict (dict): A dictionary where keys are strings representing states and
+                            values are integers representing counts.
+
+    Returns:
+        dict: A dictionary with the same keys as the input dictionary, but with values
+              converted to their respective decimal proportions.
+
+    Raises:
+        ValueError: If the total count is zero.
+        TypeError:  If the input dictionary contains non-integer values
+
+    Example:
+        >>> counts_to_decimal({"00": 10, "01": 15, "10": 20, "11": 5})
+        {"00": 0.2, "01": 0.3, "10": 0.4, "11": 0.1}
+    """
+
+    try:
+        total_count = sum(counts.values())
+    except TypeError as err:
+        raise TypeError("Counts values must be integers.") from err
+
+    if total_count == 0:
+        raise ValueError("Total count cannot be zero.")
+
+    decimal_dict = {key: value / total_count for key, value in counts.items()}
+
+    return decimal_dict
+
+
 def plot_histogram(
     counts: Union[List[dict], Dict],
     legend: Optional[Union[List[str], str]] = None,
@@ -79,6 +113,7 @@ def plot_histogram(
         if isinstance(legend, str):
             legend = [legend]
 
+    counts = [_counts_to_decimal(counts_dict) for counts_dict in counts]
     all_states = sorted(set(state for counts_dict in counts for state in counts_dict.keys()))
 
     num_dicts = len(counts)
@@ -99,7 +134,7 @@ def plot_histogram(
     for i, counts_dict in enumerate(counts):
         counts = [counts_dict.get(state, 0) for state in all_states]
 
-        default_label = f"Job {i+1}" if num_dicts > 1 else None
+        default_label = f"Job {i}" if num_dicts > 1 else None
         label = legend[i] if legend and i < len(legend) else default_label
 
         plt.bar(
@@ -113,7 +148,7 @@ def plot_histogram(
 
     plt.xticks(x_positions, all_states, rotation=45)
 
-    y_label = "Count" if not y_label else y_label
+    y_label = "Probabilities" if not y_label else y_label
     plt.ylabel(y_label)
 
     if x_label:
@@ -124,8 +159,6 @@ def plot_histogram(
 
     if legend or num_dicts > 1:
         plt.legend()
-
-    plt.tight_layout()
 
     if save_path:
         plt.savefig(save_path)
