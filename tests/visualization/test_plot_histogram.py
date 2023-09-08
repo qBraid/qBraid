@@ -19,29 +19,34 @@ from qbraid.visualization.plot_histogram import _counts_to_decimal, plot_histogr
 
 
 def test_counts_to_decimal_normal_case():
+    """Test convering measurement counts to decimal probabilities."""
     counts_dict = {"00": 10, "01": 15, "10": 20, "11": 5}
     expected_output = {"00": 0.2, "01": 0.3, "10": 0.4, "11": 0.1}
     assert _counts_to_decimal(counts_dict) == expected_output
 
 
 def test_counts_to_decimal_with_zero_total_count():
+    """Test raising error when total of counts is zero."""
     counts_dict = {"00": 0, "01": 0, "10": 0, "11": 0}
     with pytest.raises(ValueError, match="Total count cannot be zero."):
         _counts_to_decimal(counts_dict)
 
 
 def test_counts_to_decimal_with_non_integer_values():
+    """Test raising error when counts values are not integers."""
     counts_dict = {"00": "ten", "01": 15, "10": 20, "11": 5}
     with pytest.raises(TypeError, match="Counts values must be integers."):
         _counts_to_decimal(counts_dict)
 
 
 def test_plot_histogram_single_dict():
+    """Test plotting histogram with single counts dict."""
     counts_dict = {"00": 50, "01": 30, "10": 10, "11": 10}
     plot_histogram(counts_dict, title="Single Dict Test", show_plot=False)
 
 
 def test_plot_histogram_multiple_dicts():
+    """Test plotting histogram with multiple counts dicts."""
     counts_dict1 = {"00": 50, "01": 30, "10": 10, "11": 10}
     counts_dict2 = {"00": 20, "01": 40, "10": 30, "11": 10}
 
@@ -55,6 +60,7 @@ def test_plot_histogram_multiple_dicts():
 
 
 def test_plot_histogram_mismatched_legend_length():
+    """Test raising error when legend length does not match counts length."""
     counts_dict1 = {"00": 50, "01": 30, "10": 10, "11": 10}
     counts_dict2 = {"00": 20, "01": 40, "10": 30, "11": 10}
 
@@ -68,6 +74,7 @@ def test_plot_histogram_mismatched_legend_length():
 
 
 def test_plot_histogram_mismatched_colors_length():
+    """Test raising error when colors length does not match counts length."""
     counts_dict1 = {"00": 50, "01": 30, "10": 10, "11": 10}
     counts_dict2 = {"00": 20, "01": 40, "10": 30, "11": 10}
 
