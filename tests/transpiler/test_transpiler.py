@@ -80,7 +80,7 @@ circuit_types = {
     "braket": BraketCircuit,
     "pytket": pytket.Circuit,
     "qasm2": str,
-    "qasm3": str
+    "qasm3": str,
 }
 
 

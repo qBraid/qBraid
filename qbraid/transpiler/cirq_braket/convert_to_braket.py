@@ -27,6 +27,11 @@ from cirq import ops as cirq_ops
 from cirq import protocols
 from cirq.linalg.decompositions import kak_decomposition
 
+try:
+    import cirq_ionq.ionq_native_gates as cirq_ionq_ops
+except ImportError:
+    cirq_ionq_ops = None
+
 from qbraid.interface import convert_to_contiguous
 from qbraid.interface.qbraid_cirq.tools import _int_from_qubit, is_measurement_gate
 from qbraid.transpiler.cirq_braket.custom_gates import C as BKControl
@@ -200,6 +205,13 @@ def _to_one_qubit_braket_instruction(
 
         if isinstance(gate, cirq_ops.PhaseDampingChannel):
             return [BKInstruction(braket_noise_gate.PhaseDamping(operation.gate._gamma), target)]
+
+        if cirq_ionq_ops and isinstance(
+            gate, cirq_ionq_ops.GPIGate, cirq_ionq_ops.GPI2Gate, cirq_ionq_ops.MSGate
+        ):
+            raise NotImplementedError(
+                "Cirq to Amazon Braket IonQ gate conversions not yet supported."
+            )
 
         matrix = protocols.unitary(gate)
         gate_name = "U" if isinstance(gate, cirq_ops.MatrixGate) else str(gate)

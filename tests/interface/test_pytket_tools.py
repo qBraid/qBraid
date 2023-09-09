@@ -26,5 +26,6 @@ from qbraid.interface.qbraid_pytket.tools import reverse_qubit_ordering
     ],
 )
 def test_reverse_qubit_ordering(input_circuit, expected_circuit):
+    """Test reversing qubit ordering of pytket circuit."""
     result_circuit = reverse_qubit_ordering(input_circuit)
     assert result_circuit.get_commands() == expected_circuit.get_commands()

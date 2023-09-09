@@ -35,8 +35,8 @@ class IBMJobWrapper(JobLikeWrapper):
         """Return the job like object that is being wrapped."""
         if not isinstance(self.device.vendor_dlo, IBMBackend):
             raise JobError(
-                "Cannot retrieve job submitted to unrecognized backend. Expected device object "
-                f"type qiskit_ibm_provider.IBMBackend, but instead got {type(self.device.vendor_dlo)}."
+                "Cannot retrieve job submitted to unrecognized backend. Expected device of type "
+                f"qiskit_ibm_provider.IBMBackend, but instead got {type(self.device.vendor_dlo)}."
             )
         job_id = self.vendor_job_id
         backend = self.device.vendor_dlo
