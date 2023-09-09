@@ -79,6 +79,8 @@ circuit_types = {
     "pyquil": pyQuilProgram,
     "braket": BraketCircuit,
     "pytket": pytket.Circuit,
+    "qasm2": str,
+    "qasm3": str,
 }
 
 
@@ -164,7 +166,7 @@ def bell_test_data(package):
 
 
 # Define circuits and unitaries
-target_packages = ["cirq", "qiskit", "braket", "pyquil", "pytket"]
+target_packages = ["cirq", "qiskit", "braket", "pyquil", "pytket", "qasm2", "qasm3"]
 data_test_15 = [shared_gates_test_data(name) for name in target_packages[:3]]
 data_test_bell = [bell_test_data(name) for name in target_packages]
 

@@ -17,13 +17,14 @@ Let's start by defining a simple qiskit quantum circuit that we wish to execute.
     circuit.rz(np.pi / 2, 0)
     circuit.measure(0, 0)
 
-This time, we'll run our quantum program on the IBMQ Armonk QPU. After
-the job has completed, we'll gather the result, and plot a histogram of the
-measurement counts.
+This time, we'll run our quantum program on the IBMQ Belem QPU. After the
+job has completed, we'll gather the result, print the measurement counts,
+and plot a histogram of the probabilities.
 
 .. code-block:: python
 
     from qbraid import device_wrapper
+    from qbraid.visualization import plot_histogram
 
     shots = 2**10
     
@@ -32,12 +33,15 @@ measurement counts.
     qjob.wait_for_final_state()
     
     qresult_ibmq = qjob.result()
-    qresult.ibmq.plot_counts()
+    qresult_ibmq.measurement_counts()
+    # {'0': 136, '1': 864}
+
+    plot_histogram(qresult_ibmq.measurement_counts())
 
 .. raw:: html
     
     <p>
-        <img src="../_static/sdk-files/plot_counts.png" alt="plot_counts" style="width: 60%">
+        <img src="../_static/sdk-files/plot_counts.png" alt="plot_counts" style="width: 40%">
     </p>
 
 The results layer follows the same wrapper abstraction as the circuit, device
@@ -52,29 +56,37 @@ the ``vendor_rlo`` attribute:
     qiskit.result.result.Result
 
 
-Now, let's execute the same one-qubit qiskit circuit on a density-matrix simulator
-provided AWS:
+Now, let's run a batch job using two copies of the one-qubit qiskit circuit
+on a density-matrix simulator provided AWS:
 
 .. code-block:: python
 
     aws_device = device_wrapper('aws_dm_sim')
 
-    aws_job = aws_device.run(circuit, shots=shots)
+    batch_jobs = aws_device.run_batch([circuit, circuit], shots=shots)
 
-    qresult_aws = aws_job.result()
+    batch_results = [job.result() for job in batch_jobs]
+
+    batch_counts = [result.measurement_counts() for result in batch_results]
 
 Using the qBraid quantum wrapper flow, result data will be returned with consistent
 typing, formatting, and qubit indexing for every supported backend.
 
 .. code-block:: python
 
-    >>> qresult_ibmq.measurement_counts()
-    {'0': 139, '1': 885}
-    >>> qresult_aws.measurement_counts()
-    {'0': 136, '1': 888}
+    >>> batch_counts[0]
+    {'0': 136, '1': 864}
+    >>> batch_counts[1]
+    {'0': 166, '1': 834}
+    >>> plot_histogram(batch_counts)
 
+.. raw:: html
+    
+    <p>
+        <img src="../_static/sdk-files/batch_counts.png" alt="plot_counts" style="width: 40%">
+    </p>
 
 The qBraid SDK not only allows executing your quantum programs on a range of quantum
 backends, but also has built-in protocols that enable seemless comparisson of results.
-As shown above, we can now easily compare the measurement counts across all three runs,
+As shown above, we can now easily compare the measurement counts across both runs,
 perfect for benchmarking and countless other applications.

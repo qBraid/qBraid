@@ -1,6 +1,7 @@
 # integrations
-amazon-braket-sdk~=1.54.3
-cirq-rigetti~=1.3.0.dev20230906020857
+amazon-braket-sdk~=1.54.3.post0
+cirq-ionq~=1.3.0.dev20230908221855
+cirq-rigetti~=1.3.0.dev20230908221855
 pyquil>=3.5.4,<3.6.0
 pytket~=1.19.1
 pytket-braket~=0.30.0
@@ -8,23 +9,13 @@ qiskit~=0.44.1
 qiskit-ibm-provider~=0.7.0
 qiskit-qasm3-import~=0.2.0
 
-# benchmarking
-qiskit-braket-provider
+# visualization
+matplotlib
+ipython
+# pylatex
+# qiskit[visualization]
 
 # testing
 sympy
 pytest
 coverage
-tox>=4.2
-ipython
-
-# docs
-sphinx
-sphinx-autodoc-typehints
-sphinx-rtd-theme
-docutils<0.17
-
-# linters
-isort
-pylint
-black

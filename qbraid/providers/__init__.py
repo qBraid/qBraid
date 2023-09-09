@@ -10,13 +10,10 @@
 
 """
 ====================================
- Devices (:mod:`qbraid.providers`)
+Providers (:mod:`qbraid.providers`)
 ====================================
 
 .. currentmodule:: qbraid.providers
-
-Devices API
-------------
 
 .. autosummary::
    :toctree: ../stubs/

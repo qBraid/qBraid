@@ -280,19 +280,20 @@ def test_cancel_completed_batch_error(device_id):
 
 def test_circuit_too_many_qubits():
     """Test that run method raises exception when input circuit
-    num qubits exceeds that of wrapped Qiskit device."""
-    two_qubit_circuit = QiskitCircuit(6)
-    two_qubit_circuit.h([0, 1])
-    two_qubit_circuit.cx(0, 5)
-    one_qubit_device = device_wrapper("ibm_q_belem")
+    num qubits exceeds that of wrapped AWS device."""
+    device = device_wrapper("aws_ionq_harmony")
+    num_qubits = device.num_qubits + 10
+    circuit = QiskitCircuit(num_qubits)
+    circuit.h([0, 1])
+    circuit.cx(0, num_qubits - 1)
     with pytest.raises(ProgramValidationError):
-        one_qubit_device.run(two_qubit_circuit)
+        device.run(circuit)
 
 
 def test_device_num_qubits():
     """Test device wrapper num qubits method"""
-    five_qubit_device = device_wrapper("ibm_q_belem")
-    assert five_qubit_device.num_qubits == 5
+    five_qubit_device = device_wrapper("aws_ionq_harmony")
+    assert five_qubit_device.num_qubits == 11
 
 
 def test_wait_for_final_state():
