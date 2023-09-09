@@ -91,22 +91,25 @@ def _qasm_qubit_decl(qasmstr: str) -> List[QASMType]:
 
 
 def _get_qreg(qubit_decl: str) -> tuple:
-    """Get qreg name and size from qubit declaration"""
+    """Get qreg name and size from qubit declaration
+
+    Args:
+        qubit_decl (str): The qubit declaration string
+    Returns:
+        tuple: A tuple containing the name and size of the qreg
+    """
 
     name, size = None, None
     if "qreg" in qubit_decl:
-        reg = qubit_decl.split("qreg")[1].split(";")[0].strip()
-        elements = reg.split("[")
-        name = elements[0]
-        size = int(elements[1].split("]")[0])
+        name, size = re.findall(r"qreg\s+(\S+)\s*\[(\d+)\]", qubit_decl.strip())[0]
     else:
-        try:
-            name = qubit_decl.split("]")[1].split(";")[0].strip()
-            size = int(qubit_decl.split("[")[1].split("]")[0].strip())
-        except IndexError as _:
-            name = qubit_decl.split("qubit")[1].split(";")[0].strip()
+        match = re.findall(r"qubit\s*\[(\d+)\]\s*(\S+)\s*;", qubit_decl.strip())
+        if len(match) > 0:
+            size, name = match[0]
+        else:
+            name = re.findall(r"qubit\s+(\S+)\s*;", qubit_decl.strip())[0]
             size = 1
-    return (name, size)
+    return (name, int(size))
 
 
 def _remove_gate_definitions(qasm_str):
@@ -130,6 +133,11 @@ def _remove_gate_definitions(qasm_str):
 
     // Actual depth : 1
     // Calculated depth : 2 (because of the gate definition)
+
+    Args:
+        qasm_str (string): The qasm string
+    Returns:
+        qasm_str (string): The qasm string with gate definitions removed
     """
 
     gate_decls = [x.group() for x in re.finditer(r"(gate)(.*\n)*?\s*\}", qasm_str)]
@@ -139,6 +147,15 @@ def _remove_gate_definitions(qasm_str):
 
 
 def _get_unused_qubit_indices(qasm_str, register_list):
+    """Get unused qubit indices in the circuit
+
+    Args:
+        qasm_str (string): The qasm string
+        register_list (list): The list of quantum registers with sizes
+
+    Returns:
+        dict: A dictionary with keys as register names and values as sets of unused indices
+    """
     qasm_str = _remove_gate_definitions(qasm_str)
     lines = qasm_str.splitlines()
     gate_lines = [
@@ -169,9 +186,16 @@ def _get_unused_qubit_indices(qasm_str, register_list):
 
 
 def convert_to_contiguous_qasm3(qasmstr: str) -> QASMType:
-    """Converts OpenQASM 3 string to contiguous qasm3 string with gate expansion"""
+    """Converts OpenQASM 3 string to contiguous qasm3 string with gate expansion
 
-    # SCOPE : no loops, no functions at the moment
+       no loops OR custom functions supported at the moment
+
+    Args:
+        qasmstr (str): OpenQASM 3 string
+
+    Returns:
+        str: Contiguous OpenQASM 3 string with gate expansion
+    """
 
     # pylint: disable=import-outside-toplevel
 
@@ -182,10 +206,10 @@ def convert_to_contiguous_qasm3(qasmstr: str) -> QASMType:
     # 2. Identify which qubits are not used in the circuit
     for qubit_decl in qubit_list:
         qreg_list.append(_get_qreg(qubit_decl))
-
-    # 3. Add an identity gate for the unused qubits
     qubit_indices = _get_unused_qubit_indices(qasmstr, qreg_list)
     expansion_qasm = ""
+
+    # 3. Add an identity gate for the unused qubits
     for reg, indices in qubit_indices.items():
         for index in indices:
             expansion_qasm += f"i {reg}[{index}];\n"
