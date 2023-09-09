@@ -21,4 +21,4 @@ Visualization (:mod:`qbraid.visualization`)
    plot_histogram
 
 """
-from .plot_histogram import plot_histogram
+from .plot_counts import plot_distribution, plot_histogram
