@@ -207,7 +207,7 @@ def _to_one_qubit_braket_instruction(
             return [BKInstruction(braket_noise_gate.PhaseDamping(operation.gate._gamma), target)]
 
         if cirq_ionq_ops and isinstance(
-            gate, cirq_ionq_ops.GPIGate, cirq_ionq_ops.GPI2Gate, cirq_ionq_ops.MSGate
+            gate, (cirq_ionq_ops.GPIGate, cirq_ionq_ops.GPI2Gate, cirq_ionq_ops.MSGate)
         ):
             raise NotImplementedError(
                 "Cirq to Amazon Braket IonQ gate conversions not yet supported."
