@@ -20,14 +20,14 @@ Transpiler  (:mod:`qbraid.transpiler`)
 
    convert_from_cirq
    convert_to_cirq
-   QuantumProgramWrapper
-   CirqCircuitWrapper
-   QasmCircuitWrapper
+   QuantumProgram
+   CirqCircuit
+   OpenQasm2Program
    CircuitConversionError
 
 """
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
-from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper
-from qbraid.transpiler.wrappers.cirq_circuit import CirqCircuitWrapper
-from qbraid.transpiler.wrappers.qasm_str import QasmCircuitWrapper
+from qbraid.transpiler.programs.abc_qprogram import QuantumProgram
+from qbraid.transpiler.programs.cirq_circuit import CirqCircuit
+from qbraid.transpiler.programs.qasm2_program import OpenQasm2Program

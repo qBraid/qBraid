@@ -14,8 +14,8 @@ Unit tests for enums defined in the qbraid device layer.
 """
 import pytest
 
-from qbraid.providers.enums import JobStatus, is_status_final, status_from_raw
-from qbraid.providers.job import _set_init_status
+from qbraid.providers.enums import JobStatus
+from qbraid.providers.job import QuantumJob
 
 status_data = [
     (JobStatus.INITIALIZING, False),
@@ -34,8 +34,8 @@ def test_is_status_final(status_tuple):
     """Test identifying job status objects that are in final state"""
     status_obj, final_expected = status_tuple
     status_str = status_obj.raw()
-    final_obj = is_status_final(status_obj)
-    final_str = is_status_final(status_str)
+    final_obj = QuantumJob.status_final(status_obj)
+    final_str = QuantumJob.status_final(status_str)
     assert final_obj == final_expected
     assert final_str == final_expected
 
@@ -44,7 +44,7 @@ def test_is_status_final(status_tuple):
 def test_is_status_final_error(status):
     """Test raiseing exception while checking if job status is final"""
     with pytest.raises(TypeError):
-        is_status_final(status)
+        QuantumJob.status_final(status)
 
 
 @pytest.mark.parametrize("status_tuple", status_data)
@@ -52,7 +52,7 @@ def test_status_from_raw(status_tuple):
     """Test converting str status representation to JobStatus object."""
     status_obj, _ = status_tuple
     status_str = status_obj.raw()
-    status_obj_test = status_from_raw(status_str)
+    status_obj_test = QuantumJob._map_status(status_str)
     assert status_obj == status_obj_test
 
 
@@ -60,12 +60,24 @@ def test_status_from_raw(status_tuple):
 def test_status_from_raw_error(status):
     """Test raising exception while converting invalid str status representation."""
     with pytest.raises(ValueError):
-        status_from_raw(status)
+        QuantumJob._map_status(status)
 
 
 @pytest.mark.parametrize(
-    "status_tuple", [(JobStatus.QUEUED, JobStatus.QUEUED), ("BadValue", JobStatus.UNKNOWN)]
+    "status_tuple",
+    [
+        (JobStatus.QUEUED, JobStatus.QUEUED),
+        ("VALIDATING", JobStatus.VALIDATING),
+        (None, JobStatus.UNKNOWN),
+    ],
 )
-def test_set_init_status(status_tuple):
+def test_map_status(status_tuple):
+    """Test setting initial job status."""
     status_input, status_expected = status_tuple
-    assert _set_init_status(status_input) == status_expected
+    assert QuantumJob._map_status(status_input) == status_expected
+
+
+def test_map__status_raises():
+    """Test raising exception for bad status type."""
+    with pytest.raises(ValueError):
+        QuantumJob._map_status(0)

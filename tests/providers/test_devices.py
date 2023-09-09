@@ -27,15 +27,10 @@ from qiskit_ibm_provider import IBMBackend, IBMJob, IBMProvider
 from qbraid import QbraidError, device_wrapper, job_wrapper
 from qbraid.api import QbraidSession
 from qbraid.interface import random_circuit
-from qbraid.providers.aws import AwsDeviceWrapper, AwsQuantumTaskWrapper
-from qbraid.providers.enums import is_status_final
+from qbraid.providers import QuantumJob
+from qbraid.providers.aws import BraketDevice, BraketQuantumTask
 from qbraid.providers.exceptions import JobStateError, ProgramValidationError
-from qbraid.providers.ibm import (
-    IBMBackendWrapper,
-    IBMJobWrapper,
-    ibm_least_busy_qpu,
-    ibm_to_qbraid_id,
-)
+from qbraid.providers.ibm import QiskitBackend, QiskitJob, ibm_least_busy_qpu, ibm_to_qbraid_id
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
@@ -100,8 +95,8 @@ def test_device_wrapper_id_error():
 def test_init_braket_device_wrapper(device_id):
     """Test device wrapper for ids of devices available through Amazon Braket."""
     qbraid_device = device_wrapper(device_id)
-    vendor_device = qbraid_device.vendor_dlo
-    assert isinstance(qbraid_device, AwsDeviceWrapper)
+    vendor_device = qbraid_device._device
+    assert isinstance(qbraid_device, BraketDevice)
     assert isinstance(vendor_device, AwsDevice)
 
 
@@ -109,8 +104,8 @@ def test_device_wrapper_from_braket_arn():
     """Test creating device wrapper from Amazon Braket device ARN."""
     aws_device_arn = "arn:aws:braket:::device/quantum-simulator/amazon/sv1"
     qbraid_device = device_wrapper(aws_device_arn)
-    vendor_device = qbraid_device.vendor_dlo
-    assert isinstance(qbraid_device, AwsDeviceWrapper)
+    vendor_device = qbraid_device._device
+    assert isinstance(qbraid_device, BraketDevice)
     assert isinstance(vendor_device, AwsDevice)
 
 
@@ -118,8 +113,8 @@ def test_device_wrapper_from_braket_arn():
 def test_init_qiskit_device_wrapper(device_id):
     """Test device wrapper for ids of devices available through Qiskit."""
     qbraid_device = device_wrapper(device_id)
-    vendor_device = qbraid_device.vendor_dlo
-    assert isinstance(qbraid_device, IBMBackendWrapper)
+    vendor_device = qbraid_device._device
+    assert isinstance(qbraid_device, QiskitBackend)
     assert isinstance(vendor_device, IBMBackend)
 
 
@@ -127,8 +122,8 @@ def test_device_wrapper_from_qiskit_id():
     """Test creating device wrapper from Qiskit device ID."""
     qiskit_device_id = "ibmq_belem"
     qbraid_device = device_wrapper(qiskit_device_id)
-    vendor_device = qbraid_device.vendor_dlo
-    assert isinstance(qbraid_device, IBMBackendWrapper)
+    vendor_device = qbraid_device._device
+    assert isinstance(qbraid_device, QiskitBackend)
     assert isinstance(vendor_device, IBMBackend)
 
 
@@ -138,13 +133,13 @@ def test_device_wrapper_properties():
     assert wrapper.provider == "OQC"
     assert wrapper.name == "Lucy"
     assert str(wrapper) == "AWS OQC Lucy device wrapper"
-    assert repr(wrapper) == "<AwsDeviceWrapper(OQC:'Lucy')>"
+    assert repr(wrapper) == "<BraketDevice(OQC:'Lucy')>"
 
 
 def test_wrap_least_busy():
     device_id = ibm_least_busy_qpu()
     qbraid_device = device_wrapper(device_id)
-    assert isinstance(qbraid_device, IBMBackendWrapper)
+    assert isinstance(qbraid_device, QiskitBackend)
 
 
 """
@@ -206,8 +201,8 @@ def test_run_qiskit_device_wrapper(device_id, circuit):
     """Test run method from wrapped Qiskit backends"""
     qbraid_device = device_wrapper(device_id)
     qbraid_job = qbraid_device.run(circuit, shots=10)
-    vendor_job = qbraid_job.vendor_jlo
-    assert isinstance(qbraid_job, IBMJobWrapper)
+    vendor_job = qbraid_job._job
+    assert isinstance(qbraid_job, QiskitJob)
     assert isinstance(vendor_job, IBMJob)
 
 
@@ -216,8 +211,8 @@ def test_run_batch_qiskit_device_wrapper(device_id):
     """Test run_batch method from wrapped Qiskit backends"""
     qbraid_device = device_wrapper(device_id)
     qbraid_job = qbraid_device.run_batch(circuits_qiskit_run, shots=10)
-    vendor_job = qbraid_job.vendor_jlo
-    assert isinstance(qbraid_job, IBMJobWrapper)
+    vendor_job = qbraid_job._job
+    assert isinstance(qbraid_job, QiskitJob)
     assert isinstance(vendor_job, IBMJob)
 
 
@@ -227,8 +222,8 @@ def test_run_braket_device_wrapper(device_id, circuit):
     """Test run method of wrapped Braket devices"""
     qbraid_device = device_wrapper(device_id)
     qbraid_job = qbraid_device.run(circuit, shots=10)
-    vendor_job = qbraid_job.vendor_jlo
-    assert isinstance(qbraid_job, AwsQuantumTaskWrapper)
+    vendor_job = qbraid_job._job
+    assert isinstance(qbraid_job, BraketQuantumTask)
     assert isinstance(vendor_job, AwsQuantumTask)
 
 
@@ -238,7 +233,7 @@ def test_run_batch_braket_device_wrapper():
     qbraid_job_list = qbraid_device.run_batch(circuits_braket_run, shots=10)
     qbraid_job = qbraid_job_list[0]
     assert len(qbraid_job_list) == len(circuits_braket_run)
-    assert isinstance(qbraid_job, AwsQuantumTaskWrapper)
+    assert isinstance(qbraid_job, BraketQuantumTask)
 
 
 @pytest.mark.parametrize("device_id", ["ibm_q_simulator_statevector"])
@@ -259,7 +254,7 @@ def test_cancel_completed_batch_error(device_id):
     while elapsed_time < timeout:
         # Check if job has reached its final state
         status = qbraid_job.status()
-        if is_status_final(status):
+        if QuantumJob.status_final(status):
             break
 
         # If not, sleep and then check again
@@ -303,7 +298,7 @@ def test_wait_for_final_state():
     job = device.run(circuit, shots=10)
     job.wait_for_final_state()
     status = job.status()
-    assert is_status_final(status)
+    assert QuantumJob.status_final(status)
 
 
 def test_aws_device_available():

@@ -9,19 +9,19 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining BraketCircuitWrapper Class
+Module defining PytketCircuit Class
 
 """
-from braket.circuits.circuit import Circuit as BKCircuit
+from pytket.circuit import Circuit as TKCircuit
 
-from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper
+from qbraid.transpiler.programs.abc_qprogram import QuantumProgram
 
 
-class BraketCircuitWrapper(QuantumProgramWrapper):
-    """Wrapper class for Amazon Braket ``Circuit`` objects."""
+class PytketCircuit(QuantumProgram):
+    """Wrapper class for Pytket ``Circuit`` objects."""
 
-    def __init__(self, circuit: BKCircuit):
-        """Create a BraketCircuitWrapper
+    def __init__(self, circuit: TKCircuit):
+        """Create a PytketCircuit
 
         Args:
             circuit: the circuit object to be wrapped
@@ -30,7 +30,8 @@ class BraketCircuitWrapper(QuantumProgramWrapper):
         super().__init__(circuit)
 
         self._qubits = circuit.qubits
-        self._num_qubits = len(self.qubits)
-        self._depth = circuit.depth
-        self._package = "braket"
+        self._num_qubits = circuit.n_qubits
+        self._num_clbits = circuit.n_bits
+        self._depth = circuit.depth()
+        self._package = "pytket"
         self._program_type = "Circuit"

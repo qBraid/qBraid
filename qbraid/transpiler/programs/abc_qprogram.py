@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining QuantumProgramWrapper Class
+Module defining QuantumProgram Class
 
 """
 from typing import TYPE_CHECKING, List, Optional
@@ -24,7 +24,7 @@ if TYPE_CHECKING:
     import qbraid
 
 
-class QuantumProgramWrapper:
+class QuantumProgram:
     """Abstract class for qbraid program wrapper objects.
 
     Note: The program wrapper object keeps track of abstract parameters and qubits using an

@@ -23,11 +23,11 @@ from braket.schema_common import BraketSchemaBase
 
 from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.api import QbraidSession
-from qbraid.providers.device import DeviceLikeWrapper
+from qbraid.providers.device import QuantumDevice
 from qbraid.providers.enums import DeviceStatus
 from qbraid.providers.exceptions import DeviceError
 
-from .job import AwsQuantumTaskWrapper
+from .job import BraketQuantumTask
 
 if TYPE_CHECKING:
     import qbraid
@@ -40,11 +40,11 @@ class AwsDeviceType(str, Enum):
     QPU = "QPU"
 
 
-class AwsDeviceWrapper(DeviceLikeWrapper):
+class BraketDevice(QuantumDevice):
     """Wrapper class for Amazon Braket ``Device`` objects."""
 
     def __init__(self, **kwargs):
-        """Create a AwsDeviceWrapper."""
+        """Create a BraketDevice."""
 
         super().__init__(**kwargs)
         self._arn = self.vendor_device_id
@@ -104,7 +104,7 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
         Returns:
             The status of this Device
         """
-        if self.vendor_dlo.status != "ONLINE":
+        if self._device.status != "ONLINE":
             return DeviceStatus.OFFLINE
         return DeviceStatus.ONLINE
 
@@ -128,7 +128,7 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
         is_available_result = False
         available_time = None
 
-        device = self.vendor_dlo
+        device = self._device
 
         if device.status != "ONLINE":
             return is_available_result, ""
@@ -242,13 +242,13 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
 
         if "s3_destination_folder" not in kwargs:
             kwargs["s3_destination_folder"] = self._default_s3_folder
-        aws_quantum_task = self.vendor_dlo.run(run_input, *args, **kwargs)
+        aws_quantum_task = self._device.run(run_input, *args, **kwargs)
         metadata = aws_quantum_task.metadata()
         shots = 0 if "shots" not in metadata else metadata["shots"]
         vendor_job_id = metadata["quantumTaskArn"]
         job_id = self._init_job(vendor_job_id, [qbraid_circuit], shots)
-        return AwsQuantumTaskWrapper(
-            job_id, vendor_job_id=vendor_job_id, device=self, vendor_jlo=aws_quantum_task
+        return BraketQuantumTask(
+            job_id, vendor_job_id=vendor_job_id, device=self, vendor_job_obj=aws_quantum_task
         )
 
     def run_batch(self, run_input, **kwargs) -> List["qbraid.device.aws.BraketQuantumTaskWrapper"]:
@@ -261,10 +261,10 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
             shots (int): The number of times to run the task on the device. Default is 1024.
 
         Returns:
-            List of AwsQuantumTaskWrapper objects for the run.
+            List of BraketQuantumTask objects for the run.
 
         """
-        device = self.vendor_dlo
+        device = self._device
         qbraid_circuit_batch = []
         run_input_batch = []
         for circuit in run_input:
@@ -285,8 +285,11 @@ class AwsDeviceWrapper(DeviceLikeWrapper):
             vendor_job_id = metadata["quantumTaskArn"]
             job_id = self._init_job(vendor_job_id, [qbraid_circuit], shots)
             aws_quantum_task_wrapper_list.append(
-                AwsQuantumTaskWrapper(
-                    job_id, vendor_job_id=vendor_job_id, device=self, vendor_jlo=aws_quantum_task
+                BraketQuantumTask(
+                    job_id,
+                    vendor_job_id=vendor_job_id,
+                    device=self,
+                    vendor_job_obj=aws_quantum_task,
                 )
             )
         return aws_quantum_task_wrapper_list

@@ -12,20 +12,20 @@
 
 
 """
-Module defining CirqCircuitWrapper Class
+Module defining CirqCircuit Class
 
 """
 
 from cirq.circuits import Circuit
 
-from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper
+from qbraid.transpiler.programs.abc_qprogram import QuantumProgram
 
 
-class CirqCircuitWrapper(QuantumProgramWrapper):
+class CirqCircuit(QuantumProgram):
     """Wrapper class for Cirq ``Circuit`` objects."""
 
     def __init__(self, circuit: Circuit):
-        """Create a CirqCircuitWrapper
+        """Create a CirqCircuit
 
         Args:
             circuit: the cirq ``Circuit`` object to be wrapped

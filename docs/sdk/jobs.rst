@@ -19,15 +19,15 @@ target backend, the procedure was as follows:
     >>> type(qjob)
     qbraid.providers.aws.job.BraketQuantumTaskWrapper
 
-Invoking the ``run`` method of a qBraid ``DeviceLikeWrapper`` returns a qBraid
-``JobLikeWrapper``. Through a unified set of methods and attributes, this class
+Invoking the ``run`` method of a qBraid ``QuantumDevice`` returns a qBraid
+``QuantumJob``. Through a unified set of methods and attributes, this class
 provides access to data about the quantum jobs executed across any qBraid supported
 backend. You can also directly access the wrapped "job-like" object using the
-``vendor_jlo`` attribute.
+``_job`` attribute.
 
 .. code-block:: python
 
-    >>> type(qjob.vendor_jlo)
+    >>> type(qjob._job)
     braket.aws.aws_quantum_task.AwsQuantumTask
 
 Check the status of your quantum job using the ``status`` method:
@@ -66,7 +66,7 @@ By default, ``get_jobs`` returns the 10 most recently submitted jobs matching yo
     ...
 
 
-This job ID can be used to reinstantiate a qBraid ``JobLikeWrapper`` object at any
+This job ID can be used to reinstantiate a qBraid ``QuantumJob`` object at any
 time, and even in a seperate program, with no loss of information.
 
 .. code-block:: python

@@ -19,22 +19,21 @@ Providers (:mod:`qbraid.providers`)
    :toctree: ../stubs/
 
    DeviceError
-   DeviceLikeWrapper
+   QuantumDevice
    DeviceStatus
    DeviceType
    JobError
    JobStateError
-   JobLikeWrapper
+   QuantumJob
    JobStatus
    ProgramValidationError
    QbraidRuntimeError
-   ResultWrapper
-   is_status_final
+   QuantumJobResult
 
 
 """
-from .device import DeviceLikeWrapper
-from .enums import DeviceStatus, DeviceType, JobStatus, is_status_final
+from .device import QuantumDevice
+from .enums import DeviceStatus, DeviceType, JobStatus
 from .exceptions import (
     DeviceError,
     JobError,
@@ -42,5 +41,5 @@ from .exceptions import (
     ProgramValidationError,
     QbraidRuntimeError,
 )
-from .job import JobLikeWrapper
-from .result import ResultWrapper
+from .job import QuantumJob
+from .result import QuantumJobResult

@@ -106,7 +106,7 @@ how this value is used to wrap the quantum backends / device objects of various 
 Device Wrapper
 ----------------
 
-Given a ``qbraid_id`` retrieved from ``get_devices``, a ``qbraid.providers.DeviceLikeWrapper``
+Given a ``qbraid_id`` retrieved from ``get_devices``, a ``qbraid.providers.QuantumDevice``
 object can be created as follows:
 
 .. code-block:: python
@@ -140,14 +140,14 @@ wrapped device object directly, and more.
     'status': 'ONLINE',
     ...,
     ...}
-    >>> type(qdevice.vendor_dlo)
+    >>> type(qdevice._device)
     braket.aws.aws_device.AwsDevice
 
 
 Executing Circuits
 -------------------
 
-Each ``DeviceLikeWrapper`` is equipped with a ``run`` method, which extends the
+Each ``QuantumDevice`` is equipped with a ``run`` method, which extends the
 wrapped object's native ``execute``, ``sample``, ``run``, or equivalent circuit
 execution method. This abstraction allows the user to pass a quantum circuit built
 using any qbraid-supported frontend to the ``run`` method of the wrapped device.

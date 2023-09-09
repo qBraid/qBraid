@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining IBMJobWrapper Class
+Module defining QiskitJob Class
 
 """
 import logging
@@ -19,39 +19,39 @@ from qiskit_ibm_provider.job.exceptions import IBMJobInvalidStateError
 
 from qbraid.providers.enums import JOB_FINAL
 from qbraid.providers.exceptions import JobError, JobStateError
-from qbraid.providers.job import JobLikeWrapper
+from qbraid.providers.job import QuantumJob
 
-from .result import IBMResultWrapper
+from .result import QiskitResult
 
 
-class IBMJobWrapper(JobLikeWrapper):
+class QiskitJob(QuantumJob):
     """Wrapper class for IBM Qiskit ``Job`` objects."""
 
     def __init__(self, job_id: str, **kwargs):
-        """Create a ``IBMJobWrapper`` object."""
+        """Create a ``QiskitJob`` object."""
         super().__init__(job_id, **kwargs)
 
-    def _get_vendor_jlo(self):
+    def _get_job(self):
         """Return the job like object that is being wrapped."""
-        if not isinstance(self.device.vendor_dlo, IBMBackend):
+        if not isinstance(self.device._device, IBMBackend):
             raise JobError(
                 "Cannot retrieve job submitted to unrecognized backend. Expected device of type "
-                f"qiskit_ibm_provider.IBMBackend, but instead got {type(self.device.vendor_dlo)}."
+                f"qiskit_ibm_provider.IBMBackend, but instead got {type(self.device._device)}."
             )
         job_id = self.vendor_job_id
-        backend = self.device.vendor_dlo
+        backend = self.device._device
         provider = backend.provider
         return provider.backend.retrieve_job(job_id)
 
     def _get_status(self):
         """Returns status from Qiskit Job object."""
-        return str(self.vendor_jlo.status())
+        return str(self._job.status())
 
     def result(self):
         """Return the results of the job."""
         if self.status() not in JOB_FINAL:
             logging.info("Result will be available when job has reached final state.")
-        return IBMResultWrapper(self.vendor_jlo.result())
+        return QiskitResult(self._job.result())
 
     def cancel(self):
         """Attempt to cancel the job."""
@@ -59,6 +59,6 @@ class IBMJobWrapper(JobLikeWrapper):
         if status in JOB_FINAL:
             raise JobStateError(f"Cannot cancel quantum job in the {status} state.")
         try:
-            return self.vendor_jlo.cancel()
+            return self._job.cancel()
         except IBMJobInvalidStateError as err:
             raise JobStateError from err

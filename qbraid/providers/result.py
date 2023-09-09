@@ -9,22 +9,22 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining abstract ResultWrapper Class
+Module defining abstract QuantumJobResult Class
 
 """
 from abc import ABC, abstractmethod
 
 
-class ResultWrapper(ABC):
+class QuantumJobResult(ABC):
     """Abstract interface for result-like classes.
 
     Args:
-        vendor_rlo: A result-like object
+        _result: A result-like object
 
     """
 
-    def __init__(self, vendor_rlo):
-        self.vendor_rlo = vendor_rlo
+    def __init__(self, _result):
+        self._result = _result
 
     @abstractmethod
     def measurements(self):
@@ -46,9 +46,9 @@ class ResultWrapper(ABC):
 
             >>> counts
             {'1 1': 13, '0 0': 46, '1 0': 79}
-            >>> ResultWrapper.format_counts(counts)
+            >>> QuantumJobResult.format_counts(counts)
             {'00': 46, '10': 79, '11': 13}
-            >>> ResultWrapper.format_counts(counts, include_zero_values=True)
+            >>> QuantumJobResult.format_counts(counts, include_zero_values=True)
             {'00': 46, '01': 0, '10': 79, '11': 13}
 
         """

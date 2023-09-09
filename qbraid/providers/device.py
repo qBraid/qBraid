@@ -11,7 +11,7 @@
 # pylint:disable=invalid-name
 
 """
-Module defining abstract DeviceLikeWrapper Class
+Module defining abstract QuantumDevice Class
 
 """
 
@@ -32,11 +32,11 @@ if TYPE_CHECKING:
     import qbraid
 
 
-class DeviceLikeWrapper(ABC):
+class QuantumDevice(ABC):
     """Abstract interface for device-like classes."""
 
     def __init__(self, **kwargs):
-        """Create a ``DeviceLikeWrapper`` object.
+        """Create a ``QuantumDevice`` object.
 
         Keyword Args:
             qbraid_id (str): The internal device ID (see :func:`~qbraid.get_devices`)
@@ -52,7 +52,7 @@ class DeviceLikeWrapper(ABC):
         self._info = kwargs
         self._qubits = self._info.get("numberQubits")
         self.vendor_device_id = self._info.pop("objArg")
-        self.vendor_dlo = self._get_device()
+        self._device = self._get_device()
 
     @property
     def info(self) -> dict:
@@ -175,13 +175,11 @@ class DeviceLikeWrapper(ABC):
         """
         return self._compile(run_input)
 
-    def process_run_input(
-        self, run_input: "qbraid.QPROGRAM"
-    ) -> "qbraid.transpiler.QuantumProgramWrapper":
+    def process_run_input(self, run_input: "qbraid.QPROGRAM") -> "qbraid.transpiler.QuantumProgram":
         """Process quantum program before passing to device run method.
 
         Returns:
-            :class:`~qbraid.transpiler.QuantumProgramWrapper`: qBraid wrapped quantum program object
+            :class:`~qbraid.transpiler.QuantumProgram`: qBraid wrapped quantum program object
 
         Raises:
             QbraidRuntimeError: If error processing run input
@@ -195,7 +193,7 @@ class DeviceLikeWrapper(ABC):
     def _init_job(
         self,
         vendor_job_id: str,
-        circuits: "qbraid.transpiler.QuantumProgramWrapper",
+        circuits: "qbraid.transpiler.QuantumProgram",
         shots: int,
     ) -> str:
         """Initialize data dictionary for new qbraid job and
@@ -228,7 +226,7 @@ class DeviceLikeWrapper(ABC):
         # Create a new document for the user job. The qBraid API creates a unique
         # Job ID, which is collected in the response. We use dummy variables for
         # each of the status fields, which will be updated via the `get_job_data`
-        # function upon instantiation of the `JobLikeWrapper` object.
+        # function upon instantiation of the `QuantumJob` object.
         init_data = {
             "qbraidJobId": "",
             "vendorJobId": vendor_job_id,
@@ -263,7 +261,5 @@ class DeviceLikeWrapper(ABC):
         """Applies any software/device specific modifications to run input."""
 
     @abstractmethod
-    def run(
-        self, run_input: "qbraid.QPROGRAM", *args, **kwargs
-    ) -> "qbraid.providers.JobLikeWrapper":
+    def run(self, run_input: "qbraid.QPROGRAM", *args, **kwargs) -> "qbraid.providers.QuantumJob":
         """Abstract run method."""

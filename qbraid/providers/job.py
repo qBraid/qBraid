@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining abstract JobLikeWrapper Class
+Module defining abstract QuantumJob Class
 
 """
 import logging
@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 from qbraid import device_wrapper
 from qbraid.api import QbraidSession
 
-from .enums import JOB_FINAL, JobStatus, status_from_raw
+from .enums import JOB_FINAL, JobStatus
 from .exceptions import JobError
 from .status_maps import STATUS_MAP
 
@@ -28,37 +28,23 @@ if TYPE_CHECKING:
     import qbraid
 
 
-def _set_init_status(status: Optional[Union[str, JobStatus]]) -> JobStatus:
-    """Returns `JobStatus` object with which to initialize job. If no value
-    provided or conversion from string fails, returns `JobStatus.UNKNOWN`.
-    """
-    if isinstance(status, JobStatus):
-        return status
-    if isinstance(status, str):
-        try:
-            return status_from_raw(status)
-        except ValueError:
-            return JobStatus.UNKNOWN
-    return JobStatus.UNKNOWN
-
-
-class JobLikeWrapper(ABC):
+class QuantumJob(ABC):
     """Abstract interface for job-like classes."""
 
     def __init__(  # pylint: disable=too-many-arguments
         self,
         job_id: str,
         vendor_job_id: Optional[str] = None,
-        device: "Optional[qbraid.providers.DeviceLikeWrapper]" = None,
-        vendor_jlo: Optional[Any] = None,
+        device: "Optional[qbraid.providers.QuantumDevice]" = None,
+        vendor_job_obj: Optional[Any] = None,
         status: Optional[Union[str, JobStatus]] = None,
     ):
         self._cache_metadata = None
-        self._cache_status = _set_init_status(status)
+        self._cache_status = self._map_status(status)
         self._job_id = job_id
         self._vendor_job_id = vendor_job_id
         self._device = device
-        self._vendor_jlo = vendor_jlo
+        self._job = vendor_job_obj or self._get_job()
         self._status_map = STATUS_MAP[self.device.vendor]
 
     @property
@@ -70,25 +56,70 @@ class JobLikeWrapper(ABC):
     def vendor_job_id(self) -> str:
         """Returns the ID assigned by the device vendor"""
         if self._vendor_job_id is None:
-            self._cache_metadata = self._get_job_data(self.id)
+            self._cache_metadata = self._post_job_data()
             self._vendor_job_id = self._cache_metadata["vendorJobId"]
         return self._vendor_job_id
 
     @property
-    def device(self) -> "qbraid.providers.DeviceLikeWrapper":
-        """Returns the qbraid DeviceLikeWrapper object associated with this job."""
+    def device(self) -> "qbraid.providers.QuantumDevice":
+        """Returns the qbraid QuantumDevice object associated with this job."""
         if self._device is None:
             self._device = device_wrapper(self.id.split(":")[0])
         return self._device
 
-    @property
-    def vendor_jlo(self) -> Any:
-        """Return the job like object that is being wrapped."""
-        if self._vendor_jlo is None:
-            self._vendor_jlo = self._get_vendor_jlo()
-        return self._vendor_jlo
+    @staticmethod
+    def _map_status(status: Optional[Union[str, JobStatus]] = None) -> JobStatus:
+        """Returns `JobStatus` object mapped from raw status value. If no value
+        provided or conversion from string fails, returns `JobStatus.UNKNOWN`."""
+        if status is None:
+            return JobStatus.UNKNOWN
+        if isinstance(status, JobStatus):
+            return status
+        if isinstance(status, str):
+            for e in JobStatus:
+                status_enum = JobStatus(e.value)
+                if status == status_enum.raw() or status == str(status_enum):
+                    return status_enum
+            raise ValueError(f"Status value '{status}' not recognized.")
+        raise ValueError(f"Invalid status value type: {type(status)}")
 
-    def _get_job_data(self, update: Optional[dict] = None) -> dict:
+    @staticmethod
+    def status_final(status: Union[str, JobStatus]) -> bool:
+        """Returns True if job is in final state. False otherwise."""
+        if isinstance(status, str):
+            if status in JOB_FINAL:
+                return True
+            for job_status in JOB_FINAL:
+                if job_status.raw() == status:
+                    return True
+            return False
+        raise TypeError(
+            f"Expected status of type 'str' or 'JobStatus' \
+            but instead got status of type {type(status)}."
+        )
+
+    def _status(self) -> Tuple[JobStatus, str]:
+        vendor_status = self._get_status()
+        try:
+            return self._status_map[vendor_status], vendor_status
+        except KeyError:
+            logging.warning(
+                "Expected %s job status matching one of %s but instead got '%s'.",
+                self._device.vendor,
+                str(list(self._status_map.keys())),
+                vendor_status,
+            )
+            return JobStatus.UNKNOWN, vendor_status
+
+    def status(self) -> JobStatus:
+        """Return the status of the job / task , among the values of ``JobStatus``."""
+        qbraid_status, vendor_status = self._status()
+        if qbraid_status != self._cache_status:
+            update = {"status": vendor_status, "qbraidStatus": qbraid_status.raw()}
+            _ = self._post_job_data(update=update)
+        return qbraid_status
+
+    def _post_job_data(self, update: Optional[dict] = None) -> dict:
         """Retreives job metadata and optionally updates document.
 
         Args:
@@ -109,43 +140,13 @@ class JobLikeWrapper(ABC):
         metadata.pop("user", None)
         return metadata
 
-    @abstractmethod
-    def _get_vendor_jlo(self):
-        """Return the job like object that is being wrapped."""
-
-    def _status(self) -> Tuple[JobStatus, str]:
-        vendor_status = self._get_status()
-        try:
-            return self._status_map[vendor_status], vendor_status
-        except KeyError:
-            logging.warning(
-                "Expected %s job status matching one of %s but instead got '%s'.",
-                self._device.vendor,
-                str(list(self._status_map.keys())),
-                vendor_status,
-            )
-            return JobStatus.UNKNOWN, vendor_status
-
-    def status(self) -> JobStatus:
-        """Return the status of the job / task , among the values of ``JobStatus``."""
-        qbraid_status, vendor_status = self._status()
-        if qbraid_status != self._cache_status:
-            update = {"status": vendor_status, "qbraidStatus": qbraid_status.raw()}
-            _ = self._get_job_data(update=update)
-        return qbraid_status
-
-    @abstractmethod
-    def _get_status(self) -> str:
-        """Status method helper function. Uses ``vendor_jlo`` to get status of the job / task, casts
-        as string if necessary, returns result."""
-
     def metadata(self) -> Dict[str, Any]:
         """Return the metadata regarding the job."""
         qbraid_status, vendor_status = self._status()
         if not self._cache_metadata or qbraid_status != self._cache_status:
             update = {"status": vendor_status, "qbraidStatus": qbraid_status.raw()}
-            self._cache_metadata = self._get_job_data(update=update)
-            self._cache_status = status_from_raw(self._cache_metadata["qbraidStatus"])
+            self._cache_metadata = self._post_job_data(update=update)
+            self._cache_status = self._map_status(self._cache_metadata["qbraidStatus"])
         return self._cache_metadata
 
     def wait_for_final_state(self, timeout=None, wait=5) -> None:
@@ -161,12 +162,20 @@ class JobLikeWrapper(ABC):
         """
         start_time = time()
         status = self.status()
-        while status not in JOB_FINAL:
+        while not self.status_final(status):
             elapsed_time = time() - start_time
             if timeout is not None and elapsed_time >= timeout:
                 raise JobError(f"Timeout while waiting for job {self.id}.")
             sleep(wait)
             status = self.status()
+
+    @abstractmethod
+    def _get_job(self):
+        """Return the job like object that is being wrapped."""
+
+    @abstractmethod
+    def _get_status(self) -> str:
+        """Returns job status casted as string."""
 
     @abstractmethod
     def result(self) -> "qbraid.providers.ResultWrapper":
@@ -177,5 +186,5 @@ class JobLikeWrapper(ABC):
         """Attempt to cancel the job."""
 
     def __repr__(self) -> str:
-        """String representation of a JobLikeWrapper object."""
+        """String representation of a QuantumJob object."""
         return f"<{self.__class__.__name__}(id:'{self.id}')>"

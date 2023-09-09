@@ -66,7 +66,7 @@ def test_retrieving_ibm_job():
     circuit.measure(0, 0)
     qbraid_device = device_wrapper("ibm_q_qasm_simulator")
     qbraid_job = qbraid_device.run(circuit, shots=1)
-    ibm_job = qbraid_job._get_vendor_jlo()
+    ibm_job = qbraid_job._get_job()
     assert isinstance(ibm_job, IBMCircuitJob)
 
 
@@ -78,6 +78,6 @@ def test_retrieving_ibm_job_raises_error():
     circuit.measure(0, 0)
     qbraid_device = device_wrapper("ibm_q_qasm_simulator")
     qbraid_job = qbraid_device.run(circuit, shots=1)
-    qbraid_job.device.vendor_dlo = Mock()
+    qbraid_job.device._device = Mock()
     with pytest.raises(JobError):
-        qbraid_job._get_vendor_jlo()
+        qbraid_job._get_job()

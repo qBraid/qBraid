@@ -46,13 +46,13 @@ and plot a histogram of the probabilities.
 
 The results layer follows the same wrapper abstraction as the circuit, device
 and job layers. You can access the underlying "result-like" object using
-the ``vendor_rlo`` attribute:
+the ``_result`` attribute:
 
 .. code-block:: python
 
     >>> type(qresult_ibmq)
-    qbraid.providers.ibm.result.IBMResultWrapper
-    >>> type(qresult_ibmq.vendor_rlo)
+    qbraid.providers.ibm.result.QiskitResult
+    >>> type(qresult_ibmq._result)
     qiskit.result.result.Result
 
 

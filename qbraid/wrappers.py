@@ -29,7 +29,7 @@ def _get_entrypoints(group: str):
 def circuit_wrapper(program: QPROGRAM):
     """Apply qbraid quantum program wrapper to a supported quantum program.
 
-    This function is used to create a qBraid :class:`~qbraid.transpiler.QuantumProgramWrapper`
+    This function is used to create a qBraid :class:`~qbraid.transpiler.QuantumProgram`
     object, which can then be transpiled to any supported quantum circuit-building package.
     The input quantum circuit object must be an instance of a circuit object derived from a
     supported package.
@@ -47,7 +47,7 @@ def circuit_wrapper(program: QPROGRAM):
         circuit (:data:`~qbraid.QPROGRAM`): A supported quantum circuit / program object
 
     Returns:
-        :class:`~qbraid.transpiler.QuantumProgramWrapper`: A wrapped quantum circuit-like object
+        :class:`~qbraid.transpiler.QuantumProgram`: A wrapped quantum circuit-like object
 
     Raises:
         :class:`~qbraid.QbraidError`: If the input circuit is not a supported quantum program.
@@ -83,7 +83,7 @@ def device_wrapper(device_id: str):
         device_id: unique ID specifying a supported quantum hardware device/simulator
 
     Returns:
-        :class:`~qbraid.providers.DeviceLikeWrapper`: A wrapped quantum device-like object
+        :class:`~qbraid.providers.QuantumDevice`: A wrapped quantum device-like object
 
     Raises:
         :class:`~qbraid.QbraidError`: If ``device_id`` is not a valid device reference.
@@ -121,7 +121,7 @@ def job_wrapper(qbraid_job_id: str):
         qbraid_job_id: qBraid Job ID
 
     Returns:
-        :class:`~qbraid.providers.job.JobLikeWrapper`: A wrapped quantum job-like object
+        :class:`~qbraid.providers.job.QuantumJob`: A wrapped quantum job-like object
 
     """
     session = QbraidSession()

@@ -9,15 +9,15 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining BraketResultWrapper Class
+Module defining BraketGateModelResult Class
 
 """
 import numpy as np
 
-from qbraid.providers.result import ResultWrapper
+from qbraid.providers.result import QuantumJobResult
 
 
-class AwsGateModelResultWrapper(ResultWrapper):
+class BraketGateModelResult(QuantumJobResult):
     """Wrapper class for Amazon Braket result objects."""
 
     def measurements(self):
@@ -28,11 +28,11 @@ class AwsGateModelResultWrapper(ResultWrapper):
         TODO: Make doc-string consistent with parent.
 
         """
-        return np.flip(self.vendor_rlo.measurements, 1)
+        return np.flip(self._result.measurements, 1)
 
     def raw_counts(self):
         """Returns the histogram data of the run"""
-        braket_counts = dict(self.vendor_rlo.measurement_counts)
+        braket_counts = dict(self._result.measurement_counts)
         qbraid_counts = {}
         for key in braket_counts:
             str_key = "".join(reversed([str(i) for i in key]))

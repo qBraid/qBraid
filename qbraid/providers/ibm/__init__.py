@@ -26,12 +26,12 @@ This module contains the classes used to run quantum circuits on devices availab
    ibm_provider
    ibm_least_busy_qpu
    ibm_to_qbraid_id
-   IBMBackendWrapper
-   IBMJobWrapper
-   IBMResultWrapper
+   QiskitBackend
+   QiskitJob
+   QiskitResult
 
 """
-from .result import IBMResultWrapper
-from .device import IBMBackendWrapper
-from .job import IBMJobWrapper
+from .result import QiskitResult
+from .device import QiskitBackend
+from .job import QiskitJob
 from .provider import ibm_provider, ibm_least_busy_qpu, ibm_to_qbraid_id

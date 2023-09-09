@@ -9,19 +9,19 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining QiskitCircuitWrapper Class
+Module defining QiskitCircuit Class
 
 """
 from cirq import Circuit
 
-from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper
+from qbraid.transpiler.programs.abc_qprogram import QuantumProgram
 
 
-class QiskitCircuitWrapper(QuantumProgramWrapper):
+class QiskitCircuit(QuantumProgram):
     """Wrapper class for Qiskit ``Circuit`` objects"""
 
     def __init__(self, circuit: Circuit):
-        """Create a QiskitCircuitWrapper
+        """Create a QiskitCircuit
 
         Args
             circuit: the qiskit ``Circuit`` object to be wrapped
