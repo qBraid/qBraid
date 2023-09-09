@@ -24,13 +24,11 @@ from qiskit.qasm3 import dumps, loads
 from qbraid.interface import circuits_allclose, random_circuit
 from qbraid.interface.qbraid_qasm3.random_circuit import _qasm3_random
 from qbraid.interface.qbraid_qasm3.tools import (
+    convert_to_contiguous_qasm3,
     convert_to_qasm3,
     qasm3_depth,
-    qasm_3_num_qubits,
-    qasm_depth,
-    qasm_num_qubits,
-    qasm_qubits,
-    convert_to_contiguous_qasm3,
+    qasm3_num_qubits,
+    qasm3_qubits,
 )
 
 from .._data.qasm3.circuits import qasm3_bell, qasm3_shared15
@@ -157,7 +155,6 @@ def test_convert_to_contiguous_qasm_3():
 
     qasm_expected = qasm_test + """i q1[1];\ni q2[1];\ni q4[0];\n"""
 
-    print(convert_to_contiguous_qasm3(qasm_test))
     assert convert_to_contiguous_qasm3(qasm_test) == qasm_expected
 
 
