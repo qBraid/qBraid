@@ -66,8 +66,12 @@ def _unitary_from_qasm3(qasmstr: QASMType) -> np.ndarray:
     return _unitary_from_qiskit(circuit)
 
 
-def _convert_to_contiguous_qasm3(qasmstr: QASMType, rev_qubits=False) -> QASMType:
+def _convert_to_contiguous_qasm3(qasmstr: QASMType, rev_qubits=False, expansion=False) -> QASMType:
     """Delete qubit(s) with no gate, if any exist."""
+    if expansion:
+        qasmstr = _contiguous_expansion(qasmstr)
+        if not rev_qubits:
+            return qasmstr
     circuit = loads(qasmstr)
     circuit_contig = _convert_to_contiguous_qiskit(circuit, rev_qubits=rev_qubits)
     return dumps(circuit_contig)
@@ -185,7 +189,7 @@ def _get_unused_qubit_indices(qasm_str, register_list):
     return unused_indices
 
 
-def convert_to_contiguous_qasm3(qasmstr: str) -> QASMType:
+def _contiguous_expansion(qasmstr: str) -> QASMType:
     """Converts OpenQASM 3 string to contiguous qasm3 string with gate expansion
 
        no loops OR custom functions supported at the moment
