@@ -18,7 +18,7 @@ import pytest
 
 from qbraid import device_wrapper
 from qbraid.interface import random_circuit
-from qbraid.providers.result import _format_counts
+from qbraid.providers.result import ResultWrapper
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
@@ -26,12 +26,12 @@ REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM/AWS sto
 
 
 @pytest.mark.parametrize(
-    "counts_raw, expected_out, remove_zeros",
+    "counts_raw, expected_out, include_zero_values",
     [
-        ({" 1": 0, "0": 550}, {"0": 550}, True),
-        ({"10": 479, "1 1": 13, "0 0 ": 496}, {"00": 496, "10": 479, "11": 13}, True),
-        ({" 1": 474, "0": 550}, {"0": 550, "1": 474}, False),
-        ({"10": 479, "1 1": 13, "0 0 ": 496}, {"00": 496, "01": 0, "10": 479, "11": 13}, False),
+        ({" 1": 0, "0": 550}, {"0": 550}, False),
+        ({"10": 479, "1 1": 13, "0 0 ": 496}, {"00": 496, "10": 479, "11": 13}, False),
+        ({" 1": 474, "0": 550}, {"0": 550, "1": 474}, True),
+        ({"10": 479, "1 1": 13, "0 0 ": 496}, {"00": 496, "01": 0, "10": 479, "11": 13}, True),
         (
             {"10 1": 586, "11  0  ": 139, "0 01": 496, "  010": 543, "11 1": 594},
             {
@@ -44,12 +44,12 @@ REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM/AWS sto
                 "110": 139,
                 "111": 594,
             },
-            False,
+            True,
         ),
     ],
 )
-def test_format_counts(counts_raw, expected_out, remove_zeros):
-    counts_out = _format_counts(counts_raw, remove_zeros)
+def test_format_counts(counts_raw, expected_out, include_zero_values):
+    counts_out = ResultWrapper.format_counts(counts_raw, include_zero_values=include_zero_values)
     assert counts_out == expected_out  # check equivalance
     assert list(counts_out.items()) == list(expected_out.items())  # check ordering of keys
 

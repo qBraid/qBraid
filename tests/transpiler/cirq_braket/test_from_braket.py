@@ -208,6 +208,7 @@ def test_generalized_amplitude_damping_channel_gate():
 
 
 def test_depolarizing_channel_gate():
+    """Testing converting Kraus noise gates"""
     probs = np.random.uniform(low=0, high=0.5, size=(1))
     instruction = Instruction(
         braket_noise_gate.TwoQubitDepolarizing(probability=probs[0]), target=[0, 1]
@@ -221,6 +222,7 @@ def test_depolarizing_channel_gate():
 
 
 def test_raise_error():
+    """Test raising error when converting unsupported Pulse sequences"""
     with pytest.raises(CircuitConversionError):
         from braket.pulse import Frame, Port
         from braket.pulse.pulse_sequence import PulseSequence
@@ -238,3 +240,13 @@ def test_raise_error():
             Instruction(braket_gates.PulseGate(pulse_seq, 1), [0])
         )
         from_braket(test_case)
+
+
+def test_convert_ionq_gates():
+    """Test converting IonQ GPi, GPi2, and MS (Mølmer-Sørenson) gates."""
+    bk_circuit = BKCircuit()
+    bk_circuit.gpi(0, np.pi)
+    bk_circuit.gpi2(1, np.pi / 3)
+    bk_circuit.ms(0, 1, np.pi / 4, np.pi / 2, 3 * np.pi / 4)
+    cirq_circuit = from_braket(bk_circuit)
+    assert circuits_allclose(bk_circuit, cirq_circuit, strict_gphase=True)

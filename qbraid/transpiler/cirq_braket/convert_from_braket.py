@@ -26,6 +26,11 @@ from cirq import Circuit, LineQubit
 from cirq import ops as cirq_ops
 from cirq import protocols
 
+try:
+    import cirq_ionq.ionq_native_gates as cirq_ionq_ops
+except ImportError:
+    cirq_ionq_ops = None
+
 from qbraid.interface import convert_to_contiguous, to_unitary
 from qbraid.transpiler.custom_gates import matrix_gate
 from qbraid.transpiler.exceptions import CircuitConversionError
@@ -173,6 +178,14 @@ def _from_one_qubit_braket_instruction(
     if isinstance(gate, braket_gates.PhaseShift):
         return [cirq_ops.Z.on(*qubits) ** (gate.angle / np.pi)]
 
+    # One-qubit parameterized IonQ gates
+    if cirq_ionq_ops and isinstance(gate, (braket_gates.GPi, braket_gates.GPi2)):
+        phi = gate.angle / (2 * np.pi)
+        gate_class = (
+            cirq_ionq_ops.GPIGate if isinstance(gate, braket_gates.GPi) else cirq_ionq_ops.GPI2Gate
+        )
+        return [gate_class(phi=phi).on(*qubits)]
+
     # One-qubit Noise gates.
     if isinstance(gate, braket_noise_gate.BitFlip):
         return [cirq_ops.BitFlipChannel(gate.probability).on(*qubits)]
@@ -269,6 +282,16 @@ def _from_two_qubit_braket_instruction(
         return [cirq_ops.KrausChannel(gate._matrices).on(*qubits)]
     if isinstance(gate, braket_noise_gate.TwoQubitDepolarizing):
         return [cirq_ops.DepolarizingChannel(gate.probability, n_qubits=2).on(*qubits)]
+
+    # Two-qubit two-parameters IonQ gates.
+    if cirq_ionq_ops and isinstance(gate, braket_gates.MS):
+        return [
+            cirq_ionq_ops.MSGate(
+                phi0=gate.angle_1 / (2 * np.pi),
+                phi1=gate.angle_2 / (2 * np.pi),
+                theta=gate.angle_3 / (2 * np.pi),
+            ).on(*qubits)
+        ]
 
     try:
         matrix = _gate_to_matrix_braket(gate)
