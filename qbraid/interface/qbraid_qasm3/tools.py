@@ -19,9 +19,9 @@ from typing import List
 import numpy as np
 from openqasm3.ast import QubitDeclaration
 from openqasm3.parser import parse
-from qiskit.qasm3 import dumps, loads
+from qiskit.qasm3 import loads
 
-from qbraid.interface.qbraid_qiskit.tools import _convert_to_contiguous_qiskit, _unitary_from_qiskit
+from qbraid.interface.qbraid_qiskit.tools import _unitary_from_qiskit
 
 QASMType = str
 
@@ -40,7 +40,9 @@ def qasm3_qubits(qasmstr: str) -> List[QASMType]:
     qubits = []
     for statement in program.statements:
         if isinstance(statement, QubitDeclaration):
-            qubits.append((statement.qubit.name, statement.size.value))
+            name = statement.qubit.name
+            size = statement.size.value if statement.size else 1
+            qubits.append((name, size))
     return qubits
 
 
@@ -64,52 +66,6 @@ def _unitary_from_qasm3(qasmstr: QASMType) -> np.ndarray:
     """Return the unitary of the QASM 3 string"""
     circuit = loads(qasmstr)
     return _unitary_from_qiskit(circuit)
-
-
-def _convert_to_contiguous_qasm3(qasmstr: QASMType, rev_qubits=False) -> QASMType:
-    """Delete qubit(s) with no gate, if any exist."""
-    circuit = loads(qasmstr)
-    circuit_contig = _convert_to_contiguous_qiskit(circuit, rev_qubits=rev_qubits)
-    return dumps(circuit_contig)
-
-
-def _qasm_qubit_decl(qasmstr: str) -> List[QASMType]:
-    """Get declaration statement of qasm qubits.
-
-    Args:
-        qasmstr (str): OpenQASM 2 or OpenQASM 3 string
-
-    Returns:
-        List of qubits in the circuit
-    """
-    return [
-        text.replace("\n", "")
-        for match in re.findall(r"(qreg.*;)|(qubit.*;)", qasmstr)
-        for text in match
-        if text != "" and len(text) >= 4
-    ]
-
-
-def _get_qreg(qubit_decl: str) -> tuple:
-    """Get qreg name and size from qubit declaration
-
-    Args:
-        qubit_decl (str): The qubit declaration string
-    Returns:
-        tuple: A tuple containing the name and size of the qreg
-    """
-
-    name, size = None, None
-    if "qreg" in qubit_decl:
-        name, size = re.findall(r"qreg\s+(\S+)\s*\[(\d+)\]", qubit_decl.strip())[0]
-    else:
-        match = re.findall(r"qubit\s*\[(\d+)\]\s*(\S+)\s*;", qubit_decl.strip())
-        if len(match) > 0:
-            size, name = match[0]
-        else:
-            name = re.findall(r"qubit\s+(\S+)\s*;", qubit_decl.strip())[0]
-            size = 1
-    return (name, int(size))
 
 
 def _remove_gate_definitions(qasm_str):
@@ -185,7 +141,7 @@ def _get_unused_qubit_indices(qasm_str, register_list):
     return unused_indices
 
 
-def convert_to_contiguous_qasm3(qasmstr: str) -> QASMType:
+def _expand_to_contiguous_qasm3(qasmstr: str) -> QASMType:
     """Converts OpenQASM 3 string to contiguous qasm3 string with gate expansion
 
        no loops OR custom functions supported at the moment
@@ -199,23 +155,104 @@ def convert_to_contiguous_qasm3(qasmstr: str) -> QASMType:
 
     # pylint: disable=import-outside-toplevel
 
-    # 1. Analyse the qasm3 string for qubits and bit declarations
-    qubit_list = _qasm_qubit_decl(qasmstr)
-    qreg_list = []
-
-    # 2. Identify which qubits are not used in the circuit
-    for qubit_decl in qubit_list:
-        qreg_list.append(_get_qreg(qubit_decl))
+    # 1. Analyse the qasm3 string for registers and find unused qubits
+    qreg_list = qasm3_qubits(qasmstr)
     qubit_indices = _get_unused_qubit_indices(qasmstr, qreg_list)
     expansion_qasm = ""
 
-    # 3. Add an identity gate for the unused qubits
+    # 2. Add an identity gate for the unused qubits
     for reg, indices in qubit_indices.items():
         for index in indices:
             expansion_qasm += f"i {reg}[{index}];\n"
 
     # 4. Return the qasm3 string
     return qasmstr + expansion_qasm
+
+
+def _remap_qubits(qasm_str, reg_name, reg_size, unused_indices):
+    """Re-map the qubits for a partially used quantum register
+    Args:
+        qasm_str (str): QASM string
+        reg_name (str): name of register
+        reg_size (int): original size of register
+        unused_indices (set): set of unused indices
+
+    Returns:
+        str: updated qasm string"""
+    required_size = reg_size - len(unused_indices)
+
+    new_id = 0
+    qubit_map = {}
+    for idx in range(reg_size):
+        if idx not in unused_indices:
+            # idx -> new_id
+            qubit_map[idx] = new_id
+            new_id += 1
+
+    # old_id WILL NEVER match the declaration
+    # as it will be < the original size of register
+
+    # 1. Replace the qubits first
+    #    as the regex may match the new declaration itself
+    for old_id, new_id in qubit_map.items():
+        if old_id != new_id:
+            qasm_str = re.sub(rf"{reg_name}\s*\[{old_id}\]", f"{reg_name}[{new_id}]", qasm_str)
+
+    # 2. Replace the declaration
+    qasm_str = re.sub(
+        rf"qreg\s+{reg_name}\s*\[{reg_size}\]\s*;",
+        f"qreg {reg_name}[{required_size}];",
+        qasm_str,
+    )
+    qasm_str = re.sub(
+        rf"qubit\s*\[{reg_size}\]\s*{reg_name}\s*;",
+        f"qubit[{required_size}] {reg_name};",
+        qasm_str,
+    )
+    # 1 qubit register can never be partially used :)
+
+    return qasm_str
+
+
+def _compress_to_contiguous_qasm3(qasm_str: str) -> QASMType:
+    """Converts OpenQASM 3 string to contiguous qasm3 string by removing unused qubits
+
+    Args:
+        qasmstr (str): OpenQASM 3 string
+
+    Returns:
+        QASMType: Contiguous OpenQASM 3 string
+    """
+
+    qreg_list = set(qasm3_qubits(qasm_str))
+    qubit_indices = _get_unused_qubit_indices(qasm_str, qreg_list)
+    for reg, indices in qubit_indices.items():
+        size = 1
+        for qreg in qreg_list:
+            if qreg[0] == reg:
+                size = qreg[1]
+                break
+
+        # remove the register declarations which are not used
+        if len(indices) == size:
+            qasm_str = re.sub(rf"qreg\s+{reg}\s*\[\d+\]\s*;", "", qasm_str)
+            qasm_str = re.sub(rf"qubit\s*\[\d+\]\s*{reg}\s*;", "", qasm_str)
+            if size == 1:
+                qasm_str = re.sub(rf"qubit\s+{reg}\s*;", "", qasm_str)
+            qreg_list.remove((reg, size))
+
+        # resize and re-map the indices of the partially used register
+        elif len(indices):
+            qasm_str = _remap_qubits(qasm_str, reg, size, indices)
+    return qasm_str
+
+
+def _convert_to_contiguous_qasm3(qasmstr: QASMType, expansion=False) -> QASMType:
+    """Delete qubit(s) with no gate, if any exist."""
+    # remove unused registers
+    if not expansion:
+        return _compress_to_contiguous_qasm3(qasmstr)
+    return _expand_to_contiguous_qasm3(qasmstr)
 
 
 def _build_qasm_3_reg(line: str, qreg_type: bool) -> QASMType:
