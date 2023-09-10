@@ -29,14 +29,7 @@ if TYPE_CHECKING:
 
 
 class QuantumProgram:
-    """Abstract class for qbraid program wrapper objects.
-
-    Note: The program wrapper object keeps track of abstract parameters and qubits using an
-    intermediate representation. Qubits are stored simplhy as integers. All other objects are
-    transpiled directly when the :meth:`~qbraid.transpiler.QuantumProgramtWrapper.transpile`
-    method is called.
-
-    """
+    """Abstract class for qbraid program wrapper objects."""
 
     def __init__(self, program: "qbraid.QPROGRAM"):
         self.program = program
@@ -99,7 +92,6 @@ class QuantumProgram:
     def _contiguous_expansion(self) -> None:
         """Remove empty registers of circuit."""
 
-    @abstractmethod
     def convert_to_contiguous(self, expansion=False) -> None:
         """Remove empty registers of circuit."""
         if expansion:

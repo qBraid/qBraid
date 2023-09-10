@@ -21,7 +21,7 @@ from qiskit.circuit import Qubit
 from qiskit.converters import circuit_to_dag, dag_to_circuit
 from qiskit.quantum_info import Operator
 
-from qbraid.transpiler.programs.abc_qprogram import QuantumProgram
+from qbraid.programs.abc_program import QuantumProgram
 
 if TYPE_CHECKING:
     import numpy as np

@@ -8,9 +8,6 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint: disable=invalid-name
-
-
 """
 Module defining OpenQasm3Program Class
 
@@ -23,7 +20,7 @@ import numpy as np
 from openqasm3.ast import Program, QubitDeclaration
 from openqasm3.parser import parse
 
-from qbraid.transpiler.programs.abc_qprogram import QuantumProgram
+from qbraid.programs.abc_program import QuantumProgram
 
 
 class OpenQasm3Program(QuantumProgram):
@@ -70,6 +67,7 @@ class OpenQasm3Program(QuantumProgram):
     @property
     def num_clbits(self) -> int:
         """Return the number of classical bits in the circuit."""
+        # pylint: disable=import-outside-toplevel
         from qiskit.qasm3 import loads
 
         return loads(self.program).num_clbits
@@ -77,12 +75,14 @@ class OpenQasm3Program(QuantumProgram):
     @property
     def depth(self) -> int:
         """Return the circuit depth (i.e., length of critical path)."""
+        # pylint: disable=import-outside-toplevel
         from qiskit.qasm3 import loads
 
         return loads(self.program).depth()
 
     def unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
+        # pylint: disable=import-outside-toplevel
         from qiskit.qasm3 import loads
         from qiskit.quantum_info import Operator
 

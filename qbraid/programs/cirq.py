@@ -8,9 +8,6 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint: disable=invalid-name
-
-
 """
 Module defining CirqCircuit Class
 
@@ -21,11 +18,11 @@ from typing import List
 import cirq
 import numpy as np
 
-from qbraid.transpiler.programs.abc_qprogram import QuantumProgram
+from qbraid.programs.abc_program import QuantumProgram
 
 
 class CirqCircuit(QuantumProgram):
-    """Class defining ``cirq.Circuit`` objects."""
+    """Wrapper class for ``cirq.Circuit`` objects."""
 
     @property
     def program(self) -> cirq.Circuit:
@@ -120,7 +117,8 @@ class CirqCircuit(QuantumProgram):
         circuit = self.program.copy()
         cirq_qubits = list(circuit.all_qubits())
         if isinstance(cirq_qubits[0], cirq.NamedQubit):
-            return self._convert_to_line_qubits()
+            self._convert_to_line_qubits()
+            return
 
         nqubits = 0
         max_qubit = 0
@@ -139,6 +137,7 @@ class CirqCircuit(QuantumProgram):
             for qubit in cirq_qubits:
                 circuit.append(cirq.I(qubit))
         self._program = circuit
+        return
 
     def _contiguous_compression(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,

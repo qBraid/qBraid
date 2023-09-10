@@ -16,14 +16,14 @@ from typing import TYPE_CHECKING, List
 
 from braket.circuits import Circuit, Instruction, Qubit
 
-from qbraid.transpiler.programs.abc_qprogram import QuantumProgram
+from qbraid.programs.abc_program import QuantumProgram
 
 if TYPE_CHECKING:
     import numpy as np
 
 
 class BraketCircuit(QuantumProgram):
-    """Wrapper class for Amazon Braket ``Circuit`` objects."""
+    """Wrapper class for ``braket.circuits.Circuit`` objects."""
 
     @property
     def program(self) -> Circuit:

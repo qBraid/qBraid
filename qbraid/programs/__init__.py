@@ -9,19 +9,20 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-==============================================
-Transpiler  (:mod:`qbraid.transpiler`)
-==============================================
+=====================================
+Programs  (:mod:`qbraid.programs`)
+=====================================
 
-.. currentmodule:: qbraid.transpiler
+.. currentmodule:: qbraid.programs
 
 .. autosummary::
    :toctree: ../stubs/
 
-   convert_from_cirq
-   convert_to_cirq
-   CircuitConversionError
+   QuantumProgram
+   CirqCircuit
+   OpenQasm2Program
 
 """
-from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.programs.abc_program import QuantumProgram
+from qbraid.programs.cirq import CirqCircuit
+from qbraid.programs.qasm2 import OpenQasm2Program
