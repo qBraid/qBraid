@@ -9,19 +9,19 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining PyQuilProgramWrapper Class
+Module defining PyQuilProgram Class
 
 """
 from pyquil import Program
 
-from qbraid.transpiler.wrappers.abc_qprogram import QuantumProgramWrapper
+from qbraid.transpiler.programs.abc_qprogram import QuantumProgram
 
 
-class PyQuilProgramWrapper(QuantumProgramWrapper):
+class PyQuilProgram(QuantumProgram):
     """Wrapper class for pyQuil ``Program`` objects."""
 
     def __init__(self, program: Program):
-        """Create a PyQuilProgramWrapper
+        """Create a PyQuilProgram
 
         Args:
             program: the program object to be wrapped

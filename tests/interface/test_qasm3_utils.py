@@ -134,8 +134,8 @@ c[2] = measure q[2];
     _check_output(circuit, out__expected)
 
 
-def test_convert_to_expanded_contiguous_qasm_3():
-    """Test conversion of qasm3 to expanded contiguous qasm3"""
+def test_convert_to_contiguous_qasm3_expansion():
+    """Test conversion of qasm3 to contiguous qasm3"""
     qasm_test = """
     OPENQASM 3.0;
     gate custom q1, q2, q3{
@@ -416,3 +416,18 @@ def test_rxx_gate_conversion():
     """
 
     _check_output(convert_to_qasm3(test_rxx), test_rxx_expected)
+
+
+@pytest.mark.skip(reason="Syntax not yet supported")
+def test_qasm3_num_qubits_alternate_synatx():
+    """Test calculating num qubits for qasm3 syntax edge-case"""
+    qasm3_str = """
+OPENQASM 3;
+include "stdgates.inc";
+qubit _qubit0;
+qubit _qubit1;
+h _qubit0;
+cx _qubit0, _qubit1;
+"""
+    circuit = loads(qasm3_str)
+    assert qasm3_num_qubits(qasm3_str) == circuit.num_qubits

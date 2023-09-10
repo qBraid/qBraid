@@ -30,8 +30,3 @@ qbraid.transpiler
    :members:
    :undoc-members:
    :show-inheritance:
-
-.. automodule:: qbraid.transpiler.code
-   :members:
-   :undoc-members:
-   :show-inheritance:

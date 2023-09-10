@@ -18,7 +18,7 @@ import pytest
 
 from qbraid import device_wrapper
 from qbraid.interface import random_circuit
-from qbraid.providers.result import ResultWrapper
+from qbraid.providers.result import QuantumJobResult
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
@@ -49,7 +49,7 @@ REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM/AWS sto
     ],
 )
 def test_format_counts(counts_raw, expected_out, include_zero_values):
-    counts_out = ResultWrapper.format_counts(counts_raw, include_zero_values=include_zero_values)
+    counts_out = QuantumJobResult.format_counts(counts_raw, include_zero_values=include_zero_values)
     assert counts_out == expected_out  # check equivalance
     assert list(counts_out.items()) == list(expected_out.items())  # check ordering of keys
 

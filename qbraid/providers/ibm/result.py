@@ -9,15 +9,15 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining IBMResultWrapper Class
+Module defining QiskitResult Class
 
 """
 import numpy as np
 
-from qbraid.providers.result import ResultWrapper
+from qbraid.providers.result import QuantumJobResult
 
 
-class IBMResultWrapper(ResultWrapper):
+class QiskitResult(QuantumJobResult):
     """Qiskit ``Result`` wrapper class."""
 
     def _format_measurements(self, memory_list):
@@ -30,8 +30,8 @@ class IBMResultWrapper(ResultWrapper):
 
     def measurements(self):
         """Return measurements as list"""
-        num_circuits = len(self.vendor_rlo.results)
-        qiskit_meas = [self.vendor_rlo.get_memory(i) for i in range(num_circuits)]
+        num_circuits = len(self._result.results)
+        qiskit_meas = [self._result.get_memory(i) for i in range(num_circuits)]
         qbraid_meas = [self._format_measurements(qiskit_meas[i]) for i in range(num_circuits)]
 
         if num_circuits == 1:
@@ -41,4 +41,4 @@ class IBMResultWrapper(ResultWrapper):
 
     def raw_counts(self):
         """Returns the histogram data of the run"""
-        return self.vendor_rlo.get_counts()
+        return self._result.get_counts()

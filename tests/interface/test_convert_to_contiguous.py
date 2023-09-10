@@ -18,6 +18,7 @@ from braket.circuits import Circuit as BKCircuit
 from cirq import Circuit, LineQubit, X, Y, Z
 from pytket.circuit import Circuit as TKCircuit
 from qiskit import QuantumCircuit
+from qiskit.qasm3 import loads
 
 from qbraid.exceptions import ProgramTypeError
 from qbraid.interface.calculate_unitary import circuits_allclose
@@ -97,3 +98,30 @@ def test_unitary_raises():
     """Test that convert_to_contiguous raises an error when passed a non-circuit object"""
     with pytest.raises(ProgramTypeError):
         convert_to_contiguous(None)
+
+
+def test_convert_qasm3_expansion():
+    """Test that convert_to_contiguous for qasm3 string"""
+    qasm3_str = """
+OPENQASM 3;
+include "stdgates.inc";
+qubit[4] q;
+h q[1];
+cx q[1], q[3];
+"""
+    contig_qasm3_str = convert_to_contiguous(qasm3_str, expansion=True)
+    assert contig_qasm3_str == qasm3_str + """i q[0];\ni q[2];\n"""
+
+
+def test_convert_qasm3():
+    """Test that convert_to_contiguous for qasm3 string"""
+    qasm3_str = """
+OPENQASM 3;
+include "stdgates.inc";
+qubit[4] q;
+h q[1];
+cx q[1], q[3];
+"""
+    contig_qasm3_str = convert_to_contiguous(qasm3_str)
+    circuit_contig = loads(contig_qasm3_str)
+    assert circuit_contig.num_qubits == 2

@@ -112,7 +112,7 @@ def get_jobs(filters: Optional[dict] = None):
         filters: A dictionary containing any filters to be applied.
 
     """
-    from qbraid.providers import is_status_final  # pylint: disable=import-outside-toplevel
+    from qbraid.providers import QuantumJob  # pylint: disable=import-outside-toplevel
 
     query = {} if filters is None else filters
 
@@ -137,7 +137,7 @@ def get_jobs(filters: Optional[dict] = None):
             status = document["qbraidStatus"]
         except KeyError:
             status = "UNKNOWN"
-        if not is_status_final(status):
+        if not QuantumJob.status_final(status):
             try:
                 qbraid_job = job_wrapper(job_id)
                 status_obj = qbraid_job.status()

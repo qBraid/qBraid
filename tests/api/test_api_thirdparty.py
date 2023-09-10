@@ -17,12 +17,13 @@ import os
 
 import pytest
 
-from qbraid.api.job_api import _qbraid_jobs_enabled, _running_in_lab
+from qbraid.api import QbraidSession
 from qbraid.api.session import STATUS_FORCELIST, PostForcelistRetry, QbraidSession
 
 
 def test_running_in_lab():
-    assert not _running_in_lab()
+    """Test function that checks whether qBraid Lab is running."""
+    assert not QbraidSession._running_in_lab()
 
 
 def test_check_quantum_jobs_enabled():
@@ -33,13 +34,13 @@ def test_check_quantum_jobs_enabled():
     os.makedirs(proxy_dir, exist_ok=True)
     if os.path.exists(proxy_file):
         os.remove(proxy_file)
-    assert _qbraid_jobs_enabled() is False
+    assert QbraidSession._qbraid_jobs_enabled() is False
     outF = open(proxy_file, "w")
     outF.writelines("active = true\n")
     outF.close()
-    assert _qbraid_jobs_enabled() is True
-    assert _qbraid_jobs_enabled(vendor="aws") is True
-    assert _qbraid_jobs_enabled(vendor="ibm") is False
+    assert QbraidSession._qbraid_jobs_enabled() is True
+    assert QbraidSession._qbraid_jobs_enabled(vendor="aws") is True
+    assert QbraidSession._qbraid_jobs_enabled(vendor="ibm") is False
     os.remove(proxy_file)
 
 

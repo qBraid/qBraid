@@ -23,11 +23,11 @@ This module contains the classes used to run quantum circuits on devices availab
 .. autosummary::
    :toctree: ../stubs/
 
-   AwsDeviceWrapper
-   AwsQuantumTaskWrapper
-   AwsGateModelResultWrapper
+   BraketDevice
+   BraketQuantumTask
+   BraketGateModelResult
 
 """
-from .result import AwsGateModelResultWrapper
-from .device import AwsDeviceWrapper
-from .job import AwsQuantumTaskWrapper
+from .result import BraketGateModelResult
+from .device import BraketDevice
+from .job import BraketQuantumTask

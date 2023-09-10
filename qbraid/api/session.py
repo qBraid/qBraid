@@ -15,6 +15,7 @@ Module for making requests to the qBraid API.
 import configparser
 import logging
 import os
+import sys
 from typing import Any, Optional
 
 from requests import RequestException, Response, Session
@@ -26,6 +27,12 @@ from .retry import STATUS_FORCELIST, PostForcelistRetry
 DEFAULT_ENDPOINT_URL = "https://api.qbraid.com/api"
 DEFAULT_CONFIG_PATH = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
 DEFAULT_CONFIG_SECTION = "default"
+
+SLUG = "qbraid_sdk_9j9sjy"  # qBraid Lab environment ID.
+ENVS_PATH = os.getenv("QBRAID_USR_ENVS") or os.path.join(
+    os.path.expanduser("~"), ".qbraid", "environments"
+)
+SLUG_PATH = os.path.join(ENVS_PATH, SLUG)
 
 logger = logging.getLogger(__name__)
 
@@ -140,6 +147,34 @@ class QbraidSession(Session):
         self._id_token = id_token or os.getenv("QBRAID_ID_TOKEN")
         if id_token and "refresh-token" not in self.headers:
             self.headers.update({"id-token": id_token})  # type: ignore[attr-defined]
+
+    @staticmethod
+    def _running_in_lab() -> bool:
+        """Checks if you are running qBraid-SDK in qBraid Lab environment.
+
+        See https://docs.qbraid.com/en/latest/lab/environments.html
+        """
+        python_exe = os.path.join(SLUG_PATH, "pyenv", "bin", "python")
+        return sys.executable == python_exe
+
+    @staticmethod
+    def _qbraid_jobs_enabled(vendor: Optional[str] = None) -> bool:
+        """Returns True if running qBraid Lab and qBraid Quantum Jobs
+        proxy is enabled. Otherwise, returns False.
+
+        See https://docs.qbraid.com/en/latest/lab/quantum_jobs.html
+        """
+        # currently quantum jobs only supported for AWS
+        if vendor and vendor != "aws":
+            return False
+
+        proxy_file = os.path.join(SLUG_PATH, "qbraid", "proxy")
+        if os.path.isfile(proxy_file):
+            with open(proxy_file) as f:  # pylint: disable=unspecified-encoding
+                firstline = f.readline().rstrip()
+                return "active = true" in firstline  # check if proxy is active or not
+
+        return False
 
     def get_config_variable(self, config_name: str) -> Optional[str]:
         """Returns the config value of specified config.

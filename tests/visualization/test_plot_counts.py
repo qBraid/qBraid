@@ -9,13 +9,15 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for the qbraid visualization plot histogram function
+Unit tests for the qbraid visualization plot counts functions
 
 """
 
 import pytest
 
-from qbraid.visualization.plot_histogram import _counts_to_decimal, plot_histogram
+from qbraid.visualization.plot_counts import _counts_to_decimal, plot_distribution, plot_histogram
+
+PLOT_FNS = [plot_histogram, plot_distribution]
 
 
 def test_counts_to_decimal_normal_case():
@@ -39,18 +41,20 @@ def test_counts_to_decimal_with_non_integer_values():
         _counts_to_decimal(counts_dict)
 
 
-def test_plot_histogram_single_dict():
+@pytest.mark.parametrize("plot_function", PLOT_FNS)
+def test_plot_counts_single_dict(plot_function):
     """Test plotting histogram with single counts dict."""
     counts_dict = {"00": 50, "01": 30, "10": 10, "11": 10}
-    plot_histogram(counts_dict, title="Single Dict Test", show_plot=False)
+    plot_function(counts_dict, title="Single Dict Test", show_plot=False)
 
 
-def test_plot_histogram_multiple_dicts():
+@pytest.mark.parametrize("plot_function", PLOT_FNS)
+def test_plot_histogram_multiple_dicts(plot_function):
     """Test plotting histogram with multiple counts dicts."""
     counts_dict1 = {"00": 50, "01": 30, "10": 10, "11": 10}
     counts_dict2 = {"00": 20, "01": 40, "10": 30, "11": 10}
 
-    plot_histogram(
+    plot_function(
         counts=[counts_dict1, counts_dict2],
         legend=["First Execution", "Second Execution"],
         colors=["crimson", "midnightblue"],
@@ -59,13 +63,14 @@ def test_plot_histogram_multiple_dicts():
     )
 
 
-def test_plot_histogram_mismatched_legend_length():
+@pytest.mark.parametrize("plot_function", PLOT_FNS)
+def test_plot_histogram_mismatched_legend_length(plot_function):
     """Test raising error when legend length does not match counts length."""
     counts_dict1 = {"00": 50, "01": 30, "10": 10, "11": 10}
     counts_dict2 = {"00": 20, "01": 40, "10": 30, "11": 10}
 
     with pytest.raises(ValueError):
-        plot_histogram(
+        plot_function(
             counts=[counts_dict1, counts_dict2],
             legend=["Only one label"],
             colors=["crimson", "midnightblue"],
@@ -73,13 +78,14 @@ def test_plot_histogram_mismatched_legend_length():
         )
 
 
-def test_plot_histogram_mismatched_colors_length():
+@pytest.mark.parametrize("plot_function", PLOT_FNS)
+def test_plot_histogram_mismatched_colors_length(plot_function):
     """Test raising error when colors length does not match counts length."""
     counts_dict1 = {"00": 50, "01": 30, "10": 10, "11": 10}
     counts_dict2 = {"00": 20, "01": 40, "10": 30, "11": 10}
 
     with pytest.raises(ValueError):
-        plot_histogram(
+        plot_function(
             counts=[counts_dict1, counts_dict2],
             legend=["First Execution", "Second Execution"],
             colors=["only one color"],
