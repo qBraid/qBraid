@@ -24,7 +24,7 @@ from qiskit.qasm3 import dumps, loads
 from qbraid.interface import circuits_allclose, random_circuit
 from qbraid.interface.qbraid_qasm3.random_circuit import _qasm3_random
 from qbraid.interface.qbraid_qasm3.tools import (
-    _contiguous_expansion,
+    _convert_to_contiguous_qasm3,
     convert_to_qasm3,
     qasm3_depth,
     qasm3_num_qubits,
@@ -155,7 +155,60 @@ def test_convert_to_contiguous_qasm3_expansion():
 
     qasm_expected = qasm_test + """i q1[1];\ni q2[1];\ni q4[0];\n"""
 
-    assert _contiguous_expansion(qasm_test) == qasm_expected
+    assert _convert_to_contiguous_qasm3(qasm_test, expansion=True) == qasm_expected
+
+
+def test_convert_to_compressed_contiguous_qasm_3():
+    """Test conversion of qasm3 to compressed contiguous qasm3"""
+    qasm_test = """
+    OPENQASM 3.0;
+    gate custom q1, q2, q3{
+        x q1;
+        y q2;
+        z q3;
+    }
+    qreg q1[2];
+    qubit[2] q2;
+    qubit[3] q3;
+    qubit q4;
+    qubit[5]   q5;
+    qreg qr[3];
+    
+    x q1[0];
+    y q2[1];
+    z q3;
+    
+    
+    qubit[3] q6;
+    
+    cx q6[1], q6[2];
+    """
+
+    qasm_expected = """
+    OPENQASM 3.0;
+    gate custom q1, q2, q3{
+        x q1;
+        y q2;
+        z q3;
+    }
+    qreg q1[1];
+    qubit[1] q2;
+    qubit[3] q3;
+    
+    
+    
+    
+    x q1[0];
+    y q2[0];
+    z q3;
+    
+    
+    qubit[2] q6;
+    
+    cx q6[0], q6[1];
+    """
+
+    assert _convert_to_contiguous_qasm3(qasm_test, expansion=False) == qasm_expected
 
 
 QASM_TEST_DATA = [
