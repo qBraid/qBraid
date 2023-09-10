@@ -15,6 +15,8 @@
 Module defining Qasm2CircuitWrapper Class
 
 """
+from typing import List
+
 from qbraid.interface.qbraid_qasm.tools import qasm_depth, qasm_num_qubits, qasm_qubits
 from qbraid.transpiler.programs.abc_qprogram import QuantumProgram
 

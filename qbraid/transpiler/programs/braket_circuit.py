@@ -12,25 +12,114 @@
 Module defining BraketCircuit Class
 
 """
-from braket.circuits.circuit import Circuit as BKCircuit
+from typing import TYPE_CHECKING, List
+
+from braket.circuits import Circuit, Instruction, Qubit
 
 from qbraid.transpiler.programs.abc_qprogram import QuantumProgram
+
+if TYPE_CHECKING:
+    import numpy as np
 
 
 class BraketCircuit(QuantumProgram):
     """Wrapper class for Amazon Braket ``Circuit`` objects."""
 
-    def __init__(self, circuit: BKCircuit):
-        """Create a BraketCircuit
+    @property
+    def program(self) -> Circuit:
+        return self._program
 
-        Args:
-            circuit: the circuit object to be wrapped
+    @program.setter
+    def program(self, value: Circuit) -> None:
+        if not isinstance(value, Circuit):
+            raise ValueError("Program must be an instance of braket.circuits.Circuit")
+        self._program = value
 
-        """
-        super().__init__(circuit)
+    @property
+    def qubits(self) -> List[Qubit]:
+        """Return the qubits acted upon by the operations in this circuit"""
+        return list(self.program.qubits)
 
-        self._qubits = circuit.qubits
-        self._num_qubits = len(self.qubits)
-        self._depth = circuit.depth
-        self._package = "braket"
-        self._program_type = "Circuit"
+    @property
+    def num_qubits(self) -> int:
+        """Return the number of qubits in the circuit."""
+        return self.program.qubit_count
+
+    @property
+    def num_clbits(self) -> int:
+        """Return the number of classical bits in the circuit."""
+        return 0
+
+    @property
+    def depth(self) -> int:
+        """Return the circuit depth (i.e., length of critical path)."""
+        return self.program.depth
+
+    def unitary(self) -> "np.ndarray":
+        """Calculate unitary of circuit."""
+        return self.program.to_unitary()
+
+    def _contiguous_expansion(self) -> None:
+        """Checks whether the circuit uses contiguous qubits/indices,
+        and if not, adds identity gates to vacant registers as needed."""
+        max_qubit = 0
+        occupied_qubits = []
+        circuit = self.program.copy()
+        for qubit in circuit.qubits:
+            index = int(qubit)
+            occupied_qubits.append(index)
+            if index > max_qubit:
+                max_qubit = index
+        qubit_count = max_qubit + 1
+        if qubit_count > circuit.qubit_count:
+            all_qubits = list(range(0, qubit_count))
+            vacant_qubits = list(set(all_qubits) - set(occupied_qubits))
+            for index in vacant_qubits:
+                circuit.i(index)
+        self._program = circuit
+
+    def _contiguous_compression(self) -> None:
+        """Checks whether the circuit uses contiguous qubits/indices,
+        and if not, reduces dimension accordingly."""
+        qubit_map = {}
+        circuit = self.program.copy()
+        circuit_qubits = list(circuit.qubits)
+        circuit_qubits.sort()
+        for index, qubit in enumerate(circuit_qubits):
+            qubit_map[int(qubit)] = index
+        contig_circuit = Circuit()
+        for instr in circuit.instructions:
+            contig_target = [qubit_map[int(qubit)] for qubit in list(instr.target)]
+            contig_control = [qubit_map[int(qubit)] for qubit in list(instr.control)]
+            contig_instr = Instruction(
+                instr.operator,
+                target=contig_target,
+                control=contig_control,
+                control_state=instr.control_state,
+                power=instr.power,
+            )
+            contig_circuit.add_instruction(contig_instr)
+        self._program = contig_circuit
+
+    def reverse_qubit_order(self) -> None:
+        """Reverse the order of the qubits in the circuit."""
+        qubit_map = {}
+        circuit = self.program.copy()
+        circuit_qubits = list(circuit.qubits)
+        circuit_qubits.sort()
+        circuit_qubits = list(reversed(circuit_qubits))
+        for index, qubit in enumerate(circuit_qubits):
+            qubit_map[int(qubit)] = index
+        contig_circuit = Circuit()
+        for instr in circuit.instructions:
+            contig_target = [qubit_map[int(qubit)] for qubit in list(instr.target)]
+            contig_control = [qubit_map[int(qubit)] for qubit in list(instr.control)]
+            contig_instr = Instruction(
+                instr.operator,
+                target=contig_target,
+                control=contig_control,
+                control_state=instr.control_state,
+                power=instr.power,
+            )
+            contig_circuit.add_instruction(contig_instr)
+        self._program = contig_circuit

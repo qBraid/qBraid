@@ -293,7 +293,7 @@ def _build_qasm_3_measure(line: str) -> QASMType:
     return f"{bits_name} = measure {qubits_name};\n"
 
 
-def _change_to_qasm_3(line: str) -> QASMType:
+def _change_to_qasm3(line: str) -> QASMType:
     """Function to change an openqasm 2 line to openqasm 3
 
     Args:
@@ -352,6 +352,6 @@ def convert_to_qasm3(qasm2_str: str):
             qasm3_str += line
 
     for line in qasm2_str.splitlines():
-        line = _change_to_qasm_3(line)
+        line = _change_to_qasm3(line)
         qasm3_str += line
     return qasm3_str

@@ -12,6 +12,9 @@
 Module defining PytketCircuit Class
 
 """
+
+from typing import List
+
 from pytket.circuit import Circuit as TKCircuit
 
 from qbraid.transpiler.programs.abc_qprogram import QuantumProgram

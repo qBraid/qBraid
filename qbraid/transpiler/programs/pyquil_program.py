@@ -12,6 +12,9 @@
 Module defining PyQuilProgram Class
 
 """
+
+from typing import List
+
 from pyquil import Program
 
 from qbraid.transpiler.programs.abc_qprogram import QuantumProgram

@@ -12,15 +12,19 @@
 Module defining QuantumProgram Class
 
 """
-from typing import TYPE_CHECKING, List, Optional
+from abc import abstractmethod
+from typing import TYPE_CHECKING, Any, List, Optional
 
 from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.exceptions import PackageValueError
+from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError
 from qbraid.interface.circuit_drawer import circuit_drawer
+from qbraid.qasm_checks import get_qasm_version
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 if TYPE_CHECKING:
+    import numpy as np
+
     import qbraid
 
 
@@ -35,54 +39,76 @@ class QuantumProgram:
     """
 
     def __init__(self, program: "qbraid.QPROGRAM"):
-        self._program = program
-        self._qubits = []
-        self._num_qubits = 0
-        self._num_clbits = 0
-        self._depth = 0
-        self._params = []
-        self._input_param_mapping = {}
-        self._package = None
-
-    @property
-    def program(self) -> "qbraid.QPROGRAM":
-        """Return the underlying quantum program that has been wrapped."""
-        return self._program
-
-    @property
-    def qubits(self) -> List[int]:
-        """Return the qubits acted upon by the operations in this circuit"""
-        return self._qubits
-
-    @property
-    def num_qubits(self) -> int:
-        """Return the number of qubits in the circuit."""
-        return self._num_qubits
-
-    @property
-    def num_clbits(self) -> int:
-        """Return the number of classical bits in the circuit."""
-        return self._num_clbits
-
-    @property
-    def depth(self) -> int:
-        """Return the circuit depth (i.e., length of critical path)."""
-        return self._depth
-
-    @property
-    def params(self) -> Optional[list]:
-        """Return the circuit parameters. Defaults to None."""
-        return self._params
-
-    @property
-    def input_param_mapping(self) -> dict:
-        """Return the input parameter mapping. Defaults to None."""
-        return self._input_param_mapping
+        self.program = program
+        self._package = self._determine_package()
 
     @property
     def package(self) -> str:
         """Return the original package of the wrapped circuit."""
         return self._package
+
+    def _determine_package(self) -> str:
+        """Return the original package of the wrapped circuit."""
+        if isinstance(self.program, str):
+            try:
+                return get_qasm_version(self.program)
+            except QasmError as err:
+                raise ProgramTypeError(
+                    "Input of type string must represent a valid OpenQASM program."
+                ) from err
+
+        try:
+            return self.program.__module__.split(".")[0].lower()
+        except AttributeError as err:
+            raise ProgramTypeError(self.program) from err
+
+    @property
+    @abstractmethod
+    def program(self) -> "qbraid.QPROGRAM":
+        """Return the wrapped quantum program object."""
+
+    @property
+    @abstractmethod
+    def qubits(self) -> List[Any]:
+        """Return the qubits acted upon by the operations in this circuit"""
+
+    @property
+    def num_qubits(self) -> int:
+        """Return the number of qubits in the circuit."""
+        return len(self.qubits)
+
+    @property
+    @abstractmethod
+    def num_clbits(self) -> Optional[int]:
+        """Return the number of classical bits in the circuit."""
+
+    @property
+    @abstractmethod
+    def depth(self) -> int:
+        """Return the circuit depth (i.e., length of critical path)."""
+
+    @abstractmethod
+    def unitary(self) -> "np.ndarray":
+        """Calculate unitary of circuit."""
+
+    @abstractmethod
+    def _contiguous_compression(self) -> None:
+        """Remove empty registers of circuit."""
+
+    @abstractmethod
+    def _contiguous_expansion(self) -> None:
+        """Remove empty registers of circuit."""
+
+    @abstractmethod
+    def convert_to_contiguous(self, expansion=False) -> None:
+        """Remove empty registers of circuit."""
+        if expansion:
+            return self._contiguous_expansion()
+        return self._contiguous_compression()
+
+    @abstractmethod
+    def reverse_qubit_order(self) -> None:
+        """Rerverse qubit ordering of circuit."""
 
     def transpile(self, conversion_type: str) -> "qbraid.QPROGRAM":
         r"""Transpile a qbraid quantum program wrapper object to quantum
