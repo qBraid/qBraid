@@ -1,7 +1,7 @@
 # integrations
-amazon-braket-sdk~=1.54.3.post0
-cirq-ionq~=1.3.0.dev20230908221855
-cirq-rigetti~=1.3.0.dev20230908221855
+amazon-braket-sdk~=1.55.0
+cirq-ionq~=1.3.0.dev20230913023633
+cirq-rigetti~=1.3.0.dev20230913023633
 pyquil>=3.5.4,<3.6.0
 pytket~=1.19.1
 pytket-braket~=0.30.0
