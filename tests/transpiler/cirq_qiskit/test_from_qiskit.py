@@ -17,7 +17,8 @@ import pytest
 from qiskit import QuantumCircuit
 from qiskit.circuit.random import random_circuit
 
-from qbraid.interface import circuits_allclose, convert_to_contiguous
+from qbraid import circuit_wrapper
+from qbraid.interface import circuits_allclose
 from qbraid.transpiler.cirq_qiskit.conversions import from_qiskit
 from qbraid.transpiler.exceptions import CircuitConversionError
 
@@ -98,7 +99,9 @@ def test_qiskit_roundtrip_noncontig():
     qiskit_circuit.ecr(1, 2)
     qiskit_circuit.cs(2, 0)
     cirq_circuit = from_qiskit(qiskit_circuit)
-    qiskit_contig = convert_to_contiguous(qiskit_circuit)
+    qprogram = circuit_wrapper(cirq_circuit)
+    qprogram.convert_to_contiguous()
+    qiskit_contig = qprogram.program
     assert circuits_allclose(qiskit_contig, cirq_circuit, strict_gphase=False)
 
 
@@ -113,4 +116,4 @@ def test_raise_error():
     with pytest.raises(CircuitConversionError):
         qiskit_circuit = QuantumCircuit(1)
         qiskit_circuit.delay(300, 0)
-        cirq_circuit = from_qiskit(qiskit_circuit)
+        from_qiskit(qiskit_circuit)

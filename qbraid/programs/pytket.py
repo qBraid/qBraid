@@ -13,10 +13,10 @@ Module defining PytketCircuit Class
 
 """
 
-from typing import List
+from typing import List, Optional, Union
 
 import numpy as np
-from pytket.circuit import Circuit
+from pytket.circuit import Circuit, Command
 from pytket.unit_id import Qubit
 
 from qbraid.programs.abc_program import QuantumProgram
@@ -55,20 +55,21 @@ class PytketCircuit(QuantumProgram):
         """Return the circuit depth (i.e., length of critical path)."""
         return self.program.depth()
 
-    def unitary(self) -> "np.ndarray":
+    def _unitary(self) -> "np.ndarray":
         """Return the unitary of a pytket circuit."""
         return self.program.get_unitary()
 
     def _contiguous_expansion(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, adds identity gates to vacant registers as needed."""
-        raise NotImplementedError
+        return NotImplementedError
 
     def _contiguous_compression(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
         circuit = self.program.copy()
-        self._program = circuit.remove_blank_wires()
+        circuit.remove_blank_wires()
+        self._program = circuit
 
     def reverse_qubit_order(self) -> None:
         """Reverses the qubit ordering of a PyTKET circuit."""
@@ -84,3 +85,18 @@ class PytketCircuit(QuantumProgram):
                 circuit_qubits,
             )
         self._program = new_c
+
+    @staticmethod
+    def gate_to_matrix(
+        gates: Optional[Union[List[Circuit], Command]], flat: bool = False
+    ) -> np.ndarray:
+        """Return the unitary of the Command"""
+        gates = gates if (list == type(gates)) else [gates]
+        a = list(map(max, [gate.qubits for gate in gates]))
+        circuit = Circuit(max(a).index[0] + 1)
+        for gate in gates:
+            gate_op = gate.op
+            circuit.add_gate(gate_op.type, gate_op.params, gate.qubits)
+        if flat:
+            circuit.remove_blank_wires()
+        return circuit.get_unitary()

@@ -15,16 +15,18 @@ Unit tests for Qiskit utility functions.
 
 from qiskit import QuantumCircuit
 
-from qbraid.interface.qbraid_qiskit.tools import reverse_qubit_ordering
+from qbraid import circuit_wrapper
 
 
-def test_reverse_qubit_ordering():
+def test_reverse_qubit_order():
     """Test reversing ordering of qubits in qiskit circuit"""
     circ = QuantumCircuit(3)
     circ.h(0)
     circ.cx(0, 2)
 
-    reversed_circ = reverse_qubit_ordering(circ)
+    qprogram = circuit_wrapper(circ)
+    qprogram.reverse_qubit_order()
+    reversed_circ = qprogram.program
 
     expected_circ = QuantumCircuit(3)
     expected_circ.h(2)

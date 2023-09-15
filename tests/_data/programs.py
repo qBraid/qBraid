@@ -17,8 +17,8 @@ from typing import Any, Callable, Dict, Tuple
 
 import numpy as np
 
+from qbraid import circuit_wrapper
 from qbraid._qprogram import QPROGRAM
-from qbraid.interface.calculate_unitary import to_unitary
 
 from .braket.circuits import braket_bell, braket_shared15
 from .cirq.circuits import cirq_bell, cirq_shared15
@@ -34,7 +34,7 @@ QROGRAM_TEST_TYPE = Tuple[Dict[str, Callable[[Any], QPROGRAM]], np.ndarray]
 def bell_data() -> QROGRAM_TEST_TYPE:
     """Returns bell circuit/program in each supported package."""
 
-    unitary = to_unitary(cirq_bell())
+    unitary = circuit_wrapper(cirq_bell()).unitary()
 
     circuits = {
         "braket": braket_bell,
@@ -52,7 +52,7 @@ def bell_data() -> QROGRAM_TEST_TYPE:
 def shared15_data() -> QROGRAM_TEST_TYPE:
     """Returns shared gates circuit/program in each supported package."""
 
-    unitary = to_unitary(cirq_shared15())
+    unitary = circuit_wrapper(cirq_shared15()).unitary()
 
     circuits = {
         "braket": braket_shared15,

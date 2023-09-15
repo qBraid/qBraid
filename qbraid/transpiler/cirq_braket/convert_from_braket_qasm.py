@@ -17,7 +17,7 @@ from braket.circuits import Circuit as BKCircuit
 from cirq import Circuit
 from cirq.contrib.qasm_import.exception import QasmException
 
-from qbraid.interface import convert_to_contiguous
+from qbraid import circuit_wrapper
 from qbraid.interface.qbraid_braket.qasm import braket_to_qasm
 from qbraid.transpiler.cirq_qasm import from_qasm
 from qbraid.transpiler.exceptions import CircuitConversionError
@@ -35,7 +35,9 @@ def from_braket(circuit: BKCircuit) -> Circuit:
     Raises:
         CircuitConversionError: if circuit could not be converted
     """
-    compat_circuit = convert_to_contiguous(circuit)
+    qprogram = circuit_wrapper(circuit)
+    qprogram.convert_to_contiguous()
+    compat_circuit = qprogram.program
     qasm_str = braket_to_qasm(compat_circuit)
     try:
         return from_qasm(qasm_str)

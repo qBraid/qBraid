@@ -18,7 +18,6 @@ from qbraid import circuit_wrapper
 from qbraid.exceptions import ProgramTypeError, VisualizationError
 from qbraid.interface.calculate_unitary import circuits_allclose
 from qbraid.interface.circuit_drawer import circuit_drawer
-from qbraid.interface.qbraid_qiskit.tools import reverse_qubit_ordering
 from qbraid.interface.random_circuit import random_circuit
 
 from .._data.programs import bell_data, shared15_data
@@ -95,7 +94,9 @@ q_0: ─────┤ X ├
      ┌───┐└─┬─┘
 q_1: ┤ H ├──■──
      └───┘     """
-    result = circuit_drawer(reverse_qubit_ordering(qiskit_bell), output="text")
+    qprogram = circuit_wrapper(qiskit_bell)
+    qprogram.reverse_qubit_order()
+    result = circuit_drawer(qprogram.program, output="text")
     assert str(result) == expected
 
 

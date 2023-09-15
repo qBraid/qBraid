@@ -55,20 +55,20 @@ class PyQuilProgram(QuantumProgram):
         """Return the circuit depth (i.e., length of critical path)."""
         return len(self.program)
 
-    def unitary(self) -> "np.ndarray":
+    def _unitary(self) -> "np.ndarray":
         """Return the unitary of a pyQuil program."""
         return program_unitary(self.program, n_qubits=self.num_qubits)
 
     def _contiguous_expansion(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, adds identity gates to vacant registers as needed."""
-        raise NotImplementedError
+        return NotImplementedError
 
     def _contiguous_compression(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
-        raise NotImplementedError
+        return NotImplementedError
 
     def reverse_qubit_order(self) -> None:
         """Reverse the order of the qubits in the circuit."""
-        raise NotImplementedError
+        return NotImplementedError

@@ -32,7 +32,6 @@ try:
 except ImportError:
     cirq_ionq_ops = None
 
-from qbraid.interface import convert_to_contiguous
 from qbraid.interface.qbraid_cirq.tools import _int_from_qubit, is_measurement_gate
 from qbraid.transpiler.cirq_braket.custom_gates import C as BKControl
 from qbraid.transpiler.exceptions import CircuitConversionError
@@ -47,7 +46,11 @@ def to_braket(circuit: Circuit) -> BKCircuit:
     Returns:
         Braket circuit equivalent to the input Cirq circuit.
     """
-    compat_circuit = convert_to_contiguous(circuit)
+    from qbraid import circuit_wrapper  # pylint: disable=import-outside-toplevel
+
+    qprogram = circuit_wrapper(circuit)
+    qprogram.convert_to_contiguous()
+    compat_circuit = qprogram.program
     cirq_int_qubits = range(len(compat_circuit.all_qubits()))
     braket_int_qubits = list(cirq_int_qubits)
     qubit_mapping = {x: braket_int_qubits[x] for x in cirq_int_qubits}

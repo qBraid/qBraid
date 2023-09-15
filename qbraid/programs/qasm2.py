@@ -36,10 +36,14 @@ class OpenQasm2Program(QuantumProgram):
             raise ValueError("Program must be an instance of str")
         self._program = value
 
-    @property
-    def qubits(self) -> List[str]:
-        """Use regex to extract all qreg definitions from the string"""
-        matches = re.findall(r"qreg (\w+)\[(\d+)\];", self.program)
+    def _get_bits(self, bit_type: str) -> List[str]:
+        """Return the number of qubits or classical bits in the circuit.
+
+        Args:
+            bit_type: either "q" or "c" for qubits or classical bits, respectively.
+
+        """
+        matches = re.findall(rf"{bit_type}reg (\w+)\[(\d+)\];", self.program)
 
         result = []
         for match in matches:
@@ -50,9 +54,14 @@ class OpenQasm2Program(QuantumProgram):
         return result
 
     @property
+    def qubits(self) -> List[str]:
+        """Use regex to extract all qreg definitions from the string"""
+        return self._get_bits("q")
+
+    @property
     def num_clbits(self) -> int:
         """Return the number of classical bits in the circuit."""
-        raise NotImplementedError
+        return self._get_bits("c")
 
     @staticmethod
     def _get_max_count(counts_dict) -> int:
@@ -139,22 +148,34 @@ class OpenQasm2Program(QuantumProgram):
 
         return self._get_max_count(depth_counts)
 
-    def unitary(self) -> "np.ndarray":
+    def _unitary(self) -> "np.ndarray":
         """Return the unitary of the QASM"""
         # pylint: disable=import-outside-toplevel
-
+        # self.transpile("cirq")
+        # unitary = self.unitary()
+        # self.transpile("qasm2")
+        # return unitary
         return from_qasm(self.program).unitary()
 
     def _contiguous_expansion(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, adds identity gates to vacant registers as needed."""
-        raise NotImplementedError
+        cirq_circuit = from_qasm(self.program)
+        cirq_contig = _convert_to_contiguous_cirq(cirq_circuit, expansion=True)
+        qasm_program = to_qasm(cirq_contig)
+        self._program = qasm_program
 
     def _contiguous_compression(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
-        self._program = to_qasm(_convert_to_contiguous_cirq(from_qasm(self.program)))
+        cirq_circuit = from_qasm(self.program)
+        cirq_contig = _convert_to_contiguous_cirq(cirq_circuit)
+        qasm_program = to_qasm(cirq_contig)
+        self._program = qasm_program
 
     def reverse_qubit_order(self) -> None:
         """Reverses the qubit ordering of a openqasm program."""
-        raise NotImplementedError
+        cirq_circuit = from_qasm(self.program)
+        cirq_contig = _convert_to_contiguous_cirq(cirq_circuit, rev_qubits=True)
+        qasm_program = to_qasm(cirq_contig)
+        self._program = qasm_program

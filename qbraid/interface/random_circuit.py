@@ -66,6 +66,8 @@ def random_circuit(
         if package != "cirq":
             from qbraid import circuit_wrapper
 
-            rand_circuit = circuit_wrapper(rand_circuit).transpile(package)
+            qbraid_program = circuit_wrapper(rand_circuit)
+            qbraid_program.transpile(package)
+            rand_circuit = qbraid_program.program
 
     return rand_circuit

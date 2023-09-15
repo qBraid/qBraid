@@ -80,7 +80,7 @@ class OpenQasm3Program(QuantumProgram):
 
         return loads(self.program).depth()
 
-    def unitary(self) -> "np.ndarray":
+    def _unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
         # pylint: disable=import-outside-toplevel
         from qiskit.qasm3 import loads

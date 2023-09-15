@@ -15,15 +15,9 @@ Module containing Cirq tools
 from copy import deepcopy
 from typing import List, Sequence, Union
 
-import numpy as np
 from cirq import Circuit, GridQubit, I, LineQubit, MeasurementGate, NamedQubit, Qid, ops
 
 QUBIT = Union[LineQubit, GridQubit, NamedQubit, Qid]
-
-
-def _unitary_from_cirq(circuit: Circuit) -> np.ndarray:
-    """Return the unitary of a Cirq circuit."""
-    return circuit.unitary()
 
 
 def _convert_to_line_qubits(

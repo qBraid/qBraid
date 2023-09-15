@@ -31,7 +31,6 @@ try:
 except ImportError:
     cirq_ionq_ops = None
 
-from qbraid.interface import convert_to_contiguous, to_unitary
 from qbraid.transpiler.custom_gates import matrix_gate
 from qbraid.transpiler.exceptions import CircuitConversionError
 
@@ -42,7 +41,7 @@ def _gate_to_matrix_braket(gate: braket_gates.Unitary) -> np.ndarray:
     nqubits = int(np.log2(len(matrix)))
     qubits = list(range(nqubits)) if nqubits > 1 else 0
     circuit = BKCircuit([BKInstruction(unitary_gate, qubits)])
-    return to_unitary(circuit)
+    return circuit.to_unitary()
 
 
 def unitary_braket_instruction(instr: BKInstruction) -> BKInstruction:
@@ -73,7 +72,11 @@ def from_braket(circuit: BKCircuit) -> Circuit:
     Args:
         circuit: Braket circuit to convert to a Cirq circuit.
     """
-    compat_circuit = convert_to_contiguous(circuit)
+    from qbraid import circuit_wrapper  # pylint: disable=import-outside-toplevel
+
+    qprogram = circuit_wrapper(circuit)
+    qprogram.convert_to_contiguous()
+    compat_circuit = qprogram.program
     cirq_qubits = [LineQubit(x) for x in range(len(compat_circuit.qubits))]
     qubit_mapping = {x: cirq_qubits[x] for x in range(len(cirq_qubits))}
     return Circuit(

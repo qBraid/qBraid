@@ -16,8 +16,8 @@ import cirq
 import numpy as np
 import pytest
 
+from qbraid import circuit_wrapper
 from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.interface import to_unitary
 from qbraid.transpiler.conversions import convert_from_cirq
 
 
@@ -31,7 +31,7 @@ def test_convert_circuit_operation_from_cirq(frontend):
 
     test_circuit = convert_from_cirq(cirq_circuit, frontend)
 
-    cirq_unitary = to_unitary(cirq_circuit)
-    test_unitary = to_unitary(test_circuit)
+    cirq_unitary = circuit_wrapper(cirq_circuit).unitary()
+    test_unitary = circuit_wrapper(test_circuit).unitary()
 
     assert np.allclose(cirq_unitary, test_unitary)

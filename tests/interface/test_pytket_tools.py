@@ -15,7 +15,7 @@ Unit tests for PyTKET utility functions.
 import pytest
 from pytket.circuit import Circuit
 
-from qbraid.interface.qbraid_pytket.tools import reverse_qubit_ordering
+from qbraid import circuit_wrapper
 
 
 @pytest.mark.parametrize(
@@ -25,7 +25,9 @@ from qbraid.interface.qbraid_pytket.tools import reverse_qubit_ordering
         (Circuit(3).CCX(0, 1, 2), Circuit(3).CCX(2, 1, 0)),
     ],
 )
-def test_reverse_qubit_ordering(input_circuit, expected_circuit):
+def test_reverse_qubit_order(input_circuit, expected_circuit):
     """Test reversing qubit ordering of pytket circuit."""
-    result_circuit = reverse_qubit_ordering(input_circuit)
+    qprogram = circuit_wrapper(input_circuit)
+    qprogram.reverse_qubit_order()
+    result_circuit = qprogram.program
     assert result_circuit.get_commands() == expected_circuit.get_commands()

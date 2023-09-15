@@ -15,6 +15,8 @@ Module defining QuantumProgram Class
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Any, List, Optional
 
+import numpy as np
+
 from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError
 from qbraid.interface.circuit_drawer import circuit_drawer
@@ -23,8 +25,6 @@ from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 if TYPE_CHECKING:
-    import numpy as np
-
     import qbraid
 
 
@@ -33,6 +33,7 @@ class QuantumProgram:
 
     def __init__(self, program: "qbraid.QPROGRAM"):
         self.program = program
+        self._program = program
         self._package = self._determine_package()
 
     @property
@@ -56,9 +57,9 @@ class QuantumProgram:
             raise ProgramTypeError(self.program) from err
 
     @property
-    @abstractmethod
     def program(self) -> "qbraid.QPROGRAM":
         """Return the wrapped quantum program object."""
+        return self._program
 
     @property
     @abstractmethod
@@ -81,8 +82,80 @@ class QuantumProgram:
         """Return the circuit depth (i.e., length of critical path)."""
 
     @abstractmethod
+    def _unitary(self) -> "np.ndarray":
+        """Calculate unitary of circuit."""
+
     def unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
+        if self.package in ["pyquil", "qiskit", "qasm3"]:
+            return self.rev_qubits_unitary()
+        return self._unitary()
+
+    def rev_qubits_unitary(self) -> np.ndarray:
+        """Peforms Kronecker (tensor) product factor permutation of given matrix.
+        Returns a matrix equivalent to that computed from a quantum circuit if its
+        qubit indicies were reversed.
+
+        Args:
+            matrix (np.ndarray): The input matrix, assumed to be a 2^N x 2^N square matrix
+                                where N is an integer.
+
+        Returns:
+            np.ndarray: The matrix with permuted Kronecker product factors.
+
+        Raises:
+            ValueError: If the input matrix is not square or its size is not a power of 2.
+        """
+        matrix = self._unitary()
+        if matrix.shape[0] != matrix.shape[1] or (matrix.shape[0] & (matrix.shape[0] - 1)) != 0:
+            raise ValueError("Input matrix must be a square matrix of size 2^N for some integer N.")
+
+        # Determine the number of qubits from the matrix size
+        num_qubits = int(np.log2(matrix.shape[0]))
+
+        # Create an empty matrix of the same size
+        permuted_matrix = np.zeros((2**num_qubits, 2**num_qubits), dtype=complex)
+
+        for i in range(2**num_qubits):
+            for j in range(2**num_qubits):
+                # pylint: disable=consider-using-generator
+                # Convert indices to binary representations (qubit states)
+                bits_i = [((i >> bit) & 1) for bit in range(num_qubits)]
+                bits_j = [((j >> bit) & 1) for bit in range(num_qubits)]
+
+                # Reverse the bits
+                reversed_i = sum([bit << (num_qubits - 1 - k) for k, bit in enumerate(bits_i)])
+                reversed_j = sum([bit << (num_qubits - 1 - k) for k, bit in enumerate(bits_j)])
+
+                # Update the new matrix
+                permuted_matrix[reversed_i, reversed_j] = matrix[i, j]
+
+        return permuted_matrix
+
+    @staticmethod
+    def unitary_to_little_endian(matrix: np.ndarray) -> np.ndarray:
+        """Converts unitary calculated using big-endian system to its
+        equivalent form in a little-endian system.
+
+        Args:
+            matrix: big-endian unitary
+
+        Raises:
+            ValueError: If input matrix is not unitary
+
+        Returns:
+            little-endian unitary
+
+        """
+        rank = len(matrix)
+        if not np.allclose(np.eye(rank), matrix.dot(matrix.T.conj())):
+            raise ValueError("Input matrix must be unitary.")
+        num_qubits = int(np.log2(rank))
+        tensor_be = matrix.reshape([2] * 2 * num_qubits)
+        indicies_in = list(reversed(range(num_qubits)))
+        indicies_out = [i + num_qubits for i in indicies_in]
+        tensor_le = np.einsum(tensor_be, indicies_in + indicies_out)
+        return tensor_le.reshape([rank, rank])
 
     @abstractmethod
     def _contiguous_compression(self) -> None:
@@ -121,8 +194,10 @@ class QuantumProgram:
 
         """
         if conversion_type == self.package:
-            return self.program
+            return self._program
         if conversion_type in QPROGRAM_LIBS:
+            # cirq_circuit, _ = convert_to_cirq(self.program)
+            # converted_program = convert_from_cirq(cirq_circuit, conversion_type)
             try:
                 cirq_circuit, _ = convert_to_cirq(self.program)
             except Exception as err:
@@ -139,10 +214,13 @@ class QuantumProgram:
                     f"program of type {conversion_type}."
                 ) from err
 
-            return converted_program
+            self._program = converted_program
+            return self._program
 
         raise PackageValueError(conversion_type)
 
-    def draw(self, package: str = "cirq", output: Optional[str] = None, **kwrags):
-        """draw circuit"""
-        return circuit_drawer(self.transpile(package), output, **kwrags)
+    def draw(self, package: Optional[str] = None, output: Optional[str] = None, **kwrags):
+        """Draw circuit"""
+        package = "cirq" if package is None else package
+        self.transpile(package)
+        return circuit_drawer(self.program, output, **kwrags)

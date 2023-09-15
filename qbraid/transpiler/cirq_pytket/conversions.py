@@ -17,7 +17,7 @@ from cirq import Circuit
 from pytket.circuit import Circuit as TKCircuit
 from pytket.qasm import circuit_from_qasm_str, circuit_to_qasm_str
 
-from qbraid.interface import convert_to_contiguous
+from qbraid import circuit_wrapper
 from qbraid.transpiler.cirq_qasm import from_qasm, to_qasm
 from qbraid.transpiler.custom_gates import _map_zpow_and_unroll
 from qbraid.transpiler.exceptions import CircuitConversionError
@@ -35,7 +35,9 @@ def to_pytket(circuit: Circuit) -> TKCircuit:
         Pytket circuit object equivalent to the input Cirq circuit.
     """
     try:
-        contig_circuit = convert_to_contiguous(circuit)
+        qprogram = circuit_wrapper(circuit)
+        qprogram.convert_to_contiguous()
+        contig_circuit = qprogram.program
         compat_circuit = _map_zpow_and_unroll(contig_circuit)
         return circuit_from_qasm_str(to_qasm(compat_circuit))
     except ValueError as err:
@@ -55,7 +57,9 @@ def from_pytket(circuit: TKCircuit, compat=False) -> Circuit:
         qasm_str = circuit_to_qasm_str(circuit)
         cirq_circuit = from_qasm(qasm_str)
         if compat:
-            cirq_circuit = convert_to_contiguous(cirq_circuit)
+            qprogram = circuit_wrapper(cirq_circuit)
+            qprogram.convert_to_contiguous()
+            cirq_circuit = qprogram.program
         return cirq_circuit
     except Exception as err:
         raise CircuitConversionError("Cirq qasm converter doesn't yet support qasm3.") from err

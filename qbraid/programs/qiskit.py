@@ -60,7 +60,7 @@ class QiskitCircuit(QuantumProgram):
         """Return the circuit depth (i.e., length of critical path)."""
         return self.program.depth()
 
-    def unitary(self) -> "np.ndarray":
+    def _unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
         return Operator(self.program).data
 

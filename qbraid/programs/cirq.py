@@ -49,7 +49,7 @@ class CirqCircuit(QuantumProgram):
         """Return the circuit depth (i.e., length of critical path)."""
         return len(cirq.Circuit(self.program.all_operations()))
 
-    def unitary(self) -> np.ndarray:
+    def _unitary(self) -> np.ndarray:
         """Calculate unitary of circuit."""
         return self.program.unitary()
 

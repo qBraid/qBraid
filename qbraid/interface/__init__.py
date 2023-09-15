@@ -18,26 +18,12 @@ Interface (:mod:`qbraid.interface`)
 .. autosummary::
    :toctree: ../stubs/
 
-   to_unitary
-   unitary_to_little_endian
    random_unitary_matrix
-   convert_to_contiguous
    circuits_allclose
    random_circuit
    circuit_drawer
-   rev_qubits_unitary
-   ContiguousConversionError
-   UnitaryCalculationError
 
 """
-from .calculate_unitary import (
-    UnitaryCalculationError,
-    circuits_allclose,
-    random_unitary_matrix,
-    rev_qubits_unitary,
-    to_unitary,
-    unitary_to_little_endian,
-)
+from .calculate_unitary import circuits_allclose, random_unitary_matrix
 from .circuit_drawer import circuit_drawer
-from .convert_to_contiguous import ContiguousConversionError, convert_to_contiguous
 from .random_circuit import random_circuit
