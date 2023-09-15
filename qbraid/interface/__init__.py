@@ -24,6 +24,6 @@ Interface (:mod:`qbraid.interface`)
    circuit_drawer
 
 """
-from .calculate_unitary import circuits_allclose, random_unitary_matrix
 from .circuit_drawer import circuit_drawer
-from .random_circuit import random_circuit
+from .circuit_equality import circuits_allclose
+from .random_circuit import random_circuit, random_unitary_matrix

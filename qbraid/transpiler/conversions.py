@@ -20,7 +20,7 @@ from cirq import Circuit
 from cirq.contrib.qasm_import import circuit_from_qasm
 
 from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError
-from qbraid.interface.calculate_unitary import circuits_allclose
+from qbraid.interface.circuit_equality import circuits_allclose
 from qbraid.qasm_checks import get_qasm_version
 from qbraid.transpiler.cirq_qasm import from_qasm, to_qasm
 from qbraid.transpiler.exceptions import CircuitConversionError

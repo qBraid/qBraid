@@ -54,6 +54,13 @@ class CirqCircuit(QuantumProgram):
         return self.program.unitary()
 
     @staticmethod
+    def is_measurement_gate(op: cirq.Operation) -> bool:
+        """Returns whether Cirq gate/operation is MeasurementGate."""
+        return isinstance(op, cirq.ops.MeasurementGate) or isinstance(
+            getattr(op, "gate", None), cirq.ops.MeasurementGate
+        )
+
+    @staticmethod
     def _key_from_qubit(qubit: cirq.Qid) -> str:
         if isinstance(qubit, cirq.LineQubit):
             key = str(qubit)
@@ -101,7 +108,7 @@ class CirqCircuit(QuantumProgram):
     def _convert_to_line_qubits(self) -> None:
         """Converts a Cirq circuit constructed using NamedQubits to
         a Cirq circuit constructed using LineQubits."""
-        qubits = self.qubits.copy()
+        qubits = list(self.program.all_qubits())
         qubits.sort()
         qubit_map = {self._key_from_qubit(q): i for i, q in enumerate(qubits)}
         line_qubit_circuit = cirq.Circuit()

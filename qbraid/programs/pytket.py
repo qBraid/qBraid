@@ -62,7 +62,7 @@ class PytketCircuit(QuantumProgram):
     def _contiguous_expansion(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, adds identity gates to vacant registers as needed."""
-        return NotImplementedError
+        raise NotImplementedError
 
     def _contiguous_compression(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,

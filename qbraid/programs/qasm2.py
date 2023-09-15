@@ -15,9 +15,8 @@ Module defining OpenQasm2Program Class
 import re
 from typing import TYPE_CHECKING, List
 
-from qbraid.interface.qbraid_cirq.tools import _convert_to_contiguous_cirq
 from qbraid.programs.abc_program import QuantumProgram
-from qbraid.transpiler.cirq_qasm.qasm_conversions import from_qasm, to_qasm
+from qbraid.transpiler.cirq_qasm.qasm_conversions import from_qasm
 
 if TYPE_CHECKING:
     import numpy as np
@@ -150,32 +149,18 @@ class OpenQasm2Program(QuantumProgram):
 
     def _unitary(self) -> "np.ndarray":
         """Return the unitary of the QASM"""
-        # pylint: disable=import-outside-toplevel
-        # self.transpile("cirq")
-        # unitary = self.unitary()
-        # self.transpile("qasm2")
-        # return unitary
         return from_qasm(self.program).unitary()
 
     def _contiguous_expansion(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, adds identity gates to vacant registers as needed."""
-        cirq_circuit = from_qasm(self.program)
-        cirq_contig = _convert_to_contiguous_cirq(cirq_circuit, expansion=True)
-        qasm_program = to_qasm(cirq_contig)
-        self._program = qasm_program
+        raise NotImplementedError
 
     def _contiguous_compression(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
-        cirq_circuit = from_qasm(self.program)
-        cirq_contig = _convert_to_contiguous_cirq(cirq_circuit)
-        qasm_program = to_qasm(cirq_contig)
-        self._program = qasm_program
+        raise NotImplementedError
 
     def reverse_qubit_order(self) -> None:
         """Reverses the qubit ordering of a openqasm program."""
-        cirq_circuit = from_qasm(self.program)
-        cirq_contig = _convert_to_contiguous_cirq(cirq_circuit, rev_qubits=True)
-        qasm_program = to_qasm(cirq_contig)
-        self._program = qasm_program
+        raise NotImplementedError

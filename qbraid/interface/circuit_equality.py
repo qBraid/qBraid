@@ -12,12 +12,16 @@
 Module for calculating unitary of quantum circuit/program
 
 """
-from typing import TYPE_CHECKING, Optional
+from copy import deepcopy
+from typing import TYPE_CHECKING, Union
 
 import numpy as np
+from cirq import Circuit, GridQubit, LineQubit, MeasurementGate, NamedQubit, Qid
 from cirq.testing import assert_allclose_up_to_global_phase
 
 from qbraid.exceptions import QbraidError
+
+QUBIT = Union[LineQubit, GridQubit, NamedQubit, Qid]
 
 if TYPE_CHECKING:
     import qbraid
@@ -30,10 +34,10 @@ class UnitaryCalculationError(QbraidError):
 def circuits_allclose(  # pylint: disable=too-many-arguments
     circuit0: "qbraid.QPROGRAM",
     circuit1: "qbraid.QPROGRAM",
-    index_contig: Optional[bool] = True,
-    allow_rev_qubits: Optional[bool] = False,
-    strict_gphase: Optional[bool] = False,
-    atol: Optional[float] = 1e-7,
+    index_contig: bool = False,
+    allow_rev_qubits: bool = False,
+    strict_gphase: bool = False,
+    atol: float = 1e-7,
 ) -> bool:
     """Check if quantum program unitaries are equivalent.
 
@@ -79,22 +83,53 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
 
     unitary0 = program0.unitary()
     unitary1 = program1.unitary()
-    unitary_rev = program1.rev_qubits_unitary()
+    unitary_rev = program1.unitary_rev_qubits()
 
     return unitary_equivalence_check(unitary0, unitary1, unitary_rev)
 
 
-def random_unitary_matrix(dim: int) -> np.ndarray:
-    """Create a random (complex) unitary matrix of order `dim`
+def _equal(
+    circuit_one: Circuit,
+    circuit_two: Circuit,
+    require_qubit_equality: bool = False,
+    require_measurement_equality: bool = False,
+) -> bool:
+    """Returns True if the circuits are equal, else False.
 
     Args:
-        dim: integer square matrix dimension
+        circuit_one: Input circuit to compare to circuit_two.
+        circuit_two: Input circuit to compare to circuit_one.
+        require_qubit_equality: Requires that the qubits be equal
+            in the two circuits.
+        require_measurement_equality: Requires that measurements are equal on
+            the two circuits, meaning that measurement keys are equal.
 
-    Returns:
-        random unitary matrix of shape dim x dim
+    Note:
+        If set(circuit_one.all_qubits()) = {LineQubit(0)},
+        then set(circuit_two_all_qubits()) must be {LineQubit(0)},
+        else the two are not equal.
+        If True, the qubits of both circuits must have a well-defined ordering.
     """
-    # Create a random complex matrix of size dim x dim
-    matrix = np.random.randn(dim, dim) + 1j * np.random.randn(dim, dim)
-    # Use the QR decomposition to get a random unitary matrix
-    unitary, _ = np.linalg.qr(matrix)
-    return unitary
+    # Make a deepcopy only if it's necessary
+    if not (require_qubit_equality and require_measurement_equality):
+        circuit_one = deepcopy(circuit_one)
+        circuit_two = deepcopy(circuit_two)
+
+    if not require_qubit_equality:
+        # Transform the qubits of circuit one to those of circuit two
+        qubit_map = dict(
+            zip(
+                sorted(circuit_one.all_qubits()),
+                sorted(circuit_two.all_qubits()),
+            )
+        )
+        circuit_one = circuit_one.transform_qubits(lambda q: qubit_map[q])
+
+    if not require_measurement_equality:
+        for circ in (circuit_one, circuit_two):
+            measurements = [
+                (moment, op)
+                for moment, op, _ in circ.findall_operations_with_gate_type(MeasurementGate)
+            ]
+            circ.batch_remove(measurements)
+    return circuit_one == circuit_two

@@ -17,7 +17,7 @@ from copy import deepcopy
 import cirq
 import pytest
 
-from qbraid.interface.qbraid_cirq.tools import _equal
+from qbraid.interface.circuit_equality import _equal
 
 
 @pytest.mark.parametrize("require_qubit_equality", [True, False])

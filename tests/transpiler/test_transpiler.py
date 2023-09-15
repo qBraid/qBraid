@@ -31,7 +31,7 @@ from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 from qbraid import QbraidError, circuit_wrapper
 from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.exceptions import PackageValueError, ProgramTypeError
-from qbraid.interface.qbraid_cirq.tools import _equal
+from qbraid.interface.circuit_equality import _equal
 from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
 

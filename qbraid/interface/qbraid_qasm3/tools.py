@@ -14,9 +14,6 @@ Module containing OpenQASM conversion function
 """
 import os
 
-from qbraid.exceptions import QasmError
-from qbraid.qasm_checks import get_qasm_version
-
 QASMType = str
 
 

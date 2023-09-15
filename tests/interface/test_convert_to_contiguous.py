@@ -19,7 +19,7 @@ from pytket.circuit import Circuit as TKCircuit
 from qiskit import QuantumCircuit
 
 from qbraid import circuit_wrapper
-from qbraid.interface.calculate_unitary import circuits_allclose
+from qbraid.interface.circuit_equality import circuits_allclose
 
 
 def test_remove_idle_qubits_qiskit():
@@ -44,7 +44,7 @@ def test_convert_braket_bell():
     qprogram.convert_to_contiguous()
     bk_contig = qprogram.program
     u_test = bk_contig.as_unitary()
-    u_little_endian = qprogram.unitary_to_little_endian(qprogram.unitary())
+    u_little_endian = qprogram.unitary_little_endian()
     assert np.allclose(u_expected, u_test)
     assert np.allclose(u_expected, u_little_endian)
 

@@ -20,8 +20,7 @@ from braket.circuits import Circuit, Instruction, gates
 from pytket.circuit import Circuit as TKCircuit
 
 from qbraid import circuit_wrapper
-from qbraid.interface.calculate_unitary import random_unitary_matrix
-from qbraid.programs.abc_program import QuantumProgram
+from qbraid.interface.random_circuit import random_unitary_matrix
 from qbraid.programs.pytket import PytketCircuit as QbraidPytketCircuit
 
 
@@ -90,8 +89,7 @@ def test_unitary_calc(bk_instrs, u_expected):
     non-contiguous qubit indexing."""
     circuit = make_circuit(bk_instrs)
     qbraid_circuit = circuit_wrapper(circuit)
-    u_test = qbraid_circuit.unitary()
-    u_expected = QuantumProgram.unitary_to_little_endian(u_expected)
+    u_test = qbraid_circuit.unitary_little_endian()
     assert np.allclose(u_expected, u_test)
 
 
@@ -100,8 +98,7 @@ def test_convert_be_to_le(bk_instrs, u_expected):
     """Test converting big-endian unitary to little-endian unitary."""
     circuit = make_circuit(bk_instrs)
     qbraid_circuit = circuit_wrapper(circuit)
-    u_big = qbraid_circuit.unitary()
-    u_test = QuantumProgram.unitary_to_little_endian(u_big)
+    u_test = qbraid_circuit.unitary_little_endian()
     assert np.allclose(u_expected, u_test)
 
 
@@ -135,13 +132,6 @@ def test_kronecker_product_factor_permutation():
 
     unitary = circuit.unitary()
     circuit.reverse_qubit_order()
-    unitary_rev = circuit.rev_qubits_unitary()
+    unitary_rev = circuit.unitary_rev_qubits()
 
     assert np.allclose(unitary, unitary_rev)
-
-
-# def test_kronecker_product_factor_permutation_invalid_input():
-#     """Test raising ValueError for non-square matrix of size not 2^N"""
-#     invalid_matrix = np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]])
-#     with pytest.raises(ValueError):
-#         rev_qubits_unitary(invalid_matrix)

@@ -16,11 +16,6 @@ qbraid.interface
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.interface.qbraid_pyquil
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 .. automodule:: qbraid.interface.qbraid_qiskit
    :members:
    :undoc-members:

@@ -88,10 +88,10 @@ class QuantumProgram:
     def unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
         if self.package in ["pyquil", "qiskit", "qasm3"]:
-            return self.rev_qubits_unitary()
+            return self.unitary_rev_qubits()
         return self._unitary()
 
-    def rev_qubits_unitary(self) -> np.ndarray:
+    def unitary_rev_qubits(self) -> np.ndarray:
         """Peforms Kronecker (tensor) product factor permutation of given matrix.
         Returns a matrix equivalent to that computed from a quantum circuit if its
         qubit indicies were reversed.
@@ -132,8 +132,7 @@ class QuantumProgram:
 
         return permuted_matrix
 
-    @staticmethod
-    def unitary_to_little_endian(matrix: np.ndarray) -> np.ndarray:
+    def unitary_little_endian(self) -> np.ndarray:
         """Converts unitary calculated using big-endian system to its
         equivalent form in a little-endian system.
 
@@ -147,6 +146,7 @@ class QuantumProgram:
             little-endian unitary
 
         """
+        matrix = self.unitary()
         rank = len(matrix)
         if not np.allclose(np.eye(rank), matrix.dot(matrix.T.conj())):
             raise ValueError("Input matrix must be unitary.")
