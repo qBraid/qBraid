@@ -17,6 +17,7 @@ import re
 from typing import List
 
 import numpy as np
+from openqasm3 import dumps
 from openqasm3.ast import QubitDeclaration
 from openqasm3.parser import parse
 from qiskit.qasm3 import loads
@@ -66,6 +67,12 @@ def _unitary_from_qasm3(qasmstr: QASMType) -> np.ndarray:
     """Return the unitary of the QASM 3 string"""
     circuit = loads(qasmstr)
     return _unitary_from_qiskit(circuit)
+
+
+def _unitary_from_openqasm_ast(qasm_ast):
+    """Return unitary of openqasm AST program"""
+    qasm_3 = dumps(qasm_ast)
+    return _unitary_from_qasm3(qasm_3)
 
 
 def _remove_gate_definitions(qasm_str):
