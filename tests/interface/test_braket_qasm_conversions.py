@@ -22,12 +22,12 @@ def test_braket_to_qasm3_bell_circuit():
     """Test converting braket bell circuit to OpenQASM 3.0 string"""
     qasm_expected = """
 OPENQASM 3.0;
-bit[2] __bits__;
-qubit[2] __qubits__;
-h __qubits__[0];
-cnot __qubits__[0], __qubits__[1];
-__bits__[0] = measure __qubits__[0];
-__bits__[1] = measure __qubits__[1];
+bit[2] b;
+qubit[2] q;
+h q[0];
+cnot q[0], q[1];
+b[0] = measure q[0];
+b[1] = measure q[1];
 """
     bell = Circuit().h(0).cnot(0, 1)
     assert qasm_expected.strip("\n") == braket_to_qasm3(bell)
