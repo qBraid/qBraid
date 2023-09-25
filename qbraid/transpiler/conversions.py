@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Tuple
 
 from cirq import Circuit
 from cirq.contrib.qasm_import import circuit_from_qasm
+from openqasm3 import parse as openqasm_parse
 
 from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError
 from qbraid.interface.circuit_equality import circuits_allclose
@@ -81,6 +82,15 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple["cirq.Circuit", str]:
             from qbraid.transpiler.cirq_pytket import from_pytket
 
             return from_pytket(program), "pytket"
+
+        if "openqasm3" in package:
+            from openqasm3 import dumps
+            from qiskit.qasm3 import loads
+
+            from qbraid.transpiler.cirq_qiskit import from_qiskit
+
+            qasm_str = dumps(program)
+            return from_qiskit(loads(qasm_str)), "openqasm3"
 
         if package == "qasm2":
             return from_qasm(program), package
@@ -154,6 +164,12 @@ def _convert_from_cirq(circuit: "cirq.Circuit", frontend: str) -> "qbraid.QPROGR
 
             qasm2_str = to_qasm(circuit)
             return convert_to_qasm3(qasm2_str)
+
+        if frontend == "openqasm3":
+            from qbraid.interface.qbraid_qasm3.tools import convert_to_qasm3
+
+            qasm3_str = convert_to_qasm3(to_qasm(circuit))
+            return openqasm_parse(qasm3_str)
 
         if frontend == "cirq":
             return circuit

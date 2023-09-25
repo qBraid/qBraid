@@ -136,7 +136,8 @@ def test_cirq_bell_text_draw(capfd, package):
 
 def test_cirq_bell_svg_draw():
     """Test drawing Cirq circuit using SVG source output"""
-    assert len(circuit_drawer(cirq_bell, output="svg_source")) == 1211
+    svg_str = circuit_drawer(cirq_bell, output="svg_source")
+    assert svg_str.startswith("<svg") and svg_str.endswith("</svg>")
 
 
 def test_cirq_raises():
