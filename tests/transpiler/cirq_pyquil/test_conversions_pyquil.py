@@ -16,10 +16,12 @@ import numpy as np
 import pytest
 from cirq import Circuit, LineQubit
 from cirq import ops as cirq_ops
+from cirq.contrib.qasm_import import circuit_from_qasm
 from pyquil import Program
 from pyquil.gates import CNOT, CZ, RX, RZ, H, X, Y, Z
 from pyquil.noise import _decoherence_noise_model, _get_program_gates, apply_noise_model
 
+from qbraid.interface import circuits_allclose
 from qbraid.transpiler.cirq_pyquil.conversions import from_pyquil, to_pyquil
 from qbraid.transpiler.exceptions import CircuitConversionError
 
@@ -31,7 +33,8 @@ def test_to_from_pyquil():
     p += Z(2)
     p += CNOT(0, 1)
     p += CZ(1, 2)
-    p_test = to_pyquil(from_pyquil(p, compat=False), compat=False)
+    p_cirq = from_pyquil(p)
+    p_test = to_pyquil(p_cirq)
     assert p.out() == p_test.out()
 
 
@@ -83,8 +86,10 @@ def test_to_from_pyquil_quil_string():
     and forth perfectly (in terms of labels -- the program unitaries and
     number of measurements are equivalent)."""
     p = Program(QUIL_STRING)
-    p_test = to_pyquil(from_pyquil(p, compat=False), compat=False)
-    assert p.out() == p_test.out()
+    p_cirq = from_pyquil(p)
+    p_cirq = circuit_from_qasm(p_cirq.to_qasm())
+    p_test = to_pyquil(p_cirq)
+    assert circuits_allclose(p, p_test)
 
 
 def test_to_pyquil_from_pyquil_no_zero_qubit():

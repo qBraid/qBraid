@@ -15,11 +15,11 @@ representation and pyQuil's circuit representation (Quil programs).
 """
 from cirq import Circuit, LineQubit
 from cirq.ops import QubitOrder
-from cirq_rigetti.quil_input import circuit_from_quil
-from cirq_rigetti.quil_output import QuilOutput
 from pyquil import Program
 
 from qbraid import circuit_wrapper
+from qbraid.transpiler.cirq_pyquil.quil_input import circuit_from_quil
+from qbraid.transpiler.cirq_pyquil.quil_output import QuilOutput
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
