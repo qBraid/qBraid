@@ -128,6 +128,11 @@ def to_unitary(program: "qbraid.QPROGRAM", ensure_contiguous: Optional[bool] = F
         from qbraid.interface.qbraid_pytket.tools import _unitary_from_pytket
 
         to_unitary_function = _unitary_from_pytket
+    elif "openqasm3" in package:
+        from qbraid.interface.qbraid_qasm3.tools import _unitary_from_openqasm_ast
+
+        to_unitary_function = _unitary_from_openqasm_ast
+
     elif package == "qasm2":
         from qbraid.interface.qbraid_qasm.tools import _unitary_from_qasm
 

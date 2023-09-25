@@ -118,16 +118,16 @@ def braket_to_qasm3(circuit: Circuit) -> QASMType:
         q2 : -----X-
 
         T  : |0|1|2|
-        >>> print(circuit_to_qasm3(circuit))
+        >>> print(braket_to_qasm3(circuit))
         OPENQASM 3.0;
-        bit[3] __bits__;
-        qubit[3] __qubits__;
-        h __qubits__[0];
-        cnot __qubits__[0], __qubits__[1];
-        cnot __qubits__[1], __qubits__[2];
-        __bits__[0] = measure __qubits__[0];
-        __bits__[1] = measure __qubits__[1];
-        __bits__[2] = measure __qubits__[2];
+        bit[3] b;
+        qubit[3] q;
+        h q[0];
+        cnot q[0], q[1];
+        cnot q[1], q[2];
+        b[0] = measure q[0];
+        b[1] = measure q[1];
+        b[2] = measure q[2];
 
     Args:
         circuit: Amazon Braket quantum circuit

@@ -54,7 +54,9 @@ def device_wrapper_inputs(vendor: str):
 
 def ibm_devices():
     provider = IBMProvider()
-    backends = provider.backends()
+    backends = provider.backends(
+        filters=lambda b: b.status().status_msg == "active", operational=True
+    )
     qbraid_devices = device_wrapper_inputs("IBM")
     ibm_devices = [ibm_to_qbraid_id(backend.name) for backend in backends]
     return [dev for dev in qbraid_devices if dev in ibm_devices]

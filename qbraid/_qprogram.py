@@ -16,6 +16,7 @@ Module defining input / output types for a quantum backend:
   * QPROGRAM_LIBS: List of all supported quantum software libraries / packages
 
 """
+
 from importlib import import_module
 from types import ModuleType
 from typing import List, Union
@@ -58,13 +59,15 @@ def __get_class(module: str):
             return pyquil.Program  # type: ignore
         case "pytket":
             return pytket._tket.circuit.Circuit  # type: ignore
+        case "openqasm3":
+            return openqasm3.ast.Program  # type: ignore
         case _:
             pass
 
 
 # Supported quantum programs.
 QASMType = str
-_PROGRAMS = __dynamic_importer(["qiskit", "pyquil", "pytket", "braket.circuits"])
+_PROGRAMS = __dynamic_importer(["qiskit", "pyquil", "pytket", "braket.circuits", "openqasm3"])
 QPROGRAM = Union[tuple(_PROGRAMS)]  # type: ignore
 
 # pylint: disable-next=bad-str-strip-call

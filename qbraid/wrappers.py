@@ -68,7 +68,6 @@ def circuit_wrapper(program: QPROGRAM):
     ep = package.lower()
 
     transpiler_entrypoints = _get_entrypoints("qbraid.transpiler")
-
     if package in transpiler_entrypoints:
         circuit_wrapper_class = transpiler_entrypoints[ep].load()
         return circuit_wrapper_class(program)
