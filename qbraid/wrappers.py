@@ -13,6 +13,7 @@ Module containing top-level qbraid wrapper functionality. Each of these
 functions utilize entrypoints via ``pkg_resources``.
 
 """
+import openqasm3
 import pkg_resources
 
 from ._qprogram import QPROGRAM
@@ -53,6 +54,9 @@ def circuit_wrapper(program: QPROGRAM):
         :class:`~qbraid.QbraidError`: If the input circuit is not a supported quantum program.
 
     """
+    if isinstance(program, openqasm3.ast.Program):
+        program = openqasm3.dumps(program)
+
     if isinstance(program, str):
         package = get_qasm_version(program)
 
