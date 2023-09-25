@@ -15,15 +15,15 @@ representation and pyQuil's circuit representation (Quil programs).
 """
 from cirq import Circuit, LineQubit
 from cirq.ops import QubitOrder
-from cirq_rigetti.quil_input import circuit_from_quil
-from cirq_rigetti.quil_output import QuilOutput
 from pyquil import Program
 
-from qbraid.interface.convert_to_contiguous import convert_to_contiguous
+from qbraid import circuit_wrapper
+from qbraid.transpiler.cirq_pyquil.quil_input import circuit_from_quil
+from qbraid.transpiler.cirq_pyquil.quil_output import QuilOutput
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
-def to_pyquil(circuit: Circuit, compat=True) -> Program:
+def to_pyquil(circuit: Circuit, compat: bool = True) -> Program:
     """Returns a pyQuil Program equivalent to the input Cirq circuit.
 
     Args:
@@ -33,7 +33,9 @@ def to_pyquil(circuit: Circuit, compat=True) -> Program:
         pyquil.Program object equivalent to the input Cirq circuit.
     """
     if compat:
-        circuit = convert_to_contiguous(circuit)
+        qprogram = circuit_wrapper(circuit)
+        qprogram.convert_to_contiguous()
+        circuit = qprogram.program
     input_qubits = circuit.all_qubits()
     max_qubit = max(input_qubits)
     # if we are using LineQubits, keep the qubit labeling the same
@@ -54,7 +56,7 @@ def to_pyquil(circuit: Circuit, compat=True) -> Program:
         ) from err
 
 
-def from_pyquil(program: Program, compat=True) -> Circuit:
+def from_pyquil(program: Program, compat: bool = True) -> Circuit:
     """Returns a Cirq circuit equivalent to the input pyQuil Program.
 
     Args:
@@ -66,7 +68,9 @@ def from_pyquil(program: Program, compat=True) -> Circuit:
     try:
         circuit = circuit_from_quil(program.out())
         if compat:
-            circuit = convert_to_contiguous(circuit)
+            qprogram = circuit_wrapper(circuit)
+            qprogram.convert_to_contiguous()
+            circuit = qprogram.program
         return circuit
     except Exception as err:
         raise CircuitConversionError(

@@ -16,8 +16,7 @@ representation and Qiskit's circuit representation.
 import cirq
 import qiskit
 
-from qbraid.interface import convert_to_contiguous
-from qbraid.interface.qbraid_cirq.tools import _convert_to_line_qubits
+from qbraid import circuit_wrapper
 from qbraid.transpiler.cirq_qasm import from_qasm, to_qasm
 from qbraid.transpiler.custom_gates import _map_zpow_and_unroll
 from qbraid.transpiler.exceptions import CircuitConversionError
@@ -35,7 +34,9 @@ def to_qiskit(circuit: cirq.Circuit) -> qiskit.QuantumCircuit:
         Qiskit.QuantumCircuit object equivalent to the input Cirq circuit.
     """
     try:
-        contig_circuit = convert_to_contiguous(circuit)
+        qprogram = circuit_wrapper(circuit)
+        qprogram.convert_to_contiguous()
+        contig_circuit = qprogram.program
         compat_circuit = _map_zpow_and_unroll(contig_circuit)
         return qiskit.QuantumCircuit.from_qasm_str(to_qasm(compat_circuit))
     except ValueError as err:
@@ -54,6 +55,8 @@ def from_qiskit(circuit: qiskit.QuantumCircuit) -> cirq.Circuit:
     try:
         qasm_str = circuit.qasm()
         cirq_circuit = from_qasm(qasm_str)
-        return _convert_to_line_qubits(cirq_circuit)
+        qprogram = circuit_wrapper(cirq_circuit)
+        qprogram._convert_to_line_qubits()
+        return qprogram.program
     except Exception as err:
         raise CircuitConversionError from err

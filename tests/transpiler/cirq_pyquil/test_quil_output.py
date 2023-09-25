@@ -14,28 +14,28 @@
 # with modifications by qBraid. The original copyright notice is included above.
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# isort: skip_file
-# pylint: skip-file
-# flake8: noqa
-# fmt: off
-
 """
 Module for testing qBraid QuilOutput.
 
 """
 
 import os
-import numpy as np
-import pytest
 
 import cirq
+import numpy as np
+import pytest
 from cirq.ops.pauli_interaction_gate import PauliInteractionGate
 
-from qbraid.transpiler.cirq_pyquil.quil_output import QuilOutput, QuilOneQubitGate, QuilTwoQubitGate
+from qbraid.transpiler.cirq_pyquil.quil_output import (
+    QuilOneQubitGate,
+    QuilOutput,
+    QuilTwoQubitGate,
+    exponent_to_pi_string,
+)
 
 
 def _make_qubits(n):
-    return [cirq.NamedQubit(f'q{i}') for i in range(n)]
+    return [cirq.NamedQubit(f"q{i}") for i in range(n)]
 
 
 def test_single_gate_no_parameter():
@@ -61,7 +61,7 @@ RX({np.pi / 2}) 0\n"""
 
 
 def test_single_gate_named_qubit():
-    q = cirq.NamedQubit('qTest')
+    q = cirq.NamedQubit("qTest")
     output = QuilOutput((cirq.X(q),), (q,))
 
     assert (
@@ -86,11 +86,11 @@ RY({-np.pi / 4}) 0\n"""
 
 
 def test_save_to_file(tmpdir):
-    file_path = os.path.join(tmpdir, 'test.quil')
+    file_path = os.path.join(tmpdir, "test.quil")
     (q0,) = _make_qubits(1)
     output = QuilOutput((cirq.X(q0)), (q0,))
     output.save_to_file(file_path)
-    with open(file_path, 'r') as f:
+    with open(file_path, "r") as f:
         file_content = f.read()
     assert (
         file_content
@@ -111,9 +111,7 @@ def test_quil_one_qubit_gate_repr():
 
 
 def test_quil_two_qubit_gate_repr():
-    gate = QuilTwoQubitGate(
-        np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-    )
+    gate = QuilTwoQubitGate(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]))
     assert repr(gate) == (
         """cirq.circuits.quil_output.QuilTwoQubitGate(matrix=
 [[1 0 0 0]
@@ -134,19 +132,11 @@ def test_quil_one_qubit_gate_eq():
 
 
 def test_quil_two_qubit_gate_eq():
-    gate = QuilTwoQubitGate(
-        np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-    )
-    gate2 = QuilTwoQubitGate(
-        np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-    )
+    gate = QuilTwoQubitGate(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]))
+    gate2 = QuilTwoQubitGate(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]))
     assert cirq.approx_eq(gate, gate2, atol=1e-8)
-    gate3 = QuilTwoQubitGate(
-        np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-    )
-    gate4 = QuilTwoQubitGate(
-        np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 2, 0], [0, 0, 0, 1]])
-    )
+    gate3 = QuilTwoQubitGate(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]))
+    gate4 = QuilTwoQubitGate(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 2, 0], [0, 0, 0, 1]]))
     assert not cirq.approx_eq(gate4, gate3, atol=1e-8)
 
 
@@ -189,9 +179,7 @@ USERGATE2 0
 
 def test_quil_two_qubit_gate_output():
     (q0, q1) = _make_qubits(2)
-    gate = QuilTwoQubitGate(
-        np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-    )
+    gate = QuilTwoQubitGate(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]))
     output = QuilOutput((gate.on(q0, q1),), (q0, q1))
     assert (
         str(output)
@@ -372,11 +360,11 @@ def _all_operations(q0, q1, q2, q3, q4, include_measurements=True):
         cirq.PhasedXPowGate(phase_exponent=0.333, exponent=0.5).on(q1),
         cirq.PhasedXPowGate(phase_exponent=0.777, exponent=-0.5).on(q1),
         cirq.wait(q0, nanos=0),
-        cirq.measure(q0, key='xX'),
-        cirq.measure(q2, key='x_a'),
-        cirq.measure(q3, key='X'),
-        cirq.measure(q2, key='x_a'),
-        cirq.measure(q1, q2, q3, key='multi', invert_mask=(False, True)),
+        cirq.measure(q0, key="xX"),
+        cirq.measure(q2, key="x_a"),
+        cirq.measure(q3, key="X"),
+        cirq.measure(q2, key="x_a"),
+        cirq.measure(q1, q2, q3, key="multi", invert_mask=(False, True)),
     )
 
 
@@ -386,7 +374,7 @@ def test_fails_on_big_unknowns():
 
     q0, q1, q2 = _make_qubits(3)
     res = QuilOutput(UnrecognizedGate().on(q0, q1, q2), (q0, q1, q2))
-    with pytest.raises(ValueError, match='Cannot output operation as QUIL'):
+    with pytest.raises(ValueError, match="Cannot output operation as QUIL"):
         _ = str(res)
 
 
@@ -476,9 +464,9 @@ def test_parseable_defgate_output():
     q0, q1 = _make_qubits(2)
     operations = [
         QuilOneQubitGate(np.array([[1, 0], [0, 1]])).on(q0),
-        QuilTwoQubitGate(
-            np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
-        ).on(q0, q1),
+        QuilTwoQubitGate(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])).on(
+            q0, q1
+        ),
     ]
     output = QuilOutput(operations, (q0, q1))
     # Just checks that we can create a pyQuil Program without crashing.
@@ -498,3 +486,19 @@ def test_unconveritble_op():
     # operation would crash if you call _op_to_quil_directly
     with pytest.raises(ValueError, match="Can't convert"):
         _ = QuilOutput(op, (q0,))._op_to_quil(op)
+
+
+@pytest.mark.parametrize(
+    "input_exp, expected",
+    [
+        (0.25 * np.pi, "pi/4"),
+        (-0.25 * np.pi, "-pi/4"),
+        (0, "0"),
+        (np.pi / 3, "pi/3"),
+        (-1.25 * np.pi, "-5*pi/4"),
+        (1 * np.pi, "pi"),
+        (-1 * np.pi, "-pi"),
+    ],
+)
+def test_exponent_to_pi_string(input_exp, expected):
+    assert exponent_to_pi_string(input_exp) == expected

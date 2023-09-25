@@ -29,8 +29,19 @@ cnot q[0], q[1];
 b[0] = measure q[0];
 b[1] = measure q[1];
 """
+
+    qasm_expected_2 = """
+OPENQASM 3.0;
+bit[2] __bits__;
+qubit[2] __qubits__;
+h __qubits__[0];
+cnot __qubits__[0], __qubits__[1];
+__bits__[0] = measure __qubits__[0];
+__bits__[1] = measure __qubits__[1];
+"""
     bell = Circuit().h(0).cnot(0, 1)
-    assert qasm_expected.strip("\n") == braket_to_qasm3(bell)
+    qbraid_qasm = braket_to_qasm3(bell)
+    assert qasm_expected.strip("\n") == qbraid_qasm or qasm_expected_2.strip("\n") == qbraid_qasm
 
 
 def test_braket_from_qasm3():

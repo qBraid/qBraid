@@ -13,16 +13,13 @@ Unit tests for converting circuits to use contiguous qubit indexing
 
 """
 import numpy as np
-import pytest
 from braket.circuits import Circuit as BKCircuit
 from cirq import Circuit, LineQubit, X, Y, Z
 from pytket.circuit import Circuit as TKCircuit
 from qiskit import QuantumCircuit
-from qiskit.qasm3 import loads
 
-from qbraid.exceptions import ProgramTypeError
-from qbraid.interface.calculate_unitary import circuits_allclose
-from qbraid.interface.convert_to_contiguous import convert_to_contiguous
+from qbraid import circuit_wrapper
+from qbraid.interface.circuit_equality import circuits_allclose
 
 
 def test_remove_idle_qubits_qiskit():
@@ -30,7 +27,9 @@ def test_remove_idle_qubits_qiskit():
     circuit = QuantumCircuit(3)
     circuit.h(0)
     circuit.cx(0, 1)
-    contig_circuit = convert_to_contiguous(circuit)
+    qprogram = circuit_wrapper(circuit)
+    qprogram.convert_to_contiguous()
+    contig_circuit = qprogram.program
     assert contig_circuit.num_qubits == 2
 
 
@@ -41,9 +40,13 @@ def test_convert_braket_bell():
     h_gate_kron = np.kron(np.eye(2), h_gate)
     cnot_gate = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
     u_expected = np.einsum("ij,jk->ki", h_gate_kron, cnot_gate)
-    contig_circuit = convert_to_contiguous(circuit)
-    u_test = contig_circuit.as_unitary()
+    qprogram = circuit_wrapper(circuit)
+    qprogram.convert_to_contiguous()
+    bk_contig = qprogram.program
+    u_test = bk_contig.as_unitary()
+    u_little_endian = qprogram.unitary_little_endian()
     assert np.allclose(u_expected, u_test)
+    assert np.allclose(u_expected, u_little_endian)
 
 
 def test_compare_conversion_braket_cirq():
@@ -67,22 +70,29 @@ def test_compare_conversion_braket_cirq():
 
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
-    braket_compat_circuit = convert_to_contiguous(braket_circuit)
+    qprogram = circuit_wrapper(braket_circuit)
+    qprogram.convert_to_contiguous()
+    braket_compat_circuit = qprogram.program
     assert braket_compat_circuit.qubit_count == 3
 
-    cirq_compat_circuit = convert_to_contiguous(cirq_circuit)
-
+    qprogram = circuit_wrapper(cirq_circuit)
+    qprogram.convert_to_contiguous()
+    cirq_compat_circuit = qprogram.program
     assert circuits_allclose(braket_compat_circuit, cirq_compat_circuit, strict_gphase=True)
 
-    cirq_expanded_circuit = convert_to_contiguous(cirq_circuit, expansion=True)
+    qprogram = circuit_wrapper(cirq_circuit)
+    qprogram.convert_to_contiguous(expansion=True)
+    cirq_expanded_circuit = qprogram.program
     assert len(cirq_expanded_circuit.all_qubits()) == 5
 
 
 def test_braket_control_modifier():
     """Test that converting braket circuits to contiguous qubits works with control modifiers"""
     circuit = BKCircuit().y(target=0, control=1)
-    contrig_circuit = convert_to_contiguous(circuit)
-    assert circuit.qubit_count == contrig_circuit.qubit_count
+    qprogram = circuit_wrapper(circuit)
+    qprogram.convert_to_contiguous()
+    contig_circuit = qprogram.program
+    assert circuit.qubit_count == contig_circuit.qubit_count
 
 
 def test_remove_blank_wires_pytket():
@@ -90,14 +100,10 @@ def test_remove_blank_wires_pytket():
     circuit = TKCircuit(3)
     circuit.H(0)
     circuit.CX(0, 1)
-    contig_circuit = convert_to_contiguous(circuit)
+    qprogram = circuit_wrapper(circuit)
+    qprogram.convert_to_contiguous()
+    contig_circuit = qprogram.program
     assert contig_circuit.n_qubits == 2
-
-
-def test_unitary_raises():
-    """Test that convert_to_contiguous raises an error when passed a non-circuit object"""
-    with pytest.raises(ProgramTypeError):
-        convert_to_contiguous(None)
 
 
 def test_convert_qasm3_expansion():
@@ -109,7 +115,9 @@ qubit[4] q;
 h q[1];
 cx q[1], q[3];
 """
-    contig_qasm3_str = convert_to_contiguous(qasm3_str, expansion=True)
+    qprogram = circuit_wrapper(qasm3_str)
+    qprogram.convert_to_contiguous(expansion=True)
+    contig_qasm3_str = qprogram.program
     assert contig_qasm3_str == qasm3_str + """i q[0];\ni q[2];\n"""
 
 
@@ -122,6 +130,6 @@ qubit[4] q;
 h q[1];
 cx q[1], q[3];
 """
-    contig_qasm3_str = convert_to_contiguous(qasm3_str)
-    circuit_contig = loads(contig_qasm3_str)
-    assert circuit_contig.num_qubits == 2
+    qprogram = circuit_wrapper(qasm3_str)
+    qprogram.convert_to_contiguous()
+    assert qprogram.num_qubits == 2

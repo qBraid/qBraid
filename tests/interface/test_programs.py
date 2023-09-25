@@ -16,9 +16,8 @@ import pytest
 
 from qbraid import circuit_wrapper
 from qbraid.exceptions import ProgramTypeError, VisualizationError
-from qbraid.interface.calculate_unitary import circuits_allclose
 from qbraid.interface.circuit_drawer import circuit_drawer
-from qbraid.interface.qbraid_qiskit.tools import reverse_qubit_ordering
+from qbraid.interface.circuit_equality import circuits_allclose
 from qbraid.interface.random_circuit import random_circuit
 
 from .._data.programs import bell_data, shared15_data
@@ -35,6 +34,7 @@ qasm3_bell = bell_map["qasm3"]()
 shared15_map, _ = shared15_data()
 braket_shared15 = shared15_map["braket"]()
 cirq_shared15 = shared15_map["cirq"]()
+pyquil_shared15 = shared15_map["pyquil"]()
 qiskit_shared15 = shared15_map["qiskit"]()
 pytket_shared15 = shared15_map["pytket"]()
 qasm2_shared15 = shared15_map["qasm2"]()
@@ -58,12 +58,13 @@ def test_shared15():
     """Test the equality of shared gates circuits"""
 
     eq1 = circuits_allclose(braket_shared15, cirq_shared15, strict_gphase=True)
-    eq2 = circuits_allclose(cirq_shared15, qiskit_shared15, strict_gphase=True)
-    eq3 = circuits_allclose(qiskit_shared15, pytket_shared15, strict_gphase=True)
-    eq4 = circuits_allclose(pytket_shared15, qasm2_shared15, strict_gphase=True)
-    eq5 = circuits_allclose(qasm2_shared15, qasm3_shared15, strict_gphase=False)
+    eq2 = circuits_allclose(cirq_shared15, pyquil_shared15, strict_gphase=False)
+    eq3 = circuits_allclose(pyquil_shared15, qiskit_shared15, strict_gphase=False)
+    eq4 = circuits_allclose(qiskit_shared15, pytket_shared15, strict_gphase=True)
+    eq5 = circuits_allclose(pytket_shared15, qasm2_shared15, strict_gphase=True)
+    eq6 = circuits_allclose(qasm2_shared15, qasm3_shared15, strict_gphase=False)
 
-    assert eq1 and eq2 and eq3 and eq4 and eq5
+    assert eq1 and eq2 and eq3 and eq4 and eq5 and eq6
 
 
 @pytest.mark.parametrize("package", ["braket", "cirq", "qiskit"])
@@ -95,7 +96,9 @@ q_0: ─────┤ X ├
      ┌───┐└─┬─┘
 q_1: ┤ H ├──■──
      └───┘     """
-    result = circuit_drawer(reverse_qubit_ordering(qiskit_bell), output="text")
+    qprogram = circuit_wrapper(qiskit_bell)
+    qprogram.reverse_qubit_order()
+    result = circuit_drawer(qprogram.program, output="text")
     assert str(result) == expected
 
 

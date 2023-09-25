@@ -23,7 +23,8 @@ from braket.circuits import gates as braket_gates
 from braket.circuits import noises as braket_noise_gate
 from cirq import ops as cirq_ops
 
-from qbraid.interface import circuits_allclose, to_unitary
+from qbraid import circuit_wrapper
+from qbraid.interface import circuits_allclose
 from qbraid.transpiler.cirq_braket.convert_from_braket import (
     from_braket,
     unitary_braket_instruction,
@@ -136,8 +137,8 @@ def test_unitary_braket_instruction():
     instr_cnot_u = unitary_braket_instruction(instr_cnot_01)
     circuit_expected = BKCircuit().add_instruction(instr_cnot_01)
     circuit_test = BKCircuit().add_instruction(instr_cnot_u)
-    u_expected = to_unitary(circuit_expected)
-    u_test = to_unitary(circuit_test)
+    u_expected = circuit_wrapper(circuit_expected).unitary()
+    u_test = circuit_wrapper(circuit_test).unitary()
     assert np.allclose(u_expected, u_test)
 
 

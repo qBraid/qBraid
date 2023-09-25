@@ -148,13 +148,13 @@ random ``cirq.Circuit`` with four qubits and depth four.
 Unitary calculations
 ^^^^^^^^^^^^^^^^^^^^^
 
-The ``to_unitary`` method will calculate the matrix representation of an input circuit of any
+The ``unitary`` method will calculate the matrix representation of an input circuit of any
 supported program type.
 
 .. code-block:: python
 
-    >>> from qbraid.interface import to_unitary
-    >>> cirq_unitary = to_unitary(cirq_circuit)
+    >>> from qbraid import circuit_wrapper
+    >>> cirq_unitary = circuit_wrapper(cirq_circuit).unitary()
     >>> cirq_unitary.shape
     (16, 16)
 
@@ -177,7 +177,7 @@ We can now apply the circuit wrapper to the random Cirq circuit above, and use t
 
 
 To verify the equivalence of the two circuits, we can use the ``circuits_allclose`` method.
-It applies ``to_unitary`` to both input circuits, compares the outputs via ``numpy.allclose``, and returns the result.
+It applies the ``unitary`` method to both input circuits, compares the outputs via ``numpy.allclose``, and returns the result.
 
 .. code-block:: python
 

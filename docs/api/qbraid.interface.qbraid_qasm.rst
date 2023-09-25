@@ -21,11 +21,3 @@ qbraid.interface.qbraid_qasm.qelib1_defs module
    :members:
    :undoc-members:
    :show-inheritance:
-
-qbraid.interface.qbraid_qasm.tools module
-------------------------------------------------------
-
-.. automodule:: qbraid.interface.qbraid_qasm.tools
-   :members:
-   :undoc-members:
-   :show-inheritance:

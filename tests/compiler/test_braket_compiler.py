@@ -15,7 +15,7 @@ Unit tests for Amazon Braket circuit compilation
 import braket
 import pytest
 
-from qbraid.compiler.braket.ionq import braket_ionq_compile
+from qbraid.compiler.braket import braket_ionq_compile
 
 from .._data.braket.gates import get_braket_gates
 

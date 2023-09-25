@@ -7,16 +7,22 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
-"""
-Module containing pyQuil tools
 
 """
-import numpy as np
-from pyquil import Program
-from pyquil.simulation.tools import program_unitary
+=====================================
+Programs  (:mod:`qbraid.programs`)
+=====================================
 
+.. currentmodule:: qbraid.programs
 
-def _unitary_from_pyquil(program: Program) -> np.ndarray:
-    """Return the unitary of a pyQuil program."""
-    n_qubits = len(program.get_qubits())
-    return program_unitary(program, n_qubits=n_qubits)
+.. autosummary::
+   :toctree: ../stubs/
+
+   QuantumProgram
+   CirqCircuit
+   OpenQasm2Program
+
+"""
+from qbraid.programs.abc_program import QuantumProgram
+from qbraid.programs.cirq import CirqCircuit
+from qbraid.programs.qasm2 import OpenQasm2Program

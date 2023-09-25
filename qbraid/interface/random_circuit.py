@@ -66,6 +66,23 @@ def random_circuit(
         if package != "cirq":
             from qbraid import circuit_wrapper
 
-            rand_circuit = circuit_wrapper(rand_circuit).transpile(package)
+            qbraid_program = circuit_wrapper(rand_circuit)
+            rand_circuit = qbraid_program.transpile(package)
 
     return rand_circuit
+
+
+def random_unitary_matrix(dim: int) -> np.ndarray:
+    """Create a random (complex) unitary matrix of order `dim`
+
+    Args:
+        dim: integer square matrix dimension
+
+    Returns:
+        random unitary matrix of shape dim x dim
+    """
+    # Create a random complex matrix of size dim x dim
+    matrix = np.random.randn(dim, dim) + 1j * np.random.randn(dim, dim)
+    # Use the QR decomposition to get a random unitary matrix
+    unitary, _ = np.linalg.qr(matrix)
+    return unitary

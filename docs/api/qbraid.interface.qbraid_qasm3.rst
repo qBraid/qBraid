@@ -21,11 +21,3 @@ qbraid.interface.qbraid_qasm3.random_circuit module
    :members:
    :undoc-members:
    :show-inheritance:
-
-qbraid.interface.qbraid_qasm3.tools module
-------------------------------------------------------
-
-.. automodule:: qbraid.interface.qbraid_qasm3.tools
-   :members:
-   :undoc-members:
-   :show-inheritance:

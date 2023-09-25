@@ -18,6 +18,7 @@ import string
 import numpy as np
 import pytest
 import pytket
+from cirq.contrib.qasm_import import circuit_from_qasm
 
 import qbraid
 
@@ -139,7 +140,7 @@ def get_pytket_circuits():
 ### TESTS ###
 #############
 
-TARGETS = [("braket", 0.64), ("cirq", 0.64), ("pyquil", 0.56), ("qiskit", 0.64)]
+TARGETS = [("braket", 0.64), ("cirq", 0.64), ("pyquil", 0.64), ("qiskit", 0.64)]
 pytket_circuits = get_pytket_circuits()
 
 
@@ -148,8 +149,11 @@ def convert_from_pytket_to_x(target, circuit_name):
     target program type, and check equivalence.
     """
     source_circuit = pytket_circuits[circuit_name]
-    target_circuit = qbraid.circuit_wrapper(source_circuit).transpile(target)
-    assert qbraid.interface.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
+    circuit = qbraid.circuit_wrapper(source_circuit).transpile("cirq")
+    qasm = circuit.to_qasm()
+    cirq_circuit = circuit_from_qasm(qasm)
+    target_circuit = qbraid.circuit_wrapper(cirq_circuit).transpile(target)
+    assert qbraid.interface.circuits_allclose(cirq_circuit, target_circuit, strict_gphase=False)
 
 
 @pytest.mark.parametrize(("target", "baseline"), TARGETS)
