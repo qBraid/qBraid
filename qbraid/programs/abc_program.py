@@ -207,20 +207,17 @@ class QuantumProgram:
                     "not yet supported by the qBraid transpiler."
                 ) from err
             try:
-                converted_program = convert_from_cirq(cirq_circuit, conversion_type)
+                return convert_from_cirq(cirq_circuit, conversion_type)
             except Exception as err:
                 raise CircuitConversionError(
                     f"Circuit could not be converted from Cirq to "
                     f"program of type {conversion_type}."
                 ) from err
 
-            self._program = converted_program
-            return self._program
-
         raise PackageValueError(conversion_type)
 
     def draw(self, package: Optional[str] = None, output: Optional[str] = None, **kwrags):
         """Draw circuit"""
         package = "cirq" if package is None else package
-        self.transpile(package)
-        return circuit_drawer(self.program, output, **kwrags)
+        qprogram = self.transpile(package)
+        return circuit_drawer(qprogram, output, **kwrags)
