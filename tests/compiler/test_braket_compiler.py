@@ -15,7 +15,7 @@ Unit tests for Amazon Braket circuit compilation
 import braket
 import pytest
 
-import qbraid
+from qbraid.compiler.braket import braket_ionq_compile
 
 from .._data.braket.gates import get_braket_gates
 
@@ -33,5 +33,5 @@ def test_braket_ionq_compilation(gate_name):
             [braket.circuits.Instruction(gate, range(gate.qubit_count))]
         )
 
-        braket_circuit = qbraid.compiler.braket.braket_ionq_compile(source_circuit)
+        braket_circuit = braket_ionq_compile(source_circuit)
         assert isinstance(braket_circuit, braket.circuits.Circuit)
