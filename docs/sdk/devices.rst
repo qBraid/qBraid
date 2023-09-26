@@ -196,7 +196,7 @@ least number of queued quantum jobs.
     >>> qbraid_id = ibm_least_busy_qpu()
     >>> qdevice = device_wrapper(qbraid_id)
     >>> qdevice.name
-    'IBMQ Belem'
+    'Nairobi'
     >>> qdevice.status
     <DeviceStatus.ONLINE: 0>
 

@@ -223,6 +223,15 @@ class BraketDevice(QuantumDevice):
         available_time_hms = ":".join(time_str_lst)
         return is_available_result, available_time_hms
 
+    def pending_jobs(self) -> int:
+        """Return the number of jobs in the queue for the device"""
+        aws_device = self._device
+        queue_depth_info = aws_device.queue_depth()
+        queued_tasks = queue_depth_info.quantum_tasks
+        num_queued_normal = queued_tasks["Normal"]
+        num_queued_priority = queued_tasks["Priority"]
+        return int(num_queued_normal) + int(num_queued_priority)
+
     def run(self, run_input, *args, **kwargs) -> "qbraid.device.aws.BraketQuantumTaskWrapper":
         """Run a quantum task specification on this quantum device. Task must represent a
         quantum circuit, annealing problems not supported.
