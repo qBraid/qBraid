@@ -6,6 +6,11 @@ qbraid.transpiler
    :undoc-members:
    :show-inheritance:
 
+.. automodule:: qbraid.transpiler.braket_qasm
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 .. automodule:: qbraid.transpiler.cirq_braket
    :members:
    :undoc-members:

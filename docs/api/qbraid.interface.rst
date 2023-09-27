@@ -6,16 +6,6 @@ qbraid.interface
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.interface.qbraid_braket
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. automodule:: qbraid.interface.qbraid_cirq
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 .. automodule:: qbraid.interface.qbraid_qiskit
    :members:
    :undoc-members:

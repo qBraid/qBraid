@@ -12,6 +12,7 @@
 Module for top-level interfacing with the IBMQ API
 
 """
+import os
 import re
 from typing import Optional
 
@@ -30,11 +31,10 @@ def ibm_to_qbraid_id(name: str) -> str:
 
 def ibm_provider(token: Optional[str] = None) -> IBMProvider:
     """Get IBMQ AccountProvider"""
+    token = os.getenv("QISKIT_IBM_TOKEN", None) if token is None else token
     try:
-        if token is None:
-            return IBMProvider()
         return IBMProvider(token=token)
-    except (AccountNotFoundError, Exception) as err:
+    except AccountNotFoundError as err:
         raise AuthError from err
 
 

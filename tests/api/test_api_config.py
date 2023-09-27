@@ -14,6 +14,7 @@ custom user configurations and required run-command pre-sets.
 
 """
 import configparser
+import json
 import os
 
 import pytest
@@ -36,6 +37,7 @@ REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of qBraid stor
 
 aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
 aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
+ibm_config_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskit-ibm.json")
 
 config_lst = [
     # (config_name, config_value, section, filepath)
@@ -46,7 +48,7 @@ config_lst = [
 ]
 
 
-def set_config():
+def set_config_aws():
     """Set config inside testing virtual environments with default values
     hard-coded and secret values read from environment variables.
 
@@ -73,6 +75,29 @@ def set_config():
             config.write(cfgfile)
 
 
+def set_config_ibm():
+    """Set IBM config inside testing virtual environments with default values"""
+
+    try:
+        os.remove(ibm_config_path)
+    except FileNotFoundError:
+        pass
+
+    qiskit_ibm_config = {
+        "channel": "ibm_quantum",
+        "token": os.getenv("QISKIT_IBM_TOKEN"),
+        "url": "https://auth.quantum-computing.ibm.com/api",
+        "instance": "ibm-q/open/main",
+        "verify": False,
+    }
+
+    directory = os.path.dirname(ibm_config_path)
+    os.makedirs(directory, exist_ok=True)
+
+    with open(ibm_config_path, "w") as f:
+        json.dump(qiskit_ibm_config, f)
+
+
 def _remove_id_token_qbraidrc():
     """Remove id-token from qbraidrc file."""
     try:
@@ -88,13 +113,8 @@ def _remove_id_token_qbraidrc():
 
 
 if not skip_remote_tests:
-    set_config()
-    IBMProvider.save_account(
-        token=os.getenv("QISKIT_IBM_TOKEN"),
-        url="https://auth.quantum-computing.ibm.com/api",
-        instance="ibm-q/open/main",
-        overwrite=True,
-    )
+    set_config_aws()
+    set_config_ibm()
 
 
 def test_api_error():

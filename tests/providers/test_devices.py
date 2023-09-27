@@ -53,7 +53,7 @@ def device_wrapper_inputs(vendor: str):
 
 
 def ibm_devices():
-    provider = IBMProvider()
+    provider = IBMProvider(token=os.getenv("QISKIT_IBM_TOKEN"))
     backends = provider.backends(
         filters=lambda b: b.status().status_msg == "active", operational=True
     )

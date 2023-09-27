@@ -14,11 +14,12 @@ Module defining QiskitBackend Class
 """
 from qiskit import transpile
 from qiskit.providers import QiskitBackendNotFoundError
-from qiskit_ibm_provider import IBMBackend, IBMProvider
+from qiskit_ibm_provider import IBMBackend
 
 from qbraid.providers.device import QuantumDevice
 from qbraid.providers.enums import DeviceStatus
 from qbraid.providers.exceptions import DeviceError
+from qbraid.providers.ibm.provider import ibm_provider
 
 from .job import QiskitJob
 
@@ -28,8 +29,8 @@ class QiskitBackend(QuantumDevice):
 
     def _get_device(self) -> IBMBackend:
         """Initialize an IBM device."""
+        provider = ibm_provider()
         try:
-            provider = IBMProvider()
             return provider.get_backend(self.vendor_device_id)
         except QiskitBackendNotFoundError as err:
             raise DeviceError("Device not found.") from err

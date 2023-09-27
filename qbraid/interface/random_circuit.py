@@ -14,15 +14,42 @@ Module for generate random quantum circuits used for testing
 """
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
+import cirq
 import numpy as np
 
 from qbraid._qprogram import QPROGRAM, QPROGRAM_LIBS
-from qbraid.exceptions import PackageValueError
+from qbraid.exceptions import PackageValueError, QbraidError
 
 QROGRAM_TEST_TYPE = Tuple[Dict[str, Callable[[Any], QPROGRAM]], np.ndarray]
 
 if TYPE_CHECKING:
     import qbraid
+
+
+def _cirq_random(num_qubits: int, depth: int, **kwargs) -> cirq.Circuit:
+    """Generate random circuit of arbitrary size and form.
+
+    Args:
+        num_qubits (int): number of quantum wires
+        depth (int): layers of operations (i.e. critical path length)
+
+    Raises:
+        QbraidError: When invalid cirq random circuit options given
+
+    Returns:
+        Cirq random circuit
+
+    """
+    if "random_state" not in kwargs:
+        kwargs["random_state"] = np.random.randint(1, 11)
+
+    if "op_density" not in kwargs:
+        kwargs["op_density"] = 1
+
+    try:
+        return cirq.testing.random_circuit(num_qubits, n_moments=depth, **kwargs)
+    except ValueError as err:
+        raise QbraidError("Could not create Cirq random circuit") from err
 
 
 def random_circuit(
@@ -59,8 +86,6 @@ def random_circuit(
 
         rand_circuit = _qiskit_random(num_qubits, depth, **kwargs)
     else:
-        from qbraid.interface.qbraid_cirq.random_circuit import _cirq_random
-
         rand_circuit = _cirq_random(num_qubits, depth, **kwargs)
 
         if package != "cirq":
