@@ -17,7 +17,7 @@ Let's start by defining a simple qiskit quantum circuit that we wish to execute.
     circuit.rz(np.pi / 2, 0)
     circuit.measure(0, 0)
 
-This time, we'll run our quantum program on the IBMQ Belem QPU. After the
+This time, we'll run our quantum program on the IBMQ Nairobi QPU. After the
 job has completed, we'll gather the result, print the measurement counts,
 and plot a histogram of the probabilities.
 
@@ -28,7 +28,7 @@ and plot a histogram of the probabilities.
 
     shots = 2**10
     
-    qdevice = device_wrapper('ibm_q_belem')
+    qdevice = device_wrapper('ibm_q_nairobi')
     qjob = ibmq_device.run(circuit, shots=shots)
     qjob.wait_for_final_state()
     

@@ -196,8 +196,6 @@ class QuantumProgram:
         if conversion_type == self.package:
             return self._program
         if conversion_type == "pyquil" or conversion_type in QPROGRAM_LIBS:
-            # cirq_circuit, _ = convert_to_cirq(self.program)
-            # converted_program = convert_from_cirq(cirq_circuit, conversion_type)
             try:
                 cirq_circuit, _ = convert_to_cirq(self.program)
             except Exception as err:
@@ -214,9 +212,6 @@ class QuantumProgram:
                     f"program of type {conversion_type}."
                 ) from err
 
-        print(f"conversion_type: {conversion_type}")
-        print(f"conversion_type == pyquil: {conversion_type == 'pyquil'}")
-        print(f"QPROGRAM_LIBS: {QPROGRAM_LIBS}")
         raise PackageValueError(conversion_type)
 
     def draw(self, package: Optional[str] = None, output: Optional[str] = None, **kwrags):

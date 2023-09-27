@@ -59,7 +59,7 @@ def ibm_devices():
     )
     qbraid_devices = device_wrapper_inputs("IBM")
     ibm_devices = [ibm_to_qbraid_id(backend.name) for backend in backends]
-    return [dev for dev in qbraid_devices if dev in ibm_devices]
+    return [dev for dev in ibm_devices if dev in qbraid_devices]
 
 
 """
@@ -122,7 +122,7 @@ def test_init_qiskit_device_wrapper(device_id):
 
 def test_device_wrapper_from_qiskit_id():
     """Test creating device wrapper from Qiskit device ID."""
-    qiskit_device_id = "ibmq_belem"
+    qiskit_device_id = "ibm_q_qasm_simulator"
     qbraid_device = device_wrapper(qiskit_device_id)
     vendor_device = qbraid_device._device
     assert isinstance(qbraid_device, QiskitBackend)
@@ -136,6 +136,13 @@ def test_device_wrapper_properties():
     assert wrapper.name == "Lucy"
     assert str(wrapper) == "AWS OQC Lucy device wrapper"
     assert repr(wrapper) == "<BraketDevice(OQC:'Lucy')>"
+
+
+def test_pending_jobs():
+    aws_device = device_wrapper("aws_sv_sim")
+    ibm_device = device_wrapper("ibm_q_qasm_simulator")
+    assert isinstance(aws_device.pending_jobs(), int)
+    assert isinstance(ibm_device.pending_jobs(), int)
 
 
 def test_wrap_least_busy():

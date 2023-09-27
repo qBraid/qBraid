@@ -108,6 +108,10 @@ class QuantumDevice(ABC):
     def status(self) -> "qbraid.providers.DeviceStatus":
         """Return device status."""
 
+    @abstractmethod
+    def pending_jobs(self) -> int:
+        """Return the number of jobs in the queue for the backend"""
+
     def __str__(self):
         return f"{self.vendor} {self.provider} {self.name} device wrapper"
 

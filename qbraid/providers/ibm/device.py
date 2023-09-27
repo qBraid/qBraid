@@ -52,7 +52,7 @@ class QiskitBackend(QuantumDevice):
             return DeviceStatus.OFFLINE
         return DeviceStatus.ONLINE
 
-    def pending_jobs(self):
+    def pending_jobs(self) -> int:
         """Return the number of jobs in the queue for the ibm backend"""
         return self._device.status().pending_jobs
 

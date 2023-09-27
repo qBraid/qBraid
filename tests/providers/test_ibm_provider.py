@@ -30,7 +30,7 @@ REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM storage
 
 backend_id_data = [
     ("ibm_nairobi", "ibm_q_nairobi"),
-    ("ibmq_belem", "ibm_q_belem"),
+    ("ibmq_qasm_simulator", "ibm_q_qasm_simulator"),
     ("simulator_extended_stabilizer", "ibm_q_simulator_extended_stabilizer"),
 ]
 
