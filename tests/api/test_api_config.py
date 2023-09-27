@@ -22,16 +22,8 @@ from qiskit_ibm_provider import IBMProvider
 from qbraid.api.exceptions import AuthError, RequestsApiError
 from qbraid.api.session import DEFAULT_CONFIG_PATH, QbraidSession
 
-aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
-aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
-qiskitrc_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
-qbraidrc_path = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
-
 # These environment variables don't actually exist in qBraid Lab, but instead
 # are set and used for convenience for local development and testing.
-aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
-aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
-ibmq_token = os.getenv("QISKIT_IBM_TOKEN")
 qbraid_refresh_token = os.getenv("REFRESH")
 qbraid_api_key = os.getenv("QBRAID_API_KEY")
 
@@ -42,16 +34,15 @@ qbraid_user = os.getenv("JUPYTERHUB_USER")
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of qBraid storage)"
 
+aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
+aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
+
 config_lst = [
     # (config_name, config_value, section, filepath)
-    ["aws_access_key_id", aws_access_key_id, "default", aws_cred_path],
-    ["aws_secret_access_key", aws_secret_access_key, "default", aws_cred_path],
+    ["aws_access_key_id", os.getenv("AWS_ACCESS_KEY_ID"), "default", aws_cred_path],
+    ["aws_secret_access_key", os.getenv("AWS_SECRET_ACCESS_KEY"), "default", aws_cred_path],
     ["region", "us-east-1", "default", aws_config_path],
     ["output", "json", "default", aws_config_path],
-    ["token", ibmq_token, "ibmq", qiskitrc_path],
-    ["url", "https://auth.quantum-computing.ibm.com/api", "ibmq", qiskitrc_path],
-    ["verify", "True", "ibmq", qiskitrc_path],
-    ["default_provider", "ibm-q/open/main", "ibmq", qiskitrc_path],
 ]
 
 
@@ -61,9 +52,7 @@ def set_config():
 
     Note: this function is used for testing purposes only."""
 
-    IBMProvider.save_account(token=ibmq_token, overwrite=True)
-
-    for file in [aws_config_path, aws_cred_path, qiskitrc_path]:
+    for file in [aws_config_path, aws_cred_path]:
         try:
             os.remove(file)
         except FileNotFoundError:
@@ -100,6 +89,12 @@ def _remove_id_token_qbraidrc():
 
 if not skip_remote_tests:
     set_config()
+    IBMProvider.save_account(
+        token=os.getenv("QISKIT_IBM_TOKEN"),
+        url="https://auth.quantum-computing.ibm.com/api",
+        instance="ibm-q/open/main",
+        overwrite=True,
+    )
 
 
 def test_api_error():
