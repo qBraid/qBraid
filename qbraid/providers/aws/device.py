@@ -104,9 +104,13 @@ class BraketDevice(QuantumDevice):
         Returns:
             The status of this Device
         """
-        if self._device.status != "ONLINE":
-            return DeviceStatus.OFFLINE
-        return DeviceStatus.ONLINE
+        if self._device.is_available:
+            return DeviceStatus.ONLINE
+
+        if self._device.status == "RETIRED":
+            return DeviceStatus.RETIRED
+
+        return DeviceStatus.OFFLINE
 
     @property
     def properties(self) -> DeviceCapabilities:

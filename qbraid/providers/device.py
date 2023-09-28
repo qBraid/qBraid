@@ -18,7 +18,7 @@ Module defining abstract QuantumDevice Class
 import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING  # pylint: disable=unused-import
+from typing import Optional, TYPE_CHECKING  # pylint: disable=unused-import
 
 from qbraid import circuit_wrapper
 from qbraid.api import ApiError, QbraidSession
@@ -34,24 +34,39 @@ if TYPE_CHECKING:
 class QuantumDevice(ABC):
     """Abstract interface for device-like classes."""
 
-    def __init__(self, **kwargs):
-        """Create a ``QuantumDevice`` object.
+    def __init__(self, device: "Optional[qbraid.QDEVICE]" = None, qbraid_id: Optional[str] = None):
+        """Create a qBraid QuantumDevice object.
 
         Keyword Args:
+            qdevice (:data:`~qbraid.QDEVICE`): A supported quantum device object
             qbraid_id (str): The internal device ID (see :func:`~qbraid.get_devices`)
-            name (str): The name of the device
-            provider (str): The company to which the device belongs
-            vendor (str): The company who's software is used to access the device
-            runPackage (str): The software package used to access the device
-            objArg (str): The vendor device id/arn to supply as arg to vendor device-like object
-            type (str): The type of the device, "QPU" or "Simulator"
-            numberQubits (int): The number of qubits in the device (if applicable)
 
         """
-        self._info = kwargs
-        self._qubits = self._info.get("numberQubits")
-        self.vendor_device_id = self._info.pop("objArg")
-        self._device = self._get_device()
+        self._id = qbraid_id
+        self.device = device
+        # self._info = kwargs
+        # self._qubits = self._info.get("numberQubits")
+        # self.vendor_device_id = self._info.pop("objArg")
+
+
+    @property
+    def id(self) -> str:
+        """Return the device ID."""
+        return self._id
+
+    @property
+    def device(self) -> "qbraid.QDEVICE":
+        """Return the quantum device / backend object."""
+        return self._device
+
+    @device.setter
+    def device(self, value: "Optional[qbraid.QDEVICE]") -> None:
+        """Instantiate the quantum device / backend object."""
+        self._device = value or self._get_device()
+
+    @abstractmethod
+    def _get_device(self):
+        """Abstract init device method."""
 
     @property
     def info(self) -> dict:
@@ -59,11 +74,7 @@ class QuantumDevice(ABC):
         return self._info
 
     @property
-    def id(self) -> str:
-        """Return the device ID."""
-        return self.info["qbraid_id"]
-
-    @property
+    @abstractmethod
     def name(self) -> str:
         """Return the device name.
 
@@ -74,6 +85,7 @@ class QuantumDevice(ABC):
         return self.info["name"]
 
     @property
+    @abstractmethod
     def provider(self) -> str:
         """Return the device provider.
 
@@ -84,6 +96,7 @@ class QuantumDevice(ABC):
         return self.info["provider"]
 
     @property
+    @abstractmethod
     def vendor(self) -> str:
         """Return the software vendor name.
 
@@ -94,6 +107,7 @@ class QuantumDevice(ABC):
         return self.info["vendor"]
 
     @property
+    @abstractmethod
     def num_qubits(self) -> int:
         """The number of qubits supported by the device.
 
@@ -103,7 +117,6 @@ class QuantumDevice(ABC):
         """
         return self._qubits
 
-    @property
     @abstractmethod
     def status(self) -> "qbraid.providers.DeviceStatus":
         """Return device status."""
@@ -127,7 +140,7 @@ class QuantumDevice(ABC):
                 qubits exceeds device number qubits
 
         """
-        if self.status.value == 1:
+        if self.status().value == 1:
             warnings.warn(
                 "Device is currently offline. Depending on the provider queueing system, "
                 "submitting this job may result in an exception or a long wait time.",
@@ -250,10 +263,6 @@ class QuantumDevice(ABC):
             init_data["circuitBatchDepth"] = [circuit.depth for circuit in circuits]
 
         return session.post("/init-job", data=init_data).json()
-
-    @abstractmethod
-    def _get_device(self):
-        """Abstract init device method."""
 
     @abstractmethod
     def _transpile(self, run_input):

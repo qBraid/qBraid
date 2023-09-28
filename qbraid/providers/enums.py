@@ -39,6 +39,7 @@ class DeviceStatus(int, Enum):
 
     ONLINE = 0
     OFFLINE = 1
+    RETIRED = 2
 
 
 class JobStatus(str, Enum):
