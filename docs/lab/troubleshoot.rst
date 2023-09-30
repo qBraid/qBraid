@@ -49,7 +49,8 @@ in that environment. See `Install new package <environments.html#install-new-pac
 NoRegionError
 --------------
 
-If you are running an Amazon Braket notebook and get a ``NoRegionError``, it's likely that you have not enabled Quantum Jobs. Run
+If you are running an Amazon Braket notebook and get a ``NoRegionError``, it menas that not default AWS region has been set in ``~/.aws/config``.
+This can be fixed by (re-)enabling Quantum Jobs. Run
 
 .. code-block::
 
@@ -60,6 +61,23 @@ and restart your kernel, and try running the notebook again. If you are using th
 .. seealso::
 
     -  `Quantum Jobs <quantum_jobs.html>`_
+
+UnrecognizedClientException
+----------------------------
+
+If you are trying to submit an AWS task and get the following exception,
+
+.. code-block:: python
+
+  ClientError: An error occurred (UnrecognizedClientException) when calling the GetDevice operation: The security token included in the request is invalid.
+  
+it most likely means that you have not enabled Quantum Jobs. Run
+
+.. code-block::
+
+  $ qbraid jobs enable [env_name]
+
+and restart your kernel, and try running the notebook again.
 
 Extension sidebar errors
 --------------------------

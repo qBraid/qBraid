@@ -27,6 +27,12 @@ from .job import QiskitJob
 class QiskitBackend(QuantumDevice):
     """Wrapper class for IBM Qiskit ``Backend`` objects."""
 
+    def __init__(self, **kwargs):
+        """Create a BraketDevice."""
+
+        super().__init__(**kwargs)
+        self._vendor = "ibm"
+
     def _get_device(self) -> IBMBackend:
         """Initialize an IBM device."""
         provider = ibm_provider()

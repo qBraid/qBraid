@@ -51,8 +51,8 @@ Exceptions
 
 """
 from . import _warnings
-from ._qprogram import QPROGRAM, QPROGRAM_LIBS, QPROGRAM_TYPES
 from ._qdevice import QDEVICE, QDEVICE_TYPES
+from ._qprogram import QPROGRAM, QPROGRAM_LIBS, QPROGRAM_TYPES
 from ._version import __version__
 from .exceptions import (
     PackageValueError,

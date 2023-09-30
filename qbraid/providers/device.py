@@ -18,7 +18,7 @@ Module defining abstract QuantumDevice Class
 import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING  # pylint: disable=unused-import
+from typing import TYPE_CHECKING, Optional  # pylint: disable=unused-import
 
 from qbraid import circuit_wrapper
 from qbraid.api import ApiError, QbraidSession
@@ -44,15 +44,18 @@ class QuantumDevice(ABC):
         """
         self._id = qbraid_id
         self.device = device
-        # self._info = kwargs
-        # self._qubits = self._info.get("numberQubits")
-        # self.vendor_device_id = self._info.pop("objArg")
-
+        self._vendor = None
+        self._provider = None
 
     @property
     def id(self) -> str:
         """Return the device ID."""
         return self._id
+    
+    @property
+    @abstractmethod
+    def vendor_device_id(self) -> str:
+        """Return the device ID."""
 
     @property
     def device(self) -> "qbraid.QDEVICE":
@@ -68,43 +71,24 @@ class QuantumDevice(ABC):
     def _get_device(self):
         """Abstract init device method."""
 
-    @property
-    def info(self) -> dict:
+    @abstractmethod
+    def metadata(self) -> dict:
         """Return the device info."""
-        return self._info
 
     @property
     @abstractmethod
     def name(self) -> str:
-        """Return the device name.
-
-        Returns:
-            The name of the device.
-
-        """
-        return self.info["name"]
+        """Return the device name."""
 
     @property
-    @abstractmethod
     def provider(self) -> str:
-        """Return the device provider.
-
-        Returns:
-            The provider responsible for the device.
-
-        """
-        return self.info["provider"]
+        """Return the device provider."""
+        return self._provider
 
     @property
-    @abstractmethod
     def vendor(self) -> str:
-        """Return the software vendor name.
-
-        Returns:
-            The name of the software vendor.
-
-        """
-        return self.info["vendor"]
+        """Return the software vendor name."""
+        return self._vendor
 
     @property
     @abstractmethod
