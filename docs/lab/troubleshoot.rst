@@ -61,6 +61,23 @@ and restart your kernel, and try running the notebook again. If you are using th
 
     -  `Quantum Jobs <quantum_jobs.html>`_
 
+UnrecognizedClientException
+----------------------------
+
+If you are trying to submit an AWS task and get the following exception,
+
+.. code-block:: python
+
+  ClientError: An error occurred (UnrecognizedClientException) when calling the GetDevice operation: The security token included in the request is invalid.
+  
+it most likely means that you have not enabled Quantum Jobs. Run
+
+.. code-block::
+
+  $ qbraid jobs enable [env_name]
+
+and restart your kernel, and try running the notebook again.
+
 Extension sidebar errors
 --------------------------
 
