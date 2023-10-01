@@ -22,7 +22,7 @@ from braket.aws import AwsDevice
 from braket.circuits import Circuit as BraketCircuit
 from braket.tasks.quantum_task import QuantumTask as AwsQuantumTask
 from qiskit import QuantumCircuit as QiskitCircuit
-from qiskit_ibm_provider import IBMBackend, IBMJob, IBMProvider
+from qiskit_ibm_provider import IBMBackend, IBMJob
 
 from qbraid import QbraidError, device_wrapper, job_wrapper
 from qbraid.api import QbraidSession
@@ -30,7 +30,8 @@ from qbraid.interface import random_circuit
 from qbraid.providers import QuantumJob
 from qbraid.providers.aws import BraketDevice, BraketQuantumTask
 from qbraid.providers.exceptions import JobStateError, ProgramValidationError
-from qbraid.providers.ibm import QiskitBackend, QiskitJob, ibm_least_busy_qpu, ibm_to_qbraid_id
+from qbraid.providers.ibm import QiskitBackend, QiskitJob
+from qbraid.providers.provider import QbraidProvider
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
@@ -53,12 +54,13 @@ def device_wrapper_inputs(vendor: str):
 
 
 def ibm_devices():
-    provider = IBMProvider()
-    backends = provider.backends(
+    provider = QbraidProvider(ibm_quantum_token=os.getenv("QISKIT_IBM_TOKEN"))
+    backends = provider._get_ibm_backends(
         filters=lambda b: b.status().status_msg == "active", operational=True
     )
     qbraid_devices = device_wrapper_inputs("IBM")
-    ibm_devices = [ibm_to_qbraid_id(backend.name) for backend in backends]
+    ibm_devices = [provider.ibm_to_qbraid_id(backend.name) for backend in backends]
+    # ibm_simulators = [qbraid_id for qbraid_id in ibm_devices if "simulator" in qbraid_id]
     return [dev for dev in ibm_devices if dev in qbraid_devices]
 
 
@@ -146,7 +148,8 @@ def test_pending_jobs():
 
 
 def test_wrap_least_busy():
-    device_id = ibm_least_busy_qpu()
+    provider = QbraidProvider()
+    device_id = provider.ibm_least_busy_qpu()
     qbraid_device = device_wrapper(device_id)
     assert isinstance(qbraid_device, QiskitBackend)
 
