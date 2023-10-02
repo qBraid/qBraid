@@ -55,7 +55,9 @@ def __get_class(module: str):
 
 # Supported quantum devices.
 _DEVICES = __dynamic_importer(["qiskit_ibm_provider", "braket.aws"])
-QDEVICE = Union[tuple(_DEVICES)]  # type: ignore
+
+# pylint: disable-next=line-too-long
+QDEVICE = None if not _DEVICES else _DEVICES[0] if len(_DEVICES) == 1 else Union[tuple(_DEVICES)]  # type: ignore
 
 # pylint: disable-next=bad-str-strip-call
 QDEVICE_TYPES = [str(x).strip("<class").strip(">").strip(" ").strip("'") for x in _DEVICES]

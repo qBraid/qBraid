@@ -24,6 +24,7 @@ This module contains the classes used to run quantum circuits on devices availab
    :toctree: ../stubs/
 
    BraketDevice
+   BraketProvider
    BraketQuantumTask
    BraketGateModelResult
 
@@ -31,3 +32,4 @@ This module contains the classes used to run quantum circuits on devices availab
 from .result import BraketGateModelResult
 from .device import BraketDevice
 from .job import BraketQuantumTask
+from .provider import BraketProvider

@@ -30,7 +30,7 @@ from qbraid.interface import random_circuit
 from qbraid.providers import QuantumJob
 from qbraid.providers.aws import BraketDevice, BraketQuantumTask
 from qbraid.providers.exceptions import JobStateError, ProgramValidationError
-from qbraid.providers.ibm import QiskitBackend, QiskitJob
+from qbraid.providers.ibm import QiskitBackend, QiskitJob, QiskitProvider
 from qbraid.providers.provider import QbraidProvider
 
 # Skip tests if IBM/AWS account auth/creds not configured
@@ -54,8 +54,8 @@ def device_wrapper_inputs(vendor: str):
 
 
 def ibm_devices():
-    provider = QbraidProvider(ibm_quantum_token=os.getenv("QISKIT_IBM_TOKEN"))
-    backends = provider._get_ibm_backends(
+    provider = QiskitProvider()
+    backends = provider.get_devices(
         filters=lambda b: b.status().status_msg == "active", operational=True
     )
     qbraid_devices = device_wrapper_inputs("IBM")
@@ -148,7 +148,7 @@ def test_pending_jobs():
 
 
 def test_wrap_least_busy():
-    provider = QbraidProvider()
+    provider = QiskitProvider()
     device_id = provider.ibm_least_busy_qpu()
     qbraid_device = device_wrapper(device_id)
     assert isinstance(qbraid_device, QiskitBackend)

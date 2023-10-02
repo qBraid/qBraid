@@ -22,7 +22,7 @@ from qiskit_ibm_provider.job.ibm_circuit_job import IBMCircuitJob
 
 from qbraid import device_wrapper
 from qbraid.providers.exceptions import JobError
-from qbraid.providers.provider import QbraidProvider
+from qbraid.providers.ibm import QiskitProvider
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
@@ -39,7 +39,7 @@ backend_id_data = [
 def test_get_qbraid_id(data):
     """Test converting backend name to qbraid_id."""
     original, expected = data
-    result = QbraidProvider.ibm_to_qbraid_id(original)
+    result = QiskitProvider.ibm_to_qbraid_id(original)
     assert result == expected
 
 
@@ -47,15 +47,15 @@ def test_get_qbraid_id(data):
 def test_ibm_provider():
     """Test getting IBMQ provider using qiskit_ibm_provider package."""
     ibmq_token = os.getenv("QISKIT_IBM_TOKEN", None)
-    qbraid_provider = QbraidProvider(ibm_quantum_token=ibmq_token)
-    ibm_provider = qbraid_provider._get_ibm_provider()
+    qbraid_provider = QiskitProvider(qiskit_ibm_token=ibmq_token)
+    ibm_provider = qbraid_provider._provider
     assert isinstance(ibm_provider, IBMProvider)
 
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_ibm_least_busy():
     """Test returning qbraid ID of least busy IBMQ QPU."""
-    provider = QbraidProvider()
+    provider = QiskitProvider()
     qbraid_id = provider.ibm_least_busy_qpu()
     assert qbraid_id[:6] == "ibm_q_"
 
