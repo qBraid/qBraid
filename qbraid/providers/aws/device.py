@@ -23,9 +23,9 @@ from braket.schema_common import BraketSchemaBase
 from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.providers.device import QuantumDevice
 from qbraid.providers.enums import DeviceStatus
-from qbraid.providers.provider import QbraidProvider
 
 from .job import BraketQuantumTask
+from .provider import BraketProvider
 
 if TYPE_CHECKING:
     import qbraid
@@ -46,7 +46,7 @@ class BraketDevice(QuantumDevice):
 
         super().__init__(**kwargs)
         self._arn = self.vendor_device_id
-        self._default_s3_folder = (QbraidProvider._get_s3_default_bucket(), "tasks")
+        self._default_s3_folder = (BraketProvider._get_s3_default_bucket(), "tasks")
         self.refresh_metadata()
 
     def _transpile(self, run_input):

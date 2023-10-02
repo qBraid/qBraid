@@ -25,9 +25,11 @@ This module contains the classes used to run quantum circuits on devices availab
 
    QiskitBackend
    QiskitJob
+   QiskitProvider
    QiskitResult
 
 """
 from .result import QiskitResult
 from .device import QiskitBackend
 from .job import QiskitJob
+from .provider import QiskitProvider
