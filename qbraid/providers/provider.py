@@ -68,14 +68,22 @@ class QbraidProvider(QuantumProvider):
         raise NotImplementedError
 
     def _get_aws_provider(self, aws_access_key_id, aws_secret_access_key):
-        from qbraid.providers.aws import BraketProvider  # pylint: disable=import-outside-toplevel
+        if "braket.aws.aws_device.AwsDevice" in QDEVICE_TYPES:
+            from qbraid.providers.aws import (  # pylint: disable=import-outside-toplevel
+                BraketProvider,
+            )
 
-        return BraketProvider(aws_access_key_id, aws_secret_access_key)
+            return BraketProvider(aws_access_key_id, aws_secret_access_key)
+        return None
 
     def _get_ibm_provider(self, qiskit_ibm_token):
-        from qbraid.providers.ibm import QiskitProvider  # pylint: disable=import-outside-toplevel
+        if "qiskit_ibm_provider.ibm_backend.IBMBackend" in QDEVICE_TYPES:
+            from qbraid.providers.ibm import (  # pylint: disable=import-outside-toplevel
+                QiskitProvider,
+            )
 
-        return QiskitProvider(qiskit_ibm_token)
+            return QiskitProvider(qiskit_ibm_token)
+        return None
 
     def get_devices(self) -> List[QDEVICE]:
         """Return a list of backends matching the specified filtering.
@@ -86,11 +94,9 @@ class QbraidProvider(QuantumProvider):
         """
         devices = []
 
-        if "qiskit_ibm_provider.ibm_backend.IBMBackend" in QDEVICE_TYPES:
-            devices += self._ibm_provider.get_devices()
-
-        if "braket.aws.aws_device.AwsDevice" in QDEVICE_TYPES:
-            devices += self._aws_provider.get_devices()
+        for provider in [self._aws_provider, self._ibm_provider]:
+            if provider is not None:
+                devices += provider.get_devices()
 
         return devices
 
@@ -104,11 +110,11 @@ class QbraidProvider(QuantumProvider):
             QbraidDeviceNotFoundError: if no device could be found
         """
         if vendor_device_id.startswith("ibm") or vendor_device_id.startswith("simulator"):
-            if "qiskit_ibm_provider.ibm_backend.IBMBackend" in QDEVICE_TYPES:
+            if self._ibm_provider is not None:
                 return self._ibm_provider.get_device(vendor_device_id)
 
         if vendor_device_id.startswith("arn:aws"):
-            if "braket.aws.aws_device.AwsDevice" in QDEVICE_TYPES:
+            if self._aws_provider is not None:
                 return self._aws_provider.get_device(vendor_device_id)
 
         raise QbraidDeviceNotFoundError(f"Device {vendor_device_id} not found.")
