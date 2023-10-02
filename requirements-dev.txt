@@ -16,9 +16,3 @@ ipython
 sympy
 pytest
 coverage
-
-# docs
-sphinx
-sphinx-autodoc-typehints
-sphinx-rtd-theme
-docutils<0.17
