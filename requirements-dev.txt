@@ -1,7 +1,7 @@
 # integrations
 amazon-braket-sdk~=1.56.0
 cirq-ionq~=1.3.0.dev20230925223615
-pyquil~=4.0.0
+pyquil~=4.0.1
 pytket~=1.20.1
 pytket-braket~=0.30.0
 qiskit~=0.44.1
