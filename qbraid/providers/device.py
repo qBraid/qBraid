@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING  # pylint: disable=unused-import
 from qbraid import circuit_wrapper
 from qbraid.api import ApiError, QbraidSession
 from qbraid.exceptions import QbraidError
+from qbraid.providers.provider import QbraidProvider
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 from .exceptions import ProgramValidationError, QbraidRuntimeError
@@ -51,6 +52,7 @@ class QuantumDevice(ABC):
         self._info = kwargs
         self._qubits = self._info.get("numberQubits")
         self.vendor_device_id = self._info.pop("objArg")
+        self._qbraid_provider = QbraidProvider()
         self._device = self._get_device()
 
     @property
@@ -103,10 +105,18 @@ class QuantumDevice(ABC):
         """
         return self._qubits
 
+    def _get_device(self):
+        """Initialize an Quanum device."""
+        return self._qbraid_provider.get_device(self.vendor_device_id)
+
     @property
     @abstractmethod
     def status(self) -> "qbraid.providers.DeviceStatus":
         """Return device status."""
+
+    @abstractmethod
+    def pending_jobs(self) -> int:
+        """Return the number of jobs in the queue for the backend"""
 
     def __str__(self):
         return f"{self.vendor} {self.provider} {self.name} device wrapper"
@@ -246,10 +256,6 @@ class QuantumDevice(ABC):
             init_data["circuitBatchDepth"] = [circuit.depth for circuit in circuits]
 
         return session.post("/init-job", data=init_data).json()
-
-    @abstractmethod
-    def _get_device(self):
-        """Abstract init device method."""
 
     @abstractmethod
     def _transpile(self, run_input):

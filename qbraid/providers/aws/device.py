@@ -16,18 +16,16 @@ from datetime import datetime, timedelta
 from enum import Enum
 from typing import TYPE_CHECKING, List, Tuple
 
-from braket.aws import AwsDevice
 from braket.aws.aws_session import AwsSession
 from braket.device_schema import DeviceCapabilities, ExecutionDay
 from braket.schema_common import BraketSchemaBase
 
 from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.api import QbraidSession
 from qbraid.providers.device import QuantumDevice
 from qbraid.providers.enums import DeviceStatus
-from qbraid.providers.exceptions import DeviceError
 
 from .job import BraketQuantumTask
+from .provider import BraketProvider
 
 if TYPE_CHECKING:
     import qbraid
@@ -48,24 +46,8 @@ class BraketDevice(QuantumDevice):
 
         super().__init__(**kwargs)
         self._arn = self.vendor_device_id
-        self._default_s3_folder = self._qbraid_s3_folder()
-        self._aws_session = self._get_device()._aws_session
+        self._default_s3_folder = (BraketProvider._get_s3_default_bucket(), "tasks")
         self.refresh_metadata()
-
-    def _qbraid_s3_folder(self):
-        session = QbraidSession()
-        bucket = "amazon-braket-qbraid-jobs"
-        folder = session._email_converter()
-        if folder is None:
-            return None
-        return (bucket, folder)
-
-    def _get_device(self):
-        """Initialize an AWS device."""
-        try:
-            return AwsDevice(self.vendor_device_id)
-        except ValueError as err:
-            raise DeviceError("Device not found") from err
 
     def _transpile(self, run_input):
         """Transpile a circuit for the device."""
@@ -84,7 +66,7 @@ class BraketDevice(QuantumDevice):
         """
         Refresh the `AwsDevice` object with the most recent Device metadata.
         """
-        self._populate_properties(self._aws_session)
+        self._populate_properties(self._device._aws_session)
 
     def _populate_properties(self, session: AwsSession) -> None:
         # pylint: disable=attribute-defined-outside-init
@@ -222,6 +204,15 @@ class BraketDevice(QuantumDevice):
         time_str_lst = [str(x) if x >= 10 else f"0{x}" for x in time_lst]
         available_time_hms = ":".join(time_str_lst)
         return is_available_result, available_time_hms
+
+    def pending_jobs(self) -> int:
+        """Return the number of jobs in the queue for the device"""
+        aws_device = self._device
+        queue_depth_info = aws_device.queue_depth()
+        queued_tasks = queue_depth_info.quantum_tasks
+        num_queued_normal = queued_tasks["Normal"]
+        num_queued_priority = queued_tasks["Priority"]
+        return int(num_queued_normal) + int(num_queued_priority)
 
     def run(self, run_input, *args, **kwargs) -> "qbraid.device.aws.BraketQuantumTaskWrapper":
         """Run a quantum task specification on this quantum device. Task must represent a

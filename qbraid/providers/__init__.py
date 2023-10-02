@@ -27,6 +27,8 @@ Providers (:mod:`qbraid.providers`)
    QuantumJob
    JobStatus
    ProgramValidationError
+   QbraidDeviceNotFoundError
+   QbraidProvider
    QbraidRuntimeError
    QuantumJobResult
 
@@ -42,4 +44,5 @@ from .exceptions import (
     QbraidRuntimeError,
 )
 from .job import QuantumJob
+from .provider import QbraidDeviceNotFoundError, QbraidProvider
 from .result import QuantumJobResult
