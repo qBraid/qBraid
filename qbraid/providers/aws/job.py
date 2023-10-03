@@ -13,8 +13,8 @@ Module defining BraketQuantumTask Class
 
 """
 import logging
-
 from typing import Optional
+
 from braket.aws import AwsQuantumTask
 
 from qbraid.providers.enums import JOB_FINAL
