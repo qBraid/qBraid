@@ -14,6 +14,7 @@ Module defining BraketQuantumTask Class
 """
 import logging
 
+from typing import Optional
 from braket.aws import AwsQuantumTask
 
 from qbraid.providers.enums import JOB_FINAL
@@ -21,6 +22,10 @@ from qbraid.providers.exceptions import JobStateError
 from qbraid.providers.job import QuantumJob
 
 from .result import BraketGateModelResult
+
+
+class AmazonBraketVersionError(Exception):
+    """Exception raised for Amazon Braket SDK errors due to versioning."""
 
 
 class BraketQuantumTask(QuantumJob):
@@ -38,6 +43,18 @@ class BraketQuantumTask(QuantumJob):
     def _get_status(self):
         """Returns status from Braket QuantumTask object metadata."""
         return self._job.state()
+
+    def queue_position(self) -> Optional[int]:
+        """Returns queue position from Braket QuantumTask."""
+        try:
+            position = self._job.queue_position().queue_position
+            if isinstance(position, str):
+                return int(position)
+            return position
+        except AttributeError as err:
+            raise AmazonBraketVersionError(
+                "Queue visibility is only available for amazon-braket-sdk>=1.56.0"
+            ) from err
 
     def result(self) -> BraketGateModelResult:
         """Return the results of the job."""
