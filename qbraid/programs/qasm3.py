@@ -243,6 +243,107 @@ class OpenQasm3Program(QuantumProgram):
                 qasm_str = self._remap_qubits(qasm_str, reg, size, indices)
         self._program = qasm_str
 
+    def _validate_qubit_mapping(self, qubit_decls, qubit_mapping: dict):
+        """Validate the supplied qubit map
+            qubit mapping structure should be like -
+                {
+                <reg name> : { old_id : new_id, old_id : new_id, ... },
+                ...
+                }
+        Moreover, every reg should be present in the mapping, even if not being remapped.
+        The mapping should be complete and indices should be unique and in range.
+
+
+        Args:
+            qubit_decls (list): Qubit register declarations
+            qubit_mapping (dict): A dict containing the qubit mapping for
+                                  qasm string
+        """
+
+        for name, size in qubit_decls:
+            # 1. Check if the registers are present in the mapping
+            if name not in qubit_mapping:
+                raise ValueError(f"Register {name} not present in the qubit mapping.")
+
+            if not isinstance(qubit_mapping[name], dict):
+                raise ValueError(f"Mapping for register {name} is not a dictionary.")
+
+            if len(qubit_mapping[name]) != size:
+                raise ValueError(
+                    f"Mapping for register {name} is not exact. Map is {qubit_mapping[name]}."
+                )
+
+            # 2. If yes, then see whether all the indices of the register are present in the mapping
+            #    and are in range and unique
+
+            old_indices = set(range(size))
+            new_indices = []
+
+            for idx in old_indices:
+                if idx not in qubit_mapping[name]:
+                    raise ValueError(f"Index {idx} of register {name} not present in the mapping.")
+                if qubit_mapping[name][idx] >= size or qubit_mapping[name][idx] < 0:
+                    raise ValueError(
+                        f"New index {qubit_mapping[name][idx]} of register {name} is out of range."
+                    )
+                new_indices.append(qubit_mapping[name][idx])
+
+            # 3. Check that all the new indices are unique
+            if set(new_indices) != old_indices:
+                raise ValueError(
+                    f"Index map of register {name} is not unique. Map is {qubit_mapping[name]}."
+                )
+
+    def apply_qubit_mapping(self, qubit_mapping: dict):
+        """Apply qubit mapping for the qasm program
+
+        Args:
+            qubit_mapping (dict): A dict containing the qubit mapping for
+                                  qasm string
+
+        Returns:
+            str: updated qasm string
+        """
+        if not qubit_mapping:
+            print("No qubit mapping provided.")
+            return self.program
+
+        qubit_decls = self.qubits
+        self._validate_qubit_mapping(qubit_decls, qubit_mapping)
+
+        # need some placeholder to avoid replacing the same qubit multiple times
+        # in case of a CYCLIC mapping
+
+        # Eg. { q : {0:1, 1:0} }
+        # In this case if we have
+        # cnot q[0], q[1]; and apply the mapping
+        # first q[0] -> q[1] and state is -
+        # cnot q[1], q[1];
+        # second, q[1] -> q[0] and state is -
+        # cnot q[0], q[0];
+
+        # this is inconsistent
+
+        marker = "-"
+        for name, _ in qubit_decls:
+            for old_id, new_id in qubit_mapping[name].items():
+                if old_id != new_id:
+                    self._program = re.sub(
+                        rf"{name}\s*\[{old_id}\]", f"{name}[{marker}{new_id}]", self._program
+                    )
+
+        # remove the '-' markers
+        for name, _ in qubit_decls:
+            self._program = re.sub(rf"{name}\[{marker}", f"{name}[", self._program)
+        return self.program
+
     def reverse_qubit_order(self) -> None:
         """Reverse the order of the qubits in the circuit."""
-        raise NotImplementedError
+
+        qubit_decls = self.qubits
+
+        qubit_mapping = {}
+        for reg, size in qubit_decls:
+            qubit_mapping[reg] = {old_id: size - old_id - 1 for old_id in range(size)}
+
+        return self.apply_qubit_mapping(qubit_mapping)

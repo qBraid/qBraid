@@ -14,6 +14,8 @@ Module containing OpenQASM conversion function
 """
 import os
 
+from qbraid.programs.qasm3 import OpenQasm3Program
+
 QASMType = str
 
 
@@ -117,3 +119,21 @@ def convert_to_qasm3(qasm_str: str):
         line = _change_to_qasm3(line)
         qasm3_str += line
     return qasm3_str
+
+
+def reverse_qubit_order(qasm_str: str, qubit_mapping=None):
+    """Reverse the qubit order of a qasm string
+
+    Args:
+        qasm_str (str): qasm string
+        qubit_mapping (dict, optional): Qubit mapping. Defaults to None.
+
+    Returns:
+        str: qasm string with qubit order reversed
+    """
+    qasm_program = OpenQasm3Program(qasm_str)
+
+    if qubit_mapping:
+        return qasm_program.apply_qubit_mapping(qubit_mapping)
+
+    return qasm_program.reverse_qubit_order()
