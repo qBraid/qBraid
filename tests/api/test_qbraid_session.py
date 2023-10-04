@@ -9,16 +9,30 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for functions that utilize, interact with,
-or relate to qBraid other third-party APIs.
+Unit tests for qBraid API sessions
 
 """
 import os
 
 import pytest
 
-from qbraid.api import QbraidSession
-from qbraid.api.session import STATUS_FORCELIST, PostForcelistRetry, QbraidSession
+from qbraid.api.exceptions import AuthError
+from qbraid.api.retry import STATUS_FORCELIST, PostForcelistRetry
+from qbraid.api.session import QbraidSession
+
+
+@pytest.mark.parametrize(
+    "retry_data", [("POST", 200, False, 8), ("GET", 500, True, 3), ("POST", 502, True, 4)]
+)
+def test_post_forcelist_retry(retry_data):
+    """Test methods for session retry checks and counters"""
+    method, code, should_retry, init_retries = retry_data
+    retry = PostForcelistRetry(
+        total=init_retries,
+        status_forcelist=STATUS_FORCELIST,
+    )
+    assert retry.is_retry(method, code) == should_retry
+    assert retry.increment().total == init_retries - 1
 
 
 def test_running_in_lab():
@@ -52,13 +66,15 @@ def test_get_session_values():
     assert session.refresh_token == fake_refresh_token
 
 
-@pytest.mark.parametrize("retry_data", [("POST", 200, False, 8), ("GET", 500, True, 3)])
-def test_post_forcelist_retry(retry_data):
-    """Test methods for session retry checks and counters"""
-    method, code, should_retry, init_retries = retry_data
-    retry = PostForcelistRetry(
-        total=init_retries,
-        status_forcelist=STATUS_FORCELIST,
-    )
-    assert retry.is_retry(method, code) == should_retry
-    assert retry.increment().total == init_retries - 1
+def test_convert_email_symbols():
+    """Test function that converts email to username."""
+    email_input = "test-format.company_org@qbraid.com"
+    expected_output = "test-2dformat-2ecompany-5forg-40qbraid-2ecom"
+    assert QbraidSession._convert_email_symbols(email_input) == expected_output
+
+
+def test_save_config_bad_url():
+    """Test that passing bad base_url to save_config raises exception."""
+    session = QbraidSession()
+    with pytest.raises(AuthError):
+        session.save_config(base_url="bad_url")
