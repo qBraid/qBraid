@@ -431,3 +431,92 @@ cx _qubit0, _qubit1;
     circuit = loads(qasm3_str)
     qprogram = circuit_wrapper(qasm3_str)
     assert qprogram.num_qubits == circuit.num_qubits
+
+
+def test_reverse_qubit_order():
+    """Test the reverse qubit ordering function"""
+    qasm_str = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    qubit[4] q2;
+    qubit q3;
+
+    cnot q[0], q[1];
+    cnot q2[0], q2[1];
+    x q2[3];
+    cnot q2[0], q2[2];
+    x q3[0];
+    """
+
+    reverse_qasm = circuit_wrapper(qasm_str).reverse_qubit_order()
+    expected_qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    qubit[4] q2;
+    qubit q3;
+
+    cnot q[1], q[0];
+    cnot q2[3], q2[2];
+    x q2[0];
+    cnot q2[3], q2[1];
+    x q3[0];
+    """
+    assert reverse_qasm == expected_qasm
+
+
+def test_remap_qubit_order():
+    """Test the remapping of qubits in qasm string"""
+    qubit_mapping = {"q1": {0: 1, 1: 0}, "q2": {0: 2, 1: 0, 2: 1}}
+    qasm_str = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q1;
+    qubit[3] q2;
+    
+    cnot q1[1], q1[0];
+    cnot q2[2], q2[1];
+    x q2[0];
+    """
+
+    remapped_qasm = circuit_wrapper(qasm_str).apply_qubit_mapping(qubit_mapping)
+
+    expected_qasm = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q1;
+    qubit[3] q2;
+    
+    cnot q1[0], q1[1];
+    cnot q2[1], q2[0];
+    x q2[2];
+    """
+    assert expected_qasm == remapped_qasm
+
+
+def test_incorrect_remapping():
+    """Test that incorrect remapping raises error"""
+    reg_not_there_mapping = {"q2": {0: 2, 1: 0, 2: 1}}
+    incomplete_reg_mapping = {"q1": {0: 1, 1: 0}, "q2": {0: 2, 1: 0}}
+    out_of_bounds_mapping = {"q1": {0: 1, 1: 2}, "q2": {0: 2, 1: 0, 3: 1}}
+
+    qasm_str = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q1;
+    qubit[3] q2;
+    
+    cnot q1[1], q1[0];
+    cnot q2[2], q2[1];
+    x q2[0];
+    """
+
+    with pytest.raises(ValueError):
+        _ = circuit_wrapper(qasm_str).apply_qubit_mapping(reg_not_there_mapping)
+
+    with pytest.raises(ValueError):
+        _ = circuit_wrapper(qasm_str).apply_qubit_mapping(incomplete_reg_mapping)
+
+    with pytest.raises(ValueError):
+        _ = circuit_wrapper(qasm_str).apply_qubit_mapping(out_of_bounds_mapping)
