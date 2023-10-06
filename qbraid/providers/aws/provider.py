@@ -49,15 +49,6 @@ class BraketProvider:
         raise NotImplementedError
 
     @staticmethod
-    def _get_default_s3_folder() -> str:
-        """Returns the default AWS region."""
-        try:
-            session = Session()
-            return session.region_name
-        except Exception:  # pylint: disable=broad-exception-caught
-            return "us-east-1"
-
-    @staticmethod
     def _get_default_region() -> str:
         """Returns the default AWS region."""
         try:

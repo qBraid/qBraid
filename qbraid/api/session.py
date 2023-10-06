@@ -260,16 +260,10 @@ class QbraidSession(Session):
         except Exception as err:
             raise ConfigError from err
 
-    def _email_converter(self) -> Optional[str]:
+    @staticmethod
+    def _convert_email_symbols(email: str) -> Optional[str]:
         """Convert email to compatible string format"""
-        if not self.user_email:
-            return None
-        return (
-            self.user_email.replace("-", "-2d")
-            .replace(".", "-2e")
-            .replace("@", "-40")
-            .replace("_", "-5f")
-        )
+        return email.replace("-", "-2d").replace(".", "-2e").replace("@", "-40").replace("_", "-5f")
 
     def _initialize_retry(
         self, retries_total: int, retries_connect: int, backoff_factor: float
