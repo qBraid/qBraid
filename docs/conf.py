@@ -41,6 +41,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "sphinx.ext.coverage",
     "sphinx.ext.viewcode",  # Hide source code link
+    "sphinx.ext.intersphinx",
 ]
 
 # set_type_checking_flag = True
