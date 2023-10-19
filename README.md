@@ -31,12 +31,12 @@ transpilation, and execution of quantum programs.
 For the best experience, install the qBraid-SDK environment on
 [lab.qbraid.com](https://lab.qbraid.com). Login (or
 [create an account](https://account.qbraid.com)) and follow the steps to
-[install an environment](https://docs.qbraid.com/en/latest/lab/environments.html#install-environment).
+[install an environment](https://docs.qbraid.com/projects/lab/en/latest/lab/environments.html#install-environment).
 
 Using the SDK on qBraid Lab means direct, pre-configured access to all
 [Amazon Braket supported devices](https://docs.aws.amazon.com/braket/latest/developerguide/braket-devices.html)
 with no additional access keys or API tokens required. See
-[qBraid Quantum Jobs](https://docs.qbraid.com/en/latest/lab/quantum_jobs.html)
+[qBraid Quantum Jobs](https://docs.qbraid.com/projects/lab/en/latest/lab/quantum_jobs.html)
 for more.
 
 ### Local install
@@ -56,12 +56,12 @@ credentials.
 ## Documentation & Tutorials
 
 qBraid documentation is available at
-[docs.qbraid.com](https://docs.qbraid.com/en/latest/).
+[docs.qbraid.com](https://docs.qbraid.com/en/stable/).
 
 See also:
 
-- [API Reference](https://docs.qbraid.com/en/latest/api/qbraid.html)
-- [User Guide](https://docs.qbraid.com/en/latest/sdk/overview.html)
+- [API Reference](https://docs.qbraid.com/en/stable/api/qbraid.html)
+- [User Guide](https://docs.qbraid.com/en/stable/sdk/overview.html)
 - [Example Notebooks](https://github.com/qBraid/qbraid-lab-demo)
 
 ## Quickstart
