@@ -22,7 +22,7 @@ from braket.aws import AwsDevice
 from braket.circuits import Circuit as BraketCircuit
 from braket.tasks.quantum_task import QuantumTask as AwsQuantumTask
 from qiskit import QuantumCircuit as QiskitCircuit
-from qiskit_ibm_provider import IBMBackend, IBMJob, IBMProvider
+from qiskit_ibm_provider import IBMBackend, IBMJob
 
 from qbraid import QbraidError, device_wrapper, job_wrapper
 from qbraid.api import QbraidSession
@@ -30,7 +30,8 @@ from qbraid.interface import random_circuit
 from qbraid.providers import QuantumJob
 from qbraid.providers.aws import BraketDevice, BraketQuantumTask
 from qbraid.providers.exceptions import JobStateError, ProgramValidationError
-from qbraid.providers.ibm import QiskitBackend, QiskitJob, ibm_least_busy_qpu, ibm_to_qbraid_id
+from qbraid.providers.ibm import QiskitBackend, QiskitJob, QiskitProvider
+from qbraid.providers.provider import QbraidProvider
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
@@ -53,12 +54,13 @@ def device_wrapper_inputs(vendor: str):
 
 
 def ibm_devices():
-    provider = IBMProvider()
-    backends = provider.backends(
+    provider = QiskitProvider()
+    backends = provider.get_devices(
         filters=lambda b: b.status().status_msg == "active", operational=True
     )
     qbraid_devices = device_wrapper_inputs("IBM")
-    ibm_devices = [ibm_to_qbraid_id(backend.name) for backend in backends]
+    ibm_devices = [provider.ibm_to_qbraid_id(backend.name) for backend in backends]
+    # ibm_simulators = [qbraid_id for qbraid_id in ibm_devices if "simulator" in qbraid_id]
     return [dev for dev in ibm_devices if dev in qbraid_devices]
 
 
@@ -132,21 +134,22 @@ def test_device_wrapper_from_qiskit_id():
 def test_device_wrapper_properties():
     device_id = "aws_oqc_lucy"
     wrapper = device_wrapper(device_id)
-    assert wrapper.provider == "OQC"
+    assert wrapper.provider == "Oxford"
     assert wrapper.name == "Lucy"
-    assert str(wrapper) == "AWS OQC Lucy device wrapper"
-    assert repr(wrapper) == "<BraketDevice(OQC:'Lucy')>"
+    assert str(wrapper) == "AWS Oxford Lucy device wrapper"
+    assert repr(wrapper) == "<BraketDevice(Oxford:'Lucy')>"
 
 
-def test_pending_jobs():
+def test_queue_depth():
     aws_device = device_wrapper("aws_sv_sim")
     ibm_device = device_wrapper("ibm_q_qasm_simulator")
-    assert isinstance(aws_device.pending_jobs(), int)
-    assert isinstance(ibm_device.pending_jobs(), int)
+    assert isinstance(aws_device.queue_depth(), int)
+    assert isinstance(ibm_device.queue_depth(), int)
 
 
 def test_wrap_least_busy():
-    device_id = ibm_least_busy_qpu()
+    provider = QiskitProvider()
+    device_id = provider.ibm_least_busy_qpu()
     qbraid_device = device_wrapper(device_id)
     assert isinstance(qbraid_device, QiskitBackend)
 
@@ -314,5 +317,5 @@ def test_aws_device_available():
     """Test BraketDeviceWrapper avaliable output identical"""
     device = device_wrapper("aws_dm_sim")
     is_available_bool, is_available_time = device.is_available
-    assert is_available_bool == device._get_device().is_available
+    assert is_available_bool == device._device.is_available
     assert len(is_available_time.split(":")) == 3

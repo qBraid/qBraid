@@ -58,7 +58,7 @@ Documentation
    </p>
    <div class="row">
    <div class="column">
-      <a href="lab/overview.html">
+      <a href="https://docs.qbraid.com/projects/lab/en/latest/lab/overview.html">
          <div class="card">
             <h3>Lab</h3>
             <img src="_static/cards/jupyter.png" alt="terminal" style="width:60px;height:60px;">
@@ -67,7 +67,7 @@ Documentation
    </div>
    
    <div class="column">
-      <a href="cli/qbraid.html">
+      <a href="https://docs.qbraid.com/projects/cli/en/latest/cli/qbraid.html">
          <div class="card">
             <h3>CLI</h3>
             <img src="_static/cards/terminal.png" alt="terminal" style="width:60px;height:60px;">
@@ -89,26 +89,6 @@ Documentation
    </html>
 
 |
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Lab User Guide
-   :hidden:
-
-   lab/overview
-   lab/account
-   lab/getting_started
-   lab/environments
-   lab/kernels
-   lab/notebooks
-   lab/quantum_devices
-   lab/quantum_jobs
-   lab/code_snippets
-   lab/gpu
-   lab/julia
-   lab/integrations
-   lab/system
-   lab/troubleshoot
 
 .. toctree::
    :maxdepth: 1
@@ -134,16 +114,6 @@ Documentation
    api/qbraid.compiler
    api/qbraid.providers
    api/qbraid.visualization
-
-.. toctree::
-   :maxdepth: 1
-   :caption: CLI Reference
-   :hidden:
-
-   cli/qbraid
-   cli/envs
-   cli/jobs
-   cli/kernels
 
 
 .. Indices and Tables

@@ -21,6 +21,9 @@ Data Types
 .. autodata:: QPROGRAM
    :annotation: = Type alias defining all supported quantum circuit / program types
 
+.. autodata:: QDEVICE
+   :annotation: = Type alias defining all supported quantum device / backend types
+
 Functions
 ----------
 
@@ -48,6 +51,7 @@ Exceptions
 
 """
 from . import _warnings
+from ._qdevice import QDEVICE, QDEVICE_TYPES
 from ._qprogram import QPROGRAM, QPROGRAM_LIBS, QPROGRAM_TYPES
 from ._version import __version__
 from .exceptions import (
@@ -59,4 +63,5 @@ from .exceptions import (
 )
 from .get_devices import get_devices, refresh_devices
 from .get_jobs import get_jobs
-from .wrappers import circuit_wrapper, device_wrapper, job_wrapper
+from .load_program import circuit_wrapper
+from .load_provider import device_wrapper, job_wrapper

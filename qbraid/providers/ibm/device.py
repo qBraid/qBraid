@@ -12,27 +12,47 @@
 Module defining QiskitBackend Class
 
 """
+from typing import TYPE_CHECKING  # pylint: disable=unused-import
+
 from qiskit import transpile
-from qiskit.providers import QiskitBackendNotFoundError
-from qiskit_ibm_provider import IBMBackend, IBMProvider
+from qiskit.transpiler import TranspilerError
 
 from qbraid.providers.device import QuantumDevice
-from qbraid.providers.enums import DeviceStatus
-from qbraid.providers.exceptions import DeviceError
+from qbraid.providers.enums import DeviceStatus, DeviceType
 
 from .job import QiskitJob
+
+if TYPE_CHECKING:
+    import qiskit_ibm_provider
 
 
 class QiskitBackend(QuantumDevice):
     """Wrapper class for IBM Qiskit ``Backend`` objects."""
 
-    def _get_device(self) -> IBMBackend:
-        """Initialize an IBM device."""
+    def __init__(self, ibm_device: "qiskit_ibm_provider.IBMBackend"):
+        """Create a BraketDevice."""
+
+        super().__init__(ibm_device)
+        self._vendor = "IBM"
+        self._run_package = "qiskit"
+
+    def _populate_metadata(self, device: "qiskit_ibm_provider.IBMBackend") -> None:
+        """Populate device metadata using IBMBackend object."""
+        # pylint: disable=attribute-defined-outside-init
+        self._id = device.name
+        self._name = device.name
+        self._provider = "IBM"
+        self._device_type = DeviceType("SIMULATOR") if device.simulator else DeviceType("QPU")
+
         try:
-            provider = IBMProvider()
-            return provider.get_backend(self.vendor_device_id)
-        except QiskitBackendNotFoundError as err:
-            raise DeviceError("Device not found.") from err
+            self._num_qubits = device.num_qubits
+        except TranspilerError:
+            if device.name == "simulator_stabilizer":
+                self._num_qubits = 5000
+            elif device.name == "simulator_extended_stabilizer":
+                self._num_qubits = 63
+            else:
+                self._num_qubits = None
 
     def _transpile(self, run_input):
         return transpile(run_input, backend=self._device)
@@ -40,7 +60,6 @@ class QiskitBackend(QuantumDevice):
     def _compile(self, run_input):
         return run_input
 
-    @property
     def status(self):
         """Return the status of this Device.
 
@@ -52,7 +71,7 @@ class QiskitBackend(QuantumDevice):
             return DeviceStatus.OFFLINE
         return DeviceStatus.ONLINE
 
-    def pending_jobs(self) -> int:
+    def queue_depth(self) -> int:
         """Return the number of jobs in the queue for the ibm backend"""
         return self._device.status().pending_jobs
 

@@ -15,10 +15,6 @@ Module defining exceptions for errors raised while processing a device.
 from qbraid.exceptions import QbraidError
 
 
-class DeviceError(QbraidError):
-    """Base class for errors raised while processing a device."""
-
-
 class ProgramValidationError(QbraidError):
     """Base class for errors raised while validating a quantum program."""
 

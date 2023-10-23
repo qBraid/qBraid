@@ -18,7 +18,6 @@ Providers (:mod:`qbraid.providers`)
 .. autosummary::
    :toctree: ../stubs/
 
-   DeviceError
    QuantumDevice
    DeviceStatus
    DeviceType
@@ -27,6 +26,8 @@ Providers (:mod:`qbraid.providers`)
    QuantumJob
    JobStatus
    ProgramValidationError
+   QbraidDeviceNotFoundError
+   QbraidProvider
    QbraidRuntimeError
    QuantumJobResult
 
@@ -34,12 +35,7 @@ Providers (:mod:`qbraid.providers`)
 """
 from .device import QuantumDevice
 from .enums import DeviceStatus, DeviceType, JobStatus
-from .exceptions import (
-    DeviceError,
-    JobError,
-    JobStateError,
-    ProgramValidationError,
-    QbraidRuntimeError,
-)
+from .exceptions import JobError, JobStateError, ProgramValidationError, QbraidRuntimeError
 from .job import QuantumJob
+from .provider import QbraidDeviceNotFoundError, QbraidProvider
 from .result import QuantumJobResult

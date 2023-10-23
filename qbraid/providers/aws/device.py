@@ -12,110 +12,63 @@
 Module defining BraketDeviceWrapper Class
 
 """
+import json
 from datetime import datetime, timedelta
-from enum import Enum
 from typing import TYPE_CHECKING, List, Tuple
 
-from braket.aws import AwsDevice
-from braket.aws.aws_session import AwsSession
-from braket.device_schema import DeviceCapabilities, ExecutionDay
-from braket.schema_common import BraketSchemaBase
+from braket.device_schema import ExecutionDay
 
 from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.api import QbraidSession
 from qbraid.providers.device import QuantumDevice
-from qbraid.providers.enums import DeviceStatus
-from qbraid.providers.exceptions import DeviceError
+from qbraid.providers.enums import DeviceStatus, DeviceType
 
 from .job import BraketQuantumTask
 
 if TYPE_CHECKING:
+    import braket.aws
+
     import qbraid
-
-
-class AwsDeviceType(str, Enum):
-    """Possible AWS device types"""
-
-    SIMULATOR = "SIMULATOR"
-    QPU = "QPU"
 
 
 class BraketDevice(QuantumDevice):
     """Wrapper class for Amazon Braket ``Device`` objects."""
 
-    def __init__(self, **kwargs):
+    def __init__(self, aws_device: "braket.aws.AwsDevice"):
         """Create a BraketDevice."""
 
-        super().__init__(**kwargs)
-        self._arn = self.vendor_device_id
-        self._default_s3_folder = self._qbraid_s3_folder()
-        self._aws_session = self._get_device()._aws_session
-        self.refresh_metadata()
+        super().__init__(aws_device)
+        self._vendor = "AWS"
+        self._run_package = "braket"
 
-    def _qbraid_s3_folder(self):
-        session = QbraidSession()
-        bucket = "amazon-braket-qbraid-jobs"
-        folder = session._email_converter()
-        if folder is None:
-            return None
-        return (bucket, folder)
-
-    def _get_device(self):
-        """Initialize an AWS device."""
-        try:
-            return AwsDevice(self.vendor_device_id)
-        except ValueError as err:
-            raise DeviceError("Device not found") from err
-
-    def _transpile(self, run_input):
-        """Transpile a circuit for the device."""
-        return run_input
-
-    def _compile(self, run_input):
-        """Compile a circuit for the device."""
-        if self.provider.lower() == "ionq" and "pytket" in QPROGRAM_LIBS:
-            # pylint: disable=import-outside-toplevel
-            from qbraid.compiler.braket.ionq import braket_ionq_compile
-
-            run_input = braket_ionq_compile(run_input)
-        return run_input
-
-    def refresh_metadata(self) -> None:
-        """
-        Refresh the `AwsDevice` object with the most recent Device metadata.
-        """
-        self._populate_properties(self._aws_session)
-
-    def _populate_properties(self, session: AwsSession) -> None:
+    def _populate_metadata(self, device: "braket.aws.AwsDevice") -> None:
+        """Populate device metadata using BraketSchemaBase"""
         # pylint: disable=attribute-defined-outside-init
-        metadata = session.get_device(self._arn)
-        self._name = metadata.get("deviceName")
-        self._status = metadata.get("deviceStatus")
-        self._type = AwsDeviceType(metadata.get("deviceType"))
-        self._provider_name = metadata.get("providerName")
-        self._properties = metadata.get("deviceCapabilities")
-        self._frames = None
-        self._ports = None
+        metadata = device.aws_session.get_device(device.arn)
+        capabilities = json.loads(metadata.get("deviceCapabilities"))
 
-    @property
+        self._id = metadata.get("deviceArn")
+        self._name = metadata.get("deviceName")
+        self._provider = metadata.get("providerName")
+        self._device_type = DeviceType(metadata.get("deviceType"))
+
+        try:
+            self._num_qubits = capabilities["paradigm"]["qubitCount"]
+        except KeyError:
+            self._num_qubits = None
+
     def status(self) -> "qbraid.providers.DeviceStatus":
         """Return the status of this Device.
 
         Returns:
             The status of this Device
         """
-        if self._device.status != "ONLINE":
-            return DeviceStatus.OFFLINE
-        return DeviceStatus.ONLINE
+        if self._device.is_available:
+            return DeviceStatus.ONLINE
 
-    @property
-    def properties(self) -> DeviceCapabilities:
-        """DeviceCapabilities: Return the device properties
+        if self._device.status == "RETIRED":
+            return DeviceStatus.RETIRED
 
-        Please see `braket.device_schema` in amazon-braket-schemas-python_
-
-        .. _amazon-braket-schemas-python: https://github.com/aws/amazon-braket-schemas-python"""
-        return BraketSchemaBase.parse_raw_schema(self._properties)
+        return DeviceStatus.OFFLINE
 
     @property
     def is_available(self) -> Tuple[bool, str]:
@@ -223,7 +176,7 @@ class BraketDevice(QuantumDevice):
         available_time_hms = ":".join(time_str_lst)
         return is_available_result, available_time_hms
 
-    def pending_jobs(self) -> int:
+    def queue_depth(self) -> int:
         """Return the number of jobs in the queue for the device"""
         aws_device = self._device
         queue_depth_info = aws_device.queue_depth()
@@ -232,7 +185,22 @@ class BraketDevice(QuantumDevice):
         num_queued_priority = queued_tasks["Priority"]
         return int(num_queued_normal) + int(num_queued_priority)
 
-    def run(self, run_input, *args, **kwargs) -> "qbraid.device.aws.BraketQuantumTaskWrapper":
+    def _transpile(self, run_input):
+        """Transpile a circuit for the device."""
+        return run_input
+
+    def _compile(self, run_input):
+        """Compile a circuit for the device."""
+        if self.provider.lower() == "ionq" and "pytket" in QPROGRAM_LIBS:
+            # pylint: disable=import-outside-toplevel
+            from qbraid.compiler.braket.ionq import braket_ionq_compile
+
+            run_input = braket_ionq_compile(run_input)
+        return run_input
+
+    def run(
+        self, run_input, *args, auto_compile: bool = False, **kwargs
+    ) -> "qbraid.device.aws.BraketQuantumTaskWrapper":
         """Run a quantum task specification on this quantum device. Task must represent a
         quantum circuit, annealing problems not supported.
 
@@ -240,17 +208,15 @@ class BraketDevice(QuantumDevice):
             run_input: Specification of a task to run on device.
 
         Keyword Args:
+            auto_compile (bool): Whether to compile the circuit for the device before running.
             shots (int): The number of times to run the task on the device.
 
         Returns:
             The job like object for the run.
 
         """
-        qbraid_circuit = self.process_run_input(run_input)
+        qbraid_circuit = self.process_run_input(run_input, auto_compile=auto_compile)
         run_input = qbraid_circuit._program
-
-        if "s3_destination_folder" not in kwargs:
-            kwargs["s3_destination_folder"] = self._default_s3_folder
         aws_quantum_task = self._device.run(run_input, *args, **kwargs)
         metadata = aws_quantum_task.metadata()
         shots = 0 if "shots" not in metadata else metadata["shots"]
@@ -260,13 +226,16 @@ class BraketDevice(QuantumDevice):
             job_id, vendor_job_id=vendor_job_id, device=self, vendor_job_obj=aws_quantum_task
         )
 
-    def run_batch(self, run_input, **kwargs) -> List["qbraid.device.aws.BraketQuantumTaskWrapper"]:
+    def run_batch(
+        self, run_input, *args, auto_compile: bool = False, **kwargs
+    ) -> List["qbraid.device.aws.BraketQuantumTaskWrapper"]:
         """Run batch of quantum tasks on this quantum device.
 
         Args:
             run_input: A circuit object list to run on the wrapped device.
 
         Keyword Args:
+            auto_compile (bool): Whether to compile the circuits for the device before running.
             shots (int): The number of times to run the task on the device. Default is 1024.
 
         Returns:
@@ -277,14 +246,11 @@ class BraketDevice(QuantumDevice):
         qbraid_circuit_batch = []
         run_input_batch = []
         for circuit in run_input:
-            qbraid_circuit = self.process_run_input(circuit)
+            qbraid_circuit = self.process_run_input(circuit, auto_compile=auto_compile)
             run_input = qbraid_circuit._program
             run_input_batch.append(run_input)
             qbraid_circuit_batch.append(qbraid_circuit)
-
-        if "s3_destination_folder" not in kwargs:
-            kwargs["s3_destination_folder"] = self._default_s3_folder
-        aws_quantum_task_batch = device.run_batch(run_input_batch, **kwargs)
+        aws_quantum_task_batch = device.run_batch(run_input_batch, *args, **kwargs)
         aws_quantum_tasks = aws_quantum_task_batch.tasks
         aws_quantum_task_wrapper_list = []
         for index, aws_quantum_task in enumerate(aws_quantum_tasks):
