@@ -197,7 +197,7 @@ least number of queued quantum jobs.
     >>> qdevice = device_wrapper(qbraid_id)
     >>> qdevice.name
     'Nairobi'
-    >>> qdevice.status
+    >>> qdevice.status()
     <DeviceStatus.ONLINE: 0>
 
 After applying the device wrapper and verifying the device is online, we're ready
@@ -207,12 +207,12 @@ to submit a job. This time, we'll use a Cirq circuit as the ``run`` method input
 
     >>> from qbraid.interface import random_circuit
     >>> cirq_circuit = random_circuit("cirq", num_qubits=qdevice.num_qubits)
-    >>> qdevice.pending_jobs()
+    >>> qdevice.queue_depth()
     4
     >>> qjob = qdevice.run(cirq_circuit)
     >>> qjob.status()
     <JobStatus.QUEUED: 1>
-    >>> qdevice.pending_jobs()
+    >>> qdevice.queue_depth()
     5
 
 For fun, we the set number of qubits used in the random circuit equal to the number of
