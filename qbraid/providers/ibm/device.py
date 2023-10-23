@@ -36,20 +36,20 @@ class QiskitBackend(QuantumDevice):
         self._vendor = "IBM"
         self._run_package = "qiskit"
 
-    def _populate_metadata(self, backend: "qiskit_ibm_provider.IBMBackend") -> None:
+    def _populate_metadata(self, device: "qiskit_ibm_provider.IBMBackend") -> None:
         """Populate device metadata using IBMBackend object."""
         # pylint: disable=attribute-defined-outside-init
-        self._id = backend.name
-        self._name = backend.name
+        self._id = device.name
+        self._name = device.name
         self._provider = "IBM"
-        self._device_type = DeviceType("SIMULATOR") if backend.simulator else DeviceType("QPU")
+        self._device_type = DeviceType("SIMULATOR") if device.simulator else DeviceType("QPU")
 
         try:
-            self._num_qubits = backend.num_qubits
+            self._num_qubits = device.num_qubits
         except TranspilerError:
-            if backend.name == "simulator_stabilizer":
+            if device.name == "simulator_stabilizer":
                 self._num_qubits = 5000
-            elif backend.name == "simulator_extended_stabilizer":
+            elif device.name == "simulator_extended_stabilizer":
                 self._num_qubits = 63
             else:
                 self._num_qubits = None

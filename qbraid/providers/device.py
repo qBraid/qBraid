@@ -42,6 +42,7 @@ class QuantumDevice(ABC):
             device (:data:`~.qbraid.QDEVICE`): qBraid Quantum device object
 
         """
+        # pylint: disable=too-many-function-args
         self._device = device
         self._id = None
         self._name = None
@@ -115,7 +116,7 @@ class QuantumDevice(ABC):
         """Return the number of jobs in the queue for the backend"""
 
     @abstractmethod
-    def _populate_metadata(self) -> None:
+    def _populate_metadata(self, device: "qbraid.QDEVICE") -> None:
         """Populate device metadata with the following fields:
         * self._id
         * self._name
@@ -133,8 +134,8 @@ class QuantumDevice(ABC):
             "provider": self._provider,
             "vendor": self._vendor,
             "numQubits": self._num_qubits,
-            "deviceType": self._device_type,
-            "status": self.status(),
+            "deviceType": self._device_type.name,
+            "status": self.status().name,
             "queueDepth": self.queue_depth(),
         }
 
@@ -204,7 +205,7 @@ class QuantumDevice(ABC):
         return self._compile(run_input)
 
     def process_run_input(
-        self, run_input: "qbraid.QPROGRAM", compile: bool = False
+        self, run_input: "qbraid.QPROGRAM", auto_compile: bool = False
     ) -> "qbraid.transpiler.QuantumProgram":
         """Process quantum program before passing to device run method.
 
@@ -217,7 +218,7 @@ class QuantumDevice(ABC):
         """
         self.verify_run(run_input)
         run_input = self.transpile(run_input)
-        if compile:
+        if auto_compile:
             run_input = self._compile(run_input)
         return circuit_wrapper(run_input)
 

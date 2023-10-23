@@ -63,11 +63,6 @@ class QuantumJob(ABC):
     @property
     def device(self) -> "qbraid.providers.QuantumDevice":
         """Returns the qbraid QuantumDevice object associated with this job."""
-        if self._device is None:
-            # pylint: disable=import-outside-toplevel
-            from qbraid.load_provider import device_wrapper
-
-            self._device = device_wrapper(self.id.split(":")[0])
         return self._device
 
     @staticmethod
