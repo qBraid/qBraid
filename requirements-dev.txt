@@ -6,7 +6,7 @@ pytket~=1.21.0
 pytket-braket~=0.30.0
 qiskit~=0.44.2
 qiskit-ibm-provider~=0.7.0
-qiskit-qasm3-import~=0.2.0
+qiskit-qasm3-import~=0.3.0
 
 # visualization
 matplotlib
