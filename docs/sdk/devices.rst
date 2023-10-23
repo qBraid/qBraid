@@ -124,20 +124,15 @@ wrapped device object directly, and more.
 
 .. code-block:: python
 
-    >>> qdevice.info
-    {'numberQubits': 8,
-    'visibility': 'public',
-    'connectivityGraph': [],
-    'qbraid_id': 'aws_oqc_lucy',
+    >>> qdevice.metadata()
+    {'id': 'arn:aws:braket:eu-west-2::device/qpu/oqc/Lucy',
     'name': 'Lucy',
-    'provider': 'OQC',
-    'paradigm': 'gate-based',
-    'type': 'QPU',
-    'architecture': 'superconducting',
-    'location': 'London, England',
+    'provider': 'Oxford',
     'vendor': 'AWS',
-    'runPackage': 'braket',
+    'numQubits': 8,
+    'deviceType': 'QPU',
     'status': 'ONLINE',
+    'queueDepth': 9,
     ...,
     ...}
     >>> type(qdevice._device)
