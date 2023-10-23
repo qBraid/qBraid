@@ -153,17 +153,17 @@ Supported Frontends
    :width: 70%
    :target: PyQuil_
 
-.. |pytket| image:: ../_static/pkg-logos/pytket.png
+.. |pytket| image:: ../_static/pkg-logos/quantinuum.png
    :align: middle
    :width: 70%
    :target: PyTKET_
 
-.. |qasm| image:: ../_static/pkg-logos/qasm.png
+.. |qasm| image:: ../_static/pkg-logos/openqasm.png
    :align: middle
    :width: 70%
    :target: QASM_
 
-.. .. |pennylane| image:: ../_static/pkg-logos/xanadu.png
+.. .. |pennylane| image:: ../_static/pkg-logos/pennylane.png
 ..    :align: middle
 ..    :width: 90%
 ..    :target: Pennylane_
