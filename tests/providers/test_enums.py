@@ -33,7 +33,7 @@ status_data = [
 def test_is_status_final(status_tuple):
     """Test identifying job status objects that are in final state"""
     status_obj, final_expected = status_tuple
-    status_str = status_obj.raw()
+    status_str = status_obj.name
     final_obj = QuantumJob.status_final(status_obj)
     final_str = QuantumJob.status_final(status_str)
     assert final_obj == final_expected
@@ -51,7 +51,7 @@ def test_is_status_final_error(status):
 def test_status_from_raw(status_tuple):
     """Test converting str status representation to JobStatus object."""
     status_obj, _ = status_tuple
-    status_str = status_obj.raw()
+    status_str = status_obj.name
     status_obj_test = QuantumJob._map_status(status_str)
     assert status_obj == status_obj_test
 

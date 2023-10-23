@@ -26,7 +26,7 @@ except ImportError:
 
 from .api import QbraidSession
 from .display_utils import running_in_jupyter, update_progress_bar
-from .wrappers import job_wrapper
+from .load_provider import job_wrapper
 
 
 def _display_jobs_basic(data, msg):
@@ -141,7 +141,7 @@ def get_jobs(filters: Optional[dict] = None):
             try:
                 qbraid_job = job_wrapper(job_id)
                 status_obj = qbraid_job.status()
-                status = status_obj.raw()
+                status = status_obj.name
             except Exception:  # pylint: disable=broad-except
                 pass
         job_data.append([job_id, timestamp, status])

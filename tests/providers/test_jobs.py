@@ -35,7 +35,7 @@ def get_braket_most_busy():
     test_device = None
     max_queued = 0
     for device in qbraid_devices:
-        jobs_queued = device.pending_jobs()
+        jobs_queued = device.queue_depth()
         if jobs_queued is not None and jobs_queued > max_queued:
             max_queued = jobs_queued
             test_device = device

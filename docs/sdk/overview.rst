@@ -135,37 +135,37 @@ Supported Frontends
 
 .. |cirq| image:: ../_static/pkg-logos/cirq.png
    :align: middle
-   :width: 70%
+   :width: 100px
    :target: Cirq_
 
 .. |braket| image:: ../_static/pkg-logos/braket.png
    :align: middle
-   :width: 70%
+   :width: 100px
    :target: Braket_
 
 .. |qiskit| image:: ../_static/pkg-logos/qiskit.png
    :align: middle
-   :width: 70%
+   :width: 100px
    :target: Qiskit_
 
 .. |pyquil| image:: ../_static/pkg-logos/pyquil.png
    :align: middle
-   :width: 70%
+   :width: 100px
    :target: PyQuil_
 
-.. |pytket| image:: ../_static/pkg-logos/pytket.png
+.. |pytket| image:: ../_static/pkg-logos/quantinuum.png
    :align: middle
-   :width: 70%
+   :width: 100px
    :target: PyTKET_
 
 .. |qasm| image:: ../_static/pkg-logos/qasm.png
    :align: middle
-   :width: 70%
+   :width: 100px
    :target: QASM_
 
-.. .. |pennylane| image:: ../_static/pkg-logos/xanadu.png
+.. .. |pennylane| image:: ../_static/pkg-logos/pennylane.png
 ..    :align: middle
-..    :width: 90%
+..    :width: 100px
 ..    :target: Pennylane_
 
 .. _Cirq: https://quantumai.google/cirq

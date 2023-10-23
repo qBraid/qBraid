@@ -134,17 +134,17 @@ def test_device_wrapper_from_qiskit_id():
 def test_device_wrapper_properties():
     device_id = "aws_oqc_lucy"
     wrapper = device_wrapper(device_id)
-    assert wrapper.provider == "OQC"
+    assert wrapper.provider == "Oxford"
     assert wrapper.name == "Lucy"
-    assert str(wrapper) == "AWS OQC Lucy device wrapper"
-    assert repr(wrapper) == "<BraketDevice(OQC:'Lucy')>"
+    assert str(wrapper) == "AWS Oxford Lucy device wrapper"
+    assert repr(wrapper) == "<BraketDevice(Oxford:'Lucy')>"
 
 
-def test_pending_jobs():
+def test_queue_depth():
     aws_device = device_wrapper("aws_sv_sim")
     ibm_device = device_wrapper("ibm_q_qasm_simulator")
-    assert isinstance(aws_device.pending_jobs(), int)
-    assert isinstance(ibm_device.pending_jobs(), int)
+    assert isinstance(aws_device.queue_depth(), int)
+    assert isinstance(ibm_device.queue_depth(), int)
 
 
 def test_wrap_least_busy():
@@ -317,5 +317,5 @@ def test_aws_device_available():
     """Test BraketDeviceWrapper avaliable output identical"""
     device = device_wrapper("aws_dm_sim")
     is_available_bool, is_available_time = device.is_available
-    assert is_available_bool == device._get_device().is_available
+    assert is_available_bool == device._device.is_available
     assert len(is_available_time.split(":")) == 3

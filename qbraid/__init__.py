@@ -63,4 +63,5 @@ from .exceptions import (
 )
 from .get_devices import get_devices, refresh_devices
 from .get_jobs import get_jobs
-from .wrappers import circuit_wrapper, device_wrapper, job_wrapper
+from .load_program import circuit_wrapper
+from .load_provider import device_wrapper, job_wrapper
