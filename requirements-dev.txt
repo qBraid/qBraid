@@ -5,7 +5,7 @@ pyquil~=4.0.3
 pytket~=1.21.0
 pytket-braket~=0.31.0
 qiskit~=0.44.2
-qiskit-ibm-provider~=0.7.1
+qiskit-ibm-provider~=0.7.2
 qiskit-qasm3-import>=0.2.0,<0.4.0
 
 # visualization
