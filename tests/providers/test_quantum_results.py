@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for post-processing of measurement results.
+Unit tests for retrieving and post-processing experimental results.
 
 """
 import os
@@ -49,6 +49,7 @@ REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM/AWS sto
     ],
 )
 def test_format_counts(counts_raw, expected_out, include_zero_values):
+    """Test formatting of raw measurement counts."""
     counts_out = QuantumJobResult.format_counts(counts_raw, include_zero_values=include_zero_values)
     assert counts_out == expected_out  # check equivalance
     assert list(counts_out.items()) == list(expected_out.items())  # check ordering of keys
