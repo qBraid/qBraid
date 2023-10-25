@@ -74,5 +74,5 @@ def test_job_wrapper_type():
     circuit = Circuit().h(0).cnot(0, 1)
     job_0 = device.run(circuit, shots=10)
     job_1 = job_wrapper(job_0.id)
-    assert isinstance(job_0, job_1)
+    assert isinstance(job_0, type(job_1))
     assert job_0.vendor_job_id == job_1.metadata()["vendorJobId"]

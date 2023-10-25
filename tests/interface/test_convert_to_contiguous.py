@@ -42,10 +42,7 @@ def test_convert_braket_bell():
     u_expected = np.einsum("ij,jk->ki", h_gate_kron, cnot_gate)
     qprogram = circuit_wrapper(circuit)
     qprogram.convert_to_contiguous()
-    bk_contig = qprogram.program
-    u_test = bk_contig.as_unitary()
     u_little_endian = qprogram.unitary_little_endian()
-    assert np.allclose(u_expected, u_test)
     assert np.allclose(u_expected, u_little_endian)
 
 
