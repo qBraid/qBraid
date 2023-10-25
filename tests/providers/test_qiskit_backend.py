@@ -16,6 +16,8 @@ import os
 import time
 
 import pytest
+from qiskit.providers import Backend
+from qiskit.providers.fake_provider import FakeManilaV2
 from qiskit_ibm_provider import IBMBackend, IBMJob
 
 from qbraid import device_wrapper
@@ -57,6 +59,16 @@ def test_device_wrapper_ibm_from_api(device_id):
     vendor_device = qbraid_device._device
     assert isinstance(qbraid_device, QiskitBackend)
     assert isinstance(vendor_device, IBMBackend)
+
+
+def test_wrap_fake_provider():
+    """Test wrapping fake Qiskit provider."""
+    backend = FakeManilaV2()
+    backend.simulator = True
+    qbraid_device = QiskitBackend(backend)
+    vendor_device = qbraid_device._device
+    assert isinstance(qbraid_device, QiskitBackend)
+    assert isinstance(vendor_device, Backend)
 
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
