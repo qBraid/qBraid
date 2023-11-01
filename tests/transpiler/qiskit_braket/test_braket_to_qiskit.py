@@ -31,4 +31,7 @@ def test_random_circuit_to_qiskit(num_qubits):
         )
         qiskit_circuit = braket_to_qiskit(braket_circuit)
         qiskit_circuit.remove_final_measurements()
-        assert circuits_allclose(qiskit_circuit, braket_circuit, strict_gphase=False)
+        # try to see if the qubits are inverted in the qiskit circuit
+        assert circuits_allclose(
+            qiskit_circuit, braket_circuit, allow_rev_qubits=True, strict_gphase=False
+        )

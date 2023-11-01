@@ -35,6 +35,8 @@ class QuantumProgram:
         self.program = program
         self._program = program
         self._package = self._determine_package()
+        self._direct_conversion_set = set()
+        self._openqasm_conversion_set = set()
 
     @property
     def package(self) -> str:
@@ -84,6 +86,22 @@ class QuantumProgram:
     @abstractmethod
     def _unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
+
+    @abstractmethod
+    def _set_direct_conversions(self, package: str) -> None:
+        """Set packages for direct conversion"""
+
+    @abstractmethod
+    def _set_openqasm_conversions(self, package: str) -> None:
+        """Set packages for conversion through openqasm"""
+
+    @abstractmethod
+    def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
+        """Convert circuit to package through direct mapping"""
+
+    @abstractmethod
+    def _convert_openqasm_to_package(self, package: str) -> "qbraid.QPROGRAM":
+        """Convert circuit to package via openqasm"""
 
     def unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
@@ -175,8 +193,35 @@ class QuantumProgram:
     def reverse_qubit_order(self) -> None:
         """Rerverse qubit ordering of circuit."""
 
+    def _convert_to_package(self, target: str) -> "qbraid.QPROGRAM":
+        """Convert the circuit into target package either through
+        direct mapping or via openqasm"""
+
+        if target not in self._direct_conversion_set:
+            print(f"Direct conversion to {target} is not supported, falling back to openqasm")
+        else:
+            try:
+                self._convert_direct_to_package(target)
+            except Exception as err:
+                print(
+                    f"Direct conversion failed for {self.package} to {target} with error {err}, falling back to openqasm"
+                )
+
+        if target not in self._openqasm_conversion_set:
+            # need to raise an error here so that in transpile we can catch it
+            raise CircuitConversionError(
+                f"Conversion to {target} through openqasm is not supported"
+            )
+        else:
+            try:
+                self._convert_openqasm_to_package(target)
+            except Exception as err:
+                raise CircuitConversionError(
+                    f"Direct / openqasm conversions are either absent or have failed for {self.package} to {target} with error {err}"
+                ) from err
+
     def transpile(self, conversion_type: str) -> "qbraid.QPROGRAM":
-        r"""Transpile a qbraid quantum program wrapper object to quantum
+        """Transpile a qbraid quantum program wrapper object to quantum
         program object of type specified by ``conversion_type``.
 
         Args:
@@ -191,11 +236,20 @@ class QuantumProgram:
 
         Returns:
             :data:`~qbraid.QPROGRAM`: supported quantum program object
-
         """
+        if self._direct_conversion_set is None:
+            self._set_direct_conversions()
+        if self._openqasm_conversion_set is None:
+            self._set_openqasm_conversions()
+
         if conversion_type == self.package:
             return self._program
         if conversion_type == "pyquil" or conversion_type in QPROGRAM_LIBS:
+            if self.package != "cirq":
+                try:
+                    return self._convert_to_package(conversion_type)
+                except Exception as err:
+                    print(f'Failed conversions with error "{err}", falling back to cirq')
             try:
                 cirq_circuit, _ = convert_to_cirq(self.program)
             except Exception as err:

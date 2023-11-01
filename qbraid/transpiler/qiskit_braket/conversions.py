@@ -17,8 +17,14 @@ from qiskit.circuit import QuantumCircuit as QiskitCircuit
 from qiskit.qasm3 import dumps, loads
 
 from qbraid.interface.qbraid_braket.qasm import braket_from_qasm3, braket_to_qasm3
-from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
+
+
+qasm3_header_path = "qbraid/interface/qbraid_qasm3/stdgates.qasm"
+qasm3_header = open(qasm3_header_path, "r").read()
+
+gates_defs_path = "qbraid/transpiler/qiskit_braket/gate_defs.qasm"
+gate_defs = open(gates_defs_path, "r").read()
 
 
 def braket_to_qiskit(circuit: BraketCircuit) -> QiskitCircuit:
@@ -31,17 +37,17 @@ def braket_to_qiskit(circuit: BraketCircuit) -> QiskitCircuit:
     """
     try:
         qasm3_str = braket_to_qasm3(circuit)
-        if "stdgates.inc" not in qasm3_str:
-            qasm3_str = qasm3_str.replace(
-                "OPENQASM 3.0;\n", 'OPENQASM 3.0;\ninclude "stdgates.inc";\n'
-            )
+        qasm3_str = qasm3_str.replace('include "stdgates.inc";\n', "")
+        qasm3_str = qasm3_str.replace(
+            "OPENQASM 3.0;", f"OPENQASM 3.0;\n{qasm3_header}\n{gate_defs}"
+        )
+
         return loads(qasm3_str)
     except CircuitConversionError as err:
         # pylint: disable=broad-exception-caught
         print("Couldn't convert to Qiskit circuit using Braket's qasm3 converter.")
         print("Exception: ", err)
         print("Fallback to Cirq converter...")
-        return convert_from_cirq(convert_to_cirq(circuit)[0], "qiskit")
 
 
 def qiskit_to_braket(circuit: QiskitCircuit) -> BraketCircuit:
@@ -54,14 +60,12 @@ def qiskit_to_braket(circuit: QiskitCircuit) -> BraketCircuit:
     """
     try:
         qasm3_str = dumps(circuit)
-        if "stdgates.inc" not in qasm3_str:
-            qasm3_str = qasm3_str.replace(
-                "OPENQASM 3.0;\n", 'OPENQASM 3.0;\ninclude "stdgates.inc";\n'
-            )
+        qasm3_str = qasm3_str.replace('include "stdgates.inc";\n', "")
+        qasm3_str = qasm3_str.replace("OPENQASM 3;", f"OPENQASM 3.0;\n{qasm3_header}\n{gate_defs}")
+        print(qasm3_str)
         return braket_from_qasm3(qasm3_str)
     except CircuitConversionError as err:
         # pylint: disable=broad-exception-caught
         print("Couldn't convert to Braket circuit using Qiskit's QASM3 converter.")
         print("Exception: ", err)
         print("Fallback to Cirq converter...")
-        return convert_from_cirq(convert_to_cirq(circuit)[0], "braket")

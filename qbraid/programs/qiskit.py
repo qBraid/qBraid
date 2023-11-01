@@ -22,6 +22,7 @@ from qiskit.converters import circuit_to_dag, dag_to_circuit
 from qiskit.quantum_info import Operator
 
 from qbraid.programs.abc_program import QuantumProgram
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 if TYPE_CHECKING:
     import numpy as np
@@ -64,6 +65,12 @@ class QiskitCircuit(QuantumProgram):
         """Calculate unitary of circuit."""
         return Operator(self.program).data
 
+    def _set_direct_conversions(self) -> None:
+        self._direct_conversion_set = {}
+
+    def _set_openqasm_conversions(self) -> None:
+        self._openqasm_conversion_set = {}
+
     def _contiguous_expansion(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, adds identity gates to vacant registers as needed."""
@@ -98,3 +105,15 @@ class QiskitCircuit(QuantumProgram):
             reversed_circuit.append(inst, reversed_qargs)
 
         self._program = reversed_circuit
+
+    def _convert_direct_to_package(self, target: str) -> "qbraid.QPROGRAM":
+        """Convert the circuit into target package via direct mapping"""
+        pass
+
+    def _convert_openqasm_to_package(self, target: str) -> "qbraid.QPROGRAM":
+        """Convert the circuit into target package via openqasm"""
+        # if target == "braket":
+        #     from qbraid.transpiler.qiskit_braket.conversions import qiskit_to_braket
+
+        #     return qiskit_to_braket(self.program)
+        pass

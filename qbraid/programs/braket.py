@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, List
 from braket.circuits import Circuit, Instruction, Qubit
 
 from qbraid.programs.abc_program import QuantumProgram
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 if TYPE_CHECKING:
     import numpy as np
@@ -54,6 +55,12 @@ class BraketCircuit(QuantumProgram):
     def depth(self) -> int:
         """Return the circuit depth (i.e., length of critical path)."""
         return self.program.depth
+
+    def _set_direct_conversions(self) -> None:
+        self._direct_conversion_set = {}
+
+    def _set_openqasm_conversions(self) -> None:
+        self._openqasm_conversion_set = {}
 
     def _unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
@@ -123,3 +130,10 @@ class BraketCircuit(QuantumProgram):
             )
             contig_circuit.add_instruction(contig_instr)
         self._program = contig_circuit
+
+    def _convert_direct_to_package(self, target: str) -> "qbraid.QPROGRAM":
+        """Convert the circuit into target package via direct mapping"""
+        pass
+
+    def _convert_openqasm_to_package(self, target: str) -> "qbraid.QPROGRAM":
+        pass
