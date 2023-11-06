@@ -30,3 +30,8 @@ qbraid.transpiler
    :members:
    :undoc-members:
    :show-inheritance:
+
+.. automodule:: qbraid.transpiler.braket_qasm3
+   :members:
+   :undoc-members:
+   :show-inheritance:
