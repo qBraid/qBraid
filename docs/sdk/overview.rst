@@ -127,11 +127,10 @@ Supported Frontends
 ^^^^^^^^^^^^^^^^^^^^
 
 +-------------+-------------+------------+-------------+-------------+-------------+
-|  Cirq_      |  Braket_    |  Qiskit_   |  PyQuil_    |  PyTKET_    |  QASM_      |
+|  Cirq_      |  Braket_    |  Qiskit_   |  PyQuil_    |  PyTKET_    |  OpenQASM_  |
 +=============+=============+============+=============+=============+=============+
 | |cirq|      | |braket|    | |qiskit|   | |pyquil|    | |pytket|    | |qasm|      |
 +-------------+-------------+------------+-------------+-------------+-------------+
-
 
 .. |cirq| image:: ../_static/pkg-logos/cirq.png
    :align: middle
@@ -161,17 +160,23 @@ Supported Frontends
 .. |qasm| image:: ../_static/pkg-logos/qasm.png
    :align: middle
    :width: 100px
-   :target: QASM_
+   :target: OpenQASM_
 
-.. .. |pennylane| image:: ../_static/pkg-logos/pennylane.png
-..    :align: middle
-..    :width: 100px
-..    :target: Pennylane_
+.. |pennylane| image:: ../_static/pkg-logos/pennylane.png
+   :align: middle
+   :width: 100px
+   :target: Pennylane_
+
+.. |qir| image:: ../_static/pkg-logos/qir.png
+   :align: middle
+   :width: 100px
+   :target: PyQIR_
 
 .. _Cirq: https://quantumai.google/cirq
 .. _Braket: https://aws.amazon.com/braket
 .. _Qiskit: https://qiskit.org
 .. _PyQuil: https://www.rigetti.com/applications/pyquil
 .. _PyTKET: https://cqcl.github.io/tket/pytket/api/
-.. _QASM: https://openqasm.com/
+.. _OpenQASM: https://openqasm.com/
 .. _Pennylane: https://pennylane.ai
+.. _PyQIR: https://www.qir-alliance.org/pyqir/
