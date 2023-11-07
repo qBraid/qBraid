@@ -149,27 +149,24 @@ class CirqCircuit(QuantumProgram):
     def _contiguous_compression(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
-        qubit_map = {}
-        circuit_qubits = self.qubits.copy()
-        circuit_qubits.sort()
-        for index, qubit in enumerate(circuit_qubits):
-            qubit_map[self._int_from_qubit(qubit)] = index
-        contig_circuit = cirq.Circuit()
-        for opr in self.program.all_operations():
-            contig_indicies = [qubit_map[self._int_from_qubit(qubit)] for qubit in opr.qubits]
-            contig_qubits = self._make_qubits(circuit_qubits[0], contig_indicies)
-            contig_circuit.append(opr.gate.on(*contig_qubits))
-        self._program = contig_circuit
+        original_qubits = sorted(self.program.all_qubits(), key=self._int_from_qubit)
+        qubit_map = {
+            q: new_q
+            for q, new_q in zip(
+                original_qubits, self._make_qubits(original_qubits[0], range(len(original_qubits)))
+            )
+        }
+        self._program = self.program.transform_qubits(lambda q: qubit_map[q])
 
     def reverse_qubit_order(self) -> None:
         """Rerverse qubit ordering of circuit."""
-        qubits = self.qubits.copy()
-        qubits.sort()
-        qubits = list(reversed(qubits))
-        qubit_map = {self._key_from_qubit(q): i for i, q in enumerate(qubits)}
-        rev_qubit_circuit = cirq.Circuit()
-        for opr in self.program.all_operations():
-            qubit_indicies = [qubit_map[self._key_from_qubit(q)] for q in opr.qubits]
-            line_qubits = [cirq.LineQubit(i) for i in qubit_indicies]
-            rev_qubit_circuit.append(opr.gate.on(*line_qubits))
-        self._program = rev_qubit_circuit
+        original_qubits = sorted(self.program.all_qubits(), key=self._int_from_qubit)
+        max_index = max(self._int_from_qubit(q) for q in original_qubits)
+        qubit_map = {
+            q: new_q
+            for q, new_q in zip(
+                original_qubits,
+                self._make_qubits(original_qubits[0], reversed(range(max_index + 1))),
+            )
+        }
+        self._program = self.program.transform_qubits(lambda q: qubit_map[q])
