@@ -93,16 +93,22 @@ class CirqCircuit(QuantumProgram):
         return index
 
     @staticmethod
-    def _make_qubits(qubit: cirq.Qid, targets: List[int]) -> List[cirq.Qid]:
-        if isinstance(qubit, cirq.LineQubit):
+    def _make_qubits(qubits: List[cirq.Qid], targets: List[int]) -> List[cirq.Qid]:
+        if len(set(type(qubit) for qubit in qubits)) > 1:
+            # If mixed types, default to LineQubits
+            qubit_type = cirq.LineQubit
+        else:
+            qubit_type = type(qubits[0])
+
+        if qubit_type == cirq.LineQubit:
             return [cirq.LineQubit(i) for i in targets]
-        if isinstance(qubit, cirq.GridQubit):
-            return [cirq.GridQubit(i, qubit.col) for i in targets]
-        if isinstance(qubit, cirq.NamedQubit):
+        if qubit_type == cirq.GridQubit:
+            return [cirq.GridQubit(0, i) for i in targets]
+        if qubit_type == cirq.NamedQubit:
             return [cirq.NamedQubit(str(i)) for i in targets]
         raise ValueError(
             "Expected qubits of type 'GridQubit', 'LineQubit', or "
-            f"'NamedQubit' but instead got {type(qubit)}"
+            f"'NamedQubit' but instead got {qubit_type}"
         )
 
     def _convert_to_line_qubits(self) -> None:
@@ -140,7 +146,7 @@ class CirqCircuit(QuantumProgram):
         if qubit_count > nqubits:
             all_qubits = list(range(0, qubit_count))
             vacant_qubits = list(set(all_qubits) - set(occupied_qubits))
-            cirq_qubits = self._make_qubits(cirq_qubits[0], vacant_qubits)
+            cirq_qubits = self._make_qubits(cirq_qubits, vacant_qubits)
             for qubit in cirq_qubits:
                 circuit.append(cirq.I(qubit))
         self._program = circuit
@@ -150,23 +156,16 @@ class CirqCircuit(QuantumProgram):
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
         original_qubits = sorted(self.program.all_qubits(), key=self._int_from_qubit)
-        qubit_map = {
-            q: new_q
-            for q, new_q in zip(
-                original_qubits, self._make_qubits(original_qubits[0], range(len(original_qubits)))
-            )
-        }
+        qubit_map = dict(
+            zip(original_qubits, self._make_qubits(original_qubits, range(len(original_qubits))))
+        )
         self._program = self.program.transform_qubits(lambda q: qubit_map[q])
 
     def reverse_qubit_order(self) -> None:
         """Rerverse qubit ordering of circuit."""
         original_qubits = sorted(self.program.all_qubits(), key=self._int_from_qubit)
         max_index = max(self._int_from_qubit(q) for q in original_qubits)
-        qubit_map = {
-            q: new_q
-            for q, new_q in zip(
-                original_qubits,
-                self._make_qubits(original_qubits[0], reversed(range(max_index + 1))),
-            )
-        }
+        qubit_map = dict(
+            zip(original_qubits, self._make_qubits(original_qubits, reversed(range(max_index + 1))))
+        )
         self._program = self.program.transform_qubits(lambda q: qubit_map[q])
