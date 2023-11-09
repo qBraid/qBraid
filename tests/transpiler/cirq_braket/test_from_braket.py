@@ -265,11 +265,11 @@ def _rotation_of_pi_over_7(num_qubits):
 def test_from_braket_raises_on_unsupported_gates():
     """Test that converting circuit with unsupported gate raises error"""
     for num_qubits in range(1, 5):
-        braket_circuit = BKCircuit()
+        braket_unitary_circuit = BKCircuit()
         instr = Instruction(
             braket_gates.Unitary(_rotation_of_pi_over_7(num_qubits)),
             target=list(range(num_qubits)),
         )
-        braket_circuit.add_instruction(instr)
-        with pytest.raises(CircuitConversionError):
-            from_braket(braket_circuit)
+        braket_unitary_circuit.add_instruction(instr)
+    with pytest.raises(CircuitConversionError):
+        from_braket(braket_unitary_circuit)
