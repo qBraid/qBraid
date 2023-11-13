@@ -80,6 +80,15 @@ class OpenQasm3Program(QuantumProgram):
 
         return loads(self.program).depth()
 
+    def _set_direct_conversions(self) -> None:
+        self._direct_conversion_set = {}
+
+    def _set_openqasm_conversions(self) -> None:
+        self._openqasm_conversion_set = {}
+
+    def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
+        """Convert the circuit into target package via direct mapping"""
+
     def _unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
         # pylint: disable=import-outside-toplevel

@@ -22,7 +22,6 @@ from qiskit.converters import circuit_to_dag, dag_to_circuit
 from qiskit.quantum_info import Operator
 
 from qbraid.programs.abc_program import QuantumProgram
-from qbraid.transpiler.exceptions import CircuitConversionError
 
 if TYPE_CHECKING:
     import numpy as np
@@ -106,14 +105,6 @@ class QiskitCircuit(QuantumProgram):
 
         self._program = reversed_circuit
 
-    def _convert_direct_to_package(self, target: str) -> "qbraid.QPROGRAM":
+    def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
         """Convert the circuit into target package via direct mapping"""
-        pass
-
-    def _convert_openqasm_to_package(self, target: str) -> "qbraid.QPROGRAM":
-        """Convert the circuit into target package via openqasm"""
-        # if target == "braket":
-        #     from qbraid.transpiler.qiskit_braket.conversions import qiskit_to_braket
-
-        #     return qiskit_to_braket(self.program)
-        pass
+        

@@ -19,7 +19,6 @@ from qiskit.qasm3 import dumps, loads
 from qbraid.interface.qbraid_braket.qasm import braket_from_qasm3, braket_to_qasm3
 from qbraid.transpiler.exceptions import CircuitConversionError
 
-
 qasm3_header_path = "qbraid/interface/qbraid_qasm3/stdgates.qasm"
 qasm3_header = open(qasm3_header_path, "r").read()
 

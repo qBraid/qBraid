@@ -13,6 +13,7 @@ Module defining QuantumProgram Class
 
 """
 from abc import abstractmethod
+from importlib import import_module
 from typing import TYPE_CHECKING, Any, List, Optional
 
 import numpy as np
@@ -27,6 +28,10 @@ from qbraid.transpiler.exceptions import CircuitConversionError
 if TYPE_CHECKING:
     import qbraid
 
+transpiler_openqasm_modules = {
+    "qiskit" : import_module("qbraid.transpiler.openqasm.qiskit"),
+    "braket" : import_module("qbraid.transpiler.openqasm.braket")
+}
 
 class QuantumProgram:
     """Abstract class for qbraid program wrapper objects."""
@@ -37,6 +42,13 @@ class QuantumProgram:
         self._package = self._determine_package()
         self._direct_conversion_set = set()
         self._openqasm_conversion_set = set()
+
+        self._openqasm3_transformers = {
+            package : {
+                "from": getattr(transpiler_openqasm_modules[package], f'{package}_from_qasm3'),
+                "to": getattr(transpiler_openqasm_modules[package], f'{package}_to_qasm3')
+            }  for package in ["qiskit", "braket"]
+        }
 
     @property
     def package(self) -> str:
@@ -88,20 +100,41 @@ class QuantumProgram:
         """Calculate unitary of circuit."""
 
     @abstractmethod
-    def _set_direct_conversions(self, package: str) -> None:
+    def _set_direct_conversions(self) -> None:
         """Set packages for direct conversion"""
 
     @abstractmethod
-    def _set_openqasm_conversions(self, package: str) -> None:
+    def _set_openqasm_conversions(self) -> None:
         """Set packages for conversion through openqasm"""
 
     @abstractmethod
     def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
         """Convert circuit to package through direct mapping"""
 
-    @abstractmethod
-    def _convert_openqasm_to_package(self, package: str) -> "qbraid.QPROGRAM":
-        """Convert circuit to package via openqasm"""
+    def _get_openqasm_transformer(self, package: str, version: int, conversion_type: str):
+        """Get openqasm transformer for given package and conversion type
+        """
+        if version != 3:
+            raise ValueError(f"Version {version} of OpenQASM is not supported")
+        if conversion_type not in {"to", "from"}:
+            raise ValueError(f"Invalid conversion type {conversion_type} supplied")
+        return self._openqasm3_transformers[package][conversion_type]
+
+    def _convert_openqasm_to_package(self, target: str) -> "qbraid.QPROGRAM":
+        """Convert the circuit into target package via openqasm"""
+        openqasm_converter = self._get_openqasm_transformer(self.package, 3, "to")
+        try:
+            qasm_str = openqasm_converter(self.program)
+        except Exception as e:
+            raise CircuitConversionError(f"Error converting {self.package} circ to QASM 3") from e
+
+        target_converter = self._get_openqasm_transformer(target, 3, "from")
+        try:
+            return target_converter(qasm_str)
+        except Exception as e:
+            raise CircuitConversionError(
+                f"Error converting {self.package} circuit to {target} circuit via openqasm3"
+            ) from e
 
     def unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
@@ -204,21 +237,21 @@ class QuantumProgram:
                 self._convert_direct_to_package(target)
             except Exception as err:
                 print(
-                    f"Direct conversion failed for {self.package} to {target} with error {err}, falling back to openqasm"
+                    f"""Direct conversion failed for {self.package} to {target}, 
+                    error {err}, trying openqasm"""
                 )
-
         if target not in self._openqasm_conversion_set:
             # need to raise an error here so that in transpile we can catch it
             raise CircuitConversionError(
                 f"Conversion to {target} through openqasm is not supported"
             )
-        else:
-            try:
-                self._convert_openqasm_to_package(target)
-            except Exception as err:
-                raise CircuitConversionError(
-                    f"Direct / openqasm conversions are either absent or have failed for {self.package} to {target} with error {err}"
-                ) from err
+        try:
+            self._convert_openqasm_to_package(target)
+        except Exception as err:
+            raise CircuitConversionError(
+                f"""Direct / openqasm conversions are either absent or have \
+                  failed for {self.package} to {target} with error {err}"""
+            ) from err
 
     def transpile(self, conversion_type: str) -> "qbraid.QPROGRAM":
         """Transpile a qbraid quantum program wrapper object to quantum
