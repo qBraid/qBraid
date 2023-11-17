@@ -10,28 +10,29 @@
 
 """
 Unit tests for conversions between BraKet circuits and Qiskit circuits
-using openqasm3
+using OpenQASM 3.
 
 """
-# import numpy as np
-# import pytest
+import numpy as np
+import pytest
 
-# from qbraid.interface import circuits_allclose
-# from qbraid.interface.random_circuit import random_circuit
-# from qbraid.transpiler.qiskit_braket.conversions import braket_to_qiskit
+from qbraid.interface import circuits_allclose
+from qbraid.interface.random_circuit import random_circuit
+from qbraid.transpiler.qiskit_braket.conversions import braket_to_qiskit
 
-# @pytest.mark.skip("This test is not ")
-# @pytest.mark.parametrize("num_qubits", [1, 2, 3, 4, 5])
-# def test_random_circuit_to_qiskit(num_qubits):
-#     for _ in range(10):
-#         braket_circuit = random_circuit(
-#             "braket",
-#             num_qubits=num_qubits,
-#             depth=np.random.randint(5, 15),
-#         )
-#         qiskit_circuit = braket_to_qiskit(braket_circuit)
-#         qiskit_circuit.remove_final_measurements()
-#         # try to see if the qubits are inverted in the qiskit circuit
-#         assert circuits_allclose(
-#             qiskit_circuit, braket_circuit, allow_rev_qubits=True, strict_gphase=False
-#         )
+
+@pytest.mark.skip("Feature stil in development")
+@pytest.mark.parametrize("num_qubits", [1, 2, 3, 4, 5])
+def test_random_circuit_to_qiskit(num_qubits):
+    for _ in range(10):
+        braket_circuit = random_circuit(
+            "braket",
+            num_qubits=num_qubits,
+            depth=np.random.randint(5, 15),
+        )
+        qiskit_circuit = braket_to_qiskit(braket_circuit)
+        qiskit_circuit.remove_final_measurements()
+        # try to see if the qubits are inverted in the qiskit circuit
+        assert circuits_allclose(
+            qiskit_circuit, braket_circuit, allow_rev_qubits=True, strict_gphase=False
+        )

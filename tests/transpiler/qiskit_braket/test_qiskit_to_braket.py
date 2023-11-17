@@ -10,25 +10,26 @@
 
 """
 Unit tests for conversions between Qiskit circuits and Braket circuits
-using openqasm3
+using OpenQASM 3.
 
 """
 
-# import numpy as np
-# import pytest
+import numpy as np
+import pytest
 
-# from qbraid.interface import circuits_allclose
-# from qbraid.interface.random_circuit import random_circuit
-# from qbraid.transpiler.qiskit_braket.conversions import qiskit_to_braket
+from qbraid.interface import circuits_allclose
+from qbraid.interface.random_circuit import random_circuit
+from qbraid.transpiler.qiskit_braket.conversions import qiskit_to_braket
 
 
-# @pytest.mark.parametrize("num_qubits", [1, 2, 3, 4, 5])
-# def test_random_circuit_to_braket(num_qubits):
-#     for _ in range(10):
-#         qiskit_circuit = random_circuit(
-#             "qiskit",
-#             num_qubits=num_qubits,
-#             depth=np.random.randint(5, 15),
-#         )
-#         braket_circuit = qiskit_to_braket(qiskit_circuit)
-#         assert circuits_allclose(braket_circuit, qiskit_circuit, strict_gphase=False)
+@pytest.mark.skip("Feature stil in development")
+@pytest.mark.parametrize("num_qubits", [1, 2, 3, 4, 5])
+def test_random_circuit_to_braket(num_qubits):
+    for _ in range(10):
+        qiskit_circuit = random_circuit(
+            "qiskit",
+            num_qubits=num_qubits,
+            depth=np.random.randint(5, 15),
+        )
+        braket_circuit = qiskit_to_braket(qiskit_circuit)
+        assert circuits_allclose(braket_circuit, qiskit_circuit, strict_gphase=False)
