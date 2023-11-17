@@ -8,9 +8,11 @@
 Add an `x` between the boxes braket that apply, meaning to complete the check before any merge happen, feel free to ask help if you are unsure about anything.
 
 ### General 
-- [ ] I have read the CONTRIBUTING doc.
+- [ ] I have read `CONTRIBUTING.md`.
 
-- [ ] ALL new features must include unit test to the test directory, codecov will check for any missing test code exist.
+- [ ] All new code includes corresponding unit tests and satisfies codecov.
 
-- [ ] Ensure that all the test passes.
+- [ ] API Reference docstrings and/or User Guide have been updated to account for new features.
+
+- [ ] All integration tests, including remote tests, are passing.
 

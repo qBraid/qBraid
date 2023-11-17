@@ -1,12 +1,28 @@
 <img width=full alt="qbraid-sdk-header" src="https://user-images.githubusercontent.com/46977852/224456452-605e51f2-193d-4789-863e-e51cdd4b0a54.png">
 
-[![CI](https://github.com/qBraid/qBraid/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/qBraid/qBraid/actions/workflows/main.yml)
-[![codecov](https://codecov.io/gh/qBraid/qBraid/branch/main/graph/badge.svg?token=1UTM0XZB7A)](https://codecov.io/gh/qBraid/qBraid)
-[![Documentation Status](https://readthedocs.com/projects/qbraid-qbraid/badge/?version=latest)](https://docs.qbraid.com/en/latest/?badge=latest)
-[![PyPI version](https://img.shields.io/pypi/v/qbraid.svg?color=blue)](https://pypi.org/project/qbraid/)
-[![Downloads](https://img.shields.io/pypi/dm/qbraid.svg?color=blue)](https://pypi.org/project/qbraid/)
-[![License](https://img.shields.io/github/license/qBraid/qbraid.svg)](https://www.gnu.org/licenses/gpl-3.0.html)
-[![Discord](https://img.shields.io/discord/771898982564626445.svg?color=pink)](https://discord.gg/TPBU2sa8Et)
+<p align="center">
+  <a href="https://github.com/qBraid/qBraid/actions/workflows/main.yml">
+    <img src="https://github.com/qBraid/qBraid/actions/workflows/main.yml/badge.svg?branch=main" alt="CI"/>
+  </a>
+  <a href="https://codecov.io/gh/qBraid/qBraid">
+    <img src="https://codecov.io/gh/qBraid/qBraid/branch/main/graph/badge.svg?token=1UTM0XZB7A" alt="codecov"/>
+  </a>
+  <a href="https://docs.qbraid.com/en/latest/?badge=latest">
+    <img src="https://readthedocs.com/projects/qbraid-qbraid/badge/?version=latest" alt="Documentation Status"/>
+  </a>
+  <a href="https://pypi.org/project/qbraid/">
+    <img src="https://img.shields.io/pypi/v/qbraid.svg?color=blue" alt="PyPI version"/>
+  </a>
+  <a href="https://pypi.org/project/qbraid/">
+    <img src="https://img.shields.io/pypi/dm/qbraid.svg?color=blue" alt="Downloads"/>
+  </a>
+  <a href="https://www.gnu.org/licenses/gpl-3.0.html">
+    <img src="https://img.shields.io/github/license/qBraid/qbraid.svg" alt="License"/>
+  </a>
+  <a href="https://discord.gg/TPBU2sa8Et">
+    <img src="https://img.shields.io/discord/771898982564626445.svg?color=pink" alt="Discord"/>
+  </a>
+</p>
 
 The qBraid-SDK is a Python toolkit for cross-framework abstraction,
 transpilation, and execution of quantum programs.
@@ -47,11 +63,32 @@ The qBraid-SDK, and all of its dependencies, can also be installed using pip:
 pip install qbraid
 ```
 
+You can also [install from source](CONTRIBUTING.md#installing-from-source) by cloning this repository and running a pip install command in the root directory of the repository:
+
+```bash
+git clone https://github.com/qBraid/qBraid.git
+cd qBraid
+pip install -e '.[all]'
+```
+
+*Note*: The qBraid-SDK requires Python 3.10 or greater.
+
 If using locally, follow linked instructions to configure your
 [qBraid](#local-account-setup),
 [AWS](https://github.com/aws/amazon-braket-sdk-python#boto3-and-setting-up-aws-credentials),
 and [IBMQ](https://github.com/Qiskit/qiskit-ibm-provider#provider-setup)
 credentials.
+
+### Check version
+
+You can view the version of the qBraid-SDK you have installed within Python using the following:
+
+```python
+In [1]: import qbraid
+
+In [2]: qbraid.__version__
+```
+
 
 ## Documentation & Tutorials
 

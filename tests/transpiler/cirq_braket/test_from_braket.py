@@ -222,6 +222,16 @@ def test_depolarizing_channel_gate():
     assert Gate.n_qubits == 2
 
 
+def test_convert_ionq_gates():
+    """Test converting IonQ GPi, GPi2, and MS (Mølmer-Sørenson) gates."""
+    bk_circuit = BKCircuit()
+    bk_circuit.gpi(0, np.pi)
+    bk_circuit.gpi2(1, np.pi / 3)
+    bk_circuit.ms(0, 1, np.pi / 4, np.pi / 2, 3 * np.pi / 4)
+    cirq_circuit = from_braket(bk_circuit)
+    assert circuits_allclose(bk_circuit, cirq_circuit, strict_gphase=True)
+
+
 def test_raise_error():
     """Test raising error when converting unsupported Pulse sequences"""
     with pytest.raises(CircuitConversionError):
@@ -243,11 +253,23 @@ def test_raise_error():
         from_braket(test_case)
 
 
-def test_convert_ionq_gates():
-    """Test converting IonQ GPi, GPi2, and MS (Mølmer-Sørenson) gates."""
-    bk_circuit = BKCircuit()
-    bk_circuit.gpi(0, np.pi)
-    bk_circuit.gpi2(1, np.pi / 3)
-    bk_circuit.ms(0, 1, np.pi / 4, np.pi / 2, 3 * np.pi / 4)
-    cirq_circuit = from_braket(bk_circuit)
-    assert circuits_allclose(bk_circuit, cirq_circuit, strict_gphase=True)
+def _rotation_of_pi_over_7(num_qubits):
+    matrix = np.identity(2**num_qubits)
+    matrix[0:2, 0:2] = [
+        [np.cos(np.pi / 7), np.sin(np.pi / 7)],
+        [-np.sin(np.pi / 7), np.cos(np.pi / 7)],
+    ]
+    return matrix
+
+
+def test_from_braket_raises_on_unsupported_gates():
+    """Test that converting circuit with unsupported gate raises error"""
+    for num_qubits in range(1, 5):
+        braket_unitary_circuit = BKCircuit()
+        instr = Instruction(
+            braket_gates.Unitary(_rotation_of_pi_over_7(num_qubits)),
+            target=list(range(num_qubits)),
+        )
+        braket_unitary_circuit.add_instruction(instr)
+    with pytest.raises(CircuitConversionError):
+        from_braket(braket_unitary_circuit)
