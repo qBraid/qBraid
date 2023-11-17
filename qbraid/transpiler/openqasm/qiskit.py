@@ -19,17 +19,17 @@ def qiskit_from_qasm2(qasm_str: str):
     """Convert QASM 2.0 string to qiskit QuantumCircuit repr"""
     return QuantumCircuit.from_qasm_str(qasm_str)
 
+
 def qiskit_to_qasm2(circuit: QuantumCircuit):
-    """Convert qiskit QuantumCircuit to QASM 2.0 string
-    """
+    """Convert qiskit QuantumCircuit to QASM 2.0 string"""
     return circuit.qasm()
 
+
 def qiskit_from_qasm3(qasm_str: str):
-    """Convert QASM 3.0 string to qiskit QuantumCircuit repr
-    """
+    """Convert QASM 3.0 string to qiskit QuantumCircuit repr"""
     return loads(qasm_str)
 
+
 def qiskit_to_qasm3(circuit: QuantumCircuit):
-    """Convert qiskit QuantumCircuit to QASM 3.0 string
-    """
+    """Convert qiskit QuantumCircuit to QASM 3.0 string"""
     return dumps(circuit)

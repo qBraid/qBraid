@@ -12,6 +12,7 @@
 Module defining QuantumProgram Class
 
 """
+import warnings
 from abc import abstractmethod
 from importlib import import_module
 from typing import TYPE_CHECKING, Any, List, Optional
@@ -29,9 +30,10 @@ if TYPE_CHECKING:
     import qbraid
 
 transpiler_openqasm_modules = {
-    "qiskit" : import_module("qbraid.transpiler.openqasm.qiskit"),
-    "braket" : import_module("qbraid.transpiler.openqasm.braket")
+    "qiskit": import_module("qbraid.transpiler.openqasm.qiskit"),
+    "braket": import_module("qbraid.transpiler.openqasm.braket"),
 }
+
 
 class QuantumProgram:
     """Abstract class for qbraid program wrapper objects."""
@@ -44,10 +46,11 @@ class QuantumProgram:
         self._openqasm_conversion_set = set()
 
         self._openqasm3_transformers = {
-            package : {
-                "from": getattr(transpiler_openqasm_modules[package], f'{package}_from_qasm3'),
-                "to": getattr(transpiler_openqasm_modules[package], f'{package}_to_qasm3')
-            }  for package in ["qiskit", "braket"]
+            package: {
+                "from": getattr(transpiler_openqasm_modules[package], f"{package}_from_qasm3"),
+                "to": getattr(transpiler_openqasm_modules[package], f"{package}_to_qasm3"),
+            }
+            for package in ["qiskit", "braket"]
         }
 
     @property
@@ -112,8 +115,7 @@ class QuantumProgram:
         """Convert circuit to package through direct mapping"""
 
     def _get_openqasm_transformer(self, package: str, version: int, conversion_type: str):
-        """Get openqasm transformer for given package and conversion type
-        """
+        """Get openqasm transformer for given package and conversion type"""
         if version != 3:
             raise ValueError(f"Version {version} of OpenQASM is not supported")
         if conversion_type not in {"to", "from"}:
@@ -231,12 +233,14 @@ class QuantumProgram:
         direct mapping or via openqasm"""
 
         if target not in self._direct_conversion_set:
-            print(f"Direct conversion to {target} is not supported, falling back to openqasm")
+            warnings.warn(
+                f"Direct conversion to {target} is not supported, falling back to openqasm"
+            )
         else:
             try:
                 self._convert_direct_to_package(target)
-            except Exception as err:
-                print(
+            except Exception as err:  # pylint: disable=broad-exception-caught
+                warnings.warn(
                     f"""Direct conversion failed for {self.package} to {target}, 
                     error {err}, trying openqasm"""
                 )
@@ -281,8 +285,8 @@ class QuantumProgram:
             if self.package != "cirq":
                 try:
                     return self._convert_to_package(conversion_type)
-                except Exception as err:
-                    print(f'Failed conversions with error "{err}", falling back to cirq')
+                except Exception as err:  # pylint: disable=broad-exception-caught
+                    warnings.warn(f'Failed conversions with error "{err}", falling back to cirq')
             try:
                 cirq_circuit, _ = convert_to_cirq(self.program)
             except Exception as err:

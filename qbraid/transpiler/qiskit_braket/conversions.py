@@ -12,6 +12,8 @@
 Module containing functions to convert between Qiskit's circuit
 representation and Braket's circuit representation via OpenQASM 3.0.
 """
+import warnings
+
 from braket.circuits import Circuit as BraketCircuit
 from qiskit.circuit import QuantumCircuit as QiskitCircuit
 from qiskit.qasm3 import dumps, loads
@@ -20,10 +22,12 @@ from qbraid.interface.qbraid_braket.qasm import braket_from_qasm3, braket_to_qas
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 qasm3_header_path = "qbraid/interface/qbraid_qasm3/stdgates.qasm"
-qasm3_header = open(qasm3_header_path, "r").read()
+with open(qasm3_header_path, "r", encoding="utf-8") as file:
+    qasm3_header = file.read()
 
 gates_defs_path = "qbraid/transpiler/qiskit_braket/gate_defs.qasm"
-gate_defs = open(gates_defs_path, "r").read()
+with open(gates_defs_path, "r", encoding="utf-8") as file:
+    gate_defs = file.read()
 
 
 def braket_to_qiskit(circuit: BraketCircuit) -> QiskitCircuit:
@@ -43,10 +47,13 @@ def braket_to_qiskit(circuit: BraketCircuit) -> QiskitCircuit:
 
         return loads(qasm3_str)
     except CircuitConversionError as err:
-        # pylint: disable=broad-exception-caught
-        print("Couldn't convert to Qiskit circuit using Braket's qasm3 converter.")
-        print("Exception: ", err)
-        print("Fallback to Cirq converter...")
+        message = (
+            "Couldn't convert to Qiskit circuit using Braket's native OpenQASM 3 converter.\n"
+            f"Exception: {err}\n"
+            "Fallback to Cirq converter..."
+        )
+        warnings.warn(message)
+        return None
 
 
 def qiskit_to_braket(circuit: QiskitCircuit) -> BraketCircuit:
@@ -61,10 +68,12 @@ def qiskit_to_braket(circuit: QiskitCircuit) -> BraketCircuit:
         qasm3_str = dumps(circuit)
         qasm3_str = qasm3_str.replace('include "stdgates.inc";\n', "")
         qasm3_str = qasm3_str.replace("OPENQASM 3;", f"OPENQASM 3.0;\n{qasm3_header}\n{gate_defs}")
-        print(qasm3_str)
         return braket_from_qasm3(qasm3_str)
     except CircuitConversionError as err:
-        # pylint: disable=broad-exception-caught
-        print("Couldn't convert to Braket circuit using Qiskit's QASM3 converter.")
-        print("Exception: ", err)
-        print("Fallback to Cirq converter...")
+        message = (
+            "Couldn't convert to Braket circuit using Qiskit's native OpenQASM 3 converter.\n"
+            f"Exception: {err}\n"
+            "Fallback to Cirq converter..."
+        )
+        warnings.warn(message)
+        return None

@@ -20,6 +20,7 @@ from qbraid.exceptions import QasmError
 
 QASMType = str
 
+
 def braket_from_qasm2(qasm_str):
     """Converts an OpenQASM 2.0 string to a `braket.circuits.Circuit`."""
     raise NotImplementedError

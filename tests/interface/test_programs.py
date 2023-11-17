@@ -130,6 +130,7 @@ def test_cirq_bell_text_draw(capfd, package):
     _, err = capfd.readouterr()
     assert len(err) == 0
 
+
 def test_cirq_bell_svg_draw():
     """Test drawing Cirq circuit using SVG source output"""
     svg_str = circuit_drawer(cirq_bell, output="svg_source")

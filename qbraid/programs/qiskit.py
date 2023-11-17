@@ -107,4 +107,3 @@ class QiskitCircuit(QuantumProgram):
 
     def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
         """Convert the circuit into target package via direct mapping"""
-        
