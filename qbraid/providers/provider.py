@@ -68,22 +68,26 @@ class QbraidProvider(QuantumProvider):
         raise NotImplementedError
 
     def _get_aws_provider(self, aws_access_key_id, aws_secret_access_key):
-        if "braket.aws.aws_device.AwsDevice" in QDEVICE_TYPES:
-            from qbraid.providers.aws import (  # pylint: disable=import-outside-toplevel
-                BraketProvider,
-            )
+        if "braket.aws.aws_device.AwsDevice" not in QDEVICE_TYPES:
+            return None
 
+        from qbraid.providers.aws import BraketProvider  # pylint: disable=import-outside-toplevel
+
+        try:
             return BraketProvider(aws_access_key_id, aws_secret_access_key)
-        return None
+        except Exception:  # pylint: disable=broad-exception-caught
+            return None
 
     def _get_ibm_provider(self, qiskit_ibm_token):
-        if "qiskit_ibm_provider.ibm_backend.IBMBackend" in QDEVICE_TYPES:
-            from qbraid.providers.ibm import (  # pylint: disable=import-outside-toplevel
-                QiskitProvider,
-            )
+        if "qiskit_ibm_provider.ibm_backend.IBMBackend" not in QDEVICE_TYPES:
+            return None
 
+        from qbraid.providers.ibm import QiskitProvider  # pylint: disable=import-outside-toplevel
+
+        try:
             return QiskitProvider(qiskit_ibm_token)
-        return None
+        except Exception:  # pylint: disable=broad-exception-caught
+            return None
 
     def get_devices(self) -> List[QDEVICE]:
         """Return a list of backends matching the specified filtering.

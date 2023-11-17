@@ -26,7 +26,7 @@ except ImportError:
 
 from .api import ApiError, QbraidSession
 from .display_utils import running_in_jupyter, update_progress_bar
-from .wrappers import device_wrapper
+from .load_provider import device_wrapper
 
 
 def refresh_devices():
@@ -43,7 +43,7 @@ def refresh_devices():
             qbraid_id = document["qbraid_id"]
             try:
                 device = device_wrapper(qbraid_id)
-                status = device.status.name
+                status = device.status().name
                 session.put("/lab/update-device", data={"qbraid_id": qbraid_id, "status": status})
             except Exception:  # pylint: disable=broad-except
                 pass
@@ -155,11 +155,11 @@ def get_devices(filters: Optional[dict] = None, refresh: bool = False):
             filters={
                 'name': 'string',
                 'vendor': 'AWS'|'IBM',
-                'provider: 'AWS'|'IBM'|'IonQ'|'Rigetti'|'OQC'|'QuEra'|'Xanadu',
+                'provider: 'AWS'|'IBM'|'IonQ'|'Rigetti'|'OQC'|'QuEra',
                 'type': 'QPU' | 'Simulator',
                 'numberQubits': 123,
                 'paradigm': 'gate-based'|'quantum-annealer'|'AHS'|'continuous-variable',
-                'status': 'ONLINE'|'OFFLINE'
+                'status': 'ONLINE'|'OFFLINE|RETIRED'
             }
         )
 

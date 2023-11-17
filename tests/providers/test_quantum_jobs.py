@@ -9,11 +9,13 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for enums defined in the qbraid device layer.
+Unit tests for quantum jobs functions and data types
 
 """
 import pytest
 
+from qbraid import job_wrapper
+from qbraid.exceptions import QbraidError
 from qbraid.providers.enums import JobStatus
 from qbraid.providers.job import QuantumJob
 
@@ -33,7 +35,7 @@ status_data = [
 def test_is_status_final(status_tuple):
     """Test identifying job status objects that are in final state"""
     status_obj, final_expected = status_tuple
-    status_str = status_obj.raw()
+    status_str = status_obj.name
     final_obj = QuantumJob.status_final(status_obj)
     final_str = QuantumJob.status_final(status_str)
     assert final_obj == final_expected
@@ -51,7 +53,7 @@ def test_is_status_final_error(status):
 def test_status_from_raw(status_tuple):
     """Test converting str status representation to JobStatus object."""
     status_obj, _ = status_tuple
-    status_str = status_obj.raw()
+    status_str = status_obj.name
     status_obj_test = QuantumJob._map_status(status_str)
     assert status_obj == status_obj_test
 
@@ -77,7 +79,13 @@ def test_map_status(status_tuple):
     assert QuantumJob._map_status(status_input) == status_expected
 
 
-def test_map__status_raises():
+def test_map_status_raises():
     """Test raising exception for bad status type."""
     with pytest.raises(ValueError):
         QuantumJob._map_status(0)
+
+
+def test_job_wrapper_id_error():
+    """Test raising job wrapper error due to invalid job ID."""
+    with pytest.raises(QbraidError):
+        job_wrapper("Id123")

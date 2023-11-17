@@ -14,10 +14,10 @@ Module defining abstract QuantumJob Class
 """
 import logging
 from abc import ABC, abstractmethod
+from enum import Enum
 from time import sleep, time
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
-from qbraid import device_wrapper
 from qbraid.api import QbraidSession
 
 from .enums import JOB_FINAL, JobStatus
@@ -63,8 +63,6 @@ class QuantumJob(ABC):
     @property
     def device(self) -> "qbraid.providers.QuantumDevice":
         """Returns the qbraid QuantumDevice object associated with this job."""
-        if self._device is None:
-            self._device = device_wrapper(self.id.split(":")[0])
         return self._device
 
     @staticmethod
@@ -73,12 +71,12 @@ class QuantumJob(ABC):
         provided or conversion from string fails, returns `JobStatus.UNKNOWN`."""
         if status is None:
             return JobStatus.UNKNOWN
-        if isinstance(status, JobStatus):
+        if isinstance(status, Enum):
             return status
         if isinstance(status, str):
             for e in JobStatus:
                 status_enum = JobStatus(e.value)
-                if status == status_enum.raw() or status == str(status_enum):
+                if status == status_enum.name or status == str(status_enum):
                     return status_enum
             raise ValueError(f"Status value '{status}' not recognized.")
         raise ValueError(f"Invalid status value type: {type(status)}")
@@ -90,7 +88,7 @@ class QuantumJob(ABC):
             if status in JOB_FINAL:
                 return True
             for job_status in JOB_FINAL:
-                if job_status.raw() == status:
+                if job_status.name == status:
                     return True
             return False
         raise TypeError(
@@ -115,7 +113,7 @@ class QuantumJob(ABC):
         """Return the status of the job / task , among the values of ``JobStatus``."""
         qbraid_status, vendor_status = self._status()
         if qbraid_status != self._cache_status:
-            update = {"status": vendor_status, "qbraidStatus": qbraid_status.raw()}
+            update = {"status": vendor_status, "qbraidStatus": qbraid_status.name}
             _ = self._post_job_data(update=update)
         return qbraid_status
 
@@ -144,7 +142,7 @@ class QuantumJob(ABC):
         """Return the metadata regarding the job."""
         qbraid_status, vendor_status = self._status()
         if not self._cache_metadata or qbraid_status != self._cache_status:
-            update = {"status": vendor_status, "qbraidStatus": qbraid_status.raw()}
+            update = {"status": vendor_status, "qbraidStatus": qbraid_status.name}
             self._cache_metadata = self._post_job_data(update=update)
             self._cache_status = self._map_status(self._cache_metadata["qbraidStatus"])
         return self._cache_metadata

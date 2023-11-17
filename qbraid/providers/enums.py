@@ -39,6 +39,7 @@ class DeviceStatus(int, Enum):
 
     ONLINE = 0
     OFFLINE = 1
+    RETIRED = 2
 
 
 class JobStatus(str, Enum):
@@ -67,10 +68,6 @@ class JobStatus(str, Enum):
     COMPLETED = "job has successfully run"
     FAILED = "job failed / incurred error"
     UNKNOWN = "vendor-supplied job status not recognized"
-
-    def raw(self):
-        """Returns raw status string"""
-        return str(self)[10:]
 
 
 JOB_FINAL = (JobStatus.COMPLETED, JobStatus.CANCELLED, JobStatus.FAILED)
