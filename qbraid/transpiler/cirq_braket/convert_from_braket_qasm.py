@@ -18,9 +18,9 @@ from cirq import Circuit
 from cirq.contrib.qasm_import.exception import QasmException
 
 from qbraid import circuit_wrapper
-from qbraid.interface.qbraid_braket.qasm import braket_to_qasm
 from qbraid.transpiler.cirq_qasm import from_qasm
 from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler.openqasm.braket import braket_to_qasm2
 
 
 def from_braket(circuit: BKCircuit) -> Circuit:
@@ -38,7 +38,7 @@ def from_braket(circuit: BKCircuit) -> Circuit:
     qprogram = circuit_wrapper(circuit)
     qprogram.convert_to_contiguous()
     compat_circuit = qprogram.program
-    qasm_str = braket_to_qasm(compat_circuit)
+    qasm_str = braket_to_qasm2(compat_circuit)
     try:
         return from_qasm(qasm_str)
     except QasmException as err:
