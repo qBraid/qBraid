@@ -147,6 +147,12 @@ class OpenQasm2Program(QuantumProgram):
 
         return self._get_max_count(depth_counts)
 
+    def _set_direct_conversions(self) -> None:
+        self._direct_conversion_set = {}
+
+    def _set_openqasm_conversions(self) -> None:
+        self._openqasm_conversion_set = {}
+
     def _unitary(self) -> "np.ndarray":
         """Return the unitary of the QASM"""
         return from_qasm(self.program).unitary()

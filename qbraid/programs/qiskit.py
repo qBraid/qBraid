@@ -64,6 +64,12 @@ class QiskitCircuit(QuantumProgram):
         """Calculate unitary of circuit."""
         return Operator(self.program).data
 
+    def _set_direct_conversions(self) -> None:
+        self._direct_conversion_set = {}
+
+    def _set_openqasm_conversions(self) -> None:
+        self._openqasm_conversion_set = {}
+
     def _contiguous_expansion(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, adds identity gates to vacant registers as needed."""
@@ -98,3 +104,6 @@ class QiskitCircuit(QuantumProgram):
             reversed_circuit.append(inst, reversed_qargs)
 
         self._program = reversed_circuit
+
+    def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
+        """Convert the circuit into target package via direct mapping"""
