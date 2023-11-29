@@ -6,10 +6,10 @@ qbraid.transpiler.cirq_braket package
 Submodules
 ----------
 
-qbraid.transpiler.cirq_braket.convert_from_braket_qasm module
---------------------------------------------------------------
+qbraid.transpiler.cirq_braket.braket_qasm module
+--------------------------------------------------
 
-.. automodule:: qbraid.transpiler.cirq_braket.convert_from_braket_qasm
+.. automodule:: qbraid.transpiler.cirq_braket.braket_qasm
    :members:
    :undoc-members:
    :show-inheritance:

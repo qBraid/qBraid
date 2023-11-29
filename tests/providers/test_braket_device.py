@@ -94,6 +94,10 @@ def test_run_braket_device_wrapper(device_id, circuit):
     qbraid_device = device_wrapper(device_id)
     qbraid_job = qbraid_device.run(circuit, shots=10)
     vendor_job = qbraid_job._job
+    try:
+        qbraid_job.cancel()
+    except Exception:  # pylint: disable=broad-exception-caught
+        pass
     assert isinstance(qbraid_job, BraketQuantumTask)
     assert isinstance(vendor_job, AwsQuantumTask)
 
@@ -103,6 +107,11 @@ def test_run_batch_braket_device_wrapper():
     qbraid_device = device_wrapper("aws_sv_sim")
     qbraid_job_list = qbraid_device.run_batch(circuits_braket_run, shots=10)
     qbraid_job = qbraid_job_list[0]
+    for job in qbraid_job_list:
+        try:
+            job.cancel()
+        except Exception:  # pylint: disable=broad-exception-caught
+            pass
     assert len(qbraid_job_list) == len(circuits_braket_run)
     assert isinstance(qbraid_job, BraketQuantumTask)
 

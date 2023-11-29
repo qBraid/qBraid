@@ -15,7 +15,7 @@ Unit tests for converting Braket circuits to/from OpenQASM
 
 from braket.circuits import Circuit
 
-from qbraid.transpiler.braket_qasm3 import braket_from_qasm3, braket_to_qasm3
+from qbraid.transpiler.cirq_braket.braket_qasm import braket_from_qasm3, braket_to_qasm3
 
 
 def test_braket_to_qasm3_bell_circuit():
