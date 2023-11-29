@@ -11,6 +11,7 @@
 """
 Module containing functions to convert between Qiskit's circuit
 representation and Braket's circuit representation via OpenQASM 3.0.
+
 """
 import warnings
 
@@ -18,8 +19,8 @@ from braket.circuits import Circuit as BraketCircuit
 from qiskit.circuit import QuantumCircuit as QiskitCircuit
 from qiskit.qasm3 import dumps, loads
 
+from qbraid.transpiler.cirq_braket.braket_qasm import braket_from_qasm3, braket_to_qasm3
 from qbraid.transpiler.exceptions import CircuitConversionError
-from qbraid.transpiler.openqasm.braket import braket_from_qasm3, braket_to_qasm3
 
 qasm3_header_path = "qbraid/interface/qbraid_qasm3/stdgates.qasm"
 with open(qasm3_header_path, "r", encoding="utf-8") as file:

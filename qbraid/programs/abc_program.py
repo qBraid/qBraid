@@ -30,8 +30,8 @@ if TYPE_CHECKING:
     import qbraid
 
 transpiler_openqasm_modules = {
-    "qiskit": import_module("qbraid.transpiler.openqasm.qiskit"),
-    "braket": import_module("qbraid.transpiler.openqasm.braket"),
+    "qiskit": import_module("qbraid.transpiler.cirq_qiskit.qiskit_qasm"),
+    "braket": import_module("qbraid.transpiler.cirq_braket.braket_qasm"),
 }
 
 
@@ -117,9 +117,9 @@ class QuantumProgram:
     def _get_openqasm_transformer(self, package: str, version: int, conversion_type: str):
         """Get openqasm transformer for given package and conversion type"""
         if version != 3:
-            raise ValueError(f"Version {version} of OpenQASM is not supported")
+            raise ValueError(f"Conversion type OpenQASM {version} not supported")
         if conversion_type not in {"to", "from"}:
-            raise ValueError(f"Invalid conversion type {conversion_type} supplied")
+            raise ValueError(f"Invalid conversion type {conversion_type}")
         return self._openqasm3_transformers[package][conversion_type]
 
     def _convert_openqasm_to_package(self, target: str) -> "qbraid.QPROGRAM":
@@ -128,14 +128,16 @@ class QuantumProgram:
         try:
             qasm_str = openqasm_converter(self.program)
         except Exception as e:
-            raise CircuitConversionError(f"Error converting {self.package} circ to QASM 3") from e
+            raise CircuitConversionError(
+                f"Error converting {self.package} program to OpenQASM 3"
+            ) from e
 
         target_converter = self._get_openqasm_transformer(target, 3, "from")
         try:
             return target_converter(qasm_str)
         except Exception as e:
             raise CircuitConversionError(
-                f"Error converting {self.package} circuit to {target} circuit via openqasm3"
+                f"Error converting {self.package} program to {target} via OpenQASM 3"
             ) from e
 
     def unitary(self) -> "np.ndarray":
@@ -234,7 +236,8 @@ class QuantumProgram:
 
         if target not in self._direct_conversion_set:
             warnings.warn(
-                f"Direct conversion to {target} is not supported, falling back to openqasm"
+                f"Direct conversion to {target} not supported, "
+                "falling back to OpenQASM intermediate conversion."
             )
         else:
             try:
@@ -242,19 +245,19 @@ class QuantumProgram:
             except Exception as err:  # pylint: disable=broad-exception-caught
                 warnings.warn(
                     f"""Direct conversion failed for {self.package} to {target}, 
-                    error {err}, trying openqasm"""
+                    Error: {err}.\n Re-trying with OpenQASM intermediate conversion."""
                 )
         if target not in self._openqasm_conversion_set:
             # need to raise an error here so that in transpile we can catch it
             raise CircuitConversionError(
-                f"Conversion to {target} through openqasm is not supported"
+                f"Conversion to {target} through OpenQASM is not supported"
             )
         try:
             self._convert_openqasm_to_package(target)
         except Exception as err:
             raise CircuitConversionError(
-                f"""Direct / openqasm conversions are either absent or have \
-                  failed for {self.package} to {target} with error {err}"""
+                f"""Direct / OpenQASM conversions are either absent or have \
+                  failed for {self.package} to {target} with error."""
             ) from err
 
     def transpile(self, conversion_type: str) -> "qbraid.QPROGRAM":
@@ -281,12 +284,15 @@ class QuantumProgram:
 
         if conversion_type == self.package:
             return self._program
-        if conversion_type == "pyquil" or conversion_type in QPROGRAM_LIBS:
-            if self.package != "cirq":
-                try:
-                    return self._convert_to_package(conversion_type)
-                except Exception as err:  # pylint: disable=broad-exception-caught
-                    warnings.warn(f'Failed conversions with error "{err}", falling back to cirq')
+        if conversion_type in QPROGRAM_LIBS:
+            # if self.package != "cirq":
+            #     try:
+            #         return self._convert_to_package(conversion_type)
+            #     except Exception as err:  # pylint: disable=broad-exception-caught
+            #         warnings.warn(
+            #             f'Failed conversions with error "{err}". '
+            #             "Falling back to Cirq intermediate conversion"
+            #         )
             try:
                 cirq_circuit, _ = convert_to_cirq(self.program)
             except Exception as err:

@@ -19,10 +19,16 @@ import pytket.extensions.braket
 from braket.circuits import Circuit
 
 try:
-    from pytket.circuit_library import _TK1_to_RzRx  # type: ignore
+    # pytket >= 1.22
+    from pytket.circuit_library import TK1_to_RzRx  # type: ignore
 except (ModuleNotFoundError, ImportError):
-    # pytket <= 1.18
-    from pytket._tket.circuit._library import _TK1_to_RzRx  # type: ignore
+    try:
+        # pytket >1.18,<1.22
+        from pytket.circuit_library import _TK1_to_RzRx as TK1_to_RzRx  # type: ignore
+    except (ModuleNotFoundError, ImportError):
+        # pytket <= 1.18
+        from pytket._tket.circuit._library import _TK1_to_RzRx as TK1_to_RzRx  # type: ignore
+
 
 from pytket.passes import RebaseCustom
 from pytket.predicates import (
@@ -76,7 +82,7 @@ preds = [
 ionq_rebase_pass = RebaseCustom(
     ionq_gates,
     pytket.Circuit(),  # cx_replacement (irrelevant)
-    _TK1_to_RzRx,
+    TK1_to_RzRx,
 )  # tk1_replacement
 
 
