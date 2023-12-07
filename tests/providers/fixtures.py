@@ -12,7 +12,7 @@
 Helper functions for providers testing
 
 """
-import braket
+import braket.circuits
 import cirq
 import numpy as np
 import qiskit
