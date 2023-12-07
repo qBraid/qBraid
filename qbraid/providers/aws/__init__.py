@@ -27,9 +27,11 @@ This module contains the classes used to run quantum circuits on devices availab
    BraketProvider
    BraketQuantumTask
    BraketGateModelResult
+   get_quantum_task_cost
 
 """
 from .result import BraketGateModelResult
 from .device import BraketDevice
 from .job import BraketQuantumTask
 from .provider import BraketProvider
+from .tracker import get_quantum_task_cost

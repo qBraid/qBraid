@@ -93,4 +93,16 @@ Jobs submitted through the SDK are organized in the qBraid Lab Quantum Jobs Side
     :target: javascript:void(0);
 
 
+Cost Tracker
+-------------
+
+Retrieve the cost of a quantum task submitted to an AWS device:
+
+.. code-block:: python
+
+    >>> from qbraid.providers.aws import BraketQuantumTask
+    >>> qjob = BraketQuantumTask(job_id)
+    >>> qjob.get_cost() # returns cost in USD
+    0.00375
+
 The next module will go in depth on qBraid SDK quantum results.

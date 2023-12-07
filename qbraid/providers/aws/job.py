@@ -22,6 +22,7 @@ from qbraid.providers.exceptions import JobStateError
 from qbraid.providers.job import QuantumJob
 
 from .result import BraketGateModelResult
+from .tracker import get_quantum_task_cost
 
 
 class AmazonBraketVersionError(Exception):
@@ -68,3 +69,8 @@ class BraketQuantumTask(QuantumJob):
         if status in JOB_FINAL:
             raise JobStateError(f"Cannot cancel quantum job in the {status} state.")
         return self._job.cancel()
+
+    def get_cost(self) -> float:
+        """Return the cost of the job."""
+        decimal_cost = get_quantum_task_cost(self.vendor_job_id)
+        return float(decimal_cost)
