@@ -214,6 +214,53 @@ SUPPORTED_GATES: Dict[str, Union[Gate, Callable[..., Gate]]] = {
 }
 
 
+def parse_defgates(quil_str: str) -> Dict[str, np.ndarray]:
+    """
+    Parses non-parameterized DEFGATE definitions from a Quil program string.
+
+    This function scans through the given Quil program string and extracts
+    the definitions of custom gates defined using the DEFGATE directive.
+    It only supports non-parameterized gate definitions. If a parameterized
+    gate definition is encountered, the function raises a ValueError.
+
+    Args:
+        quil_str (str): A string representation of a Quil program containing
+                        one or more DEFGATE definitions.
+
+    Returns:
+        dict: A dictionary where each key is the name of a custom gate and
+              each value is a numpy array representing the gate's unitary matrix.
+
+    Raises:
+        UnsupportedQuilInstruction: If a parameterized DEFGATE definition is encountered.
+    """
+    defgates = {}
+    lines = quil_str.split("\n")
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        if line.startswith("DEFGATE"):
+            gate_name = line.split()[1]
+            # Check for parameters and raise an exception if found
+            if "(" in gate_name or ")" in gate_name:
+                raise UnsupportedQuilInstruction("Parameterized DEFGATEs are not supported.")
+
+            gate_name = gate_name.split(":")[0]  # Extract the gate name
+            matrix_lines = []
+            i += 1
+            while i < len(lines) and lines[i].strip() and not lines[i].startswith("DEFGATE"):
+                # Split the line by comma and whitespace, then strip each element
+                matrix_elements = [elem.strip() for elem in lines[i].split(",")]
+                matrix_lines.append(matrix_elements)
+                i += 1
+            # Convert the string elements to floats
+            matrix = np.array([[float(element) for element in row] for row in matrix_lines])
+            defgates[gate_name] = matrix
+        else:
+            i += 1
+    return defgates
+
+
 def circuit_from_quil(quil: str) -> Circuit:
     """Convert a Quil program to a Cirq Circuit.
 
@@ -233,6 +280,12 @@ def circuit_from_quil(quil: str) -> Circuit:
     circuit = Circuit()
     defined_gates = SUPPORTED_GATES.copy()
     instructions = Program(quil).instructions
+
+    defgates = parse_defgates(quil)
+
+    # Add the parsed DefGates to defined_gates
+    for gate_name, matrix in defgates.items():
+        defined_gates[gate_name] = MatrixGate(matrix)
 
     for inst in instructions:
         # Add DEFGATE-defined gates to defgates dict using MatrixGate.
