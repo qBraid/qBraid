@@ -103,5 +103,5 @@ def get_quantum_task_cost(task_arn: str, aws_session: AwsSession) -> Decimal:
 
     try:
         return task_cost[device_type](response)
-    except KeyError:
-        raise ValueError(f"Device type {device_type} is not supported.")
+    except KeyError as err:
+        raise ValueError(f"Device type {device_type} is not supported.") from err
