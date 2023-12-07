@@ -69,11 +69,12 @@ def get_qpu_task_cost(boto_data: Dict[str, Any]) -> Decimal:
     raise NotImplementedError
 
 
-def get_quantum_task_cost(task_arn: str) -> Decimal:
+def get_quantum_task_cost(task_arn: str, aws_session: AwsSession) -> Decimal:
     """Returns the cost of quantum task run on an AWS device
 
     Args:
         task_arn (str): The quantumTaskArn.
+        aws_session (AwsSession): The session associated with account that submitted the task.
 
     Returns:
         Decimal: The estimated total cost in USD
@@ -81,7 +82,6 @@ def get_quantum_task_cost(task_arn: str) -> Decimal:
     Raises:
         ValueError: If the task is not in final state
     """
-    aws_session = AwsSession()
     braket_client = aws_session.braket_client
     response = braket_client.get_quantum_task(quantumTaskArn=task_arn)
     status = response["status"]
@@ -101,4 +101,7 @@ def get_quantum_task_cost(task_arn: str) -> Decimal:
         "QPU": get_qpu_task_cost,
     }
 
-    return task_cost[device_type](response)
+    try:
+        return task_cost[device_type](response)
+    except KeyError:
+        raise ValueError(f"Device type {device_type} is not supported.")
