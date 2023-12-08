@@ -15,21 +15,16 @@ using OpenQASM 3.
 """
 
 import numpy as np
-import pytest
+from qiskit import QuantumCircuit
 
 from qbraid.interface import circuits_allclose
-from qbraid.interface.random_circuit import random_circuit
 from qbraid.transpiler.qiskit_braket.conversions import qiskit_to_braket
 
 
-@pytest.mark.skip("Feature stil in development")
-@pytest.mark.parametrize("num_qubits", [1, 2, 3, 4, 5])
-def test_random_circuit_to_braket(num_qubits):
-    for _ in range(10):
-        qiskit_circuit = random_circuit(
-            "qiskit",
-            num_qubits=num_qubits,
-            depth=np.random.randint(5, 15),
-        )
-        braket_circuit = qiskit_to_braket(qiskit_circuit)
-        assert circuits_allclose(braket_circuit, qiskit_circuit, strict_gphase=False)
+def test_one_qubit_circuit_to_braket():
+    """Test converting qiskit to braket for one qubit circuit."""
+    qiskit_circuit = QuantumCircuit(1)
+    qiskit_circuit.h(0)
+    qiskit_circuit.ry(np.pi / 2, 0)
+    braket_circuit = qiskit_to_braket(qiskit_circuit)
+    circuits_allclose(qiskit_circuit, braket_circuit, strict_gphase=True)

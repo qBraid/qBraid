@@ -13,12 +13,15 @@ Module defining CirqCircuit Class
 
 """
 
-from typing import List
+from typing import TYPE_CHECKING, List
 
 import cirq
 import numpy as np
 
 from qbraid.programs.abc_program import QuantumProgram
+
+if TYPE_CHECKING:
+    import qbraid
 
 
 class CirqCircuit(QuantumProgram):

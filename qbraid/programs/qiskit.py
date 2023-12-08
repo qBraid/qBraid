@@ -26,6 +26,8 @@ from qbraid.programs.abc_program import QuantumProgram
 if TYPE_CHECKING:
     import numpy as np
 
+    import qbraid
+
 
 class QiskitCircuit(QuantumProgram):
     """Wrapper class for ``qiskit.QuantumCircuit`` objects"""
@@ -61,8 +63,11 @@ class QiskitCircuit(QuantumProgram):
         return self.program.depth()
 
     def _unitary(self) -> "np.ndarray":
-        """Calculate unitary of circuit."""
-        return Operator(self.program).data
+        """Calculate unitary of circuit. Removes measurement gates to
+        perform calculation if necessary."""
+        circuit = self.program.copy()
+        circuit.remove_final_measurements()
+        return Operator(circuit).data
 
     def _set_direct_conversions(self) -> None:
         self._direct_conversion_set = {}
