@@ -26,6 +26,8 @@ from qbraid.programs.abc_program import QuantumProgram
 if TYPE_CHECKING:
     import numpy as np
 
+    import qbraid
+
 
 class QiskitCircuit(QuantumProgram):
     """Wrapper class for ``qiskit.QuantumCircuit`` objects"""
@@ -61,8 +63,17 @@ class QiskitCircuit(QuantumProgram):
         return self.program.depth()
 
     def _unitary(self) -> "np.ndarray":
-        """Calculate unitary of circuit."""
-        return Operator(self.program).data
+        """Calculate unitary of circuit. Removes measurement gates to
+        perform calculation if necessary."""
+        circuit = self.program.copy()
+        circuit.remove_final_measurements()
+        return Operator(circuit).data
+
+    def _set_direct_conversions(self) -> None:
+        self._direct_conversion_set = {}
+
+    def _set_openqasm_conversions(self) -> None:
+        self._openqasm_conversion_set = {}
 
     def _contiguous_expansion(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
@@ -98,3 +109,6 @@ class QiskitCircuit(QuantumProgram):
             reversed_circuit.append(inst, reversed_qargs)
 
         self._program = reversed_circuit
+
+    def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
+        """Convert the circuit into target package via direct mapping"""

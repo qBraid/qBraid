@@ -40,10 +40,10 @@ class BraketDevice(QuantumDevice):
         self._vendor = "AWS"
         self._run_package = "braket"
 
-    def _populate_metadata(self, aws_device: "braket.aws.AwsDevice") -> None:
+    def _populate_metadata(self, device: "braket.aws.AwsDevice") -> None:
         """Populate device metadata using BraketSchemaBase"""
         # pylint: disable=attribute-defined-outside-init
-        metadata = aws_device.aws_session.get_device(aws_device.arn)
+        metadata = device.aws_session.get_device(device.arn)
         capabilities = json.loads(metadata.get("deviceCapabilities"))
 
         self._id = metadata.get("deviceArn")
@@ -199,7 +199,7 @@ class BraketDevice(QuantumDevice):
         return run_input
 
     def run(
-        self, run_input, compile: bool = False, *args, **kwargs
+        self, run_input, *args, auto_compile: bool = False, **kwargs
     ) -> "qbraid.device.aws.BraketQuantumTaskWrapper":
         """Run a quantum task specification on this quantum device. Task must represent a
         quantum circuit, annealing problems not supported.
@@ -208,14 +208,14 @@ class BraketDevice(QuantumDevice):
             run_input: Specification of a task to run on device.
 
         Keyword Args:
-            compile (bool): Whether to compile the circuit for the device before running.
+            auto_compile (bool): Whether to compile the circuit for the device before running.
             shots (int): The number of times to run the task on the device.
 
         Returns:
             The job like object for the run.
 
         """
-        qbraid_circuit = self.process_run_input(run_input, compile=compile)
+        qbraid_circuit = self.process_run_input(run_input, auto_compile=auto_compile)
         run_input = qbraid_circuit._program
         aws_quantum_task = self._device.run(run_input, *args, **kwargs)
         metadata = aws_quantum_task.metadata()
@@ -227,7 +227,7 @@ class BraketDevice(QuantumDevice):
         )
 
     def run_batch(
-        self, run_input, compile: bool = False, *args, **kwargs
+        self, run_input, *args, auto_compile: bool = False, **kwargs
     ) -> List["qbraid.device.aws.BraketQuantumTaskWrapper"]:
         """Run batch of quantum tasks on this quantum device.
 
@@ -235,7 +235,7 @@ class BraketDevice(QuantumDevice):
             run_input: A circuit object list to run on the wrapped device.
 
         Keyword Args:
-            compile (bool): Whether to compile the circuits for the device before running.
+            auto_compile (bool): Whether to compile the circuits for the device before running.
             shots (int): The number of times to run the task on the device. Default is 1024.
 
         Returns:
@@ -246,7 +246,7 @@ class BraketDevice(QuantumDevice):
         qbraid_circuit_batch = []
         run_input_batch = []
         for circuit in run_input:
-            qbraid_circuit = self.process_run_input(circuit, compile=compile)
+            qbraid_circuit = self.process_run_input(circuit, auto_compile=auto_compile)
             run_input = qbraid_circuit._program
             run_input_batch.append(run_input)
             qbraid_circuit_batch.append(qbraid_circuit)

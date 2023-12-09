@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for working with IBM provider
+Unit tests for QiskitProvider class
 
 """
 import os
@@ -24,7 +24,7 @@ from qbraid import device_wrapper
 from qbraid.providers.exceptions import JobError
 from qbraid.providers.ibm import QiskitProvider
 
-# Skip tests if IBM/AWS account auth/creds not configured
+# Skip tests if IBM account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM storage)"
 

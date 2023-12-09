@@ -55,6 +55,12 @@ class PytketCircuit(QuantumProgram):
         """Return the circuit depth (i.e., length of critical path)."""
         return self.program.depth()
 
+    def _set_direct_conversions(self) -> None:
+        self._direct_conversion_set = {}
+
+    def _set_openqasm_conversions(self) -> None:
+        self._openqasm_conversion_set = {}
+
     def _unitary(self) -> "np.ndarray":
         """Return the unitary of a pytket circuit."""
         return self.program.get_unitary()

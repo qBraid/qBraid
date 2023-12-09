@@ -16,7 +16,7 @@ import re
 from typing import TYPE_CHECKING, List
 
 from qbraid.programs.abc_program import QuantumProgram
-from qbraid.transpiler.cirq_qasm.qasm_conversions import from_qasm
+from qbraid.transpiler.cirq_qasm2.qasm_conversions import from_qasm
 
 if TYPE_CHECKING:
     import numpy as np
@@ -146,6 +146,12 @@ class OpenQasm2Program(QuantumProgram):
                     track_measured[creg] = matches, max_depth + 1
 
         return self._get_max_count(depth_counts)
+
+    def _set_direct_conversions(self) -> None:
+        self._direct_conversion_set = {}
+
+    def _set_openqasm_conversions(self) -> None:
+        self._openqasm_conversion_set = {}
 
     def _unitary(self) -> "np.ndarray":
         """Return the unitary of the QASM"""

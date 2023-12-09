@@ -9,48 +9,47 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for managing Quantum Jobs
+Fixtures imported/defined in this file can be used by any test in this directory
+without needing to import them (pytest will automatically discover them).
 
 """
-import os
-
+import braket.circuits
+import numpy as np
 import pytest
-from braket.circuits import Circuit
 
 from qbraid import device_wrapper
 from qbraid.providers.aws import BraketProvider
 
-# Skip tests if IBM/AWS account auth/creds not configured
-skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
-REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of AWS storage)"
 
-
-def get_braket_most_busy():
+@pytest.fixture
+def braket_most_busy():
     """Return the most busy device for testing purposes."""
     provider = BraketProvider()
     braket_devices = provider.get_devices(
         types=["QPU"], statuses=["ONLINE"], provider_names=["Rigetti", "IonQ", "Oxford"]
     )
     qbraid_devices = [device_wrapper(device.arn) for device in braket_devices]
-    test_device = None
+    qbraid_device = None
     max_queued = 0
     for device in qbraid_devices:
         jobs_queued = device.queue_depth()
         if jobs_queued is not None and jobs_queued > max_queued:
             max_queued = jobs_queued
-            test_device = device
-    return test_device
+            qbraid_device = device
+    yield qbraid_device
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
-def test_braket_queue_visibility():
-    """Test methods that check Braket device/job queue."""
-    circuit = Circuit().h(0).cnot(0, 1)
-    device = get_braket_most_busy()
-    if device is None:
-        pytest.skip("No devices available for testing")
-    else:
-        job = device.run(circuit, shots=10)
-        queue_position = job.queue_position()
-        job.cancel()
-        assert isinstance(queue_position, int)
+@pytest.fixture
+def aws_session():
+    """Return AWS session."""
+    provider = BraketProvider()
+    yield provider._get_aws_session()
+
+
+@pytest.fixture
+def braket_circuit():
+    """Low-depth, one-qubit Braket circuit to be used for testing."""
+    circuit = braket.circuits.Circuit()
+    circuit.h(0)
+    circuit.ry(0, np.pi / 2)
+    yield circuit

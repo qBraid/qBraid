@@ -63,11 +63,6 @@ class QuantumJob(ABC):
     @property
     def device(self) -> "qbraid.providers.QuantumDevice":
         """Returns the qbraid QuantumDevice object associated with this job."""
-        if self._device is None:
-            # pylint: disable=import-outside-toplevel
-            from qbraid.load_provider import device_wrapper
-
-            self._device = device_wrapper(self.id.split(":")[0])
         return self._device
 
     @staticmethod
@@ -152,12 +147,12 @@ class QuantumJob(ABC):
             self._cache_status = self._map_status(self._cache_metadata["qbraidStatus"])
         return self._cache_metadata
 
-    def wait_for_final_state(self, timeout=None, wait=5) -> None:
+    def wait_for_final_state(self, timeout=None, poll_interval=5) -> None:
         """Poll the job status until it progresses to a final state.
 
         Args:
             timeout: Seconds to wait for the job. If ``None``, wait indefinitely.
-            wait: Seconds between queries.
+            poll_interval: Seconds between queries.
 
         Raises:
             JobError: If the job does not reach a final state before the specified timeout.
@@ -169,7 +164,7 @@ class QuantumJob(ABC):
             elapsed_time = time() - start_time
             if timeout is not None and elapsed_time >= timeout:
                 raise JobError(f"Timeout while waiting for job {self.id}.")
-            sleep(wait)
+            sleep(poll_interval)
             status = self.status()
 
     @abstractmethod

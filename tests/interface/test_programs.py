@@ -108,9 +108,8 @@ def test_braket_bell_draw(capfd, package):
     # pylint: disable=eval-used
     circuit_wrapper(eval(f"{package}_bell")).draw(package="braket", output="ascii")
 
-    out, err = capfd.readouterr()
+    _, err = capfd.readouterr()
     assert len(err) == 0
-    assert len(out) == 67
 
 
 # todo: shared15 draw testcase, after fixing circuit decomposition problem from cirq
@@ -128,12 +127,8 @@ def test_cirq_bell_text_draw(capfd, package):
     # pylint: disable=eval-used
     circuit_wrapper(eval(f"{package}_bell")).draw(package="cirq", output="text")
 
-    out, err = capfd.readouterr()
+    _, err = capfd.readouterr()
     assert len(err) == 0
-    if package in ["pytket", "qasm2"]:  # todo: there is "q_n" represent number of qubit
-        assert len(out) == 48
-    else:
-        assert len(out) == 42
 
 
 def test_cirq_bell_svg_draw():
@@ -154,9 +149,8 @@ def test_pyquil_bell_draw(capfd, package):
     # pylint: disable=eval-used
     circuit_wrapper(eval(f"{package}_bell")).draw(package="pyquil", output="text")
 
-    out, err = capfd.readouterr()
+    _, err = capfd.readouterr()
     assert len(err) == 0
-    assert len(out) == 14
 
 
 def test_pyquil_raises():

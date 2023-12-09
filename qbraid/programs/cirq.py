@@ -13,12 +13,15 @@ Module defining CirqCircuit Class
 
 """
 
-from typing import List
+from typing import TYPE_CHECKING, List
 
 import cirq
 import numpy as np
 
 from qbraid.programs.abc_program import QuantumProgram
+
+if TYPE_CHECKING:
+    import qbraid
 
 
 class CirqCircuit(QuantumProgram):
@@ -49,9 +52,18 @@ class CirqCircuit(QuantumProgram):
         """Return the circuit depth (i.e., length of critical path)."""
         return len(cirq.Circuit(self.program.all_operations()))
 
+    def _set_direct_conversions(self) -> None:
+        self._direct_conversion_set = {}
+
+    def _set_openqasm_conversions(self) -> None:
+        self._openqasm_conversion_set = {}
+
     def _unitary(self) -> np.ndarray:
         """Calculate unitary of circuit."""
         return self.program.unitary()
+
+    def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
+        """Convert the circuit into target package via direct mapping"""
 
     @staticmethod
     def is_measurement_gate(op: cirq.Operation) -> bool:
@@ -93,16 +105,22 @@ class CirqCircuit(QuantumProgram):
         return index
 
     @staticmethod
-    def _make_qubits(qubit: cirq.Qid, targets: List[int]) -> List[cirq.Qid]:
-        if isinstance(qubit, cirq.LineQubit):
+    def _make_qubits(qubits: List[cirq.Qid], targets: List[int]) -> List[cirq.Qid]:
+        if len(set(type(qubit) for qubit in qubits)) > 1:
+            # If mixed types, default to LineQubits
+            qubit_type = cirq.LineQubit
+        else:
+            qubit_type = type(qubits[0])
+
+        if qubit_type == cirq.LineQubit:
             return [cirq.LineQubit(i) for i in targets]
-        if isinstance(qubit, cirq.GridQubit):
-            return [cirq.GridQubit(i, qubit.col) for i in targets]
-        if isinstance(qubit, cirq.NamedQubit):
+        if qubit_type == cirq.GridQubit:
+            return [cirq.GridQubit(0, i) for i in targets]
+        if qubit_type == cirq.NamedQubit:
             return [cirq.NamedQubit(str(i)) for i in targets]
         raise ValueError(
             "Expected qubits of type 'GridQubit', 'LineQubit', or "
-            f"'NamedQubit' but instead got {type(qubit)}"
+            f"'NamedQubit' but instead got {qubit_type}"
         )
 
     def _convert_to_line_qubits(self) -> None:
@@ -140,7 +158,7 @@ class CirqCircuit(QuantumProgram):
         if qubit_count > nqubits:
             all_qubits = list(range(0, qubit_count))
             vacant_qubits = list(set(all_qubits) - set(occupied_qubits))
-            cirq_qubits = self._make_qubits(cirq_qubits[0], vacant_qubits)
+            cirq_qubits = self._make_qubits(cirq_qubits, vacant_qubits)
             for qubit in cirq_qubits:
                 circuit.append(cirq.I(qubit))
         self._program = circuit
@@ -149,27 +167,17 @@ class CirqCircuit(QuantumProgram):
     def _contiguous_compression(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
-        qubit_map = {}
-        circuit_qubits = self.qubits.copy()
-        circuit_qubits.sort()
-        for index, qubit in enumerate(circuit_qubits):
-            qubit_map[self._int_from_qubit(qubit)] = index
-        contig_circuit = cirq.Circuit()
-        for opr in self.program.all_operations():
-            contig_indicies = [qubit_map[self._int_from_qubit(qubit)] for qubit in opr.qubits]
-            contig_qubits = self._make_qubits(circuit_qubits[0], contig_indicies)
-            contig_circuit.append(opr.gate.on(*contig_qubits))
-        self._program = contig_circuit
+        original_qubits = sorted(self.program.all_qubits(), key=self._int_from_qubit)
+        qubit_map = dict(
+            zip(original_qubits, self._make_qubits(original_qubits, range(len(original_qubits))))
+        )
+        self._program = self.program.transform_qubits(lambda q: qubit_map[q])
 
     def reverse_qubit_order(self) -> None:
         """Rerverse qubit ordering of circuit."""
-        qubits = self.qubits.copy()
-        qubits.sort()
-        qubits = list(reversed(qubits))
-        qubit_map = {self._key_from_qubit(q): i for i, q in enumerate(qubits)}
-        rev_qubit_circuit = cirq.Circuit()
-        for opr in self.program.all_operations():
-            qubit_indicies = [qubit_map[self._key_from_qubit(q)] for q in opr.qubits]
-            line_qubits = [cirq.LineQubit(i) for i in qubit_indicies]
-            rev_qubit_circuit.append(opr.gate.on(*line_qubits))
-        self._program = rev_qubit_circuit
+        original_qubits = sorted(self.program.all_qubits(), key=self._int_from_qubit)
+        max_index = max(self._int_from_qubit(q) for q in original_qubits)
+        qubit_map = dict(
+            zip(original_qubits, self._make_qubits(original_qubits, reversed(range(max_index + 1))))
+        )
+        self._program = self.program.transform_qubits(lambda q: qubit_map[q])

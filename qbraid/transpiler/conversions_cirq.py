@@ -22,7 +22,7 @@ from openqasm3 import parse as openqasm_parse
 
 from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError
 from qbraid.qasm_checks import get_qasm_version
-from qbraid.transpiler.cirq_qasm import from_qasm, to_qasm
+from qbraid.transpiler.cirq_qasm2 import from_qasm, to_qasm
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 if TYPE_CHECKING:

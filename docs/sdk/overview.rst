@@ -78,11 +78,11 @@ Search for quantum backend(s) on which to execute your program:
    Device ID                           Status     
    ---------                           ------
    aws_oqc_lucy                        ONLINE        
-   aws_rigetti_aspen_m2                OFFLINE
+   aws_ionq_aria2                      OFFLINE
    aws_rigetti_aspen_m3                ONLINE
    
    >>> ibm_least_busy_qpu()
-   ibm_q_perth
+   ibm_q_oslo
 
 Apply the device wrapper and send your quantum jobs:
 
@@ -90,7 +90,7 @@ Apply the device wrapper and send your quantum jobs:
 
    >>> from qbraid import device_wrapper
    >>> jobs  = []
-   >>> qbraid_ids = ['aws_oqc_lucy', 'ibm_q_perth']
+   >>> qbraid_ids = ['aws_oqc_lucy', 'ibm_q_oslo']
    >>> for device in qbraid_ids:
    ... qdevice = device_wrapper(device)
    ... qjob = qdevice.run(circuit, shots=1000)
@@ -107,7 +107,7 @@ List your submitted jobs and view their status:
    Job ID                                              Submitted                  Status
    ------                                              ---------                  ------
    aws_oqc_lucy-exampleuser-qjob-zzzzzzz...            2023-05-21T21:13:47.220Z   QUEUED
-   ibm_q_perth-exampleuser-qjob-xxxxxxx...             2023-05-21T21:13:48.220Z   RUNNING
+   ibm_q_oslo-exampleuser-qjob-xxxxxxx...              2023-05-21T21:13:48.220Z   RUNNING
 
 Compare the results:
 
@@ -120,18 +120,17 @@ Compare the results:
    ... print("{:<20} {:<20}".format(qbraid_ids[i],str(counts)))
    Device               Counts              
    aws_oqc_lucy         {'0': 477, '1': 547}
-   ibm_q_perth          {'0': 550, '1': 474}
+   ibm_q_oslo           {'0': 550, '1': 474}
 
 
 Supported Frontends
 ^^^^^^^^^^^^^^^^^^^^
 
 +-------------+-------------+------------+-------------+-------------+-------------+
-|  Cirq_      |  Braket_    |  Qiskit_   |  PyQuil_    |  PyTKET_    |  QASM_      |
+|  Cirq_      |  Braket_    |  Qiskit_   |  PyQuil_    |  PyTKET_    |  OpenQASM_  |
 +=============+=============+============+=============+=============+=============+
 | |cirq|      | |braket|    | |qiskit|   | |pyquil|    | |pytket|    | |qasm|      |
 +-------------+-------------+------------+-------------+-------------+-------------+
-
 
 .. |cirq| image:: ../_static/pkg-logos/cirq.png
    :align: middle
@@ -161,17 +160,23 @@ Supported Frontends
 .. |qasm| image:: ../_static/pkg-logos/qasm.png
    :align: middle
    :width: 100px
-   :target: QASM_
+   :target: OpenQASM_
 
-.. .. |pennylane| image:: ../_static/pkg-logos/pennylane.png
-..    :align: middle
-..    :width: 100px
-..    :target: Pennylane_
+.. |pennylane| image:: ../_static/pkg-logos/pennylane.png
+   :align: middle
+   :width: 100px
+   :target: Pennylane_
+
+.. |qir| image:: ../_static/pkg-logos/qir.png
+   :align: middle
+   :width: 100px
+   :target: PyQIR_
 
 .. _Cirq: https://quantumai.google/cirq
 .. _Braket: https://aws.amazon.com/braket
 .. _Qiskit: https://qiskit.org
 .. _PyQuil: https://www.rigetti.com/applications/pyquil
 .. _PyTKET: https://cqcl.github.io/tket/pytket/api/
-.. _QASM: https://openqasm.com/
+.. _OpenQASM: https://openqasm.com/
 .. _Pennylane: https://pennylane.ai
+.. _PyQIR: https://www.qir-alliance.org/pyqir/

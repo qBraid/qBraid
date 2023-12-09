@@ -10,7 +10,7 @@ your current working directory is the qBraid repo root.
 
 1. `tox -e unit-tests`: All unit tests are passing. New + modified code has corresponding unit tests and satisfy `codecov` checks. To run remote tests (i.e. those requiring qBraid/AWS/IBM credentials), set environment variable `QBRAID_RUN_REMOTE_TESTS=True`.
 2. `tox -e docs`: Doc builds are passing. New + modified code has appropriate docstrings and tree stubs are updated, if applicable.
-3. `tox -e linters`: Code passes linters and formatters checks. Any exceptions or updates to code style configs are documented.
+3. `tox -e format-check`: Code passes linters and formatters checks. Any exceptions or updates to code style configs are documented.
 4. `python tools/verify_headers.py`: New files have appropriate licensing headers. Running headers script passes checks.
 
 ## Installing from source
@@ -20,7 +20,7 @@ You can install the qBraid-SDK from source by cloning this repository and runnin
 ```bash
 git clone https://github.com/qbraid/qBraid.git
 cd qBraid
-python3 -m pip install -e .
+pip install -e '.[all]' # install all extensions
 ```
 
 ## Documentation
@@ -28,13 +28,13 @@ python3 -m pip install -e .
 To generate the API reference documentation locally:
 
 ```bash
-pip install 'tox'
+pip install 'tox>=4.2'
 tox -e docs
 ```
 
 Alternatively:
 ```bash
-pip install -e ".[docs]"
+pip install -e '.[docs]'
 cd docs
 make html
 ```
@@ -73,7 +73,7 @@ the `reST` syntax mentioned (linked) above.
 To run all unit tests:
 
 ```bash
-pip install 'tox'
+pip install 'tox>=4.2'
 tox -e unit-tests
 ```
 
@@ -86,12 +86,13 @@ tox -e unit-tests -- {your-arguments}
 Alternatively:
 
 ```bash
-pip install -e ".[test]"
+pip install pytest
 pytest {path-to-test}
 ```
 
 Running unit tests with tox will automatically generate a coverage report, which can be viewed by
-opening `tests/_coverage/index.html` in your browser.
+opening `tests/_coverage/index.html` in your browser. The latest code coverage report generated
+from the `main` branch can be viewed at https://app.codecov.io/gh/qBraid/qBraid/tree/main.
 
 To run linters and doc generators and unit tests:
 ```bash
