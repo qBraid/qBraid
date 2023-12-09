@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 from cirq import Circuit, LineQubit, ops, testing
 
-from qbraid.interface import circuits_allclose
+from qbraid.programs import circuits_allclose
 from qbraid.transpiler.cirq_qiskit.conversions import to_qiskit
 from qbraid.transpiler.exceptions import CircuitConversionError
 

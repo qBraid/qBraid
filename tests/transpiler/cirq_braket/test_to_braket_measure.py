@@ -14,7 +14,7 @@ Unit tests for converting Cirq circuits with MeasurementGate(s) to Braket circui
 """
 import cirq
 
-from qbraid.interface import circuits_allclose
+from qbraid.programs import circuits_allclose
 from qbraid.transpiler.cirq_braket.convert_to_braket import to_braket
 
 

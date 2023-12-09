@@ -16,7 +16,7 @@ import braket.circuits
 import numpy as np
 import qiskit
 
-from qbraid.interface import circuits_allclose
+from qbraid.programs import circuits_allclose
 from qbraid.transpiler.conversions_qasm3 import convert_from_qasm3, convert_to_qasm3
 
 

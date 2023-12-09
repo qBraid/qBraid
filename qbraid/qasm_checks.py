@@ -36,3 +36,24 @@ def get_qasm_version(qasm_str: str) -> str:
         return f"qasm{verion}"
     except QASM3ParsingError as err:
         raise QasmError("Failed to parse OpenQASM program.") from err
+
+
+def is_valid_qasm2(qasm_str: str) -> bool:
+    """Checks if input string is a valid OpenQASM 2 program.
+
+    Args:
+        qasm_str: An OpenQASM program string
+
+    Returns:
+        bool: True if input string is a valid OpenQASM 2 program, False otherwise
+
+    """
+    # pylint: disable=import-outside-toplevel
+    from qiskit import QuantumCircuit
+    from qiskit.qasm2 import QASM2ParseError
+
+    try:
+        _ = QuantumCircuit.from_qasm_str(qasm_str)
+    except QASM2ParseError:
+        return False
+    return True

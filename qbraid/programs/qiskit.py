@@ -32,6 +32,11 @@ if TYPE_CHECKING:
 class QiskitCircuit(QuantumProgram):
     """Wrapper class for ``qiskit.QuantumCircuit`` objects"""
 
+    def __init__(self, program: "qiskit.QuantumCircuit"):
+        super().__init__(program)
+        self._direct_conversion_set = {}
+        self._openqasm_conversion_set = {}
+
     @property
     def program(self) -> qiskit.QuantumCircuit:
         return self._program
@@ -69,18 +74,7 @@ class QiskitCircuit(QuantumProgram):
         circuit.remove_final_measurements()
         return Operator(circuit).data
 
-    def _set_direct_conversions(self) -> None:
-        self._direct_conversion_set = {}
-
-    def _set_openqasm_conversions(self) -> None:
-        self._openqasm_conversion_set = {}
-
-    def _contiguous_expansion(self) -> None:
-        """Checks whether the circuit uses contiguous qubits/indices,
-        and if not, adds identity gates to vacant registers as needed."""
-        raise NotImplementedError
-
-    def _contiguous_compression(self) -> None:
+    def collapse_empty_registers(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
         circuit = self.program.copy()
@@ -112,3 +106,4 @@ class QiskitCircuit(QuantumProgram):
 
     def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
         """Convert the circuit into target package via direct mapping"""
+        raise NotImplementedError

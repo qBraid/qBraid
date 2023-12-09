@@ -34,7 +34,7 @@ def to_pyquil(circuit: Circuit, compat: bool = True) -> Program:
     """
     if compat:
         qprogram = circuit_wrapper(circuit)
-        qprogram.convert_to_contiguous()
+        qprogram.collapse_empty_registers()
         circuit = qprogram.program
     input_qubits = circuit.all_qubits()
     max_qubit = max(input_qubits)
@@ -69,7 +69,7 @@ def from_pyquil(program: Program, compat: bool = True) -> Circuit:
         circuit = circuit_from_quil(program.out())
         if compat:
             qprogram = circuit_wrapper(circuit)
-            qprogram.convert_to_contiguous()
+            qprogram.collapse_empty_registers()
             circuit = qprogram.program
         return circuit
     except Exception as err:

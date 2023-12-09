@@ -120,7 +120,7 @@ This time, using the same origin circuit wrapper, we'll input ``"pyquil"`` to re
 Interface
 -----------
 
-The ``qbraid.interface`` module contains a number of functions that can be helpful for testing, quick calculations,
+The ``qbraid.programs.testing`` module contains a number of functions that can be helpful for testing, quick calculations,
 verification, or other general use.
 
 Random circuits
@@ -131,7 +131,7 @@ random ``cirq.Circuit`` with four qubits and depth four.
 
 .. code-block:: python
 
-    >>> from qbraid.interface import random_circuit
+    >>> from qbraid.programs import random_circuit
     >>> cirq_circuit = random_circuit("cirq", num_qubits=4, depth=4)
     >>> print(cirq_circuit)
           ┌──────┐   ┌──┐           ┌──┐
@@ -181,7 +181,7 @@ It applies the ``unitary`` method to both input circuits, compares the outputs v
 
 .. code-block:: python
 
-    >>> from qbraid.interface import circuits_allclose
+    >>> from qbraid.programs import circuits_allclose
     >>> circuits_allclose(cirq_circuit, pyquil_circuit)
     True
 
@@ -194,7 +194,7 @@ methods and functions dedicated to resolving any potential compatibility issues.
 instance, each frontend has slightly different rules and standard conventions when it
 comes to qubit indexing. Functions and/or methods in some modules require that circuits
 are constructed using contiguous qubits i.e. sequential qubit indexing, while others
-do not. The ``convert_to_contiguous`` method can be used to map qubit indicies accordingly,
+do not. The ``collapse_empty_registers`` method can be used to map qubit indicies accordingly,
 and address compatibility issues without re-constructing each circuit.
 
 For example, let's look at a Braket circuit that creates a GHZ state.
@@ -227,15 +227,17 @@ Notice, our three-qubit circuit uses qubit indicies ``[0,2,4]``:
     T  : |0|1|2|
 
 
-From here, we can use ``convert_to_contiguous`` to map the circuit to the ``[0,1,2]`` convention.
+From here, we can use ``collapse_empty_registers`` to map the circuit to the ``[0,1,2]`` convention.
 If the use-case requires using the dimensionality of the maximally indexed qubit, you
-can set ``expansion=True`` to append identity gates to "vacant" registers instead of
+can use ``populate_empty_registers`` to append identity gates to "vacant" registers instead of
 performing the qubit mapping.
 
 .. code-block:: python
 
-    >>> from qbraid.interface import convert_to_contiguous
-    >>> print(convert_to_contiguous(braket_circuit))
+    >>> from qbraid import circuit_wrapper
+    >>> qprogram = circuit_wrapper(braket_circuit)
+    >>> qprogram.collapse_empty_registers()
+    >>> print(qprogram.program)
     T  : |0|1|2|
             
     q0 : -H-C---
@@ -245,7 +247,9 @@ performing the qubit mapping.
     q2 : -----X-
 
     T  : |0|1|2|
-    >>> print(convert_to_contiguous(braket_circuit, expansion=True))
+    >>> qprogram1 = circuit_wrapper(braket_circuit)
+    >>> qprogram1.populate_empty_registers()
+    >>> print(qprogram1.program)
     T  : |0|1|2|
             
     q0 : -H-C---

@@ -20,11 +20,11 @@ from typing import TYPE_CHECKING, Any, List, Optional
 import numpy as np
 
 from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError
-from qbraid.interface.circuit_drawer import circuit_drawer
+from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError, QbraidError
 from qbraid.qasm_checks import get_qasm_version
 from qbraid.transpiler.conversions_cirq import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.visualization.draw_circuit import circuit_drawer
 
 if TYPE_CHECKING:
     import qbraid
@@ -101,14 +101,6 @@ class QuantumProgram:
     @abstractmethod
     def _unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
-
-    @abstractmethod
-    def _set_direct_conversions(self) -> None:
-        """Set packages for direct conversion"""
-
-    @abstractmethod
-    def _set_openqasm_conversions(self) -> None:
-        """Set packages for conversion through openqasm"""
 
     @abstractmethod
     def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
@@ -213,18 +205,8 @@ class QuantumProgram:
         return tensor_le.reshape([rank, rank])
 
     @abstractmethod
-    def _contiguous_compression(self) -> None:
+    def collapse_empty_registers(self) -> None:
         """Remove empty registers of circuit."""
-
-    @abstractmethod
-    def _contiguous_expansion(self) -> None:
-        """Remove empty registers of circuit."""
-
-    def convert_to_contiguous(self, expansion=False) -> None:
-        """Remove empty registers of circuit."""
-        if expansion:
-            return self._contiguous_expansion()
-        return self._contiguous_compression()
 
     @abstractmethod
     def reverse_qubit_order(self) -> None:
@@ -242,7 +224,7 @@ class QuantumProgram:
         else:
             try:
                 self._convert_direct_to_package(target)
-            except Exception as err:  # pylint: disable=broad-exception-caught
+            except (QbraidError, NotImplementedError) as err:
                 warnings.warn(
                     f"""Direct conversion failed for {self.package} to {target}, 
                     Error: {err}.\n Re-trying with OpenQASM intermediate conversion."""
@@ -254,7 +236,7 @@ class QuantumProgram:
             )
         try:
             self._convert_openqasm_to_package(target)
-        except Exception as err:
+        except (QbraidError, NotImplementedError) as err:
             raise CircuitConversionError(
                 f"""Direct / OpenQASM conversions are either absent or have \
                   failed for {self.package} to {target} with error."""
@@ -278,9 +260,9 @@ class QuantumProgram:
             :data:`~qbraid.QPROGRAM`: supported quantum program object
         """
         if self._direct_conversion_set is None:
-            self._set_direct_conversions()
+            pass
         if self._openqasm_conversion_set is None:
-            self._set_openqasm_conversions()
+            pass
 
         if conversion_type == self.package:
             return self._program

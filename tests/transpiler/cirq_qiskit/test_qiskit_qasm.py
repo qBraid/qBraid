@@ -15,7 +15,7 @@ Unit tests for converting qiskit circuits to/from OpenQASM.
 import pytest
 from qiskit import QuantumCircuit
 
-from qbraid.interface import circuits_allclose
+from qbraid.programs import circuits_allclose
 from qbraid.transpiler.qasm3_qiskit.conversions import (
     _add_stdgates_include,
     qiskit_from_qasm3,

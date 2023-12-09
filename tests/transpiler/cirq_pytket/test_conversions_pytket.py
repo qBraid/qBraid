@@ -18,10 +18,10 @@ from cirq import Circuit, LineQubit, ops, testing
 from pytket.circuit import Circuit as TKCircuit
 from pytket.qasm import circuit_to_qasm_str
 
-from qbraid.interface import circuits_allclose
-from qbraid.interface.circuit_equality import _equal
+from qbraid.programs import circuits_allclose
+from qbraid.programs.testing.circuit_equality import _equal
 from qbraid.transpiler.cirq_pytket.conversions import from_pytket, to_pytket
-from qbraid.transpiler.cirq_qasm2 import from_qasm
+from qbraid.transpiler.qasm_node import cirq_from_qasm
 
 
 def test_bell_state_to_from_circuits():
@@ -53,7 +53,7 @@ def test_convert_with_barrier(as_qasm):
     pytket_circuit.add_barrier([i for i in range(n)])
 
     if as_qasm:
-        cirq_circuit = from_qasm(circuit_to_qasm_str(pytket_circuit))
+        cirq_circuit = cirq_from_qasm(circuit_to_qasm_str(pytket_circuit))
     else:
         cirq_circuit = from_pytket(pytket_circuit)
 
@@ -73,7 +73,7 @@ def test_convert_with_multiple_barriers(as_qasm):
         pytket_circuit.add_barrier([i for i in range(n)])
 
     if as_qasm:
-        cirq_circuit = from_qasm(circuit_to_qasm_str(pytket_circuit))
+        cirq_circuit = cirq_from_qasm(circuit_to_qasm_str(pytket_circuit))
     else:
         cirq_circuit = from_pytket(pytket_circuit)
 

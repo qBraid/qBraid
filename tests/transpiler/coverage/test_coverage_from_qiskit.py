@@ -31,7 +31,7 @@ def convert_from_qiskit_to_x(target, gate_name):
     source_circuit = qiskit.QuantumCircuit(gate.num_qubits)
     source_circuit.compose(gate, inplace=True)
     target_circuit = qbraid.circuit_wrapper(source_circuit).transpile(target)
-    assert qbraid.interface.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
+    assert qbraid.programs.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
 
 
 @pytest.mark.parametrize(("target", "baseline"), TARGETS)

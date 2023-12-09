@@ -6,7 +6,17 @@ qbraid.transpiler
    :undoc-members:
    :show-inheritance:
 
+.. automodule:: qbraid.transpiler.qasm_node
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 .. automodule:: qbraid.transpiler.cirq_braket
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+.. automodule:: qbraid.transpiler.cirq_qiskit
    :members:
    :undoc-members:
    :show-inheritance:
@@ -21,22 +31,12 @@ qbraid.transpiler
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.transpiler.cirq_qiskit
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. automodule:: qbraid.transpiler.cirq_qasm2
+.. automodule:: qbraid.transpiler.qasm3_braket
    :members:
    :undoc-members:
    :show-inheritance:
 
 .. automodule:: qbraid.transpiler.qasm3_qiskit
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. automodule:: qbraid.transpiler.qasm3_braket
    :members:
    :undoc-members:
    :show-inheritance:

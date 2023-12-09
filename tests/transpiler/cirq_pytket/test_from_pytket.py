@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 from pytket.circuit import Circuit as TKCircuit
 
-from qbraid.interface import circuits_allclose, random_circuit
+from qbraid.programs import circuits_allclose, random_circuit
 from qbraid.transpiler.cirq_pytket.conversions import from_pytket
 from qbraid.transpiler.exceptions import CircuitConversionError
 
