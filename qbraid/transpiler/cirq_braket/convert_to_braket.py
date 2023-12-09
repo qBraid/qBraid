@@ -47,7 +47,7 @@ def to_braket(circuit: Circuit) -> BKCircuit:
         Braket circuit equivalent to the input Cirq circuit.
     """
     qprogram = qbraid.circuit_wrapper(circuit)
-    qprogram.convert_to_contiguous()
+    qprogram.collapse_empty_registers()
     compat_circuit = qprogram.program
     cirq_int_qubits = range(len(compat_circuit.all_qubits()))
     braket_int_qubits = list(cirq_int_qubits)

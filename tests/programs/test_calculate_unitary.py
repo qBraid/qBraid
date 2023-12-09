@@ -73,7 +73,7 @@ def make_circuit(bk_instrs):
         Gate, index = instr
         circuit.add_instruction(Instruction(Gate(), target=index))
     qprogram = circuit_wrapper(circuit)
-    qprogram.convert_to_contiguous(expansion=True)
+    qprogram.populate_empty_registers()
     return qprogram.program
 
 

@@ -36,7 +36,7 @@ def to_pytket(circuit: Circuit) -> TKCircuit:
     """
     try:
         qprogram = circuit_wrapper(circuit)
-        qprogram.convert_to_contiguous()
+        qprogram.collapse_empty_registers()
         contig_circuit = qprogram.program
         compat_circuit = _map_zpow_and_unroll(contig_circuit)
         return circuit_from_qasm_str(cirq_to_qasm(compat_circuit))
@@ -58,7 +58,7 @@ def from_pytket(circuit: TKCircuit, compat=False) -> Circuit:
         cirq_circuit = cirq_from_qasm(qasm_str)
         if compat:
             qprogram = circuit_wrapper(cirq_circuit)
-            qprogram.convert_to_contiguous()
+            qprogram.collapse_empty_registers()
             cirq_circuit = qprogram.program
         return cirq_circuit
     except Exception as err:

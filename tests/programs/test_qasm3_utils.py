@@ -125,7 +125,7 @@ c[2] = measure q[2];
     _check_output(circuit, out__expected)
 
 
-def test_convert_to_contiguous_qasm3_expansion():
+def test_collapse_empty_registers_qasm3_expansion():
     """Test conversion of qasm3 to contiguous qasm3"""
     qasm_test = """
     OPENQASM 3.0;
@@ -147,7 +147,7 @@ def test_convert_to_contiguous_qasm3_expansion():
     qasm_expected = qasm_test + """i q1[1];\ni q2[1];\ni q4[0];\n"""
 
     qprogram = circuit_wrapper(qasm_test)
-    qprogram.convert_to_contiguous(expansion=True)
+    qprogram.populate_empty_registers()
     assert qprogram.program == qasm_expected
 
 
@@ -202,7 +202,7 @@ def test_convert_to_compressed_contiguous_qasm3():
     """
 
     qprogram = circuit_wrapper(qasm_test)
-    qprogram.convert_to_contiguous()
+    qprogram.collapse_empty_registers()
     assert qprogram.program == qasm_expected
 
 

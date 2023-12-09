@@ -35,7 +35,7 @@ def to_qiskit(circuit: cirq.Circuit) -> qiskit.QuantumCircuit:
     """
     try:
         qprogram = circuit_wrapper(circuit)
-        qprogram.convert_to_contiguous()
+        qprogram.collapse_empty_registers()
         contig_circuit = qprogram.program
         compat_circuit = _map_zpow_and_unroll(contig_circuit)
         return qiskit.QuantumCircuit.from_qasm_str(cirq_to_qasm(compat_circuit))

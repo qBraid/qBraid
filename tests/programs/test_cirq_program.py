@@ -26,7 +26,7 @@ def test_contiguous_line_qubits():
     circuit.append(Z(LineQubit(4)))
 
     program = CirqCircuit(circuit)
-    program._contiguous_compression()
+    program.collapse_empty_registers()
 
     expected_qubits = [LineQubit(0), LineQubit(1), LineQubit(2)]
     assert set(program.qubits) == set(expected_qubits)
@@ -40,7 +40,7 @@ def test_contiguous_grid_qubits():
     circuit.append(Z(GridQubit(0, 4)))
 
     program = CirqCircuit(circuit)
-    program._contiguous_compression()
+    program.collapse_empty_registers()
 
     expected_qubits = [GridQubit(0, 0), GridQubit(0, 1), GridQubit(0, 2)]
     assert set(program.qubits) == set(expected_qubits)
@@ -53,7 +53,7 @@ def test_mixed_qubit_types():
     circuit.append(Y(GridQubit(0, 4)))
 
     program = CirqCircuit(circuit)
-    program._contiguous_compression()
+    program.collapse_empty_registers()
 
     expected_qubits = [LineQubit(0), LineQubit(1)]
     assert set(program.qubits) == set(expected_qubits)

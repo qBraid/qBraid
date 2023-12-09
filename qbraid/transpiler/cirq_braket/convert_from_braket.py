@@ -75,7 +75,7 @@ def from_braket(circuit: BKCircuit) -> Circuit:
     from qbraid import circuit_wrapper  # pylint: disable=import-outside-toplevel
 
     qprogram = circuit_wrapper(circuit)
-    qprogram.convert_to_contiguous()
+    qprogram.collapse_empty_registers()
     compat_circuit = qprogram.program
     cirq_qubits = [LineQubit(x) for x in range(len(compat_circuit.qubits))]
     qubit_mapping = {x: cirq_qubits[x] for x in range(len(cirq_qubits))}

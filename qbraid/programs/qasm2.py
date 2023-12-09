@@ -21,9 +21,16 @@ from qbraid.transpiler.qasm_node.convert_cirq import cirq_from_qasm
 if TYPE_CHECKING:
     import numpy as np
 
+    import qbraid
+
 
 class OpenQasm2Program(QuantumProgram):
     """Wrapper class for OpenQASM 2 strings."""
+
+    def __init__(self, program: str):
+        super().__init__(program)
+        self._direct_conversion_set = {}
+        self._openqasm_conversion_set = {}
 
     @property
     def program(self) -> str:
@@ -147,26 +154,19 @@ class OpenQasm2Program(QuantumProgram):
 
         return self._get_max_count(depth_counts)
 
-    def _set_direct_conversions(self) -> None:
-        self._direct_conversion_set = {}
-
-    def _set_openqasm_conversions(self) -> None:
-        self._openqasm_conversion_set = {}
-
     def _unitary(self) -> "np.ndarray":
         """Return the unitary of the QASM"""
         return cirq_from_qasm(self.program).unitary()
 
-    def _contiguous_expansion(self) -> None:
-        """Checks whether the circuit uses contiguous qubits/indices,
-        and if not, adds identity gates to vacant registers as needed."""
-        raise NotImplementedError
-
-    def _contiguous_compression(self) -> None:
+    def collapse_empty_registers(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
         raise NotImplementedError
 
     def reverse_qubit_order(self) -> None:
         """Reverses the qubit ordering of a openqasm program."""
+        raise NotImplementedError
+
+    def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
+        """Convert circuit to package through direct mapping"""
         raise NotImplementedError

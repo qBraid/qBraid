@@ -27,6 +27,11 @@ if TYPE_CHECKING:
 class CirqCircuit(QuantumProgram):
     """Wrapper class for ``cirq.Circuit`` objects."""
 
+    def __init__(self, program: "cirq.Circuit"):
+        super().__init__(program)
+        self._direct_conversion_set = {}
+        self._openqasm_conversion_set = {}
+
     @property
     def program(self) -> cirq.Circuit:
         return self._program
@@ -52,18 +57,9 @@ class CirqCircuit(QuantumProgram):
         """Return the circuit depth (i.e., length of critical path)."""
         return len(cirq.Circuit(self.program.all_operations()))
 
-    def _set_direct_conversions(self) -> None:
-        self._direct_conversion_set = {}
-
-    def _set_openqasm_conversions(self) -> None:
-        self._openqasm_conversion_set = {}
-
     def _unitary(self) -> np.ndarray:
         """Calculate unitary of circuit."""
         return self.program.unitary()
-
-    def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
-        """Convert the circuit into target package via direct mapping"""
 
     @staticmethod
     def is_measurement_gate(op: cirq.Operation) -> bool:
@@ -136,7 +132,7 @@ class CirqCircuit(QuantumProgram):
             line_qubit_circuit.append(opr.gate.on(*line_qubits))
         self._program = line_qubit_circuit
 
-    def _contiguous_expansion(self) -> None:
+    def populate_empty_registers(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, adds identity gates to vacant registers as needed."""
         circuit = self.program.copy()
@@ -164,7 +160,7 @@ class CirqCircuit(QuantumProgram):
         self._program = circuit
         return
 
-    def _contiguous_compression(self) -> None:
+    def collapse_empty_registers(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
         original_qubits = sorted(self.program.all_qubits(), key=self._int_from_qubit)
@@ -181,3 +177,7 @@ class CirqCircuit(QuantumProgram):
             zip(original_qubits, self._make_qubits(original_qubits, reversed(range(max_index + 1))))
         )
         self._program = self.program.transform_qubits(lambda q: qubit_map[q])
+
+    def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
+        """Convert the circuit into target package via direct mapping"""
+        raise NotImplementedError

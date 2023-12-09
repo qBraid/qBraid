@@ -13,7 +13,7 @@ Module defining PyQuilProgram Class
 
 """
 
-from typing import List
+from typing import TYPE_CHECKING, List
 
 import numpy as np
 import pyquil
@@ -21,9 +21,17 @@ from pyquil.simulation.tools import program_unitary
 
 from qbraid.programs.abc_program import QuantumProgram
 
+if TYPE_CHECKING:
+    import qbraid
+
 
 class PyQuilProgram(QuantumProgram):
     """Wrapper class for ``pyQuil.Program`` objects."""
+
+    def __init__(self, program: "pyquil.Program"):
+        super().__init__(program)
+        self._direct_conversion_set = {}
+        self._openqasm_conversion_set = {}
 
     @property
     def program(self) -> pyquil.Program:
@@ -55,26 +63,19 @@ class PyQuilProgram(QuantumProgram):
         """Return the circuit depth (i.e., length of critical path)."""
         return len(self.program)
 
-    def _set_direct_conversions(self) -> None:
-        self._direct_conversion_set = {}
-
-    def _set_openqasm_conversions(self) -> None:
-        self._openqasm_conversion_set = {}
-
     def _unitary(self) -> "np.ndarray":
         """Return the unitary of a pyQuil program."""
         return program_unitary(self.program, n_qubits=self.num_qubits)
 
-    def _contiguous_expansion(self) -> None:
-        """Checks whether the circuit uses contiguous qubits/indices,
-        and if not, adds identity gates to vacant registers as needed."""
-        raise NotImplementedError
-
-    def _contiguous_compression(self) -> None:
+    def collapse_empty_registers(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
         raise NotImplementedError
 
     def reverse_qubit_order(self) -> None:
         """Reverse the order of the qubits in the circuit."""
+        raise NotImplementedError
+
+    def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
+        """Convert circuit to package through direct mapping"""
         raise NotImplementedError

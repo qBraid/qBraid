@@ -194,7 +194,7 @@ methods and functions dedicated to resolving any potential compatibility issues.
 instance, each frontend has slightly different rules and standard conventions when it
 comes to qubit indexing. Functions and/or methods in some modules require that circuits
 are constructed using contiguous qubits i.e. sequential qubit indexing, while others
-do not. The ``convert_to_contiguous`` method can be used to map qubit indicies accordingly,
+do not. The ``collapse_empty_registers`` method can be used to map qubit indicies accordingly,
 and address compatibility issues without re-constructing each circuit.
 
 For example, let's look at a Braket circuit that creates a GHZ state.
@@ -227,16 +227,16 @@ Notice, our three-qubit circuit uses qubit indicies ``[0,2,4]``:
     T  : |0|1|2|
 
 
-From here, we can use ``convert_to_contiguous`` to map the circuit to the ``[0,1,2]`` convention.
+From here, we can use ``collapse_empty_registers`` to map the circuit to the ``[0,1,2]`` convention.
 If the use-case requires using the dimensionality of the maximally indexed qubit, you
-can set ``expansion=True`` to append identity gates to "vacant" registers instead of
+can use ``populate_empty_registers`` to append identity gates to "vacant" registers instead of
 performing the qubit mapping.
 
 .. code-block:: python
 
     >>> from qbraid import circuit_wrapper
     >>> qprogram = circuit_wrapper(braket_circuit)
-    >>> qprogram.convert_to_contiguous()
+    >>> qprogram.collapse_empty_registers()
     >>> print(qprogram.program)
     T  : |0|1|2|
             
@@ -248,7 +248,7 @@ performing the qubit mapping.
 
     T  : |0|1|2|
     >>> qprogram1 = circuit_wrapper(braket_circuit)
-    >>> qprogram1.convert_to_contiguous(expansion=True)
+    >>> qprogram1.populate_empty_registers()
     >>> print(qprogram1.program)
     T  : |0|1|2|
             

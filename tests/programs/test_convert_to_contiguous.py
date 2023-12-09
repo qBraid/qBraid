@@ -28,7 +28,7 @@ def test_remove_idle_qubits_qiskit():
     circuit.h(0)
     circuit.cx(0, 1)
     qprogram = circuit_wrapper(circuit)
-    qprogram.convert_to_contiguous()
+    qprogram.collapse_empty_registers()
     contig_circuit = qprogram.program
     assert contig_circuit.num_qubits == 2
 
@@ -41,7 +41,7 @@ def test_convert_braket_bell():
     cnot_gate = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
     u_expected = np.einsum("ij,jk->ki", h_gate_kron, cnot_gate)
     qprogram = circuit_wrapper(circuit)
-    qprogram.convert_to_contiguous()
+    qprogram.collapse_empty_registers()
     u_little_endian = qprogram.unitary_little_endian()
     assert np.allclose(u_expected, u_little_endian)
 
@@ -68,17 +68,17 @@ def test_compare_conversion_braket_cirq():
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
     qprogram = circuit_wrapper(braket_circuit)
-    qprogram.convert_to_contiguous()
+    qprogram.collapse_empty_registers()
     braket_compat_circuit = qprogram.program
     assert braket_compat_circuit.qubit_count == 3
 
     qprogram = circuit_wrapper(cirq_circuit)
-    qprogram.convert_to_contiguous()
+    qprogram.collapse_empty_registers()
     cirq_compat_circuit = qprogram.program
     assert circuits_allclose(braket_compat_circuit, cirq_compat_circuit, strict_gphase=True)
 
     qprogram = circuit_wrapper(cirq_circuit)
-    qprogram.convert_to_contiguous(expansion=True)
+    qprogram.populate_empty_registers()
     cirq_expanded_circuit = qprogram.program
     assert len(cirq_expanded_circuit.all_qubits()) == 5
 
@@ -87,7 +87,7 @@ def test_braket_control_modifier():
     """Test that converting braket circuits to contiguous qubits works with control modifiers"""
     circuit = BKCircuit().y(target=0, control=1)
     qprogram = circuit_wrapper(circuit)
-    qprogram.convert_to_contiguous()
+    qprogram.collapse_empty_registers()
     contig_circuit = qprogram.program
     assert circuit.qubit_count == contig_circuit.qubit_count
 
@@ -98,13 +98,13 @@ def test_remove_blank_wires_pytket():
     circuit.H(0)
     circuit.CX(0, 1)
     qprogram = circuit_wrapper(circuit)
-    qprogram.convert_to_contiguous()
+    qprogram.collapse_empty_registers()
     contig_circuit = qprogram.program
     assert contig_circuit.n_qubits == 2
 
 
 def test_convert_qasm3_expansion():
-    """Test that convert_to_contiguous for qasm3 string"""
+    """Test that collapse_empty_registers for qasm3 string"""
     qasm3_str = """
 OPENQASM 3;
 include "stdgates.inc";
@@ -113,13 +113,13 @@ h q[1];
 cx q[1], q[3];
 """
     qprogram = circuit_wrapper(qasm3_str)
-    qprogram.convert_to_contiguous(expansion=True)
+    qprogram.populate_empty_registers()
     contig_qasm3_str = qprogram.program
     assert contig_qasm3_str == qasm3_str + """i q[0];\ni q[2];\n"""
 
 
 def test_convert_qasm3():
-    """Test that convert_to_contiguous for qasm3 string"""
+    """Test that collapse_empty_registers for qasm3 string"""
     qasm3_str = """
 OPENQASM 3;
 include "stdgates.inc";
@@ -128,5 +128,5 @@ h q[1];
 cx q[1], q[3];
 """
     qprogram = circuit_wrapper(qasm3_str)
-    qprogram.convert_to_contiguous()
+    qprogram.collapse_empty_registers()
     assert qprogram.num_qubits == 2
