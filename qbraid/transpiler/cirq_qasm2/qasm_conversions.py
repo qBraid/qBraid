@@ -19,7 +19,7 @@ from cirq import ops
 
 import qbraid
 from qbraid.interface.qbraid_qasm.qasm_preprocess import convert_to_supported_qasm
-from qbraid.transpiler.cirq_qasm.qasm_parser import QasmParser
+from qbraid.transpiler.cirq_qasm2.qasm_parser import QasmParser
 
 QASMType = str
 

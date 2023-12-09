@@ -21,6 +21,8 @@ from qbraid.programs.abc_program import QuantumProgram
 if TYPE_CHECKING:
     import numpy as np
 
+    import qbraid
+
 
 class BraketCircuit(QuantumProgram):
     """Wrapper class for ``braket.circuits.Circuit`` objects."""

@@ -23,15 +23,15 @@ from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError
 from qbraid.interface.circuit_drawer import circuit_drawer
 from qbraid.qasm_checks import get_qasm_version
-from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
+from qbraid.transpiler.conversions_cirq import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 if TYPE_CHECKING:
     import qbraid
 
 transpiler_openqasm_modules = {
-    "qiskit": import_module("qbraid.transpiler.cirq_qiskit.qiskit_qasm"),
-    "braket": import_module("qbraid.transpiler.cirq_braket.braket_qasm"),
+    "qiskit": import_module("qbraid.transpiler.qasm3_qiskit.conversions"),
+    "braket": import_module("qbraid.transpiler.qasm3_braket.conversions"),
 }
 
 

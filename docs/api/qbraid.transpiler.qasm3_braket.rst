@@ -1,15 +1,15 @@
 :orphan:
 
-qbraid.transpiler.qiskit_braket package
+qbraid.transpiler.qasm3_braket package
 =========================================
 
 Submodules
 ----------
 
-qbraid.transpiler.qiskit_braket.conversions module
+qbraid.transpiler.qasm3_braket.conversions module
 ----------------------------------------------------
 
-.. automodule:: qbraid.transpiler.qiskit_braket.conversions
+.. automodule:: qbraid.transpiler.qasm3_braket.conversions
    :members:
    :undoc-members:
    :show-inheritance:

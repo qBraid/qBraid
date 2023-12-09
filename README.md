@@ -144,9 +144,9 @@ Device status updated 0 minutes ago
 Device ID                           Status
 ---------                           ------
 aws_oqc_lucy                        ONLINE
-aws_rigetti_aspen_m2                OFFLINE
+aws_ionq_aria2                      OFFLINE
 aws_rigetti_aspen_m3                ONLINE
-ibm_q_perth                         ONLINE
+ibm_q_brisbane                      ONLINE
 ...
 
 ```
@@ -157,7 +157,7 @@ from any supported program type:
 ```python
 >>> from qbraid import device_wrapper, get_jobs
 >>> aws_device = device_wrapper("aws_oqc_lucy")
->>> ibm_device = device_wrapper("ibm_q_perth")
+>>> ibm_device = device_wrapper("ibm_q_brisbane")
 >>> aws_job = aws_device.run(qiskit_circuit, shots=1000)
 >>> ibm_job = ibm_device.run(cirq_circuit, shots=1000)
 >>> get_jobs()
@@ -166,7 +166,7 @@ Displaying 2 most recent jobs:
 Job ID                                              Submitted                  Status
 ------                                              ---------                  ------
 aws_oqc_lucy-exampleuser-qjob-zzzzzzz...            2023-05-21T21:13:47.220Z   QUEUED
-ibm_q_perth-exampleuser-qjob-xxxxxxx...             2023-05-21T21:13:48.220Z   RUNNING
+ibm_q_brisbane-exampleuser-qjob-xxxxxxx...          2023-05-21T21:13:48.220Z   RUNNING
 ...
 ```
 
