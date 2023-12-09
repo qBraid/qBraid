@@ -12,8 +12,8 @@
 Unit tests for OpenQASM 3 conversions
 
 """
-import numpy as np
 import braket.circuits
+import numpy as np
 import qiskit
 
 from qbraid.interface import circuits_allclose
@@ -31,6 +31,7 @@ def test_one_qubit_qiskit_to_braket():
 
 
 def test_one_qubit_braket_to_qiskit():
+    """Test converting braket to qiskit for one qubit circuit."""
     braket_circuit = braket.circuits.Circuit().h(0).ry(0, np.pi / 2)
     qasm3_program = convert_to_qasm3(braket_circuit)
     qiskit_circuit = convert_from_qasm3(qasm3_program, "qiskit")
@@ -38,6 +39,7 @@ def test_one_qubit_braket_to_qiskit():
 
 
 def test_two_qubit_braket_to_qiskit():
+    """Test converting braket to qiskit for two qubit circuit."""
     braket_circuit = braket.circuits.Circuit().h(0).cnot(0, 1)
     qasm3_program = convert_to_qasm3(braket_circuit)
     qiskit_circuit = convert_from_qasm3(qasm3_program, "qiskit")
@@ -74,7 +76,8 @@ def test_braket_to_qiskit_stdgates():
 
 
 def test_braket_to_qiskit_vi_sxdg():
-    """Test converting braket to qiskit with vi/sxdg gate with non-strict global phase comparison."""
+    """Test converting braket to qiskit with vi/sxdg gate with
+    non-strict global phase comparison."""
     circuit = braket.circuits.Circuit().vi(0)
     qasm3_program = convert_to_qasm3(circuit)
     qiskit_circuit = convert_from_qasm3(qasm3_program, "qiskit")
