@@ -9,22 +9,17 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-========================================================
-QASM conversions  (:mod:`qbraid.transpiler.cirq_qasm`)
-========================================================
+==================================================================
+QASM3-Qiskit Conversions  (:mod:`qbraid.transpiler.qasm3_qiskit`)
+==================================================================
 
-.. currentmodule:: qbraid.transpiler.cirq_qasm
+.. currentmodule:: qbraid.transpiler.qasm3_qiskit
 
 .. autosummary::
    :toctree: ../stubs/
 
-   from_qasm
-   to_qasm
-   Qasm
-   QasmGateStatement
-   QasmParser
-
+   qiskit_to_qasm3
+   qiskit_from_qasm3
 
 """
-from qbraid.transpiler.cirq_qasm.qasm_conversions import from_qasm, to_qasm
-from qbraid.transpiler.cirq_qasm.qasm_parser import Qasm, QasmGateStatement, QasmParser
+from qbraid.transpiler.qasm3_qiskit.conversions import qiskit_from_qasm3, qiskit_to_qasm3

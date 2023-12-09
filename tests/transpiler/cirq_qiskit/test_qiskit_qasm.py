@@ -16,7 +16,7 @@ import pytest
 from qiskit import QuantumCircuit
 
 from qbraid.interface import circuits_allclose
-from qbraid.transpiler.cirq_qiskit.qiskit_qasm import (
+from qbraid.transpiler.qasm3_qiskit.conversions import (
     _add_stdgates_include,
     qiskit_from_qasm3,
     qiskit_to_qasm3,

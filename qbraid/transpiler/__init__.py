@@ -23,5 +23,5 @@ Transpiler  (:mod:`qbraid.transpiler`)
    CircuitConversionError
 
 """
-from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
+from qbraid.transpiler.conversions_cirq import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError

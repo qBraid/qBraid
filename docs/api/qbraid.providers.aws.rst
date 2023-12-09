@@ -29,3 +29,11 @@ qbraid.providers.aws.result module
    :members:
    :undoc-members:
    :show-inheritance:
+
+qbraid.providers.aws.tracker module
+------------------------------------
+
+.. automodule:: qbraid.providers.aws.tracker
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -9,9 +9,9 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-=============================================================
-pyQuil Conversions  (:mod:`qbraid.transpiler.cirq_pyquil`)
-=============================================================
+================================================================
+Cirq-PyQuil Conversions  (:mod:`qbraid.transpiler.cirq_pyquil`)
+================================================================
 
 .. currentmodule:: qbraid.transpiler.cirq_pyquil
 

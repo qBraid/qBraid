@@ -17,7 +17,7 @@ import cirq
 import qiskit
 
 from qbraid import circuit_wrapper
-from qbraid.transpiler.cirq_qasm import from_qasm, to_qasm
+from qbraid.transpiler.cirq_qasm2 import from_qasm, to_qasm
 from qbraid.transpiler.custom_gates import _map_zpow_and_unroll
 from qbraid.transpiler.exceptions import CircuitConversionError
 

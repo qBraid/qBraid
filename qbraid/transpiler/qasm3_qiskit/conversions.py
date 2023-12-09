@@ -72,16 +72,6 @@ def _add_stdgates_include(qasm_str: str) -> str:
     return "\n".join(lines)
 
 
-def qiskit_from_qasm2(qasm_str: str) -> QuantumCircuit:
-    """Convert QASM 2.0 string to qiskit QuantumCircuit repr"""
-    return QuantumCircuit.from_qasm_str(qasm_str)
-
-
-def qiskit_to_qasm2(circuit: QuantumCircuit) -> str:
-    """Convert qiskit QuantumCircuit to QASM 2.0 string"""
-    return circuit.qasm()
-
-
 def qiskit_from_qasm3(qasm3_str: str) -> QuantumCircuit:
     """Convert QASM 3.0 string to qiskit QuantumCircuit repr"""
     qasm3_str = qasm3_str.replace("cnot ", "cx ")

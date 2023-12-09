@@ -9,33 +9,44 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for conversions between Amazon Braket circuits and Qiskit circuits
-using OpenQASM 3.
+Unit tests for OpenQASM 3 conversions
 
 """
 import numpy as np
-from braket.circuits import Circuit
+import braket.circuits
+import qiskit
 
 from qbraid.interface import circuits_allclose
-from qbraid.transpiler.cirq_braket.braket_qasm import braket_to_qasm3
-from qbraid.transpiler.qiskit_braket.conversions import braket_to_qiskit
+from qbraid.transpiler.conversions_qasm3 import convert_from_qasm3, convert_to_qasm3
 
 
-def test_one_qubit_circuit_to_qiskit():
-    braket_circuit = Circuit().h(0).ry(0, np.pi / 2)
-    qiskit_circuit = braket_to_qiskit(braket_circuit)
+def test_one_qubit_qiskit_to_braket():
+    """Test converting qiskit to braket for one qubit circuit."""
+    qiskit_circuit = qiskit.QuantumCircuit(1)
+    qiskit_circuit.h(0)
+    qiskit_circuit.ry(np.pi / 2, 0)
+    qasm3_program = convert_to_qasm3(qiskit_circuit)
+    braket_circuit = convert_from_qasm3(qasm3_program, "braket")
+    circuits_allclose(qiskit_circuit, braket_circuit, strict_gphase=True)
+
+
+def test_one_qubit_braket_to_qiskit():
+    braket_circuit = braket.circuits.Circuit().h(0).ry(0, np.pi / 2)
+    qasm3_program = convert_to_qasm3(braket_circuit)
+    qiskit_circuit = convert_from_qasm3(qasm3_program, "qiskit")
     assert circuits_allclose(braket_circuit, qiskit_circuit, strict_gphase=True)
 
 
-def test_two_qubit_circuit_to_qiskit():
-    braket_circuit = Circuit().h(0).cnot(0, 1)
-    qiskit_circuit = braket_to_qiskit(braket_circuit)
+def test_two_qubit_braket_to_qiskit():
+    braket_circuit = braket.circuits.Circuit().h(0).cnot(0, 1)
+    qasm3_program = convert_to_qasm3(braket_circuit)
+    qiskit_circuit = convert_from_qasm3(qasm3_program, "qiskit")
     assert circuits_allclose(braket_circuit, qiskit_circuit, strict_gphase=True)
 
 
 def test_braket_to_qiskit_stdgates():
     """Test converting braket to qiskit for standard gates."""
-    circuit = Circuit()
+    circuit = braket.circuits.Circuit()
 
     circuit.h([0, 1, 2, 3])
     circuit.x([0, 1])
@@ -57,12 +68,14 @@ def test_braket_to_qiskit_stdgates():
     circuit.cnot(0, 1)
     circuit.cphaseshift(2, 3, np.pi / 4)
 
-    qiskit_circuit = braket_to_qiskit(circuit)
+    qasm3_program = convert_to_qasm3(circuit)
+    qiskit_circuit = convert_from_qasm3(qasm3_program, "qiskit")
     assert circuits_allclose(circuit, qiskit_circuit, strict_gphase=True)
 
 
 def test_braket_to_qiskit_vi_sxdg():
     """Test converting braket to qiskit with vi/sxdg gate with non-strict global phase comparison."""
-    circuit = Circuit().vi(0)
-    qiskit_circuit = braket_to_qiskit(circuit)
+    circuit = braket.circuits.Circuit().vi(0)
+    qasm3_program = convert_to_qasm3(circuit)
+    qiskit_circuit = convert_from_qasm3(qasm3_program, "qiskit")
     assert circuits_allclose(circuit, qiskit_circuit, strict_gphase=False)

@@ -32,7 +32,7 @@ from qbraid import QbraidError, circuit_wrapper
 from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.exceptions import PackageValueError, ProgramTypeError
 from qbraid.interface.circuit_equality import _equal
-from qbraid.transpiler.conversions import convert_from_cirq, convert_to_cirq
+from qbraid.transpiler.conversions_cirq import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 from .._data.braket.gates import braket_gates as braket_gates_dict
