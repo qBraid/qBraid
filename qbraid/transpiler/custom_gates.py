@@ -199,12 +199,11 @@ def rzz(theta):
     return RZZGate(theta)
 
 
-def _map_zpow(op: Operation, _: int) -> OP_TREE:
-    if isinstance(op.gate, cirq.ZPowGate):
-        yield ZPowGate(exponent=op.gate.exponent, global_shift=op.gate.global_shift)(op.qubits[0])
-    else:
-        yield op
-
-
 def _map_zpow_and_unroll(circuit: Circuit) -> Circuit:
+    """Map ZPowGate to RZ and unroll circuit"""
+    def _map_zpow(op: Operation, _: int) -> OP_TREE:
+        if isinstance(op.gate, cirq.ZPowGate):
+            yield ZPowGate(exponent=op.gate.exponent, global_shift=op.gate.global_shift)(op.qubits[0])
+        else:
+            yield op
     return cirq.map_operations_and_unroll(circuit, _map_zpow)

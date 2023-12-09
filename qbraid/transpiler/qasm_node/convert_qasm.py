@@ -97,9 +97,10 @@ def qasm2_to_qasm3(qasm_str: str) -> QASMType:
     Returns:
         str: OpenQASM 3.0 string
     """
+    from qiskit import QuantumCircuit
     try:
         # use inbuilt method to check validity
-        _ = cirq_from_qasm(qasm_str)
+        _ = QuantumCircuit.from_qasm_str(qasm_str)
     except Exception as e:
         raise ValueError("Invalid OpenQASM 2.0 string") from e
 

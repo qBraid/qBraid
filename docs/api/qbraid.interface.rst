@@ -16,11 +16,6 @@ qbraid.interface
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.interface.qbraid_qasm
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 .. automodule:: qbraid.interface.qbraid_qasm3
    :members:
    :undoc-members:

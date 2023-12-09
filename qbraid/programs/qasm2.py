@@ -16,7 +16,7 @@ import re
 from typing import TYPE_CHECKING, List
 
 from qbraid.programs.abc_program import QuantumProgram
-from qbraid.transpiler.qasm_node.convert_cirq import from_qasm
+from qbraid.transpiler.qasm_node.convert_cirq import cirq_from_qasm
 
 if TYPE_CHECKING:
     import numpy as np
@@ -155,7 +155,7 @@ class OpenQasm2Program(QuantumProgram):
 
     def _unitary(self) -> "np.ndarray":
         """Return the unitary of the QASM"""
-        return from_qasm(self.program).unitary()
+        return cirq_from_qasm(self.program).unitary()
 
     def _contiguous_expansion(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
