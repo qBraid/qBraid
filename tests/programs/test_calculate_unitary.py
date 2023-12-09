@@ -20,8 +20,8 @@ from braket.circuits import Circuit, Instruction, gates
 from pytket.circuit import Circuit as TKCircuit
 
 from qbraid import circuit_wrapper
-from qbraid.interface.random_circuit import random_unitary_matrix
 from qbraid.programs.pytket import PytketCircuit as QbraidPytketCircuit
+from qbraid.programs.testing.random import random_unitary_matrix
 
 
 def get_subsets(nqubits):

@@ -14,10 +14,19 @@ Module containing OpenQASM conversion function
 """
 import os
 
+from qbraid.qasm_checks import is_valid_qasm2
+from qbraid.transpiler.qasm_node.qelib1_defs import _decompose_rxx_instr
+
 QASMType = str
 
-from qbraid.transpiler.qasm_node.convert_cirq import cirq_from_qasm
-from qbraid.transpiler.qasm_node.qelib1_defs import _decompose_rxx_instr
+
+def _get_qasm3_gate_defs() -> str:
+    """Helper function to get openqasm 3 gate defs from .qasm file"""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    qelib_qasm = os.path.join(current_dir, "qelib_qasm3.qasm")
+    with open(qelib_qasm, mode="r", encoding="utf-8") as file:
+        gate_defs = file.read()
+    return gate_defs
 
 
 def _build_qasm_3_reg(line: str, qreg_type: bool) -> QASMType:
@@ -97,24 +106,18 @@ def qasm2_to_qasm3(qasm_str: str) -> QASMType:
     Returns:
         str: OpenQASM 3.0 string
     """
-    from qiskit import QuantumCircuit
-    try:
-        # use inbuilt method to check validity
-        _ = QuantumCircuit.from_qasm_str(qasm_str)
-    except Exception as e:
-        raise ValueError("Invalid OpenQASM 2.0 string") from e
+    if not is_valid_qasm2(qasm_str):
+        raise ValueError("Invalid OpenQASM 2.0 string")
 
     qasm3_str = "OPENQASM 3.0;\ninclude 'stdgates.inc';"
 
-    # add the gate from qelib1.inc not present in the stdgates.inc file
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    with open(
-        os.path.join(current_dir, "qelib_qasm3.qasm"), mode="r", encoding="utf-8"
-    ) as gate_defs:
-        for line in gate_defs:
-            qasm3_str += line
+    gate_defs = _get_qasm3_gate_defs()
+
+    for line in gate_defs:
+        qasm3_str += line
 
     for line in qasm_str.splitlines():
         line = _convert_line_to_qasm3(line)
         qasm3_str += line
+
     return qasm3_str

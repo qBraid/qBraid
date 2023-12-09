@@ -158,7 +158,8 @@ class QasmGateStatement:
 
 
 class QasmParser:
-    """Parser for QASM strings.
+    """Cirq Parser for QASM strings.
+
     Example:
         qasm = "OPENQASM 2.0; qreg q1[2]; CX q1[0], q1[1];"
         parsedQasm = QasmParser().parse(qasm)

@@ -21,10 +21,10 @@ import numpy as np
 
 from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError
-from qbraid.interface.circuit_drawer import circuit_drawer
 from qbraid.qasm_checks import get_qasm_version
 from qbraid.transpiler.conversions_cirq import convert_from_cirq, convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.visualization.draw_circuit import circuit_drawer
 
 if TYPE_CHECKING:
     import qbraid

@@ -120,7 +120,7 @@ This time, using the same origin circuit wrapper, we'll input ``"pyquil"`` to re
 Interface
 -----------
 
-The ``qbraid.interface`` module contains a number of functions that can be helpful for testing, quick calculations,
+The ``qbraid.programs.testing`` module contains a number of functions that can be helpful for testing, quick calculations,
 verification, or other general use.
 
 Random circuits
@@ -131,7 +131,7 @@ random ``cirq.Circuit`` with four qubits and depth four.
 
 .. code-block:: python
 
-    >>> from qbraid.interface import random_circuit
+    >>> from qbraid.programs import random_circuit
     >>> cirq_circuit = random_circuit("cirq", num_qubits=4, depth=4)
     >>> print(cirq_circuit)
           ┌──────┐   ┌──┐           ┌──┐
@@ -181,7 +181,7 @@ It applies the ``unitary`` method to both input circuits, compares the outputs v
 
 .. code-block:: python
 
-    >>> from qbraid.interface import circuits_allclose
+    >>> from qbraid.programs import circuits_allclose
     >>> circuits_allclose(cirq_circuit, pyquil_circuit)
     True
 
@@ -234,8 +234,10 @@ performing the qubit mapping.
 
 .. code-block:: python
 
-    >>> from qbraid.interface import convert_to_contiguous
-    >>> print(convert_to_contiguous(braket_circuit))
+    >>> from qbraid import circuit_wrapper
+    >>> qprogram = circuit_wrapper(braket_circuit)
+    >>> qprogram.convert_to_contiguous()
+    >>> print(qprogram.program)
     T  : |0|1|2|
             
     q0 : -H-C---
@@ -245,7 +247,9 @@ performing the qubit mapping.
     q2 : -----X-
 
     T  : |0|1|2|
-    >>> print(convert_to_contiguous(braket_circuit, expansion=True))
+    >>> qprogram1 = circuit_wrapper(braket_circuit)
+    >>> qprogram1.convert_to_contiguous(expansion=True)
+    >>> print(qprogram1.program)
     T  : |0|1|2|
             
     q0 : -H-C---

@@ -44,22 +44,23 @@ def random_circuit(
         :data:`~qbraid.QPROGRAM`: randomly generated quantum circuit/program
 
     """
-    # todo: custom random gate
     if package not in QPROGRAM_LIBS:
         raise PackageValueError(package)
+
     num_qubits = np.random.randint(1, 4) if num_qubits is None else num_qubits
     depth = np.random.randint(1, 4) if depth is None else depth
+
     # pylint: disable=import-outside-toplevel
     if package == "qasm3":
-        from qbraid.interface.qbraid_qasm3.random_circuit import _qasm3_random
+        from qbraid.programs.testing.qasm3_random import _qasm3_random
 
         rand_circuit = _qasm3_random(num_qubits, depth, **kwargs)
     elif package == "qiskit":
-        from qbraid.interface.qbraid_qiskit.random_circuit import _qiskit_random
+        from qbraid.programs.testing.qiskit_random import _qiskit_random
 
         rand_circuit = _qiskit_random(num_qubits, depth, **kwargs)
     else:
-        from qbraid.interface.qbraid_cirq.random_circuit import _cirq_random
+        from qbraid.programs.testing.cirq_random import _cirq_random
 
         rand_circuit = _cirq_random(num_qubits, depth, **kwargs)
 

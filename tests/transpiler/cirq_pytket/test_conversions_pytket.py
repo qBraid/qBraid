@@ -18,8 +18,8 @@ from cirq import Circuit, LineQubit, ops, testing
 from pytket.circuit import Circuit as TKCircuit
 from pytket.qasm import circuit_to_qasm_str
 
-from qbraid.interface import circuits_allclose
-from qbraid.interface.circuit_equality import _equal
+from qbraid.programs import circuits_allclose
+from qbraid.programs.testing.circuit_equality import _equal
 from qbraid.transpiler.cirq_pytket.conversions import from_pytket, to_pytket
 from qbraid.transpiler.qasm_node import cirq_from_qasm
 

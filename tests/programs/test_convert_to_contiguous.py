@@ -19,7 +19,7 @@ from pytket.circuit import Circuit as TKCircuit
 from qiskit import QuantumCircuit
 
 from qbraid import circuit_wrapper
-from qbraid.interface.circuit_equality import circuits_allclose
+from qbraid.programs.testing.circuit_equality import circuits_allclose
 
 
 def test_remove_idle_qubits_qiskit():

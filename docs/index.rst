@@ -108,7 +108,6 @@ Documentation
 
    api/qbraid
    api/qbraid.api
-   api/qbraid.interface
    api/qbraid.programs
    api/qbraid.transpiler
    api/qbraid.compiler

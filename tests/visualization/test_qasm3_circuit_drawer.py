@@ -15,7 +15,7 @@ Unit tests for OpenQASM 3 circuit drawer
 
 import pytest
 
-from qbraid.interface.qbraid_qasm3.circuit_drawer import draw_circuit
+from qbraid.visualization.draw_qasm3 import _draw_qasm3
 
 qasm_str_1 = "\n".join(
     [
@@ -162,4 +162,4 @@ qasm_str_4_output = "\n".join(
 )
 def test_circuit_drawer(qasm_str, expected_output):
     """Tests the qasm circuit drawer"""
-    assert draw_circuit(qasm_str) == expected_output
+    assert _draw_qasm3(qasm_str) == expected_output

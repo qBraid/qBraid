@@ -14,7 +14,6 @@ Unit tests for OpenQASM 3 utility functions.
 """
 
 import logging
-import os
 
 import numpy as np
 import pytest
@@ -22,16 +21,13 @@ from qiskit.circuit import QuantumCircuit
 from qiskit.qasm3 import dumps, loads
 
 from qbraid import circuit_wrapper
-from qbraid.interface import circuits_allclose, random_circuit
-from qbraid.interface.qbraid_qasm3.random_circuit import _qasm3_random
-from qbraid.transpiler.qasm_node.convert_qasm import qasm2_to_qasm3
+from qbraid.programs.testing import circuits_allclose, random_circuit
+from qbraid.programs.testing.qasm3_random import _qasm3_random
+from qbraid.transpiler.qasm_node.convert_qasm import _get_qasm3_gate_defs, qasm2_to_qasm3
 
 from .._data.qasm3.circuits import qasm3_bell, qasm3_shared15
 
-lib_dir = os.path.dirname(os.path.dirname(__file__))
-qasm3_lib = os.path.join(lib_dir, "_data", "qasm3", "qelib_qasm3.qasm")
-with open(qasm3_lib, mode="r", encoding="utf-8") as file:
-    gate_def_qasm3 = file.read()
+gate_def_qasm3 = _get_qasm3_gate_defs()
 
 
 def test_qasm_qubits():

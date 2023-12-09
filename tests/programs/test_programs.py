@@ -16,9 +16,9 @@ import pytest
 
 from qbraid import circuit_wrapper
 from qbraid.exceptions import ProgramTypeError, VisualizationError
-from qbraid.interface.circuit_drawer import circuit_drawer
-from qbraid.interface.circuit_equality import circuits_allclose
-from qbraid.interface.random_circuit import random_circuit
+from qbraid.programs.testing.circuit_equality import circuits_allclose
+from qbraid.programs.testing.random import random_circuit
+from qbraid.visualization.draw_circuit import circuit_drawer
 
 from .._data.programs import bell_data, shared15_data
 

@@ -18,7 +18,7 @@ from qiskit import QuantumCircuit
 from qiskit.circuit.random import random_circuit
 
 from qbraid import circuit_wrapper
-from qbraid.interface import circuits_allclose
+from qbraid.programs import circuits_allclose
 from qbraid.transpiler.cirq_qiskit.conversions import from_qiskit
 from qbraid.transpiler.exceptions import CircuitConversionError
 
