@@ -16,8 +16,8 @@ from typing import Optional
 
 import numpy as np
 
-from qbraid.exceptions import QbraidError
 from qbraid._version import __version__
+from qbraid.exceptions import QbraidError
 
 QASMType = str
 

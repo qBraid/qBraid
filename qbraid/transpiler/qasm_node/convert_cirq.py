@@ -18,8 +18,8 @@ import cirq
 from cirq import ops
 
 import qbraid
-from qbraid.transpiler.qasm_node.qasm_passes import flatten_qasm_program
 from qbraid.transpiler.qasm_node.cirq_qasm_parser import QasmParser
+from qbraid.transpiler.qasm_node.qasm_passes import flatten_qasm_program
 
 QASMType = str
 

@@ -13,7 +13,7 @@ Unit tests for QASM preprocessing functions
 
 """
 
-from qbraid.transpiler.qasm_node.qasm_passes import remove_qasm_barriers, flatten_qasm_program
+from qbraid.transpiler.qasm_node.qasm_passes import flatten_qasm_program, remove_qasm_barriers
 
 qasm_0 = """OPENQASM 2.0;
 include "qelib1.inc";
