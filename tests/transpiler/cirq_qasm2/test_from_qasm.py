@@ -18,8 +18,8 @@ from qiskit import QuantumCircuit
 
 from qbraid import circuit_wrapper
 from qbraid.interface import circuits_allclose
-from qbraid.interface.qbraid_qasm.qasm_preprocess import convert_to_supported_qasm
-from qbraid.transpiler.cirq_qasm2.qasm_conversions import from_qasm
+from qbraid.transpiler.qasm_node.qasm_passes import flatten_qasm_program
+from qbraid.transpiler.qasm_node.convert_cirq import from_qasm
 
 qasm_0 = """OPENQASM 2.0;
 include "qelib1.inc";
@@ -62,7 +62,7 @@ def strings_equal(s1, s2):
 def test_preprocess_qasm(qasm_str):
     """Test converting qasm string to format supported by Cirq parser"""
     qiskit_circuit = QuantumCircuit().from_qasm_str(qasm_str)
-    supported_qasm = convert_to_supported_qasm(qasm_str)
+    supported_qasm = flatten_qasm_program(qasm_str)
     cirq_circuit = from_qasm(supported_qasm)
     qprogram = circuit_wrapper(cirq_circuit)
     qprogram._convert_to_line_qubits()

@@ -16,6 +16,9 @@ import os
 
 QASMType = str
 
+from qbraid.transpiler.qasm_node.qelib1_defs import _decompose_rxx_instr
+from qbraid.transpiler.qasm_node.convert_cirq import cirq_from_qasm
+
 
 def _build_qasm_3_reg(line: str, qreg_type: bool) -> QASMType:
     """Helper function to build openqasm 3 register statements
@@ -55,7 +58,7 @@ def _build_qasm_3_measure(line: str) -> QASMType:
     return f"{bits_name} = measure {qubits_name};\n"
 
 
-def _change_to_qasm3(line: str) -> QASMType:
+def _convert_line_to_qasm3(line: str) -> QASMType:
     """Function to change an openqasm 2 line to openqasm 3
 
     Args:
@@ -64,9 +67,6 @@ def _change_to_qasm3(line: str) -> QASMType:
     Returns:
         str: corresponding openqasm 3 line
     """
-    # pylint: disable=import-outside-toplevel
-    from qbraid.interface.qbraid_qasm.qelib1_defs import _decompose_rxx_instr
-
     line = line.lstrip()
     if line.startswith("OPENQASM"):
         return ""
@@ -88,20 +88,20 @@ def _change_to_qasm3(line: str) -> QASMType:
     return line + "\n"
 
 
-def convert_to_qasm3(qasm_str: str):
+def qasm2_to_qasm3(qasm_str: str) -> QASMType:
     """Convert a OpenQASM 2.0 string to OpenQASM 3.0 string
 
     Args:
         qasm_str (str): OpenQASM 2.0 string
-    """
-    # pylint: disable=import-outside-toplevel
-    from qiskit import QuantumCircuit
 
+    Returns:
+        str: OpenQASM 3.0 string
+    """
     try:
         # use inbuilt method to check validity
-        _ = QuantumCircuit.from_qasm_str(qasm_str)
+        _ = cirq_from_qasm(qasm_str)
     except Exception as e:
-        raise ValueError("Invalid QASM 2.0 string") from e
+        raise ValueError("Invalid OpenQASM 2.0 string") from e
 
     qasm3_str = "OPENQASM 3.0;\ninclude 'stdgates.inc';"
 
@@ -114,6 +114,6 @@ def convert_to_qasm3(qasm_str: str):
             qasm3_str += line
 
     for line in qasm_str.splitlines():
-        line = _change_to_qasm3(line)
+        line = _convert_line_to_qasm3(line)
         qasm3_str += line
     return qasm3_str

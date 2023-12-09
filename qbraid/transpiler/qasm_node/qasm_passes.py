@@ -14,10 +14,10 @@ Module for preprocessing qasm string to before it is passed to parser.
 """
 import re
 
-from qbraid.interface.qbraid_qasm.qelib1_defs import replace_qelib1_defs
+from qbraid.transpiler.qasm_node.qelib1_defs import decompose_qasm_qelib1
 
 
-def _remove_barriers(qasm_str: str) -> str:
+def remove_qasm_barriers(qasm_str: str) -> str:
     """Returns a copy of the input QASM with all barriers removed.
 
     Args:
@@ -55,7 +55,8 @@ def _format_qasm_string(qasm_string, skip_pattern):
     return "\n".join(formatted_lines)
 
 
-def _convert_gate_defs(qasm_string):
+def unfold_qasm_gate_defs(qasm_string):
+    """Recursively expands gate definitions in the input OpenQASM string."""
     # Define regular expression patterns
     gate_definition_pattern = re.compile(
         r"gate ([a-zA-Z0-9_]+)(\((.*?)\))? ((q[0-9]+,)*q[0-9]+) {(.*?)}"
@@ -113,10 +114,10 @@ def _find_gate_line(lines):
     return None
 
 
-def convert_to_supported_qasm(qasm_str):
-    """Dev version of convert_to_supported_qasm function, compatible
+def flatten_qasm_program(qasm_str):
+    """Dev version of flatten_qasm_program function, compatible
     with qiskit>=0.43.0. Returns a copy of the input QASM compatible with
-    the :class:`~qbraid.transpiler.cirq_qasm2.qasm_parser.QasmParser`.
+    the :class:`~qbraid.transpiler.qasm_node.cirq_parser.QasmParser`.
     Conversion includes deconstruction of custom defined gates, and
     decomposition of unsupported gates/operations.
 
@@ -124,7 +125,7 @@ def convert_to_supported_qasm(qasm_str):
     # temp hack to fix 'r' replacing last char of 'ecr'
     qasm_str = qasm_str.replace("ecr", "ecr_")
 
-    input_str = _remove_barriers(qasm_str)
+    input_str = remove_qasm_barriers(qasm_str)
 
     lines = input_str.strip("\n").split("\n")
     gate_lines = [(i, line) for i, line in enumerate(lines) if line.strip().startswith("gate")]
@@ -140,13 +141,13 @@ def convert_to_supported_qasm(qasm_str):
         lines.insert(gate_line_idx, gate_line)
 
         new_input = "\n".join(lines)
-        new_input = _convert_gate_defs(new_input)  # call the conversion function
+        new_input = unfold_qasm_gate_defs(new_input)  # call the conversion function
         lines = new_input.split("\n")  # update lines after conversion
 
         # Remove the current 'gate' line for the next iteration
         lines.pop(gate_line_idx)
 
     qasm = "\n".join(lines)
-    qasm_out = replace_qelib1_defs(qasm)
+    qasm_out = decompose_qasm_qelib1(qasm)
 
     return qasm_out

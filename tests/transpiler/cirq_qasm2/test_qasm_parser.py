@@ -37,7 +37,7 @@ from cirq.circuits.qasm_output import QasmUGate
 from cirq.contrib.qasm_import import QasmException
 
 import qbraid.transpiler.custom_gates as cirq_qasm_gates
-from qbraid.transpiler.cirq_qasm2.qasm_parser import QasmParser
+from qbraid.transpiler.qasm_node.cirq_qasm_parser import QasmParser
 
 # from cirq.contrib.qasm_import._parser import QasmParser
 

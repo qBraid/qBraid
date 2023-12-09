@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     import qbraid
 
 
-def convert_to_qasm3(program: "qbraid.QPROGRAM") -> str:
+def qasm2_to_qasm3(program: "qbraid.QPROGRAM") -> str:
     """Converts any valid input quantum program to an OpenQASM 3 program.
 
     Args:
@@ -72,7 +72,7 @@ def convert_to_qasm3(program: "qbraid.QPROGRAM") -> str:
             return dumps(program)
 
         if package == "qasm2":
-            from qbraid.interface.qbraid_qasm3.tools import convert_to_qasm3 as qasm2_to_qasm3
+            from qbraid.transpiler.qasm_node.convert_qasm import qasm2_to_qasm3 as qasm2_to_qasm3
 
             return qasm2_to_qasm3(program)
 

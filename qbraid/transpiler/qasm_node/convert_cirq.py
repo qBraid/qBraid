@@ -18,8 +18,8 @@ import cirq
 from cirq import ops
 
 import qbraid
-from qbraid.interface.qbraid_qasm.qasm_preprocess import convert_to_supported_qasm
-from qbraid.transpiler.cirq_qasm2.qasm_parser import QasmParser
+from qbraid.transpiler.qasm_node.qasm_passes import flatten_qasm_program
+from qbraid.transpiler.qasm_node.cirq_qasm_parser import QasmParser
 
 QASMType = str
 
@@ -51,7 +51,7 @@ def _to_qasm_output(
     )
 
 
-def to_qasm(
+def cirq_to_qasm(
     circuit: cirq.Circuit,
     header: Optional[str] = None,
     precision: int = 10,
@@ -68,7 +68,7 @@ def to_qasm(
     return str(_to_qasm_output(circuit, header, precision, qubit_order))
 
 
-def from_qasm(qasm: QASMType) -> cirq.Circuit:
+def cirq_from_qasm(qasm: QASMType) -> cirq.Circuit:
     """Returns a Cirq circuit equivalent to the input QASM string.
 
     Args:
@@ -77,5 +77,5 @@ def from_qasm(qasm: QASMType) -> cirq.Circuit:
     Returns:
         Cirq circuit representation equivalent to the input QASM string.
     """
-    qasm = convert_to_supported_qasm(qasm)
+    qasm = flatten_qasm_program(qasm)
     return QasmParser().parse(qasm).circuit

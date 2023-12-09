@@ -7,6 +7,7 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+
 """
 Module that implements qelib1.inc qasm gate definitions as python functions
 
@@ -129,7 +130,7 @@ def _decompose_rc3x_instr(instr: str) -> str:
     return instr_out
 
 
-def replace_qelib1_defs(qasm_str: str) -> str:
+def decompose_qasm_qelib1(qasm_str: str) -> str:
     """Replace edge-case qelib1 gates with equivalent decomposition."""
     qasm_lst_out = []
     qasm_lst = qasm_str.split("\n")

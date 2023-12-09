@@ -1,5 +1,3 @@
-// Generated from qiskit v0.24.0 file qiskit/qasm/libs/qelib1.inc
-
 // QASM 3 equivalent definitions of qelib1.inc gates
 
 // idle gate (identity) with length gamma*sqglen

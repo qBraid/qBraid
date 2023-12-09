@@ -24,7 +24,7 @@ from qiskit.qasm3 import dumps, loads
 from qbraid import circuit_wrapper
 from qbraid.interface import circuits_allclose, random_circuit
 from qbraid.interface.qbraid_qasm3.random_circuit import _qasm3_random
-from qbraid.interface.qbraid_qasm3.tools import convert_to_qasm3
+from qbraid.transpiler.qasm_node.convert_qasm import qasm2_to_qasm3
 
 from .._data.qasm3.circuits import qasm3_bell, qasm3_shared15
 
@@ -318,9 +318,9 @@ c4x q[0], q[1], q[2], q[3], q[4];
 
 
 @pytest.mark.parametrize("test_input, expected_output", QASM_TEST_DATA)
-def test_convert_to_qasm3_parametrized(test_input, expected_output):
+def test_qasm2_to_qasm3_parametrized(test_input, expected_output):
     """Test the conversion of OpenQASM 2 to 3"""
-    _check_output(convert_to_qasm3(test_input), expected_output)
+    _check_output(qasm2_to_qasm3(test_input), expected_output)
 
 
 def _generate_valid_qasm_strings(seed=42, gates_to_skip=None, num_circuits=100):
@@ -357,7 +357,7 @@ def _generate_valid_qasm_strings(seed=42, gates_to_skip=None, num_circuits=100):
 @pytest.mark.parametrize("qasm2_str", _generate_valid_qasm_strings(gates_to_skip=["r"]))
 def test_random_conversion_to_qasm3(qasm2_str):
     """test random gates conversion"""
-    qasm3_str = convert_to_qasm3(qasm2_str)
+    qasm3_str = qasm2_to_qasm3(qasm2_str)
     circuit_orig = QuantumCircuit.from_qasm_str(qasm2_str)
     circuit_test = loads(qasm3_str)
 
@@ -386,7 +386,7 @@ def test_u0_gate_conversion():
     u0(0.5) q[0];
     """
 
-    _check_output(convert_to_qasm3(test_u0), test_u0_expected)
+    _check_output(qasm2_to_qasm3(test_u0), test_u0_expected)
 
 
 def test_rxx_gate_conversion():
@@ -414,7 +414,7 @@ def test_rxx_gate_conversion():
     h q[0];
     """
 
-    _check_output(convert_to_qasm3(test_rxx), test_rxx_expected)
+    _check_output(qasm2_to_qasm3(test_rxx), test_rxx_expected)
 
 
 @pytest.mark.skip(reason="Syntax not yet supported")
