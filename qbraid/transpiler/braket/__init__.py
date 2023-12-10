@@ -10,17 +10,20 @@
 
 """
 ================================================================
-Cirq-Braket Conversions  (:mod:`qbraid.transpiler.cirq_braket`)
+Braket Conversions  (:mod:`qbraid.transpiler.braket`)
 ================================================================
 
-.. currentmodule:: qbraid.transpiler.cirq_braket
+.. currentmodule:: qbraid.transpiler.braket
 
 .. autosummary::
    :toctree: ../stubs/
 
-   from_braket
-   to_braket
+   braket_to_cirq
+   cirq_to_braket
+   braket_to_qasm3
+   qasm3_to_braket
 
 """
-from qbraid.transpiler.cirq_braket.convert_from_braket import from_braket
-from qbraid.transpiler.cirq_braket.convert_to_braket import to_braket
+from qbraid.transpiler.braket.cirq_from_braket import braket_to_cirq
+from qbraid.transpiler.braket.cirq_to_braket import cirq_to_braket
+from qbraid.transpiler.braket.qasm3_conversions import braket_to_qasm3, qasm3_to_braket

@@ -25,17 +25,14 @@ from cirq import ops as cirq_ops
 
 from qbraid import circuit_wrapper
 from qbraid.programs import circuits_allclose
-from qbraid.transpiler.cirq_braket.convert_from_braket import (
-    from_braket,
-    unitary_braket_instruction,
-)
+from qbraid.transpiler.braket.cirq_from_braket import braket_to_cirq, unitary_braket_instruction
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
 def test_from_braket_bell_circuit():
     """Test converting bell circuit"""
     braket_circuit = BKCircuit().h(0).cnot(0, 1)  # pylint: disable=no-member
-    cirq_circuit = from_braket(braket_circuit)
+    cirq_circuit = braket_to_cirq(braket_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -57,7 +54,7 @@ def test_from_braket_non_parameterized_single_qubit_gates():
     ]
     for instr in instructions:
         braket_circuit.add_instruction(instr)
-    cirq_circuit = from_braket(braket_circuit)
+    cirq_circuit = braket_to_cirq(braket_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -75,7 +72,7 @@ def test_from_braket_parameterized_single_qubit_gates(qubit_index):
     instructions = [Instruction(rot(a), target=qubit_index) for rot, a in zip(pgates, angles)]
     for instr in instructions:
         braket_circuit.add_instruction(instr)
-    cirq_circuit = from_braket(braket_circuit)
+    cirq_circuit = braket_to_cirq(braket_circuit)
 
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
@@ -92,7 +89,7 @@ def test_from_braket_non_parameterized_two_qubit_gates():
     ]
     for instr in instructions:
         braket_circuit.add_instruction(instr)
-    cirq_circuit = from_braket(braket_circuit)
+    cirq_circuit = braket_to_cirq(braket_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -114,7 +111,7 @@ def test_from_braket_parameterized_two_qubit_gates():
     instructions = [Instruction(rot(a), target=[0, 1]) for rot, a in zip(pgates, angles)]
     for instr in instructions:
         braket_circuit.add_instruction(instr)
-    cirq_circuit = from_braket(braket_circuit)
+    cirq_circuit = braket_to_cirq(braket_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -127,7 +124,7 @@ def test_from_braket_three_qubit_gates():
     ]
     for instr in instructions:
         braket_circuit.add_instruction(instr)
-    cirq_circuit = from_braket(braket_circuit)
+    cirq_circuit = braket_to_cirq(braket_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -156,7 +153,7 @@ def test_single_probability_noise_gate(noise_gate, target_gate):
     probs = np.random.uniform(low=0, high=0.5)  # pylint: disable=no-member
     instructions = Instruction(noise_gate(probs), target=[0])
     braket_circuit.add_instruction(instructions)
-    cirq_circuit = from_braket(braket_circuit)
+    cirq_circuit = braket_to_cirq(braket_circuit)
     Gate = list(cirq_circuit.all_operations())[0].gate
     assert type(Gate) == target_gate
     assert Gate.p == probs
@@ -175,7 +172,7 @@ def test_single_gamma_noise_gate(noise_gate, target_gate):
     probs = np.random.uniform(low=0, high=0.5)  # pylint: disable=no-member
     instructions = Instruction(noise_gate(probs), target=[0])
     braket_circuit.add_instruction(instructions)
-    cirq_circuit = from_braket(braket_circuit)
+    cirq_circuit = braket_to_cirq(braket_circuit)
     Gate = list(cirq_circuit.all_operations())[0].gate
     assert type(Gate) == target_gate
     assert Gate.gamma == probs
@@ -187,7 +184,7 @@ def test_kraus_gates():
     K1 = np.sqrt(0.2) * np.kron(np.array([[0, 1], [1, 0]]), np.array([[0, 1], [1, 0]]))
     instructions = Instruction(braket_noise_gate.Kraus(matrices=[K0, K1]), target=[0, 1])
     braket_circuit = BKCircuit().add_instruction(instructions)
-    cirq_circuit = from_braket(braket_circuit)
+    cirq_circuit = braket_to_cirq(braket_circuit)
     Gate = list(cirq_circuit.all_operations())[0].gate
     assert type(Gate) == cirq_ops.kraus_channel.KrausChannel
     assert np.allclose(Gate._kraus_ops, [K0, K1])
@@ -201,7 +198,7 @@ def test_generalized_amplitude_damping_channel_gate():
         target=[0],
     )
     braket_circuit = BKCircuit().add_instruction(instruction)
-    cirq_circuit = from_braket(braket_circuit)
+    cirq_circuit = braket_to_cirq(braket_circuit)
     Gate = list(cirq_circuit.all_operations())[0].gate
     assert type(Gate) == cirq_ops.GeneralizedAmplitudeDampingChannel
     assert Gate.gamma == probs[0]
@@ -215,7 +212,7 @@ def test_depolarizing_channel_gate():
         braket_noise_gate.TwoQubitDepolarizing(probability=probs[0]), target=[0, 1]
     )
     braket_circuit = BKCircuit().add_instruction(instruction)
-    cirq_circuit = from_braket(braket_circuit)
+    cirq_circuit = braket_to_cirq(braket_circuit)
     Gate = list(cirq_circuit.all_operations())[0].gate
     assert type(Gate) == cirq_ops.common_channels.DepolarizingChannel
     assert Gate.p == probs
@@ -228,7 +225,7 @@ def test_convert_ionq_gates():
     bk_circuit.gpi(0, np.pi)
     bk_circuit.gpi2(1, np.pi / 3)
     bk_circuit.ms(0, 1, np.pi / 4, np.pi / 2, 3 * np.pi / 4)
-    cirq_circuit = from_braket(bk_circuit)
+    cirq_circuit = braket_to_cirq(bk_circuit)
     assert circuits_allclose(bk_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -250,7 +247,7 @@ def test_raise_error():
         test_case = BKCircuit().add_instruction(
             Instruction(braket_gates.PulseGate(pulse_seq, 1), [0])
         )
-        from_braket(test_case)
+        braket_to_cirq(test_case)
 
 
 def _rotation_of_pi_over_7(num_qubits):
@@ -272,4 +269,4 @@ def test_from_braket_raises_on_unsupported_gates():
         )
         braket_unitary_circuit.add_instruction(instr)
     with pytest.raises(CircuitConversionError):
-        from_braket(braket_unitary_circuit)
+        braket_to_cirq(braket_unitary_circuit)

@@ -62,7 +62,7 @@ def convert_to_qasm3(program: "qbraid.QPROGRAM") -> str:
             return qiskit_to_qasm3(program)
 
         if "braket" in package:
-            from qbraid.transpiler.qasm3_braket.conversions import braket_to_qasm3
+            from qbraid.transpiler.braket.qasm3_conversions import braket_to_qasm3
 
             return braket_to_qasm3(program)
 
@@ -110,9 +110,9 @@ def convert_from_qasm3(program: str, frontend: str) -> "qbraid.QPROGRAM":
             return qiskit_from_qasm3(program)
 
         if frontend == "braket":
-            from qbraid.transpiler.qasm3_braket.conversions import braket_from_qasm3
+            from qbraid.transpiler.braket.qasm3_conversions import qasm3_to_braket
 
-            return braket_from_qasm3(program)
+            return qasm3_to_braket(program)
 
         if frontend == "openqasm3":
             return openqasm_parse(program)

@@ -73,9 +73,9 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple["cirq.Circuit", str]:
             return from_pyquil(program), "pyquil"
 
         if "braket" in package:
-            from qbraid.transpiler.cirq_braket import from_braket
+            from qbraid.transpiler.braket import braket_to_cirq
 
-            return from_braket(program), "braket"
+            return braket_to_cirq(program), "braket"
 
         if "pytket" in package:
             from qbraid.transpiler.cirq_pytket import from_pytket
@@ -145,9 +145,9 @@ def _convert_from_cirq(circuit: "cirq.Circuit", frontend: str) -> "qbraid.QPROGR
                 return to_pyquil(cirq_compat)
 
         if frontend == "braket":
-            from qbraid.transpiler.cirq_braket import to_braket
+            from qbraid.transpiler.braket import cirq_to_braket
 
-            return to_braket(circuit)
+            return cirq_to_braket(circuit)
 
         if frontend == "pytket":
             from qbraid.transpiler.cirq_pytket import to_pytket

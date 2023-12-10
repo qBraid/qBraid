@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 
 transpiler_openqasm_modules = {
     "qiskit": import_module("qbraid.transpiler.qasm3_qiskit.conversions"),
-    "braket": import_module("qbraid.transpiler.qasm3_braket.conversions"),
+    "braket": import_module("qbraid.transpiler.braket.qasm3_conversions"),
 }
 
 

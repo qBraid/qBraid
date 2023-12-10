@@ -35,8 +35,8 @@ header = """# Copyright (C) 2023 qBraid
 
 skip_files = [
     "qbraid/api/retry.py",
-    "qbraid/transpiler/cirq_braket/convert_from_braket.py",
-    "qbraid/transpiler/cirq_braket/convert_to_braket.py",
+    "qbraid/transpiler/braket/cirq_from_braket.py",
+    "qbraid/transpiler/braket/cirq_to_braket.py",
     "qbraid/transpiler/qasm_node/cirq_qasm_parser.py",
     "qbraid/transpiler/cirq_pyquil/quil_output.py",
     "qbraid/transpiler/cirq_pyquil/quil_input.py",
