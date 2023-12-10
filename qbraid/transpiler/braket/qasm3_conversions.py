@@ -79,19 +79,3 @@ def braket_to_qasm3(circuit: Circuit) -> QASMType:
         return circuit.to_ir(IRType.OPENQASM).source
     except Exception as err:
         raise QasmError("Error converting braket circuit to qasm3 string") from err
-
-
-def braket_from_qasm3(qasm3_str: QASMType) -> Circuit:
-    """Converts an OpenQASM 3.0 string to a ``braket.circuits.Circuit``.
-
-    Args:
-        qasm3_str: OpenQASM 3 string
-
-    Returns:
-        The Amazon Braket circuit equivalent to the input OpenQASM 3.0 string
-
-    Raises:
-        CircuitConversionError: If qasm to braket conversion fails
-
-    """
-    return qasm3_to_braket(qasm3_str)

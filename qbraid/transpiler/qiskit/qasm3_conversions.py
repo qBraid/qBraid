@@ -72,7 +72,7 @@ def _add_stdgates_include(qasm_str: str) -> str:
     return "\n".join(lines)
 
 
-def qiskit_from_qasm3(qasm3_str: str) -> QuantumCircuit:
+def qasm3_to_qiskit(qasm3_str: str) -> QuantumCircuit:
     """Convert QASM 3.0 string to qiskit QuantumCircuit repr"""
     qasm3_str = qasm3_str.replace("cnot ", "cx ")
     qasm3_str = qasm3_str.replace("si ", "sdg ")

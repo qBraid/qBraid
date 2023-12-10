@@ -405,7 +405,7 @@ class QuilOutput:
         )
         self.qubit_id_map = self._generate_qubit_ids()
         self.measurement_id_map = self._generate_measurement_ids()
-        self.formatter = qbraid.transpiler.cirq_pyquil.quil_output.QuilFormatter(
+        self.formatter = qbraid.transpiler.pyquil.quil_output.QuilFormatter(
             qubit_id_map=self.qubit_id_map, measurement_id_map=self.measurement_id_map
         )
 

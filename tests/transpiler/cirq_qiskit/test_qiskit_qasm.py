@@ -16,9 +16,9 @@ import pytest
 from qiskit import QuantumCircuit
 
 from qbraid.programs import circuits_allclose
-from qbraid.transpiler.qasm3_qiskit.conversions import (
+from qbraid.transpiler.qiskit.qasm3_conversions import (
     _add_stdgates_include,
-    qiskit_from_qasm3,
+    qasm3_to_qiskit,
     qiskit_to_qasm3,
 )
 
@@ -53,5 +53,5 @@ def test_qiskit_to_from_qasm3():
     circuit_in.cx(0, 1)
 
     qasm3_str = qiskit_to_qasm3(circuit_in)
-    circuit_out = qiskit_from_qasm3(qasm3_str)
+    circuit_out = qasm3_to_qiskit(qasm3_str)
     assert circuits_allclose(circuit_in, circuit_out, strict_gphase=True)
