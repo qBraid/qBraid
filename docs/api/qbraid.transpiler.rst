@@ -16,17 +16,12 @@ qbraid.transpiler
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.transpiler.cirq_qiskit
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 .. automodule:: qbraid.transpiler.pyquil
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.transpiler.cirq_pytket
+.. automodule:: qbraid.transpiler.pytket
    :members:
    :undoc-members:
    :show-inheritance:

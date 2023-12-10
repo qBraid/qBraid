@@ -23,7 +23,7 @@ from qbraid.transpiler.exceptions import CircuitConversionError
 from qbraid.transpiler.qasm_node import cirq_from_qasm, cirq_to_qasm
 
 
-def to_pytket(circuit: Circuit) -> TKCircuit:
+def cirq_to_pytket(circuit: Circuit) -> TKCircuit:
     """Returns a pytket circuit equivalent to the input Cirq circuit. Note
     that the output circuit registers may not match the input circuit
     registers.
@@ -44,7 +44,7 @@ def to_pytket(circuit: Circuit) -> TKCircuit:
         raise CircuitConversionError("Cirq qasm converter doesn't yet support qasm3.") from err
 
 
-def from_pytket(circuit: TKCircuit, compat=False) -> Circuit:
+def pytket_to_cirq(circuit: TKCircuit, compat=False) -> Circuit:
     """Returns a Cirq circuit equivalent to the input pytket circuit.
 
     Args:

@@ -10,16 +10,16 @@
 
 """
 ================================================================
-Cirq-Qiskit Conversions  (:mod:`qbraid.transpiler.cirq_qiskit`)
+Pytket Conversions  (:mod:`qbraid.transpiler.pytket`)
 ================================================================
 
-.. currentmodule:: qbraid.transpiler.cirq_qiskit
+.. currentmodule:: qbraid.transpiler.pytket
 
 .. autosummary::
    :toctree: ../stubs/
 
-   from_qiskit
-   to_qiskit
+   pytket_to_cirq
+   cirq_to_pytket
 
 """
-from qbraid.transpiler.cirq_qiskit.conversions import from_qiskit, to_qiskit
+from qbraid.transpiler.pytket.conversions import cirq_to_pytket, pytket_to_cirq

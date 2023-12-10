@@ -63,9 +63,9 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple["cirq.Circuit", str]:
 
     try:
         if "qiskit" in package:
-            from qbraid.transpiler.cirq_qiskit import from_qiskit
+            from qbraid.transpiler.qiskit import qiskit_to_cirq
 
-            return from_qiskit(program), "qiskit"
+            return qiskit_to_cirq(program), "qiskit"
 
         if "pyquil" in package:
             from qbraid.transpiler.pyquil import pyquil_to_cirq
@@ -78,18 +78,18 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple["cirq.Circuit", str]:
             return braket_to_cirq(program), "braket"
 
         if "pytket" in package:
-            from qbraid.transpiler.cirq_pytket import from_pytket
+            from qbraid.transpiler.pytket import pytket_to_cirq
 
-            return from_pytket(program), "pytket"
+            return pytket_to_cirq(program), "pytket"
 
         if "openqasm3" in package:
             from openqasm3 import dumps
             from qiskit.qasm3 import loads
 
-            from qbraid.transpiler.cirq_qiskit import from_qiskit
+            from qbraid.transpiler.qiskit import qiskit_to_cirq
 
             qasm_str = dumps(program)
-            return from_qiskit(loads(qasm_str)), "openqasm3"
+            return qiskit_to_cirq(loads(qasm_str)), "openqasm3"
 
         if package == "qasm2":
             return cirq_from_qasm(program), package
@@ -97,10 +97,10 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple["cirq.Circuit", str]:
         if package == "qasm3":
             from qiskit.qasm3 import loads
 
-            from qbraid.transpiler.cirq_qiskit import from_qiskit
+            from qbraid.transpiler.qiskit import qiskit_to_cirq
 
             qiskit_circuit = loads(program)
-            return from_qiskit(qiskit_circuit), package
+            return qiskit_to_cirq(qiskit_circuit), package
 
         if isinstance(program, Circuit):
             return program, "cirq"
@@ -131,9 +131,9 @@ def _convert_from_cirq(circuit: "cirq.Circuit", frontend: str) -> "qbraid.QPROGR
 
     try:
         if frontend == "qiskit":
-            from qbraid.transpiler.cirq_qiskit import to_qiskit
+            from qbraid.transpiler.qiskit import cirq_to_qiskit
 
-            return to_qiskit(circuit)
+            return cirq_to_qiskit(circuit)
 
         if frontend == "pyquil":
             from qbraid.transpiler.pyquil import cirq_to_pyquil
@@ -150,9 +150,9 @@ def _convert_from_cirq(circuit: "cirq.Circuit", frontend: str) -> "qbraid.QPROGR
             return cirq_to_braket(circuit)
 
         if frontend == "pytket":
-            from qbraid.transpiler.cirq_pytket import to_pytket
+            from qbraid.transpiler.pytket import cirq_to_pytket
 
-            return to_pytket(circuit)
+            return cirq_to_pytket(circuit)
 
         if frontend == "qasm2":
             return cirq_to_qasm(circuit)

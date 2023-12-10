@@ -22,7 +22,7 @@ from qbraid.transpiler.exceptions import CircuitConversionError
 from qbraid.transpiler.qasm_node import cirq_from_qasm, cirq_to_qasm
 
 
-def to_qiskit(circuit: cirq.Circuit) -> qiskit.QuantumCircuit:
+def cirq_to_qiskit(circuit: cirq.Circuit) -> qiskit.QuantumCircuit:
     """Returns a Qiskit circuit equivalent to the input Cirq circuit. Note
     that the output circuit registers may not match the input circuit
     registers.
@@ -43,7 +43,7 @@ def to_qiskit(circuit: cirq.Circuit) -> qiskit.QuantumCircuit:
         raise CircuitConversionError from err
 
 
-def from_qiskit(circuit: qiskit.QuantumCircuit) -> cirq.Circuit:
+def qiskit_to_cirq(circuit: qiskit.QuantumCircuit) -> cirq.Circuit:
     """Returns a Cirq circuit equivalent to the input Qiskit circuit.
 
     Args:

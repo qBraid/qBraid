@@ -20,7 +20,7 @@ from pytket.qasm import circuit_to_qasm_str
 
 from qbraid.programs import circuits_allclose
 from qbraid.programs.testing.circuit_equality import _equal
-from qbraid.transpiler.cirq_pytket.conversions import from_pytket, to_pytket
+from qbraid.transpiler.pytket.conversions import cirq_to_pytket, pytket_to_cirq
 from qbraid.transpiler.qasm_node import cirq_from_qasm
 
 
@@ -30,8 +30,8 @@ def test_bell_state_to_from_circuits():
     """
     qreg = LineQubit.range(2)
     cirq_circuit = Circuit([ops.H.on(qreg[0]), ops.CNOT.on(qreg[0], qreg[1])])
-    qiskit_circuit = to_pytket(cirq_circuit)  # pytket from Cirq
-    circuit_cirq = from_pytket(qiskit_circuit)  # Cirq from pytket
+    qiskit_circuit = cirq_to_pytket(cirq_circuit)  # pytket from Cirq
+    circuit_cirq = pytket_to_cirq(qiskit_circuit)  # Cirq from pytket
     assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
 
 
@@ -40,8 +40,8 @@ def test_random_circuit_to_from_circuits():
     with a random two-qubit circuit.
     """
     cirq_circuit = testing.random_circuit(qubits=2, n_moments=10, op_density=0.99, random_state=1)
-    qiskit_circuit = to_pytket(cirq_circuit)
-    circuit_cirq = from_pytket(qiskit_circuit)
+    qiskit_circuit = cirq_to_pytket(cirq_circuit)
+    circuit_cirq = pytket_to_cirq(qiskit_circuit)
     assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
 
 
@@ -55,7 +55,7 @@ def test_convert_with_barrier(as_qasm):
     if as_qasm:
         cirq_circuit = cirq_from_qasm(circuit_to_qasm_str(pytket_circuit))
     else:
-        cirq_circuit = from_pytket(pytket_circuit)
+        cirq_circuit = pytket_to_cirq(pytket_circuit)
 
     assert _equal(cirq_circuit, Circuit())
 
@@ -75,7 +75,7 @@ def test_convert_with_multiple_barriers(as_qasm):
     if as_qasm:
         cirq_circuit = cirq_from_qasm(circuit_to_qasm_str(pytket_circuit))
     else:
-        cirq_circuit = from_pytket(pytket_circuit)
+        cirq_circuit = pytket_to_cirq(pytket_circuit)
 
     qbit = LineQubit(0)
     correct = Circuit(ops.H.on(qbit) for _ in range(num_ops))

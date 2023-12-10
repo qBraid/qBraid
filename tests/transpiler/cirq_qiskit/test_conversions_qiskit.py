@@ -19,8 +19,8 @@ import qiskit
 
 from qbraid.programs import circuits_allclose
 from qbraid.programs.testing.circuit_equality import _equal
-from qbraid.transpiler.cirq_qiskit.conversions import from_qiskit, to_qiskit
 from qbraid.transpiler.qasm_node import cirq_from_qasm, cirq_to_qasm
+from qbraid.transpiler.qiskit.cirq_conversions import cirq_to_qiskit, qiskit_to_cirq
 
 
 def test_bell_state_to_from_circuits():
@@ -29,8 +29,8 @@ def test_bell_state_to_from_circuits():
     """
     qreg = cirq.LineQubit.range(2)
     cirq_circuit = cirq.Circuit([cirq.ops.H.on(qreg[0]), cirq.ops.CNOT.on(qreg[0], qreg[1])])
-    qiskit_circuit = to_qiskit(cirq_circuit)  # Qiskit from Cirq
-    circuit_cirq = from_qiskit(qiskit_circuit)  # Cirq from Qiskit
+    qiskit_circuit = cirq_to_qiskit(cirq_circuit)  # Qiskit from Cirq
+    circuit_cirq = qiskit_to_cirq(qiskit_circuit)  # Cirq from Qiskit
     assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
 
 
@@ -52,8 +52,8 @@ def test_random_circuit_to_from_circuits():
     cirq_circuit = cirq.testing.random_circuit(
         qubits=2, n_moments=10, op_density=0.99, random_state=1
     )
-    qiskit_circuit = to_qiskit(cirq_circuit)
-    circuit_cirq = from_qiskit(qiskit_circuit)
+    qiskit_circuit = cirq_to_qiskit(cirq_circuit)
+    circuit_cirq = qiskit_to_cirq(qiskit_circuit)
     assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
 
 
@@ -79,7 +79,7 @@ def test_convert_with_barrier(as_qasm):
     if as_qasm:
         cirq_circuit = cirq_from_qasm(qiskit_circuit.qasm())
     else:
-        cirq_circuit = from_qiskit(qiskit_circuit)
+        cirq_circuit = qiskit_to_cirq(qiskit_circuit)
 
     assert _equal(cirq_circuit, cirq.Circuit())
 
@@ -99,7 +99,7 @@ def test_convert_with_multiple_barriers(as_qasm):
     if as_qasm:
         cirq_circuit = cirq_from_qasm(qiskit_circuit.qasm())
     else:
-        cirq_circuit = from_qiskit(qiskit_circuit)
+        cirq_circuit = qiskit_to_cirq(qiskit_circuit)
 
     qbit = cirq.LineQubit(0)
     correct = cirq.Circuit(cirq.ops.H.on(qbit) for _ in range(num_ops))

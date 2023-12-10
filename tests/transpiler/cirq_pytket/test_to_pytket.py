@@ -17,8 +17,8 @@ import pytest
 from cirq import Circuit, LineQubit, ops, testing
 
 from qbraid.programs import circuits_allclose
-from qbraid.transpiler.cirq_pytket.conversions import to_pytket
 from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler.pytket.conversions import cirq_to_pytket
 
 
 def test_bell_state_to_pytket():
@@ -27,7 +27,7 @@ def test_bell_state_to_pytket():
     """
     qreg = LineQubit.range(2)
     cirq_circuit = Circuit([ops.H.on(qreg[0]), ops.CNOT.on(qreg[0], qreg[1])])
-    pytket_circuit = to_pytket(cirq_circuit)
+    pytket_circuit = cirq_to_pytket(cirq_circuit)
     assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -40,7 +40,7 @@ def test_random_circuit_to_pytket(num_qubits):
             op_density=1,
             random_state=np.random.randint(1, 10),
         )
-        pytket_circuit = to_pytket(cirq_circuit)
+        pytket_circuit = cirq_to_pytket(cirq_circuit)
         assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -48,4 +48,4 @@ def test_raise_error():
     with pytest.raises(CircuitConversionError):
         probs = np.random.uniform(low=0, high=0.5)
         cirq_circuit = Circuit(ops.PhaseDampingChannel(probs).on(*LineQubit.range(1)))
-        to_pytket(cirq_circuit)
+        cirq_to_pytket(cirq_circuit)
