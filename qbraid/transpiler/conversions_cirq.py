@@ -79,9 +79,10 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> "cirq.Circuit":
             return braket_to_cirq(program)
 
         if "pytket" in package:
-            from qbraid.transpiler.pytket import pytket_to_cirq
+            from qbraid.transpiler.pytket import pytket_to_qasm2
 
-            return pytket_to_cirq(program)
+            qasm2_str = pytket_to_qasm2(program)
+            return convert_to_cirq(qasm2_str)
 
         if "openqasm3" in package:
             from openqasm3 import dumps
@@ -143,9 +144,10 @@ def _convert_from_cirq(circuit: "cirq.Circuit", frontend: str) -> "qbraid.QPROGR
             return cirq_to_braket(circuit)
 
         if frontend == "pytket":
-            from qbraid.transpiler.pytket import cirq_to_pytket
+            from qbraid.transpiler.pytket import qasm2_to_pytket
 
-            return cirq_to_pytket(circuit)
+            qasm2_str = cirq_to_qasm2(circuit)
+            return qasm2_to_pytket(qasm2_str)
 
         if frontend == "qasm2":
             return cirq_to_qasm2(circuit)

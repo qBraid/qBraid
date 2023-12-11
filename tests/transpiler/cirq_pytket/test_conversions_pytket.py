@@ -20,7 +20,8 @@ from pytket.qasm import circuit_to_qasm_str
 
 from qbraid.programs import circuits_allclose
 from qbraid.programs.testing.circuit_equality import _equal
-from qbraid.transpiler.pytket.conversions import cirq_to_pytket, pytket_to_cirq
+from qbraid.transpiler.conversions_cirq import convert_from_cirq, convert_to_cirq
+from qbraid.transpiler.pytket.conversions_qasm import pytket_to_qasm2, qasm2_to_pytket
 from qbraid.transpiler.qasm_node import qasm2_to_cirq
 
 
@@ -30,8 +31,8 @@ def test_bell_state_to_from_circuits():
     """
     qreg = LineQubit.range(2)
     cirq_circuit = Circuit([ops.H.on(qreg[0]), ops.CNOT.on(qreg[0], qreg[1])])
-    qiskit_circuit = cirq_to_pytket(cirq_circuit)  # pytket from Cirq
-    circuit_cirq = pytket_to_cirq(qiskit_circuit)  # Cirq from pytket
+    pytket_circuit = convert_from_cirq(cirq_circuit, "pytket")  # pytket from Cirq
+    circuit_cirq = convert_to_cirq(pytket_circuit)  # Cirq from pytket
     assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
 
 
@@ -40,8 +41,8 @@ def test_random_circuit_to_from_circuits():
     with a random two-qubit circuit.
     """
     cirq_circuit = testing.random_circuit(qubits=2, n_moments=10, op_density=0.99, random_state=1)
-    qiskit_circuit = cirq_to_pytket(cirq_circuit)
-    circuit_cirq = pytket_to_cirq(qiskit_circuit)
+    pytket_circuit = convert_from_cirq(cirq_circuit, "pytket")
+    circuit_cirq = convert_to_cirq(pytket_circuit)
     assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
 
 
@@ -55,7 +56,7 @@ def test_convert_with_barrier(as_qasm):
     if as_qasm:
         cirq_circuit = qasm2_to_cirq(circuit_to_qasm_str(pytket_circuit))
     else:
-        cirq_circuit = pytket_to_cirq(pytket_circuit)
+        cirq_circuit = convert_to_cirq(pytket_circuit)
 
     assert _equal(cirq_circuit, Circuit())
 
@@ -75,7 +76,7 @@ def test_convert_with_multiple_barriers(as_qasm):
     if as_qasm:
         cirq_circuit = qasm2_to_cirq(circuit_to_qasm_str(pytket_circuit))
     else:
-        cirq_circuit = pytket_to_cirq(pytket_circuit)
+        cirq_circuit = convert_to_cirq(pytket_circuit)
 
     qbit = LineQubit(0)
     correct = Circuit(ops.H.on(qbit) for _ in range(num_ops))

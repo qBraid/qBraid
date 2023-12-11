@@ -18,8 +18,8 @@ Pytket Conversions  (:mod:`qbraid.transpiler.pytket`)
 .. autosummary::
    :toctree: ../stubs/
 
-   pytket_to_cirq
-   cirq_to_pytket
+   pytket_to_qasm2
+   qasm2_to_pytket
 
 """
-from qbraid.transpiler.pytket.conversions import cirq_to_pytket, pytket_to_cirq
+from qbraid.transpiler.pytket.conversions_qasm import pytket_to_qasm2, qasm2_to_pytket
