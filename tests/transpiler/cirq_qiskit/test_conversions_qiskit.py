@@ -19,8 +19,8 @@ import qiskit
 
 from qbraid.programs import circuits_allclose
 from qbraid.programs.testing.circuit_equality import _equal
+from qbraid.transpiler.cirq import cirq_to_qasm2, qasm2_to_cirq
 from qbraid.transpiler.conversions_cirq import convert_from_cirq, convert_to_cirq
-from qbraid.transpiler.qasm_node import cirq_to_qasm2, qasm2_to_cirq
 
 
 def test_bell_state_to_from_circuits():

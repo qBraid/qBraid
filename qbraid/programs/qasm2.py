@@ -16,7 +16,7 @@ import re
 from typing import TYPE_CHECKING, List
 
 from qbraid.programs.abc_program import QuantumProgram
-from qbraid.transpiler.qasm_node.convert_cirq import qasm2_to_cirq
+from qbraid.transpiler.cirq.conversions_qasm import qasm2_to_cirq
 
 if TYPE_CHECKING:
     import numpy as np

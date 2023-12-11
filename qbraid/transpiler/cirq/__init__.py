@@ -9,21 +9,19 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-============================================
-Visualization (:mod:`qbraid.visualization`)
-============================================
+==================================================
+Cirq Conversions (:mod:`qbraid.transpiler.cirq`)
+==================================================
 
-.. currentmodule:: qbraid.visualization
+.. currentmodule:: qbraid.transpiler.cirq
 
 .. autosummary::
    :toctree: ../stubs/
 
-   plot_histogram
-   plot_distribution
-   circuit_drawer
-   qasm3_drawer
+   QasmParser
+   qasm2_to_cirq
+   cirq_to_qasm2
 
 """
-from .draw_circuit import circuit_drawer
-from .draw_qasm3 import qasm3_drawer
-from .plot_counts import plot_distribution, plot_histogram
+from qbraid.transpiler.cirq.cirq_qasm_parser import QasmParser
+from qbraid.transpiler.cirq.conversions_qasm import cirq_to_qasm2, qasm2_to_cirq

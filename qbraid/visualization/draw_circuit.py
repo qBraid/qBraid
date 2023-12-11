@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 
 from qbraid.exceptions import ProgramTypeError, QasmError, VisualizationError
 from qbraid.qasm_checks import get_qasm_version
-from qbraid.visualization.draw_qasm3 import draw_qasm3
+from qbraid.visualization.draw_qasm3 import qasm3_drawer
 
 if TYPE_CHECKING:
     import qbraid
@@ -103,13 +103,13 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
         )
 
     if package == "qasm3":
-        return draw_qasm3(program)
+        return qasm3_drawer(program)
 
     if package == "qasm2":
-        from qbraid.transpiler.qasm_node.convert_qasm import qasm2_to_qasm3
+        from qbraid.transpiler.qasm.convert_qasm import qasm2_to_qasm3
 
         # coverage: ignore
         qasm3_str = qasm2_to_qasm3(program)
-        return draw_qasm3(qasm3_str)
+        return qasm3_drawer(qasm3_str)
 
     raise ProgramTypeError(package)

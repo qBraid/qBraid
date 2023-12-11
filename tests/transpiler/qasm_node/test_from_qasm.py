@@ -18,8 +18,8 @@ from qiskit import QuantumCircuit
 
 from qbraid import circuit_wrapper
 from qbraid.programs import circuits_allclose
-from qbraid.transpiler.qasm_node.convert_cirq import qasm2_to_cirq
-from qbraid.transpiler.qasm_node.qasm_passes import flatten_qasm_program
+from qbraid.transpiler.cirq.conversions_qasm import qasm2_to_cirq
+from qbraid.transpiler.qasm_passes import flatten_qasm_program
 
 qasm_0 = """OPENQASM 2.0;
 include "qelib1.inc";

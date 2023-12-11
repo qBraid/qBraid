@@ -1,17 +1,11 @@
 # Copyright (C) 2023 qBraid
-# Copyright (C) The Cirq Developers
 #
-# This file is part of the qBraid-SDK.
+# This file is part of the qBraid-SDK
 #
 # The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. This specific file, adapted from Cirq, is dual-licensed under both the
-# Apache License, Version 2.0, and the GPL v3. You may not use this file except in
-# compliance with the applicable license. You may obtain a copy of the Apache License at
+# or later. You can redistribute and/or modify it under the terms of the GPL v3.
+# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
-# http://www.apache.org/licenses/LICENSE-2.0
-#
-# This file includes code adapted from Cirq (https://github.com/quantumlib/Cirq)
-# with modifications by qBraid. The original copyright notice is included above.
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 # isort: skip_file
@@ -36,7 +30,7 @@ from cirq.circuits.qasm_output import QasmUGate
 from cirq.contrib.qasm_import._lexer import QasmLexer
 from cirq.contrib.qasm_import.exception import QasmException
 
-import qbraid.transpiler.custom_gates as qbraid_cirq_gates
+import qbraid.transpiler.cirq_gates as qbraid_cirq_gates
 
 # Redefined lexer tokens (4/7/21) to surpress warning:
 # Token ['IF', 'NE'] defined, but not used

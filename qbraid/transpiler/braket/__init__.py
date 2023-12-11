@@ -10,7 +10,7 @@
 
 """
 ================================================================
-Braket Conversions  (:mod:`qbraid.transpiler.braket`)
+Braket Conversions (:mod:`qbraid.transpiler.braket`)
 ================================================================
 
 .. currentmodule:: qbraid.transpiler.braket
