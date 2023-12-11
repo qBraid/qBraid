@@ -21,14 +21,14 @@ from braket.circuits import noises as braket_noise_gate
 from cirq import Circuit, LineQubit, ops, testing
 
 from qbraid.programs.testing import circuits_allclose, random_unitary_matrix
-from qbraid.transpiler.cirq_braket.convert_to_braket import to_braket
+from qbraid.transpiler.braket.cirq_to_braket import cirq_to_braket
 
 
 @pytest.mark.parametrize("qreg", (LineQubit.range(2), [LineQubit(1), LineQubit(6)]))
 def test_to_braket_bell_circuit(qreg):
     """Test converting bell circuit"""
     cirq_circuit = Circuit(ops.H(qreg[0]), ops.CNOT(*qreg))
-    braket_circuit = to_braket(cirq_circuit)
+    braket_circuit = cirq_to_braket(cirq_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -48,7 +48,7 @@ def test_to_braket_non_parameterized_single_qubit_gates():
         ops.X(qreg[1]) ** 0.5,
         ops.X(qreg[2]) ** -0.5,
     )
-    braket_circuit = to_braket(cirq_circuit)
+    braket_circuit = cirq_to_braket(cirq_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -63,7 +63,7 @@ def test_to_braket_parameterized_single_qubit_gates(qubit_index):
         ops.rz(angles[2]).on(qubit),
         ops.Z.on(qubit) ** (angles[3] / np.pi),
     )
-    braket_circuit = to_braket(cirq_circuit)
+    braket_circuit = cirq_to_braket(cirq_circuit)
     print(braket_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
@@ -78,7 +78,7 @@ def test_to_braket_non_parameterized_two_qubit_gates():
         ops.CZ(*qreg[1:]),
         ops.ControlledGate(ops.Y).on(*qreg[:2]),
     )
-    braket_circuit = to_braket(cirq_circuit)
+    braket_circuit = cirq_to_braket(cirq_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -86,7 +86,7 @@ def test_to_braket_three_qubit_gates():
     """Testing converting circuits containing three-qubit gates"""
     qreg = LineQubit.range(1, 4)
     cirq_circuit = Circuit(ops.TOFFOLI(*qreg), ops.FREDKIN(*qreg))
-    braket_circuit = to_braket(cirq_circuit)
+    braket_circuit = cirq_to_braket(cirq_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -114,7 +114,7 @@ def test_to_braket_common_one_qubit_gates():
         ops.X(qubit) ** -0.5,
     )
 
-    braket_circuit = to_braket(cirq_circuit)
+    braket_circuit = cirq_to_braket(cirq_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -124,7 +124,7 @@ def test_to_braket_uncommon_one_qubit_gates(uncommon_gate):
     the unitaries should be equal up to global phase.
     """
     cirq_circuit = Circuit(uncommon_gate.on(LineQubit(0)))
-    braket_circuit = to_braket(cirq_circuit)
+    braket_circuit = cirq_to_braket(cirq_circuit)
     assert circuits_allclose(
         cirq_circuit,
         braket_circuit,
@@ -148,7 +148,7 @@ def test_to_braket_common_two_qubit_gates(common_gate):
     converting Cirq -> Braket.
     """
     cirq_circuit = Circuit(common_gate.on(*LineQubit.range(2)))
-    braket_circuit = to_braket(cirq_circuit)
+    braket_circuit = cirq_to_braket(cirq_circuit)
     if not isinstance(common_gate, (ops.XXPowGate, ops.YYPowGate, ops.ZZPowGate)):
         assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
     else:
@@ -164,7 +164,7 @@ def test_to_braket_uncommon_two_qubit_gates(uncommon_gate):
     the unitaries should be equal up to global phase.
     """
     cirq_circuit = Circuit(uncommon_gate.on(*LineQubit.range(2)))
-    braket_circuit = to_braket(cirq_circuit)
+    braket_circuit = cirq_to_braket(cirq_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit)
 
 
@@ -180,7 +180,7 @@ def test_to_braket_common_three_qubit_gates(common_gate):
     converting Cirq -> Braket.
     """
     cirq_circuit = Circuit(common_gate.on(*LineQubit.range(3)))
-    braket_circuit = to_braket(cirq_circuit)
+    braket_circuit = cirq_to_braket(cirq_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -193,7 +193,7 @@ def test_50_random_circuits(num_qubits):
         cirq_circuit = testing.random_circuit(
             num_qubits, n_moments=moments, op_density=1, random_state=state
         )
-        braket_circuit = to_braket(cirq_circuit)
+        braket_circuit = cirq_to_braket(cirq_circuit)
         if not circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True):
             assert False
     assert True
@@ -211,7 +211,7 @@ def test_to_braket_single_probability_noise_gate(noise_gate, target_gate):
     """Test transpile single arg noise braket"""
     probs = np.random.uniform(low=0, high=0.5)
     cirq_circuit = Circuit(noise_gate(probs).on(*LineQubit.range(1)))
-    braket_circuit = to_braket(cirq_circuit)
+    braket_circuit = cirq_to_braket(cirq_circuit)
     Gate = braket_circuit.instructions[0].operator
     assert type(Gate) == target_gate
     assert Gate.qubit_count == 1
@@ -229,7 +229,7 @@ def test_to_braket_single_gamma_noise_gate(noise_gate, target_gate):
     """Test transpile single arg noise braket"""
     probs = np.random.uniform(low=0, high=0.5)
     cirq_circuit = Circuit(noise_gate(probs).on(*LineQubit.range(1)))
-    braket_circuit = to_braket(cirq_circuit)
+    braket_circuit = cirq_to_braket(cirq_circuit)
     Gate = braket_circuit.instructions[0].operator
     assert type(Gate) == target_gate
     assert Gate.qubit_count == 1
@@ -242,7 +242,7 @@ def test_to_braket_GeneralizedAmplitudeDampingChannel():
     cirq_circuit = Circuit(
         ops.GeneralizedAmplitudeDampingChannel(probs[0], probs[1]).on(*LineQubit.range(1))
     )
-    braket_circuit = to_braket(cirq_circuit)
+    braket_circuit = cirq_to_braket(cirq_circuit)
     Gate = braket_circuit.instructions[0].operator
     assert type(Gate) == braket_noise_gate.GeneralizedAmplitudeDamping
     assert Gate.qubit_count == 1
@@ -254,7 +254,7 @@ def test_to_braket_DepolarizingChannel():
     """Test DepolarizingChannel"""
     probs = np.random.uniform(low=0, high=0.5, size=(1))
     cirq_circuit = Circuit(ops.DepolarizingChannel(probs[0]).on(*LineQubit.range(1)))
-    braket_circuit = to_braket(cirq_circuit)
+    braket_circuit = cirq_to_braket(cirq_circuit)
     Gate = braket_circuit.instructions[0].operator
     assert type(Gate) == braket_noise_gate.Depolarizing
     assert Gate.qubit_count == 1
@@ -264,7 +264,7 @@ def test_to_braket_DepolarizingChannel():
 def test_to_braket_two_DepolarizingChannel():
     probs = np.random.uniform(low=0, high=0.5, size=(1))
     cirq_circuit = Circuit(ops.DepolarizingChannel(probs[0], n_qubits=2).on(*LineQubit.range(2)))
-    braket_circuit = to_braket(cirq_circuit)
+    braket_circuit = cirq_to_braket(cirq_circuit)
     Gate = braket_circuit.instructions[0].operator
     assert type(Gate) == braket_noise_gate.TwoQubitDepolarizing
     assert Gate.qubit_count == 2
@@ -276,7 +276,7 @@ def test_to_braket_kraus_gates():
     K0 = np.sqrt(0.8) * np.eye(4)
     K1 = np.sqrt(0.2) * np.kron(np.array([[0, 1], [1, 0]]), np.array([[0, 1], [1, 0]]))
     cirq_circuit = Circuit(ops.KrausChannel([K0, K1]).on(*LineQubit.range(2)))
-    braket_circuit = to_braket(cirq_circuit)
+    braket_circuit = cirq_to_braket(cirq_circuit)
     Gate = braket_circuit.instructions[0].operator
     assert type(Gate) == braket_noise_gate.Kraus
     assert Gate.qubit_count == 2
@@ -286,5 +286,5 @@ def test_to_braket_kraus_gates():
 def test_braket_unitary_display_name():
     """Test braket unitary gate uses correct display name"""
     unitary = random_unitary_matrix(2)
-    braket_circuit = to_braket(Circuit(ops.MatrixGate(unitary).on(LineQubit(0))))
+    braket_circuit = cirq_to_braket(Circuit(ops.MatrixGate(unitary).on(LineQubit(0))))
     assert braket_circuit.instructions[0].operator.ascii_symbols[0] == "U"

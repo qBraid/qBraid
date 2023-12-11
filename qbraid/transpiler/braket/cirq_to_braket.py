@@ -33,11 +33,11 @@ except ImportError:
     cirq_ionq_ops = None
 
 import qbraid
-from qbraid.transpiler.cirq_braket.custom_gates import C as BKControl
+from qbraid.transpiler.braket.custom_gates import C as BKControl
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
-def to_braket(circuit: Circuit) -> BKCircuit:
+def cirq_to_braket(circuit: Circuit) -> BKCircuit:
     """Returns a Braket circuit equivalent to the input Cirq circuit.
 
     Args:

@@ -30,7 +30,7 @@ class QiskitBackend(QuantumDevice):
     """Wrapper class for IBM Qiskit ``Backend`` objects."""
 
     def __init__(self, ibm_device: "qiskit_ibm_provider.IBMBackend"):
-        """Create a BraketDevice."""
+        """Create a QiskitBackend."""
 
         super().__init__(ibm_device)
         self._vendor = "IBM"

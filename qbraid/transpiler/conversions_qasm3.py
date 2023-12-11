@@ -57,12 +57,12 @@ def convert_to_qasm3(program: "qbraid.QPROGRAM") -> str:
 
     try:
         if "qiskit" in package:
-            from qbraid.transpiler.qasm3_qiskit.conversions import qiskit_to_qasm3
+            from qbraid.transpiler.qiskit.conversions_qasm import qiskit_to_qasm3
 
             return qiskit_to_qasm3(program)
 
         if "braket" in package:
-            from qbraid.transpiler.qasm3_braket.conversions import braket_to_qasm3
+            from qbraid.transpiler.braket.conversions_qasm import braket_to_qasm3
 
             return braket_to_qasm3(program)
 
@@ -72,7 +72,7 @@ def convert_to_qasm3(program: "qbraid.QPROGRAM") -> str:
             return dumps(program)
 
         if package == "qasm2":
-            from qbraid.transpiler.qasm_node.convert_qasm import qasm2_to_qasm3
+            from qbraid.transpiler.qasm.convert_qasm import qasm2_to_qasm3
 
             return qasm2_to_qasm3(program)
 
@@ -105,14 +105,14 @@ def convert_from_qasm3(program: str, frontend: str) -> "qbraid.QPROGRAM":
 
     try:
         if frontend == "qiskit":
-            from qbraid.transpiler.qasm3_qiskit.conversions import qiskit_from_qasm3
+            from qbraid.transpiler.qiskit.conversions_qasm import qasm3_to_qiskit
 
-            return qiskit_from_qasm3(program)
+            return qasm3_to_qiskit(program)
 
         if frontend == "braket":
-            from qbraid.transpiler.qasm3_braket.conversions import braket_from_qasm3
+            from qbraid.transpiler.braket.conversions_qasm import qasm3_to_braket
 
-            return braket_from_qasm3(program)
+            return qasm3_to_braket(program)
 
         if frontend == "openqasm3":
             return openqasm_parse(program)

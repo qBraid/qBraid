@@ -26,7 +26,7 @@ import numpy as np
 import pytest
 from cirq.ops.pauli_interaction_gate import PauliInteractionGate
 
-from qbraid.transpiler.cirq_pyquil.quil_output import (
+from qbraid.transpiler.pyquil.quil_output import (
     QuilOneQubitGate,
     QuilOutput,
     QuilTwoQubitGate,

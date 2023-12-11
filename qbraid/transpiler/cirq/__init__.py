@@ -10,23 +10,18 @@
 
 """
 ==================================================
-OpenQASM Node :mod:`qbraid.transpiler.qasm_node`
+Cirq Conversions (:mod:`qbraid.transpiler.cirq`)
 ==================================================
 
-.. currentmodule:: qbraid.transpiler.qasm_node
+.. currentmodule:: qbraid.transpiler.cirq
 
 .. autosummary::
    :toctree: ../stubs/
 
-   cirq_from_qasm
-   cirq_to_qasm
    QasmParser
-   qasm2_to_qasm3
-   flatten_qasm_program
-
+   qasm2_to_cirq
+   cirq_to_qasm2
 
 """
-from qbraid.transpiler.qasm_node.cirq_qasm_parser import QasmParser
-from qbraid.transpiler.qasm_node.convert_cirq import cirq_from_qasm, cirq_to_qasm
-from qbraid.transpiler.qasm_node.convert_qasm import qasm2_to_qasm3
-from qbraid.transpiler.qasm_node.qasm_passes import flatten_qasm_program
+from qbraid.transpiler.cirq.cirq_qasm_parser import QasmParser
+from qbraid.transpiler.cirq.conversions_qasm import cirq_to_qasm2, qasm2_to_cirq

@@ -21,9 +21,9 @@ Visualization (:mod:`qbraid.visualization`)
    plot_histogram
    plot_distribution
    circuit_drawer
-   draw_qasm3
+   qasm3_drawer
 
 """
 from .draw_circuit import circuit_drawer
-from .draw_qasm3 import draw_qasm3
+from .draw_qasm3 import qasm3_drawer
 from .plot_counts import plot_distribution, plot_histogram

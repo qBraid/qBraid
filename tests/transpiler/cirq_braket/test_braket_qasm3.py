@@ -15,10 +15,10 @@ Unit tests for converting Braket circuits to/from OpenQASM
 import pytest
 from braket.circuits import Circuit
 
-from qbraid.transpiler.qasm3_braket.conversions import (
+from qbraid.transpiler.braket.conversions_qasm import (
     _convert_pi_to_decimal,
-    braket_from_qasm3,
     braket_to_qasm3,
+    qasm3_to_braket,
 )
 
 pi_decimal_data = [
@@ -86,4 +86,4 @@ b[0] = measure q[0];
 b[1] = measure q[1];
 """
     circuit_expected = Circuit().rx(0, 0.15).rx(1, 0.3)
-    assert circuit_expected == braket_from_qasm3(qasm_str)
+    assert circuit_expected == qasm3_to_braket(qasm_str)

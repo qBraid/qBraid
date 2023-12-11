@@ -399,7 +399,7 @@ def get_moments(gates):
     return moments
 
 
-def _draw_qasm3(qasm_str: str) -> str:
+def _qasm3_drawer(qasm_str: str) -> str:
     """Iterates over the input string and returns the gates"""
     num_qregs, num_cregs = get_circuit_height(qasm_str)
     height = (num_qregs + num_cregs) * 3
@@ -454,6 +454,6 @@ def _draw_qasm3(qasm_str: str) -> str:
     return out[:-1]
 
 
-def draw_qasm3(qasm_str: str) -> None:
+def qasm3_drawer(qasm_str: str) -> None:
     """Draws the circuit from the input string"""
-    print(_draw_qasm3(qasm_str))
+    print(_qasm3_drawer(qasm_str))

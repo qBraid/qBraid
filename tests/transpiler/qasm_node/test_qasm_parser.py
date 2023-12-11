@@ -1,11 +1,17 @@
 # Copyright (C) 2023 qBraid
+# Copyright (C) The Cirq Developers
 #
-# This file is part of the qBraid-SDK
+# This file is part of the qBraid-SDK.
 #
 # The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+# or later. This specific file, adapted from Cirq, is dual-licensed under both the
+# Apache License, Version 2.0, and the GPL v3. You may not use this file except in
+# compliance with the applicable license. You may obtain a copy of the Apache License at
 #
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# This file includes code adapted from Cirq (https://github.com/quantumlib/Cirq)
+# with modifications by qBraid. The original copyright notice is included above.
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 # isort: skip_file
@@ -30,8 +36,8 @@ from cirq import Circuit
 from cirq.circuits.qasm_output import QasmUGate
 from cirq.contrib.qasm_import import QasmException
 
-import qbraid.transpiler.custom_gates as cirq_qasm_gates
-from qbraid.transpiler.qasm_node.cirq_qasm_parser import QasmParser
+import qbraid.transpiler.cirq_gates as cirq_qasm_gates
+from qbraid.transpiler.cirq.cirq_qasm_parser import QasmParser
 
 # from cirq.contrib.qasm_import._parser import QasmParser
 

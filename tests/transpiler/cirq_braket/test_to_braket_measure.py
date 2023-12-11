@@ -15,7 +15,7 @@ Unit tests for converting Cirq circuits with MeasurementGate(s) to Braket circui
 import cirq
 
 from qbraid.programs import circuits_allclose
-from qbraid.transpiler.cirq_braket.convert_to_braket import to_braket
+from qbraid.transpiler.braket.cirq_to_braket import cirq_to_braket
 
 
 def alpha_pump(sys, env):
@@ -44,5 +44,5 @@ def batch_circuit():
 def test_ommit_measurement_gate():
     """Test that cirq.MeasurementGate is skipped during Braket conversion"""
     cirq_circuit = batch_circuit()
-    braket_circuit = to_braket(cirq_circuit)
+    braket_circuit = cirq_to_braket(cirq_circuit)
     assert circuits_allclose(cirq_circuit, braket_circuit)

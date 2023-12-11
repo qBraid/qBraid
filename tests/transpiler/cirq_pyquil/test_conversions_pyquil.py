@@ -22,8 +22,8 @@ from pyquil.gates import CNOT, CZ, RX, RZ, H, X, Y, Z
 from pyquil.noise import _decoherence_noise_model, _get_program_gates, apply_noise_model
 
 from qbraid.programs import circuits_allclose
-from qbraid.transpiler.cirq_pyquil.conversions import from_pyquil, to_pyquil
 from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler.pyquil.conversions import cirq_to_pyquil, pyquil_to_cirq
 
 
 def test_to_from_pyquil():
@@ -33,8 +33,8 @@ def test_to_from_pyquil():
     p += Z(2)
     p += CNOT(0, 1)
     p += CZ(1, 2)
-    p_cirq = from_pyquil(p)
-    p_test = to_pyquil(p_cirq)
+    p_cirq = pyquil_to_cirq(p)
+    p_test = cirq_to_pyquil(p_cirq)
     assert p.out() == p_test.out()
 
 
@@ -52,7 +52,7 @@ def test_to_from_pyquil_parameterized():
     p += RZ(np.pi / 4, q1)
     p += H(q0)
     p += H(q1)
-    p_test = to_pyquil(from_pyquil(p, compat=False), compat=False)
+    p_test = cirq_to_pyquil(pyquil_to_cirq(p, compat=False), compat=False)
     assert p.out() == p_test.out()
 
 
@@ -86,9 +86,9 @@ def test_to_from_pyquil_quil_string():
     and forth perfectly (in terms of labels -- the program unitaries and
     number of measurements are equivalent)."""
     p = Program(QUIL_STRING)
-    p_cirq = from_pyquil(p)
+    p_cirq = pyquil_to_cirq(p)
     p_cirq = circuit_from_qasm(p_cirq.to_qasm())
-    p_test = to_pyquil(p_cirq)
+    p_test = cirq_to_pyquil(p_cirq)
     assert circuits_allclose(p, p_test)
 
 
@@ -99,7 +99,7 @@ def test_to_pyquil_from_pyquil_no_zero_qubit():
     p += Z(12)
     p += CNOT(10, 11)
     p += CZ(11, 12)
-    p_test = to_pyquil(from_pyquil(p, compat=False), compat=False)
+    p_test = cirq_to_pyquil(pyquil_to_cirq(p, compat=False), compat=False)
     assert p.out() == p_test.out()
 
 
@@ -107,7 +107,7 @@ def test_raise_error_to_pyquil():
     with pytest.raises(CircuitConversionError):
         q0 = LineQubit(0)
         circuit = Circuit(cirq_ops.bit_flip(p=0.2).on(q0), cirq_ops.measure(q0, key="result"))
-        to_pyquil(circuit)
+        cirq_to_pyquil(circuit)
 
 
 def test_raise_error_from_pyquil():
@@ -116,4 +116,4 @@ def test_raise_error_from_pyquil():
         p += RX(-np.pi / 2, 0)
         noise_model = _decoherence_noise_model(_get_program_gates(p))
         p = apply_noise_model(p, noise_model)
-        from_pyquil(p, compat=False)
+        pyquil_to_cirq(p, compat=False)

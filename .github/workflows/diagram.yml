@@ -1,6 +1,8 @@
 name: Diagram
 
 on:
+  push:
+    branches: ['main']
   workflow_dispatch:
   
 jobs:
@@ -13,5 +15,5 @@ jobs:
       - name: Update diagram
         uses: githubocto/repo-visualizer@0.9.1
         with:
-          excluded_paths: "docs,tests,.github,.gitignore,.env_example,.readthedocs.yaml,tox.ini"
+          excluded_paths: "docs,tests,.github,.gitignore,.env_example,.readthedocs.yaml,tox.ini,ecosystem.json,architecture.png"
           branch: repo-visualizer-diagram

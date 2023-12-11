@@ -15,7 +15,7 @@ Module containing OpenQASM conversion function
 import os
 
 from qbraid.qasm_checks import is_valid_qasm2
-from qbraid.transpiler.qasm_node.qelib1_defs import _decompose_rxx_instr
+from qbraid.transpiler.qasm_qelib1 import _decompose_rxx_instr
 
 QASMType = str
 

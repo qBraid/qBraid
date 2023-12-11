@@ -40,7 +40,7 @@ def _convert_pi_to_decimal(qasm_str: str) -> str:
     return re.sub(pattern, replace_with_decimal, qasm_str)
 
 
-def braket_from_qasm3(qasm3_str: QASMType) -> Circuit:
+def qasm3_to_braket(qasm3_str: QASMType) -> Circuit:
     """Converts an OpenQASM 3.0 string to a ``braket.circuits.Circuit``.
 
     Args:
