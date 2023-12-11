@@ -17,7 +17,7 @@ from cirq import Circuit, LineQubit
 from cirq.ops import QubitOrder
 from pyquil import Program
 
-from qbraid import circuit_wrapper
+import qbraid
 from qbraid.transpiler.exceptions import CircuitConversionError
 from qbraid.transpiler.pyquil.quil_input import circuit_from_quil
 from qbraid.transpiler.pyquil.quil_output import QuilOutput
@@ -33,7 +33,7 @@ def cirq_to_pyquil(circuit: Circuit, compat: bool = True) -> Program:
         pyquil.Program object equivalent to the input Cirq circuit.
     """
     if compat:
-        qprogram = circuit_wrapper(circuit)
+        qprogram = qbraid.circuit_wrapper(circuit)
         qprogram.collapse_empty_registers()
         circuit = qprogram.program
     input_qubits = circuit.all_qubits()
@@ -68,7 +68,7 @@ def pyquil_to_cirq(program: Program, compat: bool = True) -> Circuit:
     try:
         circuit = circuit_from_quil(program.out())
         if compat:
-            qprogram = circuit_wrapper(circuit)
+            qprogram = qbraid.circuit_wrapper(circuit)
             qprogram.collapse_empty_registers()
             circuit = qprogram.program
         return circuit

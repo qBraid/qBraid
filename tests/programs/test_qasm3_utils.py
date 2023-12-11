@@ -23,7 +23,7 @@ from qiskit.qasm3 import dumps, loads
 from qbraid import circuit_wrapper
 from qbraid.programs.testing import circuits_allclose, random_circuit
 from qbraid.programs.testing.qasm3_random import _qasm3_random
-from qbraid.transpiler.qasm.convert_qasm import _get_qasm3_gate_defs, qasm2_to_qasm3
+from qbraid.transpiler.openqasm3.convert_qasm import _get_qasm3_gate_defs, qasm2_to_qasm3
 
 from .._data.qasm3.circuits import qasm3_bell, qasm3_shared15
 

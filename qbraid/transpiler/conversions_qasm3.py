@@ -72,7 +72,7 @@ def convert_to_qasm3(program: "qbraid.QPROGRAM") -> str:
             return dumps(program)
 
         if package == "qasm2":
-            from qbraid.transpiler.qasm.convert_qasm import qasm2_to_qasm3
+            from qbraid.transpiler.openqasm3.convert_qasm import qasm2_to_qasm3
 
             return qasm2_to_qasm3(program)
 

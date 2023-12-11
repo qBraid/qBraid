@@ -18,13 +18,41 @@ Transpiler  (:mod:`qbraid.transpiler`)
 .. autosummary::
    :toctree: ../stubs/
 
-   convert_from_cirq
-   convert_to_cirq
-   convert_from_qasm3
-   convert_to_qasm3
    CircuitConversionError
 
 """
-from qbraid.transpiler.conversions_cirq import convert_from_cirq, convert_to_cirq
-from qbraid.transpiler.conversions_qasm3 import convert_from_qasm3, convert_to_qasm3
 from qbraid.transpiler.exceptions import CircuitConversionError
+
+import importlib
+import inspect
+
+# Dynamically import QPROGRAM_LIBS when needed
+_qbraid = importlib.import_module('qbraid._qprogram')
+_PROGRAM_LIBS = getattr(_qbraid, '_PROGRAM_LIBS', [])
+
+# List to store the names of the imported functions
+conversion_function_names = []
+
+# Base path for the sub-modules
+base_path = "qbraid.transpiler."
+
+# Iterate over the installed libraries
+for lib in _PROGRAM_LIBS:
+    try:
+        # Dynamically import the sub-module
+        sub_module = importlib.import_module(base_path + lib)
+
+        # Extract function names from the sub-module
+        function_names = [
+            name
+            for name in dir(sub_module)
+            if callable(getattr(sub_module, name)) and inspect.isfunction(getattr(sub_module, name))
+        ]
+
+        # Add functions to the current namespace
+        for name in function_names:
+            globals()[name] = getattr(sub_module, name)
+            conversion_function_names.append(name)
+
+    except ModuleNotFoundError:
+        pass

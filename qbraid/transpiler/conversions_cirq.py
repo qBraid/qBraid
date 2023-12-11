@@ -153,13 +153,13 @@ def _convert_from_cirq(circuit: "cirq.Circuit", frontend: str) -> "qbraid.QPROGR
             return cirq_to_qasm2(circuit)
 
         if frontend == "qasm3":
-            from qbraid.transpiler.qasm.convert_qasm import qasm2_to_qasm3
+            from qbraid.transpiler.openqasm3.convert_qasm import qasm2_to_qasm3
 
             qasm2_str = cirq_to_qasm2(circuit)
             return qasm2_to_qasm3(qasm2_str)
 
         if frontend == "openqasm3":
-            from qbraid.transpiler.qasm.convert_qasm import qasm2_to_qasm3
+            from qbraid.transpiler.openqasm3.convert_qasm import qasm2_to_qasm3
 
             qasm3_str = qasm2_to_qasm3(cirq_to_qasm2(circuit))
             return openqasm_parse(qasm3_str)
