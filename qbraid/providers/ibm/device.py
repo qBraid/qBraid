@@ -30,7 +30,7 @@ class QiskitBackend(QuantumDevice):
     """Wrapper class for IBM Qiskit ``Backend`` objects."""
 
     def __init__(self, ibm_device: "qiskit_ibm_provider.IBMBackend"):
-        """Create a BraketDevice."""
+        """Create a QiskitDevice."""
 
         super().__init__(ibm_device)
         self._vendor = "IBM"
@@ -42,15 +42,22 @@ class QiskitBackend(QuantumDevice):
         self._id = device.name
         self._name = device.name
         self._provider = "IBM"
-        self._device_type = DeviceType("SIMULATOR") if device.simulator else DeviceType("QPU")
+        if device.name().startswith("fake"):
+            self._device_type = DeviceType("FAKE_DEVICE")
+        else:
+            self._device_type = DeviceType("SIMULATOR") if device.simulator else DeviceType("QPU")
 
         try:
-            self._num_qubits = device.num_qubits
+            if self._device_type == DeviceType("FAKE_DEVICE"):
+                self._num_qubits = device.configuration().n_qubits
+            else:
+                self._num_qubits = device.num_qubits
         except TranspilerError:
             if device.name == "simulator_stabilizer":
                 self._num_qubits = 5000
             elif device.name == "simulator_extended_stabilizer":
                 self._num_qubits = 63
+
             else:
                 self._num_qubits = None
 
@@ -66,6 +73,9 @@ class QiskitBackend(QuantumDevice):
         Returns:
             str: The status of this Device
         """
+        if self._device_type == DeviceType("FAKE_DEVICE"):
+            return DeviceStatus.ONLINE
+
         backend_status = self._device.status()
         if not backend_status.operational or backend_status.status_msg != "active":
             return DeviceStatus.OFFLINE
@@ -73,6 +83,8 @@ class QiskitBackend(QuantumDevice):
 
     def queue_depth(self) -> int:
         """Return the number of jobs in the queue for the ibm backend"""
+        if self._device_type == DeviceType("FAKE_DEVICE"):
+            return 0
         return self._device.status().pending_jobs
 
     def run(self, run_input, *args, **kwargs):
@@ -100,7 +112,11 @@ class QiskitBackend(QuantumDevice):
         )  # Needed to get measurements
         qiskit_job = backend.run(run_input, shots=shots, memory=memory, **kwargs)
         qiskit_job_id = qiskit_job.job_id()
-        qbraid_job_id = self._init_job(qiskit_job_id, [qbraid_circuit], shots)
+        qbraid_job_id = (
+            self._init_job(qiskit_job_id, [qbraid_circuit], shots)
+            if self._device_type != DeviceType("FAKE_DEVICE")
+            else "qbraid_test_id"
+        )
         qbraid_job = QiskitJob(
             qbraid_job_id, vendor_job_id=qiskit_job_id, device=self, vendor_job_obj=qiskit_job
         )
@@ -139,7 +155,11 @@ class QiskitBackend(QuantumDevice):
         qiskit_job_id = qiskit_job.job_id()
 
         # to change to batch
-        qbraid_job_id = self._init_job(qiskit_job_id, qbraid_circuit_batch, shots)
+        qbraid_job_id = (
+            self._init_job(qiskit_job_id, qbraid_circuit_batch, shots)
+            if self._device_type != DeviceType("FAKE_DEVICE")
+            else "qbraid_test_id"
+        )
         qbraid_job = QiskitJob(
             qbraid_job_id, vendor_job_id=qiskit_job_id, device=self, vendor_job_obj=qiskit_job
         )

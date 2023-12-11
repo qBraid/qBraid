@@ -99,10 +99,10 @@ class QuantumDevice(ABC):
 
     @property
     def device_type(self) -> "qbraid.providers.DeviceType":
-        """The device type, Simulator or QPU.
+        """The device type, Simulator, Fake_device or QPU.
 
         Returns:
-            Device type enum (Simulator|QPU)
+            Device type enum (Simulator|Fake_Device|QPU)
 
         """
         return self._device_type
