@@ -17,7 +17,7 @@ Module for finding shortest converion paths between circuits.
 
 # # List of conversion functions
 # conversion_functions = [
-#     "cirq_to_qasm22",
+#     "cirq_to_qasm2",
 #     "cirq_to_braket",
 #     "cirq_to_pyquil",
 #     "braket_to_cirq",

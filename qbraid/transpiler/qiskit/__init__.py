@@ -20,9 +20,13 @@ Qiskit Conversions  (:mod:`qbraid.transpiler.qiskit`)
 
    qasm3_to_qiskit
    qiskit_to_qasm3
-   cirq_to_qiskit
-   qiskit_to_cirq
+   qasm2_to_qiskit
+   qiskit_to_qasm2
 
 """
-from qbraid.transpiler.qiskit.cirq_conversions import cirq_to_qiskit, qiskit_to_cirq
-from qbraid.transpiler.qiskit.qasm3_conversions import qasm3_to_qiskit, qiskit_to_qasm3
+from qbraid.transpiler.qiskit.conversions_qasm import (
+    qasm2_to_qiskit,
+    qasm3_to_qiskit,
+    qiskit_to_qasm2,
+    qiskit_to_qasm3,
+)

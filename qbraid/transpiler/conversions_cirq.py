@@ -14,7 +14,7 @@
 Module containing functions for converting to/from Cirq's circuit representation.
 
 """
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 
 from cirq import Circuit
 from cirq.contrib.qasm_import import circuit_from_qasm
@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     import qbraid
 
 
-def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple["cirq.Circuit", str]:
+def convert_to_cirq(program: "qbraid.QPROGRAM") -> "cirq.Circuit":
     """Converts any valid input quantum program to a Cirq circuit.
 
     Args:
@@ -63,47 +63,43 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple["cirq.Circuit", str]:
 
     try:
         if "qiskit" in package:
-            from qbraid.transpiler.qiskit import qiskit_to_cirq
+            from qbraid.transpiler.qiskit import qiskit_to_qasm2
 
-            return qiskit_to_cirq(program), "qiskit"
+            qasm_str = qiskit_to_qasm2(program)
+            return convert_to_cirq(qasm_str)
 
         if "pyquil" in package:
             from qbraid.transpiler.pyquil import pyquil_to_cirq
 
-            return pyquil_to_cirq(program), "pyquil"
+            return pyquil_to_cirq(program)
 
         if "braket" in package:
             from qbraid.transpiler.braket import braket_to_cirq
 
-            return braket_to_cirq(program), "braket"
+            return braket_to_cirq(program)
 
         if "pytket" in package:
             from qbraid.transpiler.pytket import pytket_to_cirq
 
-            return pytket_to_cirq(program), "pytket"
+            return pytket_to_cirq(program)
 
         if "openqasm3" in package:
             from openqasm3 import dumps
-            from qiskit.qasm3 import loads
-
-            from qbraid.transpiler.qiskit import qiskit_to_cirq
 
             qasm_str = dumps(program)
-            return qiskit_to_cirq(loads(qasm_str)), "openqasm3"
+            return convert_to_cirq(qasm_str)
 
         if package == "qasm2":
-            return qasm2_to_cirq(program), package
+            return qasm2_to_cirq(program, map_qbraid_circuit=True)
 
         if package == "qasm3":
-            from qiskit.qasm3 import loads
+            from qbraid.transpiler.qiskit import qasm3_to_qiskit
 
-            from qbraid.transpiler.qiskit import qiskit_to_cirq
-
-            qiskit_circuit = loads(program)
-            return qiskit_to_cirq(qiskit_circuit), package
+            qiskit_circuit = qasm3_to_qiskit(program)
+            return convert_to_cirq(qiskit_circuit)
 
         if isinstance(program, Circuit):
-            return program, "cirq"
+            return program
 
     except Exception as err:
         raise CircuitConversionError(
@@ -131,18 +127,15 @@ def _convert_from_cirq(circuit: "cirq.Circuit", frontend: str) -> "qbraid.QPROGR
 
     try:
         if frontend == "qiskit":
-            from qbraid.transpiler.qiskit import cirq_to_qiskit
+            from qbraid.transpiler.qiskit import qasm2_to_qiskit
 
-            return cirq_to_qiskit(circuit)
+            qasm_str = cirq_to_qasm2(circuit, map_qbraid_circuit=True)
+            return qasm2_to_qiskit(qasm_str)
 
         if frontend == "pyquil":
             from qbraid.transpiler.pyquil import cirq_to_pyquil
 
-            try:
-                return cirq_to_pyquil(circuit)
-            except CircuitConversionError:
-                cirq_compat = circuit_from_qasm(circuit.to_qasm())
-                return cirq_to_pyquil(cirq_compat)
+            return cirq_to_pyquil(circuit)
 
         if frontend == "braket":
             from qbraid.transpiler.braket import cirq_to_braket
@@ -197,5 +190,12 @@ def convert_from_cirq(circuit: "cirq.Circuit", frontend: str) -> "qbraid.QPROGRA
     try:
         return _convert_from_cirq(circuit, frontend)
     except CircuitConversionError:
+        pass
+
+    try:
         circuit_flat = circuit_from_qasm(circuit.to_qasm())  # flatten circuit
         return _convert_from_cirq(circuit_flat, frontend)
+    except ValueError as err:
+        raise CircuitConversionError(
+            f"Cirq Circuit could not be converted to a " f"quantum program of type {frontend}."
+        ) from err

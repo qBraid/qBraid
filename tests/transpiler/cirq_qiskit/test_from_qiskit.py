@@ -19,8 +19,8 @@ from qiskit.circuit.random import random_circuit
 
 from qbraid import circuit_wrapper
 from qbraid.programs import circuits_allclose
+from qbraid.transpiler.conversions_cirq import convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
-from qbraid.transpiler.qiskit.cirq_conversions import qiskit_to_cirq
 
 
 def test_bell_state_from_qiskit():
@@ -30,7 +30,7 @@ def test_bell_state_from_qiskit():
     qiskit_circuit = QuantumCircuit(2)
     qiskit_circuit.h(0)
     qiskit_circuit.cx(0, 1)
-    cirq_circuit = qiskit_to_cirq(qiskit_circuit)
+    cirq_circuit = convert_to_cirq(qiskit_circuit)
     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -55,7 +55,7 @@ def test_common_gates_from_qiskit():
     qiskit_circuit.cx(0, 1)
     qiskit_circuit.cp(np.pi / 4, 2, 3)
 
-    cirq_circuit = qiskit_to_cirq(qiskit_circuit)
+    cirq_circuit = convert_to_cirq(qiskit_circuit)
     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -63,7 +63,7 @@ def test_common_gates_from_qiskit():
 def test_crz_gate_from_qiskit(qubits):
     qiskit_circuit = QuantumCircuit(2)
     qiskit_circuit.crz(np.pi / 4, *qubits)
-    cirq_circuit = qiskit_to_cirq(qiskit_circuit)
+    cirq_circuit = convert_to_cirq(qiskit_circuit)
     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -72,7 +72,7 @@ def test_crz_gate_from_qiskit(qubits):
 def test_rzz_gate_from_qiskit(qubits, theta):
     qiskit_circuit = QuantumCircuit(2)
     qiskit_circuit.rzz(theta, *qubits)
-    cirq_circuit = qiskit_to_cirq(qiskit_circuit)
+    cirq_circuit = convert_to_cirq(qiskit_circuit)
     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -80,7 +80,7 @@ def test_iswap_gate_from_qiskit():
     qiskit_circuit = QuantumCircuit(2)
     qiskit_circuit.h([0, 1])
     qiskit_circuit.iswap(0, 1)
-    cirq_circuit = qiskit_to_cirq(qiskit_circuit)
+    cirq_circuit = convert_to_cirq(qiskit_circuit)
     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -89,7 +89,7 @@ def test_qiskit_roundtrip():
     qiskit_circuit.ccz(0, 1, 2)
     qiskit_circuit.ecr(1, 2)
     qiskit_circuit.cs(2, 0)
-    cirq_circuit = qiskit_to_cirq(qiskit_circuit)
+    cirq_circuit = convert_to_cirq(qiskit_circuit)
     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=False)
 
 
@@ -98,7 +98,7 @@ def test_qiskit_roundtrip_noncontig():
     qiskit_circuit.ccz(0, 1, 2)
     qiskit_circuit.ecr(1, 2)
     qiskit_circuit.cs(2, 0)
-    cirq_circuit = qiskit_to_cirq(qiskit_circuit)
+    cirq_circuit = convert_to_cirq(qiskit_circuit)
     qprogram = circuit_wrapper(cirq_circuit)
     qprogram.collapse_empty_registers()
     qiskit_contig = qprogram.program
@@ -108,7 +108,7 @@ def test_qiskit_roundtrip_noncontig():
 def test_100_random_qiskit():
     for _ in range(100):
         qiskit_circuit = random_circuit(4, 1)
-        cirq_circuit = qiskit_to_cirq(qiskit_circuit)
+        cirq_circuit = convert_to_cirq(qiskit_circuit)
         assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=False)
 
 
@@ -116,4 +116,4 @@ def test_raise_error():
     with pytest.raises(CircuitConversionError):
         qiskit_circuit = QuantumCircuit(1)
         qiskit_circuit.delay(300, 0)
-        qiskit_to_cirq(qiskit_circuit)
+        convert_to_cirq(qiskit_circuit)
