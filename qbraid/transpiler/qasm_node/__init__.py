@@ -18,8 +18,8 @@ OpenQASM Node :mod:`qbraid.transpiler.qasm_node`
 .. autosummary::
    :toctree: ../stubs/
 
-   cirq_from_qasm
-   cirq_to_qasm
+   qasm2_to_cirq
+   cirq_to_qasm2
    QasmParser
    qasm2_to_qasm3
    flatten_qasm_program
@@ -27,6 +27,6 @@ OpenQASM Node :mod:`qbraid.transpiler.qasm_node`
 
 """
 from qbraid.transpiler.qasm_node.cirq_qasm_parser import QasmParser
-from qbraid.transpiler.qasm_node.convert_cirq import cirq_from_qasm, cirq_to_qasm
+from qbraid.transpiler.qasm_node.convert_cirq import cirq_to_qasm2, qasm2_to_cirq
 from qbraid.transpiler.qasm_node.convert_qasm import qasm2_to_qasm3
 from qbraid.transpiler.qasm_node.qasm_passes import flatten_qasm_program

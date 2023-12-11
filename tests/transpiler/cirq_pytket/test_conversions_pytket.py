@@ -21,7 +21,7 @@ from pytket.qasm import circuit_to_qasm_str
 from qbraid.programs import circuits_allclose
 from qbraid.programs.testing.circuit_equality import _equal
 from qbraid.transpiler.pytket.conversions import cirq_to_pytket, pytket_to_cirq
-from qbraid.transpiler.qasm_node import cirq_from_qasm
+from qbraid.transpiler.qasm_node import qasm2_to_cirq
 
 
 def test_bell_state_to_from_circuits():
@@ -53,7 +53,7 @@ def test_convert_with_barrier(as_qasm):
     pytket_circuit.add_barrier([i for i in range(n)])
 
     if as_qasm:
-        cirq_circuit = cirq_from_qasm(circuit_to_qasm_str(pytket_circuit))
+        cirq_circuit = qasm2_to_cirq(circuit_to_qasm_str(pytket_circuit))
     else:
         cirq_circuit = pytket_to_cirq(pytket_circuit)
 
@@ -73,7 +73,7 @@ def test_convert_with_multiple_barriers(as_qasm):
         pytket_circuit.add_barrier([i for i in range(n)])
 
     if as_qasm:
-        cirq_circuit = cirq_from_qasm(circuit_to_qasm_str(pytket_circuit))
+        cirq_circuit = qasm2_to_cirq(circuit_to_qasm_str(pytket_circuit))
     else:
         cirq_circuit = pytket_to_cirq(pytket_circuit)
 

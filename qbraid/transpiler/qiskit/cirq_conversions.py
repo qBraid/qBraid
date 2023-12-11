@@ -19,7 +19,7 @@ import qiskit
 from qbraid import circuit_wrapper
 from qbraid.transpiler.custom_gates import _map_zpow_and_unroll
 from qbraid.transpiler.exceptions import CircuitConversionError
-from qbraid.transpiler.qasm_node import cirq_from_qasm, cirq_to_qasm
+from qbraid.transpiler.qasm_node import cirq_to_qasm2, qasm2_to_cirq
 
 
 def cirq_to_qiskit(circuit: cirq.Circuit) -> qiskit.QuantumCircuit:
@@ -38,7 +38,7 @@ def cirq_to_qiskit(circuit: cirq.Circuit) -> qiskit.QuantumCircuit:
         qprogram.collapse_empty_registers()
         contig_circuit = qprogram.program
         compat_circuit = _map_zpow_and_unroll(contig_circuit)
-        return qiskit.QuantumCircuit.from_qasm_str(cirq_to_qasm(compat_circuit))
+        return qiskit.QuantumCircuit.from_qasm_str(cirq_to_qasm2(compat_circuit))
     except ValueError as err:
         raise CircuitConversionError from err
 
@@ -54,7 +54,7 @@ def qiskit_to_cirq(circuit: qiskit.QuantumCircuit) -> cirq.Circuit:
     """
     try:
         qasm_str = circuit.qasm()
-        cirq_circuit = cirq_from_qasm(qasm_str)
+        cirq_circuit = qasm2_to_cirq(qasm_str)
         qprogram = circuit_wrapper(cirq_circuit)
         qprogram._convert_to_line_qubits()
         return qprogram.program

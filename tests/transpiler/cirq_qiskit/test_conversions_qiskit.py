@@ -19,7 +19,7 @@ import qiskit
 
 from qbraid.programs import circuits_allclose
 from qbraid.programs.testing.circuit_equality import _equal
-from qbraid.transpiler.qasm_node import cirq_from_qasm, cirq_to_qasm
+from qbraid.transpiler.qasm_node import cirq_to_qasm2, qasm2_to_cirq
 from qbraid.transpiler.qiskit.cirq_conversions import cirq_to_qiskit, qiskit_to_cirq
 
 
@@ -40,8 +40,8 @@ def test_bell_state_to_from_qasm():
     """
     qreg = cirq.LineQubit.range(2)
     cirq_circuit = cirq.Circuit([cirq.ops.H.on(qreg[0]), cirq.ops.CNOT.on(qreg[0], qreg[1])])
-    qasm = cirq_to_qasm(cirq_circuit)  # Qasm from Cirq
-    circuit_cirq = cirq_from_qasm(qasm)
+    qasm = cirq_to_qasm2(cirq_circuit)  # Qasm from Cirq
+    circuit_cirq = qasm2_to_cirq(qasm)
     assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
 
 
@@ -62,8 +62,8 @@ def test_random_circuit_to_from_qasm():
     with a random one-qubit circuit.
     """
     circuit_0 = cirq.testing.random_circuit(qubits=2, n_moments=10, op_density=0.99, random_state=2)
-    qasm = cirq_to_qasm(circuit_0)
-    circuit_1 = cirq_from_qasm(qasm)
+    qasm = cirq_to_qasm2(circuit_0)
+    circuit_1 = qasm2_to_cirq(qasm)
     u_0 = circuit_0.unitary()
     u_1 = circuit_1.unitary()
     assert cirq.equal_up_to_global_phase(u_0, u_1)
@@ -77,7 +77,7 @@ def test_convert_with_barrier(as_qasm):
     qiskit_circuit.barrier()
 
     if as_qasm:
-        cirq_circuit = cirq_from_qasm(qiskit_circuit.qasm())
+        cirq_circuit = qasm2_to_cirq(qiskit_circuit.qasm())
     else:
         cirq_circuit = qiskit_to_cirq(qiskit_circuit)
 
@@ -97,7 +97,7 @@ def test_convert_with_multiple_barriers(as_qasm):
         qiskit_circuit.barrier()
 
     if as_qasm:
-        cirq_circuit = cirq_from_qasm(qiskit_circuit.qasm())
+        cirq_circuit = qasm2_to_cirq(qiskit_circuit.qasm())
     else:
         cirq_circuit = qiskit_to_cirq(qiskit_circuit)
 

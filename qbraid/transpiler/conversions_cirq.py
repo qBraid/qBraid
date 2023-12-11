@@ -23,7 +23,7 @@ from openqasm3 import parse as openqasm_parse
 from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError
 from qbraid.qasm_checks import get_qasm_version
 from qbraid.transpiler.exceptions import CircuitConversionError
-from qbraid.transpiler.qasm_node import cirq_from_qasm, cirq_to_qasm
+from qbraid.transpiler.qasm_node import cirq_to_qasm2, qasm2_to_cirq
 
 if TYPE_CHECKING:
     import cirq
@@ -92,7 +92,7 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> Tuple["cirq.Circuit", str]:
             return qiskit_to_cirq(loads(qasm_str)), "openqasm3"
 
         if package == "qasm2":
-            return cirq_from_qasm(program), package
+            return qasm2_to_cirq(program), package
 
         if package == "qasm3":
             from qiskit.qasm3 import loads
@@ -155,18 +155,18 @@ def _convert_from_cirq(circuit: "cirq.Circuit", frontend: str) -> "qbraid.QPROGR
             return cirq_to_pytket(circuit)
 
         if frontend == "qasm2":
-            return cirq_to_qasm(circuit)
+            return cirq_to_qasm2(circuit)
 
         if frontend == "qasm3":
             from qbraid.transpiler.qasm_node.convert_qasm import qasm2_to_qasm3
 
-            qasm2_str = cirq_to_qasm(circuit)
+            qasm2_str = cirq_to_qasm2(circuit)
             return qasm2_to_qasm3(qasm2_str)
 
         if frontend == "openqasm3":
             from qbraid.transpiler.qasm_node.convert_qasm import qasm2_to_qasm3
 
-            qasm3_str = qasm2_to_qasm3(cirq_to_qasm(circuit))
+            qasm3_str = qasm2_to_qasm3(cirq_to_qasm2(circuit))
             return openqasm_parse(qasm3_str)
 
         if frontend == "cirq":

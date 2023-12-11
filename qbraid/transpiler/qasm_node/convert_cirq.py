@@ -51,7 +51,7 @@ def _to_qasm_output(
     )
 
 
-def cirq_to_qasm(
+def cirq_to_qasm2(
     circuit: cirq.Circuit,
     header: Optional[str] = None,
     precision: int = 10,
@@ -68,7 +68,7 @@ def cirq_to_qasm(
     return str(_to_qasm_output(circuit, header, precision, qubit_order))
 
 
-def cirq_from_qasm(qasm: QASMType) -> cirq.Circuit:
+def qasm2_to_cirq(qasm: QASMType) -> cirq.Circuit:
     """Returns a Cirq circuit equivalent to the input QASM string.
 
     Args:
