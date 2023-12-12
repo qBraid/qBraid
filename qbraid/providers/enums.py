@@ -25,6 +25,7 @@ class DeviceType(str, Enum):
     """
 
     SIMULATOR = "SIMULATOR"
+    FAKE_DEVICE = "FAKE_DEVICE"
     QPU = "QPU"
 
 
