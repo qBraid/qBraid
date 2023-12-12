@@ -76,7 +76,7 @@ def _convert_path_to_string(path: List[str]) -> str:
     return " -> ".join(conversion_packages)
 
 
-def transpile(program: "qbraid.QPROGRAM", target: str) -> "qbraid.QPROGRAM":
+def convert_to_package(program: "qbraid.QPROGRAM", target: str) -> "qbraid.QPROGRAM":
     """
     Transpile a quantum program to a target language.
 
@@ -98,24 +98,22 @@ def transpile(program: "qbraid.QPROGRAM", target: str) -> "qbraid.QPROGRAM":
     graph = create_conversion_graph(conversion_functions)
     paths = find_top_shortest_conversion_paths(graph, source, target)
 
-    # Log details of each path
     for path in paths:
-        # logging.info("Conversion path: %s", _convert_path_to_string(path))
+        logging.info("Conversion path: %s", _convert_path_to_string(path))
         print(_convert_path_to_string(path))
 
     for path in paths:
-        temp_program = deepcopy(program)  # Create a copy of the original program
+        temp_program = deepcopy(program)
         try:
             for conversion in path:
                 convert_func = getattr(transpiler, conversion)
                 temp_program = convert_func(temp_program)
-            # logging.info(
-            #     "Successfully transpiled using packages: %s", _convert_path_to_string(path)
-            # )
+            logging.info(
+                "Successfully transpiled using packages: %s", _convert_path_to_string(path)
+            )
             print(_convert_path_to_string(path))
             return temp_program
-        except Exception as e:
-            continue  # If an exception occurs, continue with the next path
+        except Exception:  # pylint: disable=broad-exception-caught
+            continue
 
-    # If all paths fail, raise an exception
     raise CircuitConversionError(f"Failed to transpile program from {source} to {target}.")

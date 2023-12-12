@@ -52,7 +52,7 @@ def test_to_from_pyquil_parameterized():
     p += RZ(np.pi / 4, q1)
     p += H(q0)
     p += H(q1)
-    p_test = cirq_to_pyquil(pyquil_to_cirq(p, compat=False), compat=False)
+    p_test = cirq_to_pyquil(pyquil_to_cirq(p))
     assert p.out() == p_test.out()
 
 
@@ -99,7 +99,7 @@ def test_to_pyquil_from_pyquil_no_zero_qubit():
     p += Z(12)
     p += CNOT(10, 11)
     p += CZ(11, 12)
-    p_test = cirq_to_pyquil(pyquil_to_cirq(p, compat=False), compat=False)
+    p_test = cirq_to_pyquil(pyquil_to_cirq(p))
     assert p.out() == p_test.out()
 
 
@@ -116,4 +116,4 @@ def test_raise_error_from_pyquil():
         p += RX(-np.pi / 2, 0)
         noise_model = _decoherence_noise_model(_get_program_gates(p))
         p = apply_noise_model(p, noise_model)
-        pyquil_to_cirq(p, compat=False)
+        pyquil_to_cirq(p)

@@ -91,7 +91,7 @@ def convert_to_cirq(program: "qbraid.QPROGRAM") -> "cirq.Circuit":
             return convert_to_cirq(qasm_str)
 
         if package == "qasm2":
-            return qasm2_to_cirq(program, map_qbraid_circuit=True)
+            return qasm2_to_cirq(program)
 
         if package == "qasm3":
             from qbraid.transpiler.qiskit import qasm3_to_qiskit
@@ -130,7 +130,7 @@ def _convert_from_cirq(circuit: "cirq.Circuit", frontend: str) -> "qbraid.QPROGR
         if frontend == "qiskit":
             from qbraid.transpiler.qiskit import qasm2_to_qiskit
 
-            qasm_str = cirq_to_qasm2(circuit, map_qbraid_circuit=True)
+            qasm_str = cirq_to_qasm2(circuit)
             return qasm2_to_qiskit(qasm_str)
 
         if frontend == "pyquil":

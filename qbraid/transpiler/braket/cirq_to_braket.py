@@ -15,6 +15,7 @@
 Module for converting Braket circuits to Cirq circuits
 
 """
+from copy import deepcopy
 from typing import Dict, List, Optional, Union
 
 import numpy as np
@@ -46,15 +47,12 @@ def cirq_to_braket(circuit: Circuit) -> BKCircuit:
     Returns:
         Braket circuit equivalent to the input Cirq circuit.
     """
-    qprogram = qbraid.circuit_wrapper(circuit)
-    qprogram.collapse_empty_registers()
-    compat_circuit = qprogram.program
-    cirq_int_qubits = range(len(compat_circuit.all_qubits()))
-    braket_int_qubits = list(cirq_int_qubits)
-    qubit_mapping = {x: braket_int_qubits[x] for x in cirq_int_qubits}
+    cirq_qubits = list(circuit.all_qubits())
+    cirq_int_qubits = [qbraid.programs.cirq.CirqCircuit._int_from_qubit(q) for q in cirq_qubits]
+    braket_int_qubits = deepcopy(cirq_int_qubits)
+    qubit_mapping = {q: braket_int_qubits[i] for i, q in enumerate(cirq_int_qubits)}
     return BKCircuit(
-        _to_braket_instruction(operation, qubit_mapping)
-        for operation in compat_circuit.all_operations()
+        _to_braket_instruction(operation, qubit_mapping) for operation in circuit.all_operations()
     )
 
 

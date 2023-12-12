@@ -57,7 +57,6 @@ def cirq_to_qasm2(
     header: Optional[str] = None,
     precision: int = 10,
     qubit_order: "cirq.QubitOrderOrList" = ops.QubitOrder.DEFAULT,
-    map_qbraid_circuit: bool = False,
 ) -> QASMType:
     """Returns a QASM string representing the input Cirq circuit.
 
@@ -67,16 +66,11 @@ def cirq_to_qasm2(
     Returns:
         QASMType: QASM string equivalent to the input Cirq circuit.
     """
-    if map_qbraid_circuit:
-        qprogram = qbraid.circuit_wrapper(circuit)
-        qprogram.collapse_empty_registers()  # Check: this might break given qubit_order input
-        contig_circuit = qprogram.program
-        circuit = _map_zpow_and_unroll(contig_circuit)
-
+    circuit = _map_zpow_and_unroll(circuit)
     return str(_to_qasm_output(circuit, header, precision, qubit_order))
 
 
-def qasm2_to_cirq(qasm: QASMType, map_qbraid_circuit: bool = False) -> cirq.Circuit:
+def qasm2_to_cirq(qasm: QASMType) -> cirq.Circuit:
     """Returns a Cirq circuit equivalent to the input QASM string.
 
     Args:
@@ -86,10 +80,4 @@ def qasm2_to_cirq(qasm: QASMType, map_qbraid_circuit: bool = False) -> cirq.Circ
         Cirq circuit representation equivalent to the input QASM string.
     """
     qasm = flatten_qasm_program(qasm)
-    circuit = QasmParser().parse(qasm).circuit
-    if not map_qbraid_circuit:
-        return circuit
-
-    qprogram = qbraid.circuit_wrapper(circuit)
-    qprogram._convert_to_line_qubits()
-    return qprogram.program
+    return QasmParser().parse(qasm).circuit

@@ -72,16 +72,10 @@ def braket_to_cirq(circuit: BKCircuit) -> Circuit:
     Args:
         circuit: Braket circuit to convert to a Cirq circuit.
     """
-    from qbraid import circuit_wrapper  # pylint: disable=import-outside-toplevel
-
-    qprogram = circuit_wrapper(circuit)
-    qprogram.collapse_empty_registers()
-    compat_circuit = qprogram.program
-    cirq_qubits = [LineQubit(x) for x in range(len(compat_circuit.qubits))]
-    qubit_mapping = {x: cirq_qubits[x] for x in range(len(cirq_qubits))}
-    return Circuit(
-        _from_braket_instruction(instr, qubit_mapping) for instr in compat_circuit.instructions
-    )
+    bk_qubits = [int(q) for q in circuit.qubits]
+    cirq_qubits = [LineQubit(x) for x in bk_qubits]
+    qubit_mapping = {q: cirq_qubits[i] for i, q in enumerate(bk_qubits)}
+    return Circuit(_from_braket_instruction(instr, qubit_mapping) for instr in circuit.instructions)
 
 
 def _from_braket_instruction(

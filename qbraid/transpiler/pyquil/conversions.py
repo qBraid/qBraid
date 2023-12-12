@@ -17,13 +17,12 @@ from cirq import Circuit, LineQubit
 from cirq.ops import QubitOrder
 from pyquil import Program
 
-import qbraid
 from qbraid.transpiler.exceptions import CircuitConversionError
 from qbraid.transpiler.pyquil.quil_input import circuit_from_quil
 from qbraid.transpiler.pyquil.quil_output import QuilOutput
 
 
-def cirq_to_pyquil(circuit: Circuit, compat: bool = True) -> Program:
+def cirq_to_pyquil(circuit: Circuit) -> Program:
     """Returns a pyQuil Program equivalent to the input Cirq circuit.
 
     Args:
@@ -32,10 +31,6 @@ def cirq_to_pyquil(circuit: Circuit, compat: bool = True) -> Program:
     Returns:
         pyquil.Program object equivalent to the input Cirq circuit.
     """
-    if compat:
-        qprogram = qbraid.circuit_wrapper(circuit)
-        qprogram.collapse_empty_registers()
-        circuit = qprogram.program
     input_qubits = circuit.all_qubits()
     max_qubit = max(input_qubits)
     # if we are using LineQubits, keep the qubit labeling the same
@@ -56,7 +51,7 @@ def cirq_to_pyquil(circuit: Circuit, compat: bool = True) -> Program:
         ) from err
 
 
-def pyquil_to_cirq(program: Program, compat: bool = True) -> Circuit:
+def pyquil_to_cirq(program: Program) -> Circuit:
     """Returns a Cirq circuit equivalent to the input pyQuil Program.
 
     Args:
@@ -66,12 +61,7 @@ def pyquil_to_cirq(program: Program, compat: bool = True) -> Circuit:
         Cirq circuit representation equivalent to the input pyQuil Program.
     """
     try:
-        circuit = circuit_from_quil(program.out())
-        if compat:
-            qprogram = qbraid.circuit_wrapper(circuit)
-            qprogram.collapse_empty_registers()
-            circuit = qprogram.program
-        return circuit
+        return circuit_from_quil(program.out())
     except Exception as err:
         raise CircuitConversionError(
             "qBraid transpiler doesn't yet support pyQuil noise gates."

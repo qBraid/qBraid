@@ -17,8 +17,8 @@ from unittest.mock import Mock
 import braket.circuits
 import pytest
 
+from qbraid.converter import _convert_path_to_string, _get_program_type, convert_to_package
 from qbraid.exceptions import PackageValueError, ProgramTypeError
-from qbraid.transpile import _convert_path_to_string, _get_program_type, transpile
 
 from .._data.programs import bell_data
 
@@ -61,7 +61,7 @@ def test_bad_source_program_type(item):
 def test_unuspported_target_package():
     """Test that an error is raised if target package is not supported."""
     with pytest.raises(PackageValueError):
-        transpile(braket.circuits.Circuit(), "alice")
+        convert_to_package(braket.circuits.Circuit(), "alice")
 
 
 def test_convert_path_to_string():
