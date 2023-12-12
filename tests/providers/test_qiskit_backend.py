@@ -32,13 +32,12 @@ from .fixtures import cirq_circuit, device_wrapper_inputs, qiskit_circuit
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM storage)"
 
-### FIXTURES ###
-
 
 @pytest.fixture
 def providers():
     """Return tuple of IBM and fake providers."""
-    qbraid_provider = QiskitProvider()
+    ibmq_token = os.getenv("QISKIT_IBM_TOKEN", None)
+    qbraid_provider = QiskitProvider(qiskit_ibm_token=ibmq_token)
     ibm_provider = qbraid_provider._provider
     fake_provider = FakeProviderFactory().get_provider()
     return ibm_provider, fake_provider
@@ -64,8 +63,6 @@ def fake_ibm_devices():
 
 inputs_qiskit_dw = [] if skip_remote_tests else ibm_devices()
 circuits_qiskit_run = [cirq_circuit(), qiskit_circuit()]
-
-### TESTS ###
 
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
@@ -173,8 +170,9 @@ def test_cancel_completed_batch_error():
         qbraid_job.cancel()
 
 
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 @pytest.mark.parametrize("backend_name", ["ibmq_qasm_simulator", "fake_melbourne", "fake_almaden"])
-def test_get_device_name(providers, backend_name):  # pylint: disable=redefined-outer-name
+def test_get_device_name_fake(providers, backend_name):  # pylint: disable=redefined-outer-name
     """Test edge cases for getting device name, e.g. .name, .name(), .backend_name"""
     provider, fake_provider = providers
 
