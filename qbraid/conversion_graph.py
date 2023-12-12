@@ -15,10 +15,43 @@ quantum programs available through the qbraid.transpiler using directed graphs.
 """
 from typing import List
 
-import matplotlib.pyplot as plt
 import networkx as nx
 
 from qbraid.transpiler import conversion_functions
+
+
+def create_conversion_graph(conversion_funcs: List[str]) -> nx.DiGraph:
+    """
+    Create a directed graph from a list of conversion functions.
+
+    Args:
+        conversion_functions (list of str): List of conversion function names.
+
+    Returns:
+        nx.DiGraph: The directed graph created from conversion functions.
+    """
+    graph = nx.DiGraph()
+    for func in conversion_funcs:
+        source, target = func.split("_to_")
+        graph.add_edge(source, target)
+    return graph
+
+
+def add_new_conversion(graph: nx.DiGraph, conversion_func: str) -> nx.DiGraph:
+    """
+    Add a new conversion function as an edge in the graph.
+
+    Args:
+        graph (nx.DiGraph): The graph to add the conversion to.
+        conversion_func (str): The conversion function name.
+
+    Returns:
+        nx.DiGraph: The graph with the new conversion added.
+    """
+    source, target = conversion_func.split("_to_")
+    if not graph.has_edge(source, target):
+        graph.add_edge(source, target)
+    return graph
 
 
 def find_shortest_conversion_path(graph: nx.DiGraph, source: str, target: str) -> List[str]:
@@ -71,57 +104,7 @@ def find_top_shortest_conversion_paths(
         raise ValueError(f"No conversion path available between {source} and {target}.") from err
 
 
-def create_conversion_graph(conversion_funcs: List[str]) -> nx.DiGraph:
-    """
-    Create a directed graph from a list of conversion functions.
-
-    Args:
-        conversion_functions (list of str): List of conversion function names.
-
-    Returns:
-        nx.DiGraph: The directed graph created from conversion functions.
-    """
-    graph = nx.DiGraph()
-    for func in conversion_funcs:
-        source, target = func.split("_to_")
-        graph.add_edge(source, target)
-    return graph
-
-
-def add_new_conversion(graph: nx.DiGraph, conversion_func: str) -> nx.DiGraph:
-    """
-    Add a new conversion function as an edge in the graph.
-
-    Args:
-        graph (nx.DiGraph): The graph to add the conversion to.
-        conversion_func (str): The conversion function name.
-
-    Returns:
-        nx.DiGraph: The graph with the new conversion added.
-    """
-    source, target = conversion_func.split("_to_")
-    if not graph.has_edge(source, target):
-        graph.add_edge(source, target)
-    return graph
-
-
-def plot_conversion_graph(graph: nx.Graph) -> None:
-    """
-    Plot the conversion graph using matplotlib.
-
-    Args:
-        graph (nx.Graph): The graph to be plotted.
-    """
-    pos = nx.spring_layout(graph)
-    nx.draw_networkx_nodes(graph, pos, node_color="lightblue", node_size=500)
-    nx.draw_networkx_edges(graph, pos, edge_color="gray")
-    nx.draw_networkx_labels(graph, pos)
-    plt.title("Program Conversion Graph")
-    plt.axis("off")
-    plt.show()
-
-
-def get_shortest_conversion_path(source: str, target: str) -> List[List[str]]:
+def get_shortest_conversion_paths(source: str, target: str) -> List[List[str]]:
     """
     Get the top shortest conversion paths for given source and target.
 
