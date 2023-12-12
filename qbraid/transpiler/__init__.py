@@ -21,17 +21,17 @@ Transpiler  (:mod:`qbraid.transpiler`)
    CircuitConversionError
 
 """
-from qbraid.transpiler.exceptions import CircuitConversionError
-
 import importlib
 import inspect
 
+from qbraid.transpiler.exceptions import CircuitConversionError
+
 # Dynamically import QPROGRAM_LIBS when needed
-_qbraid = importlib.import_module('qbraid._qprogram')
-_PROGRAM_LIBS = getattr(_qbraid, '_PROGRAM_LIBS', [])
+_qbraid = importlib.import_module("qbraid._qprogram")
+_PROGRAM_LIBS = getattr(_qbraid, "_PROGRAM_LIBS", [])
 
 # List to store the names of the imported functions
-conversion_function_names = []
+conversion_functions = []
 
 # Base path for the sub-modules
 base_path = "qbraid.transpiler."
@@ -52,7 +52,7 @@ for lib in _PROGRAM_LIBS:
         # Add functions to the current namespace
         for name in function_names:
             globals()[name] = getattr(sub_module, name)
-            conversion_function_names.append(name)
+            conversion_functions.append(name)
 
     except ModuleNotFoundError:
         pass
