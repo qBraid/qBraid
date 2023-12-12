@@ -35,6 +35,15 @@ REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM storage
 ### FIXTURES ###
 
 
+@pytest.fixture
+def providers():
+    """Return tuple of IBM and fake providers."""
+    qbraid_provider = QiskitProvider()
+    ibm_provider = qbraid_provider._provider
+    fake_provider = FakeProviderFactory().get_provider()
+    return ibm_provider, fake_provider
+
+
 def ibm_devices():
     """Get list of wrapped ibm backends for testing."""
     provider = QiskitProvider()
@@ -162,3 +171,18 @@ def test_cancel_completed_batch_error():
     # Ensure that cancelling a finished job raises an error
     with pytest.raises(JobStateError):
         qbraid_job.cancel()
+
+
+@pytest.mark.parametrize("backend_name", ["ibmq_qasm_simulator", "fake_melbourne", "fake_almaden"])
+def test_get_device_name(providers, backend_name):  # pylint: disable=redefined-outer-name
+    """Test edge cases for getting device name, e.g. .name, .name(), .backend_name"""
+    provider, fake_provider = providers
+
+    if backend_name.startswith("ibmq_"):
+        backend = provider.get_backend(backend_name)
+    else:
+        backend = fake_provider.get_backend(backend_name)
+
+    qbraid_device = QiskitBackend(backend)
+
+    assert qbraid_device._get_device_name() == backend_name

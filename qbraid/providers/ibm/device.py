@@ -12,6 +12,7 @@
 Module defining QiskitBackend Class
 
 """
+import re
 from typing import TYPE_CHECKING  # pylint: disable=unused-import
 
 from qiskit import transpile
@@ -36,13 +37,26 @@ class QiskitBackend(QuantumDevice):
         self._vendor = "IBM"
         self._run_package = "qiskit"
 
+    def _get_device_name(self) -> str:
+        """Get the name of the device."""
+        backend = self._device
+        if hasattr(backend, "backend_name"):
+            return backend.backend_name
+
+        if hasattr(backend, "name"):
+            return backend.name() if callable(backend.name) else backend.name
+
+        match = re.search(r"<\w+\('([^']+)'\)>", str(backend))
+        return match.group(1) if match else str(backend)
+
     def _populate_metadata(self, device: "qiskit_ibm_provider.IBMBackend") -> None:
         """Populate device metadata using IBMBackend object."""
         # pylint: disable=attribute-defined-outside-init
-        self._id = device.name
-        self._name = device.name
+        device_name = self._get_device_name()
+        self._id = device_name
+        self._name = device_name
         self._provider = "IBM"
-        if device.name().startswith("fake"):
+        if device_name.startswith("fake"):
             self._device_type = DeviceType("FAKE_DEVICE")
         else:
             self._device_type = DeviceType("SIMULATOR") if device.simulator else DeviceType("QPU")
