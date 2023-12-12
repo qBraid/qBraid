@@ -20,7 +20,7 @@ from qbraid.conversion_graph import (
     add_new_conversion,
     create_conversion_graph,
     find_shortest_conversion_path,
-    get_shortest_conversion_paths,
+    find_top_shortest_conversion_paths,
 )
 from qbraid.transpiler import conversion_functions
 
@@ -61,7 +61,7 @@ def test_shortest_conversion_path():
     """Test that the shortest conversion path is found correctly."""
     G = create_conversion_graph(conversion_functions)
     shortest_path = find_shortest_conversion_path(G, "qiskit", "cirq")
-    top_paths = get_shortest_conversion_paths("qiskit", "cirq")
+    top_paths = find_top_shortest_conversion_paths(G, "qiskit", "cirq", top_n=3)
     assert shortest_path == ["qiskit_to_qasm2", "qasm2_to_cirq"]
     assert shortest_path == top_paths[0]
     assert len(top_paths) == 3 and len(top_paths[0]) <= len(top_paths[1]) <= len(top_paths[2])

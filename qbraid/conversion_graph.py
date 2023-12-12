@@ -17,8 +17,6 @@ from typing import List
 
 import networkx as nx
 
-from qbraid.transpiler import conversion_functions
-
 
 def create_conversion_graph(conversion_funcs: List[str]) -> nx.DiGraph:
     """
@@ -102,18 +100,3 @@ def find_top_shortest_conversion_paths(
         ]
     except nx.NetworkXNoPath as err:
         raise ValueError(f"No conversion path available between {source} and {target}.") from err
-
-
-def get_shortest_conversion_paths(source: str, target: str) -> List[List[str]]:
-    """
-    Get the top shortest conversion paths for given source and target.
-
-    Args:
-        source (str): The starting node for the path.
-        target (str): The target node for the path.
-
-    Returns:
-        list of list of str: The top shortest conversion paths.
-    """
-    G = create_conversion_graph(conversion_functions)
-    return find_top_shortest_conversion_paths(G, source, target, 3)

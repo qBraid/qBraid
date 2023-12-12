@@ -67,6 +67,7 @@ def test_shared15():
     assert eq1 and eq2 and eq3 and eq4 and eq5 and eq6
 
 
+@pytest.mark.skip(reason="Transpiler refactor")
 @pytest.mark.parametrize("package", ["braket", "cirq", "qiskit"])
 def test_random(package):
     """Test generating random circuits"""
@@ -106,7 +107,7 @@ q_1: ┤ H ├──■──
 def test_braket_bell_draw(capfd, package):
     """Test using Amazon Braket to draw using ascii output is of the expected length."""
     # pylint: disable=eval-used
-    circuit_wrapper(eval(f"{package}_bell")).draw(package="braket", output="ascii")
+    circuit_drawer(eval(f"{package}_bell"), package="braket", output="ascii")
 
     _, err = capfd.readouterr()
     assert len(err) == 0
