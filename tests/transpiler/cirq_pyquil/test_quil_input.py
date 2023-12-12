@@ -44,7 +44,7 @@ from cirq.ops import (
 from pyquil import Program
 from pyquil.simulation.tools import program_unitary
 
-from qbraid.transpiler.cirq_pyquil.quil_input import (
+from qbraid.transpiler.pyquil.quil_input import (
     UndefinedQuilGate,
     UnsupportedQuilInstruction,
     circuit_from_quil,

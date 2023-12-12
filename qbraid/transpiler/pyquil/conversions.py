@@ -18,12 +18,12 @@ from cirq.ops import QubitOrder
 from pyquil import Program
 
 from qbraid import circuit_wrapper
-from qbraid.transpiler.cirq_pyquil.quil_input import circuit_from_quil
-from qbraid.transpiler.cirq_pyquil.quil_output import QuilOutput
 from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler.pyquil.quil_input import circuit_from_quil
+from qbraid.transpiler.pyquil.quil_output import QuilOutput
 
 
-def to_pyquil(circuit: Circuit, compat: bool = True) -> Program:
+def cirq_to_pyquil(circuit: Circuit, compat: bool = True) -> Program:
     """Returns a pyQuil Program equivalent to the input Cirq circuit.
 
     Args:
@@ -56,7 +56,7 @@ def to_pyquil(circuit: Circuit, compat: bool = True) -> Program:
         ) from err
 
 
-def from_pyquil(program: Program, compat: bool = True) -> Circuit:
+def pyquil_to_cirq(program: Program, compat: bool = True) -> Circuit:
     """Returns a Cirq circuit equivalent to the input pyQuil Program.
 
     Args:

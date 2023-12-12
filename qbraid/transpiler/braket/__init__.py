@@ -10,17 +10,20 @@
 
 """
 ================================================================
-Cirq-PyQuil Conversions  (:mod:`qbraid.transpiler.cirq_pyquil`)
+Braket Conversions (:mod:`qbraid.transpiler.braket`)
 ================================================================
 
-.. currentmodule:: qbraid.transpiler.cirq_pyquil
+.. currentmodule:: qbraid.transpiler.braket
 
 .. autosummary::
    :toctree: ../stubs/
 
-   from_pyquil
-   to_pyquil
+   braket_to_cirq
+   cirq_to_braket
+   braket_to_qasm3
+   qasm3_to_braket
 
 """
-
-from qbraid.transpiler.cirq_pyquil.conversions import from_pyquil, to_pyquil
+from qbraid.transpiler.braket.cirq_from_braket import braket_to_cirq
+from qbraid.transpiler.braket.cirq_to_braket import cirq_to_braket
+from qbraid.transpiler.braket.conversions_qasm import braket_to_qasm3, qasm3_to_braket

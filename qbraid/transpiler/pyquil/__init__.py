@@ -9,17 +9,18 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-==================================================================
-QASM3-Qiskit Conversions  (:mod:`qbraid.transpiler.qasm3_qiskit`)
-==================================================================
+=========================================================
+PyQuil Conversions  (:mod:`qbraid.transpiler.pyquil`)
+=========================================================
 
-.. currentmodule:: qbraid.transpiler.qasm3_qiskit
+.. currentmodule:: qbraid.transpiler.pyquil
 
 .. autosummary::
    :toctree: ../stubs/
 
-   qiskit_to_qasm3
-   qiskit_from_qasm3
+   pyquil_to_cirq
+   cirq_to_pyquil
 
 """
-from qbraid.transpiler.qasm3_qiskit.conversions import qiskit_from_qasm3, qiskit_to_qasm3
+
+from qbraid.transpiler.pyquil.conversions import cirq_to_pyquil, pyquil_to_cirq

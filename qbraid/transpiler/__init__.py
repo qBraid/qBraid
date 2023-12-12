@@ -20,8 +20,11 @@ Transpiler  (:mod:`qbraid.transpiler`)
 
    convert_from_cirq
    convert_to_cirq
+   convert_from_qasm3
+   convert_to_qasm3
    CircuitConversionError
 
 """
 from qbraid.transpiler.conversions_cirq import convert_from_cirq, convert_to_cirq
+from qbraid.transpiler.conversions_qasm3 import convert_from_qasm3, convert_to_qasm3
 from qbraid.transpiler.exceptions import CircuitConversionError

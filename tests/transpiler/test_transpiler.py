@@ -86,9 +86,8 @@ circuit_types = {
 @pytest.mark.parametrize("circuit", (qiskit_bell, pyquil_bell, braket_bell, pytket_bell))
 def test_to_cirq(circuit):
     """Test coverting circuits to Cirq."""
-    converted_circuit, input_type = convert_to_cirq(circuit)
+    converted_circuit = convert_to_cirq(circuit)
     assert _equal(converted_circuit, cirq_bell) or _equal(converted_circuit, cirq_bell_rev)
-    assert input_type in circuit.__module__
 
 
 @pytest.mark.parametrize("item", [1, None])
@@ -112,13 +111,12 @@ def test_to_cirq_bad_openqasm_program(item):
 def test_from_cirq(to_type):
     """Test converting Cirq circuits to other supported types."""
     converted_circuit = convert_from_cirq(cirq_bell, to_type)
-    circuit, input_type = convert_to_cirq(converted_circuit)
+    circuit = convert_to_cirq(converted_circuit)
     if to_type == "qasm3":
         qprogram = circuit_wrapper(circuit)
         qprogram.collapse_empty_registers()
         circuit = qprogram.program
     assert _equal(circuit, cirq_bell)
-    assert input_type == to_type
 
 
 @pytest.mark.parametrize("item", ["package", 1, None])

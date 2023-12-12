@@ -12,14 +12,19 @@
 Unit tests for converting Braket circuits to/from OpenQASM
 
 """
+import numpy as np
 import pytest
+import qiskit
 from braket.circuits import Circuit
 
-from qbraid.transpiler.qasm3_braket.conversions import (
+from qbraid.programs import circuits_allclose
+from qbraid.transpiler.braket import qasm3_to_braket
+from qbraid.transpiler.braket.conversions_qasm import (
     _convert_pi_to_decimal,
-    braket_from_qasm3,
     braket_to_qasm3,
+    qasm3_to_braket,
 )
+from qbraid.transpiler.qiskit import qiskit_to_qasm3
 
 pi_decimal_data = [
     (
@@ -86,4 +91,22 @@ b[0] = measure q[0];
 b[1] = measure q[1];
 """
     circuit_expected = Circuit().rx(0, 0.15).rx(1, 0.3)
-    assert circuit_expected == braket_from_qasm3(qasm_str)
+    assert circuit_expected == qasm3_to_braket(qasm_str)
+
+
+def test_qiskit_to_qasm3_to_braket():
+    """Test converting Qiskit circuit to Braket via OpenQASM 3.0 for mapped gate defs"""
+    qc = qiskit.QuantumCircuit(4)
+    qc.cx(0, 1)
+    qc.s(0)
+    qc.sdg(1)
+    qc.t(2)
+    qc.tdg(3)
+    qc.sx(0)
+    qc.sxdg(1)
+    qc.p(np.pi / 8, 3)
+    qc.cp(np.pi / 4, 2, 3)
+
+    qasm3_str = qiskit_to_qasm3(qc)
+    circuit = qasm3_to_braket(qasm3_str)
+    assert circuits_allclose(qc, circuit)

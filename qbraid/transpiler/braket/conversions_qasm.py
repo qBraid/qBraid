@@ -40,7 +40,7 @@ def _convert_pi_to_decimal(qasm_str: str) -> str:
     return re.sub(pattern, replace_with_decimal, qasm_str)
 
 
-def braket_from_qasm3(qasm3_str: QASMType) -> Circuit:
+def qasm3_to_braket(qasm3_str: QASMType) -> Circuit:
     """Converts an OpenQASM 3.0 string to a ``braket.circuits.Circuit``.
 
     Args:
@@ -53,8 +53,25 @@ def braket_from_qasm3(qasm3_str: QASMType) -> Circuit:
         CircuitConversionError: If qasm to braket conversion fails
 
     """
+    replacements = {
+        "cx ": "cnot ",
+        "sdg ": "si ",
+        "tdg ": "ti ",
+        "sx ": "v ",
+        "sxdg ": "vi ",
+        "p(": "phaseshift(",
+        "cp(": "cphaseshift(",
+    }
+
+    def replace_commands(qasm, replacements):
+        for old, new in replacements.items():
+            qasm = qasm.replace(old, new)
+        return qasm
+
     qasm3_str = qasm3_str.replace('include "stdgates.inc";', "")
+    qasm3_str = replace_commands(qasm3_str, replacements)
     qasm3_str = _convert_pi_to_decimal(qasm3_str)
+
     try:
         program = OpenQasmProgram(source=qasm3_str)
         return Circuit.from_ir(source=program.source, inputs=program.inputs)

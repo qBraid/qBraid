@@ -30,8 +30,8 @@ if TYPE_CHECKING:
     import qbraid
 
 transpiler_openqasm_modules = {
-    "qiskit": import_module("qbraid.transpiler.qasm3_qiskit.conversions"),
-    "braket": import_module("qbraid.transpiler.qasm3_braket.conversions"),
+    "qiskit": import_module("qbraid.transpiler.qiskit.conversions_qasm"),
+    "braket": import_module("qbraid.transpiler.braket.conversions_qasm"),
 }
 
 
@@ -47,7 +47,7 @@ class QuantumProgram:
 
         self._openqasm3_transformers = {
             package: {
-                "from": getattr(transpiler_openqasm_modules[package], f"{package}_from_qasm3"),
+                "from": getattr(transpiler_openqasm_modules[package], f"qasm3_to_{package}"),
                 "to": getattr(transpiler_openqasm_modules[package], f"{package}_to_qasm3"),
             }
             for package in ["qiskit", "braket"]
@@ -276,7 +276,7 @@ class QuantumProgram:
             #             "Falling back to Cirq intermediate conversion"
             #         )
             try:
-                cirq_circuit, _ = convert_to_cirq(self.program)
+                cirq_circuit = convert_to_cirq(self.program)
             except Exception as err:
                 raise CircuitConversionError(
                     "Quantum program could not be converted to Cirq. "

@@ -9,17 +9,16 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-==================================================================
-QASM3-Braket Conversions  (:mod:`qbraid.transpiler.qasm3_braket`)
-==================================================================
+==================================================
+Qasm Converions (:mod:`qbraid.transpiler.qasm`)
+==================================================
 
-.. currentmodule:: qbraid.transpiler.qasm3_braket
+.. currentmodule:: qbraid.transpiler.qasm
 
 .. autosummary::
    :toctree: ../stubs/
 
-   braket_to_qasm3
-   braket_from_qasm3
+   qasm2_to_qasm3
 
 """
-from qbraid.transpiler.qasm3_braket.conversions import braket_from_qasm3, braket_to_qasm3
+from qbraid.transpiler.qasm.convert_qasm import qasm2_to_qasm3

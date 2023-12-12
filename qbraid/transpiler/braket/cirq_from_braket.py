@@ -31,7 +31,7 @@ try:
 except ImportError:
     cirq_ionq_ops = None
 
-from qbraid.transpiler.custom_gates import matrix_gate
+from qbraid.transpiler.cirq_gates import matrix_gate
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
@@ -63,7 +63,7 @@ def unitary_braket_instruction(instr: BKInstruction) -> BKInstruction:
         raise CircuitConversionError(f"Unable to convert the instruction {instr}.") from err
 
 
-def from_braket(circuit: BKCircuit) -> Circuit:
+def braket_to_cirq(circuit: BKCircuit) -> Circuit:
     """Returns a Cirq circuit equivalent to the input Braket circuit.
 
     Note: The returned Cirq circuit acts on cirq.LineQubit's with indices equal
