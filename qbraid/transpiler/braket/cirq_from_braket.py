@@ -31,7 +31,7 @@ try:
 except ImportError:
     cirq_ionq_ops = None
 
-from qbraid.transpiler.cirq_gates import matrix_gate
+from qbraid.transpiler.cirq.cirq_gates import matrix_gate
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
