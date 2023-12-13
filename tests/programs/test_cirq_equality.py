@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for Cirq utility functions.
+Unit tests for Cirq circuit equality function
 
 """
 from copy import deepcopy

@@ -9,13 +9,13 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for Qiskit utility functions.
+Unit tests for qbraid.programs.qiskit.QiskitCircuit
 
 """
 
 from qiskit import QuantumCircuit
 
-from qbraid import circuit_wrapper
+from qbraid.programs.qiskit import QiskitCircuit
 
 
 def test_reverse_qubit_order():
@@ -24,7 +24,7 @@ def test_reverse_qubit_order():
     circ.h(0)
     circ.cx(0, 2)
 
-    qprogram = circuit_wrapper(circ)
+    qprogram = QiskitCircuit(circ)
     qprogram.reverse_qubit_order()
     reversed_circ = qprogram.program
 
@@ -35,3 +35,14 @@ def test_reverse_qubit_order():
     assert (
         reversed_circ == expected_circ
     ), "The reversed circuit does not match the expected output."
+
+
+def test_collapse_empty_registers_qiskit():
+    """Test convert_to_contigious on qiskit circuit"""
+    circuit = QuantumCircuit(3)
+    circuit.h(0)
+    circuit.cx(0, 1)
+    qprogram = QiskitCircuit(circuit)
+    qprogram.collapse_empty_registers()
+    contig_circuit = qprogram.program
+    assert contig_circuit.num_qubits == 2

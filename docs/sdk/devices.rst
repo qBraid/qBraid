@@ -200,7 +200,7 @@ to submit a job. This time, we'll use a Cirq circuit as the ``run`` method input
 
 .. code-block:: python
 
-    >>> from qbraid.programs import random_circuit
+    >>> from qbraid.interface import random_circuit
     >>> cirq_circuit = random_circuit("cirq", num_qubits=qdevice.num_qubits)
     >>> qdevice.queue_depth()
     4

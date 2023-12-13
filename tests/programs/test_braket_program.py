@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for the qbraid unitary interfacing
+Unit tests for qbraid.programs.braket.BraketCircuit
 
 """
 from itertools import chain, combinations
@@ -17,11 +17,8 @@ from itertools import chain, combinations
 import numpy as np
 import pytest
 from braket.circuits import Circuit, Instruction, gates
-from pytket.circuit import Circuit as TKCircuit
 
-from qbraid import circuit_wrapper
-from qbraid.programs.pytket import PytketCircuit as QbraidPytketCircuit
-from qbraid.programs.testing.random import random_unitary_matrix
+from qbraid.programs.braket import BraketCircuit
 
 
 def get_subsets(nqubits):
@@ -72,7 +69,7 @@ def make_circuit(bk_instrs):
     for instr in bk_instrs:
         Gate, index = instr
         circuit.add_instruction(Instruction(Gate(), target=index))
-    qprogram = circuit_wrapper(circuit)
+    qprogram = BraketCircuit(circuit)
     qprogram.populate_empty_registers()
     return qprogram.program
 
@@ -88,7 +85,7 @@ def test_unitary_calc(bk_instrs, u_expected):
     """Test calculating unitary of circuits using both contiguous and
     non-contiguous qubit indexing."""
     circuit = make_circuit(bk_instrs)
-    qbraid_circuit = circuit_wrapper(circuit)
+    qbraid_circuit = BraketCircuit(circuit)
     u_test = qbraid_circuit.unitary_little_endian()
     assert np.allclose(u_expected, u_test)
 
@@ -97,41 +94,41 @@ def test_unitary_calc(bk_instrs, u_expected):
 def test_convert_be_to_le(bk_instrs, u_expected):
     """Test converting big-endian unitary to little-endian unitary."""
     circuit = make_circuit(bk_instrs)
-    qbraid_circuit = circuit_wrapper(circuit)
+    qbraid_circuit = BraketCircuit(circuit)
     u_test = qbraid_circuit.unitary_little_endian()
     assert np.allclose(u_expected, u_test)
-
-
-@pytest.mark.parametrize("flat", [True, False])
-@pytest.mark.parametrize("list_type", [True, False])
-def test_gate_to_matrix_pytket(flat, list_type):
-    """Test converting pytket gates to matrix"""
-    c = TKCircuit(10, 2, name="example")
-    c.CU1(np.pi / 2, 2, 3)
-
-    c_unitary = QbraidPytketCircuit.gate_to_matrix(
-        gates=c.get_commands()[0] if list_type else c.get_commands(), flat=flat
-    )
-    if flat:
-        assert c_unitary.shape[0] == 2**2
-    else:
-        assert c_unitary.shape[0] == 2**4
-
-
-def test_random_unitary():
-    """Test generating random unitary"""
-    matrix = random_unitary_matrix(2)
-    assert np.allclose(matrix @ matrix.conj().T, np.eye(2))
 
 
 def test_kronecker_product_factor_permutation():
     """Test calculating unitary permutation representing
     circuits with reversed qubits"""
     bk_circuit = Circuit().h(0).cnot(0, 1)
-    circuit = circuit_wrapper(bk_circuit)
+    circuit = BraketCircuit(bk_circuit)
 
     unitary = circuit.unitary()
     circuit.reverse_qubit_order()
     unitary_rev = circuit.unitary_rev_qubits()
 
     assert np.allclose(unitary, unitary_rev)
+
+
+def test_collapse_empty_registers_braket_bell():
+    """Test convert_to_contigious on bell circuit"""
+    circuit = Circuit().h(0).cnot(0, 1)  # pylint: disable=no-member
+    h_gate = np.sqrt(1 / 2) * np.array([[1, 1], [1, -1]])
+    h_gate_kron = np.kron(np.eye(2), h_gate)
+    cnot_gate = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
+    u_expected = np.einsum("ij,jk->ki", h_gate_kron, cnot_gate)
+    qprogram = BraketCircuit(circuit)
+    qprogram.collapse_empty_registers()
+    u_little_endian = qprogram.unitary_little_endian()
+    assert np.allclose(u_expected, u_little_endian)
+
+
+def test_collapse_empty_braket_control_modifier():
+    """Test that converting braket circuits to contiguous qubits works with control modifiers"""
+    circuit = Circuit().y(target=0, control=1)
+    qprogram = BraketCircuit(circuit)
+    qprogram.collapse_empty_registers()
+    contig_circuit = qprogram.program
+    assert circuit.qubit_count == contig_circuit.qubit_count

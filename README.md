@@ -129,7 +129,7 @@ from `QPROGRAM_LIBS` to "transpile" your circuit to a new program type:
 
 ```python
 >>> from qbraid import circuit_wrapper
->>> from qbraid.programs import random_circuit
+>>> from qbraid.interface import random_circuit
 >>> qiskit_circuit = random_circuit("qiskit")
 >>> cirq_circuit = circuit_wrapper(qiskit_circuit).transpile("cirq")
 >>> print(qiskit_circuit)

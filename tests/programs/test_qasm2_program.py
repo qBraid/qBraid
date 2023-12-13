@@ -9,13 +9,13 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for OpenQASM 2 utility functions.
+Unit tests for qbraid.programs.qasm2.OpenQasm2Program
 
 """
 
 import pytest
 
-from qbraid import circuit_wrapper
+from qbraid.programs.qasm2 import OpenQasm2Program
 
 from ..fixtures.qasm2.circuits import (
     _read_qasm_file,
@@ -28,14 +28,14 @@ from ..fixtures.qasm2.circuits import (
 def test_qasm_qubits():
     """Test getting QASM qubits"""
 
-    assert circuit_wrapper(qasm2_bell()).qubits == ["q[0]", "q[1]"]
-    assert circuit_wrapper(qasm2_shared15()).qubits == ["q[0]", "q[1]", "q[2]", "q[3]"]
+    assert OpenQasm2Program(qasm2_bell()).qubits == ["q[0]", "q[1]"]
+    assert OpenQasm2Program(qasm2_shared15()).qubits == ["q[0]", "q[1]", "q[2]", "q[3]"]
 
 
 def test_qasm_num_qubits():
     """Test calculating number of qubits in qasm2 circuit"""
-    assert circuit_wrapper(qasm2_bell()).num_qubits == 2
-    assert circuit_wrapper(qasm2_shared15()).num_qubits == 4
+    assert OpenQasm2Program(qasm2_bell()).num_qubits == 2
+    assert OpenQasm2Program(qasm2_shared15()).num_qubits == 4
 
 
 QASM_DEPTH_DATA = [
@@ -182,5 +182,5 @@ measure q[3] -> c[3];
 @pytest.mark.parametrize("qasm_str, expected_depth", QASM_DEPTH_DATA)
 def test_qasm_depth(qasm_str, expected_depth):
     """Test calculating depth of circuit represented by qasm2 string"""
-    qprogram = circuit_wrapper(qasm_str)
+    qprogram = OpenQasm2Program(qasm_str)
     assert qprogram.depth == expected_depth

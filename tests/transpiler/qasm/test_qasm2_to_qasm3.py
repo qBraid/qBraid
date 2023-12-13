@@ -21,11 +21,12 @@ from qiskit.circuit import QuantumCircuit
 from qiskit.qasm3 import dumps, loads
 
 from qbraid import circuit_wrapper
-from qbraid.programs.testing import circuits_allclose, random_circuit
-from qbraid.programs.testing.qasm3_random import _qasm3_random
+from qbraid.interface.random import random_circuit
+from qbraid.interface.random.qasm3_random import _qasm3_random
+from qbraid.programs.testing import circuits_allclose
 from qbraid.transpiler.openqasm3.convert_qasm import _get_qasm3_gate_defs, qasm2_to_qasm3
 
-from ..fixtures.qasm3.circuits import qasm3_bell, qasm3_shared15
+from ...fixtures.qasm3.circuits import qasm3_bell, qasm3_shared15
 
 gate_def_qasm3 = _get_qasm3_gate_defs()
 
@@ -151,7 +152,7 @@ def test_collapse_empty_registers_qasm3_expansion():
     assert qprogram.program == qasm_expected
 
 
-def test_convert_to_compressed_contiguous_qasm3():
+def test_collapse_empty_registers_qasm3():
     """Test conversion of qasm3 to compressed contiguous qasm3"""
     qasm_test = """
     OPENQASM 3.0;

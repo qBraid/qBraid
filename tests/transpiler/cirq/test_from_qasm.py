@@ -17,7 +17,7 @@ import pytest
 from qiskit import QuantumCircuit
 
 from qbraid import circuit_wrapper
-from qbraid.programs import circuits_allclose
+from qbraid.programs.testing import circuits_allclose
 from qbraid.transpiler.cirq.conversions_qasm import qasm2_to_cirq
 from qbraid.transpiler.qasm_passes import flatten_qasm_program
 

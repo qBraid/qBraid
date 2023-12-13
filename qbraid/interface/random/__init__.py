@@ -10,15 +10,16 @@
 
 """
 ==============================================
-Testing (:mod:`qbraid.programs.testing`)
+Random (:mod:`qbraid.interface.random`)
 ==============================================
 
-.. currentmodule:: qbraid.programs.testing
+.. currentmodule:: qbraid.interface.random
 
 .. autosummary::
    :toctree: ../stubs/
 
-   circuits_allclose
+   random_circuit
+   random_unitary_matrix
 
 """
-from .circuit_equality import circuits_allclose
+from .random import random_circuit, random_unitary_matrix

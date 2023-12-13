@@ -12,10 +12,14 @@
 Unit tests for equivalence of interfacing quantum programs
 
 """
+import numpy as np
 import pytest
+from braket.circuits import Circuit as BKCircuit
+from cirq import Circuit, LineQubit, X, Y, Z
 
+from qbraid import circuit_wrapper
+from qbraid.interface.random.random import random_circuit, random_unitary_matrix
 from qbraid.programs.testing.circuit_equality import circuits_allclose
-from qbraid.programs.testing.random import random_circuit
 
 from ..fixtures.programs import bell_data, shared15_data
 
@@ -72,3 +76,46 @@ def test_random(package):
     except Exception:  # pylint: disable=broad-exception-caught
         assert False
     assert True
+
+
+def test_collapse_empty_braket_cirq():
+    """Test unitary equivalance after converting to contiguous qubits"""
+    # pylint: disable=no-member
+    braket_circuit = BKCircuit()
+    braket_circuit.x(0)
+    braket_circuit.y(2)
+    braket_circuit.z(4)
+    # pylint: enable=no-member
+    assert braket_circuit.qubit_count == 3
+
+    cirq_circuit = Circuit()
+    q0 = LineQubit(0)
+    q2 = LineQubit(2)
+    q4 = LineQubit(4)
+    cirq_circuit.append(X(q0))
+    cirq_circuit.append(Y(q2))
+    cirq_circuit.append(Z(q4))
+    assert len(cirq_circuit.all_qubits()) == 3
+
+    assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
+
+    qprogram = circuit_wrapper(braket_circuit)
+    qprogram.collapse_empty_registers()
+    braket_compat_circuit = qprogram.program
+    assert braket_compat_circuit.qubit_count == 3
+
+    qprogram = circuit_wrapper(cirq_circuit)
+    qprogram.collapse_empty_registers()
+    cirq_compat_circuit = qprogram.program
+    assert circuits_allclose(braket_compat_circuit, cirq_compat_circuit, strict_gphase=True)
+
+    qprogram = circuit_wrapper(cirq_circuit)
+    qprogram.populate_empty_registers()
+    cirq_expanded_circuit = qprogram.program
+    assert len(cirq_expanded_circuit.all_qubits()) == 5
+
+
+def test_random_unitary():
+    """Test generating random unitary"""
+    matrix = random_unitary_matrix(2)
+    assert np.allclose(matrix @ matrix.conj().T, np.eye(2))

@@ -21,7 +21,7 @@ from pyquil import Program
 from pyquil.gates import CNOT, CZ, RX, RZ, H, X, Y, Z
 from pyquil.noise import _decoherence_noise_model, _get_program_gates, apply_noise_model
 
-from qbraid.programs import circuits_allclose
+from qbraid.programs.testing import circuits_allclose
 from qbraid.transpiler.exceptions import CircuitConversionError
 from qbraid.transpiler.pyquil.conversions import cirq_to_pyquil, pyquil_to_cirq
 

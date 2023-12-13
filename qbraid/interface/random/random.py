@@ -18,6 +18,7 @@ import numpy as np
 
 from qbraid._qprogram import QPROGRAM, QPROGRAM_LIBS
 from qbraid.exceptions import PackageValueError
+from qbraid.interface.converter import convert_to_package
 
 QROGRAM_TEST_TYPE = Tuple[Dict[str, Callable[[Any], QPROGRAM]], np.ndarray]
 
@@ -52,23 +53,20 @@ def random_circuit(
 
     # pylint: disable=import-outside-toplevel
     if package == "qasm3":
-        from qbraid.programs.testing.qasm3_random import _qasm3_random
+        from qbraid.interface.random.qasm3_random import _qasm3_random
 
         rand_circuit = _qasm3_random(num_qubits, depth, **kwargs)
     elif package == "qiskit":
-        from qbraid.programs.testing.qiskit_random import _qiskit_random
+        from qbraid.interface.random.qiskit_random import _qiskit_random
 
         rand_circuit = _qiskit_random(num_qubits, depth, **kwargs)
     else:
-        from qbraid.programs.testing.cirq_random import _cirq_random
+        from qbraid.interface.random.cirq_random import _cirq_random
 
         rand_circuit = _cirq_random(num_qubits, depth, **kwargs)
 
         if package != "cirq":
-            from qbraid import circuit_wrapper
-
-            qbraid_program = circuit_wrapper(rand_circuit)
-            rand_circuit = qbraid_program.transpile(package)
+            rand_circuit = convert_to_package(rand_circuit, package)
 
     return rand_circuit
 

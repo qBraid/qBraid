@@ -154,7 +154,7 @@ It applies the ``unitary`` method to both input circuits, compares the outputs v
 
 .. code-block:: python
 
-    >>> from qbraid.programs import circuits_allclose
+    >>> from qbraid.programs.testing import circuits_allclose
     >>> circuits_allclose(cirq_circuit, pyquil_circuit)
     True
 
@@ -247,7 +247,7 @@ supported frontend program type. Here, we've created a random ``cirq.Circuit`` w
 
 .. code-block:: python
 
-    >>> from qbraid.programs import random_circuit
+    >>> from qbraid.interface import random_circuit
     >>> cirq_circuit = random_circuit("cirq", num_qubits=4, depth=4)
     >>> print(cirq_circuit)
           ┌──────┐   ┌──┐           ┌──┐

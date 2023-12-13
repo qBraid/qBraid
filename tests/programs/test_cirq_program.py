@@ -9,10 +9,9 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for Cirq quantum program methods
+Unit tests for qbraid.programs.cirq.CirqCircuit
 
 """
-
 from cirq import Circuit, GridQubit, LineQubit, X, Y, Z
 
 from qbraid.programs.cirq import CirqCircuit
