@@ -6,7 +6,7 @@ qbraid.transpiler
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.transpiler.qasm
+.. automodule:: qbraid.transpiler.openqasm3
    :members:
    :undoc-members:
    :show-inheritance:

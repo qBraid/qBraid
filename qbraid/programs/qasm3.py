@@ -31,8 +31,6 @@ class OpenQasm3Program(QuantumProgram):
 
     def __init__(self, program: str):
         super().__init__(program)
-        self._direct_conversion_set = {}
-        self._openqasm_conversion_set = {}
 
     @property
     def program(self) -> str:
@@ -355,7 +353,3 @@ class OpenQasm3Program(QuantumProgram):
             qubit_mapping[reg] = {old_id: size - old_id - 1 for old_id in range(size)}
 
         return self.apply_qubit_mapping(qubit_mapping)
-
-    def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
-        """Convert the circuit into target package via direct mapping"""
-        raise NotImplementedError

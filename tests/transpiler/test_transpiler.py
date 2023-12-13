@@ -30,10 +30,9 @@ from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 
 from qbraid import QbraidError, circuit_wrapper
 from qbraid._qprogram import QPROGRAM_LIBS
+from qbraid.converter import convert_to_package
 from qbraid.exceptions import PackageValueError, ProgramTypeError
 from qbraid.programs.testing.circuit_equality import _equal
-from qbraid.transpiler.conversions_cirq import convert_from_cirq, convert_to_cirq
-from qbraid.transpiler.exceptions import CircuitConversionError
 
 from .._data.braket.gates import braket_gates as braket_gates_dict
 from .._data.cirq.gates import cirq_gates as cirq_gates_dict
@@ -86,7 +85,7 @@ circuit_types = {
 @pytest.mark.parametrize("circuit", (qiskit_bell, pyquil_bell, braket_bell, pytket_bell))
 def test_to_cirq(circuit):
     """Test coverting circuits to Cirq."""
-    converted_circuit = convert_to_cirq(circuit)
+    converted_circuit = convert_to_package(circuit, "cirq")
     assert _equal(converted_circuit, cirq_bell) or _equal(converted_circuit, cirq_bell_rev)
 
 
@@ -94,7 +93,7 @@ def test_to_cirq(circuit):
 def test_to_cirq_bad_types(item):
     """Test raising ProgramTypeError converting circuit of non-supported type"""
     with pytest.raises(ProgramTypeError):
-        convert_to_cirq(item)
+        convert_to_package(item, "cirq")
 
 
 @pytest.mark.parametrize(
@@ -104,14 +103,14 @@ def test_to_cirq_bad_types(item):
 def test_to_cirq_bad_openqasm_program(item):
     """Test raising ProgramTypeError converting invalid OpenQASM program string"""
     with pytest.raises(ProgramTypeError):
-        convert_to_cirq(item)
+        convert_to_package(item, "cirq")
 
 
 @pytest.mark.parametrize("to_type", QPROGRAM_LIBS)
 def test_from_cirq(to_type):
     """Test converting Cirq circuits to other supported types."""
-    converted_circuit = convert_from_cirq(cirq_bell, to_type)
-    circuit = convert_to_cirq(converted_circuit)
+    converted_circuit = convert_to_package(cirq_bell, to_type)
+    circuit = convert_to_package(converted_circuit, "cirq")
     if to_type == "qasm3":
         qprogram = circuit_wrapper(circuit)
         qprogram.collapse_empty_registers()
@@ -123,7 +122,7 @@ def test_from_cirq(to_type):
 def test_from_cirq_bad_package(item):
     """Test raising PackageValueError converting circuit to non-supported package"""
     with pytest.raises(PackageValueError):
-        convert_from_cirq(cirq_bell, item)
+        convert_to_package(cirq_bell, item)
 
 
 @pytest.mark.parametrize("program", ["Not a circuit", None])
@@ -146,7 +145,7 @@ def test_transpile_program_error():
     circuit = TEST_BELL["braket"]()
     wrapped = circuit_wrapper(circuit)
     wrapped._program = None
-    with pytest.raises(CircuitConversionError):
+    with pytest.raises(ProgramTypeError):
         wrapped.transpile("qiskit")
 
 

@@ -116,7 +116,7 @@ def _find_gate_line(lines):
 
 def flatten_qasm_program(qasm_str):
     """Returns a copy of the input QASM compatible with
-    the :class:`~qbraid.transpiler.qasm_node.cirq_parser.QasmParser`.
+    the :class:`~qbraid.transpiler.cirq.QasmParser`.
     Conversion includes deconstruction of custom defined gates, and
     decomposition of unsupported gates/operations.
 

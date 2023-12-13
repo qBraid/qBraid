@@ -16,8 +16,8 @@ import numpy as np
 import pytest
 from pytket.circuit import Circuit as TKCircuit
 
+from qbraid.converter import convert_to_package
 from qbraid.programs import circuits_allclose, random_circuit
-from qbraid.transpiler.conversions_cirq import convert_to_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
@@ -27,7 +27,7 @@ def test_bell_state_from_qiskit():
     pytket_circuit = TKCircuit(2)
     pytket_circuit.H(0)
     pytket_circuit.CX(0, 1)
-    cirq_circuit = convert_to_cirq(pytket_circuit)
+    cirq_circuit = convert_to_package(pytket_circuit, "cirq")
     assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -35,7 +35,7 @@ def test_bell_state_from_qiskit():
 def test_crz_gate_from_pytket(qubits):
     pytket_circuit = TKCircuit(2)
     pytket_circuit.CRz(np.pi / 4, *qubits)
-    cirq_circuit = convert_to_cirq(pytket_circuit)
+    cirq_circuit = convert_to_package(pytket_circuit, "cirq")
     assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -44,14 +44,14 @@ def test_crz_gate_from_pytket(qubits):
 def test_rzz_gate_from_pytket(qubits, theta):
     pytket_circuit = TKCircuit(2)
     pytket_circuit.ZZPhase(theta, *qubits)
-    cirq_circuit = convert_to_cirq(pytket_circuit)
+    cirq_circuit = convert_to_package(pytket_circuit, "cirq")
     assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
 
 
 def test_100_random_pytket():
     for _ in range(100):
         pytket_circuit = random_circuit("pytket", 4, 1)
-        cirq_circuit = convert_to_cirq(pytket_circuit)
+        cirq_circuit = convert_to_package(pytket_circuit, "cirq")
         assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=False)
 
 
@@ -59,4 +59,4 @@ def test_raise_error():
     with pytest.raises(CircuitConversionError):
         pytket_circuit = TKCircuit(2)
         pytket_circuit.ISWAPMax(0, 1)
-        convert_to_cirq(pytket_circuit)
+        convert_to_package(pytket_circuit, "cirq")

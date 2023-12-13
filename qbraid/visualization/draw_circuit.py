@@ -106,7 +106,7 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
         return qasm3_drawer(program)
 
     if package == "qasm2":
-        from qbraid.transpiler.qasm.convert_qasm import qasm2_to_qasm3
+        from qbraid.transpiler.openqasm3.convert_qasm import qasm2_to_qasm3
 
         # coverage: ignore
         qasm3_str = qasm2_to_qasm3(program)

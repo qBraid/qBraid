@@ -13,15 +13,12 @@ Module defining CirqCircuit Class
 
 """
 
-from typing import TYPE_CHECKING, List
+from typing import List
 
 import cirq
 import numpy as np
 
 from qbraid.programs.abc_program import QuantumProgram
-
-if TYPE_CHECKING:
-    import qbraid
 
 
 class CirqCircuit(QuantumProgram):
@@ -29,8 +26,6 @@ class CirqCircuit(QuantumProgram):
 
     def __init__(self, program: "cirq.Circuit"):
         super().__init__(program)
-        self._direct_conversion_set = {}
-        self._openqasm_conversion_set = {}
 
     @property
     def program(self) -> cirq.Circuit:
@@ -177,7 +172,3 @@ class CirqCircuit(QuantumProgram):
             zip(original_qubits, self._make_qubits(original_qubits, reversed(range(max_index + 1))))
         )
         self._program = self.program.transform_qubits(lambda q: qubit_map[q])
-
-    def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
-        """Convert the circuit into target package via direct mapping"""
-        raise NotImplementedError

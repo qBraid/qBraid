@@ -22,16 +22,12 @@ if TYPE_CHECKING:
     import braket.circuits
     import numpy as np
 
-    import qbraid
-
 
 class BraketCircuit(QuantumProgram):
     """Wrapper class for ``braket.circuits.Circuit`` objects."""
 
     def __init__(self, program: "braket.circuits.Circuit"):
         super().__init__(program)
-        self._direct_conversion_set = {}
-        self._openqasm_conversion_set = {}
 
     @property
     def program(self) -> Circuit:
@@ -131,7 +127,3 @@ class BraketCircuit(QuantumProgram):
             )
             contig_circuit.add_instruction(contig_instr)
         self._program = contig_circuit
-
-    def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
-        """Convert circuit to package through direct mapping"""
-        raise NotImplementedError

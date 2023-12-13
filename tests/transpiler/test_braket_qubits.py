@@ -7,18 +7,16 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+# from braket.circuits import Circuit
 
-"""
-==================================================
-Qasm Converions (:mod:`qbraid.transpiler.qasm`)
-==================================================
+# circuit = Circuit()
 
-.. currentmodule:: qbraid.transpiler.qasm
+# circuit.h(1)
+# circuit.cnot(1, 3)
 
-.. autosummary::
-   :toctree: ../stubs/
+# print(circuit)
+# print(circuit.qubits)
+# print(list(circuit.qubits))
 
-   qasm2_to_qasm3
-
-"""
-from qbraid.transpiler.qasm.convert_qasm import qasm2_to_qasm3
+# for q in list(circuit.qubits):
+#     print(int(q))

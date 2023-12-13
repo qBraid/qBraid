@@ -26,16 +26,12 @@ from qbraid.programs.abc_program import QuantumProgram
 if TYPE_CHECKING:
     import numpy as np
 
-    import qbraid
-
 
 class QiskitCircuit(QuantumProgram):
     """Wrapper class for ``qiskit.QuantumCircuit`` objects"""
 
     def __init__(self, program: "qiskit.QuantumCircuit"):
         super().__init__(program)
-        self._direct_conversion_set = {}
-        self._openqasm_conversion_set = {}
 
     @property
     def program(self) -> qiskit.QuantumCircuit:
@@ -103,7 +99,3 @@ class QiskitCircuit(QuantumProgram):
             reversed_circuit.append(inst, reversed_qargs)
 
         self._program = reversed_circuit
-
-    def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
-        """Convert the circuit into target package via direct mapping"""
-        raise NotImplementedError

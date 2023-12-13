@@ -21,16 +21,12 @@ from qbraid.transpiler.cirq.conversions_qasm import qasm2_to_cirq
 if TYPE_CHECKING:
     import numpy as np
 
-    import qbraid
-
 
 class OpenQasm2Program(QuantumProgram):
     """Wrapper class for OpenQASM 2 strings."""
 
     def __init__(self, program: str):
         super().__init__(program)
-        self._direct_conversion_set = {}
-        self._openqasm_conversion_set = {}
 
     @property
     def program(self) -> str:
@@ -165,8 +161,4 @@ class OpenQasm2Program(QuantumProgram):
 
     def reverse_qubit_order(self) -> None:
         """Reverses the qubit ordering of a openqasm program."""
-        raise NotImplementedError
-
-    def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
-        """Convert circuit to package through direct mapping"""
         raise NotImplementedError

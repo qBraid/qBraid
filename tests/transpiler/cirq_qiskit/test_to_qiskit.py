@@ -16,8 +16,8 @@ import numpy as np
 import pytest
 from cirq import Circuit, LineQubit, ops, testing
 
+from qbraid.converter import convert_to_package
 from qbraid.programs import circuits_allclose
-from qbraid.transpiler.conversions_cirq import convert_from_cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
@@ -27,7 +27,7 @@ def test_bell_state_to_qiskit():
     """
     qreg = LineQubit.range(2)
     cirq_circuit = Circuit([ops.H.on(qreg[0]), ops.CNOT.on(qreg[0], qreg[1])])
-    qiskit_circuit = convert_from_cirq(cirq_circuit, "qiskit")
+    qiskit_circuit = convert_to_package(cirq_circuit, "qiskit")
     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -40,7 +40,7 @@ def test_random_circuit_to_qiskit(num_qubits):
             op_density=1,
             random_state=np.random.randint(1, 10),
         )
-        qiskit_circuit = convert_from_cirq(cirq_circuit, "qiskit")
+        qiskit_circuit = convert_to_package(cirq_circuit, "qiskit")
         assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -48,4 +48,4 @@ def test_raise_error():
     with pytest.raises(CircuitConversionError):
         probs = np.random.uniform(low=0, high=0.5)
         cirq_circuit = Circuit(ops.PhaseDampingChannel(probs).on(*LineQubit.range(1)))
-        convert_from_cirq(cirq_circuit, "qiskit")
+        convert_to_package(cirq_circuit, "qiskit")

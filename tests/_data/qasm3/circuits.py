@@ -14,6 +14,8 @@ Module containing qasm programs used for testing
 """
 import os
 
+import openqasm3
+
 QASMType = str
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -31,3 +33,15 @@ def qasm3_bell() -> QASMType:
 def qasm3_shared15() -> QASMType:
     """Returns OpenQASM3 15 gate test circuit."""
     return _read_qasm_file("shared15.qasm")
+
+
+def openqasm3_bell():
+    """Returns OpenQASM3 AST representing bell program"""
+    qasm_str = qasm3_bell()
+    return openqasm3.parse(qasm_str)
+
+
+def openqasm3_shared15():
+    """Returns OpenQASM3 AST representing 15 gate test program"""
+    qasm_str = qasm3_shared15()
+    return openqasm3.parse(qasm_str)

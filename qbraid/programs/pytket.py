@@ -24,16 +24,12 @@ from qbraid.programs.abc_program import QuantumProgram
 if TYPE_CHECKING:
     import pytket
 
-    import qbraid
-
 
 class PytketCircuit(QuantumProgram):
     """Wrapper class for ``pytket.circuit.Circuit`` objects."""
 
     def __init__(self, program: "pytket.Circuit"):
         super().__init__(program)
-        self._direct_conversion_set = {}
-        self._openqasm_conversion_set = {}
 
     @property
     def program(self) -> Circuit:
@@ -105,7 +101,3 @@ class PytketCircuit(QuantumProgram):
         if flat:
             circuit.remove_blank_wires()
         return circuit.get_unitary()
-
-    def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
-        """Convert circuit to package through direct mapping"""
-        raise NotImplementedError
