@@ -111,6 +111,7 @@ Documentation
    api/qbraid
    api/qbraid.api
    api/qbraid.programs
+   api/qbraid.interface
    api/qbraid.transpiler
    api/qbraid.compiler
    api/qbraid.providers

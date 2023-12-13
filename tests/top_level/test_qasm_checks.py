@@ -16,7 +16,7 @@ Unit tests for verifying OpenQASM programs
 import pytest
 
 from qbraid.exceptions import QasmError
-from qbraid.qasm_checks import get_qasm_version
+from qbraid.interface.qasm_checks import get_qasm_version
 
 QASM_BELL_DATA = [
     (

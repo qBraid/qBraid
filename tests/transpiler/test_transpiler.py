@@ -30,8 +30,8 @@ from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 
 from qbraid import QbraidError, circuit_wrapper
 from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.converter import convert_to_package
 from qbraid.exceptions import PackageValueError, ProgramTypeError
+from qbraid.interface.converter import convert_to_package
 from qbraid.programs.testing.circuit_equality import _equal
 
 from ..fixtures.braket.gates import braket_gates as braket_gates_dict

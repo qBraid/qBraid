@@ -16,7 +16,7 @@ import networkx as nx
 import pytest
 
 from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.conversion_graph import (
+from qbraid.interface.conversion_graph import (
     add_new_conversion,
     create_conversion_graph,
     find_shortest_conversion_path,

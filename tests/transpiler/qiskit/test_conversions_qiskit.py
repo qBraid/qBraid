@@ -17,7 +17,7 @@ import numpy as np
 import pytest
 import qiskit
 
-from qbraid.converter import convert_to_package
+from qbraid.interface.converter import convert_to_package
 from qbraid.programs import circuits_allclose
 from qbraid.programs.testing.circuit_equality import _equal
 from qbraid.transpiler.cirq import cirq_to_qasm2, qasm2_to_cirq

@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, List
 
 from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError
-from qbraid.qasm_checks import get_qasm_version
+from qbraid.interface.qasm_checks import get_qasm_version
 from qbraid.transpiler import CircuitConversionError, conversion_functions
 
 from .conversion_graph import create_conversion_graph, find_top_shortest_conversion_paths

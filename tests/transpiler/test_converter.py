@@ -17,8 +17,12 @@ from unittest.mock import Mock
 import braket.circuits
 import pytest
 
-from qbraid.converter import _convert_path_to_string, _get_program_type, convert_to_package
 from qbraid.exceptions import PackageValueError, ProgramTypeError
+from qbraid.interface.converter import (
+    _convert_path_to_string,
+    _get_program_type,
+    convert_to_package,
+)
 
 from ..fixtures.programs import bell_data
 

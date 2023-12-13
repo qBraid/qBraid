@@ -25,8 +25,8 @@ except ImportError:
     pass
 
 from .api import QbraidSession
-from .display_utils import running_in_jupyter, update_progress_bar
 from .load_provider import job_wrapper
+from .visualization.display_utils import running_in_jupyter, update_progress_bar
 
 
 def _display_jobs_basic(data, msg):

@@ -16,7 +16,7 @@ import braket.circuits
 import numpy as np
 import qiskit
 
-from qbraid.converter import convert_to_package
+from qbraid.interface.converter import convert_to_package
 from qbraid.programs import circuits_allclose
 
 

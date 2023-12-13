@@ -18,7 +18,7 @@ import pytest
 
 from qbraid import circuit_wrapper
 from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.converter import convert_to_package
+from qbraid.interface.converter import convert_to_package
 
 
 @pytest.mark.parametrize("frontend", QPROGRAM_LIBS)

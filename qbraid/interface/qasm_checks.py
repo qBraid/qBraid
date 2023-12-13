@@ -14,7 +14,7 @@ Module for performing QASM program checks before conversion
 """
 from openqasm3.parser import QASM3ParsingError, parse
 
-from .exceptions import QasmError
+from qbraid.exceptions import QasmError
 
 
 def get_qasm_version(qasm_str: str) -> str:

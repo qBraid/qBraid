@@ -56,7 +56,6 @@ from . import _warnings
 from ._qdevice import QDEVICE, QDEVICE_TYPES
 from ._qprogram import QPROGRAM, QPROGRAM_LIBS, QPROGRAM_TYPES
 from ._version import __version__
-from .converter import convert_to_package
 from .exceptions import (
     PackageValueError,
     ProgramTypeError,
@@ -66,5 +65,6 @@ from .exceptions import (
 )
 from .get_devices import get_devices, refresh_devices
 from .get_jobs import get_jobs
+from .interface import convert_to_package
 from .load_program import circuit_wrapper
 from .load_provider import device_wrapper, job_wrapper

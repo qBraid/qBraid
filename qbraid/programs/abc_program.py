@@ -17,9 +17,9 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 import numpy as np
 
-from qbraid.converter import convert_to_package
 from qbraid.exceptions import ProgramTypeError, QasmError
-from qbraid.qasm_checks import get_qasm_version
+from qbraid.interface.converter import convert_to_package
+from qbraid.interface.qasm_checks import get_qasm_version
 from qbraid.visualization.draw_circuit import circuit_drawer
 
 if TYPE_CHECKING:
