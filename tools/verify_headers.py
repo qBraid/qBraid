@@ -39,23 +39,22 @@ failed_headers = []
 fixed_headers = []
 
 
-def should_skip(file_path):
+def should_skip(file_path, content):
     if file_path in skip_files:
         return True
 
     if os.path.basename(file_path) == "__init__.py":
-        return False
+        return not content.strip()
 
     skip_header_tag = "# qbraid: skip-header"
     line_number = 0
 
-    with open(file_path, 'r') as file:
-        for line in file:
-            line_number += 1
-            if 5 <= line_number <= 30 and skip_header_tag in line:
-                return True
-            if line_number > 30:
-                break
+    for line in content.splitlines():
+        line_number += 1
+        if 5 <= line_number <= 30 and skip_header_tag in line:
+            return True
+        if line_number > 30:
+            break
 
     return False
 
