@@ -31,15 +31,14 @@ from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 from qbraid import QbraidError, circuit_wrapper
 from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.exceptions import PackageValueError, ProgramTypeError
-from qbraid.interface.circuit_equality import _equal
-from qbraid.transpiler.conversions_cirq import convert_from_cirq, convert_to_cirq
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.interface.converter import convert_to_package
 
-from .._data.braket.gates import braket_gates as braket_gates_dict
-from .._data.cirq.gates import cirq_gates as cirq_gates_dict
-from .._data.cirq.gates import create_cirq_gate
-from .._data.programs import bell_data, shared15_data
-from .._data.qiskit.gates import qiskit_gates as qiskit_gates_dict
+from ..fixtures.braket.gates import braket_gates as braket_gates_dict
+from ..fixtures.cirq.gates import cirq_gates as cirq_gates_dict
+from ..fixtures.cirq.gates import create_cirq_gate
+from ..fixtures.programs import bell_data, shared15_data
+from ..fixtures.qiskit.gates import qiskit_gates as qiskit_gates_dict
+from .cirq_utils import _equal
 
 TEST_15, UNITARY_15 = shared15_data()
 TEST_BELL, UNITARY_BELL = bell_data()
@@ -86,16 +85,15 @@ circuit_types = {
 @pytest.mark.parametrize("circuit", (qiskit_bell, pyquil_bell, braket_bell, pytket_bell))
 def test_to_cirq(circuit):
     """Test coverting circuits to Cirq."""
-    converted_circuit, input_type = convert_to_cirq(circuit)
+    converted_circuit = convert_to_package(circuit, "cirq")
     assert _equal(converted_circuit, cirq_bell) or _equal(converted_circuit, cirq_bell_rev)
-    assert input_type in circuit.__module__
 
 
 @pytest.mark.parametrize("item", [1, None])
 def test_to_cirq_bad_types(item):
     """Test raising ProgramTypeError converting circuit of non-supported type"""
     with pytest.raises(ProgramTypeError):
-        convert_to_cirq(item)
+        convert_to_package(item, "cirq")
 
 
 @pytest.mark.parametrize(
@@ -105,27 +103,26 @@ def test_to_cirq_bad_types(item):
 def test_to_cirq_bad_openqasm_program(item):
     """Test raising ProgramTypeError converting invalid OpenQASM program string"""
     with pytest.raises(ProgramTypeError):
-        convert_to_cirq(item)
+        convert_to_package(item, "cirq")
 
 
 @pytest.mark.parametrize("to_type", QPROGRAM_LIBS)
 def test_from_cirq(to_type):
     """Test converting Cirq circuits to other supported types."""
-    converted_circuit = convert_from_cirq(cirq_bell, to_type)
-    circuit, input_type = convert_to_cirq(converted_circuit)
+    converted_circuit = convert_to_package(cirq_bell, to_type)
+    circuit = convert_to_package(converted_circuit, "cirq")
     if to_type == "qasm3":
         qprogram = circuit_wrapper(circuit)
-        qprogram.convert_to_contiguous()
+        qprogram.collapse_empty_registers()
         circuit = qprogram.program
     assert _equal(circuit, cirq_bell)
-    assert input_type == to_type
 
 
 @pytest.mark.parametrize("item", ["package", 1, None])
 def test_from_cirq_bad_package(item):
     """Test raising PackageValueError converting circuit to non-supported package"""
     with pytest.raises(PackageValueError):
-        convert_from_cirq(cirq_bell, item)
+        convert_to_package(cirq_bell, item)
 
 
 @pytest.mark.parametrize("program", ["Not a circuit", None])
@@ -148,7 +145,7 @@ def test_transpile_program_error():
     circuit = TEST_BELL["braket"]()
     wrapped = circuit_wrapper(circuit)
     wrapped._program = None
-    with pytest.raises(CircuitConversionError):
+    with pytest.raises(ProgramTypeError):
         wrapped.transpile("qiskit")
 
 
@@ -483,7 +480,7 @@ def test_non_contiguous_qubits_braket():
     braket_circuit.cnot(0, 2)
     braket_circuit.cnot(2, 4)
     qpgoram_test = circuit_wrapper(braket_circuit)
-    qpgoram_test.convert_to_contiguous()
+    qpgoram_test.collapse_empty_registers()
     test_circuit = qpgoram_test.program
     qbraid_wrapper = circuit_wrapper(test_circuit)
     cirq_circuit = qbraid_wrapper.transpile("cirq")
@@ -505,7 +502,7 @@ def test_non_contiguous_qubits_cirq():
     cirq_circuit.append(cirq.CNOT(q0, q2))
     cirq_circuit.append(cirq.CNOT(q2, q4))
     qpgoram_test = circuit_wrapper(cirq_circuit)
-    qpgoram_test.convert_to_contiguous()
+    qpgoram_test.collapse_empty_registers()
     test_circuit = qpgoram_test.program
     qbraid_wrapper = circuit_wrapper(test_circuit)
     qiskit_circuit = qbraid_wrapper.transpile("qiskit")

@@ -13,7 +13,7 @@ Module defining PytketCircuit Class
 
 """
 
-from typing import List, Optional, Union
+from typing import TYPE_CHECKING, List, Optional, Union
 
 import numpy as np
 from pytket.circuit import Circuit, Command
@@ -21,9 +21,15 @@ from pytket.unit_id import Qubit
 
 from qbraid.programs.abc_program import QuantumProgram
 
+if TYPE_CHECKING:
+    import pytket
+
 
 class PytketCircuit(QuantumProgram):
     """Wrapper class for ``pytket.circuit.Circuit`` objects."""
+
+    def __init__(self, program: "pytket.Circuit"):
+        super().__init__(program)
 
     @property
     def program(self) -> Circuit:
@@ -55,22 +61,11 @@ class PytketCircuit(QuantumProgram):
         """Return the circuit depth (i.e., length of critical path)."""
         return self.program.depth()
 
-    def _set_direct_conversions(self) -> None:
-        self._direct_conversion_set = {}
-
-    def _set_openqasm_conversions(self) -> None:
-        self._openqasm_conversion_set = {}
-
     def _unitary(self) -> "np.ndarray":
         """Return the unitary of a pytket circuit."""
         return self.program.get_unitary()
 
-    def _contiguous_expansion(self) -> None:
-        """Checks whether the circuit uses contiguous qubits/indices,
-        and if not, adds identity gates to vacant registers as needed."""
-        raise NotImplementedError
-
-    def _contiguous_compression(self) -> None:
+    def collapse_empty_registers(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
         circuit = self.program.copy()

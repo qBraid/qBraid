@@ -9,6 +9,6 @@
         "versions": ["3.10"]
     },
     "tests_command": [
-        "pytest tests/api tests/interface tests/transpiler tests/providers tests/compiler tests/visualization tests/top_level"
+        "pytest tests/api tests/programs tests/transpiler tests/providers tests/compiler tests/visualization tests/top_level"
     ]
 }

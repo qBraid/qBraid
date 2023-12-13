@@ -21,9 +21,7 @@ from importlib import import_module
 from types import ModuleType
 from typing import List, Union
 
-import cirq
-
-__NON_OPTIONAL_PROGRAMS: list = [cirq.Circuit]
+__NON_OPTIONAL_PROGRAMS: list = []
 
 # As we are using here dynamic imports, we'll see the ide will visualize that none of the
 # libraries have been import, as we'll import them dynamically in the execution.
@@ -51,6 +49,8 @@ def __dynamic_importer(opt_modules: List[str]) -> list:
 def __get_class(module: str):
     match module:
         # pylint: disable=undefined-variable
+        case "cirq":
+            return cirq.Circuit  # type: ignore
         case "qiskit":
             return qiskit.QuantumCircuit  # type: ignore
         case "braket.circuits":
@@ -67,7 +67,9 @@ def __get_class(module: str):
 
 # Supported quantum programs.
 QASMType = str
-_PROGRAMS = __dynamic_importer(["qiskit", "pyquil", "pytket", "braket.circuits", "openqasm3"])
+_PROGRAMS = __dynamic_importer(
+    ["cirq", "qiskit", "pyquil", "pytket", "braket.circuits", "openqasm3"]
+)
 QPROGRAM = Union[tuple(_PROGRAMS)]  # type: ignore
 
 # pylint: disable-next=bad-str-strip-call

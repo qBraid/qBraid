@@ -9,21 +9,31 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-===============================================
+============================================
 Interface (:mod:`qbraid.interface`)
-===============================================
+============================================
 
 .. currentmodule:: qbraid.interface
 
 .. autosummary::
    :toctree: ../stubs/
 
-   random_unitary_matrix
-   circuits_allclose
+   create_conversion_graph
+   add_new_conversion
+   find_shortest_conversion_path
+   find_top_shortest_conversion_paths
+   convert_to_package
+   get_qasm_version
    random_circuit
-   circuit_drawer
+   random_unitary_matrix
 
 """
-from .circuit_drawer import circuit_drawer
-from .circuit_equality import circuits_allclose
-from .random_circuit import random_circuit, random_unitary_matrix
+from .conversion_graph import (
+    add_new_conversion,
+    create_conversion_graph,
+    find_shortest_conversion_path,
+    find_top_shortest_conversion_paths,
+)
+from .converter import convert_to_package
+from .qasm_checks import get_qasm_version
+from .random import random_circuit, random_unitary_matrix

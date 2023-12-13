@@ -6,37 +6,32 @@ qbraid.transpiler
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.transpiler.cirq_braket
+.. automodule:: qbraid.transpiler.openqasm3
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.transpiler.cirq_pyquil
+.. automodule:: qbraid.transpiler.cirq
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.transpiler.cirq_pytket
+.. automodule:: qbraid.transpiler.qiskit
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.transpiler.cirq_qiskit
+.. automodule:: qbraid.transpiler.braket
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.transpiler.cirq_qasm2
+.. automodule:: qbraid.transpiler.pytket
    :members:
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.transpiler.qasm3_qiskit
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. automodule:: qbraid.transpiler.qasm3_braket
+.. automodule:: qbraid.transpiler.pyquil
    :members:
    :undoc-members:
    :show-inheritance:

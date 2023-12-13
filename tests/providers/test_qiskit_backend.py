@@ -17,7 +17,8 @@ import time
 
 import pytest
 from qiskit.providers import Backend
-from qiskit.providers.fake_provider import FakeManilaV2
+from qiskit.providers.basicaer.basicaerjob import BasicAerJob
+from qiskit.providers.fake_provider import FakeManila, FakeProviderFactory
 from qiskit_ibm_provider import IBMBackend, IBMJob
 
 from qbraid import device_wrapper
@@ -31,7 +32,15 @@ from .fixtures import cirq_circuit, device_wrapper_inputs, qiskit_circuit
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM storage)"
 
-### FIXTURES ###
+
+@pytest.fixture
+def providers():
+    """Return tuple of IBM and fake providers."""
+    ibmq_token = os.getenv("QISKIT_IBM_TOKEN", None)
+    qbraid_provider = QiskitProvider(qiskit_ibm_token=ibmq_token)
+    ibm_provider = qbraid_provider._provider
+    fake_provider = FakeProviderFactory().get_provider()
+    return ibm_provider, fake_provider
 
 
 def ibm_devices():
@@ -45,10 +54,15 @@ def ibm_devices():
     return [dev for dev in ibm_device_names if dev in qbraid_device_names]
 
 
+def fake_ibm_devices():
+    """Get list of fake wrapped ibm backends for testing"""
+    fake_provider = FakeProviderFactory().get_provider()
+    backends = fake_provider.backends()
+    return [QiskitBackend(backend) for backend in backends if backend.configuration().n_qubits < 24]
+
+
 inputs_qiskit_dw = [] if skip_remote_tests else ibm_devices()
 circuits_qiskit_run = [cirq_circuit(), qiskit_circuit()]
-
-### TESTS ###
 
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
@@ -63,7 +77,7 @@ def test_device_wrapper_ibm_from_api(device_id):
 
 def test_wrap_fake_provider():
     """Test wrapping fake Qiskit provider."""
-    backend = FakeManilaV2()
+    backend = FakeManila()
     backend.simulator = True
     qbraid_device = QiskitBackend(backend)
     vendor_device = qbraid_device._device
@@ -97,6 +111,26 @@ def test_run_batch_qiskit_device_wrapper():
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
     assert isinstance(vendor_job, IBMJob)
+
+
+@pytest.mark.parametrize("qbraid_device", fake_ibm_devices())
+@pytest.mark.parametrize("circuit", circuits_qiskit_run)
+def test_run_fake_qiskit_device_wrapper(qbraid_device, circuit):
+    """Test run method from wrapped fake Qiskit backends"""
+    print(qbraid_device)
+    qbraid_job = qbraid_device.run(circuit, shots=10)
+    vendor_job = qbraid_job._job
+    assert isinstance(qbraid_job, QiskitJob)
+    assert isinstance(vendor_job, BasicAerJob)
+
+
+@pytest.mark.parametrize("qbraid_device", fake_ibm_devices())
+def test_run_fake_batch_qiskit_device_wrapper(qbraid_device):
+    """Test run method from wrapped fake Qiskit backends"""
+    qbraid_job = qbraid_device.run_batch(circuits_qiskit_run, shots=10)
+    vendor_job = qbraid_job._job
+    assert isinstance(qbraid_job, QiskitJob)
+    assert isinstance(vendor_job, BasicAerJob)
 
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
@@ -134,3 +168,19 @@ def test_cancel_completed_batch_error():
     # Ensure that cancelling a finished job raises an error
     with pytest.raises(JobStateError):
         qbraid_job.cancel()
+
+
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+@pytest.mark.parametrize("backend_name", ["ibmq_qasm_simulator", "fake_melbourne", "fake_almaden"])
+def test_get_device_name_fake(providers, backend_name):  # pylint: disable=redefined-outer-name
+    """Test edge cases for getting device name, e.g. .name, .name(), .backend_name"""
+    provider, fake_provider = providers
+
+    if backend_name.startswith("ibmq_"):
+        backend = provider.get_backend(backend_name)
+    else:
+        backend = fake_provider.get_backend(backend_name)
+
+    qbraid_device = QiskitBackend(backend)
+
+    assert qbraid_device._get_device_name() == backend_name

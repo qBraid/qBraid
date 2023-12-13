@@ -17,14 +17,14 @@ import qiskit_braket_provider
 
 import qbraid
 
-from .._data.qiskit.gates import get_qiskit_gates
+from ..fixtures.qiskit.gates import get_qiskit_gates
 
 
 def execute_test(conversion_function, input_circuit):
     """Execute conversion, test equality, and return 1 if it fails, 0 otherwise"""
     try:
         output_circuit = conversion_function(input_circuit)
-        if not qbraid.interface.circuits_allclose(
+        if not qbraid.programs.testing.circuits_allclose(
             input_circuit, output_circuit, strict_gphase=False
         ):
             return 1

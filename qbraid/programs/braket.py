@@ -19,13 +19,15 @@ from braket.circuits import Circuit, Instruction, Qubit
 from qbraid.programs.abc_program import QuantumProgram
 
 if TYPE_CHECKING:
+    import braket.circuits
     import numpy as np
-
-    import qbraid
 
 
 class BraketCircuit(QuantumProgram):
     """Wrapper class for ``braket.circuits.Circuit`` objects."""
+
+    def __init__(self, program: "braket.circuits.Circuit"):
+        super().__init__(program)
 
     @property
     def program(self) -> Circuit:
@@ -57,17 +59,11 @@ class BraketCircuit(QuantumProgram):
         """Return the circuit depth (i.e., length of critical path)."""
         return self.program.depth
 
-    def _set_direct_conversions(self) -> None:
-        self._direct_conversion_set = {}
-
-    def _set_openqasm_conversions(self) -> None:
-        self._openqasm_conversion_set = {}
-
     def _unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
         return self.program.to_unitary()
 
-    def _contiguous_expansion(self) -> None:
+    def populate_empty_registers(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, adds identity gates to vacant registers as needed."""
         max_qubit = 0
@@ -86,7 +82,7 @@ class BraketCircuit(QuantumProgram):
                 circuit.i(index)
         self._program = circuit
 
-    def _contiguous_compression(self) -> None:
+    def collapse_empty_registers(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
         qubit_map = {}
@@ -131,6 +127,3 @@ class BraketCircuit(QuantumProgram):
             )
             contig_circuit.add_instruction(contig_instr)
         self._program = contig_circuit
-
-    def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
-        """Convert the circuit into target package via direct mapping"""

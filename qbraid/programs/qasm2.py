@@ -16,7 +16,7 @@ import re
 from typing import TYPE_CHECKING, List
 
 from qbraid.programs.abc_program import QuantumProgram
-from qbraid.transpiler.cirq_qasm2.qasm_conversions import from_qasm
+from qbraid.transpiler.cirq.conversions_qasm import qasm2_to_cirq
 
 if TYPE_CHECKING:
     import numpy as np
@@ -24,6 +24,9 @@ if TYPE_CHECKING:
 
 class OpenQasm2Program(QuantumProgram):
     """Wrapper class for OpenQASM 2 strings."""
+
+    def __init__(self, program: str):
+        super().__init__(program)
 
     @property
     def program(self) -> str:
@@ -147,22 +150,11 @@ class OpenQasm2Program(QuantumProgram):
 
         return self._get_max_count(depth_counts)
 
-    def _set_direct_conversions(self) -> None:
-        self._direct_conversion_set = {}
-
-    def _set_openqasm_conversions(self) -> None:
-        self._openqasm_conversion_set = {}
-
     def _unitary(self) -> "np.ndarray":
         """Return the unitary of the QASM"""
-        return from_qasm(self.program).unitary()
+        return qasm2_to_cirq(self.program).unitary()
 
-    def _contiguous_expansion(self) -> None:
-        """Checks whether the circuit uses contiguous qubits/indices,
-        and if not, adds identity gates to vacant registers as needed."""
-        raise NotImplementedError
-
-    def _contiguous_compression(self) -> None:
+    def collapse_empty_registers(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
         raise NotImplementedError

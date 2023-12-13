@@ -76,7 +76,9 @@ def convert_from_pyquil_to_x(target, gate_name):
     source_circuit = pyquil.Program()
     source_circuit += gate
     target_circuit = qbraid.circuit_wrapper(source_circuit).transpile(target)
-    assert qbraid.interface.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
+    assert qbraid.programs.testing.circuits_allclose(
+        source_circuit, target_circuit, strict_gphase=False
+    )
 
 
 @pytest.mark.parametrize(("target", "baseline"), TARGETS)

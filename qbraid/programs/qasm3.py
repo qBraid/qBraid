@@ -14,7 +14,7 @@ Module defining OpenQasm3Program Class
 """
 
 import re
-from typing import TYPE_CHECKING, List, Tuple
+from typing import List, Tuple
 
 import numpy as np
 from openqasm3.ast import Program, QubitDeclaration
@@ -22,12 +22,12 @@ from openqasm3.parser import parse
 
 from qbraid.programs.abc_program import QuantumProgram
 
-if TYPE_CHECKING:
-    import qbraid
-
 
 class OpenQasm3Program(QuantumProgram):
     """Wrapper class for OpenQASM 3 strings."""
+
+    def __init__(self, program: str):
+        super().__init__(program)
 
     @property
     def program(self) -> str:
@@ -82,15 +82,6 @@ class OpenQasm3Program(QuantumProgram):
         from qiskit.qasm3 import loads
 
         return loads(self.program).depth()
-
-    def _set_direct_conversions(self) -> None:
-        self._direct_conversion_set = {}
-
-    def _set_openqasm_conversions(self) -> None:
-        self._openqasm_conversion_set = {}
-
-    def _convert_direct_to_package(self, package: str) -> "qbraid.QPROGRAM":
-        """Convert the circuit into target package via direct mapping"""
 
     def _unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
@@ -213,7 +204,7 @@ class OpenQasm3Program(QuantumProgram):
 
         return qasm_str
 
-    def _contiguous_expansion(self) -> None:
+    def populate_empty_registers(self) -> None:
         """Converts OpenQASM 3 string to contiguous qasm3 string with gate expansion.
 
         No loops OR custom functions supported at the moment.
@@ -229,7 +220,7 @@ class OpenQasm3Program(QuantumProgram):
 
         self._program = self.program + expansion_qasm
 
-    def _contiguous_compression(self) -> None:
+    def collapse_empty_registers(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
         qasm_str = self.program

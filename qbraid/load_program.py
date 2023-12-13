@@ -18,7 +18,7 @@ import pkg_resources
 
 from ._qprogram import QPROGRAM
 from .exceptions import QbraidError
-from .qasm_checks import get_qasm_version
+from .interface.qasm_checks import get_qasm_version
 
 
 def _get_entrypoints(group: str):
