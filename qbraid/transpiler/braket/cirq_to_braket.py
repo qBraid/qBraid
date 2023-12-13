@@ -11,6 +11,8 @@
 # with modifications by qBraid. The original copyright notice is included above.
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# qbraid: skip-header
+
 """
 Module for converting Braket circuits to Cirq circuits
 
