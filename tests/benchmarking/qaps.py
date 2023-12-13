@@ -19,7 +19,7 @@ import numpy as np
 from scipy.stats import zscore
 
 from qbraid import circuit_wrapper
-from qbraid.programs.testing import random_circuit
+from qbraid.interface.random import random_circuit
 
 # Step 1: Collecting the data
 quantum_area_data = {}

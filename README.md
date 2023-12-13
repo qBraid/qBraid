@@ -105,19 +105,31 @@ See also:
 
 ### Transpiler
 
-Construct a quantum program of any supported program type,
+Construct a quantum program of any supported program type.
+
+Below, `QPROGRAM_LIBS` lists shorthand identifiers for supported quantum programs, each corresponding to a type in the `QPROGRAM` Union. For example, 'qiskit' in `QPROGRAM_LIBS` maps to `qiskit.QuantumCircuit` in `QPROGRAM`. Notably, 'qasm2' and 'qasm3' both represent raw OpenQASM strings. This arrangement simplifies targeting and transpiling between different quantum programming frameworks.
 
 ```python
->>> from qbraid import QPROGRAM_LIBS
+>>> from qbraid import QPROGRAM_LIBS, QPROGRAM
 >>> QPROGRAM_LIBS
-['braket', 'cirq', 'qiskit', 'pyquil', 'pytket', 'qasm2', 'qasm3']
+['braket', 'cirq', 'qiskit', 'pyquil', 'pytket', 'openqasm3', 'qasm2', 'qasm3']
+>>> QPROGRAM
+typing.Union[
+  cirq.circuits.circuit.Circuit,
+  qiskit.circuit.quantumcircuit.QuantumCircuit,
+  pyquil.quil.Program,
+  pytket._tket.circuit.Circuit,
+  braket.circuits.circuit.Circuit,
+  openqasm3.ast.Program,
+  str]
 ```
 
-and use the `circuit_wrapper()` to convert to any other supported program type:
+Pass any quantum program of type `QPROGRAM` to the `circuit_wrapper()` and specify a target package
+from `QPROGRAM_LIBS` to "transpile" your circuit to a new program type:
 
 ```python
 >>> from qbraid import circuit_wrapper
->>> from qbraid.programs import random_circuit
+>>> from qbraid.interface import random_circuit
 >>> qiskit_circuit = random_circuit("qiskit")
 >>> cirq_circuit = circuit_wrapper(qiskit_circuit).transpile("cirq")
 >>> print(qiskit_circuit)
@@ -130,6 +142,13 @@ q_1: ┤ H ├────┤ √X ├────
 0: ───@───Rx(0.966π)───
       │
 1: ───H───X^0.5────────
+```
+
+The same functionality can be achieved using the underlying `convert_to_package()` function directly:
+
+```python
+>>> from qbraid import convert_to_package
+>>> cirq_circuit = convert_to_package(qiskit_circuit, "cirq")
 ```
 
 ### Devices & Jobs

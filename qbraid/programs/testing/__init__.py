@@ -18,10 +18,7 @@ Testing (:mod:`qbraid.programs.testing`)
 .. autosummary::
    :toctree: ../stubs/
 
-   random_circuit
-   random_unitary_matrix
    circuits_allclose
 
 """
 from .circuit_equality import circuits_allclose
-from .random import random_circuit, random_unitary_matrix

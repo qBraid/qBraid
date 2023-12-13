@@ -96,7 +96,9 @@ Documentation
    :hidden:
 
    sdk/overview
-   sdk/circuits
+   sdk/programs
+   sdk/transpiler
+   sdk/providers
    sdk/devices
    sdk/jobs
    sdk/results
@@ -109,6 +111,7 @@ Documentation
    api/qbraid
    api/qbraid.api
    api/qbraid.programs
+   api/qbraid.interface
    api/qbraid.transpiler
    api/qbraid.compiler
    api/qbraid.providers

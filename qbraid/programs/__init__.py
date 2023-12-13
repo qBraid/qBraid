@@ -19,13 +19,6 @@ Programs  (:mod:`qbraid.programs`)
    :toctree: ../stubs/
 
    QuantumProgram
-   CirqCircuit
-   OpenQasm2Program
-   random_circuit
-   circuits_allclose
 
 """
 from qbraid.programs.abc_program import QuantumProgram
-from qbraid.programs.cirq import CirqCircuit
-from qbraid.programs.qasm2 import OpenQasm2Program
-from qbraid.programs.testing import circuits_allclose, random_circuit

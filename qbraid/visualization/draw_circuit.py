@@ -15,7 +15,7 @@ Module for drawing quantum circuit diagrams
 from typing import TYPE_CHECKING
 
 from qbraid.exceptions import ProgramTypeError, QasmError, VisualizationError
-from qbraid.qasm_checks import get_qasm_version
+from qbraid.interface.qasm_checks import get_qasm_version
 from qbraid.visualization.draw_qasm3 import qasm3_drawer
 
 if TYPE_CHECKING:

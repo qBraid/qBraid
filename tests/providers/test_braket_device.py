@@ -20,7 +20,7 @@ from braket.tasks.quantum_task import QuantumTask as AwsQuantumTask
 from qiskit import QuantumCircuit as QiskitCircuit
 
 from qbraid import QbraidError, device_wrapper
-from qbraid.programs import random_circuit
+from qbraid.interface import random_circuit
 from qbraid.providers import QuantumJob
 from qbraid.providers.aws import BraketDevice, BraketQuantumTask
 from qbraid.providers.exceptions import ProgramValidationError

@@ -14,16 +14,13 @@ Module defining OpenQasm3Program Class
 """
 
 import re
-from typing import TYPE_CHECKING, List, Tuple
+from typing import List, Tuple
 
 import numpy as np
 from openqasm3.ast import Program, QubitDeclaration
 from openqasm3.parser import parse
 
 from qbraid.programs.abc_program import QuantumProgram
-
-if TYPE_CHECKING:
-    import qbraid
 
 
 class OpenQasm3Program(QuantumProgram):

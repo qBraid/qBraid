@@ -17,7 +17,7 @@ import pytest
 
 import qbraid
 
-from ..._data.braket.gates import get_braket_gates
+from ...fixtures.braket.gates import get_braket_gates
 
 TARGETS = [("cirq", 1.0), ("pyquil", 0.83), ("pytket", 1.0), ("qiskit", 1.0)]
 braket_gates = get_braket_gates(seed=0)
@@ -37,7 +37,9 @@ def convert_from_braket_to_x(target, gate_name):
         )
 
     target_circuit = qbraid.circuit_wrapper(source_circuit).transpile(target)
-    assert qbraid.programs.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
+    assert qbraid.programs.testing.circuits_allclose(
+        source_circuit, target_circuit, strict_gphase=False
+    )
 
 
 @pytest.mark.parametrize(("target", "baseline"), TARGETS)
