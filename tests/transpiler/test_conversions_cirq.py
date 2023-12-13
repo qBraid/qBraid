@@ -18,7 +18,7 @@ import pytest
 
 from qbraid import circuit_wrapper
 from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.transpiler.conversions_cirq import convert_from_cirq
+from qbraid.converter import convert_to_package
 
 
 @pytest.mark.parametrize("frontend", QPROGRAM_LIBS)
@@ -29,7 +29,7 @@ def test_convert_circuit_operation_from_cirq(frontend):
         cirq.Y(q), cirq.CircuitOperation(cirq.FrozenCircuit(cirq.X(q)), repetitions=5), cirq.Z(q)
     )
 
-    test_circuit = convert_from_cirq(cirq_circuit, frontend)
+    test_circuit = convert_to_package(cirq_circuit, frontend)
 
     cirq_unitary = circuit_wrapper(cirq_circuit).unitary()
     test_unitary = circuit_wrapper(test_circuit).unitary()

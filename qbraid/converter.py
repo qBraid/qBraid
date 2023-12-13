@@ -24,9 +24,27 @@ from qbraid.transpiler import CircuitConversionError, conversion_functions
 from .conversion_graph import create_conversion_graph, find_top_shortest_conversion_paths
 
 if TYPE_CHECKING:
+    import cirq
+
     import qbraid
 
 transpiler = import_module("qbraid.transpiler")
+
+
+def _flatten_cirq(circuit: "cirq.Circuit") -> "cirq.Circuit":
+    """
+    Flatten a Cirq circuit.
+
+    Args:
+        circuit (cirq.Circuit): The Cirq circuit to flatten.
+
+    Returns:
+        cirq.Circuit: The flattened Cirq circuit.
+    """
+    # pylint: disable=import-outside-toplevel
+    from cirq.contrib.qasm_import import circuit_from_qasm
+
+    return circuit_from_qasm(circuit.to_qasm())
 
 
 def _get_program_type(program: "qbraid.QPROGRAM") -> str:
@@ -50,7 +68,7 @@ def _get_program_type(program: "qbraid.QPROGRAM") -> str:
     else:
         try:
             program_module = program.__module__
-            package = program_module.split(".")[0]
+            package = program_module.split(".")[0].lower()
         except AttributeError as err:
             raise ProgramTypeError(program) from err
 
@@ -99,19 +117,25 @@ def convert_to_package(program: "qbraid.QPROGRAM", target: str) -> "qbraid.QPROG
     paths = find_top_shortest_conversion_paths(graph, source, target)
 
     for path in paths:
-        logging.info("Conversion path: %s", _convert_path_to_string(path))
-        print(_convert_path_to_string(path))
+        logging.info("Conversion paths: %s", _convert_path_to_string(path))
+        # print(_convert_path_to_string(path))
 
     for path in paths:
         temp_program = deepcopy(program)
         try:
             for conversion in path:
-                convert_func = getattr(transpiler, conversion)
-                temp_program = convert_func(temp_program)
+                try:
+                    convert_func = getattr(transpiler, conversion)
+                    temp_program = convert_func(temp_program)
+                except Exception:  # pylint: disable=broad-exception-caught
+                    if _get_program_type(temp_program) == "cirq":
+                        temp_program = _flatten_cirq(temp_program)
+                        temp_program = convert_func(temp_program)  # Retry conversion
+                    else:
+                        raise
             logging.info(
-                "Successfully transpiled using packages: %s", _convert_path_to_string(path)
+                "\n\nSuccessfully transpiled using conversions: %s", _convert_path_to_string(path)
             )
-            print(_convert_path_to_string(path))
             return temp_program
         except Exception:  # pylint: disable=broad-exception-caught
             continue

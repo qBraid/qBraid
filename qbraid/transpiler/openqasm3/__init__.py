@@ -19,6 +19,12 @@ Qasm Converions (:mod:`qbraid.transpiler.openqasm3`)
    :toctree: ../stubs/
 
    qasm2_to_qasm3
+   openqasm3_to_qasm3
+   qasm3_to_openqasm3
 
 """
-from qbraid.transpiler.openqasm3.convert_qasm import qasm2_to_qasm3
+from qbraid.transpiler.openqasm3.convert_qasm import (
+    openqasm3_to_qasm3,
+    qasm2_to_qasm3,
+    qasm3_to_openqasm3,
+)

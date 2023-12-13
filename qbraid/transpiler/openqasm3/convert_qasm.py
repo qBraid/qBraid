@@ -14,6 +14,8 @@ Module containing OpenQASM conversion function
 """
 import os
 
+import openqasm3
+
 from qbraid.qasm_checks import is_valid_qasm2
 from qbraid.transpiler.qasm_qelib1 import _decompose_rxx_instr
 
@@ -121,3 +123,27 @@ def qasm2_to_qasm3(qasm_str: str) -> QASMType:
         qasm3_str += line
 
     return qasm3_str
+
+
+def qasm3_to_openqasm3(qasm_str: str) -> openqasm3.ast.Program:
+    """Loads an openqasm3.ast.Program from an OpenQASM 3.0 string
+
+    Args:
+        qasm_str (str): OpenQASM 3.0 string
+
+    Returns:
+        openqasm3.ast.Program: OpenQASM 3.0 AST program
+    """
+    return openqasm3.parse(qasm_str)
+
+
+def openqasm3_to_qasm3(program: openqasm3.ast.Program) -> str:
+    """Dumps openqasm3.ast.Program to an OpenQASM 3.0 string
+
+    Args:
+        program (openqasm3.ast.Program): OpenQASM 3.0 AST program
+
+    Returns:
+        str: OpenQASM 3.0 string
+    """
+    return openqasm3.dumps(program)

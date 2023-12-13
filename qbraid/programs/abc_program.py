@@ -17,11 +17,9 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 import numpy as np
 
-from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError
+from qbraid.converter import convert_to_package
+from qbraid.exceptions import ProgramTypeError, QasmError
 from qbraid.qasm_checks import get_qasm_version
-from qbraid.transpiler.conversions_cirq import convert_from_cirq, convert_to_cirq
-from qbraid.transpiler.exceptions import CircuitConversionError
 from qbraid.visualization.draw_circuit import circuit_drawer
 
 if TYPE_CHECKING:
@@ -182,31 +180,10 @@ class QuantumProgram:
         Returns:
             :data:`~qbraid.QPROGRAM`: supported quantum program object
         """
-        if conversion_type not in QPROGRAM_LIBS:
-            raise PackageValueError(conversion_type)
-
-        if conversion_type == self.package:
-            return self._program
-
-        try:
-            cirq_circuit = convert_to_cirq(self.program)
-        except Exception as err:
-            raise CircuitConversionError(
-                "Quantum program could not be converted to Cirq. "
-                "This may be because the program contains gates or operations"
-                "not yet supported by the qBraid transpiler."
-            ) from err
-
-        try:
-            return convert_from_cirq(cirq_circuit, conversion_type)
-        except Exception as err:
-            raise CircuitConversionError(
-                f"Circuit could not be converted from Cirq to "
-                f"program of type {conversion_type}."
-            ) from err
+        return convert_to_package(self.program, conversion_type)
 
     def draw(self, package: Optional[str] = None, output: Optional[str] = None, **kwrags):
-        """Draw circuit"""
+        """Draw circuit diagram"""
         package = "cirq" if package is None else package
         qprogram = self.transpile(package)
         return circuit_drawer(qprogram, output, **kwrags)
