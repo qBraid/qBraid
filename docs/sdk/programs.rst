@@ -241,7 +241,7 @@ performing the qubit mapping.
 Random circuits
 -----------------
 
-The ``qbraid.programs.testing`` module contains a number of functions that can be helpful for testing, quick calculations,
+The ``qbraid.interface`` module contains a number of functions that can be helpful for testing, quick calculations,
 verification, or other general use. One of these is the ``random_circuit`` function, which creates a random circuit of any
 supported frontend program type. Here, we've created a random ``cirq.Circuit`` with four qubits and depth four:
 
