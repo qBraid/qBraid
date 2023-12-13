@@ -12,23 +12,68 @@
 Module for calculating unitary of quantum circuit/program
 
 """
-from copy import deepcopy
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Tuple
 
 import numpy as np
-from cirq import Circuit, GridQubit, LineQubit, MeasurementGate, NamedQubit, Qid
-from cirq.testing import assert_allclose_up_to_global_phase
-
-from qbraid.exceptions import QbraidError
-
-QUBIT = Union[LineQubit, GridQubit, NamedQubit, Qid]
 
 if TYPE_CHECKING:
     import qbraid
 
 
-class UnitaryCalculationError(QbraidError):
-    """Class for exceptions raised during unitary calculation"""
+def match_global_phase(a: np.ndarray, b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Matches the global phase of two numpy arrays.
+
+    This function aligns the global phases of two matrices by applying a phase shift based
+    on the position of the largest entry in one matrix. It computes and adjusts for the
+    phase difference at this position, resulting in two phase-aligned matrices. The output,
+    (a', b'), indicates that a' == b' is equivalent to a == b * exp(i * t) for some phase t.
+
+    Args:
+        a (np.ndarray): The first input matrix.
+        b (np.ndarray): The second input matrix.
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: A tuple of the two matrices `(a', b')`, adjusted for
+                                       global phase. If shapes of `a` and `b` do not match or
+                                       either is empty, returns copies of the original matrices.
+    """
+    if a.shape != b.shape or a.size == 0:
+        return np.copy(a), np.copy(b)
+
+    k = max(np.ndindex(*a.shape), key=lambda t: abs(b[t]))
+
+    def dephase(v):
+        r = np.real(v)
+        i = np.imag(v)
+
+        if i == 0:
+            return -1 if r < 0 else 1
+        if r == 0:
+            return 1j if i < 0 else -1j
+
+        return np.exp(-1j * np.arctan2(i, r))
+
+    return a * dephase(a[k]), b * dephase(b[k])
+
+
+def assert_allclose_up_to_global_phase(a: np.ndarray, b: np.ndarray, atol: float, **kwargs) -> None:
+    """
+    Checks if two numpy arrays are equal up to a global phase, within
+    a specified tolerance, i.e. if a ~= b * exp(i t) for some t.
+
+    Args:
+        a (np.ndarray): The first input array.
+        b (np.ndarray): The second input array.
+        atol (float): The absolute error tolerance.
+        **kwargs: Additional keyword arguments to pass to `np.testing.assert_allclose`.
+
+    Raises:
+        AssertionError: The matrices aren't nearly equal up to global phase.
+
+    """
+    a, b = match_global_phase(a, b)
+    np.testing.assert_allclose(actual=a, desired=b, atol=atol, **kwargs)
 
 
 def circuits_allclose(  # pylint: disable=too-many-arguments
@@ -86,50 +131,3 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
     unitary_rev = program1.unitary_rev_qubits()
 
     return unitary_equivalence_check(unitary0, unitary1, unitary_rev)
-
-
-def _equal(
-    circuit_one: Circuit,
-    circuit_two: Circuit,
-    require_qubit_equality: bool = False,
-    require_measurement_equality: bool = False,
-) -> bool:
-    """Returns True if the circuits are equal, else False.
-
-    Args:
-        circuit_one: Input circuit to compare to circuit_two.
-        circuit_two: Input circuit to compare to circuit_one.
-        require_qubit_equality: Requires that the qubits be equal
-            in the two circuits.
-        require_measurement_equality: Requires that measurements are equal on
-            the two circuits, meaning that measurement keys are equal.
-
-    Note:
-        If set(circuit_one.all_qubits()) = {LineQubit(0)},
-        then set(circuit_two_all_qubits()) must be {LineQubit(0)},
-        else the two are not equal.
-        If True, the qubits of both circuits must have a well-defined ordering.
-    """
-    # Make a deepcopy only if it's necessary
-    if not (require_qubit_equality and require_measurement_equality):
-        circuit_one = deepcopy(circuit_one)
-        circuit_two = deepcopy(circuit_two)
-
-    if not require_qubit_equality:
-        # Transform the qubits of circuit one to those of circuit two
-        qubit_map = dict(
-            zip(
-                sorted(circuit_one.all_qubits()),
-                sorted(circuit_two.all_qubits()),
-            )
-        )
-        circuit_one = circuit_one.transform_qubits(lambda q: qubit_map[q])
-
-    if not require_measurement_equality:
-        for circ in (circuit_one, circuit_two):
-            measurements = [
-                (moment, op)
-                for moment, op, _ in circ.findall_operations_with_gate_type(MeasurementGate)
-            ]
-            circ.batch_remove(measurements)
-    return circuit_one == circuit_two

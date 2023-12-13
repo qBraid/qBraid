@@ -32,13 +32,13 @@ from qbraid import QbraidError, circuit_wrapper
 from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.exceptions import PackageValueError, ProgramTypeError
 from qbraid.interface.converter import convert_to_package
-from qbraid.programs.testing.circuit_equality import _equal
 
 from ..fixtures.braket.gates import braket_gates as braket_gates_dict
 from ..fixtures.cirq.gates import cirq_gates as cirq_gates_dict
 from ..fixtures.cirq.gates import create_cirq_gate
 from ..fixtures.programs import bell_data, shared15_data
 from ..fixtures.qiskit.gates import qiskit_gates as qiskit_gates_dict
+from .cirq_utils import _equal
 
 TEST_15, UNITARY_15 = shared15_data()
 TEST_BELL, UNITARY_BELL = bell_data()

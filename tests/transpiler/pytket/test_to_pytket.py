@@ -33,7 +33,8 @@ def test_bell_state_to_pytket():
 
 @pytest.mark.parametrize("num_qubits", [1, 2, 3, 4, 5])
 def test_random_circuit_to_pytket(num_qubits):
-    for i in range(10):
+    """Test converting random Cirq circuits to pytket."""
+    for _ in range(10):
         cirq_circuit = testing.random_circuit(
             qubits=num_qubits,
             n_moments=np.random.randint(1, 6),
@@ -45,6 +46,7 @@ def test_random_circuit_to_pytket(num_qubits):
 
 
 def test_raise_error():
+    """Test raising error for unsupported gates."""
     with pytest.raises(CircuitConversionError):
         probs = np.random.uniform(low=0, high=0.5)
         cirq_circuit = Circuit(ops.PhaseDampingChannel(probs).on(*LineQubit.range(1)))

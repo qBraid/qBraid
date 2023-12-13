@@ -37,6 +37,7 @@ def test_bell_state_from_qiskit():
 
 
 def test_common_gates_from_qiskit():
+    """Tests converting standard gates from Qiskit to Cirq."""
     qiskit_circuit = QuantumCircuit(4)
     qiskit_circuit.h([0, 1, 2, 3])
     qiskit_circuit.x([0, 1])
@@ -63,6 +64,7 @@ def test_common_gates_from_qiskit():
 
 @pytest.mark.parametrize("qubits", ([0, 1], [1, 0]))
 def test_crz_gate_from_qiskit(qubits):
+    """Tests converting controlled Rz gate from Qiskit to Cirq."""
     qiskit_circuit = QuantumCircuit(2)
     qiskit_circuit.crz(np.pi / 4, *qubits)
     cirq_circuit = convert_to_package(qiskit_circuit, "cirq")
@@ -72,6 +74,7 @@ def test_crz_gate_from_qiskit(qubits):
 @pytest.mark.parametrize("qubits", ([0, 1], [1, 0]))
 @pytest.mark.parametrize("theta", (0, 2 * np.pi, np.pi / 2, np.pi / 4))
 def test_rzz_gate_from_qiskit(qubits, theta):
+    """Tests converting Rzz gate from Qiskit to Cirq."""
     qiskit_circuit = QuantumCircuit(2)
     qiskit_circuit.rzz(theta, *qubits)
     cirq_circuit = convert_to_package(qiskit_circuit, "cirq")
@@ -79,6 +82,7 @@ def test_rzz_gate_from_qiskit(qubits, theta):
 
 
 def test_iswap_gate_from_qiskit():
+    """Tests converting iSwap gate from Qiskit to Cirq."""
     qiskit_circuit = QuantumCircuit(2)
     qiskit_circuit.h([0, 1])
     qiskit_circuit.iswap(0, 1)
@@ -87,6 +91,7 @@ def test_iswap_gate_from_qiskit():
 
 
 def test_qiskit_roundtrip():
+    """Test converting qiskit gates that previously failed qiskit roundtrip test."""
     qiskit_circuit = QuantumCircuit(3)
     qiskit_circuit.ccz(0, 1, 2)
     qiskit_circuit.ecr(1, 2)
@@ -96,6 +101,8 @@ def test_qiskit_roundtrip():
 
 
 def test_qiskit_roundtrip_noncontig():
+    """Test converting gates that previously failed qiskit roundtrip test
+    with non-contiguous qubits."""
     qiskit_circuit = QuantumCircuit(4)
     qiskit_circuit.ccz(0, 1, 2)
     qiskit_circuit.ecr(1, 2)
@@ -108,6 +115,7 @@ def test_qiskit_roundtrip_noncontig():
 
 
 def test_100_random_qiskit():
+    """Test converting 100 random qiskit circuits to cirq."""
     for _ in range(100):
         qiskit_circuit = random_circuit(4, 1)
         cirq_circuit = convert_to_package(qiskit_circuit, "cirq")
@@ -115,6 +123,7 @@ def test_100_random_qiskit():
 
 
 def test_raise_error():
+    """Test raising error for unsupported gates."""
     with pytest.raises(QasmError):
         qiskit_circuit = QuantumCircuit(1)
         qiskit_circuit.delay(300, 0)
