@@ -36,6 +36,8 @@ Functions
    device_wrapper
    job_wrapper
    get_jobs
+   convert_to_package
+
 
 Exceptions
 -----------
@@ -65,3 +67,4 @@ from .get_devices import get_devices, refresh_devices
 from .get_jobs import get_jobs
 from .load_program import circuit_wrapper
 from .load_provider import device_wrapper, job_wrapper
+from .converter import convert_to_package
