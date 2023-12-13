@@ -43,6 +43,7 @@ rypi/4) q[0];
 
 @pytest.mark.parametrize("qasm3_test_in, qasm3_expected_out", qasm_stdgate_data)
 def test_add_stdgates_include(qasm3_test_in, qasm3_expected_out):
+    """Test adding stdgates include to OpenQASM 3.0 string"""
     assert _add_stdgates_include(qasm3_test_in) == qasm3_expected_out
 
 

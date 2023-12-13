@@ -22,9 +22,8 @@ from qbraid.transpiler.exceptions import CircuitConversionError
 
 
 def test_bell_state_to_qiskit():
-    """Tests Circuit --> qiskit.QuantumCircuit --> Circuit
-    with a Bell state circuit.
-    """
+    """Tests cirq.Circuit --> qiskit.QuantumCircuit --> cirq.Circuit
+    with a Bell state circuit."""
     qreg = LineQubit.range(2)
     cirq_circuit = Circuit([ops.H.on(qreg[0]), ops.CNOT.on(qreg[0], qreg[1])])
     qiskit_circuit = convert_to_package(cirq_circuit, "qiskit")
@@ -33,6 +32,7 @@ def test_bell_state_to_qiskit():
 
 @pytest.mark.parametrize("num_qubits", [1, 2, 3, 4, 5])
 def test_random_circuit_to_qiskit(num_qubits):
+    """Tests converting random Cirq circuits to Qiskit circuits."""
     for _ in range(10):
         cirq_circuit = testing.random_circuit(
             qubits=num_qubits,
@@ -45,6 +45,7 @@ def test_random_circuit_to_qiskit(num_qubits):
 
 
 def test_raise_error():
+    """Tests raising error for unsupported gates."""
     with pytest.raises(CircuitConversionError):
         probs = np.random.uniform(low=0, high=0.5)
         cirq_circuit = Circuit(ops.PhaseDampingChannel(probs).on(*LineQubit.range(1)))

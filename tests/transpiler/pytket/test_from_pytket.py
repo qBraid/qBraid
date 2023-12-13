@@ -33,6 +33,7 @@ def test_bell_state_from_qiskit():
 
 @pytest.mark.parametrize("qubits", ([0, 1], [1, 0]))
 def test_crz_gate_from_pytket(qubits):
+    """Test converting controlled Rz gate from pytket to cirq."""
     pytket_circuit = TKCircuit(2)
     pytket_circuit.CRz(np.pi / 4, *qubits)
     cirq_circuit = convert_to_package(pytket_circuit, "cirq")
@@ -42,6 +43,7 @@ def test_crz_gate_from_pytket(qubits):
 @pytest.mark.parametrize("qubits", ([0, 1], [1, 0]))
 @pytest.mark.parametrize("theta", (0, 2 * np.pi, np.pi / 2, np.pi / 4))
 def test_rzz_gate_from_pytket(qubits, theta):
+    """Test converting Rzz gate from pytket to cirq."""
     pytket_circuit = TKCircuit(2)
     pytket_circuit.ZZPhase(theta, *qubits)
     cirq_circuit = convert_to_package(pytket_circuit, "cirq")
@@ -49,6 +51,7 @@ def test_rzz_gate_from_pytket(qubits, theta):
 
 
 def test_100_random_pytket():
+    """Test converting 100 random pytket circuits to cirq."""
     for _ in range(100):
         pytket_circuit = random_circuit("pytket", 4, 1)
         cirq_circuit = convert_to_package(pytket_circuit, "cirq")
@@ -56,6 +59,7 @@ def test_100_random_pytket():
 
 
 def test_raise_error():
+    """Test raising an error when converting an unsupported gate."""
     with pytest.raises(CircuitConversionError):
         pytket_circuit = TKCircuit(2)
         pytket_circuit.ISWAPMax(0, 1)
