@@ -24,7 +24,7 @@ filterwarnings = [
 parallel = true
 source = ["qbraid"]
 omit = [
-  "**/qbraid/transpiler/custom_gates.py"
+  "**/qbraid/transpiler/cirq/cirq_gates.py"
 ]
 
 [tool.coverage.paths]

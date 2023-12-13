@@ -20,7 +20,7 @@ import pytest
 from qbraid.converter import _convert_path_to_string, _get_program_type, convert_to_package
 from qbraid.exceptions import PackageValueError, ProgramTypeError
 
-from .._data.programs import bell_data
+from ..fixtures.programs import bell_data
 
 bell_map, _ = bell_data()
 

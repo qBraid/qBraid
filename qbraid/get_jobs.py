@@ -74,7 +74,7 @@ def _display_jobs_jupyter(data, msg):
     return display(HTML(html))
 
 
-def get_jobs(filters: Optional[dict] = None):
+def get_jobs(filters: Optional[dict] = None, refresh: bool = False):
     """Displays a list of quantum jobs submitted by user, tabulated by job ID,
     the date/time it was submitted, and status. You can specify filters to
     narrow the search by supplying a dictionary containing the desired criteria.
@@ -109,7 +109,8 @@ def get_jobs(filters: Optional[dict] = None):
         * **numResults** (int): Maximum number of results to display. Defaults to 10 if not specified.
 
     Args:
-        filters: A dictionary containing any filters to be applied.
+        filters (dict): A dictionary containing any filters to be applied.
+        refresh (bool): If True, refreshes the status of all jobs before displaying them.
 
     """
     from qbraid.providers import QuantumJob  # pylint: disable=import-outside-toplevel
@@ -137,7 +138,7 @@ def get_jobs(filters: Optional[dict] = None):
             status = document["qbraidStatus"]
         except KeyError:
             status = "UNKNOWN"
-        if not QuantumJob.status_final(status):
+        if refresh and not QuantumJob.status_final(status):
             try:
                 qbraid_job = job_wrapper(job_id)
                 status_obj = qbraid_job.status()

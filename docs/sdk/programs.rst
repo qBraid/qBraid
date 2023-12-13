@@ -1,6 +1,6 @@
-.. _guide_circuits:
+.. _sdk_programs:
 
-Circuits
+Programs
 =========
 
 In this module, you will learn how to use the qBraid SDK to interface with
@@ -26,6 +26,7 @@ Supported frontend program types include `Qiskit <QiskitQuantumCircuit>`_,
     qiskit.circuit.quantumcircuit.QuantumCircuit
     pyquil.quil.Program
     pytket._tket.circuit.Circuit
+    openqasm3.ast.Program
     qasm2
     qasm3
 
@@ -92,7 +93,7 @@ Transpiler
 
 Now, we can use the ``qbraid.transpiler.QuantumProgram.transpile`` method to convert to wrapped circuit into
 any other supported program type. Simply pass in the name of the target package from one of ``qbraid.QPROGRAM_LIBS``.
-For example, use input ``"braket"`` to return a ``braket.circuits.Circuit``:
+For example, use input "braket" to return a ``braket.circuits.Circuit``:
 
 .. code-block:: python
 
@@ -117,36 +118,8 @@ This time, using the same origin circuit wrapper, we'll input ``"pyquil"`` to re
     CNOT 0 1
 
 
-Interface
------------
-
-The ``qbraid.programs.testing`` module contains a number of functions that can be helpful for testing, quick calculations,
-verification, or other general use.
-
-Random circuits
-^^^^^^^^^^^^^^^^^
-
-The ``random_circuit`` function creates a random circuit of any supported frontend program type. Here, we've created a
-random ``cirq.Circuit`` with four qubits and depth four.
-
-.. code-block:: python
-
-    >>> from qbraid.programs import random_circuit
-    >>> cirq_circuit = random_circuit("cirq", num_qubits=4, depth=4)
-    >>> print(cirq_circuit)
-          ┌──────┐   ┌──┐           ┌──┐
-    0: ────iSwap───────@────@───Z──────────
-           │           │    │
-    1: ────┼──────────X┼────@───@────@─────
-           │          ││        │    │
-    2: ────┼────Z─────┼@────────X────┼H────
-           │          │              │
-    3: ────iSwap──────@─────H────────X─────
-          └──────┘   └──┘           └──┘
-
-
 Unitary calculations
-^^^^^^^^^^^^^^^^^^^^^
+----------------------
 
 The ``unitary`` method will calculate the matrix representation of an input circuit of any
 supported program type.
@@ -187,7 +160,7 @@ It applies the ``unitary`` method to both input circuits, compares the outputs v
 
 
 Qubit Indexing
-^^^^^^^^^^^^^^^
+----------------
 
 As a tool for interfacing between frontend modules, the qBrad SDK has a number of
 methods and functions dedicated to resolving any potential compatibility issues. For
@@ -263,3 +236,27 @@ performing the qubit mapping.
     q4 : -----X-
 
     T  : |0|1|2|
+
+
+Random circuits
+-----------------
+
+The ``qbraid.programs.testing`` module contains a number of functions that can be helpful for testing, quick calculations,
+verification, or other general use. One of these is the ``random_circuit`` function, which creates a random circuit of any
+supported frontend program type. Here, we've created a random ``cirq.Circuit`` with four qubits and depth four:
+
+.. code-block:: python
+
+    >>> from qbraid.programs import random_circuit
+    >>> cirq_circuit = random_circuit("cirq", num_qubits=4, depth=4)
+    >>> print(cirq_circuit)
+          ┌──────┐   ┌──┐           ┌──┐
+    0: ────iSwap───────@────@───Z──────────
+           │           │    │
+    1: ────┼──────────X┼────@───@────@─────
+           │          ││        │    │
+    2: ────┼────Z─────┼@────────X────┼H────
+           │          │              │
+    3: ────iSwap──────@─────H────────X─────
+          └──────┘   └──┘           └──┘
+

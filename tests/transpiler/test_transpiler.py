@@ -34,11 +34,11 @@ from qbraid.converter import convert_to_package
 from qbraid.exceptions import PackageValueError, ProgramTypeError
 from qbraid.programs.testing.circuit_equality import _equal
 
-from .._data.braket.gates import braket_gates as braket_gates_dict
-from .._data.cirq.gates import cirq_gates as cirq_gates_dict
-from .._data.cirq.gates import create_cirq_gate
-from .._data.programs import bell_data, shared15_data
-from .._data.qiskit.gates import qiskit_gates as qiskit_gates_dict
+from ..fixtures.braket.gates import braket_gates as braket_gates_dict
+from ..fixtures.cirq.gates import cirq_gates as cirq_gates_dict
+from ..fixtures.cirq.gates import create_cirq_gate
+from ..fixtures.programs import bell_data, shared15_data
+from ..fixtures.qiskit.gates import qiskit_gates as qiskit_gates_dict
 
 TEST_15, UNITARY_15 = shared15_data()
 TEST_BELL, UNITARY_BELL = bell_data()

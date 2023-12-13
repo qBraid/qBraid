@@ -96,7 +96,9 @@ Documentation
    :hidden:
 
    sdk/overview
-   sdk/circuits
+   sdk/programs
+   sdk/transpiler
+   sdk/providers
    sdk/devices
    sdk/jobs
    sdk/results

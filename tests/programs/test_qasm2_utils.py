@@ -17,7 +17,12 @@ import pytest
 
 from qbraid import circuit_wrapper
 
-from .._data.qasm2.circuits import _read_qasm_file, qasm2_bell, qasm2_cirq_shared15, qasm2_shared15
+from ..fixtures.qasm2.circuits import (
+    _read_qasm_file,
+    qasm2_bell,
+    qasm2_cirq_shared15,
+    qasm2_shared15,
+)
 
 
 def test_qasm_qubits():

@@ -14,7 +14,6 @@ Module for performing QASM program checks before conversion
 """
 from openqasm3.parser import QASM3ParsingError, parse
 
-from ._qprogram import QPROGRAM_LIBS
 from .exceptions import QasmError
 
 
@@ -31,35 +30,11 @@ def get_qasm_version(qasm_str: str) -> str:
         :class:`~qbraid.QasmError`: If string does not represent a valid OpenQASAM program.
 
     """
+    qasm_str = qasm_str.replace("opaque", "// opaque")
+
     try:
         program = parse(qasm_str)
         verion = int(float(program.version))
         return f"qasm{verion}"
     except QASM3ParsingError as err:
         raise QasmError("Failed to parse OpenQASM program.") from err
-
-
-def is_valid_qasm2(qasm_str: str) -> bool:
-    """Checks if input string is a valid OpenQASM 2 program.
-
-    NOTE: This should actually go in programs as a way to validate input qasm2 strings.
-
-    Args:
-        qasm_str: An OpenQASM program string
-
-    Returns:
-        bool: True if input string is a valid OpenQASM 2 program, False otherwise
-
-    """
-    if "qiskit" not in QPROGRAM_LIBS:
-        return "OPENQASM 2" in qasm_str
-
-    # pylint: disable=import-outside-toplevel
-    from qiskit import QuantumCircuit
-    from qiskit.qasm2 import QASM2ParseError
-
-    try:
-        _ = QuantumCircuit.from_qasm_str(qasm_str)
-    except QASM2ParseError:
-        return False
-    return True

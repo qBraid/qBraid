@@ -17,7 +17,7 @@ import qiskit
 
 import qbraid
 
-from ..._data.qiskit.gates import get_qiskit_gates
+from ...fixtures.qiskit.gates import get_qiskit_gates
 
 TARGETS = [("braket", 0.98), ("cirq", 0.98), ("pyquil", 0.81), ("pytket", 0.98)]
 qiskit_gates = get_qiskit_gates(seed=0)

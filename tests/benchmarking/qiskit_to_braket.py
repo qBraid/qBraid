@@ -17,7 +17,7 @@ import qiskit_braket_provider
 
 import qbraid
 
-from .._data.qiskit.gates import get_qiskit_gates
+from ..fixtures.qiskit.gates import get_qiskit_gates
 
 
 def execute_test(conversion_function, input_circuit):

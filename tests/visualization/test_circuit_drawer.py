@@ -20,7 +20,7 @@ from qbraid import circuit_wrapper
 from qbraid.exceptions import ProgramTypeError, VisualizationError
 from qbraid.visualization.draw_circuit import circuit_drawer
 
-from .._data.programs import bell_data
+from ..fixtures.programs import bell_data
 
 bell_map, _ = bell_data()
 braket_bell = bell_map["braket"]()

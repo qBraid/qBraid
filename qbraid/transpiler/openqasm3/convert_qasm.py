@@ -16,7 +16,7 @@ import os
 
 import openqasm3
 
-from qbraid.qasm_checks import is_valid_qasm2
+from qbraid.qasm_checks import get_qasm_version
 from qbraid.transpiler.qasm_qelib1 import _decompose_rxx_instr
 
 QASMType = str
@@ -108,7 +108,8 @@ def qasm2_to_qasm3(qasm_str: str) -> QASMType:
     Returns:
         str: OpenQASM 3.0 string
     """
-    if not is_valid_qasm2(qasm_str):
+    qasm_version = get_qasm_version(qasm_str)
+    if not qasm_version == "qasm2":
         raise ValueError("Invalid OpenQASM 2.0 string")
 
     qasm3_str = "OPENQASM 3.0;\ninclude 'stdgates.inc';"

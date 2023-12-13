@@ -17,7 +17,7 @@ import pytest
 from qbraid.programs.testing.circuit_equality import circuits_allclose
 from qbraid.programs.testing.random import random_circuit
 
-from .._data.programs import bell_data, shared15_data
+from ..fixtures.programs import bell_data, shared15_data
 
 bell_map, _ = bell_data()
 braket_bell = bell_map["braket"]()

@@ -26,10 +26,10 @@ def plot_conversion_graph(graph: nx.Graph) -> None:
     Returns:
         None
     """
-    pos = nx.spring_layout(graph)
-    nx.draw_networkx_nodes(graph, pos, node_color="lightblue", node_size=500)
-    nx.draw_networkx_edges(graph, pos, edge_color="gray")
+    pos = nx.spring_layout(graph, seed=123)
+    nx.draw_networkx_nodes(graph, pos, node_color="lightblue", node_size=1200)
+    nx.draw_networkx_edges(graph, pos, edge_color="gray", min_target_margin=18)
     nx.draw_networkx_labels(graph, pos)
-    plt.title("Program Conversion Graph")
+    plt.title("qBraid Quantum Program Conversion Graph")
     plt.axis("off")
     plt.show()
