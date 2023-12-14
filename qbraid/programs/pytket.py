@@ -65,7 +65,7 @@ class PytketCircuit(QuantumProgram):
         """Return the unitary of a pytket circuit."""
         return self.program.get_unitary()
 
-    def collapse_empty_registers(self) -> None:
+    def remove_idle_qubits(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
         circuit = self.program.copy()

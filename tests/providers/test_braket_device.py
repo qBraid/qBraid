@@ -13,9 +13,10 @@ Unit tests for BraketDevice class
 
 """
 import os
+from datetime import datetime
 
 import pytest
-from braket.aws import AwsDevice
+from braket.aws.aws_device import AwsDevice
 from braket.tasks.quantum_task import QuantumTask as AwsQuantumTask
 from qiskit import QuantumCircuit as QiskitCircuit
 
@@ -147,6 +148,11 @@ def test_wait_for_final_state():
 def test_aws_device_available():
     """Test BraketDeviceWrapper avaliable output identical"""
     device = device_wrapper("aws_dm_sim")
-    is_available_bool, is_available_time = device.is_available
+    is_available_bool, is_available_time, iso_str = device.availability_window()
     assert is_available_bool == device._device.is_available
     assert len(is_available_time.split(":")) == 3
+    assert isinstance(iso_str, str)
+    try:
+        datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%SZ")
+    except ValueError:
+        pytest.fail("iso_str not in expected format")

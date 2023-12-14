@@ -126,7 +126,7 @@ c[2] = measure q[2];
     _check_output(circuit, out__expected)
 
 
-def test_collapse_empty_registers_qasm3_expansion():
+def test_populate_idle_qubits_qasm3():
     """Test conversion of qasm3 to contiguous qasm3"""
     qasm_test = """
     OPENQASM 3.0;
@@ -148,11 +148,11 @@ def test_collapse_empty_registers_qasm3_expansion():
     qasm_expected = qasm_test + """i q1[1];\ni q2[1];\ni q4[0];\n"""
 
     qprogram = circuit_wrapper(qasm_test)
-    qprogram.populate_empty_registers()
+    qprogram.populate_idle_qubits()
     assert qprogram.program == qasm_expected
 
 
-def test_collapse_empty_registers_qasm3():
+def test_remove_idle_qubits_qasm3():
     """Test conversion of qasm3 to compressed contiguous qasm3"""
     qasm_test = """
     OPENQASM 3.0;
@@ -203,7 +203,7 @@ def test_collapse_empty_registers_qasm3():
     """
 
     qprogram = circuit_wrapper(qasm_test)
-    qprogram.collapse_empty_registers()
+    qprogram.remove_idle_qubits()
     assert qprogram.program == qasm_expected
 
 

@@ -62,7 +62,7 @@ class PyQuilProgram(QuantumProgram):
         """Return the unitary of a pyQuil program."""
         return program_unitary(self.program, n_qubits=self.num_qubits)
 
-    def collapse_empty_registers(self) -> None:
+    def remove_idle_qubits(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
         raise NotImplementedError

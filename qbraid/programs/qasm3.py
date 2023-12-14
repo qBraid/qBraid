@@ -204,7 +204,7 @@ class OpenQasm3Program(QuantumProgram):
 
         return qasm_str
 
-    def populate_empty_registers(self) -> None:
+    def populate_idle_qubits(self) -> None:
         """Converts OpenQASM 3 string to contiguous qasm3 string with gate expansion.
 
         No loops OR custom functions supported at the moment.
@@ -220,7 +220,7 @@ class OpenQasm3Program(QuantumProgram):
 
         self._program = self.program + expansion_qasm
 
-    def collapse_empty_registers(self) -> None:
+    def remove_idle_qubits(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
         qasm_str = self.program

@@ -30,6 +30,14 @@ if TYPE_CHECKING:
     import qbraid
 
 
+def _future_utc_datetime(hours: int, minutes: int, seconds: int) -> str:
+    """Return a UTC datetime that is hours, minutes, and seconds from now
+    as an ISO string without fractional seconds."""
+    current_utc = datetime.utcnow()
+    future_time = current_utc + timedelta(hours=hours, minutes=minutes, seconds=seconds)
+    return future_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 class BraketDevice(QuantumDevice):
     """Wrapper class for Amazon Braket ``Device`` objects."""
 
@@ -70,12 +78,14 @@ class BraketDevice(QuantumDevice):
 
         return DeviceStatus.OFFLINE
 
-    @property
-    def is_available(self) -> Tuple[bool, str]:
-        """Returns true if the device is currently available, and the available time.
+    def availability_window(self) -> Tuple[bool, str, str]:
+        """Provides device availability status. Indicates current availability,
+        time remaining (hours, minutes, seconds) until next availability or
+        unavailability, and future UTC datetime of next change in availability status.
 
         Returns:
-            Tuple[bool, str]: Current device availability and hr/min/sec until next available.
+            Tuple[bool, str, str]: Current device availability, hr/min/sec until availability
+                                   switch, future UTC datetime of availability switch
         """
 
         is_available_result = False
@@ -171,10 +181,9 @@ class BraketDevice(QuantumDevice):
         hours = available_time // 3600
         minutes = (available_time // 60) % 60
         seconds = available_time - hours * 3600 - minutes * 60
-        time_lst = [hours, minutes, seconds]
-        time_str_lst = [str(x) if x >= 10 else f"0{x}" for x in time_lst]
-        available_time_hms = ":".join(time_str_lst)
-        return is_available_result, available_time_hms
+        available_time_hms = f"{hours:02}:{minutes:02}:{seconds:02}"
+        utc_datetime_str = _future_utc_datetime(hours, minutes, seconds)
+        return is_available_result, available_time_hms, utc_datetime_str
 
     def queue_depth(self) -> int:
         """Return the number of jobs in the queue for the device"""

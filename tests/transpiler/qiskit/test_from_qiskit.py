@@ -109,7 +109,7 @@ def test_qiskit_roundtrip_noncontig():
     qiskit_circuit.cs(2, 0)
     cirq_circuit = convert_to_package(qiskit_circuit, "cirq")
     qprogram = circuit_wrapper(cirq_circuit)
-    qprogram.collapse_empty_registers()
+    qprogram.remove_idle_qubits()
     qiskit_contig = qprogram.program
     assert circuits_allclose(qiskit_contig, cirq_circuit, strict_gphase=False)
 
