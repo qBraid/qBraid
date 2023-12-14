@@ -89,10 +89,7 @@ def job_wrapper(qbraid_job_id: str):
     except (KeyError, QbraidError):
         qbraid_device = None
 
-    try:
-        status_str = job_data["status"]
-    except KeyError:
-        status_str = "UNKNOWN"
+    status_str = job_data.get("qbraidStatus", job_data.get("status", "UNKNOWN"))
     vendor_job_id = job_data["vendorJobId"]
     vendor = qbraid_device.vendor.lower()
     devices_entrypoints = _get_entrypoints("qbraid.providers")
