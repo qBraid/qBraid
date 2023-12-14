@@ -119,7 +119,7 @@ class CirqCircuit(QuantumProgram):
         a Cirq circuit constructed using LineQubits."""
         qubits = list(self.program.all_qubits())
         qubits.sort()
-        qubit_map = {self._key_from_qubit(q): i for i, q in enumerate(qubits)}
+        qubit_map = {self._key_from_qubit(q): self._int_from_qubit(q) for _, q in enumerate(qubits)}
         line_qubit_circuit = cirq.Circuit()
         for opr in self.program.all_operations():
             qubit_indicies = [qubit_map[self._key_from_qubit(q)] for q in opr.qubits]
@@ -134,6 +134,7 @@ class CirqCircuit(QuantumProgram):
         cirq_qubits = list(circuit.all_qubits())
         if isinstance(cirq_qubits[0], cirq.NamedQubit):
             self._convert_to_line_qubits()
+            self.populate_empty_registers()
             return
 
         nqubits = 0
