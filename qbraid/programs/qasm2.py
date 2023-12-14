@@ -154,7 +154,7 @@ class OpenQasm2Program(QuantumProgram):
         """Return the unitary of the QASM"""
         return qasm2_to_cirq(self.program).unitary()
 
-    def collapse_empty_registers(self) -> None:
+    def remove_idle_qubits(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
         raise NotImplementedError

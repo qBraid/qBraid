@@ -63,7 +63,7 @@ class BraketCircuit(QuantumProgram):
         """Calculate unitary of circuit."""
         return self.program.to_unitary()
 
-    def populate_empty_registers(self) -> None:
+    def populate_idle_qubits(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, adds identity gates to vacant registers as needed."""
         max_qubit = 0
@@ -82,7 +82,7 @@ class BraketCircuit(QuantumProgram):
                 circuit.i(index)
         self._program = circuit
 
-    def collapse_empty_registers(self) -> None:
+    def remove_idle_qubits(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
         qubit_map = {}

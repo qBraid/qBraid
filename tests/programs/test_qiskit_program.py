@@ -37,12 +37,12 @@ def test_reverse_qubit_order():
     ), "The reversed circuit does not match the expected output."
 
 
-def test_collapse_empty_registers_qiskit():
+def test_remove_idle_qubits_qiskit():
     """Test convert_to_contigious on qiskit circuit"""
     circuit = QuantumCircuit(3)
     circuit.h(0)
     circuit.cx(0, 1)
     qprogram = QiskitCircuit(circuit)
-    qprogram.collapse_empty_registers()
+    qprogram.remove_idle_qubits()
     contig_circuit = qprogram.program
     assert contig_circuit.num_qubits == 2

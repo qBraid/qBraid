@@ -100,17 +100,17 @@ def test_collapse_empty_braket_cirq():
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
     qprogram = circuit_wrapper(braket_circuit)
-    qprogram.collapse_empty_registers()
+    qprogram.remove_idle_qubits()
     braket_compat_circuit = qprogram.program
     assert braket_compat_circuit.qubit_count == 3
 
     qprogram = circuit_wrapper(cirq_circuit)
-    qprogram.collapse_empty_registers()
+    qprogram.remove_idle_qubits()
     cirq_compat_circuit = qprogram.program
     assert circuits_allclose(braket_compat_circuit, cirq_compat_circuit, strict_gphase=True)
 
     qprogram = circuit_wrapper(cirq_circuit)
-    qprogram.populate_empty_registers()
+    qprogram.populate_idle_qubits()
     cirq_expanded_circuit = qprogram.program
     assert len(cirq_expanded_circuit.all_qubits()) == 5
 
