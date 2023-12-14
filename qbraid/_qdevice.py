@@ -42,13 +42,12 @@ def __dynamic_importer(opt_modules: List[str]) -> list:
     return imported
 
 
+# pylint: disable=undefined-variable,inconsistent-return-statements
 def __get_class(module: str):
-    # pylint: disable=undefined-variable
-    module_to_class_map = {
-        "qiskit_ibm_provider": qiskit_ibm_provider.IBMBackend,  # type: ignore
-        "braket.aws": braket.aws.AwsDevice,  # type: ignore
-    }
-    return module_to_class_map.get(module)  # Returns None if module not found
+    if module == "qiskit_ibm_provider":
+        return qiskit_ibm_provider.IBMBackend  # type: ignore
+    if module == "braket.aws":
+        return braket.aws.AwsDevice  # type: ignore
 
 
 # Supported quantum devices.

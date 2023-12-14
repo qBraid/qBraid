@@ -24,9 +24,9 @@ try:
 except ImportError:
     pass
 
-from qbraid._display import running_in_jupyter, update_progress_bar
-from qbraid.api import ApiError, QbraidSession
-from qbraid.load_provider import device_wrapper
+from ._display import running_in_jupyter, update_progress_bar
+from .api import ApiError, QbraidSession
+from .load_provider import device_wrapper
 
 
 def refresh_devices():
