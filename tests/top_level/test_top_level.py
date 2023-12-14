@@ -19,11 +19,11 @@ from unittest.mock import Mock
 import pytest
 
 from qbraid import __version__
+from qbraid._display import running_in_jupyter, update_progress_bar
 from qbraid._warnings import _warn_new_version
 from qbraid.exceptions import PackageValueError
 from qbraid.get_devices import get_devices
 from qbraid.get_jobs import _display_jobs_jupyter, get_jobs
-from qbraid.visualization.display_utils import running_in_jupyter, update_progress_bar
 
 # pylint: disable=missing-function-docstring,redefined-outer-name
 

@@ -46,23 +46,20 @@ def __dynamic_importer(opt_modules: List[str]) -> list:
     return imported
 
 
+# pylint: disable=undefined-variable,inconsistent-return-statements
 def __get_class(module: str):
-    match module:
-        # pylint: disable=undefined-variable
-        case "cirq":
-            return cirq.Circuit  # type: ignore
-        case "qiskit":
-            return qiskit.QuantumCircuit  # type: ignore
-        case "braket.circuits":
-            return braket.circuits.Circuit  # type: ignore
-        case "pyquil":
-            return pyquil.Program  # type: ignore
-        case "pytket":
-            return pytket._tket.circuit.Circuit  # type: ignore
-        case "openqasm3":
-            return openqasm3.ast.Program  # type: ignore
-        case _:
-            pass
+    if module == "cirq":
+        return cirq.Circuit  # type: ignore
+    if module == "qiskit":
+        return qiskit.QuantumCircuit  # type: ignore
+    if module == "braket.circuits":
+        return braket.circuits.Circuit  # type: ignore
+    if module == "pyquil":
+        return pyquil.Program  # type: ignore
+    if module == "pytket":
+        return pytket._tket.circuit.Circuit  # type: ignore
+    if module == "openqasm3":
+        return openqasm3.ast.Program  # type: ignore
 
 
 # Supported quantum programs.
