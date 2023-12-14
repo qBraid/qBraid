@@ -24,9 +24,9 @@ try:
 except ImportError:
     pass
 
+from ._display import running_in_jupyter, update_progress_bar
 from .api import QbraidSession
 from .load_provider import job_wrapper
-from .visualization.display_utils import running_in_jupyter, update_progress_bar
 
 
 def _display_jobs_basic(data, msg):
@@ -141,7 +141,7 @@ def get_jobs(filters: Optional[dict] = None, refresh: bool = False):
         if refresh and not QuantumJob.status_final(status):
             try:
                 qbraid_job = job_wrapper(job_id)
-                status_obj = qbraid_job.status()
+                status_obj = qbraid_job.status()  # TODO: surpress warnings here
                 status = status_obj.name
             except Exception:  # pylint: disable=broad-except
                 pass
