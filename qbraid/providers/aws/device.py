@@ -94,7 +94,7 @@ class BraketDevice(QuantumDevice):
         device = self._device
 
         if device.status != "ONLINE":
-            return is_available_result, ""
+            return is_available_result, "", ""
 
         day = 0
 
@@ -178,6 +178,7 @@ class BraketDevice(QuantumDevice):
         if available_time is None:
             return is_available_result, ""
 
+        print(available_time)
         hours = available_time // 3600
         minutes = (available_time // 60) % 60
         seconds = available_time - hours * 3600 - minutes * 60
