@@ -104,7 +104,8 @@ def is_available(device: AwsDevice) -> bool:
 
     next_available_datetime = None
     for execution_window in device.properties.service.executionWindows:
-        is_available_result, future_utc_datetime = next_availability(execution_window)
+        is_available_result = is_within_execution_window(execution_window)
+        _, future_utc_datetime = next_availability(execution_window)
         if is_available_result:
             return is_available_result, future_utc_datetime
 
