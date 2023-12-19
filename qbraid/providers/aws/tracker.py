@@ -33,10 +33,12 @@ def _generate_creation_event(boto_data: Dict[str, Any]) -> _TaskCreationEvent:
     )
 
 
-def _generate_completion_event(boto_data: Dict[str, Any]) -> _TaskCompletionEvent:
+def _generate_completion_event(
+    boto_data: Dict[str, Any], aws_session: Optional[AwsSession] = None
+) -> _TaskCompletionEvent:
     """Generate a task completion event."""
     task_arn = boto_data["quantumTaskArn"]
-    result = AwsQuantumTask(task_arn).result()
+    result = AwsQuantumTask(task_arn, aws_session=aws_session).result()
     execution_duration = None
     try:
         execution_duration = result.additional_metadata.simulatorMetadata.executionDuration
@@ -51,12 +53,14 @@ def _generate_completion_event(boto_data: Dict[str, Any]) -> _TaskCompletionEven
     return _TaskCompletionEvent(**completion_data)
 
 
-def _get_tracker_task_details(boto_data: Dict[str, Any]) -> Dict[str, Any]:
+def _get_tracker_task_details(
+    boto_data: Dict[str, Any], aws_session: Optional[AwsSession] = None
+) -> Dict[str, Any]:
     """Get the quantum task details populated by the Amazon Braket cost tracker."""
     tracker = Tracker()
     register_tracker(tracker)
     creation_event = _generate_creation_event(boto_data)
-    completion_event = _generate_completion_event(boto_data)
+    completion_event = _generate_completion_event(boto_data, aws_session=aws_session)
     tracker.receive_event(creation_event)
     tracker.receive_event(completion_event)
 
@@ -107,7 +111,7 @@ def get_quantum_task_cost(task_arn: str, aws_session: Optional[AwsSession] = Non
         "QPU": _get_qpu_task_cost,
     }
 
-    details = _get_tracker_task_details(response)
+    details = _get_tracker_task_details(response, aws_session=aws_session)
 
     try:
         return task_cost[device_type](task_arn, details)
