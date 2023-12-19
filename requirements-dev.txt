@@ -6,7 +6,7 @@ pyquil~=4.4.0
 pytket~=1.22.0
 pytket-braket~=0.32.0
 qiskit~=0.45.1
-qiskit-ibm-provider~=0.7.2
+qiskit-ibm-provider~=0.7.3
 qiskit-qasm3-import>=0.2.0,<0.5.0
 # aide-qc
 
