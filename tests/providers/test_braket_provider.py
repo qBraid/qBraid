@@ -79,6 +79,7 @@ def test_job_wrapper_type():
     assert job_0.vendor_job_id == job_1.metadata()["vendorJobId"]
 
 
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_is_available():
     """Test device availability function."""
     provider = BraketProvider()
