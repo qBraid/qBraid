@@ -84,5 +84,5 @@ def test_is_available():
     provider = BraketProvider()
     devices = provider.get_devices()
     for device in devices:
-        is_available_bool, time = is_available(device)
+        is_available_bool, _ = is_available(device)
         assert device.is_available == is_available_bool

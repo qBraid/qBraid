@@ -24,6 +24,7 @@ def is_within_execution_window(execution_window: DeviceExecutionWindow) -> bool:
     current_day = current_utc.strftime("%A")
     current_time = current_utc.time()
 
+    # pylint: disable=too-many-boolean-expressions
     # Check if the current day matches the execution day
     if (
         execution_window.executionDay == ExecutionDay.EVERYDAY
@@ -55,10 +56,11 @@ def next_availability(execution_window: DeviceExecutionWindow) -> (bool, datetim
     def add_day(date: datetime, day_type: str) -> datetime:
         if day_type == "weekday":
             return date + timedelta(days=1 if date.weekday() < 4 else 3)
-        elif day_type == "weekend":
+        if day_type == "weekend":
             return date + timedelta(days=1 if date.weekday() == 5 else 6 - date.weekday())
         return date + timedelta(days=1)
 
+    # pylint: disable=too-many-boolean-expressions
     # Check if the current day matches the execution day
     if (
         execution_window.executionDay == ExecutionDay.EVERYDAY
@@ -77,7 +79,7 @@ def next_availability(execution_window: DeviceExecutionWindow) -> (bool, datetim
         if window_start <= current_utc <= window_end:
             # Currently within execution window
             return True, window_end
-        elif current_utc < window_start:
+        if current_utc < window_start:
             # Before today's execution window
             return False, window_start
 
@@ -113,9 +115,3 @@ def is_available(device: AwsDevice) -> bool:
             next_available_datetime = future_utc_datetime
 
     return False, next_available_datetime
-
-
-# device = AwsDevice("arn:aws:braket:eu-west-2::device/qpu/oqc/Lucy")
-# execution_window = device.properties.service.executionWindows[0]
-# availability, next_change = next_availability(execution_window)
-# print(f"Is Available: {availability}, Next Change: {next_change}")
