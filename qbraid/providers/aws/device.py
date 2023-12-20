@@ -94,7 +94,7 @@ class BraketDevice(QuantumDevice):
         device = self._device
 
         if device.status != "ONLINE":
-            return is_available_result, ""
+            return is_available_result, "", ""
 
         day = 0
 
