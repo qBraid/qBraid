@@ -17,6 +17,7 @@ jobs submitted through the qBraid SDK.
 """
 
 import os
+import warnings
 from typing import Optional
 
 try:
@@ -33,11 +34,23 @@ def _display_jobs_basic(data, msg):
     if len(data) == 0:
         print(msg)
     else:
+        headers = ["Job ID", "Submitted", "Status"]
+
+        max_job_id_length = max(len(str(job_id)) for job_id, _, _ in data)
+        max_job_id_length = max(max_job_id_length, len(headers[0]))
+
+        header_format = "{:<" + str(max_job_id_length) + "} {:<25} {:<15}"
+        separator_format = "{:<" + str(max_job_id_length) + "} {:<25} {:<15}"
+        row_format = "{:<" + str(max_job_id_length) + "} {:<25} {:<15}"
+
         print(f"{msg}:\n")
-        print("{:<55} {:<25} {:<15}".format("Job ID", "Submitted", "Status"))
-        print("{:<55} {:<25} {:<15}".format("-" * 6, "-" * 9, "-" * 6))
+        print(header_format.format(*headers))
+
+        separators = ["-" * len(header) for header in headers]
+        print(separator_format.format(*separators))
+
         for job_id, timestamp, status in data:
-            print("{:<55} {:<25} {:<15}".format(job_id, timestamp, status))
+            print(row_format.format(job_id, timestamp, status))
 
 
 def _display_jobs_jupyter(data, msg):
@@ -54,7 +67,14 @@ def _display_jobs_jupyter(data, msg):
             color = "green"
         elif status_str == "FAILED":
             color = "red"
-        elif status_str in ["INITIALIZING", "QUEUED", "VALIDATING", "RUNNING"]:
+        elif status_str in [
+            "INITIALIZING",
+            "INITIALIZED",
+            "CREATED",
+            "QUEUED",
+            "VALIDATING",
+            "RUNNING",
+        ]:
             color = "blue"
         else:
             color = "grey"
@@ -74,7 +94,9 @@ def _display_jobs_jupyter(data, msg):
     return display(HTML(html))
 
 
-def get_jobs(filters: Optional[dict] = None, refresh: bool = False):
+def get_jobs(
+    filters: Optional[dict] = None, refresh: bool = False
+):  # pylint: disable=too-many-statements
     """Displays a list of quantum jobs submitted by user, tabulated by job ID,
     the date/time it was submitted, and status. You can specify filters to
     narrow the search by supplying a dictionary containing the desired criteria.
@@ -116,6 +138,7 @@ def get_jobs(filters: Optional[dict] = None, refresh: bool = False):
     from qbraid.providers import QuantumJob  # pylint: disable=import-outside-toplevel
 
     query = {} if filters is None else filters
+    # TODO: account for circuitNumQubits possible migration to qubitCount in API
 
     session = QbraidSession()
     jobs = session.post("/get-user-jobs", json=query).json()
@@ -132,20 +155,28 @@ def get_jobs(filters: Optional[dict] = None, refresh: bool = False):
         count += 1
         progress = count / num_jobs
         update_progress_bar(progress)
-        job_id = document["qbraidJobId"]
-        timestamp = document["timeStamps"]["jobStarted"]
+        job_id = document.get("_id", document.get("qbraidJobId"))
+        if job_id is None:
+            continue
+        created_at = document.get("createdAt")
+        if created_at is None:
+            timestamps = document.get("timestamps", {})
+            created_at = timestamps.get("createdAt", timestamps.get("jobStarted"))
+        status = document.get("qbraidStatus", document.get("status", "UNKNOWN"))
         try:
-            status = document["qbraidStatus"]
-        except KeyError:
-            status = "UNKNOWN"
-        if refresh and not QuantumJob.status_final(status):
+            status_final = QuantumJob.status_final(status)
+        except Exception:  # pylint: disable=broad-except
+            status_final = True
+        if refresh and not status_final:
             try:
                 qbraid_job = job_wrapper(job_id)
-                status_obj = qbraid_job.status()  # TODO: surpress warnings here
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    status_obj = qbraid_job.status()
                 status = status_obj.name
             except Exception:  # pylint: disable=broad-except
                 pass
-        job_data.append([job_id, timestamp, status])
+        job_data.append([job_id, created_at, status])
 
     if num_jobs == 0:  # Design choice whether to display anything here or not
         if len(query) == 0:

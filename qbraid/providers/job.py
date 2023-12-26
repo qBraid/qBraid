@@ -63,7 +63,30 @@ class QuantumJob(ABC):
     @property
     def device(self) -> "qbraid.providers.QuantumDevice":
         """Returns the qbraid QuantumDevice object associated with this job."""
+        if self._device is None:
+            self._fetch_and_set_device()
         return self._device
+
+    def _fetch_and_set_device(self) -> None:
+        """Fetches device id from the server and sets the device object."""
+        session = QbraidSession()
+        job_lst = session.post(
+            "/get-user-jobs",
+            json={"$or": [{"qbraidJobId": self.id}, {"_id": self.id}], "numResults": 1},
+        ).json()
+
+        if len(job_lst) == 0:
+            raise JobError(f"Could not find device associated with job {self.id}.")
+
+        job_data = job_lst[0]
+
+        try:
+            import qbraid  # pylint: disable=import-outside-toplevel
+
+            vendor_device_id = job_data["vendorDeviceId"]
+            self._device = qbraid.device_wrapper(vendor_device_id)
+        except Exception as err:  # pylint: disable=broad-except
+            raise JobError(f"Could not find device associated with job {self.id}.") from err
 
     @staticmethod
     def _map_status(status: Optional[Union[str, JobStatus]] = None) -> JobStatus:
