@@ -105,7 +105,7 @@ def generate_params(varnames: List[str], seed: Optional[int] = None):
 def get_braket_gates(seed: Optional[int] = None):
     """Returns a dictionary of all braket gates with random parameters"""
     braket_gates = {attr: None for attr in dir(Gate) if attr[0] in string.ascii_uppercase}
-    for gate in ["C", "PulseGate"]:
+    for gate in ["C", "PulseGate", "GPhase"]:
         braket_gates.pop(gate, None)
 
     for gate in braket_gates:
