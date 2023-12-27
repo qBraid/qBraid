@@ -78,12 +78,16 @@ def job_wrapper(qbraid_job_id: str):
     """
     session = QbraidSession()
     job_lst = session.post(
-        "/get-user-jobs",
-        json={"$or": [{"qbraidJobId": qbraid_job_id}, {"_id": qbraid_job_id}], "numResults": 1},
+        "/get-user-jobs", json={"qbraidJobId": qbraid_job_id, "numResults": 1}
     ).json()
 
     if len(job_lst) == 0:
-        raise QbraidError(f"{qbraid_job_id} is not a valid job ID.")
+        job_lst = session.post(
+            "/get-user-jobs", json={"_id": qbraid_job_id, "numResults": 1}
+        ).json()
+
+        if len(job_lst) == 0:
+            raise QbraidError(f"{qbraid_job_id} is not a valid job ID.")
 
     job_data = job_lst[0]
 

@@ -39,18 +39,33 @@ class QuantumJob(ABC):
         vendor_job_obj: Optional[Any] = None,
         status: Optional[Union[str, JobStatus]] = None,
     ):
+        self._vendor = None
         self._cache_metadata = None
         self._cache_status = self._map_status(status)
         self._job_id = job_id
         self._vendor_job_id = vendor_job_id
         self._device = device
         self._job = vendor_job_obj or self._get_job()
-        self._status_map = STATUS_MAP[self.device.vendor]
+        self._status_map = STATUS_MAP[self.vendor]
 
     @property
     def id(self) -> str:  # pylint: disable=invalid-name
         """Return a unique id identifying the job."""
         return self._job_id
+
+    @property
+    def vendor(self) -> str:
+        """Get job vendor."""
+        if self._vendor is not None:
+            return self._vendor
+
+        try:
+            vendor = self._cache_metadata["vendor"]
+        except (KeyError, TypeError):
+            vendor = self.device.vendor
+
+        self._vendor = vendor.upper()
+        return self._vendor
 
     @property
     def vendor_job_id(self) -> str:
@@ -71,12 +86,14 @@ class QuantumJob(ABC):
         """Fetches device id from the server and sets the device object."""
         session = QbraidSession()
         job_lst = session.post(
-            "/get-user-jobs",
-            json={"$or": [{"qbraidJobId": self.id}, {"_id": self.id}], "numResults": 1},
+            "/get-user-jobs", json={"qbraidJobId": self.id, "numResults": 1}
         ).json()
 
         if len(job_lst) == 0:
-            raise JobError(f"Could not find device associated with job {self.id}.")
+            job_lst = session.post("/get-user-jobs", json={"_id": self.id, "numResults": 1}).json()
+
+            if len(job_lst) == 0:
+                raise JobError(f"Could not find device associated with job {self.id}.")
 
         job_data = job_lst[0]
 
@@ -151,14 +168,15 @@ class QuantumJob(ABC):
 
         """
         session = QbraidSession()
-        body = {"qbraidJobId": self.id}
+        body = {"qbraidJobId": self.id, "_id": self.id}
         # Two status variables so we can track both qBraid and vendor status.
         if update is not None and "status" in update and "qbraidStatus" in update:
             body["status"] = update["status"]
             body["qbraidStatus"] = update["qbraidStatus"]
         metadata = session.put("/update-job", data=body).json()[0]
-        metadata.pop("_id", None)
-        metadata.pop("user", None)
+        qbraid_id = metadata.pop("_id")
+        if "qbraidJobId" not in metadata:
+            metadata["qbraidJobId"] = qbraid_id
         return metadata
 
     def metadata(self) -> Dict[str, Any]:

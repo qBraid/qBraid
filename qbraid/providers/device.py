@@ -251,7 +251,7 @@ class QuantumDevice(ABC):
         if session._running_in_lab() and session._qbraid_jobs_enabled(vendor):
             try:
                 job = session.post("/get-user-jobs", json={"vendorJobId": vendor_job_id}).json()[0]
-                return job["qbraidJobId"]
+                return job.get("qbraidJobId", job.get("_id"))
             except IndexError as err:
                 raise ApiError(f"{self.vendor} job {vendor_job_id} not found") from err
 
