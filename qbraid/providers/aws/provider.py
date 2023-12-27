@@ -16,8 +16,12 @@ Module for configuring provider credentials and authentication.
 import os
 from typing import TYPE_CHECKING, List, Optional
 
+import boto3
 from boto3.session import Session
 from braket.aws import AwsDevice, AwsSession
+
+from qbraid.api import QbraidSession
+from qbraid.exceptions import QbraidError
 
 if TYPE_CHECKING:
     import braket.aws
@@ -32,6 +36,8 @@ class BraketProvider:
         aws_access_key_id (str): AWS access key ID for authenticating with AWS services.
         aws_secret_access_key (str): AWS secret access key for authenticating with AWS services.
     """
+
+    REGIONS = ("us-east-1", "us-west-1", "us-west-2", "eu-west-2")
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None):
         """
@@ -68,10 +74,8 @@ class BraketProvider:
 
     def _get_region_name(self, device_arn: str) -> str:
         """Returns the AWS region name."""
-        REGIONS = ("us-east-1", "us-west-1", "us-west-2", "eu-west-2")
-
         maybe_region = device_arn.split(":")[3]
-        if maybe_region in REGIONS:
+        if maybe_region in self.REGIONS:
             return maybe_region
 
         provider = device_arn.split("/")[-2]
@@ -110,3 +114,20 @@ class BraketProvider:
         region_name = self._get_region_name(device_arn)
         aws_session = self._get_aws_session(region_name=region_name)
         return AwsDevice(arn=device_arn, aws_session=aws_session)
+
+    def get_tagged_tasks(
+        self, key: str, values: Optional[List[str]] = None, region_name: Optional[str] = None
+    ) -> List[str]:
+        """Get all quantum tasks matching given tags."""
+        if QbraidSession._running_in_lab() and QbraidSession._qbraid_jobs_enabled():
+            raise QbraidError("AWS S3 requests not supported by qBraid quantum jobs.")
+
+        if region_name is None:
+            region_name = self._get_default_region()
+
+        client = boto3.client("resourcegroupstaggingapi", region_name=region_name)
+        filter = {"Key": key}
+        if values is not None and len(values) > 0:
+            filter["Values"] = values
+        response = client.get_resources(TagFilters=[filter])
+        return [t["ResourceARN"] for t in response["ResourceTagMappingList"]]

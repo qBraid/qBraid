@@ -13,6 +13,7 @@ Unit tests for qbraid top-level functionality
 
 """
 import os
+import re
 import sys
 from unittest.mock import Mock
 
@@ -24,6 +25,8 @@ from qbraid._warnings import _warn_new_version
 from qbraid.exceptions import PackageValueError
 from qbraid.get_devices import get_devices
 from qbraid.get_jobs import _display_jobs_jupyter, get_jobs
+from qbraid.interface.random import random_circuit
+from qbraid.load_provider import device_wrapper
 
 # pylint: disable=missing-function-docstring,redefined-outer-name
 
@@ -119,6 +122,23 @@ def test_get_jobs_no_results(capfd):
     get_jobs(filters={"circuitNumQubits": -1})
     out, err = capfd.readouterr()
     assert out == "No jobs found matching given criteria\n"
+    assert len(err) == 0
+
+
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+def test_get_jobs_by_tag(capfd):
+    """Test ``get_jobs`` for tagged jobs."""
+    _mock_ipython(MockIPython(None))
+    # circuit = random_circuit("braket")
+    # device = device_wrapper("aws_dm_sim")
+    # job = device.run(circuit, shots=10, tags={"alice": "bob"})
+    job_id = "6581c4e917c8308e9ce41c94"
+    get_jobs(filters={"tags": {"alice": "bob"}})
+    out, err = capfd.readouterr()
+    message = out.split("\n")[1]
+    pattern = r"Displaying \d+/\d+ jobs matching query:"
+    assert re.match(pattern, message)
+    assert job_id in out
     assert len(err) == 0
 
 

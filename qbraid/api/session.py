@@ -152,7 +152,7 @@ class QbraidSession(Session):
     def _running_in_lab() -> bool:
         """Checks if you are running qBraid-SDK in qBraid Lab environment.
 
-        See https://docs.qbraid.com/en/latest/lab/environments.html
+        See https://docs.qbraid.com/projects/lab/en/latest/lab/environments.html
         """
         python_exe = os.path.join(SLUG_PATH, "pyenv", "bin", "python")
         return sys.executable == python_exe
@@ -162,10 +162,10 @@ class QbraidSession(Session):
         """Returns True if running qBraid Lab and qBraid Quantum Jobs
         proxy is enabled. Otherwise, returns False.
 
-        See https://docs.qbraid.com/en/latest/lab/quantum_jobs.html
+        See https://docs.qbraid.com/projects/lab/en/latest/lab/quantum_jobs.html
         """
         # currently quantum jobs only supported for AWS
-        if vendor and vendor != "aws":
+        if vendor and vendor.lower() != "aws":
             return False
 
         proxy_file = os.path.join(SLUG_PATH, "qbraid", "proxy")
