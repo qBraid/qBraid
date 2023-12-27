@@ -138,15 +138,10 @@ def get_jobs(
     from qbraid.providers import QuantumJob  # pylint: disable=import-outside-toplevel
 
     query = {} if filters is None else filters
-    # TODO: account for circuitNumQubits possible migration to qubitCount in API
 
     session = QbraidSession()
     jobs = session.post("/get-user-jobs", json=query).json()
-
-    max_results = 10
-    if "numResults" in query:
-        max_results = query["numResults"]
-        query.pop("numResults")
+    max_results = query.pop("numResults", 10)
 
     count = 0
     num_jobs = len(jobs)
@@ -155,7 +150,7 @@ def get_jobs(
         count += 1
         progress = count / num_jobs
         update_progress_bar(progress)
-        job_id = document.get("_id", document.get("qbraidJobId"))
+        job_id = document.get("qbraidJobId", document.get("_id"))
         if job_id is None:
             continue
         created_at = document.get("createdAt")
