@@ -115,19 +115,49 @@ class BraketProvider:
         aws_session = self._get_aws_session(region_name=region_name)
         return AwsDevice(arn=device_arn, aws_session=aws_session)
 
-    def get_tagged_tasks(
-        self, key: str, values: Optional[List[str]] = None, region_name: Optional[str] = None
+    def get_tasks_by_tag(
+        self, key: str, values: Optional[List[str]] = None, region_names: Optional[List[str]] = None
     ) -> List[str]:
-        """Get all quantum tasks matching given tags."""
+        """
+        Retrieves a list of quantum task ARNs that match the specified tag keys or key/value pairs.
+
+        Args:
+            key (str): The tag key to match.
+            values (Optional[List[str]]): A list of tag values to match against the provided
+                                          key. If None, tasks with the specified key,
+                                          regardless of its value, are matched.
+            region_names (Optional[List[str]]): A list of region names to search. If None, all
+                                                regions in `self.REGIONS` are searched.
+
+        Returns:
+            List[str]: A list of ARNs for quantum tasks that match the given tag criteria.
+
+        Raises:
+            QbraidError: If the function is called within a qBraid quantum job environment
+                         where AWS S3 requests are not supported.
+        """
         if QbraidSession._running_in_lab() and QbraidSession._qbraid_jobs_enabled():
             raise QbraidError("AWS S3 requests not supported by qBraid quantum jobs.")
 
-        if region_name is None:
-            region_name = self._get_default_region()
+        region_names = (
+            region_names
+            if region_names is not None and len(region_names) > 0
+            else list(self.REGIONS)
+        )
+        values = values if values is not None else []
 
-        client = boto3.client("resourcegroupstaggingapi", region_name=region_name)
-        filter = {"Key": key}
-        if values is not None and len(values) > 0:
-            filter["Values"] = values
-        response = client.get_resources(TagFilters=[filter])
-        return [t["ResourceARN"] for t in response["ResourceTagMappingList"]]
+        tasks = []
+        for region_name in region_names:
+            client = boto3.client("resourcegroupstaggingapi", region_name=region_name)
+            response = client.get_resources(
+                TagFilters=[
+                    {
+                        "Key": key,
+                        "Values": values,
+                    }
+                ],
+            )
+            matches = [t["ResourceARN"] for t in response["ResourceTagMappingList"]]
+            tasks += matches
+
+        return tasks

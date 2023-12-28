@@ -13,6 +13,8 @@ Unit tests for BraketProvider class
 
 """
 import os
+import random
+import string
 
 import pytest
 from braket.circuits import Circuit
@@ -24,6 +26,12 @@ from qbraid.providers.aws.execution_window import is_available
 # Skip tests if AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of AWS storage)"
+
+
+def gen_rand_str(length: int) -> str:
+    """Returns a random alphanumeric string of specified length."""
+    chars = string.ascii_letters + string.digits
+    return "".join(random.choices(chars, k=length))
 
 
 def get_braket_most_busy():
@@ -87,3 +95,20 @@ def test_is_available():
     for device in devices:
         is_available_bool, _ = is_available(device)
         assert device.is_available == is_available_bool
+
+
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+def test_get_quantum_tasks_by_tag():
+    """Test getting tagged quantum tasks."""
+    provider = BraketProvider()
+    all_regions = list(provider.REGIONS)
+    default_region = provider._get_default_region()
+    alt_regions = [e for e in all_regions if e != default_region]
+    circuit = Circuit().h(0).cnot(0, 1)
+    device = provider.get_device("arn:aws:braket:::device/quantum-simulator/amazon/sv1")
+    key, value1, value2 = tuple(gen_rand_str(7) for _ in range(3))
+    task1 = device.run(circuit, shots=2, tags={key: value1})
+    task2 = device.run(circuit, shots=2, tags={key: value2})
+    assert set([task1.id, task2.id]) == set(provider.get_tasks_by_tag(key))
+    assert len(provider.get_tasks_by_tag(key, values=[value1], region_names=[default_region])) == 1
+    assert len(provider.get_tasks_by_tag(key, region_names=alt_regions)) == 0
