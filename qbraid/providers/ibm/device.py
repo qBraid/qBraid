@@ -76,6 +76,14 @@ class QiskitBackend(QuantumDevice):
                 self._num_qubits = None
 
     def _transpile(self, run_input):
+        if self._device.local:
+            # pylint: disable=import-outside-toplevel
+            from qbraid.programs.qiskit import QiskitCircuit
+
+            program = QiskitCircuit(run_input)
+            program.remove_idle_qubits()
+            run_input = program.program
+
         return transpile(run_input, backend=self._device)
 
     def _compile(self, run_input):
