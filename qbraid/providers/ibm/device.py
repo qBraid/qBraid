@@ -123,7 +123,10 @@ class QiskitBackend(QuantumDevice):
         shots = kwargs.pop("shots", backend.options.get("shots"))
         memory = kwargs.pop("memory", True)  # Needed to get measurements
         qiskit_job = backend.run(run_input, shots=shots, memory=memory, **kwargs)
-        tags_lst = qiskit_job.update_tags(kwargs.get("tags", []))
+        try:
+            tags_lst = qiskit_job.update_tags(kwargs.get("tags", []))
+        except AttributeError:  # BasicAerJob does not have update_tags
+            tags_lst = []
         tags = {tag: "*" for tag in tags_lst}
         qiskit_job_id = qiskit_job.job_id()
         qbraid_job_id = (
@@ -164,7 +167,10 @@ class QiskitBackend(QuantumDevice):
         shots = kwargs.pop("shots", backend.options.get("shots"))
         memory = kwargs.pop("memory", True)  # Needed to get measurements
         qiskit_job = backend.run(run_input_batch, shots=shots, memory=memory, **kwargs)
-        tags_lst = qiskit_job.update_tags(kwargs.get("tags", []))
+        try:
+            tags_lst = qiskit_job.update_tags(kwargs.get("tags", []))
+        except AttributeError:  # BasicAerJob does not have update_tags
+            tags_lst = []
         tags = {tag: "*" for tag in tags_lst}
         qiskit_job_id = qiskit_job.job_id()
 
