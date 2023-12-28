@@ -125,15 +125,30 @@ def test_get_jobs_no_results(capfd):
     assert len(err) == 0
 
 
-@pytest.mark.skip("Job tagging not yet supported by qBraid API.")
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
-def test_get_jobs_by_tag(capfd):
-    """Test ``get_jobs`` for tagged jobs."""
+def test_get_aws_jobs_by_tag(capfd):
+    """Test ``get_jobs`` for aws tagged jobs."""
     _mock_ipython(MockIPython(None))
     circuit = random_circuit("braket")
     device = device_wrapper("aws_dm_sim")
     job = device.run(circuit, shots=10, tags={"alice": "bob"})
     get_jobs(filters={"tags": {"alice": "bob"}})
+    out, err = capfd.readouterr()
+    message = out.split("\n")[1]
+    pattern = r"Displaying \d+/\d+ jobs matching query:"
+    assert re.match(pattern, message)
+    assert job.id in out
+    assert len(err) == 0
+
+
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+def test_get_ibm_jobs_by_tag(capfd):
+    """Test ``get_jobs`` for ibm tagged jobs."""
+    _mock_ipython(MockIPython(None))
+    circuit = random_circuit("qiskit")
+    device = device_wrapper("ibm_q_qasm_simulator")
+    job = device.run(circuit, shots=10, tags=["alice", "bob"])
+    get_jobs(filters={"tags": {"alice": "*", "bob": "*"}})
     out, err = capfd.readouterr()
     message = out.split("\n")[1]
     pattern = r"Displaying \d+/\d+ jobs matching query:"

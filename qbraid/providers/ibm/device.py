@@ -120,14 +120,14 @@ class QiskitBackend(QuantumDevice):
         backend = self._device
         qbraid_circuit = self.process_run_input(run_input)
         run_input = qbraid_circuit._program
-        shots = backend.options.get("shots") if "shots" not in kwargs else kwargs.pop("shots")
-        memory = (
-            True if "memory" not in kwargs else kwargs.pop("memory")
-        )  # Needed to get measurements
+        shots = kwargs.pop("shots", backend.options.get("shots"))
+        memory = kwargs.pop("memory", True)  # Needed to get measurements
         qiskit_job = backend.run(run_input, shots=shots, memory=memory, **kwargs)
+        tags_lst = qiskit_job.update_tags(kwargs.get("tags", []))
+        tags = {tag: "*" for tag in tags_lst}
         qiskit_job_id = qiskit_job.job_id()
         qbraid_job_id = (
-            self._init_job(qiskit_job_id, [qbraid_circuit], shots)
+            self._init_job(qiskit_job_id, [qbraid_circuit], shots, tags)
             if self._device_type != DeviceType("FAKE_DEVICE")
             else "qbraid_test_id"
         )
@@ -161,16 +161,16 @@ class QiskitBackend(QuantumDevice):
             run_input_batch.append(run_input)
             qbraid_circuit_batch.append(qbraid_circuit)
 
-        shots = backend.options.get("shots") if "shots" not in kwargs else kwargs.pop("shots")
-        memory = (
-            True if "memory" not in kwargs else kwargs.pop("memory")
-        )  # Needed to get measurements
+        shots = kwargs.pop("shots", backend.options.get("shots"))
+        memory = kwargs.pop("memory", True)  # Needed to get measurements
         qiskit_job = backend.run(run_input_batch, shots=shots, memory=memory, **kwargs)
+        tags_lst = qiskit_job.update_tags(kwargs.get("tags", []))
+        tags = {tag: "*" for tag in tags_lst}
         qiskit_job_id = qiskit_job.job_id()
 
         # to change to batch
         qbraid_job_id = (
-            self._init_job(qiskit_job_id, qbraid_circuit_batch, shots)
+            self._init_job(qiskit_job_id, qbraid_circuit_batch, shots, tags)
             if self._device_type != DeviceType("FAKE_DEVICE")
             else "qbraid_test_id"
         )
