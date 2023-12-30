@@ -117,7 +117,6 @@ def test_run_batch_qiskit_device_wrapper():
 @pytest.mark.parametrize("circuit", circuits_qiskit_run)
 def test_run_fake_qiskit_device_wrapper(qbraid_device, circuit):
     """Test run method from wrapped fake Qiskit backends"""
-    print(qbraid_device)
     qbraid_job = qbraid_device.run(circuit, shots=10)
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)

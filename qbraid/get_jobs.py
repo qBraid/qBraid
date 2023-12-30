@@ -16,7 +16,6 @@ jobs submitted through the qBraid SDK.
 
 """
 
-import os
 import warnings
 from typing import Optional
 
@@ -95,7 +94,7 @@ def _display_jobs_jupyter(data, msg):
 
 
 def get_jobs(
-    filters: Optional[dict] = None, refresh: bool = False
+    filters: Optional[dict] = None, refresh: bool = False, session: Optional[QbraidSession] = None
 ):  # pylint: disable=too-many-statements
     """Displays a list of quantum jobs submitted by user, tabulated by job ID,
     the date/time it was submitted, and status. You can specify filters to
@@ -139,7 +138,7 @@ def get_jobs(
 
     query = {} if filters is None else filters
 
-    session = QbraidSession()
+    session = session or QbraidSession()
     jobs = session.post("/get-user-jobs", json=query).json()
     max_results = query.pop("numResults", 10)
 
@@ -175,7 +174,7 @@ def get_jobs(
 
     if num_jobs == 0:  # Design choice whether to display anything here or not
         if len(query) == 0:
-            msg = f"No jobs found for user {os.getenv('JUPYTERHUB_USER')}"
+            msg = f"No jobs found for user {session.user_email}"
         else:
             msg = "No jobs found matching given criteria"
     elif num_jobs < max_results:

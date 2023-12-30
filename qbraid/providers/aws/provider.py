@@ -16,8 +16,12 @@ Module for configuring provider credentials and authentication.
 import os
 from typing import TYPE_CHECKING, List, Optional
 
+import boto3
 from boto3.session import Session
 from braket.aws import AwsDevice, AwsSession
+
+from qbraid.api import QbraidSession
+from qbraid.exceptions import QbraidError
 
 if TYPE_CHECKING:
     import braket.aws
@@ -32,6 +36,8 @@ class BraketProvider:
         aws_access_key_id (str): AWS access key ID for authenticating with AWS services.
         aws_secret_access_key (str): AWS secret access key for authenticating with AWS services.
     """
+
+    REGIONS = ("us-east-1", "us-west-1", "us-west-2", "eu-west-2")
 
     def __init__(self, aws_access_key_id=None, aws_secret_access_key=None):
         """
@@ -68,10 +74,8 @@ class BraketProvider:
 
     def _get_region_name(self, device_arn: str) -> str:
         """Returns the AWS region name."""
-        REGIONS = ("us-east-1", "us-west-1", "us-west-2", "eu-west-2")
-
         maybe_region = device_arn.split(":")[3]
-        if maybe_region in REGIONS:
+        if maybe_region in self.REGIONS:
             return maybe_region
 
         provider = device_arn.split("/")[-2]
@@ -110,3 +114,50 @@ class BraketProvider:
         region_name = self._get_region_name(device_arn)
         aws_session = self._get_aws_session(region_name=region_name)
         return AwsDevice(arn=device_arn, aws_session=aws_session)
+
+    def get_tasks_by_tag(
+        self, key: str, values: Optional[List[str]] = None, region_names: Optional[List[str]] = None
+    ) -> List[str]:
+        """
+        Retrieves a list of quantum task ARNs that match the specified tag keys or key/value pairs.
+
+        Args:
+            key (str): The tag key to match.
+            values (Optional[List[str]]): A list of tag values to match against the provided
+                                          key. If None, tasks with the specified key,
+                                          regardless of its value, are matched.
+            region_names (Optional[List[str]]): A list of region names to search. If None, all
+                                                regions in `self.REGIONS` are searched.
+
+        Returns:
+            List[str]: A list of ARNs for quantum tasks that match the given tag criteria.
+
+        Raises:
+            QbraidError: If the function is called within a qBraid quantum job environment
+                         where AWS S3 requests are not supported.
+        """
+        if QbraidSession._running_in_lab() and QbraidSession._qbraid_jobs_enabled():
+            raise QbraidError("AWS S3 requests not supported by qBraid quantum jobs.")
+
+        region_names = (
+            region_names
+            if region_names is not None and len(region_names) > 0
+            else list(self.REGIONS)
+        )
+        values = values if values is not None else []
+
+        tasks = []
+        for region_name in region_names:
+            client = boto3.client("resourcegroupstaggingapi", region_name=region_name)
+            response = client.get_resources(
+                TagFilters=[
+                    {
+                        "Key": key,
+                        "Values": values,
+                    }
+                ],
+            )
+            matches = [t["ResourceARN"] for t in response["ResourceTagMappingList"]]
+            tasks += matches
+
+        return tasks
