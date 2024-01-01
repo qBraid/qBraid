@@ -196,6 +196,14 @@ class BraketDevice(QuantumDevice):
 
     def _transpile(self, run_input):
         """Transpile a circuit for the device."""
+        if self._device_type.name == "SIMULATOR":
+            # pylint: disable=import-outside-toplevel
+            from qbraid.programs.braket import BraketCircuit
+
+            program = BraketCircuit(run_input)
+            program.remove_idle_qubits()
+            run_input = program.program
+
         return run_input
 
     def _compile(self, run_input):
