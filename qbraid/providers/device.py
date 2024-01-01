@@ -103,7 +103,7 @@ class QuantumDevice(ABC):
         """The device type, Simulator, Fake_device or QPU.
 
         Returns:
-            Device type enum (Simulator|Fake_Device|QPU)
+            Device type enum (SIMULATOR|QPU|FAKE)
 
         """
         return self._device_type

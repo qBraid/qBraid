@@ -57,12 +57,12 @@ class QiskitBackend(QuantumDevice):
         self._name = device_name
         self._provider = "IBM"
         if device_name.startswith("fake"):
-            self._device_type = DeviceType("FAKE_DEVICE")
+            self._device_type = DeviceType("FAKE")
         else:
             self._device_type = DeviceType("SIMULATOR") if device.simulator else DeviceType("QPU")
 
         try:
-            if self._device_type == DeviceType("FAKE_DEVICE"):
+            if self._device_type == DeviceType("FAKE"):
                 self._num_qubits = device.configuration().n_qubits
             else:
                 self._num_qubits = device.num_qubits
@@ -76,7 +76,7 @@ class QiskitBackend(QuantumDevice):
                 self._num_qubits = None
 
     def _transpile(self, run_input):
-        if not self.name.startswith("fake") and self._device.local:
+        if self._device_type.name != "FAKE" and self._device.local:
             # pylint: disable=import-outside-toplevel
             from qbraid.programs.qiskit import QiskitCircuit
 
@@ -95,7 +95,7 @@ class QiskitBackend(QuantumDevice):
         Returns:
             str: The status of this Device
         """
-        if self._device_type == DeviceType("FAKE_DEVICE"):
+        if self._device_type == DeviceType("FAKE"):
             return DeviceStatus.ONLINE
 
         backend_status = self._device.status()
@@ -105,7 +105,7 @@ class QiskitBackend(QuantumDevice):
 
     def queue_depth(self) -> int:
         """Return the number of jobs in the queue for the ibm backend"""
-        if self._device_type == DeviceType("FAKE_DEVICE"):
+        if self._device_type == DeviceType("FAKE"):
             return 0
         return self._device.status().pending_jobs
 
@@ -139,7 +139,7 @@ class QiskitBackend(QuantumDevice):
         qiskit_job_id = qiskit_job.job_id()
         qbraid_job_id = (
             self._init_job(qiskit_job_id, [qbraid_circuit], shots, tags)
-            if self._device_type != DeviceType("FAKE_DEVICE")
+            if self._device_type != DeviceType("FAKE")
             else "qbraid_test_id"
         )
         qbraid_job = QiskitJob(
@@ -185,7 +185,7 @@ class QiskitBackend(QuantumDevice):
         # to change to batch
         qbraid_job_id = (
             self._init_job(qiskit_job_id, qbraid_circuit_batch, shots, tags)
-            if self._device_type != DeviceType("FAKE_DEVICE")
+            if self._device_type != DeviceType("FAKE")
             else "qbraid_test_id"
         )
         qbraid_job = QiskitJob(
