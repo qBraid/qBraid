@@ -12,56 +12,97 @@
 Module containing quantum programs used for testing
 
 """
-
-from typing import Any, Callable, Dict, Tuple
-
-import numpy as np
-
-from qbraid import circuit_wrapper
-from qbraid._qprogram import QPROGRAM
+import pytest
 
 from .braket.circuits import braket_bell, braket_shared15
 from .cirq.circuits import cirq_bell, cirq_shared15
-from .pyquil.programs import pyquil_bell, pyquil_shared15
+from .pyquil.circuits import pyquil_bell, pyquil_shared15
 from .pytket.circuits import pytket_bell, pytket_shared15
 from .qasm2.circuits import qasm2_bell, qasm2_cirq_shared15
 from .qasm3.circuits import qasm3_bell, qasm3_shared15
 from .qiskit.circuits import qiskit_bell, qiskit_shared15
 
-QROGRAM_TEST_TYPE = Tuple[Dict[str, Callable[[Any], QPROGRAM]], np.ndarray]
+# Map package names to their bell circuit functions
+bell_circuit_functions = {
+    "braket": braket_bell,
+    "cirq": cirq_bell,
+    "pyquil": pyquil_bell,
+    "qiskit": qiskit_bell,
+    "pytket": pytket_bell,
+    "qasm2": qasm2_bell,
+    "qasm3": qasm3_bell,
+}
+
+# Map package names to their shared15 circuit functions
+shared15_circuit_functions = {
+    "braket": braket_shared15,
+    "cirq": cirq_shared15,
+    "pyquil": pyquil_shared15,
+    "qiskit": qiskit_shared15,
+    "pytket": pytket_shared15,
+    "qasm2": qasm2_cirq_shared15,
+    "qasm3": qasm3_shared15,
+}
 
 
-def bell_data() -> QROGRAM_TEST_TYPE:
-    """Returns bell circuit/program in each supported package."""
-
-    unitary = circuit_wrapper(cirq_bell()).unitary()
-
-    circuits = {
-        "braket": braket_bell,
-        "cirq": cirq_bell,
-        "pyquil": pyquil_bell,
-        "qiskit": qiskit_bell,
-        "pytket": pytket_bell,
-        "qasm2": qasm2_bell,
-        "qasm3": qasm3_bell,
-    }
-
-    return circuits, unitary
+@pytest.fixture
+def bell_circuit(request):
+    """Fixture for getting bell circuit and unitary for a specific package."""
+    package = request.param
+    circuit_func = bell_circuit_functions[package]
+    circuit = circuit_func()
+    return circuit, package
 
 
-def shared15_data() -> QROGRAM_TEST_TYPE:
-    """Returns shared gates circuit/program in each supported package."""
+@pytest.fixture
+def two_bell_circuits(request):
+    package1, package2 = request.param
+    circuit1 = bell_circuit_functions[package1]()
+    circuit2 = bell_circuit_functions[package2]()
+    return circuit1, circuit2, package1, package2
 
-    unitary = circuit_wrapper(cirq_shared15()).unitary()
 
-    circuits = {
-        "braket": braket_shared15,
-        "cirq": cirq_shared15,
-        "pyquil": pyquil_shared15,
-        "qiskit": qiskit_shared15,
-        "pytket": pytket_shared15,
-        "qasm2": qasm2_cirq_shared15,
-        "qasm3": qasm3_shared15,
-    }
+@pytest.fixture
+def bell_unitary():
+    """Fixture containing unitary for bell circuit."""
+    circuit = cirq_bell()
+    return circuit.unitary()
 
-    return circuits, unitary
+
+@pytest.fixture
+def shared15_circuit(request):
+    """Fixture for getting shared15 circuit and unitary for a specific package."""
+    package = request.param
+    circuit_func = shared15_circuit_functions[package]
+    circuit = circuit_func()
+    return circuit, package
+
+
+@pytest.fixture
+def two_shared15_circuits(request):
+    package1, package2 = request.param
+    circuit1 = shared15_circuit_functions[package1]()
+    circuit2 = shared15_circuit_functions[package2]()
+    return circuit1, circuit2, package1, package2
+
+
+@pytest.fixture
+def shared15_unitary():
+    """Fixture containing unitary for shared15 circuit."""
+    circuit = cirq_shared15()
+    return circuit.unitary()
+
+
+packages_bell = list(bell_circuit_functions.keys())
+packages_shared15 = list(shared15_circuit_functions.keys())
+
+
+packages_bell = ["braket", "cirq", "pyquil", "qiskit", "pytket", "qasm2", "qasm3"]
+packages_out = [
+    ("braket", "cirq"),
+    ("cirq", "pyquil"),
+    ("pyquil", "qiskit"),
+    ("qiskit", "pytket"),
+    ("pytket", "qasm2"),
+    ("qasm2", "qasm3"),
+]

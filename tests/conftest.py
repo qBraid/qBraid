@@ -9,17 +9,8 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-==============================================
-Testing (:mod:`qbraid.programs.testing`)
-==============================================
-
-.. currentmodule:: qbraid.programs.testing
-
-.. autosummary::
-   :toctree: ../stubs/
-
-   circuits_allclose
-   assert_allclose_up_to_global_phase
+Fixtures imported/defined in this file can be used by any test in this directory
+without needing to import them (pytest will automatically discover them).
 
 """
-from .circuit_equality import circuits_allclose, assert_allclose_up_to_global_phase
+from .fixtures import *

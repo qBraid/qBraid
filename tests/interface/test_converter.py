@@ -24,19 +24,15 @@ from qbraid.interface.converter import (
     convert_to_package,
 )
 
-from ..fixtures.programs import bell_data
-
-bell_map, _ = bell_data()
-
-# Define the test data
-packages = ["braket", "cirq", "pyquil", "qiskit", "pytket", "qasm2", "qasm3"]
-test_data = [(bell_map[package](), package) for package in packages]
+from ..fixtures import packages_bell
 
 
-@pytest.mark.parametrize("program,expected_package", test_data)
-def test_get_program_type(program, expected_package):
+@pytest.mark.parametrize("bell_circuit", packages_bell, indirect=True)
+def test_get_program_type(bell_circuit):
     """Test that the correct package is returned for a given program."""
-    assert _get_program_type(program) == expected_package
+    circuit, expected_package = bell_circuit
+    package_name = _get_program_type(circuit)
+    assert package_name == expected_package
 
 
 def test_raise_error_unuspported_source_program():
