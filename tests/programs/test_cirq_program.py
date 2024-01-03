@@ -12,7 +12,7 @@
 Unit tests for qbraid.programs.cirq.CirqCircuit
 
 """
-from cirq import Circuit, GridQubit, LineQubit, X, Y, Z
+from cirq import Circuit, GridQubit, H, LineQubit, Moment, NamedQubit, X, Y, Z
 
 from qbraid.programs.cirq import CirqCircuit
 
@@ -56,3 +56,17 @@ def test_mixed_qubit_types():
 
     expected_qubits = [LineQubit(0), LineQubit(1)]
     assert set(program.qubits) == set(expected_qubits)
+
+
+def test_convert_to_line_qubits():
+    """Test converting a circuit of all NamedQubits to LineQubits"""
+    circuit = Circuit(
+        [
+            Moment(H(NamedQubit("q"))),
+        ]
+    )
+
+    program = CirqCircuit(circuit)
+    program._convert_to_line_qubits()
+    for qubit in program.qubits:
+        assert isinstance(qubit, LineQubit)
