@@ -62,7 +62,7 @@ def test_convert_to_line_qubits():
     """Test converting a circuit of all NamedQubits to LineQubits"""
     circuit = Circuit(
         [
-            Moment(H(NamedQubit("q0"))),
+            Moment(H(NamedQubit("q"))),
         ]
     )
 
