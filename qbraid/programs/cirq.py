@@ -13,7 +13,7 @@ Module defining CirqCircuit Class
 
 """
 
-from typing import List, Optional
+from typing import List
 
 import cirq
 import numpy as np
@@ -80,26 +80,46 @@ class CirqCircuit(QuantumProgram):
         return key
 
     @staticmethod
-    def _int_from_qubit(qubit: cirq.Qid, fallback: Optional[int] = None) -> int:
+    def _int_from_qubit(qubit: cirq.Qid) -> int:
+        """Extracts an integer value from a given qubit.
+
+        This function interprets the qubit based on its type and extracts an
+        integer value accordingly. For a LineQubit, it returns its index.
+        For a GridQubit, it returns the row number. For a NamedQubit, it attempts
+        to parse and return an integer value from its name. This parsing is only
+        successful if the name of the NamedQubit contains an integer. If the name
+        does not contain an integer, such as in the case of NamedQubit("q"), or if
+        the qubit is not of the supported types (LineQubit, GridQubit, or NamedQubit),
+        a ValueError is raised.
+
+        Args:
+            qubit (cirq.Qid): The qubit from which to extract an integer.
+
+        Returns:
+            int: The extracted integer value from the qubit.
+
+        Raises:
+            ValueError: If the qubit is a NamedQubit whose name does not contain
+                        an integer, or if the qubit is not of a supported
+                        type (LineQubit, GridQubit, or NamedQubit).
+        """
         if isinstance(qubit, cirq.LineQubit):
-            index = int(qubit)
-        elif isinstance(qubit, cirq.GridQubit):
-            index = qubit.row
-        elif isinstance(qubit, cirq.NamedQubit):
-            # Only correct if numbered sequentially
+            return int(qubit)
+        if isinstance(qubit, cirq.GridQubit):
+            return qubit.row
+        if isinstance(qubit, cirq.NamedQubit):
             try:
-                index = int(qubit._comparison_key().split(":")[0][7:])
-            except ValueError:
-                if fallback is not None:
-                    index = fallback
-                else:
-                    index = 0
+                # NamedQubit("q") will fail here
+                return int(qubit._comparison_key().split(":")[0][7:])
+            except ValueError as err:
+                raise ValueError(
+                    f"The provided NamedQubit '{qubit.name}' cannot be converted to an integer."
+                ) from err
         else:
             raise ValueError(
                 "Expected qubit of type 'GridQubit' 'LineQubit' or 'NamedQubit'"
                 f"but instead got {type(qubit)}"
             )
-        return index
 
     @staticmethod
     def _make_qubits(qubits: List[cirq.Qid], targets: List[int]) -> List[cirq.Qid]:
@@ -123,63 +143,58 @@ class CirqCircuit(QuantumProgram):
     def _convert_to_line_qubits(self) -> None:
         """Converts a Cirq circuit constructed using NamedQubits to
         a Cirq circuit constructed using LineQubits."""
-        qubits = list(self.program.all_qubits())
+        qubits = self.qubits
         qubits.sort()
-        # TODO: will want to check if fallback is already in use and if so use different value
-        qubit_map = {
-            self._key_from_qubit(q): self._int_from_qubit(q, fallback=i)
-            for i, q in enumerate(qubits)
-        }
-        line_qubit_circuit = cirq.Circuit()
-        for opr in self.program.all_operations():
-            qubit_indicies = [qubit_map[self._key_from_qubit(q)] for q in opr.qubits]
-            line_qubits = [cirq.LineQubit(i) for i in qubit_indicies]
-            line_qubit_circuit.append(opr.gate.on(*line_qubits))
-        self._program = line_qubit_circuit
+        try:
+            qubit_map = {
+                qubit: cirq.LineQubit(self._int_from_qubit(qubit)) for _, qubit in enumerate(qubits)
+            }
+        except ValueError:
+            # If _int_from_qubit fails, fallback to default contiguous qubit mapping
+            qubit_map = {qubit: cirq.LineQubit(i) for i, qubit in enumerate(qubits)}
+
+        self._program = self.program.transform_qubits(lambda q: qubit_map[q])
 
     def populate_idle_qubits(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, adds identity gates to vacant registers as needed."""
         circuit = self.program.copy()
         cirq_qubits = list(circuit.all_qubits())
-        if isinstance(cirq_qubits[0], cirq.NamedQubit):
+        if any(isinstance(qubit, cirq.NamedQubit) for qubit in cirq_qubits):
             self._convert_to_line_qubits()
             self.populate_idle_qubits()
-            return
-
-        nqubits = 0
-        max_qubit = 0
-        occupied_qubits = []
-        for qubit in circuit.all_qubits():
-            index = self._int_from_qubit(qubit)
-            occupied_qubits.append(index)
-            if index > max_qubit:
-                max_qubit = index
-            nqubits += 1
-        qubit_count = max_qubit + 1
-        if qubit_count > nqubits:
-            all_qubits = list(range(0, qubit_count))
-            vacant_qubits = list(set(all_qubits) - set(occupied_qubits))
-            cirq_qubits = self._make_qubits(cirq_qubits, vacant_qubits)
-            for qubit in cirq_qubits:
-                circuit.append(cirq.I(qubit))
-        self._program = circuit
-        return
+        else:
+            nqubits = 0
+            max_qubit = 0
+            occupied_qubits = []
+            for qubit in circuit.all_qubits():
+                index = self._int_from_qubit(qubit)
+                occupied_qubits.append(index)
+                if index > max_qubit:
+                    max_qubit = index
+                nqubits += 1
+            qubit_count = max_qubit + 1
+            if qubit_count > nqubits:
+                all_qubits = list(range(0, qubit_count))
+                vacant_qubits = list(set(all_qubits) - set(occupied_qubits))
+                cirq_qubits = self._make_qubits(cirq_qubits, vacant_qubits)
+                for qubit in cirq_qubits:
+                    circuit.append(cirq.I(qubit))
+            self._program = circuit
 
     def remove_idle_qubits(self) -> None:
-        """Checks whether the circuit uses contiguous qubits/indices,
-        and if not, reduces dimension accordingly."""
-        original_qubits = sorted(self.program.all_qubits(), key=self._int_from_qubit)
-        qubit_map = dict(
-            zip(original_qubits, self._make_qubits(original_qubits, range(len(original_qubits))))
-        )
+        """If circuit does not use contiguous qubits/indices,
+        reduces dimension accordingly."""
+        qubits = self.qubits
+        qubits.sort()
+        qubit_map = dict(zip(qubits, self._make_qubits(qubits, range(self.num_qubits))))
         self._program = self.program.transform_qubits(lambda q: qubit_map[q])
 
     def reverse_qubit_order(self) -> None:
         """Rerverse qubit ordering of circuit."""
-        original_qubits = sorted(self.program.all_qubits(), key=self._int_from_qubit)
-        max_index = max(self._int_from_qubit(q) for q in original_qubits)
-        qubit_map = dict(
-            zip(original_qubits, self._make_qubits(original_qubits, reversed(range(max_index + 1))))
-        )
+        qubits = self.qubits
+        qubits.sort()
+        qubits_rev = qubits.copy()
+        qubits_rev.reverse()
+        qubit_map = dict(zip(qubits, qubits_rev))
         self._program = self.program.transform_qubits(lambda q: qubit_map[q])
