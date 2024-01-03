@@ -13,4 +13,15 @@ Fixtures imported/defined in this file can be used by any test in this directory
 without needing to import them (pytest will automatically discover them).
 
 """
-from .fixtures import *
+# pylint: disable=unused-import
+
+from .fixtures import (
+    bell_circuit,
+    bell_unitary,
+    packages_bell,
+    packages_shared15,
+    shared15_circuit,
+    shared15_unitary,
+    two_bell_circuits,
+    two_shared15_circuits,
+)

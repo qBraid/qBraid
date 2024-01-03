@@ -25,6 +25,7 @@ from ..fixtures import packages_bell, packages_shared15
 
 
 def pair_packages(packages):
+    """Return a list of tuples of packages to compare"""
     return [(packages[i], packages[i + 1]) for i in range(len(packages) - 1)]
 
 
@@ -34,12 +35,16 @@ shared15_pairs = pair_packages(packages_shared15)
 
 @pytest.mark.parametrize("two_bell_circuits", bell_pairs, indirect=True)
 def test_compare_bell_circuits(two_bell_circuits):
+    """Test unitary equivalance of bell circuits across packages for
+    testing baseline."""
     circuit1, circuit2, _, _ = two_bell_circuits
     assert circuits_allclose(circuit1, circuit2, strict_gphase=True)
 
 
 @pytest.mark.parametrize("two_shared15_circuits", shared15_pairs, indirect=True)
 def test_compare_shared15_circuits(two_shared15_circuits):
+    """Test unitary equivalance of shared15 circuits across packages for
+    testing baseline."""
     circuit1, circuit2, package1, package2 = two_shared15_circuits
     strict_gphase = not (
         "pyquil" in {package1, package2} or {package1, package2} == {"qasm2", "qasm3"}

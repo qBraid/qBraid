@@ -22,4 +22,4 @@ Testing (:mod:`qbraid.programs.testing`)
    assert_allclose_up_to_global_phase
 
 """
-from .circuit_equality import circuits_allclose, assert_allclose_up_to_global_phase
+from .circuit_equality import assert_allclose_up_to_global_phase, circuits_allclose
