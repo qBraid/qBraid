@@ -87,7 +87,11 @@ class CirqCircuit(QuantumProgram):
             index = qubit.row
         elif isinstance(qubit, cirq.NamedQubit):
             # Only correct if numbered sequentially
-            index = int(qubit._comparison_key().split(":")[0][7:])
+            qubit_elements = qubit._comparison_key().split(":")
+            if len(qubit_elements) > 1:
+                index = int(qubit_elements[0][7:])
+            else:
+                index = 0
         else:
             raise ValueError(
                 "Expected qubit of type 'GridQubit' 'LineQubit' or 'NamedQubit'"
@@ -118,14 +122,22 @@ class CirqCircuit(QuantumProgram):
         """Converts a Cirq circuit constructed using NamedQubits to
         a Cirq circuit constructed using LineQubits."""
         qubits = list(self.program.all_qubits())
-        qubits.sort()
-        qubit_map = {self._key_from_qubit(q): self._int_from_qubit(q) for _, q in enumerate(qubits)}
-        line_qubit_circuit = cirq.Circuit()
-        for opr in self.program.all_operations():
-            qubit_indicies = [qubit_map[self._key_from_qubit(q)] for q in opr.qubits]
-            line_qubits = [cirq.LineQubit(i) for i in qubit_indicies]
-            line_qubit_circuit.append(opr.gate.on(*line_qubits))
-        self._program = line_qubit_circuit
+        if all(isinstance(qubit, cirq.NamedQubit) for qubit in qubits):
+            qubit_map = {
+                qubit: cirq.LineQubit(i) for i, qubit in enumerate(self.program.all_qubits())
+            }
+            self._program = self.program.transform_qubits(lambda qubit: qubit_map[qubit])
+        else:
+            qubits.sort()
+            qubit_map = {
+                self._key_from_qubit(q): self._int_from_qubit(q) for _, q in enumerate(qubits)
+            }
+            line_qubit_circuit = cirq.Circuit()
+            for opr in self.program.all_operations():
+                qubit_indicies = [qubit_map[self._key_from_qubit(q)] for q in opr.qubits]
+                line_qubits = [cirq.LineQubit(i) for i in qubit_indicies]
+                line_qubit_circuit.append(opr.gate.on(*line_qubits))
+            self._program = line_qubit_circuit
 
     def populate_idle_qubits(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
