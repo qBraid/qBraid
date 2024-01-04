@@ -24,6 +24,7 @@ Interface (:mod:`qbraid.interface`)
    find_top_shortest_conversion_paths
    convert_to_package
    get_qasm_version
+   get_program_type
    random_circuit
    random_unitary_matrix
 
@@ -35,5 +36,5 @@ from .conversion_graph import (
     find_top_shortest_conversion_paths,
 )
 from .converter import convert_to_package
-from .qasm_checks import get_qasm_version
+from .inspector import get_qasm_version, get_program_type
 from .random import random_circuit, random_unitary_matrix

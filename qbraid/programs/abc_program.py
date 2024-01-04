@@ -17,9 +17,8 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 import numpy as np
 
-from qbraid.exceptions import ProgramTypeError, QasmError
 from qbraid.interface.converter import convert_to_package
-from qbraid.interface.qasm_checks import get_qasm_version
+from qbraid.interface.inspector import get_program_type
 from qbraid.visualization.draw_circuit import circuit_drawer
 
 if TYPE_CHECKING:
@@ -32,27 +31,12 @@ class QuantumProgram:
     def __init__(self, program: "qbraid.QPROGRAM"):
         self.program = program
         self._program = program
-        self._package = self._determine_package()
+        self._package = get_program_type(program)
 
     @property
     def package(self) -> str:
         """Return the original package of the wrapped circuit."""
         return self._package
-
-    def _determine_package(self) -> str:
-        """Return the original package of the wrapped circuit."""
-        if isinstance(self.program, str):
-            try:
-                return get_qasm_version(self.program)
-            except QasmError as err:
-                raise ProgramTypeError(
-                    "Input of type string must represent a valid OpenQASM program."
-                ) from err
-
-        try:
-            return self.program.__module__.split(".")[0].lower()
-        except AttributeError as err:
-            raise ProgramTypeError(self.program) from err
 
     @property
     def program(self) -> "qbraid.QPROGRAM":

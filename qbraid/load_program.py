@@ -18,7 +18,7 @@ import pkg_resources
 
 from ._qprogram import QPROGRAM
 from .exceptions import QbraidError
-from .interface.qasm_checks import get_qasm_version
+from .interface.inspector import get_program_type
 
 
 def _get_entrypoints(group: str):
@@ -56,23 +56,19 @@ def circuit_wrapper(program: QPROGRAM):
     if isinstance(program, openqasm3.ast.Program):
         program = openqasm3.dumps(program)
 
-    if isinstance(program, str):
-        package = get_qasm_version(program)
-
-    else:
-        try:
-            package = program.__module__.split(".")[0]
-        except AttributeError as err:
-            raise QbraidError(
-                f"Error applying circuit wrapper to quantum program \
-                of type {type(program)}"
-            ) from err
-
-    ep = package.lower()
+    try:
+        package = get_program_type(program)
+    except QbraidError as err:
+        raise QbraidError(
+            f"Error applying circuit wrapper to quantum program \
+            of type {type(program)}"
+        ) from err
 
     transpiler_entrypoints = _get_entrypoints("qbraid.programs")
-    if package in transpiler_entrypoints:
-        circuit_wrapper_class = transpiler_entrypoints[ep].load()
-        return circuit_wrapper_class(program)
+    if package not in transpiler_entrypoints:
+        raise QbraidError(
+            f"Error applying circuit wrapper to quantum program of type {type(program)}"
+        )
 
-    raise QbraidError(f"Error applying circuit wrapper to quantum program of type {type(program)}")
+    circuit_wrapper_class = transpiler_entrypoints[package].load()
+    return circuit_wrapper_class(program)

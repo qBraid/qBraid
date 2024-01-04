@@ -17,8 +17,8 @@ from importlib import import_module
 from typing import TYPE_CHECKING, List
 
 from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError
-from qbraid.interface.qasm_checks import get_qasm_version
+from qbraid.exceptions import PackageValueError
+from qbraid.interface.inspector import get_program_type
 from qbraid.transpiler import CircuitConversionError, conversion_functions
 
 from .conversion_graph import create_conversion_graph, find_top_shortest_conversion_paths
@@ -41,41 +41,13 @@ def _flatten_cirq(circuit: "cirq.Circuit") -> "cirq.Circuit":
     Returns:
         cirq.Circuit: The flattened Cirq circuit.
     """
+    # TODO: potentially replace with native cirq.decompose
+    # https://quantumai.google/reference/python/cirq/decompose
+
     # pylint: disable=import-outside-toplevel
     from cirq.contrib.qasm_import import circuit_from_qasm
 
     return circuit_from_qasm(circuit.to_qasm())
-
-
-def _get_program_type(program: "qbraid.QPROGRAM") -> str:
-    """
-    Get the type of a quantum program.
-
-    Args:
-        program (qbraid.QPROGRAM): The quantum program to get the type of.
-
-    Returns:
-        str: The type of the quantum program.
-    """
-    if isinstance(program, str):
-        try:
-            package = get_qasm_version(program)
-        except QasmError as err:
-            raise ProgramTypeError(
-                "Input of type string must represent a valid OpenQASM program."
-            ) from err
-
-    else:
-        try:
-            program_module = program.__module__
-            package = program_module.split(".")[0].lower()
-        except AttributeError as err:
-            raise ProgramTypeError(program) from err
-
-    if package not in QPROGRAM_LIBS:
-        raise PackageValueError(package)
-
-    return package
 
 
 def _convert_path_to_string(path: List[str]) -> str:
@@ -108,7 +80,7 @@ def convert_to_package(program: "qbraid.QPROGRAM", target: str) -> "qbraid.QPROG
     if target not in QPROGRAM_LIBS:
         raise PackageValueError(target)
 
-    source = _get_program_type(program)
+    source = get_program_type(program)
 
     if source == target:
         return program
@@ -128,7 +100,7 @@ def convert_to_package(program: "qbraid.QPROGRAM", target: str) -> "qbraid.QPROG
                     convert_func = getattr(transpiler, conversion)
                     temp_program = convert_func(temp_program)
                 except Exception:  # pylint: disable=broad-exception-caught
-                    if _get_program_type(temp_program) == "cirq":
+                    if get_program_type(temp_program) == "cirq":
                         temp_program = _flatten_cirq(temp_program)
                         temp_program = convert_func(temp_program)  # Retry conversion
                     else:

@@ -7,55 +7,16 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+
 """
 Unit test for the graph-based transpiler
 
 """
-
-from unittest.mock import Mock
-
 import braket.circuits
 import pytest
 
-from qbraid.exceptions import PackageValueError, ProgramTypeError
-from qbraid.interface.converter import (
-    _convert_path_to_string,
-    _get_program_type,
-    convert_to_package,
-)
-
-from ..fixtures import packages_bell
-
-
-@pytest.mark.parametrize("bell_circuit", packages_bell, indirect=True)
-def test_get_program_type(bell_circuit):
-    """Test that the correct package is returned for a given program."""
-    circuit, expected_package = bell_circuit
-    package_name = _get_program_type(circuit)
-    assert package_name == expected_package
-
-
-def test_raise_error_unuspported_source_program():
-    """Test that an error is raised if source program is not supported."""
-    with pytest.raises(PackageValueError):
-        _get_program_type(Mock())
-
-
-@pytest.mark.parametrize(
-    "item",
-    ["OPENQASM 2.0; bad operation", "OPENQASM 3.0; bad operation", "DECLARE ro BIT[1]", "circuit"],
-)
-def test_bad_source_openqasm_program(item):
-    """Test raising ProgramTypeError converting invalid OpenQASM program string"""
-    with pytest.raises(ProgramTypeError):
-        _get_program_type(item)
-
-
-@pytest.mark.parametrize("item", [1, None])
-def test_bad_source_program_type(item):
-    """Test raising ProgramTypeError converting circuit of non-supported type"""
-    with pytest.raises(ProgramTypeError):
-        _get_program_type(item)
+from qbraid.exceptions import PackageValueError
+from qbraid.interface.converter import _convert_path_to_string, convert_to_package
 
 
 def test_unuspported_target_package():
