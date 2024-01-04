@@ -13,7 +13,8 @@ Module defining input / output types for a quantum backend:
 
   * QPROGRAM: Type alias defining all supported quantum circuit / program types
 
-  * QPROGRAM_LIBS: List of all supported quantum software libraries / packages
+  * SUPPORTED_QPROGRAMS: Dict mapping all supported quantum software libraries / package
+                         names to their respective program types
 
 """
 
@@ -74,4 +75,5 @@ _PROGRAM_TYPES = [str(x).strip("<class").strip(">").strip(" ").strip("'") for x 
 QPROGRAM_TYPES = _PROGRAMS + [QASMType]
 
 _PROGRAM_LIBS = [x.split(".")[0] for x in _PROGRAM_TYPES]
-QPROGRAM_LIBS = _PROGRAM_LIBS + ["qasm2", "qasm3"]
+SUPPORTED_QPROGRAMS = dict(zip(_PROGRAM_LIBS, _PROGRAM_TYPES)) | {"qasm2": "str", "qasm3": "str"}
+QPROGRAM_LIBS = SUPPORTED_QPROGRAMS.keys()

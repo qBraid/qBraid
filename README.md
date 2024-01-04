@@ -71,7 +71,7 @@ cd qBraid
 pip install -e '.[all]'
 ```
 
-*Note*: The qBraid-SDK requires Python 3.10 or greater.
+*Note*: The qBraid-SDK requires Python 3.9 or greater.
 
 If using locally, follow linked instructions to configure your
 [qBraid](#local-account-setup),
@@ -88,7 +88,6 @@ In [1]: import qbraid
 
 In [2]: qbraid.__version__
 ```
-
 
 ## Documentation & Tutorials
 
@@ -107,12 +106,21 @@ See also:
 
 Construct a quantum program of any supported program type.
 
-Below, `QPROGRAM_LIBS` lists shorthand identifiers for supported quantum programs, each corresponding to a type in the `QPROGRAM` Union. For example, 'qiskit' in `QPROGRAM_LIBS` maps to `qiskit.QuantumCircuit` in `QPROGRAM`. Notably, 'qasm2' and 'qasm3' both represent raw OpenQASM strings. This arrangement simplifies targeting and transpiling between different quantum programming frameworks.
+Below, `SUPPORTED_QPROGRAMS` maps shorthand identifiers for supported quantum programs, each corresponding to a type in the typed `QPROGRAM` Union.
+For example, 'qiskit' maps to `qiskit.QuantumCircuit` in `QPROGRAM`. Notably, 'qasm2' and 'qasm3' both represent raw OpenQASM strings.
+This arrangement simplifies targeting and transpiling between different quantum programming frameworks.
 
 ```python
->>> from qbraid import QPROGRAM_LIBS, QPROGRAM
->>> QPROGRAM_LIBS
-['braket', 'cirq', 'qiskit', 'pyquil', 'pytket', 'openqasm3', 'qasm2', 'qasm3']
+>>> from qbraid import SUPPORTED_QPROGRAMS, QPROGRAM
+>>> SUPPORTED_QPROGRAMS
+{'cirq': 'cirq.circuits.circuit.Circuit',
+ 'qiskit': 'qiskit.circuit.quantumcircuit.QuantumCircuit',
+ 'pyquil': 'pyquil.quil.Program',
+ 'pytket': 'pytket._tket.circuit.Circuit',
+ 'braket': 'braket.circuits.circuit.Circuit',
+ 'openqasm3': 'openqasm3.ast.Program',
+ 'qasm2': 'str',
+ 'qasm3': 'str'}
 >>> QPROGRAM
 typing.Union[
   cirq.circuits.circuit.Circuit,
@@ -125,7 +133,7 @@ typing.Union[
 ```
 
 Pass any quantum program of type `QPROGRAM` to the `circuit_wrapper()` and specify a target package
-from `QPROGRAM_LIBS` to "transpile" your circuit to a new program type:
+from `SUPPORTED_QPROGRAMS` to "transpile" your circuit to a new program type:
 
 ```python
 >>> from qbraid import circuit_wrapper
