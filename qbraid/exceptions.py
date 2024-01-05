@@ -25,7 +25,7 @@ class PackageValueError(QbraidError):
 
     def __init__(self, package):
         msg = (
-            f"Quantum frontend module {package} is not supported.\n"
+            f"Quantum frontend module '{package}' is not supported.\n"
             f"Frontends supported by qBraid are: {QPROGRAM_LIBS}"
         )
         super().__init__(msg)
@@ -35,7 +35,7 @@ class ProgramTypeError(QbraidError):
     """Class for errors raised when processing unsupported quantum programs"""
 
     def __init__(self, program):
-        msg = f"Quantum program of type {type(program)} is not supported."
+        msg = f"Quantum program of type '{type(program)}' is not supported."
         super().__init__(msg)
 
 

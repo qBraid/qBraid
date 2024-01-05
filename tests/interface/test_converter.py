@@ -16,7 +16,7 @@ import braket.circuits
 import pytest
 
 from qbraid.exceptions import PackageValueError
-from qbraid.interface.converter import _convert_path_to_string, convert_to_package
+from qbraid.interface.converter import convert_to_package
 
 
 def test_unuspported_target_package():
@@ -25,13 +25,13 @@ def test_unuspported_target_package():
         convert_to_package(braket.circuits.Circuit(), "alice")
 
 
-def test_convert_path_to_string():
-    """Test formatted conversion path logging helper function."""
-    # Example conversion path
-    path = ["cirq_to_qasm2", "qasm2_to_qiskit", "qiskit_to_qasm3"]
-    expected_output = "cirq -> qasm2 -> qiskit -> qasm3"
+# def test_convert_path_to_string():
+#     """Test formatted conversion path logging helper function."""
+#     # Example conversion path
+#     path = ["cirq_to_qasm2", "qasm2_to_qiskit", "qiskit_to_qasm3"]
+#     expected_output = "cirq -> qasm2 -> qiskit -> qasm3"
 
-    # Call the function and assert the result
-    assert (
-        _convert_path_to_string(path) == expected_output
-    ), "The function did not return the expected string"
+#     # Call the function and assert the result
+#     assert (
+#         _convert_path_to_string(path) == expected_output
+#     ), "The function did not return the expected string"

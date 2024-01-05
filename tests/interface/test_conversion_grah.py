@@ -17,13 +17,14 @@ import networkx as nx
 import pytest
 
 from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.interface.conversion_graph import (
-    add_new_conversion,
-    create_conversion_graph,
-    find_shortest_conversion_path,
-    find_top_shortest_conversion_paths,
-)
+from qbraid.interface.conversion_edge import ConversionEdge
+from qbraid.interface.conversion_graph import ConversionGraph
 from qbraid.transpiler import conversion_functions
+
+
+def bound_method_str(source, target):
+    """Inserts package names into string representation of bound method."""
+    return f"<bound method ConversionEdge.convert of ('{source}', '{target}')>"
 
 
 def are_graphs_equal(graph1: nx.DiGraph, graph2: nx.DiGraph) -> bool:
@@ -60,22 +61,48 @@ def test_conversion_functions_syntax(func):
 
 def test_shortest_conversion_path():
     """Test that the shortest conversion path is found correctly."""
-    G = create_conversion_graph(conversion_functions)
-    shortest_path = find_shortest_conversion_path(G, "qiskit", "cirq")
-    top_paths = find_top_shortest_conversion_paths(G, "qiskit", "cirq", top_n=3)
-    assert shortest_path == ["qiskit_to_qasm2", "qasm2_to_cirq"]
+    G = ConversionGraph()
+    shortest_path = G.find_shortest_conversion_path("qiskit", "cirq")
+    top_paths = G.find_top_shortest_conversion_paths("qiskit", "cirq", top_n=3)
+    assert str(shortest_path[0]) == bound_method_str("qiskit", "qasm2")
+    assert str(shortest_path[1]) == bound_method_str("qasm2", "cirq")
     assert shortest_path == top_paths[0]
     assert len(top_paths) == 3 and len(top_paths[0]) <= len(top_paths[1]) <= len(top_paths[2])
 
 
 def test_add_new_conversion():
-    """Test adding a new conversion to the graph."""
-    new_conversion_func = "cirq_to_qir"
-    graph = create_conversion_graph(conversion_functions)
-    updated_graph = add_new_conversion(graph, new_conversion_func)
-    expected_graph = create_conversion_graph(conversion_functions + [new_conversion_func])
-    assert updated_graph.has_edge("cirq", "qir")
+    """
+    Test the addition of a new conversion to the ConversionGraph.
+
+    This test checks:
+    1. Whether a new conversion edge is correctly added to the graph.
+    2. If the graph structure with the new edge matches the expected structure.
+    3. The correctness of the shortest conversion path after adding the new edge.
+    """
+    # Setup - preparing ConversionEdge and ConversionGraph instances
+    source, target = "cirq", "qir"
+    conversion_func = lambda x: x  # pylint: disable=unnecessary-lambda-assignment
+    new_edge = ConversionEdge(source, target, conversion_func)
+    initial_conversions = ConversionGraph.load_default_conversions()
+    graph_with_new_edge = ConversionGraph(initial_conversions + [new_edge])
+    graph_without_new_edge = ConversionGraph(initial_conversions)
+
+    # Action - adding the new conversion edge to the graph
+    graph_without_new_edge.add_new_conversion(new_edge)
+
+    # Assertion 1 - Check if the new edge is added to the graph
+    assert graph_without_new_edge.nx_graph.has_edge(source, target)
+
+    # Assertion 2 - Check if the updated graph matches the expected graph structure
+    expected_graph = graph_with_new_edge.nx_graph
+    updated_graph = graph_without_new_edge.nx_graph
     assert are_graphs_equal(updated_graph, expected_graph)
 
-    shortest_path = find_shortest_conversion_path(updated_graph, "qiskit", "qir")
-    assert shortest_path == ["qiskit_to_qasm2", "qasm2_to_cirq", "cirq_to_qir"]
+    # Assertion 3 - Verify the shortest path after adding the new edge
+    expected_shortest_path = [
+        bound_method_str("qiskit", "qasm2"),
+        bound_method_str("qasm2", "cirq"),
+        bound_method_str("cirq", "qir"),
+    ]
+    actual_shortest_path = graph_without_new_edge.find_shortest_conversion_path("qiskit", "qir")
+    assert [str(bound_method) for bound_method in actual_shortest_path] == expected_shortest_path

@@ -14,14 +14,13 @@ Module for transpiling quantum programs between different quantum programming la
 import logging
 from copy import deepcopy
 from importlib import import_module
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING, Callable, List
 
 from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.exceptions import PackageValueError
+from qbraid.interface.conversion_graph import ConversionGraph
 from qbraid.interface.inspector import get_program_type
-from qbraid.transpiler import CircuitConversionError, conversion_functions
-
-from .conversion_graph import create_conversion_graph, find_top_shortest_conversion_paths
+from qbraid.transpiler import CircuitConversionError
 
 if TYPE_CHECKING:
     import cirq
@@ -50,20 +49,41 @@ def _flatten_cirq(circuit: "cirq.Circuit") -> "cirq.Circuit":
     return circuit_from_qasm(circuit.to_qasm())
 
 
-def _convert_path_to_string(path: List[str]) -> str:
+def _get_path_from_bound_methods(bound_methods: List[Callable]) -> str:
     """
-    Convert a conversion path to a string of package names.
+    Constructs a path string from a list of bound methods of ConversionEdge instances.
+
+    This function takes a list of bound methods (specifically 'convert' methods bound to
+    ConversionEdge instances) and constructs a path string representing the sequence of
+    conversions. Each conversion is defined by the 'source' and 'target' properties of the
+    ConversionEdge instance to which each method is bound.
 
     Args:
-        path (list): The conversion path.
+        bound_methods: A list of bound methods from ConversionEdge instances.
 
     Returns:
-        str: A string representing the sequence of packages in the path.
+        A string representing the path of conversions, formatted as
+        'source1 -> source2 -> ... -> targetN'.
+
+    Raises:
+        AttributeError: If the bound methods do not have the expected 'source'
+                        and 'target' attributes.
+        IndexError: If the list of bound methods is empty.
     """
-    conversion_packages = [path[0].split("_to_")[0]] + [
-        conversion.split("_to_")[1] for conversion in path
-    ]
-    return " -> ".join(conversion_packages)
+    if not bound_methods:
+        raise IndexError("The list of bound methods is empty.")
+
+    path = []
+    for method in bound_methods:
+        instance = method.__self__  # Get the instance to which the method is bound
+        if not hasattr(instance, "source") or not hasattr(instance, "target"):
+            raise AttributeError("Bound method instance lacks 'source' or 'target' attributes.")
+        path.append(instance.source)  # Add the source node of the instance
+
+    # Add the target of the last method's instance to complete the path
+    path.append(bound_methods[-1].__self__.target)
+
+    return " -> ".join(path)
 
 
 def convert_to_package(program: "qbraid.QPROGRAM", target: str) -> "qbraid.QPROGRAM":
@@ -85,19 +105,15 @@ def convert_to_package(program: "qbraid.QPROGRAM", target: str) -> "qbraid.QPROG
     if source == target:
         return program
 
-    graph = create_conversion_graph(conversion_functions)
-    paths = find_top_shortest_conversion_paths(graph, source, target)
-
-    for path in paths:
-        logging.info("Conversion paths: %s", _convert_path_to_string(path))
-        # print(_convert_path_to_string(path))
+    graph = ConversionGraph()
+    paths = graph.find_top_shortest_conversion_paths(source, target)
 
     for path in paths:
         temp_program = deepcopy(program)
         try:
-            for conversion in path:
+            for convert_func in path:
                 try:
-                    convert_func = getattr(transpiler, conversion)
+                    # convert_func = getattr(transpiler, conversion)
                     temp_program = convert_func(temp_program)
                 except Exception:  # pylint: disable=broad-exception-caught
                     if get_program_type(temp_program) == "cirq":
@@ -106,7 +122,8 @@ def convert_to_package(program: "qbraid.QPROGRAM", target: str) -> "qbraid.QPROG
                     else:
                         raise
             logging.info(
-                "\n\nSuccessfully transpiled using conversions: %s", _convert_path_to_string(path)
+                "\n\nSuccessfully transpiled using conversions: %s",
+                _get_path_from_bound_methods(path),
             )
             return temp_program
         except Exception:  # pylint: disable=broad-exception-caught

@@ -18,10 +18,8 @@ Interface (:mod:`qbraid.interface`)
 .. autosummary::
    :toctree: ../stubs/
 
-   create_conversion_graph
-   add_new_conversion
-   find_shortest_conversion_path
-   find_top_shortest_conversion_paths
+   ConversionGraph
+   ConversionEdge
    convert_to_package
    get_qasm_version
    get_program_type
@@ -29,12 +27,8 @@ Interface (:mod:`qbraid.interface`)
    random_unitary_matrix
 
 """
-from .conversion_graph import (
-    add_new_conversion,
-    create_conversion_graph,
-    find_shortest_conversion_path,
-    find_top_shortest_conversion_paths,
-)
+from .conversion_edge import ConversionEdge
+from .conversion_graph import ConversionGraph
 from .converter import convert_to_package
-from .inspector import get_qasm_version, get_program_type
+from .inspector import get_program_type, get_qasm_version
 from .random import random_circuit, random_unitary_matrix
