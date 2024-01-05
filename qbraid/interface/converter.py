@@ -13,8 +13,7 @@ Module for transpiling quantum programs between different quantum programming la
 """
 import logging
 from copy import deepcopy
-from importlib import import_module
-from typing import TYPE_CHECKING, Callable, List
+from typing import TYPE_CHECKING, Callable, List, Optional
 
 from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.exceptions import PackageValueError
@@ -26,8 +25,6 @@ if TYPE_CHECKING:
     import cirq
 
     import qbraid
-
-transpiler = import_module("qbraid.transpiler")
 
 
 def _flatten_cirq(circuit: "cirq.Circuit") -> "cirq.Circuit":
@@ -86,7 +83,9 @@ def _get_path_from_bound_methods(bound_methods: List[Callable]) -> str:
     return " -> ".join(path)
 
 
-def convert_to_package(program: "qbraid.QPROGRAM", target: str) -> "qbraid.QPROGRAM":
+def convert_to_package(
+    program: "qbraid.QPROGRAM", target: str, conversion_graph: Optional[ConversionGraph] = None
+) -> "qbraid.QPROGRAM":
     """
     Transpile a quantum program to a target language.
 
@@ -105,15 +104,14 @@ def convert_to_package(program: "qbraid.QPROGRAM", target: str) -> "qbraid.QPROG
     if source == target:
         return program
 
-    graph = ConversionGraph()
-    paths = graph.find_top_shortest_conversion_paths(source, target)
+    graph = conversion_graph or ConversionGraph()
+    paths = graph.find_top_shortest_conversion_paths(source, target, top_n=3)
 
     for path in paths:
         temp_program = deepcopy(program)
         try:
             for convert_func in path:
                 try:
-                    # convert_func = getattr(transpiler, conversion)
                     temp_program = convert_func(temp_program)
                 except Exception:  # pylint: disable=broad-exception-caught
                     if get_program_type(temp_program) == "cirq":

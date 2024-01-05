@@ -116,27 +116,31 @@ class ConversionGraph:
             graph.add_edge(edge.source, edge.target, func=edge.convert)
         return graph
 
-    def add_new_conversion(self, edge: ConversionEdge, overwrite_existing: bool = False) -> None:
+    def add_new_conversion(self, edge: ConversionEdge, overwrite: bool = False) -> None:
         """
         Add a new conversion function as an edge in the graph.
 
         Args:
             edge (qbraid.interface.ConversionEdge): The conversion edge to add to the graph.
-            overwrite_existing (optional, bool): If True, overwrites an existing conversion.
-                                                 Defaults to False.
+            overwrite (optional, bool): If True, overwrites an existing conversion.
+                                        Defaults to False.
 
         Raises:
             ValueError: If the conversion already exists and overwrite_existing is False.
         """
         source, target = edge.source, edge.target
 
-        if self._nx_graph.has_edge(source, target) and not overwrite_existing:
+        if self._nx_graph.has_edge(source, target) and not overwrite:
             raise ValueError(
                 f"Conversion from {source} to {target} already exists. "
-                "Set overwrite_existing=True to overwrite."
+                "Set overwrite=True to overwrite."
             )
 
-        # Add or update the edge
+        for old_edge in self._edges:
+            if old_edge == edge:
+                self._edges.remove(old_edge)
+                self._edges.append(edge)
+
         self._nx_graph.add_edge(source, target, func=edge.convert)
 
     def find_shortest_conversion_path(self, source: str, target: str) -> List[str]:
