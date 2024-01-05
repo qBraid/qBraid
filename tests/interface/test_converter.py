@@ -16,7 +16,9 @@ import braket.circuits
 import pytest
 
 from qbraid.exceptions import PackageValueError
-from qbraid.interface.converter import convert_to_package
+from qbraid.interface.conversion_edge import ConversionEdge
+from qbraid.interface.conversion_graph import ConversionGraph
+from qbraid.interface.converter import _get_path_from_bound_methods, convert_to_package
 
 
 def test_unuspported_target_package():
@@ -25,13 +27,12 @@ def test_unuspported_target_package():
         convert_to_package(braket.circuits.Circuit(), "alice")
 
 
-# def test_convert_path_to_string():
-#     """Test formatted conversion path logging helper function."""
-#     # Example conversion path
-#     path = ["cirq_to_qasm2", "qasm2_to_qiskit", "qiskit_to_qasm3"]
-#     expected_output = "cirq -> qasm2 -> qiskit -> qasm3"
-
-#     # Call the function and assert the result
-#     assert (
-#         _convert_path_to_string(path) == expected_output
-#     ), "The function did not return the expected string"
+def test_get_path_from_bound_method():
+    """Test formatted conversion path logging helper function."""
+    source, target = "cirq", "qasm2"
+    edge = ConversionEdge(source, target, lambda x: x)
+    graph = ConversionGraph([edge])
+    bound_method = graph._nx_graph[source][target]["func"]
+    bound_method_list = [bound_method]
+    path = _get_path_from_bound_methods(bound_method_list)
+    assert path == "cirq -> qasm2"
