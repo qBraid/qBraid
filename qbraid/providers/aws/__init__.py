@@ -12,13 +12,13 @@
 # pylint: skip-file
 
 """
-====================================================
-AWS Devices Interface (:mod:`qbraid.providers.aws`)
-====================================================
+Mdule submiting and managing quantm tasks through AWS
+and Amazon Braket supported devices.
 
 .. currentmodule:: qbraid.providers.aws
 
-This module contains the classes used to run quantum circuits on devices available through AWS.
+Classes
+---------
 
 .. autosummary::
    :toctree: ../stubs/
@@ -27,6 +27,13 @@ This module contains the classes used to run quantum circuits on devices availab
    BraketProvider
    BraketQuantumTask
    BraketGateModelResult
+
+Functions
+-----------
+
+.. autosummary::
+   :toctree: ../stubs/
+
    get_quantum_task_cost
 
 """

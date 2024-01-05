@@ -9,9 +9,9 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-PyQuil conversions
+Pennylane conversions
 
-.. currentmodule:: qbraid.transpiler.pyquil
+.. currentmodule:: qbraid.transpiler.pennylane
 
 Functions
 ----------
@@ -19,9 +19,7 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   pyquil_to_cirq
-   cirq_to_pyquil
+   pennylane_to_qasm2
 
 """
-
-from qbraid.transpiler.pyquil.conversions import cirq_to_pyquil, pyquil_to_cirq
+from qbraid.transpiler.pennylane.conversions_qasm import pennylane_to_qasm2

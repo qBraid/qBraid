@@ -9,17 +9,26 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-============================================
-Interface (:mod:`qbraid.interface`)
-============================================
+Module providing unified conversions interface between supported
+quantum program types.
 
 .. currentmodule:: qbraid.interface
+
+Classes
+--------
 
 .. autosummary::
    :toctree: ../stubs/
 
    ConversionGraph
    ConversionEdge
+
+Functions
+-----------
+
+.. autosummary::
+   :toctree: ../stubs/
+
    convert_to_package
    get_qasm_version
    get_program_type

@@ -18,6 +18,7 @@ from braket.circuits import Circuit as BKCircuit
 from cirq import Circuit, LineQubit, X, Y, Z
 
 from qbraid import circuit_wrapper
+from qbraid.interface.inspector import get_program_type
 from qbraid.interface.random.random import random_circuit, random_unitary_matrix
 from qbraid.programs.testing.circuit_equality import circuits_allclose
 
@@ -55,11 +56,8 @@ def test_compare_shared15_circuits(two_shared15_circuits):
 @pytest.mark.parametrize("package", ["braket", "cirq", "qiskit"])
 def test_random(package):
     """Test generating random circuits"""
-    try:
-        random_circuit(package)
-    except Exception:  # pylint: disable=broad-exception-caught
-        assert False
-    assert True
+    program = random_circuit(package)
+    assert get_program_type(program) == package
 
 
 def test_collapse_empty_braket_cirq():

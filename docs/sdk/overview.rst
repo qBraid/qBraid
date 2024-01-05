@@ -63,7 +63,7 @@ Construct a quantum program of any supported program type:
    >>> from qbraid import QPROGRAM_LIBS
    >>> from qbraid.interface import random_circuit
    >>> QPROGRAM_LIBS
-   ['braket', 'cirq', 'qiskit', 'pyquil', 'pytket', 'openqasm3', 'qasm2', 'qasm3']
+   ['cirq', 'qiskit', 'pennylane' 'pyquil', 'pytket', 'braket', 'openqasm3', 'qasm2', 'qasm3']
    >>> circuit = random_circuit("qiskit", num_qubits=1, measure=True)
 
 Search for quantum backend(s) on which to execute your program:
@@ -126,11 +126,11 @@ Compare the results:
 Supported Frontends
 ^^^^^^^^^^^^^^^^^^^^
 
-+-------------+-------------+------------+-------------+-------------+-------------+
-|  Cirq_      |  Braket_    |  Qiskit_   |  PyQuil_    |  PyTKET_    |  OpenQASM_  |
-+=============+=============+============+=============+=============+=============+
-| |cirq|      | |braket|    | |qiskit|   | |pyquil|    | |pytket|    | |qasm|      |
-+-------------+-------------+------------+-------------+-------------+-------------+
++-------------+-------------+------------+-------------+-------------+-------------+-------------+
+|  Cirq_      |  Braket_    |  Qiskit_   |  PyQuil_    |  PyTKET_    |  Pennylane_ |  OpenQASM_  |
++=============+=============+============+=============+=============+=============+=============+
+| |cirq|      | |braket|    | |qiskit|   | |pyquil|    | |pytket|    | |pennylane| | |qasm|      |
++-------------+-------------+------------+-------------+-------------+-------------+-------------+
 
 .. |cirq| image:: ../_static/pkg-logos/cirq.png
    :align: middle

@@ -9,11 +9,12 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-==============================================
-Testing (:mod:`qbraid.programs.testing`)
-==============================================
+Module containing utility functions for testing quantum programs.
 
 .. currentmodule:: qbraid.programs.testing
+
+Functions
+----------
 
 .. autosummary::
    :toctree: ../stubs/

@@ -9,11 +9,13 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-==============================================
-Random (:mod:`qbraid.interface.random`)
-==============================================
+Module for generaing random quantum circuits and unitary matrices
+for testing.
 
 .. currentmodule:: qbraid.interface.random
+
+Functions
+----------
 
 .. autosummary::
    :toctree: ../stubs/

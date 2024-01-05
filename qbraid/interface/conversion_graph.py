@@ -194,6 +194,19 @@ class ConversionGraph:
                 f"No conversion path available between {source} and {target}."
             ) from err
 
+    def has_path(self, source: str, target: str) -> bool:
+        """
+        Check if a conversion between two languages is supported.
+
+        Args:
+            source (str): The source language.
+            target (str): The target language.
+
+        Returns:
+            bool: True if the conversion is supported, False otherwise.
+        """
+        return nx.has_path(self._nx_graph, source, target)
+
     def plot_conversion_graph(self) -> None:
         """
         Plot the conversion graph using matplotlib.

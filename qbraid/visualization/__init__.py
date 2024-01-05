@@ -9,11 +9,13 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-============================================
-Visualization (:mod:`qbraid.visualization`)
-============================================
+Module for visualizing quantum programs, experimental results,
+and other associated data.
 
 .. currentmodule:: qbraid.visualization
+
+Functions
+----------
 
 .. autosummary::
    :toctree: ../stubs/

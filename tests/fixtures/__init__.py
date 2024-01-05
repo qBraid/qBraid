@@ -16,6 +16,7 @@ import pytest
 
 from .braket.circuits import braket_bell, braket_shared15
 from .cirq.circuits import cirq_bell, cirq_shared15
+from .pennylane.circuits import pennylane_bell, pennylane_shared15
 from .pyquil.circuits import pyquil_bell, pyquil_shared15
 from .pytket.circuits import pytket_bell, pytket_shared15
 from .qasm2.circuits import qasm2_bell, qasm2_cirq_shared15
@@ -25,6 +26,7 @@ from .qiskit.circuits import qiskit_bell, qiskit_shared15
 # Map package names to their bell circuit functions
 bell_circuit_functions = {
     "braket": braket_bell,
+    "pennylane": pennylane_bell,
     "cirq": cirq_bell,
     "pyquil": pyquil_bell,
     "qiskit": qiskit_bell,
@@ -36,6 +38,7 @@ bell_circuit_functions = {
 # Map package names to their shared15 circuit functions
 shared15_circuit_functions = {
     "braket": braket_shared15,
+    "pennylane": pennylane_shared15,
     "cirq": cirq_shared15,
     "pyquil": pyquil_shared15,
     "qiskit": qiskit_shared15,
@@ -97,14 +100,3 @@ def shared15_unitary():
 
 packages_bell = list(bell_circuit_functions.keys())
 packages_shared15 = list(shared15_circuit_functions.keys())
-
-
-packages_bell = ["braket", "cirq", "pyquil", "qiskit", "pytket", "qasm2", "qasm3"]
-packages_out = [
-    ("braket", "cirq"),
-    ("cirq", "pyquil"),
-    ("pyquil", "qiskit"),
-    ("qiskit", "pytket"),
-    ("pytket", "qasm2"),
-    ("qasm2", "qasm3"),
-]

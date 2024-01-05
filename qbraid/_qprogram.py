@@ -55,6 +55,8 @@ def __get_class(module: str):
         return qiskit.QuantumCircuit  # type: ignore
     if module == "braket.circuits":
         return braket.circuits.Circuit  # type: ignore
+    if module == "pennylane":
+        return pennylane.tape.QuantumTape  # type: ignore
     if module == "pyquil":
         return pyquil.Program  # type: ignore
     if module == "pytket":
@@ -66,7 +68,7 @@ def __get_class(module: str):
 # Supported quantum programs.
 QASMType = str
 _PROGRAMS = __dynamic_importer(
-    ["cirq", "qiskit", "pyquil", "pytket", "braket.circuits", "openqasm3"]
+    ["cirq", "qiskit", "pennylane", "pyquil", "pytket", "braket.circuits", "openqasm3"]
 )
 QPROGRAM = Union[tuple(_PROGRAMS)]  # type: ignore
 

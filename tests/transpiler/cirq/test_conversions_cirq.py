@@ -18,6 +18,7 @@ import pytest
 
 from qbraid import circuit_wrapper
 from qbraid._qprogram import QPROGRAM_LIBS
+from qbraid.interface.conversion_graph import ConversionGraph
 from qbraid.interface.converter import convert_to_package
 
 
@@ -29,7 +30,12 @@ def test_convert_circuit_operation_from_cirq(frontend):
         cirq.Y(q), cirq.CircuitOperation(cirq.FrozenCircuit(cirq.X(q)), repetitions=5), cirq.Z(q)
     )
 
-    test_circuit = convert_to_package(cirq_circuit, frontend)
+    graph = ConversionGraph()
+
+    if not graph.has_path("cirq", frontend):
+        pytest.skip(f"conversion from cirq to {frontend} not yet supported")
+
+    test_circuit = convert_to_package(cirq_circuit, frontend, conversion_graph=graph)
 
     cirq_unitary = circuit_wrapper(cirq_circuit).unitary()
     test_unitary = circuit_wrapper(test_circuit).unitary()

@@ -105,6 +105,10 @@ def convert_to_package(
         return program
 
     graph = conversion_graph or ConversionGraph()
+
+    if not graph.has_path(source, target):
+        raise CircuitConversionError(f"No conversion path available from {source} to {target}.")
+
     paths = graph.find_top_shortest_conversion_paths(source, target, top_n=3)
 
     for path in paths:

@@ -9,11 +9,12 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-====================================================
-Qasm Converions (:mod:`qbraid.transpiler.openqasm3`)
-====================================================
+OpenQASM conversions
 
 .. currentmodule:: qbraid.transpiler.openqasm3
+
+Functions
+----------
 
 .. autosummary::
    :toctree: ../stubs/

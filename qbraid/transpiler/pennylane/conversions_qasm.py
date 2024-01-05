@@ -9,19 +9,20 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-PyQuil conversions
-
-.. currentmodule:: qbraid.transpiler.pyquil
-
-Functions
-----------
-
-.. autosummary::
-   :toctree: ../stubs/
-
-   pyquil_to_cirq
-   cirq_to_pyquil
+Module defining Pennylane OpenQASM conversions
 
 """
+from pennylane.tape import QuantumTape
 
-from qbraid.transpiler.pyquil.conversions import cirq_to_pyquil, pyquil_to_cirq
+
+def pennylane_to_qasm2(tape: QuantumTape) -> str:
+    """Converts a PennyLane tape to OpenQASM 2.0
+
+    Args:
+        tape (QuantumTape): input PennyLane tape
+
+    Returns:
+        str: OpenQASM 2.0 representation of the tape
+
+    """
+    return tape.to_openqasm()

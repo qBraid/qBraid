@@ -115,6 +115,7 @@ This arrangement simplifies targeting and transpiling between different quantum 
 >>> SUPPORTED_QPROGRAMS
 {'cirq': 'cirq.circuits.circuit.Circuit',
  'qiskit': 'qiskit.circuit.quantumcircuit.QuantumCircuit',
+ 'pennylane': 'pennylane.tape.tape.QuantumTape',
  'pyquil': 'pyquil.quil.Program',
  'pytket': 'pytket._tket.circuit.Circuit',
  'braket': 'braket.circuits.circuit.Circuit',
@@ -125,6 +126,7 @@ This arrangement simplifies targeting and transpiling between different quantum 
 typing.Union[
   cirq.circuits.circuit.Circuit,
   qiskit.circuit.quantumcircuit.QuantumCircuit,
+  pennylane.tape.tape.QuantumTape,
   pyquil.quil.Program,
   pytket._tket.circuit.Circuit,
   braket.circuits.circuit.Circuit,

@@ -6,7 +6,11 @@ qbraid.compiler
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.compiler.braket
-   :members:
-   :undoc-members:
-   :show-inheritance:
+
+Submodules
+------------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+   braket

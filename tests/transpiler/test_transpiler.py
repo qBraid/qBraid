@@ -25,6 +25,7 @@ from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 
 from qbraid import QPROGRAM_LIBS, QbraidError, circuit_wrapper
 from qbraid.exceptions import PackageValueError, ProgramTypeError
+from qbraid.interface.conversion_graph import ConversionGraph
 from qbraid.interface.converter import convert_to_package
 from qbraid.programs.testing import assert_allclose_up_to_global_phase
 
@@ -34,6 +35,8 @@ from ..fixtures.cirq.gates import cirq_gates as cirq_gates_dict
 from ..fixtures.cirq.gates import create_cirq_gate
 from ..fixtures.qiskit.gates import qiskit_gates as qiskit_gates_dict
 from .cirq_utils import _equal
+
+conversion_graph = ConversionGraph()
 
 
 @pytest.mark.parametrize(
@@ -69,6 +72,8 @@ def test_to_cirq_bad_openqasm_program(item):
 @pytest.mark.parametrize("to_type", QPROGRAM_LIBS)
 def test_cirq_round_trip(bell_circuit, to_type):
     """Test converting Cirq circuits to other supported types."""
+    if not conversion_graph.has_path("cirq", to_type):
+        pytest.skip(f"cirq to {to_type} round-trip not yet supported")
     circuit_in, _ = bell_circuit
     circuit_mid = convert_to_package(circuit_in, to_type)
     circuit_out = convert_to_package(circuit_mid, "cirq")
@@ -128,13 +133,15 @@ def test_15(shared15_circuit, shared15_unitary, target_package):
     assert_allclose_up_to_global_phase(transpiled_unitary, shared15_unitary, atol=1e-7)
 
 
-@pytest.mark.parametrize("target_package", packages_bell)
+@pytest.mark.parametrize("target", packages_bell)
 @pytest.mark.parametrize("bell_circuit", packages_bell, indirect=True)
-def test_bell(bell_circuit, bell_unitary, target_package):
+def test_bell(bell_circuit, bell_unitary, target):
     """Tests transpiling bell circuits."""
-    circuit, _ = bell_circuit
+    circuit, source = bell_circuit
+    if not conversion_graph.has_path(source, target):
+        pytest.skip(f"{source} to {target} conversion not yet supported")
     qbraid_circuit = circuit_wrapper(circuit)
-    qbraid_circuit.transpile(target_package)
+    qbraid_circuit.transpile(target)
     transpiled_circuit = qbraid_circuit.program
     transpiled_unitary = circuit_wrapper(transpiled_circuit).unitary()
     assert_allclose_up_to_global_phase(transpiled_unitary, bell_unitary, atol=1e-7)
