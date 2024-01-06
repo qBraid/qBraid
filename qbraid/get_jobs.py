@@ -180,7 +180,8 @@ def get_jobs(
     elif num_jobs < max_results:
         msg = f"Displaying {num_jobs}/{num_jobs} jobs matching query"
     elif len(query) > 0:
-        msg = f"Displaying {num_jobs} most recent jobs matching query"
+        s = "s" if num_jobs > 1 else ""
+        msg = f"Displaying {num_jobs} most recent job{s} matching query"
     else:
         msg = f"Displaying {num_jobs} most recent jobs"
 
