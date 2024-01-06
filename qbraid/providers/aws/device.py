@@ -30,6 +30,14 @@ if TYPE_CHECKING:
     import qbraid
 
 
+def _future_utc_datetime(hours: int, minutes: int, seconds: int) -> str:
+    """Return a UTC datetime that is hours, minutes, and seconds from now
+    as an ISO string without fractional seconds."""
+    current_utc = datetime.utcnow()
+    future_time = current_utc + timedelta(hours=hours, minutes=minutes, seconds=seconds)
+    return future_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
 class BraketDevice(QuantumDevice):
     """Wrapper class for Amazon Braket ``Device`` objects."""
 
@@ -70,12 +78,14 @@ class BraketDevice(QuantumDevice):
 
         return DeviceStatus.OFFLINE
 
-    @property
-    def is_available(self) -> Tuple[bool, str]:
-        """Returns true if the device is currently available, and the available time.
+    def availability_window(self) -> Tuple[bool, str, str]:
+        """Provides device availability status. Indicates current availability,
+        time remaining (hours, minutes, seconds) until next availability or
+        unavailability, and future UTC datetime of next change in availability status.
 
         Returns:
-            Tuple[bool, str]: Current device availability and hr/min/sec until next available.
+            Tuple[bool, str, str]: Current device availability, hr/min/sec until availability
+                                   switch, future UTC datetime of availability switch
         """
 
         is_available_result = False
@@ -84,7 +94,7 @@ class BraketDevice(QuantumDevice):
         device = self._device
 
         if device.status != "ONLINE":
-            return is_available_result, ""
+            return is_available_result, "", ""
 
         day = 0
 
@@ -171,10 +181,9 @@ class BraketDevice(QuantumDevice):
         hours = available_time // 3600
         minutes = (available_time // 60) % 60
         seconds = available_time - hours * 3600 - minutes * 60
-        time_lst = [hours, minutes, seconds]
-        time_str_lst = [str(x) if x >= 10 else f"0{x}" for x in time_lst]
-        available_time_hms = ":".join(time_str_lst)
-        return is_available_result, available_time_hms
+        available_time_hms = f"{hours:02}:{minutes:02}:{seconds:02}"
+        utc_datetime_str = _future_utc_datetime(hours, minutes, seconds)
+        return is_available_result, available_time_hms, utc_datetime_str
 
     def queue_depth(self) -> int:
         """Return the number of jobs in the queue for the device"""
@@ -187,6 +196,14 @@ class BraketDevice(QuantumDevice):
 
     def _transpile(self, run_input):
         """Transpile a circuit for the device."""
+        if self._device_type.name == "SIMULATOR":
+            # pylint: disable=import-outside-toplevel
+            from qbraid.programs.braket import BraketCircuit
+
+            program = BraketCircuit(run_input)
+            program.remove_idle_qubits()
+            run_input = program.program
+
         return run_input
 
     def _compile(self, run_input):
@@ -219,9 +236,10 @@ class BraketDevice(QuantumDevice):
         run_input = qbraid_circuit._program
         aws_quantum_task = self._device.run(run_input, *args, **kwargs)
         metadata = aws_quantum_task.metadata()
-        shots = 0 if "shots" not in metadata else metadata["shots"]
+        shots = metadata.get("shots", 0)
+        tags = metadata.get("tags", {})
         vendor_job_id = metadata["quantumTaskArn"]
-        job_id = self._init_job(vendor_job_id, [qbraid_circuit], shots)
+        job_id = self._init_job(vendor_job_id, [qbraid_circuit], shots, tags)
         return BraketQuantumTask(
             job_id, vendor_job_id=vendor_job_id, device=self, vendor_job_obj=aws_quantum_task
         )
@@ -256,9 +274,10 @@ class BraketDevice(QuantumDevice):
         for index, aws_quantum_task in enumerate(aws_quantum_tasks):
             qbraid_circuit = qbraid_circuit_batch[index]
             metadata = aws_quantum_task.metadata()
-            shots = 0 if "shots" not in metadata else metadata["shots"]
+            shots = metadata.get("shots", 0)
+            tags = metadata.get("tags", {})
             vendor_job_id = metadata["quantumTaskArn"]
-            job_id = self._init_job(vendor_job_id, [qbraid_circuit], shots)
+            job_id = self._init_job(vendor_job_id, [qbraid_circuit], shots, tags)
             aws_quantum_task_wrapper_list.append(
                 BraketQuantumTask(
                     job_id,

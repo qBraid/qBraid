@@ -70,7 +70,7 @@ class QiskitCircuit(QuantumProgram):
         circuit.remove_final_measurements()
         return Operator(circuit).data
 
-    def collapse_empty_registers(self) -> None:
+    def remove_idle_qubits(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
         circuit = self.program.copy()
@@ -89,13 +89,5 @@ class QiskitCircuit(QuantumProgram):
     def reverse_qubit_order(self) -> None:
         """Reverse the order of the qubits in the circuit."""
         circuit = self.program.copy()
-        reversed_circuit = qiskit.QuantumCircuit(circuit.num_qubits)
-
-        for inst, qargs, _ in circuit.data:
-            # Find the index of the qubit within the circuit using the `find_bit` method
-            qubit_indices = [circuit.qubits.index(qubit) for qubit in qargs]
-            # Reverse the qubit indices for the instruction
-            reversed_qargs = [circuit.num_qubits - 1 - idx for idx in qubit_indices]
-            reversed_circuit.append(inst, reversed_qargs)
-
+        reversed_circuit = circuit.reverse_bits()
         self._program = reversed_circuit

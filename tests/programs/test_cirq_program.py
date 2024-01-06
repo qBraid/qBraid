@@ -12,7 +12,7 @@
 Unit tests for qbraid.programs.cirq.CirqCircuit
 
 """
-from cirq import Circuit, GridQubit, LineQubit, X, Y, Z
+from cirq import Circuit, GridQubit, H, LineQubit, Moment, NamedQubit, X, Y, Z
 
 from qbraid.programs.cirq import CirqCircuit
 
@@ -25,7 +25,7 @@ def test_contiguous_line_qubits():
     circuit.append(Z(LineQubit(4)))
 
     program = CirqCircuit(circuit)
-    program.collapse_empty_registers()
+    program.remove_idle_qubits()
 
     expected_qubits = [LineQubit(0), LineQubit(1), LineQubit(2)]
     assert set(program.qubits) == set(expected_qubits)
@@ -39,7 +39,7 @@ def test_contiguous_grid_qubits():
     circuit.append(Z(GridQubit(0, 4)))
 
     program = CirqCircuit(circuit)
-    program.collapse_empty_registers()
+    program.remove_idle_qubits()
 
     expected_qubits = [GridQubit(0, 0), GridQubit(0, 1), GridQubit(0, 2)]
     assert set(program.qubits) == set(expected_qubits)
@@ -52,7 +52,21 @@ def test_mixed_qubit_types():
     circuit.append(Y(GridQubit(0, 4)))
 
     program = CirqCircuit(circuit)
-    program.collapse_empty_registers()
+    program.remove_idle_qubits()
 
     expected_qubits = [LineQubit(0), LineQubit(1)]
     assert set(program.qubits) == set(expected_qubits)
+
+
+def test_convert_to_line_qubits():
+    """Test converting a circuit of all NamedQubits to LineQubits"""
+    circuit = Circuit(
+        [
+            Moment(H(NamedQubit("q"))),
+        ]
+    )
+
+    program = CirqCircuit(circuit)
+    program._convert_to_line_qubits()
+    for qubit in program.qubits:
+        assert isinstance(qubit, LineQubit)

@@ -113,7 +113,7 @@ def test_from_cirq(to_type):
     circuit = convert_to_package(converted_circuit, "cirq")
     if to_type == "qasm3":
         qprogram = circuit_wrapper(circuit)
-        qprogram.collapse_empty_registers()
+        qprogram.remove_idle_qubits()
         circuit = qprogram.program
     assert _equal(circuit, cirq_bell)
 
@@ -480,7 +480,7 @@ def test_non_contiguous_qubits_braket():
     braket_circuit.cnot(0, 2)
     braket_circuit.cnot(2, 4)
     qpgoram_test = circuit_wrapper(braket_circuit)
-    qpgoram_test.collapse_empty_registers()
+    qpgoram_test.remove_idle_qubits()
     test_circuit = qpgoram_test.program
     qbraid_wrapper = circuit_wrapper(test_circuit)
     cirq_circuit = qbraid_wrapper.transpile("cirq")
@@ -502,7 +502,7 @@ def test_non_contiguous_qubits_cirq():
     cirq_circuit.append(cirq.CNOT(q0, q2))
     cirq_circuit.append(cirq.CNOT(q2, q4))
     qpgoram_test = circuit_wrapper(cirq_circuit)
-    qpgoram_test.collapse_empty_registers()
+    qpgoram_test.remove_idle_qubits()
     test_circuit = qpgoram_test.program
     qbraid_wrapper = circuit_wrapper(test_circuit)
     qiskit_circuit = qbraid_wrapper.transpile("qiskit")

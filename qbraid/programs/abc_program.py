@@ -156,7 +156,7 @@ class QuantumProgram:
         return tensor_le.reshape([rank, rank])
 
     @abstractmethod
-    def collapse_empty_registers(self) -> None:
+    def remove_idle_qubits(self) -> None:
         """Remove empty registers of circuit."""
 
     @abstractmethod

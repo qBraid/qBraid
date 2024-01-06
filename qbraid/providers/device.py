@@ -15,10 +15,11 @@ Module defining abstract QuantumDevice Class
 
 """
 
+import json
 import warnings
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import TYPE_CHECKING  # pylint: disable=unused-import
+from typing import TYPE_CHECKING, Dict  # pylint: disable=unused-import
 
 from qbraid.api import ApiError, QbraidSession
 from qbraid.exceptions import QbraidError
@@ -102,7 +103,7 @@ class QuantumDevice(ABC):
         """The device type, Simulator, Fake_device or QPU.
 
         Returns:
-            Device type enum (Simulator|Fake_Device|QPU)
+            Device type enum (SIMULATOR|QPU|FAKE)
 
         """
         return self._device_type
@@ -227,6 +228,7 @@ class QuantumDevice(ABC):
         vendor_job_id: str,
         circuits: "qbraid.transpiler.QuantumProgram",
         shots: int,
+        tags: Dict[str, str],
     ) -> str:
         """Initialize data dictionary for new qbraid job and
         create associated MongoDB job document.
@@ -251,7 +253,7 @@ class QuantumDevice(ABC):
         if session._running_in_lab() and session._qbraid_jobs_enabled(vendor):
             try:
                 job = session.post("/get-user-jobs", json={"vendorJobId": vendor_job_id}).json()[0]
-                return job["qbraidJobId"]
+                return job.get("qbraidJobId", job.get("_id"))
             except IndexError as err:
                 raise ApiError(f"{self.vendor} job {vendor_job_id} not found") from err
 
@@ -270,6 +272,7 @@ class QuantumDevice(ABC):
             "qbraidDeviceId": qbraid_id,
             "vendorDeviceId": self.id,
             "shots": shots,
+            "tags": json.dumps(tags),
             "createdAt": datetime.utcnow(),
             "status": "UNKNOWN",  # this will be set after we get back the job ID and check status
             "qbraidStatus": JobStatus.INITIALIZING.name,

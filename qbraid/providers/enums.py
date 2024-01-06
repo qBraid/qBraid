@@ -21,12 +21,13 @@ class DeviceType(str, Enum):
     Attributes:
         SIMULATOR (str): the device is a simulator
         QPU (str): the device is a QPU
+        FAKE (str): is a fake device used for testing
 
     """
 
     SIMULATOR = "SIMULATOR"
-    FAKE_DEVICE = "FAKE_DEVICE"
     QPU = "QPU"
+    FAKE = "FAKE"
 
 
 class DeviceStatus(int, Enum):

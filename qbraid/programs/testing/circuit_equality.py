@@ -123,8 +123,8 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
     program1 = circuit_wrapper(circuit1)
 
     if index_contig:
-        program0.collapse_empty_registers()
-        program1.collapse_empty_registers()
+        program0.remove_idle_qubits()
+        program1.remove_idle_qubits()
 
     unitary0 = program0.unitary()
     unitary1 = program1.unitary()

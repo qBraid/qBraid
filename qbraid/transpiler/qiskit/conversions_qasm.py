@@ -12,8 +12,6 @@
 Module defining Qiskit OpenQASM conversions
 
 """
-import warnings
-
 import qiskit
 from qiskit.qasm3 import QASM3ImporterError, dumps, loads
 
@@ -100,9 +98,8 @@ def qasm3_to_qiskit(qasm3: str) -> qiskit.QuantumCircuit:
 
     try:
         return loads(qasm3)
-    except QASM3ImporterError as e:
-        # Log the error or provide feedback
-        warnings.warn(f"Initial load failed, attempting replacements: {e}", category=UserWarning)
+    except QASM3ImporterError:
+        pass
 
     qasm3 = replace_commands(qasm3, replacements)
     qasm3 = _add_stdgates_include(qasm3)

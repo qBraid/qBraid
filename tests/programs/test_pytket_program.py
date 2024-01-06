@@ -34,13 +34,13 @@ def test_reverse_qubit_order(input_circuit, expected_circuit):
     assert result_circuit.get_commands() == expected_circuit.get_commands()
 
 
-def test_collapse_empty_registers_pytket():
+def test_remove_idle_qubits_pytket():
     """Test wires with no operations from pytket circuit"""
     circuit = Circuit(3)
     circuit.H(0)
     circuit.CX(0, 1)
     qprogram = PytketCircuit(circuit)
-    qprogram.collapse_empty_registers()
+    qprogram.remove_idle_qubits()
     contig_circuit = qprogram.program
     assert contig_circuit.n_qubits == 2
 

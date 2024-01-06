@@ -70,7 +70,7 @@ def make_circuit(bk_instrs):
         Gate, index = instr
         circuit.add_instruction(Instruction(Gate(), target=index))
     qprogram = BraketCircuit(circuit)
-    qprogram.populate_empty_registers()
+    qprogram.populate_idle_qubits()
     return qprogram.program
 
 
@@ -112,7 +112,7 @@ def test_kronecker_product_factor_permutation():
     assert np.allclose(unitary, unitary_rev)
 
 
-def test_collapse_empty_registers_braket_bell():
+def test_remove_idle_qubits_braket_bell():
     """Test convert_to_contigious on bell circuit"""
     circuit = Circuit().h(0).cnot(0, 1)  # pylint: disable=no-member
     h_gate = np.sqrt(1 / 2) * np.array([[1, 1], [1, -1]])
@@ -120,7 +120,7 @@ def test_collapse_empty_registers_braket_bell():
     cnot_gate = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
     u_expected = np.einsum("ij,jk->ki", h_gate_kron, cnot_gate)
     qprogram = BraketCircuit(circuit)
-    qprogram.collapse_empty_registers()
+    qprogram.remove_idle_qubits()
     u_little_endian = qprogram.unitary_little_endian()
     assert np.allclose(u_expected, u_little_endian)
 
@@ -129,6 +129,6 @@ def test_collapse_empty_braket_control_modifier():
     """Test that converting braket circuits to contiguous qubits works with control modifiers"""
     circuit = Circuit().y(target=0, control=1)
     qprogram = BraketCircuit(circuit)
-    qprogram.collapse_empty_registers()
+    qprogram.remove_idle_qubits()
     contig_circuit = qprogram.program
     assert circuit.qubit_count == contig_circuit.qubit_count

@@ -13,17 +13,20 @@ Unit tests for qbraid top-level functionality
 
 """
 import os
+import re
 import sys
 from unittest.mock import Mock
 
 import pytest
 
 from qbraid import __version__
+from qbraid._display import running_in_jupyter, update_progress_bar
 from qbraid._warnings import _warn_new_version
 from qbraid.exceptions import PackageValueError
 from qbraid.get_devices import get_devices
 from qbraid.get_jobs import _display_jobs_jupyter, get_jobs
-from qbraid.visualization.display_utils import running_in_jupyter, update_progress_bar
+from qbraid.interface.random import random_circuit
+from qbraid.load_provider import device_wrapper
 
 # pylint: disable=missing-function-docstring,redefined-outer-name
 
@@ -119,6 +122,38 @@ def test_get_jobs_no_results(capfd):
     get_jobs(filters={"circuitNumQubits": -1})
     out, err = capfd.readouterr()
     assert out == "No jobs found matching given criteria\n"
+    assert len(err) == 0
+
+
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+def test_get_aws_jobs_by_tag(capfd):
+    """Test ``get_jobs`` for aws tagged jobs."""
+    _mock_ipython(MockIPython(None))
+    circuit = random_circuit("braket")
+    device = device_wrapper("aws_dm_sim")
+    job = device.run(circuit, shots=10, tags={"amazon": "braket"})
+    get_jobs(filters={"tags": {"amazon": "braket"}})
+    out, err = capfd.readouterr()
+    message = out.split("\n")[1]
+    pattern = r"Displaying \d+/\d+ jobs matching query:"
+    assert re.match(pattern, message)
+    assert job.id in out
+    assert len(err) == 0
+
+
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+def test_get_ibm_jobs_by_tag(capfd):
+    """Test ``get_jobs`` for ibm tagged jobs."""
+    _mock_ipython(MockIPython(None))
+    circuit = random_circuit("qiskit")
+    device = device_wrapper("ibm_q_qasm_simulator")
+    job = device.run(circuit, shots=10, tags=["ibm", "qiskit"])
+    get_jobs(filters={"tags": {"ibm": "*", "qiskit": "*"}})
+    out, err = capfd.readouterr()
+    message = out.split("\n")[1]
+    pattern = r"Displaying \d+/\d+ jobs matching query:"
+    assert re.match(pattern, message)
+    assert job.id in out
     assert len(err) == 0
 
 

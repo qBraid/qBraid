@@ -51,7 +51,10 @@ def device_wrapper(device_id: str):
         raise QbraidError(f"{device_id} is not a valid device ID.")
 
     device_info = device_lst[0]
-    device_id = device_info["objArg"]
+    try:
+        device_id = device_info["objArg"]
+    except KeyError as err:
+        raise QbraidError(f"Device {device_id} does not have an associated objArg.") from err
     provider = QbraidProvider()
     device_obj = provider.get_device(device_id)
 
@@ -79,7 +82,12 @@ def job_wrapper(qbraid_job_id: str):
     ).json()
 
     if len(job_lst) == 0:
-        raise QbraidError(f"{qbraid_job_id} is not a valid job ID.")
+        job_lst = session.post(
+            "/get-user-jobs", json={"_id": qbraid_job_id, "numResults": 1}
+        ).json()
+
+        if len(job_lst) == 0:
+            raise QbraidError(f"{qbraid_job_id} is not a valid job ID.")
 
     job_data = job_lst[0]
 
@@ -89,11 +97,11 @@ def job_wrapper(qbraid_job_id: str):
     except (KeyError, QbraidError):
         qbraid_device = None
 
+    status_str = job_data.get("qbraidStatus", job_data.get("status", "UNKNOWN"))
     try:
-        status_str = job_data["status"]
-    except KeyError:
-        status_str = "UNKNOWN"
-    vendor_job_id = job_data["vendorJobId"]
+        vendor_job_id = job_data["vendorJobId"]
+    except KeyError as err:
+        raise QbraidError(f"Job {qbraid_job_id} does not have an associated vendorJobId.") from err
     vendor = qbraid_device.vendor.lower()
     devices_entrypoints = _get_entrypoints("qbraid.providers")
     ep = f"{vendor}.job"
