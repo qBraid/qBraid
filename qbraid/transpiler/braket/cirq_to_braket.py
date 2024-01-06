@@ -35,7 +35,6 @@ try:
 except ImportError:
     cirq_ionq_ops = None
 
-import qbraid
 from qbraid.transpiler.braket.custom_gates import C as BKControl
 from qbraid.transpiler.exceptions import CircuitConversionError
 
@@ -49,6 +48,9 @@ def cirq_to_braket(circuit: Circuit) -> BKCircuit:
     Returns:
         Braket circuit equivalent to the input Cirq circuit.
     """
+    # pylint: disable=import-outside-toplevel
+    import qbraid.programs.cirq
+
     cirq_qubits = list(circuit.all_qubits())
     cirq_int_qubits = [qbraid.programs.cirq.CirqCircuit._int_from_qubit(q) for q in cirq_qubits]
     braket_int_qubits = deepcopy(cirq_int_qubits)
@@ -71,6 +73,9 @@ def _to_braket_instruction(
     Raises:
         CircuitConversionError: If the operation cannot be converted to Braket.
     """
+    # pylint: disable=import-outside-toplevel
+    import qbraid.programs.cirq
+
     if isinstance(
         operation, (cirq_ops.MeasurementGate, cirq_ops.Operation)
     ) and qbraid.programs.cirq.CirqCircuit.is_measurement_gate(operation):

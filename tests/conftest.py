@@ -9,19 +9,19 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-PyQuil conversions
-
-.. currentmodule:: qbraid.transpiler.pyquil
-
-Functions
-----------
-
-.. autosummary::
-   :toctree: ../stubs/
-
-   pyquil_to_cirq
-   cirq_to_pyquil
+Fixtures imported/defined in this file can be used by any test in this directory
+without needing to import them (pytest will automatically discover them).
 
 """
+# pylint: disable=unused-import
 
-from qbraid.transpiler.pyquil.conversions import cirq_to_pyquil, pyquil_to_cirq
+from .fixtures import (
+    bell_circuit,
+    bell_unitary,
+    packages_bell,
+    packages_shared15,
+    shared15_circuit,
+    shared15_unitary,
+    two_bell_circuits,
+    two_shared15_circuits,
+)

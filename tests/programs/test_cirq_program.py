@@ -12,9 +12,10 @@
 Unit tests for qbraid.programs.cirq.CirqCircuit
 
 """
-from cirq import Circuit, GridQubit, H, LineQubit, Moment, NamedQubit, X, Y, Z
+from cirq import CNOT, Circuit, GridQubit, H, LineQubit, Moment, NamedQubit, X, Y, Z
 
 from qbraid.programs.cirq import CirqCircuit
+from qbraid.programs.testing import circuits_allclose
 
 
 def test_contiguous_line_qubits():
@@ -58,7 +59,7 @@ def test_mixed_qubit_types():
     assert set(program.qubits) == set(expected_qubits)
 
 
-def test_convert_to_line_qubits():
+def test_convert_named_qubit_to_line_qubit():
     """Test converting a circuit of all NamedQubits to LineQubits"""
     circuit = Circuit(
         [
@@ -70,3 +71,39 @@ def test_convert_to_line_qubits():
     program._convert_to_line_qubits()
     for qubit in program.qubits:
         assert isinstance(qubit, LineQubit)
+
+
+def test_reverse_named_qubit_order():
+    """Test reversing the order of qubits in a NamedQubit circuit"""
+    circuit = Circuit(
+        [
+            Moment(H(NamedQubit("q"))),
+            Moment(X(NamedQubit("y"))),
+        ]
+    )
+
+    op_map = {}
+    for op in circuit.all_operations():
+        op_map[str(op.gate)] = op.qubits
+
+    program = CirqCircuit(circuit)
+    program.reverse_qubit_order()
+    rev_circuit = program.program
+    for op in rev_circuit.all_operations():
+        assert op_map[str(op.gate)] != op.qubits
+
+
+def test_remove_idle_named_qubits():
+    """Test removing idle qubits from a NamedQubit circuit"""
+    circuit = Circuit(
+        [
+            Moment(H(NamedQubit("q_4")), H(NamedQubit("q_8"))),
+            Moment(CNOT(NamedQubit("q_6"), NamedQubit("q_8"))),
+            Moment(X(NamedQubit("q_2"))),
+        ]
+    )
+    qprogram = CirqCircuit(circuit)
+    qprogram.remove_idle_qubits()
+    new_circuit = qprogram.program
+    assert set(new_circuit.all_qubits()) == {NamedQubit(str(i)) for i in range(qprogram.num_qubits)}
+    assert circuits_allclose(circuit, new_circuit)

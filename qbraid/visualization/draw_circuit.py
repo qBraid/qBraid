@@ -14,8 +14,8 @@ Module for drawing quantum circuit diagrams
 """
 from typing import TYPE_CHECKING
 
-from qbraid.exceptions import ProgramTypeError, QasmError, VisualizationError
-from qbraid.interface.qasm_checks import get_qasm_version
+from qbraid.exceptions import ProgramTypeError, VisualizationError
+from qbraid.interface.inspector import get_program_type
 from qbraid.visualization.draw_qasm3 import qasm3_drawer
 
 if TYPE_CHECKING:
@@ -31,34 +31,23 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
     Raises:
         ProgramTypeError: If quantum program is not of a supported type
     """
-    if isinstance(program, str):
-        try:
-            package = get_qasm_version(program)
-        except QasmError as err:
-            raise ProgramTypeError(
-                "Input of type string must represent a valid OpenQASM program."
-            ) from err
-    else:
-        try:
-            package = program.__module__
-        except AttributeError as err:
-            raise ProgramTypeError(program) from err
+    package = get_program_type(program)
 
     # pylint: disable=import-outside-toplevel
 
-    if "qiskit" in package:
+    if package == "qiskit":
         from qiskit.visualization import circuit_drawer as qiskit_drawer
 
         return qiskit_drawer(program, output=output, **kwargs)
 
-    if "braket" in package:
+    if package == "braket":
         if output in (None, "ascii"):
             from braket.circuits.ascii_circuit_diagram import AsciiCircuitDiagram
 
             return print(AsciiCircuitDiagram.build_diagram(program))
         raise VisualizationError('The only valid option for braket are "ascii"')
 
-    if "cirq" in package:
+    if package == "cirq":
         if output in (None, "text"):
             return print(program.to_text_diagram(**kwargs))
         if output == "svg":
@@ -72,7 +61,7 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
             return circuit_to_svg(program)
         raise VisualizationError('The only valid option for cirq are "text", "svg", "svf_source"')
 
-    if "pyquil" in package:
+    if package == "pyquil":
         if output is None or output == "text":
             return print(program)
         if output == "latex":
@@ -82,7 +71,7 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
             return display(program, **kwargs)
         raise VisualizationError('The only valid option for pyquil are "text", "latex"')
 
-    if "pytket" in package:
+    if package == "pytket":
         if output in (None, "jupyter"):
             from pytket.circuit.display import render_circuit_jupyter
 

@@ -18,6 +18,7 @@ filterwarnings = [
     "ignore::DeprecationWarning",
     "ignore::PendingDeprecationWarning",
     "ignore::urllib3.exceptions.InsecureRequestWarning",
+    "ignore::RuntimeWarning:numpy.linalg.linalg",
 ]
 
 [tool.coverage.run]

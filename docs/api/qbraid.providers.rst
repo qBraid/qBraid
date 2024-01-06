@@ -6,12 +6,13 @@ qbraid.providers
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.providers.aws
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
-.. automodule:: qbraid.providers.ibm
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Submodules
+-----------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+   aws
+   ibm
+

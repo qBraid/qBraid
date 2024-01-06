@@ -11,11 +11,12 @@
 # pylint: skip-file
 
 """
-==========================
- API (:mod:`qbraid.api`)
-==========================
+Module for interfacing with the qBraid API.
 
 .. currentmodule:: qbraid.api
+
+Exceptions
+------------
 
 .. autosummary::
    :toctree: ../stubs/
@@ -24,48 +25,16 @@
    AuthError
    ConfigError
    RequestsApiError
+
+
+Classes
+--------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+   QbraidSession
    PostForcelistRetry
-
-.. autoclass:: QbraidSession
-
-   .. automethod:: __init__
-
-   .. rubric:: Methods
-
-   .. autosummary::
-
-      ~QbraidSession.__init__
-      ~QbraidSession.close
-      ~QbraidSession.delete
-      ~QbraidSession.get
-      ~QbraidSession.get_adapter
-      ~QbraidSession.get_config_variable
-      ~QbraidSession.get_redirect_target
-      ~QbraidSession.head
-      ~QbraidSession.merge_environment_settings
-      ~QbraidSession.mount
-      ~QbraidSession.options
-      ~QbraidSession.patch
-      ~QbraidSession.post
-      ~QbraidSession.prepare_request
-      ~QbraidSession.put
-      ~QbraidSession.rebuild_auth
-      ~QbraidSession.rebuild_method
-      ~QbraidSession.rebuild_proxies
-      ~QbraidSession.request
-      ~QbraidSession.resolve_redirects
-      ~QbraidSession.save_config
-      ~QbraidSession.send
-      ~QbraidSession.should_strip_auth
-
-   .. rubric:: Attributes
-
-   .. autosummary::
-
-      ~QbraidSession.base_url
-      ~QbraidSession.user_email
-      ~QbraidSession.api_key
-      ~QbraidSession.refresh_token
 
 """
 from .exceptions import ApiError, AuthError, ConfigError, RequestsApiError

@@ -6,8 +6,10 @@ qbraid.interface
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.interface.random
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Submodules
+-----------
 
+.. autosummary::
+   :toctree: ../stubs/
+
+   random

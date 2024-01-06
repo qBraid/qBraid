@@ -12,13 +12,12 @@
 # pylint: skip-file
 
 """
-====================================================
-IBM Devices Interface (:mod:`qbraid.providers.ibm`)
-====================================================
+Mdule submiting and managing jobs through IBM and IBM backends.
 
 .. currentmodule:: qbraid.providers.ibm
 
-This module contains the classes used to run quantum circuits on devices available through IBM.
+Classes
+--------
 
 .. autosummary::
    :toctree: ../stubs/

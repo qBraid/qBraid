@@ -16,7 +16,6 @@ import re
 from typing import TYPE_CHECKING, List
 
 from qbraid.programs.abc_program import QuantumProgram
-from qbraid.transpiler.cirq.conversions_qasm import qasm2_to_cirq
 
 if TYPE_CHECKING:
     import numpy as np
@@ -152,6 +151,9 @@ class OpenQasm2Program(QuantumProgram):
 
     def _unitary(self) -> "np.ndarray":
         """Return the unitary of the QASM"""
+        # pylint: disable=import-outside-toplevel
+        from qbraid.transpiler.cirq.conversions_qasm import qasm2_to_cirq
+
         return qasm2_to_cirq(self.program).unitary()
 
     def remove_idle_qubits(self) -> None:

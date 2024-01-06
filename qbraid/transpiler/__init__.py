@@ -9,11 +9,13 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-==============================================
-Transpiler  (:mod:`qbraid.transpiler`)
-==============================================
+Module containing one-step functions for converting between supported
+quantum software program types.
 
 .. currentmodule:: qbraid.transpiler
+
+Exceptions
+------------
 
 .. autosummary::
    :toctree: ../stubs/

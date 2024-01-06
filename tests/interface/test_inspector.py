@@ -9,14 +9,17 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for verifying OpenQASM programs
+Unit tests for inspecting and getting information about quantum programs
 
 """
+from unittest.mock import Mock
 
 import pytest
 
-from qbraid.exceptions import QasmError
-from qbraid.interface.qasm_checks import get_qasm_version
+from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError
+from qbraid.interface.inspector import get_program_type, get_qasm_version
+
+from ..fixtures import packages_bell
 
 QASM_BELL_DATA = [
     (
@@ -88,3 +91,34 @@ def test_get_qasm_version_error(qasm_str):
     """Test getting QASM version"""
     with pytest.raises(QasmError):
         get_qasm_version(qasm_str)
+
+
+@pytest.mark.parametrize("bell_circuit", packages_bell, indirect=True)
+def test_get_program_type(bell_circuit):
+    """Test that the correct package is returned for a given program."""
+    circuit, expected_package = bell_circuit
+    package_name = get_program_type(circuit)
+    assert package_name == expected_package
+
+
+def test_raise_error_unuspported_source_program():
+    """Test that an error is raised if source program is not supported."""
+    with pytest.raises(PackageValueError):
+        get_program_type(Mock())
+
+
+@pytest.mark.parametrize(
+    "item",
+    ["OPENQASM 2.0; bad operation", "OPENQASM 3.0; bad operation", "DECLARE ro BIT[1]", "circuit"],
+)
+def test_bad_source_openqasm_program(item):
+    """Test raising ProgramTypeError converting invalid OpenQASM program string"""
+    with pytest.raises(ProgramTypeError):
+        get_program_type(item)
+
+
+@pytest.mark.parametrize("item", [1, None])
+def test_bad_source_program_type(item):
+    """Test raising ProgramTypeError converting circuit of non-supported type"""
+    with pytest.raises(ProgramTypeError):
+        get_program_type(item)

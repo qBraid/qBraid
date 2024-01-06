@@ -15,10 +15,6 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 # qbraid: skip-header
-# isort: skip_file
-# pylint: skip-file
-# flake8: noqa
-# fmt: off
 
 """
 Unit tests for Cirq Qasm Parser
@@ -27,20 +23,17 @@ Unit tests for Cirq Qasm Parser
 
 from typing import Callable
 
+import cirq
+import cirq.testing as ct
 import numpy as np
 import pytest
 import sympy
-
-import cirq
-import cirq.testing as ct
 from cirq import Circuit
 from cirq.circuits.qasm_output import QasmUGate
 from cirq.contrib.qasm_import import QasmException
 
 import qbraid.transpiler.cirq.cirq_gates as cirq_qasm_gates
 from qbraid.transpiler.cirq.cirq_qasm_parser import QasmParser
-
-# from cirq.contrib.qasm_import._parser import QasmParser
 
 
 def test_format_header_circuit():
@@ -74,7 +67,7 @@ include "qelib1.inc";
     ct.assert_same_circuits(parsed_qasm.circuit, Circuit())
 
 
-@pytest.mark.parametrize('qasm', ["include \"qelib1.inc\";", "", "qreg q[3];"])
+@pytest.mark.parametrize("qasm", ['include "qelib1.inc";', "", "qreg q[3];"])
 def test_error_not_starting_with_format(qasm: str):
     parser = QasmParser()
 
@@ -114,11 +107,11 @@ def test_multiple_qreg_declaration():
     assert parsed_qasm.supportedFormat
     assert parsed_qasm.qelib1Include
     ct.assert_same_circuits(parsed_qasm.circuit, Circuit())
-    assert parsed_qasm.qregs == {'a_quantum_register': 1337, 'q': 42}
+    assert parsed_qasm.qregs == {"a_quantum_register": 1337, "q": 42}
 
 
 @pytest.mark.parametrize(
-    'qasm',
+    "qasm",
     [
         """OPENQASM 2.0;
            qreg q[2];
@@ -138,7 +131,7 @@ def test_already_defined_error(qasm: str):
 
 
 @pytest.mark.parametrize(
-    'qasm',
+    "qasm",
     [
         """OPENQASM 2.0;
            qreg q[0];
@@ -180,8 +173,8 @@ def test_multiple_creg_declaration():
     assert parsed_qasm.supportedFormat
     assert parsed_qasm.qelib1Include
     ct.assert_same_circuits(parsed_qasm.circuit, Circuit())
-    assert parsed_qasm.qregs == {'a_quantum_register': 1337}
-    assert parsed_qasm.cregs == {'a_classical_register': 1337, 'c': 42}
+    assert parsed_qasm.qregs == {"a_quantum_register": 1337}
+    assert parsed_qasm.cregs == {"a_classical_register": 1337, "c": 42}
 
 
 def test_syntax_error():
@@ -205,10 +198,10 @@ def test_CX_gate():
 """
     parser = QasmParser()
 
-    q1_0 = cirq.NamedQubit('q1_0')
-    q1_1 = cirq.NamedQubit('q1_1')
-    q2_0 = cirq.NamedQubit('q2_0')
-    q2_1 = cirq.NamedQubit('q2_1')
+    q1_0 = cirq.NamedQubit("q1_0")
+    q1_1 = cirq.NamedQubit("q1_1")
+    q2_0 = cirq.NamedQubit("q2_0")
+    q2_1 = cirq.NamedQubit("q2_1")
 
     expected_circuit = Circuit()
     # CX q1[0], q1[1];
@@ -226,7 +219,7 @@ def test_CX_gate():
     assert not parsed_qasm.qelib1Include
 
     ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
-    assert parsed_qasm.qregs == {'q1': 2, 'q2': 2}
+    assert parsed_qasm.qregs == {"q1": 2, "q2": 2}
 
 
 @pytest.mark.skip(reason="Not yet supported")
@@ -239,11 +232,11 @@ def test_classical_control():
     """
     parser = QasmParser()
 
-    q_0 = cirq.NamedQubit('q_0')
-    q_1 = cirq.NamedQubit('q_1')
+    q_0 = cirq.NamedQubit("q_0")
+    q_1 = cirq.NamedQubit("q_1")
     expected_circuit = cirq.Circuit(
-        cirq.measure(q_0, key='a_0'),
-        cirq.CNOT(q_0, q_1).with_classical_controls(sympy.Eq(sympy.Symbol('a_0'), 1)),
+        cirq.measure(q_0, key="a_0"),
+        cirq.CNOT(q_0, q_1).with_classical_controls(sympy.Eq(sympy.Symbol("a_0"), 1)),
     )
 
     parsed_qasm = parser.parse(qasm)
@@ -252,7 +245,7 @@ def test_classical_control():
     assert not parsed_qasm.qelib1Include
 
     ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
-    assert parsed_qasm.qregs == {'q': 2}
+    assert parsed_qasm.qregs == {"q": 2}
 
     # Note this cannot *exactly* round-trip because the way QASM and Cirq handle measurements
     # into classical registers is different. Cirq parses QASM classical registers into m_a_i for i
@@ -268,6 +261,7 @@ if (m_a_0==1) cx q[0],q[1];
 """
     assert cirq.qasm(parsed_qasm.circuit) == expected_generated_qasm
 
+
 @pytest.mark.skip(reason="Not yet supported")
 def test_classical_control_multi_bit():
     qasm = """OPENQASM 2.0;
@@ -279,16 +273,16 @@ def test_classical_control_multi_bit():
     """
     parser = QasmParser()
 
-    q_0 = cirq.NamedQubit('q_0')
-    q_1 = cirq.NamedQubit('q_1')
+    q_0 = cirq.NamedQubit("q_0")
+    q_1 = cirq.NamedQubit("q_1")
 
     # Since we split the measurement into two, we also need two conditions.
     # m_a==1 corresponds to m_a[0]==1, m_a[1]==0
     expected_circuit = cirq.Circuit(
-        cirq.measure(q_0, key='a_0'),
-        cirq.measure(q_0, key='a_1'),
+        cirq.measure(q_0, key="a_0"),
+        cirq.measure(q_0, key="a_1"),
         cirq.CNOT(q_0, q_1).with_classical_controls(
-            sympy.Eq(sympy.Symbol('a_0'), 1), sympy.Eq(sympy.Symbol('a_1'), 0)
+            sympy.Eq(sympy.Symbol("a_0"), 1), sympy.Eq(sympy.Symbol("a_1"), 0)
         ),
     )
 
@@ -298,11 +292,11 @@ def test_classical_control_multi_bit():
     assert not parsed_qasm.qelib1Include
 
     ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
-    assert parsed_qasm.qregs == {'q': 2}
+    assert parsed_qasm.qregs == {"q": 2}
 
     # Note that this will *not* round-trip, but there's no good way around that due to the
     # difference in how Cirq and QASM do multi-bit measurements.
-    with pytest.raises(ValueError, match='QASM does not support multiple conditions'):
+    with pytest.raises(ValueError, match="QASM does not support multiple conditions"):
         _ = cirq.qasm(parsed_qasm.circuit)
 
 
@@ -362,8 +356,8 @@ def test_U_gate():
 """
     parser = QasmParser()
 
-    q0 = cirq.NamedQubit('q_0')
-    q1 = cirq.NamedQubit('q_1')
+    q0 = cirq.NamedQubit("q_0")
+    q1 = cirq.NamedQubit("q_1")
 
     expected_circuit = Circuit()
     expected_circuit.append(
@@ -383,7 +377,7 @@ def test_U_gate():
     assert not parsed_qasm.qelib1Include
 
     ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
-    assert parsed_qasm.qregs == {'q': 2}
+    assert parsed_qasm.qregs == {"q": 2}
 
 
 def test_U_angles():
@@ -422,31 +416,31 @@ def test_U_gate_too_much_params_error():
 
 
 @pytest.mark.parametrize(
-    'expr',
+    "expr",
     [
-        '.333 + 4',
-        '1.0 * 2',
-        '0.1 ^ pi',
-        '0.1 / pi',
-        '2.0e-05 ^ (1/2)',
-        '1.2E+05 * (3 + 2)',
-        '123123.2132312 * cos(pi)',
-        '123123.2132312 * sin(2 * pi)',
-        '3 - 4 * 2',  # precedence of *
-        '3 * 4 + 2',  # precedence of *
-        '3 * 4 ^ 2',  # precedence of ^
-        '3 - 4 ^ 2',  # precedence of ^
-        '3^2^(-2)',  # right associativity of ^
-        '(-1) * pi',
-        '(+1) * pi',
-        '-3 * 5 + 2',
-        '(+4 * (-3) ^ 5 - 2)',
-        'tan(123123.2132312)',
-        'ln(pi)',
-        'exp(2*pi)',
-        'sqrt(4)',
-        'acos(1)',
-        'atan(0.2)',
+        ".333 + 4",
+        "1.0 * 2",
+        "0.1 ^ pi",
+        "0.1 / pi",
+        "2.0e-05 ^ (1/2)",
+        "1.2E+05 * (3 + 2)",
+        "123123.2132312 * cos(pi)",
+        "123123.2132312 * sin(2 * pi)",
+        "3 - 4 * 2",  # precedence of *
+        "3 * 4 + 2",  # precedence of *
+        "3 * 4 ^ 2",  # precedence of ^
+        "3 - 4 ^ 2",  # precedence of ^
+        "3^2^(-2)",  # right associativity of ^
+        "(-1) * pi",
+        "(+1) * pi",
+        "-3 * 5 + 2",
+        "(+4 * (-3) ^ 5 - 2)",
+        "tan(123123.2132312)",
+        "ln(pi)",
+        "exp(2*pi)",
+        "sqrt(4)",
+        "acos(1)",
+        "atan(0.2)",
     ],
 )
 def test_expressions(expr: str):
@@ -457,7 +451,7 @@ def test_expressions(expr: str):
 
     parser = QasmParser()
 
-    q0 = cirq.NamedQubit('q_0')
+    q0 = cirq.NamedQubit("q_0")
 
     expected_circuit = Circuit()
     expected_circuit.append(QasmUGate(float(sympy.sympify(expr)) / np.pi, 2.0, 1 / 2.0)(q0))
@@ -470,7 +464,7 @@ def test_expressions(expr: str):
     ct.assert_allclose_up_to_global_phase(
         cirq.unitary(parsed_qasm.circuit), cirq.unitary(expected_circuit), atol=1e-10
     )
-    assert parsed_qasm.qregs == {'q': 1}
+    assert parsed_qasm.qregs == {"q": 1}
 
 
 def test_unknown_function():
@@ -484,23 +478,23 @@ def test_unknown_function():
         parser.parse(qasm)
 
 
-rotation_gates = [('rx', cirq.rx), ('ry', cirq.ry), ('rz', cirq.rz)]
+rotation_gates = [("rx", cirq.rx), ("ry", cirq.ry), ("rz", cirq.rz)]
 
 
 single_qubit_gates = [
-    ('x', cirq.X),
-    ('y', cirq.Y),
-    ('z', cirq.Z),
-    ('h', cirq.H),
-    ('s', cirq.S),
-    ('t', cirq.T),
-    ('sdg', cirq.S**-1),
-    ('tdg', cirq.T**-1),
-    ('sx', cirq.XPowGate(exponent=0.5)),
+    ("x", cirq.X),
+    ("y", cirq.Y),
+    ("z", cirq.Z),
+    ("h", cirq.H),
+    ("s", cirq.S),
+    ("t", cirq.T),
+    ("sdg", cirq.S**-1),
+    ("tdg", cirq.T**-1),
+    ("sx", cirq.XPowGate(exponent=0.5)),
 ]
 
 
-@pytest.mark.parametrize('qasm_gate,cirq_gate', rotation_gates)
+@pytest.mark.parametrize("qasm_gate,cirq_gate", rotation_gates)
 def test_rotation_gates(qasm_gate: str, cirq_gate: Callable[[float], cirq.Gate]):
     qasm = """OPENQASM 2.0;
      include "qelib1.inc";
@@ -513,8 +507,8 @@ def test_rotation_gates(qasm_gate: str, cirq_gate: Callable[[float], cirq.Gate])
 
     parser = QasmParser()
 
-    q0 = cirq.NamedQubit('q_0')
-    q1 = cirq.NamedQubit('q_1')
+    q0 = cirq.NamedQubit("q_0")
+    q1 = cirq.NamedQubit("q_1")
 
     expected_circuit = Circuit()
     expected_circuit.append(cirq.Moment([cirq_gate(np.pi / 2).on(q0), cirq_gate(np.pi).on(q1)]))
@@ -526,10 +520,10 @@ def test_rotation_gates(qasm_gate: str, cirq_gate: Callable[[float], cirq.Gate])
     assert parsed_qasm.qelib1Include
 
     ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
-    assert parsed_qasm.qregs == {'q': 2}
+    assert parsed_qasm.qregs == {"q": 2}
 
 
-@pytest.mark.parametrize('qasm_gate', [g[0] for g in rotation_gates])
+@pytest.mark.parametrize("qasm_gate", [g[0] for g in rotation_gates])
 def test_rotation_gates_wrong_number_of_args(qasm_gate: str):
     qasm = f"""
      OPENQASM 2.0;
@@ -544,7 +538,7 @@ def test_rotation_gates_wrong_number_of_args(qasm_gate: str):
         parser.parse(qasm)
 
 
-@pytest.mark.parametrize('qasm_gate', [g[0] for g in rotation_gates])
+@pytest.mark.parametrize("qasm_gate", [g[0] for g in rotation_gates])
 def test_rotation_gates_zero_params_error(qasm_gate: str):
     qasm = f"""OPENQASM 2.0;
      include "qelib1.inc";             
@@ -603,13 +597,13 @@ def test_measure_individual_bits():
     """
     parser = QasmParser()
 
-    q1_0 = cirq.NamedQubit('q1_0')
-    q1_1 = cirq.NamedQubit('q1_1')
+    q1_0 = cirq.NamedQubit("q1_0")
+    q1_1 = cirq.NamedQubit("q1_1")
 
     expected_circuit = Circuit()
 
-    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key='c1_0').on(q1_0))
-    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key='c1_1').on(q1_1))
+    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key="c1_0").on(q1_0))
+    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key="c1_1").on(q1_1))
 
     parsed_qasm = parser.parse(qasm)
 
@@ -617,8 +611,8 @@ def test_measure_individual_bits():
     assert parsed_qasm.qelib1Include
 
     ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
-    assert parsed_qasm.qregs == {'q1': 2}
-    assert parsed_qasm.cregs == {'c1': 2}
+    assert parsed_qasm.qregs == {"q1": 2}
+    assert parsed_qasm.cregs == {"c1": 2}
 
 
 def test_measure_registers():
@@ -630,15 +624,15 @@ def test_measure_registers():
     """
     parser = QasmParser()
 
-    q1_0 = cirq.NamedQubit('q1_0')
-    q1_1 = cirq.NamedQubit('q1_1')
-    q1_2 = cirq.NamedQubit('q1_2')
+    q1_0 = cirq.NamedQubit("q1_0")
+    q1_1 = cirq.NamedQubit("q1_1")
+    q1_2 = cirq.NamedQubit("q1_2")
 
     expected_circuit = Circuit()
 
-    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key='c1_0').on(q1_0))
-    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key='c1_1').on(q1_1))
-    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key='c1_2').on(q1_2))
+    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key="c1_0").on(q1_0))
+    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key="c1_1").on(q1_1))
+    expected_circuit.append(cirq.MeasurementGate(num_qubits=1, key="c1_2").on(q1_2))
 
     parsed_qasm = parser.parse(qasm)
 
@@ -646,8 +640,8 @@ def test_measure_registers():
     assert parsed_qasm.qelib1Include
 
     ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
-    assert parsed_qasm.qregs == {'q1': 3}
-    assert parsed_qasm.cregs == {'c1': 3}
+    assert parsed_qasm.qregs == {"q1": 3}
+    assert parsed_qasm.cregs == {"c1": 3}
 
 
 def test_measure_mismatched_register_size():
@@ -729,7 +723,7 @@ def test_u1_gate():
 """
     parser = QasmParser()
 
-    q0 = cirq.NamedQubit('q_0')
+    q0 = cirq.NamedQubit("q_0")
 
     expected_circuit = Circuit()
     expected_circuit.append(cirq.ops.ZPowGate(exponent=1.0 / 3.0)(q0))
@@ -740,7 +734,7 @@ def test_u1_gate():
     assert parsed_qasm.qelib1Include
 
     ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
-    assert parsed_qasm.qregs == {'q': 1}
+    assert parsed_qasm.qregs == {"q": 1}
 
 
 def test_u2_gate():
@@ -752,7 +746,7 @@ def test_u2_gate():
 """
     parser = QasmParser()
 
-    q0 = cirq.NamedQubit('q_0')
+    q0 = cirq.NamedQubit("q_0")
 
     expected_circuit = Circuit()
     expected_circuit.append(cirq_qasm_gates.U2Gate(2.0 * np.pi, np.pi / 3.0)(q0))
@@ -779,8 +773,8 @@ def test_id_gate():
 """
     parser = QasmParser()
 
-    q0 = cirq.NamedQubit('q_0')
-    q1 = cirq.NamedQubit('q_1')
+    q0 = cirq.NamedQubit("q_0")
+    q1 = cirq.NamedQubit("q_1")
 
     expected_circuit = Circuit()
     expected_circuit.append(cirq.IdentityGate(num_qubits=1)(q0))
@@ -792,7 +786,7 @@ def test_id_gate():
     assert parsed_qasm.qelib1Include
 
     ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
-    assert parsed_qasm.qregs == {'q': 2}
+    assert parsed_qasm.qregs == {"q": 2}
 
 
 def test_u3_gate():
@@ -805,8 +799,8 @@ def test_u3_gate():
 """
     parser = QasmParser()
 
-    q0 = cirq.NamedQubit('q_0')
-    q1 = cirq.NamedQubit('q_1')
+    q0 = cirq.NamedQubit("q_0")
+    q1 = cirq.NamedQubit("q_1")
 
     expected_circuit = Circuit()
     expected_circuit.append(
@@ -842,7 +836,7 @@ def test_r_gate():
 """
     parser = QasmParser()
 
-    q0 = cirq.NamedQubit('q_0')
+    q0 = cirq.NamedQubit("q_0")
 
     expected_circuit = Circuit()
     expected_circuit.append(QasmUGate(1.0, 0.0, 0.0)(q0))
@@ -853,12 +847,12 @@ def test_r_gate():
     assert parsed_qasm.qelib1Include
 
     ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
-    assert parsed_qasm.qregs == {'q': 1}
+    assert parsed_qasm.qregs == {"q": 1}
 
 
 @pytest.mark.parametrize(
-    'qasm_gate',
-    ['id', 'u2', 'u3', 'r'] + [g[0] for g in rotation_gates] + [g[0] for g in single_qubit_gates],
+    "qasm_gate",
+    ["id", "u2", "u3", "r"] + [g[0] for g in rotation_gates] + [g[0] for g in single_qubit_gates],
 )
 def test_standard_single_qubit_gates_wrong_number_of_args(qasm_gate):
     qasm = f"""
@@ -875,8 +869,8 @@ def test_standard_single_qubit_gates_wrong_number_of_args(qasm_gate):
 
 
 @pytest.mark.parametrize(
-    ['qasm_gate', 'num_params'],
-    [['id', 0], ['u2', 2], ['u3', 3], ['rx', 1], ['ry', 1], ['rz', 1], ['r', 2]]
+    ["qasm_gate", "num_params"],
+    [["id", 0], ["u2", 2], ["u3", 3], ["rx", 1], ["ry", 1], ["rz", 1], ["r", 2]]
     + [[g[0], 0] for g in single_qubit_gates],
 )
 def test_standard_gates_wrong_params_error(qasm_gate: str, num_params: int):
@@ -911,16 +905,16 @@ def test_standard_gates_wrong_params_error(qasm_gate: str, num_params: int):
 
 
 two_qubit_gates = [
-    ('cx', cirq.CNOT),
-    ('CX', cirq.CNOT),
-    ('cz', cirq.CZ),
-    ('cy', cirq.ControlledGate(cirq.Y)),
-    ('swap', cirq.SWAP),
-    ('ch', cirq.ControlledGate(cirq.H)),
+    ("cx", cirq.CNOT),
+    ("CX", cirq.CNOT),
+    ("cz", cirq.CZ),
+    ("cy", cirq.ControlledGate(cirq.Y)),
+    ("swap", cirq.SWAP),
+    ("ch", cirq.ControlledGate(cirq.H)),
 ]
 
 
-@pytest.mark.parametrize('qasm_gate,cirq_gate', two_qubit_gates)
+@pytest.mark.parametrize("qasm_gate,cirq_gate", two_qubit_gates)
 def test_two_qubit_gates(qasm_gate: str, cirq_gate: cirq.testing.TwoQubitGate):
     qasm = """
      OPENQASM 2.0;   
@@ -935,10 +929,10 @@ def test_two_qubit_gates(qasm_gate: str, cirq_gate: cirq.testing.TwoQubitGate):
     )
     parser = QasmParser()
 
-    q1_0 = cirq.NamedQubit('q1_0')
-    q1_1 = cirq.NamedQubit('q1_1')
-    q2_0 = cirq.NamedQubit('q2_0')
-    q2_1 = cirq.NamedQubit('q2_1')
+    q1_0 = cirq.NamedQubit("q1_0")
+    q1_1 = cirq.NamedQubit("q1_1")
+    q2_0 = cirq.NamedQubit("q2_0")
+    q2_1 = cirq.NamedQubit("q2_1")
 
     expected_circuit = Circuit()
     # CX q1[0], q1[1];
@@ -956,10 +950,10 @@ def test_two_qubit_gates(qasm_gate: str, cirq_gate: cirq.testing.TwoQubitGate):
     assert parsed_qasm.qelib1Include
 
     ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
-    assert parsed_qasm.qregs == {'q1': 2, 'q2': 2}
+    assert parsed_qasm.qregs == {"q1": 2, "q2": 2}
 
 
-@pytest.mark.parametrize('qasm_gate', [g[0] for g in two_qubit_gates])
+@pytest.mark.parametrize("qasm_gate", [g[0] for g in two_qubit_gates])
 def test_two_qubit_gates_not_enough_args(qasm_gate: str):
     qasm = f"""
      OPENQASM 2.0;    
@@ -976,7 +970,7 @@ def test_two_qubit_gates_not_enough_args(qasm_gate: str):
         parser.parse(qasm)
 
 
-@pytest.mark.parametrize('qasm_gate', [g[0] for g in two_qubit_gates])
+@pytest.mark.parametrize("qasm_gate", [g[0] for g in two_qubit_gates])
 def test_two_qubit_gates_with_too_much_parameters(qasm_gate: str):
     qasm = f"""
      OPENQASM 2.0;    
@@ -993,10 +987,10 @@ def test_two_qubit_gates_with_too_much_parameters(qasm_gate: str):
         parser.parse(qasm)
 
 
-three_qubit_gates = [('ccx', cirq.TOFFOLI), ('cswap', cirq.CSWAP)]
+three_qubit_gates = [("ccx", cirq.TOFFOLI), ("cswap", cirq.CSWAP)]
 
 
-@pytest.mark.parametrize('qasm_gate,cirq_gate', three_qubit_gates)
+@pytest.mark.parametrize("qasm_gate,cirq_gate", three_qubit_gates)
 def test_three_qubit_gates(qasm_gate: str, cirq_gate: cirq.testing.TwoQubitGate):
     qasm = """
      OPENQASM 2.0;
@@ -1012,12 +1006,12 @@ def test_three_qubit_gates(qasm_gate: str, cirq_gate: cirq.testing.TwoQubitGate)
     )
     parser = QasmParser()
 
-    q1_0 = cirq.NamedQubit('q1_0')
-    q1_1 = cirq.NamedQubit('q1_1')
-    q2_0 = cirq.NamedQubit('q2_0')
-    q2_1 = cirq.NamedQubit('q2_1')
-    q3_0 = cirq.NamedQubit('q3_0')
-    q3_1 = cirq.NamedQubit('q3_1')
+    q1_0 = cirq.NamedQubit("q1_0")
+    q1_1 = cirq.NamedQubit("q1_1")
+    q2_0 = cirq.NamedQubit("q2_0")
+    q2_1 = cirq.NamedQubit("q2_1")
+    q3_0 = cirq.NamedQubit("q3_0")
+    q3_1 = cirq.NamedQubit("q3_1")
 
     expected_circuit = Circuit()
 
@@ -1035,10 +1029,10 @@ def test_three_qubit_gates(qasm_gate: str, cirq_gate: cirq.testing.TwoQubitGate)
     assert parsed_qasm.qelib1Include
 
     ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
-    assert parsed_qasm.qregs == {'q1': 2, 'q2': 2, 'q3': 2}
+    assert parsed_qasm.qregs == {"q1": 2, "q2": 2, "q3": 2}
 
 
-@pytest.mark.parametrize('qasm_gate', [g[0] for g in three_qubit_gates])
+@pytest.mark.parametrize("qasm_gate", [g[0] for g in three_qubit_gates])
 def test_three_qubit_gates_not_enough_args(qasm_gate: str):
     qasm = f"""OPENQASM 2.0;
      include "qelib1.inc";
@@ -1054,7 +1048,7 @@ def test_three_qubit_gates_not_enough_args(qasm_gate: str):
         parser.parse(qasm)
 
 
-@pytest.mark.parametrize('qasm_gate', [g[0] for g in three_qubit_gates])
+@pytest.mark.parametrize("qasm_gate", [g[0] for g in three_qubit_gates])
 def test_three_qubit_gates_with_too_much_parameters(qasm_gate: str):
     qasm = f"""OPENQASM 2.0;
      include "qelib1.inc";
@@ -1068,7 +1062,7 @@ def test_three_qubit_gates_with_too_much_parameters(qasm_gate: str):
         parser.parse(qasm)
 
 
-@pytest.mark.parametrize('qasm_gate,cirq_gate', single_qubit_gates)
+@pytest.mark.parametrize("qasm_gate,cirq_gate", single_qubit_gates)
 def test_single_qubit_gates(qasm_gate: str, cirq_gate: cirq.Gate):
     qasm = """OPENQASM 2.0;
      include "qelib1.inc";
@@ -1081,8 +1075,8 @@ def test_single_qubit_gates(qasm_gate: str, cirq_gate: cirq.Gate):
 
     parser = QasmParser()
 
-    q0 = cirq.NamedQubit('q_0')
-    q1 = cirq.NamedQubit('q_1')
+    q0 = cirq.NamedQubit("q_0")
+    q1 = cirq.NamedQubit("q_1")
 
     expected_circuit = Circuit([cirq_gate.on(q0), cirq_gate.on(q0), cirq_gate.on(q1)])
 
@@ -1092,4 +1086,4 @@ def test_single_qubit_gates(qasm_gate: str, cirq_gate: cirq.Gate):
     assert parsed_qasm.qelib1Include
 
     ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
-    assert parsed_qasm.qregs == {'q': 2}
+    assert parsed_qasm.qregs == {"q": 2}

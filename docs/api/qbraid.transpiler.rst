@@ -6,32 +6,16 @@ qbraid.transpiler
    :undoc-members:
    :show-inheritance:
 
-.. automodule:: qbraid.transpiler.openqasm3
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Submodules
+-----------
 
-.. automodule:: qbraid.transpiler.cirq
-   :members:
-   :undoc-members:
-   :show-inheritance:
+.. autosummary::
+   :toctree: ../stubs/
 
-.. automodule:: qbraid.transpiler.qiskit
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. automodule:: qbraid.transpiler.braket
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. automodule:: qbraid.transpiler.pytket
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-.. automodule:: qbraid.transpiler.pyquil
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   openqasm3
+   cirq
+   qiskit
+   braket
+   pytket
+   pyquil
+   pennylane
