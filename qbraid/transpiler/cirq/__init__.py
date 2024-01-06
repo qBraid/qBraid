@@ -9,16 +9,24 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-==================================================
-Cirq Conversions (:mod:`qbraid.transpiler.cirq`)
-==================================================
+Cirq conversions
 
 .. currentmodule:: qbraid.transpiler.cirq
+
+Classes
+----------
 
 .. autosummary::
    :toctree: ../stubs/
 
    QasmParser
+
+Functions
+----------
+
+.. autosummary::
+   :toctree: ../stubs/
+
    qasm2_to_cirq
    cirq_to_qasm2
 

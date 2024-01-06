@@ -86,11 +86,12 @@ If run in the Python Shell, device data is returned in a similar format.
     Device ID                           Status
     ---------                           ------
     aws_ionq_aria1                      ONLINE
+    aws_ionq_aria2                      ONLINE
+    aws_ionq_forte1                     ONLINE
+    aws_ionq_harmony                    ONLINE
     aws_oqc_lucy                        ONLINE
     aws_quera_aquila                    ONLINE
-    aws_rigetti_aspen_m2                OFFLINE
-    aws_rigetti_aspen_m3                ONLINE
-    aws_xanadu_borealis                 ONLINE
+    aws_rigetti_aspen_m3                OFFLINE
 
 Each supported device is associated with its own qBraid ID. The next section will cover
 how this value is used to wrap the quantum backends / device objects of various types.

@@ -18,64 +18,46 @@ from braket.circuits import Circuit as BKCircuit
 from cirq import Circuit, LineQubit, X, Y, Z
 
 from qbraid import circuit_wrapper
+from qbraid.interface.inspector import get_program_type
 from qbraid.interface.random.random import random_circuit, random_unitary_matrix
 from qbraid.programs.testing.circuit_equality import circuits_allclose
 
-from ..fixtures.programs import bell_data, shared15_data
-
-bell_map, _ = bell_data()
-braket_bell = bell_map["braket"]()
-cirq_bell = bell_map["cirq"]()
-pyquil_bell = bell_map["pyquil"]()
-qiskit_bell = bell_map["qiskit"]()
-pytket_bell = bell_map["pytket"]()
-qasm2_bell = bell_map["qasm2"]()
-qasm3_bell = bell_map["qasm3"]()
-
-shared15_map, _ = shared15_data()
-braket_shared15 = shared15_map["braket"]()
-cirq_shared15 = shared15_map["cirq"]()
-pyquil_shared15 = shared15_map["pyquil"]()
-qiskit_shared15 = shared15_map["qiskit"]()
-pytket_shared15 = shared15_map["pytket"]()
-qasm2_shared15 = shared15_map["qasm2"]()
-qasm3_shared15 = shared15_map["qasm3"]()
+from ..fixtures import packages_bell, packages_shared15
 
 
-def test_bell():
-    """Test the equality of bell circuits"""
-
-    eq1 = circuits_allclose(braket_bell, cirq_bell, strict_gphase=True)
-    eq2 = circuits_allclose(cirq_bell, pyquil_bell, strict_gphase=True)
-    eq3 = circuits_allclose(pyquil_bell, qiskit_bell, strict_gphase=True)
-    eq4 = circuits_allclose(qiskit_bell, pytket_bell, strict_gphase=True)
-    eq5 = circuits_allclose(pytket_bell, qasm2_bell, strict_gphase=True)
-    eq6 = circuits_allclose(qasm2_bell, qasm3_bell, strict_gphase=True)
-
-    assert eq1 and eq2 and eq3 and eq4 and eq5 and eq6
+def pair_packages(packages):
+    """Return a list of tuples of packages to compare"""
+    return [(packages[i], packages[i + 1]) for i in range(len(packages) - 1)]
 
 
-def test_shared15():
-    """Test the equality of shared gates circuits"""
+bell_pairs = pair_packages(packages_bell)
+shared15_pairs = pair_packages(packages_shared15)
 
-    eq1 = circuits_allclose(braket_shared15, cirq_shared15, strict_gphase=True)
-    eq2 = circuits_allclose(cirq_shared15, pyquil_shared15, strict_gphase=False)
-    eq3 = circuits_allclose(pyquil_shared15, qiskit_shared15, strict_gphase=False)
-    eq4 = circuits_allclose(qiskit_shared15, pytket_shared15, strict_gphase=True)
-    eq5 = circuits_allclose(pytket_shared15, qasm2_shared15, strict_gphase=True)
-    eq6 = circuits_allclose(qasm2_shared15, qasm3_shared15, strict_gphase=False)
 
-    assert eq1 and eq2 and eq3 and eq4 and eq5 and eq6
+@pytest.mark.parametrize("two_bell_circuits", bell_pairs, indirect=True)
+def test_compare_bell_circuits(two_bell_circuits):
+    """Test unitary equivalance of bell circuits across packages for
+    testing baseline."""
+    circuit1, circuit2, _, _ = two_bell_circuits
+    assert circuits_allclose(circuit1, circuit2, strict_gphase=True)
+
+
+@pytest.mark.parametrize("two_shared15_circuits", shared15_pairs, indirect=True)
+def test_compare_shared15_circuits(two_shared15_circuits):
+    """Test unitary equivalance of shared15 circuits across packages for
+    testing baseline."""
+    circuit1, circuit2, package1, package2 = two_shared15_circuits
+    strict_gphase = not (
+        "pyquil" in {package1, package2} or {package1, package2} == {"qasm2", "qasm3"}
+    )
+    assert circuits_allclose(circuit1, circuit2, strict_gphase=strict_gphase)
 
 
 @pytest.mark.parametrize("package", ["braket", "cirq", "qiskit"])
 def test_random(package):
     """Test generating random circuits"""
-    try:
-        random_circuit(package)
-    except Exception:  # pylint: disable=broad-exception-caught
-        assert False
-    assert True
+    program = random_circuit(package)
+    assert get_program_type(program) == package
 
 
 def test_collapse_empty_braket_cirq():

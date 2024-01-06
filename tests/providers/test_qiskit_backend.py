@@ -14,11 +14,13 @@ Unit tests for QiskitBackend class.
 """
 import os
 import time
+from typing import Union
 
 import pytest
 from qiskit.providers import Backend
 from qiskit.providers.basicaer.basicaerjob import BasicAerJob
 from qiskit.providers.fake_provider import FakeManila, FakeProviderFactory
+from qiskit_aer.jobs.aerjob import AerJob
 from qiskit_ibm_provider import IBMBackend, IBMJob
 
 from qbraid import device_wrapper
@@ -120,7 +122,7 @@ def test_run_fake_qiskit_device_wrapper(qbraid_device, circuit):
     qbraid_job = qbraid_device.run(circuit, shots=10)
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
-    assert isinstance(vendor_job, BasicAerJob)
+    assert isinstance(vendor_job, Union[BasicAerJob, AerJob])
 
 
 @pytest.mark.parametrize("qbraid_device", fake_ibm_devices())
@@ -129,7 +131,7 @@ def test_run_fake_batch_qiskit_device_wrapper(qbraid_device):
     qbraid_job = qbraid_device.run_batch(circuits_qiskit_run, shots=10)
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
-    assert isinstance(vendor_job, BasicAerJob)
+    assert isinstance(vendor_job, Union[BasicAerJob, AerJob])
 
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)

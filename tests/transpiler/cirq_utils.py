@@ -19,14 +19,24 @@ Module containing function to test Cirq circuit equality
 """
 from copy import deepcopy
 
-from cirq import Circuit, MeasurementGate
+import cirq
+
+import qbraid.programs.cirq
+
+
+def _rev_qubits(circuit: cirq.Circuit) -> cirq.Circuit:
+    """Reverses the qubit order of a circuit."""
+    program = qbraid.programs.cirq.CirqCircuit(circuit)
+    program.reverse_qubit_order()
+    return program.program
 
 
 def _equal(
-    circuit_one: Circuit,
-    circuit_two: Circuit,
+    circuit_one: cirq.Circuit,
+    circuit_two: cirq.Circuit,
     require_qubit_equality: bool = False,
     require_measurement_equality: bool = False,
+    allow_reversed_qubit_order: bool = False,
 ) -> bool:
     """Returns True if the circuits are equal, else False.
 
@@ -37,6 +47,8 @@ def _equal(
             in the two circuits.
         require_measurement_equality: Requires that measurements are equal on
             the two circuits, meaning that measurement keys are equal.
+        allow_reversed_qubit_order: Allows considering the circuits as equal
+            even if their qubit order is reversed. Default is False.
 
     Note:
         If set(circuit_one.all_qubits()) = {LineQubit(0)},
@@ -63,7 +75,18 @@ def _equal(
         for circ in (circuit_one, circuit_two):
             measurements = [
                 (moment, op)
-                for moment, op, _ in circ.findall_operations_with_gate_type(MeasurementGate)
+                for moment, op, _ in circ.findall_operations_with_gate_type(cirq.MeasurementGate)
             ]
             circ.batch_remove(measurements)
+
+    if allow_reversed_qubit_order and circuit_one != circuit_two:
+        reversed_circuit_one = _rev_qubits(circuit_one)
+        return _equal(
+            reversed_circuit_one,
+            circuit_two,
+            require_qubit_equality,
+            require_measurement_equality,
+            False,
+        )
+
     return circuit_one == circuit_two
