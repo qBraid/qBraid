@@ -66,17 +66,6 @@ class PennylaneTape(QuantumProgram):
         """Return the unitary of the Pennylane tape"""
         return qml.matrix(self.program)
 
-    @staticmethod
-    def _apply_wire_map_to_tape(tape: QuantumTape, wire_map: dict) -> QuantumTape:
-        """Applies a given wire map to all operations in a tape."""
-        for op in tape.operations:
-            new_wires = op.wires.map(wire_map)
-            op._wires = new_wires
-
-        tape.wires = tape.wires.map(wire_map)
-
-        return tape
-
     def remove_idle_qubits(self) -> None:
         """Applies a given wire map to all operations in a tape."""
         tape = self.program.copy()
@@ -86,7 +75,8 @@ class PennylaneTape(QuantumProgram):
 
         wire_map = dict(zip(wires, contig_wires))
 
-        tape = self._apply_wire_map_to_tape(tape, wire_map)
+        [tape], _ = qml.map_wires(tape, wire_map)
+
         self._program = tape
 
     def reverse_qubit_order(self) -> None:
@@ -99,5 +89,6 @@ class PennylaneTape(QuantumProgram):
 
         wire_map = dict(zip(wires, wires_rev))
 
-        tape = self._apply_wire_map_to_tape(tape, wire_map)
+        [tape], _ = qml.map_wires(tape, wire_map)
+
         self._program = tape
