@@ -135,7 +135,7 @@ def test_get_aws_jobs_by_tag(capfd):
     get_jobs(filters={"tags": {"test": "123"}, "numResults": 1})
     out, err = capfd.readouterr()
     message = out.split("\n")[1]
-    assert message == "Displaying 1 most recent jobs matching query:"
+    assert message == "Displaying 1 most recent job matching query:"
     assert job.id in out
     assert len(err) == 0
 
@@ -150,7 +150,7 @@ def test_get_ibm_jobs_by_tag(capfd):
     get_jobs(filters={"tags": {"test": "*"}, "numResults": 1})
     out, err = capfd.readouterr()
     message = out.split("\n")[1]
-    assert message == "Displaying 1 most recent jobs matching query:"
+    assert message == "Displaying 1 most recent job matching query:"
     assert job.id in out
     assert len(err) == 0
 
