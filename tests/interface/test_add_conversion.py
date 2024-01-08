@@ -45,7 +45,7 @@ def test_overwrite_new_conversion(bell_circuit):
     graph = ConversionGraph(conversions)
     assert len(graph.edges) == 1
     edge = ConversionEdge("qiskit", "braket", convert_qiskit_to_braket_circuit)
-    graph.add_new_conversion(edge, overwrite=True)
+    graph.add_conversion(edge, overwrite=True)
     assert len(graph.edges) == 1
     braket_circuit = convert_to_package(qiskit_circuit, "braket", conversion_graph=graph)
     assert isinstance(braket_circuit, braket.circuits.Circuit)

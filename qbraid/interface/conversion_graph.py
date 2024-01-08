@@ -116,7 +116,7 @@ class ConversionGraph:
             graph.add_edge(edge.source, edge.target, func=edge.convert)
         return graph
 
-    def add_new_conversion(self, edge: ConversionEdge, overwrite: bool = False) -> None:
+    def add_conversion(self, edge: ConversionEdge, overwrite: bool = False) -> None:
         """
         Add a new conversion function as an edge in the graph.
 
