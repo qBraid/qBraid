@@ -70,7 +70,7 @@ def test_shortest_conversion_path():
     assert len(top_paths) == 3 and len(top_paths[0]) <= len(top_paths[1]) <= len(top_paths[2])
 
 
-def test_add_new_conversion():
+def test_add_conversion():
     """
     Test the addition of a new conversion to the ConversionGraph.
 
@@ -88,7 +88,7 @@ def test_add_new_conversion():
     graph_without_new_edge = ConversionGraph(initial_conversions)
 
     # Action - adding the new conversion edge to the graph
-    graph_without_new_edge.add_new_conversion(new_edge)
+    graph_without_new_edge.add_conversion(new_edge)
 
     # Assertion 1 - Check if the new edge is added to the graph
     assert graph_without_new_edge.nx_graph.has_edge(source, target)
