@@ -22,10 +22,12 @@ Functions
 
    plot_histogram
    plot_distribution
+   plot_conversion_graph
    circuit_drawer
    qasm3_drawer
 
 """
 from .draw_circuit import circuit_drawer
 from .draw_qasm3 import qasm3_drawer
+from .plot_conversions import plot_conversion_graph
 from .plot_counts import plot_distribution, plot_histogram

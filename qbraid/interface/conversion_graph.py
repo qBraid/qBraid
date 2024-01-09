@@ -206,26 +206,3 @@ class ConversionGraph:
             bool: True if the conversion is supported, False otherwise.
         """
         return nx.has_path(self._nx_graph, source, target)
-
-    def plot_conversion_graph(self) -> None:
-        """
-        Plot the conversion graph using matplotlib.
-
-        Returns:
-            None
-        """
-        # pylint: disable=import-outside-toplevel
-
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError as err:
-            raise ImportError("Matplotlib is required for plotting the conversion graph.") from err
-
-        graph = self._nx_graph
-        pos = nx.spring_layout(graph, seed=123)
-        nx.draw_networkx_nodes(graph, pos, node_color="lightblue", node_size=1200)
-        nx.draw_networkx_edges(graph, pos, edge_color="gray", min_target_margin=18)
-        nx.draw_networkx_labels(graph, pos)
-        plt.title("qBraid Quantum Program Conversion Graph")
-        plt.axis("off")
-        plt.show()

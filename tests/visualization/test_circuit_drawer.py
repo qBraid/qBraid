@@ -55,8 +55,7 @@ def test_braket_bell_draw(capfd, bell_circuit):
     """Test using Amazon Braket to draw using ascii output is of the expected length."""
     # pylint: disable=eval-used
     circuit, _ = bell_circuit
-    program = circuit_wrapper(circuit)
-    program.draw(package="braket", output="ascii")
+    circuit_drawer(circuit, as_package="braket", output="ascii")
 
     _, err = capfd.readouterr()
     assert len(err) == 0
@@ -77,8 +76,7 @@ def test_cirq_bell_text_draw(capfd, bell_circuit):
     """Test using Cirq to draw circuit using text output is of the expected length."""
     # pylint: disable=eval-used
     circuit, _ = bell_circuit
-    program = circuit_wrapper(circuit)
-    program.draw(package="cirq", output="text")
+    circuit_drawer(circuit, as_package="cirq", output="text")
 
     _, err = capfd.readouterr()
     assert len(err) == 0
@@ -107,8 +105,7 @@ def test_pyquil_bell_draw(capfd, bell_circuit):
     """Test using pyquil to draw circuit using text output is of the expected length."""
     # pylint: disable=eval-used
     circuit, _ = bell_circuit
-    program = circuit_wrapper(circuit)
-    program.draw(package="pyquil", output="text")
+    circuit_drawer(circuit, as_package="pyquil", output="text")
 
     _, err = capfd.readouterr()
     assert len(err) == 0
