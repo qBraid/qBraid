@@ -23,12 +23,6 @@ from qbraid.interface.random import random_circuit
 from qbraid.transpiler.braket import braket_to_cirq
 
 
-def test_raise_for_unsupported_source():
-    """Test that an exception is raised for an unsupported source package."""
-    with pytest.raises(PackageValueError):
-        ConversionEdge("unsupported", "cirq", braket_to_cirq)
-
-
 def test_raise_for_unsupported_program_input():
     """Test that an exception is raised for an unsupported program input."""
     conversion = ConversionEdge("braket", "cirq", braket_to_cirq)

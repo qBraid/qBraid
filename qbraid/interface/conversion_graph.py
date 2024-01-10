@@ -65,7 +65,6 @@ class ConversionGraph(nx.DiGraph):
         for edge in self._conversions:
             self.add_edge(edge.source, edge.target, native=edge.native, func=edge.convert)
 
-    @property
     def conversions(self) -> List[ConversionEdge]:
         """
         Get the list of conversion edges.
@@ -98,8 +97,9 @@ class ConversionGraph(nx.DiGraph):
         for old_edge in self._conversions:
             if old_edge.source == source and old_edge.target == target:
                 self._conversions.remove(old_edge)
-                self._conversions.append(edge)
+                break
 
+        self._conversions.append(edge)
         self.add_edge(source, target, native=edge.native, func=edge.convert)
 
     def find_shortest_conversion_path(self, source: str, target: str) -> List[str]:

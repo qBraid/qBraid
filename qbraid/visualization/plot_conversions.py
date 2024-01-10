@@ -69,11 +69,21 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         colors["qbraid_node"] if node in QPROGRAM_LIBS else colors["external_node"]
         for node in graph.nodes()
     ]
+
+    # Create a dictionary for quick lookup of conversions by their source and target
+    conversion_dict = {
+        (conversion.source, conversion.target): conversion for conversion in graph.conversions()
+    }
+    conversions_ordered = [
+        conversion_dict[(edge[0], edge[1])]
+        for edge in graph.edges()
+        if (edge[0], edge[1]) in conversion_dict
+    ]
     ecolors = [
         colors["qbraid_edge"]
-        if graph[edge.source][edge.target]["native"] is True
+        if graph[edge.source][edge.target]["native"]
         else colors["external_edge"]
-        for edge in graph.conversions
+        for edge in conversions_ordered
     ]
 
     pos = nx.spring_layout(graph, seed=seed)  # good seeds: 123, 134
