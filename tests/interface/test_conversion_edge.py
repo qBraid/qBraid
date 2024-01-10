@@ -18,14 +18,14 @@ import cirq
 import pytest
 
 from qbraid.exceptions import PackageValueError
-from qbraid.interface.conversion_edge import ConversionEdge
+from qbraid.interface.conversion_edge import Conversion
 from qbraid.interface.random import random_circuit
 from qbraid.transpiler.braket import braket_to_cirq
 
 
 def test_raise_for_unsupported_program_input():
     """Test that an exception is raised for an unsupported program input."""
-    conversion = ConversionEdge("braket", "cirq", braket_to_cirq)
+    conversion = Conversion("braket", "cirq", braket_to_cirq)
     circuit = Mock()
     with pytest.raises(PackageValueError):
         conversion.convert(circuit)
@@ -34,7 +34,7 @@ def test_raise_for_unsupported_program_input():
 def test_raise_for_source_program_input_mismatch():
     """Test that an exception is raised for a mismatch between the source package and input."""
     source, target, other = "braket", "cirq", "qiskit"
-    conversion = ConversionEdge(source, target, braket_to_cirq)
+    conversion = Conversion(source, target, braket_to_cirq)
     circuit = random_circuit(other)
     with pytest.raises(ValueError):
         conversion.convert(circuit)
@@ -43,7 +43,7 @@ def test_raise_for_source_program_input_mismatch():
 def test_braket_cirq_custom_conversion():
     """Test that a Braket to Cirq conversion is successful."""
     source, target = "braket", "cirq"
-    conversion = ConversionEdge(source, target, braket_to_cirq)
+    conversion = Conversion(source, target, braket_to_cirq)
     braket_circuit = random_circuit(source)
     cirq_circuit = conversion.convert(braket_circuit)
     assert isinstance(cirq_circuit, cirq.Circuit)
@@ -52,5 +52,5 @@ def test_braket_cirq_custom_conversion():
 def test_conversion_repr():
     """Test that the conversion repr is correct."""
     source, target = "braket", "cirq"
-    conversion = ConversionEdge(source, target, braket_to_cirq)
+    conversion = Conversion(source, target, braket_to_cirq)
     assert repr(conversion) == f"('{source}', '{target}')"

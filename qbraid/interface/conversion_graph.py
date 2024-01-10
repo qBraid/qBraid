@@ -18,7 +18,7 @@ from typing import List, Optional
 
 import networkx as nx
 
-from qbraid.interface.conversion_edge import ConversionEdge
+from qbraid.interface.conversion_edge import Conversion
 from qbraid.interface.exceptions import ConversionPathNotFoundError
 from qbraid.transpiler import conversion_functions
 
@@ -29,12 +29,12 @@ class ConversionGraph(nx.DiGraph):
 
     """
 
-    def __init__(self, conversions: Optional[List[ConversionEdge]] = None):
+    def __init__(self, conversions: Optional[List[Conversion]] = None):
         """
         Initialize a ConversionGraph instance.
 
         Args:
-            conversions (optional, List[ConversionEdge]): List of conversion edges. If None, default
+            conversions (optional, List[Conversion]): List of conversion edges. If None, default
                                                           conversion edges are created.
         """
         super().__init__()
@@ -42,16 +42,16 @@ class ConversionGraph(nx.DiGraph):
         self.create_conversion_graph()
 
     @staticmethod
-    def load_default_conversions() -> List[ConversionEdge]:
+    def load_default_conversions() -> List[Conversion]:
         """
         Create a list of default conversion nodes using predefined conversion functions.
 
         Returns:
-            List[ConversionEdge]: List of default conversion edges.
+            List[Conversion]: List of default conversion edges.
         """
         transpiler = import_module("qbraid.transpiler")
         return [
-            ConversionEdge(*conversion.split("_to_"), getattr(transpiler, conversion))
+            Conversion(*conversion.split("_to_"), getattr(transpiler, conversion))
             for conversion in conversion_functions
         ]
 
@@ -65,21 +65,21 @@ class ConversionGraph(nx.DiGraph):
         for edge in self._conversions:
             self.add_edge(edge.source, edge.target, native=edge.native, func=edge.convert)
 
-    def conversions(self) -> List[ConversionEdge]:
+    def conversions(self) -> List[Conversion]:
         """
         Get the list of conversion edges.
 
         Returns:
-            List[ConversionEdge]: The conversion edges of the graph.
+            List[Conversion]: The conversion edges of the graph.
         """
         return self._conversions
 
-    def add_conversion(self, edge: ConversionEdge, overwrite: bool = False) -> None:
+    def add_conversion(self, edge: Conversion, overwrite: bool = False) -> None:
         """
         Add a new conversion function as an edge in the graph.
 
         Args:
-            edge (qbraid.interface.ConversionEdge): The conversion edge to add to the graph.
+            edge (qbraid.interface.Conversion): The conversion edge to add to the graph.
             overwrite (optional, bool): If True, overwrites an existing conversion.
                                         Defaults to False.
 
@@ -162,7 +162,7 @@ class ConversionGraph(nx.DiGraph):
         """
         return nx.has_path(self, source, target)
 
-    def reset(self, conversions: Optional[List[ConversionEdge]] = None) -> None:
+    def reset(self, conversions: Optional[List[Conversion]] = None) -> None:
         """
         Reset the graph to its default state.
 

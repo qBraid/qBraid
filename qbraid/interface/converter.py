@@ -57,15 +57,15 @@ def _flatten_cirq(circuit: "cirq.Circuit") -> "cirq.Circuit":
 
 def _get_path_from_bound_methods(bound_methods: List[Callable]) -> str:
     """
-    Constructs a path string from a list of bound methods of ConversionEdge instances.
+    Constructs a path string from a list of bound methods of Conversion instances.
 
     This function takes a list of bound methods (specifically 'convert' methods bound to
-    ConversionEdge instances) and constructs a path string representing the sequence of
+    Conversion instances) and constructs a path string representing the sequence of
     conversions. Each conversion is defined by the 'source' and 'target' properties of the
-    ConversionEdge instance to which each method is bound.
+    Conversion instance to which each method is bound.
 
     Args:
-        bound_methods: A list of bound methods from ConversionEdge instances.
+        bound_methods: A list of bound methods from Conversion instances.
 
     Returns:
         A string representing the path of conversions, formatted as

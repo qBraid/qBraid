@@ -19,7 +19,7 @@ import pytest
 from qiskit_braket_provider.providers.adapter import convert_qiskit_to_braket_circuit
 
 from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.interface.conversion_edge import ConversionEdge
+from qbraid.interface.conversion_edge import Conversion
 from qbraid.interface.conversion_graph import ConversionGraph
 from qbraid.interface.converter import convert_to_package
 from qbraid.transpiler import conversion_functions
@@ -27,7 +27,7 @@ from qbraid.transpiler import conversion_functions
 
 def bound_method_str(source, target):
     """Inserts package names into string representation of bound method."""
-    return f"<bound method ConversionEdge.convert of ('{source}', '{target}')>"
+    return f"<bound method Conversion.convert of ('{source}', '{target}')>"
 
 
 def are_graphs_equal(graph1: nx.DiGraph, graph2: nx.DiGraph) -> bool:
@@ -82,10 +82,10 @@ def test_add_conversion():
     2. If the graph structure with the new edge matches the expected structure.
     3. The correctness of the shortest conversion path after adding the new edge.
     """
-    # Setup - preparing ConversionEdge and ConversionGraph instances
+    # Setup - preparing Conversion and ConversionGraph instances
     source, target = "cirq", "qir"
     conversion_func = lambda x: x  # pylint: disable=unnecessary-lambda-assignment
-    new_edge = ConversionEdge(source, target, conversion_func)
+    new_edge = Conversion(source, target, conversion_func)
     initial_conversions = ConversionGraph.load_default_conversions()
     graph_with_new_edge = ConversionGraph(initial_conversions + [new_edge])
     graph_without_new_edge = ConversionGraph(initial_conversions)
@@ -116,7 +116,7 @@ def test_initialize_new_conversion(bell_circuit):
     """Test initializing the conversion graph with a new conversion"""
     qiskit_circuit, _ = bell_circuit
     conversions = [
-        ConversionEdge(
+        Conversion(
             "qiskit",
             "braket",
             convert_qiskit_to_braket_circuit,
@@ -132,10 +132,10 @@ def test_initialize_new_conversion(bell_circuit):
 def test_overwrite_new_conversion(bell_circuit):
     """Test dynamically adding a new conversion  the conversion graph"""
     qiskit_circuit, _ = bell_circuit
-    conversions = [ConversionEdge("qiskit", "braket", lambda x: x)]
+    conversions = [Conversion("qiskit", "braket", lambda x: x)]
     graph = ConversionGraph(conversions)
     assert len(graph.edges) == 1
-    edge = ConversionEdge("qiskit", "braket", convert_qiskit_to_braket_circuit)
+    edge = Conversion("qiskit", "braket", convert_qiskit_to_braket_circuit)
     graph.add_conversion(edge, overwrite=True)
     assert len(graph.edges) == 1
     braket_circuit = convert_to_package(qiskit_circuit, "braket", conversion_graph=graph)

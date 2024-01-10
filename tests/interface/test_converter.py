@@ -15,7 +15,7 @@ Unit test for the graph-based transpiler
 import braket.circuits
 import pytest
 
-from qbraid.interface.conversion_edge import ConversionEdge
+from qbraid.interface.conversion_edge import Conversion
 from qbraid.interface.conversion_graph import ConversionGraph
 from qbraid.interface.converter import _get_path_from_bound_methods, convert_to_package
 from qbraid.interface.exceptions import ConversionPathNotFoundError, NodeNotFoundError
@@ -30,7 +30,7 @@ def test_unuspported_target_package():
 def test_get_path_from_bound_method():
     """Test formatted conversion path logging helper function."""
     source, target = "cirq", "qasm2"
-    edge = ConversionEdge(source, target, lambda x: x)
+    edge = Conversion(source, target, lambda x: x)
     graph = ConversionGraph([edge])
     bound_method = graph[source][target]["func"]
     bound_method_list = [bound_method]
@@ -43,8 +43,8 @@ def test_raise_no_conversion_path_found(bell_circuit):
     """Test raising exception when no conversion path is found"""
     qiskit_circuit, _ = bell_circuit
     conversions = [
-        ConversionEdge("cirq", "braket", lambda x: x),
-        ConversionEdge("cirq", "qiskit", lambda x: x),
+        Conversion("cirq", "braket", lambda x: x),
+        Conversion("cirq", "qiskit", lambda x: x),
     ]
     graph = ConversionGraph(conversions)
     with pytest.raises(ConversionPathNotFoundError):

@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     import qbraid
 
 
-class ConversionEdge:
+class Conversion:
     """
     Class for defining and handling custom conversions between different quantum program packages.
 
@@ -132,7 +132,7 @@ class ConversionEdge:
         Returns:
             bool: True if the instances are equal, False otherwise.
         """
-        if not isinstance(other, ConversionEdge):
+        if not isinstance(other, Conversion):
             return False
 
         return (

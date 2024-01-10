@@ -21,7 +21,7 @@ Classes
    :toctree: ../stubs/
 
    ConversionGraph
-   ConversionEdge
+   Conversion
 
 Functions
 -----------
@@ -45,7 +45,7 @@ Exceptions
    ConversionPathNotFoundError
 
 """
-from .conversion_edge import ConversionEdge
+from .conversion_edge import Conversion
 from .conversion_graph import ConversionGraph
 from .converter import convert_to_package
 from .exceptions import ConversionPathNotFoundError, NodeNotFoundError
