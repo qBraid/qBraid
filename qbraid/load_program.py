@@ -18,7 +18,7 @@ import pkg_resources
 
 from ._qprogram import QPROGRAM
 from .exceptions import QbraidError
-from .interface.inspector import get_program_type
+from .inspector import get_program_type
 
 
 def _get_entrypoints(group: str):

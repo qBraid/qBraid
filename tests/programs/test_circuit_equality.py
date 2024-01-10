@@ -16,10 +16,7 @@ Test circuit equality helper functions
 import numpy as np
 import pytest
 
-from qbraid.programs.testing.circuit_equality import (
-    assert_allclose_up_to_global_phase,
-    match_global_phase,
-)
+from qbraid.interface.circuit_equality import assert_allclose_up_to_global_phase, match_global_phase
 
 
 def test_match_global_phase_basic():

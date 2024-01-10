@@ -154,7 +154,7 @@ It applies the ``unitary`` method to both input circuits, compares the outputs v
 
 .. code-block:: python
 
-    >>> from qbraid.programs.testing import circuits_allclose
+    >>> from qbraid.interface import circuits_allclose
     >>> circuits_allclose(cirq_circuit, pyquil_circuit)
     True
 

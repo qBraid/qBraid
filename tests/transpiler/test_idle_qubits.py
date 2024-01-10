@@ -18,11 +18,8 @@ import pytest
 import qiskit
 
 from qbraid import circuit_wrapper
-from qbraid.interface import convert_to_package
-from qbraid.programs.testing.circuit_equality import (
-    assert_allclose_up_to_global_phase,
-    circuits_allclose,
-)
+from qbraid.interface.circuit_equality import assert_allclose_up_to_global_phase, circuits_allclose
+from qbraid.transpiler import convert_to_package
 
 # pylint: disable=redefined-outer-name
 

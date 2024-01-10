@@ -16,8 +16,8 @@ import braket.circuits
 import numpy as np
 import qiskit
 
-from qbraid.interface.converter import convert_to_package
-from qbraid.programs.testing import circuits_allclose
+from qbraid.interface import circuits_allclose
+from qbraid.transpiler.converter import convert_to_package
 
 
 def test_one_qubit_qiskit_to_braket():

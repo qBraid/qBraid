@@ -17,7 +17,7 @@ import pytest
 import qiskit
 from braket.circuits import Circuit
 
-from qbraid.programs.testing import circuits_allclose
+from qbraid.interface import circuits_allclose
 from qbraid.transpiler.conversions.braket import qasm3_to_braket
 from qbraid.transpiler.conversions.braket.conversions_qasm import (
     _convert_pi_to_decimal,

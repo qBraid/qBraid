@@ -153,9 +153,7 @@ def convert_from_pytket_to_x(target, circuit_name):
     qasm = circuit.to_qasm()
     cirq_circuit = circuit_from_qasm(qasm)
     target_circuit = qbraid.circuit_wrapper(cirq_circuit).transpile(target)
-    assert qbraid.programs.testing.circuits_allclose(
-        cirq_circuit, target_circuit, strict_gphase=False
-    )
+    assert qbraid.interface.circuits_allclose(cirq_circuit, target_circuit, strict_gphase=False)
 
 
 @pytest.mark.parametrize(("target", "baseline"), TARGETS)

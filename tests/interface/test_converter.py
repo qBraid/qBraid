@@ -15,10 +15,10 @@ Unit test for the graph-based transpiler
 import braket.circuits
 import pytest
 
-from qbraid.interface.conversion_edge import Conversion
-from qbraid.interface.conversion_graph import ConversionGraph
-from qbraid.interface.converter import _get_path_from_bound_methods, convert_to_package
-from qbraid.interface.exceptions import ConversionPathNotFoundError, NodeNotFoundError
+from qbraid.transpiler.converter import _get_path_from_bound_methods, convert_to_package
+from qbraid.transpiler.edge import Conversion
+from qbraid.transpiler.exceptions import ConversionPathNotFoundError, NodeNotFoundError
+from qbraid.transpiler.graph import ConversionGraph
 
 
 def test_unuspported_target_package():

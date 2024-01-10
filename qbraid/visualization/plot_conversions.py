@@ -19,11 +19,11 @@ import networkx as nx
 from qbraid._qprogram import QPROGRAM_LIBS
 
 if TYPE_CHECKING:
-    import qbraid.interface
+    import qbraid.transpiler
 
 
 def plot_conversion_graph(  # pylint: disable=too-many-arguments
-    graph: "qbraid.interface.ConversionGraph",
+    graph: "qbraid.transpiler.ConversionGraph",
     title: Optional[str] = "qBraid Quantum Program Conversion Graph",
     legend: bool = False,
     seed: Optional[int] = None,

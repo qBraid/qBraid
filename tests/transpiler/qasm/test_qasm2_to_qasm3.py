@@ -21,9 +21,9 @@ from qiskit.circuit import QuantumCircuit
 from qiskit.qasm3 import dumps, loads
 
 from qbraid import circuit_wrapper
+from qbraid.interface import circuits_allclose
 from qbraid.interface.random import random_circuit
 from qbraid.interface.random.qasm3_random import _qasm3_random
-from qbraid.programs.testing import circuits_allclose
 from qbraid.transpiler.conversions.openqasm3.convert_qasm import (
     _get_qasm3_gate_defs,
     qasm2_to_qasm3,

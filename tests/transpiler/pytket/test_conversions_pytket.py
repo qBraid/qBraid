@@ -18,9 +18,9 @@ from cirq import Circuit, LineQubit, ops, testing
 from pytket.circuit import Circuit as TKCircuit
 from pytket.qasm import circuit_to_qasm_str
 
-from qbraid.interface.converter import convert_to_package
-from qbraid.programs.testing import circuits_allclose
+from qbraid.interface import circuits_allclose
 from qbraid.transpiler.conversions.cirq import qasm2_to_cirq
+from qbraid.transpiler.converter import convert_to_package
 
 from ..cirq_utils import _equal
 

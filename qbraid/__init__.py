@@ -37,6 +37,7 @@ Functions
    job_wrapper
    get_jobs
    convert_to_package
+   get_program_type
 
 
 Exceptions
@@ -65,6 +66,7 @@ from .exceptions import (
 )
 from .get_devices import get_devices, refresh_devices
 from .get_jobs import get_jobs
-from .interface import convert_to_package
+from .inspector import get_program_type
 from .load_program import circuit_wrapper
 from .load_provider import device_wrapper, job_wrapper
+from .transpiler import convert_to_package

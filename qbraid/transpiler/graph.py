@@ -18,9 +18,9 @@ from typing import List, Optional
 
 import networkx as nx
 
-from qbraid.interface.conversion_edge import Conversion
-from qbraid.interface.exceptions import ConversionPathNotFoundError
 from qbraid.transpiler.conversions import conversion_functions
+from qbraid.transpiler.edge import Conversion
+from qbraid.transpiler.exceptions import ConversionPathNotFoundError
 
 
 class ConversionGraph(nx.DiGraph):

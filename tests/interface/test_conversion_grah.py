@@ -19,10 +19,10 @@ import pytest
 from qiskit_braket_provider.providers.adapter import convert_qiskit_to_braket_circuit
 
 from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.interface.conversion_edge import Conversion
-from qbraid.interface.conversion_graph import ConversionGraph
-from qbraid.interface.converter import convert_to_package
 from qbraid.transpiler.conversions import conversion_functions
+from qbraid.transpiler.converter import convert_to_package
+from qbraid.transpiler.edge import Conversion
+from qbraid.transpiler.graph import ConversionGraph
 
 
 def bound_method_str(source, target):

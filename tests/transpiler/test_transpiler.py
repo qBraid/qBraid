@@ -25,10 +25,10 @@ from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 
 from qbraid import QPROGRAM_LIBS, QbraidError, circuit_wrapper
 from qbraid.exceptions import ProgramTypeError
-from qbraid.interface.conversion_graph import ConversionGraph
-from qbraid.interface.converter import convert_to_package
-from qbraid.interface.exceptions import NodeNotFoundError
-from qbraid.programs.testing import assert_allclose_up_to_global_phase
+from qbraid.interface import assert_allclose_up_to_global_phase
+from qbraid.transpiler.converter import convert_to_package
+from qbraid.transpiler.exceptions import NodeNotFoundError
+from qbraid.transpiler.graph import ConversionGraph
 
 from ..fixtures import packages_bell
 from ..fixtures.braket.gates import braket_gates as braket_gates_dict
