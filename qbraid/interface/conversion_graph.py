@@ -20,7 +20,7 @@ import networkx as nx
 
 from qbraid.interface.conversion_edge import Conversion
 from qbraid.interface.exceptions import ConversionPathNotFoundError
-from qbraid.transpiler import conversion_functions
+from qbraid.transpiler.conversions import conversion_functions
 
 
 class ConversionGraph(nx.DiGraph):
@@ -49,7 +49,7 @@ class ConversionGraph(nx.DiGraph):
         Returns:
             List[Conversion]: List of default conversion edges.
         """
-        transpiler = import_module("qbraid.transpiler")
+        transpiler = import_module("qbraid.transpiler.conversions")
         return [
             Conversion(*conversion.split("_to_"), getattr(transpiler, conversion))
             for conversion in conversion_functions

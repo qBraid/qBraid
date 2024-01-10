@@ -19,7 +19,7 @@ import qiskit
 
 from qbraid.interface.converter import convert_to_package
 from qbraid.programs.testing import circuits_allclose
-from qbraid.transpiler.cirq import cirq_to_qasm2, qasm2_to_cirq
+from qbraid.transpiler.conversions.cirq import cirq_to_qasm2, qasm2_to_cirq
 
 from ..cirq_utils import _equal
 

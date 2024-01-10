@@ -9,9 +9,9 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Amazon Braket conversions
+Pennylane conversions
 
-.. currentmodule:: qbraid.transpiler.braket
+.. currentmodule:: qbraid.transpiler.conversions.pennylane
 
 Functions
 ----------
@@ -19,12 +19,7 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   braket_to_cirq
-   cirq_to_braket
-   braket_to_qasm3
-   qasm3_to_braket
+   pennylane_to_qasm2
 
 """
-from qbraid.transpiler.braket.cirq_from_braket import braket_to_cirq
-from qbraid.transpiler.braket.cirq_to_braket import cirq_to_braket
-from qbraid.transpiler.braket.conversions_qasm import braket_to_qasm3, qasm3_to_braket
+from qbraid.transpiler.conversions.pennylane.conversions_qasm import pennylane_to_qasm2

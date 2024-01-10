@@ -20,7 +20,7 @@ import pytest
 from qbraid.exceptions import PackageValueError
 from qbraid.interface.conversion_edge import Conversion
 from qbraid.interface.random import random_circuit
-from qbraid.transpiler.braket import braket_to_cirq
+from qbraid.transpiler.conversions.braket import braket_to_cirq
 
 
 def test_raise_for_unsupported_program_input():

@@ -36,7 +36,7 @@ except ImportError:
     cirq_ionq_ops = None
 
 from qbraid.exceptions import CircuitConversionError
-from qbraid.transpiler.braket.custom_gates import C as BKControl
+from qbraid.transpiler.conversions.braket.custom_gates import C as BKControl
 
 
 def cirq_to_braket(circuit: Circuit) -> BKCircuit:

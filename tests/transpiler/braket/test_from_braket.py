@@ -28,7 +28,10 @@ from cirq import ops as cirq_ops
 from qbraid import circuit_wrapper
 from qbraid.exceptions import CircuitConversionError
 from qbraid.programs.testing import circuits_allclose
-from qbraid.transpiler.braket.cirq_from_braket import braket_to_cirq, unitary_braket_instruction
+from qbraid.transpiler.conversions.braket.cirq_from_braket import (
+    braket_to_cirq,
+    unitary_braket_instruction,
+)
 
 
 def test_from_braket_bell_circuit():

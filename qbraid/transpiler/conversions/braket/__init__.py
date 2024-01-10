@@ -9,9 +9,9 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Qiskit conversions
+Amazon Braket conversions
 
-.. currentmodule:: qbraid.transpiler.qiskit
+.. currentmodule:: qbraid.transpiler.conversions.braket
 
 Functions
 ----------
@@ -19,15 +19,12 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   qasm3_to_qiskit
-   qiskit_to_qasm3
-   qasm2_to_qiskit
-   qiskit_to_qasm2
+   braket_to_cirq
+   cirq_to_braket
+   braket_to_qasm3
+   qasm3_to_braket
 
 """
-from qbraid.transpiler.qiskit.conversions_qasm import (
-    qasm2_to_qiskit,
-    qasm3_to_qiskit,
-    qiskit_to_qasm2,
-    qiskit_to_qasm3,
-)
+from qbraid.transpiler.conversions.braket.cirq_from_braket import braket_to_cirq
+from qbraid.transpiler.conversions.braket.cirq_to_braket import cirq_to_braket
+from qbraid.transpiler.conversions.braket.conversions_qasm import braket_to_qasm3, qasm3_to_braket

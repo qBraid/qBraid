@@ -18,13 +18,13 @@ import qiskit
 from braket.circuits import Circuit
 
 from qbraid.programs.testing import circuits_allclose
-from qbraid.transpiler.braket import qasm3_to_braket
-from qbraid.transpiler.braket.conversions_qasm import (
+from qbraid.transpiler.conversions.braket import qasm3_to_braket
+from qbraid.transpiler.conversions.braket.conversions_qasm import (
     _convert_pi_to_decimal,
     braket_to_qasm3,
     qasm3_to_braket,
 )
-from qbraid.transpiler.qiskit import qiskit_to_qasm3
+from qbraid.transpiler.conversions.qiskit import qiskit_to_qasm3
 
 pi_decimal_data = [
     (

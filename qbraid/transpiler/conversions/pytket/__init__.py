@@ -9,9 +9,9 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Pennylane conversions
+PyTKET conversions
 
-.. currentmodule:: qbraid.transpiler.pennylane
+.. currentmodule:: qbraid.transpiler.conversions.pytket
 
 Functions
 ----------
@@ -19,7 +19,8 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   pennylane_to_qasm2
+   pytket_to_qasm2
+   qasm2_to_pytket
 
 """
-from qbraid.transpiler.pennylane.conversions_qasm import pennylane_to_qasm2
+from qbraid.transpiler.conversions.pytket.conversions_qasm import pytket_to_qasm2, qasm2_to_pytket

@@ -34,7 +34,7 @@ except ImportError:
     cirq_ionq_ops = None
 
 from qbraid.exceptions import CircuitConversionError
-from qbraid.transpiler.cirq.cirq_gates import matrix_gate
+from qbraid.transpiler.conversions.cirq.cirq_gates import matrix_gate
 
 
 def _gate_to_matrix_braket(gate: braket_gates.Unitary) -> np.ndarray:

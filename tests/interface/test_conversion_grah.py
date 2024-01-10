@@ -22,7 +22,7 @@ from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.interface.conversion_edge import Conversion
 from qbraid.interface.conversion_graph import ConversionGraph
 from qbraid.interface.converter import convert_to_package
-from qbraid.transpiler import conversion_functions
+from qbraid.transpiler.conversions import conversion_functions
 
 
 def bound_method_str(source, target):

@@ -24,7 +24,7 @@ from cirq import Circuit, LineQubit, ops, testing
 
 from qbraid.interface.random import random_unitary_matrix
 from qbraid.programs.testing import circuits_allclose
-from qbraid.transpiler.braket.cirq_to_braket import cirq_to_braket
+from qbraid.transpiler.conversions.braket.cirq_to_braket import cirq_to_braket
 
 
 @pytest.mark.parametrize("qreg", (LineQubit.range(2), [LineQubit(1), LineQubit(6)]))

@@ -23,7 +23,7 @@ from pyquil.noise import _decoherence_noise_model, _get_program_gates, apply_noi
 
 from qbraid.exceptions import CircuitConversionError
 from qbraid.programs.testing import circuits_allclose
-from qbraid.transpiler.pyquil.conversions import cirq_to_pyquil, pyquil_to_cirq
+from qbraid.transpiler.conversions.pyquil.conversions import cirq_to_pyquil, pyquil_to_cirq
 
 
 def test_to_from_pyquil():

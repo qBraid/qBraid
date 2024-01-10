@@ -37,7 +37,7 @@ from cirq.circuits.qasm_output import QasmUGate
 from cirq.contrib.qasm_import._lexer import QasmLexer
 from cirq.contrib.qasm_import.exception import QasmException
 
-import qbraid.transpiler.cirq.cirq_gates as qbraid_cirq_gates
+import qbraid.transpiler.conversions.cirq.cirq_gates as qbraid_cirq_gates
 
 # Redefined lexer tokens (4/7/21) to surpress warning:
 # Token ['IF', 'NE'] defined, but not used
