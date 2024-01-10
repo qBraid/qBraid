@@ -39,9 +39,9 @@ class ProgramTypeError(QbraidError):
         super().__init__(msg)
 
 
-class VisualizationError(QbraidError):
-    """Class for errors raised when using visualization features."""
-
-
 class QasmError(QbraidError):
     """For errors raised while processing OpenQASM programs."""
+
+
+class CircuitConversionError(QbraidError):
+    """Base class for errors raised while converting a circuit."""

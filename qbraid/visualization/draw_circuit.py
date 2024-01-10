@@ -12,17 +12,25 @@
 Module for drawing quantum circuit diagrams
 
 """
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
-from qbraid.exceptions import ProgramTypeError, VisualizationError
+from qbraid._qprogram import QPROGRAM_LIBS
+from qbraid.exceptions import ProgramTypeError
+from qbraid.interface.converter import convert_to_package
 from qbraid.interface.inspector import get_program_type
 from qbraid.visualization.draw_qasm3 import qasm3_drawer
+from qbraid.visualization.exceptions import VisualizationError
 
 if TYPE_CHECKING:
     import qbraid
 
 
-def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
+def circuit_drawer(
+    program: "qbraid.QPROGRAM",
+    as_package: Optional[str] = None,
+    output: Optional[str] = None,
+    **kwargs,
+) -> None:
     """Draws circuit diagram.
 
     Args:
@@ -32,6 +40,10 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
         ProgramTypeError: If quantum program is not of a supported type
     """
     package = get_program_type(program)
+
+    if as_package and as_package != package and as_package in QPROGRAM_LIBS:
+        program = convert_to_package(program, as_package)
+        package = as_package
 
     # pylint: disable=import-outside-toplevel
 
@@ -95,10 +107,19 @@ def circuit_drawer(program: "qbraid.QPROGRAM", output=None, **kwargs) -> None:
         return qasm3_drawer(program)
 
     if package == "qasm2":
-        from qbraid.transpiler.openqasm3.convert_qasm import qasm2_to_qasm3
-
         # coverage: ignore
-        qasm3_str = qasm2_to_qasm3(program)
-        return qasm3_drawer(qasm3_str)
+        if "cirq" in QPROGRAM_LIBS:
+            program = convert_to_package(program, "cirq")
+        elif "qiskit" in QPROGRAM_LIBS:
+            program = convert_to_package(program, "qiskit")
+        else:
+            program = convert_to_package(program, "qasm3")
+
+        return circuit_drawer(program, output=output, **kwargs)
+
+    if package == "pennylane":
+        program = convert_to_package(program, "qasm2")
+
+        return circuit_drawer(program, output=output, **kwargs)
 
     raise ProgramTypeError(package)

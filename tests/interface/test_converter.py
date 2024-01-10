@@ -15,15 +15,15 @@ Unit test for the graph-based transpiler
 import braket.circuits
 import pytest
 
-from qbraid.exceptions import PackageValueError
 from qbraid.interface.conversion_edge import ConversionEdge
 from qbraid.interface.conversion_graph import ConversionGraph
 from qbraid.interface.converter import _get_path_from_bound_methods, convert_to_package
+from qbraid.interface.exceptions import ConversionPathNotFoundError, NodeNotFoundError
 
 
 def test_unuspported_target_package():
     """Test that an error is raised if target package is not supported."""
-    with pytest.raises(PackageValueError):
+    with pytest.raises(NodeNotFoundError):
         convert_to_package(braket.circuits.Circuit(), "alice")
 
 
@@ -32,7 +32,29 @@ def test_get_path_from_bound_method():
     source, target = "cirq", "qasm2"
     edge = ConversionEdge(source, target, lambda x: x)
     graph = ConversionGraph([edge])
-    bound_method = graph._nx_graph[source][target]["func"]
+    bound_method = graph[source][target]["func"]
     bound_method_list = [bound_method]
     path = _get_path_from_bound_methods(bound_method_list)
     assert path == "cirq -> qasm2"
+
+
+@pytest.mark.parametrize("bell_circuit", ["qiskit"], indirect=True)
+def test_raise_no_conversion_path_found(bell_circuit):
+    """Test raising exception when no conversion path is found"""
+    qiskit_circuit, _ = bell_circuit
+    conversions = [
+        ConversionEdge("cirq", "braket", lambda x: x),
+        ConversionEdge("cirq", "qiskit", lambda x: x),
+    ]
+    graph = ConversionGraph(conversions)
+    with pytest.raises(ConversionPathNotFoundError):
+        convert_to_package(qiskit_circuit, "braket", conversion_graph=graph)
+
+
+@pytest.mark.parametrize("bell_circuit", ["qiskit"], indirect=True)
+def test_raise_no_conversion_path_found_max_depth(bell_circuit):
+    """Test raising exception when no conversion path is found when a conversion path
+    exists but does not meet the max_depth requirement."""
+    qiskit_circuit, _ = bell_circuit
+    with pytest.raises(ConversionPathNotFoundError):
+        convert_to_package(qiskit_circuit, "braket", max_path_depth=1)

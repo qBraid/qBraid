@@ -17,8 +17,9 @@ Unit tests for circuit drawer
 import pytest
 
 from qbraid import circuit_wrapper
-from qbraid.exceptions import ProgramTypeError, VisualizationError
+from qbraid.exceptions import ProgramTypeError
 from qbraid.visualization.draw_circuit import circuit_drawer
+from qbraid.visualization.exceptions import VisualizationError
 
 
 def test_draw_raises():
@@ -55,8 +56,7 @@ def test_braket_bell_draw(capfd, bell_circuit):
     """Test using Amazon Braket to draw using ascii output is of the expected length."""
     # pylint: disable=eval-used
     circuit, _ = bell_circuit
-    program = circuit_wrapper(circuit)
-    program.draw(package="braket", output="ascii")
+    circuit_drawer(circuit, as_package="braket", output="ascii")
 
     _, err = capfd.readouterr()
     assert len(err) == 0
@@ -77,8 +77,7 @@ def test_cirq_bell_text_draw(capfd, bell_circuit):
     """Test using Cirq to draw circuit using text output is of the expected length."""
     # pylint: disable=eval-used
     circuit, _ = bell_circuit
-    program = circuit_wrapper(circuit)
-    program.draw(package="cirq", output="text")
+    circuit_drawer(circuit, as_package="cirq", output="text")
 
     _, err = capfd.readouterr()
     assert len(err) == 0
@@ -107,8 +106,7 @@ def test_pyquil_bell_draw(capfd, bell_circuit):
     """Test using pyquil to draw circuit using text output is of the expected length."""
     # pylint: disable=eval-used
     circuit, _ = bell_circuit
-    program = circuit_wrapper(circuit)
-    program.draw(package="pyquil", output="text")
+    circuit_drawer(circuit, as_package="pyquil", output="text")
 
     _, err = capfd.readouterr()
     assert len(err) == 0

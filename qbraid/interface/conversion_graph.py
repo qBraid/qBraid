@@ -22,7 +22,7 @@ from qbraid.interface.conversion_edge import ConversionEdge
 from qbraid.transpiler import conversion_functions
 
 
-class ConversionGraph:
+class ConversionGraph(nx.DiGraph):
     """
     Class for coordinating conversions between different quantum software programs
 
@@ -36,8 +36,9 @@ class ConversionGraph:
             conversions (optional, List[ConversionEdge]): List of conversion edges. If None, default
                                                           conversion edges are created.
         """
-        self._edges = conversions or self.load_default_conversions()
-        self._nx_graph = self.create_conversion_graph()
+        super().__init__()
+        self._conversions = conversions or self.load_default_conversions()
+        self.create_conversion_graph()
 
     @staticmethod
     def load_default_conversions() -> List[ConversionEdge]:
@@ -53,68 +54,25 @@ class ConversionGraph:
             for conversion in conversion_functions
         ]
 
+    def create_conversion_graph(self) -> None:
+        """
+        Create a directed graph from a list of conversion functions.
+
+        Returns:
+            None
+        """
+        for edge in self._conversions:
+            self.add_edge(edge.source, edge.target, func=edge.convert)
+
     @property
-    def edges(self) -> List[ConversionEdge]:
+    def conversions(self) -> List[ConversionEdge]:
         """
         Get the list of conversion edges.
 
         Returns:
             List[ConversionEdge]: The conversion edges of the graph.
         """
-        return self._edges
-
-    @property
-    def nx_graph(self) -> nx.DiGraph:
-        """
-        Gets conversion graph.
-
-        Returns:
-            nx.DiGraph: The conversion graph.
-        """
-        return self._nx_graph
-
-    @property
-    def nx_nodes(self) -> List[nx.classes.reportviews.NodeView]:
-        """
-        Retrieve the nodes of the conversion graph.
-
-        This property returns the nodes present in the graph. Each node typically
-        represents a quantum package supported by the conversion graph.
-
-        Returns:
-            List[nx.classes.reportviews.NodeView]: A list of nodes in the graph, each represented
-                                                   as a NodeView object from NetworkX.
-        """
-        return self._nx_graph.nodes
-
-    @property
-    def nx_edges(self) -> List[nx.classes.reportviews.OutEdgeView]:
-        """
-        Retrieve the edges of the conversion graph.
-
-        This property returns the edges present in the graph. Each edge represents a conversion
-        path between two quantum packages.
-
-        Returns:
-            List[nx.classes.reportviews.OutEdgeView]: A list of edges in the graph, each represented
-                                                      as an OutEdgeView object from NetworkX.
-        """
-        return self._nx_graph.edges
-
-    def create_conversion_graph(self) -> nx.DiGraph:
-        """
-        Create a directed graph from a list of conversion functions.
-
-        Args:
-            conversion_nodes (optional, List[ConversionEdge]): List of custom conversion nodes.
-
-        Returns:
-            nx.DiGraph: The directed graph created from conversion functions.
-        """
-        graph = nx.DiGraph()
-        for edge in self._edges:
-            graph.add_edge(edge.source, edge.target, func=edge.convert)
-        return graph
+        return self._conversions
 
     def add_conversion(self, edge: ConversionEdge, overwrite: bool = False) -> None:
         """
@@ -130,18 +88,18 @@ class ConversionGraph:
         """
         source, target = edge.source, edge.target
 
-        if self._nx_graph.has_edge(source, target) and not overwrite:
+        if self.has_edge(source, target) and not overwrite:
             raise ValueError(
                 f"Conversion from {source} to {target} already exists. "
                 "Set overwrite=True to overwrite."
             )
 
-        for old_edge in self._edges:
+        for old_edge in self._conversions:
             if old_edge == edge:
-                self._edges.remove(old_edge)
-                self._edges.append(edge)
+                self._conversions.remove(old_edge)
+                self._conversions.append(edge)
 
-        self._nx_graph.add_edge(source, target, func=edge.convert)
+        self.add_edge(source, target, func=edge.convert)
 
     def find_shortest_conversion_path(self, source: str, target: str) -> List[str]:
         """
@@ -158,8 +116,8 @@ class ConversionGraph:
             ValueError: If no path is found between source and target.
         """
         try:
-            path = nx.shortest_path(self._nx_graph, source, target)
-            return [self._nx_graph[path[i]][path[i + 1]]["func"] for i in range(len(path) - 1)]
+            path = nx.shortest_path(self, source, target)
+            return [self[path[i]][path[i + 1]]["func"] for i in range(len(path) - 1)]
         except nx.NetworkXNoPath as err:
             raise ValueError(
                 f"No conversion path available between {source} and {target}."
@@ -183,10 +141,10 @@ class ConversionGraph:
             ValueError: If no path is found between source and target.
         """
         try:
-            all_paths = list(nx.all_simple_paths(self._nx_graph, source, target))
+            all_paths = list(nx.all_simple_paths(self, source, target))
             sorted_paths = sorted(all_paths, key=len)[:top_n]
             return [
-                [self._nx_graph[path[i]][path[i + 1]]["func"] for i in range(len(path) - 1)]
+                [self[path[i]][path[i + 1]]["func"] for i in range(len(path) - 1)]
                 for path in sorted_paths
             ]
         except nx.NetworkXNoPath as err:
@@ -205,27 +163,4 @@ class ConversionGraph:
         Returns:
             bool: True if the conversion is supported, False otherwise.
         """
-        return nx.has_path(self._nx_graph, source, target)
-
-    def plot_conversion_graph(self) -> None:
-        """
-        Plot the conversion graph using matplotlib.
-
-        Returns:
-            None
-        """
-        # pylint: disable=import-outside-toplevel
-
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError as err:
-            raise ImportError("Matplotlib is required for plotting the conversion graph.") from err
-
-        graph = self._nx_graph
-        pos = nx.spring_layout(graph, seed=123)
-        nx.draw_networkx_nodes(graph, pos, node_color="lightblue", node_size=1200)
-        nx.draw_networkx_edges(graph, pos, edge_color="gray", min_target_margin=18)
-        nx.draw_networkx_labels(graph, pos)
-        plt.title("qBraid Quantum Program Conversion Graph")
-        plt.axis("off")
-        plt.show()
+        return nx.has_path(self, source, target)

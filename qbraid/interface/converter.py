@@ -12,19 +12,28 @@ Module for transpiling quantum programs between different quantum programming la
 
 """
 import logging
+import warnings
 from copy import deepcopy
 from typing import TYPE_CHECKING, Callable, List, Optional
 
 from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.exceptions import PackageValueError
+from qbraid.exceptions import CircuitConversionError
 from qbraid.interface.conversion_graph import ConversionGraph
+from qbraid.interface.exceptions import ConversionPathNotFoundError, NodeNotFoundError
 from qbraid.interface.inspector import get_program_type
-from qbraid.transpiler import CircuitConversionError
 
 if TYPE_CHECKING:
     import cirq
 
     import qbraid
+
+
+def _warn_if_unsupported(program_type, program_direction):
+    if program_type not in QPROGRAM_LIBS:
+        warnings.warn(
+            f"Converting {program_direction} unsupported program type '{program_type}'.",
+            UserWarning,
+        )
 
 
 def _flatten_cirq(circuit: "cirq.Circuit") -> "cirq.Circuit":
@@ -84,32 +93,66 @@ def _get_path_from_bound_methods(bound_methods: List[Callable]) -> str:
 
 
 def convert_to_package(
-    program: "qbraid.QPROGRAM", target: str, conversion_graph: Optional[ConversionGraph] = None
+    program: "qbraid.QPROGRAM",
+    target: str,
+    conversion_graph: Optional[ConversionGraph] = None,
+    max_path_attempts: int = 3,
+    max_path_depth: Optional[int] = None,
 ) -> "qbraid.QPROGRAM":
     """
-    Transpile a quantum program to a target language.
+    Transpile a quantum program to a target language using a conversion graph.
+    This function attempts to find a conversion path from the program's current
+    format to the target format. It can limit the search to a certain number of
+    attempts and path depths.
 
     Args:
         program (qbraid.QPROGRAM): The quantum program to transpile.
         target (str): The target language to transpile to.
+        conversion_graph (Optional[ConversionGraph]): The graph representing available conversions.
+            If None, a default graph is used. Defaults to None.
+        max_path_attempts (int): The maximum number of conversion paths to attempt before raising an
+            exception. This is useful to avoid excessive computations when multiple paths are
+            available. Defaults to 3.
+        max_path_depth (Optional[int]): The maximum depth of conversions within a given path to
+            allow. For example, a path with a depth of 2 would be ['cirq' -> 'qasm2' -> 'qiskit'],
+            whereas a depth  of 1 would be a direct conversion ['cirq' -> 'braket']. Defaults
+            to None, i.e. no limit set on the path depth.
 
     Returns:
         qbraid.QPROGRAM: The transpiled quantum program.
-    """
-    if target not in QPROGRAM_LIBS:
-        raise PackageValueError(target)
 
-    source = get_program_type(program)
+    Raises:
+        NodeNotFoundError: If the target or source package is not in the ConversionGraph.
+        ConversionPathNotFoundError: If no path is available to conversion between the
+            source and target packages.
+        CircuitConversionError: If the conversion fails through all attempted paths.
+    """
+    graph = conversion_graph or ConversionGraph()
+    graph_type = "Default" if conversion_graph is None else "Provided"
+
+    if not graph.has_node(target):
+        raise NodeNotFoundError(graph_type, target, graph.nodes)
+
+    source = get_program_type(program, require_supported=conversion_graph is None)
+
+    if not graph.has_node(source):
+        raise NodeNotFoundError(graph_type, target, graph.nodes)
+
+    if not graph.has_path(source, target):
+        raise ConversionPathNotFoundError(source, target)
 
     if source == target:
         return program
 
-    graph = conversion_graph or ConversionGraph()
+    _warn_if_unsupported(source, "from")
+    _warn_if_unsupported(target, "to")
 
-    if not graph.has_path(source, target):
-        raise CircuitConversionError(f"No conversion path available from {source} to {target}.")
+    paths = graph.find_top_shortest_conversion_paths(source, target, top_n=max_path_attempts)
 
-    paths = graph.find_top_shortest_conversion_paths(source, target, top_n=3)
+    if max_path_depth is not None:
+        paths = [path for path in paths if len(path) <= max_path_depth]
+        if len(paths) == 0:
+            raise ConversionPathNotFoundError(source, target, max_path_depth)
 
     for path in paths:
         temp_program = deepcopy(program)
@@ -131,4 +174,4 @@ def convert_to_package(
         except Exception:  # pylint: disable=broad-exception-caught
             continue
 
-    raise CircuitConversionError(f"Failed to transpile program from {source} to {target}.")
+    raise CircuitConversionError(f"Failed to convert program from '{source}' to '{target}'.")

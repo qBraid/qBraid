@@ -22,9 +22,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Dict  # pylint: disable=unused-import
 
 from qbraid.api import ApiError, QbraidSession
-from qbraid.exceptions import QbraidError
+from qbraid.exceptions import CircuitConversionError, QbraidError
 from qbraid.load_program import circuit_wrapper
-from qbraid.transpiler.exceptions import CircuitConversionError
 
 from .enums import JobStatus
 from .exceptions import ProgramValidationError, QbraidRuntimeError
