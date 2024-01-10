@@ -12,10 +12,4 @@ Submodules
 .. autosummary::
    :toctree: ../stubs/
 
-   openqasm3
-   cirq
-   qiskit
-   braket
-   pytket
-   pyquil
-   pennylane
+   conversions

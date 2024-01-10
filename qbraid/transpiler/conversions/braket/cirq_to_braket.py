@@ -35,7 +35,7 @@ try:
 except ImportError:
     cirq_ionq_ops = None
 
-from qbraid.exceptions import CircuitConversionError
+from qbraid.transpiler.exceptions import CircuitConversionError
 from qbraid.transpiler.conversions.braket.custom_gates import C as BKControl
 
 

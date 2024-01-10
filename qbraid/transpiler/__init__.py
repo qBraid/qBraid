@@ -37,11 +37,12 @@ Exceptions
 .. autosummary::
    :toctree: ../stubs/
 
+   CircuitConversionError
    NodeNotFoundError
    ConversionPathNotFoundError
 
 """
 from .converter import convert_to_package
 from .edge import Conversion
-from .exceptions import ConversionPathNotFoundError, NodeNotFoundError
+from .exceptions import CircuitConversionError, ConversionPathNotFoundError, NodeNotFoundError
 from .graph import ConversionGraph

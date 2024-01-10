@@ -14,9 +14,37 @@ quantum software program types.
 
 .. currentmodule:: qbraid.transpiler.conversions
 
+Functions
+----------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+    remove_qasm_barriers
+    unfold_qasm_gate_defs
+    flatten_qasm_program
+    decompose_qasm_qelib1
+
+Submodules
+-----------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+   braket
+   cirq
+   openqasm3
+   pennylane
+   pyquil
+   pytket
+   qiskit
+
 """
 import importlib
 import inspect
+
+from .qasm_passes import flatten_qasm_program, remove_qasm_barriers, unfold_qasm_gate_defs
+from .qasm_qelib1 import decompose_qasm_qelib1
 
 # Dynamically import QPROGRAM_LIBS when needed
 _qbraid = importlib.import_module("qbraid._qprogram")

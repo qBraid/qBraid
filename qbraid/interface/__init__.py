@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module providing utilities for interfacing with qBraid programs.
+Module providing utilities for interfacing with supported quantum programs.
 
 .. currentmodule:: qbraid.interface
 

@@ -49,7 +49,6 @@ Exceptions
    QbraidError
    PackageValueError
    ProgramTypeError
-   CircuitConversionError
    QasmError
 
 """
@@ -57,13 +56,7 @@ from . import _warnings
 from ._qdevice import QDEVICE, QDEVICE_TYPES
 from ._qprogram import QPROGRAM, QPROGRAM_LIBS, QPROGRAM_TYPES, SUPPORTED_QPROGRAMS
 from ._version import __version__
-from .exceptions import (
-    CircuitConversionError,
-    PackageValueError,
-    ProgramTypeError,
-    QasmError,
-    QbraidError,
-)
+from .exceptions import PackageValueError, ProgramTypeError, QasmError, QbraidError
 from .get_devices import get_devices, refresh_devices
 from .get_jobs import get_jobs
 from .inspector import get_program_type

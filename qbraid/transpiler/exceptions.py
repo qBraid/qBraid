@@ -16,6 +16,10 @@ from typing import List, Optional
 from qbraid.exceptions import QbraidError
 
 
+class CircuitConversionError(QbraidError):
+    """Base class for errors raised while converting a circuit."""
+
+
 class NodeNotFoundError(ValueError, QbraidError):
     """Class for errors raised when a node is not present in a ConversionGraph."""
 
