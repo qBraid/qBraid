@@ -14,19 +14,9 @@ quantum software program types.
 
 .. currentmodule:: qbraid.transpiler
 
-Exceptions
-------------
-
-.. autosummary::
-   :toctree: ../stubs/
-
-   CircuitConversionError
-
 """
 import importlib
 import inspect
-
-from qbraid.transpiler.exceptions import CircuitConversionError
 
 # Dynamically import QPROGRAM_LIBS when needed
 _qbraid = importlib.import_module("qbraid._qprogram")

@@ -35,9 +35,19 @@ Functions
    random_circuit
    random_unitary_matrix
 
+Exceptions
+-----------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+   NodeNotFoundError
+   ConversionPathNotFoundError
+
 """
 from .conversion_edge import ConversionEdge
 from .conversion_graph import ConversionGraph
 from .converter import convert_to_package
+from .exceptions import ConversionPathNotFoundError, NodeNotFoundError
 from .inspector import get_program_type, get_qasm_version
 from .random import random_circuit, random_unitary_matrix

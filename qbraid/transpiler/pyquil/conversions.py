@@ -17,7 +17,7 @@ from cirq import Circuit, LineQubit
 from cirq.ops import QubitOrder
 from pyquil import Program
 
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.exceptions import CircuitConversionError
 from qbraid.transpiler.pyquil.quil_input import circuit_from_quil
 from qbraid.transpiler.pyquil.quil_output import QuilOutput
 

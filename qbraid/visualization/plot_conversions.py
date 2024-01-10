@@ -65,23 +65,22 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             "external_edge": "blue",
         }
 
-    G = graph._nx_graph
     default_conversions = [tuple(conversion.split("_to_")) for conversion in conversion_functions]
 
     # Extract colors and apply them in the drawing
     ncolors = [
         colors["qbraid_node"] if node in QPROGRAM_LIBS else colors["external_node"]
-        for node in G.nodes()
+        for node in graph.nodes()
     ]
     ecolors = [
         colors["qbraid_edge"] if edge in default_conversions else colors["external_edge"]
-        for edge in G.edges()
+        for edge in graph.edges()
     ]
 
-    pos = nx.spring_layout(G, seed=seed)  # good seeds: 123, 134
-    nx.draw_networkx_nodes(G, pos, node_color=ncolors, node_size=node_size)
-    nx.draw_networkx_edges(G, pos, edge_color=ecolors, min_target_margin=min_target_margin)
-    nx.draw_networkx_labels(G, pos)
+    pos = nx.spring_layout(graph, seed=seed)  # good seeds: 123, 134
+    nx.draw_networkx_nodes(graph, pos, node_color=ncolors, node_size=node_size)
+    nx.draw_networkx_edges(graph, pos, edge_color=ecolors, min_target_margin=min_target_margin)
+    nx.draw_networkx_labels(graph, pos)
 
     if title:
         plt.title(title)

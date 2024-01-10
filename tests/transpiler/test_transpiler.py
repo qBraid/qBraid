@@ -24,9 +24,10 @@ from qiskit import QuantumRegister as QiskitQuantumRegister
 from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 
 from qbraid import QPROGRAM_LIBS, QbraidError, circuit_wrapper
-from qbraid.exceptions import PackageValueError, ProgramTypeError
+from qbraid.exceptions import ProgramTypeError
 from qbraid.interface.conversion_graph import ConversionGraph
 from qbraid.interface.converter import convert_to_package
+from qbraid.interface.exceptions import NodeNotFoundError
 from qbraid.programs.testing import assert_allclose_up_to_global_phase
 
 from ..fixtures import packages_bell
@@ -89,7 +90,7 @@ def test_cirq_round_trip(bell_circuit, to_type):
 def test_from_cirq_bad_package(bell_circuit, item):
     """Test raising PackageValueError converting circuit to non-supported package"""
     circuit, _ = bell_circuit
-    with pytest.raises(PackageValueError):
+    with pytest.raises(NodeNotFoundError):
         convert_to_package(circuit, item)
 
 
@@ -105,7 +106,7 @@ def test_transpile_package_error(bell_circuit):
     """Test raising circuit wrapper error"""
     circuit, _ = bell_circuit
     wrapped = circuit_wrapper(circuit)
-    with pytest.raises(PackageValueError):
+    with pytest.raises(NodeNotFoundError):
         wrapped.transpile("Not a package")
 
 

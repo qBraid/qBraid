@@ -46,12 +46,13 @@ def get_qasm_version(qasm_str: str) -> str:
         raise QasmError("Failed to parse OpenQASM program.") from err
 
 
-def get_program_type(program: "qbraid.QPROGRAM") -> str:
+def get_program_type(program: "qbraid.QPROGRAM", require_supported: bool = True) -> str:
     """
     Get the type of a quantum program.
 
     Args:
         program (qbraid.QPROGRAM): The quantum program to get the type of.
+        require_supported (bool): If True, raise an error if the program type is not supported.
 
     Returns:
         str: The type of the quantum program.
@@ -71,7 +72,7 @@ def get_program_type(program: "qbraid.QPROGRAM") -> str:
         except AttributeError as err:
             raise ProgramTypeError(program) from err
 
-    if package not in QPROGRAM_LIBS:
+    if package not in QPROGRAM_LIBS and require_supported:
         raise PackageValueError(package)
 
     return package
