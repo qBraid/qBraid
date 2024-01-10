@@ -17,8 +17,8 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 import numpy as np
 
-from qbraid.interface.converter import convert_to_package
-from qbraid.interface.inspector import get_program_type
+from qbraid.inspector import get_program_type
+from qbraid.transpiler.converter import convert_to_package
 
 if TYPE_CHECKING:
     import qbraid

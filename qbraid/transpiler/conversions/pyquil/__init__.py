@@ -11,7 +11,7 @@
 """
 PyQuil conversions
 
-.. currentmodule:: qbraid.transpiler.pyquil
+.. currentmodule:: qbraid.transpiler.conversions.pyquil
 
 Functions
 ----------
@@ -24,4 +24,4 @@ Functions
 
 """
 
-from qbraid.transpiler.pyquil.conversions import cirq_to_pyquil, pyquil_to_cirq
+from qbraid.transpiler.conversions.pyquil.conversions import cirq_to_pyquil, pyquil_to_cirq

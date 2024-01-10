@@ -26,9 +26,12 @@ from braket.circuits import noises as braket_noise_gate
 from cirq import ops as cirq_ops
 
 from qbraid import circuit_wrapper
-from qbraid.exceptions import CircuitConversionError
-from qbraid.programs.testing import circuits_allclose
-from qbraid.transpiler.braket.cirq_from_braket import braket_to_cirq, unitary_braket_instruction
+from qbraid.interface import circuits_allclose
+from qbraid.transpiler.conversions.braket.cirq_from_braket import (
+    braket_to_cirq,
+    unitary_braket_instruction,
+)
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 
 def test_from_braket_bell_circuit():

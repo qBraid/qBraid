@@ -16,9 +16,9 @@ import numpy as np
 import pytest
 from cirq import Circuit, LineQubit, ops, testing
 
-from qbraid.exceptions import CircuitConversionError
-from qbraid.interface.converter import convert_to_package
-from qbraid.programs.testing import circuits_allclose
+from qbraid.interface import circuits_allclose
+from qbraid.transpiler.converter import convert_to_package
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 
 def test_bell_state_to_qiskit():

@@ -17,10 +17,13 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Callable, List, Optional
 
 from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.exceptions import CircuitConversionError
-from qbraid.interface.conversion_graph import ConversionGraph
-from qbraid.interface.exceptions import ConversionPathNotFoundError, NodeNotFoundError
-from qbraid.interface.inspector import get_program_type
+from qbraid.inspector import get_program_type
+from qbraid.transpiler.exceptions import (
+    CircuitConversionError,
+    ConversionPathNotFoundError,
+    NodeNotFoundError,
+)
+from qbraid.transpiler.graph import ConversionGraph
 
 if TYPE_CHECKING:
     import cirq
@@ -57,15 +60,15 @@ def _flatten_cirq(circuit: "cirq.Circuit") -> "cirq.Circuit":
 
 def _get_path_from_bound_methods(bound_methods: List[Callable]) -> str:
     """
-    Constructs a path string from a list of bound methods of ConversionEdge instances.
+    Constructs a path string from a list of bound methods of Conversion instances.
 
     This function takes a list of bound methods (specifically 'convert' methods bound to
-    ConversionEdge instances) and constructs a path string representing the sequence of
+    Conversion instances) and constructs a path string representing the sequence of
     conversions. Each conversion is defined by the 'source' and 'target' properties of the
-    ConversionEdge instance to which each method is bound.
+    Conversion instance to which each method is bound.
 
     Args:
-        bound_methods: A list of bound methods from ConversionEdge instances.
+        bound_methods: A list of bound methods from Conversion instances.
 
     Returns:
         A string representing the path of conversions, formatted as
@@ -167,11 +170,15 @@ def convert_to_package(
                     else:
                         raise
             logging.info(
-                "\n\nSuccessfully transpiled using conversions: %s",
+                "\nSuccessfully transpiled using conversions: %s",
                 _get_path_from_bound_methods(path),
             )
             return temp_program
         except Exception:  # pylint: disable=broad-exception-caught
+            logging.info(
+                "\nFailed to transpile using conversions: %s",
+                _get_path_from_bound_methods(path),
+            )
             continue
 
     raise CircuitConversionError(f"Failed to convert program from '{source}' to '{target}'.")

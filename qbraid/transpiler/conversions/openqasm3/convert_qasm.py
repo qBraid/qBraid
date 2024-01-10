@@ -16,8 +16,8 @@ import os
 
 import openqasm3
 
-from qbraid.interface.inspector import get_qasm_version
-from qbraid.transpiler.qasm_qelib1 import _decompose_rxx_instr
+from qbraid.inspector import get_qasm_version
+from qbraid.transpiler.conversions.qasm_qelib1 import _decompose_rxx_instr
 
 QASMType = str
 

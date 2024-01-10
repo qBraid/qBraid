@@ -41,7 +41,3 @@ class ProgramTypeError(QbraidError):
 
 class QasmError(QbraidError):
     """For errors raised while processing OpenQASM programs."""
-
-
-class CircuitConversionError(QbraidError):
-    """Base class for errors raised while converting a circuit."""

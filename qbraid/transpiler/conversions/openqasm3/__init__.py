@@ -11,7 +11,7 @@
 """
 OpenQASM conversions
 
-.. currentmodule:: qbraid.transpiler.openqasm3
+.. currentmodule:: qbraid.transpiler.conversions.openqasm3
 
 Functions
 ----------
@@ -24,7 +24,7 @@ Functions
    qasm3_to_openqasm3
 
 """
-from qbraid.transpiler.openqasm3.convert_qasm import (
+from qbraid.transpiler.conversions.openqasm3.convert_qasm import (
     openqasm3_to_qasm3,
     qasm2_to_qasm3,
     qasm3_to_openqasm3,

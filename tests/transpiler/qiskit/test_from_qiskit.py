@@ -19,10 +19,10 @@ from qiskit.circuit.random import random_circuit
 
 from qbraid import circuit_wrapper
 from qbraid.exceptions import QasmError
-from qbraid.interface.converter import convert_to_package
-from qbraid.programs.testing import circuits_allclose
-from qbraid.transpiler.cirq.conversions_qasm import qasm2_to_cirq
-from qbraid.transpiler.qiskit.conversions_qasm import qiskit_to_qasm2
+from qbraid.interface import circuits_allclose
+from qbraid.transpiler.conversions.cirq.conversions_qasm import qasm2_to_cirq
+from qbraid.transpiler.conversions.qiskit.conversions_qasm import qiskit_to_qasm2
+from qbraid.transpiler.converter import convert_to_package
 
 
 def test_bell_state_from_qiskit():

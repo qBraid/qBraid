@@ -24,7 +24,7 @@ def execute_test(conversion_function, input_circuit):
     """Execute conversion, test equality, and return 1 if it fails, 0 otherwise"""
     try:
         output_circuit = conversion_function(input_circuit)
-        if not qbraid.programs.testing.circuits_allclose(
+        if not qbraid.interface.circuits_allclose(
             input_circuit, output_circuit, strict_gphase=False
         ):
             return 1

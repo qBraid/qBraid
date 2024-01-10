@@ -21,4 +21,3 @@ Submodules
    qasm2
    qasm3
    qiskit
-   testing

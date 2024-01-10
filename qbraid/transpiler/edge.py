@@ -12,17 +12,17 @@
 Module for defining custom conversions
 
 """
+import inspect
 from typing import TYPE_CHECKING, Any, Callable, Union
 
-from qbraid._qprogram import QPROGRAM_LIBS, SUPPORTED_QPROGRAMS
-from qbraid.exceptions import PackageValueError
-from qbraid.interface.inspector import get_program_type
+from qbraid._qprogram import SUPPORTED_QPROGRAMS
+from qbraid.inspector import get_program_type
 
 if TYPE_CHECKING:
     import qbraid
 
 
-class ConversionEdge:
+class Conversion:
     """
     Class for defining and handling custom conversions between different quantum program packages.
 
@@ -36,17 +36,11 @@ class ConversionEdge:
             source (str): The source package from which conversion starts.
             target (str): The target package to which conversion is done.
             conversion_func (Callable): The function that performs the actual conversion.
-
-        Raises:
-            PackageValueError: If the source package does not match a supported
-                               quantum program type.
         """
-        if source not in QPROGRAM_LIBS:
-            raise PackageValueError(source)
-
         self._source = source
         self._target = target
         self._conversion_func = conversion_func
+        self._native = self._is_native()
 
     @property
     def source(self) -> str:
@@ -67,6 +61,34 @@ class ConversionEdge:
             str: The target package name.
         """
         return self._target
+
+    @property
+    def native(self) -> bool:
+        """
+        True if the conversion function is native to qbraid package, False otherwise.
+
+        Returns:
+            bool: Whether the conversion function is native to qbraid package.
+        """
+        return self._native
+
+    def _is_native(self) -> bool:
+        """
+        Check if a conversion function is native to qbraid package.
+
+        Args:
+            func (Callable): The conversion function to check.
+
+        Returns:
+            bool: True if the function is native, False otherwise.
+        """
+        module = inspect.getmodule(self._conversion_func)
+
+        if module is None:
+            return False
+
+        package = module.__name__.split(".")[0]
+        return package == "qbraid"
 
     def convert(self, program: "qbraid.QPROGRAM") -> Union["qbraid.QPROGRAM", Any]:
         """
@@ -110,7 +132,11 @@ class ConversionEdge:
         Returns:
             bool: True if the instances are equal, False otherwise.
         """
-        if not isinstance(other, ConversionEdge):
+        if not isinstance(other, Conversion):
             return False
 
-        return self._source == other._source and self._target == other._target
+        return (
+            self._source == other._source
+            and self._target == other._target
+            and self._native == other._native
+        )
