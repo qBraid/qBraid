@@ -17,7 +17,6 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.transpiler import conversion_functions
 
 if TYPE_CHECKING:
     import qbraid.interface
@@ -65,16 +64,16 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             "external_edge": "blue",
         }
 
-    default_conversions = [tuple(conversion.split("_to_")) for conversion in conversion_functions]
-
     # Extract colors and apply them in the drawing
     ncolors = [
         colors["qbraid_node"] if node in QPROGRAM_LIBS else colors["external_node"]
         for node in graph.nodes()
     ]
     ecolors = [
-        colors["qbraid_edge"] if edge in default_conversions else colors["external_edge"]
-        for edge in graph.edges()
+        colors["qbraid_edge"]
+        if graph[edge.source][edge.target]["native"] is True
+        else colors["external_edge"]
+        for edge in graph.conversions
     ]
 
     pos = nx.spring_layout(graph, seed=seed)  # good seeds: 123, 134

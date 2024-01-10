@@ -167,11 +167,15 @@ def convert_to_package(
                     else:
                         raise
             logging.info(
-                "\n\nSuccessfully transpiled using conversions: %s",
+                "\nSuccessfully transpiled using conversions: %s",
                 _get_path_from_bound_methods(path),
             )
             return temp_program
         except Exception:  # pylint: disable=broad-exception-caught
+            logging.info(
+                "\nFailed to transpile using conversions: %s",
+                _get_path_from_bound_methods(path),
+            )
             continue
 
     raise CircuitConversionError(f"Failed to convert program from '{source}' to '{target}'.")

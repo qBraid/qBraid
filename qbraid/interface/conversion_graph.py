@@ -19,6 +19,7 @@ from typing import List, Optional
 import networkx as nx
 
 from qbraid.interface.conversion_edge import ConversionEdge
+from qbraid.interface.exceptions import ConversionPathNotFoundError
 from qbraid.transpiler import conversion_functions
 
 
@@ -62,7 +63,7 @@ class ConversionGraph(nx.DiGraph):
             None
         """
         for edge in self._conversions:
-            self.add_edge(edge.source, edge.target, func=edge.convert)
+            self.add_edge(edge.source, edge.target, native=edge.native, func=edge.convert)
 
     @property
     def conversions(self) -> List[ConversionEdge]:
@@ -95,11 +96,11 @@ class ConversionGraph(nx.DiGraph):
             )
 
         for old_edge in self._conversions:
-            if old_edge == edge:
+            if old_edge.source == source and old_edge.target == target:
                 self._conversions.remove(old_edge)
                 self._conversions.append(edge)
 
-        self.add_edge(source, target, func=edge.convert)
+        self.add_edge(source, target, native=edge.native, func=edge.convert)
 
     def find_shortest_conversion_path(self, source: str, target: str) -> List[str]:
         """
@@ -119,9 +120,7 @@ class ConversionGraph(nx.DiGraph):
             path = nx.shortest_path(self, source, target)
             return [self[path[i]][path[i + 1]]["func"] for i in range(len(path) - 1)]
         except nx.NetworkXNoPath as err:
-            raise ValueError(
-                f"No conversion path available between {source} and {target}."
-            ) from err
+            raise ConversionPathNotFoundError(source, target) from err
 
     def find_top_shortest_conversion_paths(
         self, source: str, target: str, top_n: int = 3
@@ -148,9 +147,7 @@ class ConversionGraph(nx.DiGraph):
                 for path in sorted_paths
             ]
         except nx.NetworkXNoPath as err:
-            raise ValueError(
-                f"No conversion path available between {source} and {target}."
-            ) from err
+            raise ConversionPathNotFoundError(source, target) from err
 
     def has_path(self, source: str, target: str) -> bool:
         """
@@ -164,3 +161,29 @@ class ConversionGraph(nx.DiGraph):
             bool: True if the conversion is supported, False otherwise.
         """
         return nx.has_path(self, source, target)
+
+    def reset(self, conversions: Optional[List[ConversionEdge]] = None) -> None:
+        """
+        Reset the graph to its default state.
+
+        Returns:
+            None
+        """
+        self.clear()
+        self._conversions = conversions or self.load_default_conversions()
+        self.create_conversion_graph()
+
+    def plot(self, **kwargs):
+        """
+        Plot the conversion graph.
+
+        Args:
+            **kwargs: Keyword arguments for the plot function.
+
+        Returns:
+            None
+        """
+        # pylint: disable=import-outside-toplevel
+        from qbraid.visualization.plot_conversions import plot_conversion_graph
+
+        plot_conversion_graph(self, **kwargs)
