@@ -131,12 +131,11 @@ def test_get_aws_jobs_by_tag(capfd):
     _mock_ipython(MockIPython(None))
     circuit = random_circuit("braket")
     device = device_wrapper("aws_dm_sim")
-    job = device.run(circuit, shots=10, tags={"amazon": "braket"})
-    get_jobs(filters={"tags": {"amazon": "braket"}})
+    job = device.run(circuit, shots=10, tags={"test": "123"})
+    get_jobs(filters={"tags": {"test": "123"}, "numResults": 1})
     out, err = capfd.readouterr()
     message = out.split("\n")[1]
-    pattern = r"Displaying \d+/\d+ jobs matching query:"
-    assert re.match(pattern, message)
+    assert message == "Displaying 1 most recent job matching query:"
     assert job.id in out
     assert len(err) == 0
 
@@ -147,12 +146,11 @@ def test_get_ibm_jobs_by_tag(capfd):
     _mock_ipython(MockIPython(None))
     circuit = random_circuit("qiskit")
     device = device_wrapper("ibm_q_qasm_simulator")
-    job = device.run(circuit, shots=10, tags=["ibm", "qiskit"])
-    get_jobs(filters={"tags": {"ibm": "*", "qiskit": "*"}})
+    job = device.run(circuit, shots=10, tags=["test"])
+    get_jobs(filters={"tags": {"test": "*"}, "numResults": 1})
     out, err = capfd.readouterr()
     message = out.split("\n")[1]
-    pattern = r"Displaying \d+/\d+ jobs matching query:"
-    assert re.match(pattern, message)
+    assert message == "Displaying 1 most recent job matching query:"
     assert job.id in out
     assert len(err) == 0
 

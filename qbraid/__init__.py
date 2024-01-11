@@ -37,6 +37,7 @@ Functions
    job_wrapper
    get_jobs
    convert_to_package
+   get_program_type
 
 
 Exceptions
@@ -48,7 +49,6 @@ Exceptions
    QbraidError
    PackageValueError
    ProgramTypeError
-   VisualizationError
    QasmError
 
 """
@@ -56,15 +56,10 @@ from . import _warnings
 from ._qdevice import QDEVICE, QDEVICE_TYPES
 from ._qprogram import QPROGRAM, QPROGRAM_LIBS, QPROGRAM_TYPES, SUPPORTED_QPROGRAMS
 from ._version import __version__
-from .exceptions import (
-    PackageValueError,
-    ProgramTypeError,
-    QasmError,
-    QbraidError,
-    VisualizationError,
-)
+from .exceptions import PackageValueError, ProgramTypeError, QasmError, QbraidError
 from .get_devices import get_devices, refresh_devices
 from .get_jobs import get_jobs
-from .interface import convert_to_package
+from .inspector import get_program_type
 from .load_program import circuit_wrapper
 from .load_provider import device_wrapper, job_wrapper
+from .transpiler import convert_to_package

@@ -17,7 +17,7 @@ from unittest.mock import Mock
 import pytest
 
 from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError
-from qbraid.interface.inspector import get_program_type, get_qasm_version
+from qbraid.inspector import get_program_type, get_qasm_version
 
 from ..fixtures import packages_bell
 

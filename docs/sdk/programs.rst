@@ -91,7 +91,7 @@ The underlying "wrapped" circuit can be accessed using the circuit wrapper's ``p
 Transpiler
 -----------
 
-Now, we can use the ``qbraid.transpiler.QuantumProgram.transpile`` method to convert to wrapped circuit into
+Now, we can use the ``qbraid.programs.QuantumProgram.transpile`` method to convert to wrapped circuit into
 any other supported program type. Simply pass in the name of the target package from one of ``qbraid.QPROGRAM_LIBS``.
 For example, use input "braket" to return a ``braket.circuits.Circuit``:
 
@@ -154,7 +154,7 @@ It applies the ``unitary`` method to both input circuits, compares the outputs v
 
 .. code-block:: python
 
-    >>> from qbraid.programs.testing import circuits_allclose
+    >>> from qbraid.interface import circuits_allclose
     >>> circuits_allclose(cirq_circuit, pyquil_circuit)
     True
 

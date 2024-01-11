@@ -17,9 +17,8 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 import numpy as np
 
-from qbraid.interface.converter import convert_to_package
-from qbraid.interface.inspector import get_program_type
-from qbraid.visualization.draw_circuit import circuit_drawer
+from qbraid.inspector import get_program_type
+from qbraid.transpiler.converter import convert_to_package
 
 if TYPE_CHECKING:
     import qbraid
@@ -165,9 +164,3 @@ class QuantumProgram:
             :data:`~qbraid.QPROGRAM`: supported quantum program object
         """
         return convert_to_package(self.program, conversion_type)
-
-    def draw(self, package: Optional[str] = None, output: Optional[str] = None, **kwrags):
-        """Draw circuit diagram"""
-        package = "cirq" if package is None else package
-        qprogram = self.transpile(package)
-        return circuit_drawer(qprogram, output, **kwrags)

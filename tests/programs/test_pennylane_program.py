@@ -62,7 +62,8 @@ def test_pennylane_reverse_qubit_order(wires):
 
     assert wires_out == wires_expected
     assert str(tape_out) == str(tape_expected)
-    # assert tape_out == tape_expected # Failing b/c of bad __repr__
+    assert repr(tape_out) == repr(tape_expected)
+    assert qml.equal(tape_out, tape_expected)
 
 
 @pytest.mark.parametrize("wires", [(3, 6), (2, 4)])

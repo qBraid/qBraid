@@ -18,9 +18,9 @@ from braket.circuits import Circuit as BKCircuit
 from cirq import Circuit, LineQubit, X, Y, Z
 
 from qbraid import circuit_wrapper
-from qbraid.interface.inspector import get_program_type
+from qbraid.inspector import get_program_type
+from qbraid.interface.circuit_equality import circuits_allclose
 from qbraid.interface.random.random import random_circuit, random_unitary_matrix
-from qbraid.programs.testing.circuit_equality import circuits_allclose
 
 from ..fixtures import packages_bell, packages_shared15
 

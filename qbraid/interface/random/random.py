@@ -18,7 +18,7 @@ import numpy as np
 
 from qbraid._qprogram import QPROGRAM, QPROGRAM_LIBS
 from qbraid.exceptions import PackageValueError
-from qbraid.interface.converter import convert_to_package
+from qbraid.transpiler.converter import convert_to_package
 
 QROGRAM_TEST_TYPE = Tuple[Dict[str, Callable[[Any], QPROGRAM]], np.ndarray]
 

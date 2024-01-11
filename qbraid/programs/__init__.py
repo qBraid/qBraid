@@ -23,5 +23,4 @@ Classes
    QuantumProgram
 
 """
-from qbraid.programs import testing
 from qbraid.programs.abc_program import QuantumProgram

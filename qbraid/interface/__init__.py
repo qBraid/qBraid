@@ -9,19 +9,9 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module providing unified conversions interface between supported
-quantum program types.
+Module providing utilities for interfacing with supported quantum programs.
 
 .. currentmodule:: qbraid.interface
-
-Classes
---------
-
-.. autosummary::
-   :toctree: ../stubs/
-
-   ConversionGraph
-   ConversionEdge
 
 Functions
 -----------
@@ -29,15 +19,11 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   convert_to_package
-   get_qasm_version
-   get_program_type
    random_circuit
    random_unitary_matrix
+   circuits_allclose
+   assert_allclose_up_to_global_phase
 
 """
-from .conversion_edge import ConversionEdge
-from .conversion_graph import ConversionGraph
-from .converter import convert_to_package
-from .inspector import get_program_type, get_qasm_version
+from .circuit_equality import assert_allclose_up_to_global_phase, circuits_allclose
 from .random import random_circuit, random_unitary_matrix
