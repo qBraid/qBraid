@@ -12,6 +12,7 @@ Module for retrieving Braket devices availability information.
 
 """
 from datetime import datetime, timedelta
+from typing import Tuple
 
 from braket.aws import AwsDevice
 from braket.device_schema import DeviceExecutionWindow, ExecutionDay
@@ -94,11 +95,12 @@ def next_availability(execution_window: DeviceExecutionWindow) -> (bool, datetim
     return False, next_window_start
 
 
-def is_available(device: AwsDevice) -> bool:
+def is_available(device: AwsDevice) -> Tuple[bool, datetime]:
     """Returns true if the device is currently available.
 
     Returns:
-        bool: Return if the device is currently available.
+        Tuple[bool, datetime]: Return if the device is currently available
+            and the next change in availability status (UTC datetime).
 
     """
     if device.status != "ONLINE":

@@ -27,3 +27,8 @@ Graph model (v0.5.0)
     :target: javascript:void(0);
 
 |
+
+.. seealso::
+
+    - https://github.com/qBraid/qbraid-lab-demo/blob/main/qbraid_sdk/qbraid_sdk_transpiler.ipynb
+    - https://github.com/qBraid/qbraid-lab-demo/blob/main/qbraid_sdk/qbraid_transpiler_stim.ipynb
