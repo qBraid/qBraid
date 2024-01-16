@@ -22,7 +22,7 @@ BLUE = "\033[94m"
 BOLD = "\033[1m"
 RESET = "\033[0m"
 
-header = """# Copyright (C) 2023 qBraid
+header = """# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -32,6 +32,8 @@ header = """# Copyright (C) 2023 qBraid
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 """
+
+header_2023 = header.replace("2024", "2023")
 
 skip_files = []
 
@@ -63,7 +65,11 @@ def replace_or_add_header(file_path, fix=False):
     with open(file_path, "r", encoding="ISO-8859-1") as f:
         content = f.read()
 
-    if content.startswith(header) or should_skip(file_path, content):
+    if (
+        content.startswith(header)
+        or content.startswith(header_2023)
+        or should_skip(file_path, content)
+    ):
         return
 
     if not fix:

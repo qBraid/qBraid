@@ -25,6 +25,20 @@ def _get_entrypoints(group: str):
     return {entry.name: entry for entry in pkg_resources.iter_entry_points(group)}
 
 
+def _get_device_info(device_id: str):
+    """Retrieve a device from qBraid API using device ID."""
+    session = QbraidSession()
+    api_endpoint = "/public/lab/get-devices"
+    params_list = [{"qbraid_id": device_id}, {"objArg": device_id}]
+
+    for params in params_list:
+        device_lst = session.get(api_endpoint, params=params).json()
+        if device_lst and len(device_lst) > 0:
+            return device_lst[0]
+
+    raise QbraidError(f"{device_id} is not a valid device ID.")
+
+
 def device_wrapper(device_id: str):
     """Apply qbraid device wrapper to device from a supported device provider.
 
@@ -38,19 +52,8 @@ def device_wrapper(device_id: str):
         :class:`~qbraid.QbraidError`: If ``device_id`` is not a valid device reference.
 
     """
-    session = QbraidSession()
-    api_endpoint = "/public/lab/get-devices"
-    params_list = [{"qbraid_id": device_id}, {"objArg": device_id}]
+    device_info = _get_device_info(device_id)
 
-    for params in params_list:
-        device_lst = session.get(api_endpoint, params=params).json()
-        if device_lst:
-            break
-
-    if not device_lst:
-        raise QbraidError(f"{device_id} is not a valid device ID.")
-
-    device_info = device_lst[0]
     try:
         device_id = device_info["objArg"]
     except KeyError as err:

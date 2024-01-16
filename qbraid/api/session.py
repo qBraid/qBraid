@@ -64,8 +64,8 @@ class QbraidSession(Session):
         refresh_token: Optional[str] = None,
         id_token: Optional[str] = None,
         base_url: Optional[str] = None,
-        retries_total: int = 5,
-        retries_connect: int = 3,
+        retries_total: int = 3,
+        retries_connect: int = 2,
         backoff_factor: float = 0.5,
     ) -> None:
         super().__init__()
