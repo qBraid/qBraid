@@ -19,8 +19,6 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   random_circuit
-   random_unitary_matrix
    circuits_allclose
    assert_allclose_up_to_global_phase
 

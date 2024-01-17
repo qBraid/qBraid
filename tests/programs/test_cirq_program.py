@@ -12,6 +12,7 @@
 Unit tests for qbraid.programs.cirq.CirqCircuit
 
 """
+import pytest
 from cirq import CNOT, Circuit, GridQubit, H, LineQubit, Moment, NamedQubit, X, Y, Z
 
 from qbraid.interface import circuits_allclose
@@ -32,7 +33,7 @@ def test_contiguous_line_qubits():
     assert set(program.qubits) == set(expected_qubits)
 
 
-def test_contiguous_grid_qubits():
+def test_remove_idle_grid_qubits_row():
     """Test convert to contiguous method for grid qubits."""
     circuit = Circuit()
     circuit.append(X(GridQubit(0, 0)))
@@ -43,6 +44,51 @@ def test_contiguous_grid_qubits():
     program.remove_idle_qubits()
 
     expected_qubits = [GridQubit(0, 0), GridQubit(0, 1), GridQubit(0, 2)]
+    assert set(program.qubits) == set(expected_qubits)
+
+
+@pytest.mark.skip(reason="Not implemented yet")
+def test_remove_idle_grid_qubits_col():
+    """Test convert to contiguous method for grid qubits."""
+    circuit = Circuit()
+    circuit.append(X(GridQubit(0, 0)))
+    circuit.append(Y(GridQubit(2, 0)))
+    circuit.append(Z(GridQubit(4, 0)))
+
+    program = CirqCircuit(circuit)
+    program.remove_idle_qubits()
+
+    expected_qubits = [GridQubit(0, 0), GridQubit(1, 0), GridQubit(2, 0)]
+    assert set(program.qubits) == set(expected_qubits)
+
+
+@pytest.mark.skip(reason="Not implemented yet")
+@pytest.mark.parametrize("index1,index2", [(1, 2), (2, 1)])
+def test_remove_idle_qubits_raises(index1, index2):
+    """Test removing idle qubits for grid qubits raises exception if
+    row or col indicies are not all equal."""
+    circuit = Circuit()
+    circuit.append(X(GridQubit(0, 0)))
+    circuit.append(Y(GridQubit(index1, index2)))
+
+    program = CirqCircuit(circuit)
+
+    with pytest.raises(ValueError):
+        program.remove_idle_qubits()
+
+
+@pytest.mark.skip(reason="Not implemented yet")
+def test_convert_grid_to_line_qubits():
+    """Test converting grid qubits to line qubits."""
+    circuit = Circuit()
+    circuit.append(X(GridQubit(0, 0)))
+    circuit.append(Y(GridQubit(0, 1)))
+    circuit.append(Z(GridQubit(0, 2)))
+
+    program = CirqCircuit(circuit)
+    program._convert_to_line_qubits()
+
+    expected_qubits = [LineQubit(0), LineQubit(1), LineQubit(2)]
     assert set(program.qubits) == set(expected_qubits)
 
 
