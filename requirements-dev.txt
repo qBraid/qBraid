@@ -6,7 +6,7 @@ pennylane~=0.34.0
 pyquil~=4.4.0
 pytket~=1.23.0
 pytket-braket~=0.33.0
-qiskit~=0.45.1
+qiskit~=0.45.2
 qiskit-ibm-provider~=0.8.0
 qiskit-qasm3-import~=0.4.1
 qiskit-braket-provider
