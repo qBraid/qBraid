@@ -123,8 +123,6 @@ This arrangement simplifies targeting and transpiling between different quantum 
  'qasm3': 'str'}
 ```
 
-![Conversion Graph](docs/_static/sdk-files/conversion_graph.png)
-
 Pass any quantum program of type `QPROGRAM` to the `circuit_wrapper()` and specify a target package
 from `SUPPORTED_QPROGRAMS` to "transpile" your circuit to a new program type:
 
@@ -151,6 +149,20 @@ The same functionality can be achieved using the underlying `convert_to_package(
 >>> from qbraid import convert_to_package
 >>> cirq_circuit = convert_to_package(qiskit_circuit, "cirq")
 ```
+
+Behind the scenes, the qBraid-SDK uses ``networkx`` to create a directional graph that maps all possible conversions between supported program types:
+
+```python
+from qbraid.transpiler import ConversionGraph
+from qbraid.visualization import plot_conversion_graph
+
+graph = ConversionGraph()
+plot_conversion_graph(graph)
+```
+
+![Conversion Graph](docs/_static/sdk-files/conversion_graph.png)
+
+You can use the native conversions supported by qBraid, or define your own custom nodes and/or edges. See [example](https://github.com/qBraid/qbraid-lab-demo/blob/main/qbraid_sdk/qbraid_sdk_transpiler_braket_qiskit.ipynb).
 
 ### Devices & Jobs
 
