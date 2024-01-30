@@ -20,8 +20,7 @@ import pytest
 from braket.circuits import Circuit
 
 from qbraid import device_wrapper, job_wrapper
-from qbraid.providers.aws import BraketProvider
-from qbraid.providers.aws.execution_window import is_available
+from qbraid.providers.aws import BraketDevice, BraketProvider
 
 # Skip tests if AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
@@ -93,7 +92,8 @@ def test_is_available():
     provider = BraketProvider()
     devices = provider.get_devices()
     for device in devices:
-        is_available_bool, _ = is_available(device)
+        qbraid_device = BraketDevice(aws_device=device)
+        is_available_bool, _, _ = qbraid_device.availability_window()
         assert device.is_available == is_available_bool
 
 

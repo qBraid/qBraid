@@ -263,7 +263,13 @@ class QbraidSession(Session):
     @staticmethod
     def _convert_email_symbols(email: str) -> Optional[str]:
         """Convert email to compatible string format"""
-        return email.replace("-", "-2d").replace(".", "-2e").replace("@", "-40").replace("_", "-5f")
+        return (
+            email.replace("-", "-2d")
+            .replace(".", "-2e")
+            .replace("@", "-40")
+            .replace("_", "-5f")
+            .replace("+", "-2b")
+        )
 
     def _initialize_retry(
         self, retries_total: int, retries_connect: int, backoff_factor: float
