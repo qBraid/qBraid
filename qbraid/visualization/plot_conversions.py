@@ -80,9 +80,11 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         if (edge[0], edge[1]) in conversion_dict
     ]
     ecolors = [
-        colors["qbraid_edge"]
-        if graph[edge.source][edge.target]["native"]
-        else colors["external_edge"]
+        (
+            colors["qbraid_edge"]
+            if graph[edge.source][edge.target]["native"]
+            else colors["external_edge"]
+        )
         for edge in conversions_ordered
     ]
 

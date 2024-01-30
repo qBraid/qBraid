@@ -121,16 +121,9 @@ This arrangement simplifies targeting and transpiling between different quantum 
  'openqasm3': 'openqasm3.ast.Program',
  'qasm2': 'str',
  'qasm3': 'str'}
->>> QPROGRAM
-typing.Union[
-  cirq.circuits.circuit.Circuit,
-  qiskit.circuit.quantumcircuit.QuantumCircuit,
-  pyquil.quil.Program,
-  pytket._tket.circuit.Circuit,
-  braket.circuits.circuit.Circuit,
-  openqasm3.ast.Program,
-  str]
 ```
+
+![Conversion Graph](docs/_static/sdk-files/conversion_graph.png)
 
 Pass any quantum program of type `QPROGRAM` to the `circuit_wrapper()` and specify a target package
 from `SUPPORTED_QPROGRAMS` to "transpile" your circuit to a new program type:
