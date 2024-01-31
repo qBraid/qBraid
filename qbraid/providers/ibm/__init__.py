@@ -24,11 +24,13 @@ Classes
 
    QiskitBackend
    QiskitJob
+   QiskitRemoteService
    QiskitProvider
+   QiskitRuntime
    QiskitResult
 
 """
 from .result import QiskitResult
 from .device import QiskitBackend
 from .job import QiskitJob
-from .provider import QiskitProvider
+from .provider import QiskitRemoteService, QiskitProvider, QiskitRuntime
