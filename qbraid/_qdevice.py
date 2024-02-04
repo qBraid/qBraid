@@ -60,3 +60,6 @@ QDEVICE = None if not _DEVICES else _DEVICES[0] if len(_DEVICES) == 1 else Union
 
 # pylint: disable-next=bad-str-strip-call
 QDEVICE_TYPES = [str(x).strip("<class").strip(">").strip(" ").strip("'") for x in _DEVICES]
+_DEVICE_LIBS = [x.split(".")[0] for x in QDEVICE_TYPES]
+SUPPORTED_QDEVICES = dict(zip(_DEVICE_LIBS, QDEVICE_TYPES))
+QDEVICE_LIBS = list(SUPPORTED_QDEVICES.keys())
