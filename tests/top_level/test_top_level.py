@@ -36,10 +36,10 @@ REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of qBraid/AWS/
 
 check_version_data = [
     # local, API, warn
-    ("0.1.0", "0.1.1", True),
-    ("1.0.7", "1.0.8", True),
+    ("0.1.0", "0.1.1", False),
+    ("1.0.7", "1.0.8", False),
     ("1.3.2", "2.0.6", True),
-    ("0.1.0", "0.1.0", False),
+    ("0.1.0", "0.3.0", True),
     ("0.2.4.dev1", "0.2.4", False),
     ("0.1.0", "0.1.0.dev0", False),
     ("0.1.6.dev2", "0.1.6.dev5", False),

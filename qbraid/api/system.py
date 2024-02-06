@@ -15,43 +15,9 @@ Module for gathering system information.
 import os
 import site
 import sys
-from importlib.metadata import PackageNotFoundError, version
-
-import requests
 
 from qbraid._qdevice import QDEVICE_LIBS
 from qbraid.exceptions import QbraidError
-
-
-def get_latest_version(package: str) -> str:
-    """Retrieves the latest version of a package from PyPI."""
-    url = f"https://pypi.org/pypi/{package}/json"
-    try:
-        response = requests.get(url, timeout=5)
-        response.raise_for_status()
-        data = response.json()
-        return data["info"]["version"]
-    except requests.RequestException as err:
-        raise QbraidError(f"Failed to retrieve latest {package} version.") from err
-
-
-def get_local_version(package: str) -> str:
-    """Retrieves the local version of a package."""
-    try:
-        return version(package)
-    except PackageNotFoundError as err:
-        raise QbraidError(f"{package} is not installed in the current environment.") from err
-
-
-def verify_compatible(package) -> bool:
-    """Verifies that the local version of package is compatible with latest version."""
-    installed_version = get_local_version(package)
-    latest_version = get_latest_version(package)
-
-    installed_major, intalled_minor, _ = installed_version.split(".")
-    latest_major, latest_minor, _ = latest_version.split(".")
-
-    return installed_major == latest_major and intalled_minor == latest_minor
 
 
 def get_site_packages_path() -> str:
