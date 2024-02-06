@@ -13,7 +13,7 @@ Module defining QiskitBackend Class
 
 """
 import re
-from typing import TYPE_CHECKING  # pylint: disable=unused-import
+from typing import TYPE_CHECKING, Union  # pylint: disable=unused-import
 
 from qiskit import transpile
 from qiskit.transpiler import TranspilerError
@@ -25,12 +25,15 @@ from .job import QiskitJob
 
 if TYPE_CHECKING:
     import qiskit_ibm_provider
+    import qiskit_ibm_runtime
 
 
 class QiskitBackend(QuantumDevice):
     """Wrapper class for IBM Qiskit ``Backend`` objects."""
 
-    def __init__(self, ibm_device: "qiskit_ibm_provider.IBMBackend"):
+    def __init__(
+        self, ibm_device: Union["qiskit_ibm_provider.IBMBackend", "qiskit_ibm_runtime.IBMBackend"]
+    ):
         """Create a QiskitBackend."""
 
         super().__init__(ibm_device)
@@ -49,7 +52,9 @@ class QiskitBackend(QuantumDevice):
         match = re.search(r"<\w+\('([^']+)'\)>", str(backend))
         return match.group(1) if match else str(backend)
 
-    def _populate_metadata(self, device: "qiskit_ibm_provider.IBMBackend") -> None:
+    def _populate_metadata(
+        self, device: Union["qiskit_ibm_provider.IBMBackend", "qiskit_ibm_runtime.IBMBackend"]
+    ) -> None:
         """Populate device metadata using IBMBackend object."""
         # pylint: disable=attribute-defined-outside-init
         device_name = self._get_device_name()

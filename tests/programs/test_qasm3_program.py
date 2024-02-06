@@ -232,7 +232,6 @@ def test_remove_idle_qubits_qasm3():
     assert qprogram.program == qasm_expected
 
 
-@pytest.mark.skip(reason="Syntax not yet supported")
 def test_qasm3_num_qubits_alternate_synatx():
     """Test calculating num qubits for qasm3 syntax edge-case"""
     qasm3_str = """
@@ -243,9 +242,25 @@ qubit _qubit1;
 h _qubit0;
 cx _qubit0, _qubit1;
 """
-    circuit = loads(qasm3_str)
     qprogram = OpenQasm3Program(qasm3_str)
-    assert qprogram.num_qubits == circuit.num_qubits
+    assert qprogram.num_qubits == 2
+
+
+def test_qasm3_num_clbits():
+    """Test calculating num classical bits for qasm3"""
+    qasm3_str = """
+OPENQASM 3;
+include "stdgates.inc";
+qubit[2] q;
+bit[2] c;
+h q[0];
+cx q[0], q[1];
+measure q[0] -> c[0];
+measure q[1] -> c[1];
+"""
+    qprogram = OpenQasm3Program(qasm3_str)
+    assert qprogram.num_clbits == 2
+    assert qprogram.clbits == [("c", 2)]
 
 
 def test_reverse_qubit_order():

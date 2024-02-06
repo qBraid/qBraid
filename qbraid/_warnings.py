@@ -13,20 +13,41 @@ Module for emitting and disabling warnings at top level.
 
 """
 import warnings
+from importlib.metadata import PackageNotFoundError, version
 
+import requests
 import urllib3
 
+from .exceptions import QbraidError
 
-def _warn_new_version(local: str, api: str) -> bool:
+
+def _get_latest_version(package: str) -> str:
+    """Retrieves the latest version of a package from PyPI."""
+    url = f"https://pypi.org/pypi/{package}/json"
+    try:
+        response = requests.get(url, timeout=5)
+        response.raise_for_status()
+        data = response.json()
+        return data["info"]["version"]
+    except requests.RequestException as err:
+        raise QbraidError(f"Failed to retrieve latest {package} version.") from err
+
+
+def _get_local_version(package: str) -> str:
+    """Retrieves the local version of a package."""
+    try:
+        return version(package)
+    except PackageNotFoundError as err:
+        raise QbraidError(f"{package} is not installed in the current environment.") from err
+
+
+def _warn_new_version(local: str, latest: str) -> bool:
     """Returns True if you should warn user about updated package version,
     False otherwise."""
+    installed_major, installed_minor = map(int, local.split(".")[:2])
+    latest_major, latest_minor = map(int, latest.split(".")[:2])
 
-    v_local = int("".join(local.split(".")[:3]))
-    v_api = int("".join(api.split(".")[:3]))
-
-    if v_local < v_api:
-        return True
-    return False
+    return (installed_major, installed_minor) < (latest_major, latest_minor)
 
 
 def _check_version():
@@ -34,23 +55,18 @@ def _check_version():
     compared to local copy."""
 
     # pylint: disable=import-outside-toplevel
-    from ._version import __version__ as version_local
-    from .api.session import QbraidSession
+    try:
+        latest_version = _get_latest_version("qbraid")
+        local_version = _get_local_version("qbraid")
 
-    session = QbraidSession()
-
-    if not session._running_in_lab():
-        return
-
-    version_api = session.get("/public/lab/get-sdk-version", params={}).json()
-
-    if _warn_new_version(version_local, version_api):
-        warnings.warn(
-            f"You are using qbraid version {version_local}; however, version {version_api} "
-            "is available. To avoid compatibility issues, consider upgrading by uninstalling "
-            "and reinstalling the qBraid-SDK environment.",
-            UserWarning,
-        )
+        if _warn_new_version(local_version, latest_version):
+            warnings.warn(
+                f"You are using qbraid version {local_version}; however, version {latest_version} "
+                "is available. To avoid compatibility issues, consider upgrading. ",
+                UserWarning,
+            )
+    except QbraidError:
+        pass
 
 
 # coverage: ignore

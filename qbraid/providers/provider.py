@@ -89,6 +89,17 @@ class QbraidProvider(QuantumProvider):
         except Exception:  # pylint: disable=broad-exception-caught
             return None
 
+    def _get_ibm_runtime(self, qiskit_ibm_token):
+        if "qiskit_ibm_runtime.ibm_backend.IBMBackend" not in QDEVICE_TYPES:
+            return None
+
+        from qbraid.providers.ibm import QiskitRuntime  # pylint: disable=import-outside-toplevel
+
+        try:
+            return QiskitRuntime(qiskit_ibm_token)
+        except Exception:  # pylint: disable=broad-exception-caught
+            return None
+
     def get_devices(self) -> List[QDEVICE]:
         """Return a list of backends matching the specified filtering.
 

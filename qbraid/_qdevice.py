@@ -46,15 +46,20 @@ def __dynamic_importer(opt_modules: List[str]) -> list:
 def __get_class(module: str):
     if module == "qiskit_ibm_provider":
         return qiskit_ibm_provider.IBMBackend  # type: ignore
+    if module == "qiskit_ibm_runtime":
+        return qiskit_ibm_runtime.IBMBackend  # type: ignore
     if module == "braket.aws":
         return braket.aws.AwsDevice  # type: ignore
 
 
 # Supported quantum devices.
-_DEVICES = __dynamic_importer(["qiskit_ibm_provider", "braket.aws"])
+_DEVICES = __dynamic_importer(["qiskit_ibm_provider", "qiskit_ibm_runtime", "braket.aws"])
 
 # pylint: disable-next=line-too-long
 QDEVICE = None if not _DEVICES else _DEVICES[0] if len(_DEVICES) == 1 else Union[tuple(_DEVICES)]  # type: ignore
 
 # pylint: disable-next=bad-str-strip-call
 QDEVICE_TYPES = [str(x).strip("<class").strip(">").strip(" ").strip("'") for x in _DEVICES]
+_DEVICE_LIBS = [x.split(".")[0] for x in QDEVICE_TYPES]
+SUPPORTED_QDEVICES = dict(zip(_DEVICE_LIBS, QDEVICE_TYPES))
+QDEVICE_LIBS = list(SUPPORTED_QDEVICES.keys())
