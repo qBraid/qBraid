@@ -214,7 +214,7 @@ Compare results in a consistent, unified format:
 ```
 
 ## Local account setup
-<img align="right" width="300" alt="api_key" src="https://github.com/qBraid/qBraid/assets/46977852/c13d6035-194b-4520-84c1-e57e7f9f4340">
+<img align="right" width="300" alt="api_key" src="https://qbraid-static.s3.amazonaws.com/manage-account.png">
 
 To use the qBraid-SDK locally (outside of qBraid Lab), you must add your account
 credentials:
@@ -268,13 +268,13 @@ info.
 
 Use the badge in your project's `README.md`:
 
-```
+```markdown
 [<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/YOUR-USERNAME/YOUR-REPOSITORY.git)
 ```
 
 Use the badge in your project's `README.rst`:
 
-```
+```rst
 .. image:: https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png
     :target: https://account.qbraid.com?gitHubUrl=https://github.com/YOUR-USERNAME/YOUR-REPOSITORY.git
     :width: 150px
@@ -291,7 +291,6 @@ Use the badge in your project's `README.rst`:
 - For questions that are more suited for a forum, post to
   [Quantum Computing Stack Exchange](https://quantumcomputing.stackexchange.com/)
   with the [`qbraid`](https://quantumcomputing.stackexchange.com/questions/tagged/qbraid) tag.
-  
 - Want your open-source project featured as its own runtime environment on
   qBraid Lab? Fill out our
   [New Environment Request Form](https://forms.gle/a4v7Kdn7G7bs9jYD8)
