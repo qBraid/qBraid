@@ -153,8 +153,9 @@ class QuantumJob(ABC):
         """Return the status of the job / task , among the values of ``JobStatus``."""
         qbraid_status, vendor_status = self._status()
         if qbraid_status != self._cache_status:
-            update = {"status": vendor_status, "qbraidStatus": qbraid_status.name}
-            _ = self._post_job_data(update=update)
+            self._post_job_data(
+                update={"status": vendor_status, "qbraidStatus": qbraid_status.name}
+            )
         return qbraid_status
 
     def _post_job_data(self, update: Optional[dict] = None) -> dict:
@@ -168,15 +169,14 @@ class QuantumJob(ABC):
 
         """
         session = QbraidSession()
-        body = {"qbraidJobId": self.id, "_id": self.id}
+        body = {"_id": self.id, "qbraidJobId": self.id}
         # Two status variables so we can track both qBraid and vendor status.
         if update is not None and "status" in update and "qbraidStatus" in update:
             body["status"] = update["status"]
             body["qbraidStatus"] = update["qbraidStatus"]
-        metadata = session.put("/update-job", data=body).json()[0]
-        qbraid_id = metadata.pop("_id")
+        metadata = session.put("/update-job", data=body).json()
         if "qbraidJobId" not in metadata:
-            metadata["qbraidJobId"] = qbraid_id
+            metadata["qbraidJobId"] = metadata.get("_id")
         return metadata
 
     def metadata(self) -> Dict[str, Any]:

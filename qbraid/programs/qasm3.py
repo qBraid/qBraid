@@ -14,10 +14,10 @@ Module defining OpenQasm3Program Class
 """
 
 import re
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
 import numpy as np
-from openqasm3.ast import Program, QubitDeclaration
+from openqasm3.ast import BitType, ClassicalDeclaration, QubitDeclaration
 from openqasm3.parser import parse
 
 from qbraid.programs.abc_program import QuantumProgram
@@ -28,6 +28,7 @@ class OpenQasm3Program(QuantumProgram):
 
     def __init__(self, program: str):
         super().__init__(program)
+        self._parse_qasm()
 
     @property
     def program(self) -> str:
@@ -39,41 +40,53 @@ class OpenQasm3Program(QuantumProgram):
             raise ValueError("Program must be an instance of str")
         self._program = value
 
-    def _to_openqasm3(self) -> Program:
-        """Converts qasm str to openqasm3 program type"""
-        return parse(self.program)
+    def _parse_qasm(self) -> str:
+        """Process the program string."""
+        program = parse(self._program)
+
+        num_qubits = 0
+        num_clbits = 0
+        qubits: List[Tuple[str, Optional[int]]] = []
+        clbits: List[Tuple[str, Optional[int]]] = []
+
+        for statement in program.statements:
+            if isinstance(statement, QubitDeclaration):
+                name = statement.qubit.name
+                size = None if statement.size is None else statement.size.value
+                qubits.append((name, size))
+                num_qubits += 1 if size is None else size
+            elif isinstance(statement, ClassicalDeclaration) and isinstance(
+                statement.type, BitType
+            ):
+                name = statement.identifier.name
+                size = None if statement.type.size is None else statement.type.size.value
+                clbits.append((name, size))
+                num_clbits += 1 if size is None else size
+
+        self._num_qubits = num_qubits
+        self._num_clbits = num_clbits
+        self._qubits = qubits
+        self._clbits = clbits
 
     @property
     def qubits(self) -> List[Tuple[str, int]]:
         """Return the qubits acted upon by the operations in this circuit"""
-        program = parse(self.program)
+        return self._qubits
 
-        qubits = []
-        for statement in program.statements:
-            if isinstance(statement, QubitDeclaration):
-                name = statement.qubit.name
-                size = statement.size.value if statement.size else 1
-                qubits.append((name, size))
-        return qubits
+    @property
+    def clbits(self) -> List[Tuple[str, int]]:
+        """Return the qubits acted upon by the operations in this circuit"""
+        return self._clbits
 
     @property
     def num_qubits(self) -> int:
         """Return the number of qubits in the circuit."""
-        program = parse(self.program)
-
-        num_qubits = 0
-        for statement in program.statements:
-            if isinstance(statement, QubitDeclaration):
-                num_qubits += statement.size.value
-        return num_qubits
+        return self._num_qubits
 
     @property
     def num_clbits(self) -> int:
         """Return the number of classical bits in the circuit."""
-        # pylint: disable=import-outside-toplevel
-        from qiskit.qasm3 import loads
-
-        return loads(self.program).num_clbits
+        return self._num_clbits
 
     @property
     def depth(self) -> int:
@@ -136,10 +149,11 @@ class OpenQasm3Program(QuantumProgram):
             s
             for s in lines
             if s.strip()
-            and not s.strip().startswith(("OPENQASM", "include", "qreg", "qubit", "//"))
+            and not s.strip().startswith(("OPENQASM", "include", "qreg", "qubit", "bit", "//"))
         ]
         unused_indices = {}
         for qreg, size in self.qubits:
+            size = 1 if size is None else size
             unused_indices[qreg] = set(range(size))
 
             for line in gate_lines:
@@ -219,6 +233,7 @@ class OpenQasm3Program(QuantumProgram):
                 expansion_qasm += f"i {reg}[{index}];\n"
 
         self._program = self.program + expansion_qasm
+        self._parse_qasm()
 
     def remove_idle_qubits(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
@@ -230,7 +245,7 @@ class OpenQasm3Program(QuantumProgram):
             size = 1
             for qreg in qreg_list:
                 if qreg[0] == reg:
-                    size = qreg[1]
+                    size = qreg[1] or 1
                     break
 
             # remove the register declarations which are not used
@@ -239,12 +254,16 @@ class OpenQasm3Program(QuantumProgram):
                 qasm_str = re.sub(rf"qubit\s*\[\d+\]\s*{reg}\s*;", "", qasm_str)
                 if size == 1:
                     qasm_str = re.sub(rf"qubit\s+{reg}\s*;", "", qasm_str)
-                qreg_list.remove((reg, size))
+                try:
+                    qreg_list.remove((reg, size))
+                except KeyError:
+                    qreg_list.remove((reg, None))
 
             # resize and re-map the indices of the partially used register
             elif len(indices):
                 qasm_str = self._remap_qubits(qasm_str, reg, size, indices)
         self._program = qasm_str
+        self._parse_qasm()
 
     def _validate_qubit_mapping(self, qubit_decls, qubit_mapping: dict):
         """Validate the supplied qubit map
@@ -264,6 +283,7 @@ class OpenQasm3Program(QuantumProgram):
         """
 
         for name, size in qubit_decls:
+            size = 1 if size is None else size
             # 1. Check if the registers are present in the mapping
             if name not in qubit_mapping:
                 raise ValueError(f"Register {name} not present in the qubit mapping.")
@@ -338,6 +358,8 @@ class OpenQasm3Program(QuantumProgram):
         # remove the '-' markers
         for name, _ in qubit_decls:
             self._program = re.sub(rf"{name}\[{marker}", f"{name}[", self._program)
+
+        self._parse_qasm()
         return self.program
 
     def reverse_qubit_order(self) -> None:
@@ -347,6 +369,7 @@ class OpenQasm3Program(QuantumProgram):
 
         qubit_mapping = {}
         for reg, size in qubit_decls:
+            size = 1 if size is None else size
             qubit_mapping[reg] = {old_id: size - old_id - 1 for old_id in range(size)}
 
         return self.apply_qubit_mapping(qubit_mapping)

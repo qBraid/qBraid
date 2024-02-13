@@ -1,5 +1,5 @@
 name: Bug report
-description: report a bug
+description: Report a bug 🚩
 labels: ["type: bug"]
 
 body:
@@ -32,5 +32,5 @@ body:
 
   - type: textarea
     attributes:
-      label: Any suggestion?
+      label: Any suggestions?
       description: Not required, but please don't hesitate to give any suggestions how a contributor should fix this or anything we should aware of.

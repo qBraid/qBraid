@@ -36,8 +36,16 @@ Functions
    device_wrapper
    job_wrapper
    get_jobs
-   convert_to_package
    get_program_type
+
+
+Classes
+--------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+   LazyLoader
 
 
 Exceptions
@@ -52,7 +60,10 @@ Exceptions
    QasmError
 
 """
+import sys
+
 from . import _warnings
+from ._import import LazyLoader
 from ._qdevice import QDEVICE, QDEVICE_TYPES
 from ._qprogram import QPROGRAM, QPROGRAM_LIBS, QPROGRAM_TYPES, SUPPORTED_QPROGRAMS
 from ._version import __version__
@@ -62,4 +73,10 @@ from .get_jobs import get_jobs
 from .inspector import get_program_type
 from .load_program import circuit_wrapper
 from .load_provider import device_wrapper, job_wrapper
-from .transpiler import convert_to_package
+
+# TODO: Lazy loads break docs build, so for now, only loading if sphinx is installed. However,
+# this should instead be implemented as skip as sphinx config or in skip_member() in conf.py.
+if "sphinx" not in sys.modules:
+    # lazy load interface and visualization modules.
+    interface = LazyLoader("qbraid.interface", globals())
+    visualization = LazyLoader("qbraid.visualization", globals())

@@ -1,9 +1,10 @@
 name: Pre-release qbraid to PyPi
 
 on:
-  push:
-    branches:
-      - main
+  # push:
+  #   branches:
+  #     - main
+  workflow_dispatch:
 
 jobs:
   pypi-publish:

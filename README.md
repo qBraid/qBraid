@@ -121,15 +121,6 @@ This arrangement simplifies targeting and transpiling between different quantum 
  'openqasm3': 'openqasm3.ast.Program',
  'qasm2': 'str',
  'qasm3': 'str'}
->>> QPROGRAM
-typing.Union[
-  cirq.circuits.circuit.Circuit,
-  qiskit.circuit.quantumcircuit.QuantumCircuit,
-  pyquil.quil.Program,
-  pytket._tket.circuit.Circuit,
-  braket.circuits.circuit.Circuit,
-  openqasm3.ast.Program,
-  str]
 ```
 
 Pass any quantum program of type `QPROGRAM` to the `circuit_wrapper()` and specify a target package
@@ -158,6 +149,20 @@ The same functionality can be achieved using the underlying `convert_to_package(
 >>> from qbraid import convert_to_package
 >>> cirq_circuit = convert_to_package(qiskit_circuit, "cirq")
 ```
+
+Behind the scenes, the qBraid-SDK uses ``networkx`` to create a directional graph that maps all possible conversions between supported program types:
+
+```python
+from qbraid.transpiler import ConversionGraph
+from qbraid.visualization import plot_conversion_graph
+
+graph = ConversionGraph()
+plot_conversion_graph(graph)
+```
+
+![Conversion Graph](docs/_static/sdk-files/conversion_graph.png)
+
+You can use the native conversions supported by qBraid, or define your own custom nodes and/or edges. See [example](https://github.com/qBraid/qbraid-lab-demo/blob/main/qbraid_sdk/qbraid_sdk_transpiler_braket_qiskit.ipynb).
 
 ### Devices & Jobs
 

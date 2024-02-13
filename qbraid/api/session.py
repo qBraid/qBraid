@@ -64,8 +64,8 @@ class QbraidSession(Session):
         refresh_token: Optional[str] = None,
         id_token: Optional[str] = None,
         base_url: Optional[str] = None,
-        retries_total: int = 5,
-        retries_connect: int = 3,
+        retries_total: int = 3,
+        retries_connect: int = 2,
         backoff_factor: float = 0.5,
     ) -> None:
         super().__init__()
@@ -263,7 +263,13 @@ class QbraidSession(Session):
     @staticmethod
     def _convert_email_symbols(email: str) -> Optional[str]:
         """Convert email to compatible string format"""
-        return email.replace("-", "-2d").replace(".", "-2e").replace("@", "-40").replace("_", "-5f")
+        return (
+            email.replace("-", "-2d")
+            .replace(".", "-2e")
+            .replace("@", "-40")
+            .replace("_", "-5f")
+            .replace("+", "-2b")
+        )
 
     def _initialize_retry(
         self, retries_total: int, retries_connect: int, backoff_factor: float

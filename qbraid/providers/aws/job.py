@@ -46,10 +46,13 @@ class BraketQuantumTask(QuantumJob):
         return self._job.state()
 
     def queue_position(self) -> Optional[int]:
-        """Returns queue position from Braket QuantumTask."""
+        """Returns queue position from Braket QuantumTask.
+        '>2000' returns as 2000 for typing consistency."""
         try:
             position = self._job.queue_position().queue_position
             if isinstance(position, str):
+                if position.startswith(">"):
+                    position = position[1:]
                 return int(position)
             return position
         except AttributeError as err:
@@ -65,10 +68,14 @@ class BraketQuantumTask(QuantumJob):
 
     def cancel(self) -> None:
         """Cancel the quantum task."""
+        task = self._job
         status = self.status()
         if status in JOB_FINAL:
             raise JobStateError(f"Cannot cancel quantum job in the {status} state.")
-        return self._job.cancel()
+        try:
+            task.cancel()
+        except RuntimeError:
+            task._aws_session.cancel_quantum_task(task.arn)
 
     def get_cost(self) -> float:
         """Return the cost of the job."""

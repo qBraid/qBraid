@@ -176,7 +176,7 @@ class BraketDevice(QuantumDevice):
             is_available_result = is_available_result or (matched_day and matched_time)
 
         if available_time is None:
-            return is_available_result, ""
+            return is_available_result, "", ""
 
         hours = available_time // 3600
         minutes = (available_time // 60) % 60
