@@ -67,7 +67,6 @@ def test_to_braket_parameterized_single_qubit_gates(qubit_index):
         ops.Z.on(qubit) ** (angles[3] / np.pi),
     )
     braket_circuit = cirq_to_braket(cirq_circuit)
-    print(braket_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 

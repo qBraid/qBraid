@@ -111,7 +111,7 @@ For example, 'qiskit' maps to `qiskit.QuantumCircuit` in `QPROGRAM`. Notably, 'q
 This arrangement simplifies targeting and transpiling between different quantum programming frameworks.
 
 ```python
->>> from qbraid import SUPPORTED_QPROGRAMS, QPROGRAM
+>>> from qbraid import SUPPORTED_QPROGRAMS
 >>> SUPPORTED_QPROGRAMS
 {'cirq': 'cirq.circuits.circuit.Circuit',
  'qiskit': 'qiskit.circuit.quantumcircuit.QuantumCircuit',
@@ -123,7 +123,7 @@ This arrangement simplifies targeting and transpiling between different quantum 
  'qasm3': 'str'}
 ```
 
-Pass any quantum program of type `QPROGRAM` to the `circuit_wrapper()` and specify a target package
+Pass any quantum program of type `qbraid.QPROGRAM` to the `circuit_wrapper()` and specify a target package
 from `SUPPORTED_QPROGRAMS` to "transpile" your circuit to a new program type:
 
 ```python
