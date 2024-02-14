@@ -30,6 +30,7 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
+   about
    get_devices
    refresh_devices
    circuit_wrapper
@@ -63,6 +64,7 @@ Exceptions
 import sys
 
 from . import _warnings
+from ._about import about
 from ._import import LazyLoader
 from ._qdevice import QDEVICE, QDEVICE_TYPES
 from ._qprogram import QPROGRAM, QPROGRAM_LIBS, QPROGRAM_TYPES, SUPPORTED_QPROGRAMS

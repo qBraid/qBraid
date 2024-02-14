@@ -1,16 +1,18 @@
-name: Bug report
-description: Report a bug 🚩
-labels: ["type: bug"]
+name: Bug report 🚩
+description: Create a report to help us improve
+title: "[BUG] "
+labels: [bug]
 
 body:
   - type: markdown
     attributes:
-      value: Please make sure check exist issues, to avoid duplicate issue.
+      value: "Thanks for taking the time to fill out our bug report form."
 
   - type: textarea
     attributes:
       label: Environment
       value: |
+        - **qBraid version**:
         - **Python version**:
         - **Operating system**:
     validations:
@@ -19,18 +21,21 @@ body:
   - type: textarea
     attributes:
       label: What happened?
-      description: A short description what is wrong in word and how we can reproduce the error in code.
+      description: Please provide a detailed description of the bug, accompanied by a minimal code example that demonstrates how the error(s) can be reproduced.
     validations:
       required: true
 
   - type: textarea
     attributes:
-      label: What is the expected outcome?
-      description: Descripe what should be the outcome result.
+      label: Suggestions (Optional)
+      description: We warmly welcome any recommendations on potential fixes, insights, or considerations that contributors should keep in mind when working to resolve this issue.
     validations:
-      required: true
+      required: false
 
-  - type: textarea
+  - type: checkboxes
+    id: agreement
     attributes:
-      label: Any suggestions?
-      description: Not required, but please don't hesitate to give any suggestions how a contributor should fix this or anything we should aware of.
+      label: 'Please confirm the following:'
+      options:
+        - label: 'I have searched the existing issues and confirm this is a new bug report.'
+          required: true
