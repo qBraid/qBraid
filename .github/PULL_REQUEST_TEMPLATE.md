@@ -1,18 +1,17 @@
-*issue tag, if exist*
+*issue tag(s), if applicable*:
 
-## Changes:
+## Changes
 
-## Details or comments:
+## Details or comments
 
-## Checklist before merge
-Add an `x` between the boxes braket that apply, meaning to complete the check before any merge happen, feel free to ask help if you are unsure about anything.
+## Before You Merge
 
-### General 
+Please review the checklist below and mark items with an `x` in the brackets that apply. Remember, it's perfectly fine
+to submit a draft pull request if you're still working through some items on the checklist. We're here to help!
+
+### General
+
 - [ ] I have read `CONTRIBUTING.md`.
-
 - [ ] All new code includes corresponding unit tests and satisfies codecov.
-
 - [ ] API Reference docstrings and/or User Guide have been updated to account for new features.
-
 - [ ] All integration tests, including remote tests, are passing.
-

@@ -33,6 +33,7 @@ tox -e docs
 ```
 
 Alternatively:
+
 ```bash
 pip install -e '.[docs]'
 cd docs
@@ -54,7 +55,8 @@ You can also view it by running a web server in that directory:
 cd build/html
 python3 -m http.server
 ```
-Then open your browser to http://localhost:8000. If you make changes to the docs that aren't
+
+Then open your browser to `http://localhost:8000`. If you make changes to the docs that aren't
 reflected in subsequent builds, run `make clean html`, which will force a full rebuild.
 
 ### API Docs
@@ -95,6 +97,7 @@ opening `tests/_coverage/index.html` in your browser. The latest code coverage r
 from the `main` branch can be viewed at https://app.codecov.io/gh/qBraid/qBraid/tree/main.
 
 To run linters and doc generators and unit tests:
+
 ```bash
 tox
 ```
@@ -103,5 +106,3 @@ tox
 
 For code style, our project uses a combination of [isort](https://github.com/PyCQA/isort), [pylint](https://github.com/pylint-dev/pylint),
 and [black](https://github.com/psf/black). Each of these tools is setup with its own default configuration specific to this project in `pyproject.toml`.
-
-

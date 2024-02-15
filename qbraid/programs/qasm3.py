@@ -328,7 +328,6 @@ class OpenQasm3Program(QuantumProgram):
             str: updated qasm string
         """
         if not qubit_mapping:
-            print("No qubit mapping provided.")
             return self.program
 
         qubit_decls = self.qubits
@@ -361,6 +360,51 @@ class OpenQasm3Program(QuantumProgram):
 
         self._parse_qasm()
         return self.program
+
+    def replace_reset_with_ops(self) -> None:
+        """This function finds all the reset operations in QASM string,
+        and replaces them with measurement and conditional X gate operations.
+
+        TODO: Does not account for bits named with identifiers or than 'c'
+        """
+        qasm_string = self.program
+        lines = qasm_string.split("\n")
+        transformed_lines = []
+        classical_bit_counter = 0
+
+        for line in lines:
+            if line.startswith("reset"):
+                # Extract the qubit name(s) being reset
+                qubit_name = line.split(" ")[1].strip(";")
+
+                # Check if the reset is for multiple qubits
+                if "[" in qubit_name and "]" in qubit_name:
+                    # For array-type qubits, handle them individually
+                    base_name = qubit_name.split("[")[0]
+                    indices = qubit_name[qubit_name.find("[") + 1 : qubit_name.find("]")].split(",")
+                    for index in indices:
+                        # Create new measurement operation
+                        transformed_lines.append(
+                            f"measure {base_name}[{index}] -> c{classical_bit_counter};"
+                        )
+                        # Create new conditional operation
+                        transformed_lines.append(
+                            f"if (c{classical_bit_counter} == 1) x {base_name}[{index}];"
+                        )
+                        # Increment the classical bit counter
+                        classical_bit_counter += 1
+                else:
+                    # For single qubits, just replace directly
+                    transformed_lines.append(f"measure {qubit_name} -> c{classical_bit_counter};")
+                    transformed_lines.append(f"if (c{classical_bit_counter} == 1) x {qubit_name};")
+                    classical_bit_counter += 1
+            else:
+                transformed_lines.append(line)
+
+        transformed_qasm_string = "\n".join(transformed_lines)
+
+        self._program = transformed_qasm_string
+        self._parse_qasm()
 
     def reverse_qubit_order(self) -> None:
         """Reverse the order of the qubits in the circuit."""

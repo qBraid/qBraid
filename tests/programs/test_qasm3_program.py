@@ -350,3 +350,40 @@ def test_incorrect_remapping():
 
     with pytest.raises(ValueError):
         _ = OpenQasm3Program(qasm_str).apply_qubit_mapping(out_of_bounds_mapping)
+
+
+def test_replace_reset():
+    """Test replacing reset gate in qasm3 string"""
+    qasm_input = """
+OPENQASM 3;
+include "stdgates.inc";
+qubit q0;
+qubit q1;
+bit c0;
+bit c1;
+reset q0;
+h q1;
+cx q0, q1;
+reset q1;
+measure q1 -> c1;
+    """
+
+    expected_output = """
+OPENQASM 3;
+include "stdgates.inc";
+qubit q0;
+qubit q1;
+bit c0;
+bit c1;
+measure q0 -> c0;
+if (c0 == 1) x q0;
+h q1;
+cx q0, q1;
+measure q1 -> c1;
+if (c1 == 1) x q1;
+measure q1 -> c1;
+    """
+
+    program = OpenQasm3Program(qasm_input)
+    program.replace_reset_with_ops()
+    assert program.program == expected_output

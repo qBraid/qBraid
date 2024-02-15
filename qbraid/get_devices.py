@@ -156,10 +156,10 @@ def get_devices(filters: Optional[dict] = None, refresh: bool = False):
                 'name': 'string',
                 'vendor': 'AWS'|'IBM',
                 'provider: 'AWS'|'IBM'|'IonQ'|'Rigetti'|'OQC'|'QuEra',
-                'type': 'QPU' | 'Simulator',
+                'type': 'QPU'|'Simulator',
                 'numberQubits': 123,
                 'paradigm': 'gate-based'|'quantum-annealer'|'AHS'|'continuous-variable',
-                'status': 'ONLINE'|'OFFLINE|RETIRED'
+                'status': 'ONLINE'|'OFFLINE'|'RETIRED'
             }
         )
 
