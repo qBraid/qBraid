@@ -136,7 +136,7 @@ class BraketProvider:
             QbraidError: If the function is called within a qBraid quantum job environment
                          where AWS S3 requests are not supported.
         """
-        if QbraidSession._running_in_lab() and QbraidSession._qbraid_jobs_enabled():
+        if QbraidSession._qbraid_jobs_enabled():
             raise QbraidError("AWS S3 requests not supported by qBraid quantum jobs.")
 
         region_names = (

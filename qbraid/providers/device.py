@@ -250,7 +250,7 @@ class QuantumDevice(ABC):
         # qBraid Quantum Jobs proxy is enabled, a document has already been
         # created for this job. So, instead creating a duplicate, we query the
         # user jobs for the `vendorJobId` and return the correspondong `qbraidJobId`.
-        if session._running_in_lab() and session._qbraid_jobs_enabled(vendor):
+        if session._qbraid_jobs_enabled(vendor):
             try:
                 job = session.post("/get-user-jobs", json={"vendorJobId": vendor_job_id}).json()[0]
                 return job.get("qbraidJobId", job.get("_id"))

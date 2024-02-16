@@ -37,7 +37,8 @@ def test_post_forcelist_retry(retry_data):
 
 def test_running_in_lab():
     """Test function that checks whether qBraid Lab is running."""
-    assert not QbraidSession._running_in_lab()
+    session = QbraidSession()
+    assert not session._running_in_lab()
 
 
 def test_check_quantum_jobs_enabled():

@@ -16,6 +16,7 @@ import configparser
 import logging
 import os
 import sys
+from datetime import datetime
 from typing import Any, Optional
 
 from requests import RequestException, Response, Session
@@ -148,14 +149,22 @@ class QbraidSession(Session):
         if id_token and "refresh-token" not in self.headers:
             self.headers.update({"id-token": id_token})  # type: ignore[attr-defined]
 
-    @staticmethod
-    def _running_in_lab() -> bool:
-        """Checks if you are running qBraid-SDK in qBraid Lab environment.
+    def _running_in_lab(self) -> bool:
+        """Check if running in the qBraid Lab environment."""
+        # Check platform and OS
+        if sys.platform != "linux" or os.name != "posix":
+            return False
 
-        See https://docs.qbraid.com/projects/lab/en/latest/lab/environments.html
-        """
-        python_exe = os.path.join(SLUG_PATH, "pyenv", "bin", "python")
-        return sys.executable == python_exe
+        if os.getenv("HOME") != "/home/jovyan":
+            return False
+
+        # API interaction to confirm environment
+        try:
+            formatted_time = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+            response = self.get(f"/lab/is-mounted/{formatted_time}")
+            return bool(response.json().get("isMounted", False))
+        except (RequestsApiError, KeyError):
+            return False
 
     @staticmethod
     def _qbraid_jobs_enabled(vendor: Optional[str] = None) -> bool:
