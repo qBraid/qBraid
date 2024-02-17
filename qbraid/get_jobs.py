@@ -148,7 +148,8 @@ def get_jobs(
     for document in jobs:
         count += 1
         progress = count / num_jobs
-        update_progress_bar(progress)
+        if refresh:
+            update_progress_bar(progress)
         job_id = document.get("qbraidJobId", document.get("_id"))
         if job_id is None:
             continue
