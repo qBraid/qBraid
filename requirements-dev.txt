@@ -1,5 +1,5 @@
 # integrations
-amazon-braket-sdk~=1.70.0
+amazon-braket-sdk~=1.70.2
 cirq-core~=1.3.0
 cirq-ionq~=1.3.0
 pennylane~=0.34.0
