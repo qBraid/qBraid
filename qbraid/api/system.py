@@ -182,7 +182,7 @@ def get_local_package_path(package: str) -> str:
     try:
         site_packages_path = get_active_site_packages_path()
         return os.path.join(site_packages_path, package)
-    except PackageNotFoundError as err:
+    except (PackageNotFoundError, ModuleNotFoundError) as err:
         raise QbraidError(f"{package} is not installed in the current environment.") from err
 
 
@@ -204,19 +204,34 @@ def get_qbraid_envs_paths() -> List[Path]:
 
 
 def is_valid_slug(slug: str) -> bool:
-    """Returns True if the slug is valid, False otherwise."""
-    if len(slug) > 20:
+    """Validates whether a slug meets the defined criteria."""
+    # Define the length constraints
+    MAX_TOTAL_LENGTH = 20
+    SLUG_ALPHANUMERIC_LENGTH = 6
+    MAX_NAME_PART_LENGTH = MAX_TOTAL_LENGTH - SLUG_ALPHANUMERIC_LENGTH - 1
+
+    # Check the total slug length
+    if len(slug) > MAX_TOTAL_LENGTH or not slug:
         return False
 
-    alphanumeric_part = slug[-6:]
-    if not re.match(r"^[a-zA-Z0-9]{6}$", alphanumeric_part):
+    # Split the slug into name part and alphanumeric part
+    parts = slug.rsplit("_", 1)
+    if len(parts) < 2 or len(parts) > 3:
+        return False
+    if len(parts[0]) > MAX_NAME_PART_LENGTH:
         return False
 
-    if slug[-7:-6] != "_":
+    name_part = parts[0]
+    alphanumeric_part = parts[-1]
+
+    # Validate the alphanumeric part (strictly lowercase and numeric, 6 characters)
+    if not re.fullmatch(r"^[a-z0-9]{6}$", alphanumeric_part):
         return False
 
-    remaining_part = slug[:-7]
-    if not re.match(r"^[a-z0-9_]*$", remaining_part):
+    # Validate the name part (correct length and content)
+    if not 0 < len(name_part) <= MAX_NAME_PART_LENGTH:
+        return False
+    if not re.fullmatch(r"^[a-z0-9]+(_[a-z0-9]+)*$", name_part):
         return False
 
     return True
