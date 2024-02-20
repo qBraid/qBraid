@@ -186,13 +186,15 @@ class BraketDevice(QuantumDevice):
         return is_available_result, available_time_hms, utc_datetime_str
 
     def queue_depth(self) -> int:
-        """Return the number of jobs in the queue for the device"""
-        aws_device = self._device
-        queue_depth_info = aws_device.queue_depth()
-        queued_tasks = queue_depth_info.quantum_tasks
-        num_queued_normal = queued_tasks["Normal"]
-        num_queued_priority = queued_tasks["Priority"]
-        return int(num_queued_normal) + int(num_queued_priority)
+        """Return the number of jobs in the queue for the device."""
+        queue_depth_info = self._device.queue_depth()
+        total_queued = 0
+        for queue_type in ["Normal", "Priority"]:
+            num_queued = queue_depth_info.quantum_tasks[queue_type]
+            if isinstance(num_queued, str) and num_queued.startswith(">"):
+                num_queued = num_queued[1:]
+            total_queued += int(num_queued)
+        return total_queued
 
     def _transpile(self, run_input):
         """Transpile a circuit for the device."""

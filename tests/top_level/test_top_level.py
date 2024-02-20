@@ -134,7 +134,7 @@ def test_get_aws_jobs_by_tag(capfd):
     job = device.run(circuit, shots=10, tags={"test": "123"})
     get_jobs(filters={"tags": {"test": "123"}, "numResults": 1})
     out, err = capfd.readouterr()
-    message = out.split("\n")[1]
+    message = out.split("\n")[0]
     assert message == "Displaying 1 most recent job matching query:"
     assert job.id in out
     assert len(err) == 0
@@ -149,7 +149,7 @@ def test_get_ibm_jobs_by_tag(capfd):
     job = device.run(circuit, shots=10, tags=["test"])
     get_jobs(filters={"tags": {"test": "*"}, "numResults": 1})
     out, err = capfd.readouterr()
-    message = out.split("\n")[1]
+    message = out.split("\n")[0]
     assert message == "Displaying 1 most recent job matching query:"
     assert job.id in out
     assert len(err) == 0
@@ -159,19 +159,18 @@ def test_get_ibm_jobs_by_tag(capfd):
 def test_get_jobs_results(capfd):
     """Test ``get_jobs`` stdout for results > 0.
     When results returned, output format is as follows:
-    (1) Progress bar
-    (2) Message
-    (3) Empty line
-    (4) Section titles
-    (5) Underline titles
-    (5+x) ``x`` lines of results
-    (6+x) Empty line
+    (1) Message
+    (2) Empty line
+    (3) Section titles
+    (4) Underline titles
+    (4+x) ``x`` lines of results
+    (5+x) Empty line
 
     So, for ``numResults == x`` we expected ``6+x`` total lines from stdout.
     """
     _mock_ipython(MockIPython(None))
     num_results = 3  # test value
-    lines_expected = 6 + num_results
+    lines_expected = 5 + num_results
     get_jobs(filters={"numResults": num_results})
     out, err = capfd.readouterr()
     lines_out = len(out.split("\n"))
