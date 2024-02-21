@@ -17,6 +17,7 @@ from unittest.mock import patch
 
 import pytest
 
+from qbraid.api import QbraidSession
 from qbraid.api.system import (
     get_active_site_packages_path,
     get_local_package_path,
@@ -49,6 +50,15 @@ slug_data = [
 def test_is_valid_slug(slug, expected):
     """Test the is_valid_slug function."""
     assert is_valid_slug(slug) == expected
+
+
+def test_verified_slugs_are_valid():
+    """Test that all existing qBraid environment slugs are deemed valid."""
+    session = QbraidSession()
+    res = session.get("/environments").json()
+    for env in res:
+        slug = env["slug"]
+        assert is_valid_slug(slug)
 
 
 def test_get_qbraid_envs_paths_with_env_var_set(monkeypatch):

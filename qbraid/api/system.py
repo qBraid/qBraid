@@ -210,6 +210,11 @@ def is_valid_slug(slug: str) -> bool:
     SLUG_ALPHANUMERIC_LENGTH = 6
     MAX_NAME_PART_LENGTH = MAX_TOTAL_LENGTH - SLUG_ALPHANUMERIC_LENGTH - 1
 
+    legacy = ["cirq__openfer_5f52ck"]
+
+    if slug in legacy:
+        return True
+
     # Check the total slug length
     if len(slug) > MAX_TOTAL_LENGTH or not slug:
         return False
