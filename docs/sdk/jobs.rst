@@ -150,8 +150,7 @@ Retrieve the cost of a quantum task submitted to an AWS device:
 
 .. code-block:: python
 
-    >>> aws_job.get_cost()
-    >>> qjob.get_cost() # returns cost in USD
+    >>> aws_job.get_cost() # returns cost in USD
     0.00375
 
 
