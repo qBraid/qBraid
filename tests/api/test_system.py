@@ -22,6 +22,7 @@ from qbraid.api.system import (
     get_active_site_packages_path,
     get_local_package_path,
     get_qbraid_envs_paths,
+    is_valid_env_name,
     is_valid_slug,
 )
 from qbraid.exceptions import QbraidError
@@ -128,3 +129,35 @@ def test_get_local_package_path_error(mock_get_active_site_packages_path):
     package_name = "nonexistent_package"
     with pytest.raises(QbraidError):
         get_local_package_path(package_name)
+
+
+@pytest.mark.parametrize(
+    "env_name, expected",
+    [
+        # Valid names
+        ("valid_env", True),
+        ("env123", True),
+        ("_env", True),
+        # Invalid names due to invalid characters
+        ("env*name", False),
+        ("<env>", False),
+        ("env|name", False),
+        # Reserved names
+        ("CON", False),
+        ("com1", False),
+        # Names that are too long
+        ("a" * 21, False),
+        # Empty or whitespace names
+        ("", False),
+        ("   ", False),
+        # Python reserved words
+        ("False", False),
+        ("import", False),
+        # Names starting with a number
+        ("1env", False),
+        ("123", False),
+    ],
+)
+def test_is_valid_env_name(env_name, expected):
+    """Test function that verifies valid python venv names."""
+    assert is_valid_env_name(env_name) == expected
