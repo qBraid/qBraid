@@ -73,5 +73,9 @@ max-line-length = 100
 disable = "C0103, E0401, R0801, R0902, R0903, R0911, R0912, R0914, W0212, W0511"
 
 [tool.isort]
-profile = "hug"
-skip_glob = "**/qbraid/providers/*/__init__.py"
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+line_length = 100

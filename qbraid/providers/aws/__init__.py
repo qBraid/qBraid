@@ -8,7 +8,6 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# isort: skip_file
 # pylint: skip-file
 
 """
@@ -37,8 +36,8 @@ Functions
    get_quantum_task_cost
 
 """
-from .result import BraketGateModelResult
 from .device import BraketDevice
 from .job import BraketQuantumTask
 from .provider import BraketProvider
+from .result import BraketGateModelResult
 from .tracker import get_quantum_task_cost

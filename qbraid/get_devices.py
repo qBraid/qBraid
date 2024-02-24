@@ -17,19 +17,19 @@ supported by the qBraid SDK.
 """
 
 from datetime import datetime
-from typing import Optional
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 try:
-    from IPython.display import HTML, clear_output, display
+    from IPython.display import HTML, DisplayHandle, clear_output, display
 except ImportError:
     pass
 
 from ._display import running_in_jupyter, update_progress_bar
-from .api import ApiError, QbraidSession
+from .api import QbraidSession
 from .load_provider import device_wrapper
 
 
-def refresh_devices():
+def refresh_devices() -> None:
     """Refreshes status for all qbraid supported devices. Requires credential for each vendor."""
 
     session = QbraidSession()
@@ -53,21 +53,22 @@ def refresh_devices():
     print()
 
 
-def _get_device_data(query):
-    """Internal :func:`~qbraid.get_devices` helper function that connects with the MongoDB database
-    and returns a list of devices that match the ``filter_dict`` filters. Each device is
-    represented by its own length-4 list containing the device provider, name, qbraid_id,
-    and status.
+def _get_device_data(query: Dict[str, Any]) -> Tuple[List[List[str]], int]:
+    """Get devices helper function that queries the qBraid API for all supported devices
+    and returns a list of devices that match the query filters. Each device is
+    represented by its own length-4 list containing the [provider, name, qbraid_id, status].
     """
     session = QbraidSession()
+
+    # forward compatibility for casing transition
+    if query.get("type") == "SIMULATOR":
+        query["type"] = "Simulator"
 
     # get-devices must be a POST request with kwarg `json` (not `data`) to
     # encode the query. This is because certain queries contain regular
     # expressions which cannot be encoded in GET request `params`.
     devices = session.post("/public/lab/get-devices", json=query).json()
 
-    if isinstance(devices, str):
-        raise ApiError(devices)
     device_data = []
     tot_dev = 0
     min_lag = 1e7
@@ -88,28 +89,26 @@ def _get_device_data(query):
         status = document["status"]
         tot_dev += 1
         device_data.append([provider, name, qbraid_id, status])
-    if tot_dev == 0:
+    if len(device_data) == 0:
         return [], 0  # No results matching given criteria
     device_data.sort()
     lag_minutes, _ = divmod(min_lag, 60)
     return device_data, int(lag_minutes)
 
 
-def _display_basic(data, msg):
+def _display_basic(data: List[str], message: str) -> None:
     if len(data) == 0:
-        print(msg)
+        print(message)
     else:
-        print(f"{msg}\n")
+        print(f"{message}\n")
         print("{:<35} {:<15}".format("Device ID", "Status"))
         print("{:<35} {:<15}".format("-" * 9, "-" * 6))
         for _, _, device_id, status in data:
             print("{:<35} {:<15}".format(device_id, status))
 
 
-def _display_jupyter(data, msg, align=None):
+def _display_jupyter(data: List[str], message: Optional[str] = None, align: str = "right"):
     clear_output(wait=True)
-
-    align = "right" if align is None else align
 
     html = """<h3>Supported Devices</h3><table><tr>
     <th style='text-align:left'>Provider</th>
@@ -118,14 +117,27 @@ def _display_jupyter(data, msg, align=None):
     <th style='text-align:left'>Status</th></tr>
     """
 
-    online = "<span style='color:green'>●</span>"
-    offline = "<span style='color:red'>○</span>"
+    status_icon = {
+        "ONLINE": "<span style='color:green'>●</span>",
+        "OFFLINE": "<span style='color:red'>○</span>",
+        "RETIRED": "<span style='color:grey'>○</span>",
+    }
 
-    for provider, name, qbraid_id, status_str in data:
-        if status_str == "ONLINE":
-            status = online
-        else:
-            status = offline
+    for item in data:
+        if len(item) != 4:
+            raise ValueError(
+                f"Invalid data entry: {item}. Expected length-4 list containing: "
+                "provider, name, qbraid_id, status."
+            )
+
+        provider, name, qbraid_id, status_str = item
+
+        try:
+            status = status_icon[status_str.upper()]
+        except KeyError as err:
+            raise ValueError(
+                f"Invalid status: {status_str}. Must be one of {status_icon.keys()}."
+            ) from err
 
         html += f"""<tr>
         <td style='text-align:left'>{provider}</td>
@@ -134,14 +146,17 @@ def _display_jupyter(data, msg, align=None):
         <td>{status}</td></tr>
         """
 
-    html += f"<tr><td colspan='4'; style='text-align:{align}'>{msg}</td></tr>"
+    if message:
+        html += f"<tr><td colspan='4'; style='text-align:{align}'>{message}</td></tr>"
 
     html += "</table>"
 
     return display(HTML(html))
 
 
-def get_devices(filters: Optional[dict] = None, refresh: bool = False):
+def get_devices(
+    filters: Optional[Dict[str, Any]] = None, refresh: bool = False
+) -> Optional[Union[DisplayHandle, Any]]:
     """Displays a list of all supported devices matching given filters, tabulated by provider,
     name, and qBraid ID. Each device also has a status given by a solid green bubble or a hollow
     red bubble, indicating that the device is online or offline, respectively. You can narrow your
@@ -156,7 +171,7 @@ def get_devices(filters: Optional[dict] = None, refresh: bool = False):
                 'name': 'string',
                 'vendor': 'AWS'|'IBM',
                 'provider: 'AWS'|'IBM'|'IonQ'|'Rigetti'|'OQC'|'QuEra',
-                'type': 'QPU'|'Simulator',
+                'type': 'QPU'|'SIMULATOR',
                 'numberQubits': 123,
                 'paradigm': 'gate-based'|'quantum-annealer'|'AHS'|'continuous-variable',
                 'status': 'ONLINE'|'OFFLINE'|'RETIRED'
@@ -191,7 +206,7 @@ def get_devices(filters: Optional[dict] = None, refresh: bool = False):
 
         # Search for state vector simulators by filtering for device ID's containing string "sv".
         get_devices(
-            filters={"type": "Simulator", "qbraid_id": {"$regex": "sv"}}
+            filters={"type": "SIMULATOR", "qbraid_id": {"$regex": "sv"}}
         )
 
     For a complete list of search operators, see `Query Selectors`__. To refresh the device

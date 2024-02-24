@@ -16,7 +16,6 @@ used to dictate transpiler conversions.
 import braket.circuits
 import networkx as nx
 import pytest
-from qiskit_braket_provider.providers.adapter import convert_qiskit_to_braket_circuit
 
 from qbraid._qprogram import QPROGRAM_LIBS
 from qbraid.transpiler.conversions import conversion_functions
@@ -111,9 +110,13 @@ def test_add_conversion():
     assert [str(bound_method) for bound_method in actual_shortest_path] == expected_shortest_path
 
 
+@pytest.mark.skip(reason="Requires qiskit-braket-provider dependency update")
 @pytest.mark.parametrize("bell_circuit", ["qiskit"], indirect=True)
 def test_initialize_new_conversion(bell_circuit):
     """Test initializing the conversion graph with a new conversion"""
+    # pylint: disable-next=import-outside-toplevel
+    from qiskit_braket_provider.providers.adapter import convert_qiskit_to_braket_circuit
+
     qiskit_circuit, _ = bell_circuit
     conversions = [
         Conversion(
@@ -128,9 +131,13 @@ def test_initialize_new_conversion(bell_circuit):
     assert isinstance(braket_circuit, braket.circuits.Circuit)
 
 
+@pytest.mark.skip(reason="Requires qiskit-braket-provider dependency update")
 @pytest.mark.parametrize("bell_circuit", ["qiskit"], indirect=True)
 def test_overwrite_new_conversion(bell_circuit):
     """Test dynamically adding a new conversion  the conversion graph"""
+    # pylint: disable-next=import-outside-toplevel
+    from qiskit_braket_provider.providers.adapter import convert_qiskit_to_braket_circuit
+
     qiskit_circuit, _ = bell_circuit
     conversions = [Conversion("qiskit", "braket", lambda x: x)]
     graph = ConversionGraph(conversions)
