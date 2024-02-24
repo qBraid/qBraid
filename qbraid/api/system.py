@@ -11,6 +11,7 @@
 Module for serving system information.
 
 """
+import keyword
 import logging
 import os
 import re
@@ -210,6 +211,11 @@ def is_valid_slug(slug: str) -> bool:
     SLUG_ALPHANUMERIC_LENGTH = 6
     MAX_NAME_PART_LENGTH = MAX_TOTAL_LENGTH - SLUG_ALPHANUMERIC_LENGTH - 1
 
+    legacy = ["cirq__openfer_5f52ck"]
+
+    if slug in legacy:
+        return True
+
     # Check the total slug length
     if len(slug) > MAX_TOTAL_LENGTH or not slug:
         return False
@@ -296,3 +302,70 @@ def qbraid_jobs_state(device_lib: str) -> Tuple[bool, bool]:
         return False, False
 
     return check_proxy(proxy_spec)
+
+
+def is_valid_env_name(env_name: str) -> bool:
+    """
+    Validates a Python virtual environment name against best practices.
+
+    This function checks if the given environment name is valid based on certain
+    criteria, including length, use of special characters, reserved names, and
+    operating system-specific restrictions.
+
+    Args:
+        env_name (str): The name of the Python virtual environment to validate.
+
+    Returns:
+        bool: True if the name is valid, False otherwise.
+
+    Raises:
+        ValueError: If the environment name is not a string or is empty.
+    """
+    # Basic checks for empty names or purely whitespace names
+    if not env_name or env_name.isspace():
+        return False
+
+    # Check for invalid characters, including shell metacharacters and spaces
+    if re.search(r'[<>:"/\\|?*\s&;()$[\]#~!{}]', env_name):
+        return False
+
+    # Reserved names for Windows (example list, can be expanded)
+    reserved_names = [
+        "CON",
+        "PRN",
+        "AUX",
+        "NUL",
+        "COM1",
+        "COM2",
+        "COM3",
+        "COM4",
+        "COM5",
+        "COM6",
+        "COM7",
+        "COM8",
+        "COM9",
+        "LPT1",
+        "LPT2",
+        "LPT3",
+        "LPT4",
+        "LPT5",
+        "LPT6",
+        "LPT7",
+        "LPT8",
+        "LPT9",
+    ]
+    if env_name.upper() in reserved_names:
+        return False
+
+    if len(env_name) > 20:
+        return False
+
+    # Check against Python reserved words
+    if keyword.iskeyword(env_name):
+        return False
+
+    # Check if it starts with a number, which is not a good practice
+    if env_name[0].isdigit():
+        return False
+
+    return True
