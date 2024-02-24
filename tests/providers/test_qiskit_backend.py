@@ -18,8 +18,26 @@ from typing import Union
 
 import pytest
 from qiskit.providers import Backend
-from qiskit.providers.basicaer.basicaerjob import BasicAerJob
-from qiskit.providers.fake_provider import FakeManila, FakeProviderFactory
+
+try:
+    from qiskit.providers.basic_provider.basic_provider_job import BasicProviderJob
+    from qiskit.providers.fake_provider import Fake5QV1, GenericBackendV2
+
+    fake_provider = None
+    fake_melbourne = GenericBackendV2(num_qubits=5)
+    fake_melbourne.name = "fake_melbourne"
+    fake_almaden = GenericBackendV2(num_qubits=20)
+    fake_almaden.name = "fake_almaden"
+except ImportError:  # prama: no cover
+    # qiskit < 1.0.0
+    from qiskit.providers.basicaer.basicaerjob import BasicAerJob as BasicProviderJob
+    from qiskit.providers.fake_provider import FakeManila as Fake5QV1
+    from qiskit.providers.fake_provider import FakeProviderFactory
+
+    fake_provider = FakeProviderFactory().get_provider()
+    fake_melbourne = fake_provider.get_backend("fake_melbourne")
+    fake_almaden = fake_provider.get_backend("fake_almaden")
+
 from qiskit_aer.jobs.aerjob import AerJob
 from qiskit_ibm_provider import IBMBackend, IBMJob
 
@@ -36,13 +54,11 @@ REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM storage
 
 
 @pytest.fixture
-def providers():
-    """Return tuple of IBM and fake providers."""
+def ibm_provider():
+    """Return IBM provider."""
     ibmq_token = os.getenv("QISKIT_IBM_TOKEN", None)
     qbraid_provider = QiskitProvider(qiskit_ibm_token=ibmq_token)
-    ibm_provider = qbraid_provider._provider
-    fake_provider = FakeProviderFactory().get_provider()
-    return ibm_provider, fake_provider
+    return qbraid_provider._provider
 
 
 def ibm_devices():
@@ -58,7 +74,10 @@ def ibm_devices():
 
 def fake_ibm_devices():
     """Get list of fake wrapped ibm backends for testing"""
-    fake_provider = FakeProviderFactory().get_provider()
+    if fake_provider is None:
+        backends = [fake_melbourne, fake_almaden]
+        return [QiskitBackend(backend) for backend in backends if backend.num_qubits < 24]
+
     backends = fake_provider.backends()
     return [QiskitBackend(backend) for backend in backends if backend.configuration().n_qubits < 24]
 
@@ -79,8 +98,7 @@ def test_device_wrapper_ibm_from_api(device_id):
 
 def test_wrap_fake_provider():
     """Test wrapping fake Qiskit provider."""
-    backend = FakeManila()
-    backend.simulator = True
+    backend = Fake5QV1()
     qbraid_device = QiskitBackend(backend)
     vendor_device = qbraid_device._device
     assert isinstance(qbraid_device, QiskitBackend)
@@ -122,7 +140,7 @@ def test_run_fake_qiskit_device_wrapper(qbraid_device, circuit):
     qbraid_job = qbraid_device.run(circuit, shots=10)
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
-    assert isinstance(vendor_job, Union[BasicAerJob, AerJob])
+    assert isinstance(vendor_job, Union[BasicProviderJob, AerJob])
 
 
 @pytest.mark.parametrize("qbraid_device", fake_ibm_devices())
@@ -131,7 +149,7 @@ def test_run_fake_batch_qiskit_device_wrapper(qbraid_device):
     qbraid_job = qbraid_device.run_batch(circuits_qiskit_run, shots=10)
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
-    assert isinstance(vendor_job, Union[BasicAerJob, AerJob])
+    assert isinstance(vendor_job, Union[BasicProviderJob, AerJob])
 
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
@@ -172,15 +190,19 @@ def test_cancel_completed_batch_error():
 
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
-@pytest.mark.parametrize("backend_name", ["ibmq_qasm_simulator", "fake_melbourne", "fake_almaden"])
-def test_get_device_name_fake(providers, backend_name):  # pylint: disable=redefined-outer-name
+@pytest.mark.parametrize(
+    "backend_name", ["ibmq_qasm_simulator", "fake_melbourne", "fake_almaden", "fake_5q_v1"]
+)
+def test_get_device_name_fake(ibm_provider, backend_name):  # pylint: disable=redefined-outer-name
     """Test edge cases for getting device name, e.g. .name, .name(), .backend_name"""
-    provider, fake_provider = providers
-
-    if backend_name.startswith("ibmq_"):
-        backend = provider.get_backend(backend_name)
+    if backend_name == "fake_melbourne":
+        backend = fake_melbourne
+    elif backend_name == "fake_almaden":
+        backend = fake_almaden
+    elif backend_name == "fake_5q_v1":
+        backend = Fake5QV1()
     else:
-        backend = fake_provider.get_backend(backend_name)
+        backend = ibm_provider.get_backend(backend_name)
 
     qbraid_device = QiskitBackend(backend)
 
