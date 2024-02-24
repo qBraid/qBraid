@@ -12,6 +12,7 @@
 Unit tests related to qBraid core functionality and system configurations.
 
 """
+import os
 from pathlib import Path
 from unittest.mock import patch
 
@@ -27,32 +28,37 @@ from qbraid.api.system import (
 )
 from qbraid.exceptions import QbraidError
 
-slug_data = [
-    ("abc_123456", True),  # Valid slug
-    ("", False),  # Empty slug
-    ("a" * 7 + "_123456", True),  # Valid slug with max name length
-    ("a" * 14 + "_123456", False),  # Name part too long
-    ("abc_def_123456", True),  # Valid slug with underscores in name
-    ("abc-def_123456", False),  # Invalid character '-' in name
-    ("ABC_123456", False),  # Capital letters in the name part
-    ("abc_12345a", True),  # Alphanumeric part with lowercase letters
-    ("abc_12345", False),  # Alphanumeric part too short
-    ("abc_!23456", False),  # Invalid character '!' in name
-    ("abc_12345G", False),  # Capital letter in the alphanumeric part
-    ("123_456789", True),  # Numeric name part
-    ("abc123456789", False),  # Missing underscore separator
-    ("abc__123456", False),  # Double underscore in name
-    ("_123_123456", False),  # Starting with underscore (name part too short)
-    ("a" * 7 + "_1a2b3c", True),  # Edge case based on new logic
-]
+skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
+REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of qBraid storage)"
 
 
-@pytest.mark.parametrize("slug, expected", slug_data)
+@pytest.mark.parametrize(
+    "slug, expected",
+    [
+        ("abc_123456", True),  # Valid slug
+        ("", False),  # Empty slug
+        ("a" * 7 + "_123456", True),  # Valid slug with max name length
+        ("a" * 14 + "_123456", False),  # Name part too long
+        ("abc_def_123456", True),  # Valid slug with underscores in name
+        ("abc-def_123456", False),  # Invalid character '-' in name
+        ("ABC_123456", False),  # Capital letters in the name part
+        ("abc_12345a", True),  # Alphanumeric part with lowercase letters
+        ("abc_12345", False),  # Alphanumeric part too short
+        ("abc_!23456", False),  # Invalid character '!' in name
+        ("abc_12345G", False),  # Capital letter in the alphanumeric part
+        ("123_456789", True),  # Numeric name part
+        ("abc123456789", False),  # Missing underscore separator
+        ("abc__123456", False),  # Double underscore in name
+        ("_123_123456", False),  # Starting with underscore (name part too short)
+        ("a" * 7 + "_1a2b3c", True),  # Valid edge case
+    ],
+)
 def test_is_valid_slug(slug, expected):
     """Test the is_valid_slug function."""
     assert is_valid_slug(slug) == expected
 
 
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_verified_slugs_are_valid():
     """Test that all existing qBraid environment slugs are deemed valid."""
     session = QbraidSession()
