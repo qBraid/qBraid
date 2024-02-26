@@ -132,26 +132,54 @@ class CirqCircuit(QuantumProgram):
         if qubit_type == cirq.LineQubit:
             return [cirq.LineQubit(i) for i in targets]
         if qubit_type == cirq.GridQubit:
-            return [cirq.GridQubit(0, i) for i in targets]
+            rows = [qubit.row for qubit in qubits]
+            cols = [qubit.col for qubit in qubits]
+
+            if len(set(rows)) == 1:
+                # All qubits in a single row, vary column
+                return [cirq.GridQubit(rows[0], i) for i in targets]
+            if len(set(cols)) == 1:
+                # All qubits in a single column, vary row
+                return [cirq.GridQubit(i, cols[0]) for i in targets]
+
+            raise ValueError("GridQubits must be aligned in a single row or column.")
         if qubit_type == cirq.NamedQubit:
             return [cirq.NamedQubit(str(i)) for i in targets]
+
         raise ValueError(
-            "Expected qubits of type 'GridQubit', 'LineQubit', or "
-            f"'NamedQubit' but instead got {qubit_type}"
+            f"Expected qubits of type 'GridQubit', 'LineQubit', 'NamedQubit' but got {qubit_type}"
         )
 
     def _convert_to_line_qubits(self) -> None:
         """Converts a Cirq circuit constructed using NamedQubits to
         a Cirq circuit constructed using LineQubits."""
-        qubits = self.qubits
-        qubits.sort()
-        try:
-            qubit_map = {
-                qubit: cirq.LineQubit(self._int_from_qubit(qubit)) for _, qubit in enumerate(qubits)
-            }
-        except ValueError:
-            # If _int_from_qubit fails, fallback to default contiguous qubit mapping
-            qubit_map = {qubit: cirq.LineQubit(i) for i, qubit in enumerate(qubits)}
+        qubits = sorted(self.qubits)
+        num_grid_qubits = sum(isinstance(qubit, cirq.GridQubit) for qubit in qubits)
+
+        # Check if all qubits are GridQubits
+        if len(qubits) == num_grid_qubits:
+            rows, cols = zip(
+                *((qubit.row, qubit.col) for qubit in qubits if isinstance(qubit, cirq.GridQubit))
+            )
+
+            rows_all_equal = len(set(rows)) == 1
+            cols_all_equal = len(set(cols)) == 1
+
+            if rows_all_equal:
+                qubit_map = {qubit: cirq.LineQubit(qubit.col) for qubit in qubits}
+            elif cols_all_equal:
+                qubit_map = {qubit: cirq.LineQubit(qubit.row) for qubit in qubits}
+            else:
+                qubit_map = {qubit: cirq.LineQubit(i) for i, qubit in enumerate(qubits)}
+        else:
+            qubit_map = {}
+            for i, qubit in enumerate(qubits):
+                try:
+                    qubit_map[qubit] = cirq.LineQubit(self._int_from_qubit(qubit))
+                except ValueError:
+                    # If _int_from_qubit fails, fallback to default contiguous qubit mapping
+                    qubit_map = {qubit: cirq.LineQubit(i) for i, qubit in enumerate(qubits)}
+                    break
 
         self._program = self.program.transform_qubits(lambda q: qubit_map[q])
 
@@ -182,11 +210,9 @@ class CirqCircuit(QuantumProgram):
             self._program = circuit
 
     def remove_idle_qubits(self) -> None:
-        """If circuit does not use contiguous qubits/indices,
-        reduces dimension accordingly."""
-        qubits = self.qubits
-        qubits.sort()
-        qubit_map = dict(zip(qubits, self._make_qubits(qubits, range(self.num_qubits))))
+        """If circuit does not use contiguous qubits/indices, reduces dimension accordingly."""
+        qubits = sorted(self.qubits)
+        qubit_map = dict(zip(qubits, self._make_qubits(qubits, range(len(qubits)))))
         self._program = self.program.transform_qubits(lambda q: qubit_map[q])
 
     def reverse_qubit_order(self) -> None:
