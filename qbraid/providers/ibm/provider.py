@@ -112,12 +112,14 @@ class QiskitRuntime(QiskitRemoteService):
         """Save the current configuration."""
         raise NotImplementedError
 
-    def _get_ibm_provider(self, **kwargs) -> "qiskit_ibm_runtime.QiskitRuntimeService":
+    def _get_ibm_provider(
+        self, channel: str = "ibm_quantum", **kwargs
+    ) -> "qiskit_ibm_runtime.QiskitRuntimeService":
         """Returns the IBM Qiskt Runtime service."""
         # pylint: disable-next=import-outside-toplevel
         from qiskit_ibm_runtime import QiskitRuntimeService
 
-        return QiskitRuntimeService(token=self.qiskit_ibm_token, **kwargs)
+        return QiskitRuntimeService(token=self.qiskit_ibm_token, channel=channel, **kwargs)
 
     def native_least_busy(self) -> "qiskit_ibm_runtime.IBMBackend":
         """Return the qBraid ID of the least busy IBMQ QPU."""

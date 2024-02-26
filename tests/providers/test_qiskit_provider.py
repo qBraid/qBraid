@@ -19,10 +19,11 @@ import pytest
 from qiskit import QuantumCircuit
 from qiskit_ibm_provider import IBMProvider
 from qiskit_ibm_provider.job.ibm_circuit_job import IBMCircuitJob
+from qiskit_ibm_runtime import IBMBackend, QiskitRuntimeService
 
 from qbraid import device_wrapper
 from qbraid.providers.exceptions import JobError
-from qbraid.providers.ibm import QiskitProvider
+from qbraid.providers.ibm import QiskitProvider, QiskitRuntime
 
 # Skip tests if IBM account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
@@ -83,3 +84,19 @@ def test_retrieving_ibm_job_raises_error():
     qbraid_job.device._device = Mock()
     with pytest.raises(JobError):
         qbraid_job._get_job()
+
+
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+def test_get_qiskit_runtime_provider():
+    """Test getting QiskitRuntime provider."""
+    qiskit_runtime = QiskitRuntime()
+    provider = qiskit_runtime._get_ibm_provider()
+    assert isinstance(provider, QiskitRuntimeService)
+
+
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+def test_get_qiskit_runtime_least_busy():
+    """Test getting least busy QiskitRuntime device."""
+    qiskit_runtime = QiskitRuntime()
+    device = qiskit_runtime.native_least_busy()
+    assert isinstance(device, IBMBackend)
