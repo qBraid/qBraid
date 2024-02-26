@@ -72,8 +72,7 @@ class BraketCircuit(QuantumProgram):
         for qubit in circuit.qubits:
             index = int(qubit)
             occupied_qubits.append(index)
-            if index > max_qubit:
-                max_qubit = index
+            max_qubit = max(max_qubit, index)
         qubit_count = max_qubit + 1
         if qubit_count > circuit.qubit_count:
             all_qubits = list(range(0, qubit_count))

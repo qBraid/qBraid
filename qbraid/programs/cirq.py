@@ -170,8 +170,7 @@ class CirqCircuit(QuantumProgram):
             for qubit in circuit.all_qubits():
                 index = self._int_from_qubit(qubit)
                 occupied_qubits.append(index)
-                if index > max_qubit:
-                    max_qubit = index
+                max_qubit = max(max_qubit, index)
                 nqubits += 1
             qubit_count = max_qubit + 1
             if qubit_count > nqubits:
