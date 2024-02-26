@@ -201,6 +201,8 @@ def test_get_device_name_fake(ibm_provider, backend_name):  # pylint: disable=re
         backend = fake_almaden
     elif backend_name == "fake_5q_v1":
         backend = Fake5QV1()
+        if fake_provider is not None:
+            backend_name = "fake_manila"
     else:
         backend = ibm_provider.get_backend(backend_name)
 
