@@ -47,7 +47,6 @@ def test_remove_idle_grid_qubits_row():
     assert set(program.qubits) == set(expected_qubits)
 
 
-@pytest.mark.skip(reason="Not implemented yet")
 def test_remove_idle_grid_qubits_col():
     """Test convert to contiguous method for grid qubits."""
     circuit = Circuit()
@@ -62,7 +61,6 @@ def test_remove_idle_grid_qubits_col():
     assert set(program.qubits) == set(expected_qubits)
 
 
-@pytest.mark.skip(reason="Not implemented yet")
 @pytest.mark.parametrize("index1,index2", [(1, 2), (2, 1)])
 def test_remove_idle_qubits_raises(index1, index2):
     """Test removing idle qubits for grid qubits raises exception if
@@ -77,7 +75,6 @@ def test_remove_idle_qubits_raises(index1, index2):
         program.remove_idle_qubits()
 
 
-@pytest.mark.skip(reason="Not implemented yet")
 def test_convert_grid_to_line_qubits():
     """Test converting grid qubits to line qubits."""
     circuit = Circuit()

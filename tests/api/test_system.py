@@ -18,6 +18,7 @@ from unittest.mock import patch
 
 import pytest
 
+from qbraid._warnings import _get_latest_version, _get_local_version
 from qbraid.api import QbraidSession
 from qbraid.api.system import (
     get_active_site_packages_path,
@@ -167,3 +168,15 @@ def test_get_local_package_path_error(mock_get_active_site_packages_path):
 def test_is_valid_env_name(env_name, expected):
     """Test function that verifies valid python venv names."""
     assert is_valid_env_name(env_name) == expected
+
+
+def test_get_latest_version_raises():
+    """Test the _get_latest_version function when an error occurs."""
+    with pytest.raises(QbraidError):
+        _get_latest_version("nonexistent_package")
+
+
+def test_get_local_version_raises():
+    """Test the _get_local_version function when an error occurs."""
+    with pytest.raises(QbraidError):
+        _get_local_version("nonexistent_package")

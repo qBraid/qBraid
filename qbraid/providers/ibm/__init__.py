@@ -8,7 +8,6 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# isort: skip_file
 # pylint: skip-file
 
 """
@@ -30,7 +29,7 @@ Classes
    QiskitResult
 
 """
-from .result import QiskitResult
 from .device import QiskitBackend
 from .job import QiskitJob
-from .provider import QiskitRemoteService, QiskitProvider, QiskitRuntime
+from .provider import QiskitProvider, QiskitRemoteService, QiskitRuntime
+from .result import QiskitResult

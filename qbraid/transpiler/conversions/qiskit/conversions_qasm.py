@@ -13,6 +13,7 @@ Module defining Qiskit OpenQASM conversions
 
 """
 import qiskit
+from qiskit.qasm2 import dumps as qasm2_dumps
 from qiskit.qasm3 import QASM3ImporterError, dumps, loads
 
 gate_defs = {
@@ -134,4 +135,4 @@ def qiskit_to_qasm2(circuit: qiskit.QuantumCircuit) -> str:
     Returns:
         str: OpenQASM 2 representation of the input Qiskit circuit.
     """
-    return circuit.qasm()
+    return qasm2_dumps(circuit)

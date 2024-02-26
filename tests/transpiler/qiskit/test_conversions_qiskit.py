@@ -19,6 +19,7 @@ import qiskit
 
 from qbraid.interface import circuits_allclose
 from qbraid.transpiler.conversions.cirq import cirq_to_qasm2, qasm2_to_cirq
+from qbraid.transpiler.conversions.qiskit import qiskit_to_qasm2
 from qbraid.transpiler.converter import convert_to_package
 
 from ..cirq_utils import _equal
@@ -78,7 +79,7 @@ def test_convert_with_barrier(as_qasm):
     qiskit_circuit.barrier()
 
     if as_qasm:
-        cirq_circuit = qasm2_to_cirq(qiskit_circuit.qasm())
+        cirq_circuit = qasm2_to_cirq(qiskit_to_qasm2(qiskit_circuit))
     else:
         cirq_circuit = convert_to_package(qiskit_circuit, "cirq")
 
@@ -98,7 +99,7 @@ def test_convert_with_multiple_barriers(as_qasm):
         qiskit_circuit.barrier()
 
     if as_qasm:
-        cirq_circuit = qasm2_to_cirq(qiskit_circuit.qasm())
+        cirq_circuit = qasm2_to_cirq(qiskit_to_qasm2(qiskit_circuit))
     else:
         cirq_circuit = convert_to_package(qiskit_circuit, "cirq")
 

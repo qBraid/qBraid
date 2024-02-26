@@ -21,7 +21,7 @@ from braket.circuits import Circuit
 try:
     # pytket >= 1.22
     from pytket.circuit_library import TK1_to_RzRx  # type: ignore
-except (ModuleNotFoundError, ImportError):
+except (ModuleNotFoundError, ImportError):  # prama: no cover
     try:
         # pytket >1.18,<1.22
         from pytket.circuit_library import _TK1_to_RzRx as TK1_to_RzRx  # type: ignore

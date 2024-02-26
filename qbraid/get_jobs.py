@@ -94,7 +94,10 @@ def _display_jobs_jupyter(data, msg):
 
 
 def get_jobs(
-    filters: Optional[dict] = None, refresh: bool = False, session: Optional[QbraidSession] = None
+    filters: Optional[dict] = None,
+    refresh: bool = False,
+    raw: bool = False,
+    session: Optional[QbraidSession] = None,
 ):  # pylint: disable=too-many-statements
     """Displays a list of quantum jobs submitted by user, tabulated by job ID,
     the date/time it was submitted, and status. You can specify filters to
@@ -132,6 +135,8 @@ def get_jobs(
     Args:
         filters (dict): A dictionary containing any filters to be applied.
         refresh (bool): If True, refreshes the status of all jobs before displaying them.
+        raw (bool): If True, returns a list of job IDs instead of displaying the jobs.
+        session (QbraidSession): A qBraid session object. If not provided, a new session will be created.
 
     """
     from qbraid.providers import QuantumJob  # pylint: disable=import-outside-toplevel
@@ -173,6 +178,10 @@ def get_jobs(
                 pass
         job_data.append([job_id, created_at, status])
 
+    if raw:
+        job_ids = [job[0] for job in job_data]
+        return job_ids
+
     if num_jobs == 0:  # Design choice whether to display anything here or not
         if len(query) == 0:
             msg = f"No jobs found for user {session.user_email}"
@@ -187,7 +196,6 @@ def get_jobs(
         msg = f"Displaying {num_jobs} most recent jobs"
 
     if not running_in_jupyter():
-        _display_jobs_basic(job_data, msg)
+        return _display_jobs_basic(job_data, msg)
 
-    else:
-        _display_jobs_jupyter(job_data, msg)
+    return _display_jobs_jupyter(job_data, msg)

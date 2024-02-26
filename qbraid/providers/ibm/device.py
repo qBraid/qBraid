@@ -61,24 +61,27 @@ class QiskitBackend(QuantumDevice):
         self._id = device_name
         self._name = device_name
         self._provider = "IBM"
-        if device_name.startswith("fake"):
-            self._device_type = DeviceType("FAKE")
+        lower_device_name = device_name.lower()
+        if lower_device_name.startswith("fake"):
+            self._device_type = DeviceType.FAKE
+        elif "simulator" in lower_device_name or "aer" in lower_device_name:
+            self._device_type = DeviceType.SIMULATOR
         else:
-            self._device_type = DeviceType("SIMULATOR") if device.simulator else DeviceType("QPU")
+            self._device_type = (
+                DeviceType.SIMULATOR if getattr(device, "simulator", True) else DeviceType.QPU
+            )
 
         try:
-            if self._device_type == DeviceType("FAKE"):
-                self._num_qubits = device.configuration().n_qubits
+            if self._device_type == DeviceType.FAKE:
+                self._num_qubits = getattr(device, "configuration", lambda: device)().n_qubits
             else:
                 self._num_qubits = device.num_qubits
-        except TranspilerError:
-            if device.name == "simulator_stabilizer":
-                self._num_qubits = 5000
-            elif device.name == "simulator_extended_stabilizer":
-                self._num_qubits = 63
-
-            else:
-                self._num_qubits = None
+        except (AttributeError, TranspilerError):
+            self._num_qubits = (
+                5000
+                if device.name == "simulator_stabilizer"
+                else 63 if device.name == "simulator_extended_stabilizer" else None
+            )
 
     def _transpile(self, run_input):
         if self._device_type.name != "FAKE" and self._device.local:
