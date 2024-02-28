@@ -161,10 +161,24 @@ class QbraidSession(Session):
         # API interaction to confirm environment
         try:
             formatted_time = datetime.utcnow().strftime("%Y%m%d%H%M%S")
+            directory = os.path.join(os.path.expanduser("~"), ".qbraid", "certs")
+            filepath = os.path.join(directory, formatted_time)
+            os.makedirs(directory, exist_ok=True)
+
+            # Create an empty file
+            with open(filepath, "w", encoding="utf-8"):
+                pass  # The file is created and closed immediately
+
             response = self.get(f"/lab/is-mounted/{formatted_time}")
-            return bool(response.json().get("isMounted", False))
+            is_mounted = bool(response.json().get("isMounted", False))
         except (RequestsApiError, KeyError):
-            return False
+            is_mounted = False
+
+        try:
+            os.remove(filepath)
+        except (FileNotFoundError, IOError):
+            pass
+        return is_mounted
 
     @staticmethod
     def _qbraid_jobs_enabled(vendor: Optional[str] = None) -> bool:
