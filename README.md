@@ -160,7 +160,7 @@ graph = ConversionGraph()
 plot_conversion_graph(graph)
 ```
 
-![Conversion Graph](docs/_static/sdk-files/conversion_graph.png)
+<img align="middle" width="full" alt="conversion_graph" src="https://qbraid-static.s3.amazonaws.com/conversion_graph.png">
 
 You can use the native conversions supported by qBraid, or define your own custom nodes and/or edges. See [example](https://github.com/qBraid/qbraid-lab-demo/blob/main/qbraid_sdk/qbraid_sdk_transpiler_braket_qiskit.ipynb).
 

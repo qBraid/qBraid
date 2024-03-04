@@ -17,16 +17,19 @@ supported by the qBraid SDK.
 """
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 try:
-    from IPython.display import HTML, DisplayHandle, clear_output, display
+    from IPython.display import HTML, clear_output, display
 except ImportError:
     pass
 
 from ._display import running_in_jupyter, update_progress_bar
 from .api import QbraidSession
 from .load_provider import device_wrapper
+
+if TYPE_CHECKING:
+    from IPython.display import DisplayHandle
 
 
 def refresh_devices() -> None:
@@ -156,7 +159,7 @@ def _display_jupyter(data: List[str], message: Optional[str] = None, align: str 
 
 def get_devices(
     filters: Optional[Dict[str, Any]] = None, refresh: bool = False
-) -> Optional[Union[DisplayHandle, Any]]:
+) -> "Optional[Union[DisplayHandle, Any]]":
     """Displays a list of all supported devices matching given filters, tabulated by provider,
     name, and qBraid ID. Each device also has a status given by a solid green bubble or a hollow
     red bubble, indicating that the device is online or offline, respectively. You can narrow your
