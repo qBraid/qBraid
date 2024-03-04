@@ -59,10 +59,15 @@ def test_format_counts(counts_raw, expected_out, include_zero_values):
 @pytest.mark.parametrize("device_id", ["ibm_q_simulator_statevector", "aws_sv_sim"])
 def test_result_wrapper_measurements(device_id):
     """Test result wrapper measurements method."""
-    jobs = get_jobs(filters={"qbraidDeviceId": device_id, "qbraidStatus": "COMPLETED"}, raw=True)
-    if len(jobs) == 0:
-        get_jobs(filters={"qbraidDeviceId": device_id}, raw=True, refresh=True)
-    jobs = get_jobs(filters={"qbraidDeviceId": device_id, "qbraidStatus": "COMPLETED"}, raw=True)
+    jobs = get_jobs(
+        filters={
+            "qbraidDeviceId": device_id,
+            "qbraidStatus": "COMPLETED",
+            "circuitNumQubits": {"$exists": True},
+        },
+        raw=True,
+        refresh=True,
+    )
     if len(jobs) == 0:
         circuit = random_circuit("qiskit", measure=True)
         sim = device_wrapper(device_id).run(circuit, shots=10)
