@@ -77,6 +77,7 @@ class QbraidSession(Session):
         self.id_token = id_token
         self.base_url = base_url
         self.verify = False
+        self.headers.update({"domain": "qbraid"})
 
         self._initialize_retry(retries_total, retries_connect, backoff_factor)
 
