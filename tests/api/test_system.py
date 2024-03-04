@@ -62,7 +62,7 @@ def test_is_valid_slug(slug, expected):
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_verified_slugs_are_valid():
     """Test that all existing qBraid environment slugs are deemed valid."""
-    session = QbraidSession(user_email=os.getenv("JUPYTERHUB_USER"), refresh_token=os.getenv("REFRESH"))
+    session = QbraidSession()
     res = session.get("/environments").json()
     for env in res:
         slug = env["slug"]
