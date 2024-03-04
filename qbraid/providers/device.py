@@ -281,7 +281,7 @@ class QuantumDevice(ABC):
 
         if len(circuits) == 1:
             init_data["circuitNumQubits"] = circuits[0].num_qubits
-            init_data["circuitDepth"]: circuits[0].depth
+            init_data["circuitDepth"] = circuits[0].depth
         else:
             init_data["circuitBatchNumQubits"] = ([circuit.num_qubits for circuit in circuits],)
             init_data["circuitBatchDepth"] = [circuit.depth for circuit in circuits]
