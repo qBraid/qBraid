@@ -10,7 +10,7 @@ qiskit~=1.0.2
 qiskit-ibm-provider~=0.10.0
 qiskit-ibm-runtime~=0.21.1
 qiskit-qasm3-import~=0.4.1
-# qiskit-braket-provider # https://github.com/qiskit-community/qiskit-braket-provider/issues/161
+qiskit-braket-provider
 qiskit-aer
 
 
