@@ -17,7 +17,7 @@ jobs submitted through the qBraid SDK.
 """
 
 import warnings
-from typing import Optional, Dict, Any, Tuple, List
+from typing import Any, Dict, List, Optional, Tuple
 
 try:
     from IPython.display import HTML, clear_output, display
@@ -92,11 +92,11 @@ def _display_jobs_jupyter(data, msg):
 
     return display(HTML(html))
 
+
 def _get_jobs_data(
-        query: Dict[str, Any],
-        refresh: bool = False,
-        raw: bool = False,
-        session: Optional[QbraidSession] = None,
+    query: Dict[str, Any],
+    refresh: bool = False,
+    session: Optional[QbraidSession] = None,
 ) -> Tuple[List[List[str]], str]:
     from qbraid.providers import QuantumJob  # pylint: disable=import-outside-toplevel
 
@@ -134,10 +134,6 @@ def _get_jobs_data(
                 pass
         job_data.append([job_id, created_at, status])
 
-    if raw:
-        job_ids = [job[0] for job in job_data]
-        return job_ids
-
     if num_jobs == 0:  # Design choice whether to display anything here or not
         if len(query) == 0:
             msg = f"No jobs found for user {session.user_email}"
@@ -154,10 +150,10 @@ def _get_jobs_data(
 
 
 def get_jobs(
-        filters: Optional[dict] = None,
-        refresh: bool = False,
-        raw: bool = False,
-        session: Optional[QbraidSession] = None,
+    filters: Optional[dict] = None,
+    refresh: bool = False,
+    raw: bool = False,
+    session: Optional[QbraidSession] = None,
 ):  # pylint: disable=too-many-statements
     """Displays a list of quantum jobs submitted by user, tabulated by job ID,
     the date/time it was submitted, and status. You can specify filters to
@@ -199,13 +195,14 @@ def get_jobs(
         session (QbraidSession): A qBraid session object. If not provided, a new session will be created.
 
     """
-    query = {} if filters is None else filters
-    # if refresh:
-    #     refresh_jobs() # TODO: Figure out if this makes sense
+    filters = filters or {}
 
-    job_data, msg = _get_jobs_data(query, refresh, raw, session)
-    if not running_in_jupyter():
-        return _display_jobs_basic(job_data, msg)
+    job_data, msg = _get_jobs_data(filters, refresh, session)
 
-    else:
+    if raw:
+        job_ids = [job[0] for job in job_data]
+        return job_ids
+
+    if running_in_jupyter():
         return _display_jobs_jupyter(job_data, msg)
+    return _display_jobs_basic(job_data, msg)
