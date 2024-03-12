@@ -247,7 +247,6 @@ def get_devices(
                 min_display = minutes
             msg = f"Device status updated {min_display} minutes ago"
 
-    if not running_in_jupyter():
-        _display_basic(device_data, msg)
-    else:
-        _display_jupyter(device_data, msg, align=align)
+    if running_in_jupyter():
+        return _display_jupyter(device_data, msg, align=align)
+    return _display_basic(device_data, msg)

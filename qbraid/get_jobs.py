@@ -17,7 +17,7 @@ jobs submitted through the qBraid SDK.
 """
 
 import warnings
-from typing import Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 try:
     from IPython.display import HTML, clear_output, display
@@ -93,6 +93,62 @@ def _display_jobs_jupyter(data, msg):
     return display(HTML(html))
 
 
+def _get_jobs_data(
+    query: Dict[str, Any],
+    refresh: bool = False,
+    session: Optional[QbraidSession] = None,
+) -> Tuple[List[List[str]], str]:
+    from qbraid.providers import QuantumJob  # pylint: disable=import-outside-toplevel
+
+    session = QbraidSession() if not session else session
+    jobs = session.post("/get-user-jobs", json=query).json()
+    max_results = query.pop("numResults", 10)
+    count = 0
+    num_jobs = len(jobs)
+    job_data = []
+    for document in jobs:
+        count += 1
+        progress = count / num_jobs
+        if refresh:
+            update_progress_bar(progress)
+        job_id = document.get("qbraidJobId", document.get("_id"))
+        if job_id is None:
+            continue
+        created_at = document.get("createdAt")
+        if created_at is None:
+            timestamps = document.get("timestamps", {})
+            created_at = timestamps.get("createdAt", timestamps.get("jobStarted"))
+        status = document.get("qbraidStatus", document.get("status", "UNKNOWN"))
+        try:
+            status_final = QuantumJob.status_final(status)
+        except Exception:  # pylint: disable=broad-except
+            status_final = True
+        if refresh and not status_final:
+            try:
+                qbraid_job = job_wrapper(job_id)
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    status_obj = qbraid_job.status()
+                status = status_obj.name
+            except Exception:  # pylint: disable=broad-except
+                pass
+        job_data.append([job_id, created_at, status])
+
+    if num_jobs == 0:  # Design choice whether to display anything here or not
+        if len(query) == 0:
+            msg = f"No jobs found for user {session.user_email}"
+        else:
+            msg = "No jobs found matching given criteria"
+    elif num_jobs < max_results:
+        msg = f"Displaying {num_jobs}/{num_jobs} jobs matching query"
+    elif len(query) > 0:
+        s = "s" if num_jobs > 1 else ""
+        msg = f"Displaying {num_jobs} most recent job{s} matching query"
+    else:
+        msg = f"Displaying {num_jobs} most recent jobs"
+    return job_data, msg
+
+
 def get_jobs(
     filters: Optional[dict] = None,
     refresh: bool = False,
@@ -139,63 +195,14 @@ def get_jobs(
         session (QbraidSession): A qBraid session object. If not provided, a new session will be created.
 
     """
-    from qbraid.providers import QuantumJob  # pylint: disable=import-outside-toplevel
+    filters = filters or {}
 
-    query = {} if filters is None else filters
-
-    session = session or QbraidSession()
-    jobs = session.post("/get-user-jobs", json=query).json()
-    max_results = query.pop("numResults", 10)
-
-    count = 0
-    num_jobs = len(jobs)
-    job_data = []
-    for document in jobs:
-        count += 1
-        progress = count / num_jobs
-        if refresh:
-            update_progress_bar(progress)
-        job_id = document.get("qbraidJobId", document.get("_id"))
-        if job_id is None:
-            continue
-        created_at = document.get("createdAt")
-        if created_at is None:
-            timestamps = document.get("timestamps", {})
-            created_at = timestamps.get("createdAt", timestamps.get("jobStarted"))
-        status = document.get("qbraidStatus", document.get("status", "UNKNOWN"))
-        try:
-            status_final = QuantumJob.status_final(status)
-        except Exception:  # pylint: disable=broad-except
-            status_final = True
-        if refresh and not status_final:
-            try:
-                qbraid_job = job_wrapper(job_id)
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    status_obj = qbraid_job.status()
-                status = status_obj.name
-            except Exception:  # pylint: disable=broad-except
-                pass
-        job_data.append([job_id, created_at, status])
+    job_data, msg = _get_jobs_data(filters, refresh, session)
 
     if raw:
         job_ids = [job[0] for job in job_data]
         return job_ids
 
-    if num_jobs == 0:  # Design choice whether to display anything here or not
-        if len(query) == 0:
-            msg = f"No jobs found for user {session.user_email}"
-        else:
-            msg = "No jobs found matching given criteria"
-    elif num_jobs < max_results:
-        msg = f"Displaying {num_jobs}/{num_jobs} jobs matching query"
-    elif len(query) > 0:
-        s = "s" if num_jobs > 1 else ""
-        msg = f"Displaying {num_jobs} most recent job{s} matching query"
-    else:
-        msg = f"Displaying {num_jobs} most recent jobs"
-
-    if not running_in_jupyter():
-        return _display_jobs_basic(job_data, msg)
-
-    return _display_jobs_jupyter(job_data, msg)
+    if running_in_jupyter():
+        return _display_jobs_jupyter(job_data, msg)
+    return _display_jobs_basic(job_data, msg)
