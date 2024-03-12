@@ -17,7 +17,7 @@ jobs submitted through the qBraid SDK.
 """
 
 import warnings
-from typing import Optional
+from typing import Optional, Dict, Any, Tuple, List
 
 try:
     from IPython.display import HTML, clear_output, display
@@ -92,61 +92,17 @@ def _display_jobs_jupyter(data, msg):
 
     return display(HTML(html))
 
-
-def get_jobs(
-    filters: Optional[dict] = None,
-    refresh: bool = False,
-    raw: bool = False,
-    session: Optional[QbraidSession] = None,
-):  # pylint: disable=too-many-statements
-    """Displays a list of quantum jobs submitted by user, tabulated by job ID,
-    the date/time it was submitted, and status. You can specify filters to
-    narrow the search by supplying a dictionary containing the desired criteria.
-
-    **Request Syntax:**
-
-    .. code-block:: python
-
-        get_jobs(
-            filters={
-                'qbraidJobId': 'string',
-                'vendorJobId': 'string',
-                'qbraidDeviceId: 'string',
-                'circuitNumQubits': 123,
-                'circuitDepth': 123,
-                'shots': 123,
-                'status': 'string',
-                'numResults': 123
-            }
-        )
-
-    # pylint: disable=line-too-long
-    **Filters:**
-
-        * **qbraidJobId** (str): The qBraid ID of the quantum job
-        * **vendorJobId** (str): The Job ID assigned by the software provider to whom the job was submitted
-        * **qbraidDeviceId** (str): The qBraid ID of the device used in the job
-        * **circuitNumQubits** (int): The number of qubits in the quantum circuit used in the job
-        * **circuitDepth** (int): The depth the quantum circuit used in the job
-        * **shots** (int): Number of shots used in the job
-        * **status** (str): The status of the job
-        * **numResults** (int): Maximum number of results to display. Defaults to 10 if not specified.
-
-    Args:
-        filters (dict): A dictionary containing any filters to be applied.
-        refresh (bool): If True, refreshes the status of all jobs before displaying them.
-        raw (bool): If True, returns a list of job IDs instead of displaying the jobs.
-        session (QbraidSession): A qBraid session object. If not provided, a new session will be created.
-
-    """
+def _get_jobs_data(
+        query: Dict[str, Any],
+        refresh: bool = False,
+        raw: bool = False,
+        session: Optional[QbraidSession] = None,
+) -> Tuple[List[List[str]], str]:
     from qbraid.providers import QuantumJob  # pylint: disable=import-outside-toplevel
 
-    query = {} if filters is None else filters
-
-    session = session or QbraidSession()
+    session = QbraidSession() if not session else session
     jobs = session.post("/get-user-jobs", json=query).json()
     max_results = query.pop("numResults", 10)
-
     count = 0
     num_jobs = len(jobs)
     job_data = []
@@ -194,8 +150,62 @@ def get_jobs(
         msg = f"Displaying {num_jobs} most recent job{s} matching query"
     else:
         msg = f"Displaying {num_jobs} most recent jobs"
+    return job_data, msg
 
+
+def get_jobs(
+        filters: Optional[dict] = None,
+        refresh: bool = False,
+        raw: bool = False,
+        session: Optional[QbraidSession] = None,
+):  # pylint: disable=too-many-statements
+    """Displays a list of quantum jobs submitted by user, tabulated by job ID,
+    the date/time it was submitted, and status. You can specify filters to
+    narrow the search by supplying a dictionary containing the desired criteria.
+
+    **Request Syntax:**
+
+    .. code-block:: python
+
+        get_jobs(
+            filters={
+                'qbraidJobId': 'string',
+                'vendorJobId': 'string',
+                'qbraidDeviceId: 'string',
+                'circuitNumQubits': 123,
+                'circuitDepth': 123,
+                'shots': 123,
+                'status': 'string',
+                'numResults': 123
+            }
+        )
+
+    # pylint: disable=line-too-long
+    **Filters:**
+
+        * **qbraidJobId** (str): The qBraid ID of the quantum job
+        * **vendorJobId** (str): The Job ID assigned by the software provider to whom the job was submitted
+        * **qbraidDeviceId** (str): The qBraid ID of the device used in the job
+        * **circuitNumQubits** (int): The number of qubits in the quantum circuit used in the job
+        * **circuitDepth** (int): The depth the quantum circuit used in the job
+        * **shots** (int): Number of shots used in the job
+        * **status** (str): The status of the job
+        * **numResults** (int): Maximum number of results to display. Defaults to 10 if not specified.
+
+    Args:
+        filters (dict): A dictionary containing any filters to be applied.
+        refresh (bool): If True, refreshes the status of all jobs before displaying them.
+        raw (bool): If True, returns a list of job IDs instead of displaying the jobs.
+        session (QbraidSession): A qBraid session object. If not provided, a new session will be created.
+
+    """
+    query = {} if filters is None else filters
+    # if refresh:
+    #     refresh_jobs() # TODO: Figure out if this makes sense
+
+    job_data, msg = _get_jobs_data(query, refresh, raw, session)
     if not running_in_jupyter():
         return _display_jobs_basic(job_data, msg)
 
-    return _display_jobs_jupyter(job_data, msg)
+    else:
+        return _display_jobs_jupyter(job_data, msg)
