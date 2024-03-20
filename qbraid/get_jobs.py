@@ -24,8 +24,9 @@ try:
 except ImportError:
     pass
 
+from qbraid_core import QbraidSession
+
 from ._display import running_in_jupyter, update_progress_bar
-from .api import QbraidSession
 from .load_provider import job_wrapper
 
 

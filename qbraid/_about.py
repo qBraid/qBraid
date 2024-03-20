@@ -15,7 +15,7 @@ from networkx import __version__ as networkx_version
 from numpy import __version__ as numpy_version
 from openqasm3 import __version__ as openqasm3_version
 from ply import __version__ as ply_version
-from requests import __version__ as requests_version
+from qbraid_core._version import __version__ as qbraid_core_version
 
 from ._version import __version__ as qbraid_version
 
@@ -26,10 +26,10 @@ def about() -> None:
     """
     # Core dependencies
     core_dependencies = {
+        "qbraid_core": qbraid_core_version,
         "networkx": networkx_version,
         "openqasm3": openqasm3_version,
         "numpy": numpy_version,
-        "requests": requests_version,
         "ply": ply_version,
     }
 

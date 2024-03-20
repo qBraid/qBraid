@@ -18,7 +18,7 @@ from enum import Enum
 from time import sleep, time
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
-from qbraid.api import QbraidSession
+from qbraid_core.session import QbraidSession
 
 from .enums import JOB_FINAL, JobStatus
 from .exceptions import JobError
@@ -158,7 +158,7 @@ class QuantumJob(ABC):
             )
         return qbraid_status
 
-    def _post_job_data(self, update: Optional[dict] = None) -> dict:
+    def _post_job_data(self, update: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Retreives job metadata and optionally updates document.
 
         Args:
@@ -188,12 +188,12 @@ class QuantumJob(ABC):
             self._cache_status = self._map_status(self._cache_metadata["qbraidStatus"])
         return self._cache_metadata
 
-    def wait_for_final_state(self, timeout=None, poll_interval=5) -> None:
+    def wait_for_final_state(self, timeout: Optional[int] = None, poll_interval: int = 5) -> None:
         """Poll the job status until it progresses to a final state.
 
         Args:
             timeout: Seconds to wait for the job. If ``None``, wait indefinitely.
-            poll_interval: Seconds between queries.
+            poll_interval: Seconds between queries. Defaults to 5 seconds.
 
         Raises:
             JobError: If the job does not reach a final state before the specified timeout.

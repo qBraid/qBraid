@@ -21,7 +21,9 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import TYPE_CHECKING, Dict  # pylint: disable=unused-import
 
-from qbraid.api import ApiError, QbraidSession
+from qbraid_core import QbraidSession
+from qbraid_core.jobs import jobs_supported_enabled
+
 from qbraid.exceptions import QbraidError
 from qbraid.load_program import circuit_wrapper
 from qbraid.transpiler.exceptions import CircuitConversionError
@@ -244,23 +246,22 @@ class QuantumDevice(ABC):
         """
         session = QbraidSession()
 
-        vendor = self.vendor.lower()
         # One of the features of qBraid Quantum Jobs is the ability to send
         # jobs without any credentials using the qBraid Lab platform. If the
         # qBraid Quantum Jobs proxy is enabled, a document has already been
         # created for this job. So, instead creating a duplicate, we query the
         # user jobs for the `vendorJobId` and return the correspondong `qbraidJobId`.
-        if session._qbraid_jobs_enabled(vendor):
+        jobs_supported, jobs_enabled = jobs_supported_enabled(self._run_package)
+        if jobs_supported and jobs_enabled:
             try:
                 job = session.post("/get-user-jobs", json={"vendorJobId": vendor_job_id}).json()[0]
                 return job.get("qbraidJobId", job.get("_id"))
             except IndexError as err:
-                raise ApiError(f"{self.vendor} job {vendor_job_id} not found") from err
+                raise QbraidRuntimeError(f"{self.vendor} job {vendor_job_id} not found") from err
 
         # get qBraid device ID. Temporary workaround until we have a better way
-        qbraid_id = session.get("/public/lab/get-devices", params={"objArg": self.id}).json()[0][
-            "qbraid_id"
-        ]
+        device = session.get("/public/lab/get-devices", params={"objArg": self.id}).json()[0]
+        qbraid_id = device["qbraid_id"]
 
         # Create a new document for the user job. The qBraid API creates a unique
         # Job ID, which is collected in the response. We use dummy variables for
@@ -273,7 +274,7 @@ class QuantumDevice(ABC):
             "vendorDeviceId": self.id,
             "shots": shots,
             "tags": json.dumps(tags),
-            "createdAt": datetime.utcnow(),
+            "createdAt": datetime.utcnow(),  # datetime.datetime.now(datetime.UTC)
             "status": "UNKNOWN",  # this will be set after we get back the job ID and check status
             "qbraidStatus": JobStatus.INITIALIZING.name,
             "email": session.user_email,

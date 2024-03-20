@@ -228,7 +228,7 @@ credentials:
    `QbraidSession.save_config()`:
 
 ```python
-from qbraid.api import QbraidSession
+from qbraid_core import QbraidSession
 
 session = QbraidSession(api_key='API_KEY')
 session.save_config()
@@ -251,7 +251,7 @@ export QBRAID_API_KEY='QBRAID_API_KEY'
 Then instantiate the session without any arguments
 
 ```python
-from qbraid.api import QbraidSession
+from qbraid_core import QbraidSession
 
 session = QbraidSession()
 ```

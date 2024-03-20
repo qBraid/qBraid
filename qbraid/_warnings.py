@@ -13,32 +13,10 @@ Module for emitting and disabling warnings at top level.
 
 """
 import warnings
-from importlib.metadata import PackageNotFoundError, version
 
-import requests
 import urllib3
-
-from .exceptions import QbraidError
-
-
-def _get_latest_version(package: str) -> str:
-    """Retrieves the latest version of a package from PyPI."""
-    url = f"https://pypi.org/pypi/{package}/json"
-    try:
-        response = requests.get(url, timeout=5)
-        response.raise_for_status()
-        data = response.json()
-        return data["info"]["version"]
-    except requests.RequestException as err:
-        raise QbraidError(f"Failed to retrieve latest {package} version.") from err
-
-
-def _get_local_version(package: str) -> str:
-    """Retrieves the local version of a package."""
-    try:
-        return version(package)
-    except PackageNotFoundError as err:
-        raise QbraidError(f"{package} is not installed in the current environment.") from err
+from qbraid_core.exceptions import QbraidException
+from qbraid_core.system import get_latest_package_version, get_local_package_version
 
 
 def _warn_new_version(local: str, latest: str) -> bool:
@@ -56,8 +34,8 @@ def _check_version():
 
     # pylint: disable=import-outside-toplevel
     try:
-        latest_version = _get_latest_version("qbraid")
-        local_version = _get_local_version("qbraid")
+        latest_version = get_latest_package_version("qbraid")
+        local_version = get_local_package_version("qbraid")
 
         if _warn_new_version(local_version, latest_version):
             warnings.warn(
@@ -65,7 +43,7 @@ def _check_version():
                 "is available. To avoid compatibility issues, consider upgrading. ",
                 UserWarning,
             )
-    except QbraidError:
+    except QbraidException:
         pass
 
 

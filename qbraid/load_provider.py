@@ -14,8 +14,8 @@ functions utilize entrypoints via ``pkg_resources``.
 
 """
 import pkg_resources
+from qbraid_core import QbraidSession
 
-from .api import QbraidSession
 from .exceptions import QbraidError
 from .providers import QbraidProvider
 

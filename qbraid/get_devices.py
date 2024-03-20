@@ -19,13 +19,14 @@ supported by the qBraid SDK.
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
+from qbraid_core import QbraidSession
+
 try:
     from IPython.display import HTML, clear_output, display
 except ImportError:
     pass
 
 from ._display import running_in_jupyter, update_progress_bar
-from .api import QbraidSession
 from .load_provider import device_wrapper
 
 if TYPE_CHECKING:
