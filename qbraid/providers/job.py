@@ -169,7 +169,7 @@ class QuantumJob(ABC):
 
         """
         session = QbraidSession()
-        body = {"_id": self.id, "qbraidJobId": self.id}
+        body = {"_id": self.id} if session.is_valid_mongo_id(self.id) else {"qbraidJobId": self.id}
         # Two status variables so we can track both qBraid and vendor status.
         if update is not None and "status" in update and "qbraidStatus" in update:
             body["status"] = update["status"]
