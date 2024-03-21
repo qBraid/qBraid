@@ -14,21 +14,20 @@
 Module defining abstract QuantumDevice Class
 
 """
-
 import json
+import logging
 import warnings
 from abc import ABC, abstractmethod
-from datetime import datetime
 from typing import TYPE_CHECKING, Dict  # pylint: disable=unused-import
 
 from qbraid_core import QbraidSession
-from qbraid_core.jobs import jobs_supported_enabled
+from qbraid_core.devices import get_devices_raw
+from qbraid_core.jobs import create_job, get_jobs_raw, jobs_supported_enabled
 
 from qbraid.exceptions import QbraidError
 from qbraid.load_program import circuit_wrapper
 from qbraid.transpiler.exceptions import CircuitConversionError
 
-from .enums import JobStatus
 from .exceptions import ProgramValidationError, QbraidRuntimeError
 
 if TYPE_CHECKING:
@@ -254,13 +253,13 @@ class QuantumDevice(ABC):
         jobs_supported, jobs_enabled = jobs_supported_enabled(self._run_package)
         if jobs_supported and jobs_enabled:
             try:
-                job = session.post("/get-user-jobs", json={"vendorJobId": vendor_job_id}).json()[0]
+                job = get_jobs_raw(params={"vendorJobId": vendor_job_id}, session=session)[0]
                 return job.get("qbraidJobId", job.get("_id"))
             except IndexError as err:
                 raise QbraidRuntimeError(f"{self.vendor} job {vendor_job_id} not found") from err
 
         # get qBraid device ID. Temporary workaround until we have a better way
-        device = session.get("/public/lab/get-devices", params={"objArg": self.id}).json()[0]
+        device = get_devices_raw(params={"objArg": self.id}, session=session)[0]
         qbraid_id = device["qbraid_id"]
 
         # Create a new document for the user job. The qBraid API creates a unique
@@ -268,26 +267,29 @@ class QuantumDevice(ABC):
         # each of the status fields, which will be updated via the `get_job_data`
         # function upon instantiation of the `QuantumJob` object.
         init_data = {
-            "qbraidJobId": "",
             "vendorJobId": vendor_job_id,
             "qbraidDeviceId": qbraid_id,
-            "vendorDeviceId": self.id,
             "shots": shots,
             "tags": json.dumps(tags),
-            "createdAt": datetime.utcnow(),  # datetime.datetime.now(datetime.UTC)
-            "status": "UNKNOWN",  # this will be set after we get back the job ID and check status
-            "qbraidStatus": JobStatus.INITIALIZING.name,
-            "email": session.user_email,
         }
 
         if len(circuits) == 1:
+            circuit = circuits[0]
+            try:
+                init_data["openQasm"] = circuit.transpile("qasm3")
+            except Exception as err:  # pylint: disable=broad-exception-caught
+                logging.info(
+                    "Error converting circuit to OpenQASM 3: %s. "
+                    "Field will be ommited in job metadata",
+                    err,
+                )
             init_data["circuitNumQubits"] = circuits[0].num_qubits
             init_data["circuitDepth"] = circuits[0].depth
         else:
             init_data["circuitBatchNumQubits"] = ([circuit.num_qubits for circuit in circuits],)
             init_data["circuitBatchDepth"] = [circuit.depth for circuit in circuits]
 
-        return session.post("/init-job", data=init_data).json()
+        return create_job(data=init_data, session=session)
 
     @abstractmethod
     def _transpile(self, run_input):
