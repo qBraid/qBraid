@@ -13,13 +13,16 @@ Module for configuring provider credentials and authentication.
 
 """
 from abc import ABC, abstractmethod
-from typing import List
+from typing import TYPE_CHECKING, List, Optional
 
-from qbraid._qdevice import QDEVICE, QDEVICE_TYPES
+from qbraid_core.devices import get_devices_raw, get_device_metadata
 
+from qbraid._qdevice import QDEVICE_TYPES
 
-class QbraidDeviceNotFoundError(Exception):
-    """Exception raised when no device could be found."""
+from .exceptions import QbraidDeviceNotFoundError, ResourceNotFoundError
+
+if TYPE_CHECKING:
+    import qbraid
 
 
 class QuantumProvider(ABC):
@@ -100,7 +103,7 @@ class QbraidProvider(QuantumProvider):
         except Exception:  # pylint: disable=broad-exception-caught
             return None
 
-    def get_devices(self) -> List[QDEVICE]:
+    def get_devices(self) -> "List[qbraid.QDEVICE]":
         """Return a list of backends matching the specified filtering.
 
         Returns:
@@ -115,7 +118,24 @@ class QbraidProvider(QuantumProvider):
 
         return devices
 
-    def get_device(self, vendor_device_id: str) -> QDEVICE:
+    @staticmethod
+    def _get_vendor(vendor_device_id: str) -> str:
+        """Return the software vendor of the specified device."""
+        if vendor_device_id.startswith("ibm") or vendor_device_id.startswith("simulator"):
+            return "ibm"
+        if vendor_device_id.startswith("arn:aws"):
+            return "aws"
+
+        device_data = get_devices_raw(params={"objArg": vendor_device_id})
+        if len(device_data) == 0:
+            raise QbraidDeviceNotFoundError(f"Device {vendor_device_id} not found.")
+
+        try:
+            return device_data[0]["vendor"].lower()
+        except (IndexError, KeyError) as err:
+            raise ResourceNotFoundError(f"Failed to load device due to invalid device data.") from err
+
+    def _get_device(self, vendor_device_id: str, vendor: Optional[str] = None) -> "qbraid.QDEVICE":
         """Return quantum device corresponding to the specified device ID.
 
         Returns:
@@ -124,12 +144,40 @@ class QbraidProvider(QuantumProvider):
         Raises:
             QbraidDeviceNotFoundError: if no device could be found
         """
-        if vendor_device_id.startswith("ibm") or vendor_device_id.startswith("simulator"):
-            if self._ibm_provider is not None:
-                return self._ibm_provider.get_device(vendor_device_id)
+        vendor = vendor or self._get_vendor(vendor_device_id)
 
-        if vendor_device_id.startswith("arn:aws"):
-            if self._aws_provider is not None:
-                return self._aws_provider.get_device(vendor_device_id)
+        if vendor == "ibm" and self._ibm_provider is not None:
+            return self._ibm_provider.get_device(vendor_device_id)
+
+        if vendor == "aws" and self._aws_provider is not None:
+            return self._aws_provider.get_device(vendor_device_id)
 
         raise QbraidDeviceNotFoundError(f"Device {vendor_device_id} not found.")
+
+    def get_device(self, qbraid_device_id: str) -> "qbraid.QDEVICE":
+        """Return quantum device corresponding to the specified device ID.
+
+        Returns:
+            QDEVICE: the quantum device corresponding to the given ID
+
+        Raises:
+            QbraidDeviceNotFoundError: if no device could be found
+        """
+        try:
+            device_data = get_device_metadata(qbraid_id=qbraid_device_id)
+        except ValueError as err:
+            raise QbraidDeviceNotFoundError(f"Device {qbraid_device_id} not found.") from err
+
+        try:
+            vendor = device_data["vendor"].lower()
+        except (KeyError, AttributeError):
+            vendor = None
+
+        try:
+            vendor_device_id = device_data["objArg"]
+        except KeyError as err:
+            raise ResourceNotFoundError(
+                f"Failed to load device due to invalid device data: missing required field 'objArg'."
+            ) from err
+        
+        return self._get_device(vendor_device_id, vendor)
