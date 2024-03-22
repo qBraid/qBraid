@@ -20,6 +20,7 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from qbraid_core import QbraidSession
+from qbraid_core.devices import get_devices_raw, update_device
 
 try:
     from IPython.display import HTML, clear_output, display
@@ -36,8 +37,7 @@ if TYPE_CHECKING:
 def refresh_devices() -> None:
     """Refreshes status for all qbraid supported devices. Requires credential for each vendor."""
 
-    session = QbraidSession()
-    devices = session.get("/public/lab/get-devices", params={}).json()
+    devices = get_devices_raw()
     count = 0
     num_devices = len(devices)  # i.e. number of iterations
     for document in devices:
@@ -48,7 +48,7 @@ def refresh_devices() -> None:
             try:
                 device = device_wrapper(qbraid_id)
                 status = device.status().name
-                session.put("/lab/update-device", data={"qbraid_id": qbraid_id, "status": status})
+                update_device(data={"qbraid_id": qbraid_id, "status": status})
             except Exception:  # pylint: disable=broad-except
                 pass
 

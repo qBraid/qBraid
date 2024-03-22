@@ -15,6 +15,8 @@ functions utilize entrypoints via ``pkg_resources``.
 """
 import pkg_resources
 from qbraid_core import QbraidSession
+from qbraid_core.devices import get_devices_raw
+from qbraid_core.jobs import get_jobs_raw
 
 from .exceptions import QbraidError
 from .providers import QbraidProvider
@@ -27,12 +29,10 @@ def _get_entrypoints(group: str):
 
 def _get_device_info(device_id: str):
     """Retrieve a device from qBraid API using device ID."""
-    session = QbraidSession()
-    api_endpoint = "/public/lab/get-devices"
     params_list = [{"qbraid_id": device_id}, {"objArg": device_id}]
 
     for params in params_list:
-        device_lst = session.get(api_endpoint, params=params).json()
+        device_lst = get_devices_raw(params=params)
         if device_lst and len(device_lst) > 0:
             return device_lst[0]
 
@@ -79,14 +79,13 @@ def job_wrapper(qbraid_job_id: str):
         :class:`~qbraid.providers.job.QuantumJob`: A wrapped quantum job-like object
 
     """
-    session = QbraidSession()
     query = {"numResults": 1}
-    if session.is_valid_mongo_id(qbraid_job_id):
+    if QbraidSession.is_valid_mongo_id(qbraid_job_id):
         query["_id"] = qbraid_job_id
     else:
         query["qbraidJobId"] = qbraid_job_id
 
-    job_lst = session.post("/get-user-jobs", json=query).json()
+    job_lst = get_jobs_raw(params=query)
 
     if len(job_lst) == 0:
         raise QbraidError(f"{qbraid_job_id} is not a valid job ID.")
@@ -94,17 +93,26 @@ def job_wrapper(qbraid_job_id: str):
     job_data = job_lst[0]
 
     try:
+        vendor = job_data["vendor"]
+    except KeyError:
+        vendor = None
+
+    try:
         vendor_device_id = job_data["vendorDeviceId"]
         qbraid_device = device_wrapper(vendor_device_id)
+        vendor = qbraid_device.vendor.lower()
     except (KeyError, QbraidError):
         qbraid_device = None
+
+    if vendor is None:
+        raise QbraidError(f"Job {qbraid_job_id} does not have an associated vendor.")
 
     status_str = job_data.get("qbraidStatus", job_data.get("status", "UNKNOWN"))
     try:
         vendor_job_id = job_data["vendorJobId"]
     except KeyError as err:
         raise QbraidError(f"Job {qbraid_job_id} does not have an associated vendorJobId.") from err
-    vendor = qbraid_device.vendor.lower()
+
     devices_entrypoints = _get_entrypoints("qbraid.providers")
     ep = f"{vendor}.job"
     job_wrapper_class = devices_entrypoints[ep].load()

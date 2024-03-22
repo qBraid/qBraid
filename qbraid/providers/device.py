@@ -289,7 +289,8 @@ class QuantumDevice(ABC):
             init_data["circuitBatchNumQubits"] = ([circuit.num_qubits for circuit in circuits],)
             init_data["circuitBatchDepth"] = [circuit.depth for circuit in circuits]
 
-        return create_job(data=init_data, session=session)
+        job = create_job(data=init_data, session=session)
+        return job.get("qbraidJobId", job.get("_id"))
 
     @abstractmethod
     def _transpile(self, run_input):
