@@ -20,9 +20,7 @@ import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Dict  # pylint: disable=unused-import
 
-from qbraid_core import QbraidSession
-from qbraid_core.devices import get_devices_raw
-from qbraid_core.jobs import create_job, get_jobs_raw, jobs_supported_enabled
+from qbraid_core.services.quantum import QuantumClient, quantum_lib_proxy_state
 
 from qbraid.exceptions import QbraidError
 from qbraid.load_program import circuit_wrapper
@@ -243,23 +241,28 @@ class QuantumDevice(ABC):
             The qbraid job ID associated with this job
 
         """
-        session = QbraidSession()
+        client = QuantumClient()
 
         # One of the features of qBraid Quantum Jobs is the ability to send
         # jobs without any credentials using the qBraid Lab platform. If the
         # qBraid Quantum Jobs proxy is enabled, a document has already been
         # created for this job. So, instead creating a duplicate, we query the
         # user jobs for the `vendorJobId` and return the correspondong `qbraidJobId`.
-        jobs_supported, jobs_enabled = jobs_supported_enabled(self._run_package)
-        if jobs_supported and jobs_enabled:
+        try:
+            jobs_state = quantum_lib_proxy_state(self._run_package)
+            jobs_enabled = jobs_state.get("enabled", False)
+        except ValueError:
+            jobs_enabled = False
+
+        if jobs_enabled:
             try:
-                job = get_jobs_raw(params={"vendorJobId": vendor_job_id}, session=session)[0]
+                job = client.get_job(vendor_id=vendor_job_id)
                 return job.get("qbraidJobId", job.get("_id"))
             except IndexError as err:
                 raise QbraidRuntimeError(f"{self.vendor} job {vendor_job_id} not found") from err
 
         # get qBraid device ID. Temporary workaround until we have a better way
-        device = get_devices_raw(params={"objArg": self.id}, session=session)[0]
+        device = client.get_device(vendor_id=self.id)
         qbraid_id = device["qbraid_id"]
 
         # Create a new document for the user job. The qBraid API creates a unique
@@ -289,7 +292,7 @@ class QuantumDevice(ABC):
             init_data["circuitBatchNumQubits"] = ([circuit.num_qubits for circuit in circuits],)
             init_data["circuitBatchDepth"] = [circuit.depth for circuit in circuits]
 
-        job = create_job(data=init_data, session=session)
+        job = client.create_job(data=init_data)
         return job.get("qbraidJobId", job.get("_id"))
 
     @abstractmethod

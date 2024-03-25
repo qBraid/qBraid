@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, List, Optional
 import boto3
 from boto3.session import Session
 from braket.aws import AwsDevice, AwsSession
-from qbraid_core.jobs import jobs_supported_enabled
+from qbraid_core.services.quantum import quantum_lib_proxy_state
 
 from qbraid.exceptions import QbraidError
 
@@ -136,7 +136,11 @@ class BraketProvider:
             QbraidError: If the function is called within a qBraid quantum job environment
                          where AWS S3 requests are not supported.
         """
-        _, jobs_enabled = jobs_supported_enabled("braket")
+        try:
+            jobs_state = quantum_lib_proxy_state("braket")
+            jobs_enabled = jobs_state.get("enabled", False)
+        except ValueError:
+            jobs_enabled = False
 
         if jobs_enabled:
             raise QbraidError("AWS S3 requests not supported by qBraid quantum jobs.")

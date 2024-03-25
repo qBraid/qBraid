@@ -18,8 +18,7 @@ from enum import Enum
 from time import sleep, time
 from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
 
-from qbraid_core.jobs.rest import get_jobs_raw, update_job
-from qbraid_core.session import QbraidSession
+from qbraid_core.services.quantum import QuantumClient
 
 from .enums import JOB_FINAL, JobStatus
 from .exceptions import JobError
@@ -85,13 +84,14 @@ class QuantumJob(ABC):
 
     def _fetch_and_set_device(self) -> None:
         """Fetches device id from the server and sets the device object."""
+        client = QuantumClient()
         query = {"numResults": 1}
-        if QbraidSession.is_valid_mongo_id(self.id):
+        if client._is_valid_object_id(self.id):
             query["_id"] = self.id
         else:
             query["qbraidJobId"] = self.id
 
-        job_lst = get_jobs_raw(params=query)
+        job_lst = client.search_jobs(query=query)
 
         if len(job_lst) == 0:
             raise JobError(f"Could not find device associated with job {self.id}.")
@@ -169,16 +169,13 @@ class QuantumJob(ABC):
             The metadata associated with this job
 
         """
-        body = (
-            {"_id": self.id}
-            if QbraidSession.is_valid_mongo_id(self.id)
-            else {"qbraidJobId": self.id}
-        )
+        client = QuantumClient()
+        body = {"_id": self.id} if client._is_valid_object_id(self.id) else {"qbraidJobId": self.id}
         # Two status variables so we can track both qBraid and vendor status.
         if update is not None and "status" in update and "qbraidStatus" in update:
             body["status"] = update["status"]
             body["qbraidStatus"] = update["qbraidStatus"]
-        metadata = update_job(data=body)
+        metadata = client.update_job(data=body)
         if "qbraidJobId" not in metadata:
             metadata["qbraidJobId"] = metadata.get("_id")
         return metadata

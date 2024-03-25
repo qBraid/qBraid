@@ -14,9 +14,7 @@ functions utilize entrypoints via ``pkg_resources``.
 
 """
 import pkg_resources
-from qbraid_core import QbraidSession
-from qbraid_core.devices import get_devices_raw
-from qbraid_core.jobs import get_jobs_raw
+from qbraid_core.services.quantum import QuantumClient
 
 from .exceptions import QbraidError
 from .providers import QbraidProvider
@@ -29,10 +27,11 @@ def _get_entrypoints(group: str):
 
 def _get_device_info(device_id: str):
     """Retrieve a device from qBraid API using device ID."""
+    client = QuantumClient()
     params_list = [{"qbraid_id": device_id}, {"objArg": device_id}]
 
     for params in params_list:
-        device_lst = get_devices_raw(params=params)
+        device_lst = client.search_devices(query=params)
         if device_lst and len(device_lst) > 0:
             return device_lst[0]
 
@@ -79,13 +78,14 @@ def job_wrapper(qbraid_job_id: str):
         :class:`~qbraid.providers.job.QuantumJob`: A wrapped quantum job-like object
 
     """
+    client = QuantumClient()
     query = {"numResults": 1}
-    if QbraidSession.is_valid_mongo_id(qbraid_job_id):
+    if client._is_valid_object_id(qbraid_job_id):
         query["_id"] = qbraid_job_id
     else:
         query["qbraidJobId"] = qbraid_job_id
 
-    job_lst = get_jobs_raw(params=query)
+    job_lst = client.search_jobs(query=query)
 
     if len(job_lst) == 0:
         raise QbraidError(f"{qbraid_job_id} is not a valid job ID.")
