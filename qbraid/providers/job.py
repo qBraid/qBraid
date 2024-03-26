@@ -25,7 +25,7 @@ from .exceptions import JobError
 from .status_maps import STATUS_MAP
 
 if TYPE_CHECKING:
-    import qbraid
+    import qbraid.providers
 
 
 class QuantumJob(ABC):

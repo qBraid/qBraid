@@ -44,7 +44,6 @@ Exceptions
    JobError
    JobStateError
    ProgramValidationError
-   QbraidDeviceNotFoundError
    QbraidRuntimeError
    ResourceNotFoundError
 
@@ -55,7 +54,6 @@ from .exceptions import (
     JobError,
     JobStateError,
     ProgramValidationError,
-    QbraidDeviceNotFoundError,
     QbraidRuntimeError,
     ResourceNotFoundError,
 )

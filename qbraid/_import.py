@@ -13,6 +13,21 @@ Module used for lazy loading of submodules.
 """
 import importlib
 import types
+from typing import Type
+
+import pkg_resources
+
+
+def _load_entrypoint(module: str, name: str) -> Type:
+    """Load an entrypoint given its category and name, optionally with a vendor.
+
+    Args:
+        module (str): module of entrypoint to load, e.g., "programs" or "providers".
+        name (str): name of the entrypoint to load within the module.
+    """
+    group = f"qbraid.{module}"
+    entrypoints = {entry.name: entry for entry in pkg_resources.iter_entry_points(group)}
+    return entrypoints.get(name).load()
 
 
 class LazyLoader(types.ModuleType):

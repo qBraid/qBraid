@@ -13,63 +13,31 @@ Module containing top-level qbraid wrapper functionality. Each of these
 functions utilize entrypoints via ``pkg_resources``.
 
 """
-import pkg_resources
-from qbraid_core.services.quantum import QuantumClient
+import warnings
 
-from .exceptions import QbraidError
 from .providers import QbraidProvider
 
 
-def _get_entrypoints(group: str):
-    """Returns a dictionary mapping each entry of ``group`` to its loadable entrypoint."""
-    return {entry.name: entry for entry in pkg_resources.iter_entry_points(group)}
-
-
-def _get_device_info(device_id: str):
-    """Retrieve a device from qBraid API using device ID."""
-    client = QuantumClient()
-    params_list = [{"qbraid_id": device_id}, {"objArg": device_id}]
-
-    for params in params_list:
-        device_lst = client.search_devices(query=params)
-        if device_lst and len(device_lst) > 0:
-            return device_lst[0]
-
-    raise QbraidError(f"{device_id} is not a valid device ID.")
-
-
 def device_wrapper(device_id: str):
-    """Apply qbraid device wrapper to device from a supported device provider.
+    """(DEPRECATED) Apply qbraid device wrapper to device from a supported device provider.
 
     Args:
         device_id: unique ID specifying a supported quantum hardware device/simulator
 
     Returns:
         :class:`~qbraid.providers.QuantumDevice`: A wrapped quantum device-like object
-
-    Raises:
-        :class:`~qbraid.QbraidError`: If ``device_id`` is not a valid device reference.
-
     """
-    device_info = _get_device_info(device_id)
-
-    try:
-        device_id = device_info["objArg"]
-    except KeyError as err:
-        raise QbraidError(f"Device {device_id} does not have an associated objArg.") from err
+    warnings.warn(
+        "qbraid.device_wrapper() is deprecated. Please use \
+        qbraid.providers.QbraidProvider.get_device() instead.",
+        PendingDeprecationWarning,
+    )
     provider = QbraidProvider()
-    device_obj = provider.get_device(device_id)
-
-    devices_entrypoints = _get_entrypoints("qbraid.providers")
-
-    vendor = device_info["vendor"].lower()
-    ep = f"{vendor}.device"
-    device_wrapper_class = devices_entrypoints[ep].load()
-    return device_wrapper_class(device_obj)
+    return provider.get_device(device_id)
 
 
 def job_wrapper(qbraid_job_id: str):
-    """Retrieve a job from qBraid API using job ID and return job wrapper object.
+    """(DEPRECATED) Retrieve a job from qBraid API using job ID and return job wrapper object.
 
     Args:
         qbraid_job_id: qBraid Job ID
@@ -78,44 +46,10 @@ def job_wrapper(qbraid_job_id: str):
         :class:`~qbraid.providers.job.QuantumJob`: A wrapped quantum job-like object
 
     """
-    client = QuantumClient()
-    query = {"numResults": 1}
-    if client._is_valid_object_id(qbraid_job_id):
-        query["_id"] = qbraid_job_id
-    else:
-        query["qbraidJobId"] = qbraid_job_id
-
-    job_lst = client.search_jobs(query=query)
-
-    if len(job_lst) == 0:
-        raise QbraidError(f"{qbraid_job_id} is not a valid job ID.")
-
-    job_data = job_lst[0]
-
-    try:
-        vendor = job_data["vendor"]
-    except KeyError:
-        vendor = None
-
-    try:
-        vendor_device_id = job_data["vendorDeviceId"]
-        qbraid_device = device_wrapper(vendor_device_id)
-        vendor = qbraid_device.vendor.lower()
-    except (KeyError, QbraidError):
-        qbraid_device = None
-
-    if vendor is None:
-        raise QbraidError(f"Job {qbraid_job_id} does not have an associated vendor.")
-
-    status_str = job_data.get("qbraidStatus", job_data.get("status", "UNKNOWN"))
-    try:
-        vendor_job_id = job_data["vendorJobId"]
-    except KeyError as err:
-        raise QbraidError(f"Job {qbraid_job_id} does not have an associated vendorJobId.") from err
-
-    devices_entrypoints = _get_entrypoints("qbraid.providers")
-    ep = f"{vendor}.job"
-    job_wrapper_class = devices_entrypoints[ep].load()
-    return job_wrapper_class(
-        qbraid_job_id, vendor_job_id=vendor_job_id, device=qbraid_device, status=status_str
+    warnings.warn(
+        "qbraid.job_wrapper() is deprecated. Please use \
+        qbraid.providers.QbraidProvider.get_job() instead.",
+        PendingDeprecationWarning,
     )
+    provider = QbraidProvider()
+    return provider.get_job(qbraid_job_id)

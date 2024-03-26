@@ -13,17 +13,14 @@ Module containing top-level qbraid wrapper functionality. Each of these
 functions utilize entrypoints via ``pkg_resources``.
 
 """
-import openqasm3
-import pkg_resources
+import warnings
 
+import openqasm3
+
+from ._import import _load_entrypoint
 from ._qprogram import QPROGRAM
 from .exceptions import QbraidError
 from .inspector import get_program_type
-
-
-def _get_entrypoints(group: str):
-    """Returns a dictionary mapping each entry of ``group`` to its loadable entrypoint."""
-    return {entry.name: entry for entry in pkg_resources.iter_entry_points(group)}
 
 
 def circuit_wrapper(program: QPROGRAM):
@@ -53,6 +50,11 @@ def circuit_wrapper(program: QPROGRAM):
         :class:`~qbraid.QbraidError`: If the input circuit is not a supported quantum program.
 
     """
+    warnings.warn(
+        "qbraid.circuit_wrapper() is deprecated. Please use \
+        qbraid.programs.loads instead.",
+        PendingDeprecationWarning,
+    )
     if isinstance(program, openqasm3.ast.Program):
         program = openqasm3.dumps(program)
 
@@ -64,11 +66,11 @@ def circuit_wrapper(program: QPROGRAM):
             of type {type(program)}"
         ) from err
 
-    transpiler_entrypoints = _get_entrypoints("qbraid.programs")
-    if package not in transpiler_entrypoints:
+    try:
+        circuit_wrapper_class = _load_entrypoint("programs", package)
+    except Exception as err:
         raise QbraidError(
             f"Error applying circuit wrapper to quantum program of type {type(program)}"
-        )
+        ) from err
 
-    circuit_wrapper_class = transpiler_entrypoints[package].load()
     return circuit_wrapper_class(program)
