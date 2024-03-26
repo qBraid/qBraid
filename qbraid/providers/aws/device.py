@@ -241,9 +241,14 @@ class BraketDevice(QuantumDevice):
         shots = metadata.get("shots", 0)
         tags = metadata.get("tags", {})
         vendor_job_id = metadata["quantumTaskArn"]
-        job_id = self._init_job(vendor_job_id, [qbraid_circuit], shots, tags)
+        job_json = self.create_job(vendor_job_id, [qbraid_circuit], shots, tags)
+        job_id = job_json.get("qbraidJobId", job_json.get("_id"))
         return BraketQuantumTask(
-            job_id, vendor_job_id=vendor_job_id, device=self, vendor_job_obj=aws_quantum_task
+            job_id,
+            job_obj=aws_quantum_task,
+            job_json=job_json,
+            device=self,
+            circuits=[qbraid_circuit],
         )
 
     def run_batch(
@@ -279,13 +284,15 @@ class BraketDevice(QuantumDevice):
             shots = metadata.get("shots", 0)
             tags = metadata.get("tags", {})
             vendor_job_id = metadata["quantumTaskArn"]
-            job_id = self._init_job(vendor_job_id, [qbraid_circuit], shots, tags)
+            job_json = self.create_job(vendor_job_id, [qbraid_circuit], shots, tags)
+            job_id = job_json.get("qbraidJobId", job_json.get("_id"))
             aws_quantum_task_wrapper_list.append(
                 BraketQuantumTask(
                     job_id,
-                    vendor_job_id=vendor_job_id,
+                    job_obj=aws_quantum_task,
+                    job_json=job_json,
                     device=self,
-                    vendor_job_obj=aws_quantum_task,
+                    circuits=[qbraid_circuit],
                 )
             )
         return aws_quantum_task_wrapper_list

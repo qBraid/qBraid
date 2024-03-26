@@ -18,12 +18,13 @@ import json
 import logging
 import warnings
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Dict  # pylint: disable=unused-import
+from typing import TYPE_CHECKING, Any, Dict  # pylint: disable=unused-import
 
 from qbraid_core.services.quantum import QuantumClient, quantum_lib_proxy_state
 
 from qbraid.exceptions import QbraidError
 from qbraid.load_program import circuit_wrapper
+from qbraid.providers.enums import DeviceType
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 from .exceptions import ProgramValidationError, QbraidRuntimeError
@@ -222,15 +223,14 @@ class QuantumDevice(ABC):
             run_input = self._compile(run_input)
         return circuit_wrapper(run_input)
 
-    def _init_job(
+    def create_job(
         self,
         vendor_job_id: str,
         circuits: "qbraid.transpiler.QuantumProgram",
         shots: int,
         tags: Dict[str, str],
-    ) -> str:
-        """Initialize data dictionary for new qbraid job and
-        create associated MongoDB job document.
+    ) -> Dict[str, Any]:
+        """Create new qBraid job.
 
         Args:
             vendor_job_id: Job ID provided by device vendor
@@ -241,6 +241,15 @@ class QuantumDevice(ABC):
             The qbraid job ID associated with this job
 
         """
+        if self._device_type == DeviceType("FAKE"):
+            test_data = {
+                "qbraidJobId": f"{self.vendor.lower()}_test_id",
+                "vendorJobId": vendor_job_id,
+                "shots": shots,
+                "tags": json.dumps(tags),
+            }
+            return test_data
+
         client = QuantumClient()
 
         # One of the features of qBraid Quantum Jobs is the ability to send
@@ -292,8 +301,7 @@ class QuantumDevice(ABC):
             init_data["circuitBatchNumQubits"] = ([circuit.num_qubits for circuit in circuits],)
             init_data["circuitBatchDepth"] = [circuit.depth for circuit in circuits]
 
-        job = client.create_job(data=init_data)
-        return job.get("qbraidJobId", job.get("_id"))
+        return client.create_job(data=init_data)
 
     @abstractmethod
     def _transpile(self, run_input):

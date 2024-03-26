@@ -13,21 +13,36 @@ Module used for lazy loading of submodules.
 """
 import importlib
 import types
-from typing import Type
+from typing import Optional, Type
 
 import pkg_resources
 
+from .exceptions import QbraidError
 
-def _load_entrypoint(module: str, name: str) -> Type:
+
+def _load_entrypoint(module: str, name: str) -> Optional[Type]:
     """Load an entrypoint given its category and name, optionally with a vendor.
 
     Args:
-        module (str): module of entrypoint to load, e.g., "programs" or "providers".
-        name (str): name of the entrypoint to load within the module.
+        module (str): Module of entrypoint to load, e.g., "programs" or "providers".
+        name (str): Name of the entrypoint to load within the module.
+
+    Returns:
+        Optional[Type]: The loaded entry point class, or None if not found or failed to load.
+
+    Raises:
+        ValueError: If the specified entry point cannot be found.
+        QbraidError: If the specifiedentry point fails to load.
     """
     group = f"qbraid.{module}"
-    entrypoints = {entry.name: entry for entry in pkg_resources.iter_entry_points(group)}
-    return entrypoints.get(name).load()
+    try:
+        entrypoints = {entry.name: entry for entry in pkg_resources.iter_entry_points(group)}
+        entry_point = entrypoints[name]
+        return entry_point.load()
+    except KeyError as err:
+        raise ValueError(f"Entrypoint '{name}' not found in module '{module}'.") from err
+    except Exception as err:
+        raise QbraidError(f"Failed to load entrypoint '{name}' from module '{module}'.") from err
 
 
 class LazyLoader(types.ModuleType):

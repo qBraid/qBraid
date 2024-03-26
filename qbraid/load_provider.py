@@ -15,7 +15,7 @@ functions utilize entrypoints via ``pkg_resources``.
 """
 import warnings
 
-from .providers import QbraidProvider
+from .providers import QbraidProvider, QuantumJob
 
 
 def device_wrapper(device_id: str):
@@ -48,8 +48,7 @@ def job_wrapper(qbraid_job_id: str):
     """
     warnings.warn(
         "qbraid.job_wrapper() is deprecated. Please use \
-        qbraid.providers.QbraidProvider.get_job() instead.",
+        qbraid.providers.QuantumJob.retrieve() instead.",
         PendingDeprecationWarning,
     )
-    provider = QbraidProvider()
-    return provider.get_job(qbraid_job_id)
+    return QuantumJob.retrieve(qbraid_job_id)
