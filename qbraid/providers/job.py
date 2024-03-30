@@ -58,8 +58,8 @@ class QuantumJob(ABC):
                 "QuantumJob is an abstract class and cannot be instantiated directly."
             )
         self._job_id = job_id
-        self._provider = provider or QbraidProvider()
-        self._client = self._provider.client
+        self._provider = provider
+        self._client = None
 
         job_data = job_json or self._fetch_metadata()
         self._cache_metadata = job_data
@@ -79,11 +79,15 @@ class QuantumJob(ABC):
     @property
     def provider(self) -> QbraidProvider:
         """Return the quantum client object."""
+        if self._provider is None:
+            self._provider = QbraidProvider()
         return self._provider
 
     @property
     def client(self) -> QuantumClient:
         """Return the quantum client object."""
+        if self._client is None:
+            self._client = self.provider.client
         return self._client
 
     @property
@@ -196,6 +200,9 @@ class QuantumJob(ABC):
             The metadata associated with this job
 
         """
+        if self._device and self._device._device_type.name == "FAKE":
+            return self._cache_metadata
+
         client = QuantumClient()
         body = {"_id": self.id} if client._is_valid_object_id(self.id) else {"qbraidJobId": self.id}
         # Two status variables so we can track both qBraid and vendor status.
