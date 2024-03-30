@@ -44,13 +44,19 @@ Exceptions
    JobError
    JobStateError
    ProgramValidationError
-   QbraidDeviceNotFoundError
    QbraidRuntimeError
+   ResourceNotFoundError
 
 """
 from .device import QuantumDevice
 from .enums import DeviceStatus, DeviceType, JobStatus
-from .exceptions import JobError, JobStateError, ProgramValidationError, QbraidRuntimeError
+from .exceptions import (
+    JobError,
+    JobStateError,
+    ProgramValidationError,
+    QbraidRuntimeError,
+    ResourceNotFoundError,
+)
 from .job import QuantumJob
-from .provider import QbraidDeviceNotFoundError, QbraidProvider
+from .provider import QbraidProvider
 from .result import QuantumJobResult

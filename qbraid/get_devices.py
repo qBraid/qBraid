@@ -15,9 +15,10 @@ Module to retrieve, update, and display information about devices
 supported by the qBraid SDK.
 
 """
-
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+
+from qbraid_core import QbraidSession
+from qbraid_core.services.quantum import QuantumClient, process_device_data
 
 try:
     from IPython.display import HTML, clear_output, display
@@ -25,7 +26,6 @@ except ImportError:
     pass
 
 from ._display import running_in_jupyter, update_progress_bar
-from .api import QbraidSession
 from .load_provider import device_wrapper
 
 if TYPE_CHECKING:
@@ -35,8 +35,8 @@ if TYPE_CHECKING:
 def refresh_devices() -> None:
     """Refreshes status for all qbraid supported devices. Requires credential for each vendor."""
 
-    session = QbraidSession()
-    devices = session.get("/public/lab/get-devices", params={}).json()
+    client = QuantumClient()
+    devices = client.search_devices()
     count = 0
     num_devices = len(devices)  # i.e. number of iterations
     for document in devices:
@@ -47,7 +47,7 @@ def refresh_devices() -> None:
             try:
                 device = device_wrapper(qbraid_id)
                 status = device.status().name
-                session.put("/lab/update-device", data={"qbraid_id": qbraid_id, "status": status})
+                client.update_device(data={"qbraid_id": qbraid_id, "status": status})
             except Exception:  # pylint: disable=broad-except
                 pass
 
@@ -71,32 +71,7 @@ def _get_device_data(query: Dict[str, Any]) -> Tuple[List[List[str]], int]:
     # encode the query. This is because certain queries contain regular
     # expressions which cannot be encoded in GET request `params`.
     devices = session.post("/public/lab/get-devices", json=query).json()
-
-    device_data = []
-    tot_dev = 0
-    min_lag = 1e7
-    for document in devices:
-        qbraid_id = document["qbraid_id"]
-        name = document["name"]
-        provider = document["provider"]
-        status_refresh = document["statusRefresh"]
-        timestamp = datetime.utcnow()
-        if status_refresh is not None:
-            format_datetime = str(status_refresh)[:10].split("-") + str(status_refresh)[
-                11:19
-            ].split(":")
-            format_datetime_int = [int(x) for x in format_datetime]
-            mk_datime = datetime(*format_datetime_int)
-            lag = (timestamp - mk_datime).seconds
-            min_lag = min(lag, min_lag)
-        status = document["status"]
-        tot_dev += 1
-        device_data.append([provider, name, qbraid_id, status])
-    if len(device_data) == 0:
-        return [], 0  # No results matching given criteria
-    device_data.sort()
-    lag_minutes, _ = divmod(min_lag, 60)
-    return device_data, int(lag_minutes)
+    return process_device_data(devices)
 
 
 def _display_basic(data: List[str], message: str) -> None:
@@ -226,26 +201,8 @@ def get_devices(
     if refresh:
         refresh_devices()
     query = {} if filters is None else filters
-    device_data, lag = _get_device_data(query)
-
-    if len(device_data) == 0:
-        align = "center"
-        msg = "No results matching given criteria"
-    else:
-        align = "right"
-        hours, minutes = divmod(lag, 60)
-        min_10, _ = divmod(minutes, 10)
-        min_display = min_10 * 10
-        if hours > 0:
-            if minutes > 30:
-                msg = f"Device status updated {hours}.5 hours ago"
-            else:
-                hour_s = "hour" if hours == 1 else "hours"
-                msg = f"Device status updated {hours} {hour_s} ago"
-        else:
-            if minutes < 10:
-                min_display = minutes
-            msg = f"Device status updated {min_display} minutes ago"
+    device_data, msg = _get_device_data(query)
+    align = "center" if len(device_data) == 0 else "right"
 
     if running_in_jupyter():
         return _display_jupyter(device_data, msg, align=align)

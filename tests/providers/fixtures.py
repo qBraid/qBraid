@@ -16,8 +16,7 @@ import braket.circuits
 import cirq
 import numpy as np
 import qiskit
-
-from qbraid.api import QbraidSession
+from qbraid_core import QbraidSession
 
 
 def device_wrapper_inputs(vendor: str):

@@ -18,12 +18,14 @@ import re
 from abc import abstractmethod
 from typing import TYPE_CHECKING, List, Union
 
+from qbraid.providers.provider import QuantumProvider
+
 if TYPE_CHECKING:
     import qiskit_ibm_provider
     import qiskit_ibm_runtime
 
 
-class QiskitRemoteService:
+class QiskitRemoteService(QuantumProvider):
     """
     This class is responsible for managing the interactions and
     authentications with the IBM Quantum services.

@@ -24,8 +24,10 @@ try:
 except ImportError:
     pass
 
+from qbraid_core import QbraidSession
+from qbraid_core.services.quantum.adapter import _job_status_msg
+
 from ._display import running_in_jupyter, update_progress_bar
-from .api import QbraidSession
 from .load_provider import job_wrapper
 
 
@@ -102,7 +104,6 @@ def _get_jobs_data(
 
     session = QbraidSession() if not session else session
     jobs = session.post("/get-user-jobs", json=query).json()
-    max_results = query.pop("numResults", 10)
     count = 0
     num_jobs = len(jobs)
     job_data = []
@@ -134,18 +135,8 @@ def _get_jobs_data(
                 pass
         job_data.append([job_id, created_at, status])
 
-    if num_jobs == 0:  # Design choice whether to display anything here or not
-        if len(query) == 0:
-            msg = f"No jobs found for user {session.user_email}"
-        else:
-            msg = "No jobs found matching given criteria"
-    elif num_jobs < max_results:
-        msg = f"Displaying {num_jobs}/{num_jobs} jobs matching query"
-    elif len(query) > 0:
-        s = "s" if num_jobs > 1 else ""
-        msg = f"Displaying {num_jobs} most recent job{s} matching query"
-    else:
-        msg = f"Displaying {num_jobs} most recent jobs"
+    msg = _job_status_msg(num_jobs, query)
+
     return job_data, msg
 
 

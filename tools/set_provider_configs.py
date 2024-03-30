@@ -16,11 +16,8 @@ custom user configurations and required run-command pre-sets.
 import configparser
 import os
 
-import pytest
+from qbraid_core import QbraidSession
 from qiskit_ibm_provider import IBMProvider
-
-from qbraid.api.exceptions import AuthError, RequestsApiError
-from qbraid.api.session import DEFAULT_CONFIG_PATH, QbraidSession
 
 aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
 aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
@@ -39,7 +36,7 @@ qbraid_api_key = os.getenv("QBRAID_API_KEY")
 qbraid_user = os.getenv("JUPYTERHUB_USER")
 
 # Skip tests if IBM/AWS account auth/creds not configured
-skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
+skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of qBraid storage)"
 
 config_lst = [
@@ -60,8 +57,14 @@ def set_config():
     hard-coded and secret values read from environment variables.
 
     Note: this function is used for testing purposes only."""
+    if skip_remote_tests:
+        return
 
     IBMProvider.save_account(token=ibmq_token, overwrite=True)
+    session = QbraidSession(
+        user_email=qbraid_user, refresh_token=qbraid_refresh_token, api_key=qbraid_api_key
+    )
+    session.save_config()
 
     for file in [aws_config_path, aws_cred_path, qiskitrc_path]:
         try:
@@ -84,72 +87,5 @@ def set_config():
             config.write(cfgfile)
 
 
-def _remove_id_token_qbraidrc():
-    """Remove id-token from qbraidrc file."""
-    try:
-        with open(DEFAULT_CONFIG_PATH, "r") as file:
-            lines = file.readlines()
-
-        with open(DEFAULT_CONFIG_PATH, "w") as file:
-            for line in lines:
-                if not line.startswith("id-token"):
-                    file.write(line)
-    except FileNotFoundError:
-        pass
-
-
-if not skip_remote_tests:
+if __name__ == "__main__":
     set_config()
-
-
-def test_api_error():
-    """Test raising error when making invalid API request."""
-    with pytest.raises(RequestsApiError):
-        session = QbraidSession()
-        session.request("POST", "not a url")
-
-
-def test_qbraid_session_from_args():
-    """Test initializing QbraidSession with attributes set from user-provided values."""
-    refresh_token = "test123"
-    session = QbraidSession(refresh_token=refresh_token)
-    assert session.refresh_token == refresh_token
-    del session
-
-
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
-def test_qbraid_config_overwrite_with_id_token():
-    """Test setting/saving id-token and then test overwritting config value"""
-    dummy_id_token = "alice123"
-    dummy_id_token_overwrite = "bob456"
-    session = QbraidSession(id_token=dummy_id_token)
-    assert session.id_token == dummy_id_token
-    session.save_config()
-    assert session.get_config_variable("id-token") == dummy_id_token
-    session.save_config(id_token=dummy_id_token_overwrite)
-    assert session.get_config_variable("id-token") == dummy_id_token_overwrite
-    _remove_id_token_qbraidrc()
-
-
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
-def test_qbraid_session_api_key():
-    """Test initializing QbraidSession without args and then saving config."""
-    session = QbraidSession()
-    session.save_config(api_key=qbraid_api_key, user_email=qbraid_user)
-    assert session.get_config_variable("api-key") == qbraid_api_key
-
-
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
-def test_qbraid_session_save_config():
-    """Test initializing QbraidSession without args and then saving config."""
-    session = QbraidSession()
-    session.save_config(user_email=qbraid_user, refresh_token=qbraid_refresh_token)
-    assert session.get_config_variable("email") == qbraid_user
-    assert session.get_config_variable("refresh-token") == qbraid_refresh_token
-
-
-def test_qbraid_session_credential_mismatch_error():
-    """Test initializing QbraidSession with mismatched email and apiKey."""
-    session = QbraidSession(api_key=qbraid_api_key, user_email="fakeuser@email.com")
-    with pytest.raises(AuthError):
-        session.save_config()

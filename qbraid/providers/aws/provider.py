@@ -19,15 +19,16 @@ from typing import TYPE_CHECKING, List, Optional
 import boto3
 from boto3.session import Session
 from braket.aws import AwsDevice, AwsSession
+from qbraid_core.services.quantum import quantum_lib_proxy_state
 
-from qbraid.api import QbraidSession
 from qbraid.exceptions import QbraidError
+from qbraid.providers.provider import QuantumProvider
 
 if TYPE_CHECKING:
     import braket.aws
 
 
-class BraketProvider:
+class BraketProvider(QuantumProvider):
     """
     This class is responsible for managing the interactions and
     authentications with the AWS services.
@@ -109,11 +110,11 @@ class BraketProvider:
 
         return AwsDevice.get_devices(aws_session=aws_session, statuses=statuses, **kwargs)
 
-    def get_device(self, device_arn: str) -> "braket.aws.AwsDevice":
+    def get_device(self, device_id: str) -> "braket.aws.AwsDevice":
         """Returns the AWS device."""
-        region_name = self._get_region_name(device_arn)
+        region_name = self._get_region_name(device_id)  # deviceArn
         aws_session = self._get_aws_session(region_name=region_name)
-        return AwsDevice(arn=device_arn, aws_session=aws_session)
+        return AwsDevice(arn=device_id, aws_session=aws_session)
 
     def get_tasks_by_tag(
         self, key: str, values: Optional[List[str]] = None, region_names: Optional[List[str]] = None
@@ -136,7 +137,13 @@ class BraketProvider:
             QbraidError: If the function is called within a qBraid quantum job environment
                          where AWS S3 requests are not supported.
         """
-        if QbraidSession._qbraid_jobs_enabled():
+        try:
+            jobs_state = quantum_lib_proxy_state("braket")
+            jobs_enabled = jobs_state.get("enabled", False)
+        except ValueError:
+            jobs_enabled = False
+
+        if jobs_enabled:
             raise QbraidError("AWS S3 requests not supported by qBraid quantum jobs.")
 
         region_names = (

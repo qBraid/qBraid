@@ -145,15 +145,11 @@ class QiskitBackend(QuantumDevice):
             tags_lst = []
         tags = {tag: "*" for tag in tags_lst}
         qiskit_job_id = qiskit_job.job_id()
-        qbraid_job_id = (
-            self._init_job(qiskit_job_id, [qbraid_circuit], shots, tags)
-            if self._device_type != DeviceType("FAKE")
-            else "qbraid_test_id"
+        job_json = self.create_job(qiskit_job_id, [qbraid_circuit], shots, tags)
+        job_id = job_json.get("qbraidJobId", job_json.get("_id"))
+        return QiskitJob(
+            job_id, job_obj=qiskit_job, job_json=job_json, device=self, circuits=[qbraid_circuit]
         )
-        qbraid_job = QiskitJob(
-            qbraid_job_id, vendor_job_id=qiskit_job_id, device=self, vendor_job_obj=qiskit_job
-        )
-        return qbraid_job
 
     def run_batch(self, run_input, **kwargs):
         """Runs circuit(s) on qiskit backend via :meth:`~qiskit.execute`
@@ -189,14 +185,12 @@ class QiskitBackend(QuantumDevice):
             tags_lst = []
         tags = {tag: "*" for tag in tags_lst}
         qiskit_job_id = qiskit_job.job_id()
-
-        # to change to batch
-        qbraid_job_id = (
-            self._init_job(qiskit_job_id, qbraid_circuit_batch, shots, tags)
-            if self._device_type != DeviceType("FAKE")
-            else "qbraid_test_id"
+        job_json = self.create_job(qiskit_job_id, qbraid_circuit_batch, shots, tags)
+        job_id = job_json.get("qbraidJobId", job_json.get("_id"))
+        return QiskitJob(
+            job_id,
+            job_obj=qiskit_job,
+            job_json=job_json,
+            device=self,
+            circuits=qbraid_circuit_batch,
         )
-        qbraid_job = QiskitJob(
-            qbraid_job_id, vendor_job_id=qiskit_job_id, device=self, vendor_job_obj=qiskit_job
-        )
-        return qbraid_job

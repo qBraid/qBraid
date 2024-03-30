@@ -14,19 +14,19 @@
 Module defining abstract QuantumDevice Class
 
 """
-
 import json
+import logging
 import warnings
 from abc import ABC, abstractmethod
-from datetime import datetime
-from typing import TYPE_CHECKING, Dict  # pylint: disable=unused-import
+from typing import TYPE_CHECKING, Any, Dict  # pylint: disable=unused-import
 
-from qbraid.api import ApiError, QbraidSession
+from qbraid_core.services.quantum import QuantumClient, quantum_lib_proxy_state
+
 from qbraid.exceptions import QbraidError
 from qbraid.load_program import circuit_wrapper
+from qbraid.providers.enums import DeviceType
 from qbraid.transpiler.exceptions import CircuitConversionError
 
-from .enums import JobStatus
 from .exceptions import ProgramValidationError, QbraidRuntimeError
 
 if TYPE_CHECKING:
@@ -223,15 +223,14 @@ class QuantumDevice(ABC):
             run_input = self._compile(run_input)
         return circuit_wrapper(run_input)
 
-    def _init_job(
+    def create_job(
         self,
         vendor_job_id: str,
         circuits: "qbraid.transpiler.QuantumProgram",
         shots: int,
         tags: Dict[str, str],
-    ) -> str:
-        """Initialize data dictionary for new qbraid job and
-        create associated MongoDB job document.
+    ) -> Dict[str, Any]:
+        """Create new qBraid job.
 
         Args:
             vendor_job_id: Job ID provided by device vendor
@@ -242,51 +241,58 @@ class QuantumDevice(ABC):
             The qbraid job ID associated with this job
 
         """
-        session = QbraidSession()
-
-        vendor = self.vendor.lower()
-        # One of the features of qBraid Quantum Jobs is the ability to send
-        # jobs without any credentials using the qBraid Lab platform. If the
-        # qBraid Quantum Jobs proxy is enabled, a document has already been
-        # created for this job. So, instead creating a duplicate, we query the
-        # user jobs for the `vendorJobId` and return the correspondong `qbraidJobId`.
-        if session._qbraid_jobs_enabled(vendor):
-            try:
-                job = session.post("/get-user-jobs", json={"vendorJobId": vendor_job_id}).json()[0]
-                return job.get("qbraidJobId", job.get("_id"))
-            except IndexError as err:
-                raise ApiError(f"{self.vendor} job {vendor_job_id} not found") from err
-
-        # get qBraid device ID. Temporary workaround until we have a better way
-        qbraid_id = session.get("/public/lab/get-devices", params={"objArg": self.id}).json()[0][
-            "qbraid_id"
-        ]
-
-        # Create a new document for the user job. The qBraid API creates a unique
-        # Job ID, which is collected in the response. We use dummy variables for
-        # each of the status fields, which will be updated via the `get_job_data`
-        # function upon instantiation of the `QuantumJob` object.
         init_data = {
-            "qbraidJobId": "",
             "vendorJobId": vendor_job_id,
-            "qbraidDeviceId": qbraid_id,
-            "vendorDeviceId": self.id,
+            "qbraidDeviceId": None,
             "shots": shots,
             "tags": json.dumps(tags),
-            "createdAt": datetime.utcnow(),
-            "status": "UNKNOWN",  # this will be set after we get back the job ID and check status
-            "qbraidStatus": JobStatus.INITIALIZING.name,
-            "email": session.user_email,
         }
 
         if len(circuits) == 1:
+            circuit = circuits[0]
+            try:
+                init_data["openQasm"] = circuit.transpile("qasm3")
+            except Exception as err:  # pylint: disable=broad-exception-caught
+                logging.info(
+                    "Error converting circuit to OpenQASM 3: %s. "
+                    "Field will be ommited in job metadata",
+                    err,
+                )
             init_data["circuitNumQubits"] = circuits[0].num_qubits
             init_data["circuitDepth"] = circuits[0].depth
         else:
             init_data["circuitBatchNumQubits"] = ([circuit.num_qubits for circuit in circuits],)
             init_data["circuitBatchDepth"] = [circuit.depth for circuit in circuits]
 
-        return session.post("/init-job", data=init_data).json()
+        if self._device_type == DeviceType("FAKE"):
+            init_data["qbraidJobId"] = f"{self.vendor.lower()}_test_id"
+            return init_data
+
+        client = QuantumClient()
+
+        # One of the features of qBraid Quantum Jobs is the ability to send
+        # jobs without any credentials using the qBraid Lab platform. If the
+        # qBraid Quantum Jobs proxy is enabled, a document has already been
+        # created for this job. So, instead creating a duplicate, we query the
+        # user jobs for the `vendorJobId` and return the correspondong `qbraidJobId`.
+        try:
+            jobs_state = quantum_lib_proxy_state(self._run_package)
+            jobs_enabled = jobs_state.get("enabled", False)
+        except ValueError:
+            jobs_enabled = False
+
+        if jobs_enabled:
+            try:
+                return client.get_job(vendor_id=vendor_job_id)
+            except IndexError as err:
+                raise QbraidRuntimeError(f"{self.vendor} job {vendor_job_id} not found") from err
+
+        # get qBraid device ID. Temporary workaround until we have a better way
+        device = client.get_device(vendor_id=self.id)
+        qbraid_id = device["qbraid_id"]
+        init_data["qbraidDeviceId"] = qbraid_id
+
+        return client.create_job(data=init_data)
 
     @abstractmethod
     def _transpile(self, run_input):
