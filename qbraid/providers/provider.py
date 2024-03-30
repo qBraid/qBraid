@@ -15,6 +15,7 @@ Module for configuring provider credentials and authentication.
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, List, Optional
 
+from qbraid_core.exceptions import AuthError
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
 
 from qbraid._import import _load_entrypoint
@@ -65,7 +66,7 @@ class QbraidProvider(QuantumProvider):
             aws_secret_access_key (str, optional): AWS secret access token. Defaults to None.
             qiskit_ibm_token (str, optional): IBM Quantum token. Defaults to None.
         """
-        self._client = client or QuantumClient()
+        self._client = client
         aws_access_key_id = kwargs.get("aws_access_key_id", None)
         aws_secret_access_key = kwargs.get("aws_secret_access_key", None)
         qiskit_ibm_token = kwargs.get("qiskit_ibm_token", None)
@@ -79,6 +80,13 @@ class QbraidProvider(QuantumProvider):
     @property
     def client(self):
         """Return the QuantumClient object."""
+        if self._client is None:
+            try:
+                self._client = QuantumClient()
+            except AuthError as err:
+                raise ResourceNotFoundError(
+                    "Failed to authenticate with the Quantum service."
+                ) from err
         return self._client
 
     def _get_aws_provider(self, aws_access_key_id, aws_secret_access_key):
