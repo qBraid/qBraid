@@ -163,7 +163,7 @@ class QbraidProvider(QuantumProvider):
             QDEVICE: the quantum device corresponding to the given ID
 
         Raises:
-            QbraidDeviceNotFoundError: if no device could be found
+            ResourceNotFoundError: if no device could be found
         """
         vendor = vendor or self._get_vendor(vendor_device_id)
 
