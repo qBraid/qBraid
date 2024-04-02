@@ -65,7 +65,7 @@ def test_get_quantum_task_cost_cancelled(braket_most_busy, braket_circuit):
 
     # assert "Current state is CANCELLING" in str(excinfo.value)
 
-    qbraid_job.wait_for_final_state()
+    qbraid_job.wait_for_final_state(timeout=30)
     assert get_quantum_task_cost(task_arn, aws_session) == Decimal(0)
 
 

@@ -23,6 +23,10 @@ class QbraidRuntimeError(QbraidError):
     """Base class for errors raised while submitting a quantum job."""
 
 
+class ResourceNotFoundError(QbraidError):
+    """Exception raised when the desired resource could not be found."""
+
+
 class JobError(QbraidError):
     """Base class for errors raised by Jobs."""
 

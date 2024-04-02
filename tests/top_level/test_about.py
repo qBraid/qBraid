@@ -37,10 +37,10 @@ def test_about():
 
     # Verify core dependencies are mentioned in the output
     assert "Core Dependencies" in output
+    assert "qbraid_core:" in output
     assert "networkx:" in output
     assert "numpy:" in output
     assert "openqasm3:" in output
-    assert "requests:" in output
     assert "ply:" in output
 
     # Verify the presence of optional dependencies section

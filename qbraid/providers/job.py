@@ -16,12 +16,15 @@ import logging
 from abc import ABC, abstractmethod
 from enum import Enum
 from time import sleep, time
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
-from qbraid.api import QbraidSession
+from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
+
+from qbraid._import import _load_entrypoint
 
 from .enums import JOB_FINAL, JobStatus
-from .exceptions import JobError
+from .exceptions import JobError, ResourceNotFoundError
+from .provider import QbraidProvider
 from .status_maps import STATUS_MAP
 
 if TYPE_CHECKING:
@@ -31,22 +34,42 @@ if TYPE_CHECKING:
 class QuantumJob(ABC):
     """Abstract interface for job-like classes."""
 
+    @classmethod
+    def retrieve(cls, job_id: str, **kwargs) -> "qbraid.providers.QuantumJob":
+        """Create a QuantumJob object from a job_id."""
+        try:
+            vendor = job_id.split("_")[0]
+            job_class = _load_entrypoint("providers", f"{vendor}.job")
+        except (ValueError, IndexError) as err:
+            raise ResourceNotFoundError(f"Invalid Job Id {job_id}.") from err
+        return job_class(job_id, **kwargs)
+
     def __init__(  # pylint: disable=too-many-arguments
         self,
         job_id: str,
-        vendor_job_id: Optional[str] = None,
+        job_obj: Optional[Any] = None,
+        job_json: Optional[Dict[str, Any]] = None,
         device: "Optional[qbraid.providers.QuantumDevice]" = None,
-        vendor_job_obj: Optional[Any] = None,
-        status: Optional[Union[str, JobStatus]] = None,
+        circuits: "Optional[List[qbraid.programs.QuantumProgram]]" = None,
+        provider: Optional[QbraidProvider] = None,
     ):
-        self._vendor = None
-        self._cache_metadata = None
-        self._cache_status = self._map_status(status)
+        if type(self) is QuantumJob:  # pylint: disable=unidiomatic-typecheck
+            raise NotImplementedError(
+                "QuantumJob is an abstract class and cannot be instantiated directly."
+            )
         self._job_id = job_id
-        self._vendor_job_id = vendor_job_id
-        self._device = device
-        self._job = vendor_job_obj or self._get_job()
+        self._provider = provider
+        self._client = None
+
+        job_data = job_json or self._fetch_metadata()
+        self._cache_metadata = job_data
+        self._cache_status = job_data.get("qbraidStatus", job_data.get("status"))
+        self._vendor = job_data.get("vendor")
+        self._vendor_job_id = job_data.get("vendorJobId")
+        self._device = device or self.provider.get_device(job_data["qbraidDeviceId"])
+        self._job = job_obj or self._get_job()
         self._status_map = STATUS_MAP[self.vendor]
+        self._circuits = circuits
 
     @property
     def id(self) -> str:  # pylint: disable=invalid-name
@@ -54,10 +77,24 @@ class QuantumJob(ABC):
         return self._job_id
 
     @property
+    def provider(self) -> QbraidProvider:
+        """Return the quantum client object."""
+        if self._provider is None:
+            self._provider = QbraidProvider()
+        return self._provider
+
+    @property
+    def client(self) -> QuantumClient:
+        """Return the quantum client object."""
+        if self._client is None:
+            self._client = self.provider.client
+        return self._client
+
+    @property
     def vendor(self) -> str:
         """Get job vendor."""
         if self._vendor is not None:
-            return self._vendor
+            return self._vendor.upper()
 
         try:
             vendor = self._cache_metadata["vendor"]
@@ -79,31 +116,26 @@ class QuantumJob(ABC):
     def device(self) -> "qbraid.providers.QuantumDevice":
         """Returns the qbraid QuantumDevice object associated with this job."""
         if self._device is None:
-            self._fetch_and_set_device()
+            qbraid_device_id = self._cache_metadata["qbraidDeviceId"]
+            self._device = self.client.get_device(qbraid_device_id)
         return self._device
 
-    def _fetch_and_set_device(self) -> None:
-        """Fetches device id from the server and sets the device object."""
-        session = QbraidSession()
-        job_lst = session.post(
-            "/get-user-jobs", json={"qbraidJobId": self.id, "numResults": 1}
-        ).json()
+    def _fetch_metadata(self) -> Dict[str, Any]:
+        first_error = None
 
-        if len(job_lst) == 0:
-            job_lst = session.post("/get-user-jobs", json={"_id": self.id, "numResults": 1}).json()
+        # Attempt to get the device data first with the qbraid_id and then with the vendor_id
+        get_job_functions = [
+            lambda: self.client.get_job(qbraid_id=self.id),
+            lambda: self.client.get_job(object_id=self.id),
+        ]
 
-            if len(job_lst) == 0:
-                raise JobError(f"Could not find device associated with job {self.id}.")
+        for get_job_function in get_job_functions:
+            try:
+                return get_job_function()
+            except (ValueError, QuantumServiceRequestError) as err:
+                first_error = first_error or err
 
-        job_data = job_lst[0]
-
-        try:
-            import qbraid  # pylint: disable=import-outside-toplevel
-
-            vendor_device_id = job_data["vendorDeviceId"]
-            self._device = qbraid.device_wrapper(vendor_device_id)
-        except Exception as err:  # pylint: disable=broad-except
-            raise JobError(f"Could not find device associated with job {self.id}.") from err
+        raise ResourceNotFoundError(f"Quantum Job {self.id} not found.") from first_error
 
     @staticmethod
     def _map_status(status: Optional[Union[str, JobStatus]] = None) -> JobStatus:
@@ -158,7 +190,7 @@ class QuantumJob(ABC):
             )
         return qbraid_status
 
-    def _post_job_data(self, update: Optional[dict] = None) -> dict:
+    def _post_job_data(self, update: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Retreives job metadata and optionally updates document.
 
         Args:
@@ -168,13 +200,16 @@ class QuantumJob(ABC):
             The metadata associated with this job
 
         """
-        session = QbraidSession()
-        body = {"_id": self.id, "qbraidJobId": self.id}
+        if self._device and self._device._device_type.name == "FAKE":
+            return self._cache_metadata
+
+        client = QuantumClient()
+        body = {"_id": self.id} if client._is_valid_object_id(self.id) else {"qbraidJobId": self.id}
         # Two status variables so we can track both qBraid and vendor status.
         if update is not None and "status" in update and "qbraidStatus" in update:
             body["status"] = update["status"]
             body["qbraidStatus"] = update["qbraidStatus"]
-        metadata = session.put("/update-job", data=body).json()
+        metadata = client.update_job(data=body)
         if "qbraidJobId" not in metadata:
             metadata["qbraidJobId"] = metadata.get("_id")
         return metadata
@@ -188,12 +223,12 @@ class QuantumJob(ABC):
             self._cache_status = self._map_status(self._cache_metadata["qbraidStatus"])
         return self._cache_metadata
 
-    def wait_for_final_state(self, timeout=None, poll_interval=5) -> None:
+    def wait_for_final_state(self, timeout: Optional[int] = None, poll_interval: int = 5) -> None:
         """Poll the job status until it progresses to a final state.
 
         Args:
             timeout: Seconds to wait for the job. If ``None``, wait indefinitely.
-            poll_interval: Seconds between queries.
+            poll_interval: Seconds between queries. Defaults to 5 seconds.
 
         Raises:
             JobError: If the job does not reach a final state before the specified timeout.

@@ -76,8 +76,8 @@ from .inspector import get_program_type
 from .load_program import circuit_wrapper
 from .load_provider import device_wrapper, job_wrapper
 
-# TODO: Lazy loads break docs build, so for now, only loading if sphinx is installed. However,
-# this should instead be implemented as skip as sphinx config or in skip_member() in conf.py.
+# TODO: Lazy loads break docs build, so for now, only loading if sphinx is not installed. However,
+# this should instead be implemented as skip in sphinx config or in skip_member() in conf.py.
 if "sphinx" not in sys.modules:
     # lazy load interface and visualization modules.
     interface = LazyLoader("qbraid.interface", globals())

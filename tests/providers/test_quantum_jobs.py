@@ -15,8 +15,8 @@ Unit tests for quantum jobs functions and data types
 import pytest
 
 from qbraid import job_wrapper
-from qbraid.exceptions import QbraidError
 from qbraid.providers.enums import JobStatus
+from qbraid.providers.exceptions import ResourceNotFoundError
 from qbraid.providers.job import QuantumJob
 
 status_data = [
@@ -87,5 +87,5 @@ def test_map_status_raises():
 
 def test_job_wrapper_id_error():
     """Test raising job wrapper error due to invalid job ID."""
-    with pytest.raises(QbraidError):
+    with pytest.raises(ResourceNotFoundError):
         job_wrapper("Id123")
