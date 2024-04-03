@@ -53,13 +53,28 @@ from .exceptions import QbraidError
 from .get_devices import get_devices, refresh_devices
 from .get_jobs import get_jobs
 
-# TODO: Lazy loads break docs build, so for now, only loading if sphinx is not installed. However,
-# this should instead be implemented as skip in sphinx config or in skip_member() in conf.py.
-if "sphinx" not in sys.modules:
-    # lazy load sub-modules
-    compiler = LazyLoader("qbraid.compiler", globals())
-    interface = LazyLoader("qbraid.interface", globals())
-    programs = LazyLoader("qbraid.programs", globals())
-    providers = LazyLoader("qbraid.providers", globals())
-    transpiler = LazyLoader("qbraid.transpiler", globals())
-    visualization = LazyLoader("qbraid.visualization", globals())
+if "sphinx" in sys.modules:
+    from . import compiler, interface, programs, providers, transpiler, visualization
+else:
+    compiler = LazyLoader("compiler", globals(), "qbraid.compiler")
+    interface = LazyLoader("interface", globals(), "qbraid.interface")
+    programs = LazyLoader("programs", globals(), "qbraid.programs")
+    providers = LazyLoader("providers", globals(), "qbraid.providers")
+    transpiler = LazyLoader("transpiler", globals(), "qbraid.transpiler")
+    visualization = LazyLoader("visualization", globals(), "qbraid.visualization")
+
+
+__all__ = [
+    "about",
+    "compiler",
+    "get_devices",
+    "get_jobs",
+    "interface",
+    "LazyLoader",
+    "programs",
+    "providers",
+    "QbraidError",
+    "refresh_devices",
+    "transpiler",
+    "visualization",
+]

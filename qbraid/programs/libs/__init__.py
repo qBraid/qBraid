@@ -15,7 +15,7 @@ various quantum software libraries and program types.
 .. currentmodule:: qbraid.programs.libs
 
 Submodules
------------
+------------
 
 .. autosummary::
    :toctree: ../stubs/
@@ -30,3 +30,21 @@ Submodules
    qiskit
 
 """
+import importlib
+
+_qbraid = importlib.import_module("qbraid.programs._import")
+_PROGRAM_LIBS = getattr(_qbraid, "QPROGRAM_LIBS", [])
+
+submodules = []
+base_path = "qbraid.programs.libs."
+
+for lib in _PROGRAM_LIBS:
+    try:
+        imported_lib = importlib.import_module(base_path + lib)
+        submodules.append(lib)
+        globals()[lib] = imported_lib
+
+    except ImportError:
+        pass
+
+__all__ = submodules

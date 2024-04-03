@@ -33,6 +33,7 @@ Exceptions
    :toctree: ../stubs/
 
    VisualizationError
+
 """
 from .draw_circuit import circuit_drawer
 from .draw_qasm3 import qasm3_drawer
