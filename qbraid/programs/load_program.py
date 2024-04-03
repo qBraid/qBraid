@@ -17,9 +17,10 @@ import warnings
 
 import openqasm3
 
-from ._import import _load_entrypoint
+from qbraid._import import _load_entrypoint
+from qbraid.exceptions import QbraidError
+
 from ._qprogram import QPROGRAM
-from .exceptions import QbraidError
 from .inspector import get_program_type
 
 
@@ -51,7 +52,7 @@ def circuit_wrapper(program: QPROGRAM):
 
     """
     warnings.warn(
-        "qbraid.circuit_wrapper() is deprecated. Please use \
+        "qbraid.programs.circuit_wrapper() is deprecated. Please use \
         qbraid.programs.loads instead.",
         PendingDeprecationWarning,
     )

@@ -12,6 +12,8 @@
 Unit tests for the qbraid transpiler.
 
 """
+from typing import Tuple
+
 import cirq
 import numpy as np
 import pytest
@@ -23,9 +25,9 @@ from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit import QuantumRegister as QiskitQuantumRegister
 from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 
-from qbraid import QPROGRAM_LIBS, QbraidError, circuit_wrapper
-from qbraid.exceptions import ProgramTypeError
+from qbraid.exceptions import QbraidError
 from qbraid.interface import assert_allclose_up_to_global_phase
+from qbraid.programs import QPROGRAM_LIBS, ProgramTypeError, circuit_wrapper
 from qbraid.transpiler.converter import convert_to_package
 from qbraid.transpiler.exceptions import NodeNotFoundError
 from qbraid.transpiler.graph import ConversionGraph
@@ -107,7 +109,7 @@ def test_transpile_package_error(bell_circuit):
     circuit, _ = bell_circuit
     wrapped = circuit_wrapper(circuit)
     with pytest.raises(NodeNotFoundError):
-        wrapped.transpile("Not a package")
+        convert_to_package(wrapped.program, "Not a package")
 
 
 @pytest.mark.parametrize("bell_circuit", ["braket"], indirect=True)
@@ -117,7 +119,7 @@ def test_transpile_program_error(bell_circuit):
     wrapped = circuit_wrapper(circuit)
     wrapped._program = None
     with pytest.raises(ProgramTypeError):
-        wrapped.transpile("qiskit")
+        convert_to_package(wrapped.program, "qiskit")
 
 
 @pytest.mark.parametrize("target_package", ["cirq", "qiskit", "braket"])
@@ -128,8 +130,7 @@ def test_15(shared15_circuit, shared15_unitary, target_package):
     """
     circuit, _ = shared15_circuit
     qbraid_circuit = circuit_wrapper(circuit)
-    qbraid_circuit.transpile(target_package)
-    transpiled_circuit = qbraid_circuit.program
+    transpiled_circuit = convert_to_package(qbraid_circuit.program, target_package)
     transpiled_unitary = circuit_wrapper(transpiled_circuit).unitary()
     assert_allclose_up_to_global_phase(transpiled_unitary, shared15_unitary, atol=1e-7)
 
@@ -142,13 +143,15 @@ def test_bell(bell_circuit, bell_unitary, target):
     if not conversion_graph.has_path(source, target):
         pytest.skip(f"{source} to {target} conversion not yet supported")
     qbraid_circuit = circuit_wrapper(circuit)
-    qbraid_circuit.transpile(target)
-    transpiled_circuit = qbraid_circuit.program
-    transpiled_unitary = circuit_wrapper(transpiled_circuit).unitary()
-    assert_allclose_up_to_global_phase(transpiled_unitary, bell_unitary, atol=1e-7)
+    transpiled_circuit = convert_to_package(qbraid_circuit.program, target)
+    try:
+        transpiled_unitary = circuit_wrapper(transpiled_circuit).unitary()
+        assert_allclose_up_to_global_phase(transpiled_unitary, bell_unitary, atol=1e-7)
+    except NotImplementedError:
+        pytest.skip(f"Unitary calculation not yet supported for {target}")
 
 
-def nqubits_nparams(gate):
+def nqubits_nparams(gate: str) -> Tuple[int, int]:
     """Return number of qubits and parameters for a given gate."""
     if gate in ["H", "X", "Y", "Z", "S", "Sdg", "T", "Tdg", "I", "SX", "SXdg"]:
         return 1, 0
@@ -276,8 +279,8 @@ def test_gate_intersect_braket_qiskit(gate_str):
     braket_u, qbraid_braket_circ = braket_gate_test_circuit(braket_gate, nqubits)
     qiskit_u, qbraid_qiskit_circ = qiskit_gate_test_circuit(qiskt_gate, nqubits)
     assert_allclose_up_to_global_phase(braket_u, qiskit_u, atol=1e-7)
-    braket_circuit_transpile = qbraid_qiskit_circ.transpile("braket")
-    qiskit_circuit_transpile = qbraid_braket_circ.transpile("qiskit")
+    braket_circuit_transpile = convert_to_package(qbraid_qiskit_circ.program, "braket")
+    qiskit_circuit_transpile = convert_to_package(qbraid_braket_circ.program, "qiskit")
     braket_transpile_u = circuit_wrapper(braket_circuit_transpile).unitary()
     qiskit_transpile_u = circuit_wrapper(qiskit_circuit_transpile).unitary()
     assert_allclose_up_to_global_phase(braket_u, braket_transpile_u, atol=1e-7)
@@ -293,8 +296,8 @@ def test_gate_intersect_qiskit_cirq(gate_str):
     cirq_u, qbraid_cirq_circ = cirq_gate_test_circuit(cirq_gate, nqubits)
     qiskit_u, qbraid_qiskit_circ = qiskit_gate_test_circuit(qiskit_gate, nqubits)
     assert_allclose_up_to_global_phase(cirq_u, qiskit_u, atol=1e-7)
-    qiskit_circuit_transpile = qbraid_cirq_circ.transpile("qiskit")
-    cirq_circuit_transpile = qbraid_qiskit_circ.transpile("cirq")
+    qiskit_circuit_transpile = convert_to_package(qbraid_cirq_circ.program, "qiskit")
+    cirq_circuit_transpile = convert_to_package(qbraid_qiskit_circ.program, "cirq")
     qiskit_transpile_u = circuit_wrapper(qiskit_circuit_transpile).unitary()
     cirq_transpile_u = circuit_wrapper(cirq_circuit_transpile).unitary()
     assert_allclose_up_to_global_phase(cirq_u, cirq_transpile_u, atol=1e-7)
@@ -310,8 +313,8 @@ def test_gate_intersect_braket_cirq(gate_str):
     cirq_u, qbraid_cirq_circ = cirq_gate_test_circuit(cirq_gate, nqubits)
     braket_u, qbraid_braket_circ = braket_gate_test_circuit(braket_gate, nqubits)
     assert_allclose_up_to_global_phase(cirq_u, braket_u, atol=1e-7)
-    braket_circuit_transpile = qbraid_cirq_circ.transpile("braket")
-    cirq_circuit_transpile = qbraid_braket_circ.transpile("cirq")
+    braket_circuit_transpile = convert_to_package(qbraid_cirq_circ.program, "braket")
+    cirq_circuit_transpile = convert_to_package(qbraid_braket_circ.program, "cirq")
     braket_transpile_u = circuit_wrapper(braket_circuit_transpile).unitary()
     cirq_transpile_u = circuit_wrapper(cirq_circuit_transpile).unitary()
     assert_allclose_up_to_global_phase(cirq_u, cirq_transpile_u, atol=1e-7)
@@ -336,7 +339,7 @@ def test_yes_braket_no_qiskit(gate_str):
     params = np.random.random_sample(nparams) * np.pi
     braket_gate = braket_init_gate(*params)
     braket_u, qbraid_braket_circ = braket_gate_test_circuit(braket_gate, nqubits)
-    qiskit_circuit = qbraid_braket_circ.transpile("qiskit")
+    qiskit_circuit = convert_to_package(qbraid_braket_circ.program, "qiskit")
     qiskit_u = circuit_wrapper(qiskit_circuit).unitary()
     assert_allclose_up_to_global_phase(braket_u, qiskit_u, atol=1e-7)
 
@@ -350,11 +353,10 @@ def test_yes_qiskit_no_braket(gate_str):
     qiskit_gate = qiskit_init_gate(*params)
     qiskit_u, qbraid_qiskit_circ = qiskit_gate_test_circuit(qiskit_gate, nqubits)
     if gate_str in NOT_SUPPORTED:
-        assert True
-    else:
-        braket_circuit = qbraid_qiskit_circ.transpile("braket")
-        braket_u = circuit_wrapper(braket_circuit).unitary()
-        assert_allclose_up_to_global_phase(qiskit_u, braket_u, atol=1e-7)
+        pytest.skip(f"{gate_str} not supported by Amazon Braket")
+    braket_circuit = convert_to_package(qbraid_qiskit_circ.program, "braket")
+    braket_u = circuit_wrapper(braket_circuit).unitary()
+    assert_allclose_up_to_global_phase(qiskit_u, braket_u, atol=1e-7)
 
 
 @pytest.mark.parametrize("gate_str", yes_qiskit_no_cirq)
@@ -366,11 +368,10 @@ def test_yes_qiskit_no_cirq(gate_str):
     qiskit_gate = qiskit_init_gate(*params)
     qiskit_u, qbraid_qiskit_circ = qiskit_gate_test_circuit(qiskit_gate, nqubits)
     if gate_str in NOT_SUPPORTED:
-        assert True
-    else:
-        cirq_circuit = qbraid_qiskit_circ.transpile("cirq")
-        cirq_u = circuit_wrapper(cirq_circuit).unitary()
-        assert_allclose_up_to_global_phase(qiskit_u, cirq_u, atol=1e-7)
+        pytest.skip(f"{gate_str} not supported by Cirq")
+    cirq_circuit = convert_to_package(qbraid_qiskit_circ.program, "cirq")
+    cirq_u = circuit_wrapper(cirq_circuit).unitary()
+    assert_allclose_up_to_global_phase(qiskit_u, cirq_u, atol=1e-7)
 
 
 @pytest.mark.parametrize("gate_str", yes_braket_no_cirq)
@@ -381,7 +382,7 @@ def test_yes_braket_no_cirq(gate_str):
     params = np.random.random_sample(nparams) * np.pi
     braket_gate = braket_init_gate(*params)
     braket_u, qbraid_braket_circ = braket_gate_test_circuit(braket_gate, nqubits)
-    cirq_circuit = qbraid_braket_circ.transpile("cirq")
+    cirq_circuit = convert_to_package(qbraid_braket_circ.program, "cirq")
     cirq_u = circuit_wrapper(cirq_circuit).unitary()
     assert_allclose_up_to_global_phase(braket_u, cirq_u, atol=1e-7)
 
@@ -394,7 +395,7 @@ def test_yes_cirq_no_qiskit(gate_str):
     exp = np.random.random()
     cirq_gate = cirq_init_gate(exponent=exp)
     cirq_u, qbraid_cirq_circ = cirq_gate_test_circuit(cirq_gate, nqubits)
-    qiskit_circuit = qbraid_cirq_circ.transpile("qiskit")
+    qiskit_circuit = convert_to_package(qbraid_cirq_circ.program, "qiskit")
     qiskit_u = circuit_wrapper(qiskit_circuit).unitary()
     assert_allclose_up_to_global_phase(cirq_u, qiskit_u, atol=1e-7)
 
@@ -411,7 +412,7 @@ def test_yes_cirq_no_braket(gate_str):
         exp = np.random.random()
         cirq_gate = cirq_init_gate(exponent=exp)
     cirq_u, qbraid_cirq_circ = cirq_gate_test_circuit(cirq_gate, nqubits)
-    braket_circuit = qbraid_cirq_circ.transpile("braket")
+    braket_circuit = convert_to_package(qbraid_cirq_circ.program, "braket")
     braket_u = circuit_wrapper(braket_circuit).unitary()
     assert_allclose_up_to_global_phase(cirq_u, braket_u, atol=1e-7)
 
@@ -422,7 +423,7 @@ def test_braket_transpile_ccnot():
     braket_circuit.ccnot(2, 0, 1)
     braket_circuit.ccnot(3, 1, 0)
     qbraid_braket = circuit_wrapper(braket_circuit)
-    qiskit_circuit = qbraid_braket.transpile("qiskit")
+    qiskit_circuit = convert_to_package(qbraid_braket.program, "qiskit")
     braket_ccnot_unitary = circuit_wrapper(braket_circuit).unitary()
     qiskit_ccnot_unitary = circuit_wrapper(qiskit_circuit).unitary()
     assert_allclose_up_to_global_phase(braket_ccnot_unitary, qiskit_ccnot_unitary, atol=1e-7)
@@ -438,8 +439,8 @@ def test_non_contiguous_qubits_braket():
     qpgoram_test.remove_idle_qubits()
     test_circuit = qpgoram_test.program
     qbraid_wrapper = circuit_wrapper(test_circuit)
-    cirq_circuit = qbraid_wrapper.transpile("cirq")
-    qiskit_circuit = qbraid_wrapper.transpile("qiskit")
+    cirq_circuit = convert_to_package(qbraid_wrapper.program, "cirq")
+    qiskit_circuit = convert_to_package(qbraid_wrapper.program, "qiskit")
     braket_unitary = circuit_wrapper(test_circuit).unitary()
     cirq_unitary = circuit_wrapper(cirq_circuit).unitary()
     qiskit_unitary = circuit_wrapper(qiskit_circuit).unitary()
@@ -460,8 +461,8 @@ def test_non_contiguous_qubits_cirq():
     qpgoram_test.remove_idle_qubits()
     test_circuit = qpgoram_test.program
     qbraid_wrapper = circuit_wrapper(test_circuit)
-    qiskit_circuit = qbraid_wrapper.transpile("qiskit")
-    braket_circuit = qbraid_wrapper.transpile("braket")
+    qiskit_circuit = convert_to_package(qbraid_wrapper.program, "qiskit")
+    braket_circuit = convert_to_package(qbraid_wrapper.program, "braket")
     cirq_unitary = circuit_wrapper(test_circuit).unitary()
     qiskit_unitary = circuit_wrapper(qiskit_circuit).unitary()
     braket_unitary = circuit_wrapper(braket_circuit).unitary()

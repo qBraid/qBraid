@@ -23,8 +23,9 @@ from typing import TYPE_CHECKING, Any, Dict  # pylint: disable=unused-import
 from qbraid_core.services.quantum import QuantumClient, quantum_lib_proxy_state
 
 from qbraid.exceptions import QbraidError
-from qbraid.load_program import circuit_wrapper
+from qbraid.programs.load_program import circuit_wrapper
 from qbraid.providers.enums import DeviceType
+from qbraid.transpiler import convert_to_package
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 from .exceptions import ProgramValidationError, QbraidRuntimeError
@@ -186,9 +187,8 @@ class QuantumDevice(ABC):
         """
         input_run_package = run_input.__module__.split(".")[0]
         if input_run_package != self._run_package:
-            qbraid_circuit = circuit_wrapper(run_input)
             try:
-                run_input = qbraid_circuit.transpile(self._run_package)
+                run_input = convert_to_package(run_input, self._run_package)
             except CircuitConversionError as err:
                 raise QbraidRuntimeError from err
         return self._transpile(run_input)
@@ -251,7 +251,7 @@ class QuantumDevice(ABC):
         if len(circuits) == 1:
             circuit = circuits[0]
             try:
-                init_data["openQasm"] = circuit.transpile("qasm3")
+                init_data["openQasm"] = convert_to_package(circuit.program, "qasm3")
             except Exception as err:  # pylint: disable=broad-exception-caught
                 logging.info(
                     "Error converting circuit to OpenQASM 3: %s. "

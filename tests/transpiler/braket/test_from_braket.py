@@ -25,8 +25,8 @@ from braket.circuits import gates as braket_gates
 from braket.circuits import noises as braket_noise_gate
 from cirq import ops as cirq_ops
 
-from qbraid import circuit_wrapper
 from qbraid.interface import circuits_allclose
+from qbraid.programs import circuit_wrapper
 from qbraid.transpiler.conversions.braket.cirq_from_braket import (
     braket_to_cirq,
     unitary_braket_instruction,

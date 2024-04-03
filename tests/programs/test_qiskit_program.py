@@ -15,7 +15,7 @@ Unit tests for qbraid.programs.qiskit.QiskitCircuit
 
 from qiskit import QuantumCircuit
 
-from qbraid.programs.qiskit import QiskitCircuit
+from qbraid.programs.libs.qiskit import QiskitCircuit
 
 
 def test_reverse_qubit_order():

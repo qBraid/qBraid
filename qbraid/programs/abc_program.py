@@ -17,8 +17,7 @@ from typing import TYPE_CHECKING, Any, List, Optional
 
 import numpy as np
 
-from qbraid.inspector import get_program_type
-from qbraid.transpiler.converter import convert_to_package
+from .inspector import get_program_type
 
 if TYPE_CHECKING:
     import qbraid
@@ -145,22 +144,3 @@ class QuantumProgram:
     @abstractmethod
     def reverse_qubit_order(self) -> None:
         """Rerverse qubit ordering of circuit."""
-
-    def transpile(self, conversion_type: str) -> "qbraid.QPROGRAM":
-        """Transpile a qbraid quantum program wrapper object to quantum
-        program object of type specified by ``conversion_type``.
-
-        Args:
-            conversion_type: a supported quantum frontend package.
-                Must be one of :data:`~qbraid.QPROGRAM_LIBS`.
-
-        Raises:
-            PackageValueError: If ``conversion_type`` is not one of
-                :data:`~qbraid.QPROGRAM_LIBS`.
-            CircuitConversionError: If the input quantum program could not be
-                converted to a program of type ``conversion_type``.
-
-        Returns:
-            :data:`~qbraid.QPROGRAM`: supported quantum program object
-        """
-        return convert_to_package(self.program, conversion_type)

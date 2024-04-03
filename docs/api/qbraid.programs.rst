@@ -13,11 +13,4 @@ Submodules
 .. autosummary::
    :toctree: ../stubs/
 
-   braket
-   cirq
-   pennylane
-   pyquil
-   pytket
-   qasm2
-   qasm3
-   qiskit
+   libs

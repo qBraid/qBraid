@@ -60,7 +60,7 @@ Construct a quantum program of any supported program type:
 
 .. code-block:: python
    
-   >>> from qbraid import QPROGRAM_LIBS
+   >>> from qbraid.programs import QPROGRAM_LIBS
    >>> from qbraid.interface import random_circuit
    >>> QPROGRAM_LIBS
    ['cirq', 'qiskit', 'pyquil', 'pytket', 'braket', 'openqasm3', 'qasm2', 'qasm3']

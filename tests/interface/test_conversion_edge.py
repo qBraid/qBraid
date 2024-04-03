@@ -17,8 +17,8 @@ from unittest.mock import Mock
 import cirq
 import pytest
 
-from qbraid.exceptions import PackageValueError
 from qbraid.interface.random import random_circuit
+from qbraid.programs.exceptions import PackageValueError
 from qbraid.transpiler.conversions.braket import braket_to_cirq
 from qbraid.transpiler.edge import Conversion
 

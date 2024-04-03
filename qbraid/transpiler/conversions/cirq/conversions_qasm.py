@@ -19,7 +19,7 @@ from cirq import ops
 from cirq.contrib.qasm_import.exception import QasmException as CirqQasmException
 
 import qbraid
-from qbraid.exceptions import QasmError as QbraidQasmError
+from qbraid.programs.exceptions import QasmError as QbraidQasmError
 from qbraid.transpiler.conversions.cirq.cirq_gates import _map_zpow_and_unroll
 from qbraid.transpiler.conversions.cirq.cirq_qasm_parser import QasmParser
 from qbraid.transpiler.conversions.qasm_passes import flatten_qasm_program

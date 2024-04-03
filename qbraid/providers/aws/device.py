@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, List, Tuple
 
 from braket.device_schema import ExecutionDay
 
-from qbraid._qprogram import QPROGRAM_LIBS
+from qbraid.programs._qprogram import QPROGRAM_LIBS
 from qbraid.providers.device import QuantumDevice
 from qbraid.providers.enums import DeviceStatus, DeviceType
 
@@ -200,7 +200,7 @@ class BraketDevice(QuantumDevice):
         """Transpile a circuit for the device."""
         if self._device_type.name == "SIMULATOR":
             # pylint: disable=import-outside-toplevel
-            from qbraid.programs.braket import BraketCircuit
+            from qbraid.programs.libs.braket import BraketCircuit
 
             program = BraketCircuit(run_input)
             program.remove_idle_qubits()

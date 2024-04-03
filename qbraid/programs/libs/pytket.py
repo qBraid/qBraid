@@ -16,7 +16,7 @@ Module defining PytketCircuit Class
 from typing import TYPE_CHECKING, List, Optional, Union
 
 import numpy as np
-from pytket.circuit import Circuit, Command
+from pytket.circuit import Circuit, Command, OpType
 from pytket.unit_id import Qubit
 
 from qbraid.programs.abc_program import QuantumProgram
@@ -61,9 +61,38 @@ class PytketCircuit(QuantumProgram):
         """Return the circuit depth (i.e., length of critical path)."""
         return self.program.depth()
 
+    @staticmethod
+    def remove_measurements(original_circuit):
+        """
+        Return a new circuit with all non-measurement operations from the original circuit.
+
+        Args:
+            original_circuit: The pytket Circuit to process.
+
+        Returns:
+            A new pytket Circuit without measurement operations.
+        """
+        new_circuit = Circuit()
+        for qreg in original_circuit.qubits:
+            new_circuit.add_qubit(qreg)
+        for creg in original_circuit.bits:
+            new_circuit.add_bit(creg)
+
+        for command in original_circuit.get_commands():
+            if command.op.type != OpType.Measure:
+                new_circuit.add_gate(
+                    command.op.type, command.op.params, [q.index[0] for q in command.qubits]
+                )
+
+        return new_circuit
+
     def _unitary(self) -> "np.ndarray":
         """Return the unitary of a pytket circuit."""
-        return self.program.get_unitary()
+        try:
+            return self.program.get_unitary()
+        except RuntimeError:
+            program_copy = self.remove_measurements(self.program)
+            return program_copy.get_unitary()
 
     def remove_idle_qubits(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,

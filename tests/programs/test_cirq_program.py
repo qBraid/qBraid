@@ -16,7 +16,7 @@ import pytest
 from cirq import CNOT, Circuit, GridQubit, H, LineQubit, Moment, NamedQubit, X, Y, Z
 
 from qbraid.interface import circuits_allclose
-from qbraid.programs.cirq import CirqCircuit
+from qbraid.programs.libs.cirq import CirqCircuit
 
 
 def test_contiguous_line_qubits():

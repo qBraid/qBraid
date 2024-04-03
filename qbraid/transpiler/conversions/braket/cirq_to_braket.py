@@ -49,10 +49,12 @@ def cirq_to_braket(circuit: Circuit) -> BKCircuit:
         Braket circuit equivalent to the input Cirq circuit.
     """
     # pylint: disable=import-outside-toplevel
-    import qbraid.programs.cirq
+    import qbraid.programs.libs.cirq
 
     cirq_qubits = list(circuit.all_qubits())
-    cirq_int_qubits = [qbraid.programs.cirq.CirqCircuit._int_from_qubit(q) for q in cirq_qubits]
+    cirq_int_qubits = [
+        qbraid.programs.libs.cirq.CirqCircuit._int_from_qubit(q) for q in cirq_qubits
+    ]
     braket_int_qubits = deepcopy(cirq_int_qubits)
     qubit_mapping = {q: braket_int_qubits[i] for i, q in enumerate(cirq_int_qubits)}
     return BKCircuit(
@@ -74,16 +76,18 @@ def _to_braket_instruction(
         CircuitConversionError: If the operation cannot be converted to Braket.
     """
     # pylint: disable=import-outside-toplevel
-    import qbraid.programs.cirq
+    import qbraid.programs.libs.cirq
 
     if isinstance(
         operation, (cirq_ops.MeasurementGate, cirq_ops.Operation)
-    ) and qbraid.programs.cirq.CirqCircuit.is_measurement_gate(operation):
+    ) and qbraid.programs.libs.cirq.CirqCircuit.is_measurement_gate(operation):
         return []
 
     nqubits = protocols.num_qubits(operation)
     cirq_qubits = operation.qubits
-    cirq_qubits = [qbraid.programs.cirq.CirqCircuit._int_from_qubit(q) for q in operation.qubits]
+    cirq_qubits = [
+        qbraid.programs.libs.cirq.CirqCircuit._int_from_qubit(q) for q in operation.qubits
+    ]
     qubits = [qubit_mapping[x] for x in cirq_qubits]
 
     if nqubits == 1:

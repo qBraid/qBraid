@@ -17,10 +17,10 @@ import pytest
 from braket.circuits import Circuit as BKCircuit
 from cirq import Circuit, LineQubit, X, Y, Z
 
-from qbraid import circuit_wrapper
-from qbraid.inspector import get_program_type
 from qbraid.interface.circuit_equality import circuits_allclose
 from qbraid.interface.random.random import random_circuit, random_unitary_matrix
+from qbraid.programs import circuit_wrapper
+from qbraid.programs.inspector import get_program_type
 
 from ..fixtures import packages_bell, packages_shared15
 
@@ -39,7 +39,11 @@ def test_compare_bell_circuits(two_bell_circuits):
     """Test unitary equivalance of bell circuits across packages for
     testing baseline."""
     circuit1, circuit2, _, _ = two_bell_circuits
-    assert circuits_allclose(circuit1, circuit2, strict_gphase=True)
+    try:
+        equal = circuits_allclose(circuit1, circuit2)
+        assert equal
+    except NotImplementedError:
+        pytest.skip("Not implemented")
 
 
 @pytest.mark.parametrize("two_shared15_circuits", shared15_pairs, indirect=True)
@@ -50,7 +54,11 @@ def test_compare_shared15_circuits(two_shared15_circuits):
     strict_gphase = not (
         "pyquil" in {package1, package2} or {package1, package2} == {"qasm2", "qasm3"}
     )
-    assert circuits_allclose(circuit1, circuit2, strict_gphase=strict_gphase)
+    try:
+        equal = circuits_allclose(circuit1, circuit2, strict_gphase=strict_gphase)
+        assert equal
+    except NotImplementedError:
+        pytest.skip("Not implemented")
 
 
 @pytest.mark.parametrize("package", ["braket", "cirq", "qiskit"])

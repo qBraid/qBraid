@@ -19,7 +19,7 @@ from braket.circuits import Circuit
 from braket.circuits.serialization import IRType
 from braket.ir.openqasm import Program as OpenQasmProgram
 
-from qbraid.exceptions import QasmError
+from qbraid.programs.exceptions import QasmError
 
 QASMType = str
 

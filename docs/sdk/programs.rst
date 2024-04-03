@@ -70,7 +70,7 @@ Next, we'll apply the qbraid circuit wrapper.
 
 .. code-block:: python
 
-    from qbraid import circuit_wrapper
+    from qbraid.programs import circuit_wrapper
 
     qprogram = circuit_wrapper(qiskit_circuit)
 
@@ -126,7 +126,7 @@ supported program type.
 
 .. code-block:: python
 
-    >>> from qbraid import circuit_wrapper
+    >>> from qbraid.programs import circuit_wrapper
     >>> cirq_unitary = circuit_wrapper(cirq_circuit).unitary()
     >>> cirq_unitary.shape
     (16, 16)
@@ -207,7 +207,7 @@ performing the qubit mapping.
 
 .. code-block:: python
 
-    >>> from qbraid import circuit_wrapper
+    >>> from qbraid.programs import circuit_wrapper
     >>> qprogram = circuit_wrapper(braket_circuit)
     >>> qprogram.remove_idle_qubits()
     >>> print(qprogram.program)

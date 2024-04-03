@@ -14,6 +14,24 @@ suite of methods and functionality for supported program types.
 
 .. currentmodule:: qbraid.programs
 
+.. _programs_data_type:
+
+Data Types
+-----------
+
+.. autodata:: QPROGRAM
+   :annotation: = Type alias defining all supported quantum circuit / program types
+
+Functions
+----------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+   get_qasm_version
+   get_program_type
+   circuit_wrapper
+
 Classes
 --------
 
@@ -22,5 +40,19 @@ Classes
 
    QuantumProgram
 
+Exceptions
+-----------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+   PackageValueError
+   ProgramTypeError
+   QasmError
+
 """
-from qbraid.programs.abc_program import QuantumProgram
+from ._qprogram import QPROGRAM, QPROGRAM_LIBS, QPROGRAM_TYPES, SUPPORTED_QPROGRAMS
+from .abc_program import QuantumProgram
+from .exceptions import PackageValueError, ProgramTypeError, QasmError
+from .inspector import get_program_type, get_qasm_version
+from .load_program import circuit_wrapper

@@ -15,7 +15,7 @@ Module that implements qelib1.inc qasm gate definitions as python functions
 import re
 from typing import Optional
 
-from qbraid.exceptions import QasmError
+from qbraid.programs.exceptions import QasmError
 
 
 def _get_param(instr: str) -> Optional[str]:

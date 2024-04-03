@@ -86,7 +86,7 @@ class QiskitBackend(QuantumDevice):
     def _transpile(self, run_input):
         if self._device_type.name != "FAKE" and self._device.local:
             # pylint: disable=import-outside-toplevel
-            from qbraid.programs.qiskit import QiskitCircuit
+            from qbraid.programs.libs.qiskit import QiskitCircuit
 
             program = QiskitCircuit(run_input)
             program.remove_idle_qubits()

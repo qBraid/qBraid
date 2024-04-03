@@ -18,7 +18,7 @@ import networkx as nx
 import pytest
 from qiskit_braket_provider.providers.adapter import convert_qiskit_to_braket_circuit
 
-from qbraid._qprogram import QPROGRAM_LIBS
+from qbraid.programs._qprogram import QPROGRAM_LIBS
 from qbraid.transpiler.conversions import conversion_functions
 from qbraid.transpiler.converter import convert_to_package
 from qbraid.transpiler.edge import Conversion

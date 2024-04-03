@@ -16,8 +16,8 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 import numpy as np
 
-from qbraid._qprogram import QPROGRAM, QPROGRAM_LIBS
-from qbraid.exceptions import PackageValueError
+from qbraid.programs._qprogram import QPROGRAM, QPROGRAM_LIBS
+from qbraid.programs.exceptions import PackageValueError
 from qbraid.transpiler.converter import convert_to_package
 
 QROGRAM_TEST_TYPE = Tuple[Dict[str, Callable[[Any], QPROGRAM]], np.ndarray]

@@ -17,6 +17,8 @@ from typing import List
 
 import numpy as np
 import pyquil
+from pyquil import Program
+from pyquil.quilbase import Declare, Measurement
 from pyquil.simulation.tools import program_unitary
 
 from qbraid.programs.abc_program import QuantumProgram
@@ -58,9 +60,19 @@ class PyQuilProgram(QuantumProgram):
         """Return the circuit depth (i.e., length of critical path)."""
         return len(self.program)
 
+    @staticmethod
+    def remove_measurements(original_program):
+        """Remove MEASURE and DECLARE instructions from a pyQuil program."""
+        program = Program()
+        for instruction in original_program:
+            if not isinstance(instruction, Measurement) and not isinstance(instruction, Declare):
+                program += instruction
+        return program
+
     def _unitary(self) -> "np.ndarray":
         """Return the unitary of a pyQuil program."""
-        return program_unitary(self.program, n_qubits=self.num_qubits)
+        program_copy = self.remove_measurements(self.program)
+        return program_unitary(program_copy, n_qubits=self.num_qubits)
 
     def remove_idle_qubits(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,

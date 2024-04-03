@@ -149,10 +149,12 @@ def convert_from_pytket_to_x(target, circuit_name):
     target program type, and check equivalence.
     """
     source_circuit = pytket_circuits[circuit_name]
-    circuit = qbraid.circuit_wrapper(source_circuit).transpile("cirq")
+    # circuit = qbraid.programs.circuit_wrapper(source_circuit).transpile("cirq")
+    circuit = qbraid.transpiler.convert_to_package(source_circuit, "cirq")
     qasm = circuit.to_qasm()
     cirq_circuit = circuit_from_qasm(qasm)
-    target_circuit = qbraid.circuit_wrapper(cirq_circuit).transpile(target)
+    # target_circuit = qbraid.programs.circuit_wrapper(cirq_circuit).transpile(target)
+    target_circuit = qbraid.transpiler.convert_to_package(cirq_circuit, target)
     assert qbraid.interface.circuits_allclose(cirq_circuit, target_circuit, strict_gphase=False)
 
 

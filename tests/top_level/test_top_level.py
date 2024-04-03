@@ -21,31 +21,17 @@ import pytest
 
 from qbraid import __version__
 from qbraid._display import running_in_jupyter, update_progress_bar
-from qbraid._warnings import _warn_new_version
-from qbraid.exceptions import PackageValueError
 from qbraid.get_devices import get_devices
 from qbraid.get_jobs import _display_jobs_jupyter, get_jobs
 from qbraid.interface.random import random_circuit
 from qbraid.load_provider import device_wrapper
+from qbraid.programs.exceptions import PackageValueError
 
 # pylint: disable=missing-function-docstring,redefined-outer-name
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of qBraid/AWS/IBM storage)"
-
-check_version_data = [
-    # local, API, warn
-    ("0.1.0", "0.1.1", False),
-    ("1.0.7", "1.0.8", False),
-    ("1.3.2", "2.0.6", True),
-    ("0.1.0", "0.3.0", True),
-    ("0.2.4.dev1", "0.2.4", False),
-    ("0.1.0", "0.1.0.dev0", False),
-    ("0.1.6.dev2", "0.1.6.dev5", False),
-    ("0.1.6.dev5", "0.1.6.dev2", False),
-    ("0.2.0", "0.1.4", False),
-]
 
 
 job_status_list = [
@@ -59,14 +45,6 @@ job_status_list = [
     "FAILED",
     "UNKNOWN",
 ]
-
-
-@pytest.mark.parametrize("test_data", check_version_data)
-def test_check_version(test_data):
-    """Test function that compares local/api package versions to determine if
-    update is needed."""
-    local, api, warn_bool = test_data
-    assert warn_bool == _warn_new_version(local, api)
 
 
 def test_package_value_error():

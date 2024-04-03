@@ -14,45 +14,24 @@ Module for emitting and disabling warnings at top level.
 """
 import warnings
 
-import urllib3
-from qbraid_core.exceptions import QbraidException
-from qbraid_core.system import get_latest_package_version, get_local_package_version
+from qbraid_core._warnings import _check_version
 
 
-def _warn_new_version(local: str, latest: str) -> bool:
-    """Returns True if you should warn user about updated package version,
-    False otherwise."""
-    installed_major, installed_minor = map(int, local.split(".")[:2])
-    latest_major, latest_minor = map(int, latest.split(".")[:2])
-
-    return (installed_major, installed_minor) < (latest_major, latest_minor)
-
-
-def _check_version():
-    """Emits UserWarning if updated package version exists in qBraid API
-    compared to local copy."""
-
-    # pylint: disable=import-outside-toplevel
-    try:
-        latest_version = get_latest_package_version("qbraid")
-        local_version = get_local_package_version("qbraid")
-
-        if _warn_new_version(local_version, latest_version):
-            warnings.warn(
-                f"You are using qbraid version {local_version}; however, version {latest_version} "
-                "is available. To avoid compatibility issues, consider upgrading. ",
-                UserWarning,
-            )
-    except QbraidException:
-        pass
+def _filterwarnings():
+    """Filter out warnings that are not relevant to the user."""
+    warnings.filterwarnings("ignore", category=SyntaxWarning)
+    warnings.filterwarnings(
+        "ignore", category=UserWarning, message="Setuptools is replacing distutils"
+    )
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    # warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
+    warnings.filterwarnings("ignore", category=RuntimeWarning, module="numpy")
 
 
-# coverage: ignore
-warnings.filterwarnings("ignore", category=SyntaxWarning)
-warnings.filterwarnings("ignore", category=UserWarning, message="Setuptools is replacing distutils")
-warnings.filterwarnings("ignore", category=DeprecationWarning)
-# warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
-warnings.filterwarnings("ignore", category=RuntimeWarning, module="numpy")
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+def _warn_version():
+    """Emit a warning."""
+    _check_version("qbraid")
 
-_check_version()
+
+_warn_version()
+_filterwarnings()

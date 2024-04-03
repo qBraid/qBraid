@@ -14,9 +14,9 @@ Module for drawing quantum circuit diagrams
 """
 from typing import TYPE_CHECKING, Optional
 
-from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.exceptions import ProgramTypeError
-from qbraid.inspector import get_program_type
+from qbraid.programs._qprogram import QPROGRAM_LIBS
+from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.inspector import get_program_type
 from qbraid.transpiler.converter import convert_to_package
 from qbraid.visualization.draw_qasm3 import qasm3_drawer
 from qbraid.visualization.exceptions import VisualizationError

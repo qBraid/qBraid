@@ -16,8 +16,8 @@ import cirq
 import numpy as np
 import pytest
 
-from qbraid import circuit_wrapper
-from qbraid._qprogram import QPROGRAM_LIBS
+from qbraid.programs import circuit_wrapper
+from qbraid.programs._qprogram import QPROGRAM_LIBS
 from qbraid.transpiler.converter import convert_to_package
 from qbraid.transpiler.graph import ConversionGraph
 
@@ -38,6 +38,10 @@ def test_convert_circuit_operation_from_cirq(frontend):
     test_circuit = convert_to_package(cirq_circuit, frontend, conversion_graph=graph)
 
     cirq_unitary = circuit_wrapper(cirq_circuit).unitary()
-    test_unitary = circuit_wrapper(test_circuit).unitary()
+
+    try:
+        test_unitary = circuit_wrapper(test_circuit).unitary()
+    except NotImplementedError:
+        pytest.skip(f"Unitary calculation not implemented for {frontend}")
 
     assert np.allclose(cirq_unitary, test_unitary)

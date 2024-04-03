@@ -15,7 +15,7 @@ Unit tests for qbraid.programs.qasm2.OpenQasm2Program
 
 import pytest
 
-from qbraid.programs.qasm2 import OpenQasm2Program
+from qbraid.programs.libs.qasm2 import OpenQasm2Program
 
 from ..fixtures.qasm2.circuits import (
     _read_qasm_file,

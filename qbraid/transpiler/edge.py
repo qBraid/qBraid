@@ -15,8 +15,8 @@ Module for defining custom conversions
 import inspect
 from typing import TYPE_CHECKING, Any, Callable, Union
 
-from qbraid._qprogram import SUPPORTED_QPROGRAMS
-from qbraid.inspector import get_program_type
+from qbraid.programs._qprogram import SUPPORTED_QPROGRAMS
+from qbraid.programs.inspector import get_program_type
 
 if TYPE_CHECKING:
     import qbraid

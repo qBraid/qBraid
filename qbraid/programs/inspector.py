@@ -16,8 +16,8 @@ from typing import TYPE_CHECKING
 
 from openqasm3.parser import QASM3ParsingError, parse
 
-from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError
+from ._qprogram import QPROGRAM_LIBS
+from .exceptions import PackageValueError, ProgramTypeError, QasmError
 
 if TYPE_CHECKING:
     import qbraid

@@ -16,8 +16,7 @@ Unit tests for circuit drawer
 """
 import pytest
 
-from qbraid import circuit_wrapper
-from qbraid.exceptions import ProgramTypeError
+from qbraid.programs import ProgramTypeError, circuit_wrapper
 from qbraid.visualization.draw_circuit import circuit_drawer
 from qbraid.visualization.exceptions import VisualizationError
 

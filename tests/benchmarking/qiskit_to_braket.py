@@ -47,7 +47,7 @@ for gate_name, gate in qiskit_gates.items():
         qiskit_braket_provider.providers.adapter.convert_qiskit_to_braket_circuit, qiskit_circuit
     )
     qbraid_failed += execute_test(
-        lambda circuit: qbraid.circuit_wrapper(circuit).transpile("braket"), qiskit_circuit
+        lambda circuit: qbraid.transpiler.convert_to_package(circuit, "braket"), qiskit_circuit
     )
 
 total_tests = len(qiskit_gates)

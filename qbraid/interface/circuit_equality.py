@@ -100,7 +100,7 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
         True if the input circuits pass unitary equality check
 
     """
-    from qbraid import circuit_wrapper  # pylint: disable=import-outside-toplevel
+    from qbraid.programs import circuit_wrapper  # pylint: disable=import-outside-toplevel
 
     def unitary_equivalence_check(unitary0, unitary1, unitary_rev=None):
         if strict_gphase:

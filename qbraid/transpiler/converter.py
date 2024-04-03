@@ -16,8 +16,8 @@ import warnings
 from copy import deepcopy
 from typing import TYPE_CHECKING, Callable, List, Optional
 
-from qbraid._qprogram import QPROGRAM_LIBS
-from qbraid.inspector import get_program_type
+from qbraid.programs._qprogram import QPROGRAM_LIBS
+from qbraid.programs.inspector import get_program_type
 from qbraid.transpiler.exceptions import (
     CircuitConversionError,
     ConversionPathNotFoundError,
