@@ -37,7 +37,6 @@ for num_qubits in values:
     qbraid_circuit = circuit_wrapper(cirq_circuit)
 
     start = time()
-    # qbraid_circuit.transpile("qiskit")
     convert_to_package(qbraid_circuit.program, "qiskit")
     stop = time()
 

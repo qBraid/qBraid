@@ -110,7 +110,6 @@ def convert_from_cirq_to_x(target, gate_name):
     gate = cirq_gates[gate_name]
     source_circuit = cirq.Circuit()
     source_circuit.append(gate)
-    # target_circuit = qbraid.programs.circuit_wrapper(source_circuit).transpile(target)
     target_circuit = qbraid.transpiler.convert_to_package(source_circuit, target)
     assert qbraid.interface.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
 

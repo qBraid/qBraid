@@ -30,7 +30,6 @@ def convert_from_qiskit_to_x(target, gate_name):
     gate = qiskit_gates[gate_name]
     source_circuit = qiskit.QuantumCircuit(gate.num_qubits)
     source_circuit.compose(gate, inplace=True)
-    # target_circuit = qbraid.programs.circuit_wrapper(source_circuit).transpile(target)
     target_circuit = qbraid.transpiler.convert_to_package(source_circuit, target)
     assert qbraid.interface.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
 
