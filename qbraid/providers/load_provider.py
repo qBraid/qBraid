@@ -15,7 +15,8 @@ functions utilize entrypoints via ``pkg_resources``.
 """
 import warnings
 
-from .providers import QbraidProvider, QuantumJob
+from .job import QuantumJob
+from .provider import QbraidProvider
 
 
 def device_wrapper(device_id: str):

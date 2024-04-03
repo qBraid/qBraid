@@ -15,7 +15,7 @@ target backend, the procedure was as follows:
 
 .. code-block:: python
 
-    >>> from qbraid import device_wrapper
+    >>> from qbraid.providers import device_wrapper
     >>> qbraid_id = 'aws_oqc_lucy'
     >>> qdevice = device_wrapper(qbraid_id)
     >>> qjob = qdevice.run(circuit)
@@ -98,7 +98,7 @@ time, and even in a seperate program, with no loss of information.
 
 .. code-block:: python
 
-    >>> from qbraid import job_wrapper
+    >>> from qbraid.providers import job_wrapper
     >>> saved_job_id = 'aws_oqc_lucy-exampleuser-qjob-xxxxxxxxxxxxxxxxxxxx'
     >>> qjob = job_wrapper(saved_job_id)
 

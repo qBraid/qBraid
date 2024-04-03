@@ -16,8 +16,9 @@ import os
 
 import pytest
 
-from qbraid import device_wrapper, get_jobs, job_wrapper
+from qbraid import get_jobs
 from qbraid.interface import random_circuit
+from qbraid.providers import device_wrapper, job_wrapper
 from qbraid.providers.result import QuantumJobResult
 
 # Skip tests if IBM/AWS account auth/creds not configured

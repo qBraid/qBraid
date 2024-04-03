@@ -23,7 +23,7 @@ and plot a histogram of the probabilities.
 
 .. code-block:: python
 
-    from qbraid import device_wrapper
+    from qbraid.providers import device_wrapper
     from qbraid.visualization import plot_histogram
 
     shots = 2**10

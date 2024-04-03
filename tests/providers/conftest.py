@@ -17,7 +17,7 @@ import braket.circuits
 import numpy as np
 import pytest
 
-from qbraid import device_wrapper
+from qbraid.providers import device_wrapper
 from qbraid.providers.aws import BraketProvider
 
 

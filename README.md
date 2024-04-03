@@ -187,7 +187,7 @@ Apply the `device_wrapper()`, and send quantum jobs to any supported backend,
 from any supported program type:
 
 ```python
->>> from qbraid import device_wrapper, get_jobs
+>>> from qbraid.providers import device_wrapper, get_jobs
 >>> aws_device = device_wrapper("aws_oqc_lucy")
 >>> ibm_device = device_wrapper("ibm_q_brisbane")
 >>> aws_job = aws_device.run(qiskit_circuit, shots=1000)

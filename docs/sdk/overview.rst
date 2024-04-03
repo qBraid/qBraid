@@ -88,7 +88,7 @@ Apply the device wrapper and send your quantum jobs:
 
 .. code-block:: python
 
-   >>> from qbraid import device_wrapper
+   >>> from qbraid.providers import device_wrapper
    >>> jobs  = []
    >>> qbraid_ids = ['aws_oqc_lucy', 'ibm_q_oslo']
    >>> for device in qbraid_ids:

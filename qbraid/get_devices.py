@@ -26,7 +26,7 @@ except ImportError:
     pass
 
 from ._display import running_in_jupyter, update_progress_bar
-from .load_provider import device_wrapper
+from .providers.load_provider import device_wrapper
 
 if TYPE_CHECKING:
     from IPython.display import DisplayHandle

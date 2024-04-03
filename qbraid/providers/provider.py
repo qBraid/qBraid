@@ -19,7 +19,7 @@ from qbraid_core.exceptions import AuthError
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
 
 from qbraid._import import _load_entrypoint
-from qbraid._qdevice import QDEVICE_TYPES
+from qbraid.providers._qdevice import QDEVICE_TYPES
 
 from .exceptions import ResourceNotFoundError
 

@@ -13,14 +13,6 @@ This top level module contains the main qBraid public functionality.
 
 .. currentmodule:: qbraid
 
-.. _data_types:
-
-Data Types
------------
-
-.. autodata:: QDEVICE
-   :annotation: = Type alias defining all supported quantum device / backend types
-
 Functions
 ----------
 
@@ -30,8 +22,6 @@ Functions
    about
    get_devices
    refresh_devices
-   device_wrapper
-   job_wrapper
    get_jobs
 
 
@@ -58,17 +48,16 @@ import sys
 from . import _warnings
 from ._about import about
 from ._import import LazyLoader
-from ._qdevice import QDEVICE, QDEVICE_TYPES
 from ._version import __version__
 from .exceptions import QbraidError
 from .get_devices import get_devices, refresh_devices
 from .get_jobs import get_jobs
-from .load_provider import device_wrapper, job_wrapper
 
 # TODO: Lazy loads break docs build, so for now, only loading if sphinx is not installed. However,
 # this should instead be implemented as skip in sphinx config or in skip_member() in conf.py.
 if "sphinx" not in sys.modules:
     # lazy load interface and visualization modules.
+    providers = LazyLoader("qbraid.providers", globals())
     programs = LazyLoader("qbraid.programs", globals())
     interface = LazyLoader("qbraid.interface", globals())
     visualization = LazyLoader("qbraid.visualization", globals())

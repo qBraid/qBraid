@@ -19,7 +19,7 @@ import string
 import pytest
 from braket.circuits import Circuit
 
-from qbraid import device_wrapper, job_wrapper
+from qbraid.providers import device_wrapper, job_wrapper
 from qbraid.providers.aws import BraketDevice, BraketProvider
 
 # Skip tests if AWS account auth/creds not configured

@@ -41,8 +41,7 @@ except ImportError:  # prama: no cover
 from qiskit_aer.jobs.aerjob import AerJob
 from qiskit_ibm_provider import IBMBackend, IBMJob
 
-from qbraid import device_wrapper
-from qbraid.providers import QuantumJob
+from qbraid.providers import QuantumJob, device_wrapper
 from qbraid.providers.exceptions import JobStateError
 from qbraid.providers.ibm import QiskitBackend, QiskitJob, QiskitProvider
 

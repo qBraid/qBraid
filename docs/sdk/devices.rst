@@ -112,7 +112,7 @@ object can be created as follows:
 
 .. code-block:: python
 
-    from qbraid import device_wrapper
+    from qbraid.providers import device_wrapper
 
     qbraid_id = 'aws_oqc_lucy'  # as an example
 

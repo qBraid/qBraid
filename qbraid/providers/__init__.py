@@ -14,14 +14,28 @@ various quantum provider APIs.
 
 .. currentmodule:: qbraid.providers
 
+.. _devices_data_type:
+
 Data Types
 ------------
+
+.. autodata:: QDEVICE
+   :annotation: = Type alias defining all supported quantum device / backend types
 
 .. autosummary::
    :toctree: ../stubs/
 
    DeviceStatus
    DeviceType
+
+Functions
+----------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+   device_wrapper
+   job_wrapper
 
 Classes
 --------
@@ -48,6 +62,7 @@ Exceptions
    ResourceNotFoundError
 
 """
+from ._qdevice import QDEVICE
 from .device import QuantumDevice
 from .enums import DeviceStatus, DeviceType, JobStatus
 from .exceptions import (
@@ -58,5 +73,6 @@ from .exceptions import (
     ResourceNotFoundError,
 )
 from .job import QuantumJob
+from .load_provider import device_wrapper, job_wrapper
 from .provider import QbraidProvider
 from .result import QuantumJobResult
