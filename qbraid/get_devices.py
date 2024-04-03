@@ -26,7 +26,6 @@ except ImportError:
     pass
 
 from ._display import running_in_jupyter, update_progress_bar
-from .providers.load_provider import device_wrapper
 
 if TYPE_CHECKING:
     from IPython.display import DisplayHandle
@@ -34,8 +33,11 @@ if TYPE_CHECKING:
 
 def refresh_devices() -> None:
     """Refreshes status for all qbraid supported devices. Requires credential for each vendor."""
+    # pylint: disable-next=import-outside-toplevel
+    from qbraid.providers import QbraidProvider
 
     client = QuantumClient()
+    provider = QbraidProvider(client=client)
     devices = client.search_devices()
     count = 0
     num_devices = len(devices)  # i.e. number of iterations
@@ -45,7 +47,7 @@ def refresh_devices() -> None:
         if document["statusRefresh"] is not None:  # None => internally not available at moment
             qbraid_id = document["qbraid_id"]
             try:
-                device = device_wrapper(qbraid_id)
+                device = provider.get_device(qbraid_id)
                 status = device.status().name
                 client.update_device(data={"qbraid_id": qbraid_id, "status": status})
             except Exception:  # pylint: disable=broad-except

@@ -12,9 +12,14 @@
 Module for emitting and disabling warnings at top level.
 
 """
+import logging
 import warnings
 
 from qbraid_core._warnings import _check_version
+
+# Set up logging configuration to suppress INFO messages
+logging.basicConfig(level=logging.WARNING)
+logging.getLogger("qiskit").setLevel(logging.WARNING)
 
 
 def _filterwarnings():
