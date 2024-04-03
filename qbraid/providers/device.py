@@ -23,25 +23,26 @@ from typing import TYPE_CHECKING, Any, Dict  # pylint: disable=unused-import
 from qbraid_core.services.quantum import QuantumClient, quantum_lib_proxy_state
 
 from qbraid.exceptions import QbraidError
-from qbraid.programs.load_program import circuit_wrapper
+from qbraid.programs.loader import load_program
 from qbraid.providers.enums import DeviceType
-from qbraid.transpiler import convert_to_package
+from qbraid.transpiler import transpile
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 from .exceptions import ProgramValidationError, QbraidRuntimeError
 
 if TYPE_CHECKING:
-    import qbraid
+    import qbraid.programs
+    import qbraid.providers
 
 
 class QuantumDevice(ABC):
     """Abstract interface for device-like classes."""
 
-    def __init__(self, device: "qbraid.QDEVICE"):
+    def __init__(self, device: "qbraid.providers.QDEVICE"):
         """Create a ``QuantumDevice`` object.
 
         Args:
-            device (:data:`~.qbraid.QDEVICE`): qBraid Quantum device object
+            device (:data:`~.qbraid.providers.QDEVICE`): qBraid Quantum device object
 
         """
         # pylint: disable=too-many-function-args
@@ -118,7 +119,7 @@ class QuantumDevice(ABC):
         """Return the number of jobs in the queue for the backend"""
 
     @abstractmethod
-    def _populate_metadata(self, device: "qbraid.QDEVICE") -> None:
+    def _populate_metadata(self, device: "qbraid.providers.QDEVICE") -> None:
         """Populate device metadata with the following fields:
         * self._id
         * self._name
@@ -148,7 +149,7 @@ class QuantumDevice(ABC):
         """String representation of a DeviceWrapper object."""
         return f"<{self.__class__.__name__}({self.provider}:'{self.name}')>"
 
-    def verify_run(self, run_input: "qbraid.QPROGRAM") -> None:
+    def verify_run(self, run_input: "qbraid.programs.QPROGRAM") -> None:
         """Checks device is online and that circuit num qubits <= device num qubits.
 
         Raises:
@@ -164,7 +165,7 @@ class QuantumDevice(ABC):
             )
 
         try:
-            qbraid_circuit = circuit_wrapper(run_input)
+            qbraid_circuit = load_program(run_input)
         except QbraidError as err:
             raise ProgramValidationError from err
 
@@ -174,12 +175,12 @@ class QuantumDevice(ABC):
                 f"number of qubits in device ({self.num_qubits})."
             )
 
-    def transpile(self, run_input: "qbraid.QPROGRAM") -> "qbraid.QPROGRAM":
+    def transpile(self, run_input: "qbraid.programs.QPROGRAM") -> "qbraid.programs.QPROGRAM":
         """Convert circuit to package compatible with target device and pass through any
         provider transpile methods to match topology of device and/or optimize as applicable.
 
         Returns:
-            :data:`~qbraid.QPROGRAM`: Transpiled quantum program (circuit) object
+            :data:`~qbraid.programs.QPROGRAM`: Transpiled quantum program (circuit) object
 
         Raises:
             QbraidRuntimeError: If circuit conversion fails
@@ -188,16 +189,16 @@ class QuantumDevice(ABC):
         input_run_package = run_input.__module__.split(".")[0]
         if input_run_package != self._run_package:
             try:
-                run_input = convert_to_package(run_input, self._run_package)
+                run_input = transpile(run_input, self._run_package)
             except CircuitConversionError as err:
                 raise QbraidRuntimeError from err
         return self._transpile(run_input)
 
-    def compile(self, run_input: "qbraid.QPROGRAM") -> "qbraid.QPROGRAM":
+    def compile(self, run_input: "qbraid.programs.QPROGRAM") -> "qbraid.programs.QPROGRAM":
         """Compile run input.
 
         Returns:
-            :data:`~qbraid.QPROGRAM`: Compiled quantum program (circuit) object
+            :data:`~qbraid.programs.QPROGRAM`: Compiled quantum program (circuit) object
 
         Raises:
             QbraidRuntimeError: If circuit conversion fails
@@ -206,12 +207,12 @@ class QuantumDevice(ABC):
         return self._compile(run_input)
 
     def process_run_input(
-        self, run_input: "qbraid.QPROGRAM", auto_compile: bool = False
-    ) -> "qbraid.transpiler.QuantumProgram":
+        self, run_input: "qbraid.programs.QPROGRAM", auto_compile: bool = False
+    ) -> "qbraid.programs.QuantumProgram":
         """Process quantum program before passing to device run method.
 
         Returns:
-            :class:`~qbraid.transpiler.QuantumProgram`: qBraid wrapped quantum program object
+            :class:`~qbraid.programs.QuantumProgram`: qBraid wrapped quantum program object
 
         Raises:
             QbraidRuntimeError: If error processing run input
@@ -221,12 +222,12 @@ class QuantumDevice(ABC):
         run_input = self.transpile(run_input)
         if auto_compile:
             run_input = self._compile(run_input)
-        return circuit_wrapper(run_input)
+        return load_program(run_input)
 
     def create_job(
         self,
         vendor_job_id: str,
-        circuits: "qbraid.transpiler.QuantumProgram",
+        circuits: "qbraid.programs.QuantumProgram",
         shots: int,
         tags: Dict[str, str],
     ) -> Dict[str, Any]:
@@ -251,7 +252,7 @@ class QuantumDevice(ABC):
         if len(circuits) == 1:
             circuit = circuits[0]
             try:
-                init_data["openQasm"] = convert_to_package(circuit.program, "qasm3")
+                init_data["openQasm"] = transpile(circuit.program, "qasm3")
             except Exception as err:  # pylint: disable=broad-exception-caught
                 logging.info(
                     "Error converting circuit to OpenQASM 3: %s. "
@@ -303,5 +304,7 @@ class QuantumDevice(ABC):
         """Applies any software/device specific modifications to run input."""
 
     @abstractmethod
-    def run(self, run_input: "qbraid.QPROGRAM", *args, **kwargs) -> "qbraid.providers.QuantumJob":
+    def run(
+        self, run_input: "qbraid.programs.QPROGRAM", *args, **kwargs
+    ) -> "qbraid.providers.QuantumJob":
         """Abstract run method."""

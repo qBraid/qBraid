@@ -121,9 +121,9 @@ def braket_ionq_compile(circuit: Union[Circuit, pytket.circuit.Circuit]) -> Circ
             tk_circuit = pytket.extensions.braket.braket_convert.braket_to_tk(circuit)
         except NotImplementedError:
             # pylint: disable-next=import-outside-toplevel
-            from qbraid.transpiler import convert_to_package
+            from qbraid.transpiler import transpile
 
-            tk_circuit = convert_to_package(circuit, "pytket")
+            tk_circuit = transpile(circuit, "pytket")
     else:
         tk_circuit = circuit
 

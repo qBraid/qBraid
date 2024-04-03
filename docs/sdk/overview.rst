@@ -84,15 +84,16 @@ Search for quantum backend(s) on which to execute your program:
    >>> ibm_least_busy_qpu()
    ibm_q_oslo
 
-Apply the device wrapper and send your quantum jobs:
+Select a device using the ``QbraidProvider`` and send your quantum jobs:
 
 .. code-block:: python
 
-   >>> from qbraid.providers import device_wrapper
+   >>> from qbraid.providers import QbraidProvider
+   >>> provider = QbraidProvider()
    >>> jobs  = []
    >>> qbraid_ids = ['aws_oqc_lucy', 'ibm_q_oslo']
    >>> for device in qbraid_ids:
-   ... qdevice = device_wrapper(device)
+   ... qdevice = provider.get_device(device)
    ... qjob = qdevice.run(circuit, shots=1000)
    ... jobs.append(qjob)
 

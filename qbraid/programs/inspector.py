@@ -16,11 +16,11 @@ from typing import TYPE_CHECKING
 
 from openqasm3.parser import QASM3ParsingError, parse
 
-from ._qprogram import QPROGRAM_LIBS
+from ._import import QPROGRAM_LIBS
 from .exceptions import PackageValueError, ProgramTypeError, QasmError
 
 if TYPE_CHECKING:
-    import qbraid
+    import qbraid.programs
 
 
 def get_qasm_version(qasm_str: str) -> str:
@@ -30,10 +30,10 @@ def get_qasm_version(qasm_str: str) -> str:
         qasm_str: An OpenQASM program string
 
     Returns:
-        QASM version from list :obj:`~qbraid.QPROGRAM_LIBS`
+        QASM version from list :obj:`~qbraid.programs.QPROGRAM_LIBS`
 
     Raises:
-        :class:`~qbraid.QasmError`: If string does not represent a valid OpenQASAM program.
+        :class:`~qbraid.programs.QasmError`: If string does not represent a valid OpenQASAM program.
 
     """
     qasm_str = qasm_str.replace("opaque", "// opaque")
@@ -46,12 +46,12 @@ def get_qasm_version(qasm_str: str) -> str:
         raise QasmError("Failed to parse OpenQASM program.") from err
 
 
-def get_program_type(program: "qbraid.QPROGRAM", require_supported: bool = True) -> str:
+def get_program_type(program: "qbraid.programs.QPROGRAM", require_supported: bool = True) -> str:
     """
     Get the type of a quantum program.
 
     Args:
-        program (qbraid.QPROGRAM): The quantum program to get the type of.
+        program (qbraid.programs.QPROGRAM): The quantum program to get the type of.
         require_supported (bool): If True, raise an error if the program type is not supported.
 
     Returns:

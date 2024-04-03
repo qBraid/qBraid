@@ -28,15 +28,6 @@ Data Types
    DeviceStatus
    DeviceType
 
-Functions
-----------
-
-.. autosummary::
-   :toctree: ../stubs/
-
-   device_wrapper
-   job_wrapper
-
 Classes
 --------
 
@@ -62,7 +53,7 @@ Exceptions
    ResourceNotFoundError
 
 """
-from ._qdevice import QDEVICE
+from ._import import QDEVICE, QDEVICE_LIBS, QDEVICE_TYPES, SUPPORTED_QDEVICES
 from .device import QuantumDevice
 from .enums import DeviceStatus, DeviceType, JobStatus
 from .exceptions import (
@@ -73,6 +64,5 @@ from .exceptions import (
     ResourceNotFoundError,
 )
 from .job import QuantumJob
-from .load_provider import device_wrapper, job_wrapper
 from .provider import QbraidProvider
 from .result import QuantumJobResult

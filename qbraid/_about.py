@@ -45,6 +45,7 @@ def about() -> None:
         "pytket": "pytket",
         "qiskit_ibm_provider": "qiskit_ibm_provider",
         "qiskit_ibm_runtime": "qiskit_ibm_runtime",
+        "qbraid_qir": "qbraid_qir",
     }
 
     optional_dependencies = {}

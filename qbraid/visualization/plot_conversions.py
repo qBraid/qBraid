@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Dict, Optional
 import matplotlib.pyplot as plt
 import networkx as nx
 
-from qbraid.programs._qprogram import QPROGRAM_LIBS
+from qbraid.programs._import import QPROGRAM_LIBS
 
 if TYPE_CHECKING:
     import qbraid.transpiler

@@ -75,7 +75,7 @@ def convert_from_pyquil_to_x(target, gate_name):
     gate = pyquil_gates[gate_name]
     source_circuit = pyquil.Program()
     source_circuit += gate
-    target_circuit = qbraid.transpiler.convert_to_package(source_circuit, target)
+    target_circuit = qbraid.transpiler.transpile(source_circuit, target)
     assert qbraid.interface.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
 
 

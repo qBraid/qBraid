@@ -16,9 +16,8 @@ import cirq
 import numpy as np
 import pytest
 
-from qbraid.programs import circuit_wrapper
-from qbraid.programs._qprogram import QPROGRAM_LIBS
-from qbraid.transpiler.converter import convert_to_package
+from qbraid.programs import QPROGRAM_LIBS, load_program
+from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.graph import ConversionGraph
 
 
@@ -35,12 +34,12 @@ def test_convert_circuit_operation_from_cirq(frontend):
     if not graph.has_path("cirq", frontend):
         pytest.skip(f"conversion from cirq to {frontend} not yet supported")
 
-    test_circuit = convert_to_package(cirq_circuit, frontend, conversion_graph=graph)
+    test_circuit = transpile(cirq_circuit, frontend, conversion_graph=graph)
 
-    cirq_unitary = circuit_wrapper(cirq_circuit).unitary()
+    cirq_unitary = load_program(cirq_circuit).unitary()
 
     try:
-        test_unitary = circuit_wrapper(test_circuit).unitary()
+        test_unitary = load_program(test_circuit).unitary()
     except NotImplementedError:
         pytest.skip(f"Unitary calculation not implemented for {frontend}")
 

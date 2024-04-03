@@ -23,12 +23,13 @@ and plot a histogram of the probabilities.
 
 .. code-block:: python
 
-    from qbraid.providers import device_wrapper
+    from qbraid.providers import QbraidProvider
     from qbraid.visualization import plot_histogram
 
     shots = 2**10
     
-    qdevice = device_wrapper('ibm_q_nairobi')
+    provider = QbraidProvider()
+    qdevice = provider.get_device('ibm_q_nairobi')
     qjob = ibmq_device.run(circuit, shots=shots)
     qjob.wait_for_final_state()
     
@@ -61,7 +62,7 @@ on a density-matrix simulator provided AWS:
 
 .. code-block:: python
 
-    aws_device = device_wrapper('aws_dm_sim')
+    aws_device = provider.get_device('aws_dm_sim')
 
     batch_jobs = aws_device.run_batch([circuit, circuit], shots=shots)
 

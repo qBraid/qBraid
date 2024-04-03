@@ -20,7 +20,7 @@ from pytket.qasm import circuit_to_qasm_str
 
 from qbraid.interface import circuits_allclose
 from qbraid.transpiler.conversions.cirq import qasm2_to_cirq
-from qbraid.transpiler.converter import convert_to_package
+from qbraid.transpiler.converter import transpile
 
 from ..cirq_utils import _equal
 
@@ -31,8 +31,8 @@ def test_bell_state_to_from_circuits():
     """
     qreg = LineQubit.range(2)
     cirq_circuit = Circuit([ops.H.on(qreg[0]), ops.CNOT.on(qreg[0], qreg[1])])
-    pytket_circuit = convert_to_package(cirq_circuit, "pytket")  # pytket from Cirq
-    circuit_cirq = convert_to_package(pytket_circuit, "cirq")  # Cirq from pytket
+    pytket_circuit = transpile(cirq_circuit, "pytket")  # pytket from Cirq
+    circuit_cirq = transpile(pytket_circuit, "cirq")  # Cirq from pytket
     assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
 
 
@@ -41,8 +41,8 @@ def test_random_circuit_to_from_circuits():
     with a random two-qubit circuit.
     """
     cirq_circuit = testing.random_circuit(qubits=2, n_moments=10, op_density=0.99, random_state=1)
-    pytket_circuit = convert_to_package(cirq_circuit, "pytket")
-    circuit_cirq = convert_to_package(pytket_circuit, "cirq")
+    pytket_circuit = transpile(cirq_circuit, "pytket")
+    circuit_cirq = transpile(pytket_circuit, "cirq")
     assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
 
 
@@ -56,7 +56,7 @@ def test_convert_with_barrier(as_qasm):
     if as_qasm:
         cirq_circuit = qasm2_to_cirq(circuit_to_qasm_str(pytket_circuit))
     else:
-        cirq_circuit = convert_to_package(pytket_circuit, "cirq")
+        cirq_circuit = transpile(pytket_circuit, "cirq")
 
     assert _equal(cirq_circuit, Circuit())
 
@@ -76,7 +76,7 @@ def test_convert_with_multiple_barriers(as_qasm):
     if as_qasm:
         cirq_circuit = qasm2_to_cirq(circuit_to_qasm_str(pytket_circuit))
     else:
-        cirq_circuit = convert_to_package(pytket_circuit, "cirq")
+        cirq_circuit = transpile(pytket_circuit, "cirq")
 
     qbit = LineQubit(0)
     correct = Circuit(ops.H.on(qbit) for _ in range(num_ops))

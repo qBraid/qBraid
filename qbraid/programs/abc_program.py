@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 class QuantumProgram:
     """Abstract class for qbraid program wrapper objects."""
 
-    def __init__(self, program: "qbraid.QPROGRAM"):
+    def __init__(self, program: "qbraid.programs.QPROGRAM"):
         self.program = program
         self._program = program
         self._package = get_program_type(program)
@@ -37,7 +37,7 @@ class QuantumProgram:
         return self._package
 
     @property
-    def program(self) -> "qbraid.QPROGRAM":
+    def program(self) -> "qbraid.programs.QPROGRAM":
         """Return the wrapped quantum program object."""
         return self._program
 

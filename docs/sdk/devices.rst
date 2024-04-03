@@ -112,11 +112,12 @@ object can be created as follows:
 
 .. code-block:: python
 
-    from qbraid.providers import device_wrapper
+    from qbraid.providers import QbraidProvider
 
+    provider = QbraidProvider()
     qbraid_id = 'aws_oqc_lucy'  # as an example
 
-    qdevice = device_wrapper(qbraid_id)
+    qdevice = provider.get_device(qbraid_id)
 
 
 From here, class methods are available to get information about the device,
@@ -190,7 +191,7 @@ least number of queued quantum jobs.
 
     >>> from qbraid.providers.ibm import ibm_least_busy_qpu
     >>> qbraid_id = ibm_least_busy_qpu()
-    >>> qdevice = device_wrapper(qbraid_id)
+    >>> qdevice = provider.get_device(qbraid_id)
     >>> qdevice.name
     'Nairobi'
     >>> qdevice.status()
@@ -219,7 +220,7 @@ Summary
 --------
 
 The device layer of the qBraid SDK enables users to execute quantum circuits of
-any ``qbraid.QPROGRAM_TYPES`` on any simulator or QPU returned by
+any ``qbraid.programs.QPROGRAM_TYPES`` on any simulator or QPU returned by
 ``qbraid.get_devices``. Filter your search to the specifications of your task,
 identify a device, and execute your program through a consistent three-step protocol:
 

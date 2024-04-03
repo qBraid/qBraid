@@ -17,18 +17,20 @@ import braket.circuits
 import numpy as np
 import pytest
 
-from qbraid.providers import device_wrapper
+from qbraid.providers import QbraidProvider
 from qbraid.providers.aws import BraketProvider
 
 
 @pytest.fixture
 def braket_most_busy():
     """Return the most busy device for testing purposes."""
-    provider = BraketProvider()
-    braket_devices = provider.get_devices(
+    braket_provider = BraketProvider()
+    braket_devices = braket_provider.get_devices(
         types=["QPU"], statuses=["ONLINE"], provider_names=["Rigetti", "IonQ", "Oxford"]
     )
-    qbraid_devices = [device_wrapper(device.arn) for device in braket_devices]
+
+    qbraid_provider = QbraidProvider()
+    qbraid_devices = [qbraid_provider.get_device(device.arn) for device in braket_devices]
     qbraid_device = None
     max_queued = 0
     for device in qbraid_devices:

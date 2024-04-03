@@ -111,7 +111,7 @@ For example, 'qiskit' maps to `qiskit.QuantumCircuit` in `QPROGRAM`. Notably, 'q
 This arrangement simplifies targeting and transpiling between different quantum programming frameworks.
 
 ```python
->>> from qbraid import SUPPORTED_QPROGRAMS
+>>> from qbraid.programs import SUPPORTED_QPROGRAMS
 >>> SUPPORTED_QPROGRAMS
 {'cirq': 'cirq.circuits.circuit.Circuit',
  'qiskit': 'qiskit.circuit.quantumcircuit.QuantumCircuit',
@@ -123,14 +123,14 @@ This arrangement simplifies targeting and transpiling between different quantum 
  'qasm3': 'str'}
 ```
 
-Pass any quantum program of type `qbraid.QPROGRAM` to the `circuit_wrapper()` and specify a target package
+Pass any quantum program of type `qbraid.programs.QPROGRAM` to the `load_program()` and specify a target package
 from `SUPPORTED_QPROGRAMS` to "transpile" your circuit to a new program type:
 
 ```python
->>> from qbraid.programs import circuit_wrapper
+>>> from qbraid.programs import load_program
 >>> from qbraid.interface import random_circuit
 >>> qiskit_circuit = random_circuit("qiskit")
->>> cirq_circuit = circuit_wrapper(qiskit_circuit).transpile("cirq")
+>>> cirq_circuit = load_program(qiskit_circuit).transpile("cirq")
 >>> print(qiskit_circuit)
           ┌────────────┐
 q_0: ──■──┤ Rx(3.0353) ├
@@ -143,11 +143,11 @@ q_1: ┤ H ├────┤ √X ├────
 1: ───H───X^0.5────────
 ```
 
-The same functionality can be achieved using the underlying `convert_to_package()` function directly:
+The same functionality can be achieved using the underlying `transpile()` function directly:
 
 ```python
->>> from qbraid import convert_to_package
->>> cirq_circuit = convert_to_package(qiskit_circuit, "cirq")
+>>> from qbraid import transpile
+>>> cirq_circuit = transpile(qiskit_circuit, "cirq")
 ```
 
 Behind the scenes, the qBraid-SDK uses ``networkx`` to create a directional graph that maps all possible conversions between supported program types:
@@ -183,13 +183,24 @@ ibm_q_brisbane                      ONLINE
 
 ```
 
-Apply the `device_wrapper()`, and send quantum jobs to any supported backend,
-from any supported program type:
+You can get a Python list of device objects using:
 
 ```python
->>> from qbraid.providers import device_wrapper, get_jobs
->>> aws_device = device_wrapper("aws_oqc_lucy")
->>> ibm_device = device_wrapper("ibm_q_brisbane")
+from qbraid.providers import QbraidProvider
+
+provider = QbraidProvider()
+qdevices = provider.get_devices()
+```
+
+Or, instantiate a known device by ID via the `QbraidProvider.get_device()` method,
+and submit quantum jobs from any supported program type:
+
+```python
+>>> from qbraid import get_jobs
+>>> from qbraid.providers import QbraidProvider
+>>> provider = QbraidProvider()
+>>> aws_device = provider.get_device("aws_oqc_lucy")
+>>> ibm_device = provider.get_device("ibm_q_brisbane")
 >>> aws_job = aws_device.run(qiskit_circuit, shots=1000)
 >>> ibm_job = ibm_device.run(cirq_circuit, shots=1000)
 >>> get_jobs()
@@ -243,8 +254,7 @@ qBraid API and leverage functions such as `get_devices()` and `get_jobs()`.
 Alternatively, the qBraid-SDK can discover credentials from environment
 variables:
 
-```bash
-export JUPYTERHUB_USER='USER_EMAIL'
+```shell
 export QBRAID_API_KEY='QBRAID_API_KEY'
 ```
 

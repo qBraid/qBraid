@@ -14,19 +14,18 @@ Module for drawing quantum circuit diagrams
 """
 from typing import TYPE_CHECKING, Optional
 
-from qbraid.programs._qprogram import QPROGRAM_LIBS
-from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.inspector import get_program_type
-from qbraid.transpiler.converter import convert_to_package
-from qbraid.visualization.draw_qasm3 import qasm3_drawer
-from qbraid.visualization.exceptions import VisualizationError
+from qbraid.programs import QPROGRAM_LIBS, ProgramTypeError, get_program_type
+from qbraid.transpiler.converter import transpile
+
+from .draw_qasm3 import qasm3_drawer
+from .exceptions import VisualizationError
 
 if TYPE_CHECKING:
-    import qbraid
+    import qbraid.programs
 
 
 def circuit_drawer(
-    program: "qbraid.QPROGRAM",
+    program: "qbraid.programs.QPROGRAM",
     as_package: Optional[str] = None,
     output: Optional[str] = None,
     **kwargs,
@@ -34,7 +33,7 @@ def circuit_drawer(
     """Draws circuit diagram.
 
     Args:
-        :data:`~.qbraid.QPROGRAM`: Supported quantum program
+        :data:`~.qbraid.programs.QPROGRAM`: Supported quantum program
 
     Raises:
         ProgramTypeError: If quantum program is not of a supported type
@@ -42,7 +41,7 @@ def circuit_drawer(
     package = get_program_type(program)
 
     if as_package and as_package != package and as_package in QPROGRAM_LIBS:
-        program = convert_to_package(program, as_package)
+        program = transpile(program, as_package)
         package = as_package
 
     # pylint: disable=import-outside-toplevel
@@ -109,16 +108,16 @@ def circuit_drawer(
     if package == "qasm2":
         # coverage: ignore
         if "cirq" in QPROGRAM_LIBS:
-            program = convert_to_package(program, "cirq")
+            program = transpile(program, "cirq")
         elif "qiskit" in QPROGRAM_LIBS:
-            program = convert_to_package(program, "qiskit")
+            program = transpile(program, "qiskit")
         else:
-            program = convert_to_package(program, "qasm3")
+            program = transpile(program, "qasm3")
 
         return circuit_drawer(program, output=output, **kwargs)
 
     if package == "pennylane":
-        program = convert_to_package(program, "qasm2")
+        program = transpile(program, "qasm2")
 
         return circuit_drawer(program, output=output, **kwargs)
 

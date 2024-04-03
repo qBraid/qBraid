@@ -16,8 +16,7 @@ import warnings
 from copy import deepcopy
 from typing import TYPE_CHECKING, Callable, List, Optional
 
-from qbraid.programs._qprogram import QPROGRAM_LIBS
-from qbraid.programs.inspector import get_program_type
+from qbraid.programs import QPROGRAM_LIBS, get_program_type
 from qbraid.transpiler.exceptions import (
     CircuitConversionError,
     ConversionPathNotFoundError,
@@ -95,13 +94,13 @@ def _get_path_from_bound_methods(bound_methods: List[Callable]) -> str:
     return " -> ".join(path)
 
 
-def convert_to_package(
-    program: "qbraid.QPROGRAM",
+def transpile(
+    program: "qbraid.programs.QPROGRAM",
     target: str,
     conversion_graph: Optional[ConversionGraph] = None,
     max_path_attempts: int = 3,
     max_path_depth: Optional[int] = None,
-) -> "qbraid.QPROGRAM":
+) -> "qbraid.programs.QPROGRAM":
     """
     Transpile a quantum program to a target language using a conversion graph.
     This function attempts to find a conversion path from the program's current
@@ -109,7 +108,7 @@ def convert_to_package(
     attempts and path depths.
 
     Args:
-        program (qbraid.QPROGRAM): The quantum program to transpile.
+        program (qbraid.programs.QPROGRAM): The quantum program to transpile.
         target (str): The target language to transpile to.
         conversion_graph (Optional[ConversionGraph]): The graph representing available conversions.
             If None, a default graph is used. Defaults to None.
@@ -122,7 +121,7 @@ def convert_to_package(
             to None, i.e. no limit set on the path depth.
 
     Returns:
-        qbraid.QPROGRAM: The transpiled quantum program.
+        qbraid.programs.QPROGRAM: The transpiled quantum program.
 
     Raises:
         NodeNotFoundError: If the target or source package is not in the ConversionGraph.

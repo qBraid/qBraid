@@ -19,7 +19,7 @@ from cirq import Circuit, LineQubit, X, Y, Z
 
 from qbraid.interface.circuit_equality import circuits_allclose
 from qbraid.interface.random.random import random_circuit, random_unitary_matrix
-from qbraid.programs import circuit_wrapper
+from qbraid.programs import load_program
 from qbraid.programs.inspector import get_program_type
 
 from ..fixtures import packages_bell, packages_shared15
@@ -89,17 +89,17 @@ def test_collapse_empty_braket_cirq():
 
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
-    qprogram = circuit_wrapper(braket_circuit)
+    qprogram = load_program(braket_circuit)
     qprogram.remove_idle_qubits()
     braket_compat_circuit = qprogram.program
     assert braket_compat_circuit.qubit_count == 3
 
-    qprogram = circuit_wrapper(cirq_circuit)
+    qprogram = load_program(cirq_circuit)
     qprogram.remove_idle_qubits()
     cirq_compat_circuit = qprogram.program
     assert circuits_allclose(braket_compat_circuit, cirq_compat_circuit, strict_gphase=True)
 
-    qprogram = circuit_wrapper(cirq_circuit)
+    qprogram = load_program(cirq_circuit)
     qprogram.populate_idle_qubits()
     cirq_expanded_circuit = qprogram.program
     assert len(cirq_expanded_circuit.all_qubits()) == 5

@@ -20,7 +20,7 @@ import qiskit
 from qbraid.interface import circuits_allclose
 from qbraid.transpiler.conversions.cirq import cirq_to_qasm2, qasm2_to_cirq
 from qbraid.transpiler.conversions.qiskit import qiskit_to_qasm2
-from qbraid.transpiler.converter import convert_to_package
+from qbraid.transpiler.converter import transpile
 
 from ..cirq_utils import _equal
 
@@ -31,8 +31,8 @@ def test_bell_state_to_from_circuits():
     """
     qreg = cirq.LineQubit.range(2)
     cirq_circuit = cirq.Circuit([cirq.ops.H.on(qreg[0]), cirq.ops.CNOT.on(qreg[0], qreg[1])])
-    qiskit_circuit = convert_to_package(cirq_circuit, "qiskit")  # Qiskit from Cirq
-    circuit_cirq = convert_to_package(qiskit_circuit, "cirq")  # Cirq from Qiskit
+    qiskit_circuit = transpile(cirq_circuit, "qiskit")  # Qiskit from Cirq
+    circuit_cirq = transpile(qiskit_circuit, "cirq")  # Cirq from Qiskit
     assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
 
 
@@ -54,8 +54,8 @@ def test_random_circuit_to_from_circuits():
     cirq_circuit = cirq.testing.random_circuit(
         qubits=2, n_moments=10, op_density=0.99, random_state=1
     )
-    qiskit_circuit = convert_to_package(cirq_circuit, "qiskit")
-    circuit_cirq = convert_to_package(qiskit_circuit, "cirq")
+    qiskit_circuit = transpile(cirq_circuit, "qiskit")
+    circuit_cirq = transpile(qiskit_circuit, "cirq")
     assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
 
 
@@ -81,7 +81,7 @@ def test_convert_with_barrier(as_qasm):
     if as_qasm:
         cirq_circuit = qasm2_to_cirq(qiskit_to_qasm2(qiskit_circuit))
     else:
-        cirq_circuit = convert_to_package(qiskit_circuit, "cirq")
+        cirq_circuit = transpile(qiskit_circuit, "cirq")
 
     assert _equal(cirq_circuit, cirq.Circuit())
 
@@ -101,7 +101,7 @@ def test_convert_with_multiple_barriers(as_qasm):
     if as_qasm:
         cirq_circuit = qasm2_to_cirq(qiskit_to_qasm2(qiskit_circuit))
     else:
-        cirq_circuit = convert_to_package(qiskit_circuit, "cirq")
+        cirq_circuit = transpile(qiskit_circuit, "cirq")
 
     qbit = cirq.LineQubit(0)
     correct = cirq.Circuit(cirq.ops.H.on(qbit) for _ in range(num_ops))

@@ -15,9 +15,10 @@ target backend, the procedure was as follows:
 
 .. code-block:: python
 
-    >>> from qbraid.providers import device_wrapper
+    >>> from qbraid.providers import QbraidProvider
     >>> qbraid_id = 'aws_oqc_lucy'
-    >>> qdevice = device_wrapper(qbraid_id)
+    >>> provider = QbraidProvider()
+    >>> qdevice = provider.get_device(qbraid_id)
     >>> qjob = qdevice.run(circuit)
     >>> type(qjob)
     qbraid.providers.aws.job.BraketQuantumTaskWrapper
@@ -56,7 +57,7 @@ For AWS devices, ``run_batch`` will create a list of quantum job objects:
 
 .. code-block:: python
 
-    >>> aws_device = device_wrapper('aws_ionq_harmony')
+    >>> aws_device = provider.get_device('aws_ionq_harmony')
     >>> batch_jobs = aws_device.run_batch([circuit1, circuit2, circuit3], shots=1000)
     >>> batch_results = [job.result() for job in batch_jobs]
 
@@ -65,7 +66,7 @@ For IBM devices, ``run_batch`` will create a single object that contains all bat
 
 .. code-block:: python
 
-    >>> ibm_device = device_wrapper('ibm_q_kyoto')
+    >>> ibm_device = provider.get_device('ibm_q_kyoto')
     >>> batch_job = ibm_device.run_batch([circuit1, circuit2, circuit3], shots=1000)
     >>> batch_result = batch_job.result()
 
@@ -98,9 +99,9 @@ time, and even in a seperate program, with no loss of information.
 
 .. code-block:: python
 
-    >>> from qbraid.providers import job_wrapper
+    >>> from qbraid.providers import QuantumJob
     >>> saved_job_id = 'aws_oqc_lucy-exampleuser-qjob-xxxxxxxxxxxxxxxxxxxx'
-    >>> qjob = job_wrapper(saved_job_id)
+    >>> qjob = QuantumJob.retrieve(saved_job_id)
 
 
 You can also load a previously submitted jobs directly through the corresponding provider class:

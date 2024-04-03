@@ -77,8 +77,8 @@ def assert_allclose_up_to_global_phase(a: np.ndarray, b: np.ndarray, atol: float
 
 
 def circuits_allclose(  # pylint: disable=too-many-arguments
-    circuit0: "qbraid.QPROGRAM",
-    circuit1: "qbraid.QPROGRAM",
+    circuit0: "qbraid.programs.QPROGRAM",
+    circuit1: "qbraid.programs.QPROGRAM",
     index_contig: bool = False,
     allow_rev_qubits: bool = False,
     strict_gphase: bool = False,
@@ -87,8 +87,8 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
     """Check if quantum program unitaries are equivalent.
 
     Args:
-        circuit0 (:data:`~qbraid.QPROGRAM`): First quantum program to compare
-        circuit1 (:data:`~qbraid.QPROGRAM`): Second quantum program to compare
+        circuit0 (:data:`~qbraid.programs.QPROGRAM`): First quantum program to compare
+        circuit1 (:data:`~qbraid.programs.QPROGRAM`): Second quantum program to compare
         index_contig: If True, calculates circuit unitaries using contiguous qubit indexing.
         allow_rev_qubits: Whether to count identical circuits with reversed qubit ordering
             as equivalent.
@@ -100,7 +100,7 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
         True if the input circuits pass unitary equality check
 
     """
-    from qbraid.programs import circuit_wrapper  # pylint: disable=import-outside-toplevel
+    from qbraid.programs import load_program  # pylint: disable=import-outside-toplevel
 
     def unitary_equivalence_check(unitary0, unitary1, unitary_rev=None):
         if strict_gphase:
@@ -119,8 +119,8 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
                 return False
         return True
 
-    program0 = circuit_wrapper(circuit0)
-    program1 = circuit_wrapper(circuit1)
+    program0 = load_program(circuit0)
+    program1 = load_program(circuit1)
 
     if index_contig:
         program0.remove_idle_qubits()

@@ -15,7 +15,7 @@ Module defining exceptions for errors raised by qBraid.
 
 from qbraid.exceptions import QbraidError
 
-from ._qprogram import QPROGRAM_LIBS
+from ._import import QPROGRAM_LIBS
 
 
 class PackageValueError(QbraidError):

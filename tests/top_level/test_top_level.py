@@ -24,7 +24,7 @@ from qbraid.get_devices import get_devices
 from qbraid.get_jobs import _display_jobs_jupyter, get_jobs
 from qbraid.interface.random import random_circuit
 from qbraid.programs.exceptions import PackageValueError
-from qbraid.providers.load_provider import device_wrapper
+from qbraid.providers import QbraidProvider
 
 # pylint: disable=missing-function-docstring,redefined-outer-name
 
@@ -112,7 +112,8 @@ def test_get_aws_jobs_by_tag(capfd):
     """Test ``get_jobs`` for aws tagged jobs."""
     _mock_ipython(MockIPython(None))
     circuit = random_circuit("braket")
-    device = device_wrapper("aws_dm_sim")
+    provider = QbraidProvider()
+    device = provider.get_device("aws_dm_sim")
     job = device.run(circuit, shots=10, tags={"test": "123"})
     get_jobs(filters={"tags": {"test": "123"}, "numResults": 1})
     out, err = capfd.readouterr()
@@ -127,7 +128,8 @@ def test_get_ibm_jobs_by_tag(capfd):
     """Test ``get_jobs`` for ibm tagged jobs."""
     _mock_ipython(MockIPython(None))
     circuit = random_circuit("qiskit")
-    device = device_wrapper("ibm_q_qasm_simulator")
+    provider = QbraidProvider()
+    device = provider.get_device("ibm_q_qasm_simulator")
     job = device.run(circuit, shots=10, tags=["test"])
     get_jobs(filters={"tags": {"test": "*"}, "numResults": 1})
     out, err = capfd.readouterr()

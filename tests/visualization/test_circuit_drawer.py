@@ -16,7 +16,7 @@ Unit tests for circuit drawer
 """
 import pytest
 
-from qbraid.programs import ProgramTypeError, circuit_wrapper
+from qbraid.programs import ProgramTypeError, load_program
 from qbraid.visualization.draw_circuit import circuit_drawer
 from qbraid.visualization.exceptions import VisualizationError
 
@@ -42,7 +42,7 @@ q_0: ─────┤ X ├
 q_1: ┤ H ├──■──
      └───┘     """
     qiskit_bell, _ = bell_circuit
-    qprogram = circuit_wrapper(qiskit_bell)
+    qprogram = load_program(qiskit_bell)
     qprogram.reverse_qubit_order()
     result = circuit_drawer(qprogram.program, output="text")
     assert str(result) == expected

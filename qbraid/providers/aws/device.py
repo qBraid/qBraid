@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, List, Tuple
 
 from braket.device_schema import ExecutionDay
 
-from qbraid.programs._qprogram import QPROGRAM_LIBS
+from qbraid.programs._import import QPROGRAM_LIBS
 from qbraid.providers.device import QuantumDevice
 from qbraid.providers.enums import DeviceStatus, DeviceType
 

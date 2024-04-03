@@ -30,7 +30,7 @@ Functions
 
    get_qasm_version
    get_program_type
-   circuit_wrapper
+   load_program
 
 Classes
 --------
@@ -51,8 +51,8 @@ Exceptions
    QasmError
 
 """
-from ._qprogram import QPROGRAM, QPROGRAM_LIBS, QPROGRAM_TYPES, SUPPORTED_QPROGRAMS
+from ._import import QPROGRAM, QPROGRAM_LIBS, QPROGRAM_TYPES, SUPPORTED_QPROGRAMS
 from .abc_program import QuantumProgram
 from .exceptions import PackageValueError, ProgramTypeError, QasmError
 from .inspector import get_program_type, get_qasm_version
-from .load_program import circuit_wrapper
+from .loader import load_program
