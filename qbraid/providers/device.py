@@ -245,7 +245,7 @@ class QuantumDevice(ABC):
         """Process quantum program before passing to device run method.
 
         Returns:
-            Tupe of run input, circuit num_qubits, depth, and openqasm string
+            Tupe of run input and job data dictionary (num_qubits, depth, openqasm string)
 
         Raises:
             QbraidRuntimeError: If error processing run input

@@ -68,7 +68,7 @@ You can also [install from source](CONTRIBUTING.md#installing-from-source) by cl
 ```bash
 git clone https://github.com/qBraid/qBraid.git
 cd qBraid
-pip install -e '.[all]'
+pip install .
 ```
 
 *Note*: The qBraid-SDK requires Python 3.9 or greater.
@@ -127,10 +127,10 @@ Pass any quantum program of type `qbraid.programs.QPROGRAM` to the `load_program
 from `SUPPORTED_QPROGRAMS` to "transpile" your circuit to a new program type:
 
 ```python
->>> from qbraid.programs import load_program
 >>> from qbraid.interface import random_circuit
+>>> from qbraid.transpiler import transpile
 >>> qiskit_circuit = random_circuit("qiskit")
->>> cirq_circuit = load_program(qiskit_circuit).transpile("cirq")
+>>> cirq_circuit = transpile(qiskit_circuit, "cirq")
 >>> print(qiskit_circuit)
           ┌────────────┐
 q_0: ──■──┤ Rx(3.0353) ├
@@ -146,7 +146,7 @@ q_1: ┤ H ├────┤ √X ├────
 The same functionality can be achieved using the underlying `transpile()` function directly:
 
 ```python
->>> from qbraid import transpile
+>>> from qbraid.transpiler import transpile
 >>> cirq_circuit = transpile(qiskit_circuit, "cirq")
 ```
 
