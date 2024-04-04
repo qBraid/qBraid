@@ -41,6 +41,7 @@ from pytket.predicates import (
 )
 
 from qbraid.compiler.exceptions import CompilerError
+from qbraid.transpiler import transpile
 
 HARMONY_MAX_QUBITS = 11
 
@@ -120,9 +121,6 @@ def braket_ionq_compile(circuit: Union[Circuit, pytket.circuit.Circuit]) -> Circ
         try:
             tk_circuit = pytket.extensions.braket.braket_convert.braket_to_tk(circuit)
         except NotImplementedError:
-            # pylint: disable-next=import-outside-toplevel
-            from qbraid.transpiler import transpile
-
             tk_circuit = transpile(circuit, "pytket")
     else:
         tk_circuit = circuit

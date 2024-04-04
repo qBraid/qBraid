@@ -12,7 +12,7 @@
 Module for performing QASM program checks before conversion
 
 """
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from openqasm3.parser import QASM3ParsingError, parse
 
@@ -46,7 +46,9 @@ def get_qasm_version(qasm_str: str) -> str:
         raise QasmError("Failed to parse OpenQASM program.") from err
 
 
-def get_program_type(program: "qbraid.programs.QPROGRAM", require_supported: bool = True) -> str:
+def get_program_type(
+    program: "qbraid.programs.QPROGRAM", require_supported: bool = True
+) -> Optional[str]:
     """
     Get the type of a quantum program.
 
@@ -55,22 +57,27 @@ def get_program_type(program: "qbraid.programs.QPROGRAM", require_supported: boo
         require_supported (bool): If True, raise an error if the program type is not supported.
 
     Returns:
-        str: The type of the quantum program.
+        str: The type of the quantum program, or None if the type cannot be determined and
+             require_supported is False.
     """
     if isinstance(program, str):
         try:
             package = get_qasm_version(program)
         except QasmError as err:
-            raise ProgramTypeError(
-                "Input of type string must represent a valid OpenQASM program."
-            ) from err
+            if require_supported:
+                raise ProgramTypeError(
+                    "Input of type string must represent a valid OpenQASM program."
+                ) from err
+            package = None
 
     else:
         try:
             program_module = program.__module__
             package = program_module.split(".")[0].lower()
         except AttributeError as err:
-            raise ProgramTypeError(program) from err
+            if require_supported:
+                raise ProgramTypeError(program) from err
+            package = None
 
     if package not in QPROGRAM_LIBS and require_supported:
         raise PackageValueError(package)

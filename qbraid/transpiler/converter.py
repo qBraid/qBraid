@@ -27,7 +27,7 @@ from qbraid.transpiler.graph import ConversionGraph
 if TYPE_CHECKING:
     import cirq
 
-    import qbraid
+    import qbraid.programs
 
 
 def _warn_if_unsupported(program_type, program_direction):

@@ -16,6 +16,8 @@ from typing import TYPE_CHECKING, Tuple
 
 import numpy as np
 
+from qbraid.programs import load_program
+
 if TYPE_CHECKING:
     import qbraid
 
@@ -100,7 +102,6 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
         True if the input circuits pass unitary equality check
 
     """
-    from qbraid.programs import load_program  # pylint: disable=import-outside-toplevel
 
     def unitary_equivalence_check(unitary0, unitary1, unitary_rev=None):
         if strict_gphase:
