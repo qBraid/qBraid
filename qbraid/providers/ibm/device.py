@@ -128,7 +128,7 @@ class QiskitBackend(QuantumDevice):
         object, applies a :class:`~qbraid.providers.ibm.QiskitJob`, and return the result.
 
         Args:
-            circuit: A circuit object to run on the IBM device.
+            run_input: A circuit object to run on the IBM device.
 
         Keyword Args:
             shots (int): The number of times to run the task on the device. Default is 1024.
