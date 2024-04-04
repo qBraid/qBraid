@@ -49,11 +49,7 @@ For the best experience, install the qBraid-SDK environment on
 [create an account](https://account.qbraid.com)) and follow the steps to
 [install an environment](https://docs.qbraid.com/projects/lab/en/latest/lab/environments.html#install-environment).
 
-Using the SDK on qBraid Lab means direct, pre-configured access to all
-[Amazon Braket supported devices](https://docs.aws.amazon.com/braket/latest/developerguide/braket-devices.html)
-with no additional access keys or API tokens required. See
-[qBraid Quantum Jobs](https://docs.qbraid.com/projects/lab/en/latest/lab/quantum_jobs.html)
-for more.
+Using the SDK on [qBraid Lab](https://docs.qbraid.com/projects/lab/en/latest/lab/overview.html) means direct, pre-configured access to QPUs from IonQ, Oxford Quantum Circuits, QuEra, and Rigetti, as well as on-demand simulators from AWS, all with no additional access keys or API tokens required. See [qBraid Quantum Jobs](https://docs.qbraid.com/projects/lab/en/latest/lab/quantum_jobs.html) for more.
 
 ### Local install
 
@@ -157,12 +153,24 @@ from qbraid.transpiler import ConversionGraph
 from qbraid.visualization import plot_conversion_graph
 
 graph = ConversionGraph()
-plot_conversion_graph(graph)
+
+graph.plot()
 ```
 
 <img align="middle" width="full" alt="conversion_graph" src="https://qbraid-static.s3.amazonaws.com/conversion_graph.png">
 
-You can use the native conversions supported by qBraid, or define your own custom nodes and/or edges. See [example](https://github.com/qBraid/qbraid-lab-demo/blob/main/qbraid_sdk/qbraid_sdk_transpiler_braket_qiskit.ipynb).
+You can use the native conversions supported by qBraid, or define your own custom nodes and/or edges. For [example](https://github.com/qBraid/qbraid-qir?tab=readme-ov-file#add-qir-node-to-qbraid-conversion-graph):
+
+```python
+from qbraid_qir.qasm3 import qasm3_to_qir
+from qbraid.transpiler import Conversion
+
+conversion = Conversion("qasm3", "qir", qasm3_to_qir)
+
+graph.add_conversion(conversion)
+
+graph.plot()
+```
 
 ### Devices & Jobs
 
@@ -296,14 +304,10 @@ Use the badge in your project's `README.rst`:
   [CONTRIBUTING.md](CONTRIBUTING.md)
 - For feature requests and bug reports:
   [Submit an issue](https://github.com/qBraid/qBraid/issues)
-- For discussions, and specific questions about the qBraid SDK, qBraid Lab, or
-  other topics, [join our discord community](https://discord.gg/TPBU2sa8Et)
+- For discussions, and specific questions about the qBraid-SDK [join our discord community](https://discord.gg/TPBU2sa8Et)
 - For questions that are more suited for a forum, post to
   [Quantum Computing Stack Exchange](https://quantumcomputing.stackexchange.com/)
   with the [`qbraid`](https://quantumcomputing.stackexchange.com/questions/tagged/qbraid) tag.
-- Want your open-source project featured as its own runtime environment on
-  qBraid Lab? Fill out our
-  [New Environment Request Form](https://forms.gle/a4v7Kdn7G7bs9jYD8)
 
 ## License
 
