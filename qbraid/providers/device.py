@@ -419,6 +419,24 @@ class QuantumDevice(ABC):
                                             but eliminates an extra call.
         """
 
+    def process_vendor_job_data(self, vendor_job_data_item, program_data):
+        """Process vendor job data and return a QuantumJob object."""
+        qbraid_job_obj: Optional[QuantumJob] = vendor_job_data_item.pop("qbraid_job_obj", None)
+        vendor_job_obj: Optional[Any] = vendor_job_data_item.pop("vendor_job_obj", None)
+
+        job_data = {**vendor_job_data_item, **program_data}
+        job_json = self.create_job(**job_data)
+        job_id = job_json.get("qbraidJobId", job_json.get("_id"))
+
+        if qbraid_job_obj is None:
+            return QuantumJob.retrieve(job_id)
+        return qbraid_job_obj(
+            job_id,
+            job_obj=vendor_job_obj,
+            job_json=job_json,
+            device=self,
+        )
+
     def run(
         self,
         run_input: "qbraid.programs.QPROGRAM",
@@ -447,20 +465,7 @@ class QuantumDevice(ABC):
             run_input, auto_compile=auto_compile, conversion_graph=conversion_graph
         )
         vendor_job_data = self._run(run_input, *args, **kwargs)
-        qbraid_job_obj: Optional[QuantumJob] = vendor_job_data.pop("qbraid_job_obj", None)
-        vendor_job_obj: Optional[Any] = vendor_job_data.pop("vendor_job_obj", None)
-
-        job_data = {**vendor_job_data, **program_data}
-        job_json = self.create_job(**job_data)
-        job_id = job_json.get("qbraidJobId", job_json.get("_id"))
-        if qbraid_job_obj is None:
-            return QuantumJob.retrieve(job_id)
-        return qbraid_job_obj(
-            job_id,
-            job_obj=vendor_job_obj,
-            job_json=job_json,
-            device=self,
-        )
+        return self.process_vendor_job_data(vendor_job_data, program_data)
 
     def run_batch(
         self,
@@ -503,17 +508,16 @@ class QuantumDevice(ABC):
             "openqasm": openqasm_batch,
         }
         vendor_job_data = self._run_batch(run_input_batch, *args, **kwargs)
-        qbraid_job_obj: Optional[QuantumJob] = vendor_job_data.pop("qbraid_job_obj", None)
-        vendor_job_obj: Optional[Any] = vendor_job_data.pop("vendor_job_obj", None)
 
-        job_data = {**vendor_job_data, **program_data}
-        job_json = self.create_job(**job_data)
-        job_id = job_json.get("qbraidJobId", job_json.get("_id"))
-        if qbraid_job_obj is None:
-            return QuantumJob.retrieve(job_id)
-        return qbraid_job_obj(
-            job_id,
-            job_obj=vendor_job_obj,
-            job_json=job_json,
-            device=self,
-        )
+        is_list_input = isinstance(vendor_job_data, list)
+
+        if not is_list_input:
+            vendor_job_data = [vendor_job_data]
+
+        qbraid_job_objs = [
+            self.process_vendor_job_data(item, program_data) for item in vendor_job_data
+        ]
+
+        if is_list_input:
+            return qbraid_job_objs
+        return qbraid_job_objs[0]

@@ -241,49 +241,32 @@ class BraketDevice(QuantumDevice):
             "qbraid_job_obj": BraketQuantumTask,
         }
 
-    # def run_batch(
-    #     self, run_input, *args, auto_compile: bool = False, **kwargs
-    # ) -> List["qbraid.providers.aws.BraketQuantumTask"]:
-    #     """Run batch of quantum tasks on this quantum device.
+    def _run_batch(self, run_input, *args, **kwargs) -> List[Dict[str, Any]]:
+        """Run batch of quantum tasks on this quantum device.
 
-    #     Args:
-    #         run_input: A circuit object list to run on the wrapped device.
+        Args:
+            run_input: A circuit object list to run on the wrapped device.
 
-    #     Keyword Args:
-    #         auto_compile (bool): Whether to compile the circuits for the device before running.
-    #         shots (int): The number of times to run the task on the device. Default is 1024.
+        Keyword Args:
+            auto_compile (bool): Whether to compile the circuits for the device before running.
+            shots (int): The number of times to run the task on the device. Default is 1024.
 
-    #     Returns:
-    #         List of BraketQuantumTask objects for the run.
+        Returns:
+            List of BraketQuantumTask objects for the run.
 
-    #     """
-    #     device = self._device
-    #     qbraid_circuit_batch = []
-    #     run_input_batch = []
-    #     conversion_graph = kwargs.pop("conversion_graph", None)
-    #     for circuit in run_input:
-    #         qbraid_circuit = self.process_run_input(circuit, auto_compile=auto_compile, conversion_graph=conversion_graph)
-    #         run_input = qbraid_circuit._program
-    #         run_input_batch.append(run_input)
-    #         qbraid_circuit_batch.append(qbraid_circuit)
-    #     aws_quantum_task_batch = device.run_batch(run_input_batch, *args, **kwargs)
-    #     aws_quantum_tasks = aws_quantum_task_batch.tasks
-    #     aws_quantum_task_wrapper_list = []
-    #     for index, aws_quantum_task in enumerate(aws_quantum_tasks):
-    #         qbraid_circuit = qbraid_circuit_batch[index]
-    #         metadata = aws_quantum_task.metadata()
-    #         shots = metadata.get("shots", 0)
-    #         tags = metadata.get("tags", {})
-    #         vendor_job_id = metadata["quantumTaskArn"]
-    #         job_json = self.create_job(vendor_job_id, [qbraid_circuit], shots, tags)
-    #         job_id = job_json.get("qbraidJobId", job_json.get("_id"))
-    #         aws_quantum_task_wrapper_list.append(
-    #             BraketQuantumTask(
-    #                 job_id,
-    #                 job_obj=aws_quantum_task,
-    #                 job_json=job_json,
-    #                 device=self,
-    #                 circuits=[qbraid_circuit],
-    #             )
-    #         )
-    #     return aws_quantum_task_wrapper_list
+        """
+        device = self._device
+        aws_quantum_task_batch = device.run_batch(run_input, *args, **kwargs)
+        aws_quantum_tasks = aws_quantum_task_batch.tasks
+        aws_quantum_task_data = []
+        for _, aws_quantum_task in enumerate(aws_quantum_tasks):
+            metadata = aws_quantum_task.metadata()
+            job_data = {
+                "vendor_job_id": metadata["quantumTaskArn"],
+                "tags": metadata.get("tags", {}),
+                "shots": metadata.get("shots", 0),
+                "vendor_job_obj": aws_quantum_task,
+                "qbraid_job_obj": BraketQuantumTask,
+            }
+            aws_quantum_task_data.append(job_data)
+        return aws_quantum_task_data

@@ -105,7 +105,6 @@ def test_run_braket_device_wrapper(device_id, circuit):
     assert isinstance(vendor_job, AwsQuantumTask)
 
 
-@pytest.mark.skip(reason="Not implemented")
 def test_run_batch_braket_device_wrapper():
     """Test run_batch method of wrapped Braket devices"""
     qbraid_device = provider.get_device("aws_sv_sim")
