@@ -23,10 +23,9 @@ from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 from qbraid_core.services.quantum import QuantumClient, quantum_lib_proxy_state
 
 from qbraid.programs import get_program_type, load_program
-from qbraid.providers.enums import DeviceType
-from qbraid.transpiler import transpile
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler import CircuitConversionError, transpile
 
+from .enums import DeviceType
 from .exceptions import ProgramValidationError, QbraidRuntimeError
 from .job import QuantumJob
 

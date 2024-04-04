@@ -29,8 +29,6 @@ import cirq
 import numpy as np
 from cirq import ops, protocols, value
 
-import qbraid
-
 
 def exponent_to_pi_string(exp: float) -> str:
     """A function for outputting a float exponent to a string in QUIL format."""
@@ -407,7 +405,7 @@ class QuilOutput:
         )
         self.qubit_id_map = self._generate_qubit_ids()
         self.measurement_id_map = self._generate_measurement_ids()
-        self.formatter = qbraid.transpiler.conversions.pyquil.quil_output.QuilFormatter(
+        self.formatter = QuilFormatter(
             qubit_id_map=self.qubit_id_map, measurement_id_map=self.measurement_id_map
         )
 

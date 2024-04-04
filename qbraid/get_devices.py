@@ -17,13 +17,13 @@ supported by the qBraid SDK.
 """
 from typing import Any, Dict, List, Optional
 
-from qbraid_core import QbraidSession
-from qbraid_core.services.quantum import QuantumClient, process_device_data
-
 try:
     from IPython.display import HTML, clear_output, display
 except ImportError:
     pass
+
+from qbraid_core import QbraidSession
+from qbraid_core.services.quantum import QuantumClient, process_device_data
 
 from ._display import running_in_jupyter, update_progress_bar
 

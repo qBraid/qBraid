@@ -16,7 +16,7 @@ import logging
 import os
 import warnings
 
-from qbraid_core._warnings import _check_version
+from qbraid_core._compat import check_version
 
 
 def configure_logging():
@@ -40,4 +40,4 @@ def filterwarnings():
 
 def check_warn_version_update():
     """Emit a warning if updated package version exists."""
-    _check_version("qbraid")
+    check_version("qbraid")

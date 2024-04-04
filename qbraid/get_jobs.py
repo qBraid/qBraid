@@ -27,7 +27,7 @@ except ImportError:
 from qbraid_core import QbraidSession
 from qbraid_core.services.quantum import QuantumClient, process_job_data
 
-from qbraid._display import running_in_jupyter, update_progress_bar
+from ._display import running_in_jupyter, update_progress_bar
 
 
 def _display_basic(data: List[str], message: str) -> None:

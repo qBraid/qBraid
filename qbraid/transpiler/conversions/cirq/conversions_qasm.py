@@ -18,11 +18,12 @@ import cirq
 from cirq import ops
 from cirq.contrib.qasm_import.exception import QasmException as CirqQasmException
 
-import qbraid
+from qbraid._version import __version__ as qbraid_version
 from qbraid.programs.exceptions import QasmError as QbraidQasmError
-from qbraid.transpiler.conversions.cirq.cirq_gates import _map_zpow_and_unroll
-from qbraid.transpiler.conversions.cirq.cirq_qasm_parser import QasmParser
-from qbraid.transpiler.conversions.qasm_passes import flatten_qasm_program
+from qbraid.programs.qasm_passes import flatten_qasm_program
+
+from .cirq_gates import _map_zpow_and_unroll
+from .cirq_qasm_parser import QasmParser
 
 QASMType = str
 
@@ -43,7 +44,7 @@ def _to_qasm_output(
             register.
     """
     if header is None:
-        header = f"Generated from qBraid v{qbraid._version.__version__}"
+        header = f"Generated from qBraid v{qbraid_version}"
     qubits = ops.QubitOrder.as_qubit_order(qubit_order).order_for(circuit.all_qubits())
     return cirq.QasmOutput(
         operations=circuit.all_operations(),

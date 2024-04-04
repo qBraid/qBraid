@@ -17,12 +17,9 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Callable, List, Optional
 
 from qbraid.programs import QPROGRAM_LIBS, get_program_type
-from qbraid.transpiler.exceptions import (
-    CircuitConversionError,
-    ConversionPathNotFoundError,
-    NodeNotFoundError,
-)
-from qbraid.transpiler.graph import ConversionGraph
+
+from .exceptions import CircuitConversionError, ConversionPathNotFoundError, NodeNotFoundError
+from .graph import ConversionGraph
 
 if TYPE_CHECKING:
     import cirq
