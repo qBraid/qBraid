@@ -101,6 +101,16 @@ def test_get_program_type(bell_circuit):
     assert package_name == expected_package
 
 
+@pytest.mark.parametrize(
+    "program,expected_package", [("not-a-circuit", None), (Mock(), "unittest")]
+)
+def test_get_program_type_required_supported_false(program, expected_package):
+    """Test that None or module name is returned for unsupported package when
+    require supported is given as False."""
+    package = get_program_type(program, require_supported=False)
+    assert package == expected_package
+
+
 def test_raise_error_unuspported_source_program():
     """Test that an error is raised if source program is not supported."""
     with pytest.raises(PackageValueError):
