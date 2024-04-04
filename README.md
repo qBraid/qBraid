@@ -68,7 +68,7 @@ You can also [install from source](CONTRIBUTING.md#installing-from-source) by cl
 ```bash
 git clone https://github.com/qBraid/qBraid.git
 cd qBraid
-pip install -e '.[all]'
+pip install .
 ```
 
 *Note*: The qBraid-SDK requires Python 3.9 or greater.
