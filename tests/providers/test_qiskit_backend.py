@@ -30,8 +30,8 @@ try:
     fake_almaden.name = "fake_almaden"
 except ImportError:  # prama: no cover
     # qiskit < 1.0.0
-    from qiskit.providers.basicaer.basicaerjob import ( # type: ignore
-        BasicAerJob as BasicProviderJob,
+    from qiskit.providers.basicaer.basicaerjob import (
+        BasicAerJob as BasicProviderJob,  # type: ignore
     )
     from qiskit.providers.fake_provider import FakeManila as Fake5QV1
     from qiskit.providers.fake_provider import FakeProviderFactory
@@ -127,7 +127,6 @@ def test_run_qiskit_device_wrapper(circuit):
     assert isinstance(vendor_job, IBMJob)
 
 
-@pytest.mark.skip(reason="Not implemented")
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_run_batch_qiskit_device_wrapper():
     """Test run_batch method from wrapped Qiskit backends"""
@@ -149,7 +148,6 @@ def test_run_fake_qiskit_device_wrapper(qbraid_device, circuit):
     assert isinstance(vendor_job, Union[BasicProviderJob, AerJob])
 
 
-@pytest.mark.skip(reason="Not implemented")
 @pytest.mark.parametrize("qbraid_device", fake_ibm_devices())
 def test_run_fake_batch_qiskit_device_wrapper(qbraid_device):
     """Test run method from wrapped fake Qiskit backends"""
@@ -159,7 +157,6 @@ def test_run_fake_batch_qiskit_device_wrapper(qbraid_device):
     assert isinstance(vendor_job, Union[BasicProviderJob, AerJob])
 
 
-@pytest.mark.skip(reason="Not implemented")
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_cancel_completed_batch_error():
     """Test that cancelling a batch job that has already reached its

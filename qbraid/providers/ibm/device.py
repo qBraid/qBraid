@@ -13,7 +13,7 @@ Module defining QiskitBackend Class
 
 """
 import re
-from typing import TYPE_CHECKING, Union  # pylint: disable=unused-import
+from typing import TYPE_CHECKING, List, Union
 
 from qiskit import transpile
 from qiskit.transpiler import TranspilerError
@@ -116,7 +116,12 @@ class QiskitBackend(QuantumDevice):
             return 0
         return self._device.status().pending_jobs
 
-    def _run(self, run_input: "qiskit.QuantumCircuit", *args, **kwargs):
+    def _run(
+        self,
+        run_input: "Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]",
+        *args,
+        **kwargs,
+    ):
         """Runs circuit(s) on qiskit backend via :meth:`~qiskit.execute`
 
         Uses the :meth:`~qiskit.execute` method to create a :class:`~qiskit.providers.QuantumJob`
@@ -135,7 +140,7 @@ class QiskitBackend(QuantumDevice):
         backend = self._device
         shots = kwargs.pop("shots", backend.options.get("shots"))
         memory = kwargs.pop("memory", True)  # Needed to get measurements
-        qiskit_job = backend.run(run_input, shots=shots, memory=memory, **kwargs)
+        qiskit_job = backend.run(run_input, shots=shots, memory=memory)
         try:
             tags_lst = qiskit_job.update_tags(kwargs.get("tags", []))
         except AttributeError:  # BasicAerJob does not have update_tags
@@ -150,47 +155,20 @@ class QiskitBackend(QuantumDevice):
             "qbraid_job_obj": QiskitJob,
         }
 
-    # def run_batch(self, run_input, **kwargs):
-    #     """Runs circuit(s) on qiskit backend via :meth:`~qiskit.execute`
+    def _run_batch(self, run_input: "List[qiskit.QuantumCircuit]", *args, **kwargs):
+        """Runs circuit(s) on qiskit backend via :meth:`~qiskit.execute`
 
-    #     Uses the :meth:`~qiskit.execute` method to create a :class:`~qiskit.providers.QuantumJob`
-    #     object, applies a :class:`~qbraid.providers.ibm.QiskitJob`, and return the result.
+        Uses the :meth:`~qiskit.execute` method to create a :class:`~qiskit.providers.QuantumJob`
+        object, applies a :class:`~qbraid.providers.ibm.QiskitJob`, and return the result.
 
-    #     Args:
-    #         run_input: A circuit object list to run on the wrapped device.
+        Args:
+            run_input: A circuit object list to run on the wrapped device.
 
-    #     Keyword Args:
-    #         shots (int): The number of times to run the task on the device. Default is 1024.
+        Keyword Args:
+            shots (int): The number of times to run the task on the device. Default is 1024.
 
-    #     Returns:
-    #         qbraid.providers.ibm.QiskitJob: The job like object for the run.
+        Returns:
+            qbraid.providers.ibm.QiskitJob: The job like object for the run.
 
-    #     """
-    #     backend = self._device
-    #     qbraid_circuit_batch = []
-    #     run_input_batch = []
-    #     conversion_graph = kwargs.pop("conversion_graph", None)
-    #     for circuit in run_input:
-    #         qbraid_circuit = self.process_run_input(circuit, conversion_graph=conversion_graph)
-    #         run_input = qbraid_circuit._program
-    #         run_input_batch.append(run_input)
-    #         qbraid_circuit_batch.append(qbraid_circuit)
-
-    #     shots = kwargs.pop("shots", backend.options.get("shots"))
-    #     memory = kwargs.pop("memory", True)  # Needed to get measurements
-    #     qiskit_job = backend.run(run_input_batch, shots=shots, memory=memory, **kwargs)
-    #     try:
-    #         tags_lst = qiskit_job.update_tags(kwargs.get("tags", []))
-    #     except AttributeError:  # BasicAerJob does not have update_tags
-    #         tags_lst = []
-    #     tags = {tag: "*" for tag in tags_lst}
-    #     qiskit_job_id = qiskit_job.job_id()
-    #     job_json = self.create_job(qiskit_job_id, qbraid_circuit_batch, shots, tags)
-    #     job_id = job_json.get("qbraidJobId", job_json.get("_id"))
-    #     return QiskitJob(
-    #         job_id,
-    #         job_obj=qiskit_job,
-    #         job_json=job_json,
-    #         device=self,
-    #         circuits=qbraid_circuit_batch,
-    #     )
+        """
+        return self._run(run_input, **kwargs)

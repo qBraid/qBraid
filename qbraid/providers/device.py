@@ -18,7 +18,7 @@ import json
 import logging
 import warnings
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple  # pylint: disable=unused-import
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
 
 from qbraid_core.services.quantum import QuantumClient, quantum_lib_proxy_state
 
@@ -302,9 +302,9 @@ class QuantumDevice(ABC):
         vendor_job_id: str,
         tags: Optional[Dict[str, str]] = None,
         shots: Optional[int] = None,
-        openqasm: Optional[str] = None,
-        num_qubits: Optional[int] = None,
-        depth: Optional[int] = None,
+        openqasm: Optional[Union[str, List[str]]] = None,
+        num_qubits: Optional[Union[int, List[int]]] = None,
+        depth: Optional[Union[int, List[int]]] = None,
     ) -> Dict[str, Any]:
         """Create new qBraid job.
 
@@ -324,10 +324,31 @@ class QuantumDevice(ABC):
             "qbraidDeviceId": self.id,
             "shots": shots,
             "tags": json.dumps(tags),
-            "openQasm": openqasm,
-            "circuitNumQubits": num_qubits,
-            "circuitDepth": depth,
         }
+
+        if openqasm:
+            if isinstance(openqasm, str):
+                init_data["openQasm"] = openqasm
+            elif isinstance(openqasm, list):
+                init_data["openQasmBatch"] = openqasm
+            else:
+                raise ValueError("openqasm must be a string or a list of strings")
+
+        if num_qubits:
+            if isinstance(num_qubits, int):
+                init_data["circuitNumQubits"] = num_qubits
+            elif isinstance(num_qubits, list):
+                init_data["circuitBatchNumQubits"] = num_qubits
+            else:
+                raise ValueError("num_qubits must be an integer or a list of integers")
+
+        if depth:
+            if isinstance(depth, int):
+                init_data["circuitDepth"] = depth
+            elif isinstance(depth, list):
+                init_data["circuitBatchDepth"] = depth
+            else:
+                raise ValueError("depth must be an integer or a list of integers")
 
         if self._device_type == DeviceType("FAKE"):
             init_data["qbraidJobId"] = f"{self.vendor.lower()}_test_id"
@@ -379,6 +400,25 @@ class QuantumDevice(ABC):
                                             but eliminates an extra call.
         """
 
+    @abstractmethod
+    def _run_batch(
+        self, run_input: "List[qbraid.programs.QPROGRAM]", *args, **kwargs
+    ) -> Dict[str, Any]:
+        """Vendor run method. Should return dictionary with the following keys:
+
+        * "shots" (int): Number of shots. For jobs that don't support shots, set to 0.
+        * "tags" (Dict[str, str]): Dictionary of tags. For providers that use list of tags,
+                                   set all values to "*".
+        * "vendor_job_id" (str): Job ID provided by device vendor.
+        * "qbraid_job_obj" (qbraid.providers.QuantumJob): The qBraid Job object to be
+                                                          instantiated later. It should
+                                                          not be an instance.
+        * "vendor_job_obj" (optional, Any): Vendor job object (e.g. braket.aws.AwsQuantumTask).
+                                            Optional because should be accessible using
+                                            qbraidJobObj.get_job(vendorJobId) anyways,
+                                            but eliminates an extra call.
+        """
+
     def run(
         self,
         run_input: "qbraid.programs.QPROGRAM",
@@ -407,6 +447,62 @@ class QuantumDevice(ABC):
             run_input, auto_compile=auto_compile, conversion_graph=conversion_graph
         )
         vendor_job_data = self._run(run_input, *args, **kwargs)
+        qbraid_job_obj: Optional[QuantumJob] = vendor_job_data.pop("qbraid_job_obj", None)
+        vendor_job_obj: Optional[Any] = vendor_job_data.pop("vendor_job_obj", None)
+
+        job_data = {**vendor_job_data, **program_data}
+        job_json = self.create_job(**job_data)
+        job_id = job_json.get("qbraidJobId", job_json.get("_id"))
+        if qbraid_job_obj is None:
+            return QuantumJob.retrieve(job_id)
+        return qbraid_job_obj(
+            job_id,
+            job_obj=vendor_job_obj,
+            job_json=job_json,
+            device=self,
+        )
+
+    def run_batch(
+        self,
+        run_input: "List[qbraid.programs.QPROGRAM]",
+        *args,
+        auto_compile: bool = False,
+        conversion_graph: "Optional[qbraid.transpiler.ConversionGraph]" = None,
+        **kwargs,
+    ) -> "Union[qbraid.providers.QuantumJob, List[qbraid.providers.QuantumJob]]":
+        """Run a quantum job specification on this quantum device.
+
+        Args:
+            run_input: Specification of a task to run on device.
+
+        Keyword Args:
+            conversion_graph (optional, ConversionGraph): Graph of conversion functions to
+                                                          apply to the circuit.
+            auto_compile (bool): Whether to compile the circuit for the device before running.
+                                 Default is False.
+            shots (int): The number of times to run the task on the device.
+
+        Returns:
+            The job like object for the run.
+
+        """
+        program_data_batch = []
+        run_input_batch = []
+        for program in run_input:
+            run_input_transpiled, program_data = self.process_run_input(
+                program, auto_compile=auto_compile, conversion_graph=conversion_graph
+            )
+            run_input_batch.append(run_input_transpiled)
+            program_data_batch.append(program_data)
+        num_qubits_batch = [data.get("num_qubits") for data in program_data_batch]
+        depth_batch = [data.get("depth") for data in program_data_batch]
+        openqasm_batch = [data.get("openqasm") for data in program_data_batch]
+        program_data = {
+            "num_qubits": num_qubits_batch,
+            "depth": depth_batch,
+            "openqasm": openqasm_batch,
+        }
+        vendor_job_data = self._run_batch(run_input_batch, *args, **kwargs)
         qbraid_job_obj: Optional[QuantumJob] = vendor_job_data.pop("qbraid_job_obj", None)
         vendor_job_obj: Optional[Any] = vendor_job_data.pop("vendor_job_obj", None)
 
