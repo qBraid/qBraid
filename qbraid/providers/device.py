@@ -36,6 +36,9 @@ if TYPE_CHECKING:
     import qbraid.transpiler
 
 
+logger = logging.getLogger(__name__)
+
+
 class QuantumDevice(ABC):
     """Abstract interface for device-like classes."""
 
@@ -67,7 +70,7 @@ class QuantumDevice(ABC):
                 device = client.get_device(vendor_id=self._vendor_id)
                 self._id = device["qbraid_id"]
             except Exception as err:  # pylint: disable=broad-exception-caught
-                logging.info(
+                logger.info(
                     "Error retrieving device ID from qBraid API: %s. "
                     "Field will be ommited in job metadata",
                     err,
@@ -194,7 +197,7 @@ class QuantumDevice(ABC):
         except Exception as err:  # pylint: disable=broad-exception-caught
             if not safe_mode:
                 raise
-            logging.info("Error verifying run input: %s.", err)
+            logger.info("Error verifying run input: %s.", err)
             return None
 
     def transpile(
@@ -240,7 +243,6 @@ class QuantumDevice(ABC):
         run_input: "qbraid.programs.QPROGRAM",
         auto_compile: bool = False,
         conversion_graph: "Optional[qbraid.transpiler.ConversionGraph]" = None,
-        log_level=logging.INFO,
     ) -> Tuple[Any, Dict[str, Any]]:
         """Process quantum program before passing to device run method.
 
@@ -264,13 +266,13 @@ class QuantumDevice(ABC):
             except Exception as err:  # pylint: disable=broad-exception-caught
                 if not safe_mode:
                     raise
-                logging.log(log_level, "Error loading run input: %s", err)
+                logger.info("Error loading run input: %s", err)
 
         def try_extracting_info(lambda_expression, error_message):
             try:
                 return lambda_expression()
-            except Exception as err:  # pylint: disable=broad-exception-caught
-                logging.log(log_level, error_message, err)
+            except Exception:  # pylint: disable=broad-exception-caught
+                logger.info(error_message)
                 return None
 
         num_qubits = try_extracting_info(

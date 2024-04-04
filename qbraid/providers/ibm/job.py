@@ -23,6 +23,8 @@ from qbraid.providers.job import QuantumJob
 
 from .result import QiskitResult
 
+logger = logging.getLogger(__name__)
+
 
 class QiskitJob(QuantumJob):
     """Wrapper class for IBM Qiskit ``Job`` objects."""
@@ -50,7 +52,7 @@ class QiskitJob(QuantumJob):
     def result(self):
         """Return the results of the job."""
         if self.status() not in JOB_FINAL:
-            logging.info("Result will be available when job has reached final state.")
+            logger.info("Result will be available when job has reached final state.")
         return QiskitResult(self._job.result())
 
     def cancel(self):

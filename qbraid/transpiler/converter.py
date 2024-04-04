@@ -30,6 +30,9 @@ if TYPE_CHECKING:
     import qbraid.programs
 
 
+logger = logging.getLogger(__name__)
+
+
 def _warn_if_unsupported(program_type, program_direction):
     if program_type not in QPROGRAM_LIBS:
         warnings.warn(
@@ -168,13 +171,13 @@ def transpile(
                         temp_program = convert_func(temp_program)  # Retry conversion
                     else:
                         raise
-            logging.info(
+            logger.info(
                 "\nSuccessfully transpiled using conversions: %s",
                 _get_path_from_bound_methods(path),
             )
             return temp_program
         except Exception:  # pylint: disable=broad-exception-caught
-            logging.info(
+            logger.info(
                 "\nFailed to transpile using conversions: %s",
                 _get_path_from_bound_methods(path),
             )

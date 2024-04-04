@@ -21,7 +21,6 @@ Functions
 
    about
    get_devices
-   refresh_devices
    get_jobs
 
 
@@ -45,12 +44,11 @@ Exceptions
 """
 import sys
 
-from . import _warnings
 from ._about import about
 from ._import import LazyLoader
 from ._version import __version__
 from .exceptions import QbraidError
-from .get_devices import get_devices, refresh_devices
+from .get_devices import get_devices
 from .get_jobs import get_jobs
 
 if "sphinx" in sys.modules:
@@ -74,7 +72,6 @@ __all__ = [
     "programs",
     "providers",
     "QbraidError",
-    "refresh_devices",
     "transpiler",
     "visualization",
 ]

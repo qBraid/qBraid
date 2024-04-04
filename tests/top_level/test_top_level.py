@@ -21,7 +21,7 @@ import pytest
 from qbraid import __version__
 from qbraid._display import running_in_jupyter, update_progress_bar
 from qbraid.get_devices import get_devices
-from qbraid.get_jobs import _display_jobs_jupyter, get_jobs
+from qbraid.get_jobs import _display_jupyter, get_jobs
 from qbraid.interface.random import random_circuit
 from qbraid.programs.exceptions import PackageValueError
 from qbraid.providers import QbraidProvider
@@ -174,7 +174,7 @@ def test_display_jobs_in_jupyter(capfd):
         job_tuple = (job_id, timestamp, status_str)
         data.append(job_tuple)
     msg = "test123"
-    _display_jobs_jupyter(data, msg)
+    _display_jupyter(data, msg)
     out, err = capfd.readouterr()
     assert "IPython.core.display.HTML object" in out
     assert len(err) == 0

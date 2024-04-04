@@ -9,83 +9,67 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests related to setting, updating, and verifying
-custom user configurations and required run-command pre-sets.
+Set config inside testing virtual environments with default values
+hard-coded and secret values read from environment variables.
+
+Note: this script is intended for CI/CD purposes only.
 
 """
-import configparser
 import os
+from pathlib import Path
+from typing import Optional
 
 from qbraid_core import QbraidSession
 from qiskit_ibm_provider import IBMProvider
-
-aws_cred_path = os.path.join(os.path.expanduser("~"), ".aws", "credentials")
-aws_config_path = os.path.join(os.path.expanduser("~"), ".aws", "config")
-qiskitrc_path = os.path.join(os.path.expanduser("~"), ".qiskit", "qiskitrc")
-qbraidrc_path = os.path.join(os.path.expanduser("~"), ".qbraid", "qbraidrc")
-
-# These environment variables don't actually exist in qBraid Lab, but instead
-# are set and used for convenience for local development and testing.
-aws_access_key_id = os.getenv("AWS_ACCESS_KEY_ID")
-aws_secret_access_key = os.getenv("AWS_SECRET_ACCESS_KEY")
-ibmq_token = os.getenv("QISKIT_IBM_TOKEN")
-qbraid_refresh_token = os.getenv("REFRESH")
-qbraid_api_key = os.getenv("QBRAID_API_KEY")
-
-# This is the only environment variable that actually exists in qBraid Lab
-qbraid_user = os.getenv("JUPYTERHUB_USER")
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of qBraid storage)"
 
-config_lst = [
-    # (config_name, config_value, section, filepath)
-    ["aws_access_key_id", aws_access_key_id, "default", aws_cred_path],
-    ["aws_secret_access_key", aws_secret_access_key, "default", aws_cred_path],
-    ["region", "us-east-1", "default", aws_config_path],
-    ["output", "json", "default", aws_config_path],
-    ["token", ibmq_token, "ibmq", qiskitrc_path],
-    ["url", "https://auth.quantum-computing.ibm.com/api", "ibmq", qiskitrc_path],
-    ["verify", "True", "ibmq", qiskitrc_path],
-    ["default_provider", "ibm-q/open/main", "ibmq", qiskitrc_path],
-]
 
-
-def set_config():
-    """Set config inside testing virtual environments with default values
-    hard-coded and secret values read from environment variables.
-
-    Note: this function is used for testing purposes only."""
-    if skip_remote_tests:
-        return
-
-    IBMProvider.save_account(token=ibmq_token, overwrite=True)
-    session = QbraidSession(
-        user_email=qbraid_user, refresh_token=qbraid_refresh_token, api_key=qbraid_api_key
-    )
+def qbraid_configure(api_key: Optional[str] = None) -> None:
+    """Initializes qBraid configuration and credentials files."""
+    api_key = api_key or os.getenv("QBRAID_API_KEY", "MYAPIKEY")
+    session = QbraidSession(api_key=api_key)
     session.save_config()
 
-    for file in [aws_config_path, aws_cred_path, qiskitrc_path]:
-        try:
-            os.remove(file)
-        except FileNotFoundError:
-            pass
-    for c in config_lst:
-        config_name = c[0]
-        config_value = c[1]
-        section = c[2]
-        filepath = c[3]
-        if not os.path.isfile(filepath):
-            os.makedirs(os.path.dirname(filepath), exist_ok=True)
-        config = configparser.ConfigParser()
-        config.read(filepath)
-        if section not in config.sections():
-            config.add_section(section)
-        config.set(section, config_name, str(config_value))
-        with open(filepath, "w", encoding="utf-8") as cfgfile:
-            config.write(cfgfile)
+
+def ibm_configure(token: Optional[str] = None) -> None:
+    """Initializes IBM Quantum configuration and credentials files."""
+    token = token or os.getenv("QISKIT_IBM_TOKEN", "MYTOKEN")
+    IBMProvider.save_account(token=token)
+
+
+def aws_configure(
+    aws_access_key_id: Optional[str] = None,
+    aws_secret_access_key: Optional[str] = None,
+    region: Optional[str] = None,
+) -> None:
+    """Initializes AWS configuration and credentials files."""
+    aws_dir = Path.home() / ".aws"
+    config_path = aws_dir / "config"
+    credentials_path = aws_dir / "credentials"
+    aws_access_key_id = aws_access_key_id or os.getenv("AWS_ACCESS_KEY_ID", "MYACCESSKEY")
+    aws_secret_access_key = aws_secret_access_key or os.getenv(
+        "AWS_SECRET_ACCESS_KEY", "MYSECRETKEY"
+    )
+    region = region or os.getenv("AWS_REGION", "us-east-1")
+
+    aws_dir.mkdir(exist_ok=True)
+    if not config_path.exists():
+        config_content = f"[default]\nregion = {region}\noutput = json\n"
+        config_path.write_text(config_content)
+    if not credentials_path.exists():
+        credentials_content = (
+            f"[default]\n"
+            f"aws_access_key_id = {aws_access_key_id}\n"
+            f"aws_secret_access_key = {aws_secret_access_key}\n"
+        )
+        credentials_path.write_text(credentials_content)
 
 
 if __name__ == "__main__":
-    set_config()
+    if not skip_remote_tests:
+        qbraid_configure()
+        aws_configure()
+        ibm_configure()
