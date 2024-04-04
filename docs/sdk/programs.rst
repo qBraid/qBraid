@@ -70,9 +70,9 @@ Next, we'll apply the qbraid circuit wrapper.
 
 .. code-block:: python
 
-    from qbraid import circuit_wrapper
+    from qbraid.programs import load_program
 
-    qprogram = circuit_wrapper(qiskit_circuit)
+    qprogram = load_program(qiskit_circuit)
 
 
 Each circuit wrapper object has ``num_qubits`` and ``depth`` attributes, regardless of the input circuit type.
@@ -92,7 +92,7 @@ Transpiler
 -----------
 
 Now, we can use the ``qbraid.programs.QuantumProgram.transpile`` method to convert to wrapped circuit into
-any other supported program type. Simply pass in the name of the target package from one of ``qbraid.QPROGRAM_LIBS``.
+any other supported program type. Simply pass in the name of the target package from one of ``qbraid.programs.QPROGRAM_LIBS``.
 For example, use input "braket" to return a ``braket.circuits.Circuit``:
 
 .. code-block:: python
@@ -126,8 +126,8 @@ supported program type.
 
 .. code-block:: python
 
-    >>> from qbraid import circuit_wrapper
-    >>> cirq_unitary = circuit_wrapper(cirq_circuit).unitary()
+    >>> from qbraid.programs import load_program
+    >>> cirq_unitary = load_program(cirq_circuit).unitary()
     >>> cirq_unitary.shape
     (16, 16)
 
@@ -135,7 +135,7 @@ We can now apply the circuit wrapper to the random Cirq circuit above, and use t
 
 .. code-block:: python
     
-    >>> pyquil_circuit = circuit_wrapper(cirq_circuit).transpile("pyquil")
+    >>> pyquil_circuit = load_program(cirq_circuit).transpile("pyquil")
     >>> print(pyquil_circuit)
     ISWAP 0 3
     Z 1
@@ -207,8 +207,8 @@ performing the qubit mapping.
 
 .. code-block:: python
 
-    >>> from qbraid import circuit_wrapper
-    >>> qprogram = circuit_wrapper(braket_circuit)
+    >>> from qbraid.programs import load_program
+    >>> qprogram = load_program(braket_circuit)
     >>> qprogram.remove_idle_qubits()
     >>> print(qprogram.program)
     T  : |0|1|2|
@@ -220,7 +220,7 @@ performing the qubit mapping.
     q2 : -----X-
 
     T  : |0|1|2|
-    >>> qprogram1 = circuit_wrapper(braket_circuit)
+    >>> qprogram1 = load_program(braket_circuit)
     >>> qprogram1.populate_idle_qubits()
     >>> print(qprogram1.program)
     T  : |0|1|2|

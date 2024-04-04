@@ -15,7 +15,7 @@ Unit test for the graph-based transpiler
 import braket.circuits
 import pytest
 
-from qbraid.transpiler.converter import _get_path_from_bound_methods, convert_to_package
+from qbraid.transpiler.converter import _get_path_from_bound_methods, transpile
 from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.exceptions import ConversionPathNotFoundError, NodeNotFoundError
 from qbraid.transpiler.graph import ConversionGraph
@@ -24,7 +24,7 @@ from qbraid.transpiler.graph import ConversionGraph
 def test_unuspported_target_package():
     """Test that an error is raised if target package is not supported."""
     with pytest.raises(NodeNotFoundError):
-        convert_to_package(braket.circuits.Circuit(), "alice")
+        transpile(braket.circuits.Circuit(), "alice")
 
 
 def test_get_path_from_bound_method():
@@ -48,7 +48,7 @@ def test_raise_no_conversion_path_found(bell_circuit):
     ]
     graph = ConversionGraph(conversions)
     with pytest.raises(ConversionPathNotFoundError):
-        convert_to_package(qiskit_circuit, "braket", conversion_graph=graph)
+        transpile(qiskit_circuit, "braket", conversion_graph=graph)
 
 
 @pytest.mark.parametrize("bell_circuit", ["qiskit"], indirect=True)
@@ -57,4 +57,4 @@ def test_raise_no_conversion_path_found_max_depth(bell_circuit):
     exists but does not meet the max_depth requirement."""
     qiskit_circuit, _ = bell_circuit
     with pytest.raises(ConversionPathNotFoundError):
-        convert_to_package(qiskit_circuit, "braket", max_path_depth=1)
+        transpile(qiskit_circuit, "braket", max_path_depth=1)

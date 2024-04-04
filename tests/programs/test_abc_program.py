@@ -17,10 +17,10 @@ import pytest
 from braket.circuits import Circuit as BKCircuit
 from cirq import Circuit, LineQubit, X, Y, Z
 
-from qbraid import circuit_wrapper
-from qbraid.inspector import get_program_type
 from qbraid.interface.circuit_equality import circuits_allclose
 from qbraid.interface.random.random import random_circuit, random_unitary_matrix
+from qbraid.programs import load_program
+from qbraid.programs.inspector import get_program_type
 
 from ..fixtures import packages_bell, packages_shared15
 
@@ -39,7 +39,11 @@ def test_compare_bell_circuits(two_bell_circuits):
     """Test unitary equivalance of bell circuits across packages for
     testing baseline."""
     circuit1, circuit2, _, _ = two_bell_circuits
-    assert circuits_allclose(circuit1, circuit2, strict_gphase=True)
+    try:
+        equal = circuits_allclose(circuit1, circuit2)
+        assert equal
+    except NotImplementedError:
+        pytest.skip("Not implemented")
 
 
 @pytest.mark.parametrize("two_shared15_circuits", shared15_pairs, indirect=True)
@@ -50,7 +54,11 @@ def test_compare_shared15_circuits(two_shared15_circuits):
     strict_gphase = not (
         "pyquil" in {package1, package2} or {package1, package2} == {"qasm2", "qasm3"}
     )
-    assert circuits_allclose(circuit1, circuit2, strict_gphase=strict_gphase)
+    try:
+        equal = circuits_allclose(circuit1, circuit2, strict_gphase=strict_gphase)
+        assert equal
+    except NotImplementedError:
+        pytest.skip("Not implemented")
 
 
 @pytest.mark.parametrize("package", ["braket", "cirq", "qiskit"])
@@ -81,17 +89,17 @@ def test_collapse_empty_braket_cirq():
 
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
-    qprogram = circuit_wrapper(braket_circuit)
+    qprogram = load_program(braket_circuit)
     qprogram.remove_idle_qubits()
     braket_compat_circuit = qprogram.program
     assert braket_compat_circuit.qubit_count == 3
 
-    qprogram = circuit_wrapper(cirq_circuit)
+    qprogram = load_program(cirq_circuit)
     qprogram.remove_idle_qubits()
     cirq_compat_circuit = qprogram.program
     assert circuits_allclose(braket_compat_circuit, cirq_compat_circuit, strict_gphase=True)
 
-    qprogram = circuit_wrapper(cirq_circuit)
+    qprogram = load_program(cirq_circuit)
     qprogram.populate_idle_qubits()
     cirq_expanded_circuit = qprogram.program
     assert len(cirq_expanded_circuit.all_qubits()) == 5

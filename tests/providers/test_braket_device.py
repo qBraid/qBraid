@@ -20,9 +20,9 @@ from braket.aws.aws_device import AwsDevice
 from braket.tasks.quantum_task import QuantumTask as AwsQuantumTask
 from qiskit import QuantumCircuit as QiskitCircuit
 
-from qbraid import QbraidError, device_wrapper
+from qbraid import QbraidError
 from qbraid.interface import random_circuit
-from qbraid.providers import QuantumJob
+from qbraid.providers import QbraidProvider, QuantumJob
 from qbraid.providers.aws import BraketDevice, BraketQuantumTask
 from qbraid.providers.exceptions import ProgramValidationError
 
@@ -45,19 +45,21 @@ circuits_braket_run = [
 
 inputs_braket_run = ["aws_sv_sim"]
 
+provider = QbraidProvider()
+
 ### TESTS ###
 
 
 def test_device_wrapper_id_error():
     """Test raising device wrapper error due to invalid device ID."""
     with pytest.raises(QbraidError):
-        device_wrapper("Id123")
+        provider.get_device("Id123")
 
 
 @pytest.mark.parametrize("device_id", inputs_braket_dw)
 def test_device_wrapper_aws_from_api(device_id):
     """Test device wrapper for ids of devices available through Amazon Braket."""
-    qbraid_device = device_wrapper(device_id)
+    qbraid_device = provider.get_device(device_id)
     vendor_device = qbraid_device._device
     assert isinstance(qbraid_device, BraketDevice)
     assert isinstance(vendor_device, AwsDevice)
@@ -66,7 +68,7 @@ def test_device_wrapper_aws_from_api(device_id):
 def test_device_wrapper_from_braket_arn():
     """Test creating device wrapper from Amazon Braket device ARN."""
     aws_device_arn = "arn:aws:braket:::device/quantum-simulator/amazon/sv1"
-    qbraid_device = device_wrapper(aws_device_arn)
+    qbraid_device = provider.get_device(aws_device_arn)
     vendor_device = qbraid_device._device
     assert isinstance(qbraid_device, BraketDevice)
     assert isinstance(vendor_device, AwsDevice)
@@ -75,7 +77,7 @@ def test_device_wrapper_from_braket_arn():
 def test_device_wrapper_properties():
     """Test extracting properties from BraketDevice"""
     device_id = "aws_oqc_lucy"
-    wrapper = device_wrapper(device_id)
+    wrapper = provider.get_device(device_id)
     assert wrapper.provider == "Oxford"
     assert wrapper.name == "Lucy"
     assert str(wrapper) == "AWS Oxford Lucy device wrapper"
@@ -84,7 +86,7 @@ def test_device_wrapper_properties():
 
 def test_queue_depth():
     """Test getting queue_depth BraketDevice"""
-    aws_device = device_wrapper("aws_sv_sim")
+    aws_device = provider.get_device("aws_sv_sim")
     assert isinstance(aws_device.queue_depth(), int)
 
 
@@ -92,7 +94,7 @@ def test_queue_depth():
 @pytest.mark.parametrize("device_id", inputs_braket_run)
 def test_run_braket_device_wrapper(device_id, circuit):
     """Test run method of wrapped Braket devices"""
-    qbraid_device = device_wrapper(device_id)
+    qbraid_device = provider.get_device(device_id)
     qbraid_job = qbraid_device.run(circuit, shots=10)
     vendor_job = qbraid_job._job
     try:
@@ -105,7 +107,7 @@ def test_run_braket_device_wrapper(device_id, circuit):
 
 def test_run_batch_braket_device_wrapper():
     """Test run_batch method of wrapped Braket devices"""
-    qbraid_device = device_wrapper("aws_sv_sim")
+    qbraid_device = provider.get_device("aws_sv_sim")
     qbraid_job_list = qbraid_device.run_batch(circuits_braket_run, shots=10)
     qbraid_job = qbraid_job_list[0]
     for job in qbraid_job_list:
@@ -120,7 +122,7 @@ def test_run_batch_braket_device_wrapper():
 def test_circuit_too_many_qubits():
     """Test that run method raises exception when input circuit
     num qubits exceeds that of wrapped AWS device."""
-    device = device_wrapper("aws_ionq_harmony")
+    device = provider.get_device("aws_ionq_harmony")
     num_qubits = device.num_qubits + 10
     circuit = QiskitCircuit(num_qubits)
     circuit.h([0, 1])
@@ -131,13 +133,13 @@ def test_circuit_too_many_qubits():
 
 def test_device_num_qubits():
     """Test device wrapper num qubits method"""
-    five_qubit_device = device_wrapper("aws_ionq_harmony")
+    five_qubit_device = provider.get_device("aws_ionq_harmony")
     assert five_qubit_device.num_qubits == 11
 
 
 def test_wait_for_final_state():
     """Test function that returns after job is complete"""
-    device = device_wrapper("aws_dm_sim")
+    device = provider.get_device("aws_dm_sim")
     circuit = random_circuit("qiskit")
     job = device.run(circuit, shots=10)
     job.wait_for_final_state()
@@ -147,7 +149,7 @@ def test_wait_for_final_state():
 
 def test_aws_device_available():
     """Test BraketDeviceWrapper avaliable output identical"""
-    device = device_wrapper("aws_dm_sim")
+    device = provider.get_device("aws_dm_sim")
     is_available_bool, is_available_time, iso_str = device.availability_window()
     assert is_available_bool == device._device.is_available
     assert len(is_available_time.split(":")) == 3

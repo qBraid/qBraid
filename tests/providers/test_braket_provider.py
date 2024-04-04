@@ -19,7 +19,7 @@ import string
 import pytest
 from braket.circuits import Circuit
 
-from qbraid import device_wrapper, job_wrapper
+from qbraid.providers import QbraidProvider, QuantumJob
 from qbraid.providers.aws import BraketDevice, BraketProvider
 
 # Skip tests if AWS account auth/creds not configured
@@ -35,11 +35,12 @@ def gen_rand_str(length: int) -> str:
 
 def get_braket_most_busy():
     """Return the most busy device for testing purposes."""
-    provider = BraketProvider()
-    braket_devices = provider.get_devices(
+    braket_provider = BraketProvider()
+    braket_devices = braket_provider.get_devices(
         types=["QPU"], statuses=["ONLINE"], provider_names=["Rigetti", "IonQ", "Oxford"]
     )
-    qbraid_devices = [device_wrapper(device.arn) for device in braket_devices]
+    qbraid_provider = QbraidProvider()
+    qbraid_devices = [qbraid_provider.get_device(device.arn) for device in braket_devices]
     test_device = None
     max_queued = 0
     for device in qbraid_devices:
@@ -78,10 +79,11 @@ def test_get_region_name(company, region):
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_job_wrapper_type():
     """Test that job wrapper creates object of original job type"""
-    device = device_wrapper("aws_dm_sim")
+    provider = QbraidProvider()
+    device = provider.get_device("aws_dm_sim")
     circuit = Circuit().h(0).cnot(0, 1)
     job_0 = device.run(circuit, shots=10)
-    job_1 = job_wrapper(job_0.id)
+    job_1 = QuantumJob.retrieve(job_0.id)
     assert isinstance(job_0, type(job_1))
     assert job_0.vendor_job_id == job_1.metadata()["vendorJobId"]
 

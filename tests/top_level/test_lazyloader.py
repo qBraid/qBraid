@@ -24,7 +24,7 @@ def test_lazy_loading():
     if "calendar" in sys.modules:
         del sys.modules["calendar"]
 
-    calendar_loader = LazyLoader("calendar", globals())
+    calendar_loader = LazyLoader("calendar", globals(), "calendar")
     assert "calendar" not in sys.modules, "Module 'calendar' should not be loaded yet"
 
     # Access an attribute to trigger loading
@@ -39,7 +39,7 @@ def test_parent_globals_update():
     if "math" in sys.modules:
         del sys.modules["math"]
 
-    math_loader = LazyLoader("math", globals())
+    math_loader = LazyLoader("math", globals(), "math")
     assert "math" not in globals(), "Global namespace should not initially contain 'math'"
 
     _ = math_loader.pi
@@ -48,7 +48,7 @@ def test_parent_globals_update():
 
 def test_attribute_access():
     """Test that attributes of the loaded module can be accessed."""
-    math_loader = LazyLoader("math", globals())
+    math_loader = LazyLoader("math", globals(), "math")
     assert math_loader.pi == pytest.approx(
         3.141592653589793
     ), "Attribute 'pi' should match the math module's 'pi'"
@@ -56,6 +56,6 @@ def test_attribute_access():
 
 def test_invalid_attribute():
     """Test accessing an invalid attribute."""
-    math_loader = LazyLoader("math", globals())
+    math_loader = LazyLoader("math", globals(), "math")
     with pytest.raises(AttributeError):
         _ = math_loader.invalid_attribute

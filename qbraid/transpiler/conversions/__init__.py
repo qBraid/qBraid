@@ -47,7 +47,7 @@ from .qasm_passes import flatten_qasm_program, remove_qasm_barriers, unfold_qasm
 from .qasm_qelib1 import decompose_qasm_qelib1
 
 # Dynamically import QPROGRAM_LIBS when needed
-_qbraid = importlib.import_module("qbraid._qprogram")
+_qbraid = importlib.import_module("qbraid.programs._import")
 _PROGRAM_LIBS = getattr(_qbraid, "_PROGRAM_LIBS", [])
 
 # List to store the names of the imported functions

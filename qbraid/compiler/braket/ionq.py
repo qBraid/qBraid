@@ -29,7 +29,6 @@ except (ModuleNotFoundError, ImportError):  # prama: no cover
         # pytket <= 1.18
         from pytket._tket.circuit._library import _TK1_to_RzRx as TK1_to_RzRx  # type: ignore
 
-
 from pytket.passes import RebaseCustom
 from pytket.predicates import (
     CompilationUnit,
@@ -42,6 +41,7 @@ from pytket.predicates import (
 )
 
 from qbraid.compiler.exceptions import CompilerError
+from qbraid.transpiler import transpile
 
 HARMONY_MAX_QUBITS = 11
 
@@ -121,9 +121,7 @@ def braket_ionq_compile(circuit: Union[Circuit, pytket.circuit.Circuit]) -> Circ
         try:
             tk_circuit = pytket.extensions.braket.braket_convert.braket_to_tk(circuit)
         except NotImplementedError:
-            from qbraid import circuit_wrapper  # pylint: disable=import-outside-toplevel
-
-            tk_circuit = circuit_wrapper(circuit).transpile("pytket")
+            tk_circuit = transpile(circuit, "pytket")
     else:
         tk_circuit = circuit
 

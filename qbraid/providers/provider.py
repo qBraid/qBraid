@@ -13,13 +13,13 @@ Module for configuring provider credentials and authentication.
 
 """
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from qbraid_core.exceptions import AuthError
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
 
 from qbraid._import import _load_entrypoint
-from qbraid._qdevice import QDEVICE_TYPES
+from qbraid.providers._import import QDEVICE_TYPES
 
 from .exceptions import ResourceNotFoundError
 
@@ -122,7 +122,7 @@ class QbraidProvider(QuantumProvider):
         except Exception:  # pylint: disable=broad-exception-caught
             return None
 
-    def get_devices(self) -> "List[qbraid.QDEVICE]":
+    def get_devices(self) -> "List[qbraid.providers.QDEVICE]":
         """Return a list of backends matching the specified filtering.
 
         Returns:
@@ -137,6 +137,24 @@ class QbraidProvider(QuantumProvider):
 
         return devices
 
+    @staticmethod
+    def _get_required_field(data: Dict[str, Any], field_name: str) -> Any:
+        try:
+            # For 'vendor', ensure it's a string and convert to lowercase
+            if field_name == "vendor":
+                return data[field_name].lower()
+            return data[field_name]
+        except KeyError as err:
+            raise ResourceNotFoundError(
+                "Failed to load device due to invalid device data: "
+                f"missing required field '{field_name}'."
+            ) from err
+        except AttributeError as err:
+            raise ResourceNotFoundError(
+                "Failed to load device due to invalid device data: "
+                f"field '{field_name}' is not properly formatted."
+            ) from err
+
     def _get_vendor(self, vendor_device_id: str) -> str:
         """Return the software vendor of the specified device."""
         if vendor_device_id.startswith("ibm") or vendor_device_id.startswith("simulator"):
@@ -149,14 +167,11 @@ class QbraidProvider(QuantumProvider):
         except (ValueError, QuantumServiceRequestError) as err:
             raise ResourceNotFoundError(f"Device {vendor_device_id} not found.") from err
 
-        try:
-            return device_data["vendor"].lower()
-        except (KeyError, AttributeError) as err:
-            raise ResourceNotFoundError(
-                "Failed to load device due to invalid device data."
-            ) from err
+        return self._get_required_field(device_data, "vendor")
 
-    def _get_device(self, vendor_device_id: str, vendor: Optional[str] = None) -> "qbraid.QDEVICE":
+    def _get_device(
+        self, vendor_device_id: str, vendor: Optional[str] = None
+    ) -> "qbraid.providers.QDEVICE":
         """Return quantum device corresponding to the specified device ID.
 
         Returns:
@@ -201,19 +216,9 @@ class QbraidProvider(QuantumProvider):
         else:
             raise ResourceNotFoundError(f"Device {device_id} not found.") from first_error
 
-        try:
-            vendor_device_id = device_data["objArg"]
-        except KeyError as err:
-            raise ResourceNotFoundError(
-                "Failed to load device due to invalid device data: missing required field 'objArg'."
-            ) from err
-
-        try:
-            vendor = device_data["vendor"].lower()
-        except (KeyError, AttributeError) as err:
-            raise ResourceNotFoundError(
-                "Failed to load device due to invalid device data: missing required field 'vendor'."
-            ) from err
+        # qbraid_device_id = self._get_required_field(device_data, "qbraid_id")
+        vendor_device_id = self._get_required_field(device_data, "objArg")
+        vendor = self._get_required_field(device_data, "vendor")
 
         device_obj = self._get_device(vendor_device_id, vendor)
         device_wrapper = _load_entrypoint("providers", f"{vendor}.device")

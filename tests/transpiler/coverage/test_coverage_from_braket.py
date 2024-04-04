@@ -36,7 +36,7 @@ def convert_from_braket_to_x(target, gate_name):
             [braket.circuits.Instruction(gate, range(gate.qubit_count))]
         )
 
-    target_circuit = qbraid.circuit_wrapper(source_circuit).transpile(target)
+    target_circuit = qbraid.transpiler.transpile(source_circuit, target)
     assert qbraid.interface.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
 
 

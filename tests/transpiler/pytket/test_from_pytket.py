@@ -17,7 +17,7 @@ import pytest
 from pytket.circuit import Circuit as TKCircuit
 
 from qbraid.interface import circuits_allclose, random_circuit
-from qbraid.transpiler import convert_to_package
+from qbraid.transpiler import transpile
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
@@ -27,7 +27,7 @@ def test_bell_state_from_qiskit():
     pytket_circuit = TKCircuit(2)
     pytket_circuit.H(0)
     pytket_circuit.CX(0, 1)
-    cirq_circuit = convert_to_package(pytket_circuit, "cirq")
+    cirq_circuit = transpile(pytket_circuit, "cirq")
     assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -36,7 +36,7 @@ def test_crz_gate_from_pytket(qubits):
     """Test converting controlled Rz gate from pytket to cirq."""
     pytket_circuit = TKCircuit(2)
     pytket_circuit.CRz(np.pi / 4, *qubits)
-    cirq_circuit = convert_to_package(pytket_circuit, "cirq")
+    cirq_circuit = transpile(pytket_circuit, "cirq")
     assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -46,7 +46,7 @@ def test_rzz_gate_from_pytket(qubits, theta):
     """Test converting Rzz gate from pytket to cirq."""
     pytket_circuit = TKCircuit(2)
     pytket_circuit.ZZPhase(theta, *qubits)
-    cirq_circuit = convert_to_package(pytket_circuit, "cirq")
+    cirq_circuit = transpile(pytket_circuit, "cirq")
     assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -54,7 +54,7 @@ def test_100_random_pytket():
     """Test converting 100 random pytket circuits to cirq."""
     for _ in range(100):
         pytket_circuit = random_circuit("pytket", 4, 1)
-        cirq_circuit = convert_to_package(pytket_circuit, "cirq")
+        cirq_circuit = transpile(pytket_circuit, "cirq")
         assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=False)
 
 
@@ -63,4 +63,4 @@ def test_raise_error():
     with pytest.raises(CircuitConversionError):
         pytket_circuit = TKCircuit(2)
         pytket_circuit.ISWAPMax(0, 1)
-        convert_to_package(pytket_circuit, "cirq")
+        transpile(pytket_circuit, "cirq")

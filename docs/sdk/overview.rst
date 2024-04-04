@@ -60,7 +60,7 @@ Construct a quantum program of any supported program type:
 
 .. code-block:: python
    
-   >>> from qbraid import QPROGRAM_LIBS
+   >>> from qbraid.programs import QPROGRAM_LIBS
    >>> from qbraid.interface import random_circuit
    >>> QPROGRAM_LIBS
    ['cirq', 'qiskit', 'pyquil', 'pytket', 'braket', 'openqasm3', 'qasm2', 'qasm3']
@@ -84,15 +84,16 @@ Search for quantum backend(s) on which to execute your program:
    >>> ibm_least_busy_qpu()
    ibm_q_oslo
 
-Apply the device wrapper and send your quantum jobs:
+Select a device using the ``QbraidProvider`` and send your quantum jobs:
 
 .. code-block:: python
 
-   >>> from qbraid import device_wrapper
+   >>> from qbraid.providers import QbraidProvider
+   >>> provider = QbraidProvider()
    >>> jobs  = []
    >>> qbraid_ids = ['aws_oqc_lucy', 'ibm_q_oslo']
    >>> for device in qbraid_ids:
-   ... qdevice = device_wrapper(device)
+   ... qdevice = provider.get_device(device)
    ... qjob = qdevice.run(circuit, shots=1000)
    ... jobs.append(qjob)
 

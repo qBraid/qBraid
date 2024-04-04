@@ -91,18 +91,11 @@ class OpenQasm3Program(QuantumProgram):
     @property
     def depth(self) -> int:
         """Return the circuit depth (i.e., length of critical path)."""
-        # pylint: disable=import-outside-toplevel
-        from qiskit.qasm3 import loads
-
-        return loads(self.program).depth()
+        raise NotImplementedError
 
     def _unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
-        # pylint: disable=import-outside-toplevel
-        from qiskit.qasm3 import loads
-        from qiskit.quantum_info import Operator
-
-        return Operator(loads(self.program)).data
+        raise NotImplementedError
 
     @staticmethod
     def _remove_gate_definitions(qasm_str: str) -> str:

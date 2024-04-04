@@ -14,11 +14,12 @@ Module defining BraketDeviceWrapper Class
 """
 import json
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, List, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple
 
 from braket.device_schema import ExecutionDay
 
-from qbraid._qprogram import QPROGRAM_LIBS
+from qbraid.programs._import import QPROGRAM_LIBS
+from qbraid.programs.libs.braket import BraketCircuit
 from qbraid.providers.device import QuantumDevice
 from qbraid.providers.enums import DeviceStatus, DeviceType
 
@@ -26,8 +27,10 @@ from .job import BraketQuantumTask
 
 if TYPE_CHECKING:
     import braket.aws
+    import braket.circuits
 
-    import qbraid
+    import qbraid.providers.aws
+    import qbraid.transpiler
 
 
 def _future_utc_datetime(hours: int, minutes: int, seconds: int) -> str:
@@ -54,7 +57,7 @@ class BraketDevice(QuantumDevice):
         metadata = device.aws_session.get_device(device.arn)
         capabilities = json.loads(metadata.get("deviceCapabilities"))
 
-        self._id = metadata.get("deviceArn")
+        self._vendor_id = metadata.get("deviceArn")
         self._name = metadata.get("deviceName")
         self._provider = metadata.get("providerName")
         self._device_type = DeviceType(metadata.get("deviceType"))
@@ -199,9 +202,6 @@ class BraketDevice(QuantumDevice):
     def _transpile(self, run_input):
         """Transpile a circuit for the device."""
         if self._device_type.name == "SIMULATOR":
-            # pylint: disable=import-outside-toplevel
-            from qbraid.programs.braket import BraketCircuit
-
             program = BraketCircuit(run_input)
             program.remove_idle_qubits()
             run_input = program.program
@@ -217,9 +217,7 @@ class BraketDevice(QuantumDevice):
             run_input = braket_ionq_compile(run_input)
         return run_input
 
-    def run(
-        self, run_input, *args, auto_compile: bool = False, **kwargs
-    ) -> "qbraid.device.aws.BraketQuantumTaskWrapper":
+    def _run(self, run_input: "braket.circuits.Circuit", *args, **kwargs) -> Dict[str, Any]:
         """Run a quantum task specification on this quantum device. Task must represent a
         quantum circuit, annealing problems not supported.
 
@@ -227,33 +225,23 @@ class BraketDevice(QuantumDevice):
             run_input: Specification of a task to run on device.
 
         Keyword Args:
-            auto_compile (bool): Whether to compile the circuit for the device before running.
             shots (int): The number of times to run the task on the device.
 
         Returns:
             The job like object for the run.
 
         """
-        qbraid_circuit = self.process_run_input(run_input, auto_compile=auto_compile)
-        run_input = qbraid_circuit._program
         aws_quantum_task = self._device.run(run_input, *args, **kwargs)
         metadata = aws_quantum_task.metadata()
-        shots = metadata.get("shots", 0)
-        tags = metadata.get("tags", {})
-        vendor_job_id = metadata["quantumTaskArn"]
-        job_json = self.create_job(vendor_job_id, [qbraid_circuit], shots, tags)
-        job_id = job_json.get("qbraidJobId", job_json.get("_id"))
-        return BraketQuantumTask(
-            job_id,
-            job_obj=aws_quantum_task,
-            job_json=job_json,
-            device=self,
-            circuits=[qbraid_circuit],
-        )
+        return {
+            "vendor_job_id": metadata["quantumTaskArn"],
+            "tags": metadata.get("tags", {}),
+            "shots": metadata.get("shots", 0),
+            "vendor_job_obj": aws_quantum_task,
+            "qbraid_job_obj": BraketQuantumTask,
+        }
 
-    def run_batch(
-        self, run_input, *args, auto_compile: bool = False, **kwargs
-    ) -> List["qbraid.device.aws.BraketQuantumTaskWrapper"]:
+    def _run_batch(self, run_input, *args, **kwargs) -> List[Dict[str, Any]]:
         """Run batch of quantum tasks on this quantum device.
 
         Args:
@@ -268,31 +256,17 @@ class BraketDevice(QuantumDevice):
 
         """
         device = self._device
-        qbraid_circuit_batch = []
-        run_input_batch = []
-        for circuit in run_input:
-            qbraid_circuit = self.process_run_input(circuit, auto_compile=auto_compile)
-            run_input = qbraid_circuit._program
-            run_input_batch.append(run_input)
-            qbraid_circuit_batch.append(qbraid_circuit)
-        aws_quantum_task_batch = device.run_batch(run_input_batch, *args, **kwargs)
+        aws_quantum_task_batch = device.run_batch(run_input, *args, **kwargs)
         aws_quantum_tasks = aws_quantum_task_batch.tasks
-        aws_quantum_task_wrapper_list = []
-        for index, aws_quantum_task in enumerate(aws_quantum_tasks):
-            qbraid_circuit = qbraid_circuit_batch[index]
+        aws_quantum_task_data = []
+        for _, aws_quantum_task in enumerate(aws_quantum_tasks):
             metadata = aws_quantum_task.metadata()
-            shots = metadata.get("shots", 0)
-            tags = metadata.get("tags", {})
-            vendor_job_id = metadata["quantumTaskArn"]
-            job_json = self.create_job(vendor_job_id, [qbraid_circuit], shots, tags)
-            job_id = job_json.get("qbraidJobId", job_json.get("_id"))
-            aws_quantum_task_wrapper_list.append(
-                BraketQuantumTask(
-                    job_id,
-                    job_obj=aws_quantum_task,
-                    job_json=job_json,
-                    device=self,
-                    circuits=[qbraid_circuit],
-                )
-            )
-        return aws_quantum_task_wrapper_list
+            job_data = {
+                "vendor_job_id": metadata["quantumTaskArn"],
+                "tags": metadata.get("tags", {}),
+                "shots": metadata.get("shots", 0),
+                "vendor_job_obj": aws_quantum_task,
+                "qbraid_job_obj": BraketQuantumTask,
+            }
+            aws_quantum_task_data.append(job_data)
+        return aws_quantum_task_data

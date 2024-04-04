@@ -18,9 +18,9 @@ import networkx as nx
 import pytest
 from qiskit_braket_provider.providers.adapter import convert_qiskit_to_braket_circuit
 
-from qbraid._qprogram import QPROGRAM_LIBS
+from qbraid.programs._import import QPROGRAM_LIBS
 from qbraid.transpiler.conversions import conversion_functions
-from qbraid.transpiler.converter import convert_to_package
+from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.graph import ConversionGraph
 
@@ -124,7 +124,7 @@ def test_initialize_new_conversion(bell_circuit):
     ]
     graph = ConversionGraph(conversions)
     assert len(graph.edges) == 1
-    braket_circuit = convert_to_package(qiskit_circuit, "braket", conversion_graph=graph)
+    braket_circuit = transpile(qiskit_circuit, "braket", conversion_graph=graph)
     assert isinstance(braket_circuit, braket.circuits.Circuit)
 
 
@@ -138,5 +138,5 @@ def test_overwrite_new_conversion(bell_circuit):
     edge = Conversion("qiskit", "braket", convert_qiskit_to_braket_circuit)
     graph.add_conversion(edge, overwrite=True)
     assert len(graph.edges) == 1
-    braket_circuit = convert_to_package(qiskit_circuit, "braket", conversion_graph=graph)
+    braket_circuit = transpile(qiskit_circuit, "braket", conversion_graph=graph)
     assert isinstance(braket_circuit, braket.circuits.Circuit)

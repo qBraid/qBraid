@@ -29,7 +29,7 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   convert_to_package
+   transpile
 
 Exceptions
 -----------
@@ -42,7 +42,7 @@ Exceptions
    ConversionPathNotFoundError
 
 """
-from .converter import convert_to_package
+from .converter import transpile
 from .edge import Conversion
 from .exceptions import CircuitConversionError, ConversionPathNotFoundError, NodeNotFoundError
 from .graph import ConversionGraph

@@ -21,7 +21,7 @@ from qiskit_ibm_provider import IBMProvider
 from qiskit_ibm_provider.job.ibm_circuit_job import IBMCircuitJob
 from qiskit_ibm_runtime import IBMBackend, QiskitRuntimeService
 
-from qbraid import device_wrapper
+from qbraid.providers import QbraidProvider
 from qbraid.providers.exceptions import JobError
 from qbraid.providers.ibm import QiskitProvider, QiskitRuntime
 
@@ -64,10 +64,11 @@ def test_ibm_least_busy():
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_retrieving_ibm_job():
     """Test retrieving a previously submitted IBM job."""
+    provider = QbraidProvider()
     circuit = QuantumCircuit(1, 1)
     circuit.h(0)
     circuit.measure(0, 0)
-    qbraid_device = device_wrapper("ibm_q_qasm_simulator")
+    qbraid_device = provider.get_device("ibm_q_qasm_simulator")
     qbraid_job = qbraid_device.run(circuit, shots=1)
     ibm_job = qbraid_job._get_job()
     assert isinstance(ibm_job, IBMCircuitJob)
@@ -76,10 +77,11 @@ def test_retrieving_ibm_job():
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_retrieving_ibm_job_raises_error():
     """Test retrieving IBM job from unrecognized backend raises error."""
+    provider = QbraidProvider()
     circuit = QuantumCircuit(1, 1)
     circuit.h(0)
     circuit.measure(0, 0)
-    qbraid_device = device_wrapper("ibm_q_qasm_simulator")
+    qbraid_device = provider.get_device("ibm_q_qasm_simulator")
     qbraid_job = qbraid_device.run(circuit, shots=1)
     qbraid_job.device._device = Mock()
     with pytest.raises(JobError):

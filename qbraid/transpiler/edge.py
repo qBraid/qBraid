@@ -15,8 +15,7 @@ Module for defining custom conversions
 import inspect
 from typing import TYPE_CHECKING, Any, Callable, Union
 
-from qbraid._qprogram import SUPPORTED_QPROGRAMS
-from qbraid.inspector import get_program_type
+from qbraid.programs import SUPPORTED_QPROGRAMS, get_program_type
 
 if TYPE_CHECKING:
     import qbraid
@@ -90,15 +89,17 @@ class Conversion:
         package = module.__name__.split(".")[0]
         return package == "qbraid"
 
-    def convert(self, program: "qbraid.QPROGRAM") -> Union["qbraid.QPROGRAM", Any]:
+    def convert(
+        self, program: "qbraid.programs.QPROGRAM"
+    ) -> Union["qbraid.programs.QPROGRAM", Any]:
         """
         Convert a quantum program from the source package to the target package.
 
         Args:
-            program (qbraid.QPROGRAM): The quantum program to be converted.
+            program (qbraid.programs.QPROGRAM): The quantum program to be converted.
 
         Returns:
-            Union[qbraid.QPROGRAM, Any]: The converted quantum program,
+            Union[qbraid.programs.QPROGRAM, Any]: The converted quantum program,
                                          typically of a supported program type.
 
         Raises:

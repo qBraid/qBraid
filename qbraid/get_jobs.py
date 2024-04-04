@@ -27,8 +27,7 @@ except ImportError:
 from qbraid_core import QbraidSession
 from qbraid_core.services.quantum.adapter import _job_status_msg
 
-from ._display import running_in_jupyter, update_progress_bar
-from .load_provider import job_wrapper
+from qbraid._display import running_in_jupyter, update_progress_bar
 
 
 def _display_jobs_basic(data, msg):
@@ -126,7 +125,7 @@ def _get_jobs_data(
             status_final = True
         if refresh and not status_final:
             try:
-                qbraid_job = job_wrapper(job_id)
+                qbraid_job = QuantumJob.retrieve(job_id)
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore")
                     status_obj = qbraid_job.status()

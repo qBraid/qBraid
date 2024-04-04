@@ -16,7 +16,7 @@ import numpy as np
 import pytest
 from pytket.circuit import Circuit
 
-from qbraid.programs.pytket import PytketCircuit
+from qbraid.programs.libs.pytket import PytketCircuit
 
 
 @pytest.mark.parametrize(

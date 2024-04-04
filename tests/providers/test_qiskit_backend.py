@@ -30,7 +30,9 @@ try:
     fake_almaden.name = "fake_almaden"
 except ImportError:  # prama: no cover
     # qiskit < 1.0.0
-    from qiskit.providers.basicaer.basicaerjob import BasicAerJob as BasicProviderJob
+    from qiskit.providers.basicaer.basicaerjob import (
+        BasicAerJob as BasicProviderJob,  # type: ignore
+    )
     from qiskit.providers.fake_provider import FakeManila as Fake5QV1
     from qiskit.providers.fake_provider import FakeProviderFactory
 
@@ -41,8 +43,7 @@ except ImportError:  # prama: no cover
 from qiskit_aer.jobs.aerjob import AerJob
 from qiskit_ibm_provider import IBMBackend, IBMJob
 
-from qbraid import device_wrapper
-from qbraid.providers import QuantumJob
+from qbraid.providers import QbraidProvider, QuantumJob
 from qbraid.providers.exceptions import JobStateError
 from qbraid.providers.ibm import QiskitBackend, QiskitJob, QiskitProvider
 
@@ -90,7 +91,8 @@ circuits_qiskit_run = [cirq_circuit(), qiskit_circuit()]
 @pytest.mark.parametrize("device_id", inputs_qiskit_dw)
 def test_device_wrapper_ibm_from_api(device_id):
     """Test creating device wrapper from Qiskit device ID."""
-    qbraid_device = device_wrapper(device_id)
+    provider = QbraidProvider()
+    qbraid_device = provider.get_device(device_id)
     vendor_device = qbraid_device._device
     assert isinstance(qbraid_device, QiskitBackend)
     assert isinstance(vendor_device, IBMBackend)
@@ -108,7 +110,8 @@ def test_wrap_fake_provider():
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_queue_depth():
     """Test getting number of pending jobs for QiskitBackend."""
-    ibm_device = device_wrapper("ibm_q_qasm_simulator")
+    provider = QbraidProvider()
+    ibm_device = provider.get_device("ibm_q_qasm_simulator")
     assert isinstance(ibm_device.queue_depth(), int)
 
 
@@ -116,7 +119,8 @@ def test_queue_depth():
 @pytest.mark.parametrize("circuit", circuits_qiskit_run)
 def test_run_qiskit_device_wrapper(circuit):
     """Test run method from wrapped Qiskit backends"""
-    qbraid_device = device_wrapper("ibm_q_qasm_simulator")
+    provider = QbraidProvider()
+    qbraid_device = provider.get_device("ibm_q_qasm_simulator")
     qbraid_job = qbraid_device.run(circuit, shots=10)
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
@@ -126,7 +130,8 @@ def test_run_qiskit_device_wrapper(circuit):
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_run_batch_qiskit_device_wrapper():
     """Test run_batch method from wrapped Qiskit backends"""
-    qbraid_device = device_wrapper("ibm_q_qasm_simulator")
+    provider = QbraidProvider()
+    qbraid_device = provider.get_device("ibm_q_qasm_simulator")
     qbraid_job = qbraid_device.run_batch(circuits_qiskit_run, shots=10)
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
@@ -156,35 +161,28 @@ def test_run_fake_batch_qiskit_device_wrapper(qbraid_device):
 def test_cancel_completed_batch_error():
     """Test that cancelling a batch job that has already reached its
     final state raises an error."""
-
-    # Initialize your quantum device
-    qbraid_device = device_wrapper("ibm_q_simulator_statevector")
+    provider = QbraidProvider()
+    qbraid_device = provider.get_device("ibm_q_simulator_statevector")
     qbraid_job = qbraid_device.run_batch(circuits_qiskit_run, shots=10)
 
-    # Initialize your timer
-    timeout = 60  # Total time to wait for job to complete
-    check_every = 2  # Check job status every 2 seconds
+    timeout = 60
+    check_every = 2
     elapsed_time = 0
 
-    # Wait for job to complete, but not more than the timeout
     while elapsed_time < timeout:
-        # Check if job has reached its final state
         status = qbraid_job.status()
         if QuantumJob.status_final(status):
             break
 
-        # If not, sleep and then check again
         time.sleep(check_every)
         elapsed_time += check_every
 
-    # If job hasn't finished even after waiting for the timeout period, cancel it
     if elapsed_time >= timeout:
         try:
             qbraid_job.cancel()
         except JobStateError:
             pass
 
-    # Ensure that cancelling a finished job raises an error
     with pytest.raises(JobStateError):
         qbraid_job.cancel()
 

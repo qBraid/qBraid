@@ -16,9 +16,9 @@ import os
 
 import pytest
 
-from qbraid import device_wrapper, get_jobs, job_wrapper
+from qbraid import get_jobs
 from qbraid.interface import random_circuit
-from qbraid.providers.result import QuantumJobResult
+from qbraid.providers import QbraidProvider, QuantumJob, QuantumJobResult
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
@@ -59,6 +59,7 @@ def test_format_counts(counts_raw, expected_out, include_zero_values):
 @pytest.mark.parametrize("device_id", ["ibm_q_simulator_statevector", "aws_sv_sim"])
 def test_result_wrapper_measurements(device_id):
     """Test result wrapper measurements method."""
+    provider = QbraidProvider()
     jobs = get_jobs(
         filters={
             "qbraidDeviceId": device_id,
@@ -70,10 +71,10 @@ def test_result_wrapper_measurements(device_id):
     )
     if len(jobs) == 0:
         circuit = random_circuit("qiskit", measure=True)
-        sim = device_wrapper(device_id).run(circuit, shots=10)
+        sim = provider.get_device(device_id).run(circuit, shots=10)
     else:
         job_id = jobs[0]
-        sim = job_wrapper(job_id)
+        sim = QuantumJob.retrieve(job_id)
 
     metadata = sim.metadata()
     num_qubits = metadata["circuitNumQubits"]
@@ -89,6 +90,7 @@ def test_result_wrapper_measurements(device_id):
 @pytest.mark.parametrize("device_id", ["ibm_q_qasm_simulator"])
 def test_result_wrapper_batch_measurements(device_id):
     """Test result wrapper measurements method for circuit batch."""
+    provider = QbraidProvider()
     jobs = get_jobs(
         filters={
             "circuitBatchNumQubits": {"$ne": []},
@@ -100,10 +102,10 @@ def test_result_wrapper_batch_measurements(device_id):
     )
     if len(jobs) == 0:
         circuit = random_circuit("qiskit", num_qubits=3, depth=3, measure=True)
-        sim = device_wrapper(device_id).run_batch([circuit, circuit, circuit], shots=10)
+        sim = provider.get_device(device_id).run_batch([circuit, circuit, circuit], shots=10)
     else:
         job_id = jobs[0]
-        sim = job_wrapper(job_id)
+        sim = QuantumJob.retrieve(job_id)
 
     metadata = sim.metadata()
     batch_qubits = [int(q) for q in metadata["circuitBatchNumQubits"]]

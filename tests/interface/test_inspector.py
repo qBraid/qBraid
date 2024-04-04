@@ -16,8 +16,8 @@ from unittest.mock import Mock
 
 import pytest
 
-from qbraid.exceptions import PackageValueError, ProgramTypeError, QasmError
-from qbraid.inspector import get_program_type, get_qasm_version
+from qbraid.programs.exceptions import PackageValueError, ProgramTypeError, QasmError
+from qbraid.programs.inspector import get_program_type, get_qasm_version
 
 from ..fixtures import packages_bell
 
@@ -99,6 +99,16 @@ def test_get_program_type(bell_circuit):
     circuit, expected_package = bell_circuit
     package_name = get_program_type(circuit)
     assert package_name == expected_package
+
+
+@pytest.mark.parametrize(
+    "program,expected_package", [("not-a-circuit", None), (Mock(), "unittest")]
+)
+def test_get_program_type_required_supported_false(program, expected_package):
+    """Test that None or module name is returned for unsupported package when
+    require supported is given as False."""
+    package = get_program_type(program, require_supported=False)
+    assert package == expected_package
 
 
 def test_raise_error_unuspported_source_program():

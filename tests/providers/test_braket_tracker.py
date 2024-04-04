@@ -21,6 +21,7 @@ from braket.tracking import Tracker
 
 from qbraid.providers.aws import BraketProvider
 from qbraid.providers.aws.tracker import get_quantum_task_cost
+from qbraid.providers.exceptions import JobError
 
 # Skip tests if AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
@@ -52,7 +53,7 @@ def test_get_quantum_task_cost_cancelled(braket_most_busy, braket_circuit):
     provider = BraketProvider()
 
     # AwsSession region must match device region
-    region_name = provider._get_region_name(braket_most_busy._id)
+    region_name = provider._get_region_name(braket_most_busy._vendor_id)
     aws_session = provider._get_aws_session(region_name)
 
     qbraid_job = braket_most_busy.run(braket_circuit, shots=10)
@@ -60,13 +61,26 @@ def test_get_quantum_task_cost_cancelled(braket_most_busy, braket_circuit):
 
     task_arn = qbraid_job.vendor_job_id
 
-    # with pytest.raises(ValueError) as excinfo:
-    #     get_quantum_task_cost(task_arn, aws_session)
+    try:
+        qbraid_job.wait_for_final_state(timeout=30)
+        final_state_reached = True
+    except JobError:
+        final_state_reached = False
 
-    # assert "Current state is CANCELLING" in str(excinfo.value)
+    # Based on whether final state was reached or not, proceed to verify expected outcomes
+    if final_state_reached:
+        # Verify cost is as expected when job reaches a final state
+        cost = get_quantum_task_cost(task_arn, aws_session)
+        assert cost == Decimal(0), f"Expected cost to be 0 when job is in a final state, got {cost}"
+    else:
+        # Verify the appropriate error is raised when job has not reached a final state
+        with pytest.raises(ValueError) as exc_info:
+            get_quantum_task_cost(task_arn, aws_session)
 
-    qbraid_job.wait_for_final_state(timeout=30)
-    assert get_quantum_task_cost(task_arn, aws_session) == Decimal(0)
+        expected_msg = f"ValueError: Task {task_arn} is not COMPLETED. Current state is CANCELLING."
+        assert (
+            str(exc_info.value) == expected_msg
+        ), "Unexpected error message for non-final job state"
 
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)

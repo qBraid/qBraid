@@ -16,19 +16,19 @@ from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 
 import numpy as np
 
-from qbraid._qprogram import QPROGRAM, QPROGRAM_LIBS
-from qbraid.exceptions import PackageValueError
-from qbraid.transpiler.converter import convert_to_package
+from qbraid.programs._import import QPROGRAM, QPROGRAM_LIBS
+from qbraid.programs.exceptions import PackageValueError
+from qbraid.transpiler.converter import transpile
 
 QROGRAM_TEST_TYPE = Tuple[Dict[str, Callable[[Any], QPROGRAM]], np.ndarray]
 
 if TYPE_CHECKING:
-    import qbraid
+    import qbraid.programs
 
 
 def random_circuit(
     package: str, num_qubits: Optional[int] = None, depth: Optional[int] = None, **kwargs
-) -> "qbraid.QPROGRAM":
+) -> "qbraid.programs.QPROGRAM":
     """Generate random circuit of arbitrary size and form.
 
     Args:
@@ -42,7 +42,7 @@ def random_circuit(
         QbraidError: when invalid random circuit options given
 
     Returns:
-        :data:`~qbraid.QPROGRAM`: randomly generated quantum circuit/program
+        :data:`~qbraid.programs.QPROGRAM`: randomly generated quantum circuit/program
 
     """
     if package not in QPROGRAM_LIBS:
@@ -66,7 +66,7 @@ def random_circuit(
         rand_circuit = _cirq_random(num_qubits, depth, **kwargs)
 
         if package != "cirq":
-            rand_circuit = convert_to_package(rand_circuit, package)
+            rand_circuit = transpile(rand_circuit, package)
 
     return rand_circuit
 

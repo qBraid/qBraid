@@ -9,21 +9,23 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """Information about qBraid and dependencies."""
-import platform
-
-from networkx import __version__ as networkx_version
-from numpy import __version__ as numpy_version
-from openqasm3 import __version__ as openqasm3_version
-from ply import __version__ as ply_version
-from qbraid_core._version import __version__ as qbraid_core_version
-
-from ._version import __version__ as qbraid_version
 
 
 def about() -> None:
     """Displays information about qBraid, core/optional packages, and Python
     version/platform information.
     """
+    # pylint: disable=import-outside-toplevel
+    import platform
+
+    from networkx import __version__ as networkx_version
+    from numpy import __version__ as numpy_version
+    from openqasm3 import __version__ as openqasm3_version
+    from ply import __version__ as ply_version
+    from qbraid_core._version import __version__ as qbraid_core_version
+
+    from ._version import __version__ as qbraid_version
+
     # Core dependencies
     core_dependencies = {
         "qbraid_core": qbraid_core_version,
@@ -43,6 +45,7 @@ def about() -> None:
         "pytket": "pytket",
         "qiskit_ibm_provider": "qiskit_ibm_provider",
         "qiskit_ibm_runtime": "qiskit_ibm_runtime",
+        "qbraid_qir": "qbraid_qir",
     }
 
     optional_dependencies = {}

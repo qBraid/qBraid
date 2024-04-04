@@ -16,8 +16,8 @@ Unit tests for QASM preprocessing functions
 import pytest
 from qiskit import QuantumCircuit
 
-from qbraid import circuit_wrapper
 from qbraid.interface import circuits_allclose
+from qbraid.programs import load_program
 from qbraid.transpiler.conversions.cirq.conversions_qasm import qasm2_to_cirq
 from qbraid.transpiler.conversions.qasm_passes import flatten_qasm_program
 
@@ -64,7 +64,7 @@ def test_preprocess_qasm(qasm_str):
     qiskit_circuit = QuantumCircuit().from_qasm_str(qasm_str)
     supported_qasm = flatten_qasm_program(qasm_str)
     cirq_circuit = qasm2_to_cirq(supported_qasm)
-    qprogram = circuit_wrapper(cirq_circuit)
+    qprogram = load_program(cirq_circuit)
     qprogram._convert_to_line_qubits()
     cirq_circuit_compat = qprogram.program
     assert circuits_allclose(cirq_circuit_compat, qiskit_circuit)

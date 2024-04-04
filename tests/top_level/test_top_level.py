@@ -13,7 +13,6 @@ Unit tests for qbraid top-level functionality
 
 """
 import os
-import re
 import sys
 from unittest.mock import Mock
 
@@ -21,31 +20,17 @@ import pytest
 
 from qbraid import __version__
 from qbraid._display import running_in_jupyter, update_progress_bar
-from qbraid._warnings import _warn_new_version
-from qbraid.exceptions import PackageValueError
 from qbraid.get_devices import get_devices
 from qbraid.get_jobs import _display_jobs_jupyter, get_jobs
 from qbraid.interface.random import random_circuit
-from qbraid.load_provider import device_wrapper
+from qbraid.programs.exceptions import PackageValueError
+from qbraid.providers import QbraidProvider
 
 # pylint: disable=missing-function-docstring,redefined-outer-name
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of qBraid/AWS/IBM storage)"
-
-check_version_data = [
-    # local, API, warn
-    ("0.1.0", "0.1.1", False),
-    ("1.0.7", "1.0.8", False),
-    ("1.3.2", "2.0.6", True),
-    ("0.1.0", "0.3.0", True),
-    ("0.2.4.dev1", "0.2.4", False),
-    ("0.1.0", "0.1.0.dev0", False),
-    ("0.1.6.dev2", "0.1.6.dev5", False),
-    ("0.1.6.dev5", "0.1.6.dev2", False),
-    ("0.2.0", "0.1.4", False),
-]
 
 
 job_status_list = [
@@ -61,15 +46,8 @@ job_status_list = [
 ]
 
 
-@pytest.mark.parametrize("test_data", check_version_data)
-def test_check_version(test_data):
-    """Test function that compares local/api package versions to determine if
-    update is needed."""
-    local, api, warn_bool = test_data
-    assert warn_bool == _warn_new_version(local, api)
-
-
 def test_package_value_error():
+    """Test raising PackageValueError exception."""
     with pytest.raises(PackageValueError):
         raise PackageValueError("custom msg")
 
@@ -95,20 +73,24 @@ def test_update_progress_bar_halted(capfd):
 
 
 def test_running_in_jupyter():
+    """Test ``running_in_jupyter`` for non-jupyter environment."""
     assert not running_in_jupyter()
 
 
 def test_ipython_imported_but_ipython_none():
+    """Test ``running_in_jupyter`` for IPython imported but ``get_ipython()`` returns None."""
     _mock_ipython(None)
     assert not running_in_jupyter()
 
 
 def test_ipython_imported_but_not_in_jupyter():
+    """Test ``running_in_jupyter`` for IPython imported but not in Jupyter."""
     _mock_ipython(MockIPython(None))
     assert not running_in_jupyter()
 
 
 def test_ipython_imported_and_in_jupyter():
+    """Test ``running_in_jupyter`` for IPython imported and in Jupyter."""
     _mock_ipython(MockIPython("non-empty kernel"))
     assert running_in_jupyter()
 
@@ -130,7 +112,8 @@ def test_get_aws_jobs_by_tag(capfd):
     """Test ``get_jobs`` for aws tagged jobs."""
     _mock_ipython(MockIPython(None))
     circuit = random_circuit("braket")
-    device = device_wrapper("aws_dm_sim")
+    provider = QbraidProvider()
+    device = provider.get_device("aws_dm_sim")
     job = device.run(circuit, shots=10, tags={"test": "123"})
     get_jobs(filters={"tags": {"test": "123"}, "numResults": 1})
     out, err = capfd.readouterr()
@@ -145,7 +128,8 @@ def test_get_ibm_jobs_by_tag(capfd):
     """Test ``get_jobs`` for ibm tagged jobs."""
     _mock_ipython(MockIPython(None))
     circuit = random_circuit("qiskit")
-    device = device_wrapper("ibm_q_qasm_simulator")
+    provider = QbraidProvider()
+    device = provider.get_device("ibm_q_qasm_simulator")
     job = device.run(circuit, shots=10, tags=["test"])
     get_jobs(filters={"tags": {"test": "*"}, "numResults": 1})
     out, err = capfd.readouterr()
@@ -180,6 +164,7 @@ def test_get_jobs_results(capfd):
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_display_jobs_in_jupyter(capfd):
+    """Test ``_display_jobs_jupyter`` stdout for non-empty job status list."""
     _mock_ipython(MockIPython("non-empty kernel"))
     data = []
     for index, value in enumerate(job_status_list):
@@ -197,6 +182,8 @@ def test_display_jobs_in_jupyter(capfd):
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_get_jobs_in_jupyter(capfd):
+    """Test ``get_jobs`` stdout for non-empty kernel.
+    When running in Jupyter, the output should be an HTML object."""
     _mock_ipython(MockIPython("non-empty kernel"))
     get_jobs()
     out, err = capfd.readouterr()
@@ -261,6 +248,8 @@ def test_get_devices_refresh_results(capfd):
 
 
 def test_get_devices_in_jupyter(capfd):
+    """Test ``get_devices`` stdout for non-empty kernel.
+    When running in Jupyter, the output should be an HTML object."""
     _mock_ipython(MockIPython("non-empty kernel"))
     get_devices()
     out, err = capfd.readouterr()
@@ -269,10 +258,12 @@ def test_get_devices_in_jupyter(capfd):
 
 
 def get_ipython():
+    """Mock get_ipython function."""
     pass
 
 
 def _mock_ipython(get_ipython_result):
+    """Mock IPython module and get_ipython function."""
     module = sys.modules["test_top_level"]
     sys.modules["IPython"] = module
 

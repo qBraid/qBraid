@@ -18,8 +18,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import zscore
 
-from qbraid import circuit_wrapper
 from qbraid.interface.random import random_circuit
+from qbraid.programs import load_program
+from qbraid.transpiler import transpile
 
 # Step 1: Collecting the data
 quantum_area_data = {}
@@ -33,10 +34,10 @@ for num_qubits in values:
         quantum_area_data[quantum_area] = []
 
     cirq_circuit = random_circuit("cirq", num_qubits=num_qubits, depth=depth)
-    qbraid_circuit = circuit_wrapper(cirq_circuit)
+    qbraid_circuit = load_program(cirq_circuit)
 
     start = time()
-    qbraid_circuit.transpile("qiskit")
+    transpile(qbraid_circuit.program, "qiskit")
     stop = time()
 
     quantum_area_data[quantum_area].append(stop - start)

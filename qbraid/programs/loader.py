@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -9,52 +9,41 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module containing top-level qbraid wrapper functionality. Each of these
-functions utilize entrypoints via ``pkg_resources``.
+Module containing top-level qbraid program loader functionality
+utilizing entrypoints via ``pkg_resources``.
 
 """
-import warnings
+from typing import TYPE_CHECKING
 
 import openqasm3
 
-from ._import import _load_entrypoint
-from ._qprogram import QPROGRAM
-from .exceptions import QbraidError
+from qbraid._import import _load_entrypoint
+from qbraid.exceptions import QbraidError
+
 from .inspector import get_program_type
 
+if TYPE_CHECKING:
+    import qbraid.programs
 
-def circuit_wrapper(program: QPROGRAM):
+
+def load_program(program: "qbraid.programs.QPROGRAM") -> "qbraid.programs.QuantumProgram":
     """Apply qbraid quantum program wrapper to a supported quantum program.
 
-    This function is used to create a qBraid :class:`~qbraid.transpiler.QuantumProgram`
+    This function is used to create a qBraid :class:`~qbraid.programs.QuantumProgram`
     object, which can then be transpiled to any supported quantum circuit-building package.
     The input quantum circuit object must be an instance of a circuit object derived from a
     supported package.
 
-    .. code-block:: python
-
-        cirq_circuit = cirq.Circuit()
-        q0, q1, q2 = [cirq.LineQubit(i) for i in range(3)]
-        ...
-
-    Please refer to the documentation of the individual qbraid circuit wrapper objects to see
-    any additional arguments that might be supported.
-
     Args:
-        circuit (:data:`~qbraid.QPROGRAM`): A supported quantum circuit / program object
+        circuit (:data:`~qbraid.programs.QPROGRAM`): A supported quantum circuit / program object
 
     Returns:
-        :class:`~qbraid.transpiler.QuantumProgram`: A wrapped quantum circuit-like object
+        :class:`~qbraid.programs.QuantumProgram`: A wrapped quantum circuit-like object
 
     Raises:
         :class:`~qbraid.QbraidError`: If the input circuit is not a supported quantum program.
 
     """
-    warnings.warn(
-        "qbraid.circuit_wrapper() is deprecated. Please use \
-        qbraid.programs.loads instead.",
-        PendingDeprecationWarning,
-    )
     if isinstance(program, openqasm3.ast.Program):
         program = openqasm3.dumps(program)
 
@@ -67,10 +56,10 @@ def circuit_wrapper(program: QPROGRAM):
         ) from err
 
     try:
-        circuit_wrapper_class = _load_entrypoint("programs", package)
+        load_program_class = _load_entrypoint("programs", package)
     except Exception as err:
         raise QbraidError(
             f"Error applying circuit wrapper to quantum program of type {type(program)}"
         ) from err
 
-    return circuit_wrapper_class(program)
+    return load_program_class(program)

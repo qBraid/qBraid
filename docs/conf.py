@@ -15,13 +15,18 @@ import sys
 
 import qbraid
 
+# Set an environment variable to detect whether we are building the docs
+# so that we know to use raw imports instead of lazy loading.
+# os.environ['SPHINX_BUILD'] = '1'
+
+
 sys.path.insert(0, os.path.abspath(".."))
 sys.path.insert(0, os.path.abspath("../../qbraid"))
 
 # -- Project information -----------------------------------------------------
 
 project = "qBraid"
-copyright = "2023, qBraid Development Team"
+copyright = "2024, qBraid Development Team"
 author = "qBraid Development Team"
 
 # The full version, including alpha/beta/rc tags
@@ -46,7 +51,7 @@ extensions = [
 # set_type_checking_flag = True
 autodoc_member_order = "bysource"
 autoclass_content = "both"
-autodoc_mock_imports = ["cirq", "qiskit", "braket", "numpy", "matplotlib", "matplotlib.pyplot"]
+autodoc_mock_imports = ["cirq", "braket", "qiskit", "pennylane", "pyquil", "pytket", "openqasm3", "numpy", "matplotlib", "matplotlib.pyplot"]
 napoleon_numpy_docstring = False
 todo_include_todos = True
 mathjax_path = "https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
