@@ -15,68 +15,20 @@ Module to retrieve, update, and display information about devices
 supported by the qBraid SDK.
 
 """
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
-
-from qbraid_core import QbraidSession
-from qbraid_core.services.quantum import QuantumClient, process_device_data
+from typing import Any, Dict, List, Optional
 
 try:
     from IPython.display import HTML, clear_output, display
 except ImportError:
     pass
 
+from qbraid_core import QbraidSession
+from qbraid_core.services.quantum import QuantumClient, process_device_data
+
 from ._display import running_in_jupyter, update_progress_bar
 
-if TYPE_CHECKING:
-    from IPython.display import DisplayHandle
 
-
-def refresh_devices() -> None:
-    """Refreshes status for all qbraid supported devices. Requires credential for each vendor."""
-    # pylint: disable-next=import-outside-toplevel
-    from qbraid.providers import QbraidProvider
-
-    client = QuantumClient()
-    provider = QbraidProvider(client=client)
-    devices = client.search_devices()
-    count = 0
-    num_devices = len(devices)  # i.e. number of iterations
-    for document in devices:
-        progress = count / num_devices
-        update_progress_bar(progress)
-        if document["statusRefresh"] is not None:  # None => internally not available at moment
-            qbraid_id = document["qbraid_id"]
-            try:
-                device = provider.get_device(qbraid_id)
-                status = device.status().name
-                client.update_device(data={"qbraid_id": qbraid_id, "status": status})
-            except Exception:  # pylint: disable=broad-except
-                pass
-
-        count += 1
-    update_progress_bar(1)
-    print()
-
-
-def _get_device_data(query: Dict[str, Any]) -> Tuple[List[List[str]], int]:
-    """Get devices helper function that queries the qBraid API for all supported devices
-    and returns a list of devices that match the query filters. Each device is
-    represented by its own length-4 list containing the [provider, name, qbraid_id, status].
-    """
-    session = QbraidSession()
-
-    # forward compatibility for casing transition
-    if query.get("type") == "SIMULATOR":
-        query["type"] = "Simulator"
-
-    # get-devices must be a POST request with kwarg `json` (not `data`) to
-    # encode the query. This is because certain queries contain regular
-    # expressions which cannot be encoded in GET request `params`.
-    devices = session.post("/public/lab/get-devices", json=query).json()
-    return process_device_data(devices)
-
-
-def _display_basic(data: List[str], message: str) -> None:
+def _display_basic(data: List[str], message: str):
     if len(data) == 0:
         print(message)
     else:
@@ -134,9 +86,34 @@ def _display_jupyter(data: List[str], message: Optional[str] = None, align: str 
     return display(HTML(html))
 
 
-def get_devices(
-    filters: Optional[Dict[str, Any]] = None, refresh: bool = False
-) -> "Optional[Union[DisplayHandle, Any]]":
+def _refresh_devices() -> None:
+    """Refreshes status for all qbraid supported devices. Requires credential for each vendor."""
+    # pylint: disable-next=import-outside-toplevel
+    from qbraid.providers import QbraidProvider
+
+    client = QuantumClient()
+    provider = QbraidProvider(client=client)
+    devices = client.search_devices()
+    count = 0
+    num_devices = len(devices)  # i.e. number of iterations
+    for document in devices:
+        progress = count / num_devices
+        update_progress_bar(progress)
+        if document["statusRefresh"] is not None:  # None => internally not available at moment
+            qbraid_id = document["qbraid_id"]
+            try:
+                device = provider.get_device(qbraid_id)
+                status = device.status().name
+                client.update_device(data={"qbraid_id": qbraid_id, "status": status})
+            except Exception:  # pylint: disable=broad-except
+                pass
+
+        count += 1
+    update_progress_bar(1)
+    print()
+
+
+def get_devices(filters: Optional[Dict[str, Any]] = None, refresh: bool = False):
     """Displays a list of all supported devices matching given filters, tabulated by provider,
     name, and qBraid ID. Each device also has a status given by a solid green bubble or a hollow
     red bubble, indicating that the device is online or offline, respectively. You can narrow your
@@ -201,9 +178,25 @@ def get_devices(
 
     """
     if refresh:
-        refresh_devices()
+        _refresh_devices()
+
+    session = QbraidSession()
     query = {} if filters is None else filters
-    device_data, msg = _get_device_data(query)
+
+    # forward compatibility for casing transition
+    if query.get("type") == "SIMULATOR":
+        query["type"] = "Simulator"
+
+    if len(query) == 0:
+        client = QuantumClient(session=session)
+        devices = client.search_devices()
+    else:
+        # get-devices must be a POST request with kwarg `json` (not `data`) to
+        # encode the query. This is because certain queries contain regular
+        # expressions which cannot be encoded in GET request `params`.
+        devices = session.post("/public/lab/get-devices", json=query).json()
+
+    device_data, msg = process_device_data(devices)
     align = "center" if len(device_data) == 0 else "right"
 
     if running_in_jupyter():

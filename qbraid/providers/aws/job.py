@@ -24,6 +24,8 @@ from qbraid.providers.job import QuantumJob
 from .result import BraketGateModelResult
 from .tracker import get_quantum_task_cost
 
+logger = logging.getLogger(__name__)
+
 
 class AmazonBraketVersionError(Exception):
     """Exception raised for Amazon Braket SDK errors due to versioning."""
@@ -63,7 +65,7 @@ class BraketQuantumTask(QuantumJob):
     def result(self) -> BraketGateModelResult:
         """Return the results of the job."""
         if self.status() not in JOB_FINAL:
-            logging.info("Result will be available when job has reached final state.")
+            logger.info("Result will be available when job has reached final state.")
         return BraketGateModelResult(self._job.result())
 
     def cancel(self) -> None:

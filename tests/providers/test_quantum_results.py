@@ -66,8 +66,8 @@ def test_result_wrapper_measurements(device_id):
             "qbraidStatus": "COMPLETED",
             "circuitNumQubits": {"$exists": True},
         },
-        raw=True,
         refresh=True,
+        raw=True,
     )
     if len(jobs) == 0:
         circuit = random_circuit("qiskit", measure=True)
@@ -97,8 +97,8 @@ def test_result_wrapper_batch_measurements(device_id):
             "qbraidDeviceId": device_id,
             "qbraidStatus": "COMPLETED",
         },
-        raw=True,
         refresh=True,
+        raw=True,
     )
     if len(jobs) == 0:
         circuit = random_circuit("qiskit", num_qubits=3, depth=3, measure=True)

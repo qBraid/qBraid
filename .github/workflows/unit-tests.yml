@@ -1,8 +1,6 @@
 name: Unit tests (local)
 
 on:
-  pull_request:
-    branches: ['main']
   workflow_dispatch:
 
 jobs:

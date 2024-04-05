@@ -91,7 +91,8 @@ class QiskitProvider(QiskitRemoteService):
 
     def save_config(self):
         """Save the current configuration."""
-        raise NotImplementedError
+        provider = self._get_ibm_provider()
+        provider.save_account(token=self.qiskit_ibm_token, overwrite=True)
 
     def _get_ibm_provider(self, **kwargs) -> "qiskit_ibm_provider.IBMProvider":
         """Returns the IBM Quantum provider."""

@@ -17,17 +17,17 @@ from copy import deepcopy
 from typing import TYPE_CHECKING, Callable, List, Optional
 
 from qbraid.programs import QPROGRAM_LIBS, get_program_type
-from qbraid.transpiler.exceptions import (
-    CircuitConversionError,
-    ConversionPathNotFoundError,
-    NodeNotFoundError,
-)
-from qbraid.transpiler.graph import ConversionGraph
+
+from .exceptions import CircuitConversionError, ConversionPathNotFoundError, NodeNotFoundError
+from .graph import ConversionGraph
 
 if TYPE_CHECKING:
     import cirq
 
     import qbraid.programs
+
+
+logger = logging.getLogger(__name__)
 
 
 def _warn_if_unsupported(program_type, program_direction):
@@ -168,13 +168,13 @@ def transpile(
                         temp_program = convert_func(temp_program)  # Retry conversion
                     else:
                         raise
-            logging.info(
+            logger.info(
                 "\nSuccessfully transpiled using conversions: %s",
                 _get_path_from_bound_methods(path),
             )
             return temp_program
         except Exception:  # pylint: disable=broad-exception-caught
-            logging.info(
+            logger.info(
                 "\nFailed to transpile using conversions: %s",
                 _get_path_from_bound_methods(path),
             )

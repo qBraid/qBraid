@@ -17,7 +17,7 @@ jobs submitted through the qBraid SDK.
 """
 
 import warnings
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 try:
     from IPython.display import HTML, clear_output, display
@@ -25,14 +25,14 @@ except ImportError:
     pass
 
 from qbraid_core import QbraidSession
-from qbraid_core.services.quantum.adapter import _job_status_msg
+from qbraid_core.services.quantum import QuantumClient, process_job_data
 
-from qbraid._display import running_in_jupyter, update_progress_bar
+from ._display import running_in_jupyter, update_progress_bar
 
 
-def _display_jobs_basic(data, msg):
+def _display_basic(data: List[str], message: str) -> None:
     if len(data) == 0:
-        print(msg)
+        print(message)
     else:
         headers = ["Job ID", "Submitted", "Status"]
 
@@ -43,7 +43,7 @@ def _display_jobs_basic(data, msg):
         separator_format = "{:<" + str(max_job_id_length) + "} {:<25} {:<15}"
         row_format = "{:<" + str(max_job_id_length) + "} {:<25} {:<15}"
 
-        print(f"{msg}:\n")
+        print(f"{message}:\n")
         print(header_format.format(*headers))
 
         separators = ["-" * len(header) for header in headers]
@@ -53,7 +53,7 @@ def _display_jobs_basic(data, msg):
             print(row_format.format(job_id, timestamp, status))
 
 
-def _display_jobs_jupyter(data, msg):
+def _display_jupyter(data: List[str], message: Optional[str] = None, align: str = "right"):
     clear_output(wait=True)
 
     html = """<h3>Quantum Jobs</h3><table><tr>
@@ -87,43 +87,29 @@ def _display_jobs_jupyter(data, msg):
         <td style='text-align:left'>{status}</td></tr>
         """
 
-    html += f"<tr><td colspan='4'; style='text-align:right'>{msg}</td></tr>"
+    html += f"<tr><td colspan='4'; style='text-align:{align}'>{message}</td></tr>"
 
     html += "</table>"
 
     return display(HTML(html))
 
 
-def _get_jobs_data(
-    query: Dict[str, Any],
-    refresh: bool = False,
-    session: Optional[QbraidSession] = None,
-) -> Tuple[List[List[str]], str]:
+def _refresh_jobs(job_data: List[str]) -> List[str]:
+    """Refreshes the status of all quantum jobs in the list."""
     from qbraid.providers import QuantumJob  # pylint: disable=import-outside-toplevel
 
-    session = QbraidSession() if not session else session
-    jobs = session.post("/get-user-jobs", json=query).json()
     count = 0
-    num_jobs = len(jobs)
-    job_data = []
-    for document in jobs:
+    num_jobs = len(job_data)
+    job_data_refresh = []
+    for job_id, created_at, status in job_data:
         count += 1
         progress = count / num_jobs
-        if refresh:
-            update_progress_bar(progress)
-        job_id = document.get("qbraidJobId", document.get("_id"))
-        if job_id is None:
-            continue
-        created_at = document.get("createdAt")
-        if created_at is None:
-            timestamps = document.get("timestamps", {})
-            created_at = timestamps.get("createdAt", timestamps.get("jobStarted"))
-        status = document.get("qbraidStatus", document.get("status", "UNKNOWN"))
+        update_progress_bar(progress)
         try:
             status_final = QuantumJob.status_final(status)
         except Exception:  # pylint: disable=broad-except
             status_final = True
-        if refresh and not status_final:
+        if not status_final:
             try:
                 qbraid_job = QuantumJob.retrieve(job_id)
                 with warnings.catch_warnings():
@@ -132,19 +118,12 @@ def _get_jobs_data(
                 status = status_obj.name
             except Exception:  # pylint: disable=broad-except
                 pass
-        job_data.append([job_id, created_at, status])
+        job_data_refresh.append([job_id, created_at, status])
 
-    msg = _job_status_msg(num_jobs, query)
-
-    return job_data, msg
+    return job_data_refresh
 
 
-def get_jobs(
-    filters: Optional[dict] = None,
-    refresh: bool = False,
-    raw: bool = False,
-    session: Optional[QbraidSession] = None,
-):  # pylint: disable=too-many-statements
+def get_jobs(filters: Optional[Dict[str, Any]] = None, refresh: bool = False, raw: bool = False):
     """Displays a list of quantum jobs submitted by user, tabulated by job ID,
     the date/time it was submitted, and status. You can specify filters to
     narrow the search by supplying a dictionary containing the desired criteria.
@@ -182,17 +161,28 @@ def get_jobs(
         filters (dict): A dictionary containing any filters to be applied.
         refresh (bool): If True, refreshes the status of all jobs before displaying them.
         raw (bool): If True, returns a list of job IDs instead of displaying the jobs.
-        session (QbraidSession): A qBraid session object. If not provided, a new session will be created.
 
     """
     filters = filters or {}
 
-    job_data, msg = _get_jobs_data(filters, refresh, session)
+    session = QbraidSession()
+
+    if len(filters) == 0:
+        client = QuantumClient(session=session)
+        jobs = client.search_jobs()
+    else:
+        jobs = session.post("/get-user-jobs", json=filters).json()
+
+    job_data, msg = process_job_data(jobs, filters)
+
+    if refresh:
+        job_data = _refresh_jobs(job_data)
 
     if raw:
-        job_ids = [job[0] for job in job_data]
-        return job_ids
+        return [job[0] for job in job_data]
+
+    align = "center" if len(job_data) == 0 else "right"
 
     if running_in_jupyter():
-        return _display_jobs_jupyter(job_data, msg)
-    return _display_jobs_basic(job_data, msg)
+        return _display_jupyter(job_data, msg, align=align)
+    return _display_basic(job_data, msg)

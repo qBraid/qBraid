@@ -30,15 +30,15 @@ from cirq import ops as cirq_ops
 from cirq import protocols
 from cirq.linalg.decompositions import kak_decomposition
 
-import qbraid.programs.libs.cirq
-
 try:
     import cirq_ionq.ionq_native_gates as cirq_ionq_ops
 except ImportError:
     cirq_ionq_ops = None
 
-from qbraid.transpiler.conversions.braket.custom_gates import C as BKControl
+import qbraid.programs.libs.cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
+
+from .custom_gates import C as BKControl
 
 
 def cirq_to_braket(circuit: Circuit) -> BKCircuit:

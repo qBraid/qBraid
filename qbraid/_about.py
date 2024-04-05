@@ -22,7 +22,7 @@ def about() -> None:
     from numpy import __version__ as numpy_version
     from openqasm3 import __version__ as openqasm3_version
     from ply import __version__ as ply_version
-    from qbraid_core._version import __version__ as qbraid_core_version
+    from qbraid_core import __version__ as qbraid_core_version
 
     from ._version import __version__ as qbraid_version
 

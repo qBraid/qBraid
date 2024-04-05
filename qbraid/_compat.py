@@ -9,34 +9,35 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for emitting and disabling warnings at top level.
+Module for emitting and configuring warnings and logging at top level.
 
 """
 import logging
+import os
 import warnings
 
-from qbraid_core._warnings import _check_version
-
-# Set up logging configuration to suppress INFO messages
-logging.basicConfig(level=logging.WARNING)
-logging.getLogger("qiskit").setLevel(logging.WARNING)
+from qbraid_core._compat import check_version
 
 
-def _filterwarnings():
+def configure_logging():
+    """Configure logging to show warnings and errors."""
+    level = os.getenv("LOG_LEVEL", "INFO").upper()  # Default to INFO if not set
+    logging.basicConfig(
+        level=getattr(logging, level, logging.INFO),
+        format="%(levelname)s - %(module)s - %(message)s",
+    )
+
+
+def filterwarnings():
     """Filter out warnings that are not relevant to the user."""
     warnings.filterwarnings("ignore", category=SyntaxWarning)
     warnings.filterwarnings(
         "ignore", category=UserWarning, message="Setuptools is replacing distutils"
     )
     warnings.filterwarnings("ignore", category=DeprecationWarning)
-    # warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
     warnings.filterwarnings("ignore", category=RuntimeWarning, module="numpy")
 
 
-def _warn_version():
-    """Emit a warning."""
-    _check_version("qbraid")
-
-
-_warn_version()
-_filterwarnings()
+def check_warn_version_update():
+    """Emit a warning if updated package version exists."""
+    check_version("qbraid")

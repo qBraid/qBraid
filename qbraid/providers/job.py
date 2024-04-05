@@ -30,6 +30,8 @@ from .status_maps import STATUS_MAP
 if TYPE_CHECKING:
     import qbraid
 
+logger = logging.getLogger(__name__)
+
 
 class QuantumJob(ABC):
     """Abstract interface for job-like classes."""
@@ -173,7 +175,7 @@ class QuantumJob(ABC):
         try:
             return self._status_map[vendor_status], vendor_status
         except KeyError:
-            logging.warning(
+            logger.warning(
                 "Expected %s job status matching one of %s but instead got '%s'.",
                 self._device.vendor,
                 str(list(self._status_map.keys())),
