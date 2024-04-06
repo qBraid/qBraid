@@ -2,4 +2,4 @@ networkx~=3.2.1
 numpy>=1.17,<1.27
 openqasm3[parser]
 ply>=3.6
-qbraid-core>=0.1.0.dev4
+qbraid-core>=0.1.0,<0.2.0
