@@ -8,7 +8,7 @@ pytket~=1.26.0
 pytket-braket~=0.35.1
 qiskit~=1.0.2
 qiskit-ibm-provider~=0.10.0
-qiskit-ibm-runtime~=0.20.0
+qiskit-ibm-runtime>=0.20,<0.23
 qiskit-qasm3-import~=0.4.2
 qiskit-braket-provider
 qiskit-aer
