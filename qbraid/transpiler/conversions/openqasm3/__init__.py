@@ -24,4 +24,4 @@ Functions
    qasm3_to_openqasm3
 
 """
-from .convert_qasm import openqasm3_to_qasm3, qasm2_to_qasm3, qasm3_to_openqasm3
+from .conversions_qasm import openqasm3_to_qasm3, qasm2_to_qasm3, qasm3_to_openqasm3

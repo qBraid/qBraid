@@ -15,11 +15,14 @@ Module containing functions to convert between Amazon Braket and PyTKET.
 
 from typing import TYPE_CHECKING
 
+from qbraid.transpiler.annotations import requires_extras
+
 if TYPE_CHECKING:
     import braket.circuits
     import pytket.circuit
 
 
+@requires_extras("pytket.extensions.braket")
 def braket_to_pytket(circuit: "braket.circuits.Circuit") -> "pytket.circuit.Circuit":
     """Returns a pytket circuit equivalent to the input Amazon Braket circuit.
 
@@ -30,11 +33,12 @@ def braket_to_pytket(circuit: "braket.circuits.Circuit") -> "pytket.circuit.Circ
         pytket.circuit.Circuit: PyTKET circuit object equivalent to input Braket circuit.
     """
     # pylint: disable-next=import-outside-toplevel
-    from pytket.extensions.braket import braket_convert
+    from pytket.extensions.braket import braket_convert  # type: ignore
 
     return braket_convert.braket_to_tk(circuit)
 
 
+@requires_extras("pytket.extensions.braket")
 def pytket_to_braket(circuit: "pytket.circuit.Circuit") -> "braket.circuits.Circuit":
     """Returns an Amazon Braket circuit equivalent to the input pytket circuit.
 
@@ -45,7 +49,7 @@ def pytket_to_braket(circuit: "pytket.circuit.Circuit") -> "braket.circuits.Circ
         braket.circuits.Circuit: Braket circuit equivalent to input pytket circuit.
     """
     # pylint: disable-next=import-outside-toplevel
-    from pytket.extensions.braket import braket_convert
+    from pytket.extensions.braket import braket_convert  # type: ignore
 
     braket_circuit, _, _ = braket_convert.tk_to_braket(circuit)
     return braket_circuit

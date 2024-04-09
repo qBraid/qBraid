@@ -30,6 +30,7 @@ Functions
    :toctree: ../stubs/
 
    transpile
+   requires_extras
 
 Exceptions
 -----------
@@ -42,6 +43,7 @@ Exceptions
    ConversionPathNotFoundError
 
 """
+from .annotations import requires_extras
 from .converter import transpile
 from .edge import Conversion
 from .exceptions import CircuitConversionError, ConversionPathNotFoundError, NodeNotFoundError

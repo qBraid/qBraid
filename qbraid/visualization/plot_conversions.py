@@ -62,6 +62,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             "external_node": "lightgray",
             "qbraid_edge": "gray",
             "external_edge": "blue",
+            "extras_edge": "red",
         }
 
     # Extract colors and apply them in the drawing
@@ -83,7 +84,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         (
             colors["qbraid_edge"]
             if graph[edge.source][edge.target]["native"]
-            else colors["external_edge"]
+            else colors["external_edge"] if edge.supported else colors["extras_edge"]
         )
         for edge in conversions_ordered
     ]
@@ -103,6 +104,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             ("qBraid - Node", "o", colors["qbraid_node"], None),
             ("External - Node", "o", colors["external_node"], None),
             ("qBraid - Edge", None, colors["qbraid_edge"], "-"),
+            ("Extras - Edge", None, colors["extras_edge"], "-"),
             ("External - Edge", None, colors["external_edge"], "-"),
         ]
         legend_elements = [
