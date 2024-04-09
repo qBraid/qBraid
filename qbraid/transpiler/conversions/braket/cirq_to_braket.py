@@ -38,10 +38,10 @@ except ImportError:
 import qbraid.programs.libs.cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
 
-from .custom_gates import C as BKControl
+from .custom_instr import C as BKControl
 
 
-def cirq_to_braket(circuit: Circuit) -> BKCircuit:
+def _cirq_to_braket(circuit: Circuit) -> BKCircuit:
     """Returns a Braket circuit equivalent to the input Cirq circuit.
 
     Args:

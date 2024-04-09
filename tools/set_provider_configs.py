@@ -34,10 +34,10 @@ def qbraid_configure(api_key: Optional[str] = None) -> None:
     session.save_config()
 
 
-def ibm_configure(token: Optional[str] = None) -> None:
+def ibm_configure(token: Optional[str] = None, overwrite: bool = True, **kwargs) -> None:
     """Initializes IBM Quantum configuration and credentials files."""
     token = token or os.getenv("QISKIT_IBM_TOKEN", "MYTOKEN")
-    IBMProvider.save_account(token=token)
+    IBMProvider.save_account(token=token, overwrite=overwrite, **kwargs)
 
 
 def aws_configure(

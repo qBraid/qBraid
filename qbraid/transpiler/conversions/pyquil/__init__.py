@@ -24,4 +24,4 @@ Functions
 
 """
 
-from qbraid.transpiler.conversions.pyquil.conversions import cirq_to_pyquil, pyquil_to_cirq
+from .conversions_cirq import cirq_to_pyquil, pyquil_to_cirq

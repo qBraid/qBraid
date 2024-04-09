@@ -27,10 +27,8 @@ from cirq import ops as cirq_ops
 
 from qbraid.interface import circuits_allclose
 from qbraid.programs import load_program
-from qbraid.transpiler.conversions.braket.cirq_from_braket import (
-    braket_to_cirq,
-    unitary_braket_instruction,
-)
+from qbraid.transpiler.conversions.braket.conversions_cirq import braket_to_cirq
+from qbraid.transpiler.conversions.braket.custom_instr import unitary_instruction
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
@@ -133,10 +131,10 @@ def test_from_braket_three_qubit_gates():
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
-def test_unitary_braket_instruction():
+def test_unitary_instruction():
     """Test converting Braket instruction to instruction using unitary gate."""
     instr_cnot_01 = Instruction(braket_gates.CNot(), target=[0, 1])
-    instr_cnot_u = unitary_braket_instruction(instr_cnot_01)
+    instr_cnot_u = unitary_instruction(instr_cnot_01)
     circuit_expected = BKCircuit().add_instruction(instr_cnot_01)
     circuit_test = BKCircuit().add_instruction(instr_cnot_u)
     u_expected = load_program(circuit_expected).unitary()

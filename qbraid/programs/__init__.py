@@ -35,6 +35,7 @@ Functions
    unfold_qasm_gate_defs
    flatten_qasm_program
    decompose_qasm_qelib1
+   convert_qasm_pi_to_decimal
 
 Classes
 --------
@@ -60,5 +61,10 @@ from .abc_program import QuantumProgram
 from .exceptions import PackageValueError, ProgramTypeError, QasmError
 from .inspector import get_program_type, get_qasm_version
 from .loader import load_program
-from .qasm_passes import flatten_qasm_program, remove_qasm_barriers, unfold_qasm_gate_defs
+from .qasm_passes import (
+    convert_qasm_pi_to_decimal,
+    flatten_qasm_program,
+    remove_qasm_barriers,
+    unfold_qasm_gate_defs,
+)
 from .qasm_qelib1 import decompose_qasm_qelib1

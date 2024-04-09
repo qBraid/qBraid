@@ -102,6 +102,19 @@ class ConversionGraph(nx.DiGraph):
         self._conversions.append(edge)
         self.add_edge(source, target, native=edge.native, func=edge.convert)
 
+    def remove_conversion(self, source: str, target: str) -> None:
+        """Safely remove a conversion from the graph."""
+        try:
+            self.remove_edge(source, target)
+        except nx.NetworkXError as err:
+            raise ValueError(f"Conversion from {source} to {target} does not exist.") from err
+
+        self._conversions = [
+            conv
+            for conv in self._conversions.copy()
+            if not (conv.source == source and conv.target == target)
+        ]
+
     def find_shortest_conversion_path(self, source: str, target: str) -> List[str]:
         """
         Find the shortest conversion path between two nodes in a graph.

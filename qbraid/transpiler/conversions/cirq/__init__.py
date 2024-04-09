@@ -31,5 +31,5 @@ Functions
    cirq_to_qasm2
 
 """
-from qbraid.transpiler.conversions.cirq.cirq_qasm_parser import QasmParser
-from qbraid.transpiler.conversions.cirq.conversions_qasm import cirq_to_qasm2, qasm2_to_cirq
+from .cirq_qasm_parser import QasmParser
+from .conversions_qasm import cirq_to_qasm2, qasm2_to_cirq
