@@ -9,18 +9,12 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for compiling programs targeted at Amazon Braket
-supported devices.
-
-.. currentmodule:: qbraid.compiler.braket
-
-Functions
-----------
-
-.. autosummary::
-   :toctree: ../stubs/
-
-   braket_ionq_compile
+Module defining exceptions for errors raised by qBraid transforms.
 
 """
-from .ionq import braket_ionq_compile
+
+from qbraid.exceptions import QbraidError
+
+
+class CompilationError(QbraidError):
+    """Base class for errors raised during circuit compilation processes."""

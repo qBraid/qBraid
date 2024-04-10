@@ -22,6 +22,7 @@ from qbraid.programs._import import QPROGRAM_LIBS
 from qbraid.programs.libs.braket import BraketCircuit
 from qbraid.providers.device import QuantumDevice
 from qbraid.providers.enums import DeviceStatus, DeviceType
+from qbraid.transpiler import CircuitConversionError, ConversionPathNotFoundError, transpile
 
 from .job import BraketQuantumTask
 
@@ -199,22 +200,25 @@ class BraketDevice(QuantumDevice):
             total_queued += int(num_queued)
         return total_queued
 
-    def _transpile(self, run_input):
+    def transform(self, run_input: "braket.circuits.Circuit") -> "braket.circuits.Circuit":
         """Transpile a circuit for the device."""
         if self._device_type.name == "SIMULATOR":
             program = BraketCircuit(run_input)
             program.remove_idle_qubits()
             run_input = program.program
 
-        return run_input
-
-    def _compile(self, run_input):
-        """Compile a circuit for the device."""
         if self.provider.lower() == "ionq" and "pytket" in QPROGRAM_LIBS:
-            # pylint: disable=import-outside-toplevel
-            from qbraid.compiler.braket.ionq import braket_ionq_compile
 
-            run_input = braket_ionq_compile(run_input)
+            # pylint: disable=import-outside-toplevel
+            from qbraid.transforms.pytket.ionq import pytket_ionq_transform
+
+            try:
+                tk_circuit = transpile(run_input, "pytket", max_path_depth=1)
+                tk_transformed = pytket_ionq_transform(tk_circuit)
+                run_input = transpile(tk_transformed, "braket", max_path_depth=1)
+            except (ConversionPathNotFoundError, CircuitConversionError):
+                pass
+
         return run_input
 
     def _run(self, run_input: "braket.circuits.Circuit", *args, **kwargs) -> Dict[str, Any]:

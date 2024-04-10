@@ -55,13 +55,13 @@ Using the SDK on [qBraid Lab](https://docs.qbraid.com/projects/lab/en/latest/lab
 
 The qBraid-SDK, and all of its dependencies, can also be installed using pip:
 
-```bash
+```shell
 pip install qbraid
 ```
 
 You can also [install from source](CONTRIBUTING.md#installing-from-source) by cloning this repository and running a pip install command in the root directory of the repository:
 
-```bash
+```shell
 git clone https://github.com/qBraid/qBraid.git
 cd qBraid
 pip install .

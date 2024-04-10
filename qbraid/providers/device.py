@@ -223,24 +223,11 @@ class QuantumDevice(ABC):
                 )
             except CircuitConversionError as err:
                 raise QbraidRuntimeError from err
-        return self._transpile(run_input)
-
-    def compile(self, run_input: "qbraid.programs.QPROGRAM") -> "qbraid.programs.QPROGRAM":
-        """Compile run input.
-
-        Returns:
-            :data:`~qbraid.programs.QPROGRAM`: Compiled quantum program (circuit) object
-
-        Raises:
-            QbraidRuntimeError: If circuit conversion fails
-
-        """
-        return self._compile(run_input)
+        return run_input
 
     def process_run_input(
         self,
         run_input: "qbraid.programs.QPROGRAM",
-        auto_compile: bool = False,
         conversion_graph: "Optional[qbraid.transpiler.ConversionGraph]" = None,
     ) -> Tuple[Any, Dict[str, Any]]:
         """Process quantum program before passing to device run method.
@@ -255,9 +242,7 @@ class QuantumDevice(ABC):
         safe_mode = conversion_graph is not None
         qprogram = self.verify_run(run_input, safe_mode=safe_mode)
         run_input = self.transpile(run_input, conversion_graph=conversion_graph)
-
-        if auto_compile:
-            run_input = self._compile(run_input)
+        run_input = self.transform(run_input)
 
         if qprogram is None:
             try:
@@ -376,13 +361,16 @@ class QuantumDevice(ABC):
 
         return client.create_job(data=init_data)
 
-    @abstractmethod
-    def _transpile(self, run_input):
-        """Applies any software/device specific modifications to run input."""
+    def transform(
+        self, run_input: Union["qbraid.programs.QPROGRAM", Any]
+    ) -> Union["qbraid.programs.QPROGRAM", Any]:
+        """
+        Override this method with any runtime transformations to apply to the run
+        input, e.g. circuit optimizations, device-specific gate set conversions, etc.
+        Program input type should match output type.
 
-    @abstractmethod
-    def _compile(self, run_input):
-        """Applies any software/device specific modifications to run input."""
+        """
+        return run_input
 
     @abstractmethod
     def _run(self, run_input: "qbraid.programs.QPROGRAM", *args, **kwargs) -> Dict[str, Any]:
@@ -442,7 +430,6 @@ class QuantumDevice(ABC):
         self,
         run_input: "qbraid.programs.QPROGRAM",
         *args,
-        auto_compile: bool = False,
         conversion_graph: "Optional[qbraid.transpiler.ConversionGraph]" = None,
         **kwargs,
     ) -> "qbraid.providers.QuantumJob":
@@ -454,8 +441,6 @@ class QuantumDevice(ABC):
         Keyword Args:
             conversion_graph (optional, ConversionGraph): Graph of conversion functions to
                                                           apply to the circuit.
-            auto_compile (bool): Whether to compile the circuit for the device before running.
-                                 Default is False.
             shots (int): The number of times to run the task on the device.
 
         Returns:
@@ -463,7 +448,7 @@ class QuantumDevice(ABC):
 
         """
         run_input, program_data = self.process_run_input(
-            run_input, auto_compile=auto_compile, conversion_graph=conversion_graph
+            run_input, conversion_graph=conversion_graph
         )
         vendor_job_data = self._run(run_input, *args, **kwargs)
         return self.process_vendor_job_data(vendor_job_data, program_data)
@@ -472,7 +457,6 @@ class QuantumDevice(ABC):
         self,
         run_input: "List[qbraid.programs.QPROGRAM]",
         *args,
-        auto_compile: bool = False,
         conversion_graph: "Optional[qbraid.transpiler.ConversionGraph]" = None,
         **kwargs,
     ) -> "Union[qbraid.providers.QuantumJob, List[qbraid.providers.QuantumJob]]":
@@ -484,8 +468,6 @@ class QuantumDevice(ABC):
         Keyword Args:
             conversion_graph (optional, ConversionGraph): Graph of conversion functions to
                                                           apply to the circuit.
-            auto_compile (bool): Whether to compile the circuit for the device before running.
-                                 Default is False.
             shots (int): The number of times to run the task on the device.
 
         Returns:
@@ -496,7 +478,7 @@ class QuantumDevice(ABC):
         run_input_batch = []
         for program in run_input:
             run_input_transpiled, program_data = self.process_run_input(
-                program, auto_compile=auto_compile, conversion_graph=conversion_graph
+                program, conversion_graph=conversion_graph
             )
             run_input_batch.append(run_input_transpiled)
             program_data_batch.append(program_data)

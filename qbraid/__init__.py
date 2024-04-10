@@ -52,9 +52,9 @@ from .get_devices import get_devices
 from .get_jobs import get_jobs
 
 if "sphinx" in sys.modules:
-    from . import compiler, interface, programs, providers, transpiler, visualization
+    from . import interface, programs, providers, transforms, transpiler, visualization
 else:
-    compiler = LazyLoader("compiler", globals(), "qbraid.compiler")
+    transforms = LazyLoader("transforms", globals(), "qbraid.transforms")
     interface = LazyLoader("interface", globals(), "qbraid.interface")
     programs = LazyLoader("programs", globals(), "qbraid.programs")
     providers = LazyLoader("providers", globals(), "qbraid.providers")
@@ -64,7 +64,7 @@ else:
 
 __all__ = [
     "about",
-    "compiler",
+    "transforms",
     "get_devices",
     "get_jobs",
     "interface",

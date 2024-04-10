@@ -45,10 +45,6 @@ class QiskitRemoteService(QuantumProvider):
         self._provider = self._get_ibm_provider(**kwargs)
 
     @abstractmethod
-    def save_config(self):
-        """Save the current configuration."""
-
-    @abstractmethod
     def _get_ibm_provider(self, **kwargs):
         """Returns the IBM Quantum provider."""
 
@@ -110,10 +106,6 @@ class QiskitProvider(QiskitRemoteService):
 
 class QiskitRuntime(QiskitRemoteService):
     """Wrapper for qiskit_ibm_runtime.QiskitRuntimeService class."""
-
-    def save_config(self):
-        """Save the current configuration."""
-        raise NotImplementedError
 
     def _get_ibm_provider(
         self, channel: str = "ibm_quantum", **kwargs
