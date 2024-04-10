@@ -9,12 +9,12 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining exceptions for errors raised by the qBraid compiler.
+Module defining exceptions for errors raised by qBraid transforms.
 
 """
 
 from qbraid.exceptions import QbraidError
 
 
-class CompilerError(QbraidError):
-    """Base class for errors raised by the qBraid compiler."""
+class CompilationError(QbraidError):
+    """Base class for errors raised during circuit compilation processes."""

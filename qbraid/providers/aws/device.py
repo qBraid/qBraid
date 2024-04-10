@@ -212,9 +212,9 @@ class BraketDevice(QuantumDevice):
         """Compile a circuit for the device."""
         if self.provider.lower() == "ionq" and "pytket" in QPROGRAM_LIBS:
             # pylint: disable=import-outside-toplevel
-            from qbraid.compiler.braket.ionq import braket_ionq_compile
+            from qbraid.transforms.pytket.ionq import pytket_ionq_transform
 
-            run_input = braket_ionq_compile(run_input)
+            run_input = pytket_ionq_transform(run_input)
         return run_input
 
     def _run(self, run_input: "braket.circuits.Circuit", *args, **kwargs) -> Dict[str, Any]:

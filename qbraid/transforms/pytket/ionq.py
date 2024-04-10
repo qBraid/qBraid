@@ -12,10 +12,9 @@
 Module for converting generic quantum circuits to basis gate set compatible with IonQ devices.
 
 """
-from typing import Union
+from typing import TYPE_CHECKING
 
 import pytket
-from braket.circuits import Circuit
 
 try:
     # pytket >= 1.22
@@ -39,8 +38,10 @@ from pytket.predicates import (
     NoSymbolsPredicate,
 )
 
-from qbraid.compiler.exceptions import CompilerError
-from qbraid.transpiler import transpile
+from qbraid.transforms.exceptions import CompilerError
+
+if TYPE_CHECKING:
+    import pytket.circuit
 
 HARMONY_MAX_QUBITS = 11
 
@@ -85,16 +86,15 @@ ionq_rebase_pass = RebaseCustom(
 )  # tk1_replacement
 
 
-def braket_ionq_compile(circuit: Union[Circuit, pytket.circuit.Circuit]) -> Circuit:
+def pytket_ionq_transform(circuit: "pytket.circuit.Circuit") -> "pytket.circuit.Circuit":
     """
     Compiles a Braket circuit to a Braket circuit that can run on IonQ Harmony.
 
     Args:
-        circuit (Union[braket.circuits.Circuit, pytket.circuit.Circuit]):
-            The input Braket or PyTKET circuit to be compiled.
+        circuit (pytket.circuit.Circuit): The input PyTKET circuit to be transformed.
 
     Returns:
-        braket.circuits.Circuit: The compiled Braket circuit that can run on IonQ Harmony.
+        pytket.circuit.Circuit: The transformed PyTKET circuit that can run on IonQ Harmony.
 
     Notes:
         - If the input circuit is a braket Circuit, the function
@@ -116,13 +116,8 @@ def braket_ionq_compile(circuit: Union[Circuit, pytket.circuit.Circuit]) -> Circ
         - Otherwise, the circuit is transpiled using ``pytket-braket``'s ``braket_to_tk``.
 
     """
-    if isinstance(circuit, Circuit):
-        tk_circuit = transpile(circuit, "pytket")
-    else:
-        tk_circuit = circuit
-
-    cu = CompilationUnit(tk_circuit, preds)
+    cu = CompilationUnit(circuit, preds)
     ionq_rebase_pass.apply(cu)
     if not cu.check_all_predicates():
         raise CompilerError("Circuit cannot be compiled to IonQ Harmony.")
-    return transpile(cu.circuit, "braket")
+    return cu.circuit

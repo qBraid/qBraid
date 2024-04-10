@@ -9,18 +9,17 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for compiling programs targeted at Amazon Braket
-supported devices.
+Module for device-specific quantum program transformations.
 
-.. currentmodule:: qbraid.compiler.braket
+.. currentmodule:: qbraid.transforms
 
-Functions
-----------
+Exceptions
+-----------
 
 .. autosummary::
    :toctree: ../stubs/
 
-   braket_ionq_compile
+   CompilationError
 
 """
-from .ionq import braket_ionq_compile
+from .exceptions import CompilationError

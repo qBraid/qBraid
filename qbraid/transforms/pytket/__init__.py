@@ -9,17 +9,17 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for device-specific quantum program conversions
+Module for compiling Pytket circuits.
 
-.. currentmodule:: qbraid.compiler
+.. currentmodule:: qbraid.transforms.pytket
 
-Exceptions
------------
+Functions
+----------
 
 .. autosummary::
    :toctree: ../stubs/
 
-   CompilerError
+   pytket_ionq_transform
 
 """
-from .exceptions import CompilerError
+from .ionq import pytket_ionq_transform

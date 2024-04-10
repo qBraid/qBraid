@@ -385,6 +385,30 @@ class QuantumDevice(ABC):
         """Applies any software/device specific modifications to run input."""
 
     @abstractmethod
+    def pre_conversion_transforms(self, run_input: Union["qbraid.programs.QPROGRAM", Any]) -> Union["qbraid.programs.QPROGRAM", Any]:
+        """Circuit transformations performed before transpiling to target run package.
+
+        Returns:
+            :data:`~qbraid.programs.QPROGRAM`: Transformed quantum program (circuit) object
+
+        Raises:
+            QbraidRuntimeError: If circuit conversion fails
+
+        """
+
+    @abstractmethod
+    def post_conversion_transforms(self, run_input: Union["qbraid.programs.QPROGRAM", Any]) -> Union["qbraid.programs.QPROGRAM", Any]:
+        """Circuit transformations performed after transpiling to target package, just before calling 'run' method.
+
+        Returns:
+            :data:`~qbraid.programs.QPROGRAM`: Transformed quantum program (circuit) object
+
+        Raises:
+            QbraidRuntimeError: If circuit conversion fails
+
+        """
+
+    @abstractmethod
     def _run(self, run_input: "qbraid.programs.QPROGRAM", *args, **kwargs) -> Dict[str, Any]:
         """Vendor run method. Should return dictionary with the following keys:
 
