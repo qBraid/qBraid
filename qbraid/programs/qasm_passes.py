@@ -12,9 +12,26 @@
 Module for preprocessing qasm string to before it is passed to parser.
 
 """
+import math
 import re
 
 from .qasm_qelib1 import decompose_qasm_qelib1
+
+
+def convert_qasm_pi_to_decimal(qasm_str: str) -> str:
+    """Convert all instances of 'pi' in the QASM string to their decimal value."""
+
+    pattern = r"(\d*\.?\d*\s*[*/+-]\s*)?pi(\s*[*/+-]\s*\d*\.?\d*)?"
+
+    def replace_with_decimal(match):
+        expr = match.group()
+        try:
+            value = eval(expr.replace("pi", str(math.pi)))  # pylint: disable=eval-used
+        except SyntaxError:
+            return expr
+        return str(value)
+
+    return re.sub(pattern, replace_with_decimal, qasm_str)
 
 
 def remove_qasm_barriers(qasm_str: str) -> str:

@@ -13,44 +13,12 @@ Unit tests for converting Braket circuits to/from OpenQASM
 
 """
 import numpy as np
-import pytest
 import qiskit
 from braket.circuits import Circuit
 
 from qbraid.interface import circuits_allclose
-from qbraid.transpiler.conversions.braket import qasm3_to_braket
-from qbraid.transpiler.conversions.braket.conversions_qasm import (
-    _convert_pi_to_decimal,
-    braket_to_qasm3,
-    qasm3_to_braket,
-)
+from qbraid.transpiler.conversions.braket import braket_to_qasm3, qasm3_to_braket
 from qbraid.transpiler.conversions.qiskit import qiskit_to_qasm3
-
-pi_decimal_data = [
-    (
-        """
-        OPENQASM 3;
-        qubit[1] q;
-        h q[0];
-        rx(pi / 4) q[0];
-        ry(2*pi) q[0];
-        rz(3 * pi/4) q[0];
-        """,
-        """
-        OPENQASM 3;
-        qubit[1] q;
-        h q[0];
-        rx(0.7853981633974483) q[0];
-        ry(6.283185307179586) q[0];
-        rz(2.356194490192345) q[0];
-        """,
-    ),
-]
-
-
-@pytest.mark.parametrize("qasm3_str_pi, qasm3_str_decimal", pi_decimal_data)
-def test_convert_pi_to_decimal(qasm3_str_pi, qasm3_str_decimal):
-    assert _convert_pi_to_decimal(qasm3_str_pi) == qasm3_str_decimal
 
 
 def test_braket_to_qasm3_bell_circuit():

@@ -33,39 +33,13 @@ try:
 except ImportError:
     cirq_ionq_ops = None
 
-from qbraid.transpiler.conversions.cirq.cirq_gates import matrix_gate
+from qbraid.transpiler.conversions.cirq.custom_ops import matrix_gate as matrix_to_cirq_gate
 from qbraid.transpiler.exceptions import CircuitConversionError
 
-
-def _gate_to_matrix_braket(gate: braket_gates.Unitary) -> np.ndarray:
-    matrix = gate.to_matrix()
-    unitary_gate = braket_gates.Unitary(matrix)
-    nqubits = int(np.log2(len(matrix)))
-    qubits = list(range(nqubits)) if nqubits > 1 else 0
-    circuit = BKCircuit([BKInstruction(unitary_gate, qubits)])
-    return circuit.to_unitary()
+from .custom_instr import gate_to_matrix as braket_gate_to_matrix
 
 
-def unitary_braket_instruction(instr: BKInstruction) -> BKInstruction:
-    """Converts a Braket instruction to a unitary gate instruction.
-
-    Args:
-        instr: Braket instruction to convert.
-
-    Raises:
-        CircuitConversionError: If the instruction cannot be converted
-    """
-    gate = instr.operator
-
-    try:
-        matrix = _gate_to_matrix_braket(gate)
-        gate_name = "U" if gate.name is None else gate.name
-        return BKInstruction(braket_gates.Unitary(matrix, display_name=gate_name), instr.target)
-    except (ValueError, TypeError) as err:
-        raise CircuitConversionError(f"Unable to convert the instruction {instr}.") from err
-
-
-def braket_to_cirq(circuit: BKCircuit) -> Circuit:
+def _braket_to_cirq(circuit: BKCircuit) -> Circuit:
     """Returns a Cirq circuit equivalent to the input Braket circuit.
 
     Note: The returned Cirq circuit acts on cirq.LineQubit's with indices equal
@@ -111,7 +85,7 @@ def _from_braket_instruction(
             if isinstance(instr.operator, braket_gates.CSwap):
                 return [cirq_ops.FREDKIN.on(*qubits)]
             try:
-                matrix = _gate_to_matrix_braket(instr.operator)
+                matrix = braket_gate_to_matrix(instr.operator)
                 return [cirq_ops.MatrixGate(matrix).on(*qubits)]
             except (ValueError, TypeError) as err:
                 raise CircuitConversionError(
@@ -202,7 +176,7 @@ def _from_one_qubit_braket_instruction(
         return [cirq_ops.PhaseDampingChannel(gate.gamma).on(*qubits)]
 
     try:
-        matrix = _gate_to_matrix_braket(gate)
+        matrix = braket_gate_to_matrix(gate)
         return [cirq_ops.MatrixGate(matrix).on(*qubits)]
     except (ValueError, TypeError) as err:
         raise ValueError(f"Unable to convert the instruction {instr} to Cirq.") from err
@@ -293,8 +267,8 @@ def _from_two_qubit_braket_instruction(
         ]
 
     try:
-        matrix = _gate_to_matrix_braket(gate)
-        unitary_gate = matrix_gate(matrix)
+        matrix = braket_gate_to_matrix(gate)
+        unitary_gate = matrix_to_cirq_gate(matrix)
         return [unitary_gate.on(*qubits)]
     except (ValueError, TypeError) as err:
         raise ValueError(f"Unable to convert the instruction {instr} to Cirq.") from err

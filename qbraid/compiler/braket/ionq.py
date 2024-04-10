@@ -15,7 +15,6 @@ Module for converting generic quantum circuits to basis gate set compatible with
 from typing import Union
 
 import pytket
-import pytket.extensions.braket
 from braket.circuits import Circuit
 
 try:
@@ -118,10 +117,7 @@ def braket_ionq_compile(circuit: Union[Circuit, pytket.circuit.Circuit]) -> Circ
 
     """
     if isinstance(circuit, Circuit):
-        try:
-            tk_circuit = pytket.extensions.braket.braket_convert.braket_to_tk(circuit)
-        except NotImplementedError:
-            tk_circuit = transpile(circuit, "pytket")
+        tk_circuit = transpile(circuit, "pytket")
     else:
         tk_circuit = circuit
 
@@ -129,5 +125,4 @@ def braket_ionq_compile(circuit: Union[Circuit, pytket.circuit.Circuit]) -> Circ
     ionq_rebase_pass.apply(cu)
     if not cu.check_all_predicates():
         raise CompilerError("Circuit cannot be compiled to IonQ Harmony.")
-    compiled, _, _ = pytket.extensions.braket.braket_convert.tk_to_braket(cu.circuit)
-    return compiled
+    return transpile(cu.circuit, "braket")

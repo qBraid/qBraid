@@ -25,9 +25,4 @@ Functions
    qiskit_to_qasm2
 
 """
-from qbraid.transpiler.conversions.qiskit.conversions_qasm import (
-    qasm2_to_qiskit,
-    qasm3_to_qiskit,
-    qiskit_to_qasm2,
-    qiskit_to_qasm3,
-)
+from .conversions_qasm import qasm2_to_qiskit, qasm3_to_qiskit, qiskit_to_qasm2, qiskit_to_qasm3

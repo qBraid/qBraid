@@ -22,8 +22,8 @@ from qbraid._version import __version__ as qbraid_version
 from qbraid.programs.exceptions import QasmError as QbraidQasmError
 from qbraid.programs.qasm_passes import flatten_qasm_program
 
-from .cirq_gates import _map_zpow_and_unroll
 from .cirq_qasm_parser import QasmParser
+from .custom_ops import _map_zpow_and_unroll
 
 QASMType = str
 

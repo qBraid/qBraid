@@ -12,6 +12,7 @@
 Module for defining custom conversions
 
 """
+import importlib
 import inspect
 from typing import TYPE_CHECKING, Any, Callable, Union
 
@@ -24,7 +25,6 @@ if TYPE_CHECKING:
 class Conversion:
     """
     Class for defining and handling custom conversions between different quantum program packages.
-
     """
 
     def __init__(self, source: str, target: str, conversion_func: Callable):
@@ -39,7 +39,13 @@ class Conversion:
         self._source = source
         self._target = target
         self._conversion_func = conversion_func
-        self._native = self._is_native()
+        self._extras = getattr(conversion_func, "requires_extras", [])
+
+        module = inspect.getmodule(conversion_func)
+        self._native = (
+            module is not None and module.__name__.startswith("qbraid") and len(self._extras) == 0
+        )
+        self._supported = self._check_supported()
 
     @property
     def source(self) -> str:
@@ -71,23 +77,31 @@ class Conversion:
         """
         return self._native
 
-    def _is_native(self) -> bool:
+    @property
+    def supported(self) -> bool:
         """
-        Check if a conversion function is native to qbraid package.
-
-        Args:
-            func (Callable): The conversion function to check.
+        True if all packages required to perform the conversion are installed. False otherwise.
 
         Returns:
-            bool: True if the function is native, False otherwise.
+            bool: Whether the conversion function supported in the current runtime environment.
         """
-        module = inspect.getmodule(self._conversion_func)
+        return self._supported
 
-        if module is None:
-            return False
+    def _check_supported(self) -> bool:
+        """
+        Determine if the required packages for the conversion are installed.
 
-        package = module.__name__.split(".")[0]
-        return package == "qbraid"
+        Returns:
+            bool: True if supported, otherwise False.
+        """
+        if self._native:
+            return True
+        for extra in self._extras:
+            try:
+                importlib.import_module(extra)
+            except ImportError:
+                return False
+        return True
 
     def convert(
         self, program: "qbraid.programs.QPROGRAM"

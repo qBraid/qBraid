@@ -17,8 +17,7 @@ import pytest
 from pytket.circuit import Circuit as TKCircuit
 
 from qbraid.interface import circuits_allclose, random_circuit
-from qbraid.transpiler import transpile
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler import CircuitConversionError, ConversionGraph, transpile
 
 
 def test_bell_state_from_qiskit():
@@ -60,7 +59,14 @@ def test_100_random_pytket():
 
 def test_raise_error():
     """Test raising an error when converting an unsupported gate."""
+    graph = ConversionGraph()
+    try:
+        # transpile succeeds if pytket-braket is installed
+        graph.remove_conversion("pytket", "braket")
+    except ValueError:
+        pass
+
     with pytest.raises(CircuitConversionError):
         pytket_circuit = TKCircuit(2)
         pytket_circuit.ISWAPMax(0, 1)
-        transpile(pytket_circuit, "cirq")
+        transpile(pytket_circuit, "cirq", conversion_graph=graph)

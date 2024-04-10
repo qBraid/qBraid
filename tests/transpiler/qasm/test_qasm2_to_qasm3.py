@@ -26,7 +26,7 @@ from qbraid.interface import circuits_allclose
 from qbraid.interface.random import random_circuit
 from qbraid.interface.random.qasm3_random import _qasm3_random
 from qbraid.programs import load_program
-from qbraid.transpiler.conversions.openqasm3.convert_qasm import (
+from qbraid.transpiler.conversions.openqasm3.conversions_qasm import (
     _get_qasm3_gate_defs,
     qasm2_to_qasm3,
 )

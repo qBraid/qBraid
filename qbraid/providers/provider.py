@@ -34,10 +34,6 @@ class QuantumProvider(ABC):
     """
 
     @abstractmethod
-    def save_config(self):
-        """Save the current configuration."""
-
-    @abstractmethod
     def get_devices(self):
         """Return a list of backends matching the specified filtering."""
 

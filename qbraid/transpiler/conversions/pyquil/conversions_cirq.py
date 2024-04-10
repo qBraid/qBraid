@@ -13,17 +13,18 @@ Module containing functions to convert between Cirq's circuit
 representation and pyQuil's circuit representation (Quil programs).
 
 """
-from cirq import Circuit, LineQubit
-from cirq.ops import QubitOrder
+from typing import TYPE_CHECKING
+
 from pyquil import Program
 
 from qbraid.transpiler.exceptions import CircuitConversionError
 
-from .quil_input import circuit_from_quil
-from .quil_output import QuilOutput
+if TYPE_CHECKING:
+    import cirq.circuits
+    import pyquil.quil
 
 
-def cirq_to_pyquil(circuit: Circuit) -> Program:
+def cirq_to_pyquil(circuit: "cirq.circuits.Circuit") -> "pyquil.quil.Program":
     """Returns a pyQuil Program equivalent to the input Cirq circuit.
 
     Args:
@@ -32,6 +33,13 @@ def cirq_to_pyquil(circuit: Circuit) -> Program:
     Returns:
         pyquil.Program object equivalent to the input Cirq circuit.
     """
+    # pylint: disable=import-outside-toplevel
+    from cirq import LineQubit, QubitOrder
+
+    from .cirq_quil_output import QuilOutput
+
+    # pylint: enable=import-outside-toplevel
+
     input_qubits = circuit.all_qubits()
     max_qubit = max(input_qubits)
     # if we are using LineQubits, keep the qubit labeling the same
@@ -52,7 +60,7 @@ def cirq_to_pyquil(circuit: Circuit) -> Program:
         ) from err
 
 
-def pyquil_to_cirq(program: Program) -> Circuit:
+def pyquil_to_cirq(program: "pyquil.quil.Program") -> "cirq.circuits.Circuit":
     """Returns a Cirq circuit equivalent to the input pyQuil Program.
 
     Args:
@@ -61,6 +69,9 @@ def pyquil_to_cirq(program: Program) -> Circuit:
     Returns:
         Cirq circuit representation equivalent to the input pyQuil Program.
     """
+    # pylint: disable-next=import-outside-toplevel
+    from .cirq_quil_input import circuit_from_quil
+
     try:
         return circuit_from_quil(program.out())
     except Exception as err:

@@ -29,15 +29,20 @@ class ConversionGraph(nx.DiGraph):
 
     """
 
-    def __init__(self, conversions: Optional[List[Conversion]] = None):
+    def __init__(
+        self, conversions: Optional[List[Conversion]] = None, requires_extras: bool = False
+    ):
         """
         Initialize a ConversionGraph instance.
 
         Args:
             conversions (optional, List[Conversion]): List of conversion edges. If None, default
                                                           conversion edges are created.
+            requires_extras (bool): If True, include unsupported "requires_extras" conversion
+                                    functions. Defaults to False.
         """
         super().__init__()
+        self.requires_extras = requires_extras
         self._conversions = conversions or self.load_default_conversions()
         self.create_conversion_graph()
 
@@ -63,6 +68,8 @@ class ConversionGraph(nx.DiGraph):
             None
         """
         for edge in self._conversions:
+            if not self.requires_extras and not edge.supported:
+                continue
             self.add_edge(edge.source, edge.target, native=edge.native, func=edge.convert)
 
     def conversions(self) -> List[Conversion]:
@@ -101,6 +108,19 @@ class ConversionGraph(nx.DiGraph):
 
         self._conversions.append(edge)
         self.add_edge(source, target, native=edge.native, func=edge.convert)
+
+    def remove_conversion(self, source: str, target: str) -> None:
+        """Safely remove a conversion from the graph."""
+        try:
+            self.remove_edge(source, target)
+        except nx.NetworkXError as err:
+            raise ValueError(f"Conversion from {source} to {target} does not exist.") from err
+
+        self._conversions = [
+            conv
+            for conv in self._conversions.copy()
+            if not (conv.source == source and conv.target == target)
+        ]
 
     def find_shortest_conversion_path(self, source: str, target: str) -> List[str]:
         """

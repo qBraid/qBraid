@@ -140,3 +140,18 @@ def test_overwrite_new_conversion(bell_circuit):
     assert len(graph.edges) == 1
     braket_circuit = transpile(qiskit_circuit, "braket", conversion_graph=graph)
     assert isinstance(braket_circuit, braket.circuits.Circuit)
+
+
+def test_remove_conversion():
+    """Test removing a conversion from the ConversionGraph."""
+    source, target = "qasm2", "qasm3"
+    graph = ConversionGraph()
+    num_edges_start = len(graph.edges)
+    num_conversions_start = len(graph.conversions())
+    assert graph.has_edge(source, target)
+    graph.remove_conversion(source, target)
+    num_edges_end = len(graph.edges)
+    num_conversions_end = len(graph.conversions())
+    assert not graph.has_edge(source, target)
+    assert num_edges_start - num_edges_end == 1
+    assert num_conversions_start - num_conversions_end == 1

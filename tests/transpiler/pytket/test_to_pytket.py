@@ -17,8 +17,7 @@ import pytest
 from cirq import Circuit, LineQubit, ops, testing
 
 from qbraid.interface import circuits_allclose
-from qbraid.transpiler.converter import transpile
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler import CircuitConversionError, ConversionGraph, transpile
 
 
 def test_bell_state_to_pytket():
@@ -47,7 +46,14 @@ def test_random_circuit_to_pytket(num_qubits):
 
 def test_raise_error():
     """Test raising error for unsupported gates."""
+    graph = ConversionGraph()
+    try:
+        # transpile succeeds if pytket-braket is installed
+        graph.remove_conversion("braket", "pytket")
+    except ValueError:
+        pass
+
     with pytest.raises(CircuitConversionError):
         probs = np.random.uniform(low=0, high=0.5)
         cirq_circuit = Circuit(ops.PhaseDampingChannel(probs).on(*LineQubit.range(1)))
-        transpile(cirq_circuit, "pytket")
+        transpile(cirq_circuit, "pytket", conversion_graph=graph)

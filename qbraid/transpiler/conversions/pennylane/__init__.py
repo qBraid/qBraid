@@ -22,4 +22,4 @@ Functions
    pennylane_to_qasm2
 
 """
-from qbraid.transpiler.conversions.pennylane.conversions_qasm import pennylane_to_qasm2
+from .conversions_qasm import pennylane_to_qasm2

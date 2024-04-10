@@ -12,32 +12,13 @@
 Module for converting Braket circuits to/from OpenQASM 3
 
 """
-import math
-import re
-
 from braket.circuits import Circuit
 from braket.circuits.serialization import IRType
 from braket.ir.openqasm import Program as OpenQasmProgram
 
-from qbraid.programs.exceptions import QasmError
+from qbraid.programs import QasmError, convert_qasm_pi_to_decimal
 
 QASMType = str
-
-
-def _convert_pi_to_decimal(qasm_str: str) -> str:
-    """Convert all instances of 'pi' in the QASM string to their decimal value."""
-
-    pattern = r"(\d*\.?\d*\s*[*/+-]\s*)?pi(\s*[*/+-]\s*\d*\.?\d*)?"
-
-    def replace_with_decimal(match):
-        expr = match.group()
-        try:
-            value = eval(expr.replace("pi", str(math.pi)))  # pylint: disable=eval-used
-        except SyntaxError:
-            return expr
-        return str(value)
-
-    return re.sub(pattern, replace_with_decimal, qasm_str)
 
 
 def qasm3_to_braket(qasm3_str: QASMType) -> Circuit:
@@ -70,7 +51,7 @@ def qasm3_to_braket(qasm3_str: QASMType) -> Circuit:
 
     qasm3_str = qasm3_str.replace('include "stdgates.inc";', "")
     qasm3_str = replace_commands(qasm3_str, replacements)
-    qasm3_str = _convert_pi_to_decimal(qasm3_str)
+    qasm3_str = convert_qasm_pi_to_decimal(qasm3_str)
 
     try:
         program = OpenQasmProgram(source=qasm3_str)

@@ -25,6 +25,5 @@ Functions
    qasm3_to_braket
 
 """
-from qbraid.transpiler.conversions.braket.cirq_from_braket import braket_to_cirq
-from qbraid.transpiler.conversions.braket.cirq_to_braket import cirq_to_braket
-from qbraid.transpiler.conversions.braket.conversions_qasm import braket_to_qasm3, qasm3_to_braket
+from .conversions_cirq import braket_to_cirq, cirq_to_braket
+from .conversions_qasm import braket_to_qasm3, qasm3_to_braket

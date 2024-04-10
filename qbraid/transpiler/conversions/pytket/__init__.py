@@ -21,6 +21,9 @@ Functions
 
    pytket_to_qasm2
    qasm2_to_pytket
+   braket_to_pytket
+   pytket_to_braket
 
 """
-from qbraid.transpiler.conversions.pytket.conversions_qasm import pytket_to_qasm2, qasm2_to_pytket
+from .conversions_braket import braket_to_pytket, pytket_to_braket
+from .conversions_qasm import pytket_to_qasm2, qasm2_to_pytket
