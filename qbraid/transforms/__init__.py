@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for device-specific quantum program transformations.
+Module for runtime quantum program transformations.
 
 .. currentmodule:: qbraid.transforms
 

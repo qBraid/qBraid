@@ -10,17 +10,18 @@ authors:
   - given-names: Ryan James
     family-names: Hill
     affiliation: qBraid Co.
+  - given-names: Harshit
+    family-names: Gupta
+    affiliation: qBraid Co.
+  - given-names: Tan
+    family-names: Jun Liang
+  - given-names: Mohamed Messaoud
+    family-names: Louamri
   - given-names: Ricky
     family-names: Young
     affiliation: qBraid Co.
   - given-names: Erik
     family-names: Weis
-  - given-names: Tan
-    family-names: Jun Liang
-  - given-names: Harshit
-    family-names: Gupta
-  - given-names: Mohamed Messaoud
-    family-names: Louamri
   - given-names: Graeme
     family-names: Jacobson
   - given-names: Caleb
@@ -49,13 +50,13 @@ authors:
     affiliation: qBraid Co.
 repository-code: 'https://github.com/qBraid/qBraid'
 url: 'https://www.qbraid.com'
-repository-artifact: 'https://github.com/qBraid/qBraid/releases/tag/v0.5.0'
+repository-artifact: 'https://github.com/qBraid/qBraid/releases/tag/v0.6.1'
 keywords:
   - python
   - quantum-computing
   - transpiler
   - openqasm
 license: GPL-3.0
-commit: feb86dfd4d15129e84bc1ab57810c0b57516f466
-version: 0.5.0
-date-released: '2024-01-11'
+commit: eaf23ebbf8264192f8f8b2e93a8e88595b1ceaa4
+version: 0.6.1
+date-released: '2024-04-09'

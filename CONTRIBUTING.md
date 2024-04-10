@@ -17,24 +17,24 @@ your current working directory is the qBraid repo root.
 
 You can install the qBraid-SDK from source by cloning this repository and running a pip install command in the root directory:
 
-```bash
+```shell
 git clone https://github.com/qbraid/qBraid.git
 cd qBraid
-pip install -e '.[all]' # install all extensions
+pip install -e .
 ```
 
 ## Documentation
 
 To generate the API reference documentation locally:
 
-```bash
+```shell
 pip install 'tox>=4.2'
 tox -e docs
 ```
 
 Alternatively:
 
-```bash
+```shell
 pip install -e '.[docs]'
 cd docs
 make html
@@ -45,13 +45,13 @@ duplicate object description, try `rm docs/stubs/*` to empty the old stubs direc
 re-start the build. If the build succeeds, it will say `The HTML pages are in build/html`. You can 
 view the generated documentation in your browser (on OS X) using:
 
-```bash
+```shell
 open build/html/index.html
 ```
 
 You can also view it by running a web server in that directory:
 
-```bash
+```shell
 cd build/html
 python3 -m http.server
 ```
@@ -74,20 +74,20 @@ the `reST` syntax mentioned (linked) above.
 
 To run all unit tests:
 
-```bash
+```shell
 pip install 'tox>=4.2'
 tox -e unit-tests
 ```
 
 You can also pass in various pytest arguments to run selected tests:
 
-```bash
+```shell
 tox -e unit-tests -- {your-arguments}
 ```
 
 Alternatively:
 
-```bash
+```shell
 pip install pytest
 pytest {path-to-test}
 ```
@@ -98,7 +98,7 @@ from the `main` branch can be viewed at https://app.codecov.io/gh/qBraid/qBraid/
 
 To run linters and doc generators and unit tests:
 
-```bash
+```shell
 tox
 ```
 

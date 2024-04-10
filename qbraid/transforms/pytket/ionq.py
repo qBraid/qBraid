@@ -38,7 +38,7 @@ from pytket.predicates import (
     NoSymbolsPredicate,
 )
 
-from qbraid.transforms.exceptions import CompilerError
+from qbraid.transforms.exceptions import CompilationError
 
 if TYPE_CHECKING:
     import pytket.circuit
@@ -119,5 +119,5 @@ def pytket_ionq_transform(circuit: "pytket.circuit.Circuit") -> "pytket.circuit.
     cu = CompilationUnit(circuit, preds)
     ionq_rebase_pass.apply(cu)
     if not cu.check_all_predicates():
-        raise CompilerError("Circuit cannot be compiled to IonQ Harmony.")
+        raise CompilationError("Circuit cannot be compiled to IonQ Harmony.")
     return cu.circuit

@@ -85,16 +85,13 @@ class QiskitBackend(QuantumDevice):
                 else 63 if device.name == "simulator_extended_stabilizer" else None
             )
 
-    def _transpile(self, run_input):
+    def transform(self, run_input: "qiskit.QuantumCircuit") -> "qiskit.QuantumCircuit":
         if self._device_type.name != "FAKE" and self._device.local:
             program = QiskitCircuit(run_input)
             program.remove_idle_qubits()
             run_input = program.program
 
         return transpile(run_input, backend=self._device)
-
-    def _compile(self, run_input):
-        return run_input
 
     def status(self):
         """Return the status of this Device.

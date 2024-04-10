@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for compiling Pytket circuits.
+Module for applying runtime transforms to Pytket circuits.
 
 .. currentmodule:: qbraid.transforms.pytket
 

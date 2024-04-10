@@ -1,7 +1,7 @@
-qbraid.compiler
-=================
+qbraid.transforms
+==================
 
-.. automodule:: qbraid.compiler
+.. automodule:: qbraid.transforms
    :members:
    :undoc-members:
    :show-inheritance:
@@ -13,4 +13,4 @@ Submodules
 .. autosummary::
    :toctree: ../stubs/
 
-   braket
+   pytket
