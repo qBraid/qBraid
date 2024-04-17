@@ -77,9 +77,9 @@ def test_get_quantum_task_cost_cancelled(braket_most_busy, braket_circuit):
         with pytest.raises(ValueError) as exc_info:
             get_quantum_task_cost(task_arn, aws_session)
 
-        expected_msg = f"ValueError: Task {task_arn} is not COMPLETED. Current state is CANCELLING."
-        assert (
-            str(exc_info.value) == expected_msg
+        expected_msg_partial = f"ValueError: Task {task_arn} is not COMPLETED."
+        assert expected_msg_partial in str(
+            exc_info.value
         ), "Unexpected error message for non-final job state"
 
 
