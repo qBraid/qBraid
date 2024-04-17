@@ -16,10 +16,10 @@ Note: this script is intended for CI/CD purposes only.
 
 """
 import os
-from pathlib import Path
 from typing import Optional
 
 from qbraid_core import QbraidSession
+from qbraid_core.services.quantum.proxy_braket import aws_configure
 from qiskit_ibm_provider import IBMProvider
 
 # Skip tests if IBM/AWS account auth/creds not configured
@@ -38,34 +38,6 @@ def ibm_configure(token: Optional[str] = None, overwrite: bool = True, **kwargs)
     """Initializes IBM Quantum configuration and credentials files."""
     token = token or os.getenv("QISKIT_IBM_TOKEN", "MYTOKEN")
     IBMProvider.save_account(token=token, overwrite=overwrite, **kwargs)
-
-
-def aws_configure(
-    aws_access_key_id: Optional[str] = None,
-    aws_secret_access_key: Optional[str] = None,
-    region: Optional[str] = None,
-) -> None:
-    """Initializes AWS configuration and credentials files."""
-    aws_dir = Path.home() / ".aws"
-    config_path = aws_dir / "config"
-    credentials_path = aws_dir / "credentials"
-    aws_access_key_id = aws_access_key_id or os.getenv("AWS_ACCESS_KEY_ID", "MYACCESSKEY")
-    aws_secret_access_key = aws_secret_access_key or os.getenv(
-        "AWS_SECRET_ACCESS_KEY", "MYSECRETKEY"
-    )
-    region = region or os.getenv("AWS_REGION", "us-east-1")
-
-    aws_dir.mkdir(exist_ok=True)
-    if not config_path.exists():
-        config_content = f"[default]\nregion = {region}\noutput = json\n"
-        config_path.write_text(config_content)
-    if not credentials_path.exists():
-        credentials_content = (
-            f"[default]\n"
-            f"aws_access_key_id = {aws_access_key_id}\n"
-            f"aws_secret_access_key = {aws_secret_access_key}\n"
-        )
-        credentials_path.write_text(credentials_content)
 
 
 if __name__ == "__main__":
