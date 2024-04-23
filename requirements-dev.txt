@@ -1,10 +1,10 @@
 # integrations
-amazon-braket-sdk>=1.74,<1.78
+amazon-braket-sdk>=1.74,<1.79
 cirq-core~=1.3.0
 cirq-ionq~=1.3.0
 pennylane~=0.35.1
 pyquil~=4.4.0
-pytket~=1.26.0
+pytket>=1.26,<1.28
 pytket-braket~=0.35.1
 qiskit~=1.0.2
 qiskit-ibm-provider~=0.10.0
