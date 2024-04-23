@@ -35,6 +35,12 @@ import inspect
 # Dynamically import QPROGRAM_LIBS when needed
 _qbraid = importlib.import_module("qbraid.programs._import")
 _PROGRAM_LIBS = getattr(_qbraid, "_PROGRAM_LIBS", [])
+QPROGRAM_LIBS = getattr(_qbraid, "QPROGRAM_LIBS", [])
+
+qprogram_libs_set = set(QPROGRAM_LIBS)
+
+# Cache for storing previously seen valid combinations, including reversed pairs
+valid_combinations_cache = set()
 
 # List to store the names of the imported functions
 conversion_functions = []
@@ -57,8 +63,24 @@ for lib in _PROGRAM_LIBS:
 
         # Add functions to the current namespace
         for name in function_names:
-            globals()[name] = getattr(sub_module, name)
-            conversion_functions.append(name)
+            p1, p2 = name.split("_to_")
+            # Create tuples for both pair and its reverse
+            pair = (p1, p2)
+            reverse_pair = (p2, p1)
+
+            # Check if either pair or its reverse has been seen as valid before
+            if pair in valid_combinations_cache or reverse_pair in valid_combinations_cache:
+                globals()[name] = getattr(sub_module, name)
+                conversion_functions.append(name)
+                continue
+
+            # Check if both p1 and p2 are in the set
+            if p1 in qprogram_libs_set and p2 in qprogram_libs_set:
+                globals()[name] = getattr(sub_module, name)
+                conversion_functions.append(name)
+                # Add both the pair and its reverse to the cache
+                valid_combinations_cache.add(pair)
+                valid_combinations_cache.add(reverse_pair)
 
     except ModuleNotFoundError:
         pass
