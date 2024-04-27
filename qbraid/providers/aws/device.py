@@ -14,12 +14,12 @@ Module defining BraketDeviceWrapper Class
 """
 import json
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple
+from typing import TYPE_CHECKING, Any
 
 from braket.device_schema import ExecutionDay
 
-from qbraid.programs._import import QPROGRAM_LIBS
 from qbraid.programs.libs.braket import BraketCircuit
+from qbraid.programs.registry import QPROGRAM_ALIASES
 from qbraid.providers.device import QuantumDevice
 from qbraid.providers.enums import DeviceStatus, DeviceType
 from qbraid.transpiler import CircuitConversionError, ConversionPathNotFoundError, transpile
@@ -82,13 +82,13 @@ class BraketDevice(QuantumDevice):
 
         return DeviceStatus.OFFLINE
 
-    def availability_window(self) -> Tuple[bool, str, str]:
+    def availability_window(self) -> tuple[bool, str, str]:
         """Provides device availability status. Indicates current availability,
         time remaining (hours, minutes, seconds) until next availability or
         unavailability, and future UTC datetime of next change in availability status.
 
         Returns:
-            Tuple[bool, str, str]: Current device availability, hr/min/sec until availability
+            tuple[bool, str, str]: Current device availability, hr/min/sec until availability
                                    switch, future UTC datetime of availability switch
         """
 
@@ -207,7 +207,7 @@ class BraketDevice(QuantumDevice):
             program.remove_idle_qubits()
             run_input = program.program
 
-        if self.provider.lower() == "ionq" and "pytket" in QPROGRAM_LIBS:
+        if self.provider.lower() == "ionq" and "pytket" in QPROGRAM_ALIASES:
 
             # pylint: disable=import-outside-toplevel
             from qbraid.transforms.pytket.ionq import pytket_ionq_transform
@@ -221,7 +221,7 @@ class BraketDevice(QuantumDevice):
 
         return run_input
 
-    def _run(self, run_input: "braket.circuits.Circuit", *args, **kwargs) -> Dict[str, Any]:
+    def _run(self, run_input: "braket.circuits.Circuit", *args, **kwargs) -> dict[str, Any]:
         """Run a quantum task specification on this quantum device. Task must represent a
         quantum circuit, annealing problems not supported.
 
@@ -245,7 +245,7 @@ class BraketDevice(QuantumDevice):
             "qbraid_job_obj": BraketQuantumTask,
         }
 
-    def _run_batch(self, run_input, *args, **kwargs) -> List[Dict[str, Any]]:
+    def _run_batch(self, run_input, *args, **kwargs) -> list[dict[str, Any]]:
         """Run batch of quantum tasks on this quantum device.
 
         Args:

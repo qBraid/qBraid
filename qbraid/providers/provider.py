@@ -13,7 +13,7 @@ Module for configuring provider credentials and authentication.
 
 """
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from qbraid_core.exceptions import AuthError
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
@@ -118,7 +118,7 @@ class QbraidProvider(QuantumProvider):
         except Exception:  # pylint: disable=broad-exception-caught
             return None
 
-    def get_devices(self) -> "List[qbraid.providers.QDEVICE]":
+    def get_devices(self) -> "list[qbraid.providers.QDEVICE]":
         """Return a list of backends matching the specified filtering.
 
         Returns:
@@ -134,7 +134,7 @@ class QbraidProvider(QuantumProvider):
         return devices
 
     @staticmethod
-    def _get_required_field(data: Dict[str, Any], field_name: str) -> Any:
+    def _get_required_field(data: dict[str, Any], field_name: str) -> Any:
         try:
             # For 'vendor', ensure it's a string and convert to lowercase
             if field_name == "vendor":

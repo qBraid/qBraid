@@ -16,7 +16,7 @@ Module for Cirq custom gates to aid the transpiler and qasm parser
 """
 
 import fractions
-from typing import Optional, Tuple
+from typing import Optional
 
 import cirq
 import numpy as np
@@ -158,7 +158,7 @@ class ZPowGate(cirq.ZPowGate):
     Z axis of the Bloch sphere.
     """
 
-    def _qasm_(self, args: "cirq.QasmArgs", qubits: Tuple["cirq.Qid", ...]) -> Optional[str]:
+    def _qasm_(self, args: "cirq.QasmArgs", qubits: tuple["cirq.Qid", ...]) -> Optional[str]:
         args.validate_version("2.0")
         if self._global_shift == 0:
             if self._exponent == 0.25:

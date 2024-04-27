@@ -32,12 +32,10 @@ Submodules
 import importlib
 import inspect
 
-# Dynamically import QPROGRAM_LIBS when needed
+# Dynamically import QPROGRAM_ALIASES when needed
 _qbraid = importlib.import_module("qbraid.programs._import")
-_PROGRAM_LIBS = getattr(_qbraid, "_PROGRAM_LIBS", [])
-QPROGRAM_LIBS = getattr(_qbraid, "QPROGRAM_LIBS", [])
-
-qprogram_libs_set = set(QPROGRAM_LIBS)
+_DYNAMIC_REGISTRY = getattr(_qbraid, "dynamic_type_registry", {})
+_QPROGRAM_ALIASES = getattr(_qbraid, "_QPROGRAM_ALIASES", set())
 
 # Cache for storing previously seen valid combinations, including reversed pairs
 valid_combinations_cache = set()
@@ -49,7 +47,7 @@ conversion_functions = []
 base_path = "qbraid.transpiler.conversions."
 
 # Iterate over the installed libraries
-for lib in _PROGRAM_LIBS:
+for lib in _DYNAMIC_REGISTRY:
     try:
         # Dynamically import the sub-module
         sub_module = importlib.import_module(base_path + lib)
@@ -75,7 +73,7 @@ for lib in _PROGRAM_LIBS:
                 continue
 
             # Check if both p1 and p2 are in the set
-            if p1 in qprogram_libs_set and p2 in qprogram_libs_set:
+            if p1 in _QPROGRAM_ALIASES and p2 in _QPROGRAM_ALIASES:
                 globals()[name] = getattr(sub_module, name)
                 conversion_functions.append(name)
                 # Add both the pair and its reverse to the cache

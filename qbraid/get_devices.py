@@ -15,7 +15,7 @@ Module to retrieve, update, and display information about devices
 supported by the qBraid SDK.
 
 """
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 try:
     from IPython.display import HTML, clear_output, display
@@ -28,7 +28,7 @@ from qbraid_core.services.quantum import QuantumClient, process_device_data
 from ._display import running_in_jupyter, update_progress_bar
 
 
-def _display_basic(data: List[str], message: str):
+def _display_basic(data: list[str], message: str):
     if len(data) == 0:
         print(message)
     else:
@@ -39,7 +39,7 @@ def _display_basic(data: List[str], message: str):
             print("{:<35} {:<15}".format(device_id, status))
 
 
-def _display_jupyter(data: List[str], message: Optional[str] = None, align: str = "right"):
+def _display_jupyter(data: list[str], message: Optional[str] = None, align: str = "right"):
     clear_output(wait=True)
 
     html = """<h3>Supported Devices</h3><table><tr>
@@ -113,7 +113,7 @@ def _refresh_devices() -> None:
     print()
 
 
-def get_devices(filters: Optional[Dict[str, Any]] = None, refresh: bool = False):
+def get_devices(filters: Optional[dict[str, Any]] = None, refresh: bool = False):
     """Displays a list of all supported devices matching given filters, tabulated by provider,
     name, and qBraid ID. Each device also has a status given by a solid green bubble or a hollow
     red bubble, indicating that the device is online or offline, respectively. You can narrow your

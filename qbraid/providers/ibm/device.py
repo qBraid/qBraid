@@ -13,7 +13,7 @@ Module defining QiskitBackend Class
 
 """
 import re
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING, Union
 
 from qiskit import transpile
 from qiskit.transpiler import TranspilerError
@@ -115,7 +115,7 @@ class QiskitBackend(QuantumDevice):
 
     def _run(
         self,
-        run_input: "Union[qiskit.QuantumCircuit, List[qiskit.QuantumCircuit]]",
+        run_input: "Union[qiskit.QuantumCircuit, list[qiskit.QuantumCircuit]]",
         *args,
         **kwargs,
     ):
@@ -152,7 +152,7 @@ class QiskitBackend(QuantumDevice):
             "qbraid_job_obj": QiskitJob,
         }
 
-    def _run_batch(self, run_input: "List[qiskit.QuantumCircuit]", *args, **kwargs):
+    def _run_batch(self, run_input: "list[qiskit.QuantumCircuit]", *args, **kwargs):
         """Runs circuit(s) on qiskit backend via :meth:`~qiskit.execute`
 
         Uses the :meth:`~qiskit.execute` method to create a :class:`~qiskit.providers.QuantumJob`

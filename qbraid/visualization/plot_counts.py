@@ -13,7 +13,7 @@ Module for plotting historgram of measurement counts against quantum states.
 
 """
 
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Optional, Union
 
 import matplotlib.pyplot as plt
 from matplotlib import colormaps
@@ -56,9 +56,9 @@ def _counts_to_decimal(counts: dict) -> dict:
 
 
 def _plot_data(
-    counts: Union[List[Dict], dict],
-    legend: Optional[Union[List[str], str]] = None,
-    colors: Optional[Union[List[str], str]] = None,
+    counts: Union[list[dict], dict],
+    legend: Optional[Union[list[str], str]] = None,
+    colors: Optional[Union[list[str], str]] = None,
     title: Optional[str] = None,
     x_label: Optional[str] = None,
     y_label: Optional[str] = None,
@@ -151,9 +151,9 @@ def _plot_data(
 
 
 def plot_distribution(
-    counts: Union[List[Dict], Dict],
-    legend: Optional[Union[List[str], str]] = None,
-    colors: Optional[Union[List[str], str]] = None,
+    counts: Union[list[dict], dict],
+    legend: Optional[Union[list[str], str]] = None,
+    colors: Optional[Union[list[str], str]] = None,
     title: Optional[str] = None,
     x_label: Optional[str] = None,
     y_label: Optional[str] = None,
@@ -164,13 +164,13 @@ def plot_distribution(
     Plots a histogram probability distribution of quantum states.
 
     Args:
-        counts (Union[List[Dict], Dict]): Dictionary or a list of dictionaries containing the
+        counts (Union[list[Dict], Dict]): Dictionary or a list of dictionaries containing the
                                           quantum states as keys and their respective counts as
                                           values.
-        legend (Optional[Union[List[str], str]]): List of strings or a single string representing
+        legend (Optional[Union[list[str], str]]): List of strings or a single string representing
                                                   the labels of the datasets. Defaults to None,
                                                   where it generates default labels.
-        colors (Optional[Union[List[str], str]]): List of strings or a single string representing
+        colors (Optional[Union[list[str], str]]): List of strings or a single string representing
                                                   the colors for each dataset. Defaults to None,
                                                   where it generates a color sequence.
         title (Optional[str]): String representing the title of the plot. Defaults to None.
@@ -218,9 +218,9 @@ def plot_distribution(
 
 
 def plot_histogram(
-    counts: Union[List[Dict], Dict],
-    legend: Optional[Union[List[str], str]] = None,
-    colors: Optional[Union[List[str], str]] = None,
+    counts: Union[list[dict], dict],
+    legend: Optional[Union[list[str], str]] = None,
+    colors: Optional[Union[list[str], str]] = None,
     title: Optional[str] = None,
     x_label: Optional[str] = None,
     y_label: Optional[str] = None,
@@ -231,13 +231,13 @@ def plot_histogram(
     Plots a histogram of measurement counts against quantum states.
 
     Args:
-        counts (Union[List[Dict], Dict]): Dictionary or a list of dictionaries containing the
+        counts (Union[list[Dict], Dict]): Dictionary or a list of dictionaries containing the
                                           quantum states as keys and their respective counts as
                                           values.
-        legend (Optional[Union[List[str], str]]): List of strings or a single string representing
+        legend (Optional[Union[list[str], str]]): List of strings or a single string representing
                                                   the labels of the datasets. Defaults to None,
                                                   where it generates default labels.
-        colors (Optional[Union[List[str], str]]): List of strings or a single string representing
+        colors (Optional[Union[list[str], str]]): List of strings or a single string representing
                                                   the colors for each dataset. Defaults to None,
                                                   where it generates a color sequence.
         title (Optional[str]): String representing the title of the plot. Defaults to None.

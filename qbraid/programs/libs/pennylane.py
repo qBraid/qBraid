@@ -12,7 +12,7 @@
 Module defining PennylaneTape Class
 
 """
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 import pennylane as qml
 from pennylane.tape import QuantumTape
@@ -40,7 +40,7 @@ class PennylaneTape(QuantumProgram):
         self._program = value
 
     @property
-    def qubits(self) -> List[int]:
+    def qubits(self) -> list[int]:
         """Returns the wires of the quantum tape as a list of ints"""
         return self.program.wires.tolist()
 

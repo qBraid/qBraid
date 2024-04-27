@@ -13,7 +13,7 @@ Module for interfacing with the Amazon Braket cost tracker
 
 """
 from decimal import Decimal
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from boto3.session import Session
 from braket.aws import AwsDevice, AwsQuantumTask, AwsSession
@@ -22,7 +22,7 @@ from braket.tracking.tracking_context import register_tracker
 from braket.tracking.tracking_events import _TaskCompletionEvent, _TaskCreationEvent
 
 
-def _generate_creation_event(boto_data: Dict[str, Any]) -> _TaskCreationEvent:
+def _generate_creation_event(boto_data: dict[str, Any]) -> _TaskCreationEvent:
     """Generate a task creation event."""
     job_token = boto_data.pop("jobToken", None)
     return _TaskCreationEvent(
@@ -34,7 +34,7 @@ def _generate_creation_event(boto_data: Dict[str, Any]) -> _TaskCreationEvent:
 
 
 def _generate_completion_event(
-    boto_data: Dict[str, Any], aws_session: Optional[AwsSession] = None
+    boto_data: dict[str, Any], aws_session: Optional[AwsSession] = None
 ) -> _TaskCompletionEvent:
     """Generate a task completion event."""
     task_arn = boto_data["quantumTaskArn"]
@@ -54,8 +54,8 @@ def _generate_completion_event(
 
 
 def _get_tracker_task_details(
-    boto_data: Dict[str, Any], aws_session: Optional[AwsSession] = None
-) -> Dict[str, Any]:
+    boto_data: dict[str, Any], aws_session: Optional[AwsSession] = None
+) -> dict[str, Any]:
     """Get the quantum task details populated by the Amazon Braket cost tracker."""
     tracker = Tracker()
     register_tracker(tracker)

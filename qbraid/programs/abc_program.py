@@ -13,7 +13,7 @@ Module defining QuantumProgram Class
 
 """
 from abc import abstractmethod
-from typing import TYPE_CHECKING, Any, List, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 
@@ -43,7 +43,7 @@ class QuantumProgram:
 
     @property
     @abstractmethod
-    def qubits(self) -> List[Any]:
+    def qubits(self) -> list[Any]:
         """Return the qubits acted upon by the operations in this circuit"""
 
     @property

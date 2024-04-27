@@ -14,7 +14,7 @@ Module for generating dictionary of all qiskit gates for testing/benchmarking
 """
 
 import string
-from typing import List, Optional
+from typing import Optional
 
 import numpy as np
 from qiskit.circuit.library import standard_gates as sg
@@ -63,7 +63,7 @@ qiskit_gates = {
 }
 
 
-def generate_params(varnames: List[str], seed: Optional[int] = None):
+def generate_params(varnames: list[str], seed: Optional[int] = None):
     """Returns a dictionary of random parameters for a given list of variable names"""
     if seed is not None:
         np.random.seed(seed)

@@ -16,7 +16,7 @@ import logging
 from abc import ABC, abstractmethod
 from enum import Enum
 from time import sleep, time
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
 
@@ -50,9 +50,9 @@ class QuantumJob(ABC):
         self,
         job_id: str,
         job_obj: Optional[Any] = None,
-        job_json: Optional[Dict[str, Any]] = None,
+        job_json: Optional[dict[str, Any]] = None,
         device: "Optional[qbraid.providers.QuantumDevice]" = None,
-        circuits: "Optional[List[qbraid.programs.QuantumProgram]]" = None,
+        circuits: "Optional[list[qbraid.programs.QuantumProgram]]" = None,
         provider: Optional[QbraidProvider] = None,
     ):
         if type(self) is QuantumJob:  # pylint: disable=unidiomatic-typecheck
@@ -122,7 +122,7 @@ class QuantumJob(ABC):
             self._device = self.client.get_device(qbraid_device_id)
         return self._device
 
-    def _fetch_metadata(self) -> Dict[str, Any]:
+    def _fetch_metadata(self) -> dict[str, Any]:
         first_error = None
 
         # Attempt to get the device data first with the qbraid_id and then with the vendor_id
@@ -170,7 +170,7 @@ class QuantumJob(ABC):
             but instead got status of type {type(status)}."
         )
 
-    def _status(self) -> Tuple[JobStatus, str]:
+    def _status(self) -> tuple[JobStatus, str]:
         vendor_status = self._get_status()
         try:
             return self._status_map[vendor_status], vendor_status
@@ -192,7 +192,7 @@ class QuantumJob(ABC):
             )
         return qbraid_status
 
-    def _post_job_data(self, update: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def _post_job_data(self, update: Optional[dict[str, Any]] = None) -> dict[str, Any]:
         """Retreives job metadata and optionally updates document.
 
         Args:
@@ -216,7 +216,7 @@ class QuantumJob(ABC):
             metadata["qbraidJobId"] = metadata.get("_id")
         return metadata
 
-    def metadata(self) -> Dict[str, Any]:
+    def metadata(self) -> dict[str, Any]:
         """Return the metadata regarding the job."""
         qbraid_status, vendor_status = self._status()
         if not self._cache_metadata or qbraid_status != self._cache_status:

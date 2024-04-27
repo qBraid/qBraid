@@ -102,13 +102,13 @@ See also:
 
 Construct a quantum program of any supported program type.
 
-Below, `SUPPORTED_QPROGRAMS` maps shorthand identifiers for supported quantum programs, each corresponding to a type in the typed `QPROGRAM` Union.
+Below, `QPROGRAM_REGISTRY` maps shorthand identifiers for supported quantum programs, each corresponding to a type in the typed `QPROGRAM` Union.
 For example, 'qiskit' maps to `qiskit.QuantumCircuit` in `QPROGRAM`. Notably, 'qasm2' and 'qasm3' both represent raw OpenQASM strings.
 This arrangement simplifies targeting and transpiling between different quantum programming frameworks.
 
 ```python
->>> from qbraid.programs import SUPPORTED_QPROGRAMS
->>> SUPPORTED_QPROGRAMS
+>>> from qbraid.programs import QPROGRAM_REGISTRY
+>>> QPROGRAM_REGISTRY
 {'cirq': 'cirq.circuits.circuit.Circuit',
  'qiskit': 'qiskit.circuit.quantumcircuit.QuantumCircuit',
  'pyquil': 'pyquil.quil.Program',
@@ -120,7 +120,7 @@ This arrangement simplifies targeting and transpiling between different quantum 
 ```
 
 Pass any quantum program of type `qbraid.programs.QPROGRAM` to the `load_program()` and specify a target package
-from `SUPPORTED_QPROGRAMS` to "transpile" your circuit to a new program type:
+from `QPROGRAM_REGISTRY` to "transpile" your circuit to a new program type:
 
 ```python
 >>> from qbraid.interface import random_circuit

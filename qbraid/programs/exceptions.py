@@ -12,29 +12,45 @@
 Module defining exceptions for errors raised by qBraid.
 
 """
+from typing import Any, Optional
 
 from qbraid.exceptions import QbraidError
 
-from ._import import QPROGRAM_LIBS
+from .registry import QPROGRAM_ALIASES
 
 
 class PackageValueError(QbraidError):
     """Class for errors raised due to unsupported quantum frontend package"""
 
-    def __init__(self, package):
+    def __init__(self, package: str):
         msg = (
             f"Quantum frontend module '{package}' is not supported.\n"
-            f"Frontends supported by qBraid are: {QPROGRAM_LIBS}"
+            f"Frontends supported by qBraid are: {QPROGRAM_ALIASES}"
         )
         super().__init__(msg)
 
 
 class ProgramTypeError(QbraidError):
-    """Class for errors raised when processing unsupported quantum programs"""
+    """Exception raised for errors encountered with unsupported quantum programs.
 
-    def __init__(self, program):
-        msg = f"Quantum program of type '{type(program)}' is not supported."
-        super().__init__(msg)
+    Attributes:
+        program (Optional[Any]): The program that caused the error, default is None.
+        message (Optional[str]): Explanation of the error. If None, a default error message
+                                 is generated based on the provided program.
+    """
+
+    def __init__(self, program: Optional[Any] = None, message: Optional[str] = None):
+        self.program = program
+        self.message = message
+        super().__init__(self.generate_message())
+
+    def generate_message(self) -> str:
+        """Generate an error message based on the input."""
+        if self.message is not None:
+            return self.message
+        if self.program is not None:
+            return f"Quantum program of type '{type(self.program)}' is not supported."
+        return "Unsupported quantum program type."
 
 
 class QasmError(QbraidError):

@@ -12,15 +12,15 @@
 Module for generate random quantum circuits used for testing
 
 """
-from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import numpy as np
 
-from qbraid.programs._import import QPROGRAM, QPROGRAM_LIBS
 from qbraid.programs.exceptions import PackageValueError
+from qbraid.programs.registry import QPROGRAM, QPROGRAM_ALIASES
 from qbraid.transpiler.converter import transpile
 
-QROGRAM_TEST_TYPE = Tuple[Dict[str, Callable[[Any], QPROGRAM]], np.ndarray]
+QROGRAM_TEST_TYPE = tuple[dict[str, Callable[[Any], QPROGRAM]], np.ndarray]
 
 if TYPE_CHECKING:
     import qbraid.programs
@@ -45,7 +45,7 @@ def random_circuit(
         :data:`~qbraid.programs.QPROGRAM`: randomly generated quantum circuit/program
 
     """
-    if package not in QPROGRAM_LIBS:
+    if package not in QPROGRAM_ALIASES:
         raise PackageValueError(package)
 
     num_qubits = np.random.randint(1, 4) if num_qubits is None else num_qubits

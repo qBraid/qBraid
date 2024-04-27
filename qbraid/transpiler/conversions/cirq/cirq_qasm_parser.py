@@ -26,7 +26,7 @@ Module defining qBraid Cirq QASM parser.
 """
 import functools
 import operator
-from typing import Any, Callable, cast, Dict, Iterable, List, Optional, Union, TYPE_CHECKING
+from typing import Any, Callable, cast, Iterable, Optional, Union, TYPE_CHECKING
 
 import numpy as np
 # import sympy
@@ -86,7 +86,7 @@ class QasmGateStatement:
     def __init__(
         self,
         qasm_gate: str,
-        cirq_gate: Union[ops.Gate, Callable[[List[float]], ops.Gate]],
+        cirq_gate: Union[ops.Gate, Callable[[list[float]], ops.Gate]],
         num_params: int,
         num_args: int,
     ):
@@ -105,14 +105,14 @@ class QasmGateStatement:
         assert num_args >= 1
         self.num_args = num_args
 
-    def _validate_args(self, args: List[List[ops.Qid]], lineno: int):
+    def _validate_args(self, args: list[list[ops.Qid]], lineno: int):
         if len(args) != self.num_args:
             raise QasmException(
                 "{} only takes {} arg(s) (qubits and/or registers), "
                 "got: {}, at line {}".format(self.qasm_gate, self.num_args, len(args), lineno)
             )
 
-    def _validate_params(self, params: List[float], lineno: int):
+    def _validate_params(self, params: list[float], lineno: int):
         if len(params) != self.num_params:
             raise QasmException(
                 "{} takes {} parameter(s), got: {}, at line {}".format(
@@ -121,7 +121,7 @@ class QasmGateStatement:
             )
 
     def on(
-        self, params: List[float], args: List[List[ops.Qid]], lineno: int
+        self, params: list[float], args: list[list[ops.Qid]], lineno: int
     ) -> Iterable[ops.Operation]:
         self._validate_args(args, lineno)
         self._validate_params(params, lineno)
@@ -146,7 +146,7 @@ class QasmGateStatement:
         # through each qubit of the registers 0 to n-1 and use the same one
         # qubit from the "single-qubit registers" for each operation.
         op_qubits = functools.reduce(
-            cast(Callable[[List['cirq.Qid'], List['cirq.Qid']], List['cirq.Qid']], np.broadcast),
+            cast(Callable[[list['cirq.Qid'], list['cirq.Qid']], list['cirq.Qid']], np.broadcast),
             args,
         )
         for qubits in op_qubits:
@@ -169,13 +169,13 @@ class QasmParser:
     def __init__(self):
         self.parser = yacc.yacc(module=self, debug=False, write_tables=False)
         self.circuit = Circuit()
-        self.qregs: Dict[str, int] = {}
-        self.cregs: Dict[str, int] = {}
+        self.qregs: dict[str, int] = {}
+        self.cregs: dict[str, int] = {}
         self.qelibinc = False
         self.lexer = QasmLexer()
         self.supported_format = False
         self.parsedQasm: Optional[Qasm] = None
-        self.qubits: Dict[str, ops.Qid] = {}
+        self.qubits: dict[str, ops.Qid] = {}
         self.functions = {
             'sin': np.sin,
             'cos': np.cos,
@@ -196,7 +196,7 @@ class QasmParser:
             '^': operator.pow,
         }
 
-    basic_gates: Dict[str, QasmGateStatement] = {
+    basic_gates: dict[str, QasmGateStatement] = {
         'CX': QasmGateStatement(qasm_gate='CX', cirq_gate=CX, num_params=0, num_args=2),
         'U': QasmGateStatement(
             qasm_gate='U',
@@ -436,7 +436,7 @@ class QasmParser:
         self._resolve_gate_operation(args=p[5], gate=p[1], p=p, params=p[3])
 
     def _resolve_gate_operation(
-        self, args: List[List[ops.Qid]], gate: str, p: Any, params: List[float]
+        self, args: list[list[ops.Qid]], gate: str, p: Any, params: list[float]
     ):
         gate_set = self.basic_gates if not self.qelibinc else self.all_gates
         if gate not in gate_set.keys():

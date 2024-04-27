@@ -12,15 +12,26 @@
 Module for performing QASM program checks before conversion
 
 """
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Type
 
 from openqasm3.parser import QASM3ParsingError, parse
 
-from ._import import QPROGRAM_LIBS
 from .exceptions import PackageValueError, ProgramTypeError, QasmError
+from .registry import QPROGRAM_REGISTRY, get_type_alias
 
 if TYPE_CHECKING:
     import qbraid.programs
+
+
+def find_str_type_alias(registry: dict[str, Type] = QPROGRAM_REGISTRY) -> Optional[str]:
+    """Find additional keys with type 'str' in the registry."""
+    str_keys = [k for k, v in registry.items() if v == str and k not in ("qasm2", "qasm3")]
+
+    if len(str_keys) == 0:
+        return None
+    if len(str_keys) == 1:
+        return str_keys[0]
+    raise ValueError(f"Multiple additional keys with type 'str' found: {str_keys}")
 
 
 def get_qasm_version(qasm_str: str) -> str:
@@ -30,7 +41,7 @@ def get_qasm_version(qasm_str: str) -> str:
         qasm_str: An OpenQASM program string
 
     Returns:
-        QASM version from list :obj:`~qbraid.programs.QPROGRAM_LIBS`
+        QASM version from list :obj:`~qbraid.programs.QPROGRAM_ALIASES`
 
     Raises:
         :class:`~qbraid.programs.QasmError`: If string does not represent a valid OpenQASAM program.
@@ -64,22 +75,37 @@ def get_program_type(
         try:
             package = get_qasm_version(program)
         except QasmError as err:
-            if require_supported:
+            package = find_str_type_alias()
+            if package is None and require_supported:
                 raise ProgramTypeError(
-                    "Input of type string must represent a valid OpenQASM program."
+                    message="Input of type string must represent a valid OpenQASM program."
                 ) from err
-            package = None
 
     else:
         try:
-            program_module = program.__module__
-            package = program_module.split(".")[0].lower()
-        except AttributeError as err:
+            package = get_type_alias(program)
+        except ValueError as err:
             if require_supported:
                 raise ProgramTypeError(program) from err
             package = None
 
-    if package not in QPROGRAM_LIBS and require_supported:
-        raise PackageValueError(package)
+    program_type = QPROGRAM_REGISTRY.get(package, None)
+
+    if program_type is None:
+        if require_supported:
+            raise PackageValueError(package)
+        return package
+
+    if (
+        not isinstance(program, program_type)
+        and not isinstance(program, type(program_type))
+        and require_supported
+    ):
+        raise ProgramTypeError(
+            message=(
+                f"Program of type '{type(program)}' does not match expected type "
+                f"mapping '{program_type}' for derived alias '{package}'."
+            )
+        )
 
     return package
