@@ -17,7 +17,7 @@ import warnings
 from copy import deepcopy
 from typing import TYPE_CHECKING, Callable, Optional
 
-from qbraid.programs import QPROGRAM_ALIASES, get_program_type_alias
+from qbraid.programs import QPROGRAM_ALIASES, ProgramTypeError, get_program_type_alias
 
 from .exceptions import CircuitConversionError, ConversionPathNotFoundError, NodeNotFoundError
 from .graph import ConversionGraph
@@ -35,6 +35,10 @@ def _warn_if_unsupported(program_type, program_direction):
             f"Converting {program_direction} unsupported program type '{program_type}'.",
             UserWarning,
         )
+
+
+def _format_exception(err: Exception) -> str:
+    return f"{type(err).__name__}: {str(err)}\n"
 
 
 def _get_path_from_bound_methods(bound_methods: list[Callable]) -> str:
@@ -146,7 +150,12 @@ def transpile(
                 try:
                     temp_program = convert_func(temp_program)
                 except Exception as err:  # pylint: disable=broad-exception-caught
-                    if get_program_type_alias(temp_program) == "cirq":
+                    try:
+                        alias = get_program_type_alias(temp_program)
+                    except ProgramTypeError:
+                        alias = None
+
+                    if alias == "cirq":
                         # pylint: disable=import-outside-toplevel
                         from qbraid.transforms.cirq import decompose
 
@@ -154,19 +163,27 @@ def transpile(
                         temp_program = convert_func(temp_program)  # Retry conversion
                     else:
                         error_detail = (
-                            f"Conversion path {path_details} failed on step "
-                            f"'{convert_func.__name__}' with exception: {str(err)}"
+                            f"Conversion {path_details} failed due to "
+                            f"exception raised while converting from '{alias}'."
                         )
                         error_messages.append(error_detail)
+                        error_messages.append(_format_exception(err))
                         raise
 
             logger.info("\nSuccessfully transpiled using conversions: %s", path_details)
             return temp_program
-        except Exception:  # pylint: disable=broad-exception-caught
+        except Exception as err:  # pylint: disable=broad-exception-caught
             logger.info("\nFailed to transpile using conversions: %s", path_details)
+            formatted_error = _format_exception(err)
+            if len(error_messages) == 0 or error_messages[-1] != formatted_error:
+                error_messages.append(formatted_error)
             continue
 
     raise CircuitConversionError(
-        f"Failed to convert program from '{source}' to '{target}'"
-        + (" due to the following errors:\n" + "\n".join(error_messages) if error_messages else "")
+        f"Failed to convert '{source}' to '{target}'"
+        + (
+            " due to the following error(s):\n\n" + "\n".join(error_messages)
+            if error_messages
+            else "."
+        )
     )

@@ -17,7 +17,7 @@ from braket.circuits.serialization import IRType
 from braket.ir.openqasm import Program as OpenQasmProgram
 
 from qbraid.programs import QasmError
-from qbraid.transforms.qasm2.passes import convert_qasm_pi_to_decimal
+from qbraid.transforms.qasm3.compat import qasm3_braket_pre_process
 
 QASMType = str
 
@@ -35,24 +35,7 @@ def qasm3_to_braket(qasm3_str: QASMType) -> Circuit:
         CircuitConversionError: If qasm to braket conversion fails
 
     """
-    replacements = {
-        "cx ": "cnot ",
-        "sdg ": "si ",
-        "tdg ": "ti ",
-        "sx ": "v ",
-        "sxdg ": "vi ",
-        "p(": "phaseshift(",
-        "cp(": "cphaseshift(",
-    }
-
-    def replace_commands(qasm, replacements):
-        for old, new in replacements.items():
-            qasm = qasm.replace(old, new)
-        return qasm
-
-    qasm3_str = qasm3_str.replace('include "stdgates.inc";', "")
-    qasm3_str = replace_commands(qasm3_str, replacements)
-    qasm3_str = convert_qasm_pi_to_decimal(qasm3_str)
+    qasm3_str = qasm3_braket_pre_process(qasm3_str)
 
     try:
         program = OpenQasmProgram(source=qasm3_str)

@@ -14,11 +14,8 @@ Unit tests for QASM preprocessing functions
 """
 import pytest
 
-from qbraid.transforms.qasm2.passes import (
-    convert_qasm_pi_to_decimal,
-    flatten_qasm_program,
-    remove_qasm_barriers,
-)
+from qbraid.transforms.qasm2.passes import flatten_qasm_program, remove_qasm_barriers
+from qbraid.transforms.qasm3.compat import convert_qasm_pi_to_decimal
 
 pi_decimal_data = [
     (

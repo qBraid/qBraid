@@ -16,3 +16,4 @@ Submodules
    cirq
    pytket
    qasm2
+   qasm3
