@@ -136,13 +136,16 @@ def transpile(
         if len(paths) == 0:
             raise ConversionPathNotFoundError(source, target, max_path_depth)
 
+    error_messages = []
+
     for path in paths:
+        path_details = _get_path_from_bound_methods(path)
         temp_program = deepcopy(program)
         try:
             for convert_func in path:
                 try:
                     temp_program = convert_func(temp_program)
-                except Exception:  # pylint: disable=broad-exception-caught
+                except Exception as err:  # pylint: disable=broad-exception-caught
                     if get_program_type_alias(temp_program) == "cirq":
                         # pylint: disable=import-outside-toplevel
                         from qbraid.transforms.cirq import decompose
@@ -150,17 +153,20 @@ def transpile(
                         temp_program = decompose(temp_program)
                         temp_program = convert_func(temp_program)  # Retry conversion
                     else:
+                        error_detail = (
+                            f"Conversion path {path_details} failed on step "
+                            f"'{convert_func.__name__}' with exception: {str(err)}"
+                        )
+                        error_messages.append(error_detail)
                         raise
-            logger.info(
-                "\nSuccessfully transpiled using conversions: %s",
-                _get_path_from_bound_methods(path),
-            )
+
+            logger.info("\nSuccessfully transpiled using conversions: %s", path_details)
             return temp_program
         except Exception:  # pylint: disable=broad-exception-caught
-            logger.info(
-                "\nFailed to transpile using conversions: %s",
-                _get_path_from_bound_methods(path),
-            )
+            logger.info("\nFailed to transpile using conversions: %s", path_details)
             continue
 
-    raise CircuitConversionError(f"Failed to convert program from '{source}' to '{target}'.")
+    raise CircuitConversionError(
+        f"Failed to convert program from '{source}' to '{target}'"
+        + (" due to the following errors:\n" + "\n".join(error_messages) if error_messages else "")
+    )
