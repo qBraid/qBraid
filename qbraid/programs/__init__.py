@@ -36,6 +36,7 @@ Functions
    flatten_qasm_program
    decompose_qasm_qelib1
    convert_qasm_pi_to_decimal
+   register_program_type
 
 Classes
 --------
@@ -56,7 +57,6 @@ Exceptions
    QasmError
 
 """
-from ._import import QPROGRAM, QPROGRAM_LIBS, QPROGRAM_TYPES, SUPPORTED_QPROGRAMS
 from .abc_program import QuantumProgram
 from .exceptions import PackageValueError, ProgramTypeError, QasmError
 from .inspector import get_program_type, get_qasm_version
@@ -68,3 +68,10 @@ from .qasm_passes import (
     unfold_qasm_gate_defs,
 )
 from .qasm_qelib1 import decompose_qasm_qelib1
+from .registry import (
+    QPROGRAM,
+    QPROGRAM_ALIASES,
+    QPROGRAM_REGISTRY,
+    QPROGRAM_TYPES,
+    register_program_type,
+)

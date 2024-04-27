@@ -14,7 +14,7 @@ Module defining QiskitCircuit Class
 """
 
 from collections import OrderedDict
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 import qiskit
 from qiskit.circuit import Qubit
@@ -44,7 +44,7 @@ class QiskitCircuit(QuantumProgram):
         self._program = value
 
     @property
-    def qubits(self) -> List[Qubit]:
+    def qubits(self) -> list[Qubit]:
         """Return the qubits acted upon by the operations in this circuit"""
         return self.program.qubits
 

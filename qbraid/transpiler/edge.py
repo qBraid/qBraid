@@ -16,7 +16,7 @@ import importlib
 import inspect
 from typing import TYPE_CHECKING, Any, Callable, Union
 
-from qbraid.programs import SUPPORTED_QPROGRAMS, get_program_type
+from qbraid.programs import QPROGRAM_REGISTRY, get_program_type
 
 if TYPE_CHECKING:
     import qbraid
@@ -122,8 +122,8 @@ class Conversion:
         package = get_program_type(program)
         if package != self._source:
             raise ValueError(
-                f"Expected program of type {SUPPORTED_QPROGRAMS[self._source]}, "
-                f"but got program of type {SUPPORTED_QPROGRAMS[package]}."
+                f"Expected program of type {QPROGRAM_REGISTRY[self._source]}, "
+                f"but got program of type {QPROGRAM_REGISTRY[package]}."
             )
         return self._conversion_func(program)
 

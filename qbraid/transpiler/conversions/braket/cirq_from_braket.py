@@ -17,8 +17,6 @@
 Module for converting Cirq circuits to Braket circuits
 
 """
-from typing import Dict, List
-
 import numpy as np
 from braket.circuits import Circuit as BKCircuit
 from braket.circuits import Instruction as BKInstruction
@@ -55,8 +53,8 @@ def _braket_to_cirq(circuit: BKCircuit) -> Circuit:
 
 
 def _from_braket_instruction(
-    instr: BKInstruction, qubit_mapping: Dict[int, LineQubit]
-) -> List[cirq_ops.Operation]:
+    instr: BKInstruction, qubit_mapping: dict[int, LineQubit]
+) -> list[cirq_ops.Operation]:
     """Converts the braket instruction to an equivalent Cirq operation or list
     of Cirq operations.
 
@@ -104,8 +102,8 @@ def _from_braket_instruction(
 
 
 def _from_one_qubit_braket_instruction(
-    instr: BKInstruction, qubits: List[LineQubit]
-) -> List[cirq_ops.Operation]:
+    instr: BKInstruction, qubits: list[LineQubit]
+) -> list[cirq_ops.Operation]:
     """Converts the one-qubit Braket instruction to Cirq operation(s).
 
     Args:
@@ -183,8 +181,8 @@ def _from_one_qubit_braket_instruction(
 
 
 def _from_two_qubit_braket_instruction(
-    instr: BKInstruction, qubits: List[LineQubit]
-) -> List[cirq_ops.Operation]:
+    instr: BKInstruction, qubits: list[LineQubit]
+) -> list[cirq_ops.Operation]:
     """Converts the two-qubit braket instruction to Cirq.
 
     Args:

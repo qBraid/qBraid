@@ -12,7 +12,7 @@
 Module defining BraketCircuit Class
 
 """
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from braket.circuits import Circuit, Instruction, Qubit
 
@@ -40,7 +40,7 @@ class BraketCircuit(QuantumProgram):
         self._program = value
 
     @property
-    def qubits(self) -> List[Qubit]:
+    def qubits(self) -> list[Qubit]:
         """Return the qubits acted upon by the operations in this circuit"""
         return list(self.program.qubits)
 

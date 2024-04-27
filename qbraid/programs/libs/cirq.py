@@ -13,8 +13,6 @@ Module defining CirqCircuit Class
 
 """
 
-from typing import List
-
 import cirq
 import numpy as np
 
@@ -38,7 +36,7 @@ class CirqCircuit(QuantumProgram):
         self._program = value
 
     @property
-    def qubits(self) -> List[cirq.Qid]:
+    def qubits(self) -> list[cirq.Qid]:
         """Return the qubits acted upon by the operations in this circuit"""
         return list(self.program.all_qubits())
 
@@ -122,7 +120,7 @@ class CirqCircuit(QuantumProgram):
             )
 
     @staticmethod
-    def _make_qubits(qubits: List[cirq.Qid], targets: List[int]) -> List[cirq.Qid]:
+    def _make_qubits(qubits: list[cirq.Qid], targets: list[int]) -> list[cirq.Qid]:
         if len(set(type(qubit) for qubit in qubits)) > 1:
             # If mixed types, default to LineQubits
             qubit_type = cirq.LineQubit

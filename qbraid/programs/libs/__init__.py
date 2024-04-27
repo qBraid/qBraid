@@ -33,7 +33,7 @@ Submodules
 import importlib
 
 _qbraid = importlib.import_module("qbraid.programs._import")
-_PROGRAM_LIBS = getattr(_qbraid, "QPROGRAM_LIBS", [])
+_PROGRAM_LIBS = getattr(_qbraid, "QPROGRAM_ALIASES", [])
 
 submodules = []
 base_path = "qbraid.programs.libs."

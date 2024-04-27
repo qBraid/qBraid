@@ -11,12 +11,12 @@
 Module for plotting qBraid transpiler quantum program conversion graphs.
 
 """
-from typing import TYPE_CHECKING, Dict, Optional
+from typing import TYPE_CHECKING, Optional
 
 import matplotlib.pyplot as plt
 import networkx as nx
 
-from qbraid.programs._import import QPROGRAM_LIBS
+from qbraid.programs.registry import QPROGRAM_ALIASES
 
 if TYPE_CHECKING:
     import qbraid.transpiler
@@ -31,7 +31,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     min_target_margin: int = 18,
     show: bool = True,
     save_path: Optional[str] = None,
-    colors: Optional[Dict[str, str]] = None,
+    colors: Optional[dict[str, str]] = None,
 ) -> None:
     """
     Plot the conversion graph using matplotlib. The graph is displayed using node
@@ -49,7 +49,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         show (bool): If True, display the figure. Defaults to True.
         save_path (Optional[str]): Path to save the figure. If None, the figure is not saved.
                                    Defaults to None.
-        colors (Optional[Dict[str, str]]): Dictionary for node and edge colors. Expected keys are
+        colors (Optional[dict[str, str]]): Dictionary for node and edge colors. Expected keys are
             'qbraid_node', 'external_node', 'qbraid_edge', 'external_edge'. Defaults to None.
 
     Returns:
@@ -67,7 +67,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
 
     # Extract colors and apply them in the drawing
     ncolors = [
-        colors["qbraid_node"] if node in QPROGRAM_LIBS else colors["external_node"]
+        colors["qbraid_node"] if node in QPROGRAM_ALIASES else colors["external_node"]
         for node in graph.nodes()
     ]
 

@@ -16,12 +16,12 @@ import cirq
 import numpy as np
 import pytest
 
-from qbraid.programs import QPROGRAM_LIBS, load_program
+from qbraid.programs import QPROGRAM_ALIASES, load_program
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.graph import ConversionGraph
 
 
-@pytest.mark.parametrize("frontend", QPROGRAM_LIBS)
+@pytest.mark.parametrize("frontend", QPROGRAM_ALIASES)
 def test_convert_circuit_operation_from_cirq(frontend):
     """Test converting Cirq FrozenCircuit operation to OpenQASM"""
     q = cirq.NamedQubit("q")

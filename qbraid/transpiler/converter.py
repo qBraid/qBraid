@@ -15,15 +15,15 @@ Module for transpiling quantum programs between different quantum programming la
 import logging
 import warnings
 from copy import deepcopy
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
-from qbraid.programs import QPROGRAM_LIBS, get_program_type
+from qbraid.programs import QPROGRAM_ALIASES, get_program_type
 
 from .exceptions import CircuitConversionError, ConversionPathNotFoundError, NodeNotFoundError
 from .graph import ConversionGraph
 
 if TYPE_CHECKING:
-    import cirq
+    import cirq  # type: ignore
 
     import qbraid.programs
 
@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 
 def _warn_if_unsupported(program_type, program_direction):
-    if program_type not in QPROGRAM_LIBS:
+    if program_type not in QPROGRAM_ALIASES:
         warnings.warn(
             f"Converting {program_direction} unsupported program type '{program_type}'.",
             UserWarning,
@@ -53,12 +53,12 @@ def _flatten_cirq(circuit: "cirq.Circuit") -> "cirq.Circuit":
     # https://quantumai.google/reference/python/cirq/decompose
 
     # pylint: disable=import-outside-toplevel
-    from cirq.contrib.qasm_import import circuit_from_qasm
+    from cirq.contrib.qasm_import import circuit_from_qasm  # type: ignore
 
     return circuit_from_qasm(circuit.to_qasm())
 
 
-def _get_path_from_bound_methods(bound_methods: List[Callable]) -> str:
+def _get_path_from_bound_methods(bound_methods: list[Callable]) -> str:
     """
     Constructs a path string from a list of bound methods of Conversion instances.
 
@@ -139,7 +139,7 @@ def transpile(
     source = get_program_type(program, require_supported=conversion_graph is None)
 
     if not graph.has_node(source):
-        raise NodeNotFoundError(graph_type, target, graph.nodes)
+        raise NodeNotFoundError(graph_type, source, graph.nodes)
 
     if not graph.has_path(source, target):
         raise ConversionPathNotFoundError(source, target)

@@ -18,7 +18,7 @@ import networkx as nx
 import pytest
 from qiskit_braket_provider.providers.adapter import convert_qiskit_to_braket_circuit
 
-from qbraid.programs._import import QPROGRAM_LIBS
+from qbraid.programs.registry import QPROGRAM_ALIASES
 from qbraid.transpiler.conversions import conversion_functions
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.edge import Conversion
@@ -57,8 +57,8 @@ def are_graphs_equal(graph1: nx.DiGraph, graph2: nx.DiGraph) -> bool:
 def test_conversion_functions_syntax(func):
     """Test that all conversion functions are named correctly."""
     source, target = func.split("_to_")
-    assert source in QPROGRAM_LIBS
-    assert target in QPROGRAM_LIBS
+    assert source in QPROGRAM_ALIASES
+    assert target in QPROGRAM_ALIASES
     assert source != target
 
 

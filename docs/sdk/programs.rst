@@ -91,13 +91,13 @@ The underlying "wrapped" circuit can be accessed using the circuit wrapper's ``p
 Transpiler
 -----------
 
-Now, we can use the ``qbraid.programs.QuantumProgram.transpile`` method to convert to wrapped circuit into
-any other supported program type. Simply pass in the name of the target package from one of ``qbraid.programs.QPROGRAM_LIBS``.
+Now, we can use the ``qbraid.transpiler.transpile`` function to convert to a quantum program into
+any other supported program type. Simply pass in the name of the target package from one of ``qbraid.programs.QPROGRAM_ALIASES``.
 For example, use input "braket" to return a ``braket.circuits.Circuit``:
 
 .. code-block:: python
 
-    >>> braket_circuit = qprogram.transpile("braket")
+    >>> braket_circuit = transpile(qiskit_circuit, "braket")
     >>> print(braket_circuit)
     T  : |0|1|
             
@@ -108,11 +108,11 @@ For example, use input "braket" to return a ``braket.circuits.Circuit``:
     T  : |0|1|
 
 
-This time, using the same origin circuit wrapper, we'll input ``"pyquil"`` to return a ``pyquil.quil.Program``:
+This time, using the same origin circuit, we'll input ``"pyquil"`` to return a ``pyquil.quil.Program``:
 
 .. code-block:: python
 
-    >>> pyquil_program = qprogram.transpile("pyquil")
+    >>> pyquil_program = transpile(qiskit_circuit, "pyquil")
     >>> print(pyquil_program)
     H 0
     CNOT 0 1

@@ -16,7 +16,7 @@ Module for configuring provider credentials and authentication.
 import os
 import re
 from abc import abstractmethod
-from typing import TYPE_CHECKING, List, Union
+from typing import TYPE_CHECKING, Union
 
 from qbraid.providers.provider import QuantumProvider
 
@@ -50,7 +50,7 @@ class QiskitRemoteService(QuantumProvider):
 
     def get_devices(
         self, operational=True, **kwargs
-    ) -> List[Union["qiskit_ibm_provider.IBMBackend", "qiskit_ibm_runtime.IBMBackend"]]:
+    ) -> list[Union["qiskit_ibm_provider.IBMBackend", "qiskit_ibm_runtime.IBMBackend"]]:
         """Returns the IBM Quantum provider backends."""
         return self._provider.backends(operational=operational, **kwargs)
 

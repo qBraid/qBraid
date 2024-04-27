@@ -13,8 +13,6 @@ Module defining PyQuilProgram Class
 
 """
 
-from typing import List
-
 import numpy as np
 import pyquil
 from pyquil import Program
@@ -41,7 +39,7 @@ class PyQuilProgram(QuantumProgram):
         self._program = value
 
     @property
-    def qubits(self) -> List[int]:
+    def qubits(self) -> list[int]:
         """Return the qubits acted upon by the operations in this circuit"""
         return list(self.program.get_qubits())
 

@@ -12,7 +12,7 @@
 Module defining exceptions for errors raised during conversions
 
 """
-from typing import List, Optional
+from typing import Optional
 
 from qbraid.exceptions import QbraidError
 
@@ -24,7 +24,7 @@ class CircuitConversionError(QbraidError):
 class NodeNotFoundError(ValueError, QbraidError):
     """Class for errors raised when a node is not present in a ConversionGraph."""
 
-    def __init__(self, graph_type: str, package: str, nodes: List[str]):
+    def __init__(self, graph_type: str, package: str, nodes: list[str]):
         message = (
             f"{graph_type} conversion graph does not contain node '{package}'. "
             f"Supported nodes are: {nodes}"

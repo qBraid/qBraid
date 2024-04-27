@@ -21,7 +21,7 @@ Module for conversions from Quil to Cirq.
 
 """
 
-from typing import Callable, Dict, Union, cast
+from typing import Callable, Union, cast
 
 import numpy as np
 from cirq import Circuit, LineQubit
@@ -189,7 +189,7 @@ RESET directives have special meaning on QCS, to enable active reset.
 """
 
 # Parameterized gates map to functions that produce Gate constructors.
-SUPPORTED_GATES: Dict[str, Union[Gate, Callable[..., Gate]]] = {
+SUPPORTED_GATES: dict[str, Union[Gate, Callable[..., Gate]]] = {
     "CCNOT": CCNOT,
     "CNOT": CNOT,
     "CSWAP": CSWAP,
@@ -216,7 +216,7 @@ SUPPORTED_GATES: Dict[str, Union[Gate, Callable[..., Gate]]] = {
 }
 
 
-def parse_defgates(quil_str: str) -> Dict[str, np.ndarray]:
+def parse_defgates(quil_str: str) -> dict[str, np.ndarray]:
     """
     Parses non-parameterized DEFGATE definitions from a Quil program string.
 

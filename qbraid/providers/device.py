@@ -18,7 +18,7 @@ import json
 import logging
 import warnings
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from qbraid_core.services.quantum import QuantumClient, quantum_lib_proxy_state
 
@@ -229,7 +229,7 @@ class QuantumDevice(ABC):
         self,
         run_input: "qbraid.programs.QPROGRAM",
         conversion_graph: "Optional[qbraid.transpiler.ConversionGraph]" = None,
-    ) -> Tuple[Any, Dict[str, Any]]:
+    ) -> tuple[Any, dict[str, Any]]:
         """Process quantum program before passing to device run method.
 
         Returns:
@@ -286,12 +286,12 @@ class QuantumDevice(ABC):
     def create_job(
         self,
         vendor_job_id: str,
-        tags: Optional[Dict[str, str]] = None,
+        tags: Optional[dict[str, str]] = None,
         shots: Optional[int] = None,
-        openqasm: Optional[Union[str, List[str]]] = None,
-        num_qubits: Optional[Union[int, List[int]]] = None,
-        depth: Optional[Union[int, List[int]]] = None,
-    ) -> Dict[str, Any]:
+        openqasm: Optional[Union[str, list[str]]] = None,
+        num_qubits: Optional[Union[int, list[int]]] = None,
+        depth: Optional[Union[int, list[int]]] = None,
+    ) -> dict[str, Any]:
         """Create new qBraid job.
 
         Args:
@@ -373,11 +373,11 @@ class QuantumDevice(ABC):
         return run_input
 
     @abstractmethod
-    def _run(self, run_input: "qbraid.programs.QPROGRAM", *args, **kwargs) -> Dict[str, Any]:
+    def _run(self, run_input: "qbraid.programs.QPROGRAM", *args, **kwargs) -> dict[str, Any]:
         """Vendor run method. Should return dictionary with the following keys:
 
         * "shots" (int): Number of shots. For jobs that don't support shots, set to 0.
-        * "tags" (Dict[str, str]): Dictionary of tags. For providers that use list of tags,
+        * "tags" (dict[str, str]): Dictionary of tags. For providers that use list of tags,
                                    set all values to "*".
         * "vendor_job_id" (str): Job ID provided by device vendor.
         * "qbraid_job_obj" (qbraid.providers.QuantumJob): The qBraid Job object to be
@@ -391,12 +391,12 @@ class QuantumDevice(ABC):
 
     @abstractmethod
     def _run_batch(
-        self, run_input: "List[qbraid.programs.QPROGRAM]", *args, **kwargs
-    ) -> Dict[str, Any]:
+        self, run_input: "list[qbraid.programs.QPROGRAM]", *args, **kwargs
+    ) -> dict[str, Any]:
         """Vendor run method. Should return dictionary with the following keys:
 
         * "shots" (int): Number of shots. For jobs that don't support shots, set to 0.
-        * "tags" (Dict[str, str]): Dictionary of tags. For providers that use list of tags,
+        * "tags" (dict[str, str]): Dictionary of tags. For providers that use list of tags,
                                    set all values to "*".
         * "vendor_job_id" (str): Job ID provided by device vendor.
         * "qbraid_job_obj" (qbraid.providers.QuantumJob): The qBraid Job object to be
@@ -455,11 +455,11 @@ class QuantumDevice(ABC):
 
     def run_batch(
         self,
-        run_input: "List[qbraid.programs.QPROGRAM]",
+        run_input: "list[qbraid.programs.QPROGRAM]",
         *args,
         conversion_graph: "Optional[qbraid.transpiler.ConversionGraph]" = None,
         **kwargs,
-    ) -> "Union[qbraid.providers.QuantumJob, List[qbraid.providers.QuantumJob]]":
+    ) -> "Union[qbraid.providers.QuantumJob, list[qbraid.providers.QuantumJob]]":
         """Run a quantum job specification on this quantum device.
 
         Args:

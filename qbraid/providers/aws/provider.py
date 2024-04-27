@@ -14,7 +14,7 @@ Module for configuring provider credentials and authentication.
 """
 
 import os
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Optional
 
 import boto3
 from boto3.session import Session
@@ -103,7 +103,7 @@ class BraketProvider(QuantumProvider):
 
     def get_devices(
         self, aws_session=None, statuses=None, **kwargs
-    ) -> List["braket.aws.AwsDevice"]:
+    ) -> list["braket.aws.AwsDevice"]:
         """Return a list of backends matching the specified filtering."""
         aws_session = self._get_aws_session() if aws_session is None else aws_session
         statuses = ["ONLINE", "OFFLINE"] if statuses is None else statuses
@@ -117,21 +117,21 @@ class BraketProvider(QuantumProvider):
         return AwsDevice(arn=device_id, aws_session=aws_session)
 
     def get_tasks_by_tag(
-        self, key: str, values: Optional[List[str]] = None, region_names: Optional[List[str]] = None
-    ) -> List[str]:
+        self, key: str, values: Optional[list[str]] = None, region_names: Optional[list[str]] = None
+    ) -> list[str]:
         """
         Retrieves a list of quantum task ARNs that match the specified tag keys or key/value pairs.
 
         Args:
             key (str): The tag key to match.
-            values (Optional[List[str]]): A list of tag values to match against the provided
+            values (Optional[list[str]]): A list of tag values to match against the provided
                                           key. If None, tasks with the specified key,
                                           regardless of its value, are matched.
-            region_names (Optional[List[str]]): A list of region names to search. If None, all
+            region_names (Optional[list[str]]): A list of region names to search. If None, all
                                                 regions in `self.REGIONS` are searched.
 
         Returns:
-            List[str]: A list of ARNs for quantum tasks that match the given tag criteria.
+            list[str]: A list of ARNs for quantum tasks that match the given tag criteria.
 
         Raises:
             QbraidError: If the function is called within a qBraid quantum job environment

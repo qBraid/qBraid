@@ -12,8 +12,6 @@
 Unit tests for the qbraid transpiler.
 
 """
-from typing import Tuple
-
 import cirq
 import numpy as np
 import pytest
@@ -27,7 +25,7 @@ from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 
 from qbraid.exceptions import QbraidError
 from qbraid.interface import assert_allclose_up_to_global_phase
-from qbraid.programs import QPROGRAM_LIBS, ProgramTypeError, load_program
+from qbraid.programs import QPROGRAM_ALIASES, ProgramTypeError, load_program
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.exceptions import NodeNotFoundError
 from qbraid.transpiler.graph import ConversionGraph
@@ -72,7 +70,7 @@ def test_to_cirq_bad_openqasm_program(item):
 
 
 @pytest.mark.parametrize("bell_circuit", ["cirq"], indirect=True)
-@pytest.mark.parametrize("to_type", QPROGRAM_LIBS)
+@pytest.mark.parametrize("to_type", QPROGRAM_ALIASES)
 def test_cirq_round_trip(bell_circuit, to_type):
     """Test converting Cirq circuits to other supported types."""
     if not conversion_graph.has_path("cirq", to_type):
@@ -151,7 +149,7 @@ def test_bell(bell_circuit, bell_unitary, target):
         pytest.skip(f"Unitary calculation not yet supported for {target}")
 
 
-def nqubits_nparams(gate: str) -> Tuple[int, int]:
+def nqubits_nparams(gate: str) -> tuple[int, int]:
     """Return number of qubits and parameters for a given gate."""
     if gate in ["H", "X", "Y", "Z", "S", "Sdg", "T", "Tdg", "I", "SX", "SXdg"]:
         return 1, 0

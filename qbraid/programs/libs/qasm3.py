@@ -14,7 +14,7 @@ Module defining OpenQasm3Program Class
 """
 
 import re
-from typing import List, Optional, Tuple
+from typing import Optional
 
 import numpy as np
 from openqasm3.ast import BitType, ClassicalDeclaration, QubitDeclaration
@@ -46,8 +46,8 @@ class OpenQasm3Program(QuantumProgram):
 
         num_qubits = 0
         num_clbits = 0
-        qubits: List[Tuple[str, Optional[int]]] = []
-        clbits: List[Tuple[str, Optional[int]]] = []
+        qubits: list[tuple[str, Optional[int]]] = []
+        clbits: list[tuple[str, Optional[int]]] = []
 
         for statement in program.statements:
             if isinstance(statement, QubitDeclaration):
@@ -69,12 +69,12 @@ class OpenQasm3Program(QuantumProgram):
         self._clbits = clbits
 
     @property
-    def qubits(self) -> List[Tuple[str, int]]:
+    def qubits(self) -> list[tuple[str, int]]:
         """Return the qubits acted upon by the operations in this circuit"""
         return self._qubits
 
     @property
-    def clbits(self) -> List[Tuple[str, int]]:
+    def clbits(self) -> list[tuple[str, int]]:
         """Return the qubits acted upon by the operations in this circuit"""
         return self._clbits
 

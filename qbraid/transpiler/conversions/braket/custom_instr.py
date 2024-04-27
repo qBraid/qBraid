@@ -13,7 +13,7 @@ Module for Braket custom gates
 
 """
 import itertools
-from typing import Any, List
+from typing import Any
 
 import braket.ir.jaqcd as ir
 import numpy as np
@@ -92,7 +92,7 @@ class C(Gate):
         sub_matrix = self.sub_gate.to_matrix()
         return self._extend_matrix(sub_matrix)
 
-    def adjoint(self) -> List[Gate]:
+    def adjoint(self) -> list[Gate]:
         return [Unitary(self.to_matrix().conj().T, display_name=f"({self.ascii_symbols})^†")]
 
     def _to_jaqcd(self, target: QubitSet) -> Any:

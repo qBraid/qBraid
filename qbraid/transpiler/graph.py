@@ -14,7 +14,7 @@ quantum programs available through the qbraid.transpiler using directed graphs.
 
 """
 from importlib import import_module
-from typing import List, Optional
+from typing import Optional
 
 import networkx as nx
 
@@ -30,13 +30,13 @@ class ConversionGraph(nx.DiGraph):
     """
 
     def __init__(
-        self, conversions: Optional[List[Conversion]] = None, requires_extras: bool = False
+        self, conversions: Optional[list[Conversion]] = None, requires_extras: bool = False
     ):
         """
         Initialize a ConversionGraph instance.
 
         Args:
-            conversions (optional, List[Conversion]): List of conversion edges. If None, default
+            conversions (optional, list[Conversion]): List of conversion edges. If None, default
                                                           conversion edges are created.
             requires_extras (bool): If True, include unsupported "requires_extras" conversion
                                     functions. Defaults to False.
@@ -47,12 +47,12 @@ class ConversionGraph(nx.DiGraph):
         self.create_conversion_graph()
 
     @staticmethod
-    def load_default_conversions() -> List[Conversion]:
+    def load_default_conversions() -> list[Conversion]:
         """
         Create a list of default conversion nodes using predefined conversion functions.
 
         Returns:
-            List[Conversion]: List of default conversion edges.
+            list[Conversion]: List of default conversion edges.
         """
         transpiler = import_module("qbraid.transpiler.conversions")
         return [
@@ -72,12 +72,12 @@ class ConversionGraph(nx.DiGraph):
                 continue
             self.add_edge(edge.source, edge.target, native=edge.native, func=edge.convert)
 
-    def conversions(self) -> List[Conversion]:
+    def conversions(self) -> list[Conversion]:
         """
         Get the list of conversion edges.
 
         Returns:
-            List[Conversion]: The conversion edges of the graph.
+            list[Conversion]: The conversion edges of the graph.
         """
         return self._conversions
 
@@ -122,7 +122,7 @@ class ConversionGraph(nx.DiGraph):
             if not (conv.source == source and conv.target == target)
         ]
 
-    def find_shortest_conversion_path(self, source: str, target: str) -> List[str]:
+    def find_shortest_conversion_path(self, source: str, target: str) -> list[str]:
         """
         Find the shortest conversion path between two nodes in a graph.
 
@@ -144,7 +144,7 @@ class ConversionGraph(nx.DiGraph):
 
     def find_top_shortest_conversion_paths(
         self, source: str, target: str, top_n: int = 3
-    ) -> List[List[str]]:
+    ) -> list[list[str]]:
         """
         Find the top shortest conversion paths between two nodes in a graph.
 
@@ -182,7 +182,7 @@ class ConversionGraph(nx.DiGraph):
         """
         return nx.has_path(self, source, target)
 
-    def reset(self, conversions: Optional[List[Conversion]] = None) -> None:
+    def reset(self, conversions: Optional[list[Conversion]] = None) -> None:
         """
         Reset the graph to its default state.
 
@@ -203,7 +203,7 @@ class ConversionGraph(nx.DiGraph):
         Returns:
             None
         """
-        # pylint: disable=import-outside-toplevel
+        # pylint: disable-next=import-outside-toplevel
         from qbraid.visualization.plot_conversions import plot_conversion_graph
 
         plot_conversion_graph(self, **kwargs)

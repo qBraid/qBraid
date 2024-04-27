@@ -17,13 +17,10 @@ Module defining supported quantum device types:
 
 from importlib import import_module
 from types import ModuleType
-from typing import List, Union
-
-# As we are using here dynamic imports, we'll see the ide will visualize that none of the
-# libraries have been import, as we'll import them dynamically in the execution.
+from typing import Union
 
 
-def __dynamic_importer(opt_modules: List[str]) -> list:
+def __dynamic_importer(opt_modules: list[str]) -> list:
     imported: list = []
     for m in opt_modules:
         try:

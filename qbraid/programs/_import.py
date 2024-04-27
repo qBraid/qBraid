@@ -13,23 +13,18 @@ Module defining input / output types for a quantum backend:
 
   * QPROGRAM: Type alias defining all supported quantum circuit / program types
 
-  * SUPPORTED_QPROGRAMS: Dict mapping all supported quantum software libraries / package
+  * QPROGRAM_REGISTRY: Dict mapping all supported quantum software libraries / package
                          names to their respective program types
 
 """
 
 from importlib import import_module
 from types import ModuleType
-from typing import List, Union
-
-__NON_OPTIONAL_PROGRAMS: list = []
-
-# As we are using here dynamic imports, we'll see the ide will visualize that none of the
-# libraries have been import, as we'll import them dynamically in the execution.
+from typing import Type
 
 
-def __dynamic_importer(opt_modules: List[str]) -> list:
-    imported: list = __NON_OPTIONAL_PROGRAMS
+def __dynamic_importer(opt_modules: list[str]) -> list[Type]:
+    imported: list = []
     for m in opt_modules:
         try:
             data = m.split(".")
@@ -66,16 +61,13 @@ def __get_class(module: str):
 
 
 # Supported quantum programs.
-QASMType = str
 _PROGRAMS = __dynamic_importer(
     ["cirq", "qiskit", "pennylane", "pyquil", "pytket", "braket.circuits", "openqasm3"]
 )
-QPROGRAM = Union[tuple(_PROGRAMS)]  # type: ignore
 
-# pylint: disable-next=bad-str-strip-call
-_PROGRAM_TYPES = [str(x).strip("<class").strip(">").strip(" ").strip("'") for x in _PROGRAMS]
-QPROGRAM_TYPES = _PROGRAMS + [QASMType]
+dynamic_type_registry: dict[str, Type] = {t.__module__.split(".")[0]: t for t in _PROGRAMS}
+static_type_registry: dict[str, Type] = {"qasm2": str, "qasm3": str}
 
-_PROGRAM_LIBS = [x.split(".")[0] for x in _PROGRAM_TYPES]
-SUPPORTED_QPROGRAMS = dict(zip(_PROGRAM_LIBS, _PROGRAM_TYPES)) | {"qasm2": "str", "qasm3": "str"}
-QPROGRAM_LIBS = list(SUPPORTED_QPROGRAMS.keys())
+_QPROGRAM_REGISTRY: dict[str, Type] = dynamic_type_registry | static_type_registry
+_QPROGRAM_TYPES: set[Type] = set(_QPROGRAM_REGISTRY.values())
+_QPROGRAM_ALIASES: set[str] = set(_QPROGRAM_REGISTRY.keys())

@@ -13,7 +13,7 @@ Module defining PytketCircuit Class
 
 """
 
-from typing import TYPE_CHECKING, List, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import numpy as np
 from pytket.circuit import Circuit, Command, OpType
@@ -42,7 +42,7 @@ class PytketCircuit(QuantumProgram):
         self._program = value
 
     @property
-    def qubits(self) -> List[Qubit]:
+    def qubits(self) -> list[Qubit]:
         """Return the qubits acted upon by the operations in this circuit"""
         return self.program.qubits
 
@@ -118,7 +118,7 @@ class PytketCircuit(QuantumProgram):
 
     @staticmethod
     def gate_to_matrix(
-        gates: Optional[Union[List[Circuit], Command]], flat: bool = False
+        gates: Optional[Union[list[Circuit], Command]], flat: bool = False
     ) -> np.ndarray:
         """Return the unitary of the Command"""
         gates = gates if (list == type(gates)) else [gates]

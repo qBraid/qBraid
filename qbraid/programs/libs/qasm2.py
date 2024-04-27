@@ -13,7 +13,7 @@ Module defining OpenQasm2Program Class
 
 """
 import re
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
 
 from qbraid.programs.abc_program import QuantumProgram
 
@@ -37,7 +37,7 @@ class OpenQasm2Program(QuantumProgram):
             raise ValueError("Program must be an instance of str")
         self._program = value
 
-    def _get_bits(self, bit_type: str) -> List[str]:
+    def _get_bits(self, bit_type: str) -> list[str]:
         """Return the number of qubits or classical bits in the circuit.
 
         Args:
@@ -55,7 +55,7 @@ class OpenQasm2Program(QuantumProgram):
         return result
 
     @property
-    def qubits(self) -> List[str]:
+    def qubits(self) -> list[str]:
         """Use regex to extract all qreg definitions from the string"""
         return self._get_bits("q")
 

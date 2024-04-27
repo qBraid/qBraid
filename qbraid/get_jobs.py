@@ -17,7 +17,7 @@ jobs submitted through the qBraid SDK.
 """
 
 import warnings
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 try:
     from IPython.display import HTML, clear_output, display
@@ -30,7 +30,7 @@ from qbraid_core.services.quantum import QuantumClient, process_job_data
 from ._display import running_in_jupyter, update_progress_bar
 
 
-def _display_basic(data: List[str], message: str) -> None:
+def _display_basic(data: list[str], message: str) -> None:
     if len(data) == 0:
         print(message)
     else:
@@ -53,7 +53,7 @@ def _display_basic(data: List[str], message: str) -> None:
             print(row_format.format(job_id, timestamp, status))
 
 
-def _display_jupyter(data: List[str], message: Optional[str] = None, align: str = "right"):
+def _display_jupyter(data: list[str], message: Optional[str] = None, align: str = "right"):
     clear_output(wait=True)
 
     html = """<h3>Quantum Jobs</h3><table><tr>
@@ -94,7 +94,7 @@ def _display_jupyter(data: List[str], message: Optional[str] = None, align: str 
     return display(HTML(html))
 
 
-def _refresh_jobs(job_data: List[str]) -> List[str]:
+def _refresh_jobs(job_data: list[str]) -> list[str]:
     """Refreshes the status of all quantum jobs in the list."""
     from qbraid.providers import QuantumJob  # pylint: disable=import-outside-toplevel
 
@@ -123,7 +123,7 @@ def _refresh_jobs(job_data: List[str]) -> List[str]:
     return job_data_refresh
 
 
-def get_jobs(filters: Optional[Dict[str, Any]] = None, refresh: bool = False, raw: bool = False):
+def get_jobs(filters: Optional[dict[str, Any]] = None, refresh: bool = False, raw: bool = False):
     """Displays a list of quantum jobs submitted by user, tabulated by job ID,
     the date/time it was submitted, and status. You can specify filters to
     narrow the search by supplying a dictionary containing the desired criteria.

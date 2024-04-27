@@ -14,7 +14,7 @@ Module for drawing quantum circuit diagrams
 """
 from typing import TYPE_CHECKING, Optional
 
-from qbraid.programs import QPROGRAM_LIBS, ProgramTypeError, get_program_type
+from qbraid.programs import QPROGRAM_ALIASES, ProgramTypeError, get_program_type
 from qbraid.transpiler.converter import transpile
 
 from .draw_qasm3 import qasm3_drawer
@@ -40,7 +40,7 @@ def circuit_drawer(
     """
     package = get_program_type(program)
 
-    if as_package and as_package != package and as_package in QPROGRAM_LIBS:
+    if as_package and as_package != package and as_package in QPROGRAM_ALIASES:
         program = transpile(program, as_package)
         package = as_package
 
@@ -107,9 +107,9 @@ def circuit_drawer(
 
     if package == "qasm2":
         # coverage: ignore
-        if "cirq" in QPROGRAM_LIBS:
+        if "cirq" in QPROGRAM_ALIASES:
             program = transpile(program, "cirq")
-        elif "qiskit" in QPROGRAM_LIBS:
+        elif "qiskit" in QPROGRAM_ALIASES:
             program = transpile(program, "qiskit")
         else:
             program = transpile(program, "qasm3")

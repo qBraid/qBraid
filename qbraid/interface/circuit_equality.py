@@ -12,7 +12,7 @@
 Module for calculating unitary of quantum circuit/program
 
 """
-from typing import TYPE_CHECKING, Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
 
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     import qbraid
 
 
-def match_global_phase(a: np.ndarray, b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def match_global_phase(a: np.ndarray, b: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """
     Matches the global phase of two numpy arrays.
 
@@ -36,7 +36,7 @@ def match_global_phase(a: np.ndarray, b: np.ndarray) -> Tuple[np.ndarray, np.nda
         b (np.ndarray): The second input matrix.
 
     Returns:
-        Tuple[np.ndarray, np.ndarray]: A tuple of the two matrices `(a', b')`, adjusted for
+        tuple[np.ndarray, np.ndarray]: A tuple of the two matrices `(a', b')`, adjusted for
                                        global phase. If shapes of `a` and `b` do not match or
                                        either is empty, returns copies of the original matrices.
     """
