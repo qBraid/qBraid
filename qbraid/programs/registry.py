@@ -14,7 +14,7 @@ Module for registering custom program types and aliases
 """
 from typing import Any, Optional, Type, Union
 
-from ._import import _QPROGRAM_ALIASES, _QPROGRAM_REGISTRY, _QPROGRAM_TYPES
+from ._import import _QPROGRAM_ALIASES, _QPROGRAM_REGISTRY, _QPROGRAM_TYPES, NATIVE_REGISTRY
 
 QPROGRAM = Union[tuple(_QPROGRAM_TYPES)]
 QPROGRAM_REGISTRY = _QPROGRAM_REGISTRY
@@ -98,3 +98,20 @@ def register_program_type(
     QPROGRAM_REGISTRY[normalized_alias] = program_type
     QPROGRAM_ALIASES.add(normalized_alias)
     QPROGRAM_TYPES.add(program_type)
+
+
+def is_registered_alias_native(alias: str) -> bool:
+    """
+    Determine if the registered program type for a given alias matches the native program type.
+
+    Args:
+        alias (str): The alias to check against the native and registered program types.
+
+    Returns:
+        bool: True if the alias is registered and its program type matches the native type,
+              otherwise False.
+    """
+    native_type = NATIVE_REGISTRY.get(alias)
+    registered_type = QPROGRAM_REGISTRY.get(alias)
+
+    return native_type is not None and native_type == registered_type

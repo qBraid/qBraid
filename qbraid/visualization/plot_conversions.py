@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING, Optional
 import matplotlib.pyplot as plt
 import networkx as nx
 
-from qbraid.programs.registry import QPROGRAM_ALIASES
+from qbraid.programs.registry import is_registered_alias_native
 
 if TYPE_CHECKING:
     import qbraid.transpiler
@@ -67,7 +67,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
 
     # Extract colors and apply them in the drawing
     ncolors = [
-        colors["qbraid_node"] if node in QPROGRAM_ALIASES else colors["external_node"]
+        colors["qbraid_node"] if is_registered_alias_native(node) else colors["external_node"]
         for node in graph.nodes()
     ]
 
