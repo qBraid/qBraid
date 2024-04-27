@@ -13,4 +13,6 @@ Submodules
 .. autosummary::
    :toctree: ../stubs/
 
+   cirq
    pytket
+   qasm2

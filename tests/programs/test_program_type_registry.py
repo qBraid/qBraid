@@ -17,7 +17,7 @@ import unittest.mock
 
 import pytest
 
-from qbraid.programs.registry import QPROGRAM_REGISTRY, register_program_type
+from qbraid.programs import QPROGRAM_REGISTRY, get_program_type_alias, register_program_type
 
 
 @pytest.fixture(autouse=True)
@@ -69,3 +69,16 @@ def test_re_registration_same_alias_type():
     register_program_type(str, "qasm2")
     register_program_type(str, "qasm2")
     assert len(QPROGRAM_REGISTRY) == init_registry_size
+
+
+def test_get_program_type_alias_alias_library_mismatch():
+    """Test getting program type when the alias does not match the module."""
+    register_program_type(unittest.mock.Mock, alias="mock")
+    assert get_program_type_alias(unittest.mock.Mock()) == "mock"
+
+
+def test_overwrite_existing_alias():
+    """Test overwriting an existing alias with a new type"""
+    register_program_type(str, "qasm2")
+    register_program_type(unittest.mock.Mock, "qasm2", overwrite=True)
+    assert QPROGRAM_REGISTRY["qasm2"] == unittest.mock.Mock

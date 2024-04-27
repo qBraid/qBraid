@@ -20,7 +20,7 @@ import openqasm3
 from qbraid._import import _load_entrypoint
 from qbraid.exceptions import QbraidError
 
-from .inspector import get_program_type
+from .alias_manager import get_program_type_alias
 
 if TYPE_CHECKING:
     import qbraid.programs
@@ -48,18 +48,13 @@ def load_program(program: "qbraid.programs.QPROGRAM") -> "qbraid.programs.Quantu
         program = openqasm3.dumps(program)
 
     try:
-        package = get_program_type(program)
+        package = get_program_type_alias(program)
     except QbraidError as err:
-        raise QbraidError(
-            f"Error applying circuit wrapper to quantum program \
-            of type {type(program)}"
-        ) from err
+        raise QbraidError(f"Error loading quantum program of type {type(program)}") from err
 
     try:
         load_program_class = _load_entrypoint("programs", package)
     except Exception as err:
-        raise QbraidError(
-            f"Error applying circuit wrapper to quantum program of type {type(program)}"
-        ) from err
+        raise QbraidError(f"Error loading quantum program of type {type(program)}") from err
 
     return load_program_class(program)

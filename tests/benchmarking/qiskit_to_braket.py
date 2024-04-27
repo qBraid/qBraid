@@ -13,9 +13,10 @@ Benchmarking accuracy of qiskit to braket conversions
 
 """
 import qiskit
-import qiskit_braket_provider
+from qiskit_braket_provider.providers.adapter import convert_qiskit_to_braket_circuit
 
-import qbraid
+from qbraid.interface import circuits_allclose
+from qbraid.transpiler import transpile
 
 from ..fixtures.qiskit.gates import get_qiskit_gates
 
@@ -24,9 +25,7 @@ def execute_test(conversion_function, input_circuit):
     """Execute conversion, test equality, and return 1 if it fails, 0 otherwise"""
     try:
         output_circuit = conversion_function(input_circuit)
-        if not qbraid.interface.circuits_allclose(
-            input_circuit, output_circuit, strict_gphase=False
-        ):
+        if not circuits_allclose(input_circuit, output_circuit, strict_gphase=False):
             return 1
     except Exception:  # pylint: disable=broad-exception-caught
         return 1
@@ -43,12 +42,8 @@ for gate_name, gate in qiskit_gates.items():
     qiskit_circuit = qiskit.QuantumCircuit(gate.num_qubits)
     qiskit_circuit.compose(gate, inplace=True)
 
-    qiskit_failed += execute_test(
-        qiskit_braket_provider.providers.adapter.convert_qiskit_to_braket_circuit, qiskit_circuit
-    )
-    qbraid_failed += execute_test(
-        lambda circuit: qbraid.transpiler.transpile(circuit, "braket"), qiskit_circuit
-    )
+    qiskit_failed += execute_test(convert_qiskit_to_braket_circuit, qiskit_circuit)
+    qbraid_failed += execute_test(lambda circuit: transpile(circuit, "braket"), qiskit_circuit)
 
 total_tests = len(qiskit_gates)
 qbraid_passed, qiskit_passed = total_tests - qbraid_failed, total_tests - qiskit_failed

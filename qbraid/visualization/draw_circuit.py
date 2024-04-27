@@ -14,7 +14,7 @@ Module for drawing quantum circuit diagrams
 """
 from typing import TYPE_CHECKING, Optional
 
-from qbraid.programs import QPROGRAM_ALIASES, ProgramTypeError, get_program_type
+from qbraid.programs import QPROGRAM_ALIASES, ProgramTypeError, get_program_type_alias
 from qbraid.transpiler.converter import transpile
 
 from .draw_qasm3 import qasm3_drawer
@@ -38,7 +38,7 @@ def circuit_drawer(
     Raises:
         ProgramTypeError: If quantum program is not of a supported type
     """
-    package = get_program_type(program)
+    package = get_program_type_alias(program)
 
     if as_package and as_package != package and as_package in QPROGRAM_ALIASES:
         program = transpile(program, as_package)

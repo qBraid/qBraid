@@ -20,7 +20,7 @@ from cirq.contrib.qasm_import.exception import QasmException as CirqQasmExceptio
 
 from qbraid._version import __version__ as qbraid_version
 from qbraid.programs.exceptions import QasmError as QbraidQasmError
-from qbraid.programs.qasm_passes import flatten_qasm_program
+from qbraid.transforms.qasm2 import flatten_qasm_program
 
 from .cirq_qasm_parser import QasmParser
 from .custom_ops import _map_zpow_and_unroll

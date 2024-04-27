@@ -14,41 +14,11 @@ Unit tests for QASM preprocessing functions
 """
 import pytest
 
-from qbraid.programs.qasm_passes import (
+from qbraid.transforms.qasm2.passes import (
     convert_qasm_pi_to_decimal,
     flatten_qasm_program,
     remove_qasm_barriers,
 )
-
-# qasm_0 = """OPENQASM 2.0;
-# include "qelib1.inc";
-# gate rzx(param0) q0,q1 { h q1; cx q0,q1; rz(-pi/4) q1; cx q0,q1; h q1; }
-# gate ecr q0,q1 { rzx(pi/4) q0,q1; x q0; rzx(-pi/4) q0,q1; }
-# gate rzx_6320157840(param0) q0,q1 { h q1; cx q0,q1; rz(2.3200048200765524) q1; cx q0,q1; h q1; }
-# qreg q[4];
-# cry(5.518945082555831) q[0],q[1];
-# u(5.75740842861076,5.870881397684582,1.8535618384181967) q[2];
-# ecr q[3],q[0];
-# rzx_6320157840(2.3200048200765524) q[2],q[1];
-# rccx q[1],q[2],q[3];
-# csx q[0],q[1];
-# rxx(5.603791034636421) q[2],q[0];
-# """
-
-# qasm_1 = """
-# OPENQASM 2.0;
-# include "qelib1.inc";
-# qreg q[5];
-# rccx q[1],q[2],q[0];
-# cu(5.64,3.60,3.73, 5.68) q[1],q[0];
-# c3x q[1],q[3],q[0],q[2];
-# c3sqrtx q[3],q[1],q[2],q[0];
-# c4x q[2],q[0],q[1],q[4],q[3];
-# rc3x q[1],q[2],q[0],q[3];
-# """
-
-# qasm_lst = [qasm_0, qasm_1]
-
 
 pi_decimal_data = [
     (

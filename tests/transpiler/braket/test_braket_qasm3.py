@@ -49,14 +49,12 @@ __bits__[1] = measure __qubits__[1];
 
 def test_braket_from_qasm3():
     """Test converting OpenQASM 3 string to braket circuit"""
-    qasm_str = """"
+    qasm_str = """
 OPENQASM 3.0;
 bit[2] b;
 qubit[2] q;
 rx(0.15) q[0];
 rx(0.3) q[1];
-b[0] = measure q[0];
-b[1] = measure q[1];
 """
     circuit_expected = Circuit().rx(0, 0.15).rx(1, 0.3)
     assert circuit_expected == qasm3_to_braket(qasm_str)

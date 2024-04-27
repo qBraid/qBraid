@@ -16,7 +16,8 @@ from braket.circuits import Circuit
 from braket.circuits.serialization import IRType
 from braket.ir.openqasm import Program as OpenQasmProgram
 
-from qbraid.programs import QasmError, convert_qasm_pi_to_decimal
+from qbraid.programs import QasmError
+from qbraid.transforms.qasm2.passes import convert_qasm_pi_to_decimal
 
 QASMType = str
 

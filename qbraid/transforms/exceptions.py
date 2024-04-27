@@ -16,5 +16,13 @@ Module defining exceptions for errors raised by qBraid transforms.
 from qbraid.exceptions import QbraidError
 
 
-class CompilationError(QbraidError):
+class TransformError(QbraidError):
+    """Base class for errors raised during qBraid transform processes."""
+
+
+class CompilationError(TransformError):
     """Base class for errors raised during circuit compilation processes."""
+
+
+class DecompositionError(TransformError):
+    """For errors raised during circuit decomposition processes."""

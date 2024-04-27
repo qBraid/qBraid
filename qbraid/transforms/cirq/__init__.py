@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -9,19 +9,17 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for runtime quantum program transformations.
+Module containing functions for transforming cirq programs.
 
-.. currentmodule:: qbraid.transforms
+.. currentmodule:: qbraid.transforms.cirq
 
-Exceptions
------------
+Functions
+----------
 
 .. autosummary::
    :toctree: ../stubs/
-   
-   TransformError
-   CompilationError
-   DecompositionError
+
+   decompose
 
 """
-from .exceptions import CompilationError, DecompositionError, TransformError
+from .passes import decompose

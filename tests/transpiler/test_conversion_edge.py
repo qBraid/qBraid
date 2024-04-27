@@ -18,7 +18,7 @@ import cirq
 import pytest
 
 from qbraid.interface.random import random_circuit
-from qbraid.programs.exceptions import PackageValueError
+from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.transpiler.conversions.braket import braket_to_cirq
 from qbraid.transpiler.edge import Conversion
 
@@ -27,7 +27,7 @@ def test_raise_for_unsupported_program_input():
     """Test that an exception is raised for an unsupported program input."""
     conversion = Conversion("braket", "cirq", braket_to_cirq)
     circuit = Mock()
-    with pytest.raises(PackageValueError):
+    with pytest.raises(ProgramTypeError):
         conversion.convert(circuit)
 
 

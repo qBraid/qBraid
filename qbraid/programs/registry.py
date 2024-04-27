@@ -14,7 +14,7 @@ Module for registering custom program types and aliases
 """
 from typing import Any, Optional, Type, Union
 
-from qbraid.programs._import import _QPROGRAM_ALIASES, _QPROGRAM_REGISTRY, _QPROGRAM_TYPES
+from ._import import _QPROGRAM_ALIASES, _QPROGRAM_REGISTRY, _QPROGRAM_TYPES
 
 QPROGRAM = Union[tuple(_QPROGRAM_TYPES)]
 QPROGRAM_REGISTRY = _QPROGRAM_REGISTRY
@@ -22,7 +22,7 @@ QPROGRAM_ALIASES = _QPROGRAM_ALIASES
 QPROGRAM_TYPES = _QPROGRAM_TYPES
 
 
-def get_type_alias(program_type: Type[Any]) -> str:
+def derive_program_type_alias(program_type: Type[Any]) -> str:
     """
     Determines an alias for the given program type based on its module or class name.
 
@@ -46,14 +46,17 @@ def get_type_alias(program_type: Type[Any]) -> str:
         ) from err
 
 
-def register_program_type(program_type: Type, alias: Optional[str] = None) -> None:
+def register_program_type(
+    program_type: Type[Any], alias: Optional[str] = None, overwrite: bool = False
+) -> None:
     """
     Registers a user-defined program type under the specified alias.
 
     Args:
-        program_type (Type): The actual Python type or a callable that returns a type.
+        program_type (Type[Any]): The actual Python type or a callable that returns a type.
                              This can be a built-in type like str, a class, or any callable.
         alias (optional, str): The alias to register the program type under.
+        overwrite (optional, bool): Whether to overwrite an existing alias with the new type.
 
     Raises:
         ValueError: If the alias is already registered with a different type,
@@ -62,18 +65,18 @@ def register_program_type(program_type: Type, alias: Optional[str] = None) -> No
                     'qasm2' and 'qasm3'.
     """
     if not alias:
-        alias = get_type_alias(program_type)
+        alias = derive_program_type_alias(program_type)
 
     normalized_alias = alias.lower()
 
     # Check if the alias is already used and if it maps to a different type
     if normalized_alias in QPROGRAM_REGISTRY:
-        if QPROGRAM_REGISTRY[normalized_alias] != program_type:
+        if QPROGRAM_REGISTRY[normalized_alias] != program_type and overwrite is False:
             raise ValueError(f"Alias '{alias}' is already registered with a different type.")
 
     # Check if the type is already registered under any other alias
     existing_alias = next((k for k, v in QPROGRAM_REGISTRY.items() if v == program_type), None)
-    if existing_alias and existing_alias != normalized_alias:
+    if existing_alias and existing_alias != normalized_alias and overwrite is False:
         if program_type == str:
             str_types = [
                 k for k, v in QPROGRAM_REGISTRY.items() if v == str and k not in ("qasm2", "qasm3")

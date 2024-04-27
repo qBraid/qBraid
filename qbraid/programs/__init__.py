@@ -28,14 +28,8 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   get_qasm_version
-   get_program_type
    load_program
-   remove_qasm_barriers
-   unfold_qasm_gate_defs
-   flatten_qasm_program
-   decompose_qasm_qelib1
-   convert_qasm_pi_to_decimal
+   get_program_type_alias
    register_program_type
 
 Classes
@@ -58,20 +52,14 @@ Exceptions
 
 """
 from .abc_program import QuantumProgram
+from .alias_manager import get_program_type_alias, parse_qasm_type_alias
 from .exceptions import PackageValueError, ProgramTypeError, QasmError
-from .inspector import get_program_type, get_qasm_version
 from .loader import load_program
-from .qasm_passes import (
-    convert_qasm_pi_to_decimal,
-    flatten_qasm_program,
-    remove_qasm_barriers,
-    unfold_qasm_gate_defs,
-)
-from .qasm_qelib1 import decompose_qasm_qelib1
 from .registry import (
     QPROGRAM,
     QPROGRAM_ALIASES,
     QPROGRAM_REGISTRY,
     QPROGRAM_TYPES,
+    derive_program_type_alias,
     register_program_type,
 )

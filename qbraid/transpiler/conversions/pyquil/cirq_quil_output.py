@@ -87,6 +87,7 @@ class QuilFormatter(string.Formatter):
         return super().format_field(value, spec)
 
 
+# pylint: disable=abstract-method
 @value.value_equality(approximate=True)
 class QuilOneQubitGate(ops.Gate):
     """A QUIL gate representing any single qubit unitary with a DEFGATE and
