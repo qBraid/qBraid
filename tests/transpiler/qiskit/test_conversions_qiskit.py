@@ -18,7 +18,8 @@ import pytest
 import qiskit
 
 from qbraid.interface import circuits_allclose
-from qbraid.transpiler.conversions.cirq import cirq_to_qasm2, qasm2_to_cirq
+from qbraid.transpiler.conversions.cirq import cirq_to_qasm2
+from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
 from qbraid.transpiler.conversions.qiskit import qiskit_to_qasm2
 from qbraid.transpiler.converter import transpile
 

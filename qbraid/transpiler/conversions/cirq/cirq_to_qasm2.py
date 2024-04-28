@@ -16,14 +16,9 @@ from typing import Optional
 
 import cirq
 from cirq import ops
-from cirq.contrib.qasm_import.exception import QasmException as CirqQasmException
 
 from qbraid._version import __version__ as qbraid_version
-from qbraid.programs.exceptions import QasmError as QbraidQasmError
-from qbraid.transforms.qasm2 import flatten_qasm_program
-
-from .cirq_qasm_parser import QasmParser
-from .custom_ops import _map_zpow_and_unroll
+from qbraid.transforms.cirq import map_zpow_and_unroll
 
 QASMType = str
 
@@ -69,21 +64,5 @@ def cirq_to_qasm2(
     Returns:
         QASMType: QASM string equivalent to the input Cirq circuit.
     """
-    circuit = _map_zpow_and_unroll(circuit)
+    circuit = map_zpow_and_unroll(circuit)
     return str(_to_qasm_output(circuit, header, precision, qubit_order))
-
-
-def qasm2_to_cirq(qasm: QASMType) -> cirq.Circuit:
-    """Returns a Cirq circuit equivalent to the input QASM string.
-
-    Args:
-        qasm: QASM string to convert to a Cirq circuit.
-
-    Returns:
-        Cirq circuit representation equivalent to the input QASM string.
-    """
-    try:
-        qasm = flatten_qasm_program(qasm)
-        return QasmParser().parse(qasm).circuit
-    except CirqQasmException as err:
-        raise QbraidQasmError from err

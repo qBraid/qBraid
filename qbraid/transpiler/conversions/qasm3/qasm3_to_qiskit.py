@@ -13,8 +13,7 @@ Module defining Qiskit OpenQASM conversions
 
 """
 import qiskit
-from qiskit.qasm2 import dumps as qasm2_dumps
-from qiskit.qasm3 import QASM3ImporterError, dumps, loads
+from qiskit.qasm3 import QASM3ImporterError, loads
 
 from qbraid.transforms.qasm3.compat import qasm3_braket_post_process
 
@@ -36,32 +35,3 @@ def qasm3_to_qiskit(qasm3: str) -> qiskit.QuantumCircuit:
     qasm3 = qasm3_braket_post_process(qasm3)
 
     return loads(qasm3)
-
-
-def qiskit_to_qasm3(circuit: qiskit.QuantumCircuit) -> str:
-    """Convert qiskit QuantumCircuit to QASM 3.0 string"""
-    return dumps(circuit)
-
-
-def qasm2_to_qiskit(qasm: str) -> qiskit.QuantumCircuit:
-    """Returns a Qiskit circuit equivalent to the input OpenQASM 2 string.
-
-    Args:
-        qasm: OpenQASM 2 string to convert to a Qiskit circuit.
-
-    Returns:
-        Qiskit.QuantumCircuit object equivalent to the input OpenQASM 2 string.
-    """
-    return qiskit.QuantumCircuit.from_qasm_str(qasm)
-
-
-def qiskit_to_qasm2(circuit: qiskit.QuantumCircuit) -> str:
-    """Returns OpenQASM 2 string equivalent to the input Qiskit circuit.
-
-    Args:
-        circuit: Qiskit circuit to convert to OpenQASM 2 string.
-
-    Returns:
-        str: OpenQASM 2 representation of the input Qiskit circuit.
-    """
-    return qasm2_dumps(circuit)

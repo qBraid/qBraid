@@ -23,6 +23,8 @@ Submodules
    braket
    cirq
    openqasm3
+   qasm2
+   qasm3
    pennylane
    pyquil
    pytket
@@ -34,8 +36,8 @@ import inspect
 
 # Dynamically import QPROGRAM_ALIASES when needed
 _qbraid = importlib.import_module("qbraid.programs._import")
-_DYNAMIC_REGISTRY = getattr(_qbraid, "dynamic_type_registry", {})
-_QPROGRAM_ALIASES = getattr(_qbraid, "_QPROGRAM_ALIASES", set())
+NATIVE_REGISTRY = getattr(_qbraid, "NATIVE_REGISTRY", {})
+_QPROGRAM_ALIASES = set(NATIVE_REGISTRY.keys())
 
 # Cache for storing previously seen valid combinations, including reversed pairs
 valid_combinations_cache = set()
@@ -47,7 +49,7 @@ conversion_functions = []
 base_path = "qbraid.transpiler.conversions."
 
 # Iterate over the installed libraries
-for lib in _DYNAMIC_REGISTRY:
+for lib in NATIVE_REGISTRY:
     try:
         # Dynamically import the sub-module
         sub_module = importlib.import_module(base_path + lib)

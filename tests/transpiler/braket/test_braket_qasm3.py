@@ -17,7 +17,8 @@ import qiskit
 from braket.circuits import Circuit
 
 from qbraid.interface import circuits_allclose
-from qbraid.transpiler.conversions.braket import braket_to_qasm3, qasm3_to_braket
+from qbraid.transpiler.conversions.braket import braket_to_qasm3
+from qbraid.transpiler.conversions.qasm3 import qasm3_to_braket
 from qbraid.transpiler.conversions.qiskit import qiskit_to_qasm3
 
 

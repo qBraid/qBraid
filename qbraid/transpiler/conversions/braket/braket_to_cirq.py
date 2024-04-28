@@ -14,7 +14,7 @@
 # qbraid: skip-header
 
 """
-Module for converting Cirq circuits to Braket circuits
+Module for converting Braket circuits to Cirq circuits
 
 """
 import numpy as np
@@ -22,7 +22,7 @@ from braket.circuits import Circuit as BKCircuit
 from braket.circuits import Instruction as BKInstruction
 from braket.circuits import gates as braket_gates
 from braket.circuits import noises as braket_noise_gate
-from cirq import Circuit, LineQubit
+from cirq import Circuit, Gate, LineQubit, MatrixGate
 from cirq import ops as cirq_ops
 from cirq import protocols
 
@@ -31,13 +31,35 @@ try:
 except ImportError:
     cirq_ionq_ops = None
 
-from qbraid.transpiler.conversions.cirq.custom_ops import matrix_gate as matrix_to_cirq_gate
 from qbraid.transpiler.exceptions import CircuitConversionError
 
-from .custom_instr import gate_to_matrix as braket_gate_to_matrix
+
+def _give_cirq_gate_name(gate: Gate, name: str, n_qubits: int) -> Gate:
+    def _circuit_diagram_info_():
+        return name, *(name,) * (n_qubits - 1)
+
+    gate._circuit_diagram_info_ = _circuit_diagram_info_
 
 
-def _braket_to_cirq(circuit: BKCircuit) -> Circuit:
+def matrix_to_cirq_gate(matrix: np.ndarray) -> MatrixGate:
+    """Return cirq matrix gate given unitary"""
+    n_qubits = int(np.log2(len(matrix)))
+    unitary_gate = MatrixGate(matrix)
+    _give_cirq_gate_name(unitary_gate, "U", n_qubits)
+    return unitary_gate
+
+
+def braket_gate_to_matrix(gate: braket_gates.Unitary) -> np.ndarray:
+    """Return the matrix representation of a Braket gate."""
+    matrix = gate.to_matrix()
+    unitary_gate = braket_gates.Unitary(matrix)
+    nqubits = int(np.log2(len(matrix)))
+    qubits = list(range(nqubits)) if nqubits > 1 else 0
+    bk_circuit = Circuit([BKInstruction(unitary_gate, qubits)])
+    return bk_circuit.to_unitary()
+
+
+def braket_to_cirq(circuit: BKCircuit) -> Circuit:
     """Returns a Cirq circuit equivalent to the input Braket circuit.
 
     Note: The returned Cirq circuit acts on cirq.LineQubit's with indices equal

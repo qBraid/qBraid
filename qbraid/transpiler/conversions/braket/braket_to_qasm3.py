@@ -9,42 +9,16 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for converting Braket circuits to/from OpenQASM 3
+Module for converting Braket circuits to OpenQASM 3.0
 
 """
 from braket.circuits import Circuit
 from braket.circuits.serialization import IRType
-from braket.ir.openqasm import Program as OpenQasmProgram
 
 from qbraid.programs import QasmError
-from qbraid.transforms.qasm3.compat import qasm3_braket_pre_process
-
-QASMType = str
 
 
-def qasm3_to_braket(qasm3_str: QASMType) -> Circuit:
-    """Converts an OpenQASM 3.0 string to a ``braket.circuits.Circuit``.
-
-    Args:
-        qasm3_str: OpenQASM 3 string
-
-    Returns:
-        The Amazon Braket circuit equivalent to the input OpenQASM 3.0 string
-
-    Raises:
-        CircuitConversionError: If qasm to braket conversion fails
-
-    """
-    qasm3_str = qasm3_braket_pre_process(qasm3_str)
-
-    try:
-        program = OpenQasmProgram(source=qasm3_str)
-        return Circuit.from_ir(source=program.source, inputs=program.inputs)
-    except Exception as err:
-        raise QasmError("Error converting qasm3 string to braket circuit") from err
-
-
-def braket_to_qasm3(circuit: Circuit) -> QASMType:
+def braket_to_qasm3(circuit: Circuit) -> str:
     """Converts a ``braket.circuits.Circuit`` to an OpenQASM 3.0 string.
 
     Args:

@@ -9,21 +9,19 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Cirq conversions
-
-.. currentmodule:: qbraid.transpiler.conversions.cirq
-
-Functions
-----------
-
-.. autosummary::
-   :toctree: ../stubs/
-
-   cirq_to_braket
-   cirq_to_qasm2
-   cirq_to_pyquil
+Module containing OpenQASM conversion function
 
 """
-from .cirq_to_braket import cirq_to_braket
-from .cirq_to_pyquil import cirq_to_pyquil
-from .cirq_to_qasm2 import cirq_to_qasm2
+import openqasm3
+
+
+def openqasm3_to_qasm3(program: openqasm3.ast.Program) -> str:
+    """Dumps openqasm3.ast.Program to an OpenQASM 3.0 string
+
+    Args:
+        program (openqasm3.ast.Program): OpenQASM 3.0 AST program
+
+    Returns:
+        str: OpenQASM 3.0 string
+    """
+    return openqasm3.dumps(program)

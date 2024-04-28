@@ -20,8 +20,8 @@ from qiskit.circuit.random import random_circuit
 from qbraid.interface import circuits_allclose
 from qbraid.programs import load_program
 from qbraid.programs.exceptions import QasmError
-from qbraid.transpiler.conversions.cirq.conversions_qasm import qasm2_to_cirq
-from qbraid.transpiler.conversions.qiskit.conversions_qasm import qiskit_to_qasm2
+from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
+from qbraid.transpiler.conversions.qiskit import qiskit_to_qasm2
 from qbraid.transpiler.converter import transpile
 
 

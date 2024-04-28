@@ -37,7 +37,7 @@ from cirq.circuits.qasm_output import QasmUGate
 from cirq.contrib.qasm_import._lexer import QasmLexer
 from cirq.contrib.qasm_import.exception import QasmException
 
-import qbraid.transpiler.conversions.cirq.custom_ops as qbraid_cirq_gates
+from .cirq_custom import U2Gate, U3Gate, rzz
 
 # Redefined lexer tokens (4/7/21) to surpress warning:
 # Token ['IF', 'NE'] defined, but not used
@@ -237,19 +237,19 @@ class QasmParser:
         ),
         'u2': QasmGateStatement(
             qasm_gate='u2',
-            cirq_gate=(lambda params: qbraid_cirq_gates.U2Gate(*params)),
+            cirq_gate=(lambda params: U2Gate(*params)),
             num_params=2,
             num_args=1,
         ),
         'u3': QasmGateStatement(
             qasm_gate='u3',
-            cirq_gate=(lambda params: qbraid_cirq_gates.U3Gate(*params)),
+            cirq_gate=(lambda params: U3Gate(*params)),
             num_params=3,
             num_args=1,
         ),
         'u': QasmGateStatement(
             qasm_gate='u',
-            cirq_gate=(lambda params: qbraid_cirq_gates.U3Gate(*params)),
+            cirq_gate=(lambda params: U3Gate(*params)),
             num_params=3,
             num_args=1,
         ),
@@ -318,13 +318,13 @@ class QasmParser:
         ),
         'cu3': QasmGateStatement(
             qasm_gate='cu3',
-            cirq_gate=(lambda params: ops.ControlledGate(qbraid_cirq_gates.U3Gate(*params))),
+            cirq_gate=(lambda params: ops.ControlledGate(U3Gate(*params))),
             num_params=3,
             num_args=2,
         ),
         'cu': QasmGateStatement(
             qasm_gate='cu',
-            cirq_gate=(lambda params: ops.ControlledGate(qbraid_cirq_gates.U3Gate(*params))),
+            cirq_gate=(lambda params: ops.ControlledGate(U3Gate(*params))),
             num_params=3,
             num_args=2,
         ),
@@ -342,7 +342,7 @@ class QasmParser:
         ),
         'rzz': QasmGateStatement(
             qasm_gate='rzz',
-            cirq_gate=(lambda params: qbraid_cirq_gates.rzz(params[0])),
+            cirq_gate=(lambda params: rzz(params[0])),
             num_params=1,
             num_args=2,
         ),

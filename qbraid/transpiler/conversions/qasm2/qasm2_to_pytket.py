@@ -14,7 +14,7 @@ Module containing functions to convert between OpenQASM 2 and PyTKET.
 """
 from typing import TYPE_CHECKING
 
-from pytket.qasm import circuit_from_qasm_str, circuit_to_qasm_str
+from pytket.qasm import circuit_from_qasm_str
 
 if TYPE_CHECKING:
     import pytket.circuit
@@ -30,15 +30,3 @@ def qasm2_to_pytket(qasm: str) -> "pytket.circuit.Circuit":
         pytket.circuit.Circuit: PyTKET circuit object equivalent to input OpenQASM 2 string.
     """
     return circuit_from_qasm_str(qasm)
-
-
-def pytket_to_qasm2(circuit: "pytket.circuit.Circuit") -> str:
-    """Returns an OpenQASM 2 string equivalent to the input pytket circuit.
-
-    Args:
-        circuit (pytket.circuit.Circuit): PyTKET circuit to convert to OpenQASM 2 string.
-
-    Returns:
-        str: OpenQASM 2 string equivalent to input pytket circuit.
-    """
-    return circuit_to_qasm_str(circuit)

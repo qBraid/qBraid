@@ -152,7 +152,7 @@ class OpenQasm2Program(QuantumProgram):
     def _unitary(self) -> "np.ndarray":
         """Return the unitary of the QASM"""
         # pylint: disable=import-outside-toplevel
-        from qbraid.transpiler.conversions.cirq.conversions_qasm import qasm2_to_cirq
+        from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
 
         return qasm2_to_cirq(self.program).unitary()
 
