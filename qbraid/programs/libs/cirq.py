@@ -221,3 +221,22 @@ class CirqCircuit(QuantumProgram):
         qubits_rev.reverse()
         qubit_map = dict(zip(qubits, qubits_rev))
         self._program = self.program.transform_qubits(lambda q: qubit_map[q])
+
+    @staticmethod
+    def remove_measurements(circuit: cirq.Circuit) -> cirq.Circuit:
+        """Remove all measurement gates from the given Cirq circuit.
+
+        Args:
+            circuit (cirq.Circuit): The input circuit from which to remove measurement gates.
+
+        Returns:
+            cirq.Circuit: A new circuit with all measurement gates removed.
+        """
+        new_circuit = cirq.Circuit()
+        for mom in circuit:
+            filtered_operations = [
+                op for op in mom.operations if not isinstance(op.gate, cirq.MeasurementGate)
+            ]
+            if filtered_operations:
+                new_circuit.append(cirq.Moment(filtered_operations))
+        return new_circuit

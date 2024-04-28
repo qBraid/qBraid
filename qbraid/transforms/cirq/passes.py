@@ -44,6 +44,44 @@ def decompose(circuit: "cirq.Circuit", strategy: str = "qasm") -> "cirq.Circuit"
     raise ValueError(f"Decomposition strategy '{strategy}' not supported.")
 
 
+def align_final_measurements(circuit: cirq.Circuit) -> cirq.Circuit:
+    """
+    Align the final measurement gates of all qubits in the same moment
+    if they all end with a measurement.
+
+    Args:
+        circuit (cirq.Circuit): The input quantum circuit.
+
+    Returns:
+        cirq.Circuit: New circuit where all final measurements are aligned in the same moment.
+    """
+    new_circuit = cirq.Circuit()
+
+    last_ops = {qubit: None for qubit in circuit.all_qubits()}
+
+    for moment in circuit:
+        for op in moment.operations:
+            if isinstance(op.gate, cirq.MeasurementGate):
+                last_ops[op.qubits[0]] = op
+
+    if all(op is not None for op in last_ops.values()):
+        measurement_moment = cirq.Moment()
+        for op in last_ops.values():
+            measurement_moment = measurement_moment.with_operation(op)
+        for moment in circuit:
+            non_measurement_moment = cirq.Moment()
+            for op in moment.operations:
+                if not isinstance(op.gate, cirq.MeasurementGate):
+                    non_measurement_moment = non_measurement_moment.with_operation(op)
+            if non_measurement_moment.operations:
+                new_circuit.append(non_measurement_moment)
+        new_circuit.append(measurement_moment)
+    else:
+        return circuit
+
+    return new_circuit
+
+
 @value.value_equality
 class ZPowGate(cirq.ZPowGate):
     """A single qubit gate for rotations around the

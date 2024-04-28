@@ -31,11 +31,12 @@ try:
 except ImportError:
     cirq_ionq_ops = None
 
+from qbraid.transforms.cirq.passes import align_final_measurements
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
 def _give_cirq_gate_name(gate: Gate, name: str, n_qubits: int) -> Gate:
-    def _circuit_diagram_info_():
+    def _circuit_diagram_info_(args):  # pylint: disable=unused-argument
         return name, *(name,) * (n_qubits - 1)
 
     gate._circuit_diagram_info_ = _circuit_diagram_info_
@@ -71,7 +72,10 @@ def braket_to_cirq(circuit: BKCircuit) -> Circuit:
     bk_qubits = [int(q) for q in circuit.qubits]
     cirq_qubits = [LineQubit(x) for x in bk_qubits]
     qubit_mapping = {q: cirq_qubits[i] for i, q in enumerate(bk_qubits)}
-    return Circuit(_from_braket_instruction(instr, qubit_mapping) for instr in circuit.instructions)
+    circuit = Circuit(
+        _from_braket_instruction(instr, qubit_mapping) for instr in circuit.instructions
+    )
+    return align_final_measurements(circuit)
 
 
 def _from_braket_instruction(

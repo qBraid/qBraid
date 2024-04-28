@@ -31,6 +31,48 @@ def _rev_qubits(circuit: cirq.Circuit) -> cirq.Circuit:
     return program.program
 
 
+def remove_empty_moments(circuit: cirq.Circuit) -> cirq.Circuit:
+    """Remove all empty moments from a Cirq circuit.
+
+    Args:
+        circuit (cirq.Circuit): The input quantum circuit to clean up.
+
+    Returns:
+        cirq.C ircuit: A new circuit with all empty moments removed.
+    """
+    non_empty_moments = [moment for moment in circuit if moment.operations]
+    return cirq.Circuit(non_empty_moments)
+
+
+def compare_circuits(circuit1: cirq.Circuit, circuit2: cirq.Circuit):
+    """Compares two Cirq circuits and prints differences.
+
+    Args:
+        circuit1 (cirq.Circuit): The first circuit to compare.
+        circuit2 (cirq.Circuit): The second circuit to compare.
+    """
+    # First, check if they have the same number of moments
+    if len(circuit1) != len(circuit2):
+        print(f"Circuits differ in number of moments: {len(circuit1)} vs {len(circuit2)}")
+        return
+
+    # Iterate through each moment
+    for i, (moment1, moment2) in enumerate(zip(circuit1, circuit2)):
+        if moment1 != moment2:
+            print(f"Difference found in moment {i}")
+            ops1 = set(moment1.operations)
+            ops2 = set(moment2.operations)
+
+            # Compare operations in each moment
+            if ops1 != ops2:
+                unique_to_circuit1 = ops1 - ops2
+                unique_to_circuit2 = ops2 - ops1
+                if unique_to_circuit1:
+                    print(f" Unique to circuit1 in moment {i}: {unique_to_circuit1}")
+                if unique_to_circuit2:
+                    print(f" Unique to circuit2 in moment {i}: {unique_to_circuit2}")
+
+
 def _equal(
     circuit_one: cirq.Circuit,
     circuit_two: cirq.Circuit,
@@ -89,4 +131,7 @@ def _equal(
             False,
         )
 
-    return circuit_one == circuit_two
+    circuit_one_clean = remove_empty_moments(circuit_one)
+    circuit_two_clean = remove_empty_moments(circuit_two)
+
+    return circuit_one_clean == circuit_two_clean

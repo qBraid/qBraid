@@ -19,11 +19,9 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   qiskit_to_braket
    qiskit_to_qasm2
    qiskit_to_qasm3
 
 """
-from .qiskit_to_braket import qiskit_to_braket
 from .qiskit_to_qasm2 import qiskit_to_qasm2
 from .qiskit_to_qasm3 import qiskit_to_qasm3

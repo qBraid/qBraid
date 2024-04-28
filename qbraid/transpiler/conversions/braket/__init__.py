@@ -21,11 +21,9 @@ Functions
 
    braket_to_cirq
    braket_to_qasm3
-   braket_to_qiskit
    braket_to_pytket
 
 """
 from .braket_to_cirq import braket_to_cirq
 from .braket_to_pytket import braket_to_pytket
 from .braket_to_qasm3 import braket_to_qasm3
-from .braket_to_qiskit import braket_to_qiskit
