@@ -9,15 +9,18 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module containing functions to convert between Cirq's circuit
-representation and pyQuil's circuit representation (Quil programs).
+Module containing function to convert from Cirq's circuit
+representation to pyQuil's circuit representation (Quil programs).
 
 """
 from typing import TYPE_CHECKING
 
+from cirq import LineQubit, QubitOrder
 from pyquil import Program
 
 from qbraid.transpiler.exceptions import CircuitConversionError
+
+from .cirq_quil_output import QuilOutput
 
 if TYPE_CHECKING:
     import cirq.circuits
@@ -33,13 +36,6 @@ def cirq_to_pyquil(circuit: "cirq.circuits.Circuit") -> "pyquil.quil.Program":
     Returns:
         pyquil.Program object equivalent to the input Cirq circuit.
     """
-    # pylint: disable=import-outside-toplevel
-    from cirq import LineQubit, QubitOrder
-
-    from .cirq_quil_output import QuilOutput
-
-    # pylint: enable=import-outside-toplevel
-
     input_qubits = circuit.all_qubits()
     max_qubit = max(input_qubits)
     # if we are using LineQubits, keep the qubit labeling the same
@@ -57,24 +53,4 @@ def cirq_to_pyquil(circuit: "cirq.circuits.Circuit") -> "pyquil.quil.Program":
     except ValueError as err:
         raise CircuitConversionError(
             f"Cirq qasm converter doesn't yet support {err.args[0][32:]}."
-        ) from err
-
-
-def pyquil_to_cirq(program: "pyquil.quil.Program") -> "cirq.circuits.Circuit":
-    """Returns a Cirq circuit equivalent to the input pyQuil Program.
-
-    Args:
-        program: PyQuil Program to convert to a Cirq circuit.
-
-    Returns:
-        Cirq circuit representation equivalent to the input pyQuil Program.
-    """
-    # pylint: disable-next=import-outside-toplevel
-    from .cirq_quil_input import circuit_from_quil
-
-    try:
-        return circuit_from_quil(program.out())
-    except Exception as err:
-        raise CircuitConversionError(
-            "qBraid transpiler doesn't yet support pyQuil noise gates."
         ) from err

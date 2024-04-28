@@ -20,8 +20,6 @@ Functions
    :toctree: ../stubs/
 
    pyquil_to_cirq
-   cirq_to_pyquil
 
 """
-
-from .conversions_cirq import cirq_to_pyquil, pyquil_to_cirq
+from .pyquil_to_cirq import pyquil_to_cirq

@@ -22,4 +22,4 @@ Functions
    pennylane_to_qasm2
 
 """
-from .conversions_qasm import pennylane_to_qasm2
+from .pennylane_to_qasm2 import pennylane_to_qasm2

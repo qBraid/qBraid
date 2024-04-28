@@ -20,10 +20,10 @@ Functions
    :toctree: ../stubs/
 
    braket_to_cirq
-   cirq_to_braket
    braket_to_qasm3
-   qasm3_to_braket
+   braket_to_pytket
 
 """
-from .conversions_cirq import braket_to_cirq, cirq_to_braket
-from .conversions_qasm import braket_to_qasm3, qasm3_to_braket
+from .braket_to_cirq import braket_to_cirq
+from .braket_to_pytket import braket_to_pytket
+from .braket_to_qasm3 import braket_to_qasm3

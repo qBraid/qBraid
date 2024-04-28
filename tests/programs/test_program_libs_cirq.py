@@ -12,6 +12,7 @@
 Unit tests for qbraid.programs.cirq.CirqCircuit
 
 """
+import cirq
 import pytest
 from cirq import CNOT, Circuit, GridQubit, H, LineQubit, Moment, NamedQubit, X, Y, Z
 
@@ -150,3 +151,37 @@ def test_remove_idle_named_qubits():
     new_circuit = qprogram.program
     assert set(new_circuit.all_qubits()) == {NamedQubit(str(i)) for i in range(qprogram.num_qubits)}
     assert circuits_allclose(circuit, new_circuit)
+
+
+def test_remove_all_measurements():
+    """Test removing all measurement gates from a circuit"""
+    q0, q1 = cirq.LineQubit.range(2)
+    circuit = cirq.Circuit(
+        cirq.H(q0), cirq.CNOT(q0, q1), cirq.measure(q0, key="m0"), cirq.measure(q1, key="m1")
+    )
+    expected_circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1))
+    result_circuit = CirqCircuit.remove_measurements(circuit)
+    assert result_circuit == expected_circuit, "All measurement gates should be removed."
+
+
+def test_no_measurements_to_remove():
+    """Test removing measurements from a circuit with no measurements"""
+    q0, q1 = cirq.LineQubit.range(2)
+    circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1))
+    result_circuit = CirqCircuit.remove_measurements(circuit)
+    assert (
+        result_circuit == circuit
+    ), "The circuit should remain unchanged as there are no measurements."
+
+
+def test_mixed_operations_and_measurements():
+    """Test removing measurements from a circuit with mixed operations and measurements"""
+    q0, q1 = cirq.LineQubit.range(2)
+    circuit = cirq.Circuit(
+        cirq.H(q0), cirq.measure(q0, key="m0"), cirq.CNOT(q0, q1), cirq.measure(q1, key="m1")
+    )
+    expected_circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1))
+    result_circuit = CirqCircuit.remove_measurements(circuit)
+    assert (
+        result_circuit == expected_circuit
+    ), "All measurement gates should be removed, leaving other operations intact."

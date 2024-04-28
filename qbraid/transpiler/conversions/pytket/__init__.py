@@ -19,11 +19,9 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   pytket_to_qasm2
-   qasm2_to_pytket
-   braket_to_pytket
    pytket_to_braket
+   pytket_to_qasm2
 
 """
-from .conversions_braket import braket_to_pytket, pytket_to_braket
-from .conversions_qasm import pytket_to_qasm2, qasm2_to_pytket
+from .pytket_to_braket import pytket_to_braket
+from .pytket_to_qasm2 import pytket_to_qasm2

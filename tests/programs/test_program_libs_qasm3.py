@@ -19,7 +19,7 @@ from qiskit.qasm3 import dumps, loads
 from qbraid.interface.random.qasm3_random import _qasm3_random
 from qbraid.interface.random.qiskit_random import _qiskit_random
 from qbraid.programs.libs.qasm3 import OpenQasm3Program
-from qbraid.transpiler.conversions.openqasm3.conversions_qasm import _get_qasm3_gate_defs
+from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import _get_qasm3_gate_defs
 
 from ..fixtures.qasm3.circuits import qasm3_bell, qasm3_shared15
 

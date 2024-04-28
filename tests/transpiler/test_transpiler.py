@@ -78,11 +78,7 @@ def test_cirq_round_trip(bell_circuit, to_type):
     circuit_in, _ = bell_circuit
     circuit_mid = transpile(circuit_in, to_type)
     circuit_out = transpile(circuit_mid, "cirq")
-    if to_type == "qasm3":
-        qprogram = load_program(circuit_out)
-        qprogram.remove_idle_qubits()
-        circuit_out = qprogram.program
-    assert _equal(circuit_in, circuit_out)
+    assert _equal(circuit_in, circuit_out), f"Failed round-trip from cirq to {to_type}"
 
 
 @pytest.mark.parametrize("bell_circuit", ["cirq"], indirect=True)

@@ -20,6 +20,7 @@ Functions
    :toctree: ../stubs/
 
    decompose
+   map_zpow_and_unroll
 
 """
-from .passes import decompose
+from .passes import decompose, map_zpow_and_unroll

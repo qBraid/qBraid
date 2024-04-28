@@ -17,7 +17,8 @@ from qiskit import QuantumCircuit
 
 from qbraid.interface import circuits_allclose
 from qbraid.transforms.qasm3.compat import _add_stdgates_include
-from qbraid.transpiler.conversions.qiskit.conversions_qasm import qasm3_to_qiskit, qiskit_to_qasm3
+from qbraid.transpiler.conversions.qasm3 import qasm3_to_qiskit
+from qbraid.transpiler.conversions.qiskit import qiskit_to_qasm3
 
 qasm_stdgate_data = [
     (

@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for Braket custom gates
+Module for defining custom Amazon Braket control gate
 
 """
 import itertools
@@ -17,41 +17,9 @@ from typing import Any
 
 import braket.ir.jaqcd as ir
 import numpy as np
-from braket.circuits import Circuit, Gate, Instruction, QubitSet, circuit
+from braket.circuits import Gate, Instruction, QubitSet, circuit
 from braket.circuits.gates import Unitary, format_complex
 from braket.circuits.serialization import OpenQASMSerializationProperties
-
-from qbraid.transpiler.exceptions import CircuitConversionError
-
-# pylint: disable=missing-function-docstring
-
-
-def gate_to_matrix(gate: Unitary) -> np.ndarray:
-    matrix = gate.to_matrix()
-    unitary_gate = Unitary(matrix)
-    nqubits = int(np.log2(len(matrix)))
-    qubits = list(range(nqubits)) if nqubits > 1 else 0
-    bk_circuit = Circuit([Instruction(unitary_gate, qubits)])
-    return bk_circuit.to_unitary()
-
-
-def unitary_instruction(instr: Instruction) -> Instruction:
-    """Converts a Braket instruction to a unitary gate instruction.
-
-    Args:
-        instr: Braket instruction to convert.
-
-    Raises:
-        CircuitConversionError: If the instruction cannot be converted
-    """
-    gate = instr.operator
-
-    try:
-        matrix = gate_to_matrix(gate)
-        gate_name = "U" if gate.name is None else gate.name
-        return Instruction(Unitary(matrix, display_name=gate_name), instr.target)
-    except (ValueError, TypeError) as err:
-        raise CircuitConversionError(f"Unable to convert the instruction {instr}.") from err
 
 
 class C(Gate):
@@ -93,6 +61,7 @@ class C(Gate):
         return self._extend_matrix(sub_matrix)
 
     def adjoint(self) -> list[Gate]:
+        """Returns the adjoint of the gate."""
         return [Unitary(self.to_matrix().conj().T, display_name=f"({self.ascii_symbols})^†")]
 
     def _to_jaqcd(self, target: QubitSet) -> Any:

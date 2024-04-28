@@ -32,8 +32,8 @@ from cirq import Circuit
 from cirq.circuits.qasm_output import QasmUGate
 from cirq.contrib.qasm_import import QasmException
 
-import qbraid.transpiler.conversions.cirq.custom_ops as cirq_qasm_gates
-from qbraid.transpiler.conversions.cirq.cirq_qasm_parser import QasmParser
+import qbraid.transpiler.conversions.qasm2.cirq_custom as cirq_qasm_gates
+from qbraid.transpiler.conversions.qasm2.cirq_qasm_parser import QasmParser
 
 
 def test_format_header_circuit():

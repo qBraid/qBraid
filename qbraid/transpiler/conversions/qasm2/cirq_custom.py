@@ -16,21 +16,9 @@ Module for Cirq custom gates to aid the transpiler and qasm parser
 """
 
 import fractions
-from typing import Optional
 
-import cirq
 import numpy as np
-from cirq import (
-    OP_TREE,
-    Circuit,
-    CircuitDiagramInfo,
-    Gate,
-    IdentityGate,
-    MatrixGate,
-    Operation,
-    TwoQubitDiagonalGate,
-    value,
-)
+from cirq import CircuitDiagramInfo, Gate, IdentityGate, TwoQubitDiagonalGate
 
 # pylint: disable=abstract-method
 
@@ -154,44 +142,6 @@ class RZZGate(Gate):
         return CircuitDiagramInfo((gate_str, gate_str))
 
 
-@value.value_equality
-class ZPowGate(cirq.ZPowGate):
-    """A single qubit gate for rotations around the
-    Z axis of the Bloch sphere.
-    """
-
-    def _qasm_(self, args: "cirq.QasmArgs", qubits: tuple["cirq.Qid", ...]) -> Optional[str]:
-        args.validate_version("2.0")
-        if self._global_shift == 0:
-            if self._exponent == 0.25:
-                return args.format("t {0};\n", qubits[0])
-            if self._exponent == -0.25:
-                return args.format("tdg {0};\n", qubits[0])
-            if self._exponent == 0.5:
-                return args.format("s {0};\n", qubits[0])
-            if self._exponent == -0.5:
-                return args.format("sdg {0};\n", qubits[0])
-            if self._exponent == 1:
-                return args.format("z {0};\n", qubits[0])
-            return args.format("p({0:half_turns}) {1};\n", self._exponent, qubits[0])
-        return args.format("rz({0:half_turns}) {1};\n", self._exponent, qubits[0])
-
-
-def _give_cirq_gate_name(gate: Gate, name: str, n_qubits: int) -> Gate:
-    def _circuit_diagram_info_(args):
-        return name, *(name,) * (n_qubits - 1)
-
-    gate._circuit_diagram_info_ = _circuit_diagram_info_
-
-
-def matrix_gate(matrix: np.ndarray) -> MatrixGate:
-    """Return cirq matrix gate given unitary"""
-    n_qubits = int(np.log2(len(matrix)))
-    unitary_gate = MatrixGate(matrix)
-    _give_cirq_gate_name(unitary_gate, "U", n_qubits)
-    return unitary_gate
-
-
 def rzz(theta):
     """Returns custom cirq RZZ gate given rotation angle"""
     if theta == 0:
@@ -199,17 +149,3 @@ def rzz(theta):
     if theta == 2 * np.pi:
         return TwoQubitDiagonalGate([np.pi] * 4)
     return RZZGate(theta)
-
-
-def _map_zpow_and_unroll(circuit: Circuit) -> Circuit:
-    """Map ZPowGate to RZ and unroll circuit"""
-
-    def _map_zpow(op: Operation, _: int) -> OP_TREE:
-        if isinstance(op.gate, cirq.ZPowGate):
-            yield ZPowGate(exponent=op.gate.exponent, global_shift=op.gate.global_shift)(
-                op.qubits[0]
-            )
-        else:
-            yield op
-
-    return cirq.map_operations_and_unroll(circuit, _map_zpow)

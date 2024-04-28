@@ -43,19 +43,3 @@ def qiskit_to_braket(
     from qiskit_braket_provider.providers.adapter import to_braket  # type: ignore
 
     return to_braket(circuit, **kwargs)
-
-
-@requires_extras("qiskit_braket_provider")
-def braket_to_qiskit(circuit: "braket.circuits.Circuit") -> "qiskit.circuit.QuantumCircuit":
-    """Return a Qiskit quantum circuit from a Braket quantum circuit.
-
-    Args:
-        circuit (Circuit): Braket quantum circuit
-
-    Returns:
-        QuantumCircuit: Qiskit quantum circuit
-    """
-    # pylint: disable-next=import-outside-toplevel
-    from qiskit_braket_provider.providers.adapter import to_qiskit  # type: ignore
-
-    return to_qiskit(circuit)

@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-OpenQASM conversions
+OpenQASM 3 conversions
 
 .. currentmodule:: qbraid.transpiler.conversions.openqasm3
 
@@ -19,9 +19,7 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   qasm2_to_qasm3
    openqasm3_to_qasm3
-   qasm3_to_openqasm3
 
 """
-from .conversions_qasm import openqasm3_to_qasm3, qasm2_to_qasm3, qasm3_to_openqasm3
+from .openqasm3_to_qasm3 import openqasm3_to_qasm3
