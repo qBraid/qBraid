@@ -27,10 +27,15 @@ if TYPE_CHECKING:
     import qbraid.providers
 
 
-class QuantumProvider(ABC):
+class Provider:
+    """Base common type for all Provider classes."""
+
+
+class QuantumProvider(ABC, Provider):
     """
     This class is responsible for managing the interactions and
     authentications with various Quantum services.
+
     """
 
     @abstractmethod
@@ -40,6 +45,14 @@ class QuantumProvider(ABC):
     @abstractmethod
     def get_device(self, device_id: str):
         """Return quantum device corresponding to the specified device ID."""
+
+    def __eq__(self, other):
+        """Equality comparison.
+
+        By default, it is assumed that two `QuantumProviders` from the same class are
+        equal. Subclassed providers can override this behavior.
+        """
+        return type(self).__name__ == type(other).__name__
 
 
 class QbraidProvider(QuantumProvider):

@@ -12,7 +12,7 @@
 Module defining QuantumProgram Class
 
 """
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
@@ -23,7 +23,11 @@ if TYPE_CHECKING:
     import qbraid
 
 
-class QuantumProgram:
+class Program:
+    """Base common type for all Program classes."""
+
+
+class QuantumProgram(ABC, Program):
     """Abstract class for qbraid program wrapper objects."""
 
     def __init__(self, program: "qbraid.programs.QPROGRAM"):

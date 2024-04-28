@@ -20,14 +20,13 @@ import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional, Union
 
-from qbraid_core.services.quantum import QuantumClient, quantum_lib_proxy_state
+from qbraid_core.services.quantum import QuantumClient
 
 from qbraid.programs import get_program_type_alias, load_program
 from qbraid.transpiler import CircuitConversionError, transpile
 
-from .enums import DeviceType
 from .exceptions import ProgramValidationError, QbraidRuntimeError
-from .job import QuantumJob
+from .provider import Provider
 
 if TYPE_CHECKING:
     import qbraid.programs
@@ -38,10 +37,14 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class QuantumDevice(ABC):
+class Device:
+    """Base common type for all Device classes."""
+
+
+class QuantumDevice(ABC, Device):
     """Abstract interface for device-like classes."""
 
-    def __init__(self, device: "qbraid.providers.QDEVICE"):
+    def __init__(self, device: Any, provider: Provider = None, **kwargs):
         """Create a ``QuantumDevice`` object.
 
         Args:
@@ -50,65 +53,19 @@ class QuantumDevice(ABC):
         """
         # pylint: disable=too-many-function-args
         self._device = device
-        self._vendor_id = None
+        self._provider = provider
         self._id = None
         self._name = None
         self._vendor = None
-        self._provider = None
         self._num_qubits = None
         self._device_type = None
         self._run_package = None
-        self._populate_metadata(device)
+        self._populate_metadata(**kwargs)
 
     @property
     def id(self) -> str:
         """Return the device ID."""
-        if self._id is None and self._vendor_id is not None:
-            try:
-                client = QuantumClient()
-                device = client.get_device(vendor_id=self._vendor_id)
-                self._id = device["qbraid_id"]
-            except Exception as err:  # pylint: disable=broad-exception-caught
-                logger.info(
-                    "Error retrieving device ID from qBraid API: %s. "
-                    "Field will be ommited in job metadata",
-                    err,
-                )
         return self._id
-
-    @property
-    def vendor_id(self) -> str:
-        """Return the vendor device ID."""
-        return self._vendor_id
-
-    @property
-    def name(self) -> str:
-        """Return the device name.
-
-        Returns:
-            The name of the device.
-        """
-        return self._name
-
-    @property
-    def provider(self) -> str:
-        """Return the device provider.
-
-        Returns:
-            The provider responsible for the device.
-
-        """
-        return self._provider
-
-    @property
-    def vendor(self) -> str:
-        """Return the software vendor name.
-
-        Returns:
-            The name of the software vendor.
-
-        """
-        return self._vendor
 
     @property
     def num_qubits(self) -> int:
@@ -139,12 +96,9 @@ class QuantumDevice(ABC):
         """Return the number of jobs in the queue for the backend"""
 
     @abstractmethod
-    def _populate_metadata(self, device: "qbraid.providers.QDEVICE") -> None:
+    def _populate_metadata(self, **kwargs) -> None:
         """Populate device metadata with the following fields:
         * self._id
-        * self._vendor_id
-        * self._name
-        * self._provider
         * self._vendor
         * self._num_qubits
         * self._device_type
@@ -154,10 +108,6 @@ class QuantumDevice(ABC):
         """Returns device metadata"""
         return {
             "id": self._id,
-            "vendorDeviceId": self._vendor_id,
-            "name": self._name,
-            "provider": self._provider,
-            "vendor": self._vendor,
             "numQubits": self._num_qubits,
             "deviceType": self._device_type.name,
             "status": self.status().name,
@@ -284,7 +234,6 @@ class QuantumDevice(ABC):
     # pylint: disable-next=too-many-arguments
     def create_job(
         self,
-        vendor_job_id: str,
         tags: Optional[dict[str, str]] = None,
         shots: Optional[int] = None,
         openqasm: Optional[Union[str, list[str]]] = None,
@@ -305,8 +254,7 @@ class QuantumDevice(ABC):
         tags = tags or {}
 
         init_data = {
-            "vendorJobId": vendor_job_id,
-            "qbraidDeviceId": self.id,
+            "deviceId": self.id,
             "shots": shots,
             "tags": json.dumps(tags),
         }
@@ -335,29 +283,7 @@ class QuantumDevice(ABC):
             else:
                 raise ValueError("depth must be an integer or a list of integers")
 
-        if self._device_type == DeviceType("FAKE"):
-            init_data["qbraidJobId"] = f"{self.vendor.lower()}_test_id"
-            return init_data
-
-        # One of the features of qBraid Quantum Jobs is the ability to send
-        # jobs without any credentials using the qBraid Lab platform. If the
-        # qBraid Quantum Jobs proxy is enabled, a document has already been
-        # created for this job. So, instead creating a duplicate, we query the
-        # user jobs for the `vendorJobId` and return the correspondong `qbraidJobId`.
-        try:
-            jobs_state = quantum_lib_proxy_state(self._run_package)
-            jobs_enabled = jobs_state.get("enabled", False)
-        except ValueError:
-            jobs_enabled = False
-
         client = QuantumClient()
-
-        if jobs_enabled:
-            try:
-                return client.get_job(vendor_id=vendor_job_id)
-            except IndexError as err:
-                raise QbraidRuntimeError(f"{self.vendor} job {vendor_job_id} not found") from err
-
         return client.create_job(data=init_data)
 
     def transform(
@@ -372,58 +298,14 @@ class QuantumDevice(ABC):
         return run_input
 
     @abstractmethod
-    def _run(self, run_input: "qbraid.programs.QPROGRAM", *args, **kwargs) -> dict[str, Any]:
-        """Vendor run method. Should return dictionary with the following keys:
-
-        * "shots" (int): Number of shots. For jobs that don't support shots, set to 0.
-        * "tags" (dict[str, str]): Dictionary of tags. For providers that use list of tags,
-                                   set all values to "*".
-        * "vendor_job_id" (str): Job ID provided by device vendor.
-        * "qbraid_job_obj" (qbraid.providers.QuantumJob): The qBraid Job object to be
-                                                          instantiated later. It should
-                                                          not be an instance.
-        * "vendor_job_obj" (optional, Any): Vendor job object (e.g. braket.aws.AwsQuantumTask).
-                                            Optional because should be accessible using
-                                            qbraidJobObj.get_job(vendorJobId) anyways,
-                                            but eliminates an extra call.
-        """
+    def submit(self, run_input: "qbraid.programs.QPROGRAM", *args, **kwargs) -> dict[str, Any]:
+        """Vendor run method. Should return dictionary with the following keys."""
 
     @abstractmethod
-    def _run_batch(
+    def submit_batch(
         self, run_input: "list[qbraid.programs.QPROGRAM]", *args, **kwargs
     ) -> dict[str, Any]:
-        """Vendor run method. Should return dictionary with the following keys:
-
-        * "shots" (int): Number of shots. For jobs that don't support shots, set to 0.
-        * "tags" (dict[str, str]): Dictionary of tags. For providers that use list of tags,
-                                   set all values to "*".
-        * "vendor_job_id" (str): Job ID provided by device vendor.
-        * "qbraid_job_obj" (qbraid.providers.QuantumJob): The qBraid Job object to be
-                                                          instantiated later. It should
-                                                          not be an instance.
-        * "vendor_job_obj" (optional, Any): Vendor job object (e.g. braket.aws.AwsQuantumTask).
-                                            Optional because should be accessible using
-                                            qbraidJobObj.get_job(vendorJobId) anyways,
-                                            but eliminates an extra call.
-        """
-
-    def process_vendor_job_data(self, vendor_job_data_item, program_data):
-        """Process vendor job data and return a QuantumJob object."""
-        qbraid_job_obj: Optional[QuantumJob] = vendor_job_data_item.pop("qbraid_job_obj", None)
-        vendor_job_obj: Optional[Any] = vendor_job_data_item.pop("vendor_job_obj", None)
-
-        job_data = {**vendor_job_data_item, **program_data}
-        job_json = self.create_job(**job_data)
-        job_id = job_json.get("qbraidJobId", job_json.get("_id"))
-
-        if qbraid_job_obj is None:
-            return QuantumJob.retrieve(job_id)
-        return qbraid_job_obj(
-            job_id,
-            job_obj=vendor_job_obj,
-            job_json=job_json,
-            device=self,
-        )
+        """Vendor run method. Should return dictionary with the following keys."""
 
     def run(
         self,
@@ -431,7 +313,7 @@ class QuantumDevice(ABC):
         *args,
         conversion_graph: "Optional[qbraid.transpiler.ConversionGraph]" = None,
         **kwargs,
-    ) -> "qbraid.providers.QuantumJob":
+    ) -> "qbraid.providers.Job":
         """Run a quantum job specification on this quantum device.
 
         Args:
@@ -446,11 +328,8 @@ class QuantumDevice(ABC):
             The job like object for the run.
 
         """
-        run_input, program_data = self.process_run_input(
-            run_input, conversion_graph=conversion_graph
-        )
-        vendor_job_data = self._run(run_input, *args, **kwargs)
-        return self.process_vendor_job_data(vendor_job_data, program_data)
+        run_input, _ = self.process_run_input(run_input, conversion_graph=conversion_graph)
+        return self.submit(run_input, *args, **kwargs)
 
     def run_batch(
         self,
@@ -489,17 +368,4 @@ class QuantumDevice(ABC):
             "depth": depth_batch,
             "openqasm": openqasm_batch,
         }
-        vendor_job_data = self._run_batch(run_input_batch, *args, **kwargs)
-
-        is_list_input = isinstance(vendor_job_data, list)
-
-        if not is_list_input:
-            vendor_job_data = [vendor_job_data]
-
-        qbraid_job_objs = [
-            self.process_vendor_job_data(item, program_data) for item in vendor_job_data
-        ]
-
-        if is_list_input:
-            return qbraid_job_objs
-        return qbraid_job_objs[0]
+        return self.submit_batch(run_input_batch, *args, **kwargs)

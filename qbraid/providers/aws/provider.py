@@ -20,12 +20,17 @@ import boto3
 from boto3.session import Session
 from braket.aws import AwsDevice, AwsSession
 from qbraid_core.services.quantum import quantum_lib_proxy_state
+from qbraid_core.services.quantum.proxy_braket import aws_configure
 
 from qbraid.exceptions import QbraidError
 from qbraid.providers.provider import QuantumProvider
 
+from .device import BraketDevice
+
 if TYPE_CHECKING:
     import braket.aws
+
+    import qbraid.providers.aws
 
 
 class BraketProvider(QuantumProvider):
@@ -51,9 +56,9 @@ class BraketProvider(QuantumProvider):
         self.aws_access_key_id = aws_access_key_id or os.getenv("AWS_ACCESS_KEY_ID")
         self.aws_secret_access_key = aws_secret_access_key or os.getenv("AWS_SECRET_ACCESS_KEY")
 
-    def save_config(self):
+    def save_config(self, *args, **kwargs):
         """Save the current configuration."""
-        raise NotImplementedError
+        raise aws_configure(*args, **kwargs)
 
     @staticmethod
     def _get_default_region() -> str:
@@ -103,18 +108,19 @@ class BraketProvider(QuantumProvider):
 
     def get_devices(
         self, aws_session=None, statuses=None, **kwargs
-    ) -> list["braket.aws.AwsDevice"]:
+    ) -> list["qbraid.providers.aws.BraketDevice"]:
         """Return a list of backends matching the specified filtering."""
         aws_session = self._get_aws_session() if aws_session is None else aws_session
         statuses = ["ONLINE", "OFFLINE"] if statuses is None else statuses
+        devices = AwsDevice.get_devices(aws_session=aws_session, statuses=statuses, **kwargs)
+        return [BraketDevice(device) for device in devices]
 
-        return AwsDevice.get_devices(aws_session=aws_session, statuses=statuses, **kwargs)
-
-    def get_device(self, device_id: str) -> "braket.aws.AwsDevice":
+    def get_device(self, device_id: str) -> "qbraid.providers.aws.BraketDevice":
         """Returns the AWS device."""
         region_name = self._get_region_name(device_id)  # deviceArn
         aws_session = self._get_aws_session(region_name=region_name)
-        return AwsDevice(arn=device_id, aws_session=aws_session)
+        device = AwsDevice(arn=device_id, aws_session=aws_session)
+        return BraketDevice(device)
 
     def get_tasks_by_tag(
         self, key: str, values: Optional[list[str]] = None, region_names: Optional[list[str]] = None

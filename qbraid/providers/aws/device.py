@@ -221,7 +221,7 @@ class BraketDevice(QuantumDevice):
 
         return run_input
 
-    def _run(self, run_input: "braket.circuits.Circuit", *args, **kwargs) -> dict[str, Any]:
+    def submit(self, run_input: "braket.circuits.Circuit", *args, **kwargs) -> dict[str, Any]:
         """Run a quantum task specification on this quantum device. Task must represent a
         quantum circuit, annealing problems not supported.
 
@@ -236,16 +236,10 @@ class BraketDevice(QuantumDevice):
 
         """
         aws_quantum_task = self._device.run(run_input, *args, **kwargs)
-        metadata = aws_quantum_task.metadata()
-        return {
-            "vendor_job_id": metadata["quantumTaskArn"],
-            "tags": metadata.get("tags", {}),
-            "shots": metadata.get("shots", 0),
-            "vendor_job_obj": aws_quantum_task,
-            "qbraid_job_obj": BraketQuantumTask,
-        }
+        job_id = aws_quantum_task.metadata()["quantumTaskArn"]
+        return BraketQuantumTask(job_id, device=self._device)
 
-    def _run_batch(self, run_input, *args, **kwargs) -> list[dict[str, Any]]:
+    def submit_batch(self, run_input, *args, **kwargs) -> list[BraketQuantumTask]:
         """Run batch of quantum tasks on this quantum device.
 
         Args:
@@ -259,18 +253,8 @@ class BraketDevice(QuantumDevice):
             List of BraketQuantumTask objects for the run.
 
         """
-        device = self._device
-        aws_quantum_task_batch = device.run_batch(run_input, *args, **kwargs)
-        aws_quantum_tasks = aws_quantum_task_batch.tasks
-        aws_quantum_task_data = []
-        for _, aws_quantum_task in enumerate(aws_quantum_tasks):
-            metadata = aws_quantum_task.metadata()
-            job_data = {
-                "vendor_job_id": metadata["quantumTaskArn"],
-                "tags": metadata.get("tags", {}),
-                "shots": metadata.get("shots", 0),
-                "vendor_job_obj": aws_quantum_task,
-                "qbraid_job_obj": BraketQuantumTask,
-            }
-            aws_quantum_task_data.append(job_data)
-        return aws_quantum_task_data
+        aws_quantum_task_batch = self._device.run_batch(run_input, *args, **kwargs)
+        return [
+            BraketQuantumTask(task.metadata()["quantumTaskArn"], device=self._device)
+            for task in aws_quantum_task_batch.tasks
+        ]
