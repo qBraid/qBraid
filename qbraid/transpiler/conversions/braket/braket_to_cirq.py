@@ -56,7 +56,7 @@ def braket_gate_to_matrix(gate: braket_gates.Unitary) -> np.ndarray:
     unitary_gate = braket_gates.Unitary(matrix)
     nqubits = int(np.log2(len(matrix)))
     qubits = list(range(nqubits)) if nqubits > 1 else 0
-    bk_circuit = Circuit([BKInstruction(unitary_gate, qubits)])
+    bk_circuit = BKCircuit([BKInstruction(unitary_gate, qubits)])
     return bk_circuit.to_unitary()
 
 
