@@ -17,7 +17,7 @@ from typing import Optional
 
 from braket.aws import AwsQuantumTask
 
-from qbraid.providers.enums import JOB_FINAL
+from qbraid.providers.enums import JOB_FINAL, JobStatus
 from qbraid.providers.exceptions import JobStateError
 from qbraid.providers.job import QuantumJob
 
@@ -25,6 +25,16 @@ from .result import BraketGateModelResult
 from .tracker import get_quantum_task_cost
 
 logger = logging.getLogger(__name__)
+
+AWS_TASK_STATUS_MAP = {
+    "CREATED": JobStatus.INITIALIZING,
+    "QUEUED": JobStatus.QUEUED,
+    "RUNNING": JobStatus.RUNNING,
+    "CANCELLING": JobStatus.CANCELLING,
+    "CANCELLED": JobStatus.CANCELLED,
+    "COMPLETED": JobStatus.COMPLETED,
+    "FAILED": JobStatus.FAILED,
+}
 
 
 class AmazonBraketVersionError(Exception):
@@ -34,18 +44,18 @@ class AmazonBraketVersionError(Exception):
 class BraketQuantumTask(QuantumJob):
     """Wrapper class for Amazon Braket ``QuantumTask`` objects."""
 
-    def __init__(self, job_id: str, **kwargs):
+    def __init__(self, task_id: str, task: Optional[AwsQuantumTask], **kwargs):
         """Create a BraketQuantumTask."""
 
-        super().__init__(job_id, **kwargs)
+        super().__init__(task_id, **kwargs)
+        self._task = task or AwsQuantumTask(task_id)
 
-    def _get_job(self):
-        """Return the job like object that is being wrapped."""
-        return AwsQuantumTask(self.vendor_job_id)
-
-    def _get_status(self):
+    def status(self):
         """Returns status from Braket QuantumTask object metadata."""
-        return self._job.state()
+        state = self._task.state()
+        status = AWS_TASK_STATUS_MAP.get(state, JobStatus.UNKNOWN)
+        self._cache_metadata["status"] = status
+        return status
 
     def queue_position(self) -> Optional[int]:
         """Returns queue position from Braket QuantumTask.

@@ -14,14 +14,12 @@ Module defining abstract QuantumJob Class
 """
 import logging
 from abc import ABC, abstractmethod
-from enum import Enum
 from time import sleep, time
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional
 
 from .device import Device
 from .enums import JOB_FINAL, JobStatus
 from .exceptions import JobError, ResourceNotFoundError
-from .result import Result
 
 if TYPE_CHECKING:
     import qbraid.providers
@@ -40,7 +38,6 @@ class QuantumJob(ABC, Job):
         self._job_id = job_id
         self._device = device
         self._cache_metadata = kwargs
-        self._cache_status = kwargs.get("status", None)
 
     @property
     def id(self) -> str:  # pylint: disable=invalid-name
@@ -54,48 +51,22 @@ class QuantumJob(ABC, Job):
             raise ResourceNotFoundError("Job does not have an associated device.")
         return self._device
 
-    @staticmethod
-    def _map_status(status: Optional[Union[str, JobStatus]] = None) -> JobStatus:
-        """Returns `JobStatus` object mapped from raw status value. If no value
-        provided or conversion from string fails, returns `JobStatus.UNKNOWN`."""
-        if status is None:
-            return JobStatus.UNKNOWN
-        if isinstance(status, Enum):
-            return status
-        if isinstance(status, str):
-            for e in JobStatus:
-                status_enum = JobStatus(e.value)
-                if status == status_enum.name or status == str(status_enum):
-                    return status_enum
-            raise ValueError(f"Status value '{status}' not recognized.")
-        raise ValueError(f"Invalid status value type: {type(status)}")
-
-    @staticmethod
-    def status_final(status: Union[str, JobStatus]) -> bool:
+    def is_terminal_state(self) -> bool:
         """Returns True if job is in final state. False otherwise."""
-        if isinstance(status, str):
-            if status in JOB_FINAL:
-                return True
-            for job_status in JOB_FINAL:
-                if job_status.name == status:
-                    return True
-            return False
-        raise TypeError(
-            f"Expected status of type 'str' or 'JobStatus' \
-            but instead got status of type {type(status)}."
-        )
+        if self._cache_metadata.get("status", None) in JOB_FINAL:
+            return True
+
+        status = self.status()
+        return status in JOB_FINAL
 
     @abstractmethod
-    def status(
-        self,
-    ) -> JobStatus:
+    def status(self) -> JobStatus:
         """Return the status of the job / task , among the values of ``JobStatus``."""
 
     def metadata(self) -> dict[str, Any]:
         """Return the metadata regarding the job."""
         status = self.status()
-        if not self._cache_metadata or status != self._cache_status:
-            self._cache_status = self._map_status(self._cache_metadata["status"])
+        self._cache_metadata["status"] = status
         return self._cache_metadata
 
     def wait_for_final_state(self, timeout: Optional[int] = None, poll_interval: int = 5) -> None:
@@ -110,16 +81,14 @@ class QuantumJob(ABC, Job):
 
         """
         start_time = time()
-        status = self.status()
-        while not self.status_final(status):
+        while not self.is_terminal_state():
             elapsed_time = time() - start_time
             if timeout is not None and elapsed_time >= timeout:
                 raise JobError(f"Timeout while waiting for job {self.id}.")
             sleep(poll_interval)
-            status = self.status()
 
     @abstractmethod
-    def result(self) -> "qbraid.providers.ResultWrapper":
+    def result(self) -> "qbraid.providers.Result":
         """Return the results of the job."""
 
     @abstractmethod
