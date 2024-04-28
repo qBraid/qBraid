@@ -16,7 +16,7 @@ import importlib
 import inspect
 from typing import TYPE_CHECKING, Any, Callable, Union
 
-from qbraid.programs import QPROGRAM_REGISTRY, get_program_type
+from qbraid.programs import QPROGRAM_REGISTRY, get_program_type_alias
 
 if TYPE_CHECKING:
     import qbraid
@@ -40,12 +40,8 @@ class Conversion:
         self._target = target
         self._conversion_func = conversion_func
         self._extras = getattr(conversion_func, "requires_extras", [])
-
-        module = inspect.getmodule(conversion_func)
-        self._native = (
-            module is not None and module.__name__.startswith("qbraid") and len(self._extras) == 0
-        )
-        self._supported = self._check_supported()
+        self._native = self._is_module_native(conversion_func)
+        self._supported = self._is_conversion_supported()
 
     @property
     def source(self) -> str:
@@ -87,7 +83,25 @@ class Conversion:
         """
         return self._supported
 
-    def _check_supported(self) -> bool:
+    def _is_module_native(self, func: Callable) -> bool:
+        """
+        Determine if the function's module is 'qbraid' and requires no extras.
+
+        Args:
+            func (Callable): The function to check the module of.
+
+        Returns:
+            bool: True if the module is 'qbraid' and requires no extras, False otherwise.
+        """
+        module = inspect.getmodule(func)
+        is_native = (
+            module is not None
+            and module.__name__.split(".")[0] == "qbraid"
+            and len(self._extras) == 0
+        )
+        return is_native
+
+    def _is_conversion_supported(self) -> bool:
         """
         Determine if the required packages for the conversion are installed.
 
@@ -119,7 +133,7 @@ class Conversion:
         Raises:
             ValueError: If the provided program's type does not match the source package type.
         """
-        package = get_program_type(program)
+        package = get_program_type_alias(program)
         if package != self._source:
             raise ValueError(
                 f"Expected program of type {QPROGRAM_REGISTRY[self._source]}, "

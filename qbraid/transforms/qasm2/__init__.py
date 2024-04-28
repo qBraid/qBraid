@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -9,19 +9,21 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for runtime quantum program transformations.
+Module for appyling transformations to OpenQASM 2 programs.
 
-.. currentmodule:: qbraid.transforms
+.. currentmodule:: qbraid.transforms.qasm2
 
-Exceptions
------------
+Functions
+----------
 
 .. autosummary::
    :toctree: ../stubs/
-   
-   TransformError
-   CompilationError
-   DecompositionError
+
+   remove_qasm_barriers
+   unfold_qasm_gate_defs
+   flatten_qasm_program
+   decompose_qasm_qelib1
 
 """
-from .exceptions import CompilationError, DecompositionError, TransformError
+from .passes import flatten_qasm_program, remove_qasm_barriers, unfold_qasm_gate_defs
+from .qasm_qelib1 import decompose_qasm_qelib1

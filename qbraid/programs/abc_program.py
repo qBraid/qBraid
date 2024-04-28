@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 
-from .inspector import get_program_type
+from .alias_manager import get_program_type_alias
 
 if TYPE_CHECKING:
     import qbraid
@@ -29,7 +29,7 @@ class QuantumProgram:
     def __init__(self, program: "qbraid.programs.QPROGRAM"):
         self.program = program
         self._program = program
-        self._package = get_program_type(program)
+        self._package = get_program_type_alias(program)
 
     @property
     def package(self) -> str:

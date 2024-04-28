@@ -32,6 +32,8 @@ from cirq import (
     value,
 )
 
+# pylint: disable=abstract-method
+
 
 class U2Gate(Gate):
     """A single qubit gate for rotations about the

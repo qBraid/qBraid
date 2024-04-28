@@ -17,7 +17,8 @@ import unittest.mock
 
 import pytest
 
-from qbraid.programs.registry import QPROGRAM_REGISTRY, register_program_type
+from qbraid.programs import QPROGRAM_REGISTRY, get_program_type_alias, register_program_type
+from qbraid.programs.registry import is_registered_alias_native
 
 
 @pytest.fixture(autouse=True)
@@ -69,3 +70,30 @@ def test_re_registration_same_alias_type():
     register_program_type(str, "qasm2")
     register_program_type(str, "qasm2")
     assert len(QPROGRAM_REGISTRY) == init_registry_size
+
+
+def test_get_program_type_alias_alias_library_mismatch():
+    """Test getting program type when the alias does not match the module."""
+    register_program_type(unittest.mock.Mock, alias="mock")
+    assert get_program_type_alias(unittest.mock.Mock()) == "mock"
+
+
+def test_overwrite_existing_alias():
+    """Test overwriting an existing alias with a new type"""
+    register_program_type(str, "qasm2")
+    register_program_type(unittest.mock.Mock, "qasm2", overwrite=True)
+    assert QPROGRAM_REGISTRY["qasm2"] == unittest.mock.Mock
+
+
+def test_is_alias_registered_native_true():
+    """Verify that is_alias_registered_native returns True when
+    a native program type is registered with a given alias."""
+    register_program_type(str, "qasm2")
+    assert is_registered_alias_native("qasm2")
+
+
+def test_is_alias_registered_native_false():
+    """Verify that is_alias_registered_native returns False when the registered
+    program type for an alias does not match the native program type."""
+    register_program_type(dict, "qasm2", overwrite=True)
+    assert not is_registered_alias_native("qasm2")

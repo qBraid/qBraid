@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -9,19 +9,19 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for runtime quantum program transformations.
+Module for appyling transformations to OpenQASM 3 programs.
 
-.. currentmodule:: qbraid.transforms
+.. currentmodule:: qbraid.transforms.qasm3
 
-Exceptions
------------
+Functions
+----------
 
 .. autosummary::
    :toctree: ../stubs/
-   
-   TransformError
-   CompilationError
-   DecompositionError
+
+   qasm3_braket_pre_process
+   qasm3_braket_post_process
+
 
 """
-from .exceptions import CompilationError, DecompositionError, TransformError
+from .compat import qasm3_braket_post_process, qasm3_braket_pre_process

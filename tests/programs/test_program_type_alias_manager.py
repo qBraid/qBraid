@@ -9,15 +9,16 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for inspecting and getting information about quantum programs
+Unit tests for managing quantum program type aliases.
 
 """
 from unittest.mock import Mock
 
 import pytest
 
-from qbraid.programs.exceptions import PackageValueError, ProgramTypeError, QasmError
-from qbraid.programs.inspector import get_program_type, get_qasm_version
+from qbraid.programs.alias_manager import get_program_type_alias, parse_qasm_type_alias
+from qbraid.programs.exceptions import ProgramTypeError, QasmError
+from qbraid.programs.registry import derive_program_type_alias
 
 from ..fixtures import packages_bell
 
@@ -81,40 +82,38 @@ measure q -> c;
 
 
 @pytest.mark.parametrize("qasm_str, expected_version", QASM_BELL_DATA)
-def test_get_qasm_version(qasm_str, expected_version):
+def test_parse_qasm_type_alias(qasm_str, expected_version):
     """Test getting QASM version"""
-    assert get_qasm_version(qasm_str) == expected_version
+    assert parse_qasm_type_alias(qasm_str) == expected_version
 
 
 @pytest.mark.parametrize("qasm_str", QASM_ERROR_DATA)
-def test_get_qasm_version_error(qasm_str):
+def test_parse_qasm_type_alias_error(qasm_str):
     """Test getting QASM version"""
     with pytest.raises(QasmError):
-        get_qasm_version(qasm_str)
+        parse_qasm_type_alias(qasm_str)
 
 
 @pytest.mark.parametrize("bell_circuit", packages_bell, indirect=True)
-def test_get_program_type(bell_circuit):
+def test_get_program_type_alias(bell_circuit):
     """Test that the correct package is returned for a given program."""
     circuit, expected_package = bell_circuit
-    package_name = get_program_type(circuit)
+    package_name = get_program_type_alias(circuit)
     assert package_name == expected_package
 
 
-@pytest.mark.parametrize(
-    "program,expected_package", [("not-a-circuit", None), (Mock(), "unittest")]
-)
-def test_get_program_type_required_supported_false(program, expected_package):
+@pytest.mark.parametrize("program,expected_package", [(Mock(), "unittest")])
+def test_get_program_type_alias_required_supported_false(program, expected_package):
     """Test that None or module name is returned for unsupported package when
     require supported is given as False."""
-    package = get_program_type(program, require_supported=False)
+    package = derive_program_type_alias(program)
     assert package == expected_package
 
 
 def test_raise_error_unuspported_source_program():
     """Test that an error is raised if source program is not supported."""
-    with pytest.raises(PackageValueError):
-        get_program_type(Mock())
+    with pytest.raises(ProgramTypeError):
+        get_program_type_alias(Mock())
 
 
 @pytest.mark.parametrize(
@@ -124,11 +123,11 @@ def test_raise_error_unuspported_source_program():
 def test_bad_source_openqasm_program(item):
     """Test raising ProgramTypeError converting invalid OpenQASM program string"""
     with pytest.raises(ProgramTypeError):
-        get_program_type(item)
+        get_program_type_alias(item)
 
 
 @pytest.mark.parametrize("item", [1, None])
 def test_bad_source_program_type(item):
     """Test raising ProgramTypeError converting circuit of non-supported type"""
     with pytest.raises(ProgramTypeError):
-        get_program_type(item)
+        get_program_type_alias(item)

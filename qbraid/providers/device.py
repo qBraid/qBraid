@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 
 from qbraid_core.services.quantum import QuantumClient, quantum_lib_proxy_state
 
-from qbraid.programs import get_program_type, load_program
+from qbraid.programs import get_program_type_alias, load_program
 from qbraid.transpiler import CircuitConversionError, transpile
 
 from .enums import DeviceType
@@ -214,8 +214,7 @@ class QuantumDevice(ABC):
             QbraidRuntimeError: If circuit conversion fails
 
         """
-        require_supported = conversion_graph is None
-        input_run_package = get_program_type(run_input, require_supported=require_supported)
+        input_run_package = get_program_type_alias(run_input)
         if input_run_package != self._run_package:
             try:
                 run_input = transpile(

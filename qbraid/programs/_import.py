@@ -13,14 +13,15 @@ Module defining input / output types for a quantum backend:
 
   * QPROGRAM: Type alias defining all supported quantum circuit / program types
 
-  * QPROGRAM_REGISTRY: Dict mapping all supported quantum software libraries / package
+  * NATIVE_REGISTRY: Dict mapping all supported quantum software libraries / package
                          names to their respective program types
 
 """
 
+from copy import deepcopy
 from importlib import import_module
 from types import ModuleType
-from typing import Type
+from typing import Any, Type
 
 
 def __dynamic_importer(opt_modules: list[str]) -> list[Type]:
@@ -58,6 +59,8 @@ def __get_class(module: str):
         return pytket._tket.circuit.Circuit  # type: ignore
     if module == "openqasm3":
         return openqasm3.ast.Program  # type: ignore
+    if module == "pyqir":
+        return pyqir.Program  # type: ignore
 
 
 # Supported quantum programs.
@@ -65,9 +68,10 @@ _PROGRAMS = __dynamic_importer(
     ["cirq", "qiskit", "pennylane", "pyquil", "pytket", "braket.circuits", "openqasm3"]
 )
 
-dynamic_type_registry: dict[str, Type] = {t.__module__.split(".")[0]: t for t in _PROGRAMS}
-static_type_registry: dict[str, Type] = {"qasm2": str, "qasm3": str}
+dynamic_type_registry: dict[str, Type[Any]] = {t.__module__.split(".")[0]: t for t in _PROGRAMS}
+static_type_registry: dict[str, Type[Any]] = {"qasm2": str, "qasm3": str}
 
-_QPROGRAM_REGISTRY: dict[str, Type] = dynamic_type_registry | static_type_registry
-_QPROGRAM_TYPES: set[Type] = set(_QPROGRAM_REGISTRY.values())
+NATIVE_REGISTRY: dict[str, Type[Any]] = dynamic_type_registry | static_type_registry
+_QPROGRAM_REGISTRY: dict[str, Type[Any]] = deepcopy(NATIVE_REGISTRY)
+_QPROGRAM_TYPES: set[Type[Any]] = set(_QPROGRAM_REGISTRY.values())
 _QPROGRAM_ALIASES: set[str] = set(_QPROGRAM_REGISTRY.keys())

@@ -17,14 +17,12 @@ import warnings
 from copy import deepcopy
 from typing import TYPE_CHECKING, Callable, Optional
 
-from qbraid.programs import QPROGRAM_ALIASES, get_program_type
+from qbraid.programs import QPROGRAM_ALIASES, ProgramTypeError, get_program_type_alias
 
 from .exceptions import CircuitConversionError, ConversionPathNotFoundError, NodeNotFoundError
 from .graph import ConversionGraph
 
 if TYPE_CHECKING:
-    import cirq  # type: ignore
-
     import qbraid.programs
 
 
@@ -39,23 +37,8 @@ def _warn_if_unsupported(program_type, program_direction):
         )
 
 
-def _flatten_cirq(circuit: "cirq.Circuit") -> "cirq.Circuit":
-    """
-    Flatten a Cirq circuit.
-
-    Args:
-        circuit (cirq.Circuit): The Cirq circuit to flatten.
-
-    Returns:
-        cirq.Circuit: The flattened Cirq circuit.
-    """
-    # TODO: potentially replace with native cirq.decompose
-    # https://quantumai.google/reference/python/cirq/decompose
-
-    # pylint: disable=import-outside-toplevel
-    from cirq.contrib.qasm_import import circuit_from_qasm  # type: ignore
-
-    return circuit_from_qasm(circuit.to_qasm())
+def _format_exception(err: Exception) -> str:
+    return f"{type(err).__name__}: {str(err)}\n"
 
 
 def _get_path_from_bound_methods(bound_methods: list[Callable]) -> str:
@@ -136,7 +119,7 @@ def transpile(
     if not graph.has_node(target):
         raise NodeNotFoundError(graph_type, target, graph.nodes)
 
-    source = get_program_type(program, require_supported=conversion_graph is None)
+    source = get_program_type_alias(program)
 
     if not graph.has_node(source):
         raise NodeNotFoundError(graph_type, source, graph.nodes)
@@ -157,28 +140,50 @@ def transpile(
         if len(paths) == 0:
             raise ConversionPathNotFoundError(source, target, max_path_depth)
 
+    error_messages = []
+
     for path in paths:
+        path_details = _get_path_from_bound_methods(path)
         temp_program = deepcopy(program)
         try:
             for convert_func in path:
                 try:
                     temp_program = convert_func(temp_program)
-                except Exception:  # pylint: disable=broad-exception-caught
-                    if get_program_type(temp_program) == "cirq":
-                        temp_program = _flatten_cirq(temp_program)
+                except Exception as err:  # pylint: disable=broad-exception-caught
+                    try:
+                        alias = get_program_type_alias(temp_program)
+                    except ProgramTypeError:
+                        alias = None
+
+                    if alias == "cirq":
+                        # pylint: disable=import-outside-toplevel
+                        from qbraid.transforms.cirq import decompose
+
+                        temp_program = decompose(temp_program)
                         temp_program = convert_func(temp_program)  # Retry conversion
                     else:
+                        error_detail = (
+                            f"Conversion {path_details} failed due to "
+                            f"exception raised while converting from '{alias}'."
+                        )
+                        error_messages.append(error_detail)
+                        error_messages.append(_format_exception(err))
                         raise
-            logger.info(
-                "\nSuccessfully transpiled using conversions: %s",
-                _get_path_from_bound_methods(path),
-            )
+
+            logger.info("\nSuccessfully transpiled using conversions: %s", path_details)
             return temp_program
-        except Exception:  # pylint: disable=broad-exception-caught
-            logger.info(
-                "\nFailed to transpile using conversions: %s",
-                _get_path_from_bound_methods(path),
-            )
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            logger.info("\nFailed to transpile using conversions: %s", path_details)
+            formatted_error = _format_exception(err)
+            if len(error_messages) == 0 or error_messages[-1] != formatted_error:
+                error_messages.append(formatted_error)
             continue
 
-    raise CircuitConversionError(f"Failed to convert program from '{source}' to '{target}'.")
+    raise CircuitConversionError(
+        f"Failed to convert '{source}' to '{target}'"
+        + (
+            " due to the following error(s):\n\n" + "\n".join(error_messages)
+            if error_messages
+            else "."
+        )
+    )

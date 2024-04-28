@@ -12,6 +12,9 @@
 Module for converting generic quantum circuits to basis gate set compatible with IonQ devices.
 
 """
+
+# pylint: disable=no-name-in-module,no-member
+
 from typing import TYPE_CHECKING
 
 import pytket

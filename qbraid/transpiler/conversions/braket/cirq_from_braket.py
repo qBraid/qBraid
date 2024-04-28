@@ -70,6 +70,9 @@ def _from_braket_instruction(
     BK_qubits = [int(q) for q in instr.target]
     qubits = [qubit_mapping[x] for x in BK_qubits]
 
+    if str(instr.operator) == "Measure":
+        return [cirq_ops.MeasurementGate(num_qubits=nqubits).on(*qubits)]
+
     try:
         if nqubits == 1:
             return _from_one_qubit_braket_instruction(instr, qubits)
@@ -95,6 +98,7 @@ def _from_braket_instruction(
             f"Unable to convert to Cirq due to unrecognized \
             instruction: {instr}."
         )
+
     except Exception as err:
         raise CircuitConversionError(
             f"qBraid transpiler doesn't support operator {instr.operator}"

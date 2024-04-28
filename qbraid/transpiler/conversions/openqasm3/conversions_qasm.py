@@ -16,8 +16,8 @@ import os
 
 import openqasm3
 
-from qbraid.programs.inspector import get_qasm_version
-from qbraid.programs.qasm_qelib1 import _decompose_rxx_instr
+from qbraid.programs import parse_qasm_type_alias
+from qbraid.transforms.qasm2.qasm_qelib1 import _decompose_rxx_instr
 
 QASMType = str
 
@@ -108,7 +108,7 @@ def qasm2_to_qasm3(qasm_str: str) -> QASMType:
     Returns:
         str: OpenQASM 3.0 string
     """
-    qasm_version = get_qasm_version(qasm_str)
+    qasm_version = parse_qasm_type_alias(qasm_str)
     if not qasm_version == "qasm2":
         raise ValueError("Invalid OpenQASM 2.0 string")
 

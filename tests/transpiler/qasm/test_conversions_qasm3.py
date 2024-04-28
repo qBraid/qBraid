@@ -70,9 +70,13 @@ def test_braket_to_qiskit_stdgates():
     circuit.cnot(0, 1)
     circuit.cphaseshift(2, 3, np.pi / 4)
 
+    cirq_circuit = transpile(circuit, "cirq")
     qasm3_program = transpile(circuit, "qasm3")
-    qiskit_circuit = transpile(qasm3_program, "qiskit")
-    assert circuits_allclose(circuit, qiskit_circuit, strict_gphase=True)
+    qasm2_program = transpile(cirq_circuit, "qasm2")
+    qiskit_circuit_1 = transpile(qasm3_program, "qiskit")
+    qiskit_circuit_2 = transpile(qasm2_program, "qiskit")
+    assert circuits_allclose(circuit, qiskit_circuit_1, strict_gphase=True)
+    assert circuits_allclose(circuit, qiskit_circuit_2, strict_gphase=False)
 
 
 def test_braket_to_qiskit_vi_sxdg():
