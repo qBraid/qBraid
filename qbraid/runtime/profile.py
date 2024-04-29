@@ -36,7 +36,7 @@ class RuntimeProfile(Mapping):
     def __init__(
         self,
         device_type: DeviceType,
-        device_num_qubits: int,
+        device_num_qubits: Optional[int],
         program_spec: ProgramSpec,
         conversion_graph: Optional[ConversionGraph] = None,
         **kwargs,
@@ -56,14 +56,12 @@ class RuntimeProfile(Mapping):
         """
         if not isinstance(device_type, DeviceType):
             raise TypeError("device_type must be an instance of DeviceType")
-        if not isinstance(device_num_qubits, int):
+        if device_num_qubits and not isinstance(device_num_qubits, int):
             raise TypeError("device_num_qubits must be an integer")
         if not isinstance(program_spec, ProgramSpec):
             raise TypeError("program_spec must be an instance of ProgramSpec")
-        if conversion_graph is None:
-            conversion_graph = ConversionGraph()
-        elif not isinstance(conversion_graph, ConversionGraph):
-            raise TypeError("conversion_graph must be an instance of ConversionGraph")
+        if conversion_graph and not isinstance(conversion_graph, ConversionGraph):
+            raise TypeError("conversion_graph must be an instance of ConversionGraph or None")
 
         self._data = {
             "device_type": device_type,

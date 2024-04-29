@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 from time import sleep, time
 from typing import TYPE_CHECKING, Any, Optional
 
-from .enums import JOB_FINAL, JobStatus
+from .enums import JOB_STATUS_FINAL, JobStatus
 from .exceptions import JobError, ResourceNotFoundError
 
 if TYPE_CHECKING:
@@ -48,20 +48,21 @@ class QuantumJob(ABC):
 
     def is_terminal_state(self) -> bool:
         """Returns True if job is in final state. False otherwise."""
-        if self._cache_metadata.get("status", None) in JOB_FINAL:
+        if self._cache_metadata.get("status", None) in JOB_STATUS_FINAL:
             return True
 
         status = self.status()
-        return status in JOB_FINAL
+        return status in JOB_STATUS_FINAL
 
     @abstractmethod
     def status(self) -> JobStatus:
         """Return the status of the job / task , among the values of ``JobStatus``."""
 
-    def metadata(self) -> dict[str, Any]:
+    def metadata(self, use_cache: bool = False) -> dict[str, Any]:
         """Return the metadata regarding the job."""
-        status = self.status()
-        self._cache_metadata["status"] = status
+        if not use_cache:
+            status = self.status()
+            self._cache_metadata["status"] = status
         return self._cache_metadata
 
     def wait_for_final_state(self, timeout: Optional[int] = None, poll_interval: int = 5) -> None:
@@ -83,7 +84,7 @@ class QuantumJob(ABC):
             sleep(poll_interval)
 
     @abstractmethod
-    def result(self) -> "qbraid.runtime.Result":
+    def result(self) -> "qbraid.runtime.QuantumJobResult":
         """Return the results of the job."""
 
     @abstractmethod

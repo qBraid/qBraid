@@ -14,19 +14,16 @@
 Module defining abstract QuantumDevice Class
 
 """
-import json
 import logging
 import warnings
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Optional, Union
-
-from qbraid_core.services.quantum import QuantumClient
+from typing import TYPE_CHECKING, Any, Union
 
 from qbraid.programs import get_program_type_alias, load_program
 from qbraid.programs._import import NATIVE_REGISTRY
 from qbraid.transpiler import CircuitConversionError, transpile
 
-from .enums import DeviceStatus, DeviceType
+from .enums import DeviceStatus
 from .exceptions import ProgramValidationError, QbraidRuntimeError
 from .profile import RuntimeProfile
 
@@ -46,13 +43,13 @@ class QuantumDevice(ABC):
         """Create a ``QuantumDevice`` object.
 
         Args:
-            device_id: The unique identifier of the device.
-            provider: The provider associated with the device.
+            device_id (str): The unique identifier of the device.
+            provider (qbraid.runtime.QuantumProvider, optional): The provider associated with the device.
 
         """
         self._id = device_id
         self._provider = provider
-        self._profile: RuntimeProfile = self._default_profile()
+        self._profile = None
 
     @property
     def id(self) -> str:
@@ -61,23 +58,13 @@ class QuantumDevice(ABC):
 
     @property
     def num_qubits(self) -> int:
-        """The number of qubits supported by the device.
-
-        Returns:
-            Number of qubits supported by QPU. If Simulator returns None.
-
-        """
-        return self._profile.get("num_qubits")
+        """The number of qubits supported by the device."""
+        return self.profile.get("num_qubits")
 
     @property
     def device_type(self) -> "qbraid.runtime.DeviceType":
-        """The device type, Simulator, Fake_device or QPU.
-
-        Returns:
-            Device type enum (SIMULATOR|QPU|FAKE)
-
-        """
-        return self._profile.get("device_type")
+        """The device type, Simulator, Fake_device or QPU."""
+        return self.profile.get("device_type")
 
     @abstractmethod
     def status(self) -> "qbraid.runtime.DeviceStatus":
@@ -86,6 +73,13 @@ class QuantumDevice(ABC):
     @abstractmethod
     def queue_depth(self) -> int:
         """Return the number of jobs in the queue for the backend"""
+
+    @property
+    def profile(self) -> "qbraid.runtime.RuntimeProfile":
+        """Return the runtime profile."""
+        if not self._profile:
+            self._profile = self._default_profile()
+        return self._profile
 
     @classmethod
     @abstractmethod
@@ -128,8 +122,8 @@ class QuantumDevice(ABC):
                 UserWarning,
             )
 
-        run_input_type = self._profile.get("run_input_program_type")
-        run_input_alias = self._profile.get("run_input_type_alias")
+        run_input_type = self.profile.get("run_input_program_type")
+        run_input_alias = self.profile.get("run_input_type_alias")
 
         if not isinstance(run_input, (run_input_type, type(run_input_type))):
             raise ProgramValidationError(
@@ -148,11 +142,7 @@ class QuantumDevice(ABC):
                 "Run input program type not supported natively: skipping qubit count validation."
             )
 
-    def transpile(
-        self,
-        run_input: "qbraid.programs.QPROGRAM",
-        conversion_graph: "Optional[qbraid.transpiler.ConversionGraph]" = None,
-    ) -> "qbraid.programs.QPROGRAM":
+    def transpile(self, run_input: "qbraid.programs.QPROGRAM") -> "qbraid.programs.QPROGRAM":
         """Convert circuit to package compatible with target device and pass through any
         provider transpile methods to match topology of device and/or optimize as applicable.
 
@@ -163,7 +153,8 @@ class QuantumDevice(ABC):
             QbraidRuntimeError: If circuit conversion fails
 
         """
-        target_type_alias = self._profile.get("run_input_type_alias")
+        conversion_graph = self.profile.get("conversion_graph")
+        target_type_alias = self.profile.get("run_input_type_alias")
         input_run_input_alias = get_program_type_alias(run_input)
         if input_run_input_alias != target_type_alias:
             try:
@@ -184,9 +175,7 @@ class QuantumDevice(ABC):
         return run_input
 
     def apply_runtime_profile(
-        self,
-        run_input: "qbraid.programs.QPROGRAM",
-        conversion_graph: "Optional[qbraid.transpiler.ConversionGraph]" = None,
+        self, run_input: "qbraid.programs.QPROGRAM"
     ) -> "qbraid.programs.QPROGRAM":
         """Process quantum program before passing to device run method.
 
@@ -194,80 +183,33 @@ class QuantumDevice(ABC):
             Transpiled and transformed quantum program
         """
         self.validate(run_input)
-        run_input = self.transpile(run_input, conversion_graph=conversion_graph)
+        run_input = self.transpile(run_input)
         run_input = self.transform(run_input)
 
         return run_input
 
     @abstractmethod
-    def submit(self, run_input: "qbraid.programs.QPROGRAM", *args, **kwargs) -> dict[str, Any]:
-        """Vendor run method. Should return dictionary with the following keys."""
-
-    @abstractmethod
-    def submit_batch(
+    def submit(
         self, run_input: "list[qbraid.programs.QPROGRAM]", *args, **kwargs
-    ) -> dict[str, Any]:
+    ) -> "Union[qbraid.runtime.QuantumJob, list[qbraid.runtime.QuantumJob]]":
         """Vendor run method. Should return dictionary with the following keys."""
 
     def run(
         self,
-        run_input: "qbraid.programs.QPROGRAM",
+        run_input: "Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]]",
         *args,
-        conversion_graph: "Optional[qbraid.transpiler.ConversionGraph]" = None,
-        **kwargs,
-    ) -> "qbraid.runtime.Job":
-        """Run a quantum job specification on this quantum device.
-
-        Args:
-            run_input: Specification of a task to run on device.
-
-        Keyword Args:
-            conversion_graph (optional, ConversionGraph): Graph of conversion functions to
-                                                          apply to the circuit.
-            shots (int): The number of times to run the task on the device.
-
-        Returns:
-            The job like object for the run.
-
-        """
-        run_input, _ = self.process_run_input(run_input, conversion_graph=conversion_graph)
-        return self.submit(run_input, *args, **kwargs)
-
-    def run_batch(
-        self,
-        run_input: "list[qbraid.programs.QPROGRAM]",
-        *args,
-        conversion_graph: "Optional[qbraid.transpiler.ConversionGraph]" = None,
         **kwargs,
     ) -> "Union[qbraid.runtime.QuantumJob, list[qbraid.runtime.QuantumJob]]":
-        """Run a quantum job specification on this quantum device.
+        """
+        Run a quantum job or a list of quantum jobs on this quantum device.
 
         Args:
-            run_input: Specification of a task to run on device.
-
-        Keyword Args:
-            conversion_graph (optional, ConversionGraph): Graph of conversion functions to
-                                                          apply to the circuit.
-            shots (int): The number of times to run the task on the device.
+            run_input: A single quantum program or a list of quantum programs to run on the device.
 
         Returns:
-            The job like object for the run.
-
+            A QuantumJob object or a list of QuantumJob objects corresponding to the input.
         """
-        program_data_batch = []
-        run_input_batch = []
-        for program in run_input:
-            run_input_transpiled, program_data = self.process_run_input(
-                program, conversion_graph=conversion_graph
-            )
-            run_input_batch.append(run_input_transpiled)
-            program_data_batch.append(program_data)
-        num_qubits_batch = [data.get("num_qubits") for data in program_data_batch]
-        depth_batch = [data.get("depth") for data in program_data_batch]
-        openqasm_batch = [data.get("openqasm") for data in program_data_batch]
-        program_data = {
-            "num_qubits": num_qubits_batch,
-            "depth": depth_batch,
-            "openqasm": openqasm_batch,
-        }
-        return self.submit_batch(run_input_batch, *args, **kwargs)
+        is_single_input = not isinstance(run_input, list)
+        run_input = [run_input] if is_single_input else run_input
+        run_input_compat = [self.apply_runtime_profile(program) for program in run_input]
+        return self.submit(run_input_compat, *args, **kwargs)

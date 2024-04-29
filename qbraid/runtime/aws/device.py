@@ -14,11 +14,14 @@ Module defining BraketDeviceWrapper Class
 """
 import json
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
+import braket.circuits
+from braket.aws import AwsDevice
 from braket.device_schema import ExecutionDay
 
 from qbraid.programs.libs.braket import BraketCircuit
+from qbraid.programs.program import ProgramSpec
 from qbraid.programs.registry import QPROGRAM_ALIASES
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, DeviceType
@@ -45,28 +48,42 @@ def _future_utc_datetime(hours: int, minutes: int, seconds: int) -> str:
 class BraketDevice(QuantumDevice):
     """Wrapper class for Amazon Braket ``Device`` objects."""
 
-    def __init__(self, aws_device: "braket.aws.AwsDevice"):
+    def __init__(
+        self,
+        arn: Optional[str] = None,
+        provider: "Optional[qbraid.runtime.aws.BraketProvider]" = None,
+        device: "Optional[braket.aws.AwsDevice]" = None,
+    ):
         """Create a BraketDevice."""
-
-        super().__init__(aws_device)
-        self._vendor = "AWS"
-        self._run_package = "braket"
-
-    def _populate_metadata(self, device: "braket.aws.AwsDevice") -> None:
-        """Populate device metadata using BraketSchemaBase"""
-        # pylint: disable=attribute-defined-outside-init
+        if not (arn or device):
+            raise ValueError("Must specify either arn or device")
+        if arn and device:
+            raise ValueError("Can only specify one of arn and device")
+        super().__init__(device_id=arn or device.arn, provider=provider)
+        device = device or self._get_device(arn, provider)
         metadata = device.aws_session.get_device(device.arn)
         capabilities = json.loads(metadata.get("deviceCapabilities"))
+        action = capabilities.get("action", {})
+        supported = action.get("braket.ir.openqasm.program") is not None
+        if not supported:
+            raise ValueError("Only gate-based devices currently supported")
 
-        self._vendor_id = metadata.get("deviceArn")
-        self._name = metadata.get("deviceName")
-        self._provider = metadata.get("providerName")
+        self._device = device
         self._device_type = DeviceType(metadata.get("deviceType"))
+        self._num_qubits = capabilities.get("paradigm", {}).get("qubitCount")
+        self._program_spec = ProgramSpec(braket.circuits.Circuit)
+        self._provider_name = metadata.get("providerName", "").lower() or None
 
-        try:
-            self._num_qubits = capabilities["paradigm"]["qubitCount"]
-        except KeyError:
-            self._num_qubits = None
+    def _get_device(
+        self, arn: str, provider: "Optional[qbraid.runtime.aws.BraketProvider]" = None
+    ) -> "braket.aws.AwsDevice":
+        """Return the Braket device object."""
+        if provider:
+            region_name = provider._get_region_name(arn)
+            aws_session = provider._get_aws_session(region_name=region_name)
+        else:
+            aws_session = None
+        return AwsDevice(arn=arn, aws_session=aws_session)
 
     def status(self) -> "qbraid.runtime.DeviceStatus":
         """Return the status of this Device.
@@ -74,8 +91,10 @@ class BraketDevice(QuantumDevice):
         Returns:
             The status of this Device
         """
-        if self._device.is_available:
-            return DeviceStatus.ONLINE
+        if self._device.status == "ONLINE":
+            if self._device.is_available:
+                return DeviceStatus.ONLINE
+            return DeviceStatus.UNAVAILABLE
 
         if self._device.status == "RETIRED":
             return DeviceStatus.RETIRED
@@ -202,26 +221,27 @@ class BraketDevice(QuantumDevice):
 
     def transform(self, run_input: "braket.circuits.Circuit") -> "braket.circuits.Circuit":
         """Transpile a circuit for the device."""
-        if self._device_type.name == "SIMULATOR":
+        if self.device_type == DeviceType.SIMULATOR:
             program = BraketCircuit(run_input)
             program.remove_idle_qubits()
             run_input = program.program
 
-        if self.provider.lower() == "ionq" and "pytket" in QPROGRAM_ALIASES:
+        if self._provider_name == "ionq":
+            graph = self.profile.get("conversion_graph")
+            if graph is not None and graph.has_edge("pytket", "braket"):
+                # pylint: disable=import-outside-toplevel
+                from qbraid.transforms.pytket.ionq import pytket_ionq_transform
 
-            # pylint: disable=import-outside-toplevel
-            from qbraid.transforms.pytket.ionq import pytket_ionq_transform
-
-            try:
-                tk_circuit = transpile(run_input, "pytket", max_path_depth=1)
-                tk_transformed = pytket_ionq_transform(tk_circuit)
-                run_input = transpile(tk_transformed, "braket", max_path_depth=1)
-            except (ConversionPathNotFoundError, CircuitConversionError):
-                pass
+                try:
+                    tk_circuit = transpile(run_input, "pytket", max_path_depth=1)
+                    tk_transformed = pytket_ionq_transform(tk_circuit)
+                    run_input = transpile(tk_transformed, "braket", max_path_depth=1)
+                except (ConversionPathNotFoundError, CircuitConversionError):
+                    pass
 
         return run_input
 
-    def submit(self, run_input: "braket.circuits.Circuit", *args, **kwargs) -> dict[str, Any]:
+    def submit(self, run_input: "braket.circuits.Circuit", *args, **kwargs) -> BraketQuantumTask:
         """Run a quantum task specification on this quantum device. Task must represent a
         quantum circuit, annealing problems not supported.
 

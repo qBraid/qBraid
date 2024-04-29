@@ -65,14 +65,19 @@ class ProgramSpec:
         """
         if not isinstance(other, ProgramSpec):
             return False
-        
+
         return (self._program_type, self._alias) == (other._program_type, other._alias)
 
 
 class QuantumProgram(ProgramSpec, ABC):
     """Abstract class for qbraid program wrapper objects."""
 
-    def __init__(self, program: "qbraid.programs.QPROGRAM", alias: Optional[str] = None, overwrite: bool = False):
+    def __init__(
+        self,
+        program: "qbraid.programs.QPROGRAM",
+        alias: Optional[str] = None,
+        overwrite: bool = False,
+    ):
         super().__init__(type(program), alias, overwrite)
         self._program = program
 
