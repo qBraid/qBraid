@@ -19,7 +19,7 @@ from pyquil import Program
 from pyquil.quilbase import Declare, Measurement
 from pyquil.simulation.tools import program_unitary
 
-from qbraid.programs.abc_program import QuantumProgram
+from qbraid.programs.program import QuantumProgram
 
 
 class PyQuilProgram(QuantumProgram):

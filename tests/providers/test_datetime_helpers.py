@@ -16,7 +16,7 @@ from unittest.mock import patch
 
 import pytest
 
-from qbraid.providers.aws.device import _future_utc_datetime
+from qbraid.runtime.aws.device import _future_utc_datetime
 
 
 # Test function

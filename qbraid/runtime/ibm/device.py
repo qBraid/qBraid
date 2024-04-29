@@ -19,8 +19,8 @@ from qiskit import transpile
 from qiskit.transpiler import TranspilerError
 
 from qbraid.programs.libs.qiskit import QiskitCircuit
-from qbraid.providers.device import QuantumDevice
-from qbraid.providers.enums import DeviceStatus, DeviceType
+from qbraid.runtime.device import QuantumDevice
+from qbraid.runtime.enums import DeviceStatus, DeviceType
 
 from .job import QiskitJob
 

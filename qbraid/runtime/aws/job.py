@@ -17,9 +17,9 @@ from typing import Optional
 
 from braket.aws import AwsQuantumTask
 
-from qbraid.providers.enums import JOB_FINAL, JobStatus
-from qbraid.providers.exceptions import JobStateError
-from qbraid.providers.job import QuantumJob
+from qbraid.runtime.enums import JOB_FINAL, JobStatus
+from qbraid.runtime.exceptions import JobStateError
+from qbraid.runtime.job import QuantumJob
 
 from .result import BraketGateModelResult
 from .tracker import get_quantum_task_cost

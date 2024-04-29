@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 import pennylane as qml
 from pennylane.tape import QuantumTape
 
-from qbraid.programs.abc_program import QuantumProgram
+from qbraid.programs.program import QuantumProgram
 
 if TYPE_CHECKING:
     import numpy as np

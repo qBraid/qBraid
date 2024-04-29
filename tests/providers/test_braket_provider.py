@@ -19,8 +19,8 @@ import string
 import pytest
 from braket.circuits import Circuit
 
-from qbraid.providers import QbraidProvider, QuantumJob
-from qbraid.providers.aws import BraketDevice, BraketProvider
+from qbraid.runtime import QbraidProvider, QuantumJob
+from qbraid.runtime.aws import BraketDevice, BraketProvider
 
 # Skip tests if AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None

@@ -18,7 +18,7 @@ import re
 from abc import abstractmethod
 from typing import TYPE_CHECKING, Union
 
-from qbraid.providers.provider import QuantumProvider
+from qbraid.runtime.provider import QuantumProvider
 
 from .device import QiskitBackend
 
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     import qiskit_ibm_provider
     import qiskit_ibm_runtime
 
-    import qbraid.providers.ibm
+    import qbraid.runtime.ibm
 
 
 class QiskitRemoteService(QuantumProvider):
@@ -52,12 +52,12 @@ class QiskitRemoteService(QuantumProvider):
     def _get_ibm_provider(self, **kwargs):
         """Returns the IBM Quantum provider."""
 
-    def get_devices(self, operational=True, **kwargs) -> list["qbraid.providers.ibm.QiskitBackend"]:
+    def get_devices(self, operational=True, **kwargs) -> list["qbraid.runtime.ibm.QiskitBackend"]:
         """Returns the IBM Quantum provider backends."""
         backends = self._provider.backends(operational=operational, **kwargs)
         return [QiskitBackend(backend) for backend in backends]
 
-    def get_device(self, device_id: str) -> "qbraid.providers.ibm.QiskitBackend":
+    def get_device(self, device_id: str) -> "qbraid.runtime.ibm.QiskitBackend":
         """Returns the IBM Quantum provider backends."""
         provider = self._get_ibm_provider()
         backend = provider.get_backend(device_id)
@@ -76,7 +76,7 @@ class QiskitRemoteService(QuantumProvider):
     ) -> Union["qiskit_ibm_provider.IBMBackend", "qiskit_ibm_runtime.IBMBackend"]:
         """Return the Backend object of the least busy qpu."""
 
-    def ibm_least_busy_qpu(self) -> "qbraid.providers.ibm.QiskitBackend":
+    def ibm_least_busy_qpu(self) -> "qbraid.runtime.ibm.QiskitBackend":
         """Return the qBraid ID of the least busy IBMQ QPU."""
         backend = self.native_least_busy()
         return QiskitBackend(backend)

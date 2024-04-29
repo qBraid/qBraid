@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 
 from braket.circuits import Circuit, Instruction, Qubit
 
-from qbraid.programs.abc_program import QuantumProgram
+from qbraid.programs.program import QuantumProgram
 
 if TYPE_CHECKING:
     import braket.circuits

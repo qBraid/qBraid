@@ -15,11 +15,7 @@ Module defining abstract QuantumJobResult Class
 from abc import ABC, abstractmethod
 
 
-class Result:
-    """Base common type for all Result classes."""
-
-
-class QuantumJobResult(ABC, Result):
+class QuantumJobResult(ABC):
     """Abstract interface for result-like classes.
 
     Args:

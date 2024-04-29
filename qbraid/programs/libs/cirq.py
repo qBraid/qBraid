@@ -16,7 +16,7 @@ Module defining CirqCircuit Class
 import cirq
 import numpy as np
 
-from qbraid.programs.abc_program import QuantumProgram
+from qbraid.programs.program import QuantumProgram
 
 
 class CirqCircuit(QuantumProgram):

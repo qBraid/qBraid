@@ -15,7 +15,7 @@ Module defining OpenQasm2Program Class
 import re
 from typing import TYPE_CHECKING
 
-from qbraid.programs.abc_program import QuantumProgram
+from qbraid.programs.program import QuantumProgram
 
 if TYPE_CHECKING:
     import numpy as np

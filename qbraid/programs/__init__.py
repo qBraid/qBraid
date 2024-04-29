@@ -38,6 +38,7 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
+   ProgramSpec
    QuantumProgram
 
 Exceptions
@@ -51,10 +52,10 @@ Exceptions
    QasmError
 
 """
-from .abc_program import QuantumProgram
 from .alias_manager import get_program_type_alias, parse_qasm_type_alias
 from .exceptions import PackageValueError, ProgramTypeError, QasmError
 from .loader import load_program
+from .program import ProgramSpec, QuantumProgram
 from .registry import (
     QPROGRAM,
     QPROGRAM_ALIASES,

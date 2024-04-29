@@ -53,7 +53,6 @@ Exceptions
    ResourceNotFoundError
 
 """
-from ._import import QDEVICE, QDEVICE_LIBS, QDEVICE_TYPES, SUPPORTED_QDEVICES
 from .device import QuantumDevice
 from .enums import DeviceStatus, DeviceType, JobStatus
 from .exceptions import (

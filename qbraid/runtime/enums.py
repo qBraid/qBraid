@@ -9,39 +9,41 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining all :mod:`~qbraid.providers` enumerated types.
+Module defining all :mod:`~qbraid.runtime` enumerated types.
 
 """
 from enum import Enum
 
 
 class DeviceType(str, Enum):
-    """Class for possible device types.
+    """
+    Enumeration for different types of quantum computing devices.
 
     Attributes:
-        SIMULATOR (str): the device is a simulator
-        QPU (str): the device is a QPU
-        FAKE (str): is a fake device used for testing
-
+        QPU (str): A Quantum Processing Unit (QPU) hardware device located remotely.
+        SIMULATOR (str): A simulator that runs on remote servers.
+        LOCAL_SIMULATOR (str): A simulator that runs locally on the user's machine.
     """
 
-    SIMULATOR = "SIMULATOR"
-    QPU = "QPU"
-    FAKE = "FAKE"
+    QPU = "remote_qpu"
+    SIMULATOR = "remote_simulator"
+    LOCAL_SIMULATOR = "local_simulator"
 
 
-class DeviceStatus(int, Enum):
-    """Class for the status of devices.
+class DeviceStatus(str, Enum):
+    """Enumeration for representing various operational statuses of devices.
 
     Attributes:
-        ONLINE (int): the device is online
-        OFFLINE (int): the device is offline
-
+        ONLINE (str): Device is online and accepting jobs.
+        UNAVAILABLE (str): Device is online but not accepting jobs.
+        OFFLINE (str): Device is offline.
+        RETIRED (str): Device has been retired and is no longer operational.
     """
 
-    ONLINE = 0
-    OFFLINE = 1
-    RETIRED = 2
+    ONLINE = "online"
+    UNAVAILABLE = "unavailable"
+    OFFLINE = "offline"
+    RETIRED = "retired"
 
 
 class JobStatus(str, Enum):
@@ -57,7 +59,7 @@ class JobStatus(str, Enum):
         CANCELLED (str): job has been cancelled
         COMPLETED (str): job has successfully run
         FAILED (str): job failed / incurred error
-        UNKNOWN (str): vendor-supplied job status not recognized
+        UNKNOWN (str): job status is unknown/undetermined
 
     """
 
@@ -69,7 +71,7 @@ class JobStatus(str, Enum):
     CANCELLED = "job has been cancelled"
     COMPLETED = "job has successfully run"
     FAILED = "job failed / incurred error"
-    UNKNOWN = "vendor-supplied job status not recognized"
+    UNKNOWN = "job status is unknown/undetermined"
 
 
-JOB_FINAL = (JobStatus.COMPLETED, JobStatus.CANCELLED, JobStatus.FAILED)
+JOB_STATUS_FINAL = (JobStatus.COMPLETED, JobStatus.CANCELLED, JobStatus.FAILED)

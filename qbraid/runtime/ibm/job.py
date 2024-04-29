@@ -18,9 +18,9 @@ from typing import Optional
 import qiskit.providers.job
 from qiskit_ibm_provider.job.exceptions import IBMJobInvalidStateError
 
-from qbraid.providers.enums import JOB_FINAL, JobStatus
-from qbraid.providers.exceptions import JobStateError
-from qbraid.providers.job import QuantumJob
+from qbraid.runtime.enums import JOB_FINAL, JobStatus
+from qbraid.runtime.exceptions import JobStateError
+from qbraid.runtime.job import QuantumJob
 
 from .result import QiskitResult
 

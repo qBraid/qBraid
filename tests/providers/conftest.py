@@ -17,8 +17,8 @@ import braket.circuits
 import numpy as np
 import pytest
 
-from qbraid.providers import QbraidProvider
-from qbraid.providers.aws import BraketProvider
+from qbraid.runtime import QbraidProvider
+from qbraid.runtime.aws import BraketProvider
 
 
 @pytest.fixture

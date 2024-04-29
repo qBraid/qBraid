@@ -19,9 +19,9 @@ import pytest
 from braket.circuits import Circuit
 from braket.tracking import Tracker
 
-from qbraid.providers.aws import BraketProvider
-from qbraid.providers.aws.tracker import get_quantum_task_cost
-from qbraid.providers.exceptions import JobError
+from qbraid.runtime.aws import BraketProvider
+from qbraid.runtime.aws.tracker import get_quantum_task_cost
+from qbraid.runtime.exceptions import JobError
 
 # Skip tests if AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None

@@ -13,37 +13,68 @@ Module defining QuantumProgram Class
 
 """
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Type
 
 import numpy as np
 
 from .alias_manager import get_program_type_alias
+from .registry import register_program_type
 
 if TYPE_CHECKING:
     import qbraid
 
 
-class Program:
-    """Base common type for all Program classes."""
+class ProgramSpec:
+    """Base class used to register program type and type alias."""
+
+    def __init__(
+        self,
+        program_type: Type[Any],
+        alias: Optional[str] = None,
+        overwrite: bool = False,
+    ):
+        self._program_type = program_type
+        self._alias = self.register_type_alias(program_type, alias, overwrite)
+
+    @staticmethod
+    def register_type_alias(program_type: Type[Any], alias: Optional[str], overwrite: bool) -> str:
+        """Get or set the program type alias."""
+        register_program_type(program_type, alias=alias, overwrite=overwrite)
+        return get_program_type_alias(program_type)
+
+    @property
+    def alias(self) -> str:
+        """Return the alias of the registered program type."""
+        return self._alias
+
+    def __str__(self) -> str:
+        return f"ProgramSpec for {self.alias} {self._program_type.__name__} type."
+
+    def __repr__(self) -> str:
+        return f"<ProgramSpec({self._program_type}, {self.alias})>"
+
+    def __eq__(self, other: object) -> bool:
+        """
+        Compare this ProgramSpec object with another object for equality based on type and alias.
+
+        Args:
+            other (object): Another object to compare against.
+
+        Returns:
+            bool: True if both objects are instances of ProgramSpec and have the same type and alias, False otherwise.
+        """
+        if not isinstance(other, ProgramSpec):
+            return False
+        
+        return (self._program_type, self._alias) == (other._program_type, other._alias)
 
 
-class QuantumProgram(ABC, Program):
+class QuantumProgram(ProgramSpec, ABC):
     """Abstract class for qbraid program wrapper objects."""
 
-    def __init__(self, program: "qbraid.programs.QPROGRAM"):
-        self.program = program
+    def __init__(self, program: "qbraid.programs.QPROGRAM", alias: Optional[str] = None, overwrite: bool = False):
+        super().__init__(type(program), alias, overwrite)
         self._program = program
-        self._package = get_program_type_alias(program)
-
-    @property
-    def package(self) -> str:
-        """Return the original package of the wrapped circuit."""
-        return self._package
-
-    @property
-    def program(self) -> "qbraid.programs.QPROGRAM":
-        """Return the wrapped quantum program object."""
-        return self._program
 
     @property
     @abstractmethod
@@ -71,7 +102,7 @@ class QuantumProgram(ABC, Program):
 
     def unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
-        if self.package in ["pyquil", "qiskit", "qasm3"]:
+        if self.alias in ["pyquil", "qiskit", "qasm3"]:
             return self.unitary_rev_qubits()
         return self._unitary()
 

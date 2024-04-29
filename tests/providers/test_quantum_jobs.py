@@ -14,9 +14,9 @@ Unit tests for quantum jobs functions and data types
 """
 import pytest
 
-from qbraid.providers.enums import JobStatus
-from qbraid.providers.exceptions import ResourceNotFoundError
-from qbraid.providers.job import QuantumJob
+from qbraid.runtime.enums import JobStatus
+from qbraid.runtime.exceptions import ResourceNotFoundError
+from qbraid.runtime.job import QuantumJob
 
 status_data = [
     (JobStatus.INITIALIZING, False),

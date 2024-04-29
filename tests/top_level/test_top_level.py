@@ -24,7 +24,7 @@ from qbraid.get_devices import get_devices
 from qbraid.get_jobs import _display_jupyter, get_jobs
 from qbraid.interface.random import random_circuit
 from qbraid.programs.exceptions import PackageValueError
-from qbraid.providers import QbraidProvider
+from qbraid.runtime import QbraidProvider
 
 # pylint: disable=missing-function-docstring,redefined-outer-name
 

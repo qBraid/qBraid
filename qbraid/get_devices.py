@@ -89,7 +89,7 @@ def _display_jupyter(data: list[str], message: Optional[str] = None, align: str 
 def _refresh_devices() -> None:
     """Refreshes status for all qbraid supported devices. Requires credential for each vendor."""
     # pylint: disable-next=import-outside-toplevel
-    from qbraid.providers import QbraidProvider
+    from qbraid.runtime import QbraidProvider
 
     client = QuantumClient()
     provider = QbraidProvider(client=client)

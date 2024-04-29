@@ -141,7 +141,7 @@ class Conversion:
             )
         return self._conversion_func(program)
 
-    def __repr__(self) -> str:
+    def __str__(self) -> str:
         """
         Represent the Conversion instance as a string indicating
         source and target packages.
@@ -150,6 +150,24 @@ class Conversion:
             str: String representation of the Conversion instance.
         """
         return f"('{self._source}', '{self._target}')"
+
+    def __repr__(self) -> str:
+        """
+        Represent the Conversion instance as a string indicating
+        source and target packages.
+
+        Returns:
+            str: String representation of the Conversion instance.
+        """
+        return (
+            "Conversion("
+            f"source={self._source}, "
+            f"target={self._target}, "
+            f"native={self._native}, "
+            f"supported={self._supported}, "
+            f"extras={self._extras}"
+            ")"
+        )
 
     def __eq__(self, other: Any) -> bool:
         """
@@ -168,4 +186,6 @@ class Conversion:
             self._source == other._source
             and self._target == other._target
             and self._native == other._native
+            and self._supported == other._supported
+            and self._extras == other._extras
         )

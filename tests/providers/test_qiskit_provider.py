@@ -21,9 +21,9 @@ from qiskit_ibm_provider import IBMProvider
 from qiskit_ibm_provider.job.ibm_circuit_job import IBMCircuitJob
 from qiskit_ibm_runtime import IBMBackend, QiskitRuntimeService
 
-from qbraid.providers import QbraidProvider
-from qbraid.providers.exceptions import JobError
-from qbraid.providers.ibm import QiskitProvider, QiskitRuntime
+from qbraid.runtime import QbraidProvider
+from qbraid.runtime.exceptions import JobError
+from qbraid.runtime.ibm import QiskitProvider, QiskitRuntime
 
 # Skip tests if IBM account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None

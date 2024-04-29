@@ -22,9 +22,9 @@ from qiskit import QuantumCircuit as QiskitCircuit
 
 from qbraid import QbraidError
 from qbraid.interface import random_circuit
-from qbraid.providers import QbraidProvider, QuantumJob
-from qbraid.providers.aws import BraketDevice, BraketQuantumTask
-from qbraid.providers.exceptions import ProgramValidationError
+from qbraid.runtime import QbraidProvider, QuantumJob
+from qbraid.runtime.aws import BraketDevice, BraketQuantumTask
+from qbraid.runtime.exceptions import ProgramValidationError
 
 from .fixtures import braket_circuit, cirq_circuit, device_wrapper_inputs, qiskit_circuit
 

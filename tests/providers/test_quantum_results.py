@@ -18,7 +18,7 @@ import pytest
 
 from qbraid import get_jobs
 from qbraid.interface import random_circuit
-from qbraid.providers import QbraidProvider, QuantumJob, QuantumJobResult
+from qbraid.runtime import QbraidProvider, QuantumJob, QuantumJobResult
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None

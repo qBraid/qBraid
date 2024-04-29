@@ -23,14 +23,14 @@ from qbraid_core.services.quantum import quantum_lib_proxy_state
 from qbraid_core.services.quantum.proxy_braket import aws_configure
 
 from qbraid.exceptions import QbraidError
-from qbraid.providers.provider import QuantumProvider
+from qbraid.runtime.provider import QuantumProvider
 
 from .device import BraketDevice
 
 if TYPE_CHECKING:
     import braket.aws
 
-    import qbraid.providers.aws
+    import qbraid.runtime.aws
 
 
 class BraketProvider(QuantumProvider):
@@ -108,14 +108,14 @@ class BraketProvider(QuantumProvider):
 
     def get_devices(
         self, aws_session=None, statuses=None, **kwargs
-    ) -> list["qbraid.providers.aws.BraketDevice"]:
+    ) -> list["qbraid.runtime.aws.BraketDevice"]:
         """Return a list of backends matching the specified filtering."""
         aws_session = self._get_aws_session() if aws_session is None else aws_session
         statuses = ["ONLINE", "OFFLINE"] if statuses is None else statuses
         devices = AwsDevice.get_devices(aws_session=aws_session, statuses=statuses, **kwargs)
         return [BraketDevice(device) for device in devices]
 
-    def get_device(self, device_id: str) -> "qbraid.providers.aws.BraketDevice":
+    def get_device(self, device_id: str) -> "qbraid.runtime.aws.BraketDevice":
         """Returns the AWS device."""
         region_name = self._get_region_name(device_id)  # deviceArn
         aws_session = self._get_aws_session(region_name=region_name)

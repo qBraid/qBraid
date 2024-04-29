@@ -14,7 +14,7 @@ Module defining BraketGateModelResult Class
 """
 import numpy as np
 
-from qbraid.providers.result import QuantumJobResult
+from qbraid.runtime.result import QuantumJobResult
 
 
 class BraketGateModelResult(QuantumJobResult):

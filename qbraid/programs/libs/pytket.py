@@ -19,7 +19,7 @@ import numpy as np
 from pytket.circuit import Circuit, Command, OpType  # pylint: disable=no-name-in-module
 from pytket.unit_id import Qubit
 
-from qbraid.programs.abc_program import QuantumProgram
+from qbraid.programs.program import QuantumProgram
 
 if TYPE_CHECKING:
     import pytket

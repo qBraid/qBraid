@@ -14,7 +14,7 @@ Module defining QiskitResult Class
 """
 import numpy as np
 
-from qbraid.providers.result import QuantumJobResult
+from qbraid.runtime.result import QuantumJobResult
 
 
 class QiskitResult(QuantumJobResult):

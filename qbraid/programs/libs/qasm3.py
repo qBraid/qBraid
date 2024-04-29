@@ -20,7 +20,7 @@ import numpy as np
 from openqasm3.ast import BitType, ClassicalDeclaration, QubitDeclaration
 from openqasm3.parser import parse
 
-from qbraid.programs.abc_program import QuantumProgram
+from qbraid.programs.program import QuantumProgram
 
 
 class OpenQasm3Program(QuantumProgram):

@@ -20,8 +20,8 @@ from braket.device_schema import ExecutionDay
 
 from qbraid.programs.libs.braket import BraketCircuit
 from qbraid.programs.registry import QPROGRAM_ALIASES
-from qbraid.providers.device import QuantumDevice
-from qbraid.providers.enums import DeviceStatus, DeviceType
+from qbraid.runtime.device import QuantumDevice
+from qbraid.runtime.enums import DeviceStatus, DeviceType
 from qbraid.transpiler import CircuitConversionError, ConversionPathNotFoundError, transpile
 
 from .job import BraketQuantumTask
@@ -30,7 +30,7 @@ if TYPE_CHECKING:
     import braket.aws
     import braket.circuits
 
-    import qbraid.providers.aws
+    import qbraid.runtime.aws
     import qbraid.transpiler
 
 
@@ -68,7 +68,7 @@ class BraketDevice(QuantumDevice):
         except KeyError:
             self._num_qubits = None
 
-    def status(self) -> "qbraid.providers.DeviceStatus":
+    def status(self) -> "qbraid.runtime.DeviceStatus":
         """Return the status of this Device.
 
         Returns:

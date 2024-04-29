@@ -17,24 +17,19 @@ from abc import ABC, abstractmethod
 from time import sleep, time
 from typing import TYPE_CHECKING, Any, Optional
 
-from .device import Device
 from .enums import JOB_FINAL, JobStatus
 from .exceptions import JobError, ResourceNotFoundError
 
 if TYPE_CHECKING:
-    import qbraid.providers
+    import qbraid.runtime
 
 logger = logging.getLogger(__name__)
 
 
-class Job:
-    """Base common type for all Job classes."""
-
-
-class QuantumJob(ABC, Job):
+class QuantumJob(ABC):
     """Abstract interface for job-like classes."""
 
-    def __init__(self, job_id: str, device: Optional[Device], **kwargs):
+    def __init__(self, job_id: str, device: "Optional[qbraid.runtime.QuantumDevice]", **kwargs):
         self._job_id = job_id
         self._device = device
         self._cache_metadata = kwargs
@@ -45,7 +40,7 @@ class QuantumJob(ABC, Job):
         return self._job_id
 
     @property
-    def device(self) -> Device:
+    def device(self) -> "qbraid.runtime.QuantumDevice":
         """Returns the qbraid QuantumDevice object associated with this job."""
         if self._device is None:
             raise ResourceNotFoundError("Job does not have an associated device.")
@@ -88,7 +83,7 @@ class QuantumJob(ABC, Job):
             sleep(poll_interval)
 
     @abstractmethod
-    def result(self) -> "qbraid.providers.Result":
+    def result(self) -> "qbraid.runtime.Result":
         """Return the results of the job."""
 
     @abstractmethod

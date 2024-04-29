@@ -96,7 +96,7 @@ def _display_jupyter(data: list[str], message: Optional[str] = None, align: str 
 
 def _refresh_jobs(job_data: list[str]) -> list[str]:
     """Refreshes the status of all quantum jobs in the list."""
-    from qbraid.providers import QuantumJob  # pylint: disable=import-outside-toplevel
+    from qbraid.runtime import QuantumJob  # pylint: disable=import-outside-toplevel
 
     count = 0
     num_jobs = len(job_data)
