@@ -25,8 +25,10 @@ Data Types
 .. autosummary::
    :toctree: ../stubs/
 
-   DeviceStatus
    DeviceType
+   DeviceStatus
+   JobStatus
+
 
 Classes
 --------
@@ -36,8 +38,7 @@ Classes
 
    QuantumDevice
    QuantumJob
-   JobStatus
-   QbraidProvider
+   QuantumProvider
    QuantumJobResult
 
 Exceptions
@@ -63,5 +64,5 @@ from .exceptions import (
     ResourceNotFoundError,
 )
 from .job import QuantumJob
-from .provider import QbraidProvider
+from .provider import QuantumProvider
 from .result import QuantumJobResult

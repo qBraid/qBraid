@@ -15,8 +15,6 @@ Module to retrieve, update, and display information about quantum
 jobs submitted through the qBraid SDK.
 
 """
-
-import warnings
 from typing import Any, Optional
 
 try:
@@ -27,7 +25,7 @@ except ImportError:
 from qbraid_core import QbraidSession
 from qbraid_core.services.quantum import QuantumClient, process_job_data
 
-from ._display import running_in_jupyter, update_progress_bar
+from ._display import running_in_jupyter
 
 
 def _display_basic(data: list[str], message: str) -> None:
@@ -94,36 +92,7 @@ def _display_jupyter(data: list[str], message: Optional[str] = None, align: str 
     return display(HTML(html))
 
 
-def _refresh_jobs(job_data: list[str]) -> list[str]:
-    """Refreshes the status of all quantum jobs in the list."""
-    from qbraid.runtime import QuantumJob  # pylint: disable=import-outside-toplevel
-
-    count = 0
-    num_jobs = len(job_data)
-    job_data_refresh = []
-    for job_id, created_at, status in job_data:
-        count += 1
-        progress = count / num_jobs
-        update_progress_bar(progress)
-        try:
-            status_final = QuantumJob.status_final(status)
-        except Exception:  # pylint: disable=broad-except
-            status_final = True
-        if not status_final:
-            try:
-                qbraid_job = QuantumJob.retrieve(job_id)
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    status_obj = qbraid_job.status()
-                status = status_obj.name
-            except Exception:  # pylint: disable=broad-except
-                pass
-        job_data_refresh.append([job_id, created_at, status])
-
-    return job_data_refresh
-
-
-def get_jobs(filters: Optional[dict[str, Any]] = None, refresh: bool = False, raw: bool = False):
+def get_jobs(filters: Optional[dict[str, Any]] = None, raw: bool = False):
     """Displays a list of quantum jobs submitted by user, tabulated by job ID,
     the date/time it was submitted, and status. You can specify filters to
     narrow the search by supplying a dictionary containing the desired criteria.
@@ -174,9 +143,6 @@ def get_jobs(filters: Optional[dict[str, Any]] = None, refresh: bool = False, ra
         jobs = session.post("/get-user-jobs", json=filters).json()
 
     job_data, msg = process_job_data(jobs, filters)
-
-    if refresh:
-        job_data = _refresh_jobs(job_data)
 
     if raw:
         return [job[0] for job in job_data]

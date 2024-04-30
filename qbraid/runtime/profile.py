@@ -25,9 +25,9 @@ from .enums import DeviceType
 
 class RuntimeProfile(Mapping):
     """
-    Encapsulates configuration settings for a quantum device, presenting them as a read-only dictionary.
-    This class primarily stores and manages settings that are crucial for the proper functioning and integration
-    of quantum devices within a specified environment.
+    Encapsulates configuration settings for a quantum device, presenting them as a read-only
+    dictionary. This class primarily stores and manages settings that are crucial for the proper
+    functioning and integration of quantum devices within a specified environment.
 
     Attributes:
         _data (dict): Internal storage for the configuration properties.
@@ -42,14 +42,18 @@ class RuntimeProfile(Mapping):
         **kwargs,
     ) -> None:
         """
-        Initializes a new instance of the RuntimeProfile, setting up configuration according to the provided parameters.
+        Initializes a new instance of the RuntimeProfile, setting up configuration according to the
+        provided parameters.
 
         Args:
-            device_type (DeviceType): Type of the quantum device, should be an instance of DeviceType.
+            device_type (DeviceType): Type of the quantum device, instance of DeviceType.
             device_num_qubits (int): Number of qubits supported by the device.
-            program_spec (ProgramSpec): Specification for the program, encapsulating program type and other metadata.
-            conversion_graph (Optional[ConversionGraph]): Graph coordinating conversions between different quantum software program
-                                                          types. If None, the default qBraid graph is used. Defaults to None.
+            program_spec (ProgramSpec): Specification for the program, encapsulating program type
+                                        and other metadata.
+            conversion_graph (Optional[ConversionGraph]): Graph coordinating conversions between
+                                                          different quantum software program types.
+                                                          If None, the default qBraid graph is used.
+                                                          Defaults to None.
 
         Raises:
             TypeError: If any of the inputs are not of the expected type.

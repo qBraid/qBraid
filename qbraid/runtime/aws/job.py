@@ -17,7 +17,7 @@ from typing import Optional
 
 from braket.aws import AwsQuantumTask
 
-from qbraid.runtime.enums import JOB_FINAL, JobStatus
+from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 
@@ -61,7 +61,7 @@ class BraketQuantumTask(QuantumJob):
         """Returns queue position from Braket QuantumTask.
         '>2000' returns as 2000 for typing consistency."""
         try:
-            position = self._job.queue_position().queue_position
+            position = self._task.queue_position().queue_position
             if isinstance(position, str):
                 if position.startswith(">"):
                     position = position[1:]
@@ -74,16 +74,17 @@ class BraketQuantumTask(QuantumJob):
 
     def result(self) -> BraketGateModelResult:
         """Return the results of the job."""
-        if self.status() not in JOB_FINAL:
+        if not self.is_terminal_state():
             logger.info("Result will be available when job has reached final state.")
-        return BraketGateModelResult(self._job.result())
+        return BraketGateModelResult(self._task.result())
 
     def cancel(self) -> None:
         """Cancel the quantum task."""
-        task = self._job
-        status = self.status()
-        if status in JOB_FINAL:
-            raise JobStateError(f"Cannot cancel quantum job in the {status} state.")
+        task = self._task
+
+        if self.is_terminal_state():
+            raise JobStateError("Cannot cancel quantum job in terminal state.")
+
         try:
             task.cancel()
         except RuntimeError:
@@ -91,5 +92,5 @@ class BraketQuantumTask(QuantumJob):
 
     def get_cost(self) -> float:
         """Return the cost of the job."""
-        decimal_cost = get_quantum_task_cost(self.vendor_job_id)
+        decimal_cost = get_quantum_task_cost(self._task.arn)
         return float(decimal_cost)

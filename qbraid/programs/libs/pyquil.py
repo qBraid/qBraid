@@ -30,6 +30,7 @@ class PyQuilProgram(QuantumProgram):
 
     @property
     def program(self) -> pyquil.Program:
+        """Return the pyQuil program."""
         return self._program
 
     @program.setter

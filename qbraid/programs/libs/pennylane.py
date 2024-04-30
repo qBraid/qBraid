@@ -31,6 +31,7 @@ class PennylaneTape(QuantumProgram):
 
     @property
     def program(self) -> QuantumTape:
+        """Return the Pennylane tape."""
         return self._program
 
     @program.setter

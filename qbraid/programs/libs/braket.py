@@ -31,6 +31,7 @@ class BraketCircuit(QuantumProgram):
 
     @property
     def program(self) -> Circuit:
+        """Return the braket circuit."""
         return self._program
 
     @program.setter

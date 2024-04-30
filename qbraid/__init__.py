@@ -20,7 +20,6 @@ Functions
    :toctree: ../stubs/
 
    about
-   get_devices
    get_jobs
 
 
@@ -48,7 +47,6 @@ from ._about import about
 from ._import import LazyLoader
 from ._version import __version__
 from .exceptions import QbraidError
-from .get_devices import get_devices
 from .get_jobs import get_jobs
 
 if "sphinx" in sys.modules:
@@ -57,7 +55,7 @@ else:
     transforms = LazyLoader("transforms", globals(), "qbraid.transforms")
     interface = LazyLoader("interface", globals(), "qbraid.interface")
     programs = LazyLoader("programs", globals(), "qbraid.programs")
-    runtime = LazyLoader("providers", globals(), "qbraid.providers")
+    runtime = LazyLoader("runtime", globals(), "qbraid.runtime")
     transpiler = LazyLoader("transpiler", globals(), "qbraid.transpiler")
     visualization = LazyLoader("visualization", globals(), "qbraid.visualization")
 
@@ -65,7 +63,6 @@ else:
 __all__ = [
     "about",
     "transforms",
-    "get_devices",
     "get_jobs",
     "interface",
     "LazyLoader",

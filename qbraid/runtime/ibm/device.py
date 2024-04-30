@@ -39,8 +39,7 @@ class QiskitBackend(QuantumDevice):
         """Create a QiskitBackend."""
 
         super().__init__(ibm_device)
-        self._vendor = "IBM"
-        self._run_package = "qiskit"
+        self._device = ibm_device
 
     def _get_device_name(self) -> str:
         """Get the name of the device."""
@@ -65,7 +64,7 @@ class QiskitBackend(QuantumDevice):
         self._provider = "IBM"
         lower_device_name = device_name.lower()
         if lower_device_name.startswith("fake"):
-            self._device_type = DeviceType.FAKE
+            self._device_type = DeviceType.LOCAL_SIMULATOR
         elif "simulator" in lower_device_name or "aer" in lower_device_name:
             self._device_type = DeviceType.SIMULATOR
         else:
@@ -74,7 +73,7 @@ class QiskitBackend(QuantumDevice):
             )
 
         try:
-            if self._device_type == DeviceType.FAKE:
+            if self._device_type == DeviceType.LOCAL_SIMULATOR:
                 self._num_qubits = getattr(device, "configuration", lambda: device)().n_qubits
             else:
                 self._num_qubits = device.num_qubits
@@ -99,7 +98,7 @@ class QiskitBackend(QuantumDevice):
         Returns:
             str: The status of this Device
         """
-        if self._device_type == DeviceType("FAKE"):
+        if self._device_type == DeviceType.LOCAL_SIMULATOR:
             return DeviceStatus.ONLINE
 
         backend_status = self._device.status()
@@ -109,11 +108,11 @@ class QiskitBackend(QuantumDevice):
 
     def queue_depth(self) -> int:
         """Return the number of jobs in the queue for the ibm backend"""
-        if self._device_type == DeviceType("FAKE"):
+        if self._device_type == DeviceType.LOCAL_SIMULATOR:
             return 0
         return self._device.status().pending_jobs
 
-    def _run(
+    def submit(
         self,
         run_input: "Union[qiskit.QuantumCircuit, list[qiskit.QuantumCircuit]]",
         *args,
@@ -137,35 +136,5 @@ class QiskitBackend(QuantumDevice):
         backend = self._device
         shots = kwargs.pop("shots", backend.options.get("shots"))
         memory = kwargs.pop("memory", True)  # Needed to get measurements
-        qiskit_job = backend.run(run_input, shots=shots, memory=memory)
-        try:
-            tags_lst = qiskit_job.update_tags(kwargs.get("tags", []))
-        except AttributeError:  # BasicAerJob does not have update_tags
-            tags_lst = []
-        tags = {tag: "*" for tag in tags_lst}
-        qiskit_job_id = qiskit_job.job_id()
-        return {
-            "vendor_job_id": qiskit_job_id,
-            "tags": tags,
-            "shots": shots,
-            "vendor_job_obj": qiskit_job,
-            "qbraid_job_obj": QiskitJob,
-        }
-
-    def _run_batch(self, run_input: "list[qiskit.QuantumCircuit]", *args, **kwargs):
-        """Runs circuit(s) on qiskit backend via :meth:`~qiskit.execute`
-
-        Uses the :meth:`~qiskit.execute` method to create a :class:`~qiskit.providers.QuantumJob`
-        object, applies a :class:`~qbraid.providers.ibm.QiskitJob`, and return the result.
-
-        Args:
-            run_input: A circuit object list to run on the wrapped device.
-
-        Keyword Args:
-            shots (int): The number of times to run the task on the device. Default is 1024.
-
-        Returns:
-            qbraid.providers.ibm.QiskitJob: The job like object for the run.
-
-        """
-        return self._run(run_input, **kwargs)
+        job = backend.run(run_input, *args, shots=shots, memory=memory, **kwargs)
+        return QiskitJob(job, self._device)

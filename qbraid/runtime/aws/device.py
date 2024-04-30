@@ -14,7 +14,7 @@ Module defining BraketDeviceWrapper Class
 """
 import json
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional, Union
 
 import braket.circuits
 from braket.aws import AwsDevice
@@ -22,16 +22,15 @@ from braket.device_schema import ExecutionDay
 
 from qbraid.programs.libs.braket import BraketCircuit
 from qbraid.programs.program import ProgramSpec
-from qbraid.programs.registry import QPROGRAM_ALIASES
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, DeviceType
+from qbraid.runtime.profile import RuntimeProfile
 from qbraid.transpiler import CircuitConversionError, ConversionPathNotFoundError, transpile
 
 from .job import BraketQuantumTask
 
 if TYPE_CHECKING:
     import braket.aws
-    import braket.circuits
 
     import qbraid.runtime.aws
     import qbraid.transpiler
@@ -85,12 +84,16 @@ class BraketDevice(QuantumDevice):
             aws_session = None
         return AwsDevice(arn=arn, aws_session=aws_session)
 
-    def status(self) -> "qbraid.runtime.DeviceStatus":
-        """Return the status of this Device.
+    def _default_profile(self) -> "qbraid.runtime.RuntimeProfile":
+        """Return the default runtime profile."""
+        return RuntimeProfile(
+            device_type=self._device_type,
+            device_num_qubits=self._num_qubits,
+            program_spec=self._program_spec,
+        )
 
-        Returns:
-            The status of this Device
-        """
+    def status(self) -> "qbraid.runtime.DeviceStatus":
+        """Return the status of this Device."""
         if self._device.status == "ONLINE":
             if self._device.is_available:
                 return DeviceStatus.ONLINE
@@ -241,7 +244,12 @@ class BraketDevice(QuantumDevice):
 
         return run_input
 
-    def submit(self, run_input: "braket.circuits.Circuit", *args, **kwargs) -> BraketQuantumTask:
+    def submit(
+        self,
+        run_input: Union[braket.circuits.Circuit, list[braket.circuits.Circuit]],
+        *args,
+        **kwargs,
+    ) -> Union[BraketQuantumTask, list[BraketQuantumTask]]:
         """Run a quantum task specification on this quantum device. Task must represent a
         quantum circuit, annealing problems not supported.
 
@@ -255,26 +263,13 @@ class BraketDevice(QuantumDevice):
             The job like object for the run.
 
         """
-        aws_quantum_task = self._device.run(run_input, *args, **kwargs)
-        job_id = aws_quantum_task.metadata()["quantumTaskArn"]
-        return BraketQuantumTask(job_id, device=self._device)
-
-    def submit_batch(self, run_input, *args, **kwargs) -> list[BraketQuantumTask]:
-        """Run batch of quantum tasks on this quantum device.
-
-        Args:
-            run_input: A circuit object list to run on the wrapped device.
-
-        Keyword Args:
-            auto_compile (bool): Whether to compile the circuits for the device before running.
-            shots (int): The number of times to run the task on the device. Default is 1024.
-
-        Returns:
-            List of BraketQuantumTask objects for the run.
-
-        """
+        is_single_input = not isinstance(run_input, list)
+        run_input = [run_input] if is_single_input else run_input
         aws_quantum_task_batch = self._device.run_batch(run_input, *args, **kwargs)
-        return [
+        tasks = [
             BraketQuantumTask(task.metadata()["quantumTaskArn"], device=self._device)
             for task in aws_quantum_task_batch.tasks
         ]
+        if is_single_input:
+            return tasks[0]
+        return tasks

@@ -25,7 +25,6 @@ from qbraid.transpiler import CircuitConversionError, transpile
 
 from .enums import DeviceStatus
 from .exceptions import ProgramValidationError, QbraidRuntimeError
-from .profile import RuntimeProfile
 
 if TYPE_CHECKING:
     import qbraid.programs
@@ -44,7 +43,7 @@ class QuantumDevice(ABC):
 
         Args:
             device_id (str): The unique identifier of the device.
-            provider (qbraid.runtime.QuantumProvider, optional): The provider associated with the device.
+            provider (QuantumProvider, optional): The provider associated with the device.
 
         """
         self._id = device_id
@@ -81,9 +80,8 @@ class QuantumDevice(ABC):
             self._profile = self._default_profile()
         return self._profile
 
-    @classmethod
     @abstractmethod
-    def _default_profile(cls):
+    def _default_profile(self):
         """Return the default runtime profile
 
         This method will return a :class:`qbraid.runtime.RuntimeProfile`
@@ -127,7 +125,8 @@ class QuantumDevice(ABC):
 
         if not isinstance(run_input, (run_input_type, type(run_input_type))):
             raise ProgramValidationError(
-                f"Expected program of type {run_input_type}, but got program of type {type(run_input)}."
+                f"Expected program of type {run_input_type}, "
+                f"but got program of type {type(run_input)}."
             )
 
         if run_input_alias in NATIVE_REGISTRY:

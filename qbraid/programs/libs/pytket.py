@@ -33,6 +33,7 @@ class PytketCircuit(QuantumProgram):
 
     @property
     def program(self) -> Circuit:
+        """Return the pytket circuit."""
         return self._program
 
     @program.setter

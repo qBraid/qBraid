@@ -32,6 +32,7 @@ class OpenQasm3Program(QuantumProgram):
 
     @property
     def program(self) -> str:
+        """Return the OpenQASM 3 program."""
         return self._program
 
     @program.setter

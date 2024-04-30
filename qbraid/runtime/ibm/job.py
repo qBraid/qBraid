@@ -18,7 +18,7 @@ from typing import Optional
 import qiskit.providers.job
 from qiskit_ibm_provider.job.exceptions import IBMJobInvalidStateError
 
-from qbraid.runtime.enums import JOB_FINAL, JobStatus
+from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 
@@ -60,14 +60,14 @@ class QiskitJob(QuantumJob):
 
     def result(self):
         """Return the results of the job."""
-        if self.done():
+        if self.is_terminal_state():
             logger.info("Result will be available when job has reached final state.")
         return QiskitResult(self._job.result())
 
     def cancel(self):
         """Attempt to cancel the job."""
-        if not self.done():
-            raise JobStateError(f"Cannot cancel quantum job in non-terminal state.")
+        if not self.is_terminal_state():
+            raise JobStateError("Cannot cancel quantum job in non-terminal state.")
         try:
             return self._job.cancel()
         except IBMJobInvalidStateError as err:

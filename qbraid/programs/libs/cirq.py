@@ -27,6 +27,7 @@ class CirqCircuit(QuantumProgram):
 
     @property
     def program(self) -> cirq.Circuit:
+        """Return the cirq circuit."""
         return self._program
 
     @program.setter

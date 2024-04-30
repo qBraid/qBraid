@@ -61,7 +61,8 @@ class ProgramSpec:
             other (object): Another object to compare against.
 
         Returns:
-            bool: True if both objects are instances of ProgramSpec and have the same type and alias, False otherwise.
+            bool: True if both objects are instances of ProgramSpec and have the
+                  same type and alias, False otherwise.
         """
         if not isinstance(other, ProgramSpec):
             return False

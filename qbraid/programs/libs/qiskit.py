@@ -35,6 +35,7 @@ class QiskitCircuit(QuantumProgram):
 
     @property
     def program(self) -> qiskit.QuantumCircuit:
+        """Return the qiskit program."""
         return self._program
 
     @program.setter
