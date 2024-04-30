@@ -40,7 +40,7 @@ Classes
 
    ProgramSpec
    QuantumProgram
-   ProgramSpec
+   QbraidProgram
 
 Exceptions
 -----------
@@ -56,7 +56,7 @@ Exceptions
 from .alias_manager import get_program_type_alias, parse_qasm_type_alias
 from .exceptions import PackageValueError, ProgramTypeError, QasmError
 from .loader import load_program
-from .program import ProgramSpec, QuantumProgram
+from .program import QbraidProgram, QuantumProgram
 from .registry import (
     QPROGRAM,
     QPROGRAM_ALIASES,

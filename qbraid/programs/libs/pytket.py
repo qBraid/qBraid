@@ -19,28 +19,22 @@ import numpy as np
 from pytket.circuit import Circuit, Command, OpType  # pylint: disable=no-name-in-module
 from pytket.unit_id import Qubit
 
-from qbraid.programs.program import QuantumProgram
+from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.program import QbraidProgram
 
 if TYPE_CHECKING:
     import pytket
 
 
-class PytketCircuit(QuantumProgram):
+class PytketCircuit(QbraidProgram):
     """Wrapper class for ``pytket.circuit.Circuit`` objects."""
 
     def __init__(self, program: "pytket.Circuit"):
         super().__init__(program)
-
-    @property
-    def program(self) -> Circuit:
-        """Return the pytket circuit."""
-        return self._program
-
-    @program.setter
-    def program(self, value: Circuit) -> None:
-        if not isinstance(value, Circuit):
-            raise ValueError("Program must be an instance of pytket.circuit.Circuit")
-        self._program = value
+        if not isinstance(program, Circuit):
+            raise ProgramTypeError(
+                message=f"Expected 'pytket.Circuit' object, got '{type(program)}'."
+            )
 
     @property
     def qubits(self) -> list[Qubit]:

@@ -33,12 +33,12 @@ Submodules
 import importlib
 
 _qbraid = importlib.import_module("qbraid.programs._import")
-_QPROGRAM_ALIASES = getattr(_qbraid, "_QPROGRAM_ALIASES", set())
+NATIVE_REGISTRY = getattr(_qbraid, "NATIVE_REGISTRY", {})
 
 submodules = []
 base_path = "qbraid.programs.libs."
 
-for lib in _QPROGRAM_ALIASES:
+for lib in NATIVE_REGISTRY:
     try:
         imported_lib = importlib.import_module(base_path + lib)
         submodules.append(lib)

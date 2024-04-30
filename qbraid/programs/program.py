@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -12,75 +12,72 @@
 Module defining QuantumProgram Class
 
 """
+import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Optional, Type
+from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 
 from .alias_manager import get_program_type_alias
-from .registry import register_program_type
+from .exceptions import ProgramTypeError
+from .registry import QPROGRAM_REGISTRY
+from .spec import ProgramSpec
 
 if TYPE_CHECKING:
     import qbraid
 
-
-class ProgramSpec:
-    """Base class used to register program type and type alias."""
-
-    def __init__(
-        self,
-        program_type: Type[Any],
-        alias: Optional[str] = None,
-        overwrite: bool = False,
-    ):
-        self._program_type = program_type
-        self._alias = self.register_type_alias(program_type, alias, overwrite)
-
-    @staticmethod
-    def register_type_alias(program_type: Type[Any], alias: Optional[str], overwrite: bool) -> str:
-        """Get or set the program type alias."""
-        register_program_type(program_type, alias=alias, overwrite=overwrite)
-        return get_program_type_alias(program_type)
-
-    @property
-    def alias(self) -> str:
-        """Return the alias of the registered program type."""
-        return self._alias
-
-    def __str__(self) -> str:
-        return f"ProgramSpec for {self.alias} {self._program_type.__name__} type."
-
-    def __repr__(self) -> str:
-        return f"<ProgramSpec({self._program_type}, {self.alias})>"
-
-    def __eq__(self, other: object) -> bool:
-        """
-        Compare this ProgramSpec object with another object for equality based on type and alias.
-
-        Args:
-            other (object): Another object to compare against.
-
-        Returns:
-            bool: True if both objects are instances of ProgramSpec and have the
-                  same type and alias, False otherwise.
-        """
-        if not isinstance(other, ProgramSpec):
-            return False
-
-        return (self._program_type, self._alias) == (other._program_type, other._alias)
+logger = logging.getLogger(__name__)
 
 
-class QuantumProgram(ProgramSpec, ABC):
+class QuantumProgram(ABC):
     """Abstract class for qbraid program wrapper objects."""
 
-    def __init__(
-        self,
-        program: "qbraid.programs.QPROGRAM",
-        alias: Optional[str] = None,
-        overwrite: bool = False,
-    ):
-        super().__init__(type(program), alias, overwrite)
-        self._program = program
+    def __init__(self, program: "qbraid.programs.QPROGRAM"):
+        self.spec = self.get_spec(program)
+        self._program = None
+        self.program = program
+
+    @property
+    def program(self) -> "qbraid.programs.QPROGRAM":
+        """Return the quantum program."""
+        return self._program
+
+    @program.setter
+    def program(self, value: "qbraid.programs.QPROGRAM") -> None:
+        """Set the quantum program."""
+        expected_type = QPROGRAM_REGISTRY.get(self.spec.alias)
+        if not isinstance(value, expected_type):
+            raise ProgramTypeError(
+                message=(
+                    f"Expected program type of '{expected_type}' for "
+                    f"derived type alias '{self.spec.alias}'."
+                )
+            )
+        self._program = value
+
+    @staticmethod
+    def get_spec(program: "qbraid.programs.QPROGRAM") -> ProgramSpec:
+        """Return the program spec."""
+        try:
+            alias = get_program_type_alias(program)
+        except ProgramTypeError as err:
+            logger.info(err)
+            alias = None
+
+        return ProgramSpec(type(program), alias)
+
+    @property
+    @abstractmethod
+    def num_qubits(self) -> int:
+        """Return the number of qubits in the circuit."""
+
+    @abstractmethod
+    def unitary(self) -> "np.ndarray":
+        """Calculate unitary of circuit."""
+
+
+class QbraidProgram(QuantumProgram, ABC):
+    """Abstract class for qbraid program wrapper objects."""
 
     @property
     @abstractmethod
@@ -108,7 +105,7 @@ class QuantumProgram(ProgramSpec, ABC):
 
     def unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
-        if self.alias in ["pyquil", "qiskit", "qasm3"]:
+        if self.spec.alias in ["pyquil", "qiskit", "qasm3"]:
             return self.unitary_rev_qubits()
         return self._unitary()
 

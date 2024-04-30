@@ -15,28 +15,24 @@ Module defining OpenQasm2Program Class
 import re
 from typing import TYPE_CHECKING
 
+<<<<<<< HEAD
 from qbraid.programs.program import QuantumProgram
+=======
+from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.program import QbraidProgram
+>>>>>>> rh1-transpiler
 
 if TYPE_CHECKING:
     import numpy as np
 
 
-class OpenQasm2Program(QuantumProgram):
+class OpenQasm2Program(QbraidProgram):
     """Wrapper class for OpenQASM 2 strings."""
 
     def __init__(self, program: str):
         super().__init__(program)
-
-    @property
-    def program(self) -> str:
-        """Return the OpenQASM 2 program."""
-        return self._program
-
-    @program.setter
-    def program(self, value: str) -> None:
-        if not isinstance(value, str):
-            raise ValueError("Program must be an instance of str")
-        self._program = value
+        if not isinstance(program, str):
+            raise ProgramTypeError(message=f"Expected 'str' object, got '{type(program)}'.")
 
     def _get_bits(self, bit_type: str) -> list[str]:
         """Return the number of qubits or classical bits in the circuit.

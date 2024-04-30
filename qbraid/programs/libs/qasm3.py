@@ -20,26 +20,18 @@ import numpy as np
 from openqasm3.ast import BitType, ClassicalDeclaration, QubitDeclaration
 from openqasm3.parser import parse
 
-from qbraid.programs.program import QuantumProgram
+from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.program import QbraidProgram
 
 
-class OpenQasm3Program(QuantumProgram):
+class OpenQasm3Program(QbraidProgram):
     """Wrapper class for OpenQASM 3 strings."""
 
     def __init__(self, program: str):
         super().__init__(program)
+        if not isinstance(program, str):
+            raise ProgramTypeError(message=f"Expected 'str' object, got '{type(program)}'.")
         self._parse_qasm()
-
-    @property
-    def program(self) -> str:
-        """Return the OpenQASM 3 program."""
-        return self._program
-
-    @program.setter
-    def program(self, value: str) -> None:
-        if not isinstance(value, str):
-            raise ValueError("Program must be an instance of str")
-        self._program = value
 
     def _parse_qasm(self) -> str:
         """Process the program string."""

@@ -21,28 +21,22 @@ from qiskit.circuit import Qubit
 from qiskit.converters import circuit_to_dag, dag_to_circuit
 from qiskit.quantum_info import Operator
 
-from qbraid.programs.program import QuantumProgram
+from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.program import QbraidProgram
 
 if TYPE_CHECKING:
     import numpy as np
 
 
-class QiskitCircuit(QuantumProgram):
+class QiskitCircuit(QbraidProgram):
     """Wrapper class for ``qiskit.QuantumCircuit`` objects"""
 
     def __init__(self, program: "qiskit.QuantumCircuit"):
         super().__init__(program)
-
-    @property
-    def program(self) -> qiskit.QuantumCircuit:
-        """Return the qiskit program."""
-        return self._program
-
-    @program.setter
-    def program(self, value: qiskit.QuantumCircuit) -> None:
-        if not isinstance(value, qiskit.QuantumCircuit):
-            raise ValueError("Program must be an instance of qiskit.QuantumCircuit")
-        self._program = value
+        if not isinstance(program, qiskit.QuantumCircuit):
+            raise ProgramTypeError(
+                message=f"Expected 'qiskit.QuantumCircuit' object, got '{type(program)}'."
+            )
 
     @property
     def qubits(self) -> list[Qubit]:
