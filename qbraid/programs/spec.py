@@ -29,7 +29,7 @@ class ProgramSpec:
         self._program_type = program_type
 
         register_program_type(program_type, alias=alias, overwrite=overwrite)
-        self._alias = derive_program_type_alias(program_type)
+        self._alias = alias or derive_program_type_alias(program_type)
         self._native = is_registered_alias_native(self._alias)
 
     @property
@@ -51,7 +51,7 @@ class ProgramSpec:
         return f"ProgramSpec for {self.alias} {self._program_type.__name__} type."
 
     def __repr__(self) -> str:
-        return f"<ProgramSpec({self._program_type}, {self.alias})>"
+        return f"<ProgramSpec('{self.alias}', {self._program_type.__module__})>"
 
     def __eq__(self, other: object) -> bool:
         """

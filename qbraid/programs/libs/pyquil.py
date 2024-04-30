@@ -19,34 +19,24 @@ from pyquil import Program
 from pyquil.quilbase import Declare, Measurement
 from pyquil.simulation.tools import program_unitary
 
-from qbraid.programs.abc_program import QuantumProgram
+from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.program import QbraidProgram
 
 
-class PyQuilProgram(QuantumProgram):
+class PyQuilProgram(QbraidProgram):
     """Wrapper class for ``pyQuil.Program`` objects."""
 
     def __init__(self, program: "pyquil.Program"):
         super().__init__(program)
-
-    @property
-    def program(self) -> pyquil.Program:
-        return self._program
-
-    @program.setter
-    def program(self, value: pyquil.Program) -> None:
-        if not isinstance(value, pyquil.Program):
-            raise ValueError("Program must be an instance of pyquil.Program")
-        self._program = value
+        if not isinstance(program, Program):
+            raise ProgramTypeError(
+                message=f"Expected 'pyquil.Program' object, got '{type(program)}'."
+            )
 
     @property
     def qubits(self) -> list[int]:
         """Return the qubits acted upon by the operations in this circuit"""
         return list(self.program.get_qubits())
-
-    @property
-    def num_qubits(self) -> int:
-        """Return the number of qubits in the circuit."""
-        return len(self.qubits)
 
     @property
     def num_clbits(self) -> int:

@@ -17,27 +17,22 @@ from typing import TYPE_CHECKING
 import pennylane as qml
 from pennylane.tape import QuantumTape
 
-from qbraid.programs.abc_program import QuantumProgram
+from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.program import QbraidProgram
 
 if TYPE_CHECKING:
     import numpy as np
 
 
-class PennylaneTape(QuantumProgram):
+class PennylaneTape(QbraidProgram):
     """Wrapper class for Pennylane Quantum Tape programs."""
 
     def __init__(self, program: QuantumTape):
         super().__init__(program)
-
-    @property
-    def program(self) -> QuantumTape:
-        return self._program
-
-    @program.setter
-    def program(self, value: QuantumTape) -> None:
-        if not isinstance(value, QuantumTape):
-            raise ValueError("Program must be an instance of qml.tape.QuantumTape")
-        self._program = value
+        if not isinstance(program, QuantumTape):
+            raise ProgramTypeError(
+                message=f"Expected 'pennylane.tape.QuantumTape' object, got '{type(program)}'."
+            )
 
     @property
     def qubits(self) -> list[int]:

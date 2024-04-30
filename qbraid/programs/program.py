@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -12,34 +12,72 @@
 Module defining QuantumProgram Class
 
 """
-from abc import abstractmethod
+import logging
+from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional
 
 import numpy as np
 
 from .alias_manager import get_program_type_alias
+from .exceptions import ProgramTypeError
+from .registry import QPROGRAM_REGISTRY
+from .spec import ProgramSpec
 
 if TYPE_CHECKING:
     import qbraid
 
+logger = logging.getLogger(__name__)
 
-class QuantumProgram:
+
+class QuantumProgram(ABC):
     """Abstract class for qbraid program wrapper objects."""
 
     def __init__(self, program: "qbraid.programs.QPROGRAM"):
+        self.spec = self.get_spec(program)
+        self._program = None
         self.program = program
-        self._program = program
-        self._package = get_program_type_alias(program)
-
-    @property
-    def package(self) -> str:
-        """Return the original package of the wrapped circuit."""
-        return self._package
 
     @property
     def program(self) -> "qbraid.programs.QPROGRAM":
-        """Return the wrapped quantum program object."""
+        """Return the quantum program."""
         return self._program
+
+    @program.setter
+    def program(self, value: "qbraid.programs.QPROGRAM") -> None:
+        """Set the quantum program."""
+        expected_type = QPROGRAM_REGISTRY.get(self.spec.alias)
+        if not isinstance(value, expected_type):
+            raise ProgramTypeError(
+                message=(
+                    f"Expected program type of '{expected_type}' for "
+                    f"derived type alias '{self.spec.alias}'."
+                )
+            )
+        self._program = value
+
+    @staticmethod
+    def get_spec(program: "qbraid.programs.QPROGRAM") -> ProgramSpec:
+        """Return the program spec."""
+        try:
+            alias = get_program_type_alias(program)
+        except ProgramTypeError as err:
+            logger.info(err)
+            alias = None
+
+        return ProgramSpec(type(program), alias)
+
+    @property
+    @abstractmethod
+    def num_qubits(self) -> int:
+        """Return the number of qubits in the circuit."""
+
+    @abstractmethod
+    def unitary(self) -> "np.ndarray":
+        """Calculate unitary of circuit."""
+
+
+class QbraidProgram(QuantumProgram, ABC):
+    """Abstract class for qbraid program wrapper objects."""
 
     @property
     @abstractmethod
@@ -67,7 +105,7 @@ class QuantumProgram:
 
     def unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
-        if self.package in ["pyquil", "qiskit", "qasm3"]:
+        if self.spec.alias in ["pyquil", "qiskit", "qasm3"]:
             return self.unitary_rev_qubits()
         return self._unitary()
 

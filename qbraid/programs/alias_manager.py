@@ -72,7 +72,7 @@ def get_program_type_alias(program: "qbraid.programs.QPROGRAM") -> str:
         ProgramTypeError: If the program type does not match any registered program types.
     """
     if isinstance(program, type):
-        raise ProgramTypeError("Expected an instance of a quantum program, not a type.")
+        raise ProgramTypeError(message="Expected an instance of a quantum program, not a type.")
 
     if isinstance(program, str):
         try:

@@ -16,24 +16,19 @@ Module defining CirqCircuit Class
 import cirq
 import numpy as np
 
-from qbraid.programs.abc_program import QuantumProgram
+from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.program import QbraidProgram
 
 
-class CirqCircuit(QuantumProgram):
+class CirqCircuit(QbraidProgram):
     """Wrapper class for ``cirq.Circuit`` objects."""
 
     def __init__(self, program: "cirq.Circuit"):
         super().__init__(program)
-
-    @property
-    def program(self) -> cirq.Circuit:
-        return self._program
-
-    @program.setter
-    def program(self, value: cirq.Circuit) -> None:
-        if not isinstance(value, cirq.Circuit):
-            raise ValueError("Program must be an instance of cirq.Circuit")
-        self._program = value
+        if not isinstance(program, cirq.Circuit):
+            raise ProgramTypeError(
+                message=f"Expected 'cirq.Circuit' object, got '{type(program)}'."
+            )
 
     @property
     def qubits(self) -> list[cirq.Qid]:
