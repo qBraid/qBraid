@@ -71,6 +71,9 @@ def get_program_type_alias(program: "qbraid.programs.QPROGRAM") -> str:
     Raises:
         ProgramTypeError: If the program type does not match any registered program types.
     """
+    if isinstance(program, type):
+        raise ProgramTypeError("Expected an instance of a quantum program, not a type.")
+
     if isinstance(program, str):
         try:
             return parse_qasm_type_alias(program)
@@ -85,9 +88,21 @@ def get_program_type_alias(program: "qbraid.programs.QPROGRAM") -> str:
                 )
             ) from err
 
+    matched = []
     for alias, program_type in QPROGRAM_REGISTRY.items():
         if isinstance(program, (program_type, type(program_type))):
-            return alias
+            matched.append(alias)
+
+    if len(matched) == 1:
+        return matched[0]
+
+    if len(matched) > 1:
+        raise ProgramTypeError(
+            message=(
+                f"Program of type '{type(program)}' matches multiple registered program types: "
+                f"{matched}."
+            )
+        )
 
     raise ProgramTypeError(
         message=(

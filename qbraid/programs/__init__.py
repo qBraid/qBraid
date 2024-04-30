@@ -39,6 +39,7 @@ Classes
    :toctree: ../stubs/
 
    QuantumProgram
+   ProgramSpec
 
 Exceptions
 -----------
@@ -63,3 +64,4 @@ from .registry import (
     derive_program_type_alias,
     register_program_type,
 )
+from .spec import ProgramSpec

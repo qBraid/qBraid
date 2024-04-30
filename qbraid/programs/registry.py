@@ -37,7 +37,7 @@ def derive_program_type_alias(program_type: Type[Any]) -> str:
     """
     try:
         alias = program_type.__module__.split(".")[0]
-        if alias == "__main__":
+        if alias in ["__main__", "builtins"]:
             alias = program_type.__name__
         return alias.lower()
     except (AttributeError, IndexError, TypeError) as err:
