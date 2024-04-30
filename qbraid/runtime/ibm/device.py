@@ -12,85 +12,61 @@
 Module defining QiskitBackend Class
 
 """
-import re
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
-from qiskit import transpile
-from qiskit.transpiler import TranspilerError
+from qiskit import transpile, QuantumCircuit
 
+from qbraid.programs import ProgramSpec
 from qbraid.programs.libs.qiskit import QiskitCircuit
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, DeviceType
+from qbraid.runtime.profile import RuntimeProfile
 
 from .job import QiskitJob
 
 if TYPE_CHECKING:
     import qiskit
-    import qiskit_ibm_provider
     import qiskit_ibm_runtime
+
+    import qbraid.runtime.ibm
 
 
 class QiskitBackend(QuantumDevice):
     """Wrapper class for IBM Qiskit ``Backend`` objects."""
 
     def __init__(
-        self, ibm_device: Union["qiskit_ibm_provider.IBMBackend", "qiskit_ibm_runtime.IBMBackend"]
+        self,
+        name: Optional[str] = None,
+        instance: Optional[str] = None,
+        provider: "Optional[qbraid.runtime.ibm.QiskitRuntimeProvider]" = None,
+        backend: "Optional[qiskit_ibm_runtime.IBMBackend]" = None,
     ):
         """Create a QiskitBackend."""
-
-        super().__init__(ibm_device)
-        self._device = ibm_device
-
-    def _get_device_name(self) -> str:
-        """Get the name of the device."""
-        backend = self._device
-        if hasattr(backend, "backend_name"):
-            return backend.backend_name
-
-        if hasattr(backend, "name"):
-            return backend.name() if callable(backend.name) else backend.name
-
-        match = re.search(r"<\w+\('([^']+)'\)>", str(backend))
-        return match.group(1) if match else str(backend)
-
-    def _populate_metadata(
-        self, device: Union["qiskit_ibm_provider.IBMBackend", "qiskit_ibm_runtime.IBMBackend"]
-    ) -> None:
-        """Populate device metadata using IBMBackend object."""
-        # pylint: disable=attribute-defined-outside-init
-        device_name = self._get_device_name()
-        self._vendor_id = device_name
-        self._name = device_name
-        self._provider = "IBM"
-        lower_device_name = device_name.lower()
-        if lower_device_name.startswith("fake"):
-            self._device_type = DeviceType.LOCAL_SIMULATOR
-        elif "simulator" in lower_device_name or "aer" in lower_device_name:
-            self._device_type = DeviceType.SIMULATOR
+        if not (name or backend):
+            raise ValueError("Must specify either name or backend.")
+        if name and backend:
+            raise ValueError("Can only specify one of name and backend.")
+        super().__init__(device_id=name or backend.name, provider=provider)
+        backend = backend or provider.runtime_service.backend(name, instance=instance)
+        if backend.local:
+            device_type = DeviceType.LOCAL_SIMULATOR
+        elif backend.simulator:
+            device_type = DeviceType.SIMULATOR
         else:
-            self._device_type = (
-                DeviceType.SIMULATOR if getattr(device, "simulator", True) else DeviceType.QPU
-            )
+            device_type = DeviceType.QPU
 
-        try:
-            if self._device_type == DeviceType.LOCAL_SIMULATOR:
-                self._num_qubits = getattr(device, "configuration", lambda: device)().n_qubits
-            else:
-                self._num_qubits = device.num_qubits
-        except (AttributeError, TranspilerError):
-            self._num_qubits = (
-                5000
-                if device.name == "simulator_stabilizer"
-                else 63 if device.name == "simulator_extended_stabilizer" else None
-            )
+        self._backend = backend
+        self._device_type = device_type
+        self._num_qubits = backend.configuration().n_qubits
+        self._program_spec = ProgramSpec(QuantumCircuit)
 
-    def transform(self, run_input: "qiskit.QuantumCircuit") -> "qiskit.QuantumCircuit":
-        if self._device_type.name != "FAKE" and self._device.local:
-            program = QiskitCircuit(run_input)
-            program.remove_idle_qubits()
-            run_input = program.program
-
-        return transpile(run_input, backend=self._device)
+    def _default_profile(self) -> "qbraid.runtime.RuntimeProfile":
+        """Return the default runtime profile."""
+        return RuntimeProfile(
+            device_type=self._device_type,
+            device_num_qubits=self._num_qubits,
+            program_spec=self._program_spec,
+        )
 
     def status(self):
         """Return the status of this Device.
@@ -98,30 +74,40 @@ class QiskitBackend(QuantumDevice):
         Returns:
             str: The status of this Device
         """
-        if self._device_type == DeviceType.LOCAL_SIMULATOR:
+        if self == DeviceType.LOCAL_SIMULATOR:
             return DeviceStatus.ONLINE
 
-        backend_status = self._device.status()
-        if not backend_status.operational or backend_status.status_msg != "active":
-            return DeviceStatus.OFFLINE
-        return DeviceStatus.ONLINE
+        status = self._backend.status()
+        if status.operational:
+            if status.status_msg == "active":
+                return DeviceStatus.ONLINE
+            return DeviceStatus.UNAVAILABLE
+        return DeviceStatus.OFFLINE
 
     def queue_depth(self) -> int:
         """Return the number of jobs in the queue for the ibm backend"""
-        if self._device_type == DeviceType.LOCAL_SIMULATOR:
+        if self.device_type == DeviceType.LOCAL_SIMULATOR:
             return 0
-        return self._device.status().pending_jobs
+        return self._backend.status().pending_jobs
+
+    def transform(self, run_input: "qiskit.QuantumCircuit") -> "qiskit.QuantumCircuit":
+        if self.device_type == DeviceType.LOCAL_SIMULATOR:
+            program = QiskitCircuit(run_input)
+            program.remove_idle_qubits()
+            run_input = program.program
+
+        return transpile(run_input, backend=self._backend)
 
     def submit(
         self,
         run_input: "Union[qiskit.QuantumCircuit, list[qiskit.QuantumCircuit]]",
         *args,
         **kwargs,
-    ):
+    ) -> "qbraid.runtime.ibm.QiskitJob":
         """Runs circuit(s) on qiskit backend via :meth:`~qiskit.execute`
 
         Uses the :meth:`~qiskit.execute` method to create a :class:`~qiskit.providers.QuantumJob`
-        object, applies a :class:`~qbraid.providers.ibm.QiskitJob`, and return the result.
+        object, applies a :class:`~qbraid.runtime.ibm.QiskitJob`, and return the result.
 
         Args:
             run_input: A circuit object to run on the IBM device.
@@ -130,11 +116,12 @@ class QiskitBackend(QuantumDevice):
             shots (int): The number of times to run the task on the device. Default is 1024.
 
         Returns:
-            qbraid.providers.ibm.QiskitJob: The job like object for the run.
+            qbraid.runtime.ibm.QiskitJob: The job like object for the run.
 
         """
-        backend = self._device
+        backend = self._backend
         shots = kwargs.pop("shots", backend.options.get("shots"))
         memory = kwargs.pop("memory", True)  # Needed to get measurements
         job = backend.run(run_input, *args, shots=shots, memory=memory, **kwargs)
-        return QiskitJob(job, self._device)
+        job_id = job.job_id()
+        return QiskitJob(job_id, job=job, device=self)

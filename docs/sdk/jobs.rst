@@ -15,13 +15,13 @@ target backend, the procedure was as follows:
 
 .. code-block:: python
 
-    >>> from qbraid.providers import QbraidProvider
+    >>> from qbraid.runtime import QbraidProvider
     >>> qbraid_id = 'aws_oqc_lucy'
     >>> provider = QbraidProvider()
     >>> qdevice = provider.get_device(qbraid_id)
     >>> qjob = qdevice.run(circuit)
     >>> type(qjob)
-    qbraid.providers.aws.job.BraketQuantumTaskWrapper
+    qbraid.runtime.aws.job.BraketQuantumTaskWrapper
 
 Invoking the ``run`` method of a qBraid ``QuantumDevice`` returns a qBraid
 ``QuantumJob``. Through a unified set of methods and attributes, this class
@@ -99,7 +99,7 @@ time, and even in a seperate program, with no loss of information.
 
 .. code-block:: python
 
-    >>> from qbraid.providers import QuantumJob
+    >>> from qbraid.runtime import QuantumJob
     >>> saved_job_id = 'aws_oqc_lucy-exampleuser-qjob-xxxxxxxxxxxxxxxxxxxx'
     >>> qjob = QuantumJob.retrieve(saved_job_id)
 
@@ -108,7 +108,7 @@ You can also load a previously submitted jobs directly through the corresponding
 
 .. code-block:: python
 
-    >>> from qbraid.providers.aws import BraketQuantumTask
+    >>> from qbraid.runtime.aws import BraketQuantumTask
     >>> qjob = BraketQuantumTask(saved_job_id)
 
 

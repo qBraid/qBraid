@@ -1,7 +1,7 @@
-qbraid.providers
+qbraid.runtime
 ==================
 
-.. automodule:: qbraid.providers
+.. automodule:: qbraid.runtime
    :members:
    :undoc-members:
    :show-inheritance:

@@ -35,8 +35,8 @@ def test_is_status_final(status_tuple):
     """Test identifying job status objects that are in final state"""
     status_obj, final_expected = status_tuple
     status_str = status_obj.name
-    final_obj = QuantumJob.status_final(status_obj)
-    final_str = QuantumJob.status_final(status_str)
+    final_obj = QuantumJob.is_terminal_state(status_obj)
+    final_str = QuantumJob.is_terminal_state(status_str)
     assert final_obj == final_expected
     assert final_str == final_expected
 
@@ -45,7 +45,7 @@ def test_is_status_final(status_tuple):
 def test_is_status_final_error(status):
     """Test raiseing exception while checking if job status is final"""
     with pytest.raises(TypeError):
-        QuantumJob.status_final(status)
+        QuantumJob.is_terminal_state(status)
 
 
 @pytest.mark.parametrize("status_tuple", status_data)

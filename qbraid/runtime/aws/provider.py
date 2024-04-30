@@ -45,7 +45,9 @@ class BraketProvider(QuantumProvider):
 
     REGIONS = ("us-east-1", "us-west-1", "us-west-2", "eu-west-2")
 
-    def __init__(self, aws_access_key_id=None, aws_secret_access_key=None):
+    def __init__(
+        self, aws_access_key_id: Optional[str] = None, aws_secret_access_key: Optional[str] = None
+    ):
         """
         Initializes the QbraidProvider object with optional AWS credentials.
 
@@ -56,9 +58,18 @@ class BraketProvider(QuantumProvider):
         self.aws_access_key_id = aws_access_key_id or os.getenv("AWS_ACCESS_KEY_ID")
         self.aws_secret_access_key = aws_secret_access_key or os.getenv("AWS_SECRET_ACCESS_KEY")
 
-    def save_config(self, *args, **kwargs):
+    @staticmethod
+    def save_config(
+        aws_access_key_id: Optional[str] = None,
+        aws_secret_access_key: Optional[str] = None,
+        **kwargs,
+    ):
         """Save the current configuration."""
-        raise aws_configure(*args, **kwargs)
+        raise aws_configure(
+            aws_access_key_id=aws_access_key_id,
+            aws_secret_access_key=aws_secret_access_key,
+            **kwargs,
+        )
 
     @staticmethod
     def _get_default_region() -> str:

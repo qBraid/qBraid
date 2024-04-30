@@ -22,8 +22,13 @@ class QuantumProvider(ABC):
 
     """
 
+    @staticmethod
+    def save_config(**kwargs):
+        """Saves account data and/or credentials to the disk."""
+        raise NotImplementedError
+
     @abstractmethod
-    def get_devices(self):
+    def get_devices(self, **kwargs):
         """Return a list of backends matching the specified filtering."""
 
     @abstractmethod

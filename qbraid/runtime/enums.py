@@ -48,7 +48,7 @@ class DeviceStatus(str, Enum):
 
 class JobStatus(str, Enum):
     """Class for the status of processes (i.e. jobs / quantum tasks) resulting from any
-    :meth:`~qbraid.providers.QuantumDevice.run` method.
+    :meth:`~qbraid.runtime.QuantumDevice.run` method.
 
     Attributes:
         INITIALIZING (str): job is being initialized

@@ -144,7 +144,7 @@ def test_wait_for_final_state():
     job = device.run(circuit, shots=10)
     job.wait_for_final_state()
     status = job.status()
-    assert QuantumJob.status_final(status)
+    assert QuantumJob.is_terminal_state(status)
 
 
 def test_aws_device_available():

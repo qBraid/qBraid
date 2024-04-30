@@ -171,7 +171,7 @@ def test_cancel_completed_batch_error():
 
     while elapsed_time < timeout:
         status = qbraid_job.status()
-        if QuantumJob.status_final(status):
+        if QuantumJob.is_terminal_state(status):
             break
 
         time.sleep(check_every)

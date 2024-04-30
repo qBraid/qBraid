@@ -13,7 +13,7 @@
 """
 Mdule submiting and managing jobs through IBM and IBM backends.
 
-.. currentmodule:: qbraid.providers.ibm
+.. currentmodule:: qbraid.runtime.ibm
 
 Classes
 --------
@@ -23,13 +23,11 @@ Classes
 
    QiskitBackend
    QiskitJob
-   QiskitRemoteService
-   QiskitProvider
-   QiskitRuntime
+   QiskitRuntimeProvider
    QiskitResult
 
 """
 from .device import QiskitBackend
 from .job import QiskitJob
-from .provider import QiskitProvider, QiskitRemoteService, QiskitRuntime
+from .provider import QiskitRuntimeProvider
 from .result import QiskitResult

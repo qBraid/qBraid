@@ -16,9 +16,7 @@ import os
 
 import pytest
 
-from qbraid import get_jobs
-from qbraid.interface import random_circuit
-from qbraid.runtime import QbraidProvider, QuantumJob, QuantumJobResult
+from qbraid.runtime import QuantumJobResult
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
@@ -54,70 +52,3 @@ def test_format_counts(counts_raw, expected_out, include_zero_values):
     assert counts_out == expected_out  # check equivalance
     assert list(counts_out.items()) == list(expected_out.items())  # check ordering of keys
 
-
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
-@pytest.mark.parametrize("device_id", ["ibm_q_simulator_statevector", "aws_sv_sim"])
-def test_result_wrapper_measurements(device_id):
-    """Test result wrapper measurements method."""
-    provider = QbraidProvider()
-    jobs = get_jobs(
-        filters={
-            "qbraidDeviceId": device_id,
-            "qbraidStatus": "COMPLETED",
-            "circuitNumQubits": {"$exists": True},
-        },
-        refresh=True,
-        raw=True,
-    )
-    if len(jobs) == 0:
-        circuit = random_circuit("qiskit", measure=True)
-        sim = provider.get_device(device_id).run(circuit, shots=10)
-    else:
-        job_id = jobs[0]
-        sim = QuantumJob.retrieve(job_id)
-
-    metadata = sim.metadata()
-    num_qubits = metadata["circuitNumQubits"]
-    shots = metadata["shots"]
-    qbraid_result = sim.result()
-    counts = qbraid_result.measurement_counts()
-    measurements = qbraid_result.measurements()
-    assert isinstance(counts, dict)
-    assert measurements.shape == (shots, num_qubits)
-
-
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
-@pytest.mark.parametrize("device_id", ["ibm_q_qasm_simulator"])
-def test_result_wrapper_batch_measurements(device_id):
-    """Test result wrapper measurements method for circuit batch."""
-    provider = QbraidProvider()
-    jobs = get_jobs(
-        filters={
-            "circuitBatchNumQubits": {"$ne": []},
-            "qbraidDeviceId": device_id,
-            "qbraidStatus": "COMPLETED",
-        },
-        refresh=True,
-        raw=True,
-    )
-    if len(jobs) == 0:
-        circuit = random_circuit("qiskit", num_qubits=3, depth=3, measure=True)
-        sim = provider.get_device(device_id).run_batch([circuit, circuit, circuit], shots=10)
-    else:
-        job_id = jobs[0]
-        sim = QuantumJob.retrieve(job_id)
-
-    metadata = sim.metadata()
-    batch_qubits = [int(q) for q in metadata["circuitBatchNumQubits"]]
-    max_qubits = max(batch_qubits)
-    num_jobs = len(batch_qubits)
-    shots = metadata["shots"]
-    qbraid_result = sim.result()
-    counts = qbraid_result.measurement_counts()
-    measurements = qbraid_result.measurements()
-
-    assert isinstance(counts, list)
-    for count in counts:
-        assert isinstance(count, dict)
-
-    assert measurements.shape == (num_jobs, shots, max_qubits)

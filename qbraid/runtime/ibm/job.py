@@ -13,10 +13,9 @@ Module defining QiskitJob Class
 
 """
 import logging
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
-import qiskit.providers.job
-from qiskit_ibm_provider.job.exceptions import IBMJobInvalidStateError
+from qiskit_ibm_runtime.exceptions import RuntimeInvalidStateError
 
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
@@ -24,36 +23,41 @@ from qbraid.runtime.job import QuantumJob
 
 from .result import QiskitResult
 
+if TYPE_CHECKING:
+    import qiskit_ibm_runtime
+
 logger = logging.getLogger(__name__)
 
 IBM_JOB_STATUS_MAP = {
-    "JobStatus.INITIALIZING": JobStatus.INITIALIZING,
-    "JobStatus.QUEUED": JobStatus.QUEUED,
-    "JobStatus.VALIDATING": JobStatus.VALIDATING,
-    "JobStatus.RUNNING": JobStatus.RUNNING,
-    "JobStatus.CANCELLED": JobStatus.CANCELLED,
-    "JobStatus.DONE": JobStatus.COMPLETED,
-    "JobStatus.ERROR": JobStatus.FAILED,
+    "INITIALIZING": JobStatus.INITIALIZING,
+    "QUEUED": JobStatus.QUEUED,
+    "VALIDATING": JobStatus.VALIDATING,
+    "RUNNING": JobStatus.RUNNING,
+    "CANCELLED": JobStatus.CANCELLED,
+    "DONE": JobStatus.COMPLETED,
+    "ERROR": JobStatus.FAILED,
 }
 
 
 class QiskitJob(QuantumJob):
     """Wrapper class for IBM Qiskit ``Job`` objects."""
 
-    def __init__(self, job_id: str, job: Optional[qiskit.providers.job.Job], **kwargs):
+    def __init__(
+        self, job_id: str, job: "Optional[qiskit_ibm_runtime.RuntimeJob]" = None, **kwargs
+    ):
         """Create a ``QiskitJob`` object."""
         super().__init__(job_id, **kwargs)
         self._job = job or self._get_job()
 
     def _get_job(self):
         """Return the job like object that is being wrapped."""
-        backend = self.device._device
-        provider = backend.provider
-        return provider.backend.retrieve_job(self.id)
+        qbraid_provider = self.device._provider
+        service = qbraid_provider.runtime_service
+        return service.job(self.id)
 
     def status(self):
         """Returns status from Qiskit Job object."""
-        job_status = str(self._job.status())
+        job_status = self._job.status().name
         status = IBM_JOB_STATUS_MAP.get(job_status, JobStatus.UNKNOWN)
         self._cache_metadata["status"] = status
         return status
@@ -70,5 +74,5 @@ class QiskitJob(QuantumJob):
             raise JobStateError("Cannot cancel quantum job in non-terminal state.")
         try:
             return self._job.cancel()
-        except IBMJobInvalidStateError as err:
+        except RuntimeInvalidStateError as err:
             raise JobStateError from err

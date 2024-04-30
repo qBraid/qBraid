@@ -88,7 +88,7 @@ Select a device using the ``QbraidProvider`` and send your quantum jobs:
 
 .. code-block:: python
 
-   >>> from qbraid.providers import QbraidProvider
+   >>> from qbraid.runtime import QbraidProvider
    >>> provider = QbraidProvider()
    >>> jobs  = []
    >>> qbraid_ids = ['aws_oqc_lucy', 'ibm_q_oslo']

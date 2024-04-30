@@ -194,7 +194,7 @@ ibm_q_brisbane                      ONLINE
 You can get a Python list of device objects using:
 
 ```python
-from qbraid.providers import QbraidProvider
+from qbraid.runtime import QbraidProvider
 
 provider = QbraidProvider()
 qdevices = provider.get_devices()
@@ -205,7 +205,7 @@ and submit quantum jobs from any supported program type:
 
 ```python
 >>> from qbraid import get_jobs
->>> from qbraid.providers import QbraidProvider
+>>> from qbraid.runtime import QbraidProvider
 >>> provider = QbraidProvider()
 >>> aws_device = provider.get_device("aws_oqc_lucy")
 >>> ibm_device = provider.get_device("ibm_q_brisbane")

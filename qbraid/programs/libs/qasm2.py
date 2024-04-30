@@ -15,12 +15,8 @@ Module defining OpenQasm2Program Class
 import re
 from typing import TYPE_CHECKING
 
-<<<<<<< HEAD
-from qbraid.programs.program import QuantumProgram
-=======
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.program import QbraidProgram
->>>>>>> rh1-transpiler
 
 if TYPE_CHECKING:
     import numpy as np

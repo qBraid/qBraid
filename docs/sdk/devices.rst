@@ -6,7 +6,7 @@ Devices
 In this module, you will learn how to use the qBraid SDK to interface with
 quantum backends. We will demonstrate how to construct queries and search
 for available devices using the ``qbraid.get_devices`` function, and
-overview how to execute circuits using the ``qbraid.providers`` module.
+overview how to execute circuits using the ``qbraid.runtime`` module.
 
 Unified Device Search
 ----------------------
@@ -107,12 +107,12 @@ how this value is used to wrap the quantum backends / device objects of various 
 Device Wrapper
 ----------------
 
-Given a ``qbraid_id`` retrieved from ``get_devices``, a ``qbraid.providers.QuantumDevice``
+Given a ``qbraid_id`` retrieved from ``get_devices``, a ``qbraid.runtime.QuantumDevice``
 object can be created as follows:
 
 .. code-block:: python
 
-    from qbraid.providers import QbraidProvider
+    from qbraid.runtime import QbraidProvider
 
     provider = QbraidProvider()
     qbraid_id = 'aws_oqc_lucy'  # as an example
@@ -189,7 +189,7 @@ least number of queued quantum jobs.
 
 .. code-block:: python
 
-    >>> from qbraid.providers.ibm import ibm_least_busy_qpu
+    >>> from qbraid.runtime.ibm import ibm_least_busy_qpu
     >>> qbraid_id = ibm_least_busy_qpu()
     >>> qdevice = provider.get_device(qbraid_id)
     >>> qdevice.name

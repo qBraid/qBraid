@@ -30,6 +30,6 @@ from qbraid.runtime.aws.device import _future_utc_datetime
 )
 def test_future_utc_datetime(hours, minutes, seconds, expected):
     """Test calculating future utc datetime"""
-    with patch("qbraid.providers.aws.device.datetime") as mock_datetime:
+    with patch("qbraid.runtime.aws.device.datetime") as mock_datetime:
         mock_datetime.utcnow.return_value = datetime(2023, 1, 1, 0, 0, 0)
         assert _future_utc_datetime(hours, minutes, seconds) == expected

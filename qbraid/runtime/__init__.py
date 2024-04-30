@@ -12,15 +12,12 @@
 Module providing unified interface for interacting with
 various quantum provider APIs.
 
-.. currentmodule:: qbraid.providers
+.. currentmodule:: qbraid.runtime
 
 .. _devices_data_type:
 
 Data Types
 ------------
-
-.. autodata:: QDEVICE
-   :annotation: = Type alias defining all supported quantum device / backend types
 
 .. autosummary::
    :toctree: ../stubs/
@@ -40,6 +37,7 @@ Classes
    QuantumJob
    QuantumProvider
    QuantumJobResult
+   RuntimeProfile
 
 Exceptions
 ------------
@@ -54,6 +52,9 @@ Exceptions
    ResourceNotFoundError
 
 """
+import sys
+from qbraid._import import LazyLoader
+
 from .device import QuantumDevice
 from .enums import DeviceStatus, DeviceType, JobStatus
 from .exceptions import (
@@ -64,5 +65,13 @@ from .exceptions import (
     ResourceNotFoundError,
 )
 from .job import QuantumJob
+from .profile import RuntimeProfile
 from .provider import QuantumProvider
 from .result import QuantumJobResult
+
+
+if "sphinx" in sys.modules:
+    from . import ibm, aws
+else:
+    ibm = LazyLoader("ibm", globals(), "qbraid.runtime.ibm")
+    aws = LazyLoader("aws", globals(), "qbraid.runtime.aws")

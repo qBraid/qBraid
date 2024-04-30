@@ -14,7 +14,7 @@
 Mdule submiting and managing quantm tasks through AWS
 and Amazon Braket supported devices.
 
-.. currentmodule:: qbraid.providers.aws
+.. currentmodule:: qbraid.runtime.aws
 
 Classes
 ---------
