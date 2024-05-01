@@ -32,7 +32,6 @@ from .device import BraketDevice
 
 if TYPE_CHECKING:
     import braket.aws
-    import braket.circuits
 
     import qbraid.runtime.aws
 
@@ -69,7 +68,7 @@ class BraketProvider(QuantumProvider):
         **kwargs,
     ):
         """Save the current configuration."""
-        raise aws_configure(
+        aws_configure(
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,
             **kwargs,
@@ -121,7 +120,7 @@ class BraketProvider(QuantumProvider):
         )
         return AwsSession(boto_session=boto_session, default_bucket=default_bucket)
 
-    def _get_runtime_profile(
+    def _build_runtime_profile(
         self, device: "braket.aws.AwsDevice", program_spec: Optional[ProgramSpec] = None
     ) -> RuntimeProfile:
         """Returns the runtime profile for the device."""
@@ -160,7 +159,7 @@ class BraketProvider(QuantumProvider):
         qasm_spec = ProgramSpec(braket.circuits.Circuit)
         return [
             BraketDevice(
-                profile=self._get_runtime_profile(device, program_spec=qasm_spec),
+                profile=self._build_runtime_profile(device, program_spec=qasm_spec),
                 session=device.aws_session,
             )
             for device in aws_devices
@@ -173,7 +172,7 @@ class BraketProvider(QuantumProvider):
         aws_session = self._get_aws_session(region_name=region_name)
         qasm_spec = ProgramSpec(braket.circuits.Circuit)
         device = AwsDevice(arn=device_id, aws_session=aws_session)
-        profile = self._get_runtime_profile(device, program_spec=qasm_spec)
+        profile = self._build_runtime_profile(device, program_spec=qasm_spec)
         return BraketDevice(profile=profile, session=device.aws_session)
 
     def get_tasks_by_tag(

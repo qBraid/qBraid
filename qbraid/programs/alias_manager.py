@@ -120,8 +120,8 @@ def get_program_type_alias(
 
     Args:
         program (qbraid.programs.QPROGRAM): The quantum program to get the type of.
-        safe (bool): If True, return None if the program type does not match any registered program types.
-                     Defaults to False.
+        safe (bool): If True, return None if the program type does not match any registered
+                     program types. Defaults to False.
 
     Returns:
         str: The type of the quantum program.

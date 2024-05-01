@@ -12,15 +12,13 @@
 Module defining QiskitBackend Class
 
 """
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Union
 
-from qiskit import QuantumCircuit, transpile
+from qiskit import transpile
 
-from qbraid.programs import ProgramSpec
 from qbraid.programs.libs.qiskit import QiskitCircuit
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, DeviceType
-from qbraid.runtime.profile import RuntimeProfile
 
 from .job import QiskitJob
 
@@ -36,37 +34,12 @@ class QiskitBackend(QuantumDevice):
 
     def __init__(
         self,
-        name: Optional[str] = None,
-        instance: Optional[str] = None,
-        provider: "Optional[qbraid.runtime.ibm.QiskitRuntimeProvider]" = None,
-        backend: "Optional[qiskit_ibm_runtime.IBMBackend]" = None,
+        profile: "qbraid.runtime.RuntimeProfile",
+        service: "qiskit_ibm_runtime.QiskitRuntimeService",
     ):
         """Create a QiskitBackend."""
-        if not (name or backend):
-            raise ValueError("Must specify either name or backend.")
-        if name and backend:
-            raise ValueError("Can only specify one of name and backend.")
-        super().__init__(device_id=name or backend.name, provider=provider)
-        backend = backend or provider.runtime_service.backend(name, instance=instance)
-        if backend.local:
-            device_type = DeviceType.LOCAL_SIMULATOR
-        elif backend.simulator:
-            device_type = DeviceType.SIMULATOR
-        else:
-            device_type = DeviceType.QPU
-
-        self._backend = backend
-        self._device_type = device_type
-        self._num_qubits = backend.configuration().n_qubits
-        self._program_spec = ProgramSpec(QuantumCircuit)
-
-    def _default_profile(self) -> "qbraid.runtime.RuntimeProfile":
-        """Return the default runtime profile."""
-        return RuntimeProfile(
-            device_type=self._device_type,
-            device_num_qubits=self._num_qubits,
-            program_spec=self._program_spec,
-        )
+        super().__init__(profile=profile)
+        self._backend = service.backend(self.id, instance=self.profile.get("instance"))
 
     def status(self):
         """Return the status of this Device.
@@ -74,7 +47,7 @@ class QiskitBackend(QuantumDevice):
         Returns:
             str: The status of this Device
         """
-        if self == DeviceType.LOCAL_SIMULATOR:
+        if self._backend == DeviceType.LOCAL_SIMULATOR:
             return DeviceStatus.ONLINE
 
         status = self._backend.status()
@@ -123,5 +96,4 @@ class QiskitBackend(QuantumDevice):
         shots = kwargs.pop("shots", backend.options.get("shots"))
         memory = kwargs.pop("memory", True)  # Needed to get measurements
         job = backend.run(run_input, *args, shots=shots, memory=memory, **kwargs)
-        job_id = job.job_id()
-        return QiskitJob(job_id, job=job, device=self)
+        return QiskitJob(job.job_id(), job=job, device=self)

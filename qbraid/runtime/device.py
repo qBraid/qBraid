@@ -37,6 +37,7 @@ logger = logging.getLogger(__name__)
 class QuantumDevice(ABC):
     """Abstract interface for device-like classes."""
 
+    # pylint: disable-next=unused-argument
     def __init__(self, profile: "qbraid.runtime.RuntimeProfile", **kwargs):
         """Create a ``QuantumDevice`` object.
 
