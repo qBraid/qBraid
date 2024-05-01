@@ -35,9 +35,10 @@ class RuntimeProfile(Mapping):
 
     def __init__(
         self,
+        device_id: str,
         device_type: DeviceType,
-        device_num_qubits: Optional[int],
-        program_spec: ProgramSpec,
+        num_qubits: Optional[int],
+        program_spec: Optional[ProgramSpec] = None,
         conversion_graph: Optional[ConversionGraph] = None,
         **kwargs,
     ) -> None:
@@ -46,11 +47,12 @@ class RuntimeProfile(Mapping):
         provided parameters.
 
         Args:
+            device_id (str): Unique identifier for the device.
             device_type (DeviceType): Type of the quantum device, instance of DeviceType.
-            device_num_qubits (int): Number of qubits supported by the device.
-            program_spec (ProgramSpec): Specification for the program, encapsulating program type
+            num_qubits (int): Number of qubits supported by the device.
+            program_spec (optional, ProgramSpec): Specification for the program, encapsulating program type
                                         and other metadata.
-            conversion_graph (Optional[ConversionGraph]): Graph coordinating conversions between
+            conversion_graph (optional, ConversionGraph): Graph coordinating conversions between
                                                           different quantum software program types.
                                                           If None, the default qBraid graph is used.
                                                           Defaults to None.
@@ -58,20 +60,23 @@ class RuntimeProfile(Mapping):
         Raises:
             TypeError: If any of the inputs are not of the expected type.
         """
+        if not isinstance(device_id, str):
+            raise TypeError("device_id must be a string")
         if not isinstance(device_type, DeviceType):
             raise TypeError("device_type must be an instance of DeviceType")
-        if device_num_qubits and not isinstance(device_num_qubits, int):
+        if num_qubits and not isinstance(num_qubits, int):
             raise TypeError("device_num_qubits must be an integer")
-        if not isinstance(program_spec, ProgramSpec):
+        if program_spec and not isinstance(program_spec, ProgramSpec):
             raise TypeError("program_spec must be an instance of ProgramSpec")
         if conversion_graph and not isinstance(conversion_graph, ConversionGraph):
             raise TypeError("conversion_graph must be an instance of ConversionGraph or None")
 
         self._data = {
-            "device_type": device_type,
-            "device_num_qubits": device_num_qubits,
-            "program_spec": program_spec,
-            "conversion_graph": conversion_graph,
+            "deviceId": device_id,
+            "deviceType": device_type,
+            "numQubits": num_qubits,
+            "programSpec": program_spec,
+            "conversionGraph": conversion_graph,
             **kwargs,
         }
 

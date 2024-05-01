@@ -53,6 +53,7 @@ Exceptions
 
 """
 import sys
+
 from qbraid._import import LazyLoader
 
 from .device import QuantumDevice
@@ -69,9 +70,8 @@ from .profile import RuntimeProfile
 from .provider import QuantumProvider
 from .result import QuantumJobResult
 
-
 if "sphinx" in sys.modules:
-    from . import ibm, aws
+    from . import aws, ibm
 else:
     ibm = LazyLoader("ibm", globals(), "qbraid.runtime.ibm")
     aws = LazyLoader("aws", globals(), "qbraid.runtime.aws")

@@ -43,8 +43,8 @@ class ProgramSpec:
         return self._alias
 
     @property
-    def native(self) -> str:
-        """Return the alias of the registered program type."""
+    def native(self) -> bool:
+        """True if program is natively supported by qBraid, False otherwise."""
         return self._native
 
     def __str__(self) -> str:

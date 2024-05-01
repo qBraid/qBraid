@@ -14,7 +14,7 @@ Module defining QiskitBackend Class
 """
 from typing import TYPE_CHECKING, Optional, Union
 
-from qiskit import transpile, QuantumCircuit
+from qiskit import QuantumCircuit, transpile
 
 from qbraid.programs import ProgramSpec
 from qbraid.programs.libs.qiskit import QiskitCircuit

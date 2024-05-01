@@ -21,7 +21,6 @@ from braket.aws import AwsDevice
 from braket.device_schema import ExecutionDay
 
 from qbraid.programs.libs.braket import BraketCircuit
-from qbraid.programs.program import ProgramSpec
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, DeviceType
 from qbraid.runtime.profile import RuntimeProfile
@@ -50,6 +49,7 @@ class BraketDevice(QuantumDevice):
     def __init__(
         self,
         arn: Optional[str] = None,
+        profile: "Optional[RuntimeProfile]" = None,
         provider: "Optional[qbraid.runtime.aws.BraketProvider]" = None,
         device: "Optional[braket.aws.AwsDevice]" = None,
     ):
@@ -58,20 +58,9 @@ class BraketDevice(QuantumDevice):
             raise ValueError("Must specify either arn or device")
         if arn and device:
             raise ValueError("Can only specify one of arn and device")
+        if not (profile or provider):
+            raise ValueError("Must specify either profile or provider")
         super().__init__(device_id=arn or device.arn, provider=provider)
-        device = device or self._get_device(arn, provider)
-        metadata = device.aws_session.get_device(device.arn)
-        capabilities = json.loads(metadata.get("deviceCapabilities"))
-        action = capabilities.get("action", {})
-        supported = action.get("braket.ir.openqasm.program") is not None
-        if not supported:
-            raise ValueError("Only gate-based devices currently supported")
-
-        self._device = device
-        self._device_type = DeviceType(metadata.get("deviceType"))
-        self._num_qubits = capabilities.get("paradigm", {}).get("qubitCount")
-        self._program_spec = ProgramSpec(braket.circuits.Circuit)
-        self._provider_name = metadata.get("providerName", "").lower() or None
 
     def _get_device(
         self, arn: str, provider: "Optional[qbraid.runtime.aws.BraketProvider]" = None
