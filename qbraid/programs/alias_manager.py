@@ -131,7 +131,7 @@ def get_program_type_alias(
         ProgramTypeError: If the program type does not match any registered program types.
     """
     try:
-        return get_program_type_alias(program)
+        return _get_program_type_alias(program)
     except ProgramTypeError as err:
         if safe:
             return None

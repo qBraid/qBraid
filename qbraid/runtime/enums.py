@@ -25,9 +25,9 @@ class DeviceType(str, Enum):
         LOCAL_SIMULATOR (str): A simulator that runs locally on the user's machine.
     """
 
-    QPU = "remote_qpu"
-    SIMULATOR = "remote_simulator"
-    LOCAL_SIMULATOR = "local_simulator"
+    QPU = "QPU"
+    SIMULATOR = "SIMULATOR"
+    LOCAL_SIMULATOR = "LOCAL_SIMULATOR"
 
 
 class DeviceStatus(str, Enum):
