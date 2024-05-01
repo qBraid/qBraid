@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
 from qbraid.transpiler import CircuitConversionError, transpile
 
-from .enums import DeviceStatus
+from .enums import DeviceStatus, DeviceType
 from .exceptions import ProgramValidationError, QbraidRuntimeError
 
 if TYPE_CHECKING:
@@ -46,8 +46,8 @@ class QuantumDevice(ABC):
 
         """
         self._profile = profile
-        self._target_spec = profile.get("programSpec")
-        self._conversion_graph = profile.get("conversionGraph")
+        self._target_spec = profile.get("program_spec")
+        self._conversion_graph = profile.get("conversion_graph")
 
     @property
     def profile(self) -> "qbraid.runtime.RuntimeProfile":
@@ -57,17 +57,17 @@ class QuantumDevice(ABC):
     @property
     def id(self) -> str:
         """Return the device ID."""
-        return self.profile.get("deviceId")
+        return self.profile.get("device_id")
 
     @property
     def num_qubits(self) -> int:
         """The number of qubits supported by the device."""
-        return self.profile.get("numQubits")
+        return self.profile.get("num_qubits")
 
     @property
     def device_type(self) -> "qbraid.runtime.DeviceType":
         """The device type, Simulator, Fake_device or QPU."""
-        return self.profile.get("deviceType")
+        return DeviceType(self.profile.get("device_type"))
 
     @abstractmethod
     def status(self) -> "qbraid.runtime.DeviceStatus":
@@ -78,14 +78,35 @@ class QuantumDevice(ABC):
         """Return the number of jobs in the queue for the backend"""
 
     def metadata(self) -> dict[str, Any]:
-        """Returns device metadata"""
-        return {
-            "id": self.id,
-            "numQubits": self.num_qubits,
-            "deviceType": self.device_type.name,
-            "status": self.status().name,
-            "queueDepth": self.queue_depth(),
+        """
+        Returns a dictionary containing selected metadata about the device.
+
+        The metadata excludes the conversion graph and program specifications, and it includes
+        the device's current status and queue depth.
+
+        Returns:
+            dict[str, Any]: A dictionary with device status and queue depth among other details.
+        """
+        # Exclude certain keys from the profile and directly construct the desired dictionary
+        metadata = {
+            key: value
+            for key, value in self.profile.items()
+            if key not in ["conversion_graph", "program_spec"]
         }
+
+        try:
+            metadata["status"] = self.status().name
+        except Exception as err: # pylint: disable=broad-exception-caught
+            logger.error(f"Failed to fetch status: {err}")
+            metadata["status"] = "UNKNOWN"
+
+        try:
+            metadata["queue_depth"] = self.queue_depth()
+        except Exception as err: # pylint: disable=broad-exception-caught
+            logger.error(f"Failed to fetch queue depth: {err}")
+            metadata["queue_depth"] = None
+
+        return metadata
 
     def __str__(self):
         """Official string representation of QuantumDevice object."""

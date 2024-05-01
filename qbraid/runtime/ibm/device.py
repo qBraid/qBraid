@@ -12,9 +12,10 @@
 Module defining QiskitBackend Class
 
 """
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from qiskit import transpile
+from qiskit_ibm_runtime import QiskitRuntimeService
 
 from qbraid.programs.libs.qiskit import QiskitCircuit
 from qbraid.runtime.device import QuantumDevice
@@ -35,10 +36,11 @@ class QiskitBackend(QuantumDevice):
     def __init__(
         self,
         profile: "qbraid.runtime.RuntimeProfile",
-        service: "qiskit_ibm_runtime.QiskitRuntimeService",
+        service: "Optional[qiskit_ibm_runtime.QiskitRuntimeService]" = None,
     ):
         """Create a QiskitBackend."""
         super().__init__(profile=profile)
+        service = service or QiskitRuntimeService()
         self._backend = service.backend(self.id, instance=self.profile.get("instance"))
 
     def status(self):

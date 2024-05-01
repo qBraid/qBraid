@@ -15,7 +15,7 @@ parameters for integration with the qBraid runtime.
 """
 
 from collections.abc import Mapping
-from typing import Any, Iterator, Optional
+from typing import Any, Iterator, Optional, Union
 
 from qbraid.programs import ProgramSpec
 from qbraid.transpiler import ConversionGraph
@@ -37,8 +37,8 @@ class RuntimeProfile(Mapping):
     def __init__(
         self,
         device_id: str,
-        device_type: DeviceType,
-        num_qubits: Optional[int],
+        device_type: Union[DeviceType, str],
+        num_qubits: Optional[int] = None,
         program_spec: Optional[ProgramSpec] = None,
         conversion_graph: Optional[ConversionGraph] = None,
         **kwargs,
@@ -63,6 +63,8 @@ class RuntimeProfile(Mapping):
         """
         if not isinstance(device_id, str):
             raise TypeError("device_id must be a string")
+        if isinstance(device_type, str):
+            device_type = DeviceType(device_type)
         if not isinstance(device_type, DeviceType):
             raise TypeError("device_type must be an instance of DeviceType")
         if num_qubits and not isinstance(num_qubits, int):
@@ -73,11 +75,11 @@ class RuntimeProfile(Mapping):
             raise TypeError("conversion_graph must be an instance of ConversionGraph or None")
 
         self._data = {
-            "deviceId": device_id,
-            "deviceType": device_type,
-            "numQubits": num_qubits,
-            "programSpec": program_spec,
-            "conversionGraph": conversion_graph,
+            "device_id": device_id,
+            "device_type": device_type.name,
+            "num_qubits": num_qubits,
+            "program_spec": program_spec,
+            "conversion_graph": conversion_graph,
             **kwargs,
         }
 
@@ -92,3 +94,11 @@ class RuntimeProfile(Mapping):
     def __len__(self) -> int:
         """Return the number of items in the configuration."""
         return len(self._data)
+
+    def __str__(self) -> str:
+        """Return a string representation of the configuration."""
+        return str(self._data)
+
+    def __repr__(self) -> str:
+        """Return a string representation of the configuration."""
+        return f"<RuntimeProfile({self._data})>"

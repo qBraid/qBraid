@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for configuring provider credentials and authentication.
+Module for configuring IBM provider credentials and authentication.
 
 """
 
@@ -73,21 +73,23 @@ class QiskitRuntimeProvider(QuantumProvider):
         self, backend: "qiskit_ibm_runtime.IBMBackend", program_spec: Optional[ProgramSpec] = None
     ) -> RuntimeProfile:
         """Builds a runtime profile from a backend."""
-        if backend.local:
+        program_spec = program_spec or ProgramSpec(qiskit.QuantumCircuit)
+        config = backend.configuration()
+
+        if config.local:
             device_type = DeviceType.LOCAL_SIMULATOR
-        elif backend.simulator:
+        elif config.simulator:
             device_type = DeviceType.SIMULATOR
         else:
             device_type = DeviceType.QPU
-        num_qubits = backend.configuration().n_qubits
-        program_spec = program_spec or ProgramSpec(qiskit.QuantumCircuit)
+
         return RuntimeProfile(
-            device_id=backend.name(),
+            device_id=backend.name,
             device_type=device_type,
-            num_qubits=num_qubits,
+            num_qubits=config.n_qubits,
             program_spec=program_spec,
             instance=backend._instance,
-            configuration=backend.configuration(),
+            max_shots=config.max_shots,
         )
 
     def get_devices(self, operational=True, **kwargs) -> list["qbraid.runtime.ibm.QiskitBackend"]:
