@@ -12,7 +12,6 @@
 Module defining BraketDeviceWrapper Class
 
 """
-import json
 from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Optional, Union
 
@@ -23,7 +22,6 @@ from braket.device_schema import ExecutionDay
 from qbraid.programs.libs.braket import BraketCircuit
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, DeviceType
-from qbraid.runtime.profile import RuntimeProfile
 from qbraid.transpiler import CircuitConversionError, ConversionPathNotFoundError, transpile
 
 from .job import BraketQuantumTask
@@ -31,6 +29,7 @@ from .job import BraketQuantumTask
 if TYPE_CHECKING:
     import braket.aws
 
+    import qbraid.runtime
     import qbraid.runtime.aws
     import qbraid.transpiler
 
@@ -48,38 +47,12 @@ class BraketDevice(QuantumDevice):
 
     def __init__(
         self,
-        arn: Optional[str] = None,
-        profile: "Optional[RuntimeProfile]" = None,
-        provider: "Optional[qbraid.runtime.aws.BraketProvider]" = None,
-        device: "Optional[braket.aws.AwsDevice]" = None,
+        profile: "qbraid.runtime.RuntimeProfile",
+        session: "Optional[braket.aws.AwsSession]" = None,
     ):
         """Create a BraketDevice."""
-        if not (arn or device):
-            raise ValueError("Must specify either arn or device")
-        if arn and device:
-            raise ValueError("Can only specify one of arn and device")
-        if not (profile or provider):
-            raise ValueError("Must specify either profile or provider")
-        super().__init__(device_id=arn or device.arn, provider=provider)
-
-    def _get_device(
-        self, arn: str, provider: "Optional[qbraid.runtime.aws.BraketProvider]" = None
-    ) -> "braket.aws.AwsDevice":
-        """Return the Braket device object."""
-        if provider:
-            region_name = provider._get_region_name(arn)
-            aws_session = provider._get_aws_session(region_name=region_name)
-        else:
-            aws_session = None
-        return AwsDevice(arn=arn, aws_session=aws_session)
-
-    def _default_profile(self) -> "qbraid.runtime.RuntimeProfile":
-        """Return the default runtime profile."""
-        return RuntimeProfile(
-            device_type=self._device_type,
-            device_num_qubits=self._num_qubits,
-            program_spec=self._program_spec,
-        )
+        super().__init__(profile=profile)
+        self._device = AwsDevice(arn=self.id, aws_session=session)
 
     def status(self) -> "qbraid.runtime.DeviceStatus":
         """Return the status of this Device."""

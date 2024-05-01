@@ -45,7 +45,7 @@ class QuantumDevice(ABC):
 
         """
         self._profile = profile
-        self._program_spec = profile.get("programSpec")
+        self._target_spec = profile.get("programSpec")
         self._conversion_graph = profile.get("conversionGraph")
 
     @property
@@ -127,19 +127,18 @@ class QuantumDevice(ABC):
             QbraidRuntimeError: If circuit conversion fails
 
         """
-        conversion_graph = self._conversion_graph
-        target_program_spec = self._program_spec
-
-        if target_program_spec is None:
+        if self._target_spec is None:
             logger.info("Skipping transpile: no target ProgramSpec specified in RuntimeProfile.")
             return run_input
 
-        target_alias = target_program_spec.alias
-        target_type = target_program_spec.program_type
+        target_alias = self._target_spec.alias
+        target_type = self._target_spec.program_type
 
         if run_input_spec.alias != target_alias:
             try:
-                run_input = transpile(run_input, target_alias, conversion_graph=conversion_graph)
+                run_input = transpile(
+                    run_input, target_alias, conversion_graph=self._conversion_graph
+                )
             except CircuitConversionError as err:
                 raise QbraidRuntimeError from err
 
