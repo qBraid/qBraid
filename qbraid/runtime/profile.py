@@ -14,6 +14,7 @@ parameters for integration with the qBraid runtime.
 
 """
 
+
 from collections.abc import Mapping
 from typing import Any, Iterator, Optional, Union
 
@@ -51,8 +52,8 @@ class RuntimeProfile(Mapping):
             device_id (str): Unique identifier for the device.
             device_type (DeviceType): Type of the quantum device, instance of DeviceType.
             num_qubits (int): Number of qubits supported by the device.
-            program_spec (optional, ProgramSpec): Specification for the program, encapsulating program
-                                                  type and other metadata.
+            program_spec (optional, ProgramSpec): Specification for the program, encapsulating
+                                                  program type and other metadata.
             conversion_graph (optional, ConversionGraph): Graph coordinating conversions between
                                                           different quantum software program types.
                                                           If None, the default qBraid graph is used.

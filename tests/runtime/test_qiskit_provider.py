@@ -13,92 +13,65 @@ Unit tests for QiskitProvider class
 
 """
 import os
-from unittest.mock import Mock
 
 import pytest
 from qiskit import QuantumCircuit
-from qiskit_ibm_provider import IBMProvider
-from qiskit_ibm_provider.job.ibm_circuit_job import IBMCircuitJob
-from qiskit_ibm_runtime import IBMBackend, QiskitRuntimeService
+from qiskit_ibm_runtime import IBMBackend, QiskitRuntimeService, RuntimeJob
 
-from qbraid.runtime import QbraidProvider
-from qbraid.runtime.exceptions import JobError
-from qbraid.runtime.ibm import QiskitProvider, QiskitRuntime
+from qbraid.runtime.exceptions import QbraidRuntimeError
+from qbraid.runtime.ibm import QiskitRuntimeProvider
 
 # Skip tests if IBM account auth/creds not configured
-skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
+skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM storage)"
-
-backend_id_data = [
-    ("ibm_nairobi", "ibm_q_nairobi"),
-    ("ibmq_qasm_simulator", "ibm_q_qasm_simulator"),
-    ("simulator_extended_stabilizer", "ibm_q_simulator_extended_stabilizer"),
-]
-
-
-@pytest.mark.parametrize("data", backend_id_data)
-def test_get_qbraid_id(data):
-    """Test converting backend name to qbraid_id."""
-    original, expected = data
-    result = QiskitProvider.ibm_to_qbraid_id(original)
-    assert result == expected
 
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_ibm_provider():
     """Test getting IBMQ provider using qiskit_ibm_provider package."""
-    ibmq_token = os.getenv("QISKIT_IBM_TOKEN", None)
-    qbraid_provider = QiskitProvider(qiskit_ibm_token=ibmq_token)
-    ibm_provider = qbraid_provider._provider
-    assert isinstance(ibm_provider, IBMProvider)
+    provider = QiskitRuntimeProvider()
+    assert isinstance(provider.runtime_service, QiskitRuntimeService)
 
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_ibm_least_busy():
     """Test returning qbraid ID of least busy IBMQ QPU."""
-    provider = QiskitProvider()
-    qbraid_id = provider.ibm_least_busy_qpu()
-    assert qbraid_id[:6] == "ibm_q_"
+    provider = QiskitRuntimeProvider()
+    device = provider.least_busy()
+    assert device.status().name == "ONLINE"
+    assert isinstance(device._backend, IBMBackend)
 
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_retrieving_ibm_job():
     """Test retrieving a previously submitted IBM job."""
-    provider = QbraidProvider()
+    provider = QiskitRuntimeProvider()
     circuit = QuantumCircuit(1, 1)
     circuit.h(0)
     circuit.measure(0, 0)
-    qbraid_device = provider.get_device("ibm_q_qasm_simulator")
+    qbraid_device = provider.get_device("ibmq_qasm_simulator")
     qbraid_job = qbraid_device.run(circuit, shots=1)
     ibm_job = qbraid_job._get_job()
-    assert isinstance(ibm_job, IBMCircuitJob)
+    assert isinstance(ibm_job, RuntimeJob)
 
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_retrieving_ibm_job_raises_error():
     """Test retrieving IBM job from unrecognized backend raises error."""
-    provider = QbraidProvider()
+    provider = QiskitRuntimeProvider()
     circuit = QuantumCircuit(1, 1)
     circuit.h(0)
     circuit.measure(0, 0)
-    qbraid_device = provider.get_device("ibm_q_qasm_simulator")
+    qbraid_device = provider.get_device("ibmq_qasm_simulator")
     qbraid_job = qbraid_device.run(circuit, shots=1)
-    qbraid_job.device._device = Mock()
-    with pytest.raises(JobError):
+    qbraid_job._job_id = "fake_id"
+    with pytest.raises(QbraidRuntimeError):
         qbraid_job._get_job()
 
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_get_qiskit_runtime_provider():
     """Test getting QiskitRuntime provider."""
-    qiskit_runtime = QiskitRuntime()
-    provider = qiskit_runtime._get_ibm_provider()
-    assert isinstance(provider, QiskitRuntimeService)
-
-
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
-def test_get_qiskit_runtime_least_busy():
-    """Test getting least busy QiskitRuntime device."""
-    qiskit_runtime = QiskitRuntime()
-    device = qiskit_runtime.native_least_busy()
-    assert isinstance(device, IBMBackend)
+    provider = QiskitRuntimeProvider()
+    service = provider.runtime_service
+    assert isinstance(service, QiskitRuntimeService)

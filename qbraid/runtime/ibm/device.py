@@ -40,8 +40,12 @@ class QiskitBackend(QuantumDevice):
     ):
         """Create a QiskitBackend."""
         super().__init__(profile=profile)
-        service = service or QiskitRuntimeService()
-        self._backend = service.backend(self.id, instance=self.profile.get("instance"))
+        self._service = service or QiskitRuntimeService()
+        self._backend = self._service.backend(self.id, instance=self.profile.get("instance"))
+
+    def __str__(self):
+        """Official string representation of QuantumDevice object."""
+        return f"{self.__class__.__name__}('{self.id}')"
 
     def status(self):
         """Return the status of this Device.
@@ -49,7 +53,7 @@ class QiskitBackend(QuantumDevice):
         Returns:
             str: The status of this Device
         """
-        if self._backend == DeviceType.LOCAL_SIMULATOR:
+        if self.device_type == DeviceType.LOCAL_SIMULATOR:
             return DeviceStatus.ONLINE
 
         status = self._backend.status()

@@ -27,6 +27,7 @@ from qbraid_core.services.quantum.proxy_braket import aws_configure
 from qbraid.exceptions import QbraidError
 from qbraid.programs import ProgramSpec
 from qbraid.runtime import DeviceType, QuantumProvider, RuntimeProfile
+from qbraid.runtime.exceptions import ResourceNotFoundError
 
 from .device import BraketDevice
 
@@ -92,22 +93,6 @@ class BraketProvider(QuantumProvider):
         except Exception:  # pylint: disable=broad-exception-caught
             return "amazon-braket-qbraid-provider"
 
-    def _get_region_name(self, device_arn: str) -> str:
-        """Returns the AWS region name."""
-        maybe_region = device_arn.split(":")[3]
-        if maybe_region in self.REGIONS:
-            return maybe_region
-
-        provider = device_arn.split("/")[-2]
-        if provider in ["ionq", "quera", "xanadu"]:
-            return "us-east-1"
-        if provider == "oqc":
-            return "eu-west-2"
-        if provider == "rigetti":
-            return "us-west-1"
-
-        return self._get_default_region()
-
     def _get_aws_session(self, region_name: Optional[str] = None) -> "braket.aws.AwsSession":
         """Returns the AwsSession provider."""
         region_name = region_name or self._get_default_region()
@@ -168,11 +153,16 @@ class BraketProvider(QuantumProvider):
 
     def get_device(self, device_id: str) -> "qbraid.runtime.aws.BraketDevice":
         """Returns the AWS device."""
-        region_name = self._get_region_name(device_id)  # deviceArn
+        try:
+            region_name = AwsDevice.get_device_region(device_id)  # deviceArn
+        except ValueError as err:
+            if str(err).startswith("Device ARN is not a valid format"):
+                raise ResourceNotFoundError from err
+            raise
         aws_session = self._get_aws_session(region_name=region_name)
-        qasm_spec = ProgramSpec(braket.circuits.Circuit)
         device = AwsDevice(arn=device_id, aws_session=aws_session)
-        profile = self._build_runtime_profile(device, program_spec=qasm_spec)
+        program_spec = ProgramSpec(braket.circuits.Circuit)
+        profile = self._build_runtime_profile(device, program_spec=program_spec)
         return BraketDevice(profile=profile, session=device.aws_session)
 
     def get_tasks_by_tag(

@@ -19,7 +19,7 @@ import pytest
 from qbraid.runtime import QuantumJobResult
 
 # Skip tests if IBM/AWS account auth/creds not configured
-skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
+skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM/AWS storage)"
 
 

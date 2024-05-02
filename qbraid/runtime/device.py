@@ -69,6 +69,10 @@ class QuantumDevice(ABC):
         """The device type, Simulator, Fake_device or QPU."""
         return DeviceType(self.profile.get("device_type"))
 
+    def __repr__(self):
+        """Return a string representation of the device."""
+        return f"<{self.__module__}.{self.__class__.__name__}('{self.id}')>"
+
     @abstractmethod
     def status(self) -> "qbraid.runtime.DeviceStatus":
         """Return device status."""
@@ -96,21 +100,17 @@ class QuantumDevice(ABC):
 
         try:
             metadata["status"] = self.status().name
-        except Exception as err: # pylint: disable=broad-exception-caught
-            logger.error(f"Failed to fetch status: {err}")
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            logger.error("Failed to fetch status: %s", err)
             metadata["status"] = "UNKNOWN"
 
         try:
             metadata["queue_depth"] = self.queue_depth()
-        except Exception as err: # pylint: disable=broad-exception-caught
-            logger.error(f"Failed to fetch queue depth: {err}")
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            logger.error("Failed to fetch queue depth: %s", err)
             metadata["queue_depth"] = None
 
         return metadata
-
-    def __str__(self):
-        """Official string representation of QuantumDevice object."""
-        return f"<{self.__class__.__name__}('{self.id}')>"
 
     def validate(self, program: "Optional[qbraid.programs.QuantumProgram]"):
         """Verifies device status and circuit compatibility.

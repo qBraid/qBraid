@@ -8,13 +8,12 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint: disable=consider-using-f-string
+"""
+Module to display information about quantum
+jobs submitted through qBraid APIs.
 
 """
-Module to retrieve, update, and display information about quantum
-jobs submitted through the qBraid SDK.
-
-"""
+import sys
 from typing import Any, Optional
 
 try:
@@ -25,7 +24,31 @@ except ImportError:
 from qbraid_core import QbraidSession
 from qbraid_core.services.quantum import QuantumClient, process_job_data
 
-from ._display import running_in_jupyter
+
+def _running_in_jupyter():
+    """
+    Determine if running within Jupyter.
+
+    Credit: `braket.ipython_utils <https://github.com/aws/amazon-braket-sdk-python/
+    blob/0d28a8fa89263daf5d88bc706e79200d8dc091a8/src/braket/ipython_utils.py>`_.
+
+    Returns:
+        bool: True if running in Jupyter, else False.
+    """
+    in_ipython = False
+    in_ipython_kernel = False
+
+    # if IPython hasn't been imported, there's nothing to check
+    if "IPython" in sys.modules:
+        get_ipython = sys.modules["IPython"].__dict__["get_ipython"]
+
+        ip = get_ipython()
+        in_ipython = ip is not None
+
+    if in_ipython:
+        in_ipython_kernel = getattr(ip, "kernel", None) is not None
+
+    return in_ipython_kernel
 
 
 def _display_basic(data: list[str], message: str) -> None:
@@ -92,7 +115,7 @@ def _display_jupyter(data: list[str], message: Optional[str] = None, align: str 
     return display(HTML(html))
 
 
-def get_jobs(filters: Optional[dict[str, Any]] = None, raw: bool = False):
+def display_jobs(filters: Optional[dict[str, Any]] = None):
     """Displays a list of quantum jobs submitted by user, tabulated by job ID,
     the date/time it was submitted, and status. You can specify filters to
     narrow the search by supplying a dictionary containing the desired criteria.
@@ -128,9 +151,6 @@ def get_jobs(filters: Optional[dict[str, Any]] = None, raw: bool = False):
 
     Args:
         filters (dict): A dictionary containing any filters to be applied.
-        refresh (bool): If True, refreshes the status of all jobs before displaying them.
-        raw (bool): If True, returns a list of job IDs instead of displaying the jobs.
-
     """
     filters = filters or {}
 
@@ -143,12 +163,8 @@ def get_jobs(filters: Optional[dict[str, Any]] = None, raw: bool = False):
         jobs = session.post("/get-user-jobs", json=filters).json()
 
     job_data, msg = process_job_data(jobs, filters)
-
-    if raw:
-        return [job[0] for job in job_data]
-
     align = "center" if len(job_data) == 0 else "right"
 
-    if running_in_jupyter():
+    if _running_in_jupyter():
         return _display_jupyter(job_data, msg, align=align)
     return _display_basic(job_data, msg)

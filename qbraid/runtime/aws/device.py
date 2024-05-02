@@ -55,6 +55,16 @@ class BraketDevice(QuantumDevice):
         """Create a BraketDevice."""
         super().__init__(profile=profile)
         self._device = AwsDevice(arn=self.id, aws_session=session)
+        self._provider_name = self.profile.get("provider_name")
+
+    @property
+    def name(self) -> str:
+        """Return the name of this Device."""
+        return self._device.name
+
+    def __str__(self):
+        """Official string representation of QuantumDevice object."""
+        return f"{self.__class__.__name__}('{self._provider_name} {self.name}')"
 
     def status(self) -> "qbraid.runtime.DeviceStatus":
         """Return the status of this Device."""
@@ -193,7 +203,7 @@ class BraketDevice(QuantumDevice):
             program.remove_idle_qubits()
             run_input = program.program
 
-        if self.profile.get("provider_name", "").lower() == "ionq":
+        if (self._provider_name or "").lower() == "ionq":
             graph = self._conversion_graph
             if (
                 graph is not None

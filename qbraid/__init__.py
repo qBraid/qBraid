@@ -20,7 +20,7 @@ Functions
    :toctree: ../stubs/
 
    about
-   get_jobs
+   display_jobs
 
 
 Classes
@@ -46,8 +46,8 @@ import sys
 from ._about import about
 from ._import import LazyLoader
 from ._version import __version__
+from .display import display_jobs
 from .exceptions import QbraidError
-from .get_jobs import get_jobs
 
 if "sphinx" in sys.modules:
     from . import interface, programs, runtime, transforms, transpiler, visualization
@@ -63,7 +63,7 @@ else:
 __all__ = [
     "about",
     "transforms",
-    "get_jobs",
+    "display_jobs",
     "interface",
     "LazyLoader",
     "programs",

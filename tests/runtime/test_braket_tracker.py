@@ -16,6 +16,7 @@ import os
 from decimal import Decimal
 
 import pytest
+from braket.aws.aws_device import AwsDevice
 from braket.circuits import Circuit
 from braket.tracking import Tracker
 
@@ -24,7 +25,7 @@ from qbraid.runtime.aws.tracker import get_quantum_task_cost
 from qbraid.runtime.exceptions import JobError
 
 # Skip tests if AWS account auth/creds not configured
-skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS") is None
+skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of AWS storage)"
 
 
@@ -53,13 +54,13 @@ def test_get_quantum_task_cost_cancelled(braket_most_busy, braket_circuit):
     provider = BraketProvider()
 
     # AwsSession region must match device region
-    region_name = provider._get_region_name(braket_most_busy._vendor_id)
+    region_name = AwsDevice.get_device_region(braket_most_busy.id)
     aws_session = provider._get_aws_session(region_name)
 
     qbraid_job = braket_most_busy.run(braket_circuit, shots=10)
     qbraid_job.cancel()
 
-    task_arn = qbraid_job.vendor_job_id
+    task_arn = qbraid_job.id
 
     try:
         qbraid_job.wait_for_final_state(timeout=30)

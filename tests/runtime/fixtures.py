@@ -16,21 +16,48 @@ import braket.circuits
 import cirq
 import numpy as np
 import qiskit
-from qbraid_core import QbraidSession
+
+from qbraid.runtime.aws import BraketProvider
+from qbraid.runtime.ibm import QiskitRuntimeProvider
 
 
-def device_wrapper_inputs(vendor: str):
-    """Returns list of tuples containing all device_wrapper inputs for given vendor."""
-    session = QbraidSession()
-    devices = session.get("/public/lab/get-devices", params={}).json()
-    input_list = []
-    skip_list = ["aws_ionq", "aws_ionq_forte1"]
-    for document in devices:
-        if document["vendor"] == vendor:
-            qbraid_id = document["qbraid_id"]
-            if qbraid_id not in skip_list:
-                input_list.append(qbraid_id)
-    return input_list
+def device_wrapper_inputs(vendor: str) -> list[str]:
+    """
+    Returns a list of device IDs from a specified vendor, excluding certain devices.
+
+    Args:
+        vendor (str): The name of the vendor ('ibm' or 'aws').
+
+    Returns:
+        list[str]: A list of device IDs available from the given vendor, excluding specific devices.
+
+    Raises:
+        ValueError: If the vendor is not supported.
+    """
+    vendor_configs = {
+        "ibm": {"provider": QiskitRuntimeProvider(), "skip_list": []},
+        "aws": {
+            "provider": BraketProvider(),
+            "skip_list": [
+                "arn:aws:braket:us-east-1::device/qpu/ionq/Harmony",
+                "arn:aws:braket:us-east-1::device/qpu/ionq/Forte-1",
+            ],
+        },
+    }
+
+    # Check if vendor is supported
+    config = vendor_configs.get(vendor.lower())
+    if config is None:
+        raise ValueError(
+            f"Invalid vendor '{vendor}'. Supported vendors are: {', '.join(vendor_configs.keys())}"
+        )
+
+    # Use a list comprehension to filter devices
+    return [
+        device.id
+        for device in config["provider"].get_devices()
+        if device.id not in config["skip_list"]
+    ]
 
 
 def braket_circuit():

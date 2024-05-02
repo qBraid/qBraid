@@ -32,7 +32,7 @@ class QuantumJob(ABC):
     def __init__(self, job_id: str, device: "Optional[qbraid.runtime.QuantumDevice]", **kwargs):
         self._job_id = job_id
         self._device = device
-        self._cache_metadata = kwargs
+        self._cache_metadata = {"job_id": job_id, **kwargs}
 
     @property
     def id(self) -> str:  # pylint: disable=invalid-name

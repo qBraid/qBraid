@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Optional
 from qiskit_ibm_runtime.exceptions import RuntimeInvalidStateError
 
 from qbraid.runtime.enums import JobStatus
-from qbraid.runtime.exceptions import JobStateError
+from qbraid.runtime.exceptions import JobStateError, QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
 
 from .result import QiskitResult
@@ -51,9 +51,11 @@ class QiskitJob(QuantumJob):
 
     def _get_job(self):
         """Return the job like object that is being wrapped."""
-        qbraid_provider = self.device._provider
-        service = qbraid_provider.runtime_service
-        return service.job(self.id)
+        try:
+            service = self.device._service
+            return service.job(self.id)
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            raise QbraidRuntimeError(f"Error retrieving job {self.id}") from err
 
     def status(self):
         """Returns status from Qiskit Job object."""
