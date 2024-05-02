@@ -34,3 +34,4 @@ Exceptions
 """
 from .exceptions import QirRunnerError
 from .result import Result
+from .runner import Simulator
