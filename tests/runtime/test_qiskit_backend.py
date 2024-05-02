@@ -24,6 +24,7 @@ from qiskit.providers.basic_provider.basic_provider_job import BasicProviderJob
 from qiskit.providers.fake_provider import GenericBackendV2
 from qiskit_aer.jobs.aerjob import AerJob
 from qiskit_ibm_runtime import IBMBackend, RuntimeJob
+from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
 from qbraid.programs import ProgramSpec
 from qbraid.runtime import DeviceType, JobStateError, RuntimeProfile
@@ -39,20 +40,20 @@ REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM storage
 class FakeService:
     """Fake Qiskit runtime service for testing."""
 
-    def backend(self, backend_name):
+    def backend(self, backend_name, instance=None):
         """Return fake backend."""
-        for backend in self.backends():
+        for backend in self.backends(instance=instance):
             if backend_name == backend.name:
                 return backend
-        raise ValueError(f"Backend {backend_name} not found")
+        raise QiskitBackendNotFoundError("No backend matches the criteria.")
 
     def backends(self, **kwargs):  # pylint: disable=unused-argument
         """Return fake Qiskit backend."""
         return [GenericBackendV2(num_qubits=5), GenericBackendV2(num_qubits=20)]
 
-    def least_busy(self):
+    def least_busy(self, **kwargs):
         """Return least busy backend."""
-        return random.choice(self.backends())
+        return random.choice(self.backends(**kwargs))
 
 
 def ibm_devices():

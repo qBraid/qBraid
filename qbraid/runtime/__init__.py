@@ -75,3 +75,4 @@ if "sphinx" in sys.modules:
 else:
     ibm = LazyLoader("ibm", globals(), "qbraid.runtime.ibm")
     aws = LazyLoader("aws", globals(), "qbraid.runtime.aws")
+    sim = LazyLoader("sim", globals(), "qbraid.runtime.sim")

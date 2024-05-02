@@ -29,7 +29,6 @@ dependencies = [
     "openqasm3[parser]>=0.4.0,<0.6.0",
     "ply>=3.6",
     "qbraid-core>=0.1.3,<0.2.0",
-    "pydantic>=2"
 ]
 requires-python = ">= 3.9"
 
