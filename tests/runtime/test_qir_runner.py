@@ -107,17 +107,21 @@ def _is_uniform_comput_basis(array: np.ndarray) -> bool:
 
 def _uniform_state_circuit(num_qubits: Optional[int] = None) -> cirq.Circuit:
     """
-    Creates a Cirq circuit where all qubits are entangled to uniformly be in either |0⟩ or |1⟩ states upon measurement.
+    Creates a Cirq circuit where all qubits are entangled to uniformly be in
+    either |0⟩ or |1⟩ states upon measurement.
 
-    This circuit initializes the first qubit in a superposition state using a Hadamard gate and then entangles all
-    other qubits to this first qubit using CNOT gates. This ensures all qubits collapse to the same state upon measurement,
+    This circuit initializes the first qubit in a superposition state using a
+    Hadamard gate and then entangles all other qubits to this first qubit using
+    CNOT gates. This ensures all qubits collapse to the same state upon measurement,
     resulting in either all |0⟩s or all |1⟩s uniformly across different executions.
 
     Args:
-        num_qubits: The number of qubits in the circuit. If not provided, a default random number between 10 and 20 is used.
+        num_qubits (optional, int): The number of qubits in the circuit. If not provided,
+                                    a default random number between 10 and 20 is used.
 
     Returns:
-        cirq.Circuit: The resulting circuit where the measurement outcome of all qubits is either all |0⟩s or all |1⟩s.
+        cirq.Circuit: The resulting circuit where the measurement outcome of all qubits is
+                      either all |0⟩s or all |1⟩s.
 
     Raises:
         ValueError: If the number of qubits provided is less than 1.
