@@ -105,6 +105,47 @@ def _is_uniform_comput_basis(array: np.ndarray) -> bool:
     return True
 
 
+def _uniform_state_circuit(num_qubits: Optional[int] = None) -> cirq.Circuit:
+    """
+    Creates a Cirq circuit where all qubits are entangled to uniformly be in either |0⟩ or |1⟩ states upon measurement.
+
+    This circuit initializes the first qubit in a superposition state using a Hadamard gate and then entangles all
+    other qubits to this first qubit using CNOT gates. This ensures all qubits collapse to the same state upon measurement,
+    resulting in either all |0⟩s or all |1⟩s uniformly across different executions.
+
+    Args:
+        num_qubits: The number of qubits in the circuit. If not provided, a default random number between 10 and 20 is used.
+
+    Returns:
+        cirq.Circuit: The resulting circuit where the measurement outcome of all qubits is either all |0⟩s or all |1⟩s.
+
+    Raises:
+        ValueError: If the number of qubits provided is less than 1.
+    """
+    if num_qubits is not None and num_qubits < 1:
+        raise ValueError("Number of qubits must be at least 1.")
+
+    num_qubits = num_qubits or random.randint(10, 20)
+
+    # Create n qubits
+    qubits = [cirq.LineQubit(i) for i in range(num_qubits)]
+
+    # Create a circuit
+    circuit = cirq.Circuit()
+
+    # Add a Hadamard gate to the first qubit
+    circuit.append(cirq.H(qubits[0]))
+
+    # Entangle all other qubits with the first qubit
+    for qubit in qubits[1:]:
+        circuit.append(cirq.CNOT(qubits[0], qubit))
+
+    # Measure all qubits
+    circuit.append(cirq.measure(*qubits, key="result"))
+
+    return circuit
+
+
 def _sparse_circuit(num_qubits: Optional[int] = None) -> cirq.Circuit:
     """
     Generates a quantum circuit designed to benchmark the performance of a sparse simulator.
@@ -147,15 +188,15 @@ def _sparse_circuit(num_qubits: Optional[int] = None) -> cirq.Circuit:
 
 
 @pytest.fixture
-def cirq_sparse():
+def cirq_uniform():
     """Cirq circuit used for testing."""
-    yield _sparse_circuit
+    yield _uniform_state_circuit
 
 
 @pytest.mark.skipif(skip_runner_tests, reason=REASON)
-def test_sparse_simulator(cirq_sparse):
+def test_sparse_simulator(cirq_uniform):
     """Test qir-runner sparse simulator python wrapper(s)."""
-    circuit = cirq_sparse()
+    circuit = cirq_uniform()
     num_qubits = len(circuit.all_qubits())
 
     file_prefix = "sparse_simulator_test"
@@ -175,7 +216,7 @@ def test_sparse_simulator(cirq_sparse):
     metadata = result.metadata()
     assert metadata["num_shots"] == shots
     assert metadata["num_qubits"] == num_qubits
-    assert isinstance(metadata["execution_duration"], float)
+    assert isinstance(metadata["execution_duration"], int)
 
     measurements = result.measurements
     assert _is_uniform_comput_basis(measurements)

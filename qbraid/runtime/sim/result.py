@@ -21,7 +21,7 @@ import numpy as np
 class Result:
     """Class to represent the results of a quantum circuit simulation."""
 
-    def __init__(self, stdout: str, execution_duration: Optional[float] = None):
+    def __init__(self, stdout: str, execution_duration: Optional[int] = None):
         self._raw_output = stdout
         self._parsed_data = self._parse_results(stdout)
         self._measurements = self._data_to_measurements()
