@@ -20,7 +20,8 @@ import pytest
 import pytket
 from cirq.contrib.qasm_import import circuit_from_qasm
 
-import qbraid
+from qbraid.interface import circuits_allclose
+from qbraid.transpiler import ConversionGraph, transpile
 
 np.random.seed(0)
 
@@ -143,17 +144,19 @@ def get_pytket_circuits():
 TARGETS = [("braket", 0.64), ("cirq", 0.64), ("pyquil", 0.64), ("qiskit", 0.64)]
 pytket_circuits = get_pytket_circuits()
 
+graph = ConversionGraph(require_native=True)
+
 
 def convert_from_pytket_to_x(target, circuit_name):
     """Construct a PyTKET circuit with the given gate, transpile it to
     target program type, and check equivalence.
     """
     source_circuit = pytket_circuits[circuit_name]
-    circuit = qbraid.transpiler.transpile(source_circuit, "cirq")
+    circuit = transpile(source_circuit, "cirq", conversion_graph=graph)
     qasm = circuit.to_qasm()
     cirq_circuit = circuit_from_qasm(qasm)
-    target_circuit = qbraid.transpiler.transpile(cirq_circuit, target)
-    assert qbraid.interface.circuits_allclose(cirq_circuit, target_circuit, strict_gphase=False)
+    target_circuit = transpile(cirq_circuit, target)
+    assert circuits_allclose(cirq_circuit, target_circuit, strict_gphase=False)
 
 
 @pytest.mark.parametrize(("target", "baseline"), TARGETS)

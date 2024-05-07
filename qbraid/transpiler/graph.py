@@ -30,19 +30,19 @@ class ConversionGraph(nx.DiGraph):
     """
 
     def __init__(
-        self, conversions: Optional[list[Conversion]] = None, requires_extras: bool = False
+        self, conversions: Optional[list[Conversion]] = None, require_native: bool = False
     ):
         """
         Initialize a ConversionGraph instance.
 
         Args:
-            conversions (optional, list[Conversion]): List of conversion edges. If None, default
-                                                          conversion edges are created.
-            requires_extras (bool): If True, include unsupported "requires_extras" conversion
-                                    functions. Defaults to False.
+            conversions (optional, list[Conversion]): List of conversion edges. If None,
+                                                      default conversion edges are used.
+            require_native (bool): If True, only include "native" conversion functions.
+                                   Defaults to False.
         """
         super().__init__()
-        self.requires_extras = requires_extras
+        self.require_native = require_native
         self._conversions = conversions or self.load_default_conversions()
         self.create_conversion_graph()
 
@@ -67,9 +67,9 @@ class ConversionGraph(nx.DiGraph):
         Returns:
             None
         """
-        for edge in self._conversions:
-            if not self.requires_extras and not edge.supported:
-                continue
+        for edge in (
+            e for e in self._conversions if e.supported and (not self.require_native or e.native)
+        ):
             self.add_edge(edge.source, edge.target, native=edge.native, func=edge.convert)
 
     def conversions(self) -> list[Conversion]:

@@ -60,7 +60,7 @@ def __get_class(module: str):
     if module == "openqasm3":
         return openqasm3.ast.Program  # type: ignore
     if module == "pyqir":
-        return pyqir.Program  # type: ignore
+        return pyqir.Module  # type: ignore
 
 
 # Supported quantum programs.

@@ -57,4 +57,4 @@ def test_raise_no_conversion_path_found_max_depth(bell_circuit):
     exists but does not meet the max_depth requirement."""
     qiskit_circuit, _ = bell_circuit
     with pytest.raises(ConversionPathNotFoundError):
-        transpile(qiskit_circuit, "braket", max_path_depth=1)
+        transpile(qiskit_circuit, "braket", max_path_depth=1, require_native=True)

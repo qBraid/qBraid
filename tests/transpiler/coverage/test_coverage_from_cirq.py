@@ -19,7 +19,8 @@ import numpy as np
 import pytest
 import scipy
 
-import qbraid
+from qbraid.interface import circuits_allclose
+from qbraid.transpiler import ConversionGraph, transpile
 
 
 def generate_params(varnames, seed=0):
@@ -102,6 +103,8 @@ def get_cirq_gates():
 TARGETS = [("braket", 0.85), ("pyquil", 0.74), ("pytket", 0.85), ("qiskit", 0.85)]
 cirq_gates = get_cirq_gates()
 
+graph = ConversionGraph(require_native=True)
+
 
 def convert_from_cirq_to_x(target, gate_name):
     """Construct a Cirq circuit with the given gate, transpile it to
@@ -110,8 +113,8 @@ def convert_from_cirq_to_x(target, gate_name):
     gate = cirq_gates[gate_name]
     source_circuit = cirq.Circuit()
     source_circuit.append(gate)
-    target_circuit = qbraid.transpiler.transpile(source_circuit, target)
-    assert qbraid.interface.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
+    target_circuit = transpile(source_circuit, target, conversion_graph=graph)
+    assert circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
 
 
 @pytest.mark.parametrize(("target", "baseline"), TARGETS)

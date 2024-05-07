@@ -16,11 +16,15 @@ from typing import Optional
 
 import numpy as np
 
+from qbraid.runtime.result import QuantumJobResult
 
-class Result:
+
+class Result(QuantumJobResult):
     """Class to represent the results of a quantum circuit simulation."""
 
     def __init__(self, measurements: np.ndarray, execution_duration: Optional[int] = None):
+        """Create a new Result object."""
+        super().__init__()
         self._measurements = measurements
         self._execution_duration = execution_duration
         self._cached_histogram = None
@@ -30,6 +34,10 @@ class Result:
     def measurements(self) -> np.ndarray:
         """Return the measurement results as a 2D numpy array."""
         return self._measurements
+
+    def raw_counts(self):
+        """Returns raw histogram data of the run"""
+        return self.measurement_counts()
 
     def measurement_counts(self, decimal: bool = False) -> dict[str, int]:
         """Dynamically calculates and returns the histogram of measurement results."""

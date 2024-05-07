@@ -18,7 +18,8 @@ import numpy as np
 import pyquil
 import pytest
 
-import qbraid
+from qbraid.interface import circuits_allclose
+from qbraid.transpiler import ConversionGraph, transpile
 
 
 def generate_params(varnames, seed=0):
@@ -67,6 +68,8 @@ def get_pyquil_gates():
 TARGETS = [("braket", 0.77), ("cirq", 0.77), ("pytket", 0.77), ("qiskit", 0.77)]
 pyquil_gates = get_pyquil_gates()
 
+graph = ConversionGraph(require_native=True)
+
 
 def convert_from_pyquil_to_x(target, gate_name):
     """Construct a pyQuil programs with the given gate, transpile it to
@@ -75,8 +78,8 @@ def convert_from_pyquil_to_x(target, gate_name):
     gate = pyquil_gates[gate_name]
     source_circuit = pyquil.Program()
     source_circuit += gate
-    target_circuit = qbraid.transpiler.transpile(source_circuit, target)
-    assert qbraid.interface.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
+    target_circuit = transpile(source_circuit, target, conversion_graph=graph)
+    assert circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
 
 
 @pytest.mark.parametrize(("target", "baseline"), TARGETS)

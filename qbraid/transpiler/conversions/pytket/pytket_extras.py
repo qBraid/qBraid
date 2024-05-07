@@ -9,13 +9,16 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module containing function to convert from Amazon Braket to PyTKET.
+Module containing PyTKET conversion extras.
 
 """
 
 from typing import TYPE_CHECKING
 
+from qbraid._import import LazyLoader
 from qbraid.transpiler.annotations import requires_extras
+
+pytket_braket = LazyLoader("pytket_braket", globals(), "pytket.extensions.braket")
 
 if TYPE_CHECKING:
     import braket.circuits
@@ -23,16 +26,14 @@ if TYPE_CHECKING:
 
 
 @requires_extras("pytket.extensions.braket")
-def braket_to_pytket(circuit: "braket.circuits.Circuit") -> "pytket.circuit.Circuit":
-    """Returns a pytket circuit equivalent to the input Amazon Braket circuit.
+def pytket_to_braket(circuit: "pytket.circuit.Circuit") -> "braket.circuits.Circuit":
+    """Returns an Amazon Braket circuit equivalent to the input pytket circuit.
 
     Args:
-        circuit (braket.circuits.Circuit): Braket circuit to convert to a pytket circuit.
+        circuit (pytket.circuit.Circuit): PyTKET circuit to convert to Braket circuit.
 
     Returns:
-        pytket.circuit.Circuit: PyTKET circuit object equivalent to input Braket circuit.
+        braket.circuits.Circuit: Braket circuit equivalent to input pytket circuit.
     """
-    # pylint: disable-next=import-outside-toplevel
-    from pytket.extensions.braket import braket_convert  # type: ignore
-
-    return braket_convert.braket_to_tk(circuit)
+    braket_circuit, _, _ = pytket_braket.braket_convert.tk_to_braket(circuit)
+    return braket_circuit

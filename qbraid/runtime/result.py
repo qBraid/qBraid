@@ -13,6 +13,7 @@ Module defining abstract QuantumJobResult Class
 
 """
 from abc import ABC, abstractmethod
+from typing import Any, Optional
 
 
 class QuantumJobResult(ABC):
@@ -23,16 +24,16 @@ class QuantumJobResult(ABC):
 
     """
 
-    def __init__(self, _result):
-        self._result = _result
+    def __init__(self, result: Optional[Any] = None):
+        self._result = result
 
     @abstractmethod
     def measurements(self):
         """Return measurements as list"""
 
-    @abstractmethod
     def raw_counts(self):
         """Returns raw histogram data of the run"""
+        raise NotImplementedError
 
     @staticmethod
     def format_counts(counts: dict, include_zero_values: bool = False) -> dict:

@@ -9,16 +9,21 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining Qiskit to Amazon Braket conversion(s)
+Module defining Qiskit conversion extras.
 
 """
 
 from typing import TYPE_CHECKING
 
+from qbraid._import import LazyLoader
 from qbraid.transpiler.annotations import requires_extras
+
+qiskit_braket_provider = LazyLoader("qiskit_braket_provider", globals(), "qiskit_braket_provider")
+qiskit_qir = LazyLoader("qiskit_qir", globals(), "qiskit_qir")
 
 if TYPE_CHECKING:
     import braket.circuits
+    import pyqir
     import qiskit.circuit
 
 
@@ -39,7 +44,17 @@ def qiskit_to_braket(
     Returns:
         Circuit: Braket circuit
     """
-    # pylint: disable-next=import-outside-toplevel
-    from qiskit_braket_provider.providers.adapter import to_braket  # type: ignore
+    return qiskit_braket_provider.providers.adapter.to_braket(circuit, **kwargs)
 
-    return to_braket(circuit, **kwargs)
+
+@requires_extras("qiskit_qir")
+def qiskit_to_pyqir(circuit: "qiskit.circuit.QuantumCircuit") -> "pyqir.Module":
+    """Return a PyQIR module from a Qiskit quantum circuit.
+
+    Args:
+        circuit (QuantumCircuit): Qiskit quantum circuit
+
+    Returns:
+        Module: PyQIR module
+    """
+    return qiskit_qir.to_qir_module(circuit)

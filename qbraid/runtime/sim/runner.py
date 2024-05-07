@@ -12,25 +12,43 @@
 Module containing Python wrapper for the qir-runner sparse quantum state simulator.
 
 """
+import logging
 import pathlib
 import shutil
 import subprocess
 import time
 import warnings
 from collections import defaultdict
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
-import pyqir
-
-# from qbraid_core import QbraidClient
 from qbraid_core.system import is_valid_semantic_version
+
+from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
+from qbraid.runtime.device import QuantumDevice
+from qbraid.runtime.enums import DeviceStatus, DeviceType
+from qbraid.runtime.profile import RuntimeProfile
 
 from .exceptions import QirRunnerError
 from .result import Result
 
+if TYPE_CHECKING:
+    import pyqir
 
-class Simulator:
+    import qbraid.runtime
+
+logger = logging.getLogger(__name__)
+
+SPEC = None if "pyqir" not in QPROGRAM_REGISTRY else ProgramSpec(QPROGRAM_REGISTRY["pyqir"])
+PROFILE = RuntimeProfile(
+    device_type=DeviceType.SIMULATOR,
+    device_id="qbraid_qir_simulator",
+    num_qubits=64,
+    program_spec=SPEC,
+)
+
+
+class Simulator(QuantumDevice):
     """A sparse simulator that extends the functionality of the qir-runner.
 
     This simulator is a Python wrapper for the qir-runner, a command-line tool
@@ -48,15 +66,18 @@ class Simulator:
         version (str): The version of the qir-runner executable.
     """
 
-    def __init__(self, seed: Optional[int] = None, qir_runner_path: Optional[str] = None):
+    def __init__(
+        self,
+        profile: "qbraid.runtime.RuntimeProfile" = PROFILE,
+        seed: Optional[int] = None,
+        qir_runner_path: Optional[str] = None,
+    ):
+        """Create a QIR runner simulator."""
+        super().__init__(profile=profile)
         self.seed = seed
         self._version = None
         self._qir_runner = None
         self.qir_runner = qir_runner_path
-        if not is_valid_semantic_version(self.version):
-            warnings.warn(
-                f"Invalid qir-runner version '{self.version}' detected. Executable may be corrupt."
-            )
 
     @property
     def qir_runner(self) -> str:
@@ -69,11 +90,11 @@ class Simulator:
         resolved_path = shutil.which(value or "qir-runner")
         if resolved_path is None:
             if value is None:
-                error_message = "No value was provided for the qir_runner_path, \
-                                and the qir-runner executable was not found in the system PATH."
+                logger.info(
+                    "No value was provided for the qir_runner_path, and the qir-runner executable was not found in the system PATH."
+                )
             else:
-                error_message = f"The provided qir-runner executable path '{value}' does not exist."
-            raise FileNotFoundError(error_message)
+                logger.info("The provided qir-runner executable path '%s' does not exist.", value)
 
         self._qir_runner = resolved_path
         self._version = None  # Reset version cache since qir_runner changed
@@ -81,14 +102,29 @@ class Simulator:
     @property
     def version(self) -> str:
         """Get the version of the qir-runner executable, caching the result."""
-        if self._version is None:
-            if self._qir_runner is None:
-                raise ValueError("qir-runner path is not set.")
+        if self._version is None and self._qir_runner is not None:
             output = self._execute_subprocess(
                 [self.qir_runner, "--version"], stderr=subprocess.STDOUT
             )
-            self._version = output.strip().split()[-1]
+            runner_version = output.strip().split()[-1]
+            if not is_valid_semantic_version(runner_version):
+                warnings.warn(
+                    f"Invalid qir-runner version '{runner_version}' detected. Executable may be corrupt."
+                )
+                runner_version = None
+            self._version = runner_version
         return self._version
+
+    def status(self):
+        """Check the status of the qir-runner executable."""
+        if self.qir_runner is None or self.version is None:
+            return DeviceStatus.UNAVAILABLE
+
+        return DeviceStatus.ONLINE
+
+    def queue_depth(self) -> int:
+        """Return the number of jobs in the queue for the backend"""
+        return 0
 
     @staticmethod
     def _execute_subprocess(command: list[str], text: bool = True, **kwargs) -> str:
@@ -131,8 +167,8 @@ class Simulator:
         """Convert parsed data to a 2D array of measurement results."""
         return np.array([parsed_data[key] for key in sorted(parsed_data.keys())], dtype=np.int8).T
 
-    def run(
-        self, module: pyqir.Module, entrypoint: Optional[str] = None, shots: Optional[int] = None
+    def submit(
+        self, module: "pyqir.Module", entrypoint: Optional[str] = None, shots: Optional[int] = None
     ) -> Result:
         """Runs the qir-runner executable with the given QIR file and shots.
 
@@ -140,7 +176,7 @@ class Simulator:
             module (pyqir.Module): QIR module to run in the simulator.
             entrypoint (optional, str): Name of the entrypoint function to execute in the QIR file.
             shots (optional, int): The number of times to repeat the execution of the chosen entry
-                                point in the program. Defaults to 1.
+                                   point in the program. Defaults to 1.
 
         Returns:
             Result: The results of the simulation execution.

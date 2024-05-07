@@ -67,7 +67,7 @@ def test_crz_gate_from_qiskit(qubits):
     """Tests converting controlled Rz gate from Qiskit to Cirq."""
     qiskit_circuit = QuantumCircuit(2)
     qiskit_circuit.crz(np.pi / 4, *qubits)
-    cirq_circuit = transpile(qiskit_circuit, "cirq")
+    cirq_circuit = transpile(qiskit_circuit, "cirq", require_native=True)
     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
@@ -96,7 +96,7 @@ def test_qiskit_roundtrip():
     qiskit_circuit.ccz(0, 1, 2)
     qiskit_circuit.ecr(1, 2)
     qiskit_circuit.cs(2, 0)
-    cirq_circuit = transpile(qiskit_circuit, "cirq")
+    cirq_circuit = transpile(qiskit_circuit, "cirq", require_native=True)
     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=False)
 
 
@@ -107,7 +107,7 @@ def test_qiskit_roundtrip_noncontig():
     qiskit_circuit.ccz(0, 1, 2)
     qiskit_circuit.ecr(1, 2)
     qiskit_circuit.cs(2, 0)
-    cirq_circuit = transpile(qiskit_circuit, "cirq")
+    cirq_circuit = transpile(qiskit_circuit, "cirq", require_native=True)
     qprogram = load_program(cirq_circuit)
     qprogram.remove_idle_qubits()
     qiskit_contig = qprogram.program
@@ -118,7 +118,7 @@ def test_100_random_qiskit():
     """Test converting 100 random qiskit circuits to cirq."""
     for _ in range(100):
         qiskit_circuit = random_circuit(4, 1)
-        cirq_circuit = transpile(qiskit_circuit, "cirq")
+        cirq_circuit = transpile(qiskit_circuit, "cirq", require_native=True)
         assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=False)
 
 

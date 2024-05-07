@@ -21,7 +21,10 @@ Functions
 
    qiskit_to_qasm2
    qiskit_to_qasm3
+   qiskit_to_braket
+   qiskit_to_pyqir
 
 """
+from .qiskit_extras import qiskit_to_braket, qiskit_to_pyqir
 from .qiskit_to_qasm2 import qiskit_to_qasm2
 from .qiskit_to_qasm3 import qiskit_to_qasm3

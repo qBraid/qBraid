@@ -84,6 +84,7 @@ def transpile(
     conversion_graph: Optional[ConversionGraph] = None,
     max_path_attempts: int = 3,
     max_path_depth: Optional[int] = None,
+    **kwargs,
 ) -> "qbraid.programs.QPROGRAM":
     """
     Transpile a quantum program to a target language using a conversion graph.
@@ -113,7 +114,7 @@ def transpile(
             source and target packages.
         CircuitConversionError: If the conversion fails through all attempted paths.
     """
-    graph = conversion_graph or ConversionGraph()
+    graph = conversion_graph or ConversionGraph(**kwargs)
     graph_type = "Default" if conversion_graph is None else "Provided"
 
     if not graph.has_node(target):

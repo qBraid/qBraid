@@ -46,14 +46,7 @@ def test_random_circuit_to_pytket(num_qubits):
 
 def test_raise_error():
     """Test raising error for unsupported gates."""
-    graph = ConversionGraph()
-    try:
-        # transpile succeeds if pytket-braket is installed
-        graph.remove_conversion("braket", "pytket")
-    except ValueError:
-        pass
-
     with pytest.raises(CircuitConversionError):
         probs = np.random.uniform(low=0, high=0.5)
         cirq_circuit = Circuit(ops.PhaseDampingChannel(probs).on(*LineQubit.range(1)))
-        transpile(cirq_circuit, "pytket", conversion_graph=graph)
+        transpile(cirq_circuit, "pytket", require_native=True)

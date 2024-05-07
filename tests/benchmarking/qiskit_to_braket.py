@@ -13,7 +13,7 @@ Benchmarking accuracy of qiskit to braket conversions
 
 """
 import qiskit
-from qiskit_braket_provider.providers.adapter import convert_qiskit_to_braket_circuit
+from qiskit_braket_provider.providers.adapter import to_braket
 
 from qbraid.interface import circuits_allclose
 from qbraid.transpiler import transpile
@@ -42,7 +42,7 @@ for gate_name, gate in qiskit_gates.items():
     qiskit_circuit = qiskit.QuantumCircuit(gate.num_qubits)
     qiskit_circuit.compose(gate, inplace=True)
 
-    qiskit_failed += execute_test(convert_qiskit_to_braket_circuit, qiskit_circuit)
+    qiskit_failed += execute_test(to_braket, qiskit_circuit)
     qbraid_failed += execute_test(lambda circuit: transpile(circuit, "braket"), qiskit_circuit)
 
 total_tests = len(qiskit_gates)

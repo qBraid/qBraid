@@ -15,12 +15,15 @@ Benchmarking tests for Qiskit conversions
 import pytest
 import qiskit
 
-import qbraid
+from qbraid.interface import circuits_allclose
+from qbraid.transpiler import ConversionGraph, transpile
 
 from ...fixtures.qiskit.gates import get_qiskit_gates
 
 TARGETS = [("braket", 0.98), ("cirq", 0.98), ("pyquil", 0.81), ("pytket", 0.98)]
 qiskit_gates = get_qiskit_gates(seed=0)
+
+graph = ConversionGraph(require_native=True)
 
 
 def convert_from_qiskit_to_x(target, gate_name):
@@ -30,8 +33,8 @@ def convert_from_qiskit_to_x(target, gate_name):
     gate = qiskit_gates[gate_name]
     source_circuit = qiskit.QuantumCircuit(gate.num_qubits)
     source_circuit.compose(gate, inplace=True)
-    target_circuit = qbraid.transpiler.transpile(source_circuit, target)
-    assert qbraid.interface.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
+    target_circuit = transpile(source_circuit, target, conversion_graph=graph)
+    assert circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
 
 
 @pytest.mark.parametrize(("target", "baseline"), TARGETS)
