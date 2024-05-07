@@ -12,11 +12,16 @@
 Module containing Python wrapper for the qir-runner sparse quantum state simulator.
 
 """
+import pathlib
 import shutil
 import subprocess
 import time
 import warnings
-from typing import Dict, List, Optional
+from collections import defaultdict
+from typing import Optional
+
+import numpy as np
+import pyqir
 
 # from qbraid_core import QbraidClient
 from qbraid_core.system import is_valid_semantic_version
@@ -86,7 +91,7 @@ class Simulator:
         return self._version
 
     @staticmethod
-    def _execute_subprocess(command: List[str], text: bool = True, **kwargs) -> str:
+    def _execute_subprocess(command: list[str], text: bool = True, **kwargs) -> str:
         """Execute a subprocess command and return its output.
 
         Args:
@@ -103,33 +108,74 @@ class Simulator:
         except (subprocess.CalledProcessError, OSError) as err:
             raise QirRunnerError(f"Error executing qir-runner command: {command}") from err
 
+    @staticmethod
+    def _parse_results(stdout: str) -> dict[str, list[int]]:
+        """Parse the raw output from the execution to extract measurement results."""
+        results = defaultdict(list)
+        current_shot_results = []
+
+        for line in stdout.splitlines():
+            elements = line.split()
+            if len(elements) == 3 and elements[:2] == ["OUTPUT", "RESULT"]:
+                _, _, bit = elements
+                current_shot_results.append(int(bit))
+            elif line.startswith("END"):
+                for idx, result in enumerate(current_shot_results):
+                    results[f"q{idx}"].append(result)
+                current_shot_results = []
+
+        return dict(results)
+
+    @staticmethod
+    def _data_to_measurements(parsed_data: dict) -> np.ndarray:
+        """Convert parsed data to a 2D array of measurement results."""
+        return np.array([parsed_data[key] for key in sorted(parsed_data.keys())], dtype=np.int8).T
+
     def run(
-        self, file_name: str, entrypoint: Optional[str] = None, shots: Optional[int] = None
-    ) -> Dict[str, List[int]]:
+        self, module: pyqir.Module, entrypoint: Optional[str] = None, shots: Optional[int] = None
+    ) -> Result:
         """Runs the qir-runner executable with the given QIR file and shots.
 
         Args:
-            file_name (str): Path to the QIR file to run ('.ll' or '.bc' file extension)
+            module (pyqir.Module): QIR module to run in the simulator.
             entrypoint (optional, str): Name of the entrypoint function to execute in the QIR file.
             shots (optional, int): The number of times to repeat the execution of the chosen entry
-                                   point in the program. Defaults to 1.
+                                point in the program. Defaults to 1.
 
         Returns:
-            A dictionary mapping 'qubit_i' to a list of measurement results.
+            Result: The results of the simulation execution.
         """
-        # Build the command with required and optional arguments
-        command = [self.qir_runner, "--shots", str(shots), "-f", file_name]
-        if entrypoint:
-            command.extend(["-e", entrypoint])
-        if self.seed is not None:
-            command.extend(["-r", str(self.seed)])
+        filename_prefix = pathlib.Path(module.source_filename).stem
+        file_dir = pathlib.Path.cwd()
 
-        # Execute the qir-runner with the built command
-        start = time.time()
-        raw_out = self._execute_subprocess(command)
-        stop = time.time()
-        miliseconds = int((stop - start) * 1000)
-        return Result(raw_out, execution_duration=miliseconds)
+        # Create the directory if it doesn't exist
+        file_dir.mkdir(exist_ok=True)
+
+        # Construct file paths using pathlib
+        bc_file = file_dir / f"{filename_prefix}.bc"
+
+        try:
+            # Save bitcode file (does not require an encoding)
+            with open(bc_file, "wb") as file:
+                file.write(module.bitcode)
+
+            command = [self.qir_runner, "--shots", str(shots or 1), "-f", str(bc_file)]
+            if entrypoint:
+                command.extend(["-e", entrypoint])
+            if self.seed is not None:
+                command.extend(["-r", str(self.seed)])
+
+            # Execute the qir-runner with the built command
+            start = time.time()
+            raw_out = self._execute_subprocess(command)
+            stop = time.time()
+            milliseconds = int((stop - start) * 1000)
+            parsed_data = self._parse_results(raw_out)
+            measurements = self._data_to_measurements(parsed_data)
+            return Result(measurements, execution_duration=milliseconds)
+        finally:
+            # Ensure the bitcode file is deleted even if an error occurs
+            bc_file.unlink(missing_ok=True)
 
     def __eq__(self, other):
         """Check if two Simulator instances are equal based on their attributes."""

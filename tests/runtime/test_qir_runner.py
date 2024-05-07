@@ -19,7 +19,6 @@ from typing import Optional
 import cirq
 import numpy as np
 import pytest
-from qbraid_qir import dumps
 from qbraid_qir.cirq import cirq_to_qir
 
 from qbraid.runtime.sim import Result, Simulator
@@ -205,11 +204,10 @@ def test_sparse_simulator(cirq_uniform):
 
     file_prefix = "sparse_simulator_test"
     module = cirq_to_qir(circuit, name=file_prefix)
-    dumps(module)
     simulator = Simulator()
 
     shots = random.randint(500, 1000)
-    result = simulator.run(f"{file_prefix}.bc", shots=shots)
+    result = simulator.run(module, shots=shots)
     assert isinstance(result, Result)
 
     counts = result.measurement_counts()
@@ -228,7 +226,9 @@ def test_sparse_simulator(cirq_uniform):
 
 def test_result():
     """Test the Result class."""
-    result = Result(stdout, execution_duration=100)
+    parsed_data = Simulator._parse_results(stdout)
+    measurements = Simulator._data_to_measurements(parsed_data)
+    result = Result(measurements, execution_duration=100)
     parsed_expected = {"q0": [1, 1, 1, 0, 1], "q1": [1, 1, 1, 0, 1]}
     measurements_expected = np.array([[1, 1], [1, 1], [1, 1], [0, 0], [1, 1]])
     counts_expected = {"00": 1, "11": 4}
@@ -242,7 +242,7 @@ def test_result():
         "measurement_counts": counts_expected,
         "measurement_probabilities": probabilities_expected,
     }
-    assert result._parsed_data == parsed_expected
+    assert parsed_data == parsed_expected
     assert np.array_equal(result.measurements, measurements_expected)
     assert result.measurement_counts() == counts_expected
     assert result.measurement_counts(decimal=True) == counts_decimal_expected

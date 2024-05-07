@@ -12,8 +12,7 @@
 Module defining qir-runner sparse quantum state simulator result class.
 
 """
-from collections import defaultdict
-from typing import Dict, List, Optional
+from typing import Optional
 
 import numpy as np
 
@@ -21,10 +20,8 @@ import numpy as np
 class Result:
     """Class to represent the results of a quantum circuit simulation."""
 
-    def __init__(self, stdout: str, execution_duration: Optional[int] = None):
-        self._raw_output = stdout
-        self._parsed_data = self._parse_results(stdout)
-        self._measurements = self._data_to_measurements()
+    def __init__(self, measurements: np.ndarray, execution_duration: Optional[int] = None):
+        self._measurements = measurements
         self._execution_duration = execution_duration
         self._cached_histogram = None
         self._cached_metadata = None
@@ -34,7 +31,7 @@ class Result:
         """Return the measurement results as a 2D numpy array."""
         return self._measurements
 
-    def measurement_counts(self, decimal: bool = False) -> Dict[str, int]:
+    def measurement_counts(self, decimal: bool = False) -> dict[str, int]:
         """Dynamically calculates and returns the histogram of measurement results."""
         counts = self._array_to_histogram(self.measurements)
 
@@ -43,38 +40,13 @@ class Result:
 
         return counts
 
-    def measurement_probabilities(self, **kwargs) -> Dict[str, float]:
+    def measurement_probabilities(self, **kwargs) -> dict[str, float]:
         """Calculate and return the probabilities of each measurement result."""
         counts = self.measurement_counts(**kwargs)
         probabilities = self.counts_to_probabilities(counts)
         return probabilities
 
-    def _parse_results(self, output: str) -> Dict[str, List[int]]:
-        """Parse the raw output from the execution to extract measurement results."""
-        results = defaultdict(list)
-        current_shot_results = []
-
-        for line in output.splitlines():
-            elements = line.split()
-            if len(elements) == 3 and elements[:2] == ["OUTPUT", "RESULT"]:
-                _, _, bit = elements
-                current_shot_results.append(int(bit))
-            elif line.startswith("END"):
-                for idx, result in enumerate(current_shot_results):
-                    results[f"q{idx}"].append(result)
-                current_shot_results = []
-
-        return dict(results)
-
-    def _data_to_measurements(self) -> np.ndarray:
-        """Convert parsed data to a 2D array of measurement results."""
-        if not self._parsed_data:
-            return np.array([], dtype=np.int8)
-        return np.array(
-            [self._parsed_data[key] for key in sorted(self._parsed_data.keys())], dtype=np.int8
-        ).T
-
-    def _array_to_histogram(self, arr: np.ndarray) -> Dict[str, int]:
+    def _array_to_histogram(self, arr: np.ndarray) -> dict[str, int]:
         """Implement caching mechanism here."""
         if self._cached_histogram is None:
             row_strings = ["".join(map(str, row)) for row in arr]
@@ -82,7 +54,7 @@ class Result:
         return self._cached_histogram
 
     @staticmethod
-    def counts_to_probabilities(counts: Dict[str, int]) -> Dict[str, float]:
+    def counts_to_probabilities(counts: dict[str, int]) -> dict[str, float]:
         """
         Convert histogram counts to probabilities.
 
@@ -100,7 +72,7 @@ class Result:
         }
         return measurement_probabilities
 
-    def metadata(self) -> Dict[str, int]:
+    def metadata(self) -> dict[str, int]:
         """Return metadata about the measurement results."""
         if self._cached_metadata is None:
             num_shots, num_qubits = self.measurements.shape
