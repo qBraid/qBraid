@@ -20,6 +20,7 @@ from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestErr
 
 from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
 
+from .device import QbraidDevice
 from .enums import DeviceType
 from .exceptions import ResourceNotFoundError
 from .profile import RuntimeProfile
@@ -75,7 +76,7 @@ class QbraidProvider(QuantumProvider):
         self.client.session.save_config(**kwargs)
 
     @property
-    def client(self):
+    def client(self) -> QuantumClient:
         """Return the QuantumClient object."""
         if self._client is None:
             try:
@@ -97,12 +98,12 @@ class QbraidProvider(QuantumProvider):
         program_spec = ProgramSpec(program_type, alias=program_type_alias) if program_type else None
         return RuntimeProfile(
             device_type=device_type,
-            device_id=device_data["id"],
+            device_id=device_data["qbraid_id"],
             num_qubits=num_qubits,
             program_spec=program_spec,
         )
 
-    def get_devices(self, **kwargs):
+    def get_devices(self, **kwargs) -> list[QbraidDevice]:
         """Return a list of devices matching the specified filtering."""
         query = kwargs or {}
         query["provider"] = "qbraid"
@@ -113,8 +114,9 @@ class QbraidProvider(QuantumProvider):
             raise ResourceNotFoundError(f"No devices found matching given criteria.") from err
 
         profiles = [self._build_runtime_profile(device_data) for device_data in device_data_lst]
+        return [QbraidDevice(profile, client=self.client) for profile in profiles]
 
-    def get_device(self, device_id: str):
+    def get_device(self, device_id: str) -> QbraidDevice:
         """Return quantum device corresponding to the specified qBraid device ID.
 
         Returns:
@@ -129,3 +131,4 @@ class QbraidProvider(QuantumProvider):
             raise ResourceNotFoundError(f"Device '{device_id}' not found.") from err
 
         profile = self._build_runtime_profile(device_data)
+        return QbraidDevice(profile, client=self.client)

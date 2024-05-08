@@ -14,10 +14,13 @@
 Module defining abstract QuantumDevice Class
 
 """
+import json
 import logging
 import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional, Union
+
+from qbraid_core.services.quantum import QuantumClient
 
 from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
 from qbraid.transpiler import CircuitConversionError, transpile
@@ -26,6 +29,8 @@ from .enums import DeviceStatus, DeviceType
 from .exceptions import ProgramValidationError, QbraidRuntimeError
 
 if TYPE_CHECKING:
+    import pyqir
+
     import qbraid.programs
     import qbraid.runtime
     import qbraid.transpiler
@@ -225,3 +230,183 @@ class QuantumDevice(ABC):
         run_input_compat = [self.apply_runtime_profile(program) for program in run_input]
         run_input_compat = run_input_compat[0] if is_single_input else run_input_compat
         return self.submit(run_input_compat, *args, **kwargs)
+
+
+class QbraidDevice(QuantumDevice):
+    """Class to represent a qBraid device."""
+
+    def __init__(
+        self, profile: "qbraid.runtime.RuntimeProfile", client: Optional[QuantumClient] = None
+    ):
+        """Create a new QbraidDevice object."""
+        super().__init__(profile=profile)
+        self._client = client or QuantumClient()
+
+    @property
+    def client(self) -> QuantumClient:
+        """Return the QuantumClient object."""
+        return self._client
+
+    def status(self) -> "qbraid.runtime.DeviceStatus":
+        """Return device status."""
+        device_data = self.client.get_device(self.id)
+        return DeviceStatus(device_data.get("status"))
+
+    def queue_depth(self) -> int:
+        """Return the number of jobs in the queue for the backend"""
+        device_data = self.client.get_device(self.id)
+        pending_jobs = device_data.get("pendingJobs", 0)
+        return int(pending_jobs)
+
+    # pylint: disable-next=too-many-arguments
+    def create_job(
+        self,
+        tags: Optional[dict[str, str]] = None,
+        shots: Optional[int] = None,
+        openqasm: Optional[Union[str, list[str]]] = None,
+        bitecode: Optional[Union[bytes, list[bytes]]] = None,
+        num_qubits: Optional[Union[int, list[int]]] = None,
+        depth: Optional[Union[int, list[int]]] = None,
+        **kwargs,
+    ) -> dict[str, Any]:
+        """Create new qBraid job.
+
+        Args:
+            tags (optional, dict): A dictionary of tags to associate with the job.
+            shots (optional, int): The number of shots to run the job for.
+            bitecode (optional, bytes or list): The QIR byte code to run.
+            openqasm (optional, str or list): The OpenQASM to run.
+            num_qubits (optional, int or list): The number of qubits in the circuit.
+            depth (optional, int or list): The depth of the circuit.
+
+        Returns:
+            The qbraid job ID associated with this job
+
+        """
+        tags = tags or {}
+
+        if bitecode is None:
+            program_batch = []
+        elif isinstance(bitecode, bytes):
+            program_batch = [bitecode]
+        elif isinstance(bitecode, list) and all(isinstance(item, bytes) for item in bitecode):
+            program_batch = bitecode
+        else:
+            raise ValueError("bitecode must be a bytes object or a list of bytes objects")
+
+        init_data = {
+            "bitecode": program_batch,
+            "qbraidDeviceId": self.id,
+            "shots": shots,
+            "tags": json.dumps(tags),
+            **kwargs,
+        }
+
+        if openqasm:
+            if isinstance(openqasm, str):
+                init_data["openQasm"] = openqasm
+            elif isinstance(openqasm, list):
+                init_data["openQasmBatch"] = openqasm
+            else:
+                raise ValueError("openqasm must be a string or a list of strings")
+
+        if num_qubits:
+            if isinstance(num_qubits, int):
+                init_data["circuitNumQubits"] = num_qubits
+            elif isinstance(num_qubits, list):
+                init_data["circuitBatchNumQubits"] = num_qubits
+            else:
+                raise ValueError("num_qubits must be an integer or a list of integers")
+
+        if depth:
+            if isinstance(depth, int):
+                init_data["circuitDepth"] = depth
+            elif isinstance(depth, list):
+                init_data["circuitBatchDepth"] = depth
+            else:
+                raise ValueError("depth must be an integer or a list of integers")
+
+        return self.client.create_job(data=init_data)
+
+    def submit(
+        self,
+        module: "pyqir.Module",
+        entrypoint: Optional[str] = None,
+        shots: Optional[int] = None,
+        **kwargs,
+    ) -> "Union[qbraid.runtime.QuantumJob, list[qbraid.runtime.QuantumJob]]":
+        """Runs the qir-runner executable with the given QIR file and shots.
+
+        Args:
+            module (pyqir.Module): QIR module to run in the simulator.
+            entrypoint (optional, str): Name of the entrypoint function to execute in the QIR file.
+            shots (optional, int): The number of times to repeat the execution of the chosen entry
+                                   point in the program. Defaults to 1.
+
+        Returns:
+            Result: The results of the simulation execution.
+        """
+        job_data = self.create_job(
+            bitecode=module.bitcode, entrypoint=entrypoint, shots=shots, **kwargs
+        )
+
+    def try_extracting_info(self, func, error_message):
+        try:
+            return func()
+        except Exception as e:
+            logger.info(f"{error_message} {str(e)}. Field will be omitted in job metadata.")
+            return None
+
+    def run(
+        self,
+        run_input: "Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]]",
+        *args,
+        **kwargs,
+    ) -> "Union[qbraid.runtime.QuantumJob, list[qbraid.runtime.QuantumJob]]":
+        """
+        Run a quantum job or a list of quantum jobs on this quantum device.
+
+        Args:
+            run_input: A single quantum program or a list of quantum programs to run on the device.
+
+        Returns:
+            A QuantumJob object or a list of QuantumJob objects corresponding to the input.
+        """
+        if not isinstance(run_input, list):
+            run_input_list = [run_input]
+            is_single_input = True
+        else:
+            run_input_list = run_input
+            is_single_input = False
+
+        jobs = []
+
+        for program in run_input_list:
+            program_alias = self.get_program_type_alias(program, safe=True)
+            program_spec = ProgramSpec(type(program), alias=program_alias)
+            qbraid_program = self.load_program(program) if program_spec.native else None
+            program_data = {
+                "num_qubits": None,
+                "depth": None,
+                "openqasm": None,
+            }
+
+            if qbraid_program:
+                program_data["num_qubits"] = self.try_extracting_info(
+                    lambda: qbraid_program.num_qubits, "Error calculating circuit num_qubits."
+                )
+                program_data["depth"] = self.try_extracting_info(
+                    lambda: qbraid_program.depth, "Error calculating circuit depth."
+                )
+                program_data["openqasm"] = self.try_extracting_info(
+                    lambda: self.transpile(qbraid_program, "qasm3"),
+                    "Error converting circuit to OpenQASM 3.",
+                )
+
+            self.validate(qbraid_program)
+            transpiled_program = self.transpile(program, program_spec)
+            transformed_program = self.transform(transpiled_program)
+            job = self.submit(transformed_program, **program_data, **kwargs)
+            jobs.append(job)
+
+        return jobs[0] if is_single_input else jobs
