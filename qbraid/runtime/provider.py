@@ -18,12 +18,11 @@ from typing import Any, Optional
 from qbraid_core.exceptions import AuthError
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
 
-from qbraid.programs._import import _dynamic_importer
-from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
+from qbraid.programs import ProgramSpec, QPROGRAM_REGISTRY
 
 from .device import QbraidDevice
 from .enums import DeviceType
-from .exceptions import ResourceNotFoundError, QbraidRuntimeError
+from .exceptions import ResourceNotFoundError
 from .profile import RuntimeProfile
 
 
@@ -86,13 +85,13 @@ class QbraidProvider(QuantumProvider):
                     "Failed to authenticate with the Quantum service."
                 ) from err
         return self._client
-    
+
     @staticmethod
     def _get_program_spec(run_package: Optional[str]) -> Optional[ProgramSpec]:
         if not run_package:
             return None
 
-        program_type = _dynamic_importer(run_package)
+        program_type = QPROGRAM_REGISTRY.get(run_package)
         return ProgramSpec(program_type, alias=run_package) if program_type else None
 
     def _build_runtime_profile(self, device_data: dict[str, Any]) -> RuntimeProfile:
