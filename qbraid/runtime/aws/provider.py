@@ -62,13 +62,15 @@ class BraketProvider(QuantumProvider):
         self.aws_access_key_id = aws_access_key_id or os.getenv("AWS_ACCESS_KEY_ID")
         self.aws_secret_access_key = aws_secret_access_key or os.getenv("AWS_SECRET_ACCESS_KEY")
 
-    @staticmethod
     def save_config(
+        self,
         aws_access_key_id: Optional[str] = None,
         aws_secret_access_key: Optional[str] = None,
         **kwargs,
     ):
         """Save the current configuration."""
+        aws_access_key_id = aws_access_key_id or self.aws_access_key_id
+        aws_secret_access_key = aws_secret_access_key or self.aws_secret_access_key
         aws_configure(
             aws_access_key_id=aws_access_key_id,
             aws_secret_access_key=aws_secret_access_key,

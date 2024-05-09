@@ -43,7 +43,9 @@ class QiskitRuntimeProvider(QuantumProvider):
         runtime_service (qiskit_ibm_runtime.QiskitRuntimeService): IBM Quantum runtime service.
     """
 
-    def __init__(self, token: Optional[str] = None, channel: ChannelType = "ibm_quantum", **kwargs):
+    def __init__(
+        self, token: Optional[str] = None, channel: Optional[ChannelType] = None, **kwargs
+    ):
         """
         Initializes the QbraidProvider object with optional AWS and IBM Quantum credentials.
 
@@ -51,20 +53,26 @@ class QiskitRuntimeProvider(QuantumProvider):
             token (str, optional): IBM Quantum token. Defaults to None.
         """
         self.token = token or os.getenv("QISKIT_IBM_TOKEN")
-        self._runtime_service = QiskitRuntimeService(token=self.token, channel=channel, **kwargs)
+        self.channel = channel or os.getenv("QISKIT_IBM_CHANNEL", "ibm_quantum")
+        self._runtime_service = QiskitRuntimeService(
+            token=self.token, channel=self.channel, **kwargs
+        )
 
     @property
     def runtime_service(self) -> "qiskit_ibm_runtime.QiskitRuntimeService":
         """Returns the IBM Quantum runtime service."""
         return self._runtime_service
 
-    @staticmethod
     def save_config(
-        token: Optional[str] = None, channel: Optional[str] = None, overwrite: bool = True, **kwargs
+        self,
+        token: Optional[str] = None,
+        channel: Optional[str] = None,
+        overwrite: bool = True,
+        **kwargs,
     ) -> None:
         """Saves IBM runtime service account to disk for future use."""
-        token = token or os.getenv("QISKIT_IBM_TOKEN")
-        channel = channel or os.getenv("QISKIT_IBM_CHANNEL", "ibm_quantum")
+        token = token or self.token
+        channel = channel or self.channel
         QiskitRuntimeService.save_account(
             token=token, channel=channel, overwrite=overwrite, **kwargs
         )

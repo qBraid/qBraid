@@ -39,6 +39,6 @@ class QiskitResult(QuantumJobResult):
 
         return np.array(qbraid_meas)
 
-    def raw_counts(self):
+    def raw_counts(self, **kwargs):
         """Returns the histogram data of the run"""
         return self._result.get_counts()

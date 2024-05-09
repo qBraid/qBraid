@@ -27,9 +27,11 @@ from qbraid.transpiler import CircuitConversionError, transpile
 
 from .enums import DeviceStatus, DeviceType
 from .exceptions import ProgramValidationError, QbraidRuntimeError
+from .job import QbraidJob
 
 if TYPE_CHECKING:
     import pyqir
+    import qbraid_core.services.quantum
 
     import qbraid.programs
     import qbraid.runtime
@@ -236,7 +238,9 @@ class QbraidDevice(QuantumDevice):
     """Class to represent a qBraid device."""
 
     def __init__(
-        self, profile: "qbraid.runtime.RuntimeProfile", client: Optional[QuantumClient] = None
+        self,
+        profile: "qbraid.runtime.RuntimeProfile",
+        client: "Optional[qbraid_core.services.quantum.QuantumClient]" = None,
     ):
         """Create a new QbraidDevice object."""
         super().__init__(profile=profile)
@@ -328,33 +332,54 @@ class QbraidDevice(QuantumDevice):
 
         return self.client.create_job(data=init_data)
 
-    def submit(
+    def _create_and_return_job(
         self,
         module: "pyqir.Module",
         entrypoint: Optional[str] = None,
         shots: Optional[int] = None,
         **kwargs,
-    ) -> "Union[qbraid.runtime.QuantumJob, list[qbraid.runtime.QuantumJob]]":
+    ):
+        job_data = self.create_job(
+            bitcode=module.bitcode, entrypoint=entrypoint, shots=shots, **kwargs
+        )
+        job_id = job_data.pop("qbraidJobId")
+        return QbraidJob(job_id, device=self, client=self.client, **job_data)
+
+    def submit(
+        self,
+        run_input: "Union[pyqir.Module, list[pyqir.Module]]",
+        *args,
+        entrypoint: Optional[str] = None,
+        shots: Optional[int] = None,
+        **kwargs,
+    ) -> "Union[qbraid.runtime.QbraidJob, list[qbraid.runtime.QbraidJob]]":
         """Runs the qir-runner executable with the given QIR file and shots.
 
         Args:
-            module (pyqir.Module): QIR module to run in the simulator.
+            run_input (Union[pyqir.Module, list[pyqir.Module,]): QIR module to run in the simulator.
             entrypoint (optional, str): Name of the entrypoint function to execute in the QIR file.
             shots (optional, int): The number of times to repeat the execution of the chosen entry
                                    point in the program. Defaults to 1.
 
         Returns:
-            Result: The results of the simulation execution.
+            Union[QbraidJob, list[QbraidJob]: The job object(s) representing the submitted job(s).
         """
-        job_data = self.create_job(
-            bitecode=module.bitcode, entrypoint=entrypoint, shots=shots, **kwargs
-        )
+        is_single_input = not isinstance(run_input, list)
+        run_input = [run_input] if is_single_input else run_input
+        jobs = [
+            self._create_and_return_job(module, entrypoint, shots, **kwargs) for module in run_input
+        ]
+        if is_single_input:
+            return jobs[0]
+        return jobs
 
     def try_extracting_info(self, func, error_message):
+        """Try to extract information from a function/attribute,
+        logging an error if it fails."""
         try:
             return func()
-        except Exception as e:
-            logger.info(f"{error_message} {str(e)}. Field will be omitted in job metadata.")
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            logger.info("%s: %s. Field will be omitted in job metadata.", error_message, str(err))
             return None
 
     def run(
@@ -362,7 +387,7 @@ class QbraidDevice(QuantumDevice):
         run_input: "Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]]",
         *args,
         **kwargs,
-    ) -> "Union[qbraid.runtime.QuantumJob, list[qbraid.runtime.QuantumJob]]":
+    ) -> "Union[qbraid.runtime.job.QbraidJob, list[qbraid.runtime.job.QbraidJob]]":
         """
         Run a quantum job or a list of quantum jobs on this quantum device.
 
@@ -382,9 +407,9 @@ class QbraidDevice(QuantumDevice):
         jobs = []
 
         for program in run_input_list:
-            program_alias = self.get_program_type_alias(program, safe=True)
+            program_alias = get_program_type_alias(program, safe=True)
             program_spec = ProgramSpec(type(program), alias=program_alias)
-            qbraid_program = self.load_program(program) if program_spec.native else None
+            qbraid_program = load_program(program) if program_spec.native else None
             program_data = {
                 "num_qubits": None,
                 "depth": None,
@@ -393,13 +418,14 @@ class QbraidDevice(QuantumDevice):
 
             if qbraid_program:
                 program_data["num_qubits"] = self.try_extracting_info(
-                    lambda: qbraid_program.num_qubits, "Error calculating circuit num_qubits."
+                    lambda program=qbraid_program: program.num_qubits,
+                    "Error calculating circuit num_qubits.",
                 )
                 program_data["depth"] = self.try_extracting_info(
-                    lambda: qbraid_program.depth, "Error calculating circuit depth."
+                    lambda program=qbraid_program: program.depth, "Error calculating circuit depth."
                 )
                 program_data["openqasm"] = self.try_extracting_info(
-                    lambda: self.transpile(qbraid_program, "qasm3"),
+                    lambda program=qbraid_program: self.transpile(program, "qasm3"),
                     "Error converting circuit to OpenQASM 3.",
                 )
 

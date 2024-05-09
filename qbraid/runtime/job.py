@@ -17,10 +17,16 @@ from abc import ABC, abstractmethod
 from time import sleep, time
 from typing import TYPE_CHECKING, Any, Optional
 
+import numpy as np
+from qbraid_core.services.quantum import QuantumClient
+
 from .enums import JOB_STATUS_FINAL, JobStatus
-from .exceptions import JobError, ResourceNotFoundError
+from .exceptions import JobError, JobStateError, ResourceNotFoundError
+from .result import QbraidJobResult
 
 if TYPE_CHECKING:
+    import qbraid_core.services.quantum
+
     import qbraid.runtime
 
 logger = logging.getLogger(__name__)
@@ -96,3 +102,70 @@ class QuantumJob(ABC):
     def __repr__(self) -> str:
         """String representation of a QuantumJob object."""
         return f"<{self.__class__.__name__}(id:'{self.id}')>"
+
+
+class QbraidJob(QuantumJob):
+    """Class representing a qBraid job."""
+
+    def __init__(
+        self,
+        job_id: str,
+        device: "Optional[qbraid.runtime.QbraidDevice]" = None,
+        client: "Optional[qbraid_core.services.quantum.QuantumClient]" = None,
+        **kwargs,
+    ):
+        super().__init__(job_id, device, **kwargs)
+        self._client = client
+
+    @property
+    def client(self) -> "qbraid_core.services.quantum.QuantumClient":
+        """
+        Lazily initializes and returns the client object associated with the job.
+        If the job has an associated device with a client, that client is used.
+        Otherwise, a new instance of QuantumClient is created and used.
+
+        Returns:
+            QuantumClient: The client object associated with the job.
+        """
+        if self._client is None:
+            self._client = self._device.client if self._device else QuantumClient()
+        return self._client
+
+    @staticmethod
+    def _map_status(status: Optional[str]) -> JobStatus:
+        """Returns `JobStatus` object mapped from raw status value. If no value
+        provided or conversion from string fails, returns `JobStatus.UNKNOWN`."""
+        if status is None:
+            return JobStatus.UNKNOWN
+        if not isinstance(status, str):
+            raise ValueError(f"Invalid status value type: {type(status)}")
+        for e in JobStatus:
+            status_enum = JobStatus(e.value)
+            if status == status_enum.name or status == str(status_enum):
+                return status_enum
+        raise ValueError(f"Status value '{status}' not recognized.")
+
+    def status(self) -> JobStatus:
+        """Return the status of the job / task , among the values of ``JobStatus``."""
+        job_data = self.client.get_job(self.id)
+        status = job_data.get("status")
+        return self._map_status(status)
+
+    def cancel(self) -> None:
+        """Attempt to cancel the job."""
+        if self.is_terminal_state():
+            raise JobStateError("Cannot cancel job in a terminal state.")
+
+        self.client.cancel_job(self.id)
+
+    def result(self) -> "qbraid.runtime.QuantumJobResult":
+        """Return the results of the job."""
+        self.wait_for_final_state()
+        job_data = self.client.get_job(self.id)
+        result = job_data.get("result")
+        if not result:
+            raise ResourceNotFoundError("Job result not found.")
+
+        measurements = np.array(result.get("measurements", []), dtype=np.int8)
+        execution_duration = result.get("execution_duration")
+        return QbraidJobResult(measurements, execution_duration)

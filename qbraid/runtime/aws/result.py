@@ -30,7 +30,7 @@ class BraketGateModelResult(QuantumJobResult):
         """
         return np.flip(self._result.measurements, 1)
 
-    def raw_counts(self):
+    def raw_counts(self, **kwargs):
         """Returns the histogram data of the run"""
         braket_counts = dict(self._result.measurement_counts)
         qbraid_counts = {}

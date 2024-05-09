@@ -33,8 +33,7 @@ class QuantumProvider(ABC):
 
     """
 
-    @staticmethod
-    def save_config(**kwargs):
+    def save_config(self, **kwargs):
         """Saves account data and/or credentials to the disk."""
         raise NotImplementedError
 
@@ -111,7 +110,7 @@ class QbraidProvider(QuantumProvider):
         try:
             device_data_lst = self.client.search_devices(query)
         except (ValueError, QuantumServiceRequestError) as err:
-            raise ResourceNotFoundError(f"No devices found matching given criteria.") from err
+            raise ResourceNotFoundError("No devices found matching given criteria.") from err
 
         profiles = [self._build_runtime_profile(device_data) for device_data in device_data_lst]
         return [QbraidDevice(profile, client=self.client) for profile in profiles]

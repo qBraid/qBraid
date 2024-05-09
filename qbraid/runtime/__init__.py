@@ -38,6 +38,10 @@ Classes
    QuantumProvider
    QuantumJobResult
    RuntimeProfile
+   QbraidProvider
+   QbraidDevice
+   QbraidJob
+   QbraidJobResult
 
 Exceptions
 ------------
@@ -56,7 +60,7 @@ import sys
 
 from qbraid._import import LazyLoader
 
-from .device import QuantumDevice
+from .device import QbraidDevice, QuantumDevice
 from .enums import DeviceStatus, DeviceType, JobStatus
 from .exceptions import (
     JobError,
@@ -65,14 +69,13 @@ from .exceptions import (
     QbraidRuntimeError,
     ResourceNotFoundError,
 )
-from .job import QuantumJob
+from .job import QbraidJob, QuantumJob
 from .profile import RuntimeProfile
-from .provider import QuantumProvider
-from .result import QuantumJobResult
+from .provider import QbraidProvider, QuantumProvider
+from .result import QbraidJobResult, QuantumJobResult
 
 if "sphinx" in sys.modules:
     from . import aws, ibm
 else:
     ibm = LazyLoader("ibm", globals(), "qbraid.runtime.ibm")
     aws = LazyLoader("aws", globals(), "qbraid.runtime.aws")
-    sim = LazyLoader("sim", globals(), "qbraid.runtime.sim")
