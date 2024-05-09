@@ -21,11 +21,16 @@ Module defining input / output types for a quantum backend:
 from copy import deepcopy
 from importlib import import_module
 from types import ModuleType
-from typing import Any, Type
+from typing import Any, Type, Union, Optional
 
 
-def __dynamic_importer(opt_modules: list[str]) -> list[Type]:
+def _dynamic_importer(opt_modules: Union[list[str], str]) -> Union[list[Type], Optional[Type]]:
     imported: list = []
+
+    is_single_import = isinstance(opt_modules, str)
+    if is_single_import:
+        opt_modules = [opt_modules]
+
     for m in opt_modules:
         try:
             data = m.split(".")
@@ -37,14 +42,17 @@ def __dynamic_importer(opt_modules: list[str]) -> list[Type]:
             # Is prefered to let module be import_module() and throw an exception if is needed
             module: ModuleType = import_module(m)
             globals()[m] = module
-            imported.append(__get_class(module.__name__))
+            imported.append(_get_class(module.__name__))
         except Exception:  # pylint: disable=broad-except
             pass
+        
+    if is_single_import:
+        return imported[0] if len(imported) == 1 else None
     return imported
 
 
 # pylint: disable=undefined-variable,inconsistent-return-statements
-def __get_class(module: str):
+def _get_class(module: str):
     if module == "cirq":
         return cirq.Circuit  # type: ignore
     if module == "qiskit":
@@ -64,7 +72,7 @@ def __get_class(module: str):
 
 
 # Supported quantum programs.
-_PROGRAMS = __dynamic_importer(
+_PROGRAMS = _dynamic_importer(
     ["cirq", "qiskit", "pennylane", "pyquil", "pytket", "braket.circuits", "openqasm3"]
 )
 

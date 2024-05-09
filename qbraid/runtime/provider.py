@@ -18,11 +18,12 @@ from typing import Any, Optional
 from qbraid_core.exceptions import AuthError
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
 
+from qbraid.programs._import import _dynamic_importer
 from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
 
 from .device import QbraidDevice
 from .enums import DeviceType
-from .exceptions import ResourceNotFoundError
+from .exceptions import ResourceNotFoundError, QbraidRuntimeError
 from .profile import RuntimeProfile
 
 
@@ -85,16 +86,21 @@ class QbraidProvider(QuantumProvider):
                     "Failed to authenticate with the Quantum service."
                 ) from err
         return self._client
+    
+    @staticmethod
+    def _get_program_spec(run_package: Optional[str]) -> Optional[ProgramSpec]:
+        if not run_package:
+            return None
+
+        program_type = _dynamic_importer(run_package)
+        return ProgramSpec(program_type, alias=run_package) if program_type else None
 
     def _build_runtime_profile(self, device_data: dict[str, Any]) -> RuntimeProfile:
         """Builds a runtime profile from qBraid device data."""
-        num_qubits = device_data.get("numberQubits", None)
+        num_qubits = device_data.get("numberQubits")
         device_type = DeviceType(device_data.get("type", "").upper())
-        program_type_alias = device_data.get("runPackage", None)
-        program_type = (
-            QPROGRAM_REGISTRY.get(program_type_alias, None) if program_type_alias else None
-        )
-        program_spec = ProgramSpec(program_type, alias=program_type_alias) if program_type else None
+        program_type_alias = device_data.get("runPackage")
+        program_spec = self._get_program_spec(program_type_alias)
         return RuntimeProfile(
             device_type=device_type,
             device_id=device_data["qbraid_id"],
@@ -105,7 +111,7 @@ class QbraidProvider(QuantumProvider):
     def get_devices(self, **kwargs) -> list[QbraidDevice]:
         """Return a list of devices matching the specified filtering."""
         query = kwargs or {}
-        query["provider"] = "qbraid"
+        query["provider"] = "qBraid"
 
         try:
             device_data_lst = self.client.search_devices(query)
@@ -125,7 +131,7 @@ class QbraidProvider(QuantumProvider):
             ResourceNotFoundError: if device cannot be loaded from quantum service data
         """
         try:
-            device_data = self.client.get_device(qbraid_id=device_id, provider="qbraid")
+            device_data = self.client.get_device(qbraid_id=device_id)
         except (ValueError, QuantumServiceRequestError) as err:
             raise ResourceNotFoundError(f"Device '{device_id}' not found.") from err
 
