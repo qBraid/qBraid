@@ -53,6 +53,7 @@ Exceptions
    QasmError
 
 """
+from ._import import NATIVE_REGISTRY
 from .alias_manager import get_program_type_alias, parse_qasm_type_alias
 from .exceptions import PackageValueError, ProgramTypeError, QasmError
 from .loader import load_program

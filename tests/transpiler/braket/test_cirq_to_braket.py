@@ -17,6 +17,7 @@
 Unit tests for converting Cirq circuits to Braket circuits
 
 """
+import cirq
 import numpy as np
 import pytest
 from braket.circuits import noises as braket_noise_gate
@@ -25,6 +26,36 @@ from cirq import Circuit, LineQubit, ops, testing
 from qbraid.interface import circuits_allclose
 from qbraid.interface.random import random_unitary_matrix
 from qbraid.transpiler.conversions.cirq import cirq_to_braket
+
+
+def alpha_pump(sys, env):
+    yield cirq.CNOT(sys[0], env[0])
+    yield cirq.H(sys[1])
+    yield cirq.X(env[1])
+
+
+def beta_pump(sys, env):
+    yield cirq.CNOT(sys[1], sys[0])
+    yield cirq.X(env[0])
+
+
+def batch_circuit():
+    sys_qubits = [cirq.LineQubit(i) for i in range(0, 6)]
+    env_qubits = [cirq.LineQubit(i) for i in range(6, 11)]
+
+    circuit = cirq.Circuit()
+    circuit += alpha_pump(sys_qubits[0:2], env_qubits[0:2])
+    circuit += alpha_pump(sys_qubits[2:4], env_qubits[2:4])
+    circuit += beta_pump(sys_qubits[4:6], env_qubits[4:5])
+    circuit.append(cirq.measure(*circuit.all_qubits()))
+    return circuit
+
+
+def test_ommit_measurement_gate():
+    """Test that cirq.MeasurementGate is skipped during Braket conversion"""
+    cirq_circuit = batch_circuit()
+    braket_circuit = cirq_to_braket(cirq_circuit)
+    assert circuits_allclose(cirq_circuit, braket_circuit)
 
 
 @pytest.mark.parametrize("qreg", (LineQubit.range(2), [LineQubit(1), LineQubit(6)]))

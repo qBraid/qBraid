@@ -17,7 +17,7 @@ import pytest
 from cirq import Circuit, LineQubit, ops, testing
 
 from qbraid.interface import circuits_allclose
-from qbraid.transpiler import CircuitConversionError, ConversionGraph, transpile
+from qbraid.transpiler import CircuitConversionError, transpile
 
 
 def test_bell_state_to_pytket():

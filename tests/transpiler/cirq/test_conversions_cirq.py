@@ -12,16 +12,34 @@
 Unit tests for the qbraid transpiler conversions module.
 
 """
+from typing import Optional
+
 import cirq
 import numpy as np
 import pytest
 
-from qbraid.programs import QPROGRAM_ALIASES, load_program
+from qbraid.programs import load_program
+from qbraid.transpiler.conversions import conversion_functions
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.graph import ConversionGraph
 
 
-@pytest.mark.parametrize("frontend", QPROGRAM_ALIASES)
+def find_cirq_targets(skip: Optional[list[str]] = None):
+    """Find all Cirq conversion targets."""
+    skip = skip or []
+    cirq_targets = []
+    for function in conversion_functions:
+        if function.startswith("cirq_to_"):
+            _, target_library = function.split("_to_")
+            if target_library not in skip:
+                cirq_targets.append(target_library)
+    return cirq_targets
+
+
+TARGETS = find_cirq_targets(skip=["pyqir"])
+
+
+@pytest.mark.parametrize("frontend", TARGETS)
 def test_convert_circuit_operation_from_cirq(frontend):
     """Test converting Cirq FrozenCircuit operation to OpenQASM"""
     q = cirq.NamedQubit("q")

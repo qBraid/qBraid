@@ -52,7 +52,7 @@ extensions = [
 # set_type_checking_flag = True
 autodoc_member_order = "bysource"
 autoclass_content = "both"
-autodoc_mock_imports = ["cirq", "braket", "qiskit", "pennylane", "pyquil", "pytket", "openqasm3", "numpy", "matplotlib", "matplotlib.pyplot"]
+autodoc_mock_imports = ["cirq", "braket", "qiskit", "pennylane", "pyquil", "pytket", "openqasm3", "numpy", "matplotlib", "matplotlib.pyplot", "stim"]
 napoleon_numpy_docstring = False
 todo_include_todos = True
 mathjax_path = "https://cdn.jsdelivr.net/npm/mathjax@2/MathJax.js?config=TeX-AMS-MML_HTMLorMML"

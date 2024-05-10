@@ -17,12 +17,11 @@ from abc import ABC, abstractmethod
 from time import sleep, time
 from typing import TYPE_CHECKING, Any, Optional
 
-import numpy as np
 from qbraid_core.services.quantum import QuantumClient
 
 from .enums import JOB_STATUS_FINAL, JobStatus
 from .exceptions import JobError, JobStateError, ResourceNotFoundError
-from .result import QbraidJobResult
+from .result import ExperimentResult, QbraidJobResult
 
 if TYPE_CHECKING:
     import qbraid_core.services.quantum
@@ -166,6 +165,7 @@ class QbraidJob(QuantumJob):
         if not result:
             raise ResourceNotFoundError("Job result not found.")
 
-        measurements = np.array(result.get("measurements", []), dtype=np.int8)
-        execution_duration = result.get("execution_duration")
-        return QbraidJobResult(measurements, execution_duration)
+        device_id: str = result.get("qbraidDeviceId")
+        success: bool = result.get("status") == "COMPLETED"
+        result = ExperimentResult.from_result(result)
+        return QbraidJobResult(device_id, self.id, success, result)

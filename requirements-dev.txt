@@ -6,13 +6,12 @@ pennylane~=0.35.1
 pyquil~=4.4.0
 pytket>=1.26,<1.28
 pytket-braket>=0.35.1,<0.37.0
+qbraid-qir>=0.2.0
 qiskit~=1.0.2
 qiskit-ibm-runtime~=0.20.0
 qiskit-qasm3-import~=0.4.2
 qiskit-braket-provider
 qiskit-aer
-qbraid-qir~=0.2.0.dev
-
 
 # visualization
 matplotlib

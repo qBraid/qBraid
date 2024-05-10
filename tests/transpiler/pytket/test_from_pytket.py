@@ -17,7 +17,7 @@ import pytest
 from pytket.circuit import Circuit as TKCircuit
 
 from qbraid.interface import circuits_allclose, random_circuit
-from qbraid.transpiler import CircuitConversionError, ConversionGraph, transpile
+from qbraid.transpiler import CircuitConversionError, transpile
 
 
 def test_bell_state_from_qiskit():

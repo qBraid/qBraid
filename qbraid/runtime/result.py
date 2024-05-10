@@ -13,6 +13,7 @@ Module defining abstract QuantumJobResult Class
 
 """
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from typing import Any, Optional
 
 import numpy as np
@@ -77,20 +78,50 @@ class QuantumJobResult(ABC):
         ]
 
 
+@dataclass
+class ExperimentResult:
+    """Class to represent the results of a quantum circuit simulation."""
+
+    measurements: np.ndarray = field(default_factory=lambda: np.array([], dtype=np.int8))
+    execution_duration: int = -1
+    process_id: str = ""
+
+    @staticmethod
+    def from_result(result: dict[str, Any]):
+        """Factory method to create JobResult from a result dictionary."""
+        measurements = np.array(result.get("measurements", []), dtype=np.int8)
+        time_stamps = result.get("timeStamps", {})
+        execution_duration = time_stamps.get("executionDuration", -1)
+        process_id = result.get("vendorJobId", "")
+
+        return ExperimentResult(
+            measurements=measurements, execution_duration=execution_duration, process_id=process_id
+        )
+
+
 class QbraidJobResult(QuantumJobResult):
     """Class to represent the results of a quantum circuit simulation."""
 
-    def __init__(self, measurements: np.ndarray, execution_duration: Optional[int] = None):
+    def __init__(self, device_id: str, job_id: str, success: bool, result: ExperimentResult):
         """Create a new Result object."""
         super().__init__()
-        self._measurements = measurements
-        self._execution_duration = execution_duration
+        self.device_id = device_id
+        self.job_id = job_id
+        self.success = success
+        self.result = result
         self._cached_histogram = None
         self._cached_metadata = None
 
+    def __repr__(self):
+        """Return a string representation of the Result object."""
+        return (
+            f"QbraidJobResult(device_id='{self.device_id}', job_id='{self.job_id}', "
+            f"success={self.success})"
+        )
+
     def measurements(self):
         """Return the measurement results 2D numpy array."""
-        return self._measurements
+        return self.result.measurements
 
     def raw_counts(self, decimal: bool = False, **kwargs):
         """Returns raw histogram data of the run"""
@@ -140,13 +171,10 @@ class QbraidJobResult(QuantumJobResult):
             self._cached_metadata = {
                 "num_shots": num_shots,
                 "num_qubits": num_qubits,
-                "execution_duration": self._execution_duration,
+                "execution_duration": self.result.execution_duration,
                 "measurements": self.measurements(),
                 "measurement_counts": self.measurement_counts(),
                 "measurement_probabilities": self.measurement_probabilities(),
             }
 
         return self._cached_metadata
-
-    def __repr__(self) -> str:
-        return f"Result({self.metadata()})"

@@ -15,5 +15,4 @@ Submodules
 
    aws
    ibm
-   sim
 

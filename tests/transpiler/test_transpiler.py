@@ -73,7 +73,9 @@ def test_to_cirq_bad_openqasm_program(item):
 @pytest.mark.parametrize("to_type", QPROGRAM_ALIASES)
 def test_cirq_round_trip(bell_circuit, to_type):
     """Test converting Cirq circuits to other supported types."""
-    if not conversion_graph.has_path("cirq", to_type):
+    if not conversion_graph.has_path("cirq", to_type) or not conversion_graph.has_path(
+        to_type, "cirq"
+    ):
         pytest.skip(f"cirq to {to_type} round-trip not yet supported")
     circuit_in, _ = bell_circuit
     circuit_mid = transpile(circuit_in, to_type, require_native=True)

@@ -28,7 +28,8 @@ dependencies = [
     "numpy>=1.17,<1.27",
     "openqasm3[parser]>=0.4.0,<0.6.0",
     "ply>=3.6",
-    "qbraid-core>=0.1.5,<0.2.0",
+    "qbraid-core>=0.1.5",
+    "pyqir>=0.10.0"
 ]
 requires-python = ">=3.9,<3.12"
 
@@ -44,7 +45,7 @@ Discord = "https://discord.gg/TPBU2sa8Et"
 aws = ["amazon-braket-sdk>=1.42.1,<1.79.0"]
 ionq = ["pytket-braket>=0.30.0,<0.37.0"]
 ibm = ["qiskit>=0.44.0,<1.1.0", "qiskit-ibm-runtime>=0.18.0,<0.21.0"]
-sim = ["qbraid-qir>=0.1.1,<0.2.0"]
+qir = ["qbraid-qir>=0.2.0"]
 visualization = ["ipython", "matplotlib", "pylatexenc"]
 test = ["pytest", "pytest-cov"]
 lint = ["black", "isort", "pylint", "qbraid-cli"]

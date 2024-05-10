@@ -86,7 +86,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         (
             colors["qbraid_edge"]
             if graph[edge.source][edge.target]["native"]
-            else colors["external_edge"] if edge.supported else colors["extras_edge"]
+            else colors["extras_edge"] if len(edge._extras) > 0 else colors["external_edge"]
         )
         for edge in conversions_ordered
     ]

@@ -31,11 +31,3 @@ body:
       description: We warmly welcome any recommendations on potential fixes, insights, or considerations that contributors should keep in mind when working to resolve this issue.
     validations:
       required: false
-
-  - type: checkboxes
-    id: agreement
-    attributes:
-      label: 'Please confirm the following:'
-      options:
-        - label: 'I have searched the existing issues and confirm this is a new bug report.'
-          required: true
