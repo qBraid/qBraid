@@ -281,10 +281,10 @@ class QbraidDevice(QuantumDevice):
         Args:
             tags (optional, dict): A dictionary of tags to associate with the job.
             shots (optional, int): The number of shots to run the job for.
-            bitcode (optional, bytes or list): The QIR byte code to run.
-            openqasm (optional, str or list): The OpenQASM to run.
-            num_qubits (optional, int or list): The number of qubits in the circuit.
-            depth (optional, int or list): The depth of the circuit.
+            bitcode (optional, bytes): The QIR byte code to run.
+            openqasm (optional, str): The OpenQASM to run.
+            num_qubits (optional, int): The number of qubits in the circuit.
+            depth (optional, int): The depth of the circuit.
 
         Returns:
             The qbraid job ID associated with this job
@@ -398,7 +398,7 @@ class QbraidDevice(QuantumDevice):
                     lambda program=qbraid_program: program.depth, "Error calculating circuit depth."
                 )
                 program_data["openqasm"] = self.try_extracting_info(
-                    lambda program=qbraid_program: self.transpile(program, "qasm3"),
+                    lambda program=program: transpile(program, "qasm3"),
                     "Error converting circuit to OpenQASM 3.",
                 )
 

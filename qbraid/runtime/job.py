@@ -166,6 +166,6 @@ class QbraidJob(QuantumJob):
             raise ResourceNotFoundError("Job result not found.")
 
         device_id: str = result.get("qbraidDeviceId")
-        success: bool = result.get("status") == "COMPLETED"
+        success: bool = job_data.get("status") == "COMPLETED"
         result = ExperimentResult.from_result(result)
         return QbraidJobResult(device_id, self.id, success, result)
