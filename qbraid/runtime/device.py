@@ -270,10 +270,10 @@ class QbraidDevice(QuantumDevice):
         self,
         tags: Optional[dict[str, str]] = None,
         shots: Optional[int] = None,
-        openqasm: Optional[Union[str, list[str]]] = None,
-        bitecode: Optional[Union[bytes, list[bytes]]] = None,
-        num_qubits: Optional[Union[int, list[int]]] = None,
-        depth: Optional[Union[int, list[int]]] = None,
+        openqasm: Optional[str] = None,
+        bitcode: Optional[bytes] = None,
+        num_qubits: Optional[int] = None,
+        depth: Optional[int] = None,
         **kwargs,
     ) -> dict[str, Any]:
         """Create new qBraid job.
@@ -281,7 +281,7 @@ class QbraidDevice(QuantumDevice):
         Args:
             tags (optional, dict): A dictionary of tags to associate with the job.
             shots (optional, int): The number of shots to run the job for.
-            bitecode (optional, bytes or list): The QIR byte code to run.
+            bitcode (optional, bytes or list): The QIR byte code to run.
             openqasm (optional, str or list): The OpenQASM to run.
             num_qubits (optional, int or list): The number of qubits in the circuit.
             depth (optional, int or list): The depth of the circuit.
@@ -292,46 +292,16 @@ class QbraidDevice(QuantumDevice):
         """
         tags = tags or {}
 
-        if bitecode is None:
-            program_batch = []
-        elif isinstance(bitecode, bytes):
-            program_batch = [bitecode]
-        elif isinstance(bitecode, list) and all(isinstance(item, bytes) for item in bitecode):
-            program_batch = bitecode
-        else:
-            raise ValueError("bitecode must be a bytes object or a list of bytes objects")
-
         init_data = {
-            "bitecode": program_batch,
+            "bitcode": bitcode,
             "qbraidDeviceId": self.id,
             "shots": shots,
+            "openQasm": openqasm,
+            "circuitNumQubits": num_qubits,
+            "circuitDepth": depth,
             "tags": json.dumps(tags),
             **kwargs,
         }
-
-        if openqasm:
-            if isinstance(openqasm, str):
-                init_data["openQasm"] = openqasm
-            elif isinstance(openqasm, list):
-                init_data["openQasmBatch"] = openqasm
-            else:
-                raise ValueError("openqasm must be a string or a list of strings")
-
-        if num_qubits:
-            if isinstance(num_qubits, int):
-                init_data["circuitNumQubits"] = num_qubits
-            elif isinstance(num_qubits, list):
-                init_data["circuitBatchNumQubits"] = num_qubits
-            else:
-                raise ValueError("num_qubits must be an integer or a list of integers")
-
-        if depth:
-            if isinstance(depth, int):
-                init_data["circuitDepth"] = depth
-            elif isinstance(depth, list):
-                init_data["circuitBatchDepth"] = depth
-            else:
-                raise ValueError("depth must be an integer or a list of integers")
 
         return self.client.create_job(data=init_data)
 

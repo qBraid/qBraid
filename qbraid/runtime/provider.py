@@ -18,7 +18,7 @@ from typing import Any, Optional
 from qbraid_core.exceptions import AuthError
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
 
-from qbraid.programs import ProgramSpec, QPROGRAM_REGISTRY
+from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
 
 from .device import QbraidDevice
 from .enums import DeviceType
