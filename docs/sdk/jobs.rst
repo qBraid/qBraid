@@ -15,13 +15,13 @@ target backend, the procedure was as follows:
 
 .. code-block:: python
 
-    >>> from qbraid.runtime import QbraidProvider
-    >>> qbraid_id = 'aws_oqc_lucy'
-    >>> provider = QbraidProvider()
-    >>> qdevice = provider.get_device(qbraid_id)
+    >>> from qbraid.runtime.braket import BraketProvider
+    >>> arn = 'arn:aws:braket:eu-west-2::device/qpu/oqc/Lucy'
+    >>> provider = BraketProvider()
+    >>> qdevice = provider.get_device(arn)
     >>> qjob = qdevice.run(circuit)
     >>> type(qjob)
-    qbraid.runtime.aws.job.BraketQuantumTaskWrapper
+    qbraid.runtime.braket.job.BraketQuantumTask
 
 Invoking the ``run`` method of a qBraid ``QuantumDevice`` returns a qBraid
 ``QuantumJob``. Through a unified set of methods and attributes, this class
@@ -89,8 +89,8 @@ By default, ``get_jobs`` returns the 10 most recently submitted jobs matching yo
 
     Job ID                                                  Submitted                 Status
     ------                                                  ---------                 ------
-    aws_oqc_lucy-exampleuser-qjob-xxxxxxxxxxxxxxxxxxxx      2023-05-21T21:13:48.220Z  RUNNING
-    aws_oqc_lucy-exampleuser-qjob-yyyyyyyyyyyyyyyyyyyy      2023-04-15T11:09:56.783Z  COMPLETED
+    aws_oqc_lucy-exampleuser-qjob-xxxxxxxxxxxxxxxxxxxx      2024-05-21T21:13:48.220Z  RUNNING
+    aws_oqc_lucy-exampleuser-qjob-yyyyyyyyyyyyyyyyyyyy      2024-04-15T11:09:56.783Z  COMPLETED
     ...
 
 
@@ -108,7 +108,7 @@ You can also load a previously submitted jobs directly through the corresponding
 
 .. code-block:: python
 
-    >>> from qbraid.runtime.aws import BraketQuantumTask
+    >>> from qbraid.runtime.braket import BraketQuantumTask
     >>> qjob = BraketQuantumTask(saved_job_id)
 
 

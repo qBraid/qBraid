@@ -13,6 +13,7 @@ Submodules
 .. autosummary::
    :toctree: ../stubs/
 
-   aws
-   ibm
+   braket
+   qiskit
+   native
 

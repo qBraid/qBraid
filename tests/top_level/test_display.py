@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -20,11 +20,13 @@ import pytest
 from qbraid_core.services.quantum import QuantumClient
 
 from qbraid import __version__
-from qbraid.display import _display_jupyter, _running_in_jupyter, display_jobs
+from qbraid._display import running_in_jupyter
 from qbraid.interface.random import random_circuit
 from qbraid.programs.exceptions import PackageValueError
-from qbraid.runtime.aws import BraketProvider
-from qbraid.runtime.ibm import QiskitRuntimeProvider
+from qbraid.runtime._display import _job_table_jupyter
+from qbraid.runtime.braket import BraketProvider
+from qbraid.runtime.native.provider import QbraidProvider
+from qbraid.runtime.qiskit import QiskitRuntimeProvider
 
 # pylint: disable=missing-function-docstring,redefined-outer-name
 
@@ -58,25 +60,25 @@ def test_package_value_error():
 
 def test_running_in_jupyter():
     """Test ``running_in_jupyter`` for non-jupyter environment."""
-    assert not _running_in_jupyter()
+    assert not running_in_jupyter()
 
 
 def test_ipython_imported_but_ipython_none():
     """Test ``running_in_jupyter`` for IPython imported but ``get_ipython()`` returns None."""
     _mock_ipython(None)
-    assert not _running_in_jupyter()
+    assert not running_in_jupyter()
 
 
 def test_ipython_imported_but_not_in_jupyter():
     """Test ``running_in_jupyter`` for IPython imported but not in Jupyter."""
     _mock_ipython(MockIPython(None))
-    assert not _running_in_jupyter()
+    assert not running_in_jupyter()
 
 
 def test_ipython_imported_and_in_jupyter():
     """Test ``running_in_jupyter`` for IPython imported and in Jupyter."""
     _mock_ipython(MockIPython("non-empty kernel"))
-    assert _running_in_jupyter()
+    assert running_in_jupyter()
 
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
@@ -85,7 +87,8 @@ def test_get_jobs_no_results(capfd):
     When no results are found, a single line is printed.
     """
     _mock_ipython(MockIPython(None))
-    display_jobs(filters={"circuitNumQubits": -1})
+    provider = QbraidProvider()
+    provider.display_jobs(filters={"provider": "not a provider"})
     out, err = capfd.readouterr()
     assert out == "No jobs found matching given criteria\n"
     assert len(err) == 0
@@ -99,7 +102,8 @@ def test_get_aws_jobs_by_tag(capfd):
     provider = BraketProvider()
     device = provider.get_device("arn:aws:braket:::device/quantum-simulator/amazon/sv1")
     job = device.run(circuit, shots=10, tags={"test": "123"})
-    display_jobs(filters={"tags": {"test": "123"}, "numResults": 1})
+    qbraid_provider = QbraidProvider()
+    qbraid_provider.display_jobs(filters={"tags": {"test": "123"}, "numResults": 1})
     out, err = capfd.readouterr()
     message = out.split("\n")[0]
     assert message == "Displaying 1 most recent job matching query:"
@@ -115,7 +119,26 @@ def test_get_ibm_jobs_by_tag(capfd):
     provider = QiskitRuntimeProvider()
     device = provider.get_device("ibm_q_qasm_simulator")
     job = device.run(circuit, shots=10, tags=["test"])
-    display_jobs(filters={"tags": {"test": "*"}, "numResults": 1})
+    qbraid_provider = QbraidProvider()
+    qbraid_provider.display_jobs(filters={"tags": {"test": "*"}, "numResults": 1})
+    out, err = capfd.readouterr()
+    message = out.split("\n")[0]
+    assert message == "Displaying 1 most recent job matching query:"
+    assert job.id in out
+    assert len(err) == 0
+
+
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+def test_get_qbraid_jobs_by_tag(capfd):
+    """Test ``get_jobs`` for ibm tagged jobs."""
+    _mock_ipython(MockIPython(None))
+    circuit = random_circuit("cirq")
+    provider = QbraidProvider()
+    device = provider.get_device("qbraid_qir_simulator")
+    if not device.status().name == "ONLINE":
+        pytest.skip("qBraid QIR simulator not available")
+    job = device.run(circuit, shots=1, tags={"test": "456"})
+    provider.display_jobs(filters={"tags": {"test": "456"}, "numResults": 1})
     out, err = capfd.readouterr()
     message = out.split("\n")[0]
     assert message == "Displaying 1 most recent job matching query:"
@@ -139,7 +162,8 @@ def test_get_jobs_results(capfd):
     _mock_ipython(MockIPython(None))
     num_results = 3  # test value
     lines_expected = 5 + num_results
-    display_jobs(filters={"numResults": num_results})
+    provider = QbraidProvider()
+    provider.display_jobs(filters={"numResults": num_results})
     out, err = capfd.readouterr()
     lines_out = len(out.split("\n"))
     assert lines_out == lines_expected
@@ -158,7 +182,7 @@ def test_display_jobs_in_jupyter(capfd):
         job_tuple = (job_id, timestamp, status_str)
         data.append(job_tuple)
     msg = "test123"
-    _display_jupyter(data, msg)
+    _job_table_jupyter(data, msg)
     out, err = capfd.readouterr()
     assert "IPython.core.display.HTML object" in out
     assert len(err) == 0
@@ -169,7 +193,8 @@ def test_get_jobs_in_jupyter(capfd):
     """Test ``get_jobs`` stdout for non-empty kernel.
     When running in Jupyter, the output should be an HTML object."""
     _mock_ipython(MockIPython("non-empty kernel"))
-    display_jobs()
+    provider = QbraidProvider()
+    provider.display_jobs()
     out, err = capfd.readouterr()
     assert "IPython.core.display.HTML object" in out
     assert len(err) == 0
@@ -182,7 +207,7 @@ def get_ipython():
 
 def _mock_ipython(get_ipython_result):
     """Mock IPython module and get_ipython function."""
-    module = sys.modules["test_top_level"]
+    module = sys.modules["test_display"]
     sys.modules["IPython"] = module
 
     get_ipython = Mock(return_value=get_ipython_result)

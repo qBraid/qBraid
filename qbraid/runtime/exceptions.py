@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -27,9 +27,5 @@ class ResourceNotFoundError(QbraidError):
     """Exception raised when the desired resource could not be found."""
 
 
-class JobError(QbraidError):
-    """Base class for errors raised by Jobs."""
-
-
-class JobStateError(JobError):
+class JobStateError(QbraidError):
     """Class for errors raised due to the state of a quantum job"""

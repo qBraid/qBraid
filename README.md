@@ -28,7 +28,7 @@ The qBraid-SDK is a platform-agnostic quantum runtime framework designed for bot
 
 This Python-based tool streamlines the full lifecycle management of quantum jobs&mdash;from defining program specifications to job submission, and through to the post-processing and visualization of results. Distinguishing itself through a streamlined and highly-configurable approach to cross-platform integration, the qBraid-SDK *does not assume a fixed target software framework*. Instead, it allows providers to dynamically register any desired run input program type as the target, depending on their specific needs. These program types are interconnected via a graph-based transpiler, where each program type is represented as a node and supported conversions as edges. The breadth, depth, and connectivity of this `ConversionGraph` can be customized by the provider.
 
-The framework also facilitates the insertion of additional program validations, circuit transformations, and transpiler/compiler steps into its modular pipeline through a comprehensive `RuntimeProfile`. This profile encapsulates both device properties (such as number of qubits, maximum shots, native gate set) and the software requirements (`ProgramSpec`) needed to submit a job, vastly reducing the overhead and redundancy typically associated with cross-platform integrations in quantum computing.
+The framework also facilitates the insertion of additional program validations, circuit transformations, and transpiler/compiler steps into its modular pipeline through a comprehensive `TargetProfile`. This profile encapsulates both device properties (such as number of qubits, maximum shots, native gate set) and the software requirements (`ProgramSpec`) needed to submit a job, vastly reducing the overhead and redundancy typically associated with cross-platform integrations in quantum computing.
 
 [<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/qBraid/qBraid.git)
 
@@ -165,7 +165,7 @@ graph = ConversionGraph()
 graph.plot()
 ```
 
-<img align="middle" width="full" alt="conversion_graph" src="https://qbraid-static.s3.amazonaws.com/conversion_graph.png">
+<img align="middle" width="full" alt="conversion_graph" src="https://qbraid-static.s3.amazonaws.com/conversion_graph_extras.png">
 
 You can use the native conversions supported by qBraid, or define your own custom nodes and/or edges. For [example](https://github.com/qBraid/qbraid-qir?tab=readme-ov-file#add-qir-node-to-qbraid-conversion-graph):
 
@@ -182,10 +182,10 @@ graph.plot()
 
 ### QbraidProvider
 
-Run experiements using on-demand simulators provided by qBraid using the `qbraid.runtime.QbraidProvider`. You can get a Python list of device objects using:
+Run experiements using on-demand simulators provided by qBraid using the `qbraid.runtime.native.QbraidProvider`. You can get a Python list of device objects using:
 
 ```python
-from qbraid.runtime import QbraidProvider
+from qbraid.runtime.native import QbraidProvider
 
 provider = QbraidProvider()
 qdevices = provider.get_devices()
@@ -224,7 +224,7 @@ where `~` corresponds to your home (`$HOME`) directory:
 |:---------------------------|
 
 ```python
-from qbraid.runtime import QbraidProvider
+from qbraid.runtime.native import QbraidProvider
 
 provider = QbraidProvider(api_key='API_KEY')
 provider.save_config()
@@ -233,7 +233,7 @@ provider.save_config()
 Once the account is saved on disk, you can instantiate the provider without any arguments:
 
 ```python
-from qbraid.runtime import QbraidProvider
+from qbraid.runtime.native import QbraidProvider
 
 provider = QbraidProvider()
 ```

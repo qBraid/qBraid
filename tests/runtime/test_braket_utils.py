@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -13,16 +13,19 @@ Unit tests for Amazon Braket cost tracker interface
 
 """
 import os
+from datetime import datetime
 from decimal import Decimal
+from unittest.mock import patch
 
 import pytest
 from braket.aws.aws_device import AwsDevice
 from braket.circuits import Circuit
 from braket.tracking import Tracker
 
-from qbraid.runtime.aws import BraketProvider
-from qbraid.runtime.aws.tracker import get_quantum_task_cost
-from qbraid.runtime.exceptions import JobError
+from qbraid.runtime.braket import BraketProvider
+from qbraid.runtime.braket.device import _future_utc_datetime
+from qbraid.runtime.braket.tracker import get_quantum_task_cost
+from qbraid.runtime.exceptions import JobStateError
 
 # Skip tests if AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
@@ -65,7 +68,7 @@ def test_get_quantum_task_cost_cancelled(braket_most_busy, braket_circuit):
     try:
         qbraid_job.wait_for_final_state(timeout=30)
         final_state_reached = True
-    except JobError:
+    except JobStateError:
         final_state_reached = False
 
     # Based on whether final state was reached or not, proceed to verify expected outcomes
@@ -108,3 +111,18 @@ def test_get_quantum_task_cost_region_mismatch(braket_most_busy, braket_circuit)
         str(excinfo.value)
         == f"AwsSession region {other_region} does not match task region {task_region}"
     )
+
+
+@pytest.mark.parametrize(
+    "hours, minutes, seconds, expected",
+    [
+        (1, 0, 0, "2024-01-01T01:00:00Z"),
+        (0, 30, 0, "2024-01-01T00:30:00Z"),
+        (0, 0, 45, "2024-01-01T00:00:45Z"),
+    ],
+)
+def test_future_utc_datetime(hours, minutes, seconds, expected):
+    """Test calculating future utc datetime"""
+    with patch("qbraid.runtime.braket.device.datetime") as mock_datetime:
+        mock_datetime.utcnow.return_value = datetime(2024, 1, 1, 0, 0, 0)
+        assert _future_utc_datetime(hours, minutes, seconds) == expected

@@ -52,7 +52,7 @@ the ``_result`` attribute:
 .. code-block:: python
 
     >>> type(qresult_ibmq)
-    qbraid.runtime.ibm.result.QiskitResult
+    qbraid.runtime.qiskit.result.QiskitResult
     >>> type(qresult_ibmq._result)
     qiskit.result.result.Result
 

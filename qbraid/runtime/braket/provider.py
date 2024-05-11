@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -26,7 +26,7 @@ from qbraid_core.services.quantum.proxy_braket import aws_configure
 
 from qbraid.exceptions import QbraidError
 from qbraid.programs import ProgramSpec
-from qbraid.runtime import DeviceType, QuantumProvider, RuntimeProfile
+from qbraid.runtime import DeviceType, QuantumProvider, TargetProfile
 from qbraid.runtime.exceptions import ResourceNotFoundError
 
 from .device import BraketDevice
@@ -34,7 +34,7 @@ from .device import BraketDevice
 if TYPE_CHECKING:
     import braket.aws
 
-    import qbraid.runtime.aws
+    import qbraid.runtime.braket
 
 
 class BraketProvider(QuantumProvider):
@@ -109,7 +109,7 @@ class BraketProvider(QuantumProvider):
 
     def _build_runtime_profile(
         self, device: "braket.aws.AwsDevice", program_spec: Optional[ProgramSpec] = None
-    ) -> RuntimeProfile:
+    ) -> TargetProfile:
         """Returns the runtime profile for the device."""
         metadata = device.aws_session.get_device(device.arn)
         provider_name = metadata.get("providerName")
@@ -118,14 +118,14 @@ class BraketProvider(QuantumProvider):
         supported = action.get("braket.ir.openqasm.program") is not None
         if not supported:
             raise QbraidError(
-                f"RuntimeProfile cannot be created for device '{device.arn}' as it does not "
+                f"TargetProfile cannot be created for device '{device.arn}' as it does not "
                 f"support 'braket.ir.openqasm.program' program types. Please verify device "
                 f"capabilities or select a different, compatible device."
             )
         device_type = DeviceType(metadata.get("deviceType"))
         num_qubits = capabilities.get("paradigm", {}).get("qubitCount")
         program_spec = program_spec or ProgramSpec(braket.circuits.Circuit)
-        return RuntimeProfile(
+        return TargetProfile(
             device_type=device_type,
             num_qubits=num_qubits,
             program_spec=program_spec,
@@ -138,7 +138,7 @@ class BraketProvider(QuantumProvider):
         aws_session: "Optional[braket.aws.AwsSession]" = None,
         statuses: Optional[list[str]] = None,
         **kwargs,
-    ) -> list["qbraid.runtime.aws.BraketDevice"]:
+    ) -> list["qbraid.runtime.braket.BraketDevice"]:
         """Return a list of backends matching the specified filtering."""
         aws_session = self._get_aws_session() if aws_session is None else aws_session
         statuses = ["ONLINE", "OFFLINE"] if statuses is None else statuses
@@ -153,7 +153,7 @@ class BraketProvider(QuantumProvider):
             if device._provider_name in ["Rigetti", "IonQ", "Oxford", "Amazon Braket"]
         ]
 
-    def get_device(self, device_id: str) -> "qbraid.runtime.aws.BraketDevice":
+    def get_device(self, device_id: str) -> "qbraid.runtime.braket.BraketDevice":
         """Returns the AWS device."""
         try:
             region_name = AwsDevice.get_device_region(device_id)  # deviceArn

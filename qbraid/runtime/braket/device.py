@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     import braket.aws
 
     import qbraid.runtime
-    import qbraid.runtime.aws
+    import qbraid.runtime.braket
     import qbraid.transpiler
 
 
@@ -49,7 +49,7 @@ class BraketDevice(QuantumDevice):
 
     def __init__(
         self,
-        profile: "qbraid.runtime.RuntimeProfile",
+        profile: "qbraid.runtime.TargetProfile",
         session: "Optional[braket.aws.AwsSession]" = None,
     ):
         """Create a BraketDevice."""
@@ -204,7 +204,7 @@ class BraketDevice(QuantumDevice):
             run_input = program.program
 
         if (self._provider_name or "").lower() == "ionq":
-            graph = self._conversion_graph
+            graph = self.scheme.conversion_graph
             if (
                 graph is not None
                 and graph.has_edge("pytket", "braket")

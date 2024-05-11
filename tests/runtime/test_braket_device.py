@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -22,7 +22,7 @@ from qiskit import QuantumCircuit as QiskitCircuit
 
 from qbraid.interface import random_circuit
 from qbraid.runtime import ResourceNotFoundError
-from qbraid.runtime.aws import BraketDevice, BraketProvider, BraketQuantumTask
+from qbraid.runtime.braket import BraketDevice, BraketProvider, BraketQuantumTask
 from qbraid.runtime.exceptions import ProgramValidationError
 
 from .fixtures import braket_circuit, cirq_circuit, device_wrapper_inputs, qiskit_circuit
@@ -70,7 +70,7 @@ def test_device_wrapper_properties():
     """Test extracting properties from BraketDevice"""
     wrapper = provider.get_device(LUCY_ARN)
     assert str(wrapper) == "BraketDevice('Oxford Lucy')"
-    assert repr(wrapper) == f"<qbraid.runtime.aws.device.BraketDevice('{LUCY_ARN}')>"
+    assert repr(wrapper) == f"<qbraid.runtime.braket.device.BraketDevice('{LUCY_ARN}')>"
 
 
 def test_queue_depth():

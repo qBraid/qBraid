@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -19,7 +19,7 @@ from qiskit import QuantumCircuit
 from qiskit_ibm_runtime import IBMBackend, QiskitRuntimeService, RuntimeJob
 
 from qbraid.runtime.exceptions import QbraidRuntimeError
-from qbraid.runtime.ibm import QiskitRuntimeProvider
+from qbraid.runtime.qiskit import QiskitRuntimeProvider
 
 # Skip tests if IBM account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"

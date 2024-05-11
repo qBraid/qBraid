@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -25,7 +25,7 @@
 #   version = "1.0.0dev"
 #
 #   Output:
-#   1.0.0dev20230809120000
+#   1.0.0dev20240809120000
 ################################################################################
 
 set -e

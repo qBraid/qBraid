@@ -13,18 +13,15 @@ Module defining the Configuration class for quantum devices, providing necessary
 parameters for integration with the qBraid runtime.
 
 """
-
-
 from collections.abc import Mapping
 from typing import Any, Iterator, Optional, Union
 
 from qbraid.programs import ProgramSpec
-from qbraid.transpiler import ConversionGraph
 
 from .enums import DeviceType
 
 
-class RuntimeProfile(Mapping):
+class TargetProfile(Mapping):
     """
     Encapsulates configuration settings for a quantum device, presenting them as a read-only
     dictionary. This class primarily stores and manages settings that are crucial for the proper
@@ -41,11 +38,10 @@ class RuntimeProfile(Mapping):
         device_type: Union[DeviceType, str],
         num_qubits: Optional[int] = None,
         program_spec: Optional[ProgramSpec] = None,
-        conversion_graph: Optional[ConversionGraph] = None,
         **kwargs,
     ) -> None:
         """
-        Initializes a new instance of the RuntimeProfile, setting up configuration according to the
+        Initializes a new instance of the TargetProfile, setting up configuration according to the
         provided parameters.
 
         Args:
@@ -54,10 +50,6 @@ class RuntimeProfile(Mapping):
             num_qubits (int): Number of qubits supported by the device.
             program_spec (optional, ProgramSpec): Specification for the program, encapsulating
                                                   program type and other metadata.
-            conversion_graph (optional, ConversionGraph): Graph coordinating conversions between
-                                                          different quantum software program types.
-                                                          If None, the default qBraid graph is used.
-                                                          Defaults to None.
 
         Raises:
             TypeError: If any of the inputs are not of the expected type.
@@ -72,15 +64,12 @@ class RuntimeProfile(Mapping):
             raise TypeError("device_num_qubits must be an integer")
         if program_spec and not isinstance(program_spec, ProgramSpec):
             raise TypeError("program_spec must be an instance of ProgramSpec")
-        if conversion_graph and not isinstance(conversion_graph, ConversionGraph):
-            raise TypeError("conversion_graph must be an instance of ConversionGraph or None")
 
         self._data = {
             "device_id": device_id,
             "device_type": device_type.name,
             "num_qubits": num_qubits,
             "program_spec": program_spec,
-            "conversion_graph": conversion_graph,
             **kwargs,
         }
 
@@ -102,4 +91,4 @@ class RuntimeProfile(Mapping):
 
     def __repr__(self) -> str:
         """Return a string representation of the configuration."""
-        return f"<RuntimeProfile({self._data})>"
+        return f"<TargetProfile({self._data})>"

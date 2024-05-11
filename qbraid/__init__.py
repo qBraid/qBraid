@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -19,18 +19,10 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   about
-   display_jobs
-
-
-Classes
---------
-
-.. autosummary::
-   :toctree: ../stubs/
-
-   LazyLoader
-
+    about
+    configure_logging
+    filterwarnings
+    check_warn_version_update
 
 Exceptions
 -----------
@@ -44,9 +36,9 @@ Exceptions
 import sys
 
 from ._about import about
+from ._compat import check_warn_version_update, configure_logging, filterwarnings
 from ._import import LazyLoader
 from ._version import __version__
-from .display import display_jobs
 from .exceptions import QbraidError
 
 if "sphinx" in sys.modules:
@@ -62,13 +54,14 @@ else:
 
 __all__ = [
     "about",
-    "transforms",
-    "display_jobs",
+    "configure_logging",
+    "check_warn_version_update",
+    "filterwarnings",
     "interface",
-    "LazyLoader",
     "programs",
     "runtime",
     "QbraidError",
+    "transforms",
     "transpiler",
     "visualization",
 ]
