@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -16,7 +16,9 @@ import logging
 import os
 import warnings
 
-from qbraid_core._compat import check_version
+from ._import import LazyLoader
+
+qbraid_core = LazyLoader("qbraid_core", globals(), "qbraid_core")
 
 
 def configure_logging():
@@ -44,5 +46,5 @@ def filterwarnings():
 
 
 def check_warn_version_update():
-    """Emit a warning if updated package version exists."""
-    check_version("qbraid")
+    """Emit a warning if updated qBraid-SDK package version exists."""
+    qbraid_core._compat.check_version("qbraid")

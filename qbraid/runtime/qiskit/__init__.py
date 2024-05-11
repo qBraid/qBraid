@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -13,7 +13,7 @@
 """
 Mdule submiting and managing jobs through IBM and IBM backends.
 
-.. currentmodule:: qbraid.runtime.ibm
+.. currentmodule:: qbraid.runtime.qiskit
 
 Classes
 --------

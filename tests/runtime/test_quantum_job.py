@@ -15,7 +15,7 @@ Unit tests for quantum jobs functions and data types
 import pytest
 
 from qbraid.runtime.enums import JobStatus
-from qbraid.runtime.job import QbraidJob
+from qbraid.runtime.native.job import QbraidJob
 
 status_data = [
     (JobStatus.INITIALIZING, False),

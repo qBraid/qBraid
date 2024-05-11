@@ -5,13 +5,8 @@ Providers
 
 .. code-block:: python
 
-    >>> from qbraid.runtime import QbraidProvider
+    >>> from qbraid.runtime.native import QbraidProvider
     >>> provider = QbraidProvider()
     >>> QbraidProvider.get_devices()
     ...
-    >>> device = provider.get_device('device_id')
-
-
-.. seealso::
-
-    - https://github.com/qBraid/qbraid-lab-demo/blob/main/qbraid_sdk/qbraid_sdk_providers.ipynb
+    >>> device = provider.get_device('qbraid_qir_simulator')

@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -17,7 +17,7 @@ import braket.circuits
 import numpy as np
 import pytest
 
-from qbraid.runtime.aws import BraketProvider
+from qbraid.runtime.braket import BraketProvider
 
 
 @pytest.fixture

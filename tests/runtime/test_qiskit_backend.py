@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -27,8 +27,8 @@ from qiskit_ibm_runtime import IBMBackend, RuntimeJob
 from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
 from qbraid.programs import ProgramSpec
-from qbraid.runtime import DeviceType, JobStateError, RuntimeProfile
-from qbraid.runtime.ibm import QiskitBackend, QiskitJob, QiskitRuntimeProvider
+from qbraid.runtime import DeviceType, JobStateError, TargetProfile
+from qbraid.runtime.qiskit import QiskitBackend, QiskitJob, QiskitRuntimeProvider
 
 from .fixtures import cirq_circuit, qiskit_circuit
 
@@ -71,7 +71,7 @@ def fake_ibm_devices():
     backends = service.backends()
     program_spec = ProgramSpec(QuantumCircuit)
     profiles = [
-        RuntimeProfile(backend.name, DeviceType.LOCAL_SIMULATOR, backend.num_qubits, program_spec)
+        TargetProfile(backend.name, DeviceType.LOCAL_SIMULATOR, backend.num_qubits, program_spec)
         for backend in backends
     ]
     return [QiskitBackend(profile, service) for profile in profiles]

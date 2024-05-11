@@ -20,9 +20,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qbraid.runtime.job import QbraidJob
-from qbraid.runtime.provider import QbraidProvider
-from qbraid.runtime.result import ExperimentResult, QbraidJobResult
+from qbraid.runtime.native import ExperimentResult, QbraidJob, QbraidJobResult, QbraidProvider
 
 # pylint: disable=redefined-outer-name
 

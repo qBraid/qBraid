@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -19,8 +19,8 @@ import string
 import pytest
 from braket.circuits import Circuit
 
-from qbraid.runtime.aws import BraketProvider
-from qbraid.runtime.aws.job import BraketQuantumTask
+from qbraid.runtime.braket import BraketProvider
+from qbraid.runtime.braket.job import BraketQuantumTask
 
 # Skip tests if AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"

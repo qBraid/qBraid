@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -14,7 +14,7 @@ various quantum provider APIs.
 
 .. currentmodule:: qbraid.runtime
 
-.. _devices_data_type:
+.. _runtime_data_type:
 
 Data Types
 ------------
@@ -22,10 +22,17 @@ Data Types
 .. autosummary::
    :toctree: ../stubs/
 
-   DeviceType
-   DeviceStatus
-   JobStatus
+	DeviceType
+	DeviceStatus
+	JobStatus
 
+Functions
+------------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+	display_jobs_from_data
 
 Classes
 --------
@@ -33,16 +40,11 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-   QuantumDevice
-   QuantumJob
-   QuantumProvider
-   QuantumJobResult
-   RuntimeProfile
-   QbraidProvider
-   QbraidDevice
-   QbraidJob
-   QbraidJobResult
-   ExperimentResult
+   	TargetProfile
+	QuantumDevice
+	QuantumJob
+	QuantumProvider
+	QuantumJobResult
 
 Exceptions
 ------------
@@ -50,33 +52,33 @@ Exceptions
 .. autosummary::
    :toctree: ../stubs/
 
-   JobError
-   JobStateError
-   ProgramValidationError
-   QbraidRuntimeError
-   ResourceNotFoundError
+	JobStateError
+	ProgramValidationError
+	QbraidRuntimeError
+	ResourceNotFoundError
 
 """
 import sys
 
 from qbraid._import import LazyLoader
 
-from .device import QbraidDevice, QuantumDevice
+from ._display import display_jobs_from_data
+from .device import QuantumDevice
 from .enums import DeviceStatus, DeviceType, JobStatus
 from .exceptions import (
-    JobError,
     JobStateError,
     ProgramValidationError,
     QbraidRuntimeError,
     ResourceNotFoundError,
 )
-from .job import QbraidJob, QuantumJob
-from .profile import RuntimeProfile
-from .provider import QbraidProvider, QuantumProvider
-from .result import ExperimentResult, QbraidJobResult, QuantumJobResult
+from .job import QuantumJob
+from .profile import TargetProfile
+from .provider import QuantumProvider
+from .result import QuantumJobResult
 
 if "sphinx" in sys.modules:
-    from . import aws, ibm
+    from . import braket, native, qiskit
 else:
-    ibm = LazyLoader("ibm", globals(), "qbraid.runtime.ibm")
-    aws = LazyLoader("aws", globals(), "qbraid.runtime.aws")
+    native = LazyLoader("native", globals(), "qbraid.runtime.native")
+    qiskit = LazyLoader("ibm", globals(), "qbraid.runtime.qiskit")
+    braket = LazyLoader("braket", globals(), "qbraid.runtime.braket")

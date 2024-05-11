@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -20,8 +20,9 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-   ConversionGraph
    Conversion
+   ConversionGraph
+   ConversionScheme
 
 Functions
 -----------
@@ -48,3 +49,4 @@ from .converter import transpile
 from .edge import Conversion
 from .exceptions import CircuitConversionError, ConversionPathNotFoundError, NodeNotFoundError
 from .graph import ConversionGraph
+from .scheme import ConversionScheme

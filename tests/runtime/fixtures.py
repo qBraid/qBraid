@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -17,8 +17,8 @@ import cirq
 import numpy as np
 import qiskit
 
-from qbraid.runtime.aws import BraketProvider
-from qbraid.runtime.ibm import QiskitRuntimeProvider
+from qbraid.runtime.braket import BraketProvider
+from qbraid.runtime.qiskit import QiskitRuntimeProvider
 
 
 def device_wrapper_inputs(vendor: str) -> list[str]:

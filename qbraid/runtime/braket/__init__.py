@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -14,7 +14,7 @@
 Mdule submiting and managing quantm tasks through AWS
 and Amazon Braket supported devices.
 
-.. currentmodule:: qbraid.runtime.aws
+.. currentmodule:: qbraid.runtime.braket
 
 Classes
 ---------

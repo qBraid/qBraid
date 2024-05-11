@@ -107,8 +107,8 @@ List your submitted jobs and view their status:
 
    Job ID                                              Submitted                  Status
    ------                                              ---------                  ------
-   aws_oqc_lucy-exampleuser-qjob-zzzzzzz...            2023-05-21T21:13:47.220Z   QUEUED
-   ibm_q_oslo-exampleuser-qjob-xxxxxxx...              2023-05-21T21:13:48.220Z   RUNNING
+   aws_oqc_lucy-exampleuser-qjob-zzzzzzz...            2024-05-21T21:13:47.220Z   QUEUED
+   ibm_q_oslo-exampleuser-qjob-xxxxxxx...              2024-05-21T21:13:48.220Z   RUNNING
 
 Compare the results:
 

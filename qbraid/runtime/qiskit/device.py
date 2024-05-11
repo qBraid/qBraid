@@ -1,4 +1,4 @@
-# Copyright (C) 2023 qBraid
+# Copyright (C) 2024 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     import qiskit
     import qiskit_ibm_runtime
 
-    import qbraid.runtime.ibm
+    import qbraid.runtime.qiskit
 
 
 class QiskitBackend(QuantumDevice):
@@ -35,7 +35,7 @@ class QiskitBackend(QuantumDevice):
 
     def __init__(
         self,
-        profile: "qbraid.runtime.RuntimeProfile",
+        profile: "qbraid.runtime.TargetProfile",
         service: "Optional[qiskit_ibm_runtime.QiskitRuntimeService]" = None,
     ):
         """Create a QiskitBackend."""
@@ -82,11 +82,11 @@ class QiskitBackend(QuantumDevice):
         run_input: "Union[qiskit.QuantumCircuit, list[qiskit.QuantumCircuit]]",
         *args,
         **kwargs,
-    ) -> "qbraid.runtime.ibm.QiskitJob":
+    ) -> "qbraid.runtime.qiskit.QiskitJob":
         """Runs circuit(s) on qiskit backend via :meth:`~qiskit.execute`
 
         Uses the :meth:`~qiskit.execute` method to create a :class:`~qiskit.providers.QuantumJob`
-        object, applies a :class:`~qbraid.runtime.ibm.QiskitJob`, and return the result.
+        object, applies a :class:`~qbraid.runtime.qiskit.QiskitJob`, and return the result.
 
         Args:
             run_input: A circuit object to run on the IBM device.
@@ -95,7 +95,7 @@ class QiskitBackend(QuantumDevice):
             shots (int): The number of times to run the task on the device. Default is 1024.
 
         Returns:
-            qbraid.runtime.ibm.QiskitJob: The job like object for the run.
+            qbraid.runtime.qiskit.QiskitJob: The job like object for the run.
 
         """
         backend = self._backend
