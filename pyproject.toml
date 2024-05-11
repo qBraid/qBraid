@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "qbraid"
 dynamic = ["version"]
-description = "A Python toolkit for cross-framework abstraction of quantum programs."
+description = "Platform-agnostic quantum runtime framework."
 readme = "README.md"
 authors = [{name = "qBraid Development Team"}, {email = "contact@qbraid.com"}]
 license = {text = "GNU General Public License v3.0"}
