@@ -23,14 +23,12 @@ def about() -> None:
     from openqasm3 import __version__ as openqasm3_version
     from ply import __version__ as ply_version
     from qbraid_core import __version__ as qbraid_core_version
-    from qbraid_qir import __version__ as qbraid_qir_version
 
     from ._version import __version__ as qbraid_version
 
     # Core dependencies
     core_dependencies = {
         "qbraid_core": qbraid_core_version,
-        "qbraid_qir": qbraid_qir_version,
         "networkx": networkx_version,
         "openqasm3": openqasm3_version,
         "numpy": numpy_version,
@@ -46,6 +44,7 @@ def about() -> None:
         "cirq": "cirq",
         "pytket": "pytket",
         "qiskit_ibm_runtime": "qiskit_ibm_runtime",
+        "qbraid_qir": "qbraid_qir",
     }
 
     optional_dependencies = {}

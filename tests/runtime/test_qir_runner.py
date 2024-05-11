@@ -24,6 +24,8 @@ from qbraid.runtime.job import QbraidJob
 from qbraid.runtime.provider import QbraidProvider
 from qbraid.runtime.result import ExperimentResult, QbraidJobResult
 
+# pylint: disable=redefined-outer-name
+
 skip_runner_tests = shutil.which("qir-runner") is None
 REASON = "qir-runner executable not available"
 
@@ -107,7 +109,7 @@ def cirq_uniform():
 
 @pytest.mark.skipif(skip_runner_tests, reason=REASON)
 def test_qir_simulator_workflow(cirq_uniform):
-    """Test qir-runner sparse simulator python wrapper(s)."""
+    """Test qir simulator qbraid device job submission and result retrieval."""
     circuit = cirq_uniform()
     num_qubits = len(circuit.all_qubits())
 

@@ -42,6 +42,7 @@ Classes
    QbraidDevice
    QbraidJob
    QbraidJobResult
+   ExperimentResult
 
 Exceptions
 ------------
@@ -72,7 +73,7 @@ from .exceptions import (
 from .job import QbraidJob, QuantumJob
 from .profile import RuntimeProfile
 from .provider import QbraidProvider, QuantumProvider
-from .result import QbraidJobResult, QuantumJobResult
+from .result import ExperimentResult, QbraidJobResult, QuantumJobResult
 
 if "sphinx" in sys.modules:
     from . import aws, ibm
