@@ -36,7 +36,8 @@ The framework also facilitates the insertion of additional program validations, 
 
 ### 1. Quantum Program Integration
 
-Supports *eight* major quantum programming libraries (including [Qiskit](https://github.com/Qiskit/qiskit), [Amazon Braket](https://github.com/amazon-braket/amazon-braket-sdk-python), [Cirq](https://github.com/quantumlib/Cirq) and more) and offers *22+* robust native conversions. This enables flexible program submissions across different libraries, facilitated by a unique conversion map that automatically adapts quantum programs during runtime.
+Offers native support for eight major quantum programming libraries including 20+ inter-library conversions with the ability to
+dynamically register new program types and conversions on the fly. This enables flexible program submissions to cater to the unique capabilities and constraints of your preferred framework, facilitated by a unique conversion map that automatically adapts quantum programs during runtime according to the given specifications.
 
 ### 2. Modular Design
 
@@ -195,7 +196,7 @@ and submit quantum jobs from any supported program type:
 
 ```python
 device = provider.get_device("qbraid_qir_simulator")
-jobs = qbraid_device.run([qiskit_circuit, braket_circuit, cirq_circuit, qasm3_str], shots=1000)
+jobs = device.run([qiskit_circuit, braket_circuit, cirq_circuit, qasm3_str], shots=1000)
 results = [job.result() for job in jobs]
 
 print(results[0].measurement_counts())
