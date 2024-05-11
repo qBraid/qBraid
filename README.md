@@ -36,7 +36,7 @@ The framework also facilitates the insertion of additional program validations, 
 
 ### 1. Quantum Program Integration
 
-Offers native support for eight major quantum programming libraries including 20+ inter-library conversions with the ability to
+Offers native support for 10 major quantum programming libraries including 20+ inter-library conversions with the ability to
 dynamically register new program types and conversions on the fly. This enables flexible program submissions to cater to the unique capabilities and constraints of your preferred framework, facilitated by a unique conversion map that automatically adapts quantum programs during runtime according to the given specifications.
 
 ### 2. Modular Design
@@ -173,7 +173,7 @@ You can use the native conversions supported by qBraid, or define your own custo
 from qbraid_qir.qasm3 import qasm3_to_qir
 from qbraid.transpiler import Conversion
 
-conversion = Conversion("qasm3", "qir", qasm3_to_qir)
+conversion = Conversion("qasm3", "pyqir", qasm3_to_qir)
 
 graph.add_conversion(conversion)
 
@@ -226,7 +226,8 @@ where `~` corresponds to your home (`$HOME`) directory:
 ```python
 from qbraid.runtime import QbraidProvider
 
-QbraidProvider.save_config(api_key='API_KEY')
+provider = QbraidProvider(api_key='API_KEY')
+provider.save_config()
 ```
 
 Once the account is saved on disk, you can instantiate the provider without any arguments:
