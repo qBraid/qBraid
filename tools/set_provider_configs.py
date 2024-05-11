@@ -20,7 +20,7 @@ from typing import Optional
 
 from qbraid_core import QbraidSession
 from qbraid_core.services.quantum.proxy_braket import aws_configure
-from qiskit_ibm_provider import IBMProvider
+from qiskit_ibm_runtime import QiskitRuntimeService
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
@@ -34,10 +34,13 @@ def qbraid_configure(api_key: Optional[str] = None) -> None:
     session.save_config()
 
 
-def ibm_configure(token: Optional[str] = None, overwrite: bool = True, **kwargs) -> None:
+def ibm_configure(
+    token: Optional[str] = None, channel: Optional[str] = None, overwrite: bool = True, **kwargs
+) -> None:
     """Initializes IBM Quantum configuration and credentials files."""
-    token = token or os.getenv("QISKIT_IBM_TOKEN", "MYTOKEN")
-    IBMProvider.save_account(token=token, overwrite=overwrite, **kwargs)
+    token = token or os.getenv("QISKIT_IBM_TOKEN", "MY_IBM_QUANTUM_TOKEN")
+    channel = channel or os.getenv("QISKIT_IBM_CHANNEL", "ibm_quantum")
+    QiskitRuntimeService.save_account(token=token, channel=channel, overwrite=overwrite, **kwargs)
 
 
 if __name__ == "__main__":

@@ -36,8 +36,9 @@ import inspect
 
 # Dynamically import QPROGRAM_ALIASES when needed
 _qbraid = importlib.import_module("qbraid.programs._import")
+_registry = importlib.import_module("qbraid.programs.registry")
 NATIVE_REGISTRY = getattr(_qbraid, "NATIVE_REGISTRY", {})
-_QPROGRAM_ALIASES = set(NATIVE_REGISTRY.keys())
+QPROGRAM_REGISTRY = getattr(_registry, "QPROGRAM_REGISTRY", {})
 
 # Cache for storing previously seen valid combinations, including reversed pairs
 valid_combinations_cache = set()
@@ -75,7 +76,7 @@ for lib in NATIVE_REGISTRY:
                 continue
 
             # Check if both p1 and p2 are in the set
-            if p1 in _QPROGRAM_ALIASES and p2 in _QPROGRAM_ALIASES:
+            if p1 in NATIVE_REGISTRY and p2 in QPROGRAM_REGISTRY:
                 globals()[name] = getattr(sub_module, name)
                 conversion_functions.append(name)
                 # Add both the pair and its reverse to the cache

@@ -88,6 +88,10 @@ class ZPowGate(cirq.ZPowGate):
     Z axis of the Bloch sphere.
     """
 
+    def num_qubits(self) -> int:
+        """The number of qubits this gate acts on."""
+        return 1
+
     def _qasm_(self, args: "cirq.QasmArgs", qubits: tuple["cirq.Qid", ...]) -> Optional[str]:
         args.validate_version("2.0")
         if self._global_shift == 0:

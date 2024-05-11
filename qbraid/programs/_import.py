@@ -24,8 +24,9 @@ from types import ModuleType
 from typing import Any, Type
 
 
-def __dynamic_importer(opt_modules: list[str]) -> list[Type]:
-    imported: list = []
+def _dynamic_importer(opt_modules: list[str]) -> dict[str, Type[Any]]:
+    imported: dict[str, Type[Any]] = {}
+
     for m in opt_modules:
         try:
             data = m.split(".")
@@ -37,14 +38,17 @@ def __dynamic_importer(opt_modules: list[str]) -> list[Type]:
             # Is prefered to let module be import_module() and throw an exception if is needed
             module: ModuleType = import_module(m)
             globals()[m] = module
-            imported.append(__get_class(module.__name__))
+            program_type = _get_class(module.__name__)
+            program_type_alias = module.__name__.split(".")[0]
+            imported[program_type_alias] = program_type
         except Exception:  # pylint: disable=broad-except
             pass
+
     return imported
 
 
 # pylint: disable=undefined-variable,inconsistent-return-statements
-def __get_class(module: str):
+def _get_class(module: str):
     if module == "cirq":
         return cirq.Circuit  # type: ignore
     if module == "qiskit":
@@ -60,15 +64,13 @@ def __get_class(module: str):
     if module == "openqasm3":
         return openqasm3.ast.Program  # type: ignore
     if module == "pyqir":
-        return pyqir.Program  # type: ignore
+        return pyqir.Module  # type: ignore
 
 
 # Supported quantum programs.
-_PROGRAMS = __dynamic_importer(
-    ["cirq", "qiskit", "pennylane", "pyquil", "pytket", "braket.circuits", "openqasm3"]
+dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
+    ["cirq", "qiskit", "pennylane", "pyquil", "pytket", "braket.circuits", "openqasm3", "pyqir"]
 )
-
-dynamic_type_registry: dict[str, Type[Any]] = {t.__module__.split(".")[0]: t for t in _PROGRAMS}
 static_type_registry: dict[str, Type[Any]] = {"qasm2": str, "qasm3": str}
 
 NATIVE_REGISTRY: dict[str, Type[Any]] = dynamic_type_registry | static_type_registry

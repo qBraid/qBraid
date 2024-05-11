@@ -113,7 +113,7 @@ Documentation
    api/qbraid.interface
    api/qbraid.transpiler
    api/qbraid.transforms
-   api/qbraid.providers
+   api/qbraid.runtime
    api/qbraid.visualization
 
 

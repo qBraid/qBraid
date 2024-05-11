@@ -16,13 +16,15 @@ used to dictate transpiler conversions.
 import braket.circuits
 import networkx as nx
 import pytest
-from qiskit_braket_provider.providers.adapter import convert_qiskit_to_braket_circuit
 
+from qbraid._import import LazyLoader
 from qbraid.programs.registry import QPROGRAM_ALIASES
 from qbraid.transpiler.conversions import conversion_functions
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.graph import ConversionGraph
+
+qiskit_braket_provider = LazyLoader("qiskit_braket_provider", globals(), "qiskit_braket_provider")
 
 
 def bound_method_str(source, target):
@@ -64,7 +66,7 @@ def test_conversion_functions_syntax(func):
 
 def test_shortest_conversion_path():
     """Test that the shortest conversion path is found correctly."""
-    G = ConversionGraph()
+    G = ConversionGraph(require_native=True)
     shortest_path = G.find_shortest_conversion_path("qiskit", "cirq")
     top_paths = G.find_top_shortest_conversion_paths("qiskit", "cirq", top_n=3)
     assert str(shortest_path[0]) == bound_method_str("qiskit", "qasm2")
@@ -86,7 +88,8 @@ def test_add_conversion():
     source, target = "cirq", "qir"
     conversion_func = lambda x: x  # pylint: disable=unnecessary-lambda-assignment
     new_edge = Conversion(source, target, conversion_func)
-    initial_conversions = ConversionGraph.load_default_conversions()
+    conversions = ConversionGraph.load_default_conversions()
+    initial_conversions = [e for e in conversions if e.native]
     graph_with_new_edge = ConversionGraph(initial_conversions + [new_edge])
     graph_without_new_edge = ConversionGraph(initial_conversions)
 
@@ -119,7 +122,7 @@ def test_initialize_new_conversion(bell_circuit):
         Conversion(
             "qiskit",
             "braket",
-            convert_qiskit_to_braket_circuit,
+            qiskit_braket_provider.providers.adapter.to_braket,
         )
     ]
     graph = ConversionGraph(conversions)
@@ -135,7 +138,7 @@ def test_overwrite_new_conversion(bell_circuit):
     conversions = [Conversion("qiskit", "braket", lambda x: x)]
     graph = ConversionGraph(conversions)
     assert len(graph.edges) == 1
-    edge = Conversion("qiskit", "braket", convert_qiskit_to_braket_circuit)
+    edge = Conversion("qiskit", "braket", qiskit_braket_provider.providers.adapter.to_braket)
     graph.add_conversion(edge, overwrite=True)
     assert len(graph.edges) == 1
     braket_circuit = transpile(qiskit_circuit, "braket", conversion_graph=graph)

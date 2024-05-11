@@ -5,7 +5,7 @@ Providers
 
 .. code-block:: python
 
-    >>> from qbraid.providers import QbraidProvider
+    >>> from qbraid.runtime import QbraidProvider
     >>> provider = QbraidProvider()
     >>> QbraidProvider.get_devices()
     ...

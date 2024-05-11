@@ -168,4 +168,6 @@ class Conversion:
             self._source == other._source
             and self._target == other._target
             and self._native == other._native
+            and self._supported == other._supported
+            and self._extras == other._extras
         )

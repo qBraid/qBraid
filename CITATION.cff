@@ -1,7 +1,6 @@
 cff-version: 1.2.0
 title: >-
-  qBraid-SDK: Python toolkit for cross-framework abstraction
-  of quantum programs.
+  qBraid-SDK: Platform-agnostic quantum runtime framework.
 message: >-
   If you use this software, please cite it using the
   metadata from this file.

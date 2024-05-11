@@ -23,7 +23,7 @@ and plot a histogram of the probabilities.
 
 .. code-block:: python
 
-    from qbraid.providers import QbraidProvider
+    from qbraid.runtime import QbraidProvider
     from qbraid.visualization import plot_histogram
 
     shots = 2**10
@@ -52,7 +52,7 @@ the ``_result`` attribute:
 .. code-block:: python
 
     >>> type(qresult_ibmq)
-    qbraid.providers.ibm.result.QiskitResult
+    qbraid.runtime.ibm.result.QiskitResult
     >>> type(qresult_ibmq._result)
     qiskit.result.result.Result
 

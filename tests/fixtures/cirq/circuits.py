@@ -12,6 +12,9 @@
 Module containing Cirq circuits used for testing
 
 """
+import random
+from typing import Optional
+
 import numpy as np
 from cirq import (
     CNOT,
@@ -28,6 +31,7 @@ from cirq import (
     Y,
     Z,
     ZPowGate,
+    measure,
     ops,
     rx,
     ry,
@@ -76,5 +80,46 @@ def cirq_shared15():
 
     for gate in cirq_shared_gates:
         circuit.append(gate)
+
+    return circuit
+
+
+def sparse_circuit(num_qubits: Optional[int] = None) -> Circuit:
+    """
+    Generates a quantum circuit designed to benchmark the performance of a sparse simulator.
+
+    This circuit is structured to maintain a level of sparsity in the system's state vector, making
+    it a good candidate for testing sparse quantum simulators. Sparse simulators excel in
+    simulating circuits where the state vector remains sparse, i.e., most of its elements are zero
+    or can be efficiently represented.
+
+    Args:
+        num_qubits (optional, int): The number of qubits to use in the circuit. If not provided,
+                                    a random number of qubits between 10 and 20 will be used.
+
+    Returns:
+        cirq.Circuit: The constructed circuit for benchmarking
+    """
+    num_qubits = num_qubits or random.randint(10, 20)
+    # Create a circuit
+    circuit = Circuit()
+
+    # Create qubits
+    qubits = LineQubit.range(num_qubits)
+
+    # Apply Hadamard gates to the first half of the qubits
+    for qubit in qubits[: num_qubits // 2]:
+        circuit.append(H(qubit))
+
+    # Apply a CNOT ladder
+    for i in range(num_qubits - 1):
+        circuit.append(CNOT(qubits[i], qubits[i + 1]))
+
+    # Apply Z gates to randomly selected qubits
+    for qubit in random.sample(qubits, k=num_qubits // 2):
+        circuit.append(Z(qubit))
+
+    # Measurement (optional)
+    circuit.append(measure(*qubits, key="result"))
 
     return circuit

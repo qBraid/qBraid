@@ -43,7 +43,6 @@ def about() -> None:
         "pennylane": "pennylane",
         "cirq": "cirq",
         "pytket": "pytket",
-        "qiskit_ibm_provider": "qiskit_ibm_provider",
         "qiskit_ibm_runtime": "qiskit_ibm_runtime",
         "qbraid_qir": "qbraid_qir",
     }

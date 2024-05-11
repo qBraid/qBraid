@@ -20,8 +20,7 @@ Functions
    :toctree: ../stubs/
 
    about
-   get_devices
-   get_jobs
+   display_jobs
 
 
 Classes
@@ -47,17 +46,16 @@ import sys
 from ._about import about
 from ._import import LazyLoader
 from ._version import __version__
+from .display import display_jobs
 from .exceptions import QbraidError
-from .get_devices import get_devices
-from .get_jobs import get_jobs
 
 if "sphinx" in sys.modules:
-    from . import interface, programs, providers, transforms, transpiler, visualization
+    from . import interface, programs, runtime, transforms, transpiler, visualization
 else:
     transforms = LazyLoader("transforms", globals(), "qbraid.transforms")
     interface = LazyLoader("interface", globals(), "qbraid.interface")
     programs = LazyLoader("programs", globals(), "qbraid.programs")
-    providers = LazyLoader("providers", globals(), "qbraid.providers")
+    runtime = LazyLoader("runtime", globals(), "qbraid.runtime")
     transpiler = LazyLoader("transpiler", globals(), "qbraid.transpiler")
     visualization = LazyLoader("visualization", globals(), "qbraid.visualization")
 
@@ -65,12 +63,11 @@ else:
 __all__ = [
     "about",
     "transforms",
-    "get_devices",
-    "get_jobs",
+    "display_jobs",
     "interface",
     "LazyLoader",
     "programs",
-    "providers",
+    "runtime",
     "QbraidError",
     "transpiler",
     "visualization",

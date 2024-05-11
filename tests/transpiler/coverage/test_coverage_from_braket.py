@@ -12,15 +12,18 @@
 Benchmarking tests for Amazon Braket conversions
 
 """
-import braket
+import braket.circuits
 import pytest
 
-import qbraid
+from qbraid.interface import circuits_allclose
+from qbraid.transpiler import ConversionGraph, transpile
 
 from ...fixtures.braket.gates import get_braket_gates
 
 TARGETS = [("cirq", 1.0), ("pyquil", 0.83), ("pytket", 1.0), ("qiskit", 1.0)]
 braket_gates = get_braket_gates(seed=0)
+
+graph = ConversionGraph(require_native=True)
 
 
 def convert_from_braket_to_x(target, gate_name):
@@ -36,8 +39,8 @@ def convert_from_braket_to_x(target, gate_name):
             [braket.circuits.Instruction(gate, range(gate.qubit_count))]
         )
 
-    target_circuit = qbraid.transpiler.transpile(source_circuit, target)
-    assert qbraid.interface.circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
+    target_circuit = transpile(source_circuit, target, conversion_graph=graph)
+    assert circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
 
 
 @pytest.mark.parametrize(("target", "baseline"), TARGETS)

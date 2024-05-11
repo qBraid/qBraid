@@ -23,12 +23,3 @@ body:
       description: "Do you have an idea for how this could be implemented? Please include those details here."
     validations:
       required: false
-
-  - type: checkboxes
-    id: agreement
-    attributes:
-      label: 'Please confirm the following:'
-      description: 'Understanding that feature requests are evaluated for their applicability and benefit to the community, and not all requests may be implemented.'
-      options:
-        - label: 'I have searched the existing issues and confirm this is a new feature request.'
-          required: true

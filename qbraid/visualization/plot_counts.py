@@ -15,8 +15,10 @@ Module for plotting historgram of measurement counts against quantum states.
 
 from typing import Callable, Optional, Union
 
-import matplotlib.pyplot as plt
-from matplotlib import colormaps
+from qbraid._import import LazyLoader
+
+plt = LazyLoader("plt", globals(), "matplotlib.pyplot")
+matplotlib = LazyLoader("matplotlib", globals(), "matplotlib")
 
 # pylint: disable=too-many-arguments,unnecessary-lambda
 
@@ -85,7 +87,7 @@ def _plot_data(
     x_positions = range(len(all_states))
 
     if colors is None:
-        cmap = colormaps.get_cmap("tab10")
+        cmap = matplotlib.colormaps.get_cmap("tab10")
         colors = [cmap(i / 10) for i in range(num_dicts)]
 
     if len(colors) != len(counts):

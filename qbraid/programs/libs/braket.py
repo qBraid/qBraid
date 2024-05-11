@@ -16,28 +16,23 @@ from typing import TYPE_CHECKING
 
 from braket.circuits import Circuit, Instruction, Qubit
 
-from qbraid.programs.abc_program import QuantumProgram
+from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.program import QbraidProgram
 
 if TYPE_CHECKING:
     import braket.circuits
     import numpy as np
 
 
-class BraketCircuit(QuantumProgram):
+class BraketCircuit(QbraidProgram):
     """Wrapper class for ``braket.circuits.Circuit`` objects."""
 
     def __init__(self, program: "braket.circuits.Circuit"):
         super().__init__(program)
-
-    @property
-    def program(self) -> Circuit:
-        return self._program
-
-    @program.setter
-    def program(self, value: Circuit) -> None:
-        if not isinstance(value, Circuit):
-            raise ValueError("Program must be an instance of braket.circuits.Circuit")
-        self._program = value
+        if not isinstance(program, Circuit):
+            raise ProgramTypeError(
+                message=f"Expected 'braket.circuits.Circuit' object, got '{type(program)}'."
+            )
 
     @property
     def qubits(self) -> list[Qubit]:

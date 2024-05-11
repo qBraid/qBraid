@@ -17,7 +17,12 @@ import unittest.mock
 
 import pytest
 
-from qbraid.programs import QPROGRAM_REGISTRY, get_program_type_alias, register_program_type
+from qbraid.programs import (
+    QPROGRAM_REGISTRY,
+    ProgramSpec,
+    get_program_type_alias,
+    register_program_type,
+)
 from qbraid.programs.registry import is_registered_alias_native
 
 
@@ -97,3 +102,12 @@ def test_is_alias_registered_native_false():
     program type for an alias does not match the native program type."""
     register_program_type(dict, "qasm2", overwrite=True)
     assert not is_registered_alias_native("qasm2")
+
+
+def test_register_via_program_spec():
+    """Test registering a program type using ProgramSpec"""
+    spec = ProgramSpec(unittest.mock.Mock)
+    assert "unittest" in QPROGRAM_REGISTRY
+    assert spec.alias == "unittest"
+    assert spec.native is False
+    assert spec.program_type == unittest.mock.Mock

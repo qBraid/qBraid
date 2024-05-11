@@ -24,21 +24,36 @@
   </a>
 </p>
 
-The qBraid-SDK is a Python toolkit for cross-framework abstraction,
-transpilation, and execution of quantum programs.
+The qBraid-SDK is a platform-agnostic quantum runtime framework designed for both quantum software and hardware providers.
+
+This Python-based tool streamlines the full lifecycle management of quantum jobs&mdash;from defining program specifications to job submission, and through to the post-processing and visualization of results. Distinguishing itself through a streamlined and highly-configurable approach to cross-platform integration, the qBraid-SDK *does not assume a fixed target software framework*. Instead, it allows providers to dynamically register any desired run input program type as the target, depending on their specific needs. These program types are interconnected via a graph-based transpiler, where each program type is represented as a node and supported conversions as edges. The breadth, depth, and connectivity of this `ConversionGraph` can be customized by the provider.
+
+The framework also facilitates the insertion of additional program validations, circuit transformations, and transpiler/compiler steps into its modular pipeline through a comprehensive `RuntimeProfile`. This profile encapsulates both device properties (such as number of qubits, maximum shots, native gate set) and the software requirements (`ProgramSpec`) needed to submit a job, vastly reducing the overhead and redundancy typically associated with cross-platform integrations in quantum computing.
 
 [<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/qBraid/qBraid.git)
 
-## Features
+## Key Features
 
-- Unified quantum frontend interface. **Transpile** quantum circuits between
-  supported packages. Leverage the capabilities of multiple frontends through
-  **simple, consistent protocols**.
-- Build once, target many. **Create** quantum programs using your preferred
-  circuit-building package, and **execute** on any backend that interfaces with
-  a supported frontend.
-- Benchmark, compare, interpret results. Built-in **compatible** post-processing
-  enables comparing results between runs and **across backends**.
+### 1. Quantum Program Integration
+
+Offers native support for eight major quantum programming libraries including 20+ inter-library conversions with the ability to
+dynamically register new program types and conversions on the fly. This enables flexible program submissions to cater to the unique capabilities and constraints of your preferred framework, facilitated by a unique conversion map that automatically adapts quantum programs during runtime according to the given specifications.
+
+### 2. Modular Design
+
+- `qbraid.programs`: Extracts and manages metadata from supported quantum program types, with the flexibility to introduce new types.
+- `qbraid.transpiler`: Bridges different quantum programming IRs through native and customizable circuit conversions.
+- `qbraid.transforms`: Ensures quantum programs conform to hardware specifications through essential runtime transformations.
+- `qbraid.runtime`: Defines essential abstractions for providers, devices, jobs, and results, integrated through a coherent runtime profile.
+- `qbraid.visualization`: Provides tools for visualizing quantum circuits and experimental data, enhancing data interpretation.
+
+### 3. Extensibility and Customization
+
+The framework encourages community contributions and extensions, supporting an evolving ecosystem of program types and conversions, adaptable to specific provider needs. By providing a comprehensive runtime solution, the qBraid-SDK offers significant advantages to *both hardware and software providers*:
+
+- **Reduces Overhead**: Minimizes the effort required to develop client-side applications for securely submitting and managing quantum experiments remotely.
+- **Enhances Integration**: Facilitates seamless integration and interoperability of quantum software tools across all layers of the stack.
+- **Broad Compatibility**: Supports a diverse range of API complexities, catering to both established players like IBM and AWS as well as emerging providers.
 
 ## Installation & Setup
 
@@ -67,7 +82,7 @@ cd qBraid
 pip install .
 ```
 
-*Note*: The qBraid-SDK requires Python 3.9 or greater.
+> *Note:* The qBraid-SDK requires Python 3.9 or greater.
 
 If using locally, follow linked instructions to configure your
 [qBraid](#local-account-setup),
@@ -119,8 +134,8 @@ This arrangement simplifies targeting and transpiling between different quantum 
  'qasm3': 'str'}
 ```
 
-Pass any quantum program of type `qbraid.programs.QPROGRAM` to the `load_program()` and specify a target package
-from `QPROGRAM_REGISTRY` to "transpile" your circuit to a new program type:
+Pass any registered quantum program along with a target package from
+`QPROGRAM_REGISTRY` to "transpile" your circuit to a new program type:
 
 ```python
 >>> from qbraid.interface import random_circuit
@@ -137,13 +152,6 @@ q_1: ┤ H ├────┤ √X ├────
 0: ───@───Rx(0.966π)───
       │
 1: ───H───X^0.5────────
-```
-
-The same functionality can be achieved using the underlying `transpile()` function directly:
-
-```python
->>> from qbraid.transpiler import transpile
->>> cirq_circuit = transpile(qiskit_circuit, "cirq")
 ```
 
 Behind the scenes, the qBraid-SDK uses ``networkx`` to create a directional graph that maps all possible conversions between supported program types:
@@ -172,29 +180,12 @@ graph.add_conversion(conversion)
 graph.plot()
 ```
 
-### Devices & Jobs
+### QbraidProvider
 
-Search for quantum backend(s) on which to execute your program.
-
-```python
->>> from qbraid import get_devices
->>> get_devices()
-Device status updated 0 minutes ago
-
-Device ID                           Status
----------                           ------
-aws_oqc_lucy                        ONLINE
-aws_ionq_aria2                      OFFLINE
-aws_rigetti_aspen_m3                ONLINE
-ibm_q_brisbane                      ONLINE
-...
-
-```
-
-You can get a Python list of device objects using:
+Run experiements using on-demand simulators provided by qBraid using the `qbraid.runtime.QbraidProvider`. You can get a Python list of device objects using:
 
 ```python
-from qbraid.providers import QbraidProvider
+from qbraid.runtime import QbraidProvider
 
 provider = QbraidProvider()
 qdevices = provider.get_devices()
@@ -204,35 +195,16 @@ Or, instantiate a known device by ID via the `QbraidProvider.get_device()` metho
 and submit quantum jobs from any supported program type:
 
 ```python
->>> from qbraid import get_jobs
->>> from qbraid.providers import QbraidProvider
->>> provider = QbraidProvider()
->>> aws_device = provider.get_device("aws_oqc_lucy")
->>> ibm_device = provider.get_device("ibm_q_brisbane")
->>> aws_job = aws_device.run(qiskit_circuit, shots=1000)
->>> ibm_job = ibm_device.run(cirq_circuit, shots=1000)
->>> get_jobs()
-Displaying 2 most recent jobs:
+device = provider.get_device("qbraid_qir_simulator")
+jobs = device.run([qiskit_circuit, braket_circuit, cirq_circuit, qasm3_str], shots=1000)
+results = [job.result() for job in jobs]
 
-Job ID                                              Submitted                  Status
-------                                              ---------                  ------
-aws_oqc_lucy-exampleuser-qjob-zzzzzzz...            2023-05-21T21:13:47.220Z   QUEUED
-ibm_q_brisbane-exampleuser-qjob-xxxxxxx...          2023-05-21T21:13:48.220Z   RUNNING
-...
-```
-
-Compare results in a consistent, unified format:
-
-```python
->>> aws_result = aws_job.result()
->>> ibm_result = ibm_job.result()
->>> aws_result.measurement_counts()
-{'00': 483, '01': 14, '10': 486, '11': 17}
->>> ibm_result.measurement_counts()
-{'00': 496, '01': 12, '10': 479, '11': 13}
+print(results[0].measurement_counts())
+# {'00': 483, '01': 14, '10': 486, '11': 17}
 ```
 
 ## Local account setup
+
 <img align="right" width="300" alt="api_key" src="https://qbraid-static.s3.amazonaws.com/manage-account.png">
 
 To use the qBraid-SDK locally (outside of qBraid Lab), you must add your account
@@ -243,35 +215,34 @@ credentials:
 2. Copy your API Key token from the left side of
     your [account page](https://account.qbraid.com/):
 
-3. Save your API key from step 2 by calling
-   `QbraidSession.save_config()`:
+### Save account to disk
+
+Once you have your API key from step 2 by, you can save it locally in a configuration file `~/.qbraid/qbraidrc`,
+where `~` corresponds to your home (`$HOME`) directory:
+
+| :warning: Account credentials are saved in plain text, so only do so if you are using a trusted device. |
+|:---------------------------|
 
 ```python
-from qbraid_core import QbraidSession
+from qbraid.runtime import QbraidProvider
 
-session = QbraidSession(api_key='API_KEY')
-session.save_config()
+QbraidProvider.save_config(api_key='API_KEY')
 ```
 
-The command above stores your credentials locally in a configuration file `~/.qbraid/qbraidrc`,
-where `~` corresponds to your home (`$HOME`) directory. Once saved, you can then connect to the
-qBraid API and leverage functions such as `get_devices()` and `get_jobs()`.
+Once the account is saved on disk, you can instantiate the provider without any arguments:
 
-### Load Account from Environment Variables
+```python
+from qbraid.runtime import QbraidProvider
 
-Alternatively, the qBraid-SDK can discover credentials from environment
-variables:
+provider = QbraidProvider()
+```
+
+### Load account from environment variables
+
+Alternatively, the qBraid-SDK can discover credentials from environment variables:
 
 ```shell
 export QBRAID_API_KEY='QBRAID_API_KEY'
-```
-
-Then instantiate the session without any arguments
-
-```python
-from qbraid_core import QbraidSession
-
-session = QbraidSession()
 ```
 
 ## Launch on qBraid

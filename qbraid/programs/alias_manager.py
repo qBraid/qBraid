@@ -58,7 +58,7 @@ def parse_qasm_type_alias(qasm: str) -> str:
     return f"qasm{verion}"
 
 
-def get_program_type_alias(program: "qbraid.programs.QPROGRAM") -> str:
+def _get_program_type_alias(program: "qbraid.programs.QPROGRAM") -> str:
     """
     Get the type alias of a quantum program from registry.
 
@@ -71,6 +71,9 @@ def get_program_type_alias(program: "qbraid.programs.QPROGRAM") -> str:
     Raises:
         ProgramTypeError: If the program type does not match any registered program types.
     """
+    if isinstance(program, type):
+        raise ProgramTypeError(message="Expected an instance of a quantum program, not a type.")
+
     if isinstance(program, str):
         try:
             return parse_qasm_type_alias(program)
@@ -85,9 +88,21 @@ def get_program_type_alias(program: "qbraid.programs.QPROGRAM") -> str:
                 )
             ) from err
 
+    matched = []
     for alias, program_type in QPROGRAM_REGISTRY.items():
         if isinstance(program, (program_type, type(program_type))):
-            return alias
+            matched.append(alias)
+
+    if len(matched) == 1:
+        return matched[0]
+
+    if len(matched) > 1:
+        raise ProgramTypeError(
+            message=(
+                f"Program of type '{type(program)}' matches multiple registered program types: "
+                f"{matched}."
+            )
+        )
 
     raise ProgramTypeError(
         message=(
@@ -95,3 +110,29 @@ def get_program_type_alias(program: "qbraid.programs.QPROGRAM") -> str:
             f"program types. Registered program types are: {QPROGRAM_TYPES}."
         )
     )
+
+
+def get_program_type_alias(
+    program: "qbraid.programs.QPROGRAM", safe: bool = False
+) -> Optional[str]:
+    """
+    Get the type alias of a quantum program from registry.
+
+    Args:
+        program (qbraid.programs.QPROGRAM): The quantum program to get the type of.
+        safe (bool): If True, return None if the program type does not match any registered
+                     program types. Defaults to False.
+
+    Returns:
+        str: The type of the quantum program.
+        None: If the program type does not match any registered program types and safe is True.
+
+    Raises:
+        ProgramTypeError: If the program type does not match any registered program types.
+    """
+    try:
+        return _get_program_type_alias(program)
+    except ProgramTypeError as err:
+        if safe:
+            return None
+        raise err

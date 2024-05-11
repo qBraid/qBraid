@@ -13,13 +13,15 @@ Module for plotting qBraid transpiler quantum program conversion graphs.
 """
 from typing import TYPE_CHECKING, Optional
 
-import matplotlib.pyplot as plt
 import networkx as nx
 
+from qbraid._import import LazyLoader
 from qbraid.programs.registry import is_registered_alias_native
 
 if TYPE_CHECKING:
     import qbraid.transpiler
+
+plt = LazyLoader("plt", globals(), "matplotlib.pyplot")
 
 
 def plot_conversion_graph(  # pylint: disable=too-many-arguments
@@ -84,7 +86,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         (
             colors["qbraid_edge"]
             if graph[edge.source][edge.target]["native"]
-            else colors["external_edge"] if edge.supported else colors["extras_edge"]
+            else colors["extras_edge"] if len(edge._extras) > 0 else colors["external_edge"]
         )
         for edge in conversions_ordered
     ]
