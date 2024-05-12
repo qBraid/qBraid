@@ -9,9 +9,9 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for applying runtime transforms to Pytket circuits.
+Module for applying runtime transforms to Amazon Braket circuits.
 
-.. currentmodule:: qbraid.transforms.pytket
+.. currentmodule:: qbraid.transforms.braket
 
 Functions
 ----------
@@ -19,7 +19,7 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   harmony_transform
+    transform
 
 """
-from .ionq import harmony_transform
+from .transform import transform

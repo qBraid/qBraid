@@ -110,43 +110,41 @@ class QbraidProvider(QuantumProvider):
         profile = self._build_runtime_profile(device_data)
         return QbraidDevice(profile, client=self.client)
 
-    def display_jobs(self, filters: Optional[dict[str, Any]] = None):
+    def display_jobs(
+        self,
+        device_id: Optional[str] = None,
+        status: Optional[str] = None,
+        tags: Optional[dict] = None,
+        max_results: int = 10,
+    ):
         """Displays a list of quantum jobs submitted by user, tabulated by job ID,
         the date/time it was submitted, and status. You can specify filters to
         narrow the search by supplying a dictionary containing the desired criteria.
 
-        **Request Syntax:**
-
-        .. code-block:: python
-
-            get_jobs(
-                filters={
-                    'vendorDeviceId': 'string',
-                    'qbraidDeviceId: 'string',
-                    'vendor': 'string',
-                    'provider': 'string',
-                    'status': 'string',
-                    'numResults': 123
-                }
-            )
-
-        # pylint: disable=line-too-long
-
         Args:
-            vendorDeviceId** (optional, str): The Job ID assigned by the software provider to whom the job was submitted
-            qbraidDeviceId** (optional, str): The qBraid ID of the device used in the job
-            vendor** (optional, str): The name of the software provider
-            provider** (optional, str): The name of the service provider
-            tags** (optional, dict): A list of tags associated with the job
-            status** (optional, str): The status of the job
-            numResults** (optional, int): Maximum number of results to display. Defaults to 10 if not specified.
+            device_id (optional, str): The qBraid ID of the device used in the job.
+            tags (optional, dict): A list of tags associated with the job.
+            status (optional, str): The status of the job.
+            max_results (optional, int): Maximum number of results to display. Defaults to 10.
         """
-        filters = filters or {}
+        query = {"provider": "qbraid"}
 
-        if len(filters) == 0:
-            jobs = self.client.search_jobs()
-        else:
-            jobs = self.client.session.post("/get-user-jobs", json=filters).json()
+        if device_id:
+            query["qbraidDeviceId"] = device_id
 
-        job_data, msg = process_job_data(jobs, filters)
+        if status:
+            query["status"] = status
+
+        if tags:
+            query.update({f"tags.{key}": value for key, value in tags.items()})
+
+        query_filter = query.copy()
+
+        if max_results:
+            query_filter["numResults"] = max_results
+            query["resultsPerPage"] = max_results
+
+        jobs = self.client.search_jobs(query)
+
+        job_data, msg = process_job_data(jobs, query_filter)
         return display_jobs_from_data(job_data, msg)

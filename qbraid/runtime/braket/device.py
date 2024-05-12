@@ -19,12 +19,9 @@ import braket.circuits
 from braket.aws import AwsDevice
 from braket.device_schema import ExecutionDay
 
-from qbraid.programs._import import NATIVE_REGISTRY
-from qbraid.programs.libs.braket import BraketCircuit
-from qbraid.programs.registry import QPROGRAM_REGISTRY
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import DeviceStatus, DeviceType
-from qbraid.transpiler import CircuitConversionError, ConversionPathNotFoundError, transpile
+from qbraid.runtime.enums import DeviceStatus
+from qbraid.transforms.braket import transform
 
 from .job import BraketQuantumTask
 
@@ -198,36 +195,7 @@ class BraketDevice(QuantumDevice):
 
     def transform(self, run_input: "braket.circuits.Circuit") -> "braket.circuits.Circuit":
         """Transpile a circuit for the device."""
-        if self.device_type == DeviceType.SIMULATOR:
-            program = BraketCircuit(run_input)
-            program.remove_idle_qubits()
-            run_input = program.program
-
-        if (self._provider_name or "").lower() == "ionq":
-            graph = self.scheme.conversion_graph
-            if (
-                graph is not None
-                and graph.has_edge("pytket", "braket")
-                and QPROGRAM_REGISTRY["pytket"] == NATIVE_REGISTRY["pytket"]
-                and QPROGRAM_REGISTRY["braket"] == NATIVE_REGISTRY["braket"]
-                and self._target_spec.alias == "braket"
-            ):
-
-                # pylint: disable=import-outside-toplevel
-                from qbraid.transforms.pytket.ionq import pytket_ionq_transform
-
-                try:
-                    tk_circuit = transpile(
-                        run_input, "pytket", max_path_depth=1, conversion_graph=graph
-                    )
-                    tk_transformed = pytket_ionq_transform(tk_circuit)
-                    run_input = transpile(
-                        tk_transformed, "braket", max_path_depth=1, conversion_graph=graph
-                    )
-                except (ConversionPathNotFoundError, CircuitConversionError):
-                    pass
-
-        return run_input
+        return transform(run_input, device=self)
 
     def submit(
         self,
