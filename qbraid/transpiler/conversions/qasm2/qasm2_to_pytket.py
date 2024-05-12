@@ -14,7 +14,9 @@ Module containing functions to convert between OpenQASM 2 and PyTKET.
 """
 from typing import TYPE_CHECKING
 
-from pytket.qasm import circuit_from_qasm_str
+from qbraid._import import LazyLoader
+
+pytket_qasm = LazyLoader("pytket_qasm", globals(), "pytket.qasm")
 
 if TYPE_CHECKING:
     import pytket.circuit
@@ -29,4 +31,4 @@ def qasm2_to_pytket(qasm: str) -> "pytket.circuit.Circuit":
     Returns:
         pytket.circuit.Circuit: PyTKET circuit object equivalent to input OpenQASM 2 string.
     """
-    return circuit_from_qasm_str(qasm)
+    return pytket_qasm.circuit_from_qasm_str(qasm)

@@ -19,9 +19,9 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   qasm3_braket_pre_process
-   qasm3_braket_post_process
+   transform_notation_to_external
+   transform_notation_from_external
 
 
 """
-from .compat import qasm3_braket_post_process, qasm3_braket_pre_process
+from .compat import transform_notation_from_external, transform_notation_to_external

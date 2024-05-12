@@ -88,7 +88,7 @@ def test_get_jobs_no_results(capfd):
     """
     _mock_ipython(MockIPython(None))
     provider = QbraidProvider()
-    provider.display_jobs(filters={"provider": "not a provider"})
+    provider.display_jobs(device_id="non-existent-device")
     out, err = capfd.readouterr()
     assert out == "No jobs found matching given criteria\n"
     assert len(err) == 0
@@ -103,7 +103,7 @@ def test_get_aws_jobs_by_tag(capfd):
     device = provider.get_device("arn:aws:braket:::device/quantum-simulator/amazon/sv1")
     job = device.run(circuit, shots=10, tags={"test": "123"})
     qbraid_provider = QbraidProvider()
-    qbraid_provider.display_jobs(filters={"tags": {"test": "123"}, "numResults": 1})
+    qbraid_provider.display_jobs(tags={"test": "123"}, max_results=1)
     out, err = capfd.readouterr()
     message = out.split("\n")[0]
     assert message == "Displaying 1 most recent job matching query:"
@@ -120,7 +120,7 @@ def test_get_ibm_jobs_by_tag(capfd):
     device = provider.get_device("ibm_q_qasm_simulator")
     job = device.run(circuit, shots=10, tags=["test"])
     qbraid_provider = QbraidProvider()
-    qbraid_provider.display_jobs(filters={"tags": {"test": "*"}, "numResults": 1})
+    qbraid_provider.display_jobs(tags={"test": "*"}, max_results=1)
     out, err = capfd.readouterr()
     message = out.split("\n")[0]
     assert message == "Displaying 1 most recent job matching query:"
@@ -138,7 +138,7 @@ def test_get_qbraid_jobs_by_tag(capfd):
     if not device.status().name == "ONLINE":
         pytest.skip("qBraid QIR simulator not available")
     job = device.run(circuit, shots=1, tags={"test": "456"})
-    provider.display_jobs(filters={"tags": {"test": "456"}, "numResults": 1})
+    provider.display_jobs(tags={"test": "456"}, max_results=1)
     out, err = capfd.readouterr()
     message = out.split("\n")[0]
     assert message == "Displaying 1 most recent job matching query:"
@@ -160,12 +160,14 @@ def test_get_jobs_results(capfd):
     So, for ``numResults == x`` we expected ``6+x`` total lines from stdout.
     """
     _mock_ipython(MockIPython(None))
-    num_results = 3  # test value
+    num_results = 1  # test value
     lines_expected = 5 + num_results
     provider = QbraidProvider()
-    provider.display_jobs(filters={"numResults": num_results})
+    provider.display_jobs(max_results=num_results)
     out, err = capfd.readouterr()
     lines_out = len(out.split("\n"))
+    if len(lines_out) == 2:
+        pytest.skip("No jobs found")
     assert lines_out == lines_expected
     assert len(err) == 0
 

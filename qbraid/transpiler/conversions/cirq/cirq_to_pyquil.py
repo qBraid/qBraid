@@ -16,18 +16,23 @@ representation to pyQuil's circuit representation (Quil programs).
 from typing import TYPE_CHECKING
 
 from cirq import LineQubit, QubitOrder
-from pyquil import Program
 
+from qbraid._import import LazyLoader
 from qbraid.transpiler.exceptions import CircuitConversionError
 
-from .cirq_quil_output import QuilOutput
+try:
+    from .cirq_quil_output import QuilOutput
+except ImportError:
+    QuilOutput = None
+
+pyquil = LazyLoader("pyquil", globals(), "pyquil")
 
 if TYPE_CHECKING:
     import cirq.circuits
-    import pyquil.quil
+    import pyquil as pyquil_
 
 
-def cirq_to_pyquil(circuit: "cirq.circuits.Circuit") -> "pyquil.quil.Program":
+def cirq_to_pyquil(circuit: "cirq.circuits.Circuit") -> "pyquil_.Program":
     """Returns a pyQuil Program equivalent to the input Cirq circuit.
 
     Args:
@@ -49,7 +54,7 @@ def cirq_to_pyquil(circuit: "cirq.circuits.Circuit") -> "pyquil.quil.Program":
     operations = circuit.all_operations()
     try:
         quil_str = str(QuilOutput(operations, qubits))
-        return Program(quil_str)
+        return pyquil.Program(quil_str)
     except ValueError as err:
         raise CircuitConversionError(
             f"Cirq qasm converter doesn't yet support {err.args[0][32:]}."
