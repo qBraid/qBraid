@@ -15,12 +15,15 @@ Unit tests for BraketProvider class
 import os
 import random
 import string
+from unittest.mock import patch
 
 import pytest
 from braket.circuits import Circuit
+from braket.devices import LocalSimulator
 
-from qbraid.runtime.braket import BraketProvider
-from qbraid.runtime.braket.job import BraketQuantumTask
+from qbraid.programs import ProgramSpec
+from qbraid.runtime import DeviceType, TargetProfile
+from qbraid.runtime.braket import BraketDevice, BraketProvider, BraketQuantumTask
 
 # Skip tests if AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
@@ -65,15 +68,23 @@ def test_braket_queue_visibility():
         assert isinstance(queue_position, int)
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
-def test_job_wrapper_type():
+@patch("qbraid.runtime.braket.device.AwsDevice")
+@patch("qbraid.runtime.braket.job.AwsQuantumTask")
+def test_job_wrapper_type(mock_aws_quantum_task, mock_aws_device):
     """Test that job wrapper creates object of original job type"""
-    provider = BraketProvider()
-    device = provider.get_device(SV1_ARN)
+    mock_aws_device.return_value = LocalSimulator()
+    profile = TargetProfile(
+        device_type=DeviceType.SIMULATOR,
+        num_qubits=34,
+        program_spec=ProgramSpec(Circuit),
+        provider_name="Amazon Braket",
+        device_id=SV1_ARN,
+    )
+    device = BraketDevice(profile)
     circuit = Circuit().h(0).cnot(0, 1)
-    job_0 = device.run(circuit, shots=10)
-    job_1 = BraketQuantumTask(job_0.id, task=None)
-    assert isinstance(job_0, type(job_1))
+    job_0 = device._device.run(circuit, shots=10)
+    mock_aws_quantum_task.return_value = job_0
+    job_1 = BraketQuantumTask(job_0.id)
     assert job_0.id == job_1.metadata()["job_id"]
 
 

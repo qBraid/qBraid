@@ -44,7 +44,7 @@ class AmazonBraketVersionError(Exception):
 class BraketQuantumTask(QuantumJob):
     """Wrapper class for Amazon Braket ``QuantumTask`` objects."""
 
-    def __init__(self, task_id: str, task: Optional[AwsQuantumTask], **kwargs):
+    def __init__(self, task_id: str, task: Optional[AwsQuantumTask] = None, **kwargs):
         """Create a BraketQuantumTask."""
 
         super().__init__(task_id, **kwargs)
