@@ -25,8 +25,6 @@ from braket.circuits import Instruction as BKInstruction
 from braket.circuits import gates as braket_gates
 from braket.circuits import noises as braket_noise_gate
 
-from qbraid._import import LazyLoader
-
 try:
     import cirq
 except ImportError:
@@ -37,6 +35,7 @@ try:
 except ImportError:
     cirq_ionq_ops = None
 
+from qbraid._import import LazyLoader
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 cirq_passes = LazyLoader("cirq_passes", globals(), "qbraid.transforms.cirq.passes")

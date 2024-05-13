@@ -166,7 +166,7 @@ def test_get_jobs_results(capfd):
     provider.display_jobs(max_results=num_results)
     out, err = capfd.readouterr()
     lines_out = len(out.split("\n"))
-    if len(lines_out) == 2:
+    if lines_out == 2:
         pytest.skip("No jobs found")
     assert lines_out == lines_expected
     assert len(err) == 0
