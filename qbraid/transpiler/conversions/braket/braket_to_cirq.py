@@ -25,6 +25,8 @@ from braket.circuits import Instruction as BKInstruction
 from braket.circuits import gates as braket_gates
 from braket.circuits import noises as braket_noise_gate
 
+from qbraid._import import LazyLoader
+
 try:
     import cirq
 except ImportError:
@@ -35,8 +37,9 @@ try:
 except ImportError:
     cirq_ionq_ops = None
 
-from qbraid.transforms.cirq.passes import align_final_measurements
 from qbraid.transpiler.exceptions import CircuitConversionError
+
+cirq_passes = LazyLoader("cirq_passes", globals(), "qbraid.transforms.cirq.passes")
 
 if TYPE_CHECKING:
     import cirq.circuits as cirq_circuits
@@ -84,7 +87,7 @@ def braket_to_cirq(circuit: BKCircuit) -> "cirq_circuits.Circuit":
     circuit = cirq.Circuit(
         _from_braket_instruction(instr, qubit_mapping) for instr in circuit.instructions
     )
-    return align_final_measurements(circuit)
+    return cirq_passes.align_final_measurements(circuit)
 
 
 def _from_braket_instruction(
