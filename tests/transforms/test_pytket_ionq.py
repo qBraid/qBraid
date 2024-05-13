@@ -15,7 +15,7 @@ Unit tests for pytket circuit transformations.
 import braket.circuits
 import pytest
 
-from qbraid.transforms.pytket import pytket_ionq_transform
+from qbraid.transforms.pytket import harmony_transform
 from qbraid.transpiler import transpile
 
 from ..fixtures.braket.gates import get_braket_gates
@@ -35,6 +35,6 @@ def test_braket_ionq_transform(gate_name):
         )
 
     pytket_source = transpile(source_circuit, "pytket")
-    pytket_transformed = pytket_ionq_transform(pytket_source)
+    pytket_transformed = harmony_transform(pytket_source)
     braket_transformed = transpile(pytket_transformed, "braket")
     assert isinstance(braket_transformed, braket.circuits.Circuit)

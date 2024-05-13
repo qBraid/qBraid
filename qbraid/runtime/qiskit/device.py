@@ -14,12 +14,11 @@ Module defining QiskitBackend Class
 """
 from typing import TYPE_CHECKING, Optional, Union
 
-from qiskit import transpile
 from qiskit_ibm_runtime import QiskitRuntimeService
 
-from qbraid.programs.libs.qiskit import QiskitCircuit
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, DeviceType
+from qbraid.transforms.qiskit import transform
 
 from .job import QiskitJob
 
@@ -70,12 +69,8 @@ class QiskitBackend(QuantumDevice):
         return self._backend.status().pending_jobs
 
     def transform(self, run_input: "qiskit.QuantumCircuit") -> "qiskit.QuantumCircuit":
-        if self.device_type == DeviceType.LOCAL_SIMULATOR:
-            program = QiskitCircuit(run_input)
-            program.remove_idle_qubits()
-            run_input = program.program
-
-        return transpile(run_input, backend=self._backend)
+        """Transpile a circuit for the device."""
+        return transform(run_input, device=self)
 
     def submit(
         self,
