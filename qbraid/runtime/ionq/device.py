@@ -62,7 +62,11 @@ class IonQDevice(QuantumDevice):
     def remove_comment_lines(input_string):
         lines = input_string.split("\n")
         exact_remove_set = {"OPENQASM 2.0;"}
-        processed_lines = [line for line in lines if not line.strip().startswith("//") and line.strip() not in exact_remove_set]
+        processed_lines = [
+            line
+            for line in lines
+            if not line.strip().startswith("//") and line.strip() not in exact_remove_set
+        ]
         filter_lines = []
         for line in processed_lines:
             stripped_line = line.strip()
