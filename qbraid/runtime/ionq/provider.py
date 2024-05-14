@@ -9,18 +9,20 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining IonQ provider class
+Module defining IonQ session and provider classes
 
 """
 from typing import Any
 
+import openqasm3
 from qbraid_core.sessions import Session
 
-from qbraid.programs import ProgramSpec
-from qbraid.runtime import QuantumProvider
+from qbraid.programs.spec import ProgramSpec
 from qbraid.runtime.enums import DeviceType
-from qbraid.runtime.ionq.device import IonQDevice
 from qbraid.runtime.profile import TargetProfile
+from qbraid.runtime.provider import QuantumProvider
+
+from .device import IonQDevice
 
 
 class IonQSession(Session):
@@ -47,7 +49,7 @@ class IonQSession(Session):
 
     def create_job(self, data: dict[str, Any]) -> dict[str, Any]:
         """Create a new job on the IonQ API."""
-        return self.post("/jobs", json=data).json()
+        return self.post("/jobs", data=data).json()
 
     def get_job(self, job_id: str) -> dict[str, Any]:
         """Get a specific IonQ job."""
@@ -71,7 +73,7 @@ class IonQProvider(QuantumProvider):
             device_id=data.get("backend"),
             device_type=DeviceType.QPU,
             num_qubits=data.get("qubits"),
-            program_spec=ProgramSpec(str, alias="qasm2"),
+            program_spec=ProgramSpec(openqasm3.ast.Program),
         )
 
     def get_device(self, device_id: str) -> dict[str, Any]:

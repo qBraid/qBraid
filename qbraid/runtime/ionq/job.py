@@ -11,16 +11,23 @@
 # pylint:disable=invalid-name
 
 """
-Module defining IonQJob Class
+Module defining IonQ job class
 
 """
 from typing import TYPE_CHECKING
 
 from qbraid.runtime.enums import JobStatus
+from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
+
+from .result import IonQJobResult
 
 if TYPE_CHECKING:
     import qbraid.runtime.ionq.provider
+
+
+class IonQJobError(QbraidRuntimeError):
+    """Class for errors raised while processing an IonQ job."""
 
 
 class IonQJob(QuantumJob):
@@ -58,7 +65,15 @@ class IonQJob(QuantumJob):
         """Return the result of the IonQ job."""
         self.wait_for_final_state()
         job_data = self.session.get_job(self.id)
+        success = job_data.get("status") == "completed"
+        if not success:
+            failure = job_data.get("failure", {})
+            code = failure.get("code")
+            message = failure.get("error")
+            raise IonQJobError(f"Job failed with code {code}: {message}")
+
         results_url = job_data.get("results_url")
         results_endpoint = results_url.split("v0.3")[-1]
-        results_data = self.session.get(results_endpoint).json()
-        return results_data
+        job_data["probabilities"] = self.session.get(results_endpoint).json()
+        job_data["shots"] = job_data.get("shots", self._cache_metadata.get("shots"))
+        return IonQJobResult(job_data)

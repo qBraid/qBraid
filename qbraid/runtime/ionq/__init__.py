@@ -23,8 +23,18 @@ Classes
 	IonQProvider
 	IonQDevice
 	IonQJob
+	IonQJobResult
+
+Exceptions
+-----------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+	IonQJobError
 
 """
 from .device import IonQDevice
-from .job import IonQJob
+from .job import IonQJob, IonQJobError
 from .provider import IonQProvider, IonQSession
+from .result import IonQJobResult

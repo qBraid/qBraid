@@ -94,7 +94,7 @@ def test_load_completed_job(mock_aws_quantum_task):
     moock_job = mock_device.run(circuit, shots=10)
     mock_aws_quantum_task.return_value = moock_job
     job = BraketQuantumTask(moock_job.id)
-    job.metadata()["job_id"] == moock_job.id
+    assert job.metadata()["job_id"] == moock_job.id
     assert job.is_terminal_state()
 
 

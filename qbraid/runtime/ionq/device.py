@@ -14,14 +14,20 @@
 Module defining IonQ device class
 
 """
+import json
 from typing import TYPE_CHECKING
 
+from openqasm3.ast import QuantumGate
+
+from qbraid.programs import load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 
 from .job import IonQJob
 
 if TYPE_CHECKING:
+    import openqasm3
+
     import qbraid.runtime
     import qbraid.runtime.ionq.provider
 
@@ -59,31 +65,63 @@ class IonQDevice(QuantumDevice):
         raise ValueError(f"Unrecognized device status: {status}")
 
     @staticmethod
-    def remove_comment_lines(input_string):
-        lines = input_string.split("\n")
-        exact_remove_set = {"OPENQASM 2.0;"}
-        processed_lines = [
-            line
-            for line in lines
-            if not line.strip().startswith("//") and line.strip() not in exact_remove_set
-        ]
-        filter_lines = []
-        for line in processed_lines:
-            stripped_line = line.strip()
-            if stripped_line.startswith("include"):
-                continue
-            filter_lines.append(line)
-        return "\n".join(filter_lines)
+    def extract_gate_data(program: "openqasm3.ast.Program") -> list[dict]:
+        """Extract gate data from the input program."""
+        gates = []
 
-    def submit(self, run_input: list[str], *args, shots: int = 100, **kwargs) -> IonQJob:
+        for statement in program.statements:
+            if isinstance(statement, QuantumGate):
+                name = statement.name.name
+                qubits = statement.qubits
+                qubit_values = []
+
+                for qubit in qubits:
+                    _ = qubit.name.name
+                    indices = qubit.indices
+                    for index in indices:
+                        qubit_values.extend(literal.value for literal in index)
+
+                if name == "cx":
+                    name = "cnot"
+                gate_data = {"gate": name}
+                if len(qubit_values) == 1:
+                    gate_data["target"] = qubit_values[0]
+                elif len(qubit_values) == 2:
+                    if name == "cnot":
+                        gate_data["control"] = qubit_values[0]
+                        gate_data["target"] = qubit_values[1]
+                    else:
+                        raise NotImplementedError(f"'{name}' gate not yet supported")
+                else:
+                    raise NotImplementedError(f"'{name}' gate not yet supported")
+
+                gates.append(gate_data)
+
+        return gates
+
+    def transform(self, run_input: "openqasm3.ast.Program") -> dict:
+        """Transform the input to the IonQ device."""
+        num_qubits = load_program(run_input).num_qubits
+        gate_data = self.extract_gate_data(run_input)
+        return {"qubits": num_qubits, "circuit": gate_data}
+
+    def submit(self, run_input: list[dict], *args, shots: int = 100, **kwargs) -> IonQJob:
         """Submit a job to the IonQ device."""
-        run_input = self.remove_comment_lines(run_input)
-        data = {
-            "target": self.id,
-            "shots": shots,
-            "input": {"format": "qasm", "data": run_input},
-            **kwargs,
-        }
-        job_data = self.session.create_job(data)
-        job_id = job_data.get("id")
-        return IonQJob(job_id=job_id, session=self.session, device=self)
+        is_single_input = not isinstance(run_input, list)
+        run_input = [run_input] if is_single_input else run_input
+        jobs = []
+        for input_data in run_input:
+            data = {
+                "target": self.id,
+                "shots": shots,
+                "input": input_data,
+                **kwargs,
+            }
+            serialized_data = json.dumps(data)
+            job_data = self.session.create_job(serialized_data)
+            job_id = job_data.get("id")
+            if not job_id:
+                raise ValueError("Job ID not found in the response")
+            qbraid_job = IonQJob(job_id=job_id, session=self.session, device=self, shots=shots)
+            jobs.append(qbraid_job)
+        return jobs[0] if is_single_input else jobs
