@@ -58,12 +58,26 @@ class IonQDevice(QuantumDevice):
 
         raise ValueError(f"Unrecognized device status: {status}")
 
+    @staticmethod
+    def remove_comment_lines(input_string):
+        lines = input_string.split("\n")
+        exact_remove_set = {"OPENQASM 2.0;"}
+        processed_lines = [line for line in lines if not line.strip().startswith("//") and line.strip() not in exact_remove_set]
+        filter_lines = []
+        for line in processed_lines:
+            stripped_line = line.strip()
+            if stripped_line.startswith("include"):
+                continue
+            filter_lines.append(line)
+        return "\n".join(filter_lines)
+
     def submit(self, run_input: list[str], *args, shots: int = 100, **kwargs) -> IonQJob:
         """Submit a job to the IonQ device."""
+        run_input = self.remove_comment_lines(run_input)
         data = {
             "target": self.id,
             "shots": shots,
-            "input": {"format": "openqasm", "data": run_input},
+            "input": {"format": "qasm", "data": run_input},
             **kwargs,
         }
         job_data = self.session.create_job(data)
