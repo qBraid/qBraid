@@ -16,4 +16,5 @@ Submodules
    braket
    qiskit
    native
+   ionq
 
