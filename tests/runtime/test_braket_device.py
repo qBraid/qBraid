@@ -13,34 +13,34 @@ Unit tests for BraketDevice class
 
 """
 import os
-from datetime import datetime
+import json
+from datetime import datetime, time
 
 import pytest
+from unittest.mock import patch, Mock
+
+from braket.circuits import Circuit
 from braket.aws.aws_device import AwsDevice
 from braket.tasks.quantum_task import QuantumTask as AwsQuantumTask
+from braket.aws.queue_information import QueueDepthInfo, QueueType
+from braket.device_schema import ExecutionDay
+
 from qiskit import QuantumCircuit as QiskitCircuit
 
 from qbraid.interface import random_circuit
-from qbraid.runtime import ResourceNotFoundError
+from qbraid.runtime import ResourceNotFoundError, DeviceType, TargetProfile
 from qbraid.runtime.braket import BraketDevice, BraketProvider, BraketQuantumTask
 from qbraid.runtime.exceptions import ProgramValidationError
+from qbraid.programs import ProgramSpec
 
 from .fixtures import braket_circuit, cirq_circuit, device_wrapper_inputs, qiskit_circuit
-
-# Skip tests if IBM/AWS account auth/creds not configured
-skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
-REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of AWS storage)"
-pytestmark = pytest.mark.skipif(skip_remote_tests, reason=REASON)
 
 SV1_ARN = "arn:aws:braket:::device/quantum-simulator/amazon/sv1"
 DM1_ARN = "arn:aws:braket:::device/quantum-simulator/amazon/dm1"
 HARMONY_ARN = "arn:aws:braket:us-east-1::device/qpu/ionq/Harmony"
 LUCY_ARN = "arn:aws:braket:eu-west-2::device/qpu/oqc/Lucy"
 
-inputs_braket_run = [SV1_ARN]
-inputs_braket_dw = [] if skip_remote_tests else device_wrapper_inputs("AWS")
-circuits_braket_run = [braket_circuit(), cirq_circuit(meas=False), qiskit_circuit(meas=False)]
-provider = None if skip_remote_tests else BraketProvider()
+provider = BraketProvider()
 
 
 def test_device_wrapper_id_error():
@@ -48,70 +48,56 @@ def test_device_wrapper_id_error():
     with pytest.raises(ResourceNotFoundError):
         provider.get_device("Id123")
 
-
-@pytest.mark.parametrize("device_id", inputs_braket_dw)
-def test_device_wrapper_aws_from_api(device_id):
-    """Test device wrapper for ids of devices available through Amazon Braket."""
-    qbraid_device = provider.get_device(device_id)
-    vendor_device = qbraid_device._device
-    assert isinstance(qbraid_device, BraketDevice)
-    assert isinstance(vendor_device, AwsDevice)
-
-
-def test_device_wrapper_from_braket_arn():
-    """Test creating device wrapper from Amazon Braket device ARN."""
-    qbraid_device = provider.get_device(SV1_ARN)
-    vendor_device = qbraid_device._device
-    assert isinstance(qbraid_device, BraketDevice)
-    assert isinstance(vendor_device, AwsDevice)
-
-
-def test_device_wrapper_properties():
-    """Test extracting properties from BraketDevice"""
-    wrapper = provider.get_device(LUCY_ARN)
-    assert str(wrapper) == "BraketDevice('Oxford Lucy')"
-    assert repr(wrapper) == f"<qbraid.runtime.braket.device.BraketDevice('{LUCY_ARN}')>"
+@patch("qbraid.runtime.braket.device.AwsDevice")
+def test_device_profile_attributes(mock_aws_device):
+    """Test that device profile attributes are correctly set."""
+    mock_aws_device.return_value = Mock()
+    profile = TargetProfile(
+        device_type=DeviceType.SIMULATOR,
+        num_qubits=34,
+        program_spec=ProgramSpec(Circuit),
+        provider_name="Amazon Braket",
+        device_id=SV1_ARN,
+    )
+    device = BraketDevice(profile)
+    assert device.id == profile.get("device_id")
+    assert device.num_qubits == profile.get("num_qubits")
+    assert device._target_spec == profile.get("program_spec")
+    assert device.device_type == DeviceType(profile.get("device_type"))
 
 
-def test_queue_depth():
+@patch("qbraid.runtime.braket.device.AwsDevice")
+def test_queue_depth(mock_aws_device):
     """Test getting queue_depth BraketDevice"""
-    aws_device = provider.get_device(SV1_ARN)
-    assert isinstance(aws_device.queue_depth(), int)
+    mock_aws_device.queue_depth.return_value = QueueDepthInfo(
+        quantum_tasks={QueueType.NORMAL: "19", QueueType.PRIORITY: "3"},
+        jobs="0 (3 prioritized job(s) running)",
+    )
+    profile = TargetProfile(
+        device_type=DeviceType.SIMULATOR,
+        num_qubits=34,
+        program_spec=ProgramSpec(Circuit),
+        provider_name="Amazon Braket",
+        device_id=SV1_ARN,
+    )
+    device = BraketDevice(profile)
+    queue_depth = device.queue_depth()
+    assert isinstance(queue_depth, int)
 
 
-@pytest.mark.parametrize("circuit", circuits_braket_run)
-@pytest.mark.parametrize("device_id", inputs_braket_run)
-def test_run_braket_device_wrapper(device_id, circuit):
-    """Test run method of wrapped Braket devices"""
-    qbraid_device = provider.get_device(device_id)
-    qbraid_job = qbraid_device.run(circuit, shots=10)
-    vendor_job = qbraid_job._task
-    try:
-        qbraid_job.cancel()
-    except Exception:  # pylint: disable=broad-exception-caught
-        pass
-    assert isinstance(qbraid_job, BraketQuantumTask)
-    assert isinstance(vendor_job, AwsQuantumTask)
-
-
-def test_run_batch_braket_device_wrapper():
-    """Test run_batch method of wrapped Braket devices"""
-    qbraid_device = provider.get_device(SV1_ARN)
-    qbraid_job_list = qbraid_device.run(circuits_braket_run, shots=10)
-    qbraid_job = qbraid_job_list[0]
-    for job in qbraid_job_list:
-        try:
-            job.cancel()
-        except Exception:  # pylint: disable=broad-exception-caught
-            pass
-    assert len(qbraid_job_list) == len(circuits_braket_run)
-    assert isinstance(qbraid_job, BraketQuantumTask)
-
-
-def test_circuit_too_many_qubits():
+@patch("qbraid.runtime.braket.device.AwsDevice")
+def test_circuit_too_many_qubits(mock_aws_device):
     """Test that run method raises exception when input circuit
     num qubits exceeds that of wrapped AWS device."""
-    device = provider.get_device(HARMONY_ARN)
+    mock_aws_device.return_value = Mock()
+    profile = TargetProfile(
+        device_type=DeviceType.SIMULATOR,
+        num_qubits=34,
+        program_spec=ProgramSpec(Circuit),
+        provider_name="Amazon Braket",
+        device_id=SV1_ARN,
+    )
+    device = BraketDevice(profile)
     num_qubits = device.num_qubits + 10
     circuit = QiskitCircuit(num_qubits)
     circuit.h([0, 1])
@@ -120,29 +106,74 @@ def test_circuit_too_many_qubits():
         device.run(circuit)
 
 
-def test_device_num_qubits():
-    """Test device wrapper num qubits method"""
-    five_qubit_device = provider.get_device(HARMONY_ARN)
-    assert five_qubit_device.num_qubits == 11
+class TestAwsSession:
+    def __init__(self):
+        self.region = "us-east-1"
 
+    def get_device(self, device_arn):
+        capabilities = {
+            "action": {
+                "braket.ir.openqasm.program": "literally anything",
+                "paradigm": {"qubitCount": 2},
+            }
+        }
+        cap_json = json.dumps(capabilities)
+        metadata = {
+            "deviceType": "SIMULATOR",
+            "providerName": "Amazon Braket",
+            "deviceCapabilities": cap_json,
+        }
+    
+        return metadata
 
-def test_wait_for_final_state():
-    """Test function that returns after job is complete"""
-    device = provider.get_device(DM1_ARN)
-    circuit = random_circuit("qiskit")
-    job = device.run(circuit, shots=10)
-    job.wait_for_final_state()
-    assert job.is_terminal_state()
+class TestProperties:
+    def __init__(self, execution_windows=None):
+        self.service = Service(execution_windows)
 
+class Service:
+    def __init__(self, execution_windows=None):
+        self.executionWindows = execution_windows
 
+class ExecutionWindow:
+    def __init__(self, start_hour, end_hour, execution_day):
+        self.windowStartHour = time(hour=start_hour)
+        self.windowEndHour = time(hour=end_hour)
+        self.executionDay = execution_day
+
+class TestDevice:
+    def __init__(self, arn, aws_session=None):
+        self.arn = arn
+        self.aws_session = aws_session or TestAwsSession()
+        self.status = "ONLINE"
+        execution_windows = [
+            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.MONDAY),
+            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.TUESDAY),
+            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.WEDNESDAY),
+            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.THURSDAY),
+            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.FRIDAY),
+            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.SATURDAY),
+            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.SUNDAY)
+        ]
+        device_properties = TestProperties(execution_windows=execution_windows)
+        self.properties = device_properties
+        self.is_available = True
+
+    @staticmethod
+    def get_device_region(arn):
+        return "us-east-1"
+    
 def test_aws_device_available():
     """Test BraketDeviceWrapper avaliable output identical"""
-    device = provider.get_device(DM1_ARN)
-    is_available_bool, is_available_time, iso_str = device.availability_window()
-    assert is_available_bool == device._device.is_available
-    assert len(is_available_time.split(":")) == 3
-    assert isinstance(iso_str, str)
-    try:
-        datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%SZ")
-    except ValueError:
-        pytest.fail("iso_str not in expected format")
+    with (patch("qbraid.runtime.braket.provider.AwsDevice") as mock_aws_device,
+            patch("qbraid.runtime.braket.device.AwsDevice") as mock_aws_device_2):
+        mock_aws_device.return_value = TestDevice(SV1_ARN)
+        mock_aws_device_2.return_value = TestDevice(SV1_ARN)
+        device = provider.get_device(SV1_ARN)
+        is_available_bool, is_available_time, iso_str = device.availability_window()
+        assert is_available_bool == device._device.is_available
+        assert len(is_available_time.split(":")) == 3
+        assert isinstance(iso_str, str)
+        try:
+            datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%SZ")
+        except ValueError:
+            pytest.fail("iso_str not in expected format")

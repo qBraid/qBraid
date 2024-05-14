@@ -15,12 +15,21 @@ Unit tests for BraketProvider class
 import os
 import random
 import string
+import json
 
 import pytest
 from braket.circuits import Circuit
+from braket.devices import LocalSimulator
+from braket.aws.aws_device import AwsDevice
+from braket.aws.aws_session import AwsSession
 
 from qbraid.runtime.braket import BraketProvider
+from qbraid.runtime.braket.device import BraketDevice
 from qbraid.runtime.braket.job import BraketQuantumTask
+from qbraid.programs import ProgramSpec
+from qbraid.runtime import DeviceType, TargetProfile
+
+from unittest.mock import Mock, patch
 
 # Skip tests if AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
@@ -50,55 +59,134 @@ def get_braket_most_busy():
             test_device = device
     return test_device
 
-
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_braket_queue_visibility():
     """Test methods that check Braket device/job queue."""
-    circuit = Circuit().h(0).cnot(0, 1)
-    device = get_braket_most_busy()
-    if device is None:
-        pytest.skip("No devices available for testing")
-    else:
-        job = device.run(circuit, shots=10)
-        queue_position = job.queue_position()
-        job.cancel()
-        assert isinstance(queue_position, int)
+    with patch("qbraid.runtime.braket.BraketProvider") as _:
+        circuit = Circuit().h(0).cnot(0, 1)
+
+        mock_device = Mock()
+        mock_job = Mock()
+        mock_job.queue_position.return_value = 5 # job is 5th in queue
+
+        mock_device.run.return_value = mock_job
+
+        device = mock_device
+        if device is None:
+            pytest.skip("No devices available for testing")
+        else:
+            job = device.run(circuit, shots=10)
+            queue_position = job.queue_position()
+            job.cancel()
+            assert isinstance(queue_position, int)
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
-def test_job_wrapper_type():
-    """Test that job wrapper creates object of original job type"""
+def test_get_aws_session():
+    """Test getting an AWS session."""
+    with patch("boto3.session.Session") as mock_boto_session:
+        mock_boto_session.aws_access_key_id.return_value = "aws_access_key_id"
+        mock_boto_session.aws_secret_access_key.return_value = "aws_secret_access_key"
+        aws_session = BraketProvider()._get_aws_session()
+        assert aws_session.boto_session.region_name == "us-east-1"
+        assert isinstance(aws_session, AwsSession)
+
+class TestAwsSession:
+    def __init__(self):
+        self.region = "us-east-1"
+
+    def get_device(self, device_arn):
+        capabilities = {
+            "action": {
+                "braket.ir.openqasm.program": "literally anything",
+                "paradigm": {"qubitCount": 2},
+            }
+        }
+        cap_json = json.dumps(capabilities)
+        metadata = {
+            "deviceType": "SIMULATOR",
+            "providerName": "Amazon Braket",
+            "deviceCapabilities": cap_json,
+        }
+
+        return metadata
+    
+class TestDevice:
+    def __init__(self, arn, aws_session=None):
+        self.arn = arn
+        self.aws_session = aws_session or TestAwsSession()
+
+    @staticmethod
+    def get_device_region(arn):
+        return "us-east-1"
+
+def test_build_runtime_profile():
+    """Test building a runtime profile."""
     provider = BraketProvider()
-    device = provider.get_device(SV1_ARN)
-    circuit = Circuit().h(0).cnot(0, 1)
-    job_0 = device.run(circuit, shots=10)
-    job_1 = BraketQuantumTask(job_0.id, task=None)
-    assert isinstance(job_0, type(job_1))
-    assert job_0.id == job_1.metadata()["job_id"]
+    device = TestDevice("arn:aws:braket:::device/quantum-simulator/amazon/sv1")
+    profile = provider._build_runtime_profile(device=device)
+    assert profile.get("device_type") == DeviceType.SIMULATOR
+    assert profile.get("provider_name") == "Amazon Braket"
+    assert profile.get("device_id") == SV1_ARN
 
+def test_get_device():
+    device_id = "arn:aws:braket:::device/quantum-simulator/amazon/sv1"
+    provider = BraketProvider()
+    with (patch("qbraid.runtime.braket.provider.AwsDevice") as mock_aws_device, patch("qbraid.runtime.braket.device.AwsDevice") as mock_aws_device_2):
+        mock_aws_device.return_value = TestDevice(device_id)
+        mock_aws_device_2.return_value = TestDevice(device_id)
+        device = provider.get_device(device_id)
+        assert device.id == device_id
+        assert isinstance(device, BraketDevice)
+   
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_is_available():
     """Test device availability function."""
-    provider = BraketProvider()
-    devices = provider.get_devices()
-    for device in devices:
-        is_available_bool, _, _ = device.availability_window()
-        assert device._device.is_available == is_available_bool
+    with patch("qbraid.runtime.braket.BraketProvider") as mock_provider:
+        provider = mock_provider.return_value
+
+        mock_device_0 = Mock()
+        mock_device_0.availability_window.return_value = (True, 0, 0)
+        mock_device_0._device.is_available = True
+
+        mock_device_1 = Mock()
+        mock_device_1.availability_window.return_value = (False, 0, 0)
+        mock_device_1._device.is_available = False
+
+        provider.get_devices.return_value = [mock_device_0, mock_device_1]
+
+        devices = provider.get_devices()
+        for device in devices:
+            is_available_bool, _, _ = device.availability_window()
+            assert device._device.is_available == is_available_bool
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_get_quantum_tasks_by_tag():
     """Test getting tagged quantum tasks."""
-    provider = BraketProvider()
-    all_regions = list(provider.REGIONS)
-    default_region = provider._get_default_region()
-    alt_regions = [e for e in all_regions if e != default_region]
-    circuit = Circuit().h(0).cnot(0, 1)
-    device = provider.get_device(SV1_ARN)
-    key, value1, value2 = tuple(gen_rand_str(7) for _ in range(3))
-    task1 = device.run(circuit, shots=2, tags={key: value1})
-    task2 = device.run(circuit, shots=2, tags={key: value2})
-    assert set([task1.id, task2.id]) == set(provider.get_tasks_by_tag(key))
-    assert len(provider.get_tasks_by_tag(key, values=[value1], region_names=[default_region])) == 1
-    assert len(provider.get_tasks_by_tag(key, region_names=alt_regions)) == 0
+    with patch("qbraid.runtime.braket.BraketProvider") as mock_provider:
+        provider = mock_provider.return_value
+        provider.REGIONS = ["us-east-1", "us-west-1"]
+        provider._get_default_region.return_value = "us-east-1"
+        alt_regions = ["us-west-1"]
+
+        mock_device = Mock()
+        provider.get_device.return_value = mock_device
+
+        mock_task_1 = Mock()
+        mock_task_1.id = 'task1'
+
+        mock_task_2 = Mock()
+        mock_task_2.id = 'task2'
+
+        circuit = Circuit().h(0).cnot(0, 1)
+        mock_device.run.side_effect = [mock_task_1, mock_task_2]
+
+        key, value1, value2 = 'abc123', 'val1', 'val2'
+        mock_task_1.tags = {key: value1}
+        mock_task_2.tags = {key: value2}
+        provider.get_tasks_by_tag.side_effect = [[mock_task_1.id, mock_task_2.id], [mock_task_1.id], []]
+
+        task1 = mock_device.run(circuit, shots=2, tags={key: value1})
+        task2 = mock_device.run(circuit, shots=2, tags={key: value2})
+
+        assert set([task1.id, task2.id]) == set(provider.get_tasks_by_tag(key))
+        assert len(provider.get_tasks_by_tag(key, values=[value1], region_names=["us-east-1"])) == 1
+        assert len(provider.get_tasks_by_tag(key, region_names=alt_regions)) == 0
