@@ -23,8 +23,8 @@ from qbraid.runtime.braket import BraketProvider
 @pytest.fixture
 def braket_most_busy():
     """Return the most busy device for testing purposes."""
-    braket_provider = BraketProvider()
-    qbraid_devices = braket_provider.get_devices(
+    provider = BraketProvider()
+    qbraid_devices = provider.get_devices(
         types=["QPU"], statuses=["ONLINE"], provider_names=["Rigetti", "IonQ", "Oxford"]
     )
 
@@ -52,3 +52,9 @@ def braket_circuit():
     circuit.h(0)
     circuit.ry(0, np.pi / 2)
     yield circuit
+
+
+@pytest.fixture
+def braket_provider():
+    """Return a BraketProvider instance."""
+    yield BraketProvider()

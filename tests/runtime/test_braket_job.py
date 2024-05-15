@@ -12,6 +12,9 @@
 Unit tests for BracketQuantumTask class
 
 """
+import os
+from unittest.mock import patch, Mock
+
 import pytest
 import os 
 
@@ -20,28 +23,15 @@ from braket.devices import LocalSimulator
 from braket.tasks.quantum_task import QuantumTask as AwsQuantumTask
 
 from qbraid.runtime.braket.job import BraketQuantumTask
-from qbraid.runtime.braket import BraketDevice, BraketProvider, BraketQuantumTask
 
-
-from unittest.mock import Mock, patch
-
-from .fixtures import braket_circuit, cirq_circuit, device_wrapper_inputs, qiskit_circuit
-
+from .fixtures import SV1_ARN, braket_circuit, cirq_circuit, device_wrapper_inputs, qiskit_circuit
 
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of AWS storage)"
-pytestmark = pytest.mark.skipif(skip_remote_tests, reason=REASON)
-
-SV1_ARN = "arn:aws:braket:::device/quantum-simulator/amazon/sv1"
-DM1_ARN = "arn:aws:braket:::device/quantum-simulator/amazon/dm1"
-HARMONY_ARN = "arn:aws:braket:us-east-1::device/qpu/ionq/Harmony"
-LUCY_ARN = "arn:aws:braket:eu-west-2::device/qpu/oqc/Lucy"
 
 inputs_braket_run = [SV1_ARN]
 inputs_braket_dw = [] if skip_remote_tests else device_wrapper_inputs("AWS")
 circuits_braket_run = [braket_circuit(), cirq_circuit(meas=False), qiskit_circuit(meas=False)]
-
-provider = BraketProvider()
 
 
 def test_braket_queue_visibility():
