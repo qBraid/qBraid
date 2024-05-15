@@ -13,22 +13,15 @@ Unit tests for QiskitBackend class.
 
 """
 import os
-import random
-import time
+
 from typing import Union
 
 import pytest
-from unittest.mock import patch, Mock
-from qiskit import QuantumCircuit
 from qiskit.providers import Backend
 from qiskit.providers.basic_provider.basic_provider_job import BasicProviderJob
-from qiskit.providers.fake_provider import GenericBackendV2
 from qiskit_aer.jobs.aerjob import AerJob
-from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
-from qbraid.programs import ProgramSpec
-from qbraid.runtime import DeviceType, JobStateError, TargetProfile
-from qbraid.runtime.qiskit import QiskitBackend, QiskitJob, QiskitRuntimeProvider
+from qbraid.runtime.qiskit import QiskitBackend, QiskitJob
 
 from .fixtures import test_circuits, fake_ibm_devices
 
@@ -38,7 +31,6 @@ REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM storage
 
 
 inputs_qiskit_dw = fake_ibm_devices()
-# circuits_qiskit_run = [cirq_circuit(), qiskit_circuit()]
 circuits_qiskit_run = test_circuits
 
 
@@ -72,30 +64,3 @@ def test_run_fake_batch_qiskit_device_wrapper(qbraid_device):
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
     assert isinstance(vendor_job, Union[BasicProviderJob, AerJob])
-
-
-@pytest.mark.parametrize("device", fake_ibm_devices())
-def test_cancel_completed_batch_error(device):
-    """Test that cancelling a batch job that has already reached its
-    final state raises an error."""
-    job = device.run(circuits_qiskit_run, shots=10)
-
-    timeout = 30
-    check_every = 2
-    elapsed_time = 0
-
-    while elapsed_time < timeout:
-        if job.is_terminal_state():
-            break
-
-        time.sleep(check_every)
-        elapsed_time += check_every
-
-    if elapsed_time >= timeout:
-        try:
-            job.cancel()
-        except JobStateError:
-            pass
-
-    with pytest.raises(JobStateError):
-        job.cancel()

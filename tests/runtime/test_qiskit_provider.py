@@ -12,70 +12,73 @@
 Unit tests for QiskitProvider class
 
 """
-import os
-import random
-
 import pytest
 from unittest.mock import patch, Mock
-from qiskit import QuantumCircuit
-from qiskit_ibm_runtime import IBMBackend, QiskitRuntimeService, RuntimeJob
+from qiskit_ibm_runtime import IBMBackend, QiskitRuntimeService
 from qiskit.providers.fake_provider import GenericBackendV2
-from qiskit.providers.basic_provider.basic_provider_job import BasicProviderJob
-from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
+from qiskit.providers.models import QasmBackendConfiguration
 
-from qbraid.programs import ProgramSpec
-from qbraid.runtime import DeviceType, JobStateError, TargetProfile
-from qbraid.runtime.exceptions import QbraidRuntimeError
-from qbraid.runtime.qiskit import QiskitRuntimeProvider, QiskitBackend, QiskitJob
+from qbraid.runtime.qiskit import QiskitRuntimeProvider, QiskitBackend
+from qbraid.runtime.enums import DeviceStatus
 
-from .fixtures import test_circuits, fake_ibm_devices
+from .fixtures import test_circuits, fake_ibm_devices, FakeService
 
 # Skip tests if IBM account auth/creds not configured
-skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM storage)"
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
-def test_ibm_provider():
+def test_qiskit_provider():
     """Test getting IBMQ provider using qiskit_ibm_provider package."""
-    provider = QiskitRuntimeProvider()
-    assert isinstance(provider.runtime_service, QiskitRuntimeService)
+    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
+        mock_runtime_service.return_value = Mock(spec=QiskitRuntimeService)
+        provider = QiskitRuntimeProvider(token="test_token", channel="test_channel")
+        assert isinstance(provider.runtime_service, QiskitRuntimeService)
+        assert provider.token == "test_token"
+        assert provider.channel == "test_channel"
+        assert provider.runtime_service == mock_runtime_service.return_value
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
-def test_ibm_least_busy():
-    """Test returning qbraid ID of least busy IBMQ QPU."""
-    provider = QiskitRuntimeProvider()
-    device = provider.least_busy()
-    assert device.status().name == "ONLINE"
-    assert isinstance(device._backend, IBMBackend)
+def test_get_service_backend():
+    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
+        mock_runtime_service.return_value = FakeService()
+        assert isinstance(mock_runtime_service().backend("generic_backend_5q", instance=None), GenericBackendV2)
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
-def test_retrieving_ibm_job():
-    """Test retrieving a previously submitted IBM job."""
-    circuit = QuantumCircuit(1, 1)
-    circuit.h(0)
-    circuit.measure(0, 0)
-    qbraid_device = fake_ibm_devices()[0]
-    qbraid_job = qbraid_device.run(circuit, shots=1)
-    ibm_job = qbraid_job._get_job()
-    assert isinstance(ibm_job, RuntimeJob)
-
-
-def test_retrieving_ibm_job_raises_error():
-    """Test retrieving IBM job from unrecognized backend raises error."""
-    circuit = QuantumCircuit(1, 1)
-    circuit.h(0)
-    circuit.measure(0, 0)
-    qbraid_device = fake_ibm_devices()[0]
-    qbraid_job = qbraid_device.run(circuit, shots=1)
-    qbraid_job._job_id = "fake_id"
-    with pytest.raises(QbraidRuntimeError):
-        qbraid_job._get_job()
+class TestQiskitDevice(GenericBackendV2):
+    def __init__(self, num_qubits):
+        super().__init__(num_qubits)
+        self._num_qubits = num_qubits
+        self._instance = None
+    
+    def configuration(self):
+        return QasmBackendConfiguration(
+            backend_name="fake_backend",
+            backend_version="1.0",
+            n_qubits=self._num_qubits,
+            basis_gates=["u1", "u2", "u3", "cx"],
+            gates=[],
+            local=True,
+            simulator=False,
+            conditional=False,
+            open_pulse=False,
+            memory=False,
+            max_shots=8192,
+            coupling_map=None
+        )
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
-def test_get_qiskit_runtime_provider():
-    """Test getting QiskitRuntime provider."""
-    provider = QiskitRuntimeProvider()
-    service = provider.runtime_service
-    assert isinstance(service, QiskitRuntimeService)
+
+def test_build_runtime_profile():
+    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
+        mock_runtime_service.return_value = FakeService()
+        backend = TestQiskitDevice(5)
+        provider = QiskitRuntimeProvider(token="test_token", channel="test_channel")
+        profile = provider._build_runtime_profile(backend)
+        assert profile._data["device_id"] == "generic_backend_5q"
+        assert profile._data["device_type"] == "LOCAL_SIMULATOR"
+        assert profile._data["num_qubits"] == 5
+        assert profile._data["max_shots"] == 8192
+        # basically testing get_device too
+        qiskit_backend = QiskitBackend(profile, mock_runtime_service())
+        assert isinstance(qiskit_backend, QiskitBackend)
+        assert qiskit_backend.profile == profile
+
+

@@ -23,7 +23,7 @@ from qbraid.runtime import DeviceType
 from qbraid.runtime.braket import BraketProvider
 from qbraid.runtime.braket.device import BraketDevice
 
-from .fixtures import SV1_ARN, TestDevice
+from .fixtures import SV1_ARN, TestAwsDevice
 
 
 def gen_rand_str(length: int) -> str:
@@ -60,7 +60,7 @@ def test_get_aws_session():
 def test_build_runtime_profile():
     """Test building a runtime profile."""
     provider = BraketProvider()
-    device = TestDevice("arn:aws:braket:::device/quantum-simulator/amazon/sv1")
+    device = TestAwsDevice("arn:aws:braket:::device/quantum-simulator/amazon/sv1")
     profile = provider._build_runtime_profile(device=device)
     assert profile.get("device_type") == DeviceType.SIMULATOR
     assert profile.get("provider_name") == "Amazon Braket"
@@ -74,8 +74,8 @@ def test_get_device():
         patch("qbraid.runtime.braket.provider.AwsDevice") as mock_aws_device,
         patch("qbraid.runtime.braket.device.AwsDevice") as mock_aws_device_2,
     ):
-        mock_aws_device.return_value = TestDevice(SV1_ARN)
-        mock_aws_device_2.return_value = TestDevice(SV1_ARN)
+        mock_aws_device.return_value = TestAwsDevice(SV1_ARN)
+        mock_aws_device_2.return_value = TestAwsDevice(SV1_ARN)
         device = provider.get_device(SV1_ARN)
         assert device.id == SV1_ARN
         assert isinstance(device, BraketDevice)

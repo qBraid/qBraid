@@ -25,7 +25,7 @@ from qbraid.runtime import DeviceType, TargetProfile
 from qbraid.runtime.braket import BraketDevice
 from qbraid.runtime.exceptions import ProgramValidationError
 
-from .fixtures import SV1_ARN, TestDevice
+from .fixtures import SV1_ARN, TestAwsDevice
 
 
 def test_device_wrapper_id_error(braket_provider):
@@ -98,8 +98,8 @@ def test_aws_device_available(braket_provider):
         patch("qbraid.runtime.braket.provider.AwsDevice") as mock_aws_device,
         patch("qbraid.runtime.braket.device.AwsDevice") as mock_aws_device_2,
     ):
-        mock_aws_device.return_value = TestDevice(SV1_ARN)
-        mock_aws_device_2.return_value = TestDevice(SV1_ARN)
+        mock_aws_device.return_value = TestAwsDevice(SV1_ARN)
+        mock_aws_device_2.return_value = TestAwsDevice(SV1_ARN)
         device = braket_provider.get_device(SV1_ARN)
         is_available_bool, is_available_time, iso_str = device.availability_window()
         assert is_available_bool == device._device.is_available

@@ -113,13 +113,13 @@ def qiskit_circuit(meas=True):
 test_circuits = []
 try:
     import cirq
-    test_circuits.append(cirq_circuit())
+    test_circuits.append(cirq_circuit(meas=False))
 except ImportError:
     pass
 
 try:
     import qiskit
-    test_circuits.append(qiskit_circuit())
+    test_circuits.append(qiskit_circuit(meas=False))
 except ImportError:
     pass
 
@@ -177,7 +177,7 @@ class TestProperties:
         self.service = Service(execution_windows)
 
 
-class TestDevice:
+class TestAwsDevice:
     """Test class for braket device."""
 
     def __init__(self, arn, aws_session=None):
@@ -216,9 +216,17 @@ class FakeService:
         """Return fake Qiskit backend."""
         return [GenericBackendV2(num_qubits=5), GenericBackendV2(num_qubits=20)]
 
+    def backend_names(self, **kwargs):
+        """Return fake backend names."""
+        return [backend.name for backend in self.backends(**kwargs)]
+    
     def least_busy(self, **kwargs):
         """Return least busy backend."""
         return random.choice(self.backends(**kwargs))
+    
+    def job(self, job_id):
+        """Return fake job."""
+        return 
 
 
 def ibm_devices():
