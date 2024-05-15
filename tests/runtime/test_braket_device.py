@@ -12,41 +12,27 @@
 Unit tests for BraketDevice class
 
 """
-import os
-import json
-from datetime import datetime, time
+from datetime import datetime
+from unittest.mock import Mock, patch
 
 import pytest
-from unittest.mock import patch, Mock
-
-from braket.circuits import Circuit
-from braket.aws.aws_device import AwsDevice
-from braket.tasks.quantum_task import QuantumTask as AwsQuantumTask
 from braket.aws.queue_information import QueueDepthInfo, QueueType
-from braket.device_schema import ExecutionDay
-
+from braket.circuits import Circuit
 from qiskit import QuantumCircuit as QiskitCircuit
 
-from qbraid.interface import random_circuit
-from qbraid.runtime import ResourceNotFoundError, DeviceType, TargetProfile
-from qbraid.runtime.braket import BraketDevice, BraketProvider, BraketQuantumTask
-from qbraid.runtime.exceptions import ProgramValidationError
 from qbraid.programs import ProgramSpec
+from qbraid.runtime import DeviceType, TargetProfile
+from qbraid.runtime.braket import BraketDevice
+from qbraid.runtime.exceptions import ProgramValidationError
 
-from .fixtures import braket_circuit, cirq_circuit, device_wrapper_inputs, qiskit_circuit
-
-SV1_ARN = "arn:aws:braket:::device/quantum-simulator/amazon/sv1"
-DM1_ARN = "arn:aws:braket:::device/quantum-simulator/amazon/dm1"
-HARMONY_ARN = "arn:aws:braket:us-east-1::device/qpu/ionq/Harmony"
-LUCY_ARN = "arn:aws:braket:eu-west-2::device/qpu/oqc/Lucy"
-
-provider = BraketProvider()
+from .fixtures import SV1_ARN, TestDevice
 
 
-def test_device_wrapper_id_error():
+def test_device_wrapper_id_error(braket_provider):
     """Test raising device wrapper error due to invalid device ID."""
-    with pytest.raises(ResourceNotFoundError):
-        provider.get_device("Id123")
+    with pytest.raises(ValueError):
+        braket_provider.get_device("Id123")
+
 
 @patch("qbraid.runtime.braket.device.AwsDevice")
 def test_device_profile_attributes(mock_aws_device):
@@ -106,69 +92,15 @@ def test_circuit_too_many_qubits(mock_aws_device):
         device.run(circuit)
 
 
-class TestAwsSession:
-    def __init__(self):
-        self.region = "us-east-1"
-
-    def get_device(self, device_arn):
-        capabilities = {
-            "action": {
-                "braket.ir.openqasm.program": "literally anything",
-                "paradigm": {"qubitCount": 2},
-            }
-        }
-        cap_json = json.dumps(capabilities)
-        metadata = {
-            "deviceType": "SIMULATOR",
-            "providerName": "Amazon Braket",
-            "deviceCapabilities": cap_json,
-        }
-    
-        return metadata
-
-class TestProperties:
-    def __init__(self, execution_windows=None):
-        self.service = Service(execution_windows)
-
-class Service:
-    def __init__(self, execution_windows=None):
-        self.executionWindows = execution_windows
-
-class ExecutionWindow:
-    def __init__(self, start_hour, end_hour, execution_day):
-        self.windowStartHour = time(hour=start_hour)
-        self.windowEndHour = time(hour=end_hour)
-        self.executionDay = execution_day
-
-class TestDevice:
-    def __init__(self, arn, aws_session=None):
-        self.arn = arn
-        self.aws_session = aws_session or TestAwsSession()
-        self.status = "ONLINE"
-        execution_windows = [
-            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.MONDAY),
-            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.TUESDAY),
-            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.WEDNESDAY),
-            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.THURSDAY),
-            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.FRIDAY),
-            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.SATURDAY),
-            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.SUNDAY)
-        ]
-        device_properties = TestProperties(execution_windows=execution_windows)
-        self.properties = device_properties
-        self.is_available = True
-
-    @staticmethod
-    def get_device_region(arn):
-        return "us-east-1"
-    
-def test_aws_device_available():
+def test_aws_device_available(braket_provider):
     """Test BraketDeviceWrapper avaliable output identical"""
-    with (patch("qbraid.runtime.braket.provider.AwsDevice") as mock_aws_device,
-            patch("qbraid.runtime.braket.device.AwsDevice") as mock_aws_device_2):
+    with (
+        patch("qbraid.runtime.braket.provider.AwsDevice") as mock_aws_device,
+        patch("qbraid.runtime.braket.device.AwsDevice") as mock_aws_device_2,
+    ):
         mock_aws_device.return_value = TestDevice(SV1_ARN)
         mock_aws_device_2.return_value = TestDevice(SV1_ARN)
-        device = provider.get_device(SV1_ARN)
+        device = braket_provider.get_device(SV1_ARN)
         is_available_bool, is_available_time, iso_str = device.availability_window()
         assert is_available_bool == device._device.is_available
         assert len(is_available_time.split(":")) == 3

@@ -15,27 +15,21 @@ Unit tests for BraketProvider class
 import os
 import random
 import string
-import json
+from unittest.mock import Mock, patch
 
 import pytest
-from braket.circuits import Circuit
-from braket.devices import LocalSimulator
-from braket.aws.aws_device import AwsDevice
 from braket.aws.aws_session import AwsSession
+from braket.circuits import Circuit
 
+from qbraid.runtime import DeviceType
 from qbraid.runtime.braket import BraketProvider
 from qbraid.runtime.braket.device import BraketDevice
-from qbraid.runtime.braket.job import BraketQuantumTask
-from qbraid.programs import ProgramSpec
-from qbraid.runtime import DeviceType, TargetProfile
 
-from unittest.mock import Mock, patch
+from .fixtures import SV1_ARN, TestDevice
 
 # Skip tests if AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of AWS storage)"
-
-SV1_ARN = "arn:aws:braket:::device/quantum-simulator/amazon/sv1"
 
 
 def gen_rand_str(length: int) -> str:
@@ -59,6 +53,7 @@ def get_braket_most_busy():
             test_device = device
     return test_device
 
+
 def test_braket_queue_visibility():
     """Test methods that check Braket device/job queue."""
     with patch("qbraid.runtime.braket.BraketProvider") as _:
@@ -66,7 +61,7 @@ def test_braket_queue_visibility():
 
         mock_device = Mock()
         mock_job = Mock()
-        mock_job.queue_position.return_value = 5 # job is 5th in queue
+        mock_job.queue_position.return_value = 5  # job is 5th in queue
 
         mock_device.run.return_value = mock_job
 
@@ -89,34 +84,6 @@ def test_get_aws_session():
         assert aws_session.boto_session.region_name == "us-east-1"
         assert isinstance(aws_session, AwsSession)
 
-class TestAwsSession:
-    def __init__(self):
-        self.region = "us-east-1"
-
-    def get_device(self, device_arn):
-        capabilities = {
-            "action": {
-                "braket.ir.openqasm.program": "literally anything",
-                "paradigm": {"qubitCount": 2},
-            }
-        }
-        cap_json = json.dumps(capabilities)
-        metadata = {
-            "deviceType": "SIMULATOR",
-            "providerName": "Amazon Braket",
-            "deviceCapabilities": cap_json,
-        }
-
-        return metadata
-    
-class TestDevice:
-    def __init__(self, arn, aws_session=None):
-        self.arn = arn
-        self.aws_session = aws_session or TestAwsSession()
-
-    @staticmethod
-    def get_device_region(arn):
-        return "us-east-1"
 
 def test_build_runtime_profile():
     """Test building a runtime profile."""
@@ -127,16 +94,20 @@ def test_build_runtime_profile():
     assert profile.get("provider_name") == "Amazon Braket"
     assert profile.get("device_id") == SV1_ARN
 
+
 def test_get_device():
-    device_id = "arn:aws:braket:::device/quantum-simulator/amazon/sv1"
+    """Test getting a Braket device."""
     provider = BraketProvider()
-    with (patch("qbraid.runtime.braket.provider.AwsDevice") as mock_aws_device, patch("qbraid.runtime.braket.device.AwsDevice") as mock_aws_device_2):
-        mock_aws_device.return_value = TestDevice(device_id)
-        mock_aws_device_2.return_value = TestDevice(device_id)
-        device = provider.get_device(device_id)
-        assert device.id == device_id
+    with (
+        patch("qbraid.runtime.braket.provider.AwsDevice") as mock_aws_device,
+        patch("qbraid.runtime.braket.device.AwsDevice") as mock_aws_device_2,
+    ):
+        mock_aws_device.return_value = TestDevice(SV1_ARN)
+        mock_aws_device_2.return_value = TestDevice(SV1_ARN)
+        device = provider.get_device(SV1_ARN)
+        assert device.id == SV1_ARN
         assert isinstance(device, BraketDevice)
-   
+
 
 def test_is_available():
     """Test device availability function."""
@@ -171,18 +142,22 @@ def test_get_quantum_tasks_by_tag():
         provider.get_device.return_value = mock_device
 
         mock_task_1 = Mock()
-        mock_task_1.id = 'task1'
+        mock_task_1.id = "task1"
 
         mock_task_2 = Mock()
-        mock_task_2.id = 'task2'
+        mock_task_2.id = "task2"
 
         circuit = Circuit().h(0).cnot(0, 1)
         mock_device.run.side_effect = [mock_task_1, mock_task_2]
 
-        key, value1, value2 = 'abc123', 'val1', 'val2'
+        key, value1, value2 = "abc123", "val1", "val2"
         mock_task_1.tags = {key: value1}
         mock_task_2.tags = {key: value2}
-        provider.get_tasks_by_tag.side_effect = [[mock_task_1.id, mock_task_2.id], [mock_task_1.id], []]
+        provider.get_tasks_by_tag.side_effect = [
+            [mock_task_1.id, mock_task_2.id],
+            [mock_task_1.id],
+            [],
+        ]
 
         task1 = mock_device.run(circuit, shots=2, tags={key: value1})
         task2 = mock_device.run(circuit, shots=2, tags={key: value2})
