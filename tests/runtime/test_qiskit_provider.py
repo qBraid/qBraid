@@ -13,18 +13,62 @@ Unit tests for QiskitProvider class
 
 """
 import os
+import random
 
 import pytest
+from unittest.mock import patch, Mock
 from qiskit import QuantumCircuit
 from qiskit_ibm_runtime import IBMBackend, QiskitRuntimeService, RuntimeJob
+from qiskit.providers.fake_provider import GenericBackendV2
+from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
+from qbraid.programs import ProgramSpec
+from qbraid.runtime import DeviceType, JobStateError, TargetProfile
 from qbraid.runtime.exceptions import QbraidRuntimeError
-from qbraid.runtime.qiskit import QiskitRuntimeProvider
+from qbraid.runtime.qiskit import QiskitRuntimeProvider, QiskitBackend, QiskitJob
+
 
 # Skip tests if IBM account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM storage)"
 
+class FakeService:
+    """Fake Qiskit runtime service for testing."""
+    def backend(self, backend_name, instance=None):
+        """Return fake backend."""
+        for backend in self.backends(instance=instance):
+            if backend_name == backend.name:
+                return backend
+        raise QiskitBackendNotFoundError("No backend matches the criteria.")
+
+    def backends(self, **kwargs):  # pylint: disable=unused-argument
+        """Return fake Qiskit backend."""
+        return [GenericBackendV2(num_qubits=5), GenericBackendV2(num_qubits=20)]
+
+    def least_busy(self, **kwargs):
+        """Return least busy backend."""
+        return random.choice(self.backends(**kwargs))
+
+
+def ibm_devices():
+    """Get list of wrapped ibm backends for testing."""
+    provider = QiskitRuntimeProvider()
+    backends = provider.get_devices(
+        filters=lambda b: b.status().status_msg == "active", operational=True
+    )
+    return [backend.id for backend in backends]
+
+
+def fake_ibm_devices():
+    """Get list of fake wrapped ibm backends for testing"""
+    service = FakeService()
+    backends = service.backends()
+    program_spec = ProgramSpec(QuantumCircuit)
+    profiles = [
+        TargetProfile(backend.name, DeviceType.LOCAL_SIMULATOR, backend.num_qubits, program_spec)
+        for backend in backends
+    ]
+    return [QiskitBackend(profile, service) for profile in profiles]
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_ibm_provider():
@@ -45,24 +89,21 @@ def test_ibm_least_busy():
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_retrieving_ibm_job():
     """Test retrieving a previously submitted IBM job."""
-    provider = QiskitRuntimeProvider()
     circuit = QuantumCircuit(1, 1)
     circuit.h(0)
     circuit.measure(0, 0)
-    qbraid_device = provider.get_device("ibmq_qasm_simulator")
+    qbraid_device = fake_ibm_devices()[0]
     qbraid_job = qbraid_device.run(circuit, shots=1)
     ibm_job = qbraid_job._get_job()
     assert isinstance(ibm_job, RuntimeJob)
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_retrieving_ibm_job_raises_error():
     """Test retrieving IBM job from unrecognized backend raises error."""
-    provider = QiskitRuntimeProvider()
     circuit = QuantumCircuit(1, 1)
     circuit.h(0)
     circuit.measure(0, 0)
-    qbraid_device = provider.get_device("ibmq_qasm_simulator")
+    qbraid_device = fake_ibm_devices()[0]
     qbraid_job = qbraid_device.run(circuit, shots=1)
     qbraid_job._job_id = "fake_id"
     with pytest.raises(QbraidRuntimeError):

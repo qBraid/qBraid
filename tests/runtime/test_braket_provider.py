@@ -59,27 +59,6 @@ def get_braket_most_busy():
             test_device = device
     return test_device
 
-def test_braket_queue_visibility():
-    """Test methods that check Braket device/job queue."""
-    with patch("qbraid.runtime.braket.BraketProvider") as _:
-        circuit = Circuit().h(0).cnot(0, 1)
-
-        mock_device = Mock()
-        mock_job = Mock()
-        mock_job.queue_position.return_value = 5 # job is 5th in queue
-
-        mock_device.run.return_value = mock_job
-
-        device = mock_device
-        if device is None:
-            pytest.skip("No devices available for testing")
-        else:
-            job = device.run(circuit, shots=10)
-            queue_position = job.queue_position()
-            job.cancel()
-            assert isinstance(queue_position, int)
-
-
 def test_get_aws_session():
     """Test getting an AWS session."""
     with patch("boto3.session.Session") as mock_boto_session:
@@ -136,7 +115,6 @@ def test_get_device():
         device = provider.get_device(device_id)
         assert device.id == device_id
         assert isinstance(device, BraketDevice)
-   
 
 def test_is_available():
     """Test device availability function."""
@@ -157,7 +135,6 @@ def test_is_available():
         for device in devices:
             is_available_bool, _, _ = device.availability_window()
             assert device._device.is_available == is_available_bool
-
 
 def test_get_quantum_tasks_by_tag():
     """Test getting tagged quantum tasks."""

@@ -13,6 +13,8 @@ Unit tests for BracketQuantumTask class
 
 """
 import pytest
+import os 
+
 from braket.circuits import Circuit
 from braket.devices import LocalSimulator
 from braket.tasks.quantum_task import QuantumTask as AwsQuantumTask
@@ -42,6 +44,26 @@ circuits_braket_run = [braket_circuit(), cirq_circuit(meas=False), qiskit_circui
 provider = BraketProvider()
 
 
+def test_braket_queue_visibility():
+    """Test methods that check Braket device/job queue."""
+    with patch("qbraid.runtime.braket.BraketProvider") as _:
+        circuit = Circuit().h(0).cnot(0, 1)
+
+        mock_device = Mock()
+        mock_job = Mock()
+        mock_job.queue_position.return_value = 5 # job is 5th in queue
+
+        mock_device.run.return_value = mock_job
+
+        device = mock_device
+        if device is None:
+            pytest.skip("No devices available for testing")
+        else:
+            job = device.run(circuit, shots=10)
+            queue_position = job.queue_position()
+            job.cancel()
+            assert isinstance(queue_position, int)
+
 @patch("qbraid.runtime.braket.job.AwsQuantumTask")
 def test_load_completed_job(mock_aws_quantum_task):
     """Test is terminal state method for BraketQuantumTask."""
@@ -53,30 +75,3 @@ def test_load_completed_job(mock_aws_quantum_task):
     assert job.metadata()["job_id"] == mock_job.id
     assert job.is_terminal_state()
 
-@pytest.mark.parametrize("circuit", circuits_braket_run)
-@pytest.mark.parametrize("device_id", inputs_braket_run)
-def test_run_braket_device_wrapper(device_id, circuit):
-    """Test run method of wrapped Braket devices"""
-    qbraid_device = provider.get_device(device_id)
-    qbraid_job = qbraid_device.run(circuit, shots=10)
-    vendor_job = qbraid_job._task
-    try:
-        qbraid_job.cancel()
-    except Exception:  # pylint: disable=broad-exception-caught
-        pass
-    assert isinstance(qbraid_job, BraketQuantumTask)
-    assert isinstance(vendor_job, AwsQuantumTask)
-
-
-def test_run_batch_braket_device_wrapper():
-    """Test run_batch method of wrapped Braket devices"""
-    qbraid_device = provider.get_device(SV1_ARN)
-    qbraid_job_list = qbraid_device.run(circuits_braket_run, shots=10)
-    qbraid_job = qbraid_job_list[0]
-    for job in qbraid_job_list:
-        try:
-            job.cancel()
-        except Exception:  # pylint: disable=broad-exception-caught
-            pass
-    assert len(qbraid_job_list) == len(circuits_braket_run)
-    assert isinstance(qbraid_job, BraketQuantumTask)

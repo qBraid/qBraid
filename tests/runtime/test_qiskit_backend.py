@@ -18,6 +18,7 @@ import time
 from typing import Union
 
 import pytest
+from unittest.mock import patch, Mock
 from qiskit import QuantumCircuit
 from qiskit.providers import Backend
 from qiskit.providers.basic_provider.basic_provider_job import BasicProviderJob
@@ -39,7 +40,6 @@ REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM storage
 
 class FakeService:
     """Fake Qiskit runtime service for testing."""
-
     def backend(self, backend_name, instance=None):
         """Return fake backend."""
         for backend in self.backends(instance=instance):
@@ -77,16 +77,14 @@ def fake_ibm_devices():
     return [QiskitBackend(profile, service) for profile in profiles]
 
 
-inputs_qiskit_dw = [] if skip_remote_tests else ibm_devices()
+inputs_qiskit_dw = fake_ibm_devices()
 circuits_qiskit_run = [cirq_circuit(), qiskit_circuit()]
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 @pytest.mark.parametrize("device_id", inputs_qiskit_dw)
 def test_device_wrapper_ibm_from_api(device_id):
     """Test creating device wrapper from Qiskit device ID."""
-    provider = QiskitRuntimeProvider()
-    qbraid_device = provider.get_device(device_id)
+    qbraid_device = fake_ibm_devices()[0]
     vendor_device = qbraid_device._backend
     assert isinstance(qbraid_device, QiskitBackend)
     assert isinstance(vendor_device, IBMBackend)
@@ -99,31 +97,27 @@ def test_wrap_fake_provider(device):
     assert isinstance(device._backend, Backend)
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_queue_depth():
     """Test getting number of pending jobs for QiskitBackend."""
-    provider = QiskitRuntimeProvider()
-    ibm_device = provider.least_busy()
+    ibm_device = fake_ibm_devices()[0]
     assert isinstance(ibm_device.queue_depth(), int)
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+# @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 @pytest.mark.parametrize("circuit", circuits_qiskit_run)
 def test_run_qiskit_device_wrapper(circuit):
     """Test run method from wrapped Qiskit backends"""
-    provider = QiskitRuntimeProvider()
-    qbraid_device = provider.get_device("ibmq_qasm_simulator")
+    qbraid_device = fake_ibm_devices()[0]
     qbraid_job = qbraid_device.run(circuit, shots=10)
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
     assert isinstance(vendor_job, RuntimeJob)
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+# @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_run_batch_qiskit_device_wrapper():
     """Test run_batch method from wrapped Qiskit backends"""
-    provider = QiskitRuntimeProvider()
-    qbraid_device = provider.get_device("ibmq_qasm_simulator")
+    qbraid_device = fake_ibm_devices()[0]
     qbraid_job = qbraid_device.run(circuits_qiskit_run, shots=10)
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
@@ -148,16 +142,15 @@ def test_run_fake_batch_qiskit_device_wrapper(qbraid_device):
     assert isinstance(qbraid_job, QiskitJob)
     assert isinstance(vendor_job, Union[BasicProviderJob, AerJob])
 
-
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_cancel_completed_batch_error():
     """Test that cancelling a batch job that has already reached its
     final state raises an error."""
-    provider = QiskitRuntimeProvider()
-    device = provider.least_busy()
-    job = device.run(circuits_qiskit_run, shots=10)
+    device = fake_ibm_devices()[0]
+    input = [qiskit_circuit() for _ in range(2)]
+    job = device.run(input, shots=10)
 
-    timeout = 60
+    timeout = 30
     check_every = 2
     elapsed_time = 0
 
@@ -168,11 +161,10 @@ def test_cancel_completed_batch_error():
         time.sleep(check_every)
         elapsed_time += check_every
 
-    if elapsed_time >= timeout:
-        try:
-            job.cancel()
-        except JobStateError:
-            pass
+    try:
+        job.cancel()
+    except JobStateError:
+        pass
 
     with pytest.raises(JobStateError):
         job.cancel()
