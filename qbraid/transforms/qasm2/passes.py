@@ -62,6 +62,8 @@ def unfold_qasm_gate_defs(qasm_string):
         r"gate ([a-zA-Z0-9_]+)(\((.*?)\))? ((q[0-9]+,)*q[0-9]+) {(.*?)}"
     )
 
+    gate_body = ""
+    params_list = []
     gate_usage_match = None
 
     # Find gate definition and extract its components

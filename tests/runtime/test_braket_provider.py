@@ -15,12 +15,15 @@ Unit tests for BraketProvider class
 import os
 import random
 import string
+from unittest.mock import Mock, patch
 
 import pytest
 from braket.circuits import Circuit
+from braket.devices import LocalSimulator
 
-from qbraid.runtime.braket import BraketProvider
-from qbraid.runtime.braket.job import BraketQuantumTask
+from qbraid.programs import ProgramSpec
+from qbraid.runtime import DeviceType, TargetProfile
+from qbraid.runtime.braket import BraketDevice, BraketProvider, BraketQuantumTask
 
 # Skip tests if AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
@@ -65,16 +68,34 @@ def test_braket_queue_visibility():
         assert isinstance(queue_position, int)
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
-def test_job_wrapper_type():
-    """Test that job wrapper creates object of original job type"""
-    provider = BraketProvider()
-    device = provider.get_device(SV1_ARN)
+@patch("qbraid.runtime.braket.device.AwsDevice")
+def test_device_profile_attributes(mock_aws_device):
+    """Test that device profile attributes are correctly set."""
+    mock_aws_device.return_value = Mock()
+    profile = TargetProfile(
+        device_type=DeviceType.SIMULATOR,
+        num_qubits=34,
+        program_spec=ProgramSpec(Circuit),
+        provider_name="Amazon Braket",
+        device_id=SV1_ARN,
+    )
+    device = BraketDevice(profile)
+    assert device.id == profile.get("device_id")
+    assert device.num_qubits == profile.get("num_qubits")
+    assert device._target_spec == profile.get("program_spec")
+    assert device.device_type == DeviceType(profile.get("device_type"))
+
+
+@patch("qbraid.runtime.braket.job.AwsQuantumTask")
+def test_load_completed_job(mock_aws_quantum_task):
+    """Test is terminal state method for BraketQuantumTask."""
     circuit = Circuit().h(0).cnot(0, 1)
-    job_0 = device.run(circuit, shots=10)
-    job_1 = BraketQuantumTask(job_0.id, task=None)
-    assert isinstance(job_0, type(job_1))
-    assert job_0.id == job_1.metadata()["job_id"]
+    mock_device = LocalSimulator()
+    moock_job = mock_device.run(circuit, shots=10)
+    mock_aws_quantum_task.return_value = moock_job
+    job = BraketQuantumTask(moock_job.id)
+    assert job.metadata()["job_id"] == moock_job.id
+    assert job.is_terminal_state()
 
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)

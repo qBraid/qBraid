@@ -145,6 +145,7 @@ class BraketDevice(QuantumDevice):
 
             start_time = execution_window.windowStartHour
             end_time = current_time_utc
+            day_factor = 0
 
             if day == 0:
                 day_factor = day
