@@ -24,14 +24,14 @@ from braket.tasks.quantum_task import QuantumTask as AwsQuantumTask
 
 from qbraid.runtime.braket.job import BraketQuantumTask
 
-from .fixtures import SV1_ARN, braket_circuit, cirq_circuit, device_wrapper_inputs, qiskit_circuit
+from .fixtures import SV1_ARN, device_wrapper_inputs, test_circuits
 
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of AWS storage)"
 
 inputs_braket_run = [SV1_ARN]
 inputs_braket_dw = [] if skip_remote_tests else device_wrapper_inputs("AWS")
-circuits_braket_run = [braket_circuit(), cirq_circuit(meas=False), qiskit_circuit(meas=False)]
+circuits_braket_run = test_circuits
 
 
 def test_braket_queue_visibility():

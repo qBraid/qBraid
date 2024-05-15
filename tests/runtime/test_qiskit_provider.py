@@ -28,48 +28,11 @@ from qbraid.runtime import DeviceType, JobStateError, TargetProfile
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.qiskit import QiskitRuntimeProvider, QiskitBackend, QiskitJob
 
+from .fixtures import test_circuits, fake_ibm_devices
 
 # Skip tests if IBM account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM storage)"
-
-class FakeService:
-    """Fake Qiskit runtime service for testing."""
-    def backend(self, backend_name, instance=None):
-        """Return fake backend."""
-        for backend in self.backends(instance=instance):
-            if backend_name == backend.name:
-                return backend
-        raise QiskitBackendNotFoundError("No backend matches the criteria.")
-
-    def backends(self, **kwargs):  # pylint: disable=unused-argument
-        """Return fake Qiskit backend."""
-        return [GenericBackendV2(num_qubits=5), GenericBackendV2(num_qubits=20)]
-
-    def least_busy(self, **kwargs):
-        """Return least busy backend."""
-        return random.choice(self.backends(**kwargs))
-
-
-def ibm_devices():
-    """Get list of wrapped ibm backends for testing."""
-    provider = QiskitRuntimeProvider()
-    backends = provider.get_devices(
-        filters=lambda b: b.status().status_msg == "active", operational=True
-    )
-    return [backend.id for backend in backends]
-
-
-def fake_ibm_devices():
-    """Get list of fake wrapped ibm backends for testing"""
-    service = FakeService()
-    backends = service.backends()
-    program_spec = ProgramSpec(QuantumCircuit)
-    profiles = [
-        TargetProfile(backend.name, DeviceType.LOCAL_SIMULATOR, backend.num_qubits, program_spec)
-        for backend in backends
-    ]
-    return [QiskitBackend(profile, service) for profile in profiles]
 
 @pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_ibm_provider():
@@ -86,7 +49,7 @@ def test_ibm_least_busy():
     assert device.status().name == "ONLINE"
     assert isinstance(device._backend, IBMBackend)
 
-
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_retrieving_ibm_job():
     """Test retrieving a previously submitted IBM job."""
     circuit = QuantumCircuit(1, 1)

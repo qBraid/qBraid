@@ -12,12 +12,10 @@
 Unit tests for BraketProvider class
 
 """
-import os
 import random
 import string
 from unittest.mock import Mock, patch
 
-import pytest
 from braket.aws.aws_session import AwsSession
 from braket.circuits import Circuit
 
@@ -26,10 +24,6 @@ from qbraid.runtime.braket import BraketProvider
 from qbraid.runtime.braket.device import BraketDevice
 
 from .fixtures import SV1_ARN, TestDevice
-
-# Skip tests if AWS account auth/creds not configured
-skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
-REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of AWS storage)"
 
 
 def gen_rand_str(length: int) -> str:

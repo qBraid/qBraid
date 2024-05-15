@@ -13,6 +13,7 @@ Helper functions for providers testing
 
 """
 import json
+import random
 from datetime import time
 
 import braket.circuits
@@ -20,9 +21,15 @@ import cirq
 import numpy as np
 import qiskit
 from braket.device_schema import ExecutionDay
+from qiskit import QuantumCircuit
+from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
+from qiskit.providers.fake_provider import GenericBackendV2
 
+from qbraid.programs import ProgramSpec
+from qbraid.runtime import DeviceType, TargetProfile
 from qbraid.runtime.braket import BraketProvider
-from qbraid.runtime.qiskit import QiskitRuntimeProvider
+from qbraid.runtime.qiskit import QiskitBackend, QiskitRuntimeProvider
+
 
 SV1_ARN = "arn:aws:braket:::device/quantum-simulator/amazon/sv1"
 DM1_ARN = "arn:aws:braket:::device/quantum-simulator/amazon/dm1"
@@ -103,7 +110,26 @@ def qiskit_circuit(meas=True):
         circuit.measure(0, 0)
     return circuit
 
+test_circuits = []
+try:
+    import cirq
+    test_circuits.append(cirq_circuit())
+except ImportError:
+    pass
 
+try:
+    import qiskit
+    test_circuits.append(qiskit_circuit())
+except ImportError:
+    pass
+
+try:
+    import braket.circuits
+    test_circuits.append(braket_circuit())
+except ImportError:
+    pass
+
+## AWS dummy fixtures
 class TestAwsSession:
     """Test class for AWS session."""
 
@@ -175,3 +201,43 @@ class TestDevice:
     def get_device_region(arn):  # pylint: disable=unused-argument
         """Returns the region of a device."""
         return "us-east-1"
+
+## Qiskit dummy fixtures
+class FakeService:
+    """Fake Qiskit runtime service for testing."""
+    def backend(self, backend_name, instance=None):
+        """Return fake backend."""
+        for backend in self.backends(instance=instance):
+            if backend_name == backend.name:
+                return backend
+        raise QiskitBackendNotFoundError("No backend matches the criteria.")
+
+    def backends(self, **kwargs):  # pylint: disable=unused-argument
+        """Return fake Qiskit backend."""
+        return [GenericBackendV2(num_qubits=5), GenericBackendV2(num_qubits=20)]
+
+    def least_busy(self, **kwargs):
+        """Return least busy backend."""
+        return random.choice(self.backends(**kwargs))
+
+
+def ibm_devices():
+    """Get list of wrapped ibm backends for testing."""
+    provider = QiskitRuntimeProvider()
+    backends = provider.get_devices(
+        filters=lambda b: b.status().status_msg == "active", operational=True
+    )
+    return [backend.id for backend in backends]
+
+
+def fake_ibm_devices():
+    """Get list of fake wrapped ibm backends for testing"""
+    service = FakeService()
+    backends = service.backends()
+    program_spec = ProgramSpec(QuantumCircuit)
+    profiles = [
+        TargetProfile(backend.name, DeviceType.LOCAL_SIMULATOR, backend.num_qubits, program_spec)
+        for backend in backends
+    ]
+    return [QiskitBackend(profile, service) for profile in profiles]
+
