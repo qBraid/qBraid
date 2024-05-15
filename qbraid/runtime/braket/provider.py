@@ -26,7 +26,7 @@ from qbraid_core.services.quantum.proxy_braket import aws_configure
 
 from qbraid.exceptions import QbraidError
 from qbraid.programs import ProgramSpec
-from qbraid.runtime import DeviceType, QuantumProvider, TargetProfile
+from qbraid.runtime import DeviceType, QuantumProvider, TargetProfile, ResourceNotFoundError
 
 from .device import BraketDevice
 
@@ -157,11 +157,7 @@ class BraketProvider(QuantumProvider):
         try:
             region_name = device_id.split(":")[3]
         except IndexError as err:
-<<<<<<< HEAD
             raise ResourceNotFoundError(
-=======
-            raise ValueError(
->>>>>>> refs/remotes/origin/rj-refactoring
                 f"Device ARN is not a valid format: {device_id}. For valid Braket ARNs, "
                 "see 'https://docs.aws.amazon.com/braket/latest/developerguide/braket-devices.html'"
             ) from err

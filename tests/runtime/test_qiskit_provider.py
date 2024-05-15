@@ -20,6 +20,7 @@ from unittest.mock import patch, Mock
 from qiskit import QuantumCircuit
 from qiskit_ibm_runtime import IBMBackend, QiskitRuntimeService, RuntimeJob
 from qiskit.providers.fake_provider import GenericBackendV2
+from qiskit.providers.basic_provider.basic_provider_job import BasicProviderJob
 from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
 from qbraid.programs import ProgramSpec
@@ -86,7 +87,6 @@ def test_ibm_least_busy():
     assert isinstance(device._backend, IBMBackend)
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_retrieving_ibm_job():
     """Test retrieving a previously submitted IBM job."""
     circuit = QuantumCircuit(1, 1)

@@ -72,7 +72,7 @@ class QiskitJob(QuantumJob):
 
     def cancel(self):
         """Attempt to cancel the job."""
-        if not self.is_terminal_state():
+        if self.is_terminal_state():
             raise JobStateError("Cannot cancel quantum job in non-terminal state.")
         try:
             return self._job.cancel()
