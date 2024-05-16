@@ -12,16 +12,20 @@
 Module for converting Braket circuits to/from OpenQASM 3
 
 """
-from braket.circuits import Circuit
-from braket.ir.openqasm import Program as OpenQasmProgram
+from typing import TYPE_CHECKING
 
+from qbraid._import import LazyLoader
 from qbraid.programs import QasmError
-from qbraid.transforms.qasm3.compat import qasm3_braket_pre_process
+from qbraid.transforms.qasm3.compat import transform_notation_to_external
 
-QASMType = str
+braket_circuits = LazyLoader("braket_circuits", globals(), "braket.circuits")
+braket_openqasm = LazyLoader("braket_openqasm", globals(), "braket.ir.openqasm")
+
+if TYPE_CHECKING:
+    import braket.circuits
 
 
-def qasm3_to_braket(qasm3_str: QASMType) -> Circuit:
+def qasm3_to_braket(qasm3_str: str) -> "braket.circuits.Circuit":
     """Converts an OpenQASM 3.0 string to a ``braket.circuits.Circuit``.
 
     Args:
@@ -34,10 +38,10 @@ def qasm3_to_braket(qasm3_str: QASMType) -> Circuit:
         CircuitConversionError: If qasm to braket conversion fails
 
     """
-    qasm3_str = qasm3_braket_pre_process(qasm3_str)
+    qasm3_str = transform_notation_to_external(qasm3_str)
 
     try:
-        program = OpenQasmProgram(source=qasm3_str)
-        return Circuit.from_ir(source=program.source, inputs=program.inputs)
+        program = braket_openqasm.Program(source=qasm3_str)
+        return braket_circuits.Circuit.from_ir(source=program.source, inputs=program.inputs)
     except Exception as err:
         raise QasmError("Error converting qasm3 string to braket circuit") from err

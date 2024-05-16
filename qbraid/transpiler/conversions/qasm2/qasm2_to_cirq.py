@@ -12,18 +12,22 @@
 Module for conversions from QASM 2 to Cirq Circuits
 
 """
-import cirq
-from cirq.contrib.qasm_import.exception import QasmException as CirqQasmException
+from typing import TYPE_CHECKING
 
-from qbraid.programs.exceptions import QasmError as QbraidQasmError
+from qbraid._import import LazyLoader
+from qbraid.programs.exceptions import QasmError
 from qbraid.transforms.qasm2 import flatten_qasm_program
 
-from .cirq_qasm_parser import QasmParser
+cirq_qasm_import = LazyLoader("cirq_contrib", globals(), "cirq.contrib.qasm_import")
+cirq_qasm_parser = LazyLoader(
+    "cirq_qasm_parser", globals(), "qbraid.transpiler.conversions.qasm2.cirq_qasm_parser"
+)
 
-QASMType = str
+if TYPE_CHECKING:
+    import cirq
 
 
-def qasm2_to_cirq(qasm: QASMType) -> cirq.Circuit:
+def qasm2_to_cirq(qasm: str) -> "cirq.Circuit":
     """Returns a Cirq circuit equivalent to the input QASM string.
 
     Args:
@@ -34,6 +38,6 @@ def qasm2_to_cirq(qasm: QASMType) -> cirq.Circuit:
     """
     try:
         qasm = flatten_qasm_program(qasm)
-        return QasmParser().parse(qasm).circuit
-    except CirqQasmException as err:
-        raise QbraidQasmError from err
+        return cirq_qasm_parser.QasmParser().parse(qasm).circuit
+    except cirq_qasm_import.QasmException as err:
+        raise QasmError from err

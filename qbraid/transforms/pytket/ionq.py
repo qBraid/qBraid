@@ -89,9 +89,9 @@ ionq_rebase_pass = RebaseCustom(
 )  # tk1_replacement
 
 
-def pytket_ionq_transform(circuit: "pytket.circuit.Circuit") -> "pytket.circuit.Circuit":
+def harmony_transform(circuit: "pytket.circuit.Circuit") -> "pytket.circuit.Circuit":
     """
-    Compiles a Braket circuit to a Braket circuit that can run on IonQ Harmony.
+    Compiles a pytket circuit to gate set supported by IonQ Harmony.
 
     Args:
         circuit (pytket.circuit.Circuit): The input PyTKET circuit to be transformed.
@@ -115,8 +115,6 @@ def pytket_ionq_transform(circuit: "pytket.circuit.Circuit") -> "pytket.circuit.
                 MS
                 PSwap
                 Unitary
-
-        - Otherwise, the circuit is transpiled using ``pytket-braket``'s ``braket_to_tk``.
 
     """
     cu = CompilationUnit(circuit, preds)

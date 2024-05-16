@@ -18,10 +18,17 @@ from unittest.mock import Mock, patch
 
 from braket.aws.aws_session import AwsSession
 from braket.circuits import Circuit
+from braket.devices import LocalSimulator
 
+<<<<<<< HEAD
 from qbraid.runtime import DeviceType
 from qbraid.runtime.braket import BraketProvider
 from qbraid.runtime.braket.device import BraketDevice
+=======
+from qbraid.programs import ProgramSpec
+from qbraid.runtime import DeviceType, TargetProfile
+from qbraid.runtime.braket import BraketDevice, BraketProvider, BraketQuantumTask
+>>>>>>> main
 
 from .fixtures import SV1_ARN, TestAwsDevice
 
@@ -80,6 +87,36 @@ def test_get_device():
         device = provider.get_device(SV1_ARN)
         assert device.id == SV1_ARN
         assert isinstance(device, BraketDevice)
+
+
+@patch("qbraid.runtime.braket.device.AwsDevice")
+def test_device_profile_attributes(mock_aws_device):
+    """Test that device profile attributes are correctly set."""
+    mock_aws_device.return_value = Mock()
+    profile = TargetProfile(
+        device_type=DeviceType.SIMULATOR,
+        num_qubits=34,
+        program_spec=ProgramSpec(Circuit),
+        provider_name="Amazon Braket",
+        device_id=SV1_ARN,
+    )
+    device = BraketDevice(profile)
+    assert device.id == profile.get("device_id")
+    assert device.num_qubits == profile.get("num_qubits")
+    assert device._target_spec == profile.get("program_spec")
+    assert device.device_type == DeviceType(profile.get("device_type"))
+
+
+@patch("qbraid.runtime.braket.job.AwsQuantumTask")
+def test_load_completed_job(mock_aws_quantum_task):
+    """Test is terminal state method for BraketQuantumTask."""
+    circuit = Circuit().h(0).cnot(0, 1)
+    mock_device = LocalSimulator()
+    moock_job = mock_device.run(circuit, shots=10)
+    mock_aws_quantum_task.return_value = moock_job
+    job = BraketQuantumTask(moock_job.id)
+    assert job.metadata()["job_id"] == moock_job.id
+    assert job.is_terminal_state()
 
 
 def test_is_available():

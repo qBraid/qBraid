@@ -12,10 +12,17 @@
 Module defining Qiskit OpenQASM conversions
 
 """
-import qiskit
+from typing import TYPE_CHECKING
+
+from qbraid._import import LazyLoader
+
+qiskit = LazyLoader("qiskit", globals(), "qiskit")
+
+if TYPE_CHECKING:
+    import qiskit as qiskit_
 
 
-def qasm2_to_qiskit(qasm: str) -> qiskit.QuantumCircuit:
+def qasm2_to_qiskit(qasm: str) -> "qiskit_.QuantumCircuit":
     """Returns a Qiskit circuit equivalent to the input OpenQASM 2 string.
 
     Args:

@@ -23,7 +23,7 @@ from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
 from qbraid.transpiler import CircuitConversionError, ConversionScheme, transpile
 
 from .enums import DeviceStatus, DeviceType
-from .exceptions import ProgramValidationError, QbraidRuntimeError
+from .exceptions import ProgramValidationError, QbraidRuntimeError, ResourceNotFoundError
 
 if TYPE_CHECKING:
     import qbraid.programs
@@ -88,9 +88,9 @@ class QuantumDevice(ABC):
     def status(self) -> "qbraid.runtime.DeviceStatus":
         """Return device status."""
 
-    @abstractmethod
     def queue_depth(self) -> int:
         """Return the number of jobs in the queue for the backend"""
+        raise ResourceNotFoundError("Queue depth is not available for this device.")
 
     def update_scheme(self, **kwargs):
         """Update the conversion scheme with new values."""

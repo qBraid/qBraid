@@ -18,13 +18,21 @@ Module for converting Braket circuits to Cirq circuits
 
 """
 from copy import deepcopy
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 import numpy as np
-from braket.circuits import Circuit as BKCircuit
-from braket.circuits import Instruction as BKInstruction
-from braket.circuits import gates as braket_gates
-from braket.circuits import noises as braket_noise_gate
+
+try:
+    from braket.circuits import Circuit as BKCircuit
+    from braket.circuits import Instruction as BKInstruction
+    from braket.circuits import gates as braket_gates
+    from braket.circuits import noises as braket_noise_gate
+except ImportError:
+    BKCircuit = None
+    BKInstruction = None
+    braket_gates = None
+    braket_noise_gate = None
+
 from cirq import Circuit
 from cirq import ops as cirq_ops
 from cirq import protocols
@@ -38,10 +46,16 @@ except ImportError:
 import qbraid.programs.libs.cirq
 from qbraid.transpiler.exceptions import CircuitConversionError
 
-from .braket_custom import C as BKControl
+try:
+    from .braket_custom import C as BKControl
+except ImportError:
+    BKControl = None
+
+if TYPE_CHECKING:
+    import braket.circuits
 
 
-def cirq_to_braket(circuit: Circuit) -> BKCircuit:
+def cirq_to_braket(circuit: Circuit) -> "braket.circuits.Circuit":
     """Returns a Braket circuit equivalent to the input Cirq circuit.
 
     Args:
@@ -64,7 +78,7 @@ def cirq_to_braket(circuit: Circuit) -> BKCircuit:
 def _to_braket_instruction(
     operation: cirq_ops.Operation,
     qubit_mapping: dict[int, int],
-) -> list[BKInstruction]:
+) -> "list[braket.circuits.Instruction]":
     """Converts Cirq operation to equivalent Braket instruction(s).
 
     Args:
@@ -124,7 +138,7 @@ def _to_one_qubit_braket_instruction(
     operation: Union[np.ndarray, cirq_ops.Gate, cirq_ops.Operation],
     target: int,
     gate_name: Optional[str] = None,
-) -> list[BKInstruction]:
+) -> "list[braket.circuits.Instruction]":
     """Converts one-qubit Cirq operation or NumPy array to equivalent Braket instruction(s)
 
     Args:
@@ -240,7 +254,7 @@ def _to_one_qubit_braket_instruction(
 def _to_two_qubit_braket_instruction(
     operation: Union[cirq_ops.Gate, cirq_ops.Operation],
     qubits: list[int],
-) -> list[BKInstruction]:
+) -> "list[braket.circuits.Instruction]":
     """Converts two-qubit Cirq operation to equivalent Braket instruction(s)
 
     Args:
@@ -294,7 +308,7 @@ def _to_two_qubit_braket_instruction(
 
 def _kak_decomposition_to_braket_instruction(
     matrix: np.ndarray, q1: int, q2: int
-) -> list[BKInstruction]:
+) -> "list[braket.circuits.Instruction]":
     """Converts 4x4 Numpy array to equivalent Braket instruction(s) via kak decomposition
 
     Args:

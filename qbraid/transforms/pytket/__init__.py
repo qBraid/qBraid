@@ -19,7 +19,7 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   pytket_ionq_transform
+   harmony_transform
 
 """
-from .ionq import pytket_ionq_transform
+from .ionq import harmony_transform

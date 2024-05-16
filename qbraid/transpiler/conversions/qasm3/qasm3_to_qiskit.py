@@ -12,13 +12,19 @@
 Module defining Qiskit OpenQASM conversions
 
 """
-import qiskit
-from qiskit.qasm3 import QASM3ImporterError, loads
+from typing import TYPE_CHECKING
 
-from qbraid.transforms.qasm3.compat import qasm3_braket_post_process
+from qbraid._import import LazyLoader
+from qbraid.transforms.qasm3.compat import transform_notation_from_external
+
+qiskit_qasm3 = LazyLoader("qiskit_qasm3", globals(), "qiskit.qasm3")
 
 
-def qasm3_to_qiskit(qasm3: str) -> qiskit.QuantumCircuit:
+if TYPE_CHECKING:
+    import qiskit as qiskit_
+
+
+def qasm3_to_qiskit(qasm3: str) -> "qiskit_.QuantumCircuit":
     """Convert QASM 3.0 string to a Qiskit QuantumCircuit representation.
 
     Args:
@@ -28,10 +34,10 @@ def qasm3_to_qiskit(qasm3: str) -> qiskit.QuantumCircuit:
         qiskit.QuantumCircuit: A QuantumCircuit object representing the input QASM 3.0 string.
     """
     try:
-        return loads(qasm3)
-    except QASM3ImporterError:
+        return qiskit_qasm3.loads(qasm3)
+    except qiskit_qasm3.QASM3ImporterError:
         pass
 
-    qasm3 = qasm3_braket_post_process(qasm3)
+    qasm3 = transform_notation_from_external(qasm3)
 
-    return loads(qasm3)
+    return qiskit_qasm3.loads(qasm3)

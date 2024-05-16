@@ -9,19 +9,32 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for appyling transformations to OpenQASM 3 programs.
+Mdule submiting and managing jobs through the IonQ API.
 
-.. currentmodule:: qbraid.transforms.qasm3
+.. currentmodule:: qbraid.runtime.ionq
 
-Functions
-----------
+Classes
+--------
 
 .. autosummary::
    :toctree: ../stubs/
 
-   transform_notation_to_external
-   transform_notation_from_external
+	IonQSession
+	IonQProvider
+	IonQDevice
+	IonQJob
+	IonQJobResult
 
+Exceptions
+-----------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+	IonQJobError
 
 """
-from .compat import transform_notation_from_external, transform_notation_to_external
+from .device import IonQDevice
+from .job import IonQJob, IonQJobError
+from .provider import IonQProvider, IonQSession
+from .result import IonQJobResult
