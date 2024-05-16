@@ -86,9 +86,7 @@ pip install .
 
 If using locally, follow linked instructions to configure your
 [qBraid](#local-account-setup),
-[AWS](https://github.com/aws/amazon-braket-sdk-python#boto3-and-setting-up-aws-credentials),
-and [IBMQ](https://github.com/Qiskit/qiskit-ibm-provider#provider-setup)
-credentials.
+[AWS](https://github.com/aws/amazon-braket-sdk-python#boto3-and-setting-up-aws-credentials), [IBM](https://github.com/Qiskit/qiskit-ibm-runtime?tab=readme-ov-file#account-setup), and/or [IonQ](https://cloud.ionq.com/settings/keys) credentials.
 
 ### Check version
 
