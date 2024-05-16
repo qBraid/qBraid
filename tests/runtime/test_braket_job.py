@@ -13,14 +13,11 @@ Unit tests for BracketQuantumTask class
 
 """
 import os
-from unittest.mock import patch, Mock
+from unittest.mock import Mock, patch
 
 import pytest
-import os 
-
 from braket.circuits import Circuit
 from braket.devices import LocalSimulator
-from braket.tasks.quantum_task import QuantumTask as AwsQuantumTask
 
 from qbraid.runtime.braket.job import BraketQuantumTask
 
@@ -41,7 +38,7 @@ def test_braket_queue_visibility():
 
         mock_device = Mock()
         mock_job = Mock()
-        mock_job.queue_position.return_value = 5 # job is 5th in queue
+        mock_job.queue_position.return_value = 5  # job is 5th in queue
 
         mock_device.run.return_value = mock_job
 
@@ -54,6 +51,7 @@ def test_braket_queue_visibility():
             job.cancel()
             assert isinstance(queue_position, int)
 
+
 @patch("qbraid.runtime.braket.job.AwsQuantumTask")
 def test_load_completed_job(mock_aws_quantum_task):
     """Test is terminal state method for BraketQuantumTask."""
@@ -64,4 +62,3 @@ def test_load_completed_job(mock_aws_quantum_task):
     job = BraketQuantumTask(mock_job.id, task=None)
     assert job.metadata()["job_id"] == mock_job.id
     assert job.is_terminal_state()
-

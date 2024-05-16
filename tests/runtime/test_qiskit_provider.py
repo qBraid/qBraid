@@ -12,19 +12,19 @@
 Unit tests for QiskitProvider class
 
 """
-import pytest
-from unittest.mock import patch, Mock
-from qiskit_ibm_runtime import IBMBackend, QiskitRuntimeService
+from unittest.mock import Mock, patch
+
 from qiskit.providers.fake_provider import GenericBackendV2
 from qiskit.providers.models import QasmBackendConfiguration
+from qiskit_ibm_runtime import QiskitRuntimeService
 
-from qbraid.runtime.qiskit import QiskitRuntimeProvider, QiskitBackend
-from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.qiskit import QiskitBackend, QiskitRuntimeProvider
 
-from .fixtures import test_circuits, fake_ibm_devices, FakeService
+from .fixtures import FakeService
 
 # Skip tests if IBM account auth/creds not configured
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM storage)"
+
 
 def test_qiskit_provider():
     """Test getting IBMQ provider using qiskit_ibm_provider package."""
@@ -38,17 +38,24 @@ def test_qiskit_provider():
 
 
 def test_get_service_backend():
+    """Test getting a backend from the runtime service."""
     with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
         mock_runtime_service.return_value = FakeService()
-        assert isinstance(mock_runtime_service().backend("generic_backend_5q", instance=None), GenericBackendV2)
+        assert isinstance(
+            mock_runtime_service().backend("generic_backend_5q", instance=None), GenericBackendV2
+        )
+
 
 class TestQiskitDevice(GenericBackendV2):
+    """A test Qiskit device."""
+
     def __init__(self, num_qubits):
         super().__init__(num_qubits)
         self._num_qubits = num_qubits
         self._instance = None
-    
+
     def configuration(self):
+        """Return the configuration of the backend."""
         return QasmBackendConfiguration(
             backend_name="fake_backend",
             backend_version="1.0",
@@ -61,12 +68,12 @@ class TestQiskitDevice(GenericBackendV2):
             open_pulse=False,
             memory=False,
             max_shots=8192,
-            coupling_map=None
+            coupling_map=None,
         )
 
 
-
 def test_build_runtime_profile():
+    """Test building runtime profile for Qiskit backend."""
     with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
         mock_runtime_service.return_value = FakeService()
         backend = TestQiskitDevice(5)
@@ -80,5 +87,3 @@ def test_build_runtime_profile():
         qiskit_backend = QiskitBackend(profile, mock_runtime_service())
         assert isinstance(qiskit_backend, QiskitBackend)
         assert qiskit_backend.profile == profile
-
-

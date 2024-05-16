@@ -47,6 +47,7 @@ def get_braket_most_busy():
             test_device = device
     return test_device
 
+
 def test_get_aws_session():
     """Test getting an AWS session."""
     with patch("boto3.session.Session") as mock_boto_session:
@@ -80,6 +81,7 @@ def test_get_device():
         assert device.id == SV1_ARN
         assert isinstance(device, BraketDevice)
 
+
 def test_is_available():
     """Test device availability function."""
     with patch("qbraid.runtime.braket.BraketProvider") as mock_provider:
@@ -99,6 +101,7 @@ def test_is_available():
         for device in devices:
             is_available_bool, _, _ = device.availability_window()
             assert device._device.is_available == is_available_bool
+
 
 def test_get_quantum_tasks_by_tag():
     """Test getting tagged quantum tasks."""

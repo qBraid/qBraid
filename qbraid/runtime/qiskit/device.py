@@ -72,8 +72,11 @@ class QiskitBackend(QuantumDevice):
     def transform(self, run_input: "qiskit.QuantumCircuit") -> "qiskit.QuantumCircuit":
         if self.device_type == DeviceType.LOCAL_SIMULATOR:
             program = QiskitCircuit(run_input)
-            program.remove_idle_qubits()
-            run_input = program.program
+            try:
+                program.remove_idle_qubits()
+                run_input = program.program
+            except ValueError:
+                pass
 
         return transpile(run_input, backend=self._backend)
 

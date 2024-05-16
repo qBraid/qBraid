@@ -16,20 +16,16 @@ import json
 import random
 from datetime import time
 
-import braket.circuits
-import cirq
 import numpy as np
-import qiskit
 from braket.device_schema import ExecutionDay
 from qiskit import QuantumCircuit
-from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 from qiskit.providers.fake_provider import GenericBackendV2
+from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
-from qbraid.programs import ProgramSpec
+from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
 from qbraid.runtime import DeviceType, TargetProfile
 from qbraid.runtime.braket import BraketProvider
 from qbraid.runtime.qiskit import QiskitBackend, QiskitRuntimeProvider
-
 
 SV1_ARN = "arn:aws:braket:::device/quantum-simulator/amazon/sv1"
 DM1_ARN = "arn:aws:braket:::device/quantum-simulator/amazon/dm1"
@@ -78,6 +74,8 @@ def device_wrapper_inputs(vendor: str) -> list[str]:
 
 def braket_circuit():
     """Returns low-depth, one-qubit Braket circuit to be used for testing."""
+    import braket.circuits  # pylint: disable=import-outside-toplevel
+
     circuit = braket.circuits.Circuit()
     circuit.h(0)
     circuit.ry(0, np.pi / 2)
@@ -87,6 +85,8 @@ def braket_circuit():
 def cirq_circuit(meas=True):
     """Returns Low-depth, one-qubit Cirq circuit to be used for testing.
     If ``meas=True``, applies measurement operation to end of circuit."""
+    import cirq  # pylint: disable=import-outside-toplevel
+
     q0 = cirq.GridQubit(0, 0)
 
     def basic_circuit():
@@ -103,6 +103,8 @@ def cirq_circuit(meas=True):
 def qiskit_circuit(meas=True):
     """Returns Low-depth, one-qubit Qiskit circuit to be used for testing.
     If ``meas=True``, applies measurement operation to end of circuit."""
+    import qiskit  # pylint: disable=import-outside-toplevel
+
     circuit = qiskit.QuantumCircuit(1, 1) if meas else qiskit.QuantumCircuit(1)
     circuit.h(0)
     circuit.ry(np.pi / 2, 0)
@@ -110,24 +112,15 @@ def qiskit_circuit(meas=True):
         circuit.measure(0, 0)
     return circuit
 
+
 test_circuits = []
-try:
-    import cirq
+if "cirq" in NATIVE_REGISTRY:
     test_circuits.append(cirq_circuit(meas=False))
-except ImportError:
-    pass
-
-try:
-    import qiskit
+if "qiskit" in NATIVE_REGISTRY:
     test_circuits.append(qiskit_circuit(meas=False))
-except ImportError:
-    pass
-
-try:
-    import braket.circuits
+if "braket" in NATIVE_REGISTRY:
     test_circuits.append(braket_circuit())
-except ImportError:
-    pass
+
 
 ## AWS dummy fixtures
 class TestAwsSession:
@@ -157,24 +150,24 @@ class TestAwsSession:
 class ExecutionWindow:
     """Test class for execution window."""
 
-    def __init__(self, start_hour, end_hour, execution_day):
-        self.windowStartHour = time(hour=start_hour)
-        self.windowEndHour = time(hour=end_hour)
-        self.executionDay = execution_day
+    def __init__(self):
+        self.windowStartHour = time(0)
+        self.windowEndHour = time(23, 59, 59)
+        self.executionDay = ExecutionDay.EVERYDAY
 
 
 class Service:
     """Test class for braket device service."""
 
-    def __init__(self, execution_windows=None):
-        self.executionWindows = execution_windows
+    def __init__(self):
+        self.executionWindows = [ExecutionWindow()]
 
 
 class TestProperties:
     """Test class for braket device properties."""
 
-    def __init__(self, execution_windows=None):
-        self.service = Service(execution_windows)
+    def __init__(self):
+        self.service = Service()
 
 
 class TestAwsDevice:
@@ -184,17 +177,7 @@ class TestAwsDevice:
         self.arn = arn
         self.aws_session = aws_session or TestAwsSession()
         self.status = "ONLINE"
-        execution_windows = [
-            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.MONDAY),
-            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.TUESDAY),
-            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.WEDNESDAY),
-            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.THURSDAY),
-            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.FRIDAY),
-            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.SATURDAY),
-            ExecutionWindow(start_hour=0, end_hour=23, execution_day=ExecutionDay.SUNDAY),
-        ]
-        device_properties = TestProperties(execution_windows=execution_windows)
-        self.properties = device_properties
+        self.properties = TestProperties()
         self.is_available = True
 
     @staticmethod
@@ -202,9 +185,11 @@ class TestAwsDevice:
         """Returns the region of a device."""
         return "us-east-1"
 
+
 ## Qiskit dummy fixtures
 class FakeService:
     """Fake Qiskit runtime service for testing."""
+
     def backend(self, backend_name, instance=None):
         """Return fake backend."""
         for backend in self.backends(instance=instance):
@@ -219,14 +204,14 @@ class FakeService:
     def backend_names(self, **kwargs):
         """Return fake backend names."""
         return [backend.name for backend in self.backends(**kwargs)]
-    
+
     def least_busy(self, **kwargs):
         """Return least busy backend."""
         return random.choice(self.backends(**kwargs))
-    
-    def job(self, job_id):
+
+    def job(self, job_id):  # pylint: disable=unused-argument
         """Return fake job."""
-        return 
+        return
 
 
 def ibm_devices():
@@ -248,4 +233,3 @@ def fake_ibm_devices():
         for backend in backends
     ]
     return [QiskitBackend(profile, service) for profile in profiles]
-

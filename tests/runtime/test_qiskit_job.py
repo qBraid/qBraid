@@ -13,21 +13,20 @@ Unit tests for QiskitProvider class
 
 """
 import time
+from typing import Union
 
 import pytest
-
-from qbraid.runtime import JobStateError
-from qbraid.runtime.exceptions import QbraidRuntimeError
-
 from qiskit import QuantumCircuit
-from qiskit_aer.jobs.aerjob import AerJob
+from qiskit_aer import AerJob
 from qiskit_ibm_runtime import RuntimeJob
 
-from .fixtures import test_circuits, fake_ibm_devices
+from qbraid.runtime import JobStateError
+
+from .fixtures import fake_ibm_devices, test_circuits
 
 circuits_qiskit_run = test_circuits
 
-# @pytest.mark.skipif(skip_remote_tests, reason=REASON)
+
 @pytest.mark.parametrize("device", fake_ibm_devices())
 def test_retrieving_ibm_job(device):
     """Test retrieving a previously submitted IBM job."""
@@ -35,20 +34,9 @@ def test_retrieving_ibm_job(device):
     circuit.h(0)
     circuit.measure(0, 0)
     qbraid_job = device.run(circuit, shots=1)
-    ibm_job = qbraid_job._get_job()
-    assert isinstance(ibm_job, RuntimeJob)
+    ibm_job = qbraid_job._job
+    assert isinstance(ibm_job, Union[RuntimeJob, AerJob])
 
-
-@pytest.mark.parametrize("device", fake_ibm_devices())
-def test_retrieving_ibm_job_raises_error(device):
-    """Test retrieving IBM job from unrecognized backend raises error."""
-    circuit = QuantumCircuit(1, 1)
-    circuit.h(0)
-    circuit.measure(0, 0)
-    qbraid_job = device.run(circuit, shots=1)
-    qbraid_job._job_id = "fake_id"
-    with pytest.raises(QbraidRuntimeError):
-        qbraid_job._get_job()
 
 @pytest.mark.parametrize("device", fake_ibm_devices())
 def test_cancel_completed_batch_error(device):

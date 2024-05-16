@@ -13,7 +13,6 @@ Unit tests for QiskitBackend class.
 
 """
 import os
-
 from typing import Union
 
 import pytest
@@ -23,7 +22,7 @@ from qiskit_aer.jobs.aerjob import AerJob
 
 from qbraid.runtime.qiskit import QiskitBackend, QiskitJob
 
-from .fixtures import test_circuits, fake_ibm_devices
+from .fixtures import fake_ibm_devices, test_circuits
 
 # Skip tests if IBM account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
