@@ -12,6 +12,7 @@
 Module for transforming Qiskit circuits.
 
 """
+import logging
 from typing import TYPE_CHECKING
 
 from qiskit import transpile
@@ -24,13 +25,19 @@ if TYPE_CHECKING:
     import qbraid.runtime.qiskit
 
 
+logger = logging.getLogger(__name__)
+
+
 def transform(
     circuit: "qiskit.QuantumCircuit", device: "qbraid.runtime.qiskit.QiskitBackend"
 ) -> "qiskit.QuantumCircuit":
     """Transpile a circuit for the device."""
     if device.device_type.name == "LOCAL_SIMULATOR":
         program = QiskitCircuit(circuit)
-        program.remove_idle_qubits()
-        circuit = program.program
+        try:
+            program.remove_idle_qubits()
+            circuit = program.program
+        except ValueError:
+            logger.debug("Failed to remove idle qubits for device %s", device.id)
 
     return transpile(circuit, backend=device._backend)

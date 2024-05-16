@@ -27,7 +27,6 @@ from qbraid_core.services.quantum.proxy_braket import aws_configure
 from qbraid.exceptions import QbraidError
 from qbraid.programs import ProgramSpec
 from qbraid.runtime import DeviceType, QuantumProvider, TargetProfile
-from qbraid.runtime.exceptions import ResourceNotFoundError
 
 from .device import BraketDevice
 
@@ -156,11 +155,12 @@ class BraketProvider(QuantumProvider):
     def get_device(self, device_id: str) -> "qbraid.runtime.braket.BraketDevice":
         """Returns the AWS device."""
         try:
-            region_name = AwsDevice.get_device_region(device_id)  # deviceArn
-        except ValueError as err:
-            if str(err).startswith("Device ARN is not a valid format"):
-                raise ResourceNotFoundError from err
-            raise
+            region_name = device_id.split(":")[3]
+        except IndexError as err:
+            raise ValueError(
+                f"Device ARN is not a valid format: {device_id}. For valid Braket ARNs, "
+                "see 'https://docs.aws.amazon.com/braket/latest/developerguide/braket-devices.html'"
+            ) from err
         aws_session = self._get_aws_session(region_name=region_name)
         device = AwsDevice(arn=device_id, aws_session=aws_session)
         program_spec = ProgramSpec(braket.circuits.Circuit)
