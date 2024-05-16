@@ -45,7 +45,7 @@ class IonQJobResult(QuantumJobResult):
             probs_int: Optional[dict] = self._result.get("probabilities")
             if shots and probs_int:
                 probs_binary = {
-                    format(int(state), "04b"): prob for state, prob in probs_int.items()
+                    bin(int(key))[2:].zfill(2): value for key, value in probs_int.items()
                 }
                 self._counts = {state: int(prob * shots) for state, prob in probs_binary.items()}
         return self._counts

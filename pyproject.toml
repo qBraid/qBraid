@@ -20,6 +20,7 @@ classifiers = [
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Physics"
 ]
@@ -29,7 +30,7 @@ dependencies = [
     "openqasm3[parser]>=0.4.0,<0.6.0",
     "ply>=3.6",
 ]
-requires-python = ">=3.9,<3.12"
+requires-python = ">=3.9,<3.13"
 
 [project.urls]
 Homepage = "https://www.qbraid.com/"
