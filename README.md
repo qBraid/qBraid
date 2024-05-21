@@ -20,7 +20,7 @@
     <img src="https://img.shields.io/github/license/qBraid/qbraid.svg" alt="License"/>
   </a>
   <a href="https://discord.gg/TPBU2sa8Et">
-    <img src="https://img.shields.io/discord/771898982564626445.svg?color=pink" alt="Discord"/>
+    <img src="https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white" alt="Discord"/>
   </a>
 </p>
 
