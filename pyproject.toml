@@ -42,7 +42,7 @@ Discord = "https://discord.gg/TPBU2sa8Et"
 
 [project.optional-dependencies]
 braket = ["amazon-braket-sdk>=1.42.1,<1.80.0", "pytket-braket>=0.30.0,<0.37.0"]
-qiskit = ["qiskit>=0.44.0,<1.1.0", "qiskit-ibm-runtime>=0.18.0,<0.21.0"]
+qiskit = ["qiskit>=0.44.0,<1.2.0", "qiskit-ibm-runtime>=0.18.0,<0.21.0"]
 runtime = ["qbraid-qir>=0.2.0", "qbraid-core>=0.1.10"]
 visualization = ["ipython", "matplotlib", "pylatexenc"]
 test = ["pytest", "pytest-cov"]

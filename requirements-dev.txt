@@ -9,7 +9,7 @@ pytket>=1.26,<1.29
 pytket-braket>=0.35.1,<0.37.0
 qbraid-core>=0.1.10
 qbraid-qir>=0.2.0
-qiskit>=0.44.0,<1.1.0
+qiskit>=0.44.0,<1.2.0
 qiskit-ibm-runtime>=0.18.0,<0.21.0
 qiskit-qasm3-import~=0.4.2
 qiskit-braket-provider
