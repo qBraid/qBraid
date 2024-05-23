@@ -110,9 +110,11 @@ class QbraidProvider(QuantumProvider):
         profile = self._build_runtime_profile(device_data)
         return QbraidDevice(profile, client=self.client)
 
+    # pylint: disable-next=too-many-arguments
     def display_jobs(
         self,
         device_id: Optional[str] = None,
+        provider: Optional[str] = None,
         status: Optional[str] = None,
         tags: Optional[dict] = None,
         max_results: int = 10,
@@ -123,11 +125,15 @@ class QbraidProvider(QuantumProvider):
 
         Args:
             device_id (optional, str): The qBraid ID of the device used in the job.
+            provider (optional, str): The name of the provider.
             tags (optional, dict): A list of tags associated with the job.
             status (optional, str): The status of the job.
             max_results (optional, int): Maximum number of results to display. Defaults to 10.
         """
-        query = {"provider": "qbraid"}
+        query = {}
+
+        if provider:
+            query["provider"] = provider.lower()
 
         if device_id:
             query["qbraidDeviceId"] = device_id

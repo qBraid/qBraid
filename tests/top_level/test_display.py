@@ -14,7 +14,7 @@ Unit tests for qbraid top-level functionality
 """
 import os
 import sys
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 from qbraid_core.services.quantum import QuantumClient
@@ -24,9 +24,7 @@ from qbraid._display import running_in_jupyter
 from qbraid.interface.random import random_circuit
 from qbraid.programs.exceptions import PackageValueError
 from qbraid.runtime._display import _job_table_jupyter
-from qbraid.runtime.braket import BraketProvider
 from qbraid.runtime.native.provider import QbraidProvider
-from qbraid.runtime.qiskit import QiskitRuntimeProvider
 
 # pylint: disable=missing-function-docstring,redefined-outer-name
 
@@ -37,6 +35,67 @@ REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of qBraid/AWS/
 jobs_state_libs = QuantumClient.qbraid_jobs_state().get("libs", {})
 braket_enabled = jobs_state_libs.get("braket", {}).get("enabled", False)
 qiskit_enabled = jobs_state_libs.get("qiskit", {}).get("enabled", False)
+
+MOCK_JOB_DATA = [
+    {
+        "shots": 100,
+        "circuitNumQubits": 1,
+        "qbraidDeviceId": "aws_dm_sim",
+        "vendorDeviceId": "arn:aws:braket:::device/quantum-simulator/amazon/dm1",
+        "qbraidJobId": "aws_dm_sim-jovyan-qjob-1234567890",
+        "status": "COMPLETED",
+        "qbraidStatus": "COMPLETED",
+        "vendor": "aws",
+        "provider": "aws",
+        "tags": {"test": "123"},
+        "createdAt": "2024-04-30T17:28:38.962Z",
+        "updatedAt": "2024-04-30T17:28:38.962Z",
+    },
+    {
+        "shots": 100,
+        "circuitNumQubits": 3,
+        "qbraidDeviceId": "ibm_q_oslo",
+        "vendorDeviceId": "ibm_oslo",
+        "qbraidJobId": "ibm_q_oslo-jovyan-qjob-1234567890",
+        "status": "COMPLETED",
+        "qbraidStatus": "COMPLETED",
+        "vendor": "ibm",
+        "provider": "ibm",
+        "tags": {"test": "*"},
+        "createdAt": "2024-04-30T17:28:48.502Z",
+        "updatedAt": "2024-04-30T17:28:48.502Z",
+    },
+]
+
+
+class MockQbraidClient(Mock):
+
+    def search_jobs(self, query: dict):
+        max_results = query.get("resultsPerPage", 10)
+        tag = query.get("tags.test", None)
+        device_id = query.get("qbraidDeviceId", None)
+        provider = query.get("provider", None)
+
+        jobs = MOCK_JOB_DATA
+
+        if device_id:
+            jobs = [job for job in jobs if job["qbraidDeviceId"] == device_id]
+
+        if provider:
+            jobs = [job for job in jobs if job["provider"] == provider]
+
+        if tag:
+            tags = {"test": tag}
+
+            jobs = [
+                job
+                for job in jobs
+                if any(job["tags"].get(key) == value for key, value in tags.items())
+            ]
+
+        if max_results < len(jobs):
+            return jobs[:max_results]
+        return jobs
 
 
 job_status_list = [
@@ -81,50 +140,39 @@ def test_ipython_imported_and_in_jupyter():
     assert running_in_jupyter()
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_get_jobs_no_results(capfd):
     """Test ``get_jobs`` stdout for results == 0.
     When no results are found, a single line is printed.
     """
     _mock_ipython(MockIPython(None))
-    provider = QbraidProvider()
+    provider = QbraidProvider(client=MockQbraidClient())
     provider.display_jobs(device_id="non-existent-device")
     out, err = capfd.readouterr()
     assert out == "No jobs found matching given criteria\n"
     assert len(err) == 0
 
 
-@pytest.mark.skipif(skip_remote_tests or not braket_enabled, reason=REASON)
 def test_get_aws_jobs_by_tag(capfd):
     """Test ``get_jobs`` for aws tagged jobs."""
     _mock_ipython(MockIPython(None))
-    circuit = random_circuit("braket")
-    provider = BraketProvider()
-    device = provider.get_device("arn:aws:braket:::device/quantum-simulator/amazon/sv1")
-    job = device.run(circuit, shots=10, tags={"test": "123"})
-    qbraid_provider = QbraidProvider()
-    qbraid_provider.display_jobs(tags={"test": "123"}, max_results=1)
+    qbraid_provider = QbraidProvider(client=MockQbraidClient())
+    qbraid_provider.display_jobs(tags={"test": "123"}, provider="aws", max_results=1)
     out, err = capfd.readouterr()
     message = out.split("\n")[0]
     assert message == "Displaying 1 most recent job matching query:"
-    assert job.id in out
+    assert MOCK_JOB_DATA[0]["qbraidJobId"] in out
     assert len(err) == 0
 
 
-@pytest.mark.skipif(skip_remote_tests or not qiskit_enabled, reason=REASON)
 def test_get_ibm_jobs_by_tag(capfd):
     """Test ``get_jobs`` for ibm tagged jobs."""
     _mock_ipython(MockIPython(None))
-    circuit = random_circuit("qiskit")
-    provider = QiskitRuntimeProvider()
-    device = provider.get_device("ibm_q_qasm_simulator")
-    job = device.run(circuit, shots=10, tags=["test"])
-    qbraid_provider = QbraidProvider()
-    qbraid_provider.display_jobs(tags={"test": "*"}, max_results=1)
+    qbraid_provider = QbraidProvider(client=MockQbraidClient())
+    qbraid_provider.display_jobs(tags={"test": "*"}, provider="ibm", max_results=1)
     out, err = capfd.readouterr()
     message = out.split("\n")[0]
     assert message == "Displaying 1 most recent job matching query:"
-    assert job.id in out
+    assert MOCK_JOB_DATA[1]["qbraidJobId"] in out
     assert len(err) == 0
 
 
