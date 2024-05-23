@@ -13,19 +13,88 @@ Unit tests for QbraidDevice, QbraidJob, and QbraidJobResult classes using the qb
 
 """
 import random
-import shutil
-from typing import Optional
+from typing import Any, Optional
 
 import cirq
 import numpy as np
 import pytest
+from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
 from qbraid.runtime.native import ExperimentResult, QbraidJob, QbraidJobResult, QbraidProvider
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,unused-argument
 
-skip_runner_tests = shutil.which("qir-runner") is None
-REASON = "qir-runner executable not available"
+DEVICE_DATA = {
+    "numberQubits": 64,
+    "pendingJobs": 0,
+    "qbraid_id": "qbraid_qir_simulator",
+    "name": "QIR sparse simulator",
+    "provider": "qBraid",
+    "paradigm": "gate-based",
+    "type": "SIMULATOR",
+    "vendor": "qBraid",
+    "runPackage": "pyqir",
+    "status": "ONLINE",
+    "isAvailable": True,
+    "processorType": "State vector",
+}
+
+JOB_DATA = {
+    "qbraidJobId": "qbraid_qir_simulator-jovyan-qjob-1234567890",
+    "queuePosition": None,
+    "queueDepth": None,
+    "timeStamps": {"executionDuration": 16},
+    "shots": 10,
+    "circuitNumQubits": 5,
+    "measurementCounts": {"11111": 4, "00000": 6},
+    "qbraidDeviceId": "qbraid_qir_simulator",
+    "vendorJobId": "afff09f1-d9e0-4dcb-8274-b984678d35c3",
+    "status": "COMPLETED",
+    "qbraidStatus": "COMPLETED",
+    "vendor": "qbraid",
+    "provider": "qbraid",
+    "createdAt": "2024-05-23T01:39:11.288Z",
+}
+
+JOB_RESULT = {
+    "vendorJobId": "afff09f1-d9e0-4dcb-8274-b984678d35c3",
+    "measurements": [
+        [0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1],
+        [0, 0, 0, 0, 0],
+        [1, 1, 1, 1, 1],
+    ],
+    "timeStamps": {"executionDuration": 16},
+    "qbraidDeviceId": "qbraid_qir_simulator",
+    "shots": 10,
+    "circuitNumQubits": 5,
+    "tags": "{}",
+}
+
+
+class MockClient:
+    """Mock client for testing."""
+
+    def get_device(self, qbraid_id: Optional[str] = None, **kwargs):
+        """Returns the device with the given ID."""
+        if qbraid_id == "qbraid_qir_simulator":
+            return DEVICE_DATA
+        raise QuantumServiceRequestError("No devices found matching given criteria")
+
+    def create_job(self, data: dict[str, Any]) -> dict[str, Any]:
+        """Creates a new quantum job with the given data."""
+        return JOB_DATA
+
+    def get_job(self, job_id: str) -> dict[str, Any]:
+        """Returns the quantum job with the given ID."""
+        JOB_DATA["result"] = JOB_RESULT
+        return JOB_DATA
 
 
 def _is_uniform_comput_basis(array: np.ndarray) -> bool:
@@ -105,16 +174,15 @@ def cirq_uniform():
     yield _uniform_state_circuit
 
 
-@pytest.mark.skipif(skip_runner_tests, reason=REASON)
 def test_qir_simulator_workflow(cirq_uniform):
     """Test qir simulator qbraid device job submission and result retrieval."""
-    circuit = cirq_uniform()
+    circuit = cirq_uniform(num_qubits=5)
     num_qubits = len(circuit.all_qubits())
 
-    provider = QbraidProvider()
+    provider = QbraidProvider(client=MockClient())
     device = provider.get_device("qbraid_qir_simulator")
 
-    shots = random.randint(500, 1000)
+    shots = 10
     job = device.run(circuit, shots=shots)
     assert isinstance(job, QbraidJob)
     assert job.is_terminal_state()
