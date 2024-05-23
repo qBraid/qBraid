@@ -11,6 +11,7 @@
 from qbraid.programs import load_program, QPROGRAM
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, DeviceType
+from qbraid.transforms.qasm2.passes import remove_qasm_barriers, rename_qasm_registers
 
 from qcaas_client.client import OQCClient, QPUTask
 
@@ -36,6 +37,12 @@ class OQCDevice(QuantumDevice):
         else:
             raise NotImplementedError("Only OQC simulators are supported")
 
+    def transform(self, program: str) -> str:
+        # program = remove_qasm_barriers(program)
+        program = rename_qasm_registers(program)
+        print(program)
+        return program
+    
     def submit(self, run_input, **kwargs) -> OQCJob:
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
