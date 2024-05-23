@@ -50,9 +50,4 @@ def ibm_configure(
 
 if __name__ == "__main__":
     if not skip_remote_tests:
-        qbraid_configure()
         aws_configure()
-        try:
-            ibm_configure()
-        except ImportError:
-            logger.error("qiskit-ibm-runtime not installed, skipping IBM Quantum configuration")
