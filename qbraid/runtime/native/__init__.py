@@ -20,6 +20,7 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
+	QbraidSession
 	QbraidProvider
 	QbraidDevice
 	QbraidJob
@@ -27,7 +28,18 @@ Classes
 	ExperimentResult
 
 """
+from qbraid_core import QbraidSession
+
 from .device import QbraidDevice
 from .job import QbraidJob
 from .provider import QbraidProvider
 from .result import ExperimentResult, QbraidJobResult
+
+__all__ = [
+    "QbraidSession",
+    "QbraidProvider",
+    "QbraidDevice",
+    "QbraidJob",
+    "QbraidJobResult",
+    "ExperimentResult",
+]

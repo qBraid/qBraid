@@ -16,9 +16,7 @@ import logging
 import os
 import warnings
 
-from ._import import LazyLoader
-
-qbraid_core = LazyLoader("qbraid_core", globals(), "qbraid_core")
+from qbraid_core._compat import check_version
 
 
 def configure_logging():
@@ -47,4 +45,4 @@ def filterwarnings():
 
 def check_warn_version_update():
     """Emit a warning if updated qBraid-SDK package version exists."""
-    qbraid_core._compat.check_version("qbraid")
+    check_version("qbraid")

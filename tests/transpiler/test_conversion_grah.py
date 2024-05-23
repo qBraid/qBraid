@@ -16,8 +16,8 @@ used to dictate transpiler conversions.
 import braket.circuits
 import networkx as nx
 import pytest
+from qbraid_core._import import LazyLoader
 
-from qbraid._import import LazyLoader
 from qbraid.programs.registry import QPROGRAM_ALIASES
 from qbraid.transpiler.conversions import conversion_functions
 from qbraid.transpiler.converter import transpile

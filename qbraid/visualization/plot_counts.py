@@ -15,7 +15,7 @@ Module for plotting historgram of measurement counts against quantum states.
 
 from typing import Callable, Optional, Union
 
-from qbraid._import import LazyLoader
+from qbraid_core._import import LazyLoader
 
 plt = LazyLoader("plt", globals(), "matplotlib.pyplot")
 matplotlib = LazyLoader("matplotlib", globals(), "matplotlib")
