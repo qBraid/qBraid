@@ -14,7 +14,7 @@ Module containing functions to convert between OpenQASM 2 and PyTKET.
 """
 from typing import TYPE_CHECKING
 
-from qbraid._import import LazyLoader
+from qbraid_core._import import LazyLoader
 
 pytket_qasm = LazyLoader("pytket_qasm", globals(), "pytket.qasm")
 

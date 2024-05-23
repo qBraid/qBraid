@@ -14,7 +14,8 @@ Module for transforming Amazon Braket circuits.
 """
 from typing import TYPE_CHECKING
 
-from qbraid._import import LazyLoader
+from qbraid_core._import import LazyLoader
+
 from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY
 from qbraid.programs.libs.braket import BraketCircuit
 from qbraid.transpiler import transpile

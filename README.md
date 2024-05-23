@@ -70,13 +70,13 @@ Using the SDK on [qBraid Lab](https://docs.qbraid.com/projects/lab/en/latest/lab
 
 The qBraid-SDK, and all of its dependencies, can also be installed using pip:
 
-```shell
+```bash
 pip install qbraid
 ```
 
 You can also [install from source](CONTRIBUTING.md#installing-from-source) by cloning this repository and running a pip install command in the root directory of the repository:
 
-```shell
+```bash
 git clone https://github.com/qBraid/qBraid.git
 cd qBraid
 pip install .
@@ -168,22 +168,22 @@ graph.plot()
 You can use the native conversions supported by qBraid, or define your own custom nodes and/or edges. For [example](https://github.com/qBraid/qbraid-qir?tab=readme-ov-file#add-qir-node-to-qbraid-conversion-graph):
 
 ```python
-from qbraid_qir.qasm3 import qasm3_to_qir
 from qbraid.transpiler import Conversion
 
-conversion = Conversion("qasm3", "pyqir", qasm3_to_qir)
+example_func = lambda x: x # replace with your custom conversion function
+conversion = Conversion("qasm3", "stim", example_func)
 
 graph.add_conversion(conversion)
 
-graph.plot()
+graph.plot(seed=42) # using a seed is helpful to ensure reproducibility
 ```
 
 ### QbraidProvider
 
-Run experiements using on-demand simulators provided by qBraid using the `qbraid.runtime.native.QbraidProvider`. You can get a Python list of device objects using:
+Run experiements using on-demand simulators provided by qBraid using the `qbraid.runtime.QbraidProvider`. You can get a Python list of device objects using:
 
 ```python
-from qbraid.runtime.native import QbraidProvider
+from qbraid.runtime import QbraidProvider
 
 provider = QbraidProvider()
 qdevices = provider.get_devices()
@@ -222,7 +222,7 @@ where `~` corresponds to your home (`$HOME`) directory:
 |:---------------------------|
 
 ```python
-from qbraid.runtime.native import QbraidProvider
+from qbraid.runtime import QbraidProvider
 
 provider = QbraidProvider(api_key='API_KEY')
 provider.save_config()
@@ -231,7 +231,7 @@ provider.save_config()
 Once the account is saved on disk, you can instantiate the provider without any arguments:
 
 ```python
-from qbraid.runtime.native import QbraidProvider
+from qbraid.runtime import QbraidProvider
 
 provider = QbraidProvider()
 ```
@@ -240,7 +240,7 @@ provider = QbraidProvider()
 
 Alternatively, the qBraid-SDK can discover credentials from environment variables:
 
-```shell
+```bash
 export QBRAID_API_KEY='QBRAID_API_KEY'
 ```
 

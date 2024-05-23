@@ -14,8 +14,8 @@ Module for plotting qBraid transpiler quantum program conversion graphs.
 from typing import TYPE_CHECKING, Optional
 
 import networkx as nx
+from qbraid_core._import import LazyLoader
 
-from qbraid._import import LazyLoader
 from qbraid.programs.registry import is_registered_alias_native
 
 if TYPE_CHECKING:

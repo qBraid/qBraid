@@ -35,9 +35,10 @@ Exceptions
 """
 import sys
 
+from qbraid_core._import import LazyLoader
+
 from ._about import about
 from ._compat import check_warn_version_update, configure_logging, filterwarnings
-from ._import import LazyLoader
 from ._version import __version__
 from .exceptions import QbraidError
 

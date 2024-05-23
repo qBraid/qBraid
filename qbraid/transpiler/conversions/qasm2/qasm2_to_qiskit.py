@@ -14,7 +14,7 @@ Module defining Qiskit OpenQASM conversions
 """
 from typing import TYPE_CHECKING
 
-from qbraid._import import LazyLoader
+from qbraid_core._import import LazyLoader
 
 qiskit = LazyLoader("qiskit", globals(), "qiskit")
 

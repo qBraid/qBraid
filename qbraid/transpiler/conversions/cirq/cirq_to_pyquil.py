@@ -16,8 +16,8 @@ representation to pyQuil's circuit representation (Quil programs).
 from typing import TYPE_CHECKING
 
 from cirq import LineQubit, QubitOrder
+from qbraid_core._import import LazyLoader
 
-from qbraid._import import LazyLoader
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 try:

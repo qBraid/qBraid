@@ -29,6 +29,7 @@ dependencies = [
     "numpy>=1.17,<1.27",
     "openqasm3[parser]>=0.4.0,<0.6.0",
     "ply>=3.6",
+    "qbraid-core>=0.1.10"
 ]
 requires-python = ">=3.9,<3.13"
 
@@ -41,13 +42,13 @@ Discord = "https://discord.gg/TPBU2sa8Et"
 "Launch on Lab" = "https://account.qbraid.com/?gitHubUrl=https://github.com/qBraid/qBraid.git"
 
 [project.optional-dependencies]
-braket = ["amazon-braket-sdk>=1.42.1,<1.80.0", "pytket-braket>=0.30.0,<0.37.0"]
-qiskit = ["qiskit>=0.44.0,<1.1.0", "qiskit-ibm-runtime>=0.18.0,<0.21.0"]
-runtime = ["qbraid-qir>=0.2.0", "qbraid-core>=0.1.10"]
+braket = ["amazon-braket-sdk>=1.74,<1.81", "pytket-braket>=0.30,<0.37"]
+qiskit = ["qiskit>=0.44,<1.1", "qiskit-ibm-runtime>=0.18,<0.21"]
+runtime = ["qbraid-qir>=0.2"]
 visualization = ["ipython", "matplotlib", "pylatexenc"]
 test = ["pytest", "pytest-cov"]
 lint = ["black", "isort", "pylint", "qbraid-cli"]
-docs = ["sphinx>=7.2.6,<7.4.0", "sphinx-autodoc-typehints>=1.24,<2.2", "sphinx-rtd-theme>=1.3,<2.1", "docutils<0.22", "sphinx-copybutton"]
+docs = ["sphinx>=7.2,<7.4", "sphinx-autodoc-typehints>=1.24,<2.2", "sphinx-rtd-theme>=1.3,<2.1", "docutils<0.22", "sphinx-copybutton"]
 
 [project.entry-points."qbraid.programs"]
 braket = "qbraid.programs.libs.braket:BraketCircuit"
@@ -86,8 +87,9 @@ parallel = true
 source = ["qbraid"]
 omit = [
   "**/qbraid/visualization/plot_conversions.py",
-  "**/qbraid/visualization/draw_circuit.py.py",
+  "**/qbraid/visualization/draw_circuit.py",
   "**/qbraid/_compat.py",
+  "**/qbraid/runtime/ionq/*.py",
   "**/qbraid/transpiler/conversions/qasm2/qasm2_extras.py"
 ]
 

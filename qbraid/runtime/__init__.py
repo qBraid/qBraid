@@ -40,6 +40,7 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
+	Session
    	TargetProfile
 	QuantumDevice
 	QuantumJob
@@ -60,7 +61,8 @@ Exceptions
 """
 import sys
 
-from qbraid._import import LazyLoader
+from qbraid_core import Session
+from qbraid_core._import import LazyLoader
 
 from ._display import display_jobs_from_data
 from .device import QuantumDevice
@@ -72,6 +74,7 @@ from .exceptions import (
     ResourceNotFoundError,
 )
 from .job import QuantumJob
+from .native import *
 from .profile import TargetProfile
 from .provider import QuantumProvider
 from .result import QuantumJobResult
@@ -79,7 +82,6 @@ from .result import QuantumJobResult
 if "sphinx" in sys.modules:
     from . import braket, ionq, native, qiskit
 else:
-    native = LazyLoader("native", globals(), "qbraid.runtime.native")
     qiskit = LazyLoader("ibm", globals(), "qbraid.runtime.qiskit")
     braket = LazyLoader("braket", globals(), "qbraid.runtime.braket")
     ionq = LazyLoader("ionq", globals(), "qbraid.runtime.ionq")
