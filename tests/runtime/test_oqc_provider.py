@@ -21,6 +21,7 @@ import numpy as np
 import pytest
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
+from qbraid.transpiler import ConversionScheme
 from qbraid.runtime import DeviceType, JobStateError, TargetProfile
 from qbraid.runtime.oqc import OQCProvider, OQCDevice, OQCJob
 
@@ -103,5 +104,40 @@ def test_build_runtime_profile():
         assert profile._data["num_qubits"] == 8
         assert profile._data["program_spec"] == ProgramSpec(str, alias="qasm2")
     
-def test_retrieving_job():
-    pass
+class TestOQCClient:
+    """Test class for OQC client."""
+
+    def __init__(self, api_key):
+        self.api_key = api_key
+    
+    def schedule_tasks(self, task: QPUTask, qpu_id: str):
+        return task
+
+class TestOQCDevice(OQCDevice):
+    """Test class for OQC device."""
+
+    def __init__(self, id, oqc_client = None):
+        self._client = oqc_client or TestOQCClient("fake_api_key")
+        self._profile = TargetProfile(
+            device_id=id,
+            device_type=DeviceType.SIMULATOR,
+            num_qubits=8,
+            program_spec=ProgramSpec(str, alias="qasm2"),
+        )
+        self._target_spec = ProgramSpec(str, alias="qasm2")
+        self._scheme = ConversionScheme()
+
+@pytest.mark.parametrize("circuit", test_circuits())
+def test_run_fake_job(circuit):
+    device = TestOQCDevice(device_id)
+    job = device.run(circuit)
+    assert isinstance(job, OQCJob)
+
+def test_run_batch_fake_job():
+    device = TestOQCDevice(device_id)
+    circuits = test_circuits()
+    job = device.run(circuits)
+    assert isinstance(job, list)
+    assert len(job) == len(circuits)
+    assert all(isinstance(j, OQCJob) for j in job)
+

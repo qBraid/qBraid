@@ -40,7 +40,6 @@ class OQCDevice(QuantumDevice):
     def transform(self, program: str) -> str:
         # program = remove_qasm_barriers(program)
         program = rename_qasm_registers(program)
-        print(program)
         return program
     
     def submit(self, run_input, **kwargs) -> OQCJob:
