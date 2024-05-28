@@ -14,7 +14,8 @@ Module for conversions from QASM 2 to Cirq Circuits
 """
 from typing import TYPE_CHECKING
 
-from qbraid._import import LazyLoader
+from qbraid_core._import import LazyLoader
+
 from qbraid.programs.exceptions import QasmError
 from qbraid.transforms.qasm2 import flatten_qasm_program
 

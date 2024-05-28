@@ -36,11 +36,15 @@ class QbraidProvider(QuantumProvider):
         client (qbraid_core.services.quantum.QuantumClient): qBraid QuantumClient object
     """
 
-    def __init__(self, client: Optional[QuantumClient] = None):
+    def __init__(self, api_key: Optional[str] = None, client: Optional[QuantumClient] = None):
         """
         Initializes the QbraidProvider object
 
         """
+        if api_key and client:
+            raise ValueError("Provide either api_key or client, not both.")
+
+        self._api_key = None
         self._client = client
 
     def save_config(self, **kwargs):
@@ -52,7 +56,7 @@ class QbraidProvider(QuantumProvider):
         """Return the QuantumClient object."""
         if self._client is None:
             try:
-                self._client = QuantumClient()
+                self._client = QuantumClient(api_key=self._api_key)
             except AuthError as err:
                 raise ResourceNotFoundError(
                     "Failed to authenticate with the Quantum service."
@@ -110,9 +114,11 @@ class QbraidProvider(QuantumProvider):
         profile = self._build_runtime_profile(device_data)
         return QbraidDevice(profile, client=self.client)
 
+    # pylint: disable-next=too-many-arguments
     def display_jobs(
         self,
         device_id: Optional[str] = None,
+        provider: Optional[str] = None,
         status: Optional[str] = None,
         tags: Optional[dict] = None,
         max_results: int = 10,
@@ -123,11 +129,15 @@ class QbraidProvider(QuantumProvider):
 
         Args:
             device_id (optional, str): The qBraid ID of the device used in the job.
+            provider (optional, str): The name of the provider.
             tags (optional, dict): A list of tags associated with the job.
             status (optional, str): The status of the job.
             max_results (optional, int): Maximum number of results to display. Defaults to 10.
         """
-        query = {"provider": "qbraid"}
+        query = {}
+
+        if provider:
+            query["provider"] = provider.lower()
 
         if device_id:
             query["qbraidDeviceId"] = device_id
@@ -138,13 +148,10 @@ class QbraidProvider(QuantumProvider):
         if tags:
             query.update({f"tags.{key}": value for key, value in tags.items()})
 
-        query_filter = query.copy()
-
         if max_results:
-            query_filter["numResults"] = max_results
             query["resultsPerPage"] = max_results
 
         jobs = self.client.search_jobs(query)
 
-        job_data, msg = process_job_data(jobs, query_filter)
+        job_data, msg = process_job_data(jobs, query)
         return display_jobs_from_data(job_data, msg)

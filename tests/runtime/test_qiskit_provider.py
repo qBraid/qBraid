@@ -74,7 +74,7 @@ def qiskit_circuit(meas=True):
     return circuit
 
 
-def test_circuits():
+def run_inputs():
     """Returns list of test circuits for each available native provider."""
     circuits = []
     if "cirq" in NATIVE_REGISTRY:
@@ -174,7 +174,7 @@ def test_queue_depth():
 
 
 @pytest.mark.parametrize("qbraid_device", fake_ibm_devices())
-@pytest.mark.parametrize("circuit", test_circuits())
+@pytest.mark.parametrize("circuit", run_inputs())
 def test_run_fake_qiskit_device_wrapper(qbraid_device, circuit):
     """Test run method from wrapped fake Qiskit backends"""
     qbraid_job = qbraid_device.run(circuit, shots=10)
@@ -186,7 +186,7 @@ def test_run_fake_qiskit_device_wrapper(qbraid_device, circuit):
 @pytest.mark.parametrize("qbraid_device", fake_ibm_devices())
 def test_run_fake_batch_qiskit_device_wrapper(qbraid_device):
     """Test run method from wrapped fake Qiskit backends"""
-    qbraid_job = qbraid_device.run(test_circuits(), shots=10)
+    qbraid_job = qbraid_device.run(run_inputs(), shots=10)
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
     assert isinstance(vendor_job, Union[BasicProviderJob, AerJob])
@@ -244,7 +244,7 @@ def test_retrieving_ibm_job(device):
 def test_cancel_completed_batch_error(device):
     """Test that cancelling a batch job that has already reached its
     final state raises an error."""
-    job = device.run(test_circuits(), shots=10)
+    job = device.run(run_inputs(), shots=10)
 
     timeout = 30
     check_every = 2
