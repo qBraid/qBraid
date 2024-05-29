@@ -10,6 +10,7 @@
 
 # pylint:disable=invalid-name
 
+from typing import Any
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
@@ -47,3 +48,21 @@ class OQCJob(QuantumJob):
         }
 
         return status_map.get(task_status, JobStatus.UNKNOWN)
+    
+    def metrics(self):
+        return self._client.get_task_metrics(task_id=self.id, qpu_id=self._qpu_id)
+    
+    def timings(self):
+        return self._client.get_task_timings(task_id=self.id, qpu_id=self._qpu_id)
+    
+    def metadata(self):
+        return self._client.get_task_metadata(task_id=self.id, qpu_id=self._qpu_id)
+    
+    def error(self):
+        try:
+            return self._client.get_task_errors(task_id=self.id, qpu_id=self._qpu_id).error_message
+        except:
+            return "There is no error message available for this task."
+
+    # def execution_estimates(self):
+    #     return self._client.get_task_execution_estimates(task_ids=self.id, qpu_id=self._qpu_id)
