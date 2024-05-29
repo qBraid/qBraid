@@ -19,36 +19,33 @@ from .job import OQCJob
 
 results_format = {
     "binary": QuantumResultsFormat().binary_count(),
-    "raw": QuantumResultsFormat().raw(),
-    None: None
+    "raw": QuantumResultsFormat().raw()
 }
 
 metrics_type = {
     "default": MetricsType.Default,
     "empty": MetricsType.Empty,
-    "optimizedcircuit": MetricsType.OptimizedCircuit,
-    "optimizedinstructioncount": MetricsType.OptimizedInstructionCount,
-    None: None
+    "optimized_circuit": MetricsType.OptimizedCircuit,
+    "optimized_instruction_count": MetricsType.OptimizedInstructionCount
 }
 
 optimizations = {
-    "cliffordsimp": Tket(TketOptimizations.CliffordSimp),
-    "contextsimp": Tket(TketOptimizations.ContextSimp),
-    "decomposearbitrarilycontrolledgates": Tket(TketOptimizations.DecomposeArbitrarilyControlledGates),
-    "defaultmappingpass": Tket(TketOptimizations.DefaultMappingPass),
-    "empty": Tket(TketOptimizations.Empty),
-    "fullpeepholeoptimise": Tket(TketOptimizations.FullPeepholeOptimise),
-    "globalisephrasedx": Tket(TketOptimizations.GlobalisePhasedX),
-    "kakdecomposition": Tket(TketOptimizations.KAKDecomposition),
-    "one": Tket(TketOptimizations.One),
-    "peepholeoptimise2q": Tket(TketOptimizations.PeepholeOptimise2Q),
-    "removebarriers": Tket(TketOptimizations.RemoveBarriers),
-    "removediscarded": Tket(TketOptimizations.RemoveDiscarded),
-    "removeredundancies": Tket(TketOptimizations.RemoveRedundancies),
-    "simplifymeasured": Tket(TketOptimizations.SimplifyMeasured),
-    "threequbitsquash": Tket(TketOptimizations.ThreeQubitSquash),
-    "two": Tket(TketOptimizations.Two),
-    None: None
+    "clifford_simplify": Tket(TketOptimizations.CliffordSimp), # rewrite rules for simplifying Clifford gates
+    "context_simplify": Tket(TketOptimizations.ContextSimp), # simplifications enabled by knowledge of qubit state and discarded qubits
+    "decompose_controlled_gates": Tket(TketOptimizations.DecomposeArbitrarilyControlledGates), # decomposes CCX, CnX, CnY, CnZ, and CnRy gates into CX and single-qubit gates
+    "default_mapping_pass": Tket(TketOptimizations.DefaultMappingPass), # map to the physical topology of system
+    "empty": Tket(TketOptimizations.Empty), # nothing
+    "full_peephole_optimise": Tket(TketOptimizations.FullPeepholeOptimise), # maximum optimization, 
+    "globalise_phased_x": Tket(TketOptimizations.GlobalisePhasedX), # convert to global phase
+    "kak_decomposition": Tket(TketOptimizations.KAKDecomposition), # squash two qubit operations into minimal form
+    "one": Tket(TketOptimizations.One), # only want to map the qubits onto the hardware and convert the gates into native gates
+    "peephole_optimise_2q": Tket(TketOptimizations.PeepholeOptimise2Q), # peephole optimisation including resynthesis of 2-qubit gate sequences
+    "remove_barriers": Tket(TketOptimizations.RemoveBarriers), # straight forward
+    "remove_discarded": Tket(TketOptimizations.RemoveDiscarded), # remove operations that have no output
+    "remove_redundancies": Tket(TketOptimizations.RemoveRedundancies), # straight forward
+    "simplify_measured": Tket(TketOptimizations.SimplifyMeasured), # pass to replace all ‘classical maps’ followed by measure operations whose quantum output is discarded with classical operations following the measure
+    "three_qubit_squash": Tket(TketOptimizations.ThreeQubitSquash), # squash and apply clifford simplification
+    "two": Tket(TketOptimizations.Two) # attain maximum optimisations without consideration for hardware specifications
 }
 
 class OQCDevice(QuantumDevice):
@@ -83,11 +80,11 @@ class OQCDevice(QuantumDevice):
         # grab repeats, repetition_period, results_format, metrics, and optimizations from kwargs
         if "shots" in kwargs or "repetition_period" in kwargs or "results_format" in kwargs or "metrics" in kwargs or "optimizations" in kwargs:
             custom_config = CompilerConfig(
-                repeats = kwargs.get("shots", None),
-                repetition_period = kwargs.get("repetition_period", None),
-                results_format = results_format[kwargs.get("results_format", None)],
-                metrics = metrics_type[kwargs.get("metrics", None)],
-                optimizations = optimizations[kwargs.get("optimizations",  None)]
+                repeats = kwargs.get("shots", 1000),
+                repetition_period = kwargs.get("repetition_period", 200e-6),
+                results_format = results_format[kwargs.get("results_format", "binary")],
+                metrics = metrics_type[kwargs.get("metrics", "default")],
+                optimizations = optimizations[kwargs.get("optimizations",  "one")]
             )
         else:
             custom_config = None
