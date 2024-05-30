@@ -29,7 +29,7 @@ class OQCProvider(QuantumProvider):
 
     def __init__(self, api_key: str):
         super().__init__()
-        self.client = OQCClient(url = "https://cloud.oqc.app/", authentication_token = api_key)
+        self.client = OQCClient(url="https://cloud.oqc.app/", authentication_token=api_key)
 
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
         """Build a profile for OQC device."""
@@ -37,7 +37,7 @@ class OQCProvider(QuantumProvider):
             device_id=data["id"],
             device_type=DeviceType.SIMULATOR,
             num_qubits=data["num_qubits"],
-            program_spec=ProgramSpec(str, alias="qasm2")
+            program_spec=ProgramSpec(str, alias="qasm2"),
         )
 
     def get_devices(self, **kwargs) -> dict[str, dict[str, Any]]:
@@ -53,4 +53,3 @@ class OQCProvider(QuantumProvider):
             if device.profile._data["device_id"] == device_id:
                 res = device
         return res
-    

@@ -46,7 +46,7 @@ class OQCJob(QuantumJob):
             "CANCELLED": JobStatus.CANCELLED,
             "COMPLETED": JobStatus.COMPLETED,
             "UNKNOWN": JobStatus.UNKNOWN,
-            "EXPIRED": JobStatus.FAILED
+            "EXPIRED": JobStatus.FAILED,
         }
 
         return status_map.get(task_status, JobStatus.UNKNOWN)

@@ -24,11 +24,13 @@ from qbraid.transpiler import ConversionScheme
 
 try:
     from qcaas_client.client import OQCClient, QPUTask
+
     oqc_not_installed = False
 except ImportError:
     oqc_not_installed = True
 
 pytest.mark.skipif(oqc_not_installed, reason="qcaas_client not installed")
+
 
 def braket_circuit():
     """Returns low-depth, one-qubit Braket circuit to be used for testing."""
@@ -38,6 +40,7 @@ def braket_circuit():
     circuit.h(0)
     circuit.ry(0, np.pi / 2)
     return circuit
+
 
 def cirq_circuit(meas=True):
     """Returns Low-depth, one-qubit Cirq circuit to be used for testing.
@@ -56,6 +59,7 @@ def cirq_circuit(meas=True):
     circuit.append(basic_circuit())
     return circuit
 
+
 def qiskit_circuit(meas=True):
     """Returns Low-depth, one-qubit Qiskit circuit to be used for testing.
     If ``meas=True``, applies measurement operation to end of circuit."""
@@ -68,6 +72,7 @@ def qiskit_circuit(meas=True):
         circuit.measure(0, 0)
     return circuit
 
+
 def test_circuits():
     """Returns list of test circuits for each available native provider."""
     circuits = []
@@ -79,7 +84,9 @@ def test_circuits():
         circuits.append(braket_circuit())
     return circuits
 
+
 device_id = "qpu:uk:2:d865b5a184"
+
 
 def test_oqc_provider_device():
     """Test OQC provider and device."""
@@ -93,6 +100,7 @@ def test_oqc_provider_device():
         assert isinstance(test_device, OQCDevice)
         assert test_device.profile["device_id"] == device_id
 
+
 def test_build_runtime_profile():
     """Test building a runtime profile for OQC device."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
@@ -104,6 +112,7 @@ def test_build_runtime_profile():
         assert profile._data["device_type"] == DeviceType.SIMULATOR
         assert profile._data["num_qubits"] == 8
         assert profile._data["program_spec"] == ProgramSpec(str, alias="qasm2")
+
 
 class TestOQCClient:
     """Test class for OQC client."""
@@ -117,10 +126,13 @@ class TestOQCClient:
         qpu_id = qpu_id[::]
         return task
 
+
 class TestOQCDevice(OQCDevice):
     """Test class for OQC device."""
 
-    def __init__(self, id, oqc_client = None): # pylint: disable=redefined-builtin, super-init-not-called
+    def __init__(
+        self, id, oqc_client=None
+    ):  # pylint: disable=redefined-builtin, super-init-not-called
         self._client = oqc_client or TestOQCClient("fake_api_key")
         self._profile = TargetProfile(
             device_id=id,
@@ -131,12 +143,14 @@ class TestOQCDevice(OQCDevice):
         self._target_spec = ProgramSpec(str, alias="qasm2")
         self._scheme = ConversionScheme()
 
+
 @pytest.mark.parametrize("circuit", test_circuits())
 def test_run_fake_job(circuit):
     """Test running a fake job."""
     device = TestOQCDevice(device_id)
     job = device.run(circuit)
     assert isinstance(job, OQCJob)
+
 
 def test_run_batch_fake_job():
     """Test running a batch of fake jobs."""

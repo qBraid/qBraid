@@ -363,6 +363,7 @@ def _zzpow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
         op.qubits[1],
     )
 
+
 def _rzz_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
     gate = cast(RZZGate, op.gate)
     return formatter.format(
@@ -372,6 +373,7 @@ def _rzz_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
         op.qubits[1],
     )
 
+
 def _quil_u2_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
     gate = cast(U2Gate, op.gate)
     return formatter.format(
@@ -380,6 +382,7 @@ def _quil_u2_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
         gate._lam,
         op.qubits[0],
     )
+
 
 def _quil_u3_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
     gate = cast(U3Gate, op.gate)
