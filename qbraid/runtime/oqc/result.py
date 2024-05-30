@@ -8,6 +8,10 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+"""
+Module for OQC result class.
+
+"""
 from typing import Any, Optional
 
 import numpy as np
@@ -24,8 +28,8 @@ class OQCJobResult(QuantumJobResult):
         self._qpu_id = qpu_id
         self._client = client
 
-    def raw_counts(self) -> Any:
-        return self._client.get_task_results(task_id=self.id, qpu_id=self._qpu_id).result.get("c")
+    def raw_counts(self, **kwargs) -> Any:
+        return self._client.get_task_results(task_id=self.id, qpu_id=self._qpu_id, **kwargs).result.get("c")
 
     def measurements(self) -> Optional[np.ndarray]:
         counts = self.raw_counts()

@@ -77,7 +77,7 @@ class OQCDevice(QuantumDevice):
         run_input = [run_input] if is_single_input else run_input
         tasks = []
 
-        if ("shots" in kwargs or "repetition_period" in kwargs or "results_format" in kwargs 
+        if ("shots" in kwargs or "repetition_period" in kwargs or "results_format" in kwargs
             or "metrics" in kwargs or "optimizations" in kwargs):
             custom_config = CompilerConfig(
                 repeats = kwargs.get("shots", 1000),
@@ -95,8 +95,7 @@ class OQCDevice(QuantumDevice):
         qpu_tasks = self._client.schedule_tasks(tasks, qpu_id = self.id)
         job_ids = [task.task_id for task in qpu_tasks]
 
-        return [OQCJob(job_id = id_str, qpu_id = self.id, client=self._client) for id_str in job_ids] if not is_single_input else OQCJob(job_id = job_ids[0], qpu_id = self.id, client=self._client)
+        jobs = [OQCJob(job_id = id_str, qpu_id = self.id, client=self._client) for id_str in job_ids]
 
-
-
-    
+        return jobs if not is_single_input else OQCJob(job_id = job_ids[0], 
+                                                       qpu_id = self.id, client=self._client)
