@@ -7,9 +7,13 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+"""
+Device class for OQC devices.
 
+"""
 from qcaas_client.client import QPUTask
-from scc.compiler.config import CompilerConfig, QuantumResultsFormat, Tket, TketOptimizations, MetricsType
+from scc.compiler.config import (CompilerConfig, QuantumResultsFormat, 
+                                 Tket, TketOptimizations, MetricsType)
 
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, DeviceType
@@ -60,19 +64,19 @@ class OQCDevice(QuantumDevice):
 
     @property
     def client(self) -> "qcaas_client.client.OQCClient":
+        """Returns the client for the device."""
         return self._client
 
     def status(self) -> DeviceStatus:
         if self.profile.get("device_type") == DeviceType.SIMULATOR:
             return DeviceStatus.ONLINE
-        else:
-            raise NotImplementedError("Only OQC simulators are supported")
+        raise NotImplementedError("Only OQC simulators are supported")
 
-    def transform(self, program: str) -> str:
-        program = rename_qasm_registers(program)
-        return program
+    def transform(self, run_input: str) -> str:
+        run_input = rename_qasm_registers(run_input)
+        return run_input
 
-    def submit(self, run_input, **kwargs) -> OQCJob:
+    def submit(self, run_input, *args, **kwargs) -> OQCJob:
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
         tasks = []
@@ -95,7 +99,7 @@ class OQCDevice(QuantumDevice):
         qpu_tasks = self._client.schedule_tasks(tasks, qpu_id = self.id)
         job_ids = [task.task_id for task in qpu_tasks]
 
-        jobs = [OQCJob(job_id = id_str, qpu_id = self.id, client=self._client) for id_str in job_ids]
+        jobs = [OQCJob(job_id=id_str, qpu_id=self.id, client=self._client) for id_str in job_ids]
 
-        return jobs if not is_single_input else OQCJob(job_id = job_ids[0], 
+        return jobs if not is_single_input else OQCJob(job_id = job_ids[0],
                                                        qpu_id = self.id, client=self._client)

@@ -29,7 +29,8 @@ class OQCJobResult(QuantumJobResult):
         self._client = client
 
     def raw_counts(self, **kwargs) -> Any:
-        return self._client.get_task_results(task_id=self.id, qpu_id=self._qpu_id, **kwargs).result.get("c")
+        return self._client.get_task_results(task_id=self.id, 
+                                             qpu_id=self._qpu_id, **kwargs).result.get("c")
 
     def measurements(self) -> Optional[np.ndarray]:
         counts = self.raw_counts()

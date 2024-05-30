@@ -9,13 +9,14 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 # pylint:disable=invalid-name
+"""
+Module for OQC job class.
 
-from typing import Any
-from qbraid.runtime.enums import JobStatus
-from qbraid.runtime.exceptions import QbraidRuntimeError
-from qbraid.runtime.job import QuantumJob
-
+"""
 from qcaas_client.client import OQCClient
+
+from qbraid.runtime.enums import JobStatus
+from qbraid.runtime.job import QuantumJob
 
 from .result import OQCJobResult
 
@@ -48,17 +49,23 @@ class OQCJob(QuantumJob):
         }
 
         return status_map.get(task_status, JobStatus.UNKNOWN)
-    
+
     def metrics(self):
+        """Get the metrics for the task."""
         return self._client.get_task_metrics(task_id=self.id, qpu_id=self._qpu_id)
-    
+
     def timings(self):
+        """Get the timings for the task."""
         return self._client.get_task_timings(task_id=self.id, qpu_id=self._qpu_id)
-    
-    def metadata(self):
+
+    def metadata(self, use_cache: bool = False):
+        """Get the metadata for the task."""
+        if not use_cache:
+            return self._client.get_task_metadata(task_id=self.id, qpu_id=self._qpu_id)
         return self._client.get_task_metadata(task_id=self.id, qpu_id=self._qpu_id)
-    
+
     def error(self):
+        """Get the error message for the task."""
         try:
             return self._client.get_task_errors(task_id=self.id, qpu_id=self._qpu_id).error_message
         except:

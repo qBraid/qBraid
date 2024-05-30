@@ -13,16 +13,12 @@ Module defining OQC provider class
 
 """
 from typing import Any
-
-import openqasm3
-
+from qcaas_client.client import OQCClient
 
 from qbraid.programs.spec import ProgramSpec
 from qbraid.runtime.enums import DeviceType
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
-
-from qcaas_client.client import OQCClient
 
 from .device import OQCDevice
 
@@ -32,7 +28,7 @@ class OQCProvider(QuantumProvider):
     def __init__(self, api_key: str):
         super().__init__()
         self.client = OQCClient(url = "https://cloud.oqc.app/", authentication_token = api_key)
-    
+
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
         """Build a profile for OQC device."""
         return TargetProfile(
@@ -46,10 +42,13 @@ class OQCProvider(QuantumProvider):
         """Get all OQC devices."""
         data = {"id": "qpu:uk:2:d865b5a184", "num_qubits": 8}
         return [OQCDevice(profile=self._build_profile(data), client=self.client)]
-    
+
     def get_device(self, device_id: str) -> dict[str, Any]:
         """Get a specific OQC device."""
         devices = self.get_devices()
+        res = None
         for device in devices:
             if device.profile._data["device_id"] == device_id:
-                return device
+                res = device
+        return res
+    
