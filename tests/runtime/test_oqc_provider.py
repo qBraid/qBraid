@@ -121,7 +121,6 @@ class TestOQCDevice(OQCDevice):
     """Test class for OQC device."""
 
     def __init__(self, id, oqc_client = None): # pylint: disable=redefined-builtin
-        super().__init__() # pylint: disable=no-value-for-parameter
         self._client = oqc_client or TestOQCClient("fake_api_key")
         self._profile = TargetProfile(
             device_id=id,
