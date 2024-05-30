@@ -109,7 +109,7 @@ class ConversionGraph(rx.PyDiGraph):
             bool: True if the edge exists, False otherwise.
         """
         if node_a not in self._node_str_to_id or node_b not in self._node_str_to_id:
-            return False
+            return False  # To avoid KeyError
         return super().has_edge(self._node_str_to_id[node_a], self._node_str_to_id[node_b])
 
     def conversions(self) -> list[Conversion]:
@@ -189,18 +189,18 @@ class ConversionGraph(rx.PyDiGraph):
         Raises:
             ValueError: If no path is found between source and target.
         """
-        try:
-            path = rx.dijkstra_shortest_paths(
-                self, self._node_str_to_id[source], target=self._node_str_to_id[target]
-            )
-            return [
-                self.get_edge_data(
-                    path[self._node_str_to_id[target]][i], path[self._node_str_to_id[target]][i + 1]
-                )["func"]
-                for i in range(len(path[self._node_str_to_id[target]]) - 1)
-            ]
-        except (rx.NoPathFound, IndexError) as err:
-            raise ConversionPathNotFoundError(source, target) from err
+        path = rx.dijkstra_shortest_paths(
+            self, self._node_str_to_id[source], target=self._node_str_to_id[target]
+        )
+        # rx.dijkstra_shortest_paths returns an empty mapping if no path is found
+        if len(path) == 0:
+            raise ConversionPathNotFoundError(source, target)
+        return [
+            self.get_edge_data(
+                path[self._node_str_to_id[target]][i], path[self._node_str_to_id[target]][i + 1]
+            )["func"]
+            for i in range(len(path[self._node_str_to_id[target]]) - 1)
+        ]
 
     def find_top_shortest_conversion_paths(
         self, source: str, target: str, top_n: int = 3
@@ -219,19 +219,17 @@ class ConversionGraph(rx.PyDiGraph):
         Raises:
             ValueError: If no path is found between source and target.
         """
-        try:
-            all_paths = list(
-                rx.all_simple_paths(
-                    self, self._node_str_to_id[source], self._node_str_to_id[target]
-                )
-            )
-            sorted_paths = sorted(all_paths, key=len)[:top_n]
-            return [
-                [self.get_edge_data(path[i], path[i + 1])["func"] for i in range(len(path) - 1)]
-                for path in sorted_paths
-            ]
-        except (rx.NoPathFound, IndexError) as err:
-            raise ConversionPathNotFoundError(source, target) from err
+        all_paths = rx.all_simple_paths(
+            self, self._node_str_to_id[source], self._node_str_to_id[target]
+        )
+        # rx.all_simple_paths returns an empty list if no path is found
+        if len(all_paths) == 0:
+            raise ConversionPathNotFoundError(source, target)
+        sorted_paths = sorted(all_paths, key=len)[:top_n]
+        return [
+            [self.get_edge_data(path[i], path[i + 1])["func"] for i in range(len(path) - 1)]
+            for path in sorted_paths
+        ]
 
     def has_path(self, source: str, target: str) -> bool:
         """
@@ -257,6 +255,7 @@ class ConversionGraph(rx.PyDiGraph):
         """
         self.clear()
         self._conversions = conversions or self.load_default_conversions()
+        self._node_str_to_id = {}
         self.create_conversion_graph()
 
     def plot(self, **kwargs):
