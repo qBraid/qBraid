@@ -246,8 +246,7 @@ class ConversionGraph(rx.PyDiGraph):
         """
         if source == target:
             return True  # nx.has_path returns True, but rx.has_path returns False
-        else:
-            return rx.has_path(self, self._node_str_to_id[source], self._node_str_to_id[target])
+        return rx.has_path(self, self._node_str_to_id[source], self._node_str_to_id[target])
 
     def reset(self, conversions: Optional[list[Conversion]] = None) -> None:
         """
