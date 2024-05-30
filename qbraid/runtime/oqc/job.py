@@ -68,7 +68,7 @@ class OQCJob(QuantumJob):
         """Get the error message for the task."""
         try:
             return self._client.get_task_errors(task_id=self.id, qpu_id=self._qpu_id).error_message
-        except:
+        except Exception as e:
             return "There is no error message available for this task."
 
     # def execution_estimates(self):

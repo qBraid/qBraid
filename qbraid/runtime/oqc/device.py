@@ -12,7 +12,7 @@ Device class for OQC devices.
 
 """
 from qcaas_client.client import QPUTask
-from scc.compiler.config import (CompilerConfig, QuantumResultsFormat, 
+from scc.compiler.config import (CompilerConfig, QuantumResultsFormat,
                                  Tket, TketOptimizations, MetricsType)
 
 from qbraid.runtime.device import QuantumDevice
