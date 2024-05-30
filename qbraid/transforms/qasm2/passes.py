@@ -156,8 +156,11 @@ def flatten_qasm_program(qasm_str):
 
 def rename_qasm_registers(qasm_str):
     """Returns a copy of the input QASM with all registers renamed to 'q' and 'c'."""
-    qasm_str = re.sub(r"qreg\s+(\w+)\s*\[\s*(\d+)\s*\]\s*;", lambda m: f"qreg q[{m.group(2)}];", qasm_str)
-    qasm_str = re.sub(r"creg\s+(\w+)\s*\[\s*(\d+)\s*\]\s*;", lambda m: f"creg c[{m.group(2)}];", qasm_str)
-    qasm_str = re.sub(r"measure\s+(\w+)\[(\d+)\]\s*->\s*(\w+)\[(\d+)\]\s*;", lambda m: f"measure q[{m.group(2)}] -> c[{m.group(4)}];", qasm_str)
+    func = lambda m: f"qreg q[{m.group(2)}];"
+    qasm_str = re.sub(r"qreg\s+(\w+)\s*\[\s*(\d+)\s*\]\s*;", func, qasm_str)
+    func = lambda m: f"creg c[{m.group(2)}];"
+    qasm_str = re.sub(r"creg\s+(\w+)\s*\[\s*(\d+)\s*\]\s*;", func, qasm_str)
+    func = lambda m: f"measure q[{m.group(2)}] -> c[{m.group(4)}];"
+    qasm_str = re.sub(r"measure\s+(\w+)\[(\d+)\]\s*->\s*(\w+)\[(\d+)\]\s*;", func, qasm_str)
     
     return qasm_str
