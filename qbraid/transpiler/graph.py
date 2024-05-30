@@ -16,18 +16,22 @@ quantum programs available through the qbraid.transpiler using directed graphs.
 from importlib import import_module
 from typing import Optional
 
-import networkx as nx
+import rustworkx as rx
 
 from .conversions import conversion_functions
 from .edge import Conversion
 from .exceptions import ConversionPathNotFoundError
 
 
-class ConversionGraph(nx.DiGraph):
+class ConversionGraph(rx.PyDiGraph):
     """
     Class for coordinating conversions between different quantum software programs
 
     """
+
+    # avoid passing arguments to rx.PyDiGraph.__new__() when inheriting
+    def __new__(cls, *args, **kwargs):
+        return super().__new__(cls)
 
     def __init__(
         self, conversions: Optional[list[Conversion]] = None, require_native: bool = False
@@ -44,6 +48,7 @@ class ConversionGraph(nx.DiGraph):
         super().__init__()
         self.require_native = require_native
         self._conversions = conversions or self.load_default_conversions()
+        self._node_str_to_id = {}
         self.create_conversion_graph()
 
     @staticmethod
@@ -70,7 +75,30 @@ class ConversionGraph(nx.DiGraph):
         for edge in (
             e for e in self._conversions if e.supported and (not self.require_native or e.native)
         ):
-            self.add_edge(edge.source, edge.target, native=edge.native, func=edge.convert)
+            if edge.source not in self._node_str_to_id:
+                self._node_str_to_id[edge.source] = self.add_node(edge.source)
+            if edge.target not in self._node_str_to_id:
+                self._node_str_to_id[edge.target] = self.add_node(edge.target)
+            self.add_edge(
+                self._node_str_to_id[edge.source],
+                self._node_str_to_id[edge.target],
+                {"native": edge.native, "func": edge.convert},
+            )
+
+    def has_node(self, node: str) -> bool:
+        """
+        Check if a node exists in the graph.
+
+        Args:
+            node (str): The node to check.
+
+        Returns:
+            bool: True if the node exists, False otherwise.
+        """
+        return node in self._node_str_to_id
+
+    def has_edge(self, node_a: str, node_b: str) -> bool:
+        return super().has_edge(self._node_str_to_id[node_a], self._node_str_to_id[node_b])
 
     def conversions(self) -> list[Conversion]:
         """
@@ -107,14 +135,19 @@ class ConversionGraph(nx.DiGraph):
                 break
 
         self._conversions.append(edge)
-        self.add_edge(source, target, native=edge.native, func=edge.convert)
+
+        source_id = self.add_node(edge.source)
+        self._node_str_to_id[edge.source] = source_id
+        target_id = self.add_node(edge.target)
+        self._node_str_to_id[edge.target] = target_id
+        self.add_edge(source_id, target_id, {"native": edge.native, "func": edge.convert})
 
     def remove_conversion(self, source: str, target: str) -> None:
         """Safely remove a conversion from the graph."""
-        try:
+        if self.has_edge(source, target):
             self.remove_edge(source, target)
-        except nx.NetworkXError as err:
-            raise ValueError(f"Conversion from {source} to {target} does not exist.") from err
+        else:
+            raise ValueError(f"Conversion from {source} to {target} does not exist.")
 
         self._conversions = [
             conv
@@ -137,9 +170,9 @@ class ConversionGraph(nx.DiGraph):
             ValueError: If no path is found between source and target.
         """
         try:
-            path = nx.shortest_path(self, source, target)
+            path = rx.dijkstra_shortest_paths(self, source, target=target)
             return [self[path[i]][path[i + 1]]["func"] for i in range(len(path) - 1)]
-        except nx.NetworkXNoPath as err:
+        except rx.NoPathFound as err:
             raise ConversionPathNotFoundError(source, target) from err
 
     def find_top_shortest_conversion_paths(
@@ -160,13 +193,17 @@ class ConversionGraph(nx.DiGraph):
             ValueError: If no path is found between source and target.
         """
         try:
-            all_paths = list(nx.all_simple_paths(self, source, target))
+            all_paths = list(
+                rx.all_simple_paths(
+                    self, self._node_str_to_id[source], self._node_str_to_id[target]
+                )
+            )
             sorted_paths = sorted(all_paths, key=len)[:top_n]
             return [
-                [self[path[i]][path[i + 1]]["func"] for i in range(len(path) - 1)]
+                [self.get_edge_data(path[i], path[i + 1])["func"] for i in range(len(path) - 1)]
                 for path in sorted_paths
             ]
-        except nx.NetworkXNoPath as err:
+        except rx.NoPathFound as err:
             raise ConversionPathNotFoundError(source, target) from err
 
     def has_path(self, source: str, target: str) -> bool:
@@ -180,7 +217,7 @@ class ConversionGraph(nx.DiGraph):
         Returns:
             bool: True if the conversion is supported, False otherwise.
         """
-        return nx.has_path(self, source, target)
+        return rx.has_path(self, self._node_str_to_id[source], self._node_str_to_id[target])
 
     def reset(self, conversions: Optional[list[Conversion]] = None) -> None:
         """

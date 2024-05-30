@@ -14,6 +14,7 @@ Module for plotting qBraid transpiler quantum program conversion graphs.
 from typing import TYPE_CHECKING, Optional
 
 import networkx as nx
+import rustworkx as rx
 from qbraid_core._import import LazyLoader
 
 from qbraid.programs.registry import is_registered_alias_native
@@ -22,6 +23,23 @@ if TYPE_CHECKING:
     import qbraid.transpiler
 
 plt = LazyLoader("plt", globals(), "matplotlib.pyplot")
+
+
+def _convert_retworkx_to_networkx(graph: rx.PyDiGraph) -> nx.DiGraph:
+    """Convert a retworkx PyDiGraph to a networkx DiGraph."""
+    if isinstance(graph, rx.PyDiGraph):
+        edge_list = [
+            (
+                graph.get_node_data(x[0]),
+                graph.get_node_data(x[1]),
+                {"native": x[2]["native"], "func": x[2]["func"]},
+            )
+            for x in graph.weighted_edge_list()
+        ]
+
+        return nx.DiGraph(edge_list)
+    else:
+        raise ValueError("Only PyDiGraph is supported")
 
 
 def plot_conversion_graph(  # pylint: disable=too-many-arguments
@@ -78,8 +96,8 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         (conversion.source, conversion.target): conversion for conversion in graph.conversions()
     }
     conversions_ordered = [
-        conversion_dict[(edge[0], edge[1])]
-        for edge in graph.edges()
+        conversion_dict[(graph.get_node_data(edge[0]), graph.get_node_data(edge[1]))]
+        for edge in graph.edge_list()
         if (edge[0], edge[1]) in conversion_dict
     ]
     ecolors = [
@@ -91,6 +109,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         for edge in conversions_ordered
     ]
 
+    graph = _convert_retworkx_to_networkx(graph)
     pos = nx.spring_layout(graph, seed=seed)  # good seeds: 123, 134
     nx.draw_networkx_nodes(graph, pos, node_color=ncolors, node_size=node_size)
     nx.draw_networkx_edges(graph, pos, edge_color=ecolors, min_target_margin=min_target_margin)

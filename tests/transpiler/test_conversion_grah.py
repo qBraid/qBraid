@@ -14,8 +14,8 @@ used to dictate transpiler conversions.
 
 """
 import braket.circuits
-import networkx as nx
 import pytest
+import rustworkx as rx
 from qbraid_core._import import LazyLoader
 
 from qbraid.programs.registry import QPROGRAM_ALIASES
@@ -32,7 +32,7 @@ def bound_method_str(source, target):
     return f"<bound method Conversion.convert of ('{source}', '{target}')>"
 
 
-def are_graphs_equal(graph1: nx.DiGraph, graph2: nx.DiGraph) -> bool:
+def are_graphs_equal(graph1: rx.PyDiGraph, graph2: rx.PyDiGraph) -> bool:
     """Return True if two graphs are equal, False otherwise."""
     # Check if nodes are the same
     if set(graph1.nodes) != set(graph2.nodes):
