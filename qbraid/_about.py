@@ -20,7 +20,6 @@ def about() -> None:
     # pylint: disable=import-outside-toplevel
     import platform
 
-    from networkx import __version__ as networkx_version
     from numpy import __version__ as numpy_version
     from openqasm3 import __version__ as openqasm3_version
     from ply import __version__ as ply_version
@@ -30,7 +29,6 @@ def about() -> None:
 
     # Core dependencies
     core_dependencies = {
-        "networkx": networkx_version,
         "rustworkx": rustworkx_version,
         "openqasm3": openqasm3_version,
         "numpy": numpy_version,

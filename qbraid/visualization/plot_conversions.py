@@ -13,7 +13,6 @@ Module for plotting qBraid transpiler quantum program conversion graphs.
 """
 from typing import TYPE_CHECKING, Optional
 
-import networkx as nx
 import rustworkx as rx
 from qbraid_core._import import LazyLoader
 
@@ -23,20 +22,6 @@ if TYPE_CHECKING:
     import qbraid.transpiler
 
 plt = LazyLoader("plt", globals(), "matplotlib.pyplot")
-
-
-def _convert_retworkx_to_networkx(graph: rx.PyDiGraph) -> nx.DiGraph:
-    """Convert a retworkx PyDiGraph to a networkx DiGraph."""
-    edge_list = [
-        (
-            graph.get_node_data(x[0]),
-            graph.get_node_data(x[1]),
-            {"native": x[2]["native"], "func": x[2]["func"]},
-        )
-        for x in graph.weighted_edge_list()
-    ]
-
-    return nx.DiGraph(edge_list)
 
 
 def plot_conversion_graph(  # pylint: disable=too-many-arguments
@@ -95,23 +80,30 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     conversions_ordered = [
         conversion_dict[(graph.get_node_data(edge[0]), graph.get_node_data(edge[1]))]
         for edge in graph.edge_list()
-        if (edge[0], edge[1]) in conversion_dict
+        if (graph.get_node_data(edge[0]), graph.get_node_data(edge[1])) in conversion_dict
     ]
     ecolors = [
         (
             colors["qbraid_edge"]
-            if graph.get_edge_data(edge.source, edge.target)["native"]
+            if graph.get_edge_data(
+                graph._node_str_to_id[edge.source], graph._node_str_to_id[edge.target]
+            )["native"]
             else colors["extras_edge"] if len(edge._extras) > 0 else colors["external_edge"]
         )
         for edge in conversions_ordered
     ]
-    print(ecolors)
 
-    graph = _convert_retworkx_to_networkx(graph)
-    pos = nx.spring_layout(graph, seed=seed)  # good seeds: 123, 134
-    nx.draw_networkx_nodes(graph, pos, node_color=ncolors, node_size=node_size)
-    nx.draw_networkx_edges(graph, pos, edge_color=ecolors, min_target_margin=min_target_margin)
-    nx.draw_networkx_labels(graph, pos)
+    pos = rx.spring_layout(graph, seed=seed)  # good seeds: 123, 134
+    rx.visualization.mpl_draw(
+        graph,
+        pos,
+        node_color=ncolors,
+        edge_color=ecolors,
+        node_size=node_size,
+        with_labels=True,
+        labels=str,
+        min_target_margin=min_target_margin,
+    )
 
     if title:
         plt.title(title)

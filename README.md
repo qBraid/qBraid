@@ -152,7 +152,7 @@ q_1: ┤ H ├────┤ √X ├────
 1: ───H───X^0.5────────
 ```
 
-Behind the scenes, the qBraid-SDK uses ``networkx`` to create a directional graph that maps all possible conversions between supported program types:
+Behind the scenes, the qBraid-SDK uses ``rustworkx`` to create a directional graph that maps all possible conversions between supported program types:
 
 ```python
 from qbraid.transpiler import ConversionGraph
