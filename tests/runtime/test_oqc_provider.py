@@ -18,9 +18,9 @@ import numpy as np
 import pytest
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
-from qbraid.transpiler import ConversionScheme
 from qbraid.runtime import DeviceType, TargetProfile
-from qbraid.runtime.oqc import OQCProvider, OQCDevice, OQCJob
+from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCProvider
+from qbraid.transpiler import ConversionScheme
 
 try:
     from qcaas_client.client import OQCClient, QPUTask
