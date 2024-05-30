@@ -13,6 +13,7 @@ Module defining OQC provider class
 
 """
 from typing import Any
+
 from qcaas_client.client import OQCClient
 
 from qbraid.programs.spec import ProgramSpec
@@ -21,6 +22,7 @@ from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
 from .device import OQCDevice
+
 
 class OQCProvider(QuantumProvider):
     """OQC provider class."""

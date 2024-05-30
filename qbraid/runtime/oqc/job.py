@@ -20,6 +20,7 @@ from qbraid.runtime.job import QuantumJob
 
 from .result import OQCJobResult
 
+
 class OQCJob(QuantumJob):
     """OQC job class."""
 
