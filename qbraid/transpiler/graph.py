@@ -14,7 +14,7 @@ quantum programs available through the qbraid.transpiler using directed graphs.
 
 """
 from importlib import import_module
-from typing import Optional
+from typing import Callable, Optional
 
 import rustworkx as rx
 
@@ -175,7 +175,7 @@ class ConversionGraph(rx.PyDiGraph):
             if not (conv.source == source and conv.target == target)
         ]
 
-    def find_shortest_conversion_path(self, source: str, target: str) -> list[str]:
+    def find_shortest_conversion_path(self, source: str, target: str) -> list[Callable]:
         """
         Find the shortest conversion path between two nodes in a graph.
 
@@ -184,7 +184,7 @@ class ConversionGraph(rx.PyDiGraph):
             target (str): The target node for the path.
 
         Returns:
-            list of str: The shortest conversion path as a list of step strings.
+            list of Callable: The shortest conversion path as a list of bound methods of Conversion instances.
 
         Raises:
             ValueError: If no path is found between source and target.
@@ -204,7 +204,7 @@ class ConversionGraph(rx.PyDiGraph):
 
     def find_top_shortest_conversion_paths(
         self, source: str, target: str, top_n: int = 3
-    ) -> list[list[str]]:
+    ) -> list[list[Callable]]:
         """
         Find the top shortest conversion paths between two nodes in a graph.
 
@@ -214,7 +214,7 @@ class ConversionGraph(rx.PyDiGraph):
             top_n (int): Number of top shortest paths to find.
 
         Returns:
-            list of list of str: The top shortest conversion paths.
+            list of list of Callable: The top shortest conversion paths.
 
         Raises:
             ValueError: If no path is found between source and target.
