@@ -142,15 +142,23 @@ class ConversionGraph(rx.PyDiGraph):
         for old_edge in self._conversions:
             if old_edge.source == source and old_edge.target == target:
                 self._conversions.remove(old_edge)
+                self.remove_edge(
+                    self._node_str_to_id[source],
+                    self._node_str_to_id[target],
+                )
                 break
 
         self._conversions.append(edge)
 
-        source_id = self.add_node(edge.source)
-        self._node_str_to_id[edge.source] = source_id
-        target_id = self.add_node(edge.target)
-        self._node_str_to_id[edge.target] = target_id
-        self.add_edge(source_id, target_id, {"native": edge.native, "func": edge.convert})
+        if source not in self._node_str_to_id:
+            self._node_str_to_id[source] = self.add_node(source)
+        if target not in self._node_str_to_id:
+            self._node_str_to_id[target] = self.add_node(target)
+        self.add_edge(
+            self._node_str_to_id[source],
+            self._node_str_to_id[target],
+            {"native": edge.native, "func": edge.convert},
+        )
 
     def remove_conversion(self, source: str, target: str) -> None:
         """Safely remove a conversion from the graph."""
@@ -181,8 +189,8 @@ class ConversionGraph(rx.PyDiGraph):
         """
         try:
             path = rx.dijkstra_shortest_paths(self, source, target=target)
-            return [self[path[i]][path[i + 1]]["func"] for i in range(len(path) - 1)]
-        except rx.NoPathFound as err:
+            return [self.get_edge_data(path[i], path[i + 1])["func"] for i in range(len(path) - 1)]
+        except (rx.NoPathFound, IndexError) as err:
             raise ConversionPathNotFoundError(source, target) from err
 
     def find_top_shortest_conversion_paths(
@@ -213,7 +221,7 @@ class ConversionGraph(rx.PyDiGraph):
                 [self.get_edge_data(path[i], path[i + 1])["func"] for i in range(len(path) - 1)]
                 for path in sorted_paths
             ]
-        except rx.NoPathFound as err:
+        except (rx.NoPathFound, IndexError) as err:
             raise ConversionPathNotFoundError(source, target) from err
 
     def has_path(self, source: str, target: str) -> bool:
