@@ -27,19 +27,16 @@ plt = LazyLoader("plt", globals(), "matplotlib.pyplot")
 
 def _convert_retworkx_to_networkx(graph: rx.PyDiGraph) -> nx.DiGraph:
     """Convert a retworkx PyDiGraph to a networkx DiGraph."""
-    if isinstance(graph, rx.PyDiGraph):
-        edge_list = [
-            (
-                graph.get_node_data(x[0]),
-                graph.get_node_data(x[1]),
-                {"native": x[2]["native"], "func": x[2]["func"]},
-            )
-            for x in graph.weighted_edge_list()
-        ]
+    edge_list = [
+        (
+            graph.get_node_data(x[0]),
+            graph.get_node_data(x[1]),
+            {"native": x[2]["native"], "func": x[2]["func"]},
+        )
+        for x in graph.weighted_edge_list()
+    ]
 
-        return nx.DiGraph(edge_list)
-    else:
-        raise ValueError("Only PyDiGraph is supported")
+    return nx.DiGraph(edge_list)
 
 
 def plot_conversion_graph(  # pylint: disable=too-many-arguments
@@ -103,11 +100,12 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     ecolors = [
         (
             colors["qbraid_edge"]
-            if graph[edge.source][edge.target]["native"]
+            if graph.get_edge_data(edge.source, edge.target)["native"]
             else colors["extras_edge"] if len(edge._extras) > 0 else colors["external_edge"]
         )
         for edge in conversions_ordered
     ]
+    print(ecolors)
 
     graph = _convert_retworkx_to_networkx(graph)
     pos = nx.spring_layout(graph, seed=seed)  # good seeds: 123, 134

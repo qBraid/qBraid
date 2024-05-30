@@ -31,7 +31,7 @@ class ConversionGraph(rx.PyDiGraph):
 
     # avoid passing arguments to rx.PyDiGraph.__new__() when inheriting
     def __new__(cls, *args, **kwargs):
-        return super().__new__(cls)
+        return super().__new__(cls)  # pylint: disable=no-value-for-parameter
 
     def __init__(
         self, conversions: Optional[list[Conversion]] = None, require_native: bool = False
@@ -98,6 +98,16 @@ class ConversionGraph(rx.PyDiGraph):
         return node in self._node_str_to_id
 
     def has_edge(self, node_a: str, node_b: str) -> bool:
+        """
+        Check if an edge exists between two nodes in the graph.
+
+        Args:
+            node_a (str): The source node.
+            node_b (str): The target node.
+
+        Returns:
+            bool: True if the edge exists, False otherwise.
+        """
         return super().has_edge(self._node_str_to_id[node_a], self._node_str_to_id[node_b])
 
     def conversions(self) -> list[Conversion]:

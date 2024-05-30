@@ -133,6 +133,7 @@ exclude = '''
 [tool.pylint.'MESSAGES CONTROL']
 max-line-length = 100
 disable = "C0103, E0401, R0801, R0902, R0903, R0911, R0912, R0914, W0212, W0511"
+extension-pkg-whitelist = ["rustworkx"]
 
 [tool.isort]
 profile = "black"
