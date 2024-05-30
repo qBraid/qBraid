@@ -92,7 +92,7 @@ def test_oqc_provider_device():
         test_device = provider.get_device(device_id)
         assert isinstance(test_device, OQCDevice)
         assert test_device.profile["device_id"] == device_id
-    
+
 def test_build_runtime_profile():
     """Test building a runtime profile for OQC device."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
@@ -104,14 +104,14 @@ def test_build_runtime_profile():
         assert profile._data["device_type"] == DeviceType.SIMULATOR
         assert profile._data["num_qubits"] == 8
         assert profile._data["program_spec"] == ProgramSpec(str, alias="qasm2")
-    
+
 class TestOQCClient:
     """Test class for OQC client."""
 
     def __init__(self, api_key):
         super().__init__()
         self.api_key = api_key
-    
+
     def schedule_tasks(self, task: QPUTask, qpu_id):
         """Schedule tasks for the QPU."""
         qpu_id = qpu_id[::]
@@ -120,8 +120,8 @@ class TestOQCClient:
 class TestOQCDevice(OQCDevice):
     """Test class for OQC device."""
 
-    def __init__(self, id, oqc_client = None):
-        super().__init__()
+    def __init__(self, id, oqc_client = None): # pylint: disable=redefined-builtin
+        super().__init__() # pylint: disable=no-value-for-parameter
         self._client = oqc_client or TestOQCClient("fake_api_key")
         self._profile = TargetProfile(
             device_id=id,
