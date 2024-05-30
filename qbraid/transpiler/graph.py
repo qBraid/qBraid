@@ -108,6 +108,8 @@ class ConversionGraph(rx.PyDiGraph):
         Returns:
             bool: True if the edge exists, False otherwise.
         """
+        if node_a not in self._node_str_to_id or node_b not in self._node_str_to_id:
+            return False
         return super().has_edge(self._node_str_to_id[node_a], self._node_str_to_id[node_b])
 
     def conversions(self) -> list[Conversion]:
@@ -163,7 +165,7 @@ class ConversionGraph(rx.PyDiGraph):
     def remove_conversion(self, source: str, target: str) -> None:
         """Safely remove a conversion from the graph."""
         if self.has_edge(source, target):
-            self.remove_edge(source, target)
+            self.remove_edge(self._node_str_to_id[source], self._node_str_to_id[target])
         else:
             raise ValueError(f"Conversion from {source} to {target} does not exist.")
 
@@ -188,8 +190,15 @@ class ConversionGraph(rx.PyDiGraph):
             ValueError: If no path is found between source and target.
         """
         try:
-            path = rx.dijkstra_shortest_paths(self, source, target=target)
-            return [self.get_edge_data(path[i], path[i + 1])["func"] for i in range(len(path) - 1)]
+            path = rx.dijkstra_shortest_paths(
+                self, self._node_str_to_id[source], target=self._node_str_to_id[target]
+            )
+            return [
+                self.get_edge_data(
+                    path[self._node_str_to_id[target]][i], path[self._node_str_to_id[target]][i + 1]
+                )["func"]
+                for i in range(len(path[self._node_str_to_id[target]]) - 1)
+            ]
         except (rx.NoPathFound, IndexError) as err:
             raise ConversionPathNotFoundError(source, target) from err
 
@@ -235,7 +244,10 @@ class ConversionGraph(rx.PyDiGraph):
         Returns:
             bool: True if the conversion is supported, False otherwise.
         """
-        return rx.has_path(self, self._node_str_to_id[source], self._node_str_to_id[target])
+        if source == target:
+            return True  # nx.has_path returns True, but rx.has_path returns False
+        else:
+            return rx.has_path(self, self._node_str_to_id[source], self._node_str_to_id[target])
 
     def reset(self, conversions: Optional[list[Conversion]] = None) -> None:
         """
