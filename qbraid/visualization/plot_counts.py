@@ -87,7 +87,7 @@ def _plot_data(
     x_positions = range(len(all_states))
 
     if colors is None:
-        cmap = matplotlib.cm.get_cmap("tab10")
+        cmap = matplotlib.pyplot.get_cmap("tab10")
         colors = [cmap(i / 10) for i in range(num_dicts)]
 
     if len(colors) != len(counts):

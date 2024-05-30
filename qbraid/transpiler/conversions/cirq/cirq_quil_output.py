@@ -29,6 +29,8 @@ import cirq
 import numpy as np
 from cirq import ops, protocols, value
 
+from qbraid.transpiler.conversions.qasm2.cirq_custom import RZZGate, U2Gate, U3Gate
+
 
 def exponent_to_pi_string(exp: float) -> str:
     """A function for outputting a float exponent to a string in QUIL format."""
@@ -361,6 +363,34 @@ def _zzpow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
         op.qubits[1],
     )
 
+def _rzz_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
+    gate = cast(RZZGate, op.gate)
+    return formatter.format(
+        "CPHASE({0}) {1} {2}\n",
+        gate._half_turns * np.pi,
+        op.qubits[0],
+        op.qubits[1],
+    )
+
+def _quil_u2_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
+    gate = cast(U2Gate, op.gate)
+    return formatter.format(
+        "U(1.5707963267948966, {0}, {1}) {2}\n",
+        gate._phi,
+        gate._lam,
+        op.qubits[0],
+    )
+
+def _quil_u3_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
+    gate = cast(U3Gate, op.gate)
+    return formatter.format(
+        "U({0}, {1}, {2}) {3}\n",
+        gate._theta,
+        gate._phi,
+        gate._lam,
+        op.qubits[0],
+    )
+
 
 SUPPORTED_GATES = {
     ops.CCNotPowGate: _ccnotpow_gate,
@@ -383,6 +413,9 @@ SUPPORTED_GATES = {
     ops.YYPowGate: _yypow_gate,
     ops.ZPowGate: _zpow_gate,
     ops.ZZPowGate: _zzpow_gate,
+    RZZGate: _rzz_gate,
+    U2Gate: _quil_u2_gate,
+    U3Gate: _quil_u3_gate,
 }
 
 

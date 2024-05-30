@@ -20,7 +20,7 @@ from qbraid.transpiler import ConversionGraph, transpile
 
 from ...fixtures.qiskit.gates import get_qiskit_gates
 
-TARGETS = [("braket", 0.98), ("cirq", 0.98), ("pyquil", 0.81), ("pytket", 0.98)]
+TARGETS = [("braket", 0.98), ("cirq", 0.98), ("pyquil", 0.98), ("pytket", 0.98)]
 qiskit_gates = get_qiskit_gates(seed=0)
 
 graph = ConversionGraph(require_native=True)
@@ -40,7 +40,7 @@ def convert_from_qiskit_to_x(target, gate_name):
 @pytest.mark.parametrize(("target", "baseline"), TARGETS)
 def test_qiskit_coverage(target, baseline):
     """Test converting Qiskit circuits to supported target program type over
-    all Qiskit standard gates and check against baseline expecte accuracy.
+    all Qiskit standard gates and check against baseline expected accuracy.
     """
     ACCURACY_BASELINE = baseline
     ALLOWANCE = 0.01
