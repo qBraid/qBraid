@@ -25,9 +25,13 @@ from qbraid.transpiler import ConversionScheme
 from qbraid.runtime import DeviceType, JobStateError, TargetProfile
 from qbraid.runtime.oqc import OQCProvider, OQCDevice, OQCJob
 
-from qcaas_client.client import OQCClient, QPUTask
+try:
+    from qcaas_client.client import OQCClient, QPUTask
+    oqc_not_installed = False
+except ImportError:
+    oqc_not_installed = True
 
-
+pytest.mark.skipif(oqc_not_installed, reason="qcaas_client not installed")
 
 def braket_circuit():
     """Returns low-depth, one-qubit Braket circuit to be used for testing."""
