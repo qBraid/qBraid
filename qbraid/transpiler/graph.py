@@ -184,7 +184,8 @@ class ConversionGraph(rx.PyDiGraph):
             target (str): The target node for the path.
 
         Returns:
-            list of Callable: The shortest conversion path as a list of bound methods of Conversion instances.
+            list of Callable: The shortest conversion path
+                              as a list of bound methods of Conversion instances.
 
         Raises:
             ValueError: If no path is found between source and target.
