@@ -12,9 +12,6 @@
 Unit tests for OQCProvider class
 
 """
-import random
-import time
-
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -22,7 +19,7 @@ import pytest
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
 from qbraid.transpiler import ConversionScheme
-from qbraid.runtime import DeviceType, JobStateError, TargetProfile
+from qbraid.runtime import DeviceType, TargetProfile
 from qbraid.runtime.oqc import OQCProvider, OQCDevice, OQCJob
 
 try:
@@ -42,7 +39,6 @@ def braket_circuit():
     circuit.ry(0, np.pi / 2)
     return circuit
 
-
 def cirq_circuit(meas=True):
     """Returns Low-depth, one-qubit Cirq circuit to be used for testing.
     If ``meas=True``, applies measurement operation to end of circuit."""
@@ -59,7 +55,6 @@ def cirq_circuit(meas=True):
     circuit = cirq.Circuit()
     circuit.append(basic_circuit())
     return circuit
-
 
 def qiskit_circuit(meas=True):
     """Returns Low-depth, one-qubit Qiskit circuit to be used for testing.
@@ -87,6 +82,7 @@ def test_circuits():
 device_id = "qpu:uk:2:d865b5a184"
 
 def test_oqc_provider_device():
+    """Test OQC provider and device."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
         provider = OQCProvider(api_key="fake_api_key")
@@ -98,6 +94,7 @@ def test_oqc_provider_device():
         assert test_device.profile["device_id"] == device_id
     
 def test_build_runtime_profile():
+    """Test building a runtime profile for OQC device."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
         provider = OQCProvider(api_key="fake_api_key")
@@ -112,15 +109,19 @@ class TestOQCClient:
     """Test class for OQC client."""
 
     def __init__(self, api_key):
+        super().__init__()
         self.api_key = api_key
     
-    def schedule_tasks(self, task: QPUTask, qpu_id: str):
+    def schedule_tasks(self, task: QPUTask, qpu_id):
+        """Schedule tasks for the QPU."""
+        qpu_id = qpu_id[::]
         return task
 
 class TestOQCDevice(OQCDevice):
     """Test class for OQC device."""
 
     def __init__(self, id, oqc_client = None):
+        super().__init__()
         self._client = oqc_client or TestOQCClient("fake_api_key")
         self._profile = TargetProfile(
             device_id=id,
@@ -133,15 +134,16 @@ class TestOQCDevice(OQCDevice):
 
 @pytest.mark.parametrize("circuit", test_circuits())
 def test_run_fake_job(circuit):
+    """Test running a fake job."""
     device = TestOQCDevice(device_id)
     job = device.run(circuit)
     assert isinstance(job, OQCJob)
 
 def test_run_batch_fake_job():
+    """Test running a batch of fake jobs."""
     device = TestOQCDevice(device_id)
     circuits = test_circuits()
     job = device.run(circuits)
     assert isinstance(job, list)
     assert len(job) == len(circuits)
     assert all(isinstance(j, OQCJob) for j in job)
-
