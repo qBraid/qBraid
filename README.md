@@ -32,10 +32,6 @@ The framework also facilitates the insertion of additional program validations, 
 
 [<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/qBraid/qBraid.git)
 
----
-
-![Runtime Diagram](https://qbraid-static.s3.amazonaws.com/qbraid-runtime.png)
-
 ## Key Features
 
 ### 1. Quantum Program Integration
@@ -58,6 +54,10 @@ The framework encourages community contributions and extensions, supporting an e
 - **Reduces Overhead**: Minimizes the effort required to develop client-side applications for securely submitting and managing quantum experiments remotely.
 - **Enhances Integration**: Facilitates seamless integration and interoperability of quantum software tools across all layers of the stack.
 - **Broad Compatibility**: Supports a diverse range of API complexities, catering to both established players like IBM and AWS as well as emerging providers.
+
+---
+
+![Runtime Diagram](https://qbraid-static.s3.amazonaws.com/qbraid-runtime.png)
 
 ## Installation & Setup
 
@@ -126,14 +126,14 @@ This arrangement simplifies targeting and transpiling between different quantum 
 ```python
 >>> from qbraid.programs import QPROGRAM_REGISTRY
 >>> QPROGRAM_REGISTRY
-{'cirq': 'cirq.circuits.circuit.Circuit',
- 'qiskit': 'qiskit.circuit.quantumcircuit.QuantumCircuit',
- 'pyquil': 'pyquil.quil.Program',
- 'pytket': 'pytket._tket.circuit.Circuit',
- 'braket': 'braket.circuits.circuit.Circuit',
- 'openqasm3': 'openqasm3.ast.Program',
- 'qasm2': 'str',
- 'qasm3': 'str'}
+{'cirq': cirq.circuits.circuit.Circuit,
+ 'qiskit': qiskit.circuit.quantumcircuit.QuantumCircuit,
+ 'pyquil': pyquil.quil.Program,
+ 'pytket': pytket._tket.circuit.Circuit,
+ 'braket': braket.circuits.circuit.Circuit,
+ 'openqasm3': openqasm3.ast.Program,
+ 'qasm2': str,
+ 'qasm3': str}
 ```
 
 Pass any registered quantum program along with a target package from
