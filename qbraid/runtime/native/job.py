@@ -89,11 +89,7 @@ class QbraidJob(QuantumJob):
         """Return the results of the job."""
         self.wait_for_final_state()
         job_data = self.client.get_job(self.id)
-        result = job_data.get("result")
-        if not result:
-            raise ResourceNotFoundError("Job result not found.")
-
-        device_id: str = result.get("qbraidDeviceId")
+        device_id: str = job_data.get("qbraidDeviceId")
         success: bool = job_data.get("status") == "COMPLETED"
-        result = ExperimentResult.from_result(result)
+        result = ExperimentResult.from_result(job_data)
         return QbraidJobResult(device_id, self.id, success, result)
