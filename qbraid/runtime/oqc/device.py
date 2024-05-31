@@ -86,13 +86,7 @@ class OQCDevice(QuantumDevice):
         run_input = [run_input] if is_single_input else run_input
         tasks = []
 
-        if (
-            "shots" in kwargs
-            or "repetition_period" in kwargs
-            or "results_format" in kwargs
-            or "metrics" in kwargs
-            or "optimizations" in kwargs
-        ):
+        if any(key in kwargs for key in ["shots", "repetition_period", "results_format", "metrics", "optimizations"]):
             custom_config = CompilerConfig(
                 repeats=kwargs.get("shots", 1000),
                 repetition_period=kwargs.get("repetition_period", 200e-6),
