@@ -18,14 +18,14 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
+from qbraid.runtime import DeviceType, TargetProfile
+from qbraid.runtime.enums import DeviceStatus, JobStatus
+from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCJobResult, OQCProvider
+from qbraid.transpiler import ConversionScheme
+
 try:
     from qcaas_client.client import OQCClient, QPUTask  # type: ignore
-
-    from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
-    from qbraid.runtime import DeviceType, TargetProfile
-    from qbraid.runtime.enums import DeviceStatus, JobStatus
-    from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCJobResult, OQCProvider
-    from qbraid.transpiler import ConversionScheme
 
     oqc_not_installed = False
 except ImportError:
