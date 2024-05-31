@@ -67,7 +67,7 @@ def oqc_device():
         def get_task_status(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
             """Get task status."""
             return "COMPLETED"
-        
+
         def get_task_timings(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
             """Get task timings."""
             return {'RECEIVER_DEQUEUED': '2023-10-17 11:24:32.937188+00:00',
@@ -81,7 +81,7 @@ def oqc_device():
         def get_task_metrics(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
             """Get task metrics."""
             return {"optimized_circuit": "dummy", "optimized_instruction_count": 42}
-        
+
         def get_task_metadata(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
             """Get task metadata."""
             return {"metadata": "dummy"}
