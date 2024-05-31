@@ -59,7 +59,7 @@ class PennylaneTape(QbraidProgram):
 
     def _unitary(self) -> "np.ndarray":
         """Return the unitary of the Pennylane tape"""
-        return qml.matrix(self.program)
+        return qml.matrix(self.program, wire_order=self.qubits)
 
     def remove_idle_qubits(self) -> None:
         """Applies a given wire map to all operations in a tape."""

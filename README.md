@@ -41,11 +41,13 @@ dynamically register new program types and conversions on the fly. This enables 
 
 ### 2. Modular Design
 
-- `qbraid.programs`: Extracts and manages metadata from supported quantum program types, with the flexibility to introduce new types.
-- `qbraid.transpiler`: Bridges different quantum programming IRs through native and customizable circuit conversions.
-- `qbraid.transforms`: Ensures quantum programs conform to hardware specifications through essential runtime transformations.
-- `qbraid.runtime`: Defines essential abstractions for providers, devices, jobs, and results, integrated through a coherent runtime profile.
-- `qbraid.visualization`: Provides tools for visualizing quantum circuits and experimental data, enhancing data interpretation.
+| Module                  | Description                                                                                       |
+|-------------------------|---------------------------------------------------------------------------------------------------|
+| `qbraid.programs`       | Extracts and manages metadata from supported quantum program types, with the flexibility to introduce new types. |
+| `qbraid.transpiler`     | Bridges different quantum programming IRs through native and customizable circuit conversions.    |
+| `qbraid.transforms`     | Ensures quantum programs conform to hardware specifications through essential runtime transformations. |
+| `qbraid.runtime`        | Defines essential abstractions for providers, devices, jobs, and results, integrated through a coherent runtime profile. |
+| `qbraid.visualization`  | Provides tools for visualizing quantum circuits and experimental data, enhancing data interpretation. |
 
 ### 3. Extensibility and Customization
 
@@ -232,13 +234,7 @@ provider = QbraidProvider(api_key='API_KEY')
 provider.save_config()
 ```
 
-Once the account is saved on disk, you can instantiate the provider without any arguments:
-
-```python
-from qbraid.runtime import QbraidProvider
-
-provider = QbraidProvider()
-```
+Once the account is saved on disk, you can instantiate the `QbraidProvider` without any arguments.
 
 ### Load account from environment variables
 

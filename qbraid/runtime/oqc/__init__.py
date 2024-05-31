@@ -9,11 +9,10 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 # pylint: skip-file
-
 """
-Module submitting and managing jobs through IBM and IBM backends.
+Module for submitting and managing jobs through OQC and OQC backends.
 
-.. currentmodule:: qbraid.runtime.qiskit
+.. currentmodule:: qbraid.runtime.oqc
 
 Classes
 --------
@@ -21,13 +20,14 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-   QiskitBackend
-   QiskitJob
-   QiskitRuntimeProvider
-   QiskitResult
+   OQCDevice
+   OQCJob
+   OQCProvider
+   OQCJobResult
 
 """
-from .device import QiskitBackend
-from .job import QiskitJob
-from .provider import QiskitRuntimeProvider
-from .result import QiskitResult
+
+from .device import OQCDevice
+from .job import OQCJob
+from .provider import OQCProvider
+from .result import OQCJobResult

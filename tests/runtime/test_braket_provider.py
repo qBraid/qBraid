@@ -18,7 +18,6 @@ from datetime import datetime, time
 from decimal import Decimal
 from unittest.mock import Mock, patch
 
-import numpy as np
 import pytest
 from braket.aws.aws_device import AwsDevice
 from braket.aws.aws_session import AwsSession
@@ -43,15 +42,6 @@ skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() 
 REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of AWS storage)"
 
 # pylint: disable=redefined-outer-name
-
-
-@pytest.fixture
-def braket_circuit():
-    """Returns low-depth, one-qubit Braket circuit to be used for testing."""
-    circuit = Circuit()
-    circuit.h(0)
-    circuit.ry(0, np.pi / 2)
-    yield circuit
 
 
 @pytest.fixture
