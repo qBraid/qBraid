@@ -36,11 +36,6 @@ def filterwarnings():
     )
     warnings.filterwarnings("ignore", category=DeprecationWarning)
     warnings.filterwarnings("ignore", category=RuntimeWarning, module="numpy")
-    warnings.filterwarnings(
-        "ignore",
-        message="networkx backend defined more than once: nx-loopback",
-        category=RuntimeWarning,
-    )
 
 
 def check_warn_version_update():
