@@ -30,7 +30,7 @@ except (ModuleNotFoundError, ImportError):  # prama: no cover
         # pytket <= 1.18
         from pytket._tket.circuit._library import _TK1_to_RzRx as TK1_to_RzRx  # type: ignore
 
-from pytket.passes import RebaseCustom
+from pytket.passes import DecomposeBoxes, RebaseCustom
 from pytket.predicates import (
     CompilationUnit,
     GateSetPredicate,
@@ -118,6 +118,7 @@ def harmony_transform(circuit: "pytket.circuit.Circuit") -> "pytket.circuit.Circ
 
     """
     cu = CompilationUnit(circuit, preds)
+    DecomposeBoxes().apply(cu)
     ionq_rebase_pass.apply(cu)
     if not cu.check_all_predicates():
         raise CompilationError("Circuit cannot be compiled to IonQ Harmony.")

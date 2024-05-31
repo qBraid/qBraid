@@ -118,12 +118,12 @@ def transpile(
     graph_type = "Default" if conversion_graph is None else "Provided"
 
     if not graph.has_node(target):
-        raise NodeNotFoundError(graph_type, target, graph.nodes)
+        raise NodeNotFoundError(graph_type, target, list(graph._node_str_to_id.keys()))
 
     source = get_program_type_alias(program)
 
     if not graph.has_node(source):
-        raise NodeNotFoundError(graph_type, source, graph.nodes)
+        raise NodeNotFoundError(graph_type, source, list(graph._node_str_to_id.keys()))
 
     if not graph.has_path(source, target):
         raise ConversionPathNotFoundError(source, target)

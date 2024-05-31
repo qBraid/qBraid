@@ -55,6 +55,10 @@ The framework encourages community contributions and extensions, supporting an e
 - **Enhances Integration**: Facilitates seamless integration and interoperability of quantum software tools across all layers of the stack.
 - **Broad Compatibility**: Supports a diverse range of API complexities, catering to both established players like IBM and AWS as well as emerging providers.
 
+---
+
+![Runtime Diagram](https://qbraid-static.s3.amazonaws.com/qbraid-runtime.png)
+
 ## Installation & Setup
 
 <img align="right" width="300" alt="qbraid-sdk-env" src="https://github.com/qBraid/qBraid/assets/46977852/c82d61b4-2518-4c7e-8f48-05106afa708e">
@@ -122,14 +126,14 @@ This arrangement simplifies targeting and transpiling between different quantum 
 ```python
 >>> from qbraid.programs import QPROGRAM_REGISTRY
 >>> QPROGRAM_REGISTRY
-{'cirq': 'cirq.circuits.circuit.Circuit',
- 'qiskit': 'qiskit.circuit.quantumcircuit.QuantumCircuit',
- 'pyquil': 'pyquil.quil.Program',
- 'pytket': 'pytket._tket.circuit.Circuit',
- 'braket': 'braket.circuits.circuit.Circuit',
- 'openqasm3': 'openqasm3.ast.Program',
- 'qasm2': 'str',
- 'qasm3': 'str'}
+{'cirq': cirq.circuits.circuit.Circuit,
+ 'qiskit': qiskit.circuit.quantumcircuit.QuantumCircuit,
+ 'pyquil': pyquil.quil.Program,
+ 'pytket': pytket._tket.circuit.Circuit,
+ 'braket': braket.circuits.circuit.Circuit,
+ 'openqasm3': openqasm3.ast.Program,
+ 'qasm2': str,
+ 'qasm3': str}
 ```
 
 Pass any registered quantum program along with a target package from
@@ -152,7 +156,7 @@ q_1: ┤ H ├────┤ √X ├────
 1: ───H───X^0.5────────
 ```
 
-Behind the scenes, the qBraid-SDK uses ``networkx`` to create a directional graph that maps all possible conversions between supported program types:
+Behind the scenes, the qBraid-SDK uses ``rustworkx`` to create a directional graph that maps all possible conversions between supported program types:
 
 ```python
 from qbraid.transpiler import ConversionGraph
