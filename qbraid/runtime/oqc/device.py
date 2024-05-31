@@ -73,9 +73,14 @@ class OQCDevice(QuantumDevice):
         return self._client
 
     def status(self) -> DeviceStatus:
-        if self.profile.get("device_type") == DeviceType.SIMULATOR:
-            return DeviceStatus.ONLINE
-        raise NotImplementedError("Only OQC simulators are supported")
+        devices = self._client.get_qpus()
+        for device in devices:
+            if device["id"] == self.profile.get("id"):
+                if device["active"]:
+                    return DeviceStatus.ONLINE
+                else:
+                    return DeviceStatus.OFFLINE
+        return DeviceStatus.UNKNOWN
 
     def transform(self, run_input: str) -> str:
         run_input = rename_qasm_registers(run_input)
