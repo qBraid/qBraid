@@ -16,6 +16,7 @@ Unit tests for OQCProvider class
 """
 from unittest.mock import Mock, patch
 
+import numpy as np
 import pytest
 
 try:
@@ -23,8 +24,8 @@ try:
 
     from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
     from qbraid.runtime import DeviceType, TargetProfile
-    from qbraid.runtime.enums import JobStatus
-    from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCProvider
+    from qbraid.runtime.enums import DeviceStatus, JobStatus
+    from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCJobResult, OQCProvider
     from qbraid.transpiler import ConversionScheme
 
     oqc_not_installed = False
@@ -60,22 +61,29 @@ def oqc_device():
                 }
             ]
 
-        def schedule_tasks(self, task: QPUTask, qpu_id: str):
+        def schedule_tasks(self, task: QPUTask, qpu_id: str):  # pylint: disable=unused-argument
             """Schedule tasks for the QPU."""
-            qpu_id = qpu_id[::]
             return task
-        
-        def get_task_status(self, task_id: str, qpu_id: str):
+
+        def get_task_status(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
             """Get task status."""
             return "COMPLETED"
 
-        def get_task_metrics(self, task_id: str, qpu_id: str):
+        def get_task_metrics(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
             """Get task metrics."""
             return {"optimized_circuit": "dummy", "optimized_instruction_count": 42}
-        
-        def get_task_errors(self, task_id: str, qpu_id: str):
+
+        def get_task_errors(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
             """Get task errors."""
             return None
+
+        def get_task_results(self, task_id: str, qpu_id: str, **kwargs):
+            """Get task results."""
+            class Result:
+                def __init__(self, counts):
+                    self.result = counts
+
+            return Result(counts={"c": {"0": 1, "1": 1}})
 
     class TestOQCDevice(OQCDevice):
         """Test class for OQC device."""
@@ -105,6 +113,7 @@ def test_oqc_provider_device():
         assert isinstance(provider.client, OQCClient)
         assert provider.client == mock_client.return_value
         test_device = provider.get_device(DEVICE_ID)
+        assert isinstance(test_device.status(), DeviceStatus)
         assert isinstance(test_device, OQCDevice)
         assert test_device.profile["device_id"] == DEVICE_ID
 
@@ -125,13 +134,15 @@ def test_build_runtime_profile():
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
 def test_run_fake_job(circuit, oqc_device):
     """Test running a fake job."""
-    job = oqc_device.run(circuit)
+    job = oqc_device.run(circuit, repeats=1)
     assert isinstance(job, OQCJob)
-    assert type(job.status()) == JobStatus
-    assert type(job.metrics()) == dict
-    assert type(job.metrics()["optimized_instruction_count"]) == int
-    assert type(job.error()) == str
-    
+    assert isinstance(job.status(), JobStatus)
+    assert isinstance(job.metrics(), dict)
+    assert isinstance(job.metrics()["optimized_instruction_count"], int)
+    assert isinstance(job.error(), str)
+    res = job.result()
+    assert isinstance(res, OQCJobResult)
+    assert res.measurements() == [[0], [1]]
 
 
 def test_run_batch_fake_job(run_inputs, oqc_device):
