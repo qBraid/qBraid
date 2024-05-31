@@ -126,6 +126,7 @@ def test_oqc_provider_device():
     """Test OQC provider and device."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
+        mock_client.return_value.get_qpus.return_value = [{"id": DEVICE_ID, "num_qubits": 8}]
         provider = OQCProvider(api_key="fake_api_key")
         assert isinstance(provider, OQCProvider)
         assert isinstance(provider.client, OQCClient)

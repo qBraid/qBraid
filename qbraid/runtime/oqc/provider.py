@@ -42,8 +42,9 @@ class OQCProvider(QuantumProvider):
 
     def get_devices(self, **kwargs) -> dict[str, dict[str, Any]]:
         """Get all OQC devices."""
-        data = {"id": "qpu:uk:2:d865b5a184", "num_qubits": 8}
-        return [OQCDevice(profile=self._build_profile(data), client=self.client)]
+        devices = self.client.get_qpus()
+        data = [{"id": device["id"], "num_qubits": 8} for device in devices]
+        return [OQCDevice(profile=self._build_profile(x), client=self.client) for x in data]
 
     def get_device(self, device_id: str) -> dict[str, Any]:
         """Get a specific OQC device."""

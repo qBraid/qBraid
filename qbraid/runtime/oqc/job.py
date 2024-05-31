@@ -71,6 +71,3 @@ class OQCJob(QuantumJob):
             return self._client.get_task_errors(task_id=self.id, qpu_id=self._qpu_id).error_message
         except AttributeError:
             return "There was no error message for this task."
-
-    # def execution_estimates(self):
-    #     return self._client.get_task_execution_estimates(task_ids=self.id, qpu_id=self._qpu_id)

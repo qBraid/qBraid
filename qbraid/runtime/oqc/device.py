@@ -21,7 +21,7 @@ from scc.compiler.config import (
 )
 
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import DeviceStatus, DeviceType
+from qbraid.runtime.enums import DeviceStatus
 from qbraid.transforms.qasm2.passes import rename_qasm_registers
 
 from .job import OQCJob
@@ -73,9 +73,13 @@ class OQCDevice(QuantumDevice):
         return self._client
 
     def status(self) -> DeviceStatus:
-        if self.profile.get("device_type") == DeviceType.SIMULATOR:
-            return DeviceStatus.ONLINE
-        raise NotImplementedError("Only OQC simulators are supported")
+        devices = self._client.get_qpus()
+        for device in devices:
+            if device["id"] == self.profile.get("id"):
+                if device["active"]:
+                    return DeviceStatus.ONLINE
+                return DeviceStatus.OFFLINE
+        return DeviceStatus.UNAVAILABLE
 
     def transform(self, run_input: str) -> str:
         run_input = rename_qasm_registers(run_input)
@@ -86,13 +90,9 @@ class OQCDevice(QuantumDevice):
         run_input = [run_input] if is_single_input else run_input
         tasks = []
 
-        if (
-            "shots" in kwargs
-            or "repetition_period" in kwargs
-            or "results_format" in kwargs
-            or "metrics" in kwargs
-            or "optimizations" in kwargs
-        ):
+        configs = ["shots", "repetition_period", "results_format", "metrics", "optimizations"]
+
+        if any(key in kwargs for key in configs):
             custom_config = CompilerConfig(
                 repeats=kwargs.get("shots", 1000),
                 repetition_period=kwargs.get("repetition_period", 200e-6),
