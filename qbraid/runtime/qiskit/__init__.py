@@ -11,7 +11,7 @@
 # pylint: skip-file
 
 """
-Mdule submiting and managing jobs through IBM and IBM backends.
+Module submitting and managing jobs through IBM and IBM backends.
 
 .. currentmodule:: qbraid.runtime.qiskit
 

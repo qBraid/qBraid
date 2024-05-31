@@ -85,20 +85,21 @@ def test_circuits():
     return circuits
 
 
-device_id = "qpu:uk:2:d865b5a184"
+DEVICE_ID = "qpu:uk:2:d865b5a184"
 
 
 def test_oqc_provider_device():
     """Test OQC provider and device."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
+        mock_client.return_value.get_qpus.return_value = [{"id": DEVICE_ID, "num_qubits": 8}]
         provider = OQCProvider(api_key="fake_api_key")
         assert isinstance(provider, OQCProvider)
         assert isinstance(provider.client, OQCClient)
         assert provider.client == mock_client.return_value
-        test_device = provider.get_device(device_id)
+        test_device = provider.get_device(DEVICE_ID)
         assert isinstance(test_device, OQCDevice)
-        assert test_device.profile["device_id"] == device_id
+        assert test_device.profile["device_id"] == DEVICE_ID
 
 
 def test_build_runtime_profile():
@@ -106,9 +107,9 @@ def test_build_runtime_profile():
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
         provider = OQCProvider(api_key="fake_api_key")
-        profile = provider._build_profile({"id": device_id, "num_qubits": 8})
+        profile = provider._build_profile({"id": DEVICE_ID, "num_qubits": 8})
         assert isinstance(profile, TargetProfile)
-        assert profile._data["device_id"] == device_id
+        assert profile._data["device_id"] == DEVICE_ID
         assert profile._data["device_type"] == DeviceType.SIMULATOR
         assert profile._data["num_qubits"] == 8
         assert profile._data["program_spec"] == ProgramSpec(str, alias="qasm2")
@@ -147,14 +148,14 @@ class TestOQCDevice(OQCDevice):
 @pytest.mark.parametrize("circuit", test_circuits())
 def test_run_fake_job(circuit):
     """Test running a fake job."""
-    device = TestOQCDevice(device_id)
+    device = TestOQCDevice(DEVICE_ID)
     job = device.run(circuit)
     assert isinstance(job, OQCJob)
 
 
 def test_run_batch_fake_job():
     """Test running a batch of fake jobs."""
-    device = TestOQCDevice(device_id)
+    device = TestOQCDevice(DEVICE_ID)
     circuits = test_circuits()
     job = device.run(circuits)
     assert isinstance(job, list)
