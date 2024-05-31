@@ -14,18 +14,15 @@ Unit tests for QiskitProvider class
 """
 import random
 import time
-from typing import Union
 from unittest.mock import Mock, patch
 
 import numpy as np
 import pytest
 from qiskit import QuantumCircuit
-from qiskit.providers import Backend
-from qiskit.providers.basic_provider.basic_provider_job import BasicProviderJob
+from qiskit.providers import Backend, Job
 from qiskit.providers.fake_provider import GenericBackendV2
 from qiskit.providers.models import QasmBackendConfiguration
-from qiskit_aer import AerJob
-from qiskit_ibm_runtime import QiskitRuntimeService, RuntimeJob
+from qiskit_ibm_runtime import QiskitRuntimeService
 from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
@@ -180,7 +177,7 @@ def test_run_fake_qiskit_device_wrapper(qbraid_device, circuit):
     qbraid_job = qbraid_device.run(circuit, shots=10)
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
-    assert isinstance(vendor_job, Union[BasicProviderJob, AerJob])
+    assert isinstance(vendor_job, Job)
 
 
 @pytest.mark.parametrize("qbraid_device", fake_ibm_devices())
@@ -189,7 +186,7 @@ def test_run_fake_batch_qiskit_device_wrapper(qbraid_device):
     qbraid_job = qbraid_device.run(run_inputs(), shots=10)
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
-    assert isinstance(vendor_job, Union[BasicProviderJob, AerJob])
+    assert isinstance(vendor_job, Job)
 
 
 def test_qiskit_provider():
@@ -237,7 +234,7 @@ def test_retrieving_ibm_job(device):
     circuit.measure(0, 0)
     qbraid_job = device.run(circuit, shots=1)
     ibm_job = qbraid_job._job
-    assert isinstance(ibm_job, Union[RuntimeJob, AerJob])
+    assert isinstance(ibm_job, Job)
 
 
 @pytest.mark.parametrize("device", fake_ibm_devices())

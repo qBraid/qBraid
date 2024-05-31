@@ -8,6 +8,8 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# pylint: disable=redefined-outer-name
+
 """
 Unit tests for OQCProvider class
 
@@ -17,19 +19,54 @@ from unittest.mock import Mock, patch
 import numpy as np
 import pytest
 
-from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
-from qbraid.runtime import DeviceType, TargetProfile
-from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCProvider
-from qbraid.transpiler import ConversionScheme
-
 try:
-    from qcaas_client.client import OQCClient, QPUTask
+    from qcaas_client.client import OQCClient, QPUTask  # type: ignore
+
+    from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
+    from qbraid.runtime import DeviceType, TargetProfile
+    from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCProvider
+    from qbraid.transpiler import ConversionScheme
 
     oqc_not_installed = False
 except ImportError:
     oqc_not_installed = True
 
-pytest.mark.skipif(oqc_not_installed, reason="qcaas_client not installed")
+pytestmark = pytest.mark.skipif(oqc_not_installed, reason="qcaas_client not installed")
+
+DEVICE_ID = "qpu:uk:2:d865b5a184"
+
+
+@pytest.fixture
+def oqc_device():
+    """Return a fake OQC device."""
+
+    class TestOQCClient:
+        """Test class for OQC client."""
+
+        def __init__(self, api_key):
+            self.api_key = api_key
+
+        def schedule_tasks(self, task: QPUTask, qpu_id: str):
+            """Schedule tasks for the QPU."""
+            qpu_id = qpu_id[::]
+            return task
+
+    class TestOQCDevice(OQCDevice):
+        """Test class for OQC device."""
+
+        # pylint: disable-next=super-init-not-called
+        def __init__(self, device_id, oqc_client=None):
+            self._client = oqc_client or TestOQCClient("fake_api_key")
+            self._profile = TargetProfile(
+                device_id=device_id,
+                device_type=DeviceType.SIMULATOR,
+                num_qubits=8,
+                program_spec=ProgramSpec(str, alias="qasm2"),
+            )
+            self._target_spec = ProgramSpec(str, alias="qasm2")
+            self._scheme = ConversionScheme()
+
+    return TestOQCDevice(DEVICE_ID)
 
 
 def braket_circuit():
@@ -73,7 +110,7 @@ def qiskit_circuit(meas=True):
     return circuit
 
 
-def test_circuits():
+def run_inputs():
     """Returns list of test circuits for each available native provider."""
     circuits = []
     if "cirq" in NATIVE_REGISTRY:
@@ -85,9 +122,6 @@ def test_circuits():
     return circuits
 
 
-device_id = "qpu:uk:2:d865b5a184"
-
-
 def test_oqc_provider_device():
     """Test OQC provider and device."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
@@ -96,9 +130,9 @@ def test_oqc_provider_device():
         assert isinstance(provider, OQCProvider)
         assert isinstance(provider.client, OQCClient)
         assert provider.client == mock_client.return_value
-        test_device = provider.get_device(device_id)
+        test_device = provider.get_device(DEVICE_ID)
         assert isinstance(test_device, OQCDevice)
-        assert test_device.profile["device_id"] == device_id
+        assert test_device.profile["device_id"] == DEVICE_ID
 
 
 def test_build_runtime_profile():
@@ -106,57 +140,25 @@ def test_build_runtime_profile():
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
         provider = OQCProvider(api_key="fake_api_key")
-        profile = provider._build_profile({"id": device_id, "num_qubits": 8})
+        profile = provider._build_profile({"id": DEVICE_ID, "num_qubits": 8})
         assert isinstance(profile, TargetProfile)
-        assert profile._data["device_id"] == device_id
+        assert profile._data["device_id"] == DEVICE_ID
         assert profile._data["device_type"] == DeviceType.SIMULATOR
         assert profile._data["num_qubits"] == 8
         assert profile._data["program_spec"] == ProgramSpec(str, alias="qasm2")
 
 
-class TestOQCClient:
-    """Test class for OQC client."""
-
-    def __init__(self, api_key):
-        super().__init__()
-        self.api_key = api_key
-
-    def schedule_tasks(self, task: QPUTask, qpu_id):
-        """Schedule tasks for the QPU."""
-        qpu_id = qpu_id[::]
-        return task
-
-
-class TestOQCDevice(OQCDevice):
-    """Test class for OQC device."""
-
-    def __init__(
-        self, id, oqc_client=None
-    ):  # pylint: disable=redefined-builtin, super-init-not-called
-        self._client = oqc_client or TestOQCClient("fake_api_key")
-        self._profile = TargetProfile(
-            device_id=id,
-            device_type=DeviceType.SIMULATOR,
-            num_qubits=8,
-            program_spec=ProgramSpec(str, alias="qasm2"),
-        )
-        self._target_spec = ProgramSpec(str, alias="qasm2")
-        self._scheme = ConversionScheme()
-
-
-@pytest.mark.parametrize("circuit", test_circuits())
-def test_run_fake_job(circuit):
+@pytest.mark.parametrize("circuit", run_inputs())
+def test_run_fake_job(circuit, oqc_device):
     """Test running a fake job."""
-    device = TestOQCDevice(device_id)
-    job = device.run(circuit)
+    job = oqc_device.run(circuit)
     assert isinstance(job, OQCJob)
 
 
-def test_run_batch_fake_job():
+def test_run_batch_fake_job(oqc_device):
     """Test running a batch of fake jobs."""
-    device = TestOQCDevice(device_id)
-    circuits = test_circuits()
-    job = device.run(circuits)
+    circuits = run_inputs()
+    job = oqc_device.run(circuits)
     assert isinstance(job, list)
     assert len(job) == len(circuits)
     assert all(isinstance(j, OQCJob) for j in job)
