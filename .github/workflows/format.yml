@@ -1,11 +1,11 @@
-name: Formatting check
+name: Format
 
 on:
     pull_request:
         branches: ['main']
 
 jobs:
-  black:
+  check:
     runs-on: ubuntu-latest
 
     steps:

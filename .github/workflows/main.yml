@@ -33,7 +33,7 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         QISKIT_IBM_TOKEN: ${{ secrets.QISKIT_IBM_TOKEN }}
         QBRAID_API_KEY: ${{ secrets.QBRAID_API_KEY }}
-        QBRAID_RUN_REMOTE_TESTS: True
+        QBRAID_RUN_REMOTE_TESTS: False
     - name: Upload coverage to Codecov
       if: matrix.python-version == '3.10'
       uses: codecov/codecov-action@v4.4.1

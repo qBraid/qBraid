@@ -16,7 +16,6 @@ Unit tests for OQCProvider class
 """
 from unittest.mock import Mock, patch
 
-import numpy as np
 import pytest
 
 try:
@@ -34,6 +33,7 @@ except ImportError:
 pytestmark = pytest.mark.skipif(oqc_not_installed, reason="qcaas_client not installed")
 
 DEVICE_ID = "qpu:uk:2:d865b5a184"
+FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
 
 @pytest.fixture
@@ -45,6 +45,19 @@ def oqc_device():
 
         def __init__(self, api_key):
             self.api_key = api_key
+
+        def get_qpus(self):
+            """Get QPUs."""
+            return [
+                {
+                    "active": True,
+                    "generation": 2,
+                    "id": "qpu:uk:2:d865b5a184",
+                    "name": "Lucy Simulator",
+                    "region": "uk",
+                    "url": "https://uk.cloud.oqc.app/d865b5a184",
+                }
+            ]
 
         def schedule_tasks(self, task: QPUTask, qpu_id: str):
             """Schedule tasks for the QPU."""
@@ -67,59 +80,6 @@ def oqc_device():
             self._scheme = ConversionScheme()
 
     return TestOQCDevice(DEVICE_ID)
-
-
-def braket_circuit():
-    """Returns low-depth, one-qubit Braket circuit to be used for testing."""
-    import braket.circuits  # pylint: disable=import-outside-toplevel
-
-    circuit = braket.circuits.Circuit()
-    circuit.h(0)
-    circuit.ry(0, np.pi / 2)
-    return circuit
-
-
-def cirq_circuit(meas=True):
-    """Returns Low-depth, one-qubit Cirq circuit to be used for testing.
-    If ``meas=True``, applies measurement operation to end of circuit."""
-    import cirq  # pylint: disable=import-outside-toplevel
-
-    q0 = cirq.GridQubit(0, 0)
-
-    def basic_circuit():
-        yield cirq.H(q0)
-        yield cirq.Ry(rads=np.pi / 2)(q0)
-        if meas:
-            yield cirq.measure(q0, key="q0")
-
-    circuit = cirq.Circuit()
-    circuit.append(basic_circuit())
-    return circuit
-
-
-def qiskit_circuit(meas=True):
-    """Returns Low-depth, one-qubit Qiskit circuit to be used for testing.
-    If ``meas=True``, applies measurement operation to end of circuit."""
-    import qiskit  # pylint: disable=import-outside-toplevel
-
-    circuit = qiskit.QuantumCircuit(1, 1) if meas else qiskit.QuantumCircuit(1)
-    circuit.h(0)
-    circuit.ry(np.pi / 2, 0)
-    if meas:
-        circuit.measure(0, 0)
-    return circuit
-
-
-def run_inputs():
-    """Returns list of test circuits for each available native provider."""
-    circuits = []
-    if "cirq" in NATIVE_REGISTRY:
-        circuits.append(cirq_circuit(meas=False))
-    if "qiskit" in NATIVE_REGISTRY:
-        circuits.append(qiskit_circuit(meas=False))
-    if "braket" in NATIVE_REGISTRY:
-        circuits.append(braket_circuit())
-    return circuits
 
 
 def test_oqc_provider_device():
@@ -149,17 +109,16 @@ def test_build_runtime_profile():
         assert profile._data["program_spec"] == ProgramSpec(str, alias="qasm2")
 
 
-@pytest.mark.parametrize("circuit", run_inputs())
+@pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
 def test_run_fake_job(circuit, oqc_device):
     """Test running a fake job."""
     job = oqc_device.run(circuit)
     assert isinstance(job, OQCJob)
 
 
-def test_run_batch_fake_job(oqc_device):
+def test_run_batch_fake_job(run_inputs, oqc_device):
     """Test running a batch of fake jobs."""
-    circuits = run_inputs()
-    job = oqc_device.run(circuits)
+    job = oqc_device.run(run_inputs)
     assert isinstance(job, list)
-    assert len(job) == len(circuits)
+    assert len(job) == len(run_inputs)
     assert all(isinstance(j, OQCJob) for j in job)

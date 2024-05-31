@@ -82,7 +82,7 @@ filterwarnings = [
     "ignore::PendingDeprecationWarning",
     "ignore::urllib3.exceptions.InsecureRequestWarning",
     "ignore::RuntimeWarning:numpy.linalg.linalg",
-    "ignore::PytestCollectionWarning",
+    "ignore::pytest.PytestCollectionWarning",
 ]
 
 [tool.coverage.run]
