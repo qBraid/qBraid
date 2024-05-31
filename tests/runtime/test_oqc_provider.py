@@ -23,6 +23,7 @@ try:
 
     from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
     from qbraid.runtime import DeviceType, TargetProfile
+    from qbraid.runtime.enums import JobStatus
     from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCProvider
     from qbraid.transpiler import ConversionScheme
 
@@ -63,6 +64,18 @@ def oqc_device():
             """Schedule tasks for the QPU."""
             qpu_id = qpu_id[::]
             return task
+        
+        def get_task_status(self, task_id: str, qpu_id: str):
+            """Get task status."""
+            return "COMPLETED"
+
+        def get_task_metrics(self, task_id: str, qpu_id: str):
+            """Get task metrics."""
+            return {"optimized_circuit": "dummy", "optimized_instruction_count": 42}
+        
+        def get_task_errors(self, task_id: str, qpu_id: str):
+            """Get task errors."""
+            return None
 
     class TestOQCDevice(OQCDevice):
         """Test class for OQC device."""
@@ -114,6 +127,11 @@ def test_run_fake_job(circuit, oqc_device):
     """Test running a fake job."""
     job = oqc_device.run(circuit)
     assert isinstance(job, OQCJob)
+    assert type(job.status()) == JobStatus
+    assert type(job.metrics()) == dict
+    assert type(job.metrics()["optimized_instruction_count"]) == int
+    assert type(job.error()) == str
+    
 
 
 def test_run_batch_fake_job(run_inputs, oqc_device):
