@@ -16,7 +16,6 @@ Unit tests for OQCProvider class
 """
 from unittest.mock import Mock, patch
 
-import numpy as np
 import pytest
 
 try:
@@ -77,9 +76,10 @@ def oqc_device():
             """Get task errors."""
             return None
 
-        def get_task_results(self, task_id: str, qpu_id: str, **kwargs):
+        def get_task_results(self, task_id: str, qpu_id: str, **kwargs): # pylint: disable=unused-argument
             """Get task results."""
             class Result:
+                """Result class."""
                 def __init__(self, counts):
                     self.result = counts
 
