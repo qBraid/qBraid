@@ -70,13 +70,15 @@ def oqc_device():
 
         def get_task_timings(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
             """Get task timings."""
-            return {'RECEIVER_DEQUEUED': '2023-10-17 11:24:32.937188+00:00',
-                    'RECEIVER_ENQUEUED': '2023-10-17 11:24:32.996594+00:00',
-                    'RECEIVER_FROM_SCC': '2023-10-17 11:24:32.996594+00:00',
-                    'RECEIVER_TO_SCC': '2023-10-17 11:24:32.938188+00:00',
-                    'SERVER_DEQUEUED': '2023-10-17 11:24:36.057355+00:00',
-                    'SERVER_ENQUEUED': '2023-10-17 11:24:35.946476+00:00',
-                    'SERVER_RECEIVED': '2023-10-17 11:24:35.904885+00:00'}
+            return {
+                "RECEIVER_DEQUEUED": "2023-10-17 11:24:32.937188+00:00",
+                "RECEIVER_ENQUEUED": "2023-10-17 11:24:32.996594+00:00",
+                "RECEIVER_FROM_SCC": "2023-10-17 11:24:32.996594+00:00",
+                "RECEIVER_TO_SCC": "2023-10-17 11:24:32.938188+00:00",
+                "SERVER_DEQUEUED": "2023-10-17 11:24:36.057355+00:00",
+                "SERVER_ENQUEUED": "2023-10-17 11:24:35.946476+00:00",
+                "SERVER_RECEIVED": "2023-10-17 11:24:35.904885+00:00",
+            }
 
         def get_task_metrics(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
             """Get task metrics."""
