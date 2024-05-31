@@ -170,8 +170,6 @@ def rename_qasm_registers(qasm: str) -> str:
     def replace_bottom_line(m):
         return f"measure q[{m.group(2)}] -> c[{m.group(4)}];"
 
-    qasm = re.sub(
-        r"measure\s+(\w+)\[(\d+)\]\s*->\s*(\w+)\[(\d+)\]\s*;", replace_bottom_line, qasm
-    )
+    qasm = re.sub(r"measure\s+(\w+)\[(\d+)\]\s*->\s*(\w+)\[(\d+)\]\s*;", replace_bottom_line, qasm)
 
     return qasm
