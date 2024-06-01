@@ -20,8 +20,6 @@ from cirq import ops
 from qbraid._version import __version__ as qbraid_version
 from qbraid.transforms.cirq import map_zpow_and_unroll
 
-QASMType = str
-
 
 def _to_qasm_output(
     circuit: cirq.Circuit,
@@ -55,7 +53,7 @@ def cirq_to_qasm2(
     header: Optional[str] = None,
     precision: int = 10,
     qubit_order: "cirq.QubitOrderOrList" = ops.QubitOrder.DEFAULT,
-) -> QASMType:
+) -> str:
     """Returns a QASM string representing the input Cirq circuit.
 
     Args:
