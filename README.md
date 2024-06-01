@@ -41,11 +41,13 @@ dynamically register new program types and conversions on the fly. This enables 
 
 ### 2. Modular Design
 
-- `qbraid.programs`: Extracts and manages metadata from supported quantum program types, with the flexibility to introduce new types.
-- `qbraid.transpiler`: Bridges different quantum programming IRs through native and customizable circuit conversions.
-- `qbraid.transforms`: Ensures quantum programs conform to hardware specifications through essential runtime transformations.
-- `qbraid.runtime`: Defines essential abstractions for providers, devices, jobs, and results, integrated through a coherent runtime profile.
-- `qbraid.visualization`: Provides tools for visualizing quantum circuits and experimental data, enhancing data interpretation.
+| Module                  | Description                                                                                       |
+|-------------------------|---------------------------------------------------------------------------------------------------|
+| `qbraid.programs`       | Extracts and manages metadata from supported quantum program types, with the flexibility to introduce new types. |
+| `qbraid.transpiler`     | Bridges different quantum programming IRs through native and customizable circuit conversions.    |
+| `qbraid.transforms`     | Ensures quantum programs conform to hardware specifications through essential runtime transformations. |
+| `qbraid.runtime`        | Defines essential abstractions for providers, devices, jobs, and results, integrated through a coherent runtime profile. |
+| `qbraid.visualization`  | Provides tools for visualizing quantum circuits and experimental data, enhancing data interpretation. |
 
 ### 3. Extensibility and Customization
 
@@ -54,6 +56,10 @@ The framework encourages community contributions and extensions, supporting an e
 - **Reduces Overhead**: Minimizes the effort required to develop client-side applications for securely submitting and managing quantum experiments remotely.
 - **Enhances Integration**: Facilitates seamless integration and interoperability of quantum software tools across all layers of the stack.
 - **Broad Compatibility**: Supports a diverse range of API complexities, catering to both established players like IBM and AWS as well as emerging providers.
+
+---
+
+![Runtime Diagram](https://qbraid-static.s3.amazonaws.com/qbraid-runtime.png)
 
 ## Installation & Setup
 
@@ -70,13 +76,13 @@ Using the SDK on [qBraid Lab](https://docs.qbraid.com/projects/lab/en/latest/lab
 
 The qBraid-SDK, and all of its dependencies, can also be installed using pip:
 
-```shell
+```bash
 pip install qbraid
 ```
 
 You can also [install from source](CONTRIBUTING.md#installing-from-source) by cloning this repository and running a pip install command in the root directory of the repository:
 
-```shell
+```bash
 git clone https://github.com/qBraid/qBraid.git
 cd qBraid
 pip install .
@@ -122,14 +128,14 @@ This arrangement simplifies targeting and transpiling between different quantum 
 ```python
 >>> from qbraid.programs import QPROGRAM_REGISTRY
 >>> QPROGRAM_REGISTRY
-{'cirq': 'cirq.circuits.circuit.Circuit',
- 'qiskit': 'qiskit.circuit.quantumcircuit.QuantumCircuit',
- 'pyquil': 'pyquil.quil.Program',
- 'pytket': 'pytket._tket.circuit.Circuit',
- 'braket': 'braket.circuits.circuit.Circuit',
- 'openqasm3': 'openqasm3.ast.Program',
- 'qasm2': 'str',
- 'qasm3': 'str'}
+{'cirq': cirq.circuits.circuit.Circuit,
+ 'qiskit': qiskit.circuit.quantumcircuit.QuantumCircuit,
+ 'pyquil': pyquil.quil.Program,
+ 'pytket': pytket._tket.circuit.Circuit,
+ 'braket': braket.circuits.circuit.Circuit,
+ 'openqasm3': openqasm3.ast.Program,
+ 'qasm2': str,
+ 'qasm3': str}
 ```
 
 Pass any registered quantum program along with a target package from
@@ -152,7 +158,7 @@ q_1: ┤ H ├────┤ √X ├────
 1: ───H───X^0.5────────
 ```
 
-Behind the scenes, the qBraid-SDK uses ``networkx`` to create a directional graph that maps all possible conversions between supported program types:
+Behind the scenes, the qBraid-SDK uses ``rustworkx`` to create a directional graph that maps all possible conversions between supported program types:
 
 ```python
 from qbraid.transpiler import ConversionGraph
@@ -168,22 +174,22 @@ graph.plot()
 You can use the native conversions supported by qBraid, or define your own custom nodes and/or edges. For [example](https://github.com/qBraid/qbraid-qir?tab=readme-ov-file#add-qir-node-to-qbraid-conversion-graph):
 
 ```python
-from qbraid_qir.qasm3 import qasm3_to_qir
 from qbraid.transpiler import Conversion
 
-conversion = Conversion("qasm3", "pyqir", qasm3_to_qir)
+example_func = lambda x: x # replace with your custom conversion function
+conversion = Conversion("qasm3", "stim", example_func)
 
 graph.add_conversion(conversion)
 
-graph.plot()
+graph.plot(seed=42) # using a seed is helpful to ensure reproducibility
 ```
 
 ### QbraidProvider
 
-Run experiements using on-demand simulators provided by qBraid using the `qbraid.runtime.native.QbraidProvider`. You can get a Python list of device objects using:
+Run experiements using on-demand simulators provided by qBraid using the `qbraid.runtime.QbraidProvider`. You can get a Python list of device objects using:
 
 ```python
-from qbraid.runtime.native import QbraidProvider
+from qbraid.runtime import QbraidProvider
 
 provider = QbraidProvider()
 qdevices = provider.get_devices()
@@ -222,25 +228,19 @@ where `~` corresponds to your home (`$HOME`) directory:
 |:---------------------------|
 
 ```python
-from qbraid.runtime.native import QbraidProvider
+from qbraid.runtime import QbraidProvider
 
 provider = QbraidProvider(api_key='API_KEY')
 provider.save_config()
 ```
 
-Once the account is saved on disk, you can instantiate the provider without any arguments:
-
-```python
-from qbraid.runtime.native import QbraidProvider
-
-provider = QbraidProvider()
-```
+Once the account is saved on disk, you can instantiate the `QbraidProvider` without any arguments.
 
 ### Load account from environment variables
 
 Alternatively, the qBraid-SDK can discover credentials from environment variables:
 
-```shell
+```bash
 export QBRAID_API_KEY='QBRAID_API_KEY'
 ```
 

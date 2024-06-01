@@ -14,7 +14,8 @@ Module defining Qiskit OpenQASM conversions
 """
 from typing import TYPE_CHECKING
 
-from qbraid._import import LazyLoader
+from qbraid_core._import import LazyLoader
+
 from qbraid.transforms.qasm3.compat import transform_notation_from_external
 
 qiskit_qasm3 = LazyLoader("qiskit_qasm3", globals(), "qiskit.qasm3")

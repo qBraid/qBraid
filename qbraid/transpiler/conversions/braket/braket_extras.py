@@ -15,7 +15,8 @@ Module defining Amazon Braket conversion extras.
 
 from typing import TYPE_CHECKING
 
-from qbraid._import import LazyLoader
+from qbraid_core._import import LazyLoader
+
 from qbraid.transpiler.annotations import requires_extras
 
 qiskit_braket_provider = LazyLoader("qiskit_braket_provider", globals(), "qiskit_braket_provider")

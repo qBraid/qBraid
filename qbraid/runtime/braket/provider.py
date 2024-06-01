@@ -149,7 +149,7 @@ class BraketProvider(QuantumProvider):
                 session=device.aws_session,
             )
             for device in aws_devices
-            if device._provider_name in ["Rigetti", "IonQ", "Oxford", "Amazon Braket"]
+            if device._provider_name in ["Rigetti", "IonQ", "Oxford", "Amazon Braket", "IQM"]
         ]
 
     def get_device(self, device_id: str) -> "qbraid.runtime.braket.BraketDevice":
