@@ -17,4 +17,5 @@ Submodules
    qiskit
    native
    ionq
+   oqc
 

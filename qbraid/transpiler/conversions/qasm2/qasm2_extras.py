@@ -14,7 +14,8 @@ Module containing OpenQASM 2 conversion extras.
 """
 from typing import TYPE_CHECKING
 
-from qbraid._import import LazyLoader
+from qbraid_core._import import LazyLoader
+
 from qbraid.transpiler.annotations import requires_extras
 
 qibo = LazyLoader("qibo", globals(), "qibo")

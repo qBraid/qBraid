@@ -10,14 +10,13 @@ your current working directory is the qBraid repo root.
 
 1. `tox -e unit-tests`: All unit tests are passing. New + modified code has corresponding unit tests and satisfy `codecov` checks. To run remote tests (i.e. those requiring qBraid/AWS/IBM credentials), set environment variable `QBRAID_RUN_REMOTE_TESTS=True`.
 2. `tox -e docs`: Doc builds are passing. New + modified code has appropriate docstrings and tree stubs are updated, if applicable.
-3. `tox -e format-check`: Code passes linters and formatters checks. Any exceptions or updates to code style configs are documented.
-4. `python tools/verify_headers.py`: New files have appropriate licensing headers. Running headers script passes checks.
+3. `tox -e format-check`: Code passes linters, formatters, and headers checks. Any exceptions or updates to code style configs are documented.
 
 ## Installing from source
 
 You can install the qBraid-SDK from source by cloning this repository and running a pip install command in the root directory:
 
-```shell
+```bash
 git clone https://github.com/qbraid/qBraid.git
 cd qBraid
 pip install -e .
@@ -27,14 +26,14 @@ pip install -e .
 
 To generate the API reference documentation locally:
 
-```shell
+```bash
 pip install 'tox>=4.2'
 tox -e docs
 ```
 
 Alternatively:
 
-```shell
+```bash
 pip install -e '.[docs]'
 cd docs
 make html
@@ -45,13 +44,13 @@ duplicate object description, try `rm docs/stubs/*` to empty the old stubs direc
 re-start the build. If the build succeeds, it will say `The HTML pages are in build/html`. You can 
 view the generated documentation in your browser (on OS X) using:
 
-```shell
+```bash
 open build/html/index.html
 ```
 
 You can also view it by running a web server in that directory:
 
-```shell
+```bash
 cd build/html
 python3 -m http.server
 ```
@@ -74,20 +73,20 @@ the `reST` syntax mentioned (linked) above.
 
 To run all unit tests:
 
-```shell
+```bash
 pip install 'tox>=4.2'
 tox -e unit-tests
 ```
 
 You can also pass in various pytest arguments to run selected tests:
 
-```shell
+```bash
 tox -e unit-tests -- {your-arguments}
 ```
 
 Alternatively:
 
-```shell
+```bash
 pip install pytest
 pytest {path-to-test}
 ```
@@ -98,7 +97,7 @@ from the `main` branch can be viewed at https://app.codecov.io/gh/qBraid/qBraid/
 
 To run linters and doc generators and unit tests:
 
-```shell
+```bash
 tox
 ```
 

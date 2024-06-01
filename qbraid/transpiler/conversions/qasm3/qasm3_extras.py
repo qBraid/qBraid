@@ -15,7 +15,8 @@ Module containing OpenQASM 3 conversion extras.
 
 from typing import TYPE_CHECKING
 
-from qbraid._import import LazyLoader
+from qbraid_core._import import LazyLoader
+
 from qbraid.transpiler.annotations import requires_extras
 
 qbraid_qir = LazyLoader("qbraid_qir", globals(), "qbraid_qir")

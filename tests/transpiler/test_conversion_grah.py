@@ -14,10 +14,10 @@ used to dictate transpiler conversions.
 
 """
 import braket.circuits
-import networkx as nx
 import pytest
+import rustworkx as rx
+from qbraid_core._import import LazyLoader
 
-from qbraid._import import LazyLoader
 from qbraid.programs.registry import QPROGRAM_ALIASES
 from qbraid.transpiler.conversions import conversion_functions
 from qbraid.transpiler.converter import transpile
@@ -30,29 +30,6 @@ qiskit_braket_provider = LazyLoader("qiskit_braket_provider", globals(), "qiskit
 def bound_method_str(source, target):
     """Inserts package names into string representation of bound method."""
     return f"<bound method Conversion.convert of ('{source}', '{target}')>"
-
-
-def are_graphs_equal(graph1: nx.DiGraph, graph2: nx.DiGraph) -> bool:
-    """Return True if two graphs are equal, False otherwise."""
-    # Check if nodes are the same
-    if set(graph1.nodes) != set(graph2.nodes):
-        return False
-
-    # Check if edges are the same
-    if set(graph1.edges) != set(graph2.edges):
-        return False
-
-    # Check if node attributes are the same
-    for node in graph1.nodes:
-        if graph1.nodes[node] != graph2.nodes.get(node, {}):
-            return False
-
-    # Check if edge attributes are the same
-    for edge in graph1.edges:
-        if graph1.edges[edge] != graph2.edges.get(edge, {}):
-            return False
-
-    return True
 
 
 @pytest.mark.parametrize("func", conversion_functions)
@@ -102,7 +79,7 @@ def test_add_conversion():
     # Assertion 2 - Check if the updated graph matches the expected graph structure
     expected_graph = graph_with_new_edge
     updated_graph = graph_without_new_edge
-    assert are_graphs_equal(updated_graph, expected_graph)
+    assert rx.is_isomorphic(updated_graph, expected_graph)
 
     # Assertion 3 - Verify the shortest path after adding the new edge
     expected_shortest_path = [
@@ -126,7 +103,7 @@ def test_initialize_new_conversion(bell_circuit):
         )
     ]
     graph = ConversionGraph(conversions)
-    assert len(graph.edges) == 1
+    assert graph.num_edges() == 1
     braket_circuit = transpile(qiskit_circuit, "braket", conversion_graph=graph)
     assert isinstance(braket_circuit, braket.circuits.Circuit)
 
@@ -137,10 +114,10 @@ def test_overwrite_new_conversion(bell_circuit):
     qiskit_circuit, _ = bell_circuit
     conversions = [Conversion("qiskit", "braket", lambda x: x)]
     graph = ConversionGraph(conversions)
-    assert len(graph.edges) == 1
+    assert graph.num_edges() == 1
     edge = Conversion("qiskit", "braket", qiskit_braket_provider.providers.adapter.to_braket)
     graph.add_conversion(edge, overwrite=True)
-    assert len(graph.edges) == 1
+    assert graph.num_edges() == 1
     braket_circuit = transpile(qiskit_circuit, "braket", conversion_graph=graph)
     assert isinstance(braket_circuit, braket.circuits.Circuit)
 
@@ -149,11 +126,11 @@ def test_remove_conversion():
     """Test removing a conversion from the ConversionGraph."""
     source, target = "qasm2", "qasm3"
     graph = ConversionGraph()
-    num_edges_start = len(graph.edges)
+    num_edges_start = graph.num_edges()
     num_conversions_start = len(graph.conversions())
     assert graph.has_edge(source, target)
     graph.remove_conversion(source, target)
-    num_edges_end = len(graph.edges)
+    num_edges_end = graph.num_edges()
     num_conversions_end = len(graph.conversions())
     assert not graph.has_edge(source, target)
     assert num_edges_start - num_edges_end == 1

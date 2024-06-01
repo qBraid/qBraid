@@ -37,7 +37,7 @@ def test_about():
 
     # Verify core dependencies are mentioned in the output
     assert "Core Dependencies" in output
-    assert "networkx:" in output
+    assert "rustworkx:" in output
     assert "numpy:" in output
     assert "openqasm3:" in output
     assert "ply:" in output

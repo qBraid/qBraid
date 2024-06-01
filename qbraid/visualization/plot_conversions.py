@@ -13,9 +13,9 @@ Module for plotting qBraid transpiler quantum program conversion graphs.
 """
 from typing import TYPE_CHECKING, Optional
 
-import networkx as nx
+import rustworkx as rx
+from qbraid_core._import import LazyLoader
 
-from qbraid._import import LazyLoader
 from qbraid.programs.registry import is_registered_alias_native
 
 if TYPE_CHECKING:
@@ -78,23 +78,32 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         (conversion.source, conversion.target): conversion for conversion in graph.conversions()
     }
     conversions_ordered = [
-        conversion_dict[(edge[0], edge[1])]
-        for edge in graph.edges()
-        if (edge[0], edge[1]) in conversion_dict
+        conversion_dict[(graph.get_node_data(edge[0]), graph.get_node_data(edge[1]))]
+        for edge in graph.edge_list()
+        if (graph.get_node_data(edge[0]), graph.get_node_data(edge[1])) in conversion_dict
     ]
     ecolors = [
         (
             colors["qbraid_edge"]
-            if graph[edge.source][edge.target]["native"]
+            if graph.get_edge_data(
+                graph._node_str_to_id[edge.source], graph._node_str_to_id[edge.target]
+            )["native"]
             else colors["extras_edge"] if len(edge._extras) > 0 else colors["external_edge"]
         )
         for edge in conversions_ordered
     ]
 
-    pos = nx.spring_layout(graph, seed=seed)  # good seeds: 123, 134
-    nx.draw_networkx_nodes(graph, pos, node_color=ncolors, node_size=node_size)
-    nx.draw_networkx_edges(graph, pos, edge_color=ecolors, min_target_margin=min_target_margin)
-    nx.draw_networkx_labels(graph, pos)
+    pos = rx.spring_layout(graph, seed=seed)  # good seeds: 123, 134
+    rx.visualization.mpl_draw(
+        graph,
+        pos,
+        node_color=ncolors,
+        edge_color=ecolors,
+        node_size=node_size,
+        with_labels=True,
+        labels=str,
+        min_target_margin=min_target_margin,
+    )
 
     if title:
         plt.title(title)

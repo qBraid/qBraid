@@ -49,5 +49,4 @@ def ibm_configure(
 
 
 if __name__ == "__main__":
-    if not skip_remote_tests:
-        aws_configure()
+    aws_configure()

@@ -14,7 +14,8 @@ Module for converting Braket circuits to/from OpenQASM 3
 """
 from typing import TYPE_CHECKING
 
-from qbraid._import import LazyLoader
+from qbraid_core._import import LazyLoader
+
 from qbraid.programs import QasmError
 from qbraid.transforms.qasm3.compat import transform_notation_to_external
 

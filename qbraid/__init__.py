@@ -34,12 +34,20 @@ Exceptions
 
 """
 import sys
+import warnings
+
+from qbraid_core._import import LazyLoader
 
 from ._about import about
 from ._compat import check_warn_version_update, configure_logging, filterwarnings
-from ._import import LazyLoader
-from ._version import __version__
 from .exceptions import QbraidError
+
+try:
+    # Injected in _version.py during the build process.
+    from ._version import __version__
+except (ImportError, AttributeError):
+    warnings.warn("Importing 'qbraid' outside a proper installation.")
+    __version__ = "dev"
 
 if "sphinx" in sys.modules:
     from . import interface, programs, runtime, transforms, transpiler, visualization

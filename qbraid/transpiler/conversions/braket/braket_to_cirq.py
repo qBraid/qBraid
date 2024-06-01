@@ -35,7 +35,8 @@ try:
 except ImportError:
     cirq_ionq_ops = None
 
-from qbraid._import import LazyLoader
+from qbraid_core._import import LazyLoader
+
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 cirq_passes = LazyLoader("cirq_passes", globals(), "qbraid.transforms.cirq.passes")

@@ -21,6 +21,9 @@ authors:
     affiliation: qBraid Co.
   - given-names: Erik
     family-names: Weis
+  - given-names: Rohan
+    family-names: Jain
+    affiliation: Carnegie Mellon University
   - given-names: Graeme
     family-names: Jacobson
   - given-names: Caleb
@@ -49,13 +52,14 @@ authors:
     affiliation: qBraid Co.
 repository-code: 'https://github.com/qBraid/qBraid'
 url: 'https://www.qbraid.com'
-repository-artifact: 'https://github.com/qBraid/qBraid/releases/tag/v0.6.1'
+repository-artifact: 'https://github.com/qBraid/qBraid/releases/tag/v0.7.0'
 keywords:
   - python
   - quantum-computing
   - transpiler
   - openqasm
+  - qir
+  - runtime
 license: GPL-3.0
-commit: eaf23ebbf8264192f8f8b2e93a8e88595b1ceaa4
-version: 0.6.1
-date-released: '2024-04-09'
+version: 0.7.0
+date-released: '2024-05-23'

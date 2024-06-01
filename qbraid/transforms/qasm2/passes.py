@@ -152,3 +152,24 @@ def flatten_qasm_program(qasm_str):
     qasm_out = decompose_qasm_qelib1(qasm)
 
     return qasm_out
+
+
+def rename_qasm_registers(qasm: str) -> str:
+    """Returns a copy of the input QASM with all registers renamed to 'q' and 'c'."""
+
+    def replace_top_q(m):
+        return f"qreg q[{m.group(2)}];"
+
+    qasm = re.sub(r"qreg\s+(\w+)\s*\[\s*(\d+)\s*\]\s*;", replace_top_q, qasm)
+
+    def replace_top_c(m):
+        return f"creg c[{m.group(2)}];"
+
+    qasm = re.sub(r"creg\s+(\w+)\s*\[\s*(\d+)\s*\]\s*;", replace_top_c, qasm)
+
+    def replace_bottom_line(m):
+        return f"measure q[{m.group(2)}] -> c[{m.group(4)}];"
+
+    qasm = re.sub(r"measure\s+(\w+)\[(\d+)\]\s*->\s*(\w+)\[(\d+)\]\s*;", replace_bottom_line, qasm)
+
+    return qasm
