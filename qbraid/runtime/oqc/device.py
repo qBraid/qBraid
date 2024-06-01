@@ -11,6 +11,8 @@
 Device class for OQC devices.
 
 """
+from typing import TYPE_CHECKING, Union
+
 from qcaas_client.client import QPUTask
 from scc.compiler.config import (
     CompilerConfig,
@@ -26,19 +28,24 @@ from qbraid.transforms.qasm2.passes import rename_qasm_registers
 
 from .job import OQCJob
 
-results_format = {
+if TYPE_CHECKING:
+    import qcaas_client.client
+
+    import qbraid.runtime
+
+RESULTS_FORMAT = {
     "binary": QuantumResultsFormat().binary_count(),
     "raw": QuantumResultsFormat().raw(),
 }
 
-metrics_type = {
+METRICS_TYPE = {
     "default": MetricsType.Default,
     "empty": MetricsType.Empty,
     "optimized_circuit": MetricsType.OptimizedCircuit,
     "optimized_instruction_count": MetricsType.OptimizedInstructionCount,
 }
 
-optimizations = {
+OPTIMIZATIONS = {
     "clifford_simplify": Tket(TketOptimizations.CliffordSimp),
     "context_simplify": Tket(TketOptimizations.ContextSimp),
     "decompose_controlled_gates": Tket(TketOptimizations.DecomposeArbitrarilyControlledGates),
@@ -82,10 +89,9 @@ class OQCDevice(QuantumDevice):
         return DeviceStatus.UNAVAILABLE
 
     def transform(self, run_input: str) -> str:
-        run_input = rename_qasm_registers(run_input)
-        return run_input
+        return rename_qasm_registers(run_input)
 
-    def submit(self, run_input, *args, **kwargs) -> OQCJob:
+    def submit(self, run_input, *args, **kwargs) -> Union[OQCJob, list[OQCJob]]:
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
         tasks = []
@@ -96,9 +102,9 @@ class OQCDevice(QuantumDevice):
             custom_config = CompilerConfig(
                 repeats=kwargs.get("shots", 1000),
                 repetition_period=kwargs.get("repetition_period", 200e-6),
-                results_format=results_format[kwargs.get("results_format", "binary")],
-                metrics=metrics_type[kwargs.get("metrics", "default")],
-                optimizations=optimizations[kwargs.get("optimizations", "one")],
+                results_format=RESULTS_FORMAT[kwargs.get("results_format", "binary")],
+                metrics=METRICS_TYPE[kwargs.get("metrics", "default")],
+                optimizations=OPTIMIZATIONS[kwargs.get("optimizations", "one")],
             )
         else:
             custom_config = None

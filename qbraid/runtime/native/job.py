@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Optional
 from qbraid_core.services.quantum import QuantumClient
 
 from qbraid.runtime.enums import JobStatus
-from qbraid.runtime.exceptions import JobStateError, ResourceNotFoundError
+from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 
 from .result import ExperimentResult, QbraidJobResult

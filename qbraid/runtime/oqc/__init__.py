@@ -8,7 +8,6 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint: skip-file
 """
 Module for submitting and managing jobs through OQC and OQC backends.
 
@@ -26,7 +25,6 @@ Classes
    OQCJobResult
 
 """
-
 from .device import OQCDevice
 from .job import OQCJob
 from .provider import OQCProvider

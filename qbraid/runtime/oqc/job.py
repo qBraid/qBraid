@@ -13,7 +13,9 @@
 Module for OQC job class.
 
 """
-from qcaas_client.client import OQCClient
+from typing import Any, Optional
+
+from qcaas_client.client import OQCClient, QPUTaskErrors
 
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.job import QuantumJob
@@ -29,13 +31,13 @@ class OQCJob(QuantumJob):
         self._qpu_id = qpu_id
         self._client = client
 
-    def cancel(self):
+    def cancel(self) -> None:
         self._client.cancel_task(task_id=self.id, qpu_id=self._qpu_id)
 
-    def result(self):
+    def result(self) -> OQCJobResult:
         return OQCJobResult(job_id=self.id, qpu_id=self._qpu_id, client=self._client)
 
-    def status(self):
+    def status(self) -> JobStatus:
         task_status = self._client.get_task_status(task_id=self.id, qpu_id=self._qpu_id)
 
         status_map = {
@@ -51,23 +53,25 @@ class OQCJob(QuantumJob):
 
         return status_map.get(task_status, JobStatus.UNKNOWN)
 
-    def metrics(self):
+    def metadata(self, use_cache: bool = False) -> dict[str, Any]:
+        """Get the metadata for the task."""
+        if not use_cache:
+            self._cache_metadata = self._client.get_task_metadata(
+                task_id=self.id, qpu_id=self._qpu_id
+            )
+        return self._cache_metadata
+
+    def metrics(self) -> Any:
         """Get the metrics for the task."""
         return self._client.get_task_metrics(task_id=self.id, qpu_id=self._qpu_id)
 
-    def timings(self):
+    def get_timings(self) -> Any:
         """Get the timings for the task."""
         return self._client.get_task_timings(task_id=self.id, qpu_id=self._qpu_id)
 
-    def metadata(self, use_cache: bool = False):
-        """Get the metadata for the task."""
-        if not use_cache:
-            return self._client.get_task_metadata(task_id=self.id, qpu_id=self._qpu_id)
-        return self._client.get_task_metadata(task_id=self.id, qpu_id=self._qpu_id)
-
-    def error(self):
+    def get_errors(self) -> Optional[QPUTaskErrors]:
         """Get the error message for the task."""
         try:
             return self._client.get_task_errors(task_id=self.id, qpu_id=self._qpu_id).error_message
         except AttributeError:
-            return "There was no error message for this task."
+            return None
