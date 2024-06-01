@@ -33,43 +33,31 @@ Exceptions
    QbraidError
 
 """
-import sys
-import warnings
-
-from qbraid_core._import import LazyLoader
-
 from ._about import about
 from ._compat import check_warn_version_update, configure_logging, filterwarnings
+from ._version import __version__
 from .exceptions import QbraidError
-
-try:
-    # Injected in _version.py during the build process.
-    from ._version import __version__
-except (ImportError, AttributeError):
-    warnings.warn("Importing 'qbraid' outside a proper installation.")
-    __version__ = "dev"
-
-if "sphinx" in sys.modules:
-    from . import interface, programs, runtime, transforms, transpiler, visualization
-else:
-    transforms = LazyLoader("transforms", globals(), "qbraid.transforms")
-    interface = LazyLoader("interface", globals(), "qbraid.interface")
-    programs = LazyLoader("programs", globals(), "qbraid.programs")
-    runtime = LazyLoader("runtime", globals(), "qbraid.runtime")
-    transpiler = LazyLoader("transpiler", globals(), "qbraid.transpiler")
-    visualization = LazyLoader("visualization", globals(), "qbraid.visualization")
-
 
 __all__ = [
     "about",
     "configure_logging",
     "check_warn_version_update",
     "filterwarnings",
-    "interface",
-    "programs",
-    "runtime",
     "QbraidError",
-    "transforms",
-    "transpiler",
-    "visualization",
 ]
+
+_lazy_mods = ["interface", "programs", "runtime", "transforms", "transpiler", "visualization"]
+
+
+def __getattr__(name):
+    if name in _lazy_mods:
+        import importlib  # pylint: disable=import-outside-toplevel
+
+        module = importlib.import_module(f".{name}", __name__)
+        globals()[name] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    return sorted(__all__ + _lazy_mods)

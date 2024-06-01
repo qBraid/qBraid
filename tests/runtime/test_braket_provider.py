@@ -16,7 +16,7 @@ import json
 import os
 from datetime import datetime, time
 from decimal import Decimal
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from braket.aws.aws_device import AwsDevice
@@ -30,8 +30,10 @@ from qiskit import QuantumCircuit as QiskitCircuit
 
 from qbraid.programs import ProgramSpec
 from qbraid.runtime import DeviceType, TargetProfile
-from qbraid.runtime.braket import BraketDevice, BraketProvider, BraketQuantumTask
-from qbraid.runtime.braket.device import _future_utc_datetime
+from qbraid.runtime.braket.availability import _calculate_future_time
+from qbraid.runtime.braket.device import BraketDevice
+from qbraid.runtime.braket.job import AmazonBraketVersionError, BraketQuantumTask
+from qbraid.runtime.braket.provider import BraketProvider
 from qbraid.runtime.braket.tracker import get_quantum_task_cost
 from qbraid.runtime.exceptions import JobStateError, ProgramValidationError
 
@@ -208,11 +210,12 @@ def test_aws_device_available(braket_provider):
         patch("qbraid.runtime.braket.provider.AwsDevice") as mock_aws_device,
         patch("qbraid.runtime.braket.device.AwsDevice") as mock_aws_device_2,
     ):
-        mock_aws_device.return_value = TestAwsDevice(SV1_ARN)
-        mock_aws_device_2.return_value = TestAwsDevice(SV1_ARN)
+        mock_device = TestAwsDevice(SV1_ARN)
+        mock_device.is_available = False
+        mock_aws_device.return_value = mock_device
+        mock_aws_device_2.return_value = mock_device
         device = braket_provider.get_device(SV1_ARN)
-        is_available_bool, is_available_time, iso_str = device.availability_window()
-        assert is_available_bool == device._device.is_available
+        _, is_available_time, iso_str = device.availability_window()
         assert len(is_available_time.split(":")) == 3
         assert isinstance(iso_str, str)
         try:
@@ -425,15 +428,36 @@ def test_get_quantum_task_cost_region_mismatch(braket_most_busy, braket_circuit)
 
 
 @pytest.mark.parametrize(
-    "hours, minutes, seconds, expected",
+    "available_time, expected",
     [
-        (1, 0, 0, "2024-01-01T01:00:00Z"),
-        (0, 30, 0, "2024-01-01T00:30:00Z"),
-        (0, 0, 45, "2024-01-01T00:00:45Z"),
+        (3600, "2024-01-01T01:00:00Z"),
+        (1800, "2024-01-01T00:30:00Z"),
+        (45, "2024-01-01T00:00:45Z"),
     ],
 )
-def test_future_utc_datetime(hours, minutes, seconds, expected):
+def test_future_utc_datetime(available_time, expected):
     """Test calculating future utc datetime"""
-    with patch("qbraid.runtime.braket.device.datetime") as mock_datetime:
-        mock_datetime.utcnow.return_value = datetime(2024, 1, 1, 0, 0, 0)
-        assert _future_utc_datetime(hours, minutes, seconds) == expected
+    current_utc_datime = datetime(2024, 1, 1, 0, 0, 0)
+    _, datetime_str = _calculate_future_time(available_time, current_utc_datime)
+    assert datetime_str == expected
+
+
+@pytest.mark.parametrize("position,expected", [(10, 10), (">2000", 2000)])
+@patch("qbraid.runtime.braket.job.AwsQuantumTask")
+def test_queue_position(mock_aws_quantum_task, position, expected):
+    """Test getting queue_depth BraketDevice"""
+    mock_queue_position_return = MagicMock()
+    mock_queue_position_return.queue_position = position
+    mock_aws_quantum_task.return_value.queue_position.return_value = mock_queue_position_return
+    job = BraketQuantumTask("job_id")
+    assert job.queue_position() == expected
+
+
+@patch("qbraid.runtime.braket.job.AwsQuantumTask")
+def test_queue_position_raises_version_error(mock_aws_quantum_task):
+    """Test handling of AttributeError leads to raising AmazonBraketVersionError."""
+    mock_aws_quantum_task.return_value.queue_position.side_effect = AttributeError
+    job = BraketQuantumTask("job_id")
+    with pytest.raises(AmazonBraketVersionError) as excinfo:
+        job.queue_position()
+    assert "Queue visibility is only available for amazon-braket-sdk>=1.56.0" in str(excinfo.value)

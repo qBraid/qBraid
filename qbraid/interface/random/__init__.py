@@ -25,3 +25,5 @@ Functions
 
 """
 from .random import random_circuit, random_unitary_matrix
+
+__all__ = ["random_circuit", "random_unitary_matrix"]
