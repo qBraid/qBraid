@@ -80,8 +80,9 @@ from .provider import QuantumProvider
 from .result import QuantumJobResult
 
 if "sphinx" in sys.modules:
-    from . import braket, ionq, native, qiskit
+    from . import braket, ionq, native, oqc, qiskit
 else:
     qiskit = LazyLoader("ibm", globals(), "qbraid.runtime.qiskit")
     braket = LazyLoader("braket", globals(), "qbraid.runtime.braket")
     ionq = LazyLoader("ionq", globals(), "qbraid.runtime.ionq")
+    oqc = LazyLoader("oqc", globals(), "qbraid.runtime.oqc")

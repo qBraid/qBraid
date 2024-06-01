@@ -18,6 +18,7 @@ from qcaas_client.client import OQCClient
 
 from qbraid.programs.spec import ProgramSpec
 from qbraid.runtime.enums import DeviceType
+from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
@@ -40,17 +41,18 @@ class OQCProvider(QuantumProvider):
             program_spec=ProgramSpec(str, alias="qasm2"),
         )
 
-    def get_devices(self, **kwargs) -> dict[str, dict[str, Any]]:
+    def get_devices(self, **kwargs) -> list[OQCDevice]:
         """Get all OQC devices."""
         devices = self.client.get_qpus()
-        data = [{"id": device["id"], "num_qubits": 8} for device in devices]
+        data = [
+            {"id": device["id"], "num_qubits": 8} for device in devices
+        ]  # TODO: Dynamically get num_qubits
         return [OQCDevice(profile=self._build_profile(x), client=self.client) for x in data]
 
-    def get_device(self, device_id: str) -> dict[str, Any]:
+    def get_device(self, device_id: str) -> OQCDevice:
         """Get a specific OQC device."""
         devices = self.get_devices()
-        res = None
         for device in devices:
             if device.profile._data["device_id"] == device_id:
-                res = device
-        return res
+                return device
+        raise ResourceNotFoundError(f"Device '{device_id}' not found.")
