@@ -23,3 +23,5 @@ Functions
 
 """
 from .ionq import harmony_transform
+
+__all__ = ["harmony_transform"]

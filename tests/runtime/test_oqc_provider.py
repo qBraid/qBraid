@@ -28,14 +28,19 @@ try:
     from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCJobResult, OQCProvider
     from qbraid.transpiler import ConversionScheme
 
+    FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
+
     oqc_not_installed = False
 except ImportError:
+
+    FIXTURE_COUNT = 0
+
     oqc_not_installed = True
+
 
 pytestmark = pytest.mark.skipif(oqc_not_installed, reason="qcaas_client not installed")
 
 DEVICE_ID = "qpu:uk:2:d865b5a184"
-FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
 
 @pytest.fixture

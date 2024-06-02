@@ -89,8 +89,8 @@ filterwarnings = [
 parallel = true
 source = ["qbraid"]
 omit = [
+  "**/qbraid/transforms/qasm3/format.py",
   "**/qbraid/runtime/braket/tracker.py",
-  "**/qbraid/visualization/plot_conversions.py",
   "**/qbraid/visualization/draw_circuit.py",
   "**/qbraid/_compat.py",
   "**/qbraid/runtime/ionq/*.py",
@@ -110,7 +110,10 @@ exclude_lines = [
   "def __repr__",
   "if __name__ == .__main__.:",
   "if TYPE_CHECKING:",
-  "logger.debug"
+  "logger.debug",
+  "__all__",
+  "def __getattr__",
+  "def __dir__"
 ]
 
 [tool.coverage.html]

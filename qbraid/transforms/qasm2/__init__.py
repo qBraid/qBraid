@@ -27,3 +27,10 @@ Functions
 """
 from .passes import flatten_qasm_program, remove_qasm_barriers, unfold_qasm_gate_defs
 from .qasm_qelib1 import decompose_qasm_qelib1
+
+__all__ = [
+    "flatten_qasm_program",
+    "remove_qasm_barriers",
+    "unfold_qasm_gate_defs",
+    "decompose_qasm_qelib1",
+]
