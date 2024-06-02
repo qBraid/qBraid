@@ -35,7 +35,6 @@ Exceptions
 """
 from ._about import about
 from ._compat import check_warn_version_update, configure_logging, filterwarnings
-from ._version import __version__
 from .exceptions import QbraidError
 
 __all__ = [
