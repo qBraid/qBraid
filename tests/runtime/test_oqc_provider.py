@@ -16,6 +16,7 @@ Unit tests for OQCProvider class
 """
 from unittest.mock import Mock, patch
 
+import numpy as np
 import pytest
 
 try:
@@ -27,14 +28,19 @@ try:
     from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCJobResult, OQCProvider
     from qbraid.transpiler import ConversionScheme
 
+    FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
+
     oqc_not_installed = False
 except ImportError:
+
+    FIXTURE_COUNT = 0
+
     oqc_not_installed = True
+
 
 pytestmark = pytest.mark.skipif(oqc_not_installed, reason="qcaas_client not installed")
 
 DEVICE_ID = "qpu:uk:2:d865b5a184"
-FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
 
 @pytest.fixture
@@ -157,14 +163,14 @@ def test_run_fake_job(circuit, oqc_device):
     job = oqc_device.run(circuit, shots=1)
     assert isinstance(job, OQCJob)
     assert isinstance(job.status(), JobStatus)
-    assert isinstance(job.timings(), dict)
+    assert isinstance(job.get_timings(), dict)
     assert isinstance(job.metrics(), dict)
     assert isinstance(job.metrics()["optimized_instruction_count"], int)
     assert isinstance(job.metadata(), dict)
-    assert isinstance(job.error(), str)
+    assert isinstance(job.get_errors(), (str, type(None)))
     res = job.result()
     assert isinstance(res, OQCJobResult)
-    assert res.measurements() == [[0], [1]]
+    assert np.array_equal(res.measurements(), np.array([[0], [1]]))
 
 
 def test_run_batch_fake_job(run_inputs, oqc_device):

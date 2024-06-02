@@ -25,3 +25,21 @@ Exceptions
 
 """
 from .exceptions import CompilationError, DecompositionError, TransformError
+
+__all__ = ["TransformError", "CompilationError", "DecompositionError"]
+
+_lazy_mods = ["braket", "cirq", "pytket", "qasm2", "qasm3", "qiskit"]
+
+
+def __getattr__(name):
+    if name in _lazy_mods:
+        import importlib  # pylint: disable=import-outside-toplevel
+
+        module = importlib.import_module(f".{name}", __name__)
+        globals()[name] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    return sorted(__all__ + _lazy_mods)

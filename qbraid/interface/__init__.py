@@ -25,3 +25,10 @@ Functions
 """
 from .circuit_equality import assert_allclose_up_to_global_phase, circuits_allclose
 from .random import random_circuit, random_unitary_matrix
+
+__all__ = [
+    "assert_allclose_up_to_global_phase",
+    "circuits_allclose",
+    "random_circuit",
+    "random_unitary_matrix",
+]

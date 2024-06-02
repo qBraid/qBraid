@@ -12,17 +12,16 @@
 Module defining BraketDeviceWrapper Class
 
 """
-from datetime import datetime, timedelta
 from typing import TYPE_CHECKING, Optional, Union
 
 import braket.circuits
 from braket.aws import AwsDevice
-from braket.device_schema import ExecutionDay
 
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.transforms.braket import transform
 
+from .availability import next_available_time
 from .job import BraketQuantumTask
 
 if TYPE_CHECKING:
@@ -31,14 +30,6 @@ if TYPE_CHECKING:
     import qbraid.runtime
     import qbraid.runtime.braket
     import qbraid.transpiler
-
-
-def _future_utc_datetime(hours: int, minutes: int, seconds: int) -> str:
-    """Return a UTC datetime that is hours, minutes, and seconds from now
-    as an ISO string without fractional seconds."""
-    current_utc = datetime.utcnow()
-    future_time = current_utc + timedelta(hours=hours, minutes=minutes, seconds=seconds)
-    return future_time.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 class BraketDevice(QuantumDevice):
@@ -81,107 +72,10 @@ class BraketDevice(QuantumDevice):
         unavailability, and future UTC datetime of next change in availability status.
 
         Returns:
-            tuple[bool, str, str]: Current device availability, hr/min/sec until availability
-                                   switch, future UTC datetime of availability switch
+            tuple[bool, str, Optional[str]]: Current device availability, hr/min/sec until
+                availability switch, future UTC datetime of availability switch
         """
-
-        is_available_result = False
-        available_time = None
-
-        device = self._device
-
-        if device.status != "ONLINE":
-            return is_available_result, "", ""
-
-        day = 0
-
-        current_datetime_utc = datetime.utcnow()
-        for execution_window in device.properties.service.executionWindows:
-            weekday = current_datetime_utc.weekday()
-            current_time_utc = current_datetime_utc.time().replace(microsecond=0)
-
-            if (
-                execution_window.windowEndHour < execution_window.windowStartHour
-                and current_time_utc < execution_window.windowEndHour
-            ):
-                weekday = (weekday - 1) % 7
-
-            matched_day = execution_window.executionDay == ExecutionDay.EVERYDAY
-            matched_day = matched_day or (
-                execution_window.executionDay == ExecutionDay.WEEKDAYS and weekday < 5
-            )
-            matched_day = matched_day or (
-                execution_window.executionDay == ExecutionDay.WEEKENDS and weekday > 4
-            )
-            ordered_days = (
-                ExecutionDay.MONDAY,
-                ExecutionDay.TUESDAY,
-                ExecutionDay.WEDNESDAY,
-                ExecutionDay.THURSDAY,
-                ExecutionDay.FRIDAY,
-                ExecutionDay.SATURDAY,
-                ExecutionDay.SUNDAY,
-            )
-            matched_day = matched_day or (
-                execution_window.executionDay in ordered_days
-                and ordered_days.index(execution_window.executionDay) == weekday
-            )
-
-            matched_time = (
-                execution_window.windowStartHour < execution_window.windowEndHour
-                and execution_window.windowStartHour
-                <= current_time_utc
-                <= execution_window.windowEndHour
-            ) or (
-                execution_window.windowEndHour < execution_window.windowStartHour
-                and (
-                    current_time_utc >= execution_window.windowStartHour
-                    or current_time_utc <= execution_window.windowEndHour
-                )
-            )
-
-            if execution_window.executionDay in ordered_days:
-                day = (ordered_days.index(execution_window.executionDay) - weekday) % 6
-
-            start_time = execution_window.windowStartHour
-            end_time = current_time_utc
-            day_factor = 0
-
-            if day == 0:
-                day_factor = day
-            elif start_time.hour < end_time.hour:
-                day_factor = day - 1
-            elif start_time.hour == end_time.hour:
-                if start_time.minute < end_time.minute:
-                    day_factor = day - 1
-                elif start_time.minute == end_time.minute:
-                    if start_time.second <= end_time.second:
-                        day_factor = day - 1
-            else:
-                day_factor = day
-
-            td = timedelta(
-                hours=start_time.hour,
-                minutes=start_time.minute,
-                seconds=start_time.second,
-            ) - timedelta(hours=end_time.hour, minutes=end_time.minute, seconds=end_time.second)
-            days_seconds = 86400 * day_factor
-            available_time_secs = td.seconds + days_seconds
-
-            if available_time is None or available_time_secs < available_time:
-                available_time = available_time_secs
-
-            is_available_result = is_available_result or (matched_day and matched_time)
-
-        if available_time is None:
-            return is_available_result, "", ""
-
-        hours = available_time // 3600
-        minutes = (available_time // 60) % 60
-        seconds = available_time - hours * 3600 - minutes * 60
-        available_time_hms = f"{hours:02}:{minutes:02}:{seconds:02}"
-        utc_datetime_str = _future_utc_datetime(hours, minutes, seconds)
-        return is_available_result, available_time_hms, utc_datetime_str
+        return next_available_time(self._device)
 
     def queue_depth(self) -> int:
         """Return the number of jobs in the queue for the device."""
