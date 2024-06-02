@@ -93,7 +93,6 @@ omit = [
   "**/qbraid/runtime/braket/tracker.py",
   "**/qbraid/visualization/draw_circuit.py",
   "**/qbraid/_compat.py",
-  "**/qbraid/runtime/ionq/*.py",
   "**/qbraid/transpiler/conversions/qasm2/qasm2_extras.py"
 ]
 
