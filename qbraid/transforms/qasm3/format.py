@@ -9,19 +9,12 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for applying runtime transforms to Amazon Braket circuits.
-
-.. currentmodule:: qbraid.transforms.braket
-
-Functions
-----------
-
-.. autosummary::
-   :toctree: ../stubs/
-
-    transform
+Module for providing transforamtions to ensure consistency
+in the way OpenQASM 3 strings are formatted.
 
 """
-from .transform import transform
 
-__all__ = ["transform"]
+
+def remove_unused_gates(qasm: str) -> str:
+    """Remove unused gate definitions from a QASM string."""
+    raise NotImplementedError("This function is not yet implemented.")

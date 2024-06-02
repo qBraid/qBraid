@@ -24,20 +24,22 @@ from qbraid.runtime.result import QuantumJobResult
 class ExperimentResult:
     """Class to represent the results of a quantum circuit simulation."""
 
-    measurements: np.ndarray = field(default_factory=lambda: np.array([], dtype=np.int8))
+    measurement_counts: dict = field(default_factory=lambda: {})
     execution_duration: int = -1
     process_id: str = ""
 
     @staticmethod
     def from_result(result: dict[str, Any]):
         """Factory method to create JobResult from a result dictionary."""
-        measurements = np.array(result.get("measurements", []), dtype=np.int8)
+        measurement_counts = result.get("measurementCounts", {})
         time_stamps = result.get("timeStamps", {})
         execution_duration = time_stamps.get("executionDuration", -1)
         process_id = result.get("vendorJobId", "")
 
         return ExperimentResult(
-            measurements=measurements, execution_duration=execution_duration, process_id=process_id
+            measurement_counts=measurement_counts,
+            execution_duration=execution_duration,
+            process_id=process_id,
         )
 
 
@@ -53,6 +55,7 @@ class QbraidJobResult(QuantumJobResult):
         self.result = result
         self._cached_histogram = None
         self._cached_metadata = None
+        self._measurements = None
 
     def __repr__(self):
         """Return a string representation of the Result object."""
@@ -63,7 +66,14 @@ class QbraidJobResult(QuantumJobResult):
 
     def measurements(self):
         """Return the measurement results 2D numpy array."""
-        return self.result.measurements
+        if self._measurements is None:
+            counts = self.result.measurement_counts
+            if counts:
+                measurements = []
+                for state, count in counts.items():
+                    measurements.extend([list(map(int, state))] * count)
+                self._measurements = np.array(measurements, dtype=int)
+        return self._measurements
 
     def raw_counts(self, decimal: bool = False, **kwargs):
         """Returns raw histogram data of the run"""

@@ -2,7 +2,6 @@ qbraid.transforms
 ==================
 
 .. automodule:: qbraid.transforms
-   :members:
    :undoc-members:
    :show-inheritance:
 
