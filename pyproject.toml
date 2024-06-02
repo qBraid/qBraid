@@ -111,7 +111,9 @@ exclude_lines = [
   "if __name__ == .__main__.:",
   "if TYPE_CHECKING:",
   "logger.debug",
-  "__all__"
+  "__all__",
+  "def __getattr__",
+  "def __dir__"
 ]
 
 [tool.coverage.html]

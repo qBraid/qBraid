@@ -29,7 +29,7 @@ from braket.tracking import Tracker
 from qiskit import QuantumCircuit as QiskitCircuit
 
 from qbraid.programs import ProgramSpec
-from qbraid.runtime import DeviceType, TargetProfile
+from qbraid.runtime import DeviceStatus, DeviceType, TargetProfile
 from qbraid.runtime.braket.availability import _calculate_future_time
 from qbraid.runtime.braket.device import BraketDevice
 from qbraid.runtime.braket.job import AmazonBraketVersionError, BraketQuantumTask
@@ -129,6 +129,7 @@ class TestAwsDevice:
 
     def __init__(self, arn, aws_session=None):
         self.arn = arn
+        self.name = "SV1"
         self.aws_session = aws_session or TestAwsSession()
         self.status = "ONLINE"
         self.properties = TestProperties()
@@ -255,6 +256,9 @@ def test_get_device():
         mock_aws_device_2.return_value = TestAwsDevice(SV1_ARN)
         device = provider.get_device(SV1_ARN)
         assert device.id == SV1_ARN
+        assert device.name == "SV1"
+        assert str(device) == "BraketDevice('Amazon Braket SV1')"
+        assert device.status() == DeviceStatus.ONLINE
         assert isinstance(device, BraketDevice)
 
 
