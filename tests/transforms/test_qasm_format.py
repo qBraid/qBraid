@@ -12,12 +12,7 @@
 Unit tests for QASM formatting functions
 
 """
-import pytest
-
 from qbraid.transforms.qasm3.format import remove_unused_gates
-
-pytestmark = pytest.mark.skipif(True, reason="Not implemented yet")
-
 
 def test_remove_unused_single_line_non_parameterized_gate():
     """Test removing unused single line non-parameterized gate definition."""
