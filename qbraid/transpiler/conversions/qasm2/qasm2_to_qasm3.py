@@ -13,11 +13,12 @@ Module containing OpenQASM conversion function
 
 """
 import os
-import textwrap
 
-from qbraid._version import __version__ as qbraid_version
 from qbraid.programs import parse_qasm_type_alias
 from qbraid.transforms.qasm2.qasm_qelib1 import _decompose_rxx_instr
+from qbraid.transforms.qasm3.format import remove_unused_gates
+
+QASMType = str
 
 
 def _get_qasm3_gate_defs() -> str:
@@ -29,7 +30,7 @@ def _get_qasm3_gate_defs() -> str:
     return gate_defs
 
 
-def _build_qasm_3_reg(line: str, qreg_type: bool) -> str:
+def _build_qasm_3_reg(line: str, qreg_type: bool) -> QASMType:
     """Helper function to build openqasm 3 register statements
 
     Args:
@@ -49,7 +50,7 @@ def _build_qasm_3_reg(line: str, qreg_type: bool) -> str:
     return result
 
 
-def _build_qasm_3_measure(line: str) -> str:
+def _build_qasm_3_measure(line: str) -> QASMType:
     """Helper function to build openqasm 3 measure string
 
     Args:
@@ -67,7 +68,7 @@ def _build_qasm_3_measure(line: str) -> str:
     return f"{bits_name} = measure {qubits_name};\n"
 
 
-def _convert_line_to_qasm3(line: str) -> str:
+def _convert_line_to_qasm3(line: str) -> QASMType:
     """Function to change an openqasm 2 line to openqasm 3
 
     Args:
@@ -97,7 +98,7 @@ def _convert_line_to_qasm3(line: str) -> str:
     return line + "\n"
 
 
-def qasm2_to_qasm3(qasm_str: str) -> str:
+def qasm2_to_qasm3(qasm_str: str) -> QASMType:
     """Convert a OpenQASM 2.0 string to OpenQASM 3.0 string
 
     Args:
@@ -110,35 +111,17 @@ def qasm2_to_qasm3(qasm_str: str) -> str:
     if not qasm_version == "qasm2":
         raise ValueError("Invalid OpenQASM 2.0 string")
 
-    qasm3_str = textwrap.dedent(
-        f"""
-        // Generated from qBraid v{qbraid_version}
-        OPENQASM 3.0;
-        include 'stdgates.inc';
-    """
-    )
+    qasm3_str = "OPENQASM 3.0;\ninclude 'stdgates.inc';"
 
     gate_defs = _get_qasm3_gate_defs()
 
     for line in gate_defs:
         qasm3_str += line
 
-    last_line_was_blank = False
-
     for line in qasm_str.splitlines():
-        if line.strip().startswith("//"):
-            continue
-
-        # Check if the current line is blank
-        if not line.strip():
-            if last_line_was_blank:
-                continue
-
-            last_line_was_blank = True
-        else:
-            last_line_was_blank = False
-
         line = _convert_line_to_qasm3(line)
         qasm3_str += line
+
+    qasm3_str = remove_unused_gates(qasm3_str)
 
     return qasm3_str
