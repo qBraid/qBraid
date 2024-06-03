@@ -1,6 +1,6 @@
 # optional program types
 amazon-braket-sdk>=1.74,<1.81
-cirq-core~=1.3.0
+cirq-core~=1.4.0
 pennylane<0.37.0
 pyquil~=4.4.0
 pytket>=1.26,<1.29
