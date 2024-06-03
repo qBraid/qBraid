@@ -12,7 +12,7 @@
 Module defining Qiskit conversion extras.
 
 """
-
+import warnings
 from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
@@ -45,7 +45,9 @@ def qiskit_to_braket(
     Returns:
         Circuit: Braket circuit
     """
-    return qiskit_braket_provider.providers.adapter.to_braket(circuit, **kwargs)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        return qiskit_braket_provider.providers.adapter.to_braket(circuit, **kwargs)
 
 
 @requires_extras("qiskit_qir")
