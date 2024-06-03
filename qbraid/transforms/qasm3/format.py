@@ -62,8 +62,8 @@ def remove_unused_gates(qasm: str) -> str:
                     all_gates[gate] += 1
 
     unused_gates = [
-        gate for gate in all_gates if all_gates[gate] == 0
-    ]  # pylint: disable=consider-using-dict-items
+        gate for gate in all_gates if all_gates[gate] == 0 # pylint: disable=consider-using-dict-items
+    ]
     new_qasm = qasm
     for gate in unused_gates:
         new_qasm = _remove_gate_definition(new_qasm, gate)
