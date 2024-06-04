@@ -104,7 +104,7 @@ class BraketProvider(QuantumProvider):
             aws_access_key_id=self.aws_access_key_id,
             aws_secret_access_key=self.aws_secret_access_key,
         )
-        braket_client = boto_session.client("braket")
+        braket_client = boto_session.client("braket", region_name=region_name)
         return AwsSession(
             boto_session=boto_session, braket_client=braket_client, default_bucket=default_bucket
         )
