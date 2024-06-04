@@ -12,7 +12,6 @@
 Module for configuring provider credentials and authentication.
 
 """
-
 import json
 import os
 from typing import TYPE_CHECKING, Optional
@@ -20,6 +19,7 @@ from typing import TYPE_CHECKING, Optional
 import boto3
 import braket.circuits
 from boto3.session import Session
+from botocore.config import Config
 from braket.aws import AwsDevice, AwsSession
 from qbraid_core.services.quantum import quantum_lib_proxy_state
 from qbraid_core.services.quantum.proxy_braket import aws_configure
@@ -104,9 +104,13 @@ class BraketProvider(QuantumProvider):
             aws_access_key_id=self.aws_access_key_id,
             aws_secret_access_key=self.aws_secret_access_key,
         )
+        config = Config(region_name=region_name)
         braket_client = boto_session.client("braket", region_name=region_name)
         return AwsSession(
-            boto_session=boto_session, braket_client=braket_client, default_bucket=default_bucket
+            boto_session=boto_session,
+            braket_client=braket_client,
+            config=config,
+            default_bucket=default_bucket,
         )
 
     def _build_runtime_profile(
