@@ -1,28 +1,12 @@
-# Copyright (C) 2024 qBraid
-#
-# This file is part of the qBraid-SDK
-#
-# The qBraid-SDK is free software released under the GNU General Public License v3
-# or later. You can redistribute and/or modify it under the terms of the GPL v3.
-# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
-#
-# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
-
-"""
-Module for calculating unitary of quantum circuit/program
-
-"""
-from typing import TYPE_CHECKING
-
+import time
+from typing import TYPE_CHECKING, Tuple
 import numpy as np
-
 from qbraid.programs import load_program
 
 if TYPE_CHECKING:
     import qbraid
 
-
-def match_global_phase(a: np.ndarray, b: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def match_global_phase(a: np.ndarray, b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     """
     Matches the global phase of two numpy arrays.
 
@@ -36,28 +20,19 @@ def match_global_phase(a: np.ndarray, b: np.ndarray) -> tuple[np.ndarray, np.nda
         b (np.ndarray): The second input matrix.
 
     Returns:
-        tuple[np.ndarray, np.ndarray]: A tuple of the two matrices `(a', b')`, adjusted for
+        Tuple[np.ndarray, np.ndarray]: A Tuple of the two matrices `(a', b')`, adjusted for
                                        global phase. If shapes of `a` and `b` do not match or
                                        either is empty, returns copies of the original matrices.
     """
     if a.shape != b.shape or a.size == 0:
         return np.copy(a), np.copy(b)
 
-    k = max(np.ndindex(*a.shape), key=lambda t: abs(b[t]))
+    # Find the index of the maximum element in the flattened array
+    k = np.unravel_index(np.argmax(np.abs(b)), b.shape)
+    phase_a = np.exp(-1j * np.angle(a[k]))
+    phase_b = np.exp(-1j * np.angle(b[k]))
 
-    def dephase(v):
-        r = np.real(v)
-        i = np.imag(v)
-
-        if i == 0:
-            return -1 if r < 0 else 1
-        if r == 0:
-            return 1j if i < 0 else -1j
-
-        return np.exp(-1j * np.arctan2(i, r))
-
-    return a * dephase(a[k]), b * dephase(b[k])
-
+    return a * phase_a, b * phase_b
 
 def assert_allclose_up_to_global_phase(a: np.ndarray, b: np.ndarray, atol: float, **kwargs) -> None:
     """
@@ -72,13 +47,11 @@ def assert_allclose_up_to_global_phase(a: np.ndarray, b: np.ndarray, atol: float
 
     Raises:
         AssertionError: The matrices aren't nearly equal up to global phase.
-
     """
     a, b = match_global_phase(a, b)
     np.testing.assert_allclose(actual=a, desired=b, atol=atol, **kwargs)
 
-
-def circuits_allclose(  # pylint: disable=too-many-arguments
+def circuits_allclose(
     circuit0: "qbraid.programs.QPROGRAM",
     circuit1: "qbraid.programs.QPROGRAM",
     index_contig: bool = False,
@@ -100,9 +73,7 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
 
     Returns:
         True if the input circuits pass unitary equality check
-
     """
-
     def unitary_equivalence_check(unitary0, unitary1, unitary_rev=None):
         if strict_gphase:
             return np.allclose(unitary0, unitary1) or (
@@ -132,3 +103,10 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
     unitary_rev = program1.unitary_rev_qubits()
 
     return unitary_equivalence_check(unitary0, unitary1, unitary_rev)
+
+a = np.array([1,2,3])
+b = np.array([2,4,5])
+
+start = time.perf_counter()
+match_global_phase(a, b)
+print(time.perf_counter() - start)
