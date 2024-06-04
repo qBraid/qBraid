@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Optional
 import boto3
 import braket.circuits
 from boto3.session import Session
-from botocore.config import Config
 from braket.aws import AwsDevice, AwsSession
 from qbraid_core.services.quantum import quantum_lib_proxy_state
 from qbraid_core.services.quantum.proxy_braket import aws_configure
