@@ -32,7 +32,6 @@ try:
 
     oqc_not_installed = False
 except ImportError:
-
     FIXTURE_COUNT = 0
 
     oqc_not_installed = True

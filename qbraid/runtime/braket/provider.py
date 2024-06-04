@@ -12,7 +12,6 @@
 Module for configuring provider credentials and authentication.
 
 """
-
 import json
 import os
 from typing import TYPE_CHECKING, Optional
@@ -79,11 +78,13 @@ class BraketProvider(QuantumProvider):
     @staticmethod
     def _get_default_region() -> str:
         """Returns the default AWS region."""
+        default_region = "us-east-1"
+
         try:
             session = Session()
-            return session.region_name
+            return session.region_name or default_region
         except Exception:  # pylint: disable=broad-exception-caught
-            return "us-east-1"
+            return default_region
 
     @staticmethod
     def _get_s3_default_bucket() -> str:
@@ -92,7 +93,7 @@ class BraketProvider(QuantumProvider):
             aws_session = AwsSession()
             return aws_session.default_bucket()
         except Exception:  # pylint: disable=broad-exception-caught
-            return "amazon-braket-qbraid-provider"
+            return "amazon-braket-qbraid-jobs"
 
     def _get_aws_session(self, region_name: Optional[str] = None) -> "braket.aws.AwsSession":
         """Returns the AwsSession provider."""
@@ -104,7 +105,10 @@ class BraketProvider(QuantumProvider):
             aws_access_key_id=self.aws_access_key_id,
             aws_secret_access_key=self.aws_secret_access_key,
         )
-        return AwsSession(boto_session=boto_session, default_bucket=default_bucket)
+        braket_client = boto_session.client("braket", region_name=region_name)
+        return AwsSession(
+            boto_session=boto_session, braket_client=braket_client, default_bucket=default_bucket
+        )
 
     def _build_runtime_profile(
         self, device: "braket.aws.AwsDevice", program_spec: Optional[ProgramSpec] = None

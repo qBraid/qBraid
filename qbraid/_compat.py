@@ -30,12 +30,21 @@ def configure_logging():
 
 def filterwarnings():
     """Filter out warnings that are not relevant to the user."""
-    warnings.filterwarnings("ignore", category=SyntaxWarning)
-    warnings.filterwarnings(
-        "ignore", category=UserWarning, message="Setuptools is replacing distutils"
-    )
-    warnings.filterwarnings("ignore", category=DeprecationWarning)
-    warnings.filterwarnings("ignore", category=RuntimeWarning, module="numpy")
+    warnings_to_ignore = [
+        (SyntaxWarning, None, None),
+        (UserWarning, "Setuptools is replacing distutils", None),
+        (DeprecationWarning, None, None),
+        (RuntimeWarning, None, "numpy"),
+        (
+            UserWarning,
+            "`pydantic.utils:deep_update` has been removed. "
+            + "We are importing from `pydantic.v1.utils:deep_update` instead.",
+            "pydantic",
+        ),
+    ]
+
+    for category, message, module in warnings_to_ignore:
+        warnings.filterwarnings("ignore", category=category, message=message, module=module)
 
 
 def check_warn_version_update():
