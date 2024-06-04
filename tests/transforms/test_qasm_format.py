@@ -14,6 +14,7 @@ Unit tests for QASM formatting functions
 """
 from qbraid.transforms.qasm3.format import remove_unused_gates
 
+
 def test_remove_unused_single_line_non_parameterized_gate():
     """Test removing unused single line non-parameterized gate definition."""
     input_qasm = """
