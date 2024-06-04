@@ -19,7 +19,7 @@ from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.program import QbraidProgram
 
 if TYPE_CHECKING:
-    import numpy as np
+    import jax.numpy as jnp
 
 
 class OpenQasm2Program(QbraidProgram):

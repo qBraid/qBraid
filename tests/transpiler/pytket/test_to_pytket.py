@@ -12,7 +12,8 @@
 Unit tests for conversions between Cirq circuits and pytket circuits.
 
 """
-import numpy as np
+import jax
+import jax.numpy as jnp
 import pytest
 from cirq import Circuit, LineQubit, ops, testing
 
@@ -33,12 +34,13 @@ def test_bell_state_to_pytket():
 @pytest.mark.parametrize("num_qubits", [1, 2, 3, 4, 5])
 def test_random_circuit_to_pytket(num_qubits):
     """Test converting random Cirq circuits to pytket."""
+    key = jax.random.PRNGKey(0)
     for _ in range(10):
         cirq_circuit = testing.random_circuit(
             qubits=num_qubits,
-            n_moments=np.random.randint(1, 6),
+            n_moments=jax.random.randint(key, (1,), 1, 6),
             op_density=1,
-            random_state=np.random.randint(1, 10),
+            random_state=jax.random.randint(key, (1,), 1, 10),
         )
         pytket_circuit = transpile(cirq_circuit, "pytket")
         assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
@@ -47,6 +49,6 @@ def test_random_circuit_to_pytket(num_qubits):
 def test_raise_error():
     """Test raising error for unsupported gates."""
     with pytest.raises(CircuitConversionError):
-        probs = np.random.uniform(low=0, high=0.5)
+        probs = jnp.random.uniform(low=0, high=0.5)
         cirq_circuit = Circuit(ops.PhaseDampingChannel(probs).on(*LineQubit.range(1)))
         transpile(cirq_circuit, "pytket", require_native=True)

@@ -16,7 +16,7 @@ import random
 from typing import Any, Optional
 
 import cirq
-import numpy as np
+import jax.numpy as jnp
 import pytest
 from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
@@ -97,7 +97,7 @@ class MockClient:
         return JOB_DATA
 
 
-def _is_uniform_comput_basis(array: np.ndarray) -> bool:
+def _is_uniform_comput_basis(array: jnp.ndarray) -> bool:
     """
     Check if each measurement (row) in the array represents a uniform computational basis
     state, i.e., for each shot, that qubit measurements are either all |0⟩s or all |1⟩s.
@@ -118,7 +118,7 @@ def _is_uniform_comput_basis(array: np.ndarray) -> bool:
 
     for shot in array:
         # Check if all qubits in the shot are measured as |0⟩ or all as |1⟩
-        if not (np.all(shot == 0) or np.all(shot == 1)):
+        if not (jnp.all(shot == 0) or jnp.all(shot == 1)):
             return False
     return True
 

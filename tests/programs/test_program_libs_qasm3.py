@@ -12,7 +12,7 @@
 Unit tests for qbraid.programs.qasm3.OpenQasm3Program
 
 """
-import numpy as np
+import jax.numpy as jnp
 import pytest
 from qiskit.qasm3 import dumps, loads
 
@@ -35,8 +35,8 @@ def test_qasm_qubits():
 
 def test_qasm3_num_qubits():
     """Test calculating number of qubits in qasm3 circuit"""
-    num_qubits = np.random.randint(2, 10)
-    depth = np.random.randint(1, 4)
+    num_qubits = jnp.random.randint(2, 10)
+    depth = jnp.random.randint(1, 4)
     qiskit_circuit = _qiskit_random(num_qubits=num_qubits, depth=depth)
     qasm3_str = dumps(qiskit_circuit)
     assert OpenQasm3Program(qasm3_str).num_qubits == num_qubits
@@ -45,7 +45,7 @@ def test_qasm3_num_qubits():
 @pytest.mark.skip(reason="Not implemented")
 def test_qasm3_depth():
     """Test calculating qasm depth of qasm3 circuit"""
-    depth = np.random.randint(2, 10)
+    depth = jnp.random.randint(2, 10)
     qasm3_str = _qasm3_random(depth=depth, seed=42)
     assert OpenQasm3Program(qasm3_str).depth == depth
 

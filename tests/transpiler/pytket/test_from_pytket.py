@@ -12,7 +12,7 @@
 Unit tests for converting pytket circuits to Cirq circuits.
 
 """
-import numpy as np
+import jax.numpy as jnp
 import pytest
 from pytket.circuit import Circuit as TKCircuit
 
@@ -34,13 +34,13 @@ def test_bell_state_from_qiskit():
 def test_crz_gate_from_pytket(qubits):
     """Test converting controlled Rz gate from pytket to cirq."""
     pytket_circuit = TKCircuit(2)
-    pytket_circuit.CRz(np.pi / 4, *qubits)
+    pytket_circuit.CRz(jnp.pi / 4, *qubits)
     cirq_circuit = transpile(pytket_circuit, "cirq")
     assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
 
 
 @pytest.mark.parametrize("qubits", ([0, 1], [1, 0]))
-@pytest.mark.parametrize("theta", (0, 2 * np.pi, np.pi / 2, np.pi / 4))
+@pytest.mark.parametrize("theta", (0, 2 * jnp.pi, jnp.pi / 2, jnp.pi / 4))
 def test_rzz_gate_from_pytket(qubits, theta):
     """Test converting Rzz gate from pytket to cirq."""
     pytket_circuit = TKCircuit(2)

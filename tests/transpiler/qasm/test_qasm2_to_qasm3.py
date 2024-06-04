@@ -15,7 +15,7 @@ Unit tests for OpenQASM 3 utility functions.
 
 import logging
 
-import numpy as np
+import jax.numpy as jnp
 import pytest
 from qiskit.circuit import QuantumCircuit
 from qiskit.qasm2 import dumps as qasm2_dumps
@@ -44,7 +44,7 @@ def test_qasm_qubits():
 
 def test_qasm3_num_qubits():
     """Test calculating number of qubits in qasm3 circuit"""
-    num_qubits = np.random.randint(2, 10)
+    num_qubits = jnp.random.randint(2, 10)
     qiskit_circuit = random_circuit("qiskit", num_qubits=num_qubits)
     qasm3_str = qasm3_dumps(qiskit_circuit)
     assert load_program(qasm3_str).num_qubits == num_qubits
@@ -53,7 +53,7 @@ def test_qasm3_num_qubits():
 @pytest.mark.skip(reason="Not implemented")
 def test_qasm3_depth():
     """Test calculating qasm depth of qasm3 circuit"""
-    depth = np.random.randint(2, 10)
+    depth = jnp.random.randint(2, 10)
     qasm3_str = _qasm3_random(depth=depth, seed=42)
     assert load_program(qasm3_str).depth == depth
 

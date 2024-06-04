@@ -12,7 +12,7 @@
 Unit tests for equivalence of interfacing quantum programs
 
 """
-import numpy as np
+import jax.numpy as jnp
 import pytest
 from braket.circuits import Circuit as BKCircuit
 from cirq import Circuit, LineQubit, X, Y, Z
@@ -107,4 +107,4 @@ def test_collapse_empty_braket_cirq():
 def test_random_unitary():
     """Test generating random unitary"""
     matrix = random_unitary_matrix(2)
-    assert np.allclose(matrix @ matrix.conj().T, np.eye(2))
+    assert jnp.allclose(matrix @ matrix.conj().T, jnp.eye(2))

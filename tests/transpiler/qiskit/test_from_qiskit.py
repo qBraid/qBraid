@@ -12,7 +12,7 @@
 Unit tests for converting Qiskit circuits to Cirq circuits.
 
 """
-import numpy as np
+import jax.numpy as jnp
 import pytest
 from qiskit import QuantumCircuit
 from qiskit.circuit.random import random_circuit
@@ -47,16 +47,16 @@ def test_common_gates_from_qiskit():
     qiskit_circuit.sdg(1)
     qiskit_circuit.t(2)
     qiskit_circuit.tdg(3)
-    qiskit_circuit.rx(np.pi / 4, 0)
-    qiskit_circuit.ry(np.pi / 2, 1)
-    qiskit_circuit.rz(3 * np.pi / 4, 2)
-    qiskit_circuit.p(np.pi / 8, 3)
+    qiskit_circuit.rx(jnp.pi / 4, 0)
+    qiskit_circuit.ry(jnp.pi / 2, 1)
+    qiskit_circuit.rz(3 * jnp.pi / 4, 2)
+    qiskit_circuit.p(jnp.pi / 8, 3)
     qiskit_circuit.sx(0)
     qiskit_circuit.sxdg(1)
     qiskit_circuit.iswap(2, 3)
     qiskit_circuit.swap([0, 1], [2, 3])
     qiskit_circuit.cx(0, 1)
-    qiskit_circuit.cp(np.pi / 4, 2, 3)
+    qiskit_circuit.cp(jnp.pi / 4, 2, 3)
 
     cirq_circuit = transpile(qiskit_circuit, "cirq")
     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
@@ -66,13 +66,13 @@ def test_common_gates_from_qiskit():
 def test_crz_gate_from_qiskit(qubits):
     """Tests converting controlled Rz gate from Qiskit to Cirq."""
     qiskit_circuit = QuantumCircuit(2)
-    qiskit_circuit.crz(np.pi / 4, *qubits)
+    qiskit_circuit.crz(jnp.pi / 4, *qubits)
     cirq_circuit = transpile(qiskit_circuit, "cirq", require_native=True)
     assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
 @pytest.mark.parametrize("qubits", ([0, 1], [1, 0]))
-@pytest.mark.parametrize("theta", (0, 2 * np.pi, np.pi / 2, np.pi / 4))
+@pytest.mark.parametrize("theta", (0, 2 * jnp.pi, jnp.pi / 2, jnp.pi / 4))
 def test_rzz_gate_from_qiskit(qubits, theta):
     """Tests converting Rzz gate from Qiskit to Cirq."""
     qiskit_circuit = QuantumCircuit(2)

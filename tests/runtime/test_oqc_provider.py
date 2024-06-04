@@ -16,7 +16,7 @@ Unit tests for OQCProvider class
 """
 from unittest.mock import Mock, patch
 
-import numpy as np
+import jax.numpy as jnp
 import pytest
 
 try:
@@ -169,7 +169,7 @@ def test_run_fake_job(circuit, oqc_device):
     assert isinstance(job.get_errors(), (str, type(None)))
     res = job.result()
     assert isinstance(res, OQCJobResult)
-    assert np.array_equal(res.measurements(), np.array([[0], [1]]))
+    assert jnp.array_equal(res.measurements(), jnp.array([[0], [1]]))
 
 
 def test_run_batch_fake_job(run_inputs, oqc_device):

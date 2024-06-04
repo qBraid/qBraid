@@ -28,7 +28,7 @@ import functools
 import operator
 from typing import Any, Callable, cast, Iterable, Optional, Union, TYPE_CHECKING
 
-import numpy as np
+import jax.numpy as jnp
 # import sympy
 from ply import yacc
 
@@ -126,7 +126,7 @@ class QasmGateStatement:
         self._validate_args(args, lineno)
         self._validate_params(params, lineno)
 
-        reg_sizes = np.unique([len(reg) for reg in args])
+        reg_sizes = jnp.unique([len(reg) for reg in args])
         if len(reg_sizes) > 2 or (len(reg_sizes) > 1 and reg_sizes[0] != 1):
             raise QasmException(
                 f"Non matching quantum registers of length {reg_sizes} at line {lineno}"
@@ -146,7 +146,7 @@ class QasmGateStatement:
         # through each qubit of the registers 0 to n-1 and use the same one
         # qubit from the "single-qubit registers" for each operation.
         op_qubits = functools.reduce(
-            cast(Callable[[list['cirq.Qid'], list['cirq.Qid']], list['cirq.Qid']], np.broadcast),
+            cast(Callable[[list['cirq.Qid'], list['cirq.Qid']], list['cirq.Qid']], jnp.broadcast),
             args,
         )
         for qubits in op_qubits:
@@ -177,15 +177,15 @@ class QasmParser:
         self.parsedQasm: Optional[Qasm] = None
         self.qubits: dict[str, ops.Qid] = {}
         self.functions = {
-            'sin': np.sin,
-            'cos': np.cos,
-            'tan': np.tan,
-            'exp': np.exp,
-            'ln': np.log,
-            'sqrt': np.sqrt,
-            'acos': np.arccos,
-            'atan': np.arctan,
-            'asin': np.arcsin,
+            'sin': jnp.sin,
+            'cos': jnp.cos,
+            'tan': jnp.tan,
+            'exp': jnp.exp,
+            'ln': jnp.log,
+            'sqrt': jnp.sqrt,
+            'acos': jnp.arccos,
+            'atan': jnp.arctan,
+            'asin': jnp.arcsin,
         }
 
         self.binary_operators = {
@@ -203,7 +203,7 @@ class QasmParser:
             num_params=3,
             num_args=1,
             # QasmUGate expects half turns
-            cirq_gate=(lambda params: QasmUGate(*[p / np.pi for p in params])),
+            cirq_gate=(lambda params: QasmUGate(*[p / jnp.pi for p in params])),
         ),
     }
 
@@ -231,7 +231,7 @@ class QasmParser:
         ),
         'u1': QasmGateStatement(
             qasm_gate='u1',
-            cirq_gate=(lambda params: ops.ZPowGate(exponent=params[0] / np.pi)),
+            cirq_gate=(lambda params: ops.ZPowGate(exponent=params[0] / jnp.pi)),
             num_params=1,
             num_args=1,
         ),
@@ -259,7 +259,7 @@ class QasmParser:
             num_args=1,
             cirq_gate=(
                 lambda params: QasmUGate(
-                    params[0] / np.pi, (params[1] / np.pi) - 0.5, (-params[1] / np.pi) + 0.5
+                    params[0] / jnp.pi, (params[1] / jnp.pi) - 0.5, (-params[1] / jnp.pi) + 0.5
                 )
             ),
         ),
@@ -312,7 +312,7 @@ class QasmParser:
         ),
         'cu1': QasmGateStatement(
             qasm_gate='cu1',
-            cirq_gate=(lambda params: ops.ControlledGate(ops.ZPowGate(exponent=params[0] / np.pi))),
+            cirq_gate=(lambda params: ops.ControlledGate(ops.ZPowGate(exponent=params[0] / jnp.pi))),
             num_params=1,
             num_args=2,
         ),
@@ -329,11 +329,11 @@ class QasmParser:
             num_args=2,
         ),
         'p': QasmGateStatement(
-            qasm_gate='p', cirq_gate=(lambda params: ops.ZPowGate(exponent=params[0] / np.pi)), num_params=1, num_args=1,
+            qasm_gate='p', cirq_gate=(lambda params: ops.ZPowGate(exponent=params[0] / jnp.pi)), num_params=1, num_args=1,
         ),
         'cp': QasmGateStatement(
             qasm_gate='cp',
-            cirq_gate=(lambda params: ops.CZPowGate(exponent=params[0] / np.pi)),
+            cirq_gate=(lambda params: ops.CZPowGate(exponent=params[0] / jnp.pi)),
             num_params=1,
             num_args=2,
         ),

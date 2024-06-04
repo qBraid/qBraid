@@ -12,7 +12,7 @@
 Unt tests for conversions to/from pyQuil circuits.
 
 """
-import numpy as np
+import jax.numpy as jnp
 import pytest
 from cirq import Circuit, LineQubit
 from cirq import ops as cirq_ops
@@ -45,12 +45,12 @@ def test_to_from_pyquil_parameterized():
     p += H(q0)
     p += H(q1)
     p += CNOT(q0, q1)
-    p += RZ(2 * np.pi, q1)
+    p += RZ(2 * jnp.pi, q1)
     p += CNOT(q0, q1)
     p += H(q0)
     p += H(q1)
-    p += RZ(np.pi / 4, q0)
-    p += RZ(np.pi / 4, q1)
+    p += RZ(jnp.pi / 4, q0)
+    p += RZ(jnp.pi / 4, q1)
     p += H(q0)
     p += H(q1)
     p_test = cirq_to_pyquil(pyquil_to_cirq(p))
@@ -114,7 +114,7 @@ def test_raise_error_to_pyquil():
 def test_raise_error_from_pyquil():
     with pytest.raises(CircuitConversionError):
         p = Program()
-        p += RX(-np.pi / 2, 0)
+        p += RX(-jnp.pi / 2, 0)
         noise_model = _decoherence_noise_model(_get_program_gates(p))
         p = apply_noise_model(p, noise_model)
         pyquil_to_cirq(p)

@@ -14,7 +14,7 @@ Unit tests for qbraid.programs.braket.BraketCircuit
 """
 from itertools import chain, combinations
 
-import numpy as np
+import jax.numpy as jnp
 import pytest
 from braket.circuits import Circuit, Instruction, gates
 
@@ -37,8 +37,8 @@ def calculate_expected(gates_set):
     if len(gates_set) == 1:
         return gates_set[0]
     if len(gates_set) == 2:
-        return np.kron(gates_set[1], gates_set[0])
-    return np.kron(calculate_expected(gates_set[2:]), np.kron(gates_set[1], gates_set[0]))
+        return jnp.kron(gates_set[1], gates_set[0])
+    return jnp.kron(calculate_expected(gates_set[2:]), jnp.kron(gates_set[1], gates_set[0]))
 
 
 def generate_test_data(input_gate_set, contiguous=True):
@@ -87,7 +87,7 @@ def test_unitary_calc(bk_instrs, u_expected):
     circuit = make_circuit(bk_instrs)
     qbraid_circuit = BraketCircuit(circuit)
     u_test = qbraid_circuit.unitary_little_endian()
-    assert np.allclose(u_expected, u_test)
+    assert jnp.allclose(u_expected, u_test)
 
 
 @pytest.mark.parametrize("bk_instrs,u_expected", test_data)
@@ -96,7 +96,7 @@ def test_convert_be_to_le(bk_instrs, u_expected):
     circuit = make_circuit(bk_instrs)
     qbraid_circuit = BraketCircuit(circuit)
     u_test = qbraid_circuit.unitary_little_endian()
-    assert np.allclose(u_expected, u_test)
+    assert jnp.allclose(u_expected, u_test)
 
 
 def test_kronecker_product_factor_permutation():
@@ -109,20 +109,20 @@ def test_kronecker_product_factor_permutation():
     circuit.reverse_qubit_order()
     unitary_rev = circuit.unitary_rev_qubits()
 
-    assert np.allclose(unitary, unitary_rev)
+    assert jnp.allclose(unitary, unitary_rev)
 
 
 def test_remove_idle_qubits_braket_bell():
     """Test convert_to_contigious on bell circuit"""
     circuit = Circuit().h(0).cnot(0, 1)  # pylint: disable=no-member
-    h_gate = np.sqrt(1 / 2) * np.array([[1, 1], [1, -1]])
-    h_gate_kron = np.kron(np.eye(2), h_gate)
-    cnot_gate = np.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
-    u_expected = np.einsum("ij,jk->ki", h_gate_kron, cnot_gate)
+    h_gate = jnp.sqrt(1 / 2) * jnp.array([[1, 1], [1, -1]])
+    h_gate_kron = jnp.kron(jnp.eye(2), h_gate)
+    cnot_gate = jnp.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]])
+    u_expected = jnp.einsum("ij,jk->ki", h_gate_kron, cnot_gate)
     qprogram = BraketCircuit(circuit)
     qprogram.remove_idle_qubits()
     u_little_endian = qprogram.unitary_little_endian()
-    assert np.allclose(u_expected, u_little_endian)
+    assert jnp.allclose(u_expected, u_little_endian)
 
 
 def test_collapse_empty_braket_control_modifier():

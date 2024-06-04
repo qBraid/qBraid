@@ -7,14 +7,14 @@ Let's start by defining a simple qiskit quantum circuit that we wish to execute.
 
 .. code-block:: python
     
-    import numpy as np
+    import jax.numpy as jnp
     from qiskit import QuantumCircuit
 
     circuit = QuantumCircuit(1, 1)
 
     circuit.h(0)
-    circuit.ry(np.pi / 4, 0)
-    circuit.rz(np.pi / 2, 0)
+    circuit.ry(jnp.pi / 4, 0)
+    circuit.rz(jnp.pi / 2, 0)
     circuit.measure(0, 0)
 
 This time, we'll run our quantum program on the IBMQ Nairobi QPU. After the

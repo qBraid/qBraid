@@ -20,7 +20,7 @@ Module for converting Braket circuits to Cirq circuits
 from copy import deepcopy
 from typing import TYPE_CHECKING, Optional, Union
 
-import numpy as np
+import jax.numpy as jnp
 
 try:
     from braket.circuits import Circuit as BKCircuit
@@ -135,7 +135,7 @@ def _to_braket_instruction(
 
 
 def _to_one_qubit_braket_instruction(
-    operation: Union[np.ndarray, cirq_ops.Gate, cirq_ops.Operation],
+    operation: Union[jnp.ndarray, cirq_ops.Gate, cirq_ops.Operation],
     target: int,
     gate_name: Optional[str] = None,
 ) -> "list[braket.circuits.Instruction]":
@@ -158,43 +158,43 @@ def _to_one_qubit_braket_instruction(
     def convert_one_qubit_gate(gate, target):
         if isinstance(gate, cirq_ops.XPowGate):
             exponent = gate.exponent
-            if np.isclose(exponent, 1.0) or np.isclose(exponent, -1.0):
+            if jnp.isclose(exponent, 1.0) or jnp.isclose(exponent, -1.0):
                 return [BKInstruction(braket_gates.X(), target)]
-            if np.isclose(exponent, 0.5):
+            if jnp.isclose(exponent, 0.5):
                 return [BKInstruction(braket_gates.V(), target)]
-            if np.isclose(exponent, -0.5):
+            if jnp.isclose(exponent, -0.5):
                 return [BKInstruction(braket_gates.Vi(), target)]
 
-            return [BKInstruction(braket_gates.Rx(exponent * np.pi), target)]
+            return [BKInstruction(braket_gates.Rx(exponent * jnp.pi), target)]
 
         if isinstance(gate, cirq_ops.YPowGate):
             exponent = gate.exponent
 
-            if np.isclose(exponent, 1.0) or np.isclose(exponent, -1.0):
+            if jnp.isclose(exponent, 1.0) or jnp.isclose(exponent, -1.0):
                 return [BKInstruction(braket_gates.Y(), target)]
 
-            return [BKInstruction(braket_gates.Ry(exponent * np.pi), target)]
+            return [BKInstruction(braket_gates.Ry(exponent * jnp.pi), target)]
 
         if isinstance(gate, cirq_ops.ZPowGate):
             global_shift = gate.global_shift
             exponent = gate.exponent
 
-            if np.isclose(global_shift, 0.0):
-                if np.isclose(exponent, 1.0) or np.isclose(exponent, -1.0):
+            if jnp.isclose(global_shift, 0.0):
+                if jnp.isclose(exponent, 1.0) or jnp.isclose(exponent, -1.0):
                     return [BKInstruction(braket_gates.Z(), target)]
-                if np.isclose(exponent, 0.5):
+                if jnp.isclose(exponent, 0.5):
                     return [BKInstruction(braket_gates.S(), target)]
-                if np.isclose(exponent, -0.5):
+                if jnp.isclose(exponent, -0.5):
                     return [BKInstruction(braket_gates.Si(), target)]
-                if np.isclose(exponent, 0.25):
+                if jnp.isclose(exponent, 0.25):
                     return [BKInstruction(braket_gates.T(), target)]
-                if np.isclose(exponent, -0.25):
+                if jnp.isclose(exponent, -0.25):
                     return [BKInstruction(braket_gates.Ti(), target)]
-                return [BKInstruction(braket_gates.PhaseShift(exponent * np.pi), target)]
-            if np.isclose(global_shift, -0.5):
-                return [BKInstruction(braket_gates.Rz(exponent * np.pi), target)]
+                return [BKInstruction(braket_gates.PhaseShift(exponent * jnp.pi), target)]
+            if jnp.isclose(global_shift, -0.5):
+                return [BKInstruction(braket_gates.Rz(exponent * jnp.pi), target)]
 
-        if isinstance(gate, cirq_ops.HPowGate) and np.isclose(abs(gate.exponent), 1.0):
+        if isinstance(gate, cirq_ops.HPowGate) and jnp.isclose(abs(gate.exponent), 1.0):
             return [BKInstruction(braket_gates.H(), target)]
 
         if isinstance(gate, cirq_ops.IdentityGate):
@@ -238,7 +238,7 @@ def _to_one_qubit_braket_instruction(
         gate_name = "U" if isinstance(gate, cirq_ops.MatrixGate) else str(gate)
         return _to_one_qubit_braket_instruction(matrix, target, gate_name=gate_name)
 
-    if isinstance(operation, np.ndarray):
+    if isinstance(operation, jnp.ndarray):
         return instruction_from_matrix(operation, target, gate_name)
 
     if isinstance(operation, cirq_ops.Operation):
@@ -277,20 +277,20 @@ def _to_two_qubit_braket_instruction(
     q1, q2 = qubits
 
     # Check common two-qubit gates.
-    if isinstance(gate, cirq_ops.CNotPowGate) and np.isclose(abs(gate.exponent), 1.0):
+    if isinstance(gate, cirq_ops.CNotPowGate) and jnp.isclose(abs(gate.exponent), 1.0):
         return [BKInstruction(braket_gates.CNot(), [q1, q2])]
-    if isinstance(gate, cirq_ops.CZPowGate) and np.isclose(abs(gate.exponent), 1.0):
+    if isinstance(gate, cirq_ops.CZPowGate) and jnp.isclose(abs(gate.exponent), 1.0):
         return [BKInstruction(braket_gates.CZ(), [q1, q2])]
-    if isinstance(gate, cirq_ops.SwapPowGate) and np.isclose(gate.exponent, 1.0):
+    if isinstance(gate, cirq_ops.SwapPowGate) and jnp.isclose(gate.exponent, 1.0):
         return [BKInstruction(braket_gates.Swap(), [q1, q2])]
-    if isinstance(gate, cirq_ops.ISwapPowGate) and np.isclose(gate.exponent, 1.0):
+    if isinstance(gate, cirq_ops.ISwapPowGate) and jnp.isclose(gate.exponent, 1.0):
         return [BKInstruction(braket_gates.ISwap(), [q1, q2])]
     if isinstance(gate, cirq_ops.XXPowGate):
-        return [BKInstruction(braket_gates.XX(gate.exponent * np.pi), [q1, q2])]
+        return [BKInstruction(braket_gates.XX(gate.exponent * jnp.pi), [q1, q2])]
     if isinstance(gate, cirq_ops.YYPowGate):
-        return [BKInstruction(braket_gates.YY(gate.exponent * np.pi), [q1, q2])]
+        return [BKInstruction(braket_gates.YY(gate.exponent * jnp.pi), [q1, q2])]
     if isinstance(gate, cirq_ops.ZZPowGate):
-        return [BKInstruction(braket_gates.ZZ(gate.exponent * np.pi), [q1, q2])]
+        return [BKInstruction(braket_gates.ZZ(gate.exponent * jnp.pi), [q1, q2])]
     if isinstance(gate, cirq_ops.ControlledGate):
         sub_gate_instr = _to_one_qubit_braket_instruction(gate.sub_gate, q2)
         sub_gate = sub_gate_instr[0].operator
@@ -307,7 +307,7 @@ def _to_two_qubit_braket_instruction(
 
 
 def _kak_decomposition_to_braket_instruction(
-    matrix: np.ndarray, q1: int, q2: int
+    matrix: jnp.ndarray, q1: int, q2: int
 ) -> "list[braket.circuits.Instruction]":
     """Converts 4x4 Numpy array to equivalent Braket instruction(s) via kak decomposition
 
@@ -320,22 +320,22 @@ def _kak_decomposition_to_braket_instruction(
     A1, A2 = kak.single_qubit_operations_before
 
     x, y, z = kak.interaction_coefficients
-    a = x * -2 / np.pi + 0.5
-    b = y * -2 / np.pi + 0.5
-    c = z * -2 / np.pi + 0.5
+    a = x * -2 / jnp.pi + 0.5
+    b = y * -2 / jnp.pi + 0.5
+    c = z * -2 / jnp.pi + 0.5
 
     B1, B2 = kak.single_qubit_operations_after
 
     return [
         *_to_one_qubit_braket_instruction(A1, q1),
         *_to_one_qubit_braket_instruction(A2, q2),
-        BKInstruction(braket_gates.Rx(0.5 * np.pi), q1),
+        BKInstruction(braket_gates.Rx(0.5 * jnp.pi), q1),
         BKInstruction(braket_gates.CNot(), [q1, q2]),
-        BKInstruction(braket_gates.Rx(a * np.pi), q1),
-        BKInstruction(braket_gates.Ry(b * np.pi), q2),
+        BKInstruction(braket_gates.Rx(a * jnp.pi), q1),
+        BKInstruction(braket_gates.Ry(b * jnp.pi), q2),
         BKInstruction(braket_gates.CNot(), [q2, q1]),
-        BKInstruction(braket_gates.Rx(-0.5 * np.pi), q2),
-        BKInstruction(braket_gates.Rz(c * np.pi), q2),
+        BKInstruction(braket_gates.Rx(-0.5 * jnp.pi), q2),
+        BKInstruction(braket_gates.Rz(c * jnp.pi), q2),
         BKInstruction(braket_gates.CNot(), [q1, q2]),
         *_to_one_qubit_braket_instruction(B1, q1),
         *_to_one_qubit_braket_instruction(B2, q2),

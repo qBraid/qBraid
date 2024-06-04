@@ -12,7 +12,7 @@
 Module defining BraketGateModelResult Class
 
 """
-import numpy as np
+import jax.numpy as jnp
 
 from qbraid.runtime.result import QuantumJobResult
 
@@ -28,7 +28,7 @@ class BraketGateModelResult(QuantumJobResult):
         TODO: Make doc-string consistent with parent.
 
         """
-        return np.flip(self._result.measurements, 1)
+        return jnp.flip(self._result.measurements, 1)
 
     def raw_counts(self, **kwargs):
         """Returns the histogram data of the run"""

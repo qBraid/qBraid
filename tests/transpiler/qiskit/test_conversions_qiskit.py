@@ -13,7 +13,7 @@ Unit tests for conversions between Cirq circuits and Qiskit circuits.
 
 """
 import cirq
-import numpy as np
+import jax.numpy as jnp
 import pytest
 import qiskit
 
@@ -34,7 +34,7 @@ def test_bell_state_to_from_circuits():
     cirq_circuit = cirq.Circuit([cirq.ops.H.on(qreg[0]), cirq.ops.CNOT.on(qreg[0], qreg[1])])
     qiskit_circuit = transpile(cirq_circuit, "qiskit")  # Qiskit from Cirq
     circuit_cirq = transpile(qiskit_circuit, "cirq")  # Cirq from Qiskit
-    assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
+    assert jnp.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
 
 
 def test_bell_state_to_from_qasm():
@@ -45,7 +45,7 @@ def test_bell_state_to_from_qasm():
     cirq_circuit = cirq.Circuit([cirq.ops.H.on(qreg[0]), cirq.ops.CNOT.on(qreg[0], qreg[1])])
     qasm = cirq_to_qasm2(cirq_circuit)  # Qasm from Cirq
     circuit_cirq = qasm2_to_cirq(qasm)
-    assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
+    assert jnp.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
 
 
 def test_random_circuit_to_from_circuits():
@@ -57,7 +57,7 @@ def test_random_circuit_to_from_circuits():
     )
     qiskit_circuit = transpile(cirq_circuit, "qiskit")
     circuit_cirq = transpile(qiskit_circuit, "cirq")
-    assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
+    assert jnp.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
 
 
 def test_random_circuit_to_from_qasm():

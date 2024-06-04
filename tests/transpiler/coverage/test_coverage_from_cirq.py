@@ -15,7 +15,7 @@ Benchmarking tests for Cirq conversions
 import string
 
 import cirq
-import numpy as np
+import jax.numpy as jnp
 import pytest
 import scipy
 
@@ -25,30 +25,30 @@ from qbraid.transpiler import ConversionGraph, transpile
 
 def generate_params(varnames, seed=0):
     """Generate random parameters to help construct Cirq test gates"""
-    np.random.seed(seed)
+    jnp.random.seed(seed)
     params = {}
     # Generating angles
     for ra in ["rads", "theta", "phi"]:
         if ra in varnames:
-            params[ra] = np.random.rand() * 2 * np.pi
+            params[ra] = jnp.random.rand() * 2 * jnp.pi
     # Generating probabilities
     for prob in ["gamma", "p", "probability"]:
         if prob in varnames:
-            params[prob] = np.random.rand()
+            params[prob] = jnp.random.rand()
 
     # exponents
     for exp in ["exponent", "x_exponent", "z_exponent", "phase_exponent", "axis_phase_exponent"]:
         if exp in varnames:
-            params[exp] = np.random.rand() * 10
+            params[exp] = jnp.random.rand() * 10
 
     if "num_qubits" in varnames:
-        params["num_qubits"] = np.random.randint(1, 7)
+        params["num_qubits"] = jnp.random.randint(1, 7)
 
     if "sub_gate" in varnames:
-        params["sub_gate"] = np.random.choice([cirq.X, cirq.Y, cirq.Z, cirq.S, cirq.T])
+        params["sub_gate"] = jnp.random.choice([cirq.X, cirq.Y, cirq.Z, cirq.S, cirq.T])
 
     if "matrix" in varnames:
-        n = np.random.randint(1, 4)
+        n = jnp.random.randint(1, 4)
         params["matrix"] = scipy.stats.unitary_group.rvs(2**n)
 
     return params

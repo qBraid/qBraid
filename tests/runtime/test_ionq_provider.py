@@ -16,7 +16,7 @@ Unit tests for OQCProvider class
 """
 from unittest.mock import Mock, patch
 
-import numpy as np
+import jax.numpy as jnp
 import openqasm3
 import pytest
 
@@ -179,4 +179,4 @@ def test_run_fake_job(mock_post, mock_get, circuit):
 
     res = job.result()
     assert isinstance(res, IonQJobResult)
-    np.testing.assert_array_equal(res.measurements(), np.array([[0, 0], [0, 1]]))
+    jnp.testing.assert_array_equal(res.measurements(), jnp.array([[0, 0], [0, 1]]))

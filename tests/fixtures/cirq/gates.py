@@ -12,7 +12,7 @@
 Module for Cirq gate dictionary used for testing
 
 """
-import numpy as np
+import jax.numpy as jnp
 from cirq.ops.common_gates import (
     CXPowGate,
     CZPowGate,
@@ -81,7 +81,7 @@ def create_cirq_gate(data):
     # single-qubit, one-parameter gates
     elif gate_type in ("RX", "RY", "RZ"):
         theta = data["params"][0]
-        # theta = data["params"][0] / np.pi
+        # theta = data["params"][0] / jnp.pi
         return cirq_gates[gate_type](theta)
 
     elif gate_type in ("HPow", "XPow", "YPow", "ZPow"):
@@ -89,7 +89,7 @@ def create_cirq_gate(data):
         return cirq_gates[gate_type](exponent=exponent)
 
     elif gate_type in ("Phase", "U1"):
-        t = data["params"][0] / np.pi
+        t = data["params"][0] / jnp.pi
         return cirq_gates["Phase"](exponent=t)
 
     # two-qubit, no parameters

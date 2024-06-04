@@ -12,7 +12,7 @@
 Module containing Qiskit quantum circuits used for testing
 
 """
-import numpy as np
+import jax.numpy as jnp
 from qiskit import QuantumCircuit
 
 
@@ -37,15 +37,15 @@ def qiskit_shared15():
     circuit.sdg(1)
     circuit.t(2)
     circuit.tdg(3)
-    circuit.rx(np.pi / 4, 0)
-    circuit.ry(np.pi / 2, 1)
-    circuit.rz(3 * np.pi / 4, 2)
-    circuit.p(np.pi / 8, 3)
+    circuit.rx(jnp.pi / 4, 0)
+    circuit.ry(jnp.pi / 2, 1)
+    circuit.rz(3 * jnp.pi / 4, 2)
+    circuit.p(jnp.pi / 8, 3)
     circuit.sx(0)
     circuit.sxdg(1)
     circuit.iswap(2, 3)
     circuit.swap([0, 1], [2, 3])
     circuit.cx(0, 1)
-    circuit.cp(np.pi / 4, 2, 3)
+    circuit.cp(jnp.pi / 4, 2, 3)
 
     return circuit

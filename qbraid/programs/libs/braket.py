@@ -21,7 +21,7 @@ from qbraid.programs.program import QbraidProgram
 
 if TYPE_CHECKING:
     import braket.circuits
-    import numpy as np
+    import jax.numpy as jnp
 
 
 class BraketCircuit(QbraidProgram):

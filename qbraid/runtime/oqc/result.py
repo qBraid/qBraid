@@ -14,7 +14,7 @@ Module for OQC result class.
 """
 from typing import TYPE_CHECKING
 
-import numpy as np
+import jax.numpy as jnp
 
 from qbraid.runtime.result import QuantumJobResult
 
@@ -36,7 +36,7 @@ class OQCJobResult(QuantumJobResult):
             task_id=self.id, qpu_id=self._qpu_id, **kwargs
         ).result.get("c")
 
-    def measurements(self) -> np.ndarray:
+    def measurements(self) -> jnp.ndarray:
         counts = self.raw_counts()
         res = []
         for state in counts:
@@ -45,4 +45,4 @@ class OQCJobResult(QuantumJobResult):
                 new_state.append(int(bit))
             for _ in range(counts[state]):
                 res.append(new_state)
-        return np.array(res, dtype=int)
+        return jnp.array(res, dtype=int)

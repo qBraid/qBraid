@@ -13,7 +13,7 @@ Test circuit equality helper functions
 
 """
 
-import numpy as np
+import jax.numpy as jnp
 import pytest
 
 from qbraid.interface.circuit_equality import assert_allclose_up_to_global_phase, match_global_phase
@@ -21,30 +21,30 @@ from qbraid.interface.circuit_equality import assert_allclose_up_to_global_phase
 
 def test_match_global_phase_basic():
     """Test matching global phase of two arrays"""
-    a = np.array([1 + 1j, 2 + 2j])
-    b = np.array([1 - 1j, 2 - 2j])
+    a = jnp.array([1 + 1j, 2 + 2j])
+    b = jnp.array([1 - 1j, 2 - 2j])
     a_prime, b_prime = match_global_phase(a, b)
-    assert np.allclose(a_prime, b_prime)
+    assert jnp.allclose(a_prime, b_prime)
 
 
 def test_match_global_phase_shape_mismatch():
     """Test matching global phase of two arrays with shape mismatch"""
-    a = np.array([1 + 1j, 2 + 2j])
-    b = np.array([[1 - 1j, 2 - 2j]])
+    a = jnp.array([1 + 1j, 2 + 2j])
+    b = jnp.array([[1 - 1j, 2 - 2j]])
     a_prime, b_prime = match_global_phase(a, b)
-    assert np.array_equal(a, a_prime) and np.array_equal(b, b_prime)
+    assert jnp.array_equal(a, a_prime) and jnp.array_equal(b, b_prime)
 
 
 def test_assert_allclose_up_to_global_phase_basic():
     """Test assert_allclose_up_to_global_phase with two arrays"""
-    a = np.array([1 + 1j, 2 + 2j])
-    b = np.array([1 - 1j, 2 - 2j])
+    a = jnp.array([1 + 1j, 2 + 2j])
+    b = jnp.array([1 - 1j, 2 - 2j])
     assert_allclose_up_to_global_phase(a, b, atol=1e-10)
 
 
 def test_assert_allclose_up_to_global_phase_fail():
     """Test assert_allclose_up_to_global_phase with two arrays that are not close"""
-    a = np.array([1 + 1j, 2 + 2j])
-    b = np.array([10 + 10j, 20 + 20j])
+    a = jnp.array([1 + 1j, 2 + 2j])
+    b = jnp.array([10 + 10j, 20 + 20j])
     with pytest.raises(AssertionError):
         assert_allclose_up_to_global_phase(a, b, atol=1e-10)

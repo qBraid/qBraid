@@ -25,7 +25,7 @@ from typing import Callable
 
 import cirq
 import cirq.testing as ct
-import numpy as np
+import jax.numpy as jnp
 import pytest
 import sympy
 from cirq import Circuit
@@ -363,13 +363,13 @@ def test_U_gate():
     expected_circuit.append(
         cirq.Moment(
             [
-                QasmUGate(1.0, 2.3 / np.pi, 3 / np.pi)(q0),
-                QasmUGate(3.14 / np.pi, -1.0, 8 / np.pi)(q1),
+                QasmUGate(1.0, 2.3 / jnp.pi, 3 / jnp.pi)(q0),
+                QasmUGate(3.14 / jnp.pi, -1.0, 8 / jnp.pi)(q1),
             ]
         )
     )
 
-    expected_circuit.append(cirq.Moment([QasmUGate(3.14 / np.pi, -1.0, 8 / np.pi)(q0)]))
+    expected_circuit.append(cirq.Moment([QasmUGate(3.14 / jnp.pi, -1.0, 8 / jnp.pi)(q0)]))
 
     parsed_qasm = parser.parse(qasm)
 
@@ -454,7 +454,7 @@ def test_expressions(expr: str):
     q0 = cirq.NamedQubit("q_0")
 
     expected_circuit = Circuit()
-    expected_circuit.append(QasmUGate(float(sympy.sympify(expr)) / np.pi, 2.0, 1 / 2.0)(q0))
+    expected_circuit.append(QasmUGate(float(sympy.sympify(expr)) / jnp.pi, 2.0, 1 / 2.0)(q0))
 
     parsed_qasm = parser.parse(qasm)
 
@@ -511,8 +511,8 @@ def test_rotation_gates(qasm_gate: str, cirq_gate: Callable[[float], cirq.Gate])
     q1 = cirq.NamedQubit("q_1")
 
     expected_circuit = Circuit()
-    expected_circuit.append(cirq.Moment([cirq_gate(np.pi / 2).on(q0), cirq_gate(np.pi).on(q1)]))
-    expected_circuit.append(cirq.Moment([cirq_gate(np.pi).on(q0)]))
+    expected_circuit.append(cirq.Moment([cirq_gate(jnp.pi / 2).on(q0), cirq_gate(jnp.pi).on(q1)]))
+    expected_circuit.append(cirq.Moment([cirq_gate(jnp.pi).on(q0)]))
 
     parsed_qasm = parser.parse(qasm)
 
@@ -749,7 +749,7 @@ def test_u2_gate():
     q0 = cirq.NamedQubit("q_0")
 
     expected_circuit = Circuit()
-    expected_circuit.append(cirq_qasm_gates.U2Gate(2.0 * np.pi, np.pi / 3.0)(q0))
+    expected_circuit.append(cirq_qasm_gates.U2Gate(2.0 * jnp.pi, jnp.pi / 3.0)(q0))
 
     parsed_qasm = parser.parse(qasm)
 
@@ -758,7 +758,7 @@ def test_u2_gate():
 
     qasm_unitary = parsed_qasm.circuit.unitary()
     expected_unitary = expected_circuit.unitary()
-    assert np.allclose(qasm_unitary, expected_unitary)
+    assert jnp.allclose(qasm_unitary, expected_unitary)
 
     # ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
     assert parsed_qasm.qregs == {"q": 1}
@@ -806,13 +806,13 @@ def test_u3_gate():
     expected_circuit.append(
         cirq.Moment(
             [
-                cirq_qasm_gates.U3Gate(np.pi, 2.3, 3.0)(q0),
-                cirq_qasm_gates.U3Gate(3.14, -np.pi, 8.0)(q1),
+                cirq_qasm_gates.U3Gate(jnp.pi, 2.3, 3.0)(q0),
+                cirq_qasm_gates.U3Gate(3.14, -jnp.pi, 8.0)(q1),
             ]
         )
     )
 
-    expected_circuit.append(cirq.Moment([cirq_qasm_gates.U3Gate(3.14, -np.pi, 8.0)(q0)]))
+    expected_circuit.append(cirq.Moment([cirq_qasm_gates.U3Gate(3.14, -jnp.pi, 8.0)(q0)]))
 
     parsed_qasm = parser.parse(qasm)
 
@@ -821,7 +821,7 @@ def test_u3_gate():
 
     qasm_unitary = parsed_qasm.circuit.unitary()
     expected_unitary = expected_circuit.unitary()
-    assert np.allclose(qasm_unitary, expected_unitary)
+    assert jnp.allclose(qasm_unitary, expected_unitary)
 
     # ct.assert_same_circuits(parsed_qasm.circuit, expected_circuit)
     assert parsed_qasm.qregs == {"q": 2}

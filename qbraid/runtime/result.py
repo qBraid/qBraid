@@ -15,7 +15,7 @@ Module defining abstract QuantumJobResult Class
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
-import numpy as np
+import jax.numpy as jnp
 
 
 class QuantumJobResult(ABC):
@@ -30,7 +30,7 @@ class QuantumJobResult(ABC):
         self._result = result
 
     @abstractmethod
-    def measurements(self) -> np.ndarray:
+    def measurements(self) -> jnp.ndarray:
         """Return measurements as list"""
 
     @abstractmethod

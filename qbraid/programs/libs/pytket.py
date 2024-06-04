@@ -15,7 +15,7 @@ Module defining PytketCircuit Class
 
 from typing import TYPE_CHECKING, Optional, Union
 
-import numpy as np
+import jax.numpy as jnp
 from pytket.circuit import Circuit, Command, OpType  # pylint: disable=no-name-in-module
 from pytket.unit_id import Qubit
 
@@ -106,7 +106,7 @@ class PytketCircuit(QbraidProgram):
             # devide parameter by pi, from radian to degree
             new_c.add_gate(
                 gate_op.type,
-                np.array(gate_op.params) / np.pi if gate_op.params else gate_op.params,
+                jnp.array(gate_op.params) / jnp.pi if gate_op.params else gate_op.params,
                 circuit_qubits,
             )
         self._program = new_c
@@ -114,7 +114,7 @@ class PytketCircuit(QbraidProgram):
     @staticmethod
     def gate_to_matrix(
         gates: Optional[Union[list[Circuit], Command]], flat: bool = False
-    ) -> np.ndarray:
+    ) -> jnp.ndarray:
         """Return the unitary of the Command"""
         gates = gates if (list == type(gates)) else [gates]
         a = list(map(max, [gate.qubits for gate in gates]))

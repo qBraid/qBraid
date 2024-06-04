@@ -15,7 +15,7 @@ Module containing Cirq circuits used for testing
 import random
 from typing import Optional
 
-import numpy as np
+import jax.numpy as jnp
 from cirq import (
     CNOT,
     ISWAP,
@@ -65,9 +65,9 @@ def cirq_shared15():
         ZPowGate(exponent=-0.5)(q1),
         T(q2),
         ZPowGate(exponent=-0.25)(q3),
-        rx(rads=np.pi / 4)(q0),
-        ry(rads=np.pi / 2)(q1),
-        rz(rads=3 * np.pi / 4)(q2),
+        rx(rads=jnp.pi / 4)(q0),
+        ry(rads=jnp.pi / 2)(q1),
+        rz(rads=3 * jnp.pi / 4)(q2),
         ZPowGate(exponent=1 / 8)(q3),
         XPowGate(exponent=0.5)(q0),
         XPowGate(exponent=-0.5)(q1),

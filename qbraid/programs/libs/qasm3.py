@@ -16,7 +16,7 @@ Module defining OpenQasm3Program Class
 import re
 from typing import Optional
 
-import numpy as np
+import jax.numpy as jnp
 from openqasm3.ast import BitType, ClassicalDeclaration, QubitDeclaration
 from openqasm3.parser import parse
 
@@ -86,7 +86,7 @@ class OpenQasm3Program(QbraidProgram):
         """Return the circuit depth (i.e., length of critical path)."""
         raise NotImplementedError
 
-    def _unitary(self) -> "np.ndarray":
+    def _unitary(self) -> "jnp.ndarray":
         """Calculate unitary of circuit."""
         raise NotImplementedError
 

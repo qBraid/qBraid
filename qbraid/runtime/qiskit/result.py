@@ -12,7 +12,7 @@
 Module defining QiskitResult Class
 
 """
-import numpy as np
+import jax.numpy as jnp
 
 from qbraid.runtime.result import QuantumJobResult
 
@@ -37,7 +37,7 @@ class QiskitResult(QuantumJobResult):
         if num_circuits == 1:
             qbraid_meas = qbraid_meas[0]
 
-        return np.array(qbraid_meas)
+        return jnp.array(qbraid_meas)
 
     def raw_counts(self, **kwargs):
         """Returns the histogram data of the run"""

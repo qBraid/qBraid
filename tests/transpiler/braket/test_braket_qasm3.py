@@ -12,7 +12,7 @@
 Unit tests for converting Braket circuits to/from OpenQASM
 
 """
-import numpy as np
+import jax.numpy as jnp
 import qiskit
 from braket.circuits import Circuit
 
@@ -71,8 +71,8 @@ def test_qiskit_to_qasm3_to_braket():
     qc.tdg(3)
     qc.sx(0)
     qc.sxdg(1)
-    qc.p(np.pi / 8, 3)
-    qc.cp(np.pi / 4, 2, 3)
+    qc.p(jnp.pi / 8, 3)
+    qc.cp(jnp.pi / 4, 2, 3)
 
     qasm3_str = qiskit_to_qasm3(qc)
     circuit = qasm3_to_braket(qasm3_str)

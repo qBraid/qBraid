@@ -14,7 +14,7 @@ Module containing fixtures for testing
 """
 import importlib.util
 
-import numpy as np
+import jax.numpy as jnp
 import pytest
 
 from qbraid.programs import load_program
@@ -83,7 +83,7 @@ def two_bell_circuits(request):
 @pytest.fixture
 def bell_unitary():
     """Fixture containing unitary for bell circuit."""
-    return np.array(
+    return jnp.array(
         [
             [0.70710678 + 0.0j, 0.0 + 0.0j, 0.70710678 + 0.0j, 0.0 + 0.0j],
             [0.0 + 0.0j, 0.70710678 + 0.0j, 0.0 + 0.0j, 0.70710678 + 0.0j],

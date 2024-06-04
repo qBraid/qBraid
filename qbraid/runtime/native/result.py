@@ -15,7 +15,7 @@ Module defining QbraidResult class
 from dataclasses import dataclass, field
 from typing import Any
 
-import numpy as np
+import jax.numpy as jnp
 
 from qbraid.runtime.result import QuantumJobResult
 
@@ -72,7 +72,7 @@ class QbraidJobResult(QuantumJobResult):
                 measurements = []
                 for state, count in counts.items():
                     measurements.extend([list(map(int, state))] * count)
-                self._measurements = np.array(measurements, dtype=int)
+                self._measurements = jnp.array(measurements, dtype=int)
         return self._measurements
 
     def raw_counts(self, decimal: bool = False, **kwargs):
@@ -90,7 +90,7 @@ class QbraidJobResult(QuantumJobResult):
         probabilities = self.counts_to_probabilities(counts)
         return probabilities
 
-    def _array_to_histogram(self, arr: np.ndarray) -> dict[str, int]:
+    def _array_to_histogram(self, arr: jnp.ndarray) -> dict[str, int]:
         """Implement caching mechanism here."""
         if self._cached_histogram is None:
             row_strings = ["".join(map(str, row)) for row in arr]

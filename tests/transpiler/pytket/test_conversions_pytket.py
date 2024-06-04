@@ -12,7 +12,7 @@
 Unit tests for conversions between Cirq circuits and pytket circuits.
 
 """
-import numpy as np
+import jax.numpy as jnp
 import pytest
 from cirq import Circuit, LineQubit, ops, testing
 from pytket.circuit import Circuit as TKCircuit
@@ -33,7 +33,7 @@ def test_bell_state_to_from_circuits():
     cirq_circuit = Circuit([ops.H.on(qreg[0]), ops.CNOT.on(qreg[0], qreg[1])])
     pytket_circuit = transpile(cirq_circuit, "pytket")  # pytket from Cirq
     circuit_cirq = transpile(pytket_circuit, "cirq")  # Cirq from pytket
-    assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
+    assert jnp.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
 
 
 def test_random_circuit_to_from_circuits():
@@ -43,7 +43,7 @@ def test_random_circuit_to_from_circuits():
     cirq_circuit = testing.random_circuit(qubits=2, n_moments=10, op_density=0.99, random_state=1)
     pytket_circuit = transpile(cirq_circuit, "pytket")
     circuit_cirq = transpile(pytket_circuit, "cirq")
-    assert np.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
+    assert jnp.allclose(cirq_circuit.unitary(), circuit_cirq.unitary())
 
 
 @pytest.mark.parametrize("as_qasm", (True, False))

@@ -15,7 +15,8 @@ Benchmarking tests for PyTKET conversions
 
 import string
 
-import numpy as np
+import jax
+import jax.numpy as jnp
 import pytest
 import pytket
 from cirq.contrib.qasm_import import circuit_from_qasm
@@ -23,7 +24,7 @@ from cirq.contrib.qasm_import import circuit_from_qasm
 from qbraid.interface import circuits_allclose
 from qbraid.transpiler import ConversionGraph, transpile
 
-np.random.seed(0)
+key = jax.random.PRNGKey(0)
 
 # TODO: Investigate generating params dynamically.
 # Difficult because pytket methods are wrapped around C++ code.
@@ -40,11 +41,11 @@ gates_param_map = {
     "X": {"qubit": 0},
     "Y": {"qubit": 0},
     "Z": {"qubit": 0},
-    "Phase": {"arg0": np.random.rand() * 2 * np.pi},
-    "Rx": {"angle": np.random.rand() * 2 * np.pi, "qubit": 0},
-    "Ry": {"angle": np.random.rand() * 2 * np.pi, "qubit": 0},
-    "Rz": {"angle": np.random.rand() * 2 * np.pi, "qubit": 0},
-    "U1": {"angle": np.random.rand() * 2 * np.pi, "qubit": 0},
+    "Phase": {"arg0": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi},
+    "Rx": {"angle": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi, "qubit": 0},
+    "Ry": {"angle": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi, "qubit": 0},
+    "Rz": {"angle": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi, "qubit": 0},
+    "U1": {"angle": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi, "qubit": 0},
     "ECR": {"qubit_0": 0, "qubit_1": 1},
     "SWAP": {"qubit_0": 0, "qubit_1": 1},
     "ISWAPMax": {"qubit0": 0, "qubit1": 1},
@@ -61,64 +62,105 @@ gates_param_map = {
     "CCX": {"control_0": 0, "control_1": 1, "target": 2},
     "CSWAP": {"control": 0, "target_0": 1, "target_1": 2},
     "Measure": {"qubit": 0, "bit_index": 0},
-    "CRx": {"angle": np.random.rand() * 2 * np.pi, "control_qubit": 0, "target_qubit": 1},
-    "CRy": {"angle": np.random.rand() * 2 * np.pi, "control_qubit": 0, "target_qubit": 1},
-    "CRz": {"angle": np.random.rand() * 2 * np.pi, "control_qubit": 0, "target_qubit": 1},
-    "CU1": {"angle": np.random.rand() * 2 * np.pi, "control_qubit": 0, "target_qubit": 1},
-    "CU3": {
-        "angle0": np.random.rand() * 2 * np.pi,
-        "angle1": np.random.rand() * 2 * np.pi,
-        "angle2": np.random.rand() * 2 * np.pi,
+    "CRx": {
+        "angle": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
         "control_qubit": 0,
         "target_qubit": 1,
     },
-    "ESWAP": {"angle": np.random.rand() * 2 * np.pi, "qubit0": 0, "qubit1": 1},
-    "ISWAP": {"angle": np.random.rand() * 2 * np.pi, "qubit0": 0, "qubit1": 1},
+    "CRy": {
+        "angle": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "control_qubit": 0,
+        "target_qubit": 1,
+    },
+    "CRz": {
+        "angle": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "control_qubit": 0,
+        "target_qubit": 1,
+    },
+    "CU1": {
+        "angle": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "control_qubit": 0,
+        "target_qubit": 1,
+    },
+    "CU3": {
+        "angle0": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "angle1": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "angle2": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "control_qubit": 0,
+        "target_qubit": 1,
+    },
+    "ESWAP": {
+        "angle": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "qubit0": 0,
+        "qubit1": 1,
+    },
+    "ISWAP": {
+        "angle": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "qubit0": 0,
+        "qubit1": 1,
+    },
     "FSim": {
-        "angle0": np.random.rand() * 2 * np.pi,
-        "angle1": np.random.rand() * 2 * np.pi,
+        "angle0": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "angle1": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
         "qubit0": 0,
         "qubit1": 1,
     },
     "PhasedISWAP": {
-        "angle0": np.random.rand() * 2 * np.pi,
-        "angle1": np.random.rand() * 2 * np.pi,
+        "angle0": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "angle1": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
         "qubit0": 0,
         "qubit1": 1,
     },
     "PhasedX": {
-        "angle0": np.random.rand() * 2 * np.pi,
-        "angle1": np.random.rand() * 2 * np.pi,
+        "angle0": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "angle1": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
         "qubit": 0,
     },
     "U2": {
-        "angle0": np.random.rand() * 2 * np.pi,
-        "angle1": np.random.rand() * 2 * np.pi,
+        "angle0": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "angle1": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
         "qubit": 0,
     },
     "TK1": {
-        "angle0": np.random.rand() * 2 * np.pi,
-        "angle1": np.random.rand() * 2 * np.pi,
-        "angle2": np.random.rand() * 2 * np.pi,
+        "angle0": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "angle1": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "angle2": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
         "qubit": 0,
     },
     "U3": {
-        "angle0": np.random.rand() * 2 * np.pi,
-        "angle1": np.random.rand() * 2 * np.pi,
-        "angle2": np.random.rand() * 2 * np.pi,
+        "angle0": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "angle1": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "angle2": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
         "qubit": 0,
     },
     "TK2": {
-        "angle0": np.random.rand() * 2 * np.pi,
-        "angle1": np.random.rand() * 2 * np.pi,
-        "angle2": np.random.rand() * 2 * np.pi,
+        "angle0": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "angle1": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "angle2": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
         "qubit0": 0,
         "qubit1": 1,
     },
-    "XXPhase": {"angle": np.random.rand() * 2 * np.pi, "qubit0": 0, "qubit1": 1},
-    "YYPhase": {"angle": np.random.rand() * 2 * np.pi, "qubit0": 0, "qubit1": 1},
-    "ZZPhase": {"angle": np.random.rand() * 2 * np.pi, "qubit0": 0, "qubit1": 1},
-    "XXPhase3": {"angle": np.random.rand() * 2 * np.pi, "qubit0": 0, "qubit1": 1, "qubit2": 2},
+    "XXPhase": {
+        "angle": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "qubit0": 0,
+        "qubit1": 1,
+    },
+    "YYPhase": {
+        "angle": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "qubit0": 0,
+        "qubit1": 1,
+    },
+    "ZZPhase": {
+        "angle": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "qubit0": 0,
+        "qubit1": 1,
+    },
+    "XXPhase3": {
+        "angle": float(jax.random.uniform(key, shape=())) * 2 * jnp.pi,
+        "qubit0": 0,
+        "qubit1": 1,
+        "qubit2": 2,
+    },
 }
 
 

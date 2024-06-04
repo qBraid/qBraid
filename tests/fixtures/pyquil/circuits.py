@@ -12,7 +12,7 @@
 Module containing pyQuil programs used for testing
 
 """
-import numpy as np
+import jax.numpy as jnp
 from pyquil import Program
 from pyquil.gates import CNOT, CPHASE, ISWAP, RX, RY, RZ, SWAP, H, X, Y, Z
 
@@ -38,20 +38,20 @@ def pyquil_shared15() -> Program:
     p += X(1)
     p += Y(2)
     p += Z(3)
-    p += RZ(np.pi / 2, 0)  # S
-    p += RZ(-np.pi / 2, 1)  # Sdg
-    p += RZ(np.pi / 4, 2)  # T
-    p += RZ(-np.pi / 4, 3)  # Tdg
-    p += RX(np.pi / 4, 0)
-    p += RY(np.pi / 2, 1)
-    p += RZ(3 * np.pi / 4, 2)
-    p += RZ(np.pi / 8, 3)
-    p += RX(np.pi / 2, 0)
-    p += RX(-np.pi / 2, 1)
+    p += RZ(jnp.pi / 2, 0)  # S
+    p += RZ(-jnp.pi / 2, 1)  # Sdg
+    p += RZ(jnp.pi / 4, 2)  # T
+    p += RZ(-jnp.pi / 4, 3)  # Tdg
+    p += RX(jnp.pi / 4, 0)
+    p += RY(jnp.pi / 2, 1)
+    p += RZ(3 * jnp.pi / 4, 2)
+    p += RZ(jnp.pi / 8, 3)
+    p += RX(jnp.pi / 2, 0)
+    p += RX(-jnp.pi / 2, 1)
     p += ISWAP(2, 3)
     p += SWAP(0, 2)
     p += SWAP(1, 3)
     p += CNOT(0, 1)
-    p += CPHASE(np.pi / 4, 2, 3)
+    p += CPHASE(jnp.pi / 4, 2, 3)
 
     return p

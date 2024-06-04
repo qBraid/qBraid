@@ -12,7 +12,7 @@
 Unit tests for qbraid.programs.pytket.PytketCircuit
 
 """
-import numpy as np
+import jax.numpy as jnp
 import pytest
 from pytket.circuit import Circuit
 
@@ -50,7 +50,7 @@ def test_remove_idle_qubits_pytket():
 def test_gate_to_matrix_pytket(flat, list_type):
     """Test converting pytket gates to matrix"""
     c = Circuit(10, 2, name="example")
-    c.CU1(np.pi / 2, 2, 3)
+    c.CU1(jnp.pi / 2, 2, 3)
 
     c_unitary = PytketCircuit.gate_to_matrix(
         gates=c.get_commands()[0] if list_type else c.get_commands(), flat=flat

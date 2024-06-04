@@ -15,7 +15,7 @@ Takes in OpenQASM 3 code and outputs an ASCII circuit representation
 
 import re
 
-import numpy as np
+import jax.numpy as jnp
 
 controlled_gates = [
     "cx",
@@ -179,17 +179,17 @@ class Gate:
         """Outputs a matrix representation of the gate"""
         height = self.get_height()
         gate_str = self.gate_type
-        mat = np.array([])
+        mat = jnp.array([])
 
         if self.params is not None:
             gate_str += "(" + self.params + ")"
 
         if height == 1:
-            mat = np.empty((3 * height, len(gate_str) + 4), dtype="str")
+            mat = jnp.empty((3 * height, len(gate_str) + 4), dtype="str")
             mat = self.apply_gate_at_pos(gate_str, mat, 0)
 
         elif self.gate_type == "m":
-            mat = np.empty((3 * height, len(gate_str) + 4), dtype="str")
+            mat = jnp.empty((3 * height, len(gate_str) + 4), dtype="str")
             mat = self.apply_gate_at_pos(gate_str, mat, 0)
 
             c_reg_line = (
@@ -200,14 +200,14 @@ class Gate:
 
         elif self.gate_type in controlled_gates:
             if gate_str == "cswap":
-                mat = np.full((3 * height, 3), " ", dtype="str")
+                mat = jnp.full((3 * height, 3), " ", dtype="str")
                 mat[1:-1, 1] = ["|"] * (mat.shape[1] - 2)
                 mat[(self.qregs[0] - min(self.qregs)) * 3 + 1, :2] = ["-", "■"]
                 mat[(self.qregs[1] - min(self.qregs)) * 3 + 1, :2] = ["-", "X"]
                 mat[(self.qregs[2] - min(self.qregs)) * 3 + 1, :2] = ["-", "X"]
                 return mat
 
-            mat = np.full((3 * height, len(gate_str) + 4), " ", dtype="str")
+            mat = jnp.full((3 * height, len(gate_str) + 4), " ", dtype="str")
             mid = int(mat.shape[1] / 2)
             mat[1:-1, mid] = ["|"] * (mat.shape[0] - 2)
 
@@ -221,7 +221,7 @@ class Gate:
 
         elif self.gate_type in multi_qubit_gates:
             if gate_str == "swap":
-                mat = np.empty((3 * height, 3), dtype="str")
+                mat = jnp.empty((3 * height, 3), dtype="str")
                 mat[0, :] = [" "] * 3
                 mat[1, :] = ["-", "X", " "]
                 mat[2 : 3 * height - 2, :] = [[" ", "|", " "]] * (3 * height - 4)
@@ -230,7 +230,7 @@ class Gate:
                 mat[range(1, 3 * height, 3), 0] = ["-"] * height
 
             else:
-                mat = np.full((3 * height, len(gate_str) + 4), " ", dtype="str")
+                mat = jnp.full((3 * height, len(gate_str) + 4), " ", dtype="str")
                 mat[0, :] = ["|"] + ["-"] * (mat.shape[1] - 2) + ["|"]
                 mat[1:-1, :] = ["|"] + [" "] * (mat.shape[1] - 2) + ["|"]
                 for qreg_idx, _ in enumerate(self.qregs):
@@ -265,8 +265,8 @@ def add_gate(circuit, g, pos, reg_idxes):
     """Adds a gate to the circuit"""
 
     while pos + g.get_width() >= circuit.shape[1]:
-        circuit = np.concatenate(
-            [circuit, np.full((circuit.shape[0], circuit.shape[1]), " ", dtype=str)], axis=1
+        circuit = jnp.concatenate(
+            [circuit, jnp.full((circuit.shape[0], circuit.shape[1]), " ", dtype=str)], axis=1
         )
 
     circuit[reg_idxes, pos : pos + g.get_width()] = g.mat()
@@ -403,7 +403,7 @@ def _qasm3_drawer(qasm_str: str) -> str:
     """Iterates over the input string and returns the gates"""
     num_qregs, num_cregs = get_circuit_height(qasm_str)
     height = (num_qregs + num_cregs) * 3
-    circuit = np.full((height, 50), " ", dtype=str)
+    circuit = jnp.full((height, 50), " ", dtype=str)
 
     gates = []
     for line in qasm_str.split("\n"):
@@ -421,7 +421,7 @@ def _qasm3_drawer(qasm_str: str) -> str:
     #    circuit = add_wires(circuit, g, num_qregs, pos)
 
     end_pos = circuit.shape[1]
-    while np.all(circuit[:, end_pos - 1] == [" "] * circuit.shape[0]):
+    while jnp.all(circuit[:, end_pos - 1] == [" "] * circuit.shape[0]):
         end_pos -= 1
     end_pos += 1
 

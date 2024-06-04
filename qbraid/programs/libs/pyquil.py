@@ -13,7 +13,7 @@ Module defining PyQuilProgram Class
 
 """
 
-import numpy as np
+import jax.numpy as jnp
 import pyquil
 from pyquil import Program
 from pyquil.quilbase import Declare, Measurement
@@ -57,7 +57,7 @@ class PyQuilProgram(QbraidProgram):
                 program += instruction
         return program
 
-    def _unitary(self) -> "np.ndarray":
+    def _unitary(self) -> "jnp.ndarray":
         """Return the unitary of a pyQuil program."""
         program_copy = self.remove_measurements(self.program)
         return program_unitary(program_copy, n_qubits=self.num_qubits)

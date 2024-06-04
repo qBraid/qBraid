@@ -12,7 +12,7 @@
 Module for generating random Cirq circuits
 
 """
-import numpy as np
+import jax.numpy as jnp
 from cirq import Circuit
 from cirq.testing import random_circuit
 
@@ -34,7 +34,7 @@ def _cirq_random(num_qubits: int, depth: int, **kwargs) -> Circuit:
 
     """
     if "random_state" not in kwargs:
-        kwargs["random_state"] = np.random.randint(1, 11)
+        kwargs["random_state"] = jnp.random.randint(1, 11)
 
     if "op_density" not in kwargs:
         kwargs["op_density"] = 1

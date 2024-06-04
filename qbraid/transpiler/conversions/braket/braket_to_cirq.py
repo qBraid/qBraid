@@ -19,7 +19,7 @@ Module for converting Braket circuits to Cirq circuits
 """
 from typing import TYPE_CHECKING
 
-import numpy as np
+import jax.numpy as jnp
 from braket.circuits import Circuit as BKCircuit
 from braket.circuits import Instruction as BKInstruction
 from braket.circuits import gates as braket_gates
@@ -54,19 +54,19 @@ def _give_cirq_gate_name(gate: "cirq_ops.Gate", name: str, n_qubits: int) -> "ci
     gate._circuit_diagram_info_ = _circuit_diagram_info_
 
 
-def matrix_to_cirq_gate(matrix: np.ndarray) -> "cirq_ops.MatrixGate":
+def matrix_to_cirq_gate(matrix: jnp.ndarray) -> "cirq_ops.MatrixGate":
     """Return cirq matrix gate given unitary"""
-    n_qubits = int(np.log2(len(matrix)))
+    n_qubits = int(jnp.log2(len(matrix)))
     unitary_gate = cirq.MatrixGate(matrix)
     _give_cirq_gate_name(unitary_gate, "U", n_qubits)
     return unitary_gate
 
 
-def braket_gate_to_matrix(gate: braket_gates.Unitary) -> np.ndarray:
+def braket_gate_to_matrix(gate: braket_gates.Unitary) -> jnp.ndarray:
     """Return the matrix representation of a Braket gate."""
     matrix = gate.to_matrix()
     unitary_gate = braket_gates.Unitary(matrix)
-    nqubits = int(np.log2(len(matrix)))
+    nqubits = int(jnp.log2(len(matrix)))
     qubits = list(range(nqubits)) if nqubits > 1 else 0
     bk_circuit = BKCircuit([BKInstruction(unitary_gate, qubits)])
     return bk_circuit.to_unitary()
@@ -189,11 +189,11 @@ def _from_one_qubit_braket_instruction(
     if isinstance(gate, braket_gates.Rz):
         return [cirq.ops.rz(gate.angle).on(*qubits)]
     if isinstance(gate, braket_gates.PhaseShift):
-        return [cirq.ops.Z.on(*qubits) ** (gate.angle / np.pi)]
+        return [cirq.ops.Z.on(*qubits) ** (gate.angle / jnp.pi)]
 
     # One-qubit parameterized IonQ gates
     if cirq_ionq_ops and isinstance(gate, (braket_gates.GPi, braket_gates.GPi2)):
-        phi = gate.angle / (2 * np.pi)
+        phi = gate.angle / (2 * jnp.pi)
         gate_class = (
             cirq_ionq_ops.GPIGate if isinstance(gate, braket_gates.GPi) else cirq_ionq_ops.GPI2Gate
         )
@@ -255,40 +255,40 @@ def _from_two_qubit_braket_instruction(
 
     # Two-qubit parameterized gates.
     if isinstance(gate, braket_gates.CPhaseShift):
-        return [cirq.ops.CZ.on(*qubits) ** (gate.angle / np.pi)]
+        return [cirq.ops.CZ.on(*qubits) ** (gate.angle / jnp.pi)]
     if isinstance(gate, braket_gates.CPhaseShift00):
         return [
             cirq.ops.XX(*qubits),
-            cirq.ops.CZ.on(*qubits) ** (gate.angle / np.pi),
+            cirq.ops.CZ.on(*qubits) ** (gate.angle / jnp.pi),
             cirq.ops.XX(*qubits),
         ]
     if isinstance(gate, braket_gates.CPhaseShift01):
         return [
             cirq.ops.X(qubits[0]),
-            cirq.ops.CZ.on(*qubits) ** (gate.angle / np.pi),
+            cirq.ops.CZ.on(*qubits) ** (gate.angle / jnp.pi),
             cirq.ops.X(qubits[0]),
         ]
     if isinstance(gate, braket_gates.CPhaseShift10):
         return [
             cirq.ops.X(qubits[1]),
-            cirq.ops.CZ.on(*qubits) ** (gate.angle / np.pi),
+            cirq.ops.CZ.on(*qubits) ** (gate.angle / jnp.pi),
             cirq.ops.X(qubits[1]),
         ]
     if isinstance(gate, braket_gates.PSwap):
         return [
             cirq.ops.SWAP.on(*qubits),
             cirq.ops.CNOT.on(*qubits),
-            cirq.ops.Z.on(qubits[1]) ** (gate.angle / np.pi),
+            cirq.ops.Z.on(qubits[1]) ** (gate.angle / jnp.pi),
             cirq.ops.CNOT.on(*qubits),
         ]
     if isinstance(gate, braket_gates.XX):
-        return [cirq.ops.XXPowGate(exponent=gate.angle / np.pi, global_shift=-0.5).on(*qubits)]
+        return [cirq.ops.XXPowGate(exponent=gate.angle / jnp.pi, global_shift=-0.5).on(*qubits)]
     if isinstance(gate, braket_gates.YY):
-        return [cirq.ops.YYPowGate(exponent=gate.angle / np.pi, global_shift=-0.5).on(*qubits)]
+        return [cirq.ops.YYPowGate(exponent=gate.angle / jnp.pi, global_shift=-0.5).on(*qubits)]
     if isinstance(gate, braket_gates.ZZ):
-        return [cirq.ops.ZZPowGate(exponent=gate.angle / np.pi, global_shift=-0.5).on(*qubits)]
+        return [cirq.ops.ZZPowGate(exponent=gate.angle / jnp.pi, global_shift=-0.5).on(*qubits)]
     if isinstance(gate, braket_gates.XY):
-        return [cirq.ops.ISwapPowGate(exponent=gate.angle / np.pi).on(*qubits)]
+        return [cirq.ops.ISwapPowGate(exponent=gate.angle / jnp.pi).on(*qubits)]
 
     # Two-qubit noise gates.
     if isinstance(gate, braket_noise_gate.Kraus):
@@ -300,9 +300,9 @@ def _from_two_qubit_braket_instruction(
     if cirq_ionq_ops and isinstance(gate, braket_gates.MS):
         return [
             cirq_ionq_ops.MSGate(
-                phi0=gate.angle_1 / (2 * np.pi),
-                phi1=gate.angle_2 / (2 * np.pi),
-                theta=gate.angle_3 / (2 * np.pi),
+                phi0=gate.angle_1 / (2 * jnp.pi),
+                phi1=gate.angle_2 / (2 * jnp.pi),
+                theta=gate.angle_3 / (2 * jnp.pi),
             ).on(*qubits)
         ]
 

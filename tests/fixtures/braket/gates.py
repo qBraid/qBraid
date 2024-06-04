@@ -16,7 +16,7 @@ Module for generating dictionary of all braket gates for testing/benchmarking
 import string
 from typing import Optional
 
-import numpy as np
+import jax.numpy as jnp
 import scipy
 from braket.circuits import Gate
 from braket.circuits.gates import (
@@ -94,11 +94,11 @@ braket_gates = {
 def generate_params(varnames: list[str], seed: Optional[int] = None):
     """Returns a dictionary of random parameters for a given list of variable names"""
     if seed is not None:
-        np.random.seed(seed)
+        jnp.random.seed(seed)
     params = {}
     for v in varnames:
         if v.startswith("angle"):
-            params[v] = np.random.rand() * 2 * np.pi
+            params[v] = jnp.random.rand() * 2 * jnp.pi
     return params
 
 
@@ -110,7 +110,7 @@ def get_braket_gates(seed: Optional[int] = None):
 
     for gate in braket_gates:
         if gate == "Unitary":
-            n = np.random.randint(1, 4)
+            n = jnp.random.randint(1, 4)
             unitary = scipy.stats.unitary_group.rvs(2**n)
             braket_gates[gate] = getattr(Gate, gate)(matrix=unitary)
         else:

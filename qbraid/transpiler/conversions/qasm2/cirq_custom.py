@@ -17,7 +17,7 @@ Module for Cirq custom gates to aid the transpiler and qasm parser
 
 import fractions
 
-import numpy as np
+import jax.numpy as jnp
 from cirq import CircuitDiagramInfo, Gate, IdentityGate, TwoQubitDiagonalGate
 
 # pylint: disable=abstract-method
@@ -38,28 +38,28 @@ class U2Gate(Gate):
         return 1
 
     def _unitary_(self):
-        isqrt2 = 1 / np.sqrt(2)
+        isqrt2 = 1 / jnp.sqrt(2)
         phi = self._phi
         lam = self._lam
 
-        return np.array(
+        return jnp.array(
             [
-                [isqrt2, -np.exp(1j * lam) * isqrt2],
+                [isqrt2, -jnp.exp(1j * lam) * isqrt2],
                 [
-                    np.exp(1j * phi) * isqrt2,
-                    np.exp(1j * (phi + lam)) * isqrt2,
+                    jnp.exp(1j * phi) * isqrt2,
+                    jnp.exp(1j * (phi + lam)) * isqrt2,
                 ],
             ],
         )
 
     def _circuit_diagram_info_(self, args):
-        cirq_phi = self._phi / np.pi
-        cirq_lam = self._lam / np.pi
+        cirq_phi = self._phi / jnp.pi
+        cirq_lam = self._lam / jnp.pi
         return f"U2({cirq_phi}, {cirq_lam})"
 
     def __str__(self) -> str:
-        cirq_phi = fractions.Fraction(self._phi / np.pi)
-        cirq_lam = fractions.Fraction(self._lam / np.pi)
+        cirq_phi = fractions.Fraction(self._phi / jnp.pi)
+        cirq_lam = fractions.Fraction(self._lam / jnp.pi)
         gate_str = f"U2({cirq_phi},{cirq_lam})"
         frac_str = gate_str.replace("/", "π/")
         return frac_str.replace("1π", "π")
@@ -81,31 +81,31 @@ class U3Gate(Gate):
         return 1
 
     def _unitary_(self):
-        cos = np.cos(self._theta / 2)
-        sin = np.sin(self._theta / 2)
+        cos = jnp.cos(self._theta / 2)
+        sin = jnp.sin(self._theta / 2)
         phi = self._phi
         lam = self._lam
 
-        return np.array(
+        return jnp.array(
             [
-                [cos, -np.exp(complex(0, lam)) * sin],
+                [cos, -jnp.exp(complex(0, lam)) * sin],
                 [
-                    np.exp(complex(0, phi)) * sin,
-                    np.exp(complex(0, phi + lam)) * cos,
+                    jnp.exp(complex(0, phi)) * sin,
+                    jnp.exp(complex(0, phi + lam)) * cos,
                 ],
             ]
         )
 
     def _circuit_diagram_info_(self, args):
-        cirq_theta = self._theta / np.pi
-        cirq_phi = self._phi / np.pi
-        cirq_lam = self._lam / np.pi
+        cirq_theta = self._theta / jnp.pi
+        cirq_phi = self._phi / jnp.pi
+        cirq_lam = self._lam / jnp.pi
         return f"U3({cirq_theta}, {cirq_phi}, {cirq_lam})"
 
     def __str__(self) -> str:
-        cirq_theta = fractions.Fraction(self._theta / np.pi)
-        cirq_phi = fractions.Fraction(self._phi / np.pi)
-        cirq_lam = fractions.Fraction(self._lam / np.pi)
+        cirq_theta = fractions.Fraction(self._theta / jnp.pi)
+        cirq_phi = fractions.Fraction(self._phi / jnp.pi)
+        cirq_lam = fractions.Fraction(self._lam / jnp.pi)
         gate_str = f"U3({cirq_theta},{cirq_phi},{cirq_lam})"
         frac_str = gate_str.replace("/", "π/")
         return frac_str.replace("1π", "π")
@@ -124,18 +124,18 @@ class RZZGate(Gate):
 
     def _unitary_(self):
         itheta2 = 1j * float(self._theta) / 2
-        return np.array(
+        return jnp.array(
             [
-                [np.exp(-itheta2), 0, 0, 0],
-                [0, np.exp(itheta2), 0, 0],
-                [0, 0, np.exp(itheta2), 0],
-                [0, 0, 0, np.exp(-itheta2)],
+                [jnp.exp(-itheta2), 0, 0, 0],
+                [0, jnp.exp(itheta2), 0, 0],
+                [0, 0, jnp.exp(itheta2), 0],
+                [0, 0, 0, jnp.exp(-itheta2)],
             ],
         )
 
     def _circuit_diagram_info_(self, args):
-        theta_radians = self._theta / np.pi
-        rounded_theta = np.array(theta_radians)
+        theta_radians = self._theta / jnp.pi
+        rounded_theta = jnp.array(theta_radians)
         if args.precision is not None:
             rounded_theta = rounded_theta.round(args.precision)
         gate_str = f"RZZ({rounded_theta})"
@@ -146,6 +146,6 @@ def rzz(theta):
     """Returns custom cirq RZZ gate given rotation angle"""
     if theta == 0:
         return IdentityGate(2)
-    if theta == 2 * np.pi:
-        return TwoQubitDiagonalGate([np.pi] * 4)
+    if theta == 2 * jnp.pi:
+        return TwoQubitDiagonalGate([jnp.pi] * 4)
     return RZZGate(theta)

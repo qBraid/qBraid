@@ -24,7 +24,7 @@ Module for testing qBraid QuilOutput.
 import os
 
 import cirq
-import numpy as np
+import jax.numpy as jnp
 import pytest
 from cirq.ops.pauli_interaction_gate import PauliInteractionGate
 
@@ -58,7 +58,7 @@ def test_single_gate_with_parameter():
         str(output)
         == f"""# Created using qBraid.
 
-RX({np.pi / 2}) 0\n"""
+RX({jnp.pi / 2}) 0\n"""
     )
 
 
@@ -81,9 +81,9 @@ def test_h_gate_with_parameter():
         str(output)
         == f"""# Created using qBraid.
 
-RY({np.pi / 4}) 0
-RX({np.pi / 4}) 0
-RY({-np.pi / 4}) 0\n"""
+RY({jnp.pi / 4}) 0
+RX({jnp.pi / 4}) 0
+RY({-jnp.pi / 4}) 0\n"""
     )
 
 
@@ -217,7 +217,7 @@ def test_i_swap_with_power():
         str(output)
         == f"""# Created using qBraid.
 
-XY({np.pi / 4}) 0 1
+XY({jnp.pi / 4}) 0 1
 """
     )
 
@@ -237,84 +237,84 @@ DECLARE m2 BIT[1]
 DECLARE m3 BIT[3]
 
 Z 0
-RZ({5 * np.pi / 8}) 0
+RZ({5 * jnp.pi / 8}) 0
 Y 0
-RY({3 * np.pi / 8}) 0
+RY({3 * jnp.pi / 8}) 0
 X 0
-RX({7 * np.pi / 8}) 0
+RX({7 * jnp.pi / 8}) 0
 H 1
 CZ 0 1
-CPHASE({np.pi / 4}) 0 1
+CPHASE({jnp.pi / 4}) 0 1
 CNOT 0 1
-RY({-np.pi / 2}) 1
-CPHASE({np.pi / 2}) 0 1
-RY({np.pi / 2}) 1
+RY({-jnp.pi / 2}) 1
+CPHASE({jnp.pi / 2}) 0 1
+RY({jnp.pi / 2}) 1
 SWAP 0 1
 SWAP 1 0
-PSWAP({3 * np.pi / 4}) 0 1
+PSWAP({3 * jnp.pi / 4}) 0 1
 H 2
 CCNOT 0 1 2
 H 2
 CCNOT 0 1 2
-RZ({np.pi / 8}) 0
-RZ({np.pi / 8}) 1
-RZ({np.pi / 8}) 2
+RZ({jnp.pi / 8}) 0
+RZ({jnp.pi / 8}) 1
+RZ({jnp.pi / 8}) 2
 CNOT 0 1
 CNOT 1 2
-RZ({-np.pi / 8}) 1
-RZ({np.pi / 8}) 2
+RZ({-jnp.pi / 8}) 1
+RZ({jnp.pi / 8}) 2
 CNOT 0 1
 CNOT 1 2
-RZ({-np.pi / 8}) 2
+RZ({-jnp.pi / 8}) 2
 CNOT 0 1
 CNOT 1 2
-RZ({-np.pi / 8}) 2
+RZ({-jnp.pi / 8}) 2
 CNOT 0 1
 CNOT 1 2
 H 2
-RZ({np.pi / 8}) 0
-RZ({np.pi / 8}) 1
-RZ({np.pi / 8}) 2
+RZ({jnp.pi / 8}) 0
+RZ({jnp.pi / 8}) 1
+RZ({jnp.pi / 8}) 2
 CNOT 0 1
 CNOT 1 2
-RZ({-np.pi / 8}) 1
-RZ({np.pi / 8}) 2
+RZ({-jnp.pi / 8}) 1
+RZ({jnp.pi / 8}) 2
 CNOT 0 1
 CNOT 1 2
-RZ({-np.pi / 8}) 2
+RZ({-jnp.pi / 8}) 2
 CNOT 0 1
 CNOT 1 2
-RZ({-np.pi / 8}) 2
+RZ({-jnp.pi / 8}) 2
 CNOT 0 1
 CNOT 1 2
 H 2
 CSWAP 0 1 2
 X 0
 X 1
-RX({3 * np.pi / 4}) 0
-RX({3 * np.pi / 4}) 1
+RX({3 * jnp.pi / 4}) 0
+RX({3 * jnp.pi / 4}) 1
 Y 0
 Y 1
-RY({3 * np.pi / 4}) 0
-RY({3 * np.pi / 4}) 1
+RY({3 * jnp.pi / 4}) 0
+RY({3 * jnp.pi / 4}) 1
 Z 0
 Z 1
-RZ({3 * np.pi / 4}) 0
-RZ({3 * np.pi / 4}) 1
+RZ({3 * jnp.pi / 4}) 0
+RZ({3 * jnp.pi / 4}) 1
 I 0
 I 0
 I 1
 I 2
 ISWAP 2 0
-RZ({-0.111 * np.pi}) 1
-RX({np.pi / 4}) 1
-RZ({0.111 * np.pi}) 1
-RZ({-0.333 * np.pi}) 1
-RX({np.pi / 2}) 1
-RZ({0.333 * np.pi}) 1
-RZ({-0.777 * np.pi}) 1
-RX({-np.pi / 2}) 1
-RZ({0.777 * np.pi}) 1
+RZ({-0.111 * jnp.pi}) 1
+RX({jnp.pi / 4}) 1
+RZ({0.111 * jnp.pi}) 1
+RZ({-0.333 * jnp.pi}) 1
+RX({jnp.pi / 2}) 1
+RZ({0.333 * jnp.pi}) 1
+RZ({-0.777 * jnp.pi}) 1
+RX({-jnp.pi / 2}) 1
+RZ({0.777 * jnp.pi}) 1
 WAIT
 MEASURE 0 m0[0]
 MEASURE 2 m1[0]
@@ -414,7 +414,7 @@ def test_equivalent_unitaries():
     pyquil_unitary = pyquil_simulation_tools.program_unitary(program, n_qubits=2)
     # Qubit ordering differs between pyQuil and Cirq.
     cirq_unitary = cirq.Circuit(cirq.SWAP(q0, q1), operations, cirq.SWAP(q0, q1)).unitary()
-    assert np.allclose(pyquil_unitary, cirq_unitary)
+    assert jnp.allclose(pyquil_unitary, cirq_unitary)
 
 
 QUIL_CPHASES_PROGRAM = """
@@ -441,10 +441,10 @@ def test_two_qubit_diagonal_gate_quil_output():
     pyquil_simulation_tools = pytest.importorskip("pyquil.simulation.tools")
     q0, q1 = _make_qubits(2)
     operations = [
-        cirq.TwoQubitDiagonalGate([np.pi / 2, 0, 0, 0])(q0, q1),
-        cirq.TwoQubitDiagonalGate([0, np.pi / 2, 0, 0])(q0, q1),
-        cirq.TwoQubitDiagonalGate([0, 0, np.pi / 2, 0])(q0, q1),
-        cirq.TwoQubitDiagonalGate([0, 0, 0, np.pi / 2])(q0, q1),
+        cirq.TwoQubitDiagonalGate([jnp.pi / 2, 0, 0, 0])(q0, q1),
+        cirq.TwoQubitDiagonalGate([0, jnp.pi / 2, 0, 0])(q0, q1),
+        cirq.TwoQubitDiagonalGate([0, 0, jnp.pi / 2, 0])(q0, q1),
+        cirq.TwoQubitDiagonalGate([0, 0, 0, jnp.pi / 2])(q0, q1),
     ]
     output = QuilOutput(operations, (q0, q1))
     program = pyquil.Program(str(output))
@@ -453,7 +453,7 @@ def test_two_qubit_diagonal_gate_quil_output():
     pyquil_unitary = pyquil_simulation_tools.program_unitary(program, n_qubits=2)
     # Qubit ordering differs between pyQuil and Cirq.
     cirq_unitary = cirq.Circuit(cirq.SWAP(q0, q1), operations, cirq.SWAP(q0, q1)).unitary()
-    assert np.allclose(pyquil_unitary, cirq_unitary)
+    assert jnp.allclose(pyquil_unitary, cirq_unitary)
     # Also test non-CPHASE case, which decomposes into X/RZ/CPhase
     operations = [cirq.TwoQubitDiagonalGate([0, 0, 0, 0])(q0, q1)]
     output = QuilOutput(operations, (q0, q1))
@@ -493,13 +493,13 @@ def test_unconveritble_op():
 @pytest.mark.parametrize(
     "input_exp, expected",
     [
-        (0.25 * np.pi, "pi/4"),
-        (-0.25 * np.pi, "-pi/4"),
+        (0.25 * jnp.pi, "pi/4"),
+        (-0.25 * jnp.pi, "-pi/4"),
         (0, "0"),
-        (np.pi / 3, "pi/3"),
-        (-1.25 * np.pi, "-5*pi/4"),
-        (1 * np.pi, "pi"),
-        (-1 * np.pi, "-pi"),
+        (jnp.pi / 3, "pi/3"),
+        (-1.25 * jnp.pi, "-5*pi/4"),
+        (1 * jnp.pi, "pi"),
+        (-1 * jnp.pi, "-pi"),
     ],
 )
 def test_exponent_to_pi_string(input_exp, expected):

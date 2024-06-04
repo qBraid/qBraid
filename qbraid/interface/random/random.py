@@ -14,13 +14,13 @@ Module for generate random quantum circuits used for testing
 """
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
-import numpy as np
+import jax.numpy as jnp
 
 from qbraid.programs.exceptions import PackageValueError
 from qbraid.programs.registry import QPROGRAM, QPROGRAM_ALIASES
 from qbraid.transpiler.converter import transpile
 
-QROGRAM_TEST_TYPE = tuple[dict[str, Callable[[Any], QPROGRAM]], np.ndarray]
+QROGRAM_TEST_TYPE = tuple[dict[str, Callable[[Any], QPROGRAM]], jnp.ndarray]
 
 if TYPE_CHECKING:
     import qbraid.programs
@@ -48,8 +48,8 @@ def random_circuit(
     if package not in QPROGRAM_ALIASES:
         raise PackageValueError(package)
 
-    num_qubits = np.random.randint(1, 4) if num_qubits is None else num_qubits
-    depth = np.random.randint(1, 4) if depth is None else depth
+    num_qubits = jnp.random.randint(1, 4) if num_qubits is None else num_qubits
+    depth = jnp.random.randint(1, 4) if depth is None else depth
 
     # pylint: disable=import-outside-toplevel
     if package == "qasm3":
@@ -71,7 +71,7 @@ def random_circuit(
     return rand_circuit
 
 
-def random_unitary_matrix(dim: int) -> np.ndarray:
+def random_unitary_matrix(dim: int) -> jnp.ndarray:
     """Create a random (complex) unitary matrix of order `dim`
 
     Args:
@@ -81,7 +81,7 @@ def random_unitary_matrix(dim: int) -> np.ndarray:
         random unitary matrix of shape dim x dim
     """
     # Create a random complex matrix of size dim x dim
-    matrix = np.random.randn(dim, dim) + 1j * np.random.randn(dim, dim)
+    matrix = jnp.random.randn(dim, dim) + 1j * jnp.random.randn(dim, dim)
     # Use the QR decomposition to get a random unitary matrix
-    unitary, _ = np.linalg.qr(matrix)
+    unitary, _ = jnp.linalg.qr(matrix)
     return unitary

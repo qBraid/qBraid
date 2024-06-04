@@ -14,7 +14,7 @@ Module defining CirqCircuit Class
 """
 
 import cirq
-import numpy as np
+import jax.numpy as jnp
 
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.program import QbraidProgram
@@ -45,7 +45,7 @@ class CirqCircuit(QbraidProgram):
         """Return the circuit depth (i.e., length of critical path)."""
         return len(cirq.Circuit(self.program.all_operations()))
 
-    def _unitary(self) -> np.ndarray:
+    def _unitary(self) -> jnp.ndarray:
         """Calculate unitary of circuit."""
         return self.program.unitary()
 

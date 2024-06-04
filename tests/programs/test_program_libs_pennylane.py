@@ -12,7 +12,7 @@
 Unit tests for qbraid.programs.pennylane.PennylaneTape
 
 """
-import numpy as np
+import jax.numpy as jnp
 import pennylane as qml
 import pytest
 from pennylane.tape import QuantumTape
@@ -38,7 +38,7 @@ def test_pennylane_tape(bell_circuit, bell_unitary):
     assert program.num_qubits == 2
     assert program.num_clbits == 0
     assert program.depth == 2
-    assert np.allclose(program.unitary(), bell_unitary)
+    assert jnp.allclose(program.unitary(), bell_unitary)
 
 
 @pytest.mark.parametrize("wires", [(0, 1), ("a", "b")])

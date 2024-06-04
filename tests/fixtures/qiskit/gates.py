@@ -16,7 +16,7 @@ Module for generating dictionary of all qiskit gates for testing/benchmarking
 import string
 from typing import Optional
 
-import numpy as np
+import jax.numpy as jnp
 from qiskit.circuit.library import standard_gates as sg
 from qiskit.circuit.library.standard_gates import *
 
@@ -66,16 +66,16 @@ qiskit_gates = {
 def generate_params(varnames: list[str], seed: Optional[int] = None):
     """Returns a dictionary of random parameters for a given list of variable names"""
     if seed is not None:
-        np.random.seed(seed)
+        jnp.random.seed(seed)
     params = {
-        ra: np.random.rand() * 2 * np.pi
+        ra: jnp.random.rand() * 2 * jnp.pi
         for ra in ["theta", "phi", "lam", "gamma"]
         if ra in varnames
     }
     if "num_ctrl_qubits" in varnames:
-        params["num_ctrl_qubits"] = np.random.randint(1, 7)
+        params["num_ctrl_qubits"] = jnp.random.randint(1, 7)
     if "phase" in varnames:
-        params["phase"] = np.random.rand() * 2 * np.pi
+        params["phase"] = jnp.random.rand() * 2 * jnp.pi
     return params
 
 

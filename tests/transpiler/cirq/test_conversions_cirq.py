@@ -15,7 +15,7 @@ Unit tests for the qbraid transpiler conversions module.
 from typing import Optional
 
 import cirq
-import numpy as np
+import jax.numpy as jnp
 import pytest
 
 from qbraid.programs import load_program
@@ -61,4 +61,4 @@ def test_convert_circuit_operation_from_cirq(frontend):
     except NotImplementedError:
         pytest.skip(f"Unitary calculation not implemented for {frontend}")
 
-    assert np.allclose(cirq_unitary, test_unitary)
+    assert jnp.allclose(cirq_unitary, test_unitary)

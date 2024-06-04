@@ -15,7 +15,7 @@ Fixtures imported/defined in this file can be used by any test in this directory
 without needing to import them (pytest will automatically discover them).
 
 """
-import numpy as np
+import jax.numpy as jnp
 import pytest
 
 from qbraid.programs import NATIVE_REGISTRY
@@ -27,7 +27,7 @@ def _braket_circuit():
 
     circuit = braket.circuits.Circuit()
     circuit.h(0)
-    circuit.ry(0, np.pi / 2)
+    circuit.ry(0, jnp.pi / 2)
     return circuit
 
 
@@ -40,7 +40,7 @@ def _cirq_circuit(meas=True):
 
     def basic_circuit():
         yield cirq.H(q0)
-        yield cirq.Ry(rads=np.pi / 2)(q0)
+        yield cirq.Ry(rads=jnp.pi / 2)(q0)
         if meas:
             yield cirq.measure(q0, key="q0")
 
@@ -56,7 +56,7 @@ def _qiskit_circuit(meas=True):
 
     circuit = qiskit.QuantumCircuit(1, 1) if meas else qiskit.QuantumCircuit(1)
     circuit.h(0)
-    circuit.ry(np.pi / 2, 0)
+    circuit.ry(jnp.pi / 2, 0)
     if meas:
         circuit.measure(0, 0)
     return circuit

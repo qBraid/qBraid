@@ -13,7 +13,7 @@ Unit tests for the qbraid transpiler.
 
 """
 import cirq
-import numpy as np
+import jax.numpy as jnp
 import pytest
 from braket.circuits import Circuit as BraketCircuit
 from braket.circuits import Gate as BraketGate
@@ -170,13 +170,13 @@ def nqubits_nparams(gate: str) -> tuple[int, int]:
 
 def assign_params(init_gate1, init_gate2, nparams):
     """Generate and assign random parameters to gates."""
-    params = np.random.random_sample(nparams) * np.pi
+    params = jnp.random.random_sample(nparams) * jnp.pi
     return init_gate1(*params), init_gate2(*params)
 
 
 def assign_params_cirq(gate_str, init_gate, nparams):
     """Generate and assign random parameters to custom Cirq gate."""
-    params = np.random.random_sample(nparams) * np.pi
+    params = jnp.random.random_sample(nparams) * jnp.pi
     cirq_data = {"type": gate_str, "params": params, "matrix": None}
     new_cirq_gate = create_cirq_gate(cirq_data)
     return new_cirq_gate, init_gate(*params)
@@ -192,7 +192,7 @@ def braket_gate_test_circuit(test_gate, nqubits, only_test_gate=False):
         (BraketGate.H(), 2),
         (test_gate, qubits),
         (BraketGate.CNot(), [0, 1]),
-        (BraketGate.Ry(np.pi), 2),
+        (BraketGate.Ry(jnp.pi), 2),
     ]
 
     if only_test_gate:
@@ -214,7 +214,7 @@ def qiskit_gate_test_circuit(test_gate, nqubits):
     qubits = [QiskitQubit(qreg, i) for i in range(nqubits)]
     circuit.append(test_gate, qubits)
     circuit.cx(0, 1)
-    circuit.ry(np.pi, 2)
+    circuit.ry(jnp.pi, 2)
 
     qbraid_circuit = load_program(circuit)
     unitary = qbraid_circuit.unitary()
@@ -239,7 +239,7 @@ def cirq_gate_test_circuit(test_gate, nqubits):
         cirq.H(q1),
         cirq.H(q2),
         test_gate(*input_qubits),
-        cirq.ry(rads=np.pi)(q2),
+        cirq.ry(rads=jnp.pi)(q2),
         cirq.CNOT(q0, q1),
     ]
 
@@ -332,7 +332,7 @@ def test_yes_braket_no_qiskit(gate_str):
     """Test transpiling circuits with gates that are supported by Braket but not Qiskit."""
     braket_init_gate = braket_gates_dict[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
-    params = np.random.random_sample(nparams) * np.pi
+    params = jnp.random.random_sample(nparams) * jnp.pi
     braket_gate = braket_init_gate(*params)
     braket_u, qbraid_braket_circ = braket_gate_test_circuit(braket_gate, nqubits)
     qiskit_circuit = transpile(qbraid_braket_circ.program, "qiskit", require_native=True)
@@ -345,7 +345,7 @@ def test_yes_qiskit_no_braket(gate_str):
     """Test transpiling circuits with gates that are supported by Qiskit but not Braket."""
     qiskit_init_gate = qiskit_gates_dict[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
-    params = np.random.random_sample(nparams) * np.pi
+    params = jnp.random.random_sample(nparams) * jnp.pi
     qiskit_gate = qiskit_init_gate(*params)
     qiskit_u, qbraid_qiskit_circ = qiskit_gate_test_circuit(qiskit_gate, nqubits)
     if gate_str in NOT_SUPPORTED:
@@ -360,7 +360,7 @@ def test_yes_qiskit_no_cirq(gate_str):
     """Test transpiling circuits with gates that are supported by Qiskit but not Cirq."""
     qiskit_init_gate = qiskit_gates_dict[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
-    params = np.random.random_sample(nparams) * np.pi
+    params = jnp.random.random_sample(nparams) * jnp.pi
     qiskit_gate = qiskit_init_gate(*params)
     qiskit_u, qbraid_qiskit_circ = qiskit_gate_test_circuit(qiskit_gate, nqubits)
     if gate_str in NOT_SUPPORTED:
@@ -375,7 +375,7 @@ def test_yes_braket_no_cirq(gate_str):
     """Test transpiling circuits with gates that are supported by Braket but not Cirq."""
     braket_init_gate = braket_gates_dict[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
-    params = np.random.random_sample(nparams) * np.pi
+    params = jnp.random.random_sample(nparams) * jnp.pi
     braket_gate = braket_init_gate(*params)
     braket_u, qbraid_braket_circ = braket_gate_test_circuit(braket_gate, nqubits)
     cirq_circuit = transpile(qbraid_braket_circ.program, "cirq", require_native=True)
@@ -388,7 +388,7 @@ def test_yes_cirq_no_qiskit(gate_str):
     """Test transpiling circuits with gates that are supported by Cirq but not Qiskit."""
     cirq_init_gate = cirq_gates_dict[gate_str]
     nqubits, _ = nqubits_nparams(gate_str)
-    exp = np.random.random()
+    exp = jnp.random.random()
     cirq_gate = cirq_init_gate(exponent=exp)
     cirq_u, qbraid_cirq_circ = cirq_gate_test_circuit(cirq_gate, nqubits)
     qiskit_circuit = transpile(qbraid_cirq_circ.program, "qiskit", require_native=True)
@@ -402,10 +402,10 @@ def test_yes_cirq_no_braket(gate_str):
     cirq_init_gate = cirq_gates_dict[gate_str]
     nqubits, nparams = nqubits_nparams(gate_str)
     if gate_str == "U3":
-        params = np.random.random_sample(nparams)
+        params = jnp.random.random_sample(nparams)
         cirq_gate = cirq_init_gate(*params)
     else:
-        exp = np.random.random()
+        exp = jnp.random.random()
         cirq_gate = cirq_init_gate(exponent=exp)
     cirq_u, qbraid_cirq_circ = cirq_gate_test_circuit(cirq_gate, nqubits)
     braket_circuit = transpile(qbraid_cirq_circ.program, "braket", require_native=True)

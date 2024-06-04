@@ -14,7 +14,7 @@ Benchmarking tests for pyQuil conversions
 """
 import string
 
-import numpy as np
+import jax.numpy as jnp
 import pyquil
 import pytest
 
@@ -24,12 +24,12 @@ from qbraid.transpiler import ConversionGraph, transpile
 
 def generate_params(varnames, seed=0):
     """Generate random parameters to help construct PyQuil test gates"""
-    np.random.seed(seed)
+    jnp.random.seed(seed)
     params = {}
     rot_args = ["angle", "phi", "lam", "gamma"]
     for ra in rot_args:
         if ra in varnames:
-            params[ra] = np.random.rand() * 2 * np.pi
+            params[ra] = jnp.random.rand() * 2 * jnp.pi
 
     if "qubit" in varnames:
         params["qubit"] = 0

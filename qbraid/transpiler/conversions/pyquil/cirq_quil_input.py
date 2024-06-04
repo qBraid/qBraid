@@ -23,7 +23,7 @@ Module for conversions from Quil to Cirq.
 
 from typing import Callable, Union, cast
 
-import numpy as np
+import jax.numpy as jnp
 from cirq import Circuit, LineQubit
 from cirq.ops import (
     CCNOT,
@@ -76,7 +76,7 @@ def cphase(param: float) -> CZPowGate:
     Returns:
         A CZPowGate equivalent to a CPHASE gate of given angle.
     """
-    return CZPowGate(exponent=param / np.pi)
+    return CZPowGate(exponent=param / jnp.pi)
 
 
 def cphase00(phi: float) -> TwoQubitDiagonalGate:
@@ -138,7 +138,7 @@ def phase(param: float) -> ZPowGate:
     Returns:
         A ZPowGate equivalent to a PHASE gate of given angle.
     """
-    return ZPowGate(exponent=param / np.pi)
+    return ZPowGate(exponent=param / jnp.pi)
 
 
 def pswap(phi: float) -> MatrixGate:
@@ -151,11 +151,11 @@ def pswap(phi: float) -> MatrixGate:
         A MatrixGate equivalent to a PSWAP gate of given angle.
     """
     # fmt: off
-    pswap_matrix = np.array(
+    pswap_matrix = jnp.array(
         [
             [1, 0, 0, 0],
-            [0, 0, np.exp(1j * phi), 0],
-            [0, np.exp(1j * phi), 0, 0],
+            [0, 0, jnp.exp(1j * phi), 0],
+            [0, jnp.exp(1j * phi), 0, 0],
             [0, 0, 0, 1]
         ],
         dtype=complex,
@@ -175,7 +175,7 @@ def xy(param: float) -> ISwapPowGate:
     Returns:
         An ISwapPowGate equivalent to an XY gate of given angle.
     """
-    return ISwapPowGate(exponent=param / np.pi)
+    return ISwapPowGate(exponent=param / jnp.pi)
 
 
 PRAGMA_ERROR = """
@@ -216,7 +216,7 @@ SUPPORTED_GATES: dict[str, Union[Gate, Callable[..., Gate]]] = {
 }
 
 
-def parse_defgates(quil_str: str) -> dict[str, np.ndarray]:
+def parse_defgates(quil_str: str) -> dict[str, jnp.ndarray]:
     """
     Parses non-parameterized DEFGATE definitions from a Quil program string.
 
@@ -256,7 +256,7 @@ def parse_defgates(quil_str: str) -> dict[str, np.ndarray]:
                 matrix_lines.append(matrix_elements)
                 i += 1
             # Convert the string elements to floats
-            matrix = np.array([[float(element) for element in row] for row in matrix_lines])
+            matrix = jnp.array([[float(element) for element in row] for row in matrix_lines])
             defgates[gate_name] = matrix
         else:
             i += 1

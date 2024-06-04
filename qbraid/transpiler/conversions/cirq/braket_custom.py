@@ -16,7 +16,7 @@ import itertools
 from typing import Any
 
 import braket.ir.jaqcd as ir
-import numpy as np
+import jax.numpy as jnp
 from braket.circuits import Gate, Instruction, QubitSet, circuit
 from braket.circuits.gates import Unitary, format_complex
 from braket.circuits.serialization import OpenQASMSerializationProperties
@@ -39,23 +39,23 @@ class C(Gate):
 
         super().__init__(qubit_count=qubit_count, ascii_symbols=ascii_symbols)
 
-    def _extend_matrix(self, sub_matrix: np.ndarray) -> np.ndarray:
+    def _extend_matrix(self, sub_matrix: jnp.ndarray) -> jnp.ndarray:
         qid_shape = (2,) * self.qubit_count
         control_values = ((1,),) * self._num_controls
         sub_n = len(qid_shape) - self._num_controls
-        tensor = np.eye(np.prod(qid_shape, dtype=np.int64).item(), dtype=complex)
+        tensor = jnp.eye(jnp.prod(qid_shape, dtype=jnp.int64).item(), dtype=complex)
         tensor.shape = qid_shape * 2
         sub_tensor = sub_matrix.reshape(qid_shape[self._num_controls :] * 2)
         for control_vals in itertools.product(*control_values):
             active = (*(v for v in control_vals), *(slice(None),) * sub_n) * 2
             tensor[active] = sub_tensor
-        return tensor.reshape((np.prod(qid_shape, dtype=np.int64).item(),) * 2)
+        return tensor.reshape((jnp.prod(qid_shape, dtype=jnp.int64).item(),) * 2)
 
-    def to_matrix(self, *args, **kwargs) -> np.ndarray:  # pylint: disable=unused-argument
+    def to_matrix(self, *args, **kwargs) -> jnp.ndarray:  # pylint: disable=unused-argument
         """Returns a matrix representation of the quantum operator
 
         Returns:
-            np.ndarray: A matrix representation of the quantum operator
+            jnp.ndarray: A matrix representation of the quantum operator
         """
         sub_matrix = self.sub_gate.to_matrix()
         return self._extend_matrix(sub_matrix)
@@ -74,7 +74,7 @@ class C(Gate):
         self, target: QubitSet, serialization_properties: OpenQASMSerializationProperties, **kwargs
     ) -> str:
         qubits = [serialization_properties.format_target(int(qubit)) for qubit in target]
-        formatted_matrix = np.array2string(
+        formatted_matrix = jnp.array2string(
             self.to_matrix(),
             separator=", ",
             formatter={"all": lambda x: format_complex(x)},  # pylint: disable=unnecessary-lambda

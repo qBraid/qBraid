@@ -12,7 +12,7 @@
 Module containing Braket circuits used for testing
 
 """
-import numpy as np
+import jax.numpy as jnp
 from braket.circuits import Circuit as BKCircuit
 
 
@@ -35,16 +35,16 @@ def braket_shared15():
     circuit.si(1)
     circuit.t(2)
     circuit.ti(3)
-    circuit.rx(0, np.pi / 4)
-    circuit.ry(1, np.pi / 2)
-    circuit.rz(2, 3 * np.pi / 4)
-    circuit.phaseshift(3, np.pi / 8)
+    circuit.rx(0, jnp.pi / 4)
+    circuit.ry(1, jnp.pi / 2)
+    circuit.rz(2, 3 * jnp.pi / 4)
+    circuit.phaseshift(3, jnp.pi / 8)
     circuit.v(0)
     circuit.vi(1)
     circuit.iswap(2, 3)
     circuit.swap(0, 2)
     circuit.swap(1, 3)
     circuit.cnot(0, 1)
-    circuit.cphaseshift(2, 3, np.pi / 4)
+    circuit.cphaseshift(2, 3, jnp.pi / 4)
 
     return circuit

@@ -21,7 +21,7 @@ Module for testing qBraid quil input.
 
 """
 
-import numpy as np
+import jax.numpy as jnp
 import pytest
 from cirq import Circuit, LineQubit
 from cirq.ops import (
@@ -109,19 +109,19 @@ def test_circuit_from_quil():
             Z(q0) ** (1 / 8),
             Z(q1) ** (1 / 8),
             Z(q2) ** (1 / 8),
-            rx(np.pi / 2)(q0),
-            ry(np.pi / 2)(q1),
-            rz(np.pi / 2)(q2),
+            rx(jnp.pi / 2)(q0),
+            ry(jnp.pi / 2)(q1),
+            rz(jnp.pi / 2)(q2),
             CZ(q0, q1),
             CNOT(q1, q2),
-            cphase(np.pi / 2)(q0, q1),
-            cphase00(np.pi / 2)(q1, q2),
-            cphase01(np.pi / 2)(q0, q1),
-            cphase10(np.pi / 2)(q1, q2),
+            cphase(jnp.pi / 2)(q0, q1),
+            cphase00(jnp.pi / 2)(q1, q2),
+            cphase01(jnp.pi / 2)(q0, q1),
+            cphase10(jnp.pi / 2)(q1, q2),
             ISWAP(q0, q1),
-            pswap(np.pi / 2)(q1, q2),
+            pswap(jnp.pi / 2)(q1, q2),
             SWAP(q0, q1),
-            xy(np.pi / 2)(q1, q2),
+            xy(jnp.pi / 2)(q1, q2),
             CCNOT(q0, q1, q2),
             CSWAP(q0, q1, q2),
             MeasurementGate(1, key="ro[0]")(q0),
@@ -142,7 +142,7 @@ def test_circuit_from_quil():
     # get Circuit unitary
     cirq_unitary = cirq_circuit_swapped.unitary()
     # test unitary equivalence
-    assert np.isclose(pyquil_unitary, cirq_unitary).all()
+    assert jnp.isclose(pyquil_unitary, cirq_unitary).all()
 
 
 QUIL_PROGRAM_WITH_DEFGATE = """
@@ -159,7 +159,7 @@ def test_quil_with_defgate():
     q0 = LineQubit(0)
     cirq_circuit = Circuit([X(q0), Z(q0)])
     quil_circuit = circuit_from_quil(QUIL_PROGRAM_WITH_DEFGATE)
-    assert np.isclose(quil_circuit.unitary(), cirq_circuit.unitary()).all()
+    assert jnp.isclose(quil_circuit.unitary(), cirq_circuit.unitary()).all()
 
 
 QUIL_PROGRAM_WITH_PARAMETERIZED_DEFGATE = """

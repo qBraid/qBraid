@@ -12,7 +12,7 @@
 Module containing Pennylane Tapes used for testing
 
 """
-import numpy as np
+import jax.numpy as jnp
 import pennylane as qml
 from pennylane.tape import QuantumTape
 
@@ -41,15 +41,15 @@ def pennylane_shared15() -> QuantumTape:
         qml.adjoint(qml.S(wires=1))
         qml.T(wires=2)
         qml.adjoint(qml.T(wires=3))
-        qml.RX(np.pi / 4, wires=0)
-        qml.RY(np.pi / 2, wires=1)
-        qml.RZ(3 * np.pi / 4, wires=2)
-        qml.PhaseShift(np.pi / 8, wires=3)
+        qml.RX(jnp.pi / 4, wires=0)
+        qml.RY(jnp.pi / 2, wires=1)
+        qml.RZ(3 * jnp.pi / 4, wires=2)
+        qml.PhaseShift(jnp.pi / 8, wires=3)
         qml.SX(wires=0)
         qml.adjoint(qml.SX(wires=1))
         qml.ISWAP(wires=[2, 3])
         qml.SWAP(wires=[0, 2])
         qml.SWAP(wires=[1, 3])
         qml.CNOT(wires=[0, 1])
-        qml.ControlledPhaseShift(np.pi / 4, wires=[2, 3])
+        qml.ControlledPhaseShift(jnp.pi / 4, wires=[2, 3])
     return tape

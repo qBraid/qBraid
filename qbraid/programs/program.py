@@ -16,7 +16,7 @@ import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional
 
-import numpy as np
+import jax.numpy as jnp
 
 from .alias_manager import get_program_type_alias
 from .exceptions import ProgramTypeError
@@ -72,7 +72,7 @@ class QuantumProgram(ABC):
         """Return the number of qubits in the circuit."""
 
     @abstractmethod
-    def unitary(self) -> "np.ndarray":
+    def unitary(self) -> "jnp.ndarray":
         """Calculate unitary of circuit."""
 
 
@@ -100,16 +100,16 @@ class QbraidProgram(QuantumProgram, ABC):
         """Return the circuit depth (i.e., length of critical path)."""
 
     @abstractmethod
-    def _unitary(self) -> "np.ndarray":
+    def _unitary(self) -> "jnp.ndarray":
         """Calculate unitary of circuit."""
 
-    def unitary(self) -> "np.ndarray":
+    def unitary(self) -> "jnp.ndarray":
         """Calculate unitary of circuit."""
         if self.spec.alias in ["pyquil", "qiskit", "qasm3"]:
             return self.unitary_rev_qubits()
         return self._unitary()
 
-    def unitary_rev_qubits(self) -> np.ndarray:
+    def unitary_rev_qubits(self) -> jnp.ndarray:
         """Peforms Kronecker (tensor) product factor permutation of given matrix.
         Returns a matrix equivalent to that computed from a quantum circuit if its
         qubit indicies were reversed.
@@ -119,7 +119,7 @@ class QbraidProgram(QuantumProgram, ABC):
                                 where N is an integer.
 
         Returns:
-            np.ndarray: The matrix with permuted Kronecker product factors.
+            jnp.ndarray: The matrix with permuted Kronecker product factors.
 
         Raises:
             ValueError: If the input matrix is not square or its size is not a power of 2.
@@ -129,10 +129,10 @@ class QbraidProgram(QuantumProgram, ABC):
             raise ValueError("Input matrix must be a square matrix of size 2^N for some integer N.")
 
         # Determine the number of qubits from the matrix size
-        num_qubits = int(np.log2(matrix.shape[0]))
+        num_qubits = int(jnp.log2(matrix.shape[0]))
 
         # Create an empty matrix of the same size
-        permuted_matrix = np.zeros((2**num_qubits, 2**num_qubits), dtype=complex)
+        permuted_matrix = jnp.zeros((2**num_qubits, 2**num_qubits), dtype=complex)
 
         for i in range(2**num_qubits):
             for j in range(2**num_qubits):
@@ -150,7 +150,7 @@ class QbraidProgram(QuantumProgram, ABC):
 
         return permuted_matrix
 
-    def unitary_little_endian(self) -> np.ndarray:
+    def unitary_little_endian(self) -> jnp.ndarray:
         """Converts unitary calculated using big-endian system to its
         equivalent form in a little-endian system.
 
@@ -166,13 +166,13 @@ class QbraidProgram(QuantumProgram, ABC):
         """
         matrix = self.unitary()
         rank = len(matrix)
-        if not np.allclose(np.eye(rank), matrix.dot(matrix.T.conj())):
+        if not jnp.allclose(jnp.eye(rank), matrix.dot(matrix.T.conj())):
             raise ValueError("Input matrix must be unitary.")
-        num_qubits = int(np.log2(rank))
+        num_qubits = int(jnp.log2(rank))
         tensor_be = matrix.reshape([2] * 2 * num_qubits)
         indicies_in = list(reversed(range(num_qubits)))
         indicies_out = [i + num_qubits for i in indicies_in]
-        tensor_le = np.einsum(tensor_be, indicies_in + indicies_out)
+        tensor_le = jnp.einsum(tensor_be, indicies_in + indicies_out)
         return tensor_le.reshape([rank, rank])
 
     @abstractmethod

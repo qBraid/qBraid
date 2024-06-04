@@ -14,7 +14,8 @@ Module for calculating unitary of quantum circuit/program
 """
 from typing import TYPE_CHECKING
 
-import numpy as np
+import jax.numpy as jnp
+from jax import device_put
 
 from qbraid.programs import load_program
 
@@ -22,9 +23,9 @@ if TYPE_CHECKING:
     import qbraid
 
 
-def match_global_phase(a: np.ndarray, b: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+def match_global_phase(a: jnp.ndarray, b: jnp.ndarray) -> tuple[jnp.ndarray, jnp.ndarray]:
     """
-    Matches the global phase of two numpy arrays.
+    Matches the global phase of two JAX arrays.
 
     This function aligns the global phases of two matrices by applying a phase shift based
     on the position of the largest entry in one matrix. It computes and adjusts for the
@@ -32,50 +33,65 @@ def match_global_phase(a: np.ndarray, b: np.ndarray) -> tuple[np.ndarray, np.nda
     (a', b'), indicates that a' == b' is equivalent to a == b * exp(i * t) for some phase t.
 
     Args:
-        a (np.ndarray): The first input matrix.
-        b (np.ndarray): The second input matrix.
+        a (jnp.ndarray): The first input matrix.
+        b (jnp.ndarray): The second input matrix.
 
     Returns:
-        tuple[np.ndarray, np.ndarray]: A tuple of the two matrices `(a', b')`, adjusted for
-                                       global phase. If shapes of `a` and `b` do not match or
-                                       either is empty, returns copies of the original matrices.
+        tuple[jnp.ndarray, jnp.ndarray]: A tuple of the two matrices `(a', b')`, adjusted for
+                                         global phase. If shapes of `a` and `b` do not match or
+                                         either is empty, returns copies of the original matrices.
     """
     if a.shape != b.shape or a.size == 0:
-        return np.copy(a), np.copy(b)
+        return jnp.array(a), jnp.array(b)
 
-    k = max(np.ndindex(*a.shape), key=lambda t: abs(b[t]))
+    # Move the data to the device (e.g., GPU) if not already there; JAX operations run on devices.
+    a, b = device_put(a), device_put(b)
+
+    k = max(jnp.ndindex(a.shape), key=lambda t: abs(b[t]))
 
     def dephase(v):
-        r = np.real(v)
-        i = np.imag(v)
+        r = jnp.real(v)
+        i = jnp.imag(v)
 
         if i == 0:
             return -1 if r < 0 else 1
         if r == 0:
             return 1j if i < 0 else -1j
 
-        return np.exp(-1j * np.arctan2(i, r))
+        return jnp.exp(-1j * jnp.arctan2(i, r))
 
     return a * dephase(a[k]), b * dephase(b[k])
 
 
-def assert_allclose_up_to_global_phase(a: np.ndarray, b: np.ndarray, atol: float, **kwargs) -> None:
+def assert_allclose_up_to_global_phase(
+    a: jnp.ndarray, b: jnp.ndarray, atol: float, **kwargs
+) -> None:
     """
-    Checks if two numpy arrays are equal up to a global phase, within
+    Checks if two JAX arrays are equal up to a global phase, within
     a specified tolerance, i.e. if a ~= b * exp(i t) for some t.
 
     Args:
-        a (np.ndarray): The first input array.
-        b (np.ndarray): The second input array.
+        a (jnp.ndarray): The first input array.
+        b (jnp.ndarray): The second input array.
         atol (float): The absolute error tolerance.
-        **kwargs: Additional keyword arguments to pass to `np.testing.assert_allclose`.
+        **kwargs: Additional keyword arguments to pass to the assertion check.
 
     Raises:
         AssertionError: The matrices aren't nearly equal up to global phase.
 
     """
     a, b = match_global_phase(a, b)
-    np.testing.assert_allclose(actual=a, desired=b, atol=atol, **kwargs)
+
+    # JAX arrays should be moved to device if not already; optional if you know they are on device
+    a, b = device_put(a), device_put(b)
+
+    # Perform the assertion manually since JAX does not have a direct assert_allclose equivalent
+    if not jnp.allclose(a, b, atol=atol, **kwargs):
+        max_diff = jnp.max(jnp.abs(a - b))
+        message = (
+            f"Arrays are not almost equal up to global phase (max difference {max_diff} > {atol})"
+        )
+        raise AssertionError(message)
 
 
 def circuits_allclose(  # pylint: disable=too-many-arguments
@@ -86,7 +102,7 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
     strict_gphase: bool = False,
     atol: float = 1e-7,
 ) -> bool:
-    """Check if quantum program unitaries are equivalent.
+    """Check if quantum program unitaries are equivalent using JAX for computation.
 
     Args:
         circuit0 (:data:`~qbraid.programs.QPROGRAM`): First quantum program to compare
@@ -96,22 +112,21 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
             as equivalent.
         strict_gphase: If False, disregards global phase when verifying
             equivalence of the input circuit's unitaries.
-        atol: Absolute tolerance parameter for np.allclose function.
+        atol: Absolute tolerance parameter for jnp.allclose function.
 
     Returns:
         True if the input circuits pass unitary equality check
-
     """
 
     def unitary_equivalence_check(unitary0, unitary1, unitary_rev=None):
         if strict_gphase:
-            return np.allclose(unitary0, unitary1) or (
-                allow_rev_qubits and np.allclose(unitary0, unitary_rev)
+            return jnp.allclose(unitary0, unitary1, atol=atol) or (
+                allow_rev_qubits and jnp.allclose(unitary0, unitary_rev, atol=atol)
             )
         try:
             assert_allclose_up_to_global_phase(unitary0, unitary1, atol=atol)
         except AssertionError:
-            if allow_rev_qubits:
+            if allow_rev_qubits and unitary_rev is not None:
                 try:
                     assert_allclose_up_to_global_phase(unitary0, unitary_rev, atol=atol)
                 except AssertionError:
@@ -129,6 +144,6 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
 
     unitary0 = program0.unitary()
     unitary1 = program1.unitary()
-    unitary_rev = program1.unitary_rev_qubits()
+    unitary_rev = program1.unitary_rev_qubits() if allow_rev_qubits else None
 
     return unitary_equivalence_check(unitary0, unitary1, unitary_rev)
