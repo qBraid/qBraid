@@ -22,6 +22,7 @@ Data Types
 .. autosummary::
    :toctree: ../stubs/
 
+    DeviceActionType
 	DeviceType
 	DeviceStatus
 	JobStatus
@@ -64,7 +65,7 @@ from qbraid_core import Session
 from . import native
 from ._display import display_jobs_from_data
 from .device import QuantumDevice
-from .enums import DeviceStatus, DeviceType, JobStatus
+from .enums import DeviceActionType, DeviceStatus, DeviceType, JobStatus
 from .exceptions import (
     JobStateError,
     ProgramValidationError,
@@ -80,6 +81,7 @@ from .result import QuantumJobResult
 __all__ = [
     "Session",
     "QuantumDevice",
+    "DeviceActionType",
     "DeviceStatus",
     "DeviceType",
     "JobStatus",

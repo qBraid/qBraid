@@ -30,6 +30,19 @@ class DeviceType(str, Enum):
     LOCAL_SIMULATOR = "LOCAL_SIMULATOR"
 
 
+class DeviceActionType(str, Enum):
+    """
+    Enumeration for different quantum device action types
+
+    Attributes:
+        OPENQASM (str): Actions compatible with OpenQASM.
+        AHS (str): Actions using analog Hamiltonian simulation.
+    """
+
+    OPENQASM = "OpenQASM"
+    AHS = "Analog Hamiltonian Simulation"
+
+
 class DeviceStatus(str, Enum):
     """Enumeration for representing various operational statuses of devices.
 
