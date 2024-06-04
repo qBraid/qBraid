@@ -14,7 +14,7 @@ pytket-braket>=0.35.1,<0.37.0
 qiskit-braket-provider
 
 # optional runtime dependencies
-oqc-qcaas-client>=3.5,<4.0; python_version < "3.11"
+# oqc-qcaas-client>=3.5,<4.0; python_version < "3.11"
 qiskit-ibm-runtime>=0.18,<0.24
 
 # visualization
