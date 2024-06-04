@@ -92,7 +92,7 @@ class BraketProvider(QuantumProvider):
             aws_session = AwsSession()
             return aws_session.default_bucket()
         except Exception:  # pylint: disable=broad-exception-caught
-            return "amazon-braket-qbraid-provider"
+            return "amazon-braket-qbraid-jobs"
 
     def _get_aws_session(self, region_name: Optional[str] = None) -> "braket.aws.AwsSession":
         """Returns the AwsSession provider."""
@@ -104,7 +104,10 @@ class BraketProvider(QuantumProvider):
             aws_access_key_id=self.aws_access_key_id,
             aws_secret_access_key=self.aws_secret_access_key,
         )
-        return AwsSession(boto_session=boto_session, default_bucket=default_bucket)
+        braket_client = boto_session.client("braket")
+        return AwsSession(
+            boto_session=boto_session, braket_client=braket_client, default_bucket=default_bucket
+        )
 
     def _build_runtime_profile(
         self, device: "braket.aws.AwsDevice", program_spec: Optional[ProgramSpec] = None

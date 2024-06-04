@@ -12,6 +12,7 @@
 Unit tests for BraketProvider class
 
 """
+import warnings
 import json
 import os
 from datetime import datetime, time
@@ -202,7 +203,9 @@ def test_circuit_too_many_qubits(mock_aws_device):
     circuit.h([0, 1])
     circuit.cx(0, num_qubits - 1)
     with pytest.raises(ProgramValidationError):
-        device.run(circuit)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", UserWarning)
+            device.run(circuit)
 
 
 def test_aws_device_available(braket_provider):
