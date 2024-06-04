@@ -30,7 +30,7 @@ class ConversionGraph(rx.PyDiGraph):
     """
 
     # avoid passing arguments to rx.PyDiGraph.__new__() when inheriting
-    def __new__(cls, *args, **kwargs): # pylint: disable=unused-argument
+    def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
         return super().__new__(cls)  # pylint: disable=no-value-for-parameter
 
     def __init__(

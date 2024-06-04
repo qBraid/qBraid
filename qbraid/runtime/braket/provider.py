@@ -79,11 +79,13 @@ class BraketProvider(QuantumProvider):
     @staticmethod
     def _get_default_region() -> str:
         """Returns the default AWS region."""
+        default_region = "us-east-1"
+
         try:
             session = Session()
-            return session.region_name
+            return session.region_name or default_region
         except Exception:  # pylint: disable=broad-exception-caught
-            return "us-east-1"
+            return default_region
 
     @staticmethod
     def _get_s3_default_bucket() -> str:
@@ -104,13 +106,9 @@ class BraketProvider(QuantumProvider):
             aws_access_key_id=self.aws_access_key_id,
             aws_secret_access_key=self.aws_secret_access_key,
         )
-        config = Config(region_name=region_name)
         braket_client = boto_session.client("braket", region_name=region_name)
         return AwsSession(
-            boto_session=boto_session,
-            braket_client=braket_client,
-            config=config,
-            default_bucket=default_bucket,
+            boto_session=boto_session, braket_client=braket_client, default_bucket=default_bucket
         )
 
     def _build_runtime_profile(
