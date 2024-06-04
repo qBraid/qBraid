@@ -12,9 +12,9 @@
 Unit tests for BraketProvider class
 
 """
-import warnings
 import json
 import os
+import warnings
 from datetime import datetime, time
 from decimal import Decimal
 from unittest.mock import MagicMock, Mock, patch
