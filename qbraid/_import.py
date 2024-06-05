@@ -11,9 +11,8 @@
 Module used for lazy loading of submodules.
 
 """
+import importlib.metadata
 from typing import Optional, Type
-
-import pkg_resources
 
 from .exceptions import QbraidError
 
@@ -22,7 +21,7 @@ def _load_entrypoint(module: str, name: str) -> Optional[Type]:
     """Load an entrypoint given its category and name, optionally with a vendor.
 
     Args:
-        module (str): Module of entrypoint to load, e.g., "programs" or "providers".
+        module (str): Module of entrypoint to load, e.g., "programs"
         name (str): Name of the entrypoint to load within the module.
 
     Returns:
@@ -30,12 +29,13 @@ def _load_entrypoint(module: str, name: str) -> Optional[Type]:
 
     Raises:
         ValueError: If the specified entry point cannot be found.
-        QbraidError: If the specifiedentry point fails to load.
+        QbraidError: If the specified entry point fails to load.
     """
     group = f"qbraid.{module}"
+
     try:
-        entrypoints = {entry.name: entry for entry in pkg_resources.iter_entry_points(group)}
-        entry_point = entrypoints[name]
+        entry_points = {ep.name: ep for ep in importlib.metadata.entry_points().select(group=group)}
+        entry_point = entry_points[name]
         return entry_point.load()
     except KeyError as err:
         raise ValueError(f"Entrypoint '{name}' not found in module '{module}'.") from err
