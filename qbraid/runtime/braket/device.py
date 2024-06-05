@@ -90,14 +90,16 @@ class BraketDevice(QuantumDevice):
         return total_queued
 
     def transform(
-        self, run_input: "Union[Circuit, AnalogHamiltonianSimulation]"
-    ) -> "Union[Circuit, AnalogHamiltonianSimulation]":
+        self, run_input: Union[Circuit, AnalogHamiltonianSimulation]
+    ) -> Union[Circuit, AnalogHamiltonianSimulation]:
         """Transpile a circuit for the device."""
         return transform(run_input, device=self)
 
     def submit(
         self,
-        run_input: "Union[Circuit, AnalogHamiltonianSimulation, list[Circuit], list[AnalogHamiltonianSimulation]]",
+        run_input: Union[
+            Circuit, AnalogHamiltonianSimulation, list[Circuit], list[AnalogHamiltonianSimulation]
+        ],
         *args,
         **kwargs,
     ) -> Union[BraketQuantumTask, list[BraketQuantumTask]]:

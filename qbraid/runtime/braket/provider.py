@@ -26,7 +26,7 @@ from qbraid_core.services.quantum.proxy_braket import aws_configure
 
 from qbraid.exceptions import QbraidError
 from qbraid.programs import ProgramSpec
-from qbraid.runtime import DeviceType, QuantumProvider, TargetProfile, DeviceActionType
+from qbraid.runtime import DeviceActionType, DeviceType, QuantumProvider, TargetProfile
 
 from .device import BraketDevice
 

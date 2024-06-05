@@ -18,9 +18,9 @@ from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 from braket.circuits import Circuit
 from qbraid_core._import import LazyLoader
 
-from qbraid.transforms.exceptions import TransformError
 from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY
 from qbraid.programs.libs.braket import BraketCircuit
+from qbraid.transforms.exceptions import TransformError
 from qbraid.transpiler import transpile
 
 pytket_ionq = LazyLoader("pytket_ionq", globals(), "qbraid.transforms.pytket.ionq")
@@ -50,9 +50,14 @@ class DeviceProgramTypeMismatchError(TypeError, TransformError):
             actual_type = type(self.program).__name__
         except AttributeError:
             actual_type = None
-        msg = f"Incompatible program type"
-        msg += "." if actual_type is None else f": '{actual_type}'."
-        return f"{msg}. Device action type '{self.action_type}' requires a program of type '{self.expected_type}'."
+
+        msg = "Incompatible program type"
+        msg += "" if actual_type is None else f": '{actual_type}'"
+
+        return (
+            f"{msg}. Device action type '{self.action_type}' "
+            f"requires a program of type '{self.expected_type}'."
+        )
 
 
 def transform(

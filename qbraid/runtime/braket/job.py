@@ -13,15 +13,19 @@ Module defining BraketQuantumTask Class
 
 """
 import logging
-from typing import Optional
+from typing import Optional, Union
 
 from braket.aws import AwsQuantumTask
+from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
+    AnalogHamiltonianSimulationQuantumTaskResult,
+)
+from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
 
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 
-from .result import BraketGateModelResult
+from .result import BraketAhsJobResult, BraketGateModelJobResult
 from .tracker import get_quantum_task_cost
 
 logger = logging.getLogger(__name__)
@@ -72,11 +76,24 @@ class BraketQuantumTask(QuantumJob):
                 "Queue visibility is only available for amazon-braket-sdk>=1.56.0"
             ) from err
 
-    def result(self) -> BraketGateModelResult:
-        """Return the results of the job."""
+    def result(self) -> Union[BraketGateModelJobResult, BraketAhsJobResult]:
+        """
+        Return the results of the job. Raises a RuntimeError if the job is not in a terminal state.
+        """
         if not self.is_terminal_state():
-            logger.info("Result will be available when job has reached final state.")
-        return BraketGateModelResult(self._task.result())
+            raise RuntimeError("Result will be available when the job has reached a final state.")
+
+        result = self._task.result()
+
+        result_class_mapping = {
+            GateModelQuantumTaskResult: BraketGateModelJobResult,
+            AnalogHamiltonianSimulationQuantumTaskResult: BraketAhsJobResult,
+        }
+        result_class = type(result)
+        if result_class in result_class_mapping:
+            return result_class_mapping[result_class](result)
+
+        raise ValueError(f"Unsupported result type: {result_class.__name__}")
 
     def cancel(self) -> None:
         """Cancel the quantum task."""

@@ -14,10 +14,10 @@ Module defining QiskitResult Class
 """
 import numpy as np
 
-from qbraid.runtime.result import QuantumJobResult
+from qbraid.runtime.result import GateModelJobResult
 
 
-class QiskitResult(QuantumJobResult):
+class QiskitResult(GateModelJobResult):
     """Qiskit ``Result`` wrapper class."""
 
     def _format_measurements(self, memory_list):
