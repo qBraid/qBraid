@@ -64,6 +64,7 @@ class ConversionScheme:
         """
         scheme = asdict(self)
         scheme.update(scheme.pop("extra_kwargs", {}))
+        scheme.update({"conversion_graph": self.conversion_graph})
         return scheme
 
     def update_values(self, **kwargs) -> None:
