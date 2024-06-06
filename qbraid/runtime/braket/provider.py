@@ -112,7 +112,7 @@ class BraketProvider(QuantumProvider):
         )
 
     def _build_runtime_profile(
-        self, device: "braket.aws.AwsDevice", program_spec: Optional[ProgramSpec] = None
+        self, device: "braket.aws.AwsDevice", program_spec: Optional[ProgramSpec] = None, **kwargs
     ) -> TargetProfile:
         """Returns the runtime profile for the device."""
         metadata = device.aws_session.get_device(device.arn)
@@ -140,6 +140,7 @@ class BraketProvider(QuantumProvider):
             program_spec=program_spec,
             provider_name=provider_name,
             device_id=device.arn,
+            **kwargs,
         )
 
     def get_devices(

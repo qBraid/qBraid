@@ -19,6 +19,7 @@ from datetime import datetime, time
 from decimal import Decimal
 from unittest.mock import MagicMock, Mock, patch
 
+import numpy as np
 import pytest
 from braket.aws.aws_device import AwsDevice
 from braket.aws.aws_session import AwsSession
@@ -35,6 +36,7 @@ from qbraid.runtime.braket.availability import _calculate_future_time
 from qbraid.runtime.braket.device import BraketDevice
 from qbraid.runtime.braket.job import AmazonBraketVersionError, BraketQuantumTask
 from qbraid.runtime.braket.provider import BraketProvider
+from qbraid.runtime.braket.result import BraketGateModelJobResult
 from qbraid.runtime.braket.tracker import get_quantum_task_cost
 from qbraid.runtime.exceptions import JobStateError, ProgramValidationError
 
@@ -242,10 +244,11 @@ def test_build_runtime_profile():
     """Test building a runtime profile."""
     provider = BraketProvider()
     device = TestAwsDevice(SV1_ARN)
-    profile = provider._build_runtime_profile(device=device)
+    profile = provider._build_runtime_profile(device=device, extra="data")
     assert profile.get("device_type") == DeviceType.SIMULATOR
     assert profile.get("provider_name") == "Amazon Braket"
     assert profile.get("device_id") == SV1_ARN
+    assert profile.get("extra") == "data"
 
 
 def test_get_device():
@@ -468,3 +471,31 @@ def test_queue_position_raises_version_error(mock_aws_quantum_task):
     with pytest.raises(AmazonBraketVersionError) as excinfo:
         job.queue_position()
     assert "Queue visibility is only available for amazon-braket-sdk>=1.56.0" in str(excinfo.value)
+
+
+def test_aquila_job_raise_for_cancel_terminal():
+    """Test raising an error when trying to cancel a completed/failed job."""
+    with patch("qbraid.runtime.job.QuantumJob.is_terminal_state", return_value=True):
+        job = BraketQuantumTask(SV1_ARN, task=Mock())
+        with pytest.raises(JobStateError):
+            job.cancel()
+
+
+def test_measurements():
+    """Test measurements method of BraketGateModelJobResult class."""
+    mock_measurements = np.array([[0, 1, 1], [1, 0, 1]])
+    mock_result = MagicMock()
+    mock_result.measurements = mock_measurements
+    result = BraketGateModelJobResult(mock_result)
+    expected_output = np.array([[1, 1, 0], [1, 0, 1]])
+    np.testing.assert_array_equal(result.measurements(), expected_output)
+
+
+def test_raw_counts():
+    """Test raw_counts method of BraketGateModelJobResult class."""
+    mock_measurement_counts = {(0, 1, 1): 10, (1, 0, 1): 5}
+    mock_result = MagicMock()
+    mock_result.measurement_counts = mock_measurement_counts
+    result = BraketGateModelJobResult(mock_result)
+    expected_output = {"110": 10, "101": 5}
+    assert result.raw_counts() == expected_output

@@ -12,9 +12,13 @@
 Module defining BraketGateModelJobResult Class
 
 """
-from typing import Optional
+from collections import Counter
 
 import numpy as np
+from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
+    AnalogHamiltonianSimulationShotStatus,
+    ShotResult,
+)
 
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.result import GateModelJobResult, QuantumJobResult
@@ -49,7 +53,23 @@ class BraketGateModelJobResult(GateModelJobResult):
 class BraketAhsJobResult(QuantumJobResult):
     """Result from an Analog Hamiltonian Simulation (AHS)."""
 
-    def get_counts(self) -> Optional[dict[str, int]]:
+    def measurements(self):
+        """Get the list of shot results from the AHS job."""
+        measurements = []
+        for measurement in self._result.measurements:
+            status = AnalogHamiltonianSimulationShotStatus(measurement.shotMetadata.shotStatus)
+            if measurement.shotResult.preSequence:
+                pre_sequence = np.asarray(measurement.shotResult.preSequence, dtype=int)
+            else:
+                pre_sequence = None
+            if measurement.shotResult.postSequence:
+                post_sequence = np.asarray(measurement.shotResult.postSequence, dtype=int)
+            else:
+                post_sequence = None
+            measurements.append(ShotResult(status, pre_sequence, post_sequence))
+        return measurements
+
+    def get_counts(self) -> dict[str, int]:
         """
         Aggregate state counts from AHS shot results.
 
@@ -64,31 +84,23 @@ class BraketAhsJobResult(QuantumJobResult):
 
         Raises:
             ValueError: If there is an error accessing required attributes within the result object.
+
         """
-        result = self._result
-
-        if not result or not hasattr(result, "measurements") or not result.measurements:
-            return None
-
-        state_counts = {}
+        state_counts = Counter()
         states = ["e", "r", "g"]
-
-        def determine_state(pre, post):
-            """Determine the state of an atom based on its pre- and post-sequence values."""
-            return states[0] if pre == 0 else states[1] if post == 0 else states[2]
-
         try:
-            for shot in result.measurements:
+            for shot in self.measurements():
                 if shot.status.name == "SUCCESS":
-                    state = "".join(
-                        determine_state(pre, post)
-                        for pre, post in zip(shot.pre_sequence, shot.post_sequence)
-                    )
-                    state_counts[state] = state_counts.get(state, 0) + 1
+                    pre = shot.pre_sequence
+                    post = shot.post_sequence
+                    # converting presequence and postsequence measurements to state_idx
+                    state_idx = [
+                        0 if pre_i == 0 else 1 if post_i == 0 else 2
+                        for pre_i, post_i in zip(pre, post)
+                    ]
+                    state = "".join(states[s_idx] for s_idx in state_idx)
+                    state_counts.update([state])
         except AttributeError as err:
             raise ResultDecodingError from err
 
-        if not state_counts:
-            return None
-
-        return state_counts
+        return None if not state_counts else dict(state_counts)

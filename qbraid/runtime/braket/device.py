@@ -120,7 +120,7 @@ class BraketDevice(QuantumDevice):
         run_input = [run_input] if is_single_input else run_input
         aws_quantum_task_batch = self._device.run_batch(run_input, *args, **kwargs)
         tasks = [
-            BraketQuantumTask(task.metadata()["quantumTaskArn"], task=task, device=self._device)
+            BraketQuantumTask(task.id, task=task, device=self._device)
             for task in aws_quantum_task_batch.tasks
         ]
         if is_single_input:
