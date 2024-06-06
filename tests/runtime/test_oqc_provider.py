@@ -151,7 +151,7 @@ def test_build_runtime_profile():
         profile = provider._build_profile({"id": DEVICE_ID, "num_qubits": 8})
         assert isinstance(profile, TargetProfile)
         assert profile._data["device_id"] == DEVICE_ID
-        assert profile._data["device_type"] == DeviceType.SIMULATOR
+        assert profile._data["device_type"] == DeviceType.SIMULATOR.name
         assert profile._data["num_qubits"] == 8
         assert profile._data["program_spec"] == ProgramSpec(str, alias="qasm2")
 

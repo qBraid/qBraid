@@ -178,10 +178,10 @@ def test_build_runtime_profile():
         provider = QiskitRuntimeProvider(token="test_token", channel="test_channel")
         profile = provider._build_runtime_profile(backend)
         assert profile._data["device_id"] == "generic_backend_5q"
-        assert profile._data["device_type"] == "LOCAL_SIMULATOR"
+        assert profile._data["device_type"] == DeviceType.LOCAL_SIMULATOR.name
         assert profile._data["num_qubits"] == 5
         assert profile._data["max_shots"] == 8192
-        # basically testing get_device too
+
         qiskit_backend = QiskitBackend(profile, mock_runtime_service())
         assert isinstance(qiskit_backend, QiskitBackend)
         assert qiskit_backend.profile == profile
