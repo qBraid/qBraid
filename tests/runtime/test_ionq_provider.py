@@ -128,14 +128,14 @@ def test_ionq_provider_device():
         for test_device in test_devices:
             assert isinstance(test_device, IonQDevice)
             assert test_device.profile["device_id"] in [device["backend"] for device in DEVICE_DATA]
-            assert test_device.profile["device_type"] == DeviceType.QPU
+            assert test_device.profile["device_type"] == DeviceType.QPU.name
             assert test_device.profile["num_qubits"] in [device["qubits"] for device in DEVICE_DATA]
             assert test_device.profile["program_spec"] == ProgramSpec(openqasm3.ast.Program)
 
         test_device = provider.get_device("qpu.harmony")
         assert isinstance(test_device, IonQDevice)
         assert test_device.profile["device_id"] == "qpu.harmony"
-        assert test_device.profile["device_type"] == DeviceType.QPU
+        assert test_device.profile["device_type"] == DeviceType.QPU.name
         assert test_device.profile["num_qubits"] == 11
         assert test_device.profile["program_spec"] == ProgramSpec(openqasm3.ast.Program)
 
@@ -145,7 +145,6 @@ def test_ionq_provider_device():
 @patch("qbraid_core.sessions.Session.post")
 def test_run_fake_job(mock_post, mock_get, circuit):
     """Test running a fake job."""
-    # Setup mock for get
     mock_get_response = Mock()
     mock_get_response.json.side_effect = [
         DEVICE_DATA,  # provider.get_device("simulator")

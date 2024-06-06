@@ -14,6 +14,7 @@ Unit tests for QiskitProvider class
 """
 import random
 import time
+import warnings
 from unittest.mock import Mock, patch
 
 import pytest
@@ -25,7 +26,7 @@ from qiskit_ibm_runtime import QiskitRuntimeService
 from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
-from qbraid.runtime import DeviceType, JobStateError, TargetProfile
+from qbraid.runtime import DeviceActionType, DeviceType, JobStateError, TargetProfile
 from qbraid.runtime.qiskit import QiskitBackend, QiskitJob, QiskitRuntimeProvider
 
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
@@ -99,7 +100,13 @@ def fake_ibm_devices():
     backends = service.backends()
     program_spec = ProgramSpec(QuantumCircuit)
     profiles = [
-        TargetProfile(backend.name, DeviceType.LOCAL_SIMULATOR, backend.num_qubits, program_spec)
+        TargetProfile(
+            backend.name,
+            DeviceType.LOCAL_SIMULATOR,
+            DeviceActionType.OPENQASM,
+            backend.num_qubits,
+            program_spec,
+        )
         for backend in backends
     ]
     return [QiskitBackend(profile, service) for profile in profiles]
@@ -122,7 +129,10 @@ def test_queue_depth():
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
 def test_run_fake_qiskit_device_wrapper(qbraid_device, circuit):
     """Test run method from wrapped fake Qiskit backends"""
-    qbraid_job = qbraid_device.run(circuit, shots=10)
+    with warnings.catch_warnings():
+        warnings.simplefilter(action="ignore", category=RuntimeWarning)
+        qbraid_job = qbraid_device.run(circuit, shots=10)
+
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
     assert isinstance(vendor_job, Job)
@@ -131,7 +141,10 @@ def test_run_fake_qiskit_device_wrapper(qbraid_device, circuit):
 @pytest.mark.parametrize("qbraid_device", fake_ibm_devices())
 def test_run_fake_batch_qiskit_device_wrapper(qbraid_device, run_inputs):
     """Test run method from wrapped fake Qiskit backends"""
-    qbraid_job = qbraid_device.run(run_inputs, shots=10)
+    with warnings.catch_warnings():
+        warnings.simplefilter(action="ignore", category=RuntimeWarning)
+        qbraid_job = qbraid_device.run(run_inputs, shots=10)
+
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
     assert isinstance(vendor_job, Job)
@@ -180,7 +193,11 @@ def test_retrieving_ibm_job(device):
     circuit = QuantumCircuit(1, 1)
     circuit.h(0)
     circuit.measure(0, 0)
-    qbraid_job = device.run(circuit, shots=1)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter(action="ignore", category=RuntimeWarning)
+        qbraid_job = device.run(circuit, shots=1)
+
     ibm_job = qbraid_job._job
     assert isinstance(ibm_job, Job)
 
@@ -189,7 +206,9 @@ def test_retrieving_ibm_job(device):
 def test_cancel_completed_batch_error(device, run_inputs):
     """Test that cancelling a batch job that has already reached its
     final state raises an error."""
-    job = device.run(run_inputs, shots=10)
+    with warnings.catch_warnings():
+        warnings.simplefilter(action="ignore", category=RuntimeWarning)
+        job = device.run(run_inputs, shots=10)
 
     timeout = 30
     check_every = 2

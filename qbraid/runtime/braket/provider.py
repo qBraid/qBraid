@@ -136,7 +136,7 @@ class BraketProvider(QuantumProvider):
         return TargetProfile(
             device_type=device_type,
             num_qubits=num_qubits,
-            action=action_type,
+            action_type=action_type,
             program_spec=program_spec,
             provider_name=provider_name,
             device_id=device.arn,

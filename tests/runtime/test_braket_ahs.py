@@ -17,12 +17,13 @@ Unit tests for submitting a Braket AHS job.
 import json
 import uuid
 from typing import Any, Optional, Union
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
+import numpy as np
 import pytest
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 from braket.ahs.atom_arrangement import AtomArrangement
-from braket.ahs.hamiltonian import Hamiltonian
+from braket.ahs.driving_field import DrivingField
 from braket.aws import AwsQuantumTask
 from braket.aws.aws_quantum_task_batch import AwsQuantumTaskBatch
 from braket.device_schema.quera.quera_device_capabilities_v1 import QueraDeviceCapabilities
@@ -36,12 +37,16 @@ from braket.task_result import (
     AnalogHamiltonianSimulationTaskResult,
     TaskMetadata,
 )
+from braket.timings.time_series import TimeSeries
 
+from qbraid.programs import ProgramSpec
 from qbraid.runtime.braket.device import BraketDevice
 from qbraid.runtime.braket.job import BraketQuantumTask
 from qbraid.runtime.braket.provider import BraketProvider
 from qbraid.runtime.braket.result import BraketAhsJobResult
-from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.enums import DeviceActionType, DeviceStatus, DeviceType
+from qbraid.runtime.profile import TargetProfile
+from qbraid.transforms import DeviceProgramTypeMismatchError
 
 AQUILA_ARN = Devices.QuEra.Aquila
 TASK_ARN = "arn:aws:braket:us-east-1:0123456789012:quantum-task/" + str(uuid.uuid4())
@@ -272,12 +277,49 @@ class MockAquilaDevice:
 @pytest.fixture
 def ahs_program():
     """Analogue Hamiltonian Simulation program."""
+    separation = 5e-6
+    block_separation = 15e-6
+    k_max = 5
+    m_max = 5
+
     register = AtomArrangement()
-    H = Hamiltonian()
+    for k in range(k_max):
+        for m in range(m_max):
+            register.add((block_separation * m, block_separation * k + separation / np.sqrt(3)))
+            register.add(
+                (
+                    block_separation * m - separation / 2,
+                    block_separation * k - separation / (2 * np.sqrt(3)),
+                )
+            )
+            register.add(
+                (
+                    block_separation * m + separation / 2,
+                    block_separation * k - separation / (2 * np.sqrt(3)),
+                )
+            )
 
-    program = AnalogHamiltonianSimulation(hamiltonian=H, register=register)
+    omega_const = 1.5e7  # rad/s
+    rabi_pulse_area = np.pi / np.sqrt(3)  # rad
+    omega_slew_rate_max = float(
+        PARADIGM["rydberg"]["rydbergGlobal"]["rabiFrequencySlewRateMax"]
+    )  # rad/s^2
+    time_separation_min = float(PARADIGM["rydberg"]["rydbergGlobal"]["timeDeltaMin"])  # s
 
-    yield program
+    amplitude = TimeSeries.trapezoidal_signal(
+        rabi_pulse_area,
+        omega_const,
+        0.99 * omega_slew_rate_max,
+        time_separation_min=time_separation_min,
+    )
+
+    detuning = TimeSeries.constant_like(amplitude, 0.0)
+    phase = TimeSeries.constant_like(amplitude, 0.0)
+
+    drive = DrivingField(amplitude=amplitude, detuning=detuning, phase=phase)
+    ahs_program = AnalogHamiltonianSimulation(register=register, hamiltonian=drive)
+
+    return ahs_program
 
 
 @pytest.fixture
@@ -361,7 +403,7 @@ def ahs_result():
         measurements=measurements_extended,
     )
 
-    yield result
+    return result
 
 
 @pytest.fixture
@@ -369,7 +411,7 @@ def aquila_profile():
     """Runtime profile for the device."""
     provider = BraketProvider()
     device = MockAquilaDevice()
-    yield provider._build_runtime_profile(device=device)
+    return provider._build_runtime_profile(device=device)
 
 
 def test_aquila_runtime_profile(aquila_profile):
@@ -427,6 +469,33 @@ def test_aquila_device_submit(aquila_profile, ahs_program):
         assert isinstance(task, BraketQuantumTask), f"Expected BraketQuantumTask, got {type(task)}"
         assert task.status().name == "COMPLETED"
         assert task.id == TASK_ARN
+
+
+@patch("qbraid.runtime.braket.device.AwsDevice")
+@patch("braket.ahs.analog_hamiltonian_simulation.AnalogHamiltonianSimulation.discretize")
+def test_transform_ahs_programs(mock_aws_device, mock_discretize, aquila_profile, ahs_program):
+    """Test transform method for device with AHS action type."""
+    mock_aws_device.return_value = Mock()
+    device = BraketDevice(aquila_profile)
+    device.transform(ahs_program)
+    mock_discretize.assert_called_once()
+
+
+@patch("qbraid.runtime.braket.device.AwsDevice")
+def test_transform_raises_for_mismatch(mock_aws_device, ahs_program):
+    """Test raising exception for mismatched action type OPENQASM and program type AHS."""
+    mock_aws_device.return_value = Mock()
+    profile = TargetProfile(
+        device_type=DeviceType.QPU,
+        num_qubits=256,
+        program_spec=ProgramSpec(AnalogHamiltonianSimulation, alias="ahs"),
+        provider_name="QuEra",
+        device_id=AQUILA_ARN,
+        action_type=DeviceActionType.OPENQASM,
+    )
+    device = BraketDevice(profile)
+    with pytest.raises(DeviceProgramTypeMismatchError):
+        device.transform(ahs_program)
 
 
 def test_get_counts_no_measurements():
