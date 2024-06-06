@@ -36,7 +36,8 @@ class DeviceProgramTypeMismatchError(TypeError, TransformError):
 
     def __init__(self, program, expected_type, action_type):
         message = (
-            f"Incompatible program type: '{type(program).__name__}'. Device action type '{action_type}' "
+            f"Incompatible program type: '{type(program).__name__}'. "
+            f"Device action type '{action_type}' "
             f"requires a program of type '{expected_type}'."
         )
         super().__init__(message)
