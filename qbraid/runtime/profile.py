@@ -36,9 +36,9 @@ class TargetProfile(Mapping):
         self,
         device_id: str,
         device_type: Union[DeviceType, str],
-        action_type: Optional[Union[DeviceActionType, str]] = None,
         num_qubits: Optional[int] = None,
         program_spec: Optional[ProgramSpec] = None,
+        action_type: Optional[Union[DeviceActionType, str]] = None,
         **kwargs,
     ) -> None:
         """
@@ -48,11 +48,11 @@ class TargetProfile(Mapping):
         Args:
             device_id (str): Unique identifier for the device.
             device_type (DeviceType): Type of the quantum device, instance of DeviceType.
-            action (optional, DeviceActionType): Classification of quantum program type compatible
-                                                 with the device, instance of DeviceActionType.
             num_qubits (int): Number of qubits supported by the device.
             program_spec (optional, ProgramSpec): Specification for the program, encapsulating
-                                                  program type and other metadata.
+                program type and other metadata.
+            action_type (optional, DeviceActionType): Classification of quantum program type
+                compatible with the device, instance of DeviceActionType.
 
         Raises:
             TypeError: If any of the inputs are not of the expected type.

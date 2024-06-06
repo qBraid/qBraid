@@ -20,7 +20,7 @@ from qbraid_core._import import LazyLoader
 
 from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY
 from qbraid.programs.libs.braket import BraketCircuit
-from qbraid.transforms.exceptions import TransformError
+from qbraid.transforms.exceptions import DeviceProgramTypeMismatchError
 from qbraid.transpiler import transpile
 
 pytket_ionq = LazyLoader("pytket_ionq", globals(), "qbraid.transforms.pytket.ionq")
@@ -29,43 +29,15 @@ if TYPE_CHECKING:
     from qbraid.runtime.braket import BraketDevice
 
 
-class DeviceProgramTypeMismatchError(TypeError, TransformError):
-    """
-    Exception raised when the program type does not match the device action type.
-
-    Attributes:
-        program: The actual program object.
-        expected_type (str): The expected type of the program.
-        action_type (str): The type of action expected by the device.
-    """
-
-    def __init__(self, program, expected_type, action_type):
-        self.program = program
-        self.expected_type = expected_type
-        self.action_type = action_type
-        super().__init__(self._error_message())
-
-    def _error_message(self):
-        try:
-            actual_type = type(self.program).__name__
-        except AttributeError:
-            actual_type = None
-
-        msg = "Incompatible program type"
-        msg += "" if actual_type is None else f": '{actual_type}'"
-
-        return (
-            f"{msg}. Device action type '{self.action_type}' "
-            f"requires a program of type '{self.expected_type}'."
-        )
-
-
 def transform(
     program: "Union[Circuit, AnalogHamiltonianSimulation]", device: "BraketDevice"
 ) -> "Union[Circuit, AnalogHamiltonianSimulation]":
     """Transpile a circuit for the device."""
-    provider = device.profile.get("provider", "").upper()
-    action_type: str = device.profile.get("action_type", "").upper()
+    if device.profile is None:
+        return program
+
+    provider = (device.profile.get("provider") or "").upper()
+    action_type = (device.profile.get("action_type") or "").upper()
     device_type: str = device.device_type.name
 
     if action_type == "OPENQASM":

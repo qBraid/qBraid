@@ -81,7 +81,7 @@ class BraketQuantumTask(QuantumJob):
         Return the results of the job. Raises a RuntimeError if the job is not in a terminal state.
         """
         if not self.is_terminal_state():
-            raise RuntimeError("Result will be available when the job has reached a final state.")
+            logger.info("Result will be available when the job has reached a final state.")
 
         result = self._task.result()
 

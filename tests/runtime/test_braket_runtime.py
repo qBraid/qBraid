@@ -67,7 +67,7 @@ def braket_most_busy():
     """Return the most busy device for testing purposes."""
     provider = BraketProvider()
     qbraid_devices = provider.get_devices(
-        types=["QPU"], statuses=["ONLINE"], provider_names=["Rigetti", "IonQ", "Oxford"]
+        types=["QPU"], statuses=["ONLINE"], provider_names=["Rigetti", "IonQ", "Oxford", "IQM"]
     )
 
     qbraid_device = None
