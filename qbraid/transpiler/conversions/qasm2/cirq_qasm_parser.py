@@ -15,7 +15,6 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 # qbraid: skip-header
-# isort: skip_file
 # pylint: skip-file
 # flake8: noqa
 # fmt: off
@@ -26,18 +25,18 @@ Module defining qBraid Cirq QASM parser.
 """
 import functools
 import operator
-from typing import Any, Callable, cast, Iterable, Optional, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Callable, Iterable, Optional, Union, cast
 
 import numpy as np
-# import sympy
-from ply import yacc
-
-from cirq import ops, Circuit, NamedQubit, CX
+from cirq import CX, Circuit, NamedQubit, ops
 from cirq.circuits.qasm_output import QasmUGate
 from cirq.contrib.qasm_import._lexer import QasmLexer
 from cirq.contrib.qasm_import.exception import QasmException
+from qbraid_core._import import LazyLoader
 
 from .cirq_custom import U2Gate, U3Gate, rzz
+
+yacc = LazyLoader('yacc', globals(), 'ply.yacc')
 
 # Redefined lexer tokens (4/7/21) to surpress warning:
 # Token ['IF', 'NE'] defined, but not used

@@ -25,6 +25,7 @@ ipython
 sympy
 pytest
 pytest-cov
+pytest-xdist
 
 # other
 # attrs>=21.3.0; python_version < "3.11"
