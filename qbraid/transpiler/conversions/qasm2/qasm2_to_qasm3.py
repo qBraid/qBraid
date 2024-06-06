@@ -18,6 +18,7 @@ import textwrap
 from qbraid._version import __version__ as qbraid_version
 from qbraid.programs import parse_qasm_type_alias
 from qbraid.transforms.qasm2.qasm_qelib1 import _decompose_rxx_instr
+from qbraid.transforms.qasm3.format import remove_unused_gates
 
 
 def _get_qasm3_gate_defs() -> str:
@@ -44,7 +45,7 @@ def _build_qasm_3_reg(line: str, qreg_type: bool) -> str:
     elements = line.split("[")
     reg_name = elements[0].strip()
     reg_size = elements[1].split("]")[0].strip()
-    result = "qubit" if qreg_type else "bit"
+    result = "\nqubit" if qreg_type else "bit"
     result += f"[{reg_size}] {reg_name};\n"
     return result
 
@@ -140,5 +141,7 @@ def qasm2_to_qasm3(qasm_str: str) -> str:
 
         line = _convert_line_to_qasm3(line)
         qasm3_str += line
+
+    qasm3_str = remove_unused_gates(qasm3_str)
 
     return qasm3_str
