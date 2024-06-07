@@ -17,4 +17,5 @@ Submodules
    native
    ionq
    oqc
+   azure
 

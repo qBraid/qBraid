@@ -100,7 +100,7 @@ __all__ = [
 
 __all__.extend(native.__all__)
 
-_lazy_mods = ["braket", "ionq", "oqc", "qiskit"]
+_lazy_mods = ["braket", "ionq", "oqc", "qiskit", "azure"]
 
 
 def __getattr__(name):
