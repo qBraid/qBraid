@@ -70,7 +70,7 @@ def circuit_drawer(
             from cirq.contrib.svg import circuit_to_svg
 
             return circuit_to_svg(program)
-        raise VisualizationError('The only valid option for cirq are "text", "svg", "svf_source"')
+        raise VisualizationError('The only valid option for cirq are "text", "svg", "svg_source"')
 
     if package == "pyquil":
         if output is None or output == "text":
