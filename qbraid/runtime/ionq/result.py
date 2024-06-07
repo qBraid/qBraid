@@ -16,10 +16,10 @@ from typing import Any, Optional
 
 import numpy as np
 
-from qbraid.runtime.result import QuantumJobResult
+from qbraid.runtime.result import GateModelJobResult
 
 
-class IonQJobResult(QuantumJobResult):
+class IonQJobResult(GateModelJobResult):
     """IonQ result class."""
 
     def __init__(self, result: dict[str, Any]):

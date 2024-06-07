@@ -11,7 +11,7 @@ authors:
     affiliation: qBraid Co.
   - given-names: Rohan
     family-names: Jain
-    affiliation: qBraid Co.
+    affiliation: Carnegie Mellon University
   - given-names: Harshit
     family-names: Gupta
     affiliation: qBraid Co.
@@ -49,7 +49,10 @@ authors:
     affiliation: Cornell University
   - given-names: Henry
     family-names: Makhanov
-    affiliation: qBraid Co.
+    affiliation: University of Texas at Austin
+  - given-names: Pranet
+    family-names: Sharma
+    affiliation: Yale University
   - given-names: Kanav
     family-names: Setia
     affiliation: qBraid Co.

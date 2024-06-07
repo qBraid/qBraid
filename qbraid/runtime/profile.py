@@ -18,7 +18,7 @@ from typing import Any, Iterator, Optional, Union
 
 from qbraid.programs import ProgramSpec
 
-from .enums import DeviceType
+from .enums import DeviceActionType, DeviceType
 
 
 class TargetProfile(Mapping):
@@ -36,6 +36,7 @@ class TargetProfile(Mapping):
         self,
         device_id: str,
         device_type: Union[DeviceType, str],
+        action_type: Optional[Union[DeviceActionType, str]] = None,
         num_qubits: Optional[int] = None,
         program_spec: Optional[ProgramSpec] = None,
         **kwargs,
@@ -47,19 +48,33 @@ class TargetProfile(Mapping):
         Args:
             device_id (str): Unique identifier for the device.
             device_type (DeviceType): Type of the quantum device, instance of DeviceType.
+            action_type (optional, DeviceActionType): Classification of quantum program type
+                compatible with the device, instance of DeviceActionType.
             num_qubits (int): Number of qubits supported by the device.
             program_spec (optional, ProgramSpec): Specification for the program, encapsulating
-                                                  program type and other metadata.
+                program type and other metadata.
 
         Raises:
             TypeError: If any of the inputs are not of the expected type.
+            ValueError: If the device type or action type is invalid.
         """
         if not isinstance(device_id, str):
             raise TypeError("device_id must be a string")
         if isinstance(device_type, str):
-            device_type = DeviceType(device_type)
+            try:
+                device_type = getattr(DeviceType, device_type.upper())
+            except AttributeError as err:
+                raise ValueError("Invalid device type") from err
         if not isinstance(device_type, DeviceType):
             raise TypeError("device_type must be an instance of DeviceType")
+        if action_type:
+            if isinstance(action_type, str):
+                try:
+                    action_type = getattr(DeviceActionType, action_type.upper())
+                except AttributeError as err:
+                    raise ValueError("Invalid action type") from err
+            if not isinstance(action_type, DeviceActionType):
+                raise TypeError("action_type must be an instance of DeviceActionType")
         if num_qubits and not isinstance(num_qubits, int):
             raise TypeError("device_num_qubits must be an integer")
         if program_spec and not isinstance(program_spec, ProgramSpec):
@@ -68,6 +83,7 @@ class TargetProfile(Mapping):
         self._data = {
             "device_id": device_id,
             "device_type": device_type.name,
+            "action_type": action_type.name if action_type else None,
             "num_qubits": num_qubits,
             "program_spec": program_spec,
             **kwargs,
