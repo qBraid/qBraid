@@ -25,7 +25,8 @@ Classes
    BraketDevice
    BraketProvider
    BraketQuantumTask
-   BraketGateModelResult
+   BraketGateModelJobResult
+   BraketAhsJobResult
 
 Functions
 -----------
@@ -39,5 +40,14 @@ Functions
 from .device import BraketDevice
 from .job import BraketQuantumTask
 from .provider import BraketProvider
-from .result import BraketGateModelResult
+from .result import BraketAhsJobResult, BraketGateModelJobResult
 from .tracker import get_quantum_task_cost
+
+__all__ = [
+    "BraketDevice",
+    "BraketProvider",
+    "BraketQuantumTask",
+    "BraketGateModelJobResult",
+    "BraketAhsJobResult",
+    "get_quantum_task_cost",
+]

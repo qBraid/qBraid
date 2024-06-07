@@ -8,6 +8,8 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# pylint: disable=redefined-outer-name,unused-argument
+
 """
 Unit tests for QbraidDevice, QbraidJob, and QbraidJobResult classes using the qbraid_qir_simulator
 
@@ -20,9 +22,17 @@ import numpy as np
 import pytest
 from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
-from qbraid.runtime.native import ExperimentResult, QbraidJob, QbraidJobResult, QbraidProvider
-
-# pylint: disable=redefined-outer-name,unused-argument
+from qbraid.runtime.device import QuantumDevice
+from qbraid.runtime.exceptions import ResourceNotFoundError
+from qbraid.runtime.native import (
+    ExperimentResult,
+    QbraidDevice,
+    QbraidJob,
+    QbraidJobResult,
+    QbraidProvider,
+)
+from qbraid.runtime.profile import TargetProfile
+from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme
 
 DEVICE_DATA = {
     "numberQubits": 64,
@@ -95,6 +105,59 @@ class MockClient:
         """Returns the quantum job with the given ID."""
         JOB_DATA["result"] = JOB_RESULT
         return JOB_DATA
+
+
+class MockDevice(QuantumDevice):
+    """Mock basic device for testing."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def status(self):
+        raise NotImplementedError
+
+    def submit(self, *args, **kwargs):
+        raise NotImplementedError
+
+
+@pytest.fixture
+def mock_client():
+    """Mock client for testing."""
+    return MockClient()
+
+
+@pytest.fixture
+def mock_profile():
+    """Mock profile for testing."""
+    return TargetProfile(
+        device_id="mock",
+        device_type="SIMULATOR",
+        action_type="OPENQASM",
+        num_qubits=42,
+        program_spec=None,
+    )
+
+
+@pytest.fixture
+def mock_scheme():
+    """Mock conversion scheme for testing."""
+    conv1 = Conversion("alice", "bob", lambda x: x + 1)
+    conv2 = Conversion("bob", "charlie", lambda x: x - 1)
+    graph = ConversionGraph(conversions=[conv1, conv2])
+    scheme = ConversionScheme(conversion_graph=graph)
+    return scheme
+
+
+@pytest.fixture
+def mock_qbraid_device(mock_profile, mock_scheme, mock_client):
+    """Mock QbraidDevice for testing."""
+    return QbraidDevice(profile=mock_profile, client=mock_client, scheme=mock_scheme)
+
+
+@pytest.fixture
+def mock_basic_device(mock_profile):
+    """Generic mock device for testing."""
+    return MockDevice(profile=mock_profile)
 
 
 def _is_uniform_comput_basis(array: np.ndarray) -> bool:
@@ -171,15 +234,15 @@ def _uniform_state_circuit(num_qubits: Optional[int] = None) -> cirq.Circuit:
 @pytest.fixture
 def cirq_uniform():
     """Cirq circuit used for testing."""
-    yield _uniform_state_circuit
+    return _uniform_state_circuit
 
 
-def test_qir_simulator_workflow(cirq_uniform):
+def test_qir_simulator_workflow(mock_client, cirq_uniform):
     """Test qir simulator qbraid device job submission and result retrieval."""
     circuit = cirq_uniform(num_qubits=5)
     num_qubits = len(circuit.all_qubits())
 
-    provider = QbraidProvider(client=MockClient())
+    provider = QbraidProvider(client=mock_client)
     device = provider.get_device("qbraid_qir_simulator")
 
     shots = 10
@@ -205,3 +268,22 @@ def test_qir_simulator_workflow(cirq_uniform):
 
     measurements = result.measurements()
     assert _is_uniform_comput_basis(measurements)
+
+
+def test_update_scheme(mock_qbraid_device):
+    """Test updating ConversionScheme."""
+    graph = mock_qbraid_device.scheme.conversion_graph.copy()
+    new_conversion = Conversion("charlie", "alice", lambda x: x)
+    graph.add_conversion(new_conversion)
+
+    assert graph != mock_qbraid_device.scheme.conversion_graph
+
+    mock_qbraid_device.update_scheme(conversion_graph=graph)
+
+    assert graph == mock_qbraid_device.scheme.conversion_graph
+
+
+def test_queue_depth_raises(mock_basic_device):
+    """Test raising exception when queue depth is unavailable."""
+    with pytest.raises(ResourceNotFoundError):
+        mock_basic_device.queue_depth()

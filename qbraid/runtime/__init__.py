@@ -22,6 +22,7 @@ Data Types
 .. autosummary::
    :toctree: ../stubs/
 
+    DeviceActionType
 	DeviceType
 	DeviceStatus
 	JobStatus
@@ -45,7 +46,8 @@ Classes
 	QuantumDevice
 	QuantumJob
 	QuantumProvider
-	QuantumJobResult
+    QuantumJobResult
+	GateModelJobResult
 
 Exceptions
 ------------
@@ -59,14 +61,12 @@ Exceptions
 	ResourceNotFoundError
 
 """
-import sys
-
 from qbraid_core import Session
-from qbraid_core._import import LazyLoader
 
+from . import native
 from ._display import display_jobs_from_data
 from .device import QuantumDevice
-from .enums import DeviceStatus, DeviceType, JobStatus
+from .enums import DeviceActionType, DeviceStatus, DeviceType, JobStatus
 from .exceptions import (
     JobStateError,
     ProgramValidationError,
@@ -77,11 +77,41 @@ from .job import QuantumJob
 from .native import *
 from .profile import TargetProfile
 from .provider import QuantumProvider
-from .result import QuantumJobResult
+from .result import GateModelJobResult, QuantumJobResult
 
-if "sphinx" in sys.modules:
-    from . import braket, ionq, native, qiskit
-else:
-    qiskit = LazyLoader("ibm", globals(), "qbraid.runtime.qiskit")
-    braket = LazyLoader("braket", globals(), "qbraid.runtime.braket")
-    ionq = LazyLoader("ionq", globals(), "qbraid.runtime.ionq")
+__all__ = [
+    "Session",
+    "QuantumDevice",
+    "DeviceActionType",
+    "DeviceStatus",
+    "DeviceType",
+    "JobStatus",
+    "display_jobs_from_data",
+    "JobStateError",
+    "ProgramValidationError",
+    "QbraidRuntimeError",
+    "ResourceNotFoundError",
+    "TargetProfile",
+    "QuantumJob",
+    "QuantumProvider",
+    "GateModelJobResult",
+    "QuantumJobResult",
+]
+
+__all__.extend(native.__all__)
+
+_lazy_mods = ["braket", "ionq", "oqc", "qiskit"]
+
+
+def __getattr__(name):
+    if name in _lazy_mods:
+        import importlib  # pylint: disable=import-outside-toplevel
+
+        module = importlib.import_module(f".{name}", __name__)
+        globals()[name] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    return sorted(__all__ + _lazy_mods)

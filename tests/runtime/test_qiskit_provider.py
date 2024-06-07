@@ -14,76 +14,22 @@ Unit tests for QiskitProvider class
 """
 import random
 import time
-from typing import Union
+import warnings
 from unittest.mock import Mock, patch
 
-import numpy as np
 import pytest
 from qiskit import QuantumCircuit
-from qiskit.providers import Backend
-from qiskit.providers.basic_provider.basic_provider_job import BasicProviderJob
+from qiskit.providers import Backend, Job
 from qiskit.providers.fake_provider import GenericBackendV2
 from qiskit.providers.models import QasmBackendConfiguration
-from qiskit_aer import AerJob
-from qiskit_ibm_runtime import QiskitRuntimeService, RuntimeJob
+from qiskit_ibm_runtime import QiskitRuntimeService
 from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
-from qbraid.runtime import DeviceType, JobStateError, TargetProfile
+from qbraid.runtime import DeviceActionType, DeviceType, JobStateError, TargetProfile
 from qbraid.runtime.qiskit import QiskitBackend, QiskitJob, QiskitRuntimeProvider
 
-
-def braket_circuit():
-    """Returns low-depth, one-qubit Braket circuit to be used for testing."""
-    import braket.circuits  # pylint: disable=import-outside-toplevel
-
-    circuit = braket.circuits.Circuit()
-    circuit.h(0)
-    circuit.ry(0, np.pi / 2)
-    return circuit
-
-
-def cirq_circuit(meas=True):
-    """Returns Low-depth, one-qubit Cirq circuit to be used for testing.
-    If ``meas=True``, applies measurement operation to end of circuit."""
-    import cirq  # pylint: disable=import-outside-toplevel
-
-    q0 = cirq.GridQubit(0, 0)
-
-    def basic_circuit():
-        yield cirq.H(q0)
-        yield cirq.Ry(rads=np.pi / 2)(q0)
-        if meas:
-            yield cirq.measure(q0, key="q0")
-
-    circuit = cirq.Circuit()
-    circuit.append(basic_circuit())
-    return circuit
-
-
-def qiskit_circuit(meas=True):
-    """Returns Low-depth, one-qubit Qiskit circuit to be used for testing.
-    If ``meas=True``, applies measurement operation to end of circuit."""
-    import qiskit  # pylint: disable=import-outside-toplevel
-
-    circuit = qiskit.QuantumCircuit(1, 1) if meas else qiskit.QuantumCircuit(1)
-    circuit.h(0)
-    circuit.ry(np.pi / 2, 0)
-    if meas:
-        circuit.measure(0, 0)
-    return circuit
-
-
-def run_inputs():
-    """Returns list of test circuits for each available native provider."""
-    circuits = []
-    if "cirq" in NATIVE_REGISTRY:
-        circuits.append(cirq_circuit(meas=False))
-    if "qiskit" in NATIVE_REGISTRY:
-        circuits.append(qiskit_circuit(meas=False))
-    if "braket" in NATIVE_REGISTRY:
-        circuits.append(braket_circuit())
-    return circuits
+FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
 
 class FakeService:
@@ -154,7 +100,13 @@ def fake_ibm_devices():
     backends = service.backends()
     program_spec = ProgramSpec(QuantumCircuit)
     profiles = [
-        TargetProfile(backend.name, DeviceType.LOCAL_SIMULATOR, backend.num_qubits, program_spec)
+        TargetProfile(
+            backend.name,
+            DeviceType.LOCAL_SIMULATOR,
+            DeviceActionType.OPENQASM,
+            backend.num_qubits,
+            program_spec,
+        )
         for backend in backends
     ]
     return [QiskitBackend(profile, service) for profile in profiles]
@@ -174,22 +126,28 @@ def test_queue_depth():
 
 
 @pytest.mark.parametrize("qbraid_device", fake_ibm_devices())
-@pytest.mark.parametrize("circuit", run_inputs())
+@pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
 def test_run_fake_qiskit_device_wrapper(qbraid_device, circuit):
     """Test run method from wrapped fake Qiskit backends"""
-    qbraid_job = qbraid_device.run(circuit, shots=10)
+    with warnings.catch_warnings():
+        warnings.simplefilter(action="ignore", category=RuntimeWarning)
+        qbraid_job = qbraid_device.run(circuit, shots=10)
+
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
-    assert isinstance(vendor_job, Union[BasicProviderJob, AerJob])
+    assert isinstance(vendor_job, Job)
 
 
 @pytest.mark.parametrize("qbraid_device", fake_ibm_devices())
-def test_run_fake_batch_qiskit_device_wrapper(qbraid_device):
+def test_run_fake_batch_qiskit_device_wrapper(qbraid_device, run_inputs):
     """Test run method from wrapped fake Qiskit backends"""
-    qbraid_job = qbraid_device.run(run_inputs(), shots=10)
+    with warnings.catch_warnings():
+        warnings.simplefilter(action="ignore", category=RuntimeWarning)
+        qbraid_job = qbraid_device.run(run_inputs, shots=10)
+
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
-    assert isinstance(vendor_job, Union[BasicProviderJob, AerJob])
+    assert isinstance(vendor_job, Job)
 
 
 def test_qiskit_provider():
@@ -220,10 +178,10 @@ def test_build_runtime_profile():
         provider = QiskitRuntimeProvider(token="test_token", channel="test_channel")
         profile = provider._build_runtime_profile(backend)
         assert profile._data["device_id"] == "generic_backend_5q"
-        assert profile._data["device_type"] == "LOCAL_SIMULATOR"
+        assert profile._data["device_type"] == DeviceType.LOCAL_SIMULATOR.name
         assert profile._data["num_qubits"] == 5
         assert profile._data["max_shots"] == 8192
-        # basically testing get_device too
+
         qiskit_backend = QiskitBackend(profile, mock_runtime_service())
         assert isinstance(qiskit_backend, QiskitBackend)
         assert qiskit_backend.profile == profile
@@ -235,16 +193,22 @@ def test_retrieving_ibm_job(device):
     circuit = QuantumCircuit(1, 1)
     circuit.h(0)
     circuit.measure(0, 0)
-    qbraid_job = device.run(circuit, shots=1)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter(action="ignore", category=RuntimeWarning)
+        qbraid_job = device.run(circuit, shots=1)
+
     ibm_job = qbraid_job._job
-    assert isinstance(ibm_job, Union[RuntimeJob, AerJob])
+    assert isinstance(ibm_job, Job)
 
 
 @pytest.mark.parametrize("device", fake_ibm_devices())
-def test_cancel_completed_batch_error(device):
+def test_cancel_completed_batch_error(device, run_inputs):
     """Test that cancelling a batch job that has already reached its
     final state raises an error."""
-    job = device.run(run_inputs(), shots=10)
+    with warnings.catch_warnings():
+        warnings.simplefilter(action="ignore", category=RuntimeWarning)
+        job = device.run(run_inputs, shots=10)
 
     timeout = 30
     check_every = 2

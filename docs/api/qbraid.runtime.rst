@@ -2,7 +2,6 @@ qbraid.runtime
 ==================
 
 .. automodule:: qbraid.runtime
-   :members:
    :undoc-members:
    :show-inheritance:
 
@@ -17,4 +16,5 @@ Submodules
    qiskit
    native
    ionq
+   oqc
 

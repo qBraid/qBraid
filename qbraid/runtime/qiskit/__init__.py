@@ -8,10 +8,8 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint: skip-file
-
 """
-Mdule submiting and managing jobs through IBM and IBM backends.
+Module submitting and managing jobs through IBM and IBM backends.
 
 .. currentmodule:: qbraid.runtime.qiskit
 
@@ -31,3 +29,5 @@ from .device import QiskitBackend
 from .job import QiskitJob
 from .provider import QiskitRuntimeProvider
 from .result import QiskitResult
+
+__all__ = ["QiskitBackend", "QiskitJob", "QiskitRuntimeProvider", "QiskitResult"]

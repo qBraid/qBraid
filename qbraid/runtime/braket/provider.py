@@ -12,21 +12,21 @@
 Module for configuring provider credentials and authentication.
 
 """
-
 import json
 import os
 from typing import TYPE_CHECKING, Optional
 
 import boto3
-import braket.circuits
 from boto3.session import Session
+from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 from braket.aws import AwsDevice, AwsSession
+from braket.circuits import Circuit
 from qbraid_core.services.quantum import quantum_lib_proxy_state
 from qbraid_core.services.quantum.proxy_braket import aws_configure
 
 from qbraid.exceptions import QbraidError
 from qbraid.programs import ProgramSpec
-from qbraid.runtime import DeviceType, QuantumProvider, TargetProfile
+from qbraid.runtime import DeviceActionType, DeviceType, QuantumProvider, TargetProfile
 
 from .device import BraketDevice
 
@@ -79,11 +79,13 @@ class BraketProvider(QuantumProvider):
     @staticmethod
     def _get_default_region() -> str:
         """Returns the default AWS region."""
+        default_region = "us-east-1"
+
         try:
             session = Session()
-            return session.region_name
+            return session.region_name or default_region
         except Exception:  # pylint: disable=broad-exception-caught
-            return "us-east-1"
+            return default_region
 
     @staticmethod
     def _get_s3_default_bucket() -> str:
@@ -92,7 +94,7 @@ class BraketProvider(QuantumProvider):
             aws_session = AwsSession()
             return aws_session.default_bucket()
         except Exception:  # pylint: disable=broad-exception-caught
-            return "amazon-braket-qbraid-provider"
+            return "amazon-braket-qbraid-jobs"
 
     def _get_aws_session(self, region_name: Optional[str] = None) -> "braket.aws.AwsSession":
         """Returns the AwsSession provider."""
@@ -104,32 +106,41 @@ class BraketProvider(QuantumProvider):
             aws_access_key_id=self.aws_access_key_id,
             aws_secret_access_key=self.aws_secret_access_key,
         )
-        return AwsSession(boto_session=boto_session, default_bucket=default_bucket)
+        braket_client = boto_session.client("braket", region_name=region_name)
+        return AwsSession(
+            boto_session=boto_session, braket_client=braket_client, default_bucket=default_bucket
+        )
 
     def _build_runtime_profile(
-        self, device: "braket.aws.AwsDevice", program_spec: Optional[ProgramSpec] = None
+        self, device: "braket.aws.AwsDevice", program_spec: Optional[ProgramSpec] = None, **kwargs
     ) -> TargetProfile:
         """Returns the runtime profile for the device."""
         metadata = device.aws_session.get_device(device.arn)
+        device_type = DeviceType(metadata.get("deviceType"))
         provider_name = metadata.get("providerName")
         capabilities = json.loads(metadata.get("deviceCapabilities"))
+        num_qubits = capabilities.get("paradigm", {}).get("qubitCount")
         action = capabilities.get("action", {})
-        supported = action.get("braket.ir.openqasm.program") is not None
-        if not supported:
+        if action.get("braket.ir.openqasm.program") is not None:
+            action_type = DeviceActionType.OPENQASM
+            program_spec = program_spec or ProgramSpec(Circuit)
+        elif action.get("braket.ir.ahs.program") is not None:
+            action_type = DeviceActionType.AHS
+            program_spec = program_spec or ProgramSpec(AnalogHamiltonianSimulation, alias="ahs")
+        else:
             raise QbraidError(
                 f"TargetProfile cannot be created for device '{device.arn}' as it does not "
                 f"support 'braket.ir.openqasm.program' program types. Please verify device "
                 f"capabilities or select a different, compatible device."
             )
-        device_type = DeviceType(metadata.get("deviceType"))
-        num_qubits = capabilities.get("paradigm", {}).get("qubitCount")
-        program_spec = program_spec or ProgramSpec(braket.circuits.Circuit)
         return TargetProfile(
             device_type=device_type,
             num_qubits=num_qubits,
+            action_type=action_type,
             program_spec=program_spec,
             provider_name=provider_name,
             device_id=device.arn,
+            **kwargs,
         )
 
     def get_devices(
@@ -142,14 +153,14 @@ class BraketProvider(QuantumProvider):
         aws_session = self._get_aws_session() if aws_session is None else aws_session
         statuses = ["ONLINE", "OFFLINE"] if statuses is None else statuses
         aws_devices = AwsDevice.get_devices(aws_session=aws_session, statuses=statuses, **kwargs)
-        qasm_spec = ProgramSpec(braket.circuits.Circuit)
         return [
             BraketDevice(
-                profile=self._build_runtime_profile(device, program_spec=qasm_spec),
+                profile=self._build_runtime_profile(device),
                 session=device.aws_session,
             )
             for device in aws_devices
-            if device._provider_name in ["Rigetti", "IonQ", "Oxford", "Amazon Braket", "IQM"]
+            if device._provider_name
+            in ["Rigetti", "IonQ", "Oxford", "Amazon Braket", "IQM", "QuEra"]
         ]
 
     def get_device(self, device_id: str) -> "qbraid.runtime.braket.BraketDevice":
@@ -163,8 +174,7 @@ class BraketProvider(QuantumProvider):
             ) from err
         aws_session = self._get_aws_session(region_name=region_name)
         device = AwsDevice(arn=device_id, aws_session=aws_session)
-        program_spec = ProgramSpec(braket.circuits.Circuit)
-        profile = self._build_runtime_profile(device, program_spec=program_spec)
+        profile = self._build_runtime_profile(device)
         return BraketDevice(profile=profile, session=device.aws_session)
 
     def get_tasks_by_tag(

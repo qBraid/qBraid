@@ -24,3 +24,5 @@ Functions
 
 """
 from .passes import decompose, map_zpow_and_unroll
+
+__all__ = ["decompose", "map_zpow_and_unroll"]

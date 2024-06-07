@@ -30,7 +30,7 @@ class ConversionGraph(rx.PyDiGraph):
     """
 
     # avoid passing arguments to rx.PyDiGraph.__new__() when inheriting
-    def __new__(cls, *args, **kwargs):
+    def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
         return super().__new__(cls)  # pylint: disable=no-value-for-parameter
 
     def __init__(
@@ -48,7 +48,7 @@ class ConversionGraph(rx.PyDiGraph):
         super().__init__()
         self.require_native = require_native
         self._conversions = conversions or self.load_default_conversions()
-        self._node_str_to_id = {}
+        self._node_alias_id_map = {}
         self.create_conversion_graph()
 
     @staticmethod
@@ -75,13 +75,13 @@ class ConversionGraph(rx.PyDiGraph):
         for edge in (
             e for e in self._conversions if e.supported and (not self.require_native or e.native)
         ):
-            if edge.source not in self._node_str_to_id:
-                self._node_str_to_id[edge.source] = self.add_node(edge.source)
-            if edge.target not in self._node_str_to_id:
-                self._node_str_to_id[edge.target] = self.add_node(edge.target)
+            if edge.source not in self._node_alias_id_map:
+                self._node_alias_id_map[edge.source] = self.add_node(edge.source)
+            if edge.target not in self._node_alias_id_map:
+                self._node_alias_id_map[edge.target] = self.add_node(edge.target)
             self.add_edge(
-                self._node_str_to_id[edge.source],
-                self._node_str_to_id[edge.target],
+                self._node_alias_id_map[edge.source],
+                self._node_alias_id_map[edge.target],
                 {"native": edge.native, "func": edge.convert},
             )
 
@@ -95,7 +95,7 @@ class ConversionGraph(rx.PyDiGraph):
         Returns:
             bool: True if the node exists, False otherwise.
         """
-        return node in self._node_str_to_id
+        return node in set(self.nodes())
 
     def has_edge(self, node_a: str, node_b: str) -> bool:
         """
@@ -108,9 +108,10 @@ class ConversionGraph(rx.PyDiGraph):
         Returns:
             bool: True if the edge exists, False otherwise.
         """
-        if node_a not in self._node_str_to_id or node_b not in self._node_str_to_id:
-            return False  # To avoid KeyError
-        return super().has_edge(self._node_str_to_id[node_a], self._node_str_to_id[node_b])
+        if not self.has_node(node_a) or not self.has_node(node_b):
+            return False
+
+        return super().has_edge(self._node_alias_id_map[node_a], self._node_alias_id_map[node_b])
 
     def conversions(self) -> list[Conversion]:
         """
@@ -145,27 +146,27 @@ class ConversionGraph(rx.PyDiGraph):
             if old_edge.source == source and old_edge.target == target:
                 self._conversions.remove(old_edge)
                 self.remove_edge(
-                    self._node_str_to_id[source],
-                    self._node_str_to_id[target],
+                    self._node_alias_id_map[source],
+                    self._node_alias_id_map[target],
                 )
                 break
 
         self._conversions.append(edge)
 
-        if source not in self._node_str_to_id:
-            self._node_str_to_id[source] = self.add_node(source)
-        if target not in self._node_str_to_id:
-            self._node_str_to_id[target] = self.add_node(target)
+        if source not in self._node_alias_id_map:
+            self._node_alias_id_map[source] = self.add_node(source)
+        if target not in self._node_alias_id_map:
+            self._node_alias_id_map[target] = self.add_node(target)
         self.add_edge(
-            self._node_str_to_id[source],
-            self._node_str_to_id[target],
+            self._node_alias_id_map[source],
+            self._node_alias_id_map[target],
             {"native": edge.native, "func": edge.convert},
         )
 
     def remove_conversion(self, source: str, target: str) -> None:
         """Safely remove a conversion from the graph."""
         if self.has_edge(source, target):
-            self.remove_edge(self._node_str_to_id[source], self._node_str_to_id[target])
+            self.remove_edge(self._node_alias_id_map[source], self._node_alias_id_map[target])
         else:
             raise ValueError(f"Conversion from {source} to {target} does not exist.")
 
@@ -191,16 +192,17 @@ class ConversionGraph(rx.PyDiGraph):
             ValueError: If no path is found between source and target.
         """
         path = rx.dijkstra_shortest_paths(
-            self, self._node_str_to_id[source], target=self._node_str_to_id[target]
+            self, self._node_alias_id_map[source], target=self._node_alias_id_map[target]
         )
         # rx.dijkstra_shortest_paths returns an empty mapping if no path is found
         if len(path) == 0:
             raise ConversionPathNotFoundError(source, target)
         return [
             self.get_edge_data(
-                path[self._node_str_to_id[target]][i], path[self._node_str_to_id[target]][i + 1]
+                path[self._node_alias_id_map[target]][i],
+                path[self._node_alias_id_map[target]][i + 1],
             )["func"]
-            for i in range(len(path[self._node_str_to_id[target]]) - 1)
+            for i in range(len(path[self._node_alias_id_map[target]]) - 1)
         ]
 
     def find_top_shortest_conversion_paths(
@@ -221,7 +223,7 @@ class ConversionGraph(rx.PyDiGraph):
             ValueError: If no path is found between source and target.
         """
         all_paths = rx.all_simple_paths(
-            self, self._node_str_to_id[source], self._node_str_to_id[target]
+            self, self._node_alias_id_map[source], self._node_alias_id_map[target]
         )
         # rx.all_simple_paths returns an empty list if no path is found
         if len(all_paths) == 0:
@@ -245,7 +247,7 @@ class ConversionGraph(rx.PyDiGraph):
         """
         if source == target:
             return True  # nx.has_path returns True, but rx.has_path returns False
-        return rx.has_path(self, self._node_str_to_id[source], self._node_str_to_id[target])
+        return rx.has_path(self, self._node_alias_id_map[source], self._node_alias_id_map[target])
 
     def reset(self, conversions: Optional[list[Conversion]] = None) -> None:
         """
@@ -256,8 +258,24 @@ class ConversionGraph(rx.PyDiGraph):
         """
         self.clear()
         self._conversions = conversions or self.load_default_conversions()
-        self._node_str_to_id = {}
+        self._node_alias_id_map = {}
         self.create_conversion_graph()
+
+    def copy(self):
+        """
+        Create a copy of this graph, returning a new instance of ConversionGraph.
+
+        """
+        copied_conversions = self._conversions.copy() if self._conversions is not None else None
+        return ConversionGraph(copied_conversions, self.require_native)
+
+    def __eq__(self, value: object) -> bool:
+        return (
+            super().__eq__(value)
+            and self.conversions() == value.conversions()
+            and self.require_native == value.require_native
+            and self._node_alias_id_map == value._node_alias_id_map
+        )
 
     def plot(self, **kwargs):
         """

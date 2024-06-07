@@ -9,6 +9,9 @@ authors:
   - given-names: Ryan James
     family-names: Hill
     affiliation: qBraid Co.
+  - given-names: Rohan
+    family-names: Jain
+    affiliation: Carnegie Mellon University
   - given-names: Harshit
     family-names: Gupta
     affiliation: qBraid Co.
@@ -21,9 +24,9 @@ authors:
     affiliation: qBraid Co.
   - given-names: Erik
     family-names: Weis
-  - given-names: Rohan
-    family-names: Jain
-    affiliation: Carnegie Mellon University
+  - given-names: Kazuki
+    family-names: Tsuoka
+    affiliation: University of Tokyo
   - given-names: Graeme
     family-names: Jacobson
   - given-names: Caleb
@@ -46,7 +49,10 @@ authors:
     affiliation: Cornell University
   - given-names: Henry
     family-names: Makhanov
-    affiliation: qBraid Co.
+    affiliation: University of Texas at Austin
+  - given-names: Pranet
+    family-names: Sharma
+    affiliation: Yale University
   - given-names: Kanav
     family-names: Setia
     affiliation: qBraid Co.
@@ -62,4 +68,4 @@ keywords:
   - runtime
 license: GPL-3.0
 version: 0.7.0
-date-released: '2024-05-23'
+date-released: '2024-06-10'

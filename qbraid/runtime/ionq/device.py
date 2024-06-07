@@ -15,19 +15,19 @@ Module defining IonQ device class
 
 """
 import json
+import re
 from typing import TYPE_CHECKING
 
-from openqasm3.ast import QuantumGate
+import openqasm3
 
 from qbraid.programs import load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.transforms.qasm3.compat import convert_qasm_pi_to_decimal
 
 from .job import IonQJob
 
 if TYPE_CHECKING:
-    import openqasm3
-
     import qbraid.runtime
     import qbraid.runtime.ionq.provider
 
@@ -70,7 +70,7 @@ class IonQDevice(QuantumDevice):
         gates = []
 
         for statement in program.statements:
-            if isinstance(statement, QuantumGate):
+            if isinstance(statement, openqasm3.ast.QuantumGate):
                 name = statement.name.name
                 qubits = statement.qubits
                 qubit_values = []
@@ -81,17 +81,51 @@ class IonQDevice(QuantumDevice):
                     for index in indices:
                         qubit_values.extend(literal.value for literal in index)
 
-                if name == "cx":
-                    name = "cnot"
-                gate_data = {"gate": name}
+                # support gates defined in `stdgates.inc` from OpenQASM 3
                 if len(qubit_values) == 1:
-                    gate_data["target"] = qubit_values[0]
-                elif len(qubit_values) == 2:
-                    if name == "cnot":
-                        gate_data["control"] = qubit_values[0]
-                        gate_data["target"] = qubit_values[1]
+                    # IonQ supported gates:
+                    if name in ["x", "not", "y", "z", "h", "s", "si", "t", "ti", "v", "vi"]:
+                        gate_data = {"gate": name, "target": qubit_values[0]}
+                    elif name in ["rx", "ry", "rz"]:
+                        # convert "rz(3 * pi / 4) q[0];" to "3 * pi / 4"
+                        angle_str = re.findall(r"\((.+)\)", openqasm3.dumps(statement))[0]
+                        gate_data = {
+                            "gate": name,
+                            "target": qubit_values[0],
+                            "rotation": float(convert_qasm_pi_to_decimal(angle_str)),
+                        }
+                    # OpenQASM 3 aliases:
+                    elif name == "sdg":
+                        gate_data = {"gate": "si", "target": qubit_values[0]}
+                    elif name == "tdg":
+                        gate_data = {"gate": "ti", "target": qubit_values[0]}
+                    elif name == "sx":
+                        gate_data = {"gate": "v", "target": qubit_values[0]}
+                    elif name == "sxdg":
+                        gate_data = {"gate": "vi", "target": qubit_values[0]}
                     else:
                         raise NotImplementedError(f"'{name}' gate not yet supported")
+                elif len(qubit_values) == 2:
+                    if name in ["cnot", "cx", "CX"]:
+                        gate_data = {
+                            "gate": "cnot",
+                            "control": qubit_values[0],
+                            "target": qubit_values[1],
+                        }
+                    elif name == "swap":
+                        gate_data = {
+                            "gate": "swap",
+                            "targets": qubit_values,
+                        }
+                    else:
+                        raise NotImplementedError(f"'{name}' gate not yet supported")
+                elif len(qubit_values) == 3:
+                    if name in ["ccx", "toffoli"]:
+                        gate_data = {
+                            "gate": "cnot",
+                            "controls": qubit_values[:2],
+                            "target": qubit_values[2],
+                        }
                 else:
                     raise NotImplementedError(f"'{name}' gate not yet supported")
 

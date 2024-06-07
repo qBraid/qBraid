@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for qbraid top-level functionality
+Unit tests for ipython and other display functions.
 
 """
 import sys
@@ -105,6 +105,32 @@ def job_data():
     yield data
 
 
+class MockIPython:
+    """Mock IPython class for testing."""
+
+    def __init__(self, kernel):
+        self.kernel = kernel
+
+
+@pytest.fixture
+def mock_ipython(request):
+    """Fixture to mock IPython in sys.modules and restore it after the test."""
+    kernel_value = request.param
+    original_ipython = sys.modules.get("IPython", None)  # Save the original IPython module
+    # Create a mock module and assign get_ipython
+    mock_module = type("MockModule", (), {})()  # Create a mock module object
+    mock_module.get_ipython = Mock(return_value=MockIPython(kernel_value))
+    sys.modules["IPython"] = mock_module  # Set the mock module in sys.modules
+
+    yield  # Yield control to the test function
+
+    # Restore the original state after the test
+    if original_ipython is not None:
+        sys.modules["IPython"] = original_ipython
+    else:
+        del sys.modules["IPython"]
+
+
 def test_package_value_error():
     """Test raising PackageValueError exception."""
     with pytest.raises(PackageValueError):
@@ -116,38 +142,32 @@ def test_running_in_jupyter():
     assert not running_in_jupyter()
 
 
-def test_ipython_imported_but_ipython_none():
+@pytest.mark.parametrize("mock_ipython", [None], indirect=True)
+def test_ipython_imported_but_ipython_none(mock_ipython):
     """Test ``running_in_jupyter`` for IPython imported but ``get_ipython()`` returns None."""
-    _mock_ipython(None)
     assert not running_in_jupyter()
 
 
-def test_ipython_imported_but_not_in_jupyter():
-    """Test ``running_in_jupyter`` for IPython imported but not in Jupyter."""
-    _mock_ipython(MockIPython(None))
-    assert not running_in_jupyter()
-
-
-def test_ipython_imported_and_in_jupyter():
+@pytest.mark.parametrize("mock_ipython", ["non-empty kernel"], indirect=True)
+def test_ipython_imported_and_in_jupyter(mock_ipython):
     """Test ``running_in_jupyter`` for IPython imported and in Jupyter."""
-    _mock_ipython(MockIPython("non-empty kernel"))
     assert running_in_jupyter()
 
 
-def test_get_jobs_no_results(capfd, mock_provider):
+@pytest.mark.parametrize("mock_ipython", [None], indirect=True)
+def test_get_jobs_no_results(capfd, mock_provider, mock_ipython):
     """Test ``get_jobs`` stdout for results == 0.
     When no results are found, a single line is printed.
     """
-    _mock_ipython(MockIPython(None))
     mock_provider.display_jobs(device_id="non-existent-device")
     out, err = capfd.readouterr()
     assert out == "No jobs found matching given criteria\n"
     assert len(err) == 0
 
 
-def test_get_aws_jobs_by_tag(capfd, mock_provider):
+@pytest.mark.parametrize("mock_ipython", [None], indirect=True)
+def test_get_aws_jobs_by_tag(capfd, mock_provider, mock_ipython):
     """Test ``get_jobs`` for aws tagged jobs."""
-    _mock_ipython(MockIPython(None))
     mock_provider.display_jobs(tags={"test": "123"}, provider="aws", max_results=1)
     out, err = capfd.readouterr()
     message = out.split("\n")[0]
@@ -156,9 +176,9 @@ def test_get_aws_jobs_by_tag(capfd, mock_provider):
     assert len(err) == 0
 
 
-def test_get_ibm_jobs_by_tag(capfd, mock_provider):
+@pytest.mark.parametrize("mock_ipython", [None], indirect=True)
+def test_get_ibm_jobs_by_tag(capfd, mock_provider, mock_ipython):
     """Test ``get_jobs`` for ibm tagged jobs."""
-    _mock_ipython(MockIPython(None))
     mock_provider.display_jobs(tags={"test": "*"}, provider="ibm", max_results=1)
     out, err = capfd.readouterr()
     message = out.split("\n")[0]
@@ -167,7 +187,8 @@ def test_get_ibm_jobs_by_tag(capfd, mock_provider):
     assert len(err) == 0
 
 
-def test_get_jobs_results(capfd, mock_provider):
+@pytest.mark.parametrize("mock_ipython", [None], indirect=True)
+def test_get_jobs_results(capfd, mock_provider, mock_ipython):
     """Test ``get_jobs`` stdout for results > 0.
     When results returned, output format is as follows:
     (1) Message
@@ -179,7 +200,6 @@ def test_get_jobs_results(capfd, mock_provider):
 
     So, for ``numResults == x`` we expected ``6+x`` total lines from stdout.
     """
-    _mock_ipython(MockIPython(None))
     num_results = 2  # test value
     lines_expected = 5 + num_results
     mock_provider.display_jobs(max_results=num_results)
@@ -189,9 +209,9 @@ def test_get_jobs_results(capfd, mock_provider):
     assert len(err) == 0
 
 
-def test_display_jobs_in_jupyter(capfd, job_data):
+@pytest.mark.parametrize("mock_ipython", ["non-empty kernel"], indirect=True)
+def test_display_jobs_in_jupyter(capfd, job_data, mock_ipython):
     """Test ``_display_jobs_jupyter`` stdout for non-empty job status list."""
-    _mock_ipython(MockIPython("non-empty kernel"))
     msg = "test123"
     _job_table_jupyter(job_data, msg)
     out, err = capfd.readouterr()
@@ -199,32 +219,11 @@ def test_display_jobs_in_jupyter(capfd, job_data):
     assert len(err) == 0
 
 
-def test_get_jobs_in_jupyter(capfd, mock_provider):
-    """Test ``get_jobs`` stdout for non-empty kernel.
+@pytest.mark.parametrize("mock_ipython", ["non-empty kernel"], indirect=True)
+def test_get_jobs_in_jupyter(capfd, mock_provider, mock_ipython):
+    """Test `get_jobs` stdout for non-empty kernel.
     When running in Jupyter, the output should be an HTML object."""
-    _mock_ipython(MockIPython("non-empty kernel"))
-    mock_provider.display_jobs()
+    mock_provider.display_jobs()  # Assuming this uses IPython.get_ipython internally
     out, err = capfd.readouterr()
     assert "IPython.core.display.HTML object" in out
     assert len(err) == 0
-
-
-def get_ipython():
-    """Mock get_ipython function."""
-    pass
-
-
-def _mock_ipython(get_ipython_result):
-    """Mock IPython module and get_ipython function."""
-    module = sys.modules["test_display"]
-    sys.modules["IPython"] = module
-
-    get_ipython = Mock(return_value=get_ipython_result)
-    sys.modules["IPython"].__dict__["get_ipython"] = get_ipython
-
-
-class MockIPython:
-    """Mock IPython class for testing"""
-
-    def __init__(self, kernel):
-        self.kernel = kernel

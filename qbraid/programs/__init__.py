@@ -67,3 +67,38 @@ from .registry import (
     register_program_type,
 )
 from .spec import ProgramSpec
+
+__all__ = [
+    "NATIVE_REGISTRY",
+    "PackageValueError",
+    "ProgramSpec",
+    "ProgramTypeError",
+    "QPROGRAM",
+    "QPROGRAM_ALIASES",
+    "QPROGRAM_REGISTRY",
+    "QPROGRAM_TYPES",
+    "QasmError",
+    "QbraidProgram",
+    "QuantumProgram",
+    "derive_program_type_alias",
+    "get_program_type_alias",
+    "load_program",
+    "parse_qasm_type_alias",
+    "register_program_type",
+]
+
+_lazy_mods = ["libs"]
+
+
+def __getattr__(name):
+    if name in _lazy_mods:
+        import importlib  # pylint: disable=import-outside-toplevel
+
+        module = importlib.import_module(f".{name}", __name__)
+        globals()[name] = module
+        return module
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    return sorted(__all__ + _lazy_mods)
