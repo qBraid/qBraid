@@ -1,12 +1,29 @@
-import time
-from typing import TYPE_CHECKING, Tuple
+# Copyright (C) 2024 qBraid
+#
+# This file is part of the qBraid-SDK
+#
+# The qBraid-SDK is free software released under the GNU General Public License v3
+# or later. You can redistribute and/or modify it under the terms of the GPL v3.
+# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#
+# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+
+"""
+Module for calculating unitary of quantum circuit/program
+
+"""
+
+from typing import TYPE_CHECKING
+
 import numpy as np
+
 from qbraid.programs import load_program
 
 if TYPE_CHECKING:
     import qbraid
 
-def match_global_phase(a: np.ndarray, b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+
+def match_global_phase(a: np.ndarray, b: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     """
     Matches the global phase of two numpy arrays.
 
@@ -20,7 +37,7 @@ def match_global_phase(a: np.ndarray, b: np.ndarray) -> Tuple[np.ndarray, np.nda
         b (np.ndarray): The second input matrix.
 
     Returns:
-        Tuple[np.ndarray, np.ndarray]: A Tuple of the two matrices `(a', b')`, adjusted for
+        tuple[np.ndarray, np.ndarray]: A Tuple of the two matrices `(a', b')`, adjusted for
                                        global phase. If shapes of `a` and `b` do not match or
                                        either is empty, returns copies of the original matrices.
     """
@@ -33,6 +50,7 @@ def match_global_phase(a: np.ndarray, b: np.ndarray) -> Tuple[np.ndarray, np.nda
     phase_b = np.exp(-1j * np.angle(b[k]))
 
     return a * phase_a, b * phase_b
+
 
 def assert_allclose_up_to_global_phase(a: np.ndarray, b: np.ndarray, atol: float, **kwargs) -> None:
     """
@@ -51,7 +69,8 @@ def assert_allclose_up_to_global_phase(a: np.ndarray, b: np.ndarray, atol: float
     a, b = match_global_phase(a, b)
     np.testing.assert_allclose(actual=a, desired=b, atol=atol, **kwargs)
 
-def circuits_allclose(
+
+def circuits_allclose(  # pylint: disable=too-many-arguments
     circuit0: "qbraid.programs.QPROGRAM",
     circuit1: "qbraid.programs.QPROGRAM",
     index_contig: bool = False,
@@ -74,6 +93,7 @@ def circuits_allclose(
     Returns:
         True if the input circuits pass unitary equality check
     """
+
     def unitary_equivalence_check(unitary0, unitary1, unitary_rev=None):
         if strict_gphase:
             return np.allclose(unitary0, unitary1) or (
@@ -103,10 +123,3 @@ def circuits_allclose(
     unitary_rev = program1.unitary_rev_qubits()
 
     return unitary_equivalence_check(unitary0, unitary1, unitary_rev)
-
-a = np.array([1,2,3])
-b = np.array([2,4,5])
-
-start = time.perf_counter()
-match_global_phase(a, b)
-print(time.perf_counter() - start)
