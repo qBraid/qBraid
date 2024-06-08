@@ -12,15 +12,16 @@
 Module for calculating unitary of quantum circuit/program
 
 """
-import time
-from typing import TYPE_CHECKING, Tuple
-import numpy as np
+from typing import TYPE_CHECKING
+
 import jax
 import jax.numpy as jnp
+
 from qbraid.programs import load_program
 
 if TYPE_CHECKING:
     import qbraid
+
 
 @jax.jit
 def match_global_phase(a: jnp.ndarray, b: jnp.ndarray) -> tuple[jnp.ndarray, jnp.ndarray]:
@@ -50,6 +51,7 @@ def match_global_phase(a: jnp.ndarray, b: jnp.ndarray) -> tuple[jnp.ndarray, jnp
 
     return a * phase_a, b * phase_b
 
+
 @jax.jit
 def assert_allclose_up_to_global_phase(a: jnp.ndarray, b: jnp.ndarray, atol: float) -> None:
     """
@@ -66,6 +68,7 @@ def assert_allclose_up_to_global_phase(a: jnp.ndarray, b: jnp.ndarray, atol: flo
     """
     a, b = match_global_phase(a, b)
     assert jnp.allclose(a, b, atol=atol), "The matrices aren't nearly equal up to global phase."
+
 
 def circuits_allclose(
     circuit0: "qbraid.programs.QPROGRAM",
@@ -133,6 +136,3 @@ def circuits_allclose(
     unitary_rev = jnp.array(program1.unitary_rev_qubits()) if allow_rev_qubits else None
 
     return unitary_equivalence_check(unitary0, unitary1, unitary_rev)
-
-
-
