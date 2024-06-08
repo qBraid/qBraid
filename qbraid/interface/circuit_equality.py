@@ -12,20 +12,20 @@
 Module for calculating unitary of quantum circuit/program
 
 """
-
-from typing import TYPE_CHECKING
-
+import time
+from typing import TYPE_CHECKING, Tuple
 import numpy as np
-
+import jax
+import jax.numpy as jnp
 from qbraid.programs import load_program
 
 if TYPE_CHECKING:
     import qbraid
 
-
-def match_global_phase(a: np.ndarray, b: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+@jax.jit
+def match_global_phase(a: jnp.ndarray, b: jnp.ndarray) -> tuple[jnp.ndarray, jnp.ndarray]:
     """
-    Matches the global phase of two numpy arrays.
+    Matches the global phase of two JAX numpy arrays.
 
     This function aligns the global phases of two matrices by applying a phase shift based
     on the position of the largest entry in one matrix. It computes and adjusts for the
@@ -33,44 +33,41 @@ def match_global_phase(a: np.ndarray, b: np.ndarray) -> tuple[np.ndarray, np.nda
     (a', b'), indicates that a' == b' is equivalent to a == b * exp(i * t) for some phase t.
 
     Args:
-        a (np.ndarray): The first input matrix.
-        b (np.ndarray): The second input matrix.
+        a (jnp.ndarray): The first input matrix.
+        b (jnp.ndarray): The second input matrix.
 
     Returns:
-        tuple[np.ndarray, np.ndarray]: A Tuple of the two matrices `(a', b')`, adjusted for
-                                       global phase. If shapes of `a` and `b` do not match or
-                                       either is empty, returns copies of the original matrices.
+        tuple[jnp.ndarray, jnp.ndarray]: A tuple of the two matrices `(a', b')`, adjusted for
+                                         global phase. If shapes of `a` and `b` do not match or
+                                         either is empty, returns copies of the original matrices.
     """
     if a.shape != b.shape or a.size == 0:
-        return np.copy(a), np.copy(b)
+        return jnp.copy(a), jnp.copy(b)
 
-    # Find the index of the maximum element in the flattened array
-    k = np.unravel_index(np.argmax(np.abs(b)), b.shape)
-    phase_a = np.exp(-1j * np.angle(a[k]))
-    phase_b = np.exp(-1j * np.angle(b[k]))
+    k = jnp.unravel_index(jnp.argmax(jnp.abs(b)), b.shape)
+    phase_a = jnp.exp(-1j * jnp.angle(a[k]))
+    phase_b = jnp.exp(-1j * jnp.angle(b[k]))
 
     return a * phase_a, b * phase_b
 
-
-def assert_allclose_up_to_global_phase(a: np.ndarray, b: np.ndarray, atol: float, **kwargs) -> None:
+@jax.jit
+def assert_allclose_up_to_global_phase(a: jnp.ndarray, b: jnp.ndarray, atol: float) -> None:
     """
-    Checks if two numpy arrays are equal up to a global phase, within
+    Checks if two JAX numpy arrays are equal up to a global phase, within
     a specified tolerance, i.e. if a ~= b * exp(i t) for some t.
 
     Args:
-        a (np.ndarray): The first input array.
-        b (np.ndarray): The second input array.
+        a (jnp.ndarray): The first input array.
+        b (jnp.ndarray): The second input array.
         atol (float): The absolute error tolerance.
-        **kwargs: Additional keyword arguments to pass to `np.testing.assert_allclose`.
 
     Raises:
         AssertionError: The matrices aren't nearly equal up to global phase.
     """
     a, b = match_global_phase(a, b)
-    np.testing.assert_allclose(actual=a, desired=b, atol=atol, **kwargs)
+    assert jnp.allclose(a, b, atol=atol), "The matrices aren't nearly equal up to global phase."
 
-
-def circuits_allclose(  # pylint: disable=too-many-arguments
+def circuits_allclose(
     circuit0: "qbraid.programs.QPROGRAM",
     circuit1: "qbraid.programs.QPROGRAM",
     index_contig: bool = False,
@@ -78,7 +75,8 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
     strict_gphase: bool = False,
     atol: float = 1e-7,
 ) -> bool:
-    """Check if quantum program unitaries are equivalent.
+    """
+    Check if quantum program unitaries are equivalent using JAX.
 
     Args:
         circuit0 (:data:`~qbraid.programs.QPROGRAM`): First quantum program to compare
@@ -95,16 +93,27 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
     """
 
     def unitary_equivalence_check(unitary0, unitary1, unitary_rev=None):
+        """
+        Checks if two unitary matrices are equivalent up to global phase.
+
+        Args:
+            unitary0 (jnp.ndarray): First unitary matrix.
+            unitary1 (jnp.ndarray): Second unitary matrix.
+            unitary_rev (jnp.ndarray): Reversed qubit ordering unitary matrix (optional).
+
+        Returns:
+            bool: True if the unitaries are equivalent up to global phase.
+        """
         if strict_gphase:
-            return np.allclose(unitary0, unitary1) or (
-                allow_rev_qubits and np.allclose(unitary0, unitary_rev)
+            return jnp.allclose(unitary0, unitary1, atol=atol) or (
+                allow_rev_qubits and jnp.allclose(unitary0, unitary_rev, atol=atol)
             )
         try:
-            assert_allclose_up_to_global_phase(unitary0, unitary1, atol=atol)
+            assert_allclose_up_to_global_phase(unitary0, unitary1, atol)
         except AssertionError:
             if allow_rev_qubits:
                 try:
-                    assert_allclose_up_to_global_phase(unitary0, unitary_rev, atol=atol)
+                    assert_allclose_up_to_global_phase(unitary0, unitary_rev, atol)
                 except AssertionError:
                     return False
             else:
@@ -118,8 +127,12 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
         program0.remove_idle_qubits()
         program1.remove_idle_qubits()
 
-    unitary0 = program0.unitary()
-    unitary1 = program1.unitary()
-    unitary_rev = program1.unitary_rev_qubits()
+    # Convert unitaries to JAX arrays for efficient computation
+    unitary0 = jnp.array(program0.unitary())
+    unitary1 = jnp.array(program1.unitary())
+    unitary_rev = jnp.array(program1.unitary_rev_qubits()) if allow_rev_qubits else None
 
     return unitary_equivalence_check(unitary0, unitary1, unitary_rev)
+
+
+
