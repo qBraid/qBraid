@@ -70,7 +70,7 @@ def assert_allclose_up_to_global_phase(a: jnp.ndarray, b: jnp.ndarray, atol: flo
     assert jnp.allclose(a, b, atol=atol), "The matrices aren't nearly equal up to global phase."
 
 
-def circuits_allclose( # pylint: disable=too-many-arguments
+def circuits_allclose(  # pylint: disable=too-many-arguments
     circuit0: "qbraid.programs.QPROGRAM",
     circuit1: "qbraid.programs.QPROGRAM",
     index_contig: bool = False,
