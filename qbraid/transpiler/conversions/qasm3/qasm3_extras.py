@@ -22,6 +22,7 @@ from qbraid.transpiler.annotations import requires_extras
 qbraid_qir = LazyLoader("qbraid_qir", globals(), "qbraid_qir")
 
 if TYPE_CHECKING:
+    import autoqasm.program
     import pyqir
 
 
@@ -36,3 +37,17 @@ def qasm3_to_pyqir(program: str) -> "pyqir.Module":
         pyqir.Module: module equivalent to input OpenQASM 3 program.
     """
     return qbraid_qir.qasm3.qasm3_to_qir(program)
+
+
+@requires_extras("autoqasm")
+@requires_extras("qbraid_qir")
+def autoqasm_to_pyqir(program: "autoqasm.program.MainProgram") -> "pyqir.Module":
+    """Returns a PyQIR module equivalent to the input AutoQASM program.
+
+    Args:
+        program (autoqasm.program.MainProgram): AutoQASM program to convert to PyQIR module.
+
+    Returns:
+        pyqir.Module: module equivalent to input AutoQASM program.
+    """
+    return qbraid_qir.autoqasm.autoqasm_to_qir(program)

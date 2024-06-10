@@ -49,27 +49,39 @@ def _dynamic_importer(opt_modules: list[str]) -> dict[str, Type[Any]]:
 
 # pylint: disable=undefined-variable,inconsistent-return-statements
 def _get_class(module: str):
-    if module == "cirq":
-        return cirq.Circuit  # type: ignore
-    if module == "qiskit":
-        return qiskit.QuantumCircuit  # type: ignore
+    if module == "autoqasm":
+        return autoqasm.program.MainProgram  # type: ignore
     if module == "braket.circuits":
         return braket.circuits.Circuit  # type: ignore
+    if module == "cirq":
+        return cirq.Circuit  # type: ignore
+    if module == "openqasm3":
+        return openqasm3.ast.Program  # type: ignore
     if module == "pennylane":
         return pennylane.tape.QuantumTape  # type: ignore
+    if module == "pyqir":
+        return pyqir.Module  # type: ignore
     if module == "pyquil":
         return pyquil.Program  # type: ignore
     if module == "pytket":
         return pytket._tket.circuit.Circuit  # type: ignore
-    if module == "openqasm3":
-        return openqasm3.ast.Program  # type: ignore
-    if module == "pyqir":
-        return pyqir.Module  # type: ignore
+    if module == "qiskit":
+        return qiskit.QuantumCircuit  # type: ignore
 
 
 # Supported quantum programs.
 dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
-    ["cirq", "qiskit", "pennylane", "pyquil", "pytket", "braket.circuits", "openqasm3", "pyqir"]
+    [
+        "autoqasm",
+        "braket.circuits",
+        "cirq",
+        "openqasm3",
+        "pennylane",
+        "pyqir",
+        "pyquil",
+        "pytket",
+        "qiskit",
+    ]
 )
 static_type_registry: dict[str, Type[Any]] = {"qasm2": str, "qasm3": str}
 

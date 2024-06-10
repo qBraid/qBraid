@@ -20,7 +20,9 @@ import openqasm3
 from qbraid._import import _load_entrypoint
 from qbraid.exceptions import QbraidError
 
+from ._import import NATIVE_REGISTRY
 from .alias_manager import get_program_type_alias
+from .registry import QPROGRAM_REGISTRY
 
 if TYPE_CHECKING:
     import qbraid.programs
@@ -51,6 +53,10 @@ def load_program(program: "qbraid.programs.QPROGRAM") -> "qbraid.programs.Quantu
         package = get_program_type_alias(program)
     except QbraidError as err:
         raise QbraidError(f"Error loading quantum program of type {type(program)}") from err
+
+    if package == "autoqasm" and NATIVE_REGISTRY["autoqasm"] == QPROGRAM_REGISTRY["autoqasm"]:
+        package = "qasm3"
+        program = program.build().to_ir()
 
     try:
         load_program_class = _load_entrypoint("programs", package)
