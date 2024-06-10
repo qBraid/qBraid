@@ -32,9 +32,6 @@ The framework also facilitates the insertion of additional program validations, 
 
 [<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/qBraid/qBraid.git)
 
----
-
-![Runtime Diagram](https://qbraid-static.s3.amazonaws.com/qbraid-runtime.png)
 
 ## Key Features
 
