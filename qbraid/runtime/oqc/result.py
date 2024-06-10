@@ -16,13 +16,13 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from qbraid.runtime.result import QuantumJobResult
+from qbraid.runtime.result import GateModelJobResult
 
 if TYPE_CHECKING:
     import qcaas_client.client
 
 
-class OQCJobResult(QuantumJobResult):
+class OQCJobResult(GateModelJobResult):
     """OQC result class."""
 
     def __init__(self, job_id: str, qpu_id: str, client: "qcaas_client.client.OQCClient"):

@@ -15,7 +15,7 @@ Module defining all :mod:`~qbraid.runtime` enumerated types.
 from enum import Enum
 
 
-class DeviceType(str, Enum):
+class DeviceType(Enum):
     """
     Enumeration for different types of quantum computing devices.
 
@@ -30,7 +30,20 @@ class DeviceType(str, Enum):
     LOCAL_SIMULATOR = "LOCAL_SIMULATOR"
 
 
-class DeviceStatus(str, Enum):
+class DeviceActionType(Enum):
+    """
+    Enumeration for different quantum device action types
+
+    Attributes:
+        OPENQASM (str): Actions compatible with OpenQASM.
+        AHS (str): Actions using analog Hamiltonian simulation.
+    """
+
+    OPENQASM = "OpenQASM"
+    AHS = "Analog Hamiltonian Simulation"
+
+
+class DeviceStatus(Enum):
     """Enumeration for representing various operational statuses of devices.
 
     Attributes:
@@ -46,7 +59,7 @@ class DeviceStatus(str, Enum):
     RETIRED = "retired"
 
 
-class JobStatus(str, Enum):
+class JobStatus(Enum):
     """Class for the status of processes (i.e. jobs / quantum tasks) resulting from any
     :meth:`~qbraid.runtime.QuantumDevice.run` method.
 

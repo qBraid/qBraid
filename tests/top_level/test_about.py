@@ -40,7 +40,7 @@ def test_about():
     assert "rustworkx:" in output
     assert "numpy:" in output
     assert "openqasm3:" in output
-    assert "ply:" in output
+    assert "qbraid_core:" in output
 
     # Verify the presence of optional dependencies section
     assert "Optional Dependencies" in output

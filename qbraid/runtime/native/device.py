@@ -45,9 +45,10 @@ class QbraidDevice(QuantumDevice):
         self,
         profile: "qbraid.runtime.TargetProfile",
         client: "Optional[qbraid_core.services.quantum.QuantumClient]" = None,
+        **kwargs,
     ):
         """Create a new QbraidDevice object."""
-        super().__init__(profile=profile)
+        super().__init__(profile=profile, **kwargs)
         self._client = client or QuantumClient()
 
     @property

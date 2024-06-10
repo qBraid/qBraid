@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining abstract QuantumJobResult Class
+Module defining abstract GateModelJobResult Class
 
 """
 from abc import ABC, abstractmethod
@@ -18,16 +18,20 @@ from typing import Any, Optional
 import numpy as np
 
 
-class QuantumJobResult(ABC):
-    """Abstract interface for result-like classes.
+class QuantumJobResult:
+    """Result of a quantum job.
 
     Args:
-        _result: A result-like object
+        result (optional, Any): Result data
 
     """
 
     def __init__(self, result: Optional[Any] = None):
         self._result = result
+
+
+class GateModelJobResult(ABC, QuantumJobResult):
+    """Abstract interface for gate model quantum job results."""
 
     @abstractmethod
     def measurements(self) -> np.ndarray:
@@ -49,9 +53,9 @@ class QuantumJobResult(ABC):
 
             >>> counts
             {'1 1': 13, '0 0': 46, '1 0': 79}
-            >>> QuantumJobResult.format_counts(counts)
+            >>> GateModelJobResult.format_counts(counts)
             {'00': 46, '10': 79, '11': 13}
-            >>> QuantumJobResult.format_counts(counts, include_zero_values=True)
+            >>> GateModelJobResult.format_counts(counts, include_zero_values=True)
             {'00': 46, '01': 0, '10': 79, '11': 13}
 
         """
