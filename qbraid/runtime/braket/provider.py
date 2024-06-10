@@ -154,13 +154,8 @@ class BraketProvider(QuantumProvider):
         statuses = ["ONLINE", "OFFLINE"] if statuses is None else statuses
         aws_devices = AwsDevice.get_devices(aws_session=aws_session, statuses=statuses, **kwargs)
         return [
-            BraketDevice(
-                profile=self._build_runtime_profile(device),
-                session=device.aws_session,
-            )
+            BraketDevice(profile=self._build_runtime_profile(device), session=device.aws_session)
             for device in aws_devices
-            if device._provider_name
-            in ["Rigetti", "IonQ", "Oxford", "Amazon Braket", "IQM", "QuEra"]
         ]
 
     def get_device(self, device_id: str) -> "qbraid.runtime.braket.BraketDevice":

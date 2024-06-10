@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING, Optional
 
 import rustworkx as rx
 from qbraid_core._import import LazyLoader
+from rustworkx.visualization import mpl_draw
 
 from qbraid.programs.registry import is_registered_alias_native
 
@@ -94,7 +95,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     ]
 
     pos = rx.spring_layout(graph, seed=seed)  # good seeds: 123, 134
-    rx.visualization.mpl_draw(
+    mpl_draw(
         graph,
         pos,
         node_color=ncolors,
