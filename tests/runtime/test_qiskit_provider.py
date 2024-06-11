@@ -8,6 +8,8 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# pylint: disable=redefined-outer-name
+
 """
 Unit tests for QiskitProvider class
 
@@ -17,6 +19,7 @@ import time
 import warnings
 from unittest.mock import Mock, patch
 
+import numpy as np
 import pytest
 from qiskit import QuantumCircuit
 from qiskit.providers import Backend, Job
@@ -27,7 +30,7 @@ from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
 from qbraid.runtime import DeviceActionType, DeviceType, JobStateError, TargetProfile
-from qbraid.runtime.qiskit import QiskitBackend, QiskitJob, QiskitRuntimeProvider
+from qbraid.runtime.qiskit import QiskitBackend, QiskitJob, QiskitResult, QiskitRuntimeProvider
 
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
@@ -229,3 +232,46 @@ def test_cancel_completed_batch_error(device, run_inputs):
 
     with pytest.raises(JobStateError):
         job.cancel()
+
+
+@pytest.fixture
+def mock_qiskit_result():
+    """Return a mock Qiskit result."""
+    mock_result = Mock()
+    mock_result.results = [Mock(), Mock()]
+    mock_result.get_memory.side_effect = [["000", "111", "000"], ["010", "010", "111"]]
+    mock_result.get_counts.side_effect = [{"000": 2, "111": 1}]
+    return mock_result
+
+
+def test_format_measurements():
+    """Test formatting measurements into integers."""
+    qr = QiskitResult()
+    memory_list = ["010", "111"]
+    expected = [[0, 1, 0], [1, 1, 1]]
+    assert qr._format_measurements(memory_list) == expected, "The format_measurements method failed"
+
+
+def test_measurements_single_circuit(mock_qiskit_result):
+    """Test getting measurements from a single circuit."""
+    qr = QiskitResult()
+    qr._result = mock_qiskit_result
+    mock_qiskit_result.results = [Mock()]
+    expected = np.array([[0, 0, 0], [1, 1, 1], [0, 0, 0]])
+    assert np.array_equal(qr.measurements(), expected)
+
+
+def test_measurements_multiple_circuits(mock_qiskit_result):
+    """Test getting measurements from multiple circuits."""
+    qr = QiskitResult()
+    qr._result = mock_qiskit_result
+    expected = np.array([[[0, 0, 0], [1, 1, 1], [0, 0, 0]], [[0, 1, 0], [0, 1, 0], [1, 1, 1]]])
+    assert np.array_equal(qr.measurements(), expected)
+
+
+def test_raw_counts(mock_qiskit_result):
+    """Test getting raw counts from a Qiskit result."""
+    qr = QiskitResult()
+    qr._result = mock_qiskit_result
+    expected = {"000": 2, "111": 1}
+    assert qr.raw_counts() == expected

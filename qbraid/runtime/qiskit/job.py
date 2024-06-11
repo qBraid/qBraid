@@ -64,6 +64,10 @@ class QiskitJob(QuantumJob):
         self._cache_metadata["status"] = status
         return status
 
+    def queue_position(self) -> Optional[int]:
+        """Returns the position of the job in the server queue."""
+        return self._job.queue_position(refresh=True)
+
     def result(self):
         """Return the results of the job."""
         if self.is_terminal_state():
