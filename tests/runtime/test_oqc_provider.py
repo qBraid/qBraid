@@ -96,7 +96,7 @@ def oqc_device(lucy_simulator_data):
         def get_task_metadata(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
             """Get task metadata."""
             return {
-                "config": '{"$type": "<class \'scc.compiler.config.CompilerConfig\'>", "$data": {"repeats": null, "repetition_period": null, "results_format": {"$type": "<class \'scc.compiler.config.QuantumResultsFormat\'>", "$data": {"format": null, "transforms": {"$type": "<enum \'scc.compiler.config.ResultsFormatting\'>", "$value": 2}}}, "metrics": {"$type": "<enum \'scc.compiler.config.MetricsType\'>", "$value": 6}, "active_calibrations": [], "optimizations": null, "error_mitigation": null}}', # pylint: disable=line-too-long
+                "config": '{"$type": "<class \'scc.compiler.config.CompilerConfig\'>", "$data": {"repeats": null, "repetition_period": null, "results_format": {"$type": "<class \'scc.compiler.config.QuantumResultsFormat\'>", "$data": {"format": null, "transforms": {"$type": "<enum \'scc.compiler.config.ResultsFormatting\'>", "$value": 2}}}, "metrics": {"$type": "<enum \'scc.compiler.config.MetricsType\'>", "$value": 6}, "active_calibrations": [], "optimizations": null, "error_mitigation": null}}',  # pylint: disable=line-too-long
                 "created_at": "Wed, 12 Jun 2024 20:11:15 GMT",
                 "id": "e35fb436-ff08-44c8-8acc-7d5a1f1a0ada",
                 "qpu_id": "qpu:uk:2:d865b5a184",
