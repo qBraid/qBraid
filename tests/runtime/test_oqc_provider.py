@@ -24,7 +24,7 @@ try:
 
     from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
     from qbraid.runtime import DeviceType, TargetProfile
-    from qbraid.runtime.enums import DeviceStatus, JobStatus
+    from qbraid.runtime.enums import DeviceActionType, DeviceStatus, JobStatus
     from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCJobResult, OQCProvider
     from qbraid.transpiler import ConversionScheme
 
@@ -43,27 +43,31 @@ DEVICE_ID = "qpu:uk:2:d865b5a184"
 
 
 @pytest.fixture
-def oqc_device():
+def lucy_simulator_data():
+    """Return data for Lucy Simulator."""
+    return {
+        "active": True,
+        "generation": 2,
+        "id": "qpu:uk:2:d865b5a184",
+        "name": "Lucy Simulator",
+        "region": "uk",
+        "url": "https://uk.cloud.oqc.app/d865b5a184",
+    }
+
+
+@pytest.fixture
+def oqc_device(lucy_simulator_data):
     """Return a fake OQC device."""
 
     class TestOQCClient:
         """Test class for OQC client."""
 
-        def __init__(self, api_key):
-            self.api_key = api_key
+        def __init__(self, token):
+            self.token = token
 
         def get_qpus(self):
             """Get QPUs."""
-            return [
-                {
-                    "active": True,
-                    "generation": 2,
-                    "id": "qpu:uk:2:d865b5a184",
-                    "name": "Lucy Simulator",
-                    "region": "uk",
-                    "url": "https://uk.cloud.oqc.app/d865b5a184",
-                }
-            ]
+            return [lucy_simulator_data]
 
         def schedule_tasks(self, task: QPUTask, qpu_id: str):  # pylint: disable=unused-argument
             """Schedule tasks for the QPU."""
@@ -115,10 +119,13 @@ def oqc_device():
 
         # pylint: disable-next=super-init-not-called
         def __init__(self, device_id, oqc_client=None):
-            self._client = oqc_client or TestOQCClient("fake_api_key")
+            self._client = oqc_client or TestOQCClient("fake_token")
             self._profile = TargetProfile(
                 device_id=device_id,
+                device_name="Lucy Simulator",
                 device_type=DeviceType.SIMULATOR,
+                action_type=DeviceActionType.OPENQASM,
+                endpoint_url="https://uk.cloud.oqc.app/d865b5a184",
                 num_qubits=8,
                 program_spec=ProgramSpec(str, alias="qasm2"),
             )
@@ -128,27 +135,30 @@ def oqc_device():
     return TestOQCDevice(DEVICE_ID)
 
 
-def test_oqc_provider_device():
+def test_oqc_provider_device(lucy_simulator_data):
     """Test OQC provider and device."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
-        mock_client.return_value.get_qpus.return_value = [{"id": DEVICE_ID, "num_qubits": 8}]
-        provider = OQCProvider(api_key="fake_api_key")
+        mock_client.return_value.get_qpus.return_value = [lucy_simulator_data]
+        provider = OQCProvider(token="fake_token")
         assert isinstance(provider, OQCProvider)
         assert isinstance(provider.client, OQCClient)
         assert provider.client == mock_client.return_value
         test_device = provider.get_device(DEVICE_ID)
+        devices = provider.get_devices()
+        assert isinstance(devices, list)
+        assert any(device.id == test_device.id for device in devices)
         assert isinstance(test_device.status(), DeviceStatus)
         assert isinstance(test_device, OQCDevice)
         assert test_device.profile["device_id"] == DEVICE_ID
 
 
-def test_build_runtime_profile():
+def test_build_runtime_profile(lucy_simulator_data):
     """Test building a runtime profile for OQC device."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
-        provider = OQCProvider(api_key="fake_api_key")
-        profile = provider._build_profile({"id": DEVICE_ID, "num_qubits": 8})
+        provider = OQCProvider(token="fake_token")
+        profile = provider._build_profile(lucy_simulator_data)
         assert isinstance(profile, TargetProfile)
         assert profile._data["device_id"] == DEVICE_ID
         assert profile._data["device_type"] == DeviceType.SIMULATOR.name

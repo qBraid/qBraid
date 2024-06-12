@@ -8,6 +8,8 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# pylint: disable=redefined-outer-name
+
 """
 Unit tests for QiskitProvider class
 
@@ -15,8 +17,9 @@ Unit tests for QiskitProvider class
 import random
 import time
 import warnings
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
+import numpy as np
 import pytest
 from qiskit import QuantumCircuit
 from qiskit.providers import Backend, Job
@@ -27,7 +30,8 @@ from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
 from qbraid.runtime import DeviceActionType, DeviceType, JobStateError, TargetProfile
-from qbraid.runtime.qiskit import QiskitBackend, QiskitJob, QiskitRuntimeProvider
+from qbraid.runtime.exceptions import QbraidRuntimeError
+from qbraid.runtime.qiskit import QiskitBackend, QiskitJob, QiskitResult, QiskitRuntimeProvider
 
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
@@ -229,3 +233,68 @@ def test_cancel_completed_batch_error(device, run_inputs):
 
     with pytest.raises(JobStateError):
         job.cancel()
+
+
+@patch("qbraid.runtime.qiskit.job.QiskitJob._get_job")
+def test_init_without_provided_job(mock_get_job):
+    """Test initializing a QiskitJob without providing a job."""
+    job_id = "12345"
+    mock_job = MagicMock()
+    mock_get_job.return_value = mock_job
+    job = QiskitJob(job_id)
+    mock_get_job.assert_called_once()
+    assert job._job == mock_job
+
+
+def test_get_job_error_handling():
+    """Test error handling when getting a job."""
+    with pytest.raises(QbraidRuntimeError) as exc_info:
+        _ = QiskitJob("12345")
+    assert "Error retrieving job" in str(exc_info.value)
+
+
+@pytest.fixture
+def mock_qiskit_result():
+    """Return a mock Qiskit result."""
+    mock_result = Mock()
+    mock_result.results = [Mock(), Mock()]
+    meas1 = ["01"] * 9 + ["10"] + ["11"] * 4 + ["00"] * 6
+    meas2 = ["0"] * 8 + ["1"] * 12
+    mock_result.get_memory.side_effect = [meas1, meas2]
+    mock_result.get_counts.side_effect = [{"01": 9, "10": 1, "11": 4, "00": 6}, {"0": 8, "1": 12}]
+    return mock_result
+
+
+def test_format_measurements():
+    """Test formatting measurements into integers."""
+    qr = QiskitResult()
+    memory_list = ["010", "111"]
+    expected = [[0, 1, 0], [1, 1, 1]]
+    assert qr._format_measurements(memory_list) == expected
+
+
+def test_measurements_single_circuit(mock_qiskit_result):
+    """Test getting measurements from a single circuit."""
+    qr = QiskitResult()
+    qr._result = mock_qiskit_result
+    mock_qiskit_result.results = [Mock()]
+    expected = np.array([[0, 1]] * 9 + [[1, 0]] + [[1, 1]] * 4 + [[0, 0]] * 6)
+    assert np.array_equal(qr.measurements(), expected)
+
+
+def test_measurements_multiple_circuits(mock_qiskit_result):
+    """Test getting measurements from multiple circuits."""
+    qr = QiskitResult()
+    qr._result = mock_qiskit_result
+    expected_meas1 = np.array([[0, 1]] * 9 + [[1, 0]] + [[1, 1]] * 4 + [[0, 0]] * 6)
+    expected_meas2 = np.array([[0, 0]] * 8 + [[0, 1]] * 12)
+    expected = np.array([expected_meas1, expected_meas2])
+    assert np.array_equal(qr.measurements(), expected)
+
+
+def test_raw_counts(mock_qiskit_result):
+    """Test getting raw counts from a Qiskit result."""
+    qr = QiskitResult()
+    qr._result = mock_qiskit_result
+    expected = {"01": 9, "10": 1, "11": 4, "00": 6}
+    assert qr.raw_counts() == expected

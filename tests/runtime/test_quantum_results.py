@@ -16,7 +16,7 @@ import os
 
 import pytest
 
-from qbraid.runtime import GateModelJobResult
+from qbraid.runtime.result import GateModelJobResult, normalize_measurement_counts
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
@@ -53,3 +53,38 @@ def test_format_counts(counts_raw, expected_out, include_zero_values):
     )
     assert counts_out == expected_out  # check equivalance
     assert list(counts_out.items()) == list(expected_out.items())  # check ordering of keys
+
+
+def test_normalize_different_key_lengths():
+    """Test normalization of measurement counts with different key lengths."""
+    measurements = [{"0": 10, "1": 15}, {"00": 5, "01": 8, "10": 12}]
+    expected = [{"00": 10, "01": 15}, {"00": 5, "01": 8, "10": 12}]
+    assert normalize_measurement_counts(measurements) == expected
+
+
+def test_normalize_same_key_lengths():
+    """Test normalization of measurement counts with the same key lengths."""
+    measurements = [{"00": 7, "01": 9}, {"10": 4, "11": 3}]
+    expected = [{"00": 7, "01": 9}, {"10": 4, "11": 3}]
+    assert normalize_measurement_counts(measurements) == expected
+
+
+def test_empty_input():
+    """Test normalization of empty input."""
+    measurements = []
+    expected = []
+    assert normalize_measurement_counts(measurements) == expected
+
+
+def test_empty_dicts():
+    """Test normalization of empty dicts."""
+    measurements = [{}, {}, {"00": 1, "11": 2}]
+    expected = [{}, {}, {"00": 1, "11": 2}]
+    assert normalize_measurement_counts(measurements) == expected
+
+
+def test_normalize_single_dict():
+    """Test normalization of a single dict."""
+    measurements = [{"0": 2, "1": 3, "10": 4, "11": 1}]
+    expected = [{"00": 2, "01": 3, "10": 4, "11": 1}]
+    assert normalize_measurement_counts(measurements) == expected
