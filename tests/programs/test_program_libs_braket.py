@@ -112,7 +112,7 @@ def test_kronecker_product_factor_permutation():
     assert np.allclose(unitary, unitary_rev)
 
 
-def test_remove_idle_qubits_braket_bell():
+def test_unitary_little_endian_braket_bell():
     """Test convert_to_contigious on bell circuit"""
     circuit = Circuit().h(0).cnot(0, 1)  # pylint: disable=no-member
     h_gate = np.sqrt(1 / 2) * np.array([[1, 1], [1, -1]])

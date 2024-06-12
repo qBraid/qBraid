@@ -85,7 +85,7 @@ class QbraidJob(QuantumJob):
 
         self.client.cancel_job(self.id)
 
-    def result(self) -> "qbraid.runtime.QuantumJobResult":
+    def result(self) -> "qbraid.runtime.GateModelJobResult":
         """Return the results of the job."""
         self.wait_for_final_state()
         job_data = self.client.get_job(self.id)

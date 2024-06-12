@@ -135,3 +135,19 @@ def test_remove_conversion():
     assert not graph.has_edge(source, target)
     assert num_edges_start - num_edges_end == 1
     assert num_conversions_start - num_conversions_end == 1
+
+
+def test_copy_conversion_graph():
+    """Test copying a ConversionGraph."""
+    graph = ConversionGraph()
+    graph.add_conversion(Conversion("a", "z", lambda x: x))
+
+    conversions_init = graph.conversions()
+    require_native_init = graph.require_native
+    node_alias_id_map_init = graph._node_alias_id_map
+
+    copy = graph.copy()
+
+    assert conversions_init == copy.conversions()
+    assert require_native_init == copy.require_native
+    assert node_alias_id_map_init == copy._node_alias_id_map

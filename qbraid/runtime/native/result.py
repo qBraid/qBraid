@@ -17,7 +17,7 @@ from typing import Any
 
 import numpy as np
 
-from qbraid.runtime.result import QuantumJobResult
+from qbraid.runtime.result import GateModelJobResult
 
 
 @dataclass
@@ -43,7 +43,7 @@ class ExperimentResult:
         )
 
 
-class QbraidJobResult(QuantumJobResult):
+class QbraidJobResult(GateModelJobResult):
     """Class to represent the results of a quantum circuit simulation."""
 
     def __init__(self, device_id: str, job_id: str, success: bool, result: ExperimentResult):

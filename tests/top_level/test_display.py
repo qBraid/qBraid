@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for qbraid top-level functionality
+Unit tests for ipython and other display functions.
 
 """
 import sys

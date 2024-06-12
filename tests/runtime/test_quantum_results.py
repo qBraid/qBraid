@@ -16,7 +16,7 @@ import os
 
 import pytest
 
-from qbraid.runtime import QuantumJobResult
+from qbraid.runtime import GateModelJobResult
 
 # Skip tests if IBM/AWS account auth/creds not configured
 skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
@@ -48,6 +48,8 @@ REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM/AWS sto
 )
 def test_format_counts(counts_raw, expected_out, include_zero_values):
     """Test formatting of raw measurement counts."""
-    counts_out = QuantumJobResult.format_counts(counts_raw, include_zero_values=include_zero_values)
+    counts_out = GateModelJobResult.format_counts(
+        counts_raw, include_zero_values=include_zero_values
+    )
     assert counts_out == expected_out  # check equivalance
     assert list(counts_out.items()) == list(expected_out.items())  # check ordering of keys

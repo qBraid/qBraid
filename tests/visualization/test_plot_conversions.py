@@ -29,7 +29,7 @@ def mock_graph():
     mock.edge_list.return_value = []
     mock.get_node_data.return_value = "node_data"
     mock.get_edge_data.return_value = {"native": True}
-    mock._node_str_to_id = {"node1": 1, "node2": 2}
+    mock._node_alias_id_map = {"node1": 1, "node2": 2}
     return mock
 
 

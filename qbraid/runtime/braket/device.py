@@ -14,8 +14,9 @@ Module defining BraketDeviceWrapper Class
 """
 from typing import TYPE_CHECKING, Optional, Union
 
-import braket.circuits
+from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 from braket.aws import AwsDevice
+from braket.circuits import Circuit
 
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
@@ -88,13 +89,17 @@ class BraketDevice(QuantumDevice):
             total_queued += int(num_queued)
         return total_queued
 
-    def transform(self, run_input: "braket.circuits.Circuit") -> "braket.circuits.Circuit":
+    def transform(
+        self, run_input: Union[Circuit, AnalogHamiltonianSimulation]
+    ) -> Union[Circuit, AnalogHamiltonianSimulation]:
         """Transpile a circuit for the device."""
         return transform(run_input, device=self)
 
     def submit(
         self,
-        run_input: Union[braket.circuits.Circuit, list[braket.circuits.Circuit]],
+        run_input: Union[
+            Circuit, AnalogHamiltonianSimulation, list[Circuit], list[AnalogHamiltonianSimulation]
+        ],
         *args,
         **kwargs,
     ) -> Union[BraketQuantumTask, list[BraketQuantumTask]]:
@@ -115,7 +120,7 @@ class BraketDevice(QuantumDevice):
         run_input = [run_input] if is_single_input else run_input
         aws_quantum_task_batch = self._device.run_batch(run_input, *args, **kwargs)
         tasks = [
-            BraketQuantumTask(task.metadata()["quantumTaskArn"], task=task, device=self._device)
+            BraketQuantumTask(task.id, task=task, device=self._device)
             for task in aws_quantum_task_batch.tasks
         ]
         if is_single_input:
