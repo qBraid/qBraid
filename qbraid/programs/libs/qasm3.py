@@ -18,9 +18,9 @@ from typing import Optional
 
 import numpy as np
 from openqasm3.ast import (
-    QuantumBarrier,
     BitType,
     ClassicalDeclaration,
+    QuantumBarrier,
     QuantumGate,
     QubitDeclaration,
 )
