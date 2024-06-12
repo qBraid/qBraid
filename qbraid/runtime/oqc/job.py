@@ -130,9 +130,12 @@ class OQCJob(QuantumJob):
             ]
             provider_metadata["metrics"] = METRICS[config["$data"]["metrics"]["$value"]]
             provider_metadata["active_calibrations"] = config["$data"]["active_calibrations"]
-            provider_metadata["optimizations"] = OPTIMIZATIONS[
-                config["$data"]["optimizations"]["$data"]["tket_optimizations"]["$value"]
-            ]
+            try:
+                provider_metadata["optimizations"] = OPTIMIZATIONS[
+                    config["$data"]["optimizations"]["$data"]["tket_optimizations"]["$value"]
+                ]
+            except TypeError:
+                provider_metadata["optimizations"] = None
             provider_metadata["error_mitigation"] = config["$data"]["error_mitigation"]
 
             del provider_metadata["config"]
