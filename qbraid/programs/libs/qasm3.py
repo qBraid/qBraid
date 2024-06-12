@@ -99,9 +99,18 @@ class OpenQasm3Program(QbraidProgram):
             if isinstance(statement, (QubitDeclaration, ClassicalDeclaration)):
                 continue
             if isinstance(statement, QuantumGate):
-                for qubit in statement.qubits:
+                if len(statement.qubits) == 1:
+                    qubit = statement.qubits[0]
                     counts[qubit.indices[0][0].value] += 1
-                    max_depth = max(max_depth, max(counts))
+                    array_max = max(counts)
+                    max_depth = max(max_depth, array_max)
+                else:
+                    indices = [qubit.indices[0][0].value for qubit in statement.qubits]
+                    relevant_counts = [counts[idx] for idx in indices]
+                    curr_max_depth = max(relevant_counts)
+                    for idx in indices:
+                        counts[idx] = curr_max_depth + 1
+                    max_depth = max(max_depth, curr_max_depth + 1)
             elif isinstance(statement, QuantumBarrier):
                 counts = [max_depth] * n
 
