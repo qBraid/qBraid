@@ -17,7 +17,13 @@ import re
 from typing import Optional
 
 import numpy as np
-from openqasm3.ast import QuantumBarrier, BitType, ClassicalDeclaration, QuantumGate, QubitDeclaration
+from openqasm3.ast import (
+    QuantumBarrier,
+    BitType,
+    ClassicalDeclaration,
+    QuantumGate,
+    QubitDeclaration,
+)
 from openqasm3.parser import parse
 
 from qbraid.programs.exceptions import ProgramTypeError
@@ -91,7 +97,7 @@ class OpenQasm3Program(QbraidProgram):
 
         for statement in program.statements:
             if isinstance(statement, (QubitDeclaration, ClassicalDeclaration)):
-                continue 
+                continue
             if isinstance(statement, QuantumGate):
                 for qubit in statement.qubits:
                     counts[qubit.indices[0][0].value] += 1
