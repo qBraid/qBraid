@@ -12,31 +12,20 @@
 Module for OQC result class.
 
 """
-from typing import TYPE_CHECKING
-
 import numpy as np
 
 from qbraid.runtime.result import GateModelJobResult
-
-if TYPE_CHECKING:
-    import qcaas_client.client
 
 
 class OQCJobResult(GateModelJobResult):
     """OQC result class."""
 
-    def __init__(self, job_id: str, qpu_id: str, client: "qcaas_client.client.OQCClient"):
-        super().__init__()
-        self.id = job_id
-        self._qpu_id = qpu_id
-        self._client = client
-
     def raw_counts(self, **kwargs) -> dict[str, int]:
-        return self._client.get_task_results(
-            task_id=self.id, qpu_id=self._qpu_id, **kwargs
-        ).result.get("c")
+        """Get the raw measurement counts of the task."""
+        return self._result.get("counts", {})
 
     def measurements(self) -> np.ndarray:
+        """Get the measurements of the task."""
         counts = self.raw_counts()
         res = []
         for state in counts:
