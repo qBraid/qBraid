@@ -22,6 +22,8 @@ from openqasm3.ast import (
     ClassicalDeclaration,
     QuantumBarrier,
     QuantumGate,
+    QuantumMeasurement,
+    QuantumMeasurementStatement,
     QubitDeclaration,
 )
 from openqasm3.parser import parse
@@ -94,6 +96,7 @@ class OpenQasm3Program(QbraidProgram):
         max_depth = 0
         n = self._num_qubits
         counts = [0] * n
+        new_measurement_moment = True
 
         for statement in program.statements:
             if isinstance(statement, (QubitDeclaration, ClassicalDeclaration)):
@@ -113,6 +116,14 @@ class OpenQasm3Program(QbraidProgram):
                     max_depth = max(max_depth, curr_max_depth + 1)
             elif isinstance(statement, QuantumBarrier):
                 counts = [max_depth] * n
+                new_measurement_moment = True
+            elif isinstance(statement, QuantumMeasurement):
+                for i in range(n):
+                    counts[i] += 1
+            elif isinstance(statement, QuantumMeasurementStatement) and new_measurement_moment:
+                for i in range(n):
+                    counts[i] += 1
+                new_measurement_moment = False
 
         return max(counts)
 
