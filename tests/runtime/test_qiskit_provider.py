@@ -239,8 +239,10 @@ def mock_qiskit_result():
     """Return a mock Qiskit result."""
     mock_result = Mock()
     mock_result.results = [Mock(), Mock()]
-    mock_result.get_memory.side_effect = [["000", "111", "000"], ["010", "010", "111"]]
-    mock_result.get_counts.side_effect = [{"000": 2, "111": 1}]
+    meas1 = ["01"] * 9 + ["10"] + ["11"] * 4 + ["00"] * 6
+    meas2 = ["0"] * 8 + ["1"] * 12
+    mock_result.get_memory.side_effect = [meas1, meas2]
+    mock_result.get_counts.side_effect = [{"01": 9, "10": 1, "11": 4, "00": 6}, {"0": 8, "1": 12}]
     return mock_result
 
 
@@ -249,7 +251,7 @@ def test_format_measurements():
     qr = QiskitResult()
     memory_list = ["010", "111"]
     expected = [[0, 1, 0], [1, 1, 1]]
-    assert qr._format_measurements(memory_list) == expected, "The format_measurements method failed"
+    assert qr._format_measurements(memory_list) == expected
 
 
 def test_measurements_single_circuit(mock_qiskit_result):
@@ -257,7 +259,7 @@ def test_measurements_single_circuit(mock_qiskit_result):
     qr = QiskitResult()
     qr._result = mock_qiskit_result
     mock_qiskit_result.results = [Mock()]
-    expected = np.array([[0, 0, 0], [1, 1, 1], [0, 0, 0]])
+    expected = np.array([[0, 1]] * 9 + [[1, 0]] + [[1, 1]] * 4 + [[0, 0]] * 6)
     assert np.array_equal(qr.measurements(), expected)
 
 
@@ -265,7 +267,9 @@ def test_measurements_multiple_circuits(mock_qiskit_result):
     """Test getting measurements from multiple circuits."""
     qr = QiskitResult()
     qr._result = mock_qiskit_result
-    expected = np.array([[[0, 0, 0], [1, 1, 1], [0, 0, 0]], [[0, 1, 0], [0, 1, 0], [1, 1, 1]]])
+    expected_meas1 = np.array([[0, 1]] * 9 + [[1, 0]] + [[1, 1]] * 4 + [[0, 0]] * 6)
+    expected_meas2 = np.array([[0, 0]] * 8 + [[0, 1]] * 12)
+    expected = np.array([expected_meas1, expected_meas2])
     assert np.array_equal(qr.measurements(), expected)
 
 
@@ -273,5 +277,5 @@ def test_raw_counts(mock_qiskit_result):
     """Test getting raw counts from a Qiskit result."""
     qr = QiskitResult()
     qr._result = mock_qiskit_result
-    expected = {"000": 2, "111": 1}
+    expected = {"01": 9, "10": 1, "11": 4, "00": 6}
     assert qr.raw_counts() == expected
