@@ -17,7 +17,7 @@ Unit tests for QiskitProvider class
 import random
 import time
 import warnings
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 import pytest
@@ -30,6 +30,7 @@ from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
 from qbraid.runtime import DeviceActionType, DeviceType, JobStateError, TargetProfile
+from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.qiskit import QiskitBackend, QiskitJob, QiskitResult, QiskitRuntimeProvider
 
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
@@ -232,6 +233,24 @@ def test_cancel_completed_batch_error(device, run_inputs):
 
     with pytest.raises(JobStateError):
         job.cancel()
+
+
+@patch("qbraid.runtime.qiskit.job.QiskitJob._get_job")
+def test_init_without_provided_job(mock_get_job):
+    """Test initializing a QiskitJob without providing a job."""
+    job_id = "12345"
+    mock_job = MagicMock()
+    mock_get_job.return_value = mock_job
+    job = QiskitJob(job_id)
+    mock_get_job.assert_called_once()
+    assert job._job == mock_job
+
+
+def test_get_job_error_handling():
+    """Test error handling when getting a job."""
+    with pytest.raises(QbraidRuntimeError) as exc_info:
+        _ = QiskitJob("12345")
+    assert "Error retrieving job" in str(exc_info.value)
 
 
 @pytest.fixture
