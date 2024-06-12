@@ -145,6 +145,9 @@ def test_oqc_provider_device(lucy_simulator_data):
         assert isinstance(provider.client, OQCClient)
         assert provider.client == mock_client.return_value
         test_device = provider.get_device(DEVICE_ID)
+        devices = provider.get_devices()
+        assert isinstance(devices, list)
+        assert any(device.id == test_device.id for device in devices)
         assert isinstance(test_device.status(), DeviceStatus)
         assert isinstance(test_device, OQCDevice)
         assert test_device.profile["device_id"] == DEVICE_ID

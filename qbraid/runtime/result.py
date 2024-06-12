@@ -28,6 +28,9 @@ def normalize_measurement_counts(measurements: list[dict[str, int]]) -> list[dic
     Returns:
         list[dict[str, int]]: A new list of dictionaries with normalized key lengths.
     """
+    if len(measurements) == 0:
+        return measurements
+
     max_bit_length = max(len(key) for counts in measurements for key in counts.keys())
 
     normalized_counts_list = []
