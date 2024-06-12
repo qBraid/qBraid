@@ -12,7 +12,6 @@
 Unit tests for QASM formatting functions
 
 """
-import pytest
 
 from qbraid.transforms.qasm3.format import remove_unused_gates
 
