@@ -388,3 +388,53 @@ measure q1 -> c1;
     program = OpenQasm3Program(qasm_input)
     program.replace_reset_with_ops()
     assert program.program == expected_output
+
+
+def test_qasm3_depth_sparse_operations():
+    """Test calculating depth of qasm3 circuit with sparse operations"""
+    qasm = """
+OPENQASM 3.0;
+bit[2] b;
+qubit[2] q;
+s q[0];
+iswap q[0], q[1];
+z q[1];
+    """
+    qprogram = OpenQasm3Program(qasm)
+    assert qprogram.depth == 3
+
+
+def test_qasm3_depth_measurement_direct():
+    """Test calculating depth of qasm3 circuit with direct measurements"""
+    qasm = """
+OPENQASM 3.0;
+bit[2] b;
+qubit[2] q;
+s q[0];
+iswap q[0], q[1];
+z q[1];
+b[0] = measure q[0];
+b[1] = measure q[1];
+    """
+    qprogram = OpenQasm3Program(qasm)
+    assert qprogram.depth == 4
+
+
+def test_qasm3_depth_measurement_indirect():
+    """Test calculating depth of qasm3 circuit with indirect measurements"""
+    qasm = """
+OPENQASM 3.0;
+include "stdgates.inc";
+bit[3] c;
+qubit[3] q;
+cry(4.2051581759108885) q[1], q[2];
+x q[0];
+cu(3.477667891331647, 4.2539794092334375, 3.436930389872277, 5.115111057204699) q[1], q[2];
+h q[0];
+rx(5.917500589065494) q[1];
+c[0] = measure q[0];
+c[1] = measure q[1];
+c[2] = measure q[2];
+    """
+    qprogram = OpenQasm3Program(qasm)
+    assert qprogram.depth == 4
