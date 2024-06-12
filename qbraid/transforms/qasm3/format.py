@@ -56,10 +56,9 @@ def remove_unused_gates(qasm: str) -> str:
         if re.search(r"^\s*gate\s+(\w+)", line) is not None:
             gate_name = re.search(r"^\s*gate\s+(\w+)", line).group(1)
             all_gates[gate_name] = -1
-        if any(gate in line for gate in all_gates):
-            for gate in all_gates:
-                if gate in line:
-                    all_gates[gate] += 1
+        for gate in all_gates:
+            if re.search(r"\b" + re.escape(gate) + r"\b", line):
+                all_gates[gate] += 1
 
     unused_gates = [
         gate

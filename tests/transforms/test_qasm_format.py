@@ -12,7 +12,6 @@
 Unit tests for QASM formatting functions
 
 """
-import pytest
 
 from qbraid.transforms.qasm3.format import remove_unused_gates
 
@@ -167,7 +166,6 @@ used_gate(pi/2) q[0];
     assert remove_unused_gates(input_qasm).strip() == expected_qasm.strip()
 
 
-@pytest.mark.skip(reason="Not passing")
 def test_remove_unused_gate_delared_before_qubits():
     """Test removing unused gate before qubit declaration."""
     input_qasm = """
