@@ -18,6 +18,32 @@ from typing import Any, Optional
 import numpy as np
 
 
+def normalize_measurement_counts(measurements: list[dict[str, int]]) -> list[dict[str, int]]:
+    """
+    Normalizes measurement count dictionaries to have the same bit length across all keys.
+
+    Args:
+        measurements (list[dict[str, int]]): A list of dicts with binary keys and integer values.
+
+    Returns:
+        list[dict[str, int]]: A new list of dictionaries with normalized key lengths.
+    """
+    if len(measurements) == 0:
+        return measurements
+
+    max_bit_length = max(len(key) for counts in measurements for key in counts.keys())
+
+    normalized_counts_list = []
+    for counts in measurements:
+        normalized_counts = {}
+        for key, true_value in counts.items():
+            normalized_key = key.zfill(max_bit_length)
+            normalized_counts[normalized_key] = true_value
+        normalized_counts_list.append(normalized_counts)
+
+    return normalized_counts_list
+
+
 class QuantumJobResult:
     """Result of a quantum job.
 
@@ -75,7 +101,10 @@ class GateModelJobResult(ABC, QuantumJobResult):
         raw_counts = self.raw_counts(**kwargs)
         if isinstance(raw_counts, dict):
             return self.format_counts(raw_counts, include_zero_values=include_zero_values)
-        return [
+
+        batch_counts = [
             self.format_counts(counts, include_zero_values=include_zero_values)
             for counts in raw_counts
         ]
+
+        return normalize_measurement_counts(batch_counts)

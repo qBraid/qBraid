@@ -7,6 +7,7 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+
 """
 Device class for OQC devices.
 
@@ -80,18 +81,21 @@ class OQCDevice(QuantumDevice):
         return self._client
 
     def status(self) -> DeviceStatus:
+        """Returns the status of the device."""
         devices = self._client.get_qpus()
         for device in devices:
-            if device["id"] == self.profile.get("id"):
+            if device["id"] == self.id:
                 if device["active"]:
                     return DeviceStatus.ONLINE
                 return DeviceStatus.OFFLINE
         return DeviceStatus.UNAVAILABLE
 
     def transform(self, run_input: str) -> str:
+        """Transforms the input program before submitting it to the device."""
         return rename_qasm_registers(run_input)
 
     def submit(self, run_input, *args, **kwargs) -> Union[OQCJob, list[OQCJob]]:
+        """Submit one or more jobs to the device."""
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
         tasks = []
