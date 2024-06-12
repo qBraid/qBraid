@@ -398,6 +398,7 @@ bit[2] b;
 qubit[2] q;
 s q[0];
 iswap q[0], q[1];
+barrier;
 z q[1];
     """
     qprogram = OpenQasm3Program(qasm)
