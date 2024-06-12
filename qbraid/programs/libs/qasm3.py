@@ -17,7 +17,7 @@ import re
 from typing import Optional
 
 import numpy as np
-from openqasm3.ast import BitType, ClassicalDeclaration, QubitDeclaration
+from openqasm3.ast import QuantumBarrier, BitType, ClassicalDeclaration, QuantumGate, QubitDeclaration
 from openqasm3.parser import parse
 
 from qbraid.programs.exceptions import ProgramTypeError
@@ -84,7 +84,22 @@ class OpenQasm3Program(QbraidProgram):
     @property
     def depth(self) -> int:
         """Return the circuit depth (i.e., length of critical path)."""
-        raise NotImplementedError
+        program = parse(self._program)
+        max_depth = 0
+        n = self._num_qubits
+        counts = [0] * n
+
+        for statement in program.statements:
+            if isinstance(statement, (QubitDeclaration, ClassicalDeclaration)):
+                continue 
+            if isinstance(statement, QuantumGate):
+                for qubit in statement.qubits:
+                    counts[qubit.indices[0][0].value] += 1
+                    max_depth = max(max_depth, max(counts))
+            elif isinstance(statement, QuantumBarrier):
+                counts = [max_depth] * n
+
+        return max(counts)
 
     def _unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
