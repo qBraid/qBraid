@@ -26,3 +26,18 @@ class CompilationError(TransformError):
 
 class DecompositionError(TransformError):
     """For errors raised during circuit decomposition processes."""
+
+
+class DeviceProgramTypeMismatchError(TypeError, TransformError):
+    """
+    Exception raised when the program type does not match the device action type.
+
+    """
+
+    def __init__(self, program, expected_type, action_type):
+        message = (
+            f"Incompatible program type: '{type(program).__name__}'. "
+            f"Device action type '{action_type}' "
+            f"requires a program of type '{expected_type}'."
+        )
+        super().__init__(message)

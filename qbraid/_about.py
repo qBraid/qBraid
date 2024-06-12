@@ -22,7 +22,7 @@ def about() -> None:
 
     from numpy import __version__ as numpy_version
     from openqasm3 import __version__ as openqasm3_version
-    from ply import __version__ as ply_version
+    from qbraid_core import __version__ as qbraid_core_version
     from rustworkx import __version__ as rustworkx_version  # pylint: disable=no-name-in-module
 
     from ._version import __version__ as qbraid_version
@@ -32,12 +32,11 @@ def about() -> None:
         "rustworkx": rustworkx_version,
         "openqasm3": openqasm3_version,
         "numpy": numpy_version,
-        "ply": ply_version,
+        "qbraid_core": qbraid_core_version,
     }
 
     # Optional dependencies
     optional_packages = {
-        "qbraid_core": "qbraid_core",
         "qbraid_qir": "qbraid_qir",
         "braket": "braket._sdk",
         "cirq": "cirq",

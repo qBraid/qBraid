@@ -24,9 +24,19 @@ Exceptions
    DecompositionError
 
 """
-from .exceptions import CompilationError, DecompositionError, TransformError
+from .exceptions import (
+    CompilationError,
+    DecompositionError,
+    DeviceProgramTypeMismatchError,
+    TransformError,
+)
 
-__all__ = ["TransformError", "CompilationError", "DecompositionError"]
+__all__ = [
+    "TransformError",
+    "CompilationError",
+    "DecompositionError",
+    "DeviceProgramTypeMismatchError",
+]
 
 _lazy_mods = ["braket", "cirq", "pytket", "qasm2", "qasm3", "qiskit"]
 

@@ -15,6 +15,7 @@ Module defining QiskitJob Class
 import logging
 from typing import TYPE_CHECKING, Optional
 
+from qiskit_ibm_runtime import QiskitRuntimeService
 from qiskit_ibm_runtime.exceptions import RuntimeInvalidStateError
 
 from qbraid.runtime.enums import JobStatus
@@ -52,7 +53,10 @@ class QiskitJob(QuantumJob):
     def _get_job(self):
         """Return the job like object that is being wrapped."""
         try:
-            service = self.device._service
+            if self._device and getattr(self._device, "_service", None) is not None:
+                service = self._device._service
+            else:
+                service = QiskitRuntimeService()
             return service.job(self.id)
         except Exception as err:  # pylint: disable=broad-exception-caught
             raise QbraidRuntimeError(f"Error retrieving job {self.id}") from err
@@ -63,6 +67,10 @@ class QiskitJob(QuantumJob):
         status = IBM_JOB_STATUS_MAP.get(job_status, JobStatus.UNKNOWN)
         self._cache_metadata["status"] = status
         return status
+
+    def queue_position(self) -> Optional[int]:
+        """Returns the position of the job in the server queue."""
+        return self._job.queue_position(refresh=True)
 
     def result(self):
         """Return the results of the job."""

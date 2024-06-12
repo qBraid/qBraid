@@ -12,6 +12,7 @@ to submit a draft pull request if you're still working through some items on the
 ### General
 
 - [ ] I have read `CONTRIBUTING.md`.
-- [ ] All new code includes corresponding unit tests and satisfies codecov.
+- [ ] All new code includes corresponding unit tests and satisfies code coverage.
 - [ ] API Reference docstrings and/or User Guide have been updated to account for new features.
 - [ ] All integration tests, including remote tests, are passing.
+- [ ] (Optional) My name and affiliation are added to `CITATION.cff`.

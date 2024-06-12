@@ -1,5 +1,4 @@
 rustworkx>=0.14.2
 numpy>=1.17,<1.27
 openqasm3[parser]
-ply>=3.6
 qbraid-core>=0.1.13

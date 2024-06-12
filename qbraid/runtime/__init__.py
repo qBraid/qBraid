@@ -22,6 +22,7 @@ Data Types
 .. autosummary::
    :toctree: ../stubs/
 
+    DeviceActionType
 	DeviceType
 	DeviceStatus
 	JobStatus
@@ -45,7 +46,8 @@ Classes
 	QuantumDevice
 	QuantumJob
 	QuantumProvider
-	QuantumJobResult
+    QuantumJobResult
+	GateModelJobResult
 
 Exceptions
 ------------
@@ -64,7 +66,7 @@ from qbraid_core import Session
 from . import native
 from ._display import display_jobs_from_data
 from .device import QuantumDevice
-from .enums import DeviceStatus, DeviceType, JobStatus
+from .enums import DeviceActionType, DeviceStatus, DeviceType, JobStatus
 from .exceptions import (
     JobStateError,
     ProgramValidationError,
@@ -75,11 +77,12 @@ from .job import QuantumJob
 from .native import *
 from .profile import TargetProfile
 from .provider import QuantumProvider
-from .result import QuantumJobResult
+from .result import GateModelJobResult, QuantumJobResult
 
 __all__ = [
     "Session",
     "QuantumDevice",
+    "DeviceActionType",
     "DeviceStatus",
     "DeviceType",
     "JobStatus",
@@ -91,6 +94,7 @@ __all__ = [
     "TargetProfile",
     "QuantumJob",
     "QuantumProvider",
+    "GateModelJobResult",
     "QuantumJobResult",
 ]
 
