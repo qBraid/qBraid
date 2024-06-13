@@ -167,6 +167,7 @@ class BraketProvider(QuantumProvider):
                 f"Device ARN is not a valid format: {device_id}. For valid Braket ARNs, "
                 "see 'https://docs.aws.amazon.com/braket/latest/developerguide/braket-devices.html'"
             ) from err
+        region_name = region_name or self._get_default_region()
         aws_session = self._get_aws_session(region_name=region_name)
         device = AwsDevice(arn=device_id, aws_session=aws_session)
         profile = self._build_runtime_profile(device)

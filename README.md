@@ -22,6 +22,9 @@
   <a href="https://discord.gg/TPBU2sa8Et">
     <img src="https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white" alt="Discord"/>
   </a>
+  <a href="https://quantumcomputing.stackexchange.com/questions/tagged/qbraid">
+    <img src="https://img.shields.io/badge/StackExchange-Ask%20questions-blue?logo=stackexchange" alt="Stack Overflow"/>
+  </a>
 </p>
 
 The qBraid-SDK is a platform-agnostic quantum runtime framework designed for both quantum software and hardware providers.
