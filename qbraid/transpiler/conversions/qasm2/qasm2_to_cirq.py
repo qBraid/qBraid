@@ -18,6 +18,7 @@ from qbraid_core._import import LazyLoader
 
 from qbraid.programs.exceptions import QasmError
 from qbraid.transforms.qasm2 import flatten_qasm_program
+from qbraid.transpiler.annotations import weight
 
 cirq_qasm_import = LazyLoader("cirq_contrib", globals(), "cirq.contrib.qasm_import")
 cirq_qasm_parser = LazyLoader(
@@ -28,6 +29,7 @@ if TYPE_CHECKING:
     import cirq
 
 
+@weight(1)
 def qasm2_to_cirq(qasm: str) -> "cirq.Circuit":
     """Returns a Cirq circuit equivalent to the input QASM string.
 

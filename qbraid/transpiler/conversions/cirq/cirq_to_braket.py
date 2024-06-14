@@ -44,6 +44,7 @@ except ImportError:
     cirq_ionq_ops = None
 
 import qbraid.programs.libs.cirq
+from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 try:
@@ -55,6 +56,7 @@ if TYPE_CHECKING:
     import braket.circuits
 
 
+@weight(0.85)
 def cirq_to_braket(circuit: Circuit) -> "braket.circuits.Circuit":
     """Returns a Braket circuit equivalent to the input Cirq circuit.
 

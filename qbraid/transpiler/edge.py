@@ -14,7 +14,7 @@ Module for defining custom conversions
 """
 import importlib
 import inspect
-from typing import TYPE_CHECKING, Any, Callable, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 from qbraid.programs import QPROGRAM_REGISTRY, get_program_type_alias
 
@@ -27,7 +27,9 @@ class Conversion:
     Class for defining and handling custom conversions between different quantum program packages.
     """
 
-    def __init__(self, source: str, target: str, conversion_func: Callable):
+    def __init__(
+        self, source: str, target: str, conversion_func: Callable, weight: Optional[float] = None
+    ):
         """
         Initialize a Conversion instance with source and target packages and a conversion function.
 
@@ -42,6 +44,7 @@ class Conversion:
         self._extras = getattr(conversion_func, "requires_extras", [])
         self._native = self._is_module_native(conversion_func)
         self._supported = self._is_conversion_supported()
+        self._weight = weight or getattr(conversion_func, "weight", 1)
 
     @property
     def source(self) -> str:
@@ -82,6 +85,16 @@ class Conversion:
             bool: Whether the conversion function supported in the current runtime environment.
         """
         return self._supported
+
+    @property
+    def weight(self) -> int:
+        """
+        The weight of the conversion function used to prioritize conversion paths.
+
+        Returns:
+            int: The weight of the conversion function.
+        """
+        return self._weight
 
     def _is_module_native(self, func: Callable) -> bool:
         """
@@ -170,4 +183,5 @@ class Conversion:
             and self._native == other._native
             and self._supported == other._supported
             and self._extras == other._extras
+            and self._weight == other._weight
         )

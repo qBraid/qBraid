@@ -18,6 +18,7 @@ from qbraid_core._import import LazyLoader
 
 from qbraid.programs import QasmError
 from qbraid.transforms.qasm3.compat import transform_notation_to_external
+from qbraid.transpiler.annotations import weight
 
 braket_circuits = LazyLoader("braket_circuits", globals(), "braket.circuits")
 braket_openqasm = LazyLoader("braket_openqasm", globals(), "braket.ir.openqasm")
@@ -26,6 +27,7 @@ if TYPE_CHECKING:
     import braket.circuits
 
 
+@weight(1)
 def qasm3_to_braket(qasm3_str: str) -> "braket.circuits.Circuit":
     """Converts an OpenQASM 3.0 string to a ``braket.circuits.Circuit``.
 

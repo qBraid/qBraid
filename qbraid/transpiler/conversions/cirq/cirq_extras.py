@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
 
-from qbraid.transpiler.annotations import requires_extras
+from qbraid.transpiler.annotations import requires_extras, weight
 
 stimcirq = LazyLoader("stimcirq", globals(), "stimcirq")
 qbraid_qir = LazyLoader("qbraid_qir", globals(), "qbraid_qir")
@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 
 
 @requires_extras("stimcirq")
+@weight(1)
 def cirq_to_stim(circuit: "cirq.Circuit") -> "stim.Circuit":
     """Returns an stim circuit equivalent to the input cirq circuit.
 
@@ -42,6 +43,7 @@ def cirq_to_stim(circuit: "cirq.Circuit") -> "stim.Circuit":
 
 
 @requires_extras("qbraid_qir")
+@weight(1)
 def cirq_to_pyqir(circuit: "cirq.Circuit") -> "pyqir.Module":
     """Returns a PyQIR module equivalent to the input cirq circuit.
 

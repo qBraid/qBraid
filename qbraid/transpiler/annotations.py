@@ -37,3 +37,23 @@ def requires_extras(dependency: str) -> Callable[[Callable], Callable]:
         return func
 
     return decorator
+
+
+def weight(weight: float) -> Callable[[Callable], Callable]:
+    """
+    Decorator factory to mark conversion functions with a weight attribute.
+    The weight attribute is used to prioritize conversion paths in the conversion graph.
+
+
+    Args:
+        weight (float): The weight of the conversion function.
+
+    Returns:
+        Callable: A decorator that marks a function with the specified weight.
+    """
+
+    def decorator(func: Callable) -> Callable:
+        func.weight = weight
+        return func
+
+    return decorator

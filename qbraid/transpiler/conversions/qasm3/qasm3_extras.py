@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
 
-from qbraid.transpiler.annotations import requires_extras
+from qbraid.transpiler.annotations import requires_extras, weight
 
 qbraid_qir = LazyLoader("qbraid_qir", globals(), "qbraid_qir")
 
@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 
 
 @requires_extras("qbraid_qir")
+@weight(1)
 def qasm3_to_pyqir(program: str) -> "pyqir.Module":
     """Returns a PyQIR module equivalent to the input OpenQASM 3 program.
 

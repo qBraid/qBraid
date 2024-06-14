@@ -16,12 +16,15 @@ from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
 
+from qbraid.transpiler.annotations import weight
+
 qiskit = LazyLoader("qiskit", globals(), "qiskit")
 
 if TYPE_CHECKING:
     import qiskit as qiskit_
 
 
+@weight(1)
 def qasm2_to_qiskit(qasm: str) -> "qiskit_.QuantumCircuit":
     """Returns a Qiskit circuit equivalent to the input OpenQASM 2 string.
 

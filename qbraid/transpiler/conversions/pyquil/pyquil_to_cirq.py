@@ -15,6 +15,7 @@ representation (Quil programs) to Cirq's circuit representation.
 """
 from typing import TYPE_CHECKING
 
+from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 from .cirq_quil_input import circuit_from_quil
@@ -24,6 +25,7 @@ if TYPE_CHECKING:
     import pyquil.quil
 
 
+@weight(1)
 def pyquil_to_cirq(program: "pyquil.quil.Program") -> "cirq.circuits.Circuit":
     """Returns a Cirq circuit equivalent to the input pyQuil Program.
 

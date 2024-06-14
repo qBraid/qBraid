@@ -19,6 +19,7 @@ from cirq import ops
 
 from qbraid._version import __version__ as qbraid_version
 from qbraid.transforms.cirq import map_zpow_and_unroll
+from qbraid.transpiler.annotations import weight
 
 
 def _to_qasm_output(
@@ -48,6 +49,7 @@ def _to_qasm_output(
     )
 
 
+@weight(1)
 def cirq_to_qasm2(
     circuit: cirq.Circuit,
     header: Optional[str] = None,

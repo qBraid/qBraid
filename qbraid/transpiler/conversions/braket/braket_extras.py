@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
 
-from qbraid.transpiler.annotations import requires_extras
+from qbraid.transpiler.annotations import requires_extras, weight
 
 qiskit_braket_provider = LazyLoader("qiskit_braket_provider", globals(), "qiskit_braket_provider")
 pytket_braket = LazyLoader("pytket_braket", globals(), "pytket.extensions.braket")
@@ -29,6 +29,7 @@ if TYPE_CHECKING:
 
 
 @requires_extras("qiskit_braket_provider")
+@weight(1)
 def braket_to_qiskit(circuit: "braket.circuits.Circuit") -> "qiskit.circuit.QuantumCircuit":
     """Return a Qiskit quantum circuit from a Braket quantum circuit.
 
@@ -42,6 +43,7 @@ def braket_to_qiskit(circuit: "braket.circuits.Circuit") -> "qiskit.circuit.Quan
 
 
 @requires_extras("pytket.extensions.braket")
+@weight(1)
 def braket_to_pytket(circuit: "braket.circuits.Circuit") -> "pytket.circuit.Circuit":
     """Returns a pytket circuit equivalent to the input Amazon Braket circuit.
 

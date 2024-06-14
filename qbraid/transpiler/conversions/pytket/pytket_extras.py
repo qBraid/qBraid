@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
 
-from qbraid.transpiler.annotations import requires_extras
+from qbraid.transpiler.annotations import requires_extras, weight
 
 pytket_braket = LazyLoader("pytket_braket", globals(), "pytket.extensions.braket")
 
@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
 
 @requires_extras("pytket.extensions.braket")
+@weight(1)
 def pytket_to_braket(circuit: "pytket.circuit.Circuit") -> "braket.circuits.Circuit":
     """Returns an Amazon Braket circuit equivalent to the input pytket circuit.
 
