@@ -235,3 +235,7 @@ class CirqCircuit(QbraidProgram):
             if filtered_operations:
                 new_circuit.append(cirq.Moment(filtered_operations))
         return new_circuit
+
+    def transform(self, device) -> None:
+        """Transform program to according to device target profile."""
+        raise NotImplementedError

@@ -8,6 +8,8 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# pylint: disable=redefined-outer-name
+
 """
 Tests of functions that create and operate on directed graph
 used to dictate transpiler conversions.
@@ -25,6 +27,21 @@ from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.graph import ConversionGraph
 
 qiskit_braket_provider = LazyLoader("qiskit_braket_provider", globals(), "qiskit_braket_provider")
+
+
+@pytest.fixture
+def mock_conversions() -> list[Conversion]:
+    """List of mock shortest paths for testing."""
+    conv1 = Conversion("a", "b", lambda x: x)
+    conv2 = Conversion("b", "c", lambda x: x)
+    conv3 = Conversion("a", "c", lambda x: x)
+    return [conv1, conv2, conv3]
+
+
+@pytest.fixture
+def mock_graph(mock_conversions) -> ConversionGraph:
+    """Graph made up of mock paths for testing."""
+    return ConversionGraph(conversions=mock_conversions)
 
 
 def bound_method_str(source, target):
@@ -151,3 +168,32 @@ def test_copy_conversion_graph():
     assert conversions_init == copy.conversions()
     assert require_native_init == copy.require_native
     assert node_alias_id_map_init == copy._node_alias_id_map
+
+
+def test_get_path_from_bound_method():
+    """Test formatted conversion path logging helper function."""
+    source, target = "cirq", "qasm2"
+    edge = Conversion(source, target, lambda x: x)
+    graph = ConversionGraph([edge])
+    edge_data = graph.get_edge_data(
+        graph._node_alias_id_map[source], graph._node_alias_id_map[target]
+    )
+    bound_method = edge_data["func"]
+    bound_method_list = [bound_method]
+    path = ConversionGraph._get_path_from_bound_methods(bound_method_list)
+    assert path == "cirq -> qasm2"
+
+
+def test_shortest_path(mock_graph):
+    """Test the string representation of the shortest path."""
+    path = mock_graph.shortest_path("a", "c")
+    assert path == "a -> c"
+
+
+def test_all_paths(mock_graph):
+    """Test the string representation of the shortest path."""
+    paths = mock_graph.all_paths("a", "c")
+    assert isinstance(paths, list)
+    assert len(paths) == 2
+    assert "a -> b -> c" in paths
+    assert "a -> c" in paths

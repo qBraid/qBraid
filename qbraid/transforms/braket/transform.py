@@ -16,14 +16,11 @@ from typing import TYPE_CHECKING, Union
 
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 from braket.circuits import Circuit
-from qbraid_core._import import LazyLoader
 
-from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY
+from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY, load_program
 from qbraid.programs.libs.braket import BraketCircuit
 from qbraid.transforms.exceptions import DeviceProgramTypeMismatchError
 from qbraid.transpiler import transpile
-
-pytket_ionq = LazyLoader("pytket_ionq", globals(), "qbraid.transforms.pytket.ionq")
 
 if TYPE_CHECKING:
     from qbraid.runtime.braket import BraketDevice
@@ -59,7 +56,9 @@ def transform(
                 and device._target_spec.alias == "braket"
             ):
                 tk_circuit = transpile(program, "pytket", max_path_depth=1, conversion_graph=graph)
-                tk_transformed = pytket_ionq.harmony_transform(tk_circuit)
+                tk_program = load_program(tk_circuit)
+                tk_program.transform(device)
+                tk_transformed = tk_program.program
                 braket_transformed = transpile(
                     tk_transformed, "braket", max_path_depth=1, conversion_graph=graph
                 )

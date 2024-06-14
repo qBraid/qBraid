@@ -27,6 +27,8 @@ from qbraid.programs.program import QbraidProgram
 if TYPE_CHECKING:
     import numpy as np
 
+    from qbraid.runtime.qiskit import QiskitBackend
+
 
 class QiskitCircuit(QbraidProgram):
     """Wrapper class for ``qiskit.QuantumCircuit`` objects"""
@@ -86,3 +88,11 @@ class QiskitCircuit(QbraidProgram):
         circuit = self.program.copy()
         reversed_circuit = circuit.reverse_bits()
         self._program = reversed_circuit
+
+    def transform(self, device) -> None:
+        """Transform program to according to device target profile."""
+        device_type = device.profile.get("device_type")
+        if device_type == "LOCAL_SIMULATOR":
+            self.remove_idle_qubits()
+
+        self._program = qiskit.transpile(self.program, backend=device._backend)

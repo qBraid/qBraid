@@ -24,7 +24,8 @@ from .registry import QPROGRAM_REGISTRY
 from .spec import ProgramSpec
 
 if TYPE_CHECKING:
-    import qbraid
+    import qbraid.programs
+    import qbraid.runtime
 
 logger = logging.getLogger(__name__)
 
@@ -182,3 +183,7 @@ class QbraidProgram(QuantumProgram, ABC):
     @abstractmethod
     def reverse_qubit_order(self) -> None:
         """Rerverse qubit ordering of circuit."""
+
+    @abstractmethod
+    def transform(self, device: "qbraid.runtime.QuantumDevice") -> None:
+        """Transform program to according to device target profile."""

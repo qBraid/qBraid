@@ -121,3 +121,7 @@ class BraketCircuit(QbraidProgram):
             )
             contig_circuit.add_instruction(contig_instr)
         self._program = contig_circuit
+
+    def transform(self, device) -> None:
+        """Transform program to according to device target profile."""
+        raise NotImplementedError

@@ -51,11 +51,12 @@ Exceptions
    PackageValueError
    ProgramTypeError
    QasmError
+   TransformError
 
 """
 from ._import import NATIVE_REGISTRY
 from .alias_manager import get_program_type_alias, parse_qasm_type_alias
-from .exceptions import PackageValueError, ProgramTypeError, QasmError
+from .exceptions import PackageValueError, ProgramTypeError, QasmError, TransformError
 from .loader import load_program
 from .program import QbraidProgram, QuantumProgram
 from .registry import (
@@ -73,6 +74,7 @@ __all__ = [
     "PackageValueError",
     "ProgramSpec",
     "ProgramTypeError",
+    "TransformError",
     "QPROGRAM",
     "QPROGRAM_ALIASES",
     "QPROGRAM_REGISTRY",

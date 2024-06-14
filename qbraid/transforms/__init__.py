@@ -20,25 +20,18 @@ Exceptions
    :toctree: ../stubs/
    
    TransformError
-   CompilationError
    DecompositionError
 
 """
-from .exceptions import (
-    CompilationError,
-    DecompositionError,
-    DeviceProgramTypeMismatchError,
-    TransformError,
-)
+from .exceptions import DecompositionError, DeviceProgramTypeMismatchError, TransformError
 
 __all__ = [
     "TransformError",
-    "CompilationError",
     "DecompositionError",
     "DeviceProgramTypeMismatchError",
 ]
 
-_lazy_mods = ["braket", "cirq", "pytket", "qasm2", "qasm3", "qiskit"]
+_lazy_mods = ["braket", "cirq", "qasm2", "qasm3"]
 
 
 def __getattr__(name):

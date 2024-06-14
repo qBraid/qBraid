@@ -15,7 +15,7 @@ Module for transpiling quantum programs between different quantum programming la
 import logging
 import warnings
 from copy import deepcopy
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Optional
 
 from qbraid.programs import QPROGRAM_ALIASES, ProgramTypeError, get_program_type_alias
 
@@ -39,43 +39,6 @@ def _warn_if_unsupported(program_type, program_direction):
 
 def _format_exception(err: Exception) -> str:
     return f"{type(err).__name__}: {str(err)}\n"
-
-
-def _get_path_from_bound_methods(bound_methods: list[Callable]) -> str:
-    """
-    Constructs a path string from a list of bound methods of Conversion instances.
-
-    This function takes a list of bound methods (specifically 'convert' methods bound to
-    Conversion instances) and constructs a path string representing the sequence of
-    conversions. Each conversion is defined by the 'source' and 'target' properties of the
-    Conversion instance to which each method is bound.
-
-    Args:
-        bound_methods: A list of bound methods from Conversion instances.
-
-    Returns:
-        A string representing the path of conversions, formatted as
-        'source1 -> source2 -> ... -> targetN'.
-
-    Raises:
-        AttributeError: If the bound methods do not have the expected 'source'
-                        and 'target' attributes.
-        IndexError: If the list of bound methods is empty.
-    """
-    if not bound_methods:
-        raise IndexError("The list of bound methods is empty.")
-
-    path = []
-    for method in bound_methods:
-        instance = method.__self__  # Get the instance to which the method is bound
-        if not hasattr(instance, "source") or not hasattr(instance, "target"):
-            raise AttributeError("Bound method instance lacks 'source' or 'target' attributes.")
-        path.append(instance.source)  # Add the source node of the instance
-
-    # Add the target of the last method's instance to complete the path
-    path.append(bound_methods[-1].__self__.target)
-
-    return " -> ".join(path)
 
 
 def transpile(
@@ -144,7 +107,7 @@ def transpile(
     error_messages = []
 
     for path in paths:
-        path_details = _get_path_from_bound_methods(path)
+        path_details = ConversionGraph._get_path_from_bound_methods(path)
         temp_program = deepcopy(program)
         try:
             for convert_func in path:

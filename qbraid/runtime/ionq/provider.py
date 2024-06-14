@@ -74,6 +74,7 @@ class IonQProvider(QuantumProvider):
             device_type=DeviceType.QPU,
             num_qubits=data.get("qubits"),
             program_spec=ProgramSpec(openqasm3.ast.Program),
+            provider_name="IonQ",
         )
 
     def get_device(self, device_id: str) -> dict[str, Any]:
