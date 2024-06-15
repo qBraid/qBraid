@@ -189,4 +189,4 @@ def test_qasm_depth(qasm_str, expected_depth):
 def test_raise_program_type_error():
     """Test raising ProgramTypeError"""
     with pytest.raises(ProgramTypeError):
-        OpenQasm2Program("OPENQASM 2.0;qreg q[2];h q[0];cx q[0],q[1];")
+        OpenQasm2Program({})

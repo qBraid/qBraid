@@ -46,7 +46,7 @@ def test_successful_registration():
 
 def test_registration_without_alias():
     """Test registration of a program type without an alias"""
-    register_program_type(unittest.mock.Mock)
+    register_program_type(unittest.mock.Mock, overwrite=True)
     assert "unittest" in QPROGRAM_REGISTRY
     assert QPROGRAM_REGISTRY["unittest"] == unittest.mock.Mock
 

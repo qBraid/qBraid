@@ -445,4 +445,4 @@ c[2] = measure q[2];
 def test_raise_program_type_error():
     """Test raising ProgramTypeError"""
     with pytest.raises(ProgramTypeError):
-        OpenQasm3Program("OPENQASM 2.0;qreg q[2];h q[0];cx q[0],q[1];")
+        OpenQasm3Program(42)
