@@ -12,12 +12,15 @@
 Unit tests for qbraid.programs.qasm3.OpenQasm3Program
 
 """
+from unittest.mock import Mock
+
 import numpy as np
 import pytest
 from qiskit.qasm3 import dumps, loads
 
 from qbraid.interface.random.qasm3_random import _qasm3_random
 from qbraid.interface.random.qiskit_random import _qiskit_random
+from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.libs.qasm3 import OpenQasm3Program
 from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import _get_qasm3_gate_defs
 
@@ -439,3 +442,9 @@ c[2] = measure q[2];
     """
     qprogram = OpenQasm3Program(qasm)
     assert qprogram.depth == 4
+
+
+def test_raise_program_type_error():
+    """Test raising ProgramTypeError"""
+    with pytest.raises(ProgramTypeError):
+        OpenQasm3Program(Mock())

@@ -17,19 +17,7 @@ from typing import Optional, Union
 
 import numpy as np
 from pytket.circuit import Circuit, Command, OpType
-from pytket.unit_id import Qubit
-
-try:
-    # pytket >= 1.22
-    from pytket.circuit_library import TK1_to_RzRx  # type: ignore
-except (ModuleNotFoundError, ImportError):  # prama: no cover
-    try:
-        # pytket >1.18,<1.22
-        from pytket.circuit_library import _TK1_to_RzRx as TK1_to_RzRx  # type: ignore
-    except (ModuleNotFoundError, ImportError):
-        # pytket <= 1.18
-        from pytket._tket.circuit._library import _TK1_to_RzRx as TK1_to_RzRx  # type: ignore
-
+from pytket.circuit_library import TK1_to_RzRx
 from pytket.passes import DecomposeBoxes, RebaseCustom, SafetyMode
 from pytket.predicates import (
     CompilationUnit,
@@ -40,6 +28,7 @@ from pytket.predicates import (
     NoMidMeasurePredicate,
     NoSymbolsPredicate,
 )
+from pytket.unit_id import Qubit
 
 from qbraid.programs.exceptions import ProgramTypeError, TransformError
 from qbraid.programs.program import QbraidProgram
