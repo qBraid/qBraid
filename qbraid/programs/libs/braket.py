@@ -121,3 +121,9 @@ class BraketCircuit(QbraidProgram):
             )
             contig_circuit.add_instruction(contig_instr)
         self._program = contig_circuit
+
+    def transform(self, device) -> None:
+        """Transform program to according to device target profile."""
+        device_type = device.profile.get("device_type")
+        if device_type == "SIMULATOR":
+            self.remove_idle_qubits()

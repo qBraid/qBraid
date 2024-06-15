@@ -22,6 +22,9 @@
   <a href="https://discord.gg/TPBU2sa8Et">
     <img src="https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white" alt="Discord"/>
   </a>
+  <!-- <a href="https://quantumcomputing.stackexchange.com/questions/tagged/qbraid">
+    <img src="https://img.shields.io/badge/StackExchange-Ask%20questions-blue?logo=stackexchange" alt="Stack Overflow"/>
+  </a> -->
 </p>
 
 The qBraid-SDK is a platform-agnostic quantum runtime framework designed for both quantum software and hardware providers.
@@ -45,7 +48,7 @@ dynamically register new program types and conversions on the fly. This enables 
 |-------------------------|---------------------------------------------------------------------------------------------------|
 | `qbraid.programs`       | Extracts and manages metadata from supported quantum program types, with the flexibility to introduce new types. |
 | `qbraid.transpiler`     | Bridges different quantum programming IRs through native and customizable circuit conversions.    |
-| `qbraid.transforms`     | Ensures quantum programs conform to hardware specifications through essential runtime transformations. |
+| `qbraid.passes`     | Ensures quantum programs conform to hardware specifications through essential runtime transformations. |
 | `qbraid.runtime`        | Defines essential abstractions for providers, devices, jobs, and results, integrated through a coherent runtime profile. |
 | `qbraid.visualization`  | Provides tools for visualizing quantum circuits and experimental data, enhancing data interpretation. |
 

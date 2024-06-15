@@ -13,11 +13,13 @@ Unit tests for qbraid.programs.braket.BraketCircuit
 
 """
 from itertools import chain, combinations
+from unittest.mock import Mock
 
 import numpy as np
 import pytest
 from braket.circuits import Circuit, Instruction, gates
 
+from qbraid.programs import ProgramTypeError
 from qbraid.programs.libs.braket import BraketCircuit
 
 
@@ -132,3 +134,9 @@ def test_collapse_empty_braket_control_modifier():
     qprogram.remove_idle_qubits()
     contig_circuit = qprogram.program
     assert circuit.qubit_count == contig_circuit.qubit_count
+
+
+def test_raise_program_type_error():
+    """Test raising ProgramTypeError"""
+    with pytest.raises(ProgramTypeError):
+        BraketCircuit(Mock())

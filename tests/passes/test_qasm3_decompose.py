@@ -15,7 +15,7 @@ Unit tests for QASM transform to basic gates
 
 import pytest
 
-from qbraid.transforms.qasm3.transform import convert_to_basis_gates
+from qbraid.passes.qasm3.decompose import decompose
 
 
 @pytest.mark.parametrize(
@@ -105,24 +105,5 @@ s q[0];
 )
 def test_convert_to_basis_gates(original_program, expected_program):
     """Test conversion of QASM3 program to basis gates"""
-    basis_gates = [
-        "x",
-        "y",
-        "z",
-        "rx",
-        "ry",
-        "rz",
-        "h",
-        "cx",
-        "s",
-        "sdg",
-        "t",
-        "tdg",
-        "sx",
-        "sxdg",
-        "swap",
-    ]
-
-    converted_program = convert_to_basis_gates(original_program, basis_gates)
-
+    converted_program = decompose(original_program)
     assert converted_program == expected_program

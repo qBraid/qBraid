@@ -15,7 +15,7 @@ Module that implements qelib1.inc qasm gate definitions as python functions
 import re
 from typing import Optional
 
-from qbraid.transforms.exceptions import DecompositionError
+from qbraid.passes.exceptions import QasmDecompositionError
 
 
 def _get_param(instr: str) -> Optional[str]:
@@ -49,7 +49,7 @@ def _decompose_cu_instr(instr: str) -> str:
         params = [float(x) for x in params_lst]
         theta, phi, lam, gamma = params
     except (AttributeError, ValueError) as err:
-        raise DecompositionError from err
+        raise QasmDecompositionError from err
     instr_out = "\n// cu gate\n"
     instr_out += f"p({gamma}) {a};\n"
     instr_out += f"p({(lam+phi)/2}) {a};\n"
@@ -69,7 +69,7 @@ def _decompose_rxx_instr(instr: str) -> str:
         a, b = qs.strip(";").split(",")
         theta = _get_param(rxx_gate)
     except (AttributeError, ValueError) as err:
-        raise DecompositionError from err
+        raise QasmDecompositionError from err
     instr_out = "\n// rxx gate\n"
     instr_out += f"h {a};\n"
     instr_out += f"h {b};\n"
@@ -87,7 +87,7 @@ def _decompose_rccx_instr(instr: str) -> str:
         _, qs = instr.split(" ")
         a, b, c = qs.strip(";").split(",")
     except (AttributeError, ValueError) as err:
-        raise DecompositionError from err
+        raise QasmDecompositionError from err
     instr_out = "\n// rccx gate\n"
     instr_out += f"u2(0,pi) {c};\n"
     instr_out += f"u1(pi/4) {c};\n"
@@ -107,7 +107,7 @@ def _decompose_rc3x_instr(instr: str) -> str:
         _, qs = instr.split(" ")
         a, b, c, d = qs.strip(";").split(",")
     except (AttributeError, ValueError) as err:
-        raise DecompositionError from err
+        raise QasmDecompositionError from err
     instr_out = "\n// rc3x gate\n"
     instr_out += f"u2(0,pi) {d};\n"
     instr_out += f"u1(pi/4) {d};\n"

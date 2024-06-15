@@ -12,9 +12,10 @@
 Unit tests for qbraid.programs.qiskit.QiskitCircuit
 
 """
-
+import pytest
 from qiskit import QuantumCircuit
 
+from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.libs.qiskit import QiskitCircuit
 
 
@@ -46,3 +47,9 @@ def test_remove_idle_qubits_qiskit():
     qprogram.remove_idle_qubits()
     contig_circuit = qprogram.program
     assert contig_circuit.num_qubits == 2
+
+
+def test_raise_program_type_error():
+    """Test raising ProgramTypeError"""
+    with pytest.raises(ProgramTypeError):
+        QiskitCircuit("OPENQASM 2.0;qreg q[2];h q[0];cx q[0],q[1];")

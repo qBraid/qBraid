@@ -28,15 +28,25 @@ from braket.device_schema import ExecutionDay
 from braket.devices import Devices, LocalSimulator
 from qiskit import QuantumCircuit as QiskitCircuit
 
+from qbraid.interface import circuits_allclose
 from qbraid.programs import ProgramSpec
-from qbraid.runtime import DeviceActionType, DeviceStatus, DeviceType, TargetProfile
+from qbraid.runtime import (
+    DeviceActionType,
+    DeviceProgramTypeMismatchError,
+    DeviceStatus,
+    DeviceType,
+    TargetProfile,
+)
 from qbraid.runtime.braket.availability import _calculate_future_time
 from qbraid.runtime.braket.device import BraketDevice
 from qbraid.runtime.braket.job import AmazonBraketVersionError, BraketQuantumTask
 from qbraid.runtime.braket.provider import BraketProvider
 from qbraid.runtime.braket.result import BraketGateModelJobResult
 from qbraid.runtime.exceptions import JobStateError, ProgramValidationError
-from qbraid.transforms.exceptions import DeviceProgramTypeMismatchError
+
+from ..fixtures.braket.gates import get_braket_gates
+
+braket_gates = get_braket_gates()
 
 SV1_ARN = Devices.Amazon.SV1
 
@@ -406,3 +416,25 @@ def test_transform_raises_for_mismatch(mock_aws_device, braket_circuit):
     device = BraketDevice(profile)
     with pytest.raises(DeviceProgramTypeMismatchError):
         device.transform(braket_circuit)
+
+
+@patch("qbraid.runtime.braket.device.AwsDevice")
+def test_braket_ionq_transform(mock_aws_device):
+    """Test converting Amazon Braket circuit to use only IonQ supprted gates"""
+    mock_aws_device.return_value = Mock()
+    profile = TargetProfile(
+        device_type=DeviceType.QPU,
+        num_qubits=11,
+        program_spec=ProgramSpec(Circuit),
+        provider_name="IonQ",
+        device_id="arn:aws:braket:us-east-1::device/qpu/ionq/Harmony",
+        action_type=DeviceActionType.OPENQASM,
+    )
+    device = BraketDevice(profile)
+
+    toffoli_circuit = Circuit().ccnot(0, 1, 2)
+    transformed_circuit = device.transform(toffoli_circuit)
+    assert isinstance(transformed_circuit, Circuit)
+    assert toffoli_circuit.depth == 1
+    assert transformed_circuit.depth == 11
+    assert circuits_allclose(transformed_circuit, toffoli_circuit)

@@ -12,10 +12,11 @@
 Unit tests for qbraid.programs.qasm2.OpenQasm2Program
 
 """
-
 import pytest
 
+from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.libs.qasm2 import OpenQasm2Program
+from qbraid.programs.registry import unregister_program_type
 
 from ..fixtures.qasm2.circuits import (
     _read_qasm_file,
@@ -184,3 +185,12 @@ def test_qasm_depth(qasm_str, expected_depth):
     """Test calculating depth of circuit represented by qasm2 string"""
     qprogram = OpenQasm2Program(qasm_str)
     assert qprogram.depth == expected_depth
+
+
+def test_raise_program_type_error():
+    """Test raising ProgramTypeError"""
+    try:
+        with pytest.raises(ProgramTypeError):
+            OpenQasm2Program({})
+    finally:
+        unregister_program_type("dict")

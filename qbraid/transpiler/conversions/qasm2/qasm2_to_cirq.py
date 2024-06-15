@@ -16,8 +16,8 @@ from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
 
+from qbraid.passes.qasm2 import flatten_qasm_program
 from qbraid.programs.exceptions import QasmError
-from qbraid.transforms.qasm2 import flatten_qasm_program
 
 cirq_qasm_import = LazyLoader("cirq_contrib", globals(), "cirq.contrib.qasm_import")
 cirq_qasm_parser = LazyLoader(

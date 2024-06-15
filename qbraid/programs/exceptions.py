@@ -55,3 +55,7 @@ class ProgramTypeError(QbraidError):
 
 class QasmError(QbraidError):
     """For errors raised while processing OpenQASM programs."""
+
+
+class TransformError(QbraidError):
+    """Base class for errors raised during qBraid transform processes."""

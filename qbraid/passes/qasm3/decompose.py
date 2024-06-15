@@ -13,16 +13,13 @@ Module for providing transforamtions with basis gates.
 across various other quantum software frameworks.
 
 """
-
-from typing import List
-
-from openqasm3 import ast
+from openqasm3 import ast, dumps
 from openqasm3.parser import parse
 
-from qbraid.transpiler.conversions.openqasm3 import openqasm3_to_qasm3
+from qbraid.passes.exceptions import QasmDecompositionError
 
 
-def decompose_crx(gate: ast.QuantumGate) -> List[ast.Statement]:
+def decompose_crx(gate: ast.QuantumGate) -> list[ast.Statement]:
     """Decompose a crx gate into its basic gate equivalents."""
     theta = gate.arguments[0]
     control = gate.qubits[0]
@@ -80,7 +77,7 @@ def decompose_crx(gate: ast.QuantumGate) -> List[ast.Statement]:
     return [rz_pos_pi_half, ry_pos_theta_half, cx, ry_neg_theta_half, cx, rz_neg_pi_half]
 
 
-def decompose_cry(gate: ast.QuantumGate) -> List[ast.Statement]:
+def decompose_cry(gate: ast.QuantumGate) -> list[ast.Statement]:
     """Decompose a cry gate into its basic gate equivalents."""
     theta = gate.arguments[0]
     control = gate.qubits[0]
@@ -115,7 +112,7 @@ def decompose_cry(gate: ast.QuantumGate) -> List[ast.Statement]:
     return [ry_pos_theta_half, cx, ry_neg_theta_half, cx]
 
 
-def decompose_crz(gate: ast.QuantumGate) -> List[ast.Statement]:
+def decompose_crz(gate: ast.QuantumGate) -> list[ast.Statement]:
     """Decompose a cry gate into its basic gate equivalents."""
     theta = gate.arguments[0]
     control = gate.qubits[0]
@@ -150,7 +147,7 @@ def decompose_crz(gate: ast.QuantumGate) -> List[ast.Statement]:
     return [rz_pos_theta_half, cx, rz_neg_theta_half, cx]
 
 
-def decompose_cy(gate: ast.QuantumGate) -> List[ast.Statement]:
+def decompose_cy(gate: ast.QuantumGate) -> list[ast.Statement]:
     """Decompose a cy gate into its basic gate equivalents."""
     control = gate.qubits[0]
     target = gate.qubits[1]
@@ -162,10 +159,10 @@ def decompose_cy(gate: ast.QuantumGate) -> List[ast.Statement]:
         qubits=[control, target],
     )
     s = ast.QuantumGate(modifiers=[], name=ast.Identifier(name="s"), arguments=[], qubits=[control])
-    return transform_program(ast.Program(statements=[cry_pi, s])).statements
+    return _decompose(ast.Program(statements=[cry_pi, s])).statements
 
 
-def decompose_cz(gate: ast.QuantumGate) -> List[ast.Statement]:
+def decompose_cz(gate: ast.QuantumGate) -> list[ast.Statement]:
     """Decompose a cz gate into its basic gate equivalents."""
     control = gate.qubits[0]
     target = gate.qubits[1]
@@ -177,11 +174,11 @@ def decompose_cz(gate: ast.QuantumGate) -> List[ast.Statement]:
         qubits=[control, target],
     )
     s = ast.QuantumGate(modifiers=[], name=ast.Identifier(name="s"), arguments=[], qubits=[control])
-    return transform_program(ast.Program(statements=[crz_pi, s])).statements
+    return _decompose(ast.Program(statements=[crz_pi, s])).statements
 
 
-def transform_program(program: ast.Program) -> ast.Program:
-    """Transform a QASM program, decomposing crx gates."""
+def _decompose(program: ast.Program) -> ast.Program:
+    """Decompose a program into its basic gate equivalents."""
     transformed_statements = []
     for statement in program.statements:
         if isinstance(statement, ast.QuantumGate):
@@ -203,25 +200,27 @@ def transform_program(program: ast.Program) -> ast.Program:
     return ast.Program(statements=transformed_statements, version=program.version)
 
 
-def convert_to_basis_gates(qasm: str, basis_gates: list[str]) -> str:
+def decompose(qasm: str) -> str:
     """
-    Converts an OpenQASM 3 program to an equivalent program
-    Only uses the specified basis gates.
+    Decompose an OpenQASM 3 program to an equivalent program
+    using basis gates from the following set:
+
+    ["x","y","z","rx","ry","rz","h","cx","s","sdg","t","tdg","sx","sxdg","swap"]
 
     Args:
-        openqasm_program (str): The original OpenQASM 3 program as a string.
-        basis_gates (list[str]): A list of gate names allowed in the basis set.
+        qasm (str): The original OpenQASM 3 program as a string.
 
     Returns:
-        str: The converted OpenQASM 3 program.
+        str: The decomposed OpenQASM 3 program.
 
     Raises:
         ValueError: if the decomposition is not possible
     """
-    print(basis_gates)
-
     program = parse(qasm)
 
-    converted_program = transform_program(program)
+    try:
+        converted_program = _decompose(program)
+    except Exception as err:  # pylint: disable=broad-exception-caught
+        raise QasmDecompositionError from err
 
-    return openqasm3_to_qasm3(converted_program)
+    return dumps(converted_program)

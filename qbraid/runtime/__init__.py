@@ -59,6 +59,7 @@ Exceptions
 	ProgramValidationError
 	QbraidRuntimeError
 	ResourceNotFoundError
+    DeviceProgramTypeMismatchError
 
 """
 from qbraid_core import Session
@@ -68,6 +69,7 @@ from ._display import display_jobs_from_data
 from .device import QuantumDevice
 from .enums import DeviceActionType, DeviceStatus, DeviceType, JobStatus
 from .exceptions import (
+    DeviceProgramTypeMismatchError,
     JobStateError,
     ProgramValidationError,
     QbraidRuntimeError,
@@ -91,6 +93,7 @@ __all__ = [
     "ProgramValidationError",
     "QbraidRuntimeError",
     "ResourceNotFoundError",
+    "DeviceProgramTypeMismatchError",
     "TargetProfile",
     "QuantumJob",
     "QuantumProvider",

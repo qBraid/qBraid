@@ -17,6 +17,7 @@ import pennylane as qml
 import pytest
 from pennylane.tape import QuantumTape
 
+from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.libs.pennylane import PennylaneTape
 
 
@@ -78,3 +79,9 @@ def test_pennylane_remove_idle_qubits(wires):
 
     assert wires_out == [[0], [0, 1]]
     assert tape_out.wires.toset() == {0, 1}
+
+
+def test_raise_program_type_error():
+    """Test raising ProgramTypeError"""
+    with pytest.raises(ProgramTypeError):
+        PennylaneTape("OPENQASM 2.0;qreg q[2];h q[0];cx q[0],q[1];")

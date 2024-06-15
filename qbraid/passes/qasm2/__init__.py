@@ -9,9 +9,9 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for applying runtime transforms to Amazon Braket circuits.
+Module for appyling transformations to OpenQASM 2 programs.
 
-.. currentmodule:: qbraid.transforms.braket
+.. currentmodule:: qbraid.passes.qasm2
 
 Functions
 ----------
@@ -19,9 +19,18 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-    transform
+   remove_qasm_barriers
+   unfold_qasm_gate_defs
+   flatten_qasm_program
+   decompose_qasm_qelib1
 
 """
-from .transform import transform
+from .compat import flatten_qasm_program, remove_qasm_barriers, unfold_qasm_gate_defs
+from .decompose import decompose_qasm_qelib1
 
-__all__ = ["transform"]
+__all__ = [
+    "flatten_qasm_program",
+    "remove_qasm_barriers",
+    "unfold_qasm_gate_defs",
+    "decompose_qasm_qelib1",
+]

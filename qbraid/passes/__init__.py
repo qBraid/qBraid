@@ -11,7 +11,7 @@
 """
 Module for runtime quantum program transformations.
 
-.. currentmodule:: qbraid.transforms
+.. currentmodule:: qbraid.passes
 
 Exceptions
 -----------
@@ -19,26 +19,14 @@ Exceptions
 .. autosummary::
    :toctree: ../stubs/
    
-   TransformError
-   CompilationError
-   DecompositionError
+   QasmDecompositionError
 
 """
-from .exceptions import (
-    CompilationError,
-    DecompositionError,
-    DeviceProgramTypeMismatchError,
-    TransformError,
-)
+from .exceptions import QasmDecompositionError
 
-__all__ = [
-    "TransformError",
-    "CompilationError",
-    "DecompositionError",
-    "DeviceProgramTypeMismatchError",
-]
+__all__ = ["QasmDecompositionError"]
 
-_lazy_mods = ["braket", "cirq", "pytket", "qasm2", "qasm3", "qiskit"]
+_lazy_mods = ["qasm2", "qasm3"]
 
 
 def __getattr__(name):

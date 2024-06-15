@@ -12,11 +12,27 @@
 Unit tests for qbraid.programs.pytket.PytketCircuit
 
 """
+from unittest.mock import patch
+
 import numpy as np
 import pytest
 from pytket.circuit import Circuit
+from pytket.unit_id import Qubit
 
-from qbraid.programs.libs.pytket import PytketCircuit
+from qbraid.programs.exceptions import ProgramTypeError, TransformError
+from qbraid.programs.libs.pytket import IONQ_GATES, PytketCircuit
+
+
+def test_program_attributes():
+    """Test attributes of pytket circuit"""
+    circuit = Circuit(2, 1)
+    circuit.H(0)
+    circuit.CX(0, 1)
+    qprogram = PytketCircuit(circuit)
+    assert qprogram.qubits == [Qubit(0), Qubit(1)]
+    assert qprogram.num_qubits == 2
+    assert qprogram.num_clbits == 1
+    assert qprogram.depth == 2
 
 
 @pytest.mark.parametrize(
@@ -59,3 +75,24 @@ def test_gate_to_matrix_pytket(flat, list_type):
         assert c_unitary.shape[0] == 2**2
     else:
         assert c_unitary.shape[0] == 2**4
+
+
+def test_assertion_error_in_rebase():
+    """Test assertion error in rebase method"""
+    circuit = Circuit(1).H(0)
+    gates = IONQ_GATES
+    max_qubits = 5
+
+    with patch(
+        "qbraid.programs.libs.pytket.CompilationUnit.check_all_predicates", return_value=False
+    ):
+        with pytest.raises(TransformError) as excinfo:
+            PytketCircuit.rebase(circuit, gates, max_qubits)
+
+    assert "Rebased circuit failed to satisfy compilation predicates" in str(excinfo.value)
+
+
+def test_raise_program_type_error():
+    """Test raising ProgramTypeError"""
+    with pytest.raises(ProgramTypeError):
+        PytketCircuit("OPENQASM 2.0;qreg q[2];h q[0];cx q[0],q[1];")

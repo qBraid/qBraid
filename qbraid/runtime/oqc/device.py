@@ -23,9 +23,9 @@ from scc.compiler.config import (
     TketOptimizations,
 )
 
+from qbraid.passes.qasm2.compat import rename_qasm_registers
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
-from qbraid.transforms.qasm2.passes import rename_qasm_registers
 
 from .job import OQCJob
 

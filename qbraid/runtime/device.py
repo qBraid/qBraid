@@ -20,7 +20,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional, Union
 
 from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
-from qbraid.transpiler import CircuitConversionError, ConversionScheme, transpile
+from qbraid.transpiler import CircuitConversionError, ConversionGraph, ConversionScheme, transpile
 
 from .enums import DeviceStatus, DeviceType
 from .exceptions import ProgramValidationError, QbraidRuntimeError, ResourceNotFoundError
@@ -78,6 +78,8 @@ class QuantumDevice(ABC):
     @property
     def scheme(self) -> ConversionScheme:
         """Return the conversion scheme."""
+        if not self._scheme.conversion_graph:
+            self._scheme.update_values(conversion_graph=ConversionGraph())
         return self._scheme
 
     def __repr__(self):
