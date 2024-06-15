@@ -9,21 +9,12 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for appyling transformations to OpenQASM 3 programs.
-
-.. currentmodule:: qbraid.transforms.qasm3
-
-Functions
-----------
-
-.. autosummary::
-   :toctree: ../stubs/
-
-   transform_notation_to_external
-   transform_notation_from_external
-
+Module defining exceptions for errors raised by qBraid transforms.
 
 """
-from .compat import transform_notation_from_external, transform_notation_to_external
 
-__all__ = ["transform_notation_to_external", "transform_notation_from_external"]
+from qbraid.exceptions import QbraidError
+
+
+class QasmDecompositionError(QbraidError):
+    """For errors raised during OpenQASM decomposition processes."""

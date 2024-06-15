@@ -35,11 +35,8 @@ try:
 except ImportError:
     cirq_ionq_ops = None
 
-from qbraid_core._import import LazyLoader
-
+from qbraid.programs.libs.cirq import CirqCircuit as QbraidCircuit
 from qbraid.transpiler.exceptions import CircuitConversionError
-
-cirq_passes = LazyLoader("cirq_passes", globals(), "qbraid.transforms.cirq.passes")
 
 if TYPE_CHECKING:
     import cirq.circuits as cirq_circuits
@@ -87,7 +84,7 @@ def braket_to_cirq(circuit: BKCircuit) -> "cirq_circuits.Circuit":
     circuit = cirq.Circuit(
         _from_braket_instruction(instr, qubit_mapping) for instr in circuit.instructions
     )
-    return cirq_passes.align_final_measurements(circuit)
+    return QbraidCircuit.align_final_measurements(circuit)
 
 
 def _from_braket_instruction(

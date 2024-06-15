@@ -29,3 +29,18 @@ class ResourceNotFoundError(QbraidError):
 
 class JobStateError(QbraidError):
     """Class for errors raised due to the state of a quantum job"""
+
+
+class DeviceProgramTypeMismatchError(ProgramValidationError):
+    """
+    Exception raised when the program type does not match the device action type.
+
+    """
+
+    def __init__(self, program, expected_type, action_type):
+        message = (
+            f"Incompatible program type: '{type(program).__name__}'. "
+            f"Device action type '{action_type}' "
+            f"requires a program of type '{expected_type}'."
+        )
+        super().__init__(message)

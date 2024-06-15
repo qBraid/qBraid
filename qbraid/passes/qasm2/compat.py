@@ -14,7 +14,7 @@ Module for preprocessing qasm string to before it is passed to parser.
 """
 import re
 
-from .qasm_qelib1 import decompose_qasm_qelib1
+from .decompose import decompose_qasm_qelib1
 
 
 def remove_qasm_barriers(qasm_str: str) -> str:

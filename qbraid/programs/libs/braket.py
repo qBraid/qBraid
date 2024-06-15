@@ -124,4 +124,6 @@ class BraketCircuit(QbraidProgram):
 
     def transform(self, device) -> None:
         """Transform program to according to device target profile."""
-        raise NotImplementedError
+        device_type = device.profile.get("device_type")
+        if device_type == "SIMULATOR":
+            self.remove_idle_qubits()

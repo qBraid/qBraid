@@ -17,6 +17,11 @@ in the way OpenQASM 3 strings are formatted.
 import re
 
 
+def _remove_empty_lines(input_string: str) -> str:
+    """Removes all empty lines from the provided string."""
+    return "\n".join(line for line in input_string.split("\n") if line.strip())
+
+
 def _remove_double_empty_lines(qasm: str) -> str:
     """Replace double empty lines with single lines from a QASM string."""
     return re.sub(r"\n\n\n", "\n\n", qasm)
@@ -60,12 +65,12 @@ def remove_unused_gates(qasm: str) -> str:
             if re.search(r"\b" + re.escape(gate) + r"\b", line):
                 all_gates[gate] += 1
 
-    unused_gates = [
-        gate
-        for gate in all_gates  # pylint: disable=consider-using-dict-items
-        if all_gates[gate] == 0
-    ]
     new_qasm = qasm
+    unused_gates = [gate for gate, count in all_gates.items() if count == 0]
     for gate in unused_gates:
         new_qasm = _remove_gate_definition(new_qasm, gate)
-    return remove_unused_gates(new_qasm) if len(unused_gates) > 0 else new_qasm.strip()
+
+    if len(unused_gates) > 0:
+        return remove_unused_gates(new_qasm)
+
+    return new_qasm.strip()

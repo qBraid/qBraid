@@ -48,7 +48,7 @@ dynamically register new program types and conversions on the fly. This enables 
 |-------------------------|---------------------------------------------------------------------------------------------------|
 | `qbraid.programs`       | Extracts and manages metadata from supported quantum program types, with the flexibility to introduce new types. |
 | `qbraid.transpiler`     | Bridges different quantum programming IRs through native and customizable circuit conversions.    |
-| `qbraid.transforms`     | Ensures quantum programs conform to hardware specifications through essential runtime transformations. |
+| `qbraid.passes`     | Ensures quantum programs conform to hardware specifications through essential runtime transformations. |
 | `qbraid.runtime`        | Defines essential abstractions for providers, devices, jobs, and results, integrated through a coherent runtime profile. |
 | `qbraid.visualization`  | Provides tools for visualizing quantum circuits and experimental data, enhancing data interpretation. |
 

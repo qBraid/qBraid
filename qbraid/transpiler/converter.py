@@ -17,6 +17,8 @@ import warnings
 from copy import deepcopy
 from typing import TYPE_CHECKING, Optional
 
+from qbraid_core._import import LazyLoader
+
 from qbraid.programs import QPROGRAM_ALIASES, ProgramTypeError, get_program_type_alias
 
 from .exceptions import CircuitConversionError, ConversionPathNotFoundError, NodeNotFoundError
@@ -120,10 +122,10 @@ def transpile(
                         alias = None
 
                     if alias == "cirq":
-                        # pylint: disable=import-outside-toplevel
-                        from qbraid.transforms.cirq import decompose
-
-                        temp_program = decompose(temp_program)
+                        cirq_qasm_import = LazyLoader(
+                            "cirq_qasm_import", globals(), "cirq.contrib.qasm_import"
+                        )
+                        temp_program = cirq_qasm_import.circuit_from_qasm(temp_program.to_qasm())
                         temp_program = convert_func(temp_program)  # Retry conversion
                     else:
                         error_detail = (

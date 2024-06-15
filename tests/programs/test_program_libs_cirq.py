@@ -185,3 +185,42 @@ def test_mixed_operations_and_measurements():
     assert (
         result_circuit == expected_circuit
     ), "All measurement gates should be removed, leaving other operations intact."
+
+
+def test_align_final_measurements():
+    """Test aligning measurements for a circuit with measurements."""
+    q0, q1 = cirq.LineQubit.range(2)
+    circuit = cirq.Circuit(
+        cirq.H(q0), cirq.CNOT(q0, q1), cirq.measure(q0, key="m0"), cirq.measure(q1, key="m1")
+    )
+    expected_circuit = cirq.Circuit(
+        cirq.H(q0),
+        cirq.CNOT(q0, q1),
+        cirq.Moment(cirq.measure(q0, key="m0"), cirq.measure(q1, key="m1")),
+    )
+    aligned_circuit = CirqCircuit.align_final_measurements(circuit)
+    assert (
+        aligned_circuit == expected_circuit
+    ), "The measurements should be aligned in the same moment"
+
+
+def test_align_measurements_for_no_measurement():
+    """Test aligning measurements for a circuit with no measurements."""
+    q0, q1 = cirq.LineQubit.range(2)
+    circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1))
+    expected_circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1))
+    aligned_circuit = CirqCircuit.align_final_measurements(circuit)
+    assert (
+        aligned_circuit == expected_circuit
+    ), "The circuit should remain unchanged as there are no measurements"
+
+
+def test_align_measurements_for_partial_measurement():
+    """Test aligning measurements from a circuit where not all qubits are measured."""
+    q0, q1 = cirq.LineQubit.range(2)
+    circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1), cirq.measure(q0, key="m0"))
+    expected_circuit = circuit
+    aligned_circuit = CirqCircuit.align_final_measurements(circuit)
+    assert (
+        aligned_circuit == expected_circuit
+    ), "The circuit should remain unchanged as not all qubits are measured"

@@ -12,31 +12,7 @@
 Unit tests for QASM preprocessing functions
 
 """
-import pytest
-
-from qbraid.transforms.qasm2.passes import flatten_qasm_program, remove_qasm_barriers
-from qbraid.transforms.qasm3.compat import convert_qasm_pi_to_decimal
-
-pi_decimal_data = [
-    (
-        """
-        OPENQASM 3;
-        qubit[1] q;
-        h q[0];
-        rx(pi / 4) q[0];
-        ry(2*pi) q[0];
-        rz(3 * pi/4) q[0];
-        """,
-        """
-        OPENQASM 3;
-        qubit[1] q;
-        h q[0];
-        rx(0.7853981633974483) q[0];
-        ry(6.283185307179586) q[0];
-        rz(2.356194490192345) q[0];
-        """,
-    ),
-]
+from qbraid.passes.qasm2.compat import flatten_qasm_program, remove_qasm_barriers
 
 
 def strings_equal(s1, s2):
@@ -44,12 +20,6 @@ def strings_equal(s1, s2):
     s1_clean = s1.replace(" ", "").replace("\n", "")
     s2_clean = s2.replace(" ", "").replace("\n", "")
     return s1_clean == s2_clean
-
-
-@pytest.mark.parametrize("qasm3_str_pi, qasm3_str_decimal", pi_decimal_data)
-def test_convert_pi_to_decimal(qasm3_str_pi, qasm3_str_decimal):
-    """Test converting pi symbol to decimal in qasm3 string"""
-    assert convert_qasm_pi_to_decimal(qasm3_str_pi) == qasm3_str_decimal
 
 
 def test_remove_qasm_barriers():
