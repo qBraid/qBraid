@@ -31,6 +31,7 @@ Functions
    load_program
    get_program_type_alias
    register_program_type
+   unregister_program_type
 
 Classes
 --------
@@ -66,6 +67,7 @@ from .registry import (
     QPROGRAM_TYPES,
     derive_program_type_alias,
     register_program_type,
+    unregister_program_type,
 )
 from .spec import ProgramSpec
 
@@ -87,6 +89,7 @@ __all__ = [
     "load_program",
     "parse_qasm_type_alias",
     "register_program_type",
+    "unregister_program_type",
 ]
 
 _lazy_mods = ["libs"]

@@ -16,6 +16,7 @@ import pytest
 
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.libs.qasm2 import OpenQasm2Program
+from qbraid.programs.registry import unregister_program_type
 
 from ..fixtures.qasm2.circuits import (
     _read_qasm_file,
@@ -188,5 +189,8 @@ def test_qasm_depth(qasm_str, expected_depth):
 
 def test_raise_program_type_error():
     """Test raising ProgramTypeError"""
-    with pytest.raises(ProgramTypeError):
-        OpenQasm2Program({})
+    try:
+        with pytest.raises(ProgramTypeError):
+            OpenQasm2Program({})
+    finally:
+        unregister_program_type("dict")

@@ -20,6 +20,7 @@ from qbraid.interface.random.qasm3_random import _qasm3_random
 from qbraid.interface.random.qiskit_random import _qiskit_random
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.libs.qasm3 import OpenQasm3Program
+from qbraid.programs.registry import unregister_program_type
 from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import _get_qasm3_gate_defs
 
 from ..fixtures.qasm3.circuits import qasm3_bell, qasm3_shared15
@@ -443,6 +444,9 @@ c[2] = measure q[2];
 
 
 def test_raise_program_type_error():
-    """Test raising ProgramTypeError"""
-    with pytest.raises(ProgramTypeError):
-        OpenQasm3Program(42)
+    """Test that initializing OpenQasm3Program with an invalid type raises ProgramTypeError."""
+    try:
+        with pytest.raises(ProgramTypeError):
+            OpenQasm3Program(42)
+    finally:
+        unregister_program_type("int")
