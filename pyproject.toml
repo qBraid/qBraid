@@ -88,7 +88,6 @@ filterwarnings = [
 parallel = true
 source = ["qbraid"]
 omit = [
-  "**/qbraid/transforms/qasm3/format.py",
   "**/qbraid/runtime/braket/tracker.py",
   "**/qbraid/visualization/draw_circuit.py",
   "**/qbraid/_compat.py",

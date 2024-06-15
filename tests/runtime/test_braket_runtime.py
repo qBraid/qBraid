@@ -23,11 +23,12 @@ import numpy as np
 import pytest
 from braket.aws.aws_session import AwsSession
 from braket.aws.queue_information import QueueDepthInfo, QueueType
-from braket.circuits import Circuit, Instruction
+from braket.circuits import Circuit
 from braket.device_schema import ExecutionDay
 from braket.devices import Devices, LocalSimulator
 from qiskit import QuantumCircuit as QiskitCircuit
 
+from qbraid.interface import circuits_allclose
 from qbraid.programs import ProgramSpec
 from qbraid.runtime import (
     DeviceActionType,
@@ -417,9 +418,8 @@ def test_transform_raises_for_mismatch(mock_aws_device, braket_circuit):
         device.transform(braket_circuit)
 
 
-@pytest.mark.parametrize("gate_name", braket_gates)
 @patch("qbraid.runtime.braket.device.AwsDevice")
-def test_braket_ionq_transform(mock_aws_device, gate_name):
+def test_braket_ionq_transform(mock_aws_device):
     """Test converting Amazon Braket circuit to use only IonQ supprted gates"""
     mock_aws_device.return_value = Mock()
     profile = TargetProfile(
@@ -432,11 +432,9 @@ def test_braket_ionq_transform(mock_aws_device, gate_name):
     )
     device = BraketDevice(profile)
 
-    gate = braket_gates[gate_name]
-    if gate.qubit_count == 1:
-        source_circuit = Circuit([Instruction(gate, 0)])
-    else:
-        source_circuit = Circuit([Instruction(gate, range(gate.qubit_count))])
-
-    transformed_circuit = device.transform(source_circuit)
+    toffoli_circuit = Circuit().ccnot(0, 1, 2)
+    transformed_circuit = device.transform(toffoli_circuit)
     assert isinstance(transformed_circuit, Circuit)
+    assert toffoli_circuit.depth == 1
+    assert transformed_circuit.depth == 11
+    assert circuits_allclose(transformed_circuit, toffoli_circuit)

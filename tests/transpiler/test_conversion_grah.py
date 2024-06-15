@@ -15,6 +15,8 @@ Tests of functions that create and operate on directed graph
 used to dictate transpiler conversions.
 
 """
+from unittest.mock import Mock
+
 import braket.circuits
 import pytest
 import rustworkx as rx
@@ -182,6 +184,18 @@ def test_get_path_from_bound_method():
     bound_method_list = [bound_method]
     path = ConversionGraph._get_path_from_bound_methods(bound_method_list)
     assert path == "cirq -> qasm2"
+
+
+def test_raise_index_error_bound_methods_empty():
+    """Test raising ValueError when bound_methods is empty."""
+    with pytest.raises(IndexError):
+        ConversionGraph._get_path_from_bound_methods([])
+
+
+def test_attr_error_bound_method_no_source_target():
+    """Test raising AttributeError when bound_methods has no source or target."""
+    with pytest.raises(AttributeError):
+        ConversionGraph._get_path_from_bound_methods([Mock()])
 
 
 def test_shortest_path(mock_graph):
