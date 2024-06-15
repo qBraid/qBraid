@@ -116,6 +116,23 @@ def fake_ibm_devices():
     return [QiskitBackend(profile, service) for profile in profiles]
 
 
+def test_save_config():
+    """Test saving the IBM account configuration to disk."""
+    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
+        mock_runtime_service.return_value = FakeService()
+        provider = QiskitRuntimeProvider(token="fake_token", channel="fake_channel")
+
+        provider.save_config(token="fake_token", channel="fake_channel", overwrite=False)
+        mock_runtime_service.save_account.assert_called_once_with(
+            token="fake_token", channel="fake_channel", overwrite=False
+        )
+
+        provider.save_config()
+        mock_runtime_service.save_account.assert_called_with(
+            token="fake_token", channel="fake_channel", overwrite=True
+        )
+
+
 @pytest.mark.parametrize("device", fake_ibm_devices())
 def test_wrap_fake_provider(device):
     """Test wrapping fake Qiskit provider."""

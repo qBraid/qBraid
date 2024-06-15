@@ -12,8 +12,6 @@
 Unit tests for qbraid.programs.qasm2.OpenQasm2Program
 
 """
-from unittest.mock import Mock
-
 import pytest
 
 from qbraid.programs.exceptions import ProgramTypeError
@@ -191,4 +189,4 @@ def test_qasm_depth(qasm_str, expected_depth):
 def test_raise_program_type_error():
     """Test raising ProgramTypeError"""
     with pytest.raises(ProgramTypeError):
-        OpenQasm2Program(Mock())
+        OpenQasm2Program("OPENQASM 2.0;qreg q[2];h q[0];cx q[0],q[1];")

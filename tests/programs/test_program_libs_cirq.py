@@ -13,7 +13,6 @@ Unit tests for qbraid.programs.cirq.CirqCircuit
 
 """
 from typing import Any
-from unittest.mock import Mock
 
 import cirq
 import pytest
@@ -233,7 +232,7 @@ def test_align_measurements_for_partial_measurement():
 def test_raise_program_type_error():
     """Test raising ProgramTypeError"""
     with pytest.raises(ProgramTypeError):
-        CirqCircuit(Mock())
+        CirqCircuit("OPENQASM 2.0;qreg q[2];h q[0];cx q[0],q[1];")
 
 
 def test_key_from_line_qubit():

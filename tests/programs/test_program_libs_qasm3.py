@@ -12,8 +12,6 @@
 Unit tests for qbraid.programs.qasm3.OpenQasm3Program
 
 """
-from unittest.mock import Mock
-
 import numpy as np
 import pytest
 from qiskit.qasm3 import dumps, loads
@@ -447,4 +445,4 @@ c[2] = measure q[2];
 def test_raise_program_type_error():
     """Test raising ProgramTypeError"""
     with pytest.raises(ProgramTypeError):
-        OpenQasm3Program(Mock())
+        OpenQasm3Program("OPENQASM 2.0;qreg q[2];h q[0];cx q[0],q[1];")

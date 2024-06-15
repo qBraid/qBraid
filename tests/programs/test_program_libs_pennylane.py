@@ -12,8 +12,6 @@
 Unit tests for qbraid.programs.pennylane.PennylaneTape
 
 """
-from unittest.mock import Mock
-
 import numpy as np
 import pennylane as qml
 import pytest
@@ -86,4 +84,4 @@ def test_pennylane_remove_idle_qubits(wires):
 def test_raise_program_type_error():
     """Test raising ProgramTypeError"""
     with pytest.raises(ProgramTypeError):
-        PennylaneTape(Mock())
+        PennylaneTape("OPENQASM 2.0;qreg q[2];h q[0];cx q[0],q[1];")

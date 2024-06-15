@@ -13,7 +13,7 @@ Unit tests for qbraid.programs.pytket.PytketCircuit
 
 """
 
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -96,4 +96,4 @@ def test_assertion_error_in_rebase():
 def test_raise_program_type_error():
     """Test raising ProgramTypeError"""
     with pytest.raises(ProgramTypeError):
-        PytketCircuit(Mock())
+        PytketCircuit("OPENQASM 2.0;qreg q[2];h q[0];cx q[0],q[1];")
