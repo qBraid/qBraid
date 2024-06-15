@@ -77,12 +77,19 @@ def test_error_on_duplicate_alias():
 
 def test_error_on_duplicate_type_different_alias():
     """Test error when trying to register a type with a different alias"""
-    register_program_type(str, "custom_str")
-    with pytest.raises(ValueError) as excinfo:
-        register_program_type(str, "another_str")
-    assert "Cannot register more than one additional 'str' type beyond 'qasm2', 'qasm3'." in str(
-        excinfo.value
-    )
+    try:
+        register_program_type(str, "custom_str")
+
+        with pytest.raises(ValueError) as excinfo:
+            register_program_type(str, "another_str")
+
+        expected_msg = (
+            "Cannot register more than one additional 'str' type beyond 'qasm2', 'qasm3'."
+        )
+        assert expected_msg in str(excinfo.value)
+    finally:
+        unregister_program_type("custom_str", raise_error=False)
+        unregister_program_type("another_str", raise_error=False)
 
 
 def test_re_registration_same_alias_type():

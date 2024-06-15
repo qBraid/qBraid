@@ -91,7 +91,7 @@ omit = [
   "**/qbraid/runtime/braket/tracker.py",
   "**/qbraid/visualization/draw_circuit.py",
   "**/qbraid/_compat.py",
-  "**/qbraid/transpiler/conversions/qasm2/qasm2_extras.py"
+  "**/qbraid/transpiler/conversions/*/*_extras.py"
 ]
 
 [tool.coverage.paths]
@@ -108,6 +108,7 @@ exclude_lines = [
   "if __name__ == .__main__.:",
   "if TYPE_CHECKING:",
   "logger.debug",
+  "logger.info",
   "__all__",
   "def __getattr__",
   "def __dir__"

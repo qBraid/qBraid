@@ -44,7 +44,6 @@ def test_qasm3_num_qubits():
     assert OpenQasm3Program(qasm3_str).num_qubits == num_qubits
 
 
-@pytest.mark.skip(reason="Not implemented")
 def test_qasm3_depth():
     """Test calculating qasm depth of qasm3 circuit"""
     depth = np.random.randint(2, 10)
@@ -52,7 +51,6 @@ def test_qasm3_depth():
     assert OpenQasm3Program(qasm3_str).depth == depth
 
 
-@pytest.mark.skip(reason="QASM3ImporterError")
 def test_qasm3_depth_alternate_qubit_syntax():
     """Test calculating qasm depth of qasm3 circuit"""
     qasm3_str = """OPENQASM 3.0;
@@ -60,7 +58,7 @@ bit[1] __bits__;
 qubit[1] __qubits__;
 h __qubits__[0];
 __bits__[0] = measure __qubits__[0];"""
-    assert OpenQasm3Program(qasm3_str).depth == 1
+    assert OpenQasm3Program(qasm3_str).depth == 2
 
 
 def _check_output(output, expected):
