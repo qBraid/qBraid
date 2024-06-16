@@ -12,8 +12,9 @@
 Unit tests for ipython and other display functions.
 
 """
+import logging
 import sys
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -227,3 +228,22 @@ def test_get_jobs_in_jupyter(capfd, mock_provider, mock_ipython):
     out, err = capfd.readouterr()
     assert "IPython.core.display.HTML object" in out
     assert len(err) == 0
+
+
+def test_running_in_jupyter_logs_exception(caplog):
+    """
+    Test that an exception raised in running_in_jupyter() is logged correctly.
+    """
+    with patch("sys.modules", new_callable=lambda: {"IPython": MagicMock()}):
+        sys.modules["IPython"].__dict__["get_ipython"] = MagicMock(
+            side_effect=Exception("Test exception")
+        )
+
+        caplog.set_level(logging.ERROR)
+
+        result = running_in_jupyter()
+
+        assert not result, "running_in_jupyter() should return False when an exception occurs"
+        assert (
+            "Error checking if running in Jupyter: Test exception" in caplog.text
+        ), "The exception should be logged as an error"

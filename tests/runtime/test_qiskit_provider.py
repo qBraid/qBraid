@@ -212,6 +212,7 @@ def test_provider_get_devices(fake_service):
         device = devices[0]
         device_copy = provider.get_device(device.id)
         assert device.id == device_copy.id
+        assert str(device) == f"QiskitBackend('{device.id}')"
 
 
 @pytest.mark.parametrize("local", [True, False])

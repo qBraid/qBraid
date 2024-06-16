@@ -19,8 +19,23 @@ import pytest
 
 from qbraid.interface.random import random_circuit
 from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.transpiler.annotations import requires_extras
 from qbraid.transpiler.conversions.braket import braket_to_cirq
 from qbraid.transpiler.edge import Conversion
+
+
+@requires_extras("alice")
+@requires_extras("bob")
+def dummy_func():
+    """Dummy function for testing requires_extras decorator."""
+
+
+def test_requires_extras_appends_dependency():
+    """
+    Test that the requires_extras decorator correctly appends a dependency
+    to the function's attribute list.
+    """
+    assert getattr(dummy_func, "requires_extras") == ["bob", "alice"]
 
 
 def test_raise_for_unsupported_program_input():

@@ -20,13 +20,16 @@ Unit tests for converting Braket circuits to Cirq circuits
 import numpy as np
 import pytest
 from braket.circuits import Circuit as BKCircuit
-from braket.circuits import Instruction
+from braket.circuits import Instruction, QubitSet
 from braket.circuits import gates as braket_gates
 from braket.circuits import noises as braket_noise_gate
+from braket.circuits.serialization import OpenQASMSerializationProperties
+from braket.ir.jaqcd.instructions import Unitary as JaqcdUnitary
 from cirq import ops as cirq_ops
 
 from qbraid.interface import circuits_allclose
 from qbraid.transpiler.conversions.braket import braket_to_cirq
+from qbraid.transpiler.conversions.cirq.braket_custom import C as BKControl
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
@@ -260,3 +263,24 @@ def test_from_braket_raises_on_unsupported_gates():
         braket_unitary_circuit.add_instruction(instr)
     with pytest.raises(CircuitConversionError):
         braket_to_cirq(braket_unitary_circuit)
+
+
+def test_braket_control_custom():
+    """Test converting Braket controlled gate with custom control"""
+    sub_gate = braket_gates.X()
+    targets = QubitSet([0, 1])
+    props = OpenQASMSerializationProperties()
+    control_gate = BKControl(sub_gate, targets)
+    qasm = control_gate._to_openqasm(target=targets, serialization_properties=props)
+    assert (
+        qasm
+        == "#pragma braket unitary([[1.0, 0, 0, 0], [0, 1.0, 0, 0], [0, 0, 0, 1.0], [0, 0, 1.0, 0]]) q[0], q[1]"
+    )
+    adjoint_gates = control_gate.adjoint()
+    assert isinstance(adjoint_gates, list)
+    assert len(adjoint_gates) == 1
+    adjoint = adjoint_gates[0]
+    assert isinstance(adjoint, braket_gates.Unitary)
+    assert adjoint.qubit_count == 2
+    unitary = control_gate._to_jaqcd(target=targets)
+    assert isinstance(unitary, JaqcdUnitary)
