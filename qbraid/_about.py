@@ -54,7 +54,7 @@ def about() -> None:
             package = __import__(import_path, fromlist=[""])
             optional_dependencies[package_name] = package.__version__
             check_warn_version = check_warn_version or package_name == "qbraid_core"
-        except ImportError:
+        except ImportError:  # pragma: no cover
             continue
 
     about_str = (
@@ -82,4 +82,4 @@ def about() -> None:
     print(about_str)
 
     if check_warn_version:
-        check_warn_version_update()
+        check_warn_version_update()  # pragma: no cover
