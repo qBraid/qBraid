@@ -111,7 +111,8 @@ exclude_lines = [
   "logger.info",
   "__all__",
   "def __getattr__",
-  "def __dir__"
+  "def __dir__",
+  "# pragma: no cover"
 ]
 
 [tool.coverage.html]

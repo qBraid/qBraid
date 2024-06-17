@@ -37,6 +37,8 @@ class Conversion:
             source (str): The source package from which conversion starts.
             target (str): The target package to which conversion is done.
             conversion_func (Callable): The function that performs the actual conversion.
+            weight (Optional[float]): Optional weighting factor for the conversion, ranging [0,1].
+                If not specified, defaults to 1 or a custom value derived from the conversion_func.
         """
         self._source = source
         self._target = target
@@ -44,8 +46,12 @@ class Conversion:
         self._extras = getattr(conversion_func, "requires_extras", [])
         self._native = self._is_module_native(conversion_func)
         self._supported = self._is_conversion_supported()
-        self._weight = weight or getattr(conversion_func, "weight", 1)
-        self._weight = 1 / self._weight
+
+        default_weight = getattr(conversion_func, "weight", 1)
+        self._weight = weight if weight is not None else default_weight
+        if not 0 <= self._weight <= 1:
+            raise ValueError("Weight must be a float between 0 and 1, inclusive.")
+        self._weight = 1 / max(self._weight, 1e-10)
 
     @property
     def source(self) -> str:
@@ -112,6 +118,7 @@ class Conversion:
             module is not None
             and module.__name__.split(".")[0] == "qbraid"
             and len(self._extras) == 0
+            and getattr(func, "weight", None) is not None
         )
         return is_native
 

@@ -16,16 +16,15 @@ from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
 
-from qbraid.transpiler.annotations import requires_extras, weight
+from qbraid.transpiler.annotations import requires_extras
 
 qibo = LazyLoader("qibo", globals(), "qibo")
 
 if TYPE_CHECKING:
-    import qibo as qibo_
+    import qibo as qibo_  # type: ignore
 
 
 @requires_extras("qibo")
-@weight(1)
 def qasm2_to_qibo(qasm: str) -> "qibo_.Circuit":
     """Returns a qibo.Circuit equivalent to the input OpenQASM 2 circuit.
 
