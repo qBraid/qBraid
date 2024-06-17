@@ -16,7 +16,7 @@ qiskit-braket-provider
 
 # optional runtime dependencies
 oqc-qcaas-client>=3.5,<4.0; python_version < "3.11"
-qiskit-ibm-runtime>=0.18,<0.24
+qiskit-ibm-runtime>=0.18,<0.25
 
 # visualization
 matplotlib>=3.3
