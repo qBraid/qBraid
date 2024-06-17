@@ -35,6 +35,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     show: bool = True,
     save_path: Optional[str] = None,
     colors: Optional[dict[str, str]] = None,
+    edge_labels: Optional[bool] = False,
 ) -> None:
     """
     Plot the conversion graph using matplotlib. The graph is displayed using node
@@ -54,7 +55,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
                                    Defaults to None.
         colors (Optional[dict[str, str]]): Dictionary for node and edge colors. Expected keys are
             'qbraid_node', 'external_node', 'qbraid_edge', 'external_edge'. Defaults to None.
-
+        edge_labels (Optional[bool]): If True, display edge weights as labels. Defaults to False.
     Returns:
         None
     """
@@ -95,6 +96,9 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     ]
 
     pos = rx.spring_layout(graph, seed=seed)  # good seeds: 123, 134
+    kwargs = {}
+    if edge_labels:
+        kwargs["edge_labels"] = lambda edge: round(edge["weight"], 2)
     mpl_draw(
         graph,
         pos,
@@ -104,6 +108,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         with_labels=True,
         labels=str,
         min_target_margin=min_target_margin,
+        **kwargs,
     )
 
     if title:

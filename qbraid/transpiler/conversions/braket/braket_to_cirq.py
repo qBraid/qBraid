@@ -36,6 +36,7 @@ except ImportError:
     cirq_ionq_ops = None
 
 from qbraid.programs.libs.cirq import CirqCircuit as QbraidCircuit
+from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 if TYPE_CHECKING:
@@ -69,6 +70,7 @@ def braket_gate_to_matrix(gate: braket_gates.Unitary) -> np.ndarray:
     return bk_circuit.to_unitary()
 
 
+@weight(1)
 def braket_to_cirq(circuit: BKCircuit) -> "cirq_circuits.Circuit":
     """Returns a Cirq circuit equivalent to the input Braket circuit.
 

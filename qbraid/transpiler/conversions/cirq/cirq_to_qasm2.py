@@ -18,6 +18,7 @@ import cirq
 from cirq import ops, value
 
 from qbraid._version import __version__ as qbraid_version
+from qbraid.transpiler.annotations import weight
 
 
 @value.value_equality
@@ -88,6 +89,7 @@ def _to_qasm_output(
     )
 
 
+@weight(1)
 def cirq_to_qasm2(
     circuit: cirq.Circuit,
     header: Optional[str] = None,

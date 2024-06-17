@@ -24,8 +24,8 @@ qbraid_qir = LazyLoader("qbraid_qir", globals(), "qbraid_qir")
 
 if TYPE_CHECKING:
     import cirq
-    import pyqir
-    import stim
+    import pyqir  # type: ignore
+    import stim  # type: ignore
 
 
 @requires_extras("stimcirq")

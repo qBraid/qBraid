@@ -15,7 +15,10 @@ Module defining Qiskit OpenQASM conversions
 import qiskit
 from qiskit.qasm2 import dumps as qasm2_dumps
 
+from qbraid.transpiler.annotations import weight
 
+
+@weight(1)
 def qiskit_to_qasm2(circuit: qiskit.QuantumCircuit) -> str:
     """Returns OpenQASM 2 string equivalent to the input Qiskit circuit.
 
