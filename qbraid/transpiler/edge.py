@@ -45,6 +45,7 @@ class Conversion:
         self._native = self._is_module_native(conversion_func)
         self._supported = self._is_conversion_supported()
         self._weight = weight or getattr(conversion_func, "weight", 1)
+        self._weight = 1 / self._weight
 
     @property
     def source(self) -> str:

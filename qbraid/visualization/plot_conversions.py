@@ -100,7 +100,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     pos = rx.spring_layout(graph, seed=seed)  # good seeds: 123, 134
     kwargs = {}
     if edge_labels:
-        kwargs["edge_labels"] = lambda edge: edge["weight"]
+        kwargs["edge_labels"] = lambda edge: round(edge["weight"], 2)
     mpl_draw(
         graph,
         pos,
