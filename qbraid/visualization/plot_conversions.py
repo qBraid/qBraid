@@ -11,7 +11,7 @@
 Module for plotting qBraid transpiler quantum program conversion graphs.
 
 """
-from typing import TYPE_CHECKING, Callable, Optional
+from typing import TYPE_CHECKING, Optional
 
 import rustworkx as rx
 from qbraid_core._import import LazyLoader
