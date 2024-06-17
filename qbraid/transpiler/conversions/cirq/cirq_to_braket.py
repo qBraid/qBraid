@@ -27,7 +27,7 @@ try:
     from braket.circuits import Instruction as BKInstruction
     from braket.circuits import gates as braket_gates
     from braket.circuits import noises as braket_noise_gate
-except ImportError:
+except ImportError:  # pragma: no cover
     BKCircuit = None
     BKInstruction = None
     braket_gates = None
@@ -40,7 +40,7 @@ from cirq.linalg.decompositions import kak_decomposition
 
 try:
     import cirq_ionq.ionq_native_gates as cirq_ionq_ops
-except ImportError:
+except ImportError:  # pragma: no cover
     cirq_ionq_ops = None
 
 import qbraid.programs.libs.cirq
@@ -49,7 +49,7 @@ from qbraid.transpiler.exceptions import CircuitConversionError
 
 try:
     from .braket_custom import C as BKControl
-except ImportError:
+except ImportError:  # pragma: no cover
     BKControl = None
 
 if TYPE_CHECKING:

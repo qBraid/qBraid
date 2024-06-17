@@ -39,6 +39,7 @@ class TargetProfile(Mapping):
         action_type: Optional[Union[DeviceActionType, str]] = None,
         num_qubits: Optional[int] = None,
         program_spec: Optional[ProgramSpec] = None,
+        provider_name: Optional[str] = None,
         **kwargs,
     ) -> None:
         """
@@ -53,6 +54,7 @@ class TargetProfile(Mapping):
             num_qubits (int): Number of qubits supported by the device.
             program_spec (optional, ProgramSpec): Specification for the program, encapsulating
                 program type and other metadata.
+            provider_name (optional, str): Name of the quantum device provider.
 
         Raises:
             TypeError: If any of the inputs are not of the expected type.
@@ -79,6 +81,8 @@ class TargetProfile(Mapping):
             raise TypeError("device_num_qubits must be an integer")
         if program_spec and not isinstance(program_spec, ProgramSpec):
             raise TypeError("program_spec must be an instance of ProgramSpec")
+        if provider_name and not isinstance(provider_name, str):
+            raise TypeError("provider_name must be a string")
 
         self._data = {
             "device_id": device_id,
@@ -86,6 +90,7 @@ class TargetProfile(Mapping):
             "action_type": action_type.name if action_type else None,
             "num_qubits": num_qubits,
             "program_spec": program_spec,
+            "provider_name": provider_name,
             **kwargs,
         }
 

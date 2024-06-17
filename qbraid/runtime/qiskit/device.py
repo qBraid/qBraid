@@ -16,9 +16,9 @@ from typing import TYPE_CHECKING, Optional, Union
 
 from qiskit_ibm_runtime import QiskitRuntimeService
 
+from qbraid.programs import load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, DeviceType
-from qbraid.transforms.qiskit import transform
 
 from .job import QiskitJob
 
@@ -70,7 +70,9 @@ class QiskitBackend(QuantumDevice):
 
     def transform(self, run_input: "qiskit.QuantumCircuit") -> "qiskit.QuantumCircuit":
         """Transpile a circuit for the device."""
-        return transform(run_input, device=self)
+        program = load_program(run_input)
+        program.transform(self)
+        return program.program
 
     def submit(
         self,

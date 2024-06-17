@@ -157,3 +157,7 @@ class OpenQasm2Program(QbraidProgram):
     def reverse_qubit_order(self) -> None:
         """Reverses the qubit ordering of a openqasm program."""
         raise NotImplementedError
+
+    def transform(self, device) -> None:
+        """Transform program to according to device target profile."""
+        raise NotImplementedError

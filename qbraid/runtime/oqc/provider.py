@@ -49,6 +49,7 @@ class OQCProvider(QuantumProvider):
             program_spec=ProgramSpec(str, alias="qasm2"),
             device_name=device_name,
             endpoint_url=data["url"],
+            provider_name="Oxford",
         )
 
     def get_devices(self, **kwargs) -> list[OQCDevice]:

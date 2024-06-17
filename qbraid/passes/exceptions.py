@@ -9,19 +9,12 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for applying runtime transforms to Pytket circuits.
-
-.. currentmodule:: qbraid.transforms.pytket
-
-Functions
-----------
-
-.. autosummary::
-   :toctree: ../stubs/
-
-   harmony_transform
+Module defining exceptions for errors raised by qBraid transforms.
 
 """
-from .ionq import harmony_transform
 
-__all__ = ["harmony_transform"]
+from qbraid.exceptions import QbraidError
+
+
+class QasmDecompositionError(QbraidError):
+    """For errors raised during OpenQASM decomposition processes."""

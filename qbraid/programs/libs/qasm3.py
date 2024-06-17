@@ -444,3 +444,7 @@ class OpenQasm3Program(QbraidProgram):
             qubit_mapping[reg] = {old_id: size - old_id - 1 for old_id in range(size)}
 
         return self.apply_qubit_mapping(qubit_mapping)
+
+    def transform(self, device) -> None:
+        """Transform program to according to device target profile."""
+        raise NotImplementedError

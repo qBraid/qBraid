@@ -12,15 +12,9 @@
 Unit tests for retrieving and post-processing experimental results.
 
 """
-import os
-
 import pytest
 
 from qbraid.runtime.result import GateModelJobResult, normalize_measurement_counts
-
-# Skip tests if IBM/AWS account auth/creds not configured
-skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
-REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of IBM/AWS storage)"
 
 
 @pytest.mark.parametrize(
@@ -88,3 +82,23 @@ def test_normalize_single_dict():
     measurements = [{"0": 2, "1": 3, "10": 4, "11": 1}]
     expected = [{"00": 2, "01": 3, "10": 4, "11": 1}]
     assert normalize_measurement_counts(measurements) == expected
+
+
+class MockBatchResult(GateModelJobResult):
+    """Mock batch result for testing."""
+
+    def measurements(self):
+        """Return measurements as list."""
+        raise NotImplementedError
+
+    def raw_counts(self, **kwargs):
+        """Returns raw histogram data of the run."""
+        return [{" 1": 0, "0": 550}, {" 1": 474, "0": 550}]
+
+
+def test_batch_measurement_counts():
+    """Test batch measurement counts."""
+    result = MockBatchResult(None)
+    counts = result.measurement_counts(include_zero_values=False)
+    expected = [{"0": 550}, {"0": 550, "1": 474}]
+    assert counts == expected

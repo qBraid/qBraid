@@ -98,6 +98,7 @@ class QiskitRuntimeProvider(QuantumProvider):
             program_spec=program_spec,
             instance=backend._instance,
             max_shots=config.max_shots,
+            provider_name="IBM",
         )
 
     def get_devices(

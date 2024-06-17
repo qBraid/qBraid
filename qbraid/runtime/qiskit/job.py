@@ -41,24 +41,40 @@ IBM_JOB_STATUS_MAP = {
 
 
 class QiskitJob(QuantumJob):
-    """Wrapper class for IBM Qiskit ``Job`` objects."""
+    """Class for interfacing with a Qiskit IBM ``RuntimeJob``."""
 
     def __init__(
-        self, job_id: str, job: "Optional[qiskit_ibm_runtime.RuntimeJob]" = None, **kwargs
+        self,
+        job_id: str,
+        job: "Optional[qiskit_ibm_runtime.RuntimeJob]" = None,
+        service: "Optional[qiskit_ibm_runtime.QiskitRuntimeService]" = None,
+        **kwargs,
     ):
-        """Create a ``QiskitJob`` object."""
+        """Create a ``QiskitJob`` instance."""
         super().__init__(job_id, **kwargs)
-        self._job = job or self._get_job()
+        self._job = job or self._get_job(service=service)
 
-    def _get_job(self):
-        """Return the job like object that is being wrapped."""
-        try:
-            if self._device and getattr(self._device, "_service", None) is not None:
+    def _get_job(self, service: "Optional[qiskit_ibm_runtime.QiskitRuntimeService]" = None):
+        """Return the qiskit_ibm_runtime.RuntimeJob associated with instance id attribute.
+
+        Attempts to retrieve a job using a specified or default service. Handles
+        service initialization with error management for authentication issues.
+
+        Raises:
+            QbraidRuntimeError: If there is an error initializing the service or retrieving the job.
+        """
+        if service is None:
+            if self._device and getattr(self._device, "_service", None):
                 service = self._device._service
             else:
-                service = QiskitRuntimeService()
+                try:
+                    service = QiskitRuntimeService()
+                except Exception as err:
+                    raise QbraidRuntimeError("Failed to initialize the quantum service.") from err
+
+        try:
             return service.job(self.id)
-        except Exception as err:  # pylint: disable=broad-exception-caught
+        except Exception as err:
             raise QbraidRuntimeError(f"Error retrieving job {self.id}") from err
 
     def status(self):

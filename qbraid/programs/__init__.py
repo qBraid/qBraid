@@ -31,6 +31,7 @@ Functions
    load_program
    get_program_type_alias
    register_program_type
+   unregister_program_type
 
 Classes
 --------
@@ -51,11 +52,12 @@ Exceptions
    PackageValueError
    ProgramTypeError
    QasmError
+   TransformError
 
 """
 from ._import import NATIVE_REGISTRY
 from .alias_manager import get_program_type_alias, parse_qasm_type_alias
-from .exceptions import PackageValueError, ProgramTypeError, QasmError
+from .exceptions import PackageValueError, ProgramTypeError, QasmError, TransformError
 from .loader import load_program
 from .program import QbraidProgram, QuantumProgram
 from .registry import (
@@ -65,6 +67,7 @@ from .registry import (
     QPROGRAM_TYPES,
     derive_program_type_alias,
     register_program_type,
+    unregister_program_type,
 )
 from .spec import ProgramSpec
 
@@ -73,6 +76,7 @@ __all__ = [
     "PackageValueError",
     "ProgramSpec",
     "ProgramTypeError",
+    "TransformError",
     "QPROGRAM",
     "QPROGRAM_ALIASES",
     "QPROGRAM_REGISTRY",
@@ -85,6 +89,7 @@ __all__ = [
     "load_program",
     "parse_qasm_type_alias",
     "register_program_type",
+    "unregister_program_type",
 ]
 
 _lazy_mods = ["libs"]

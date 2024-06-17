@@ -16,10 +16,10 @@ import os
 import textwrap
 
 from qbraid._version import __version__ as qbraid_version
+from qbraid.passes.qasm2.decompose import _decompose_rxx_instr
+from qbraid.passes.qasm3.format import remove_unused_gates
 from qbraid.programs import parse_qasm_type_alias
 from qbraid.transpiler.annotations import weight
-from qbraid.transforms.qasm2.qasm_qelib1 import _decompose_rxx_instr
-from qbraid.transforms.qasm3.format import remove_unused_gates
 
 
 def _get_qasm3_gate_defs() -> str:

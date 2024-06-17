@@ -36,6 +36,7 @@ def valid_target_profile(valid_program_spec) -> TargetProfile:
         action_type=DeviceActionType.OPENQASM,
         num_qubits=5,
         program_spec=valid_program_spec,
+        provider_name="Heisenberg",
     )
 
 
@@ -78,11 +79,13 @@ def test_target_profile_raise_for_bad_input():
         TargetProfile(
             device_id="device123", device_type=DeviceType.SIMULATOR, program_spec="not_a_spec"
         )
+    with pytest.raises(TypeError):
+        TargetProfile(device_id="device123", device_type=DeviceType.SIMULATOR, provider_name=10)
 
 
 def test_target_profile_len(valid_target_profile):
     """Test the __len__ method of TargetProfile"""
-    assert len(valid_target_profile) == 5
+    assert len(valid_target_profile) == 6
 
 
 def test_target_profile_str(valid_target_profile):
@@ -92,7 +95,8 @@ def test_target_profile_str(valid_target_profile):
         "'device_type': 'SIMULATOR', "
         "'action_type': 'OPENQASM', "
         "'num_qubits': 5, "
-        "'program_spec': <ProgramSpec('qasm2', builtins)>}"
+        "'program_spec': <ProgramSpec('qasm2', builtins)>, "
+        "'provider_name': 'Heisenberg'}"
     )
     assert str(valid_target_profile).startswith(expected_str)
 

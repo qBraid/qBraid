@@ -17,6 +17,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from qbraid.transpiler.graph import ConversionGraph
 from qbraid.visualization.plot_conversions import plot_conversion_graph
 
 
@@ -69,3 +70,12 @@ def test_plot_conversion_graph_with_custom_title_and_legend(
     plot_conversion_graph(graph=mock_graph, title=title, legend=True, show=False)
     mock_plt.title.assert_called_once_with(title)
     mock_plt.legend.assert_called_once()
+
+
+@patch("qbraid.visualization.plot_conversions.plt", autospec=True)
+@patch("qbraid.visualization.plot_conversions.rx.visualization.mpl_draw", autospec=True)
+def test_invoke_plot_method_from_conversion_graph(mock_draw, mock_plt):
+    """Test that the graph is displayed when invoked via ConversionGraph.plot method."""
+    graph = ConversionGraph()
+    graph.plot(show=True)
+    mock_plt.show.assert_called_once()

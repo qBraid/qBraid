@@ -1,7 +1,7 @@
-qbraid.transforms
-==================
+qbraid.passes
+===============
 
-.. automodule:: qbraid.transforms
+.. automodule:: qbraid.passes
    :undoc-members:
    :show-inheritance:
 
@@ -12,7 +12,5 @@ Submodules
 .. autosummary::
    :toctree: ../stubs/
 
-   cirq
-   pytket
    qasm2
    qasm3

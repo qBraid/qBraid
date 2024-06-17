@@ -18,9 +18,11 @@ from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 from braket.aws import AwsDevice
 from braket.circuits import Circuit
 
+from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY, load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
-from qbraid.transforms.braket import transform
+from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
+from qbraid.transpiler import transpile
 
 from .availability import next_available_time
 from .job import BraketQuantumTask
@@ -93,7 +95,51 @@ class BraketDevice(QuantumDevice):
         self, run_input: Union[Circuit, AnalogHamiltonianSimulation]
     ) -> Union[Circuit, AnalogHamiltonianSimulation]:
         """Transpile a circuit for the device."""
-        return transform(run_input, device=self)
+        program = run_input
+
+        provider = (self.profile.get("provider_name") or "").upper()
+        action_type = (self.profile.get("action_type") or "").upper()
+        device_type: str = self.device_type.name
+
+        if action_type == "OPENQASM":
+            if not isinstance(program, Circuit):
+                raise DeviceProgramTypeMismatchError(program, str(Circuit), action_type)
+
+            if provider == "IONQ":
+                graph = self.scheme.conversion_graph
+                if (
+                    graph is not None
+                    and graph.has_edge("pytket", "braket")
+                    and QPROGRAM_REGISTRY["pytket"] == NATIVE_REGISTRY["pytket"]
+                    and QPROGRAM_REGISTRY["braket"] == NATIVE_REGISTRY["braket"]
+                    and self._target_spec.alias == "braket"
+                ):
+                    tk_circuit = transpile(
+                        program, "pytket", max_path_depth=1, conversion_graph=graph
+                    )
+                    tk_program = load_program(tk_circuit)
+                    tk_program.transform(self)
+                    tk_transformed = tk_program.program
+                    braket_transformed = transpile(
+                        tk_transformed, "braket", max_path_depth=1, conversion_graph=graph
+                    )
+                    program = braket_transformed
+
+            else:
+                qprogram = load_program(program)
+                qprogram.transform(self)
+                program = qprogram.program
+
+        elif action_type == "AHS":
+            if not isinstance(program, AnalogHamiltonianSimulation):
+                raise DeviceProgramTypeMismatchError(
+                    program, str(AnalogHamiltonianSimulation), action_type
+                )
+
+            if device_type == "QPU":
+                program = program.discretize(self._device)
+
+        return program
 
     def submit(
         self,

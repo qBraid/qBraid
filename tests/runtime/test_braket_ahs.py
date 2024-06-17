@@ -45,8 +45,8 @@ from qbraid.runtime.braket.job import BraketQuantumTask
 from qbraid.runtime.braket.provider import BraketProvider
 from qbraid.runtime.braket.result import BraketAhsJobResult
 from qbraid.runtime.enums import DeviceActionType, DeviceStatus, DeviceType
+from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
 from qbraid.runtime.profile import TargetProfile
-from qbraid.transforms import DeviceProgramTypeMismatchError
 
 AQUILA_ARN = Devices.QuEra.Aquila
 TASK_ARN = "arn:aws:braket:us-east-1:0123456789012:quantum-task/" + str(uuid.uuid4())

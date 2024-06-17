@@ -82,6 +82,7 @@ class QbraidProvider(QuantumProvider):
             device_id=device_data["qbraid_id"],
             num_qubits=num_qubits,
             program_spec=program_spec,
+            provider_name="qBraid",
         )
 
     def get_devices(self, **kwargs) -> list[QbraidDevice]:
