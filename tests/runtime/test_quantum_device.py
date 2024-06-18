@@ -16,6 +16,7 @@ Unit tests for QbraidDevice, QbraidJob, and QbraidJobResult classes using the qb
 """
 import random
 from typing import Any, Optional
+from unittest.mock import patch
 
 import cirq
 import numpy as np
@@ -90,6 +91,14 @@ JOB_RESULT = {
 
 class MockClient:
     """Mock client for testing."""
+
+    def search_devices(self, query: dict[str, Any]) -> list[dict[str, Any]]:
+        """Returns a list of devices matching the given query."""
+        if query.get("status") == "Bad status":
+            raise QuantumServiceRequestError("No devices found matching given criteria")
+        if query.get("provider") == "qBraid":
+            return [DEVICE_DATA]
+        return []
 
     def get_device(self, qbraid_id: Optional[str] = None, **kwargs):
         """Returns the device with the given ID."""
@@ -287,3 +296,42 @@ def test_queue_depth_raises(mock_basic_device):
     """Test raising exception when queue depth is unavailable."""
     with pytest.raises(ResourceNotFoundError):
         mock_basic_device.queue_depth()
+
+
+def test_get_devices(mock_client):
+    """Test getting devices from the client."""
+    client = mock_client
+    provider = QbraidProvider(client=client)
+    devices = provider.get_devices(qbraid_id="qbraid_qir_simulator")
+    assert len(devices) == 1
+    assert devices[0].id == "qbraid_qir_simulator"
+
+
+def test_initialize_client_raises_for_multiple_auth_params():
+    """Test raising exception when initializing client if provided
+    both an api key and a client object."""
+    with pytest.raises(ValueError):
+        QbraidProvider(api_key="abc123", client=MockClient())
+
+
+def test_resource_not_found_error_for_bad_api_key():
+    """Test raising ResourceNotFoundError when the client fails to authenticate."""
+    provider = QbraidProvider(api_key="abc123")
+    with pytest.raises(ResourceNotFoundError):
+        _ = provider.client
+
+
+def test_search_devices_resource_not_found_for_bad_client():
+    """Test raising ResourceNotFoundError when the client fails to authenticate."""
+    provider = QbraidProvider(client=MockClient())
+    with pytest.raises(ResourceNotFoundError):
+        provider.get_devices(qbraid_id="qbraid_qir_simulator", status="Bad status")
+
+
+@patch("qbraid.runtime.native.provider.QuantumClient")
+def test_client_from_valid_api_key(client):
+    """Test a valid API key."""
+    mock_client = MockClient()
+    client.return_value = mock_client
+    provider = QbraidProvider(api_key="abc123")
+    assert provider.client == mock_client

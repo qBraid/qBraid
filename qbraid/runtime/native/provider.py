@@ -44,7 +44,7 @@ class QbraidProvider(QuantumProvider):
         if api_key and client:
             raise ValueError("Provide either api_key or client, not both.")
 
-        self._api_key = None
+        self._api_key = api_key
         self._client = client
 
     def save_config(self, **kwargs):
