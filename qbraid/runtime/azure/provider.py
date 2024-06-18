@@ -14,27 +14,22 @@ Module defining Azure session and provider classes
 """
 from uuid import uuid4
 from typing import Any
-from qiskit import QuantumCircuit, qasm2
 from azure.storage.blob import BlobServiceClient, ContentSettings
 
 from qbraid_core.sessions import Session
 from qbraid_core.exceptions import RequestsApiError
-
 from qbraid.runtime.enums import DeviceType
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
+from qbraid.programs.spec import ProgramSpec
 
 from .device import AzureQuantumDevice
 
-import json
+import openqasm3
+import pyquil
 
 class AzureSession(Session):
     """Azure session class."""
-
-    # NOTE: The below initialization outline is simply an outline, and does not represent a correct implementation.
-    # Because of the fact that Azure uses two step authentication, we cannot assume that the user already has the
-    # access token. So this initialization will intead most likely need to ask the user for the client ID and client
-    # secret so that we can then programmatically retrieve the access token, and form the authorization header.
 
     def __init__(self, client_id: str, client_secret: str, tenant_id: str, 
                  location_name: str, subscription_id: str, resource_group_name: str, 
@@ -46,19 +41,17 @@ class AzureSession(Session):
         self.workspace_name = workspace_name
         self.storage_account = storage_account
         self.connection_string = connection_string
-        self.jobs = {}
-
-        self.session = Session()
-        self.quantum_access_token = AzureHelperFunctions.quantum_access_token(client_id, client_secret, tenant_id, self.session)
-        self.storage_access_token = AzureHelperFunctions.storage_access_token(client_id, client_secret, tenant_id, self.session)
-
-        self.base_url=f"https://{location_name}.quantum.azure.com",
-        self.json_headers={"Content-Type": "application/json"},
-        self.auth_headers={"Authorization": f"Bearer {self.quantum_access_token}"}
-
         self.backends={"Syntax Checker":"quantinuum.sim.h1-1sc", 
                        "Emulator":"quantinuum.sim.h1-1e", 
-                       "QPU":"quantinuum.qpu.h1-1"}
+                       "QPU":"quantinuum.qpu.h1-1"} # will need to add for pyquil
+        self.formats={"quantinuum":["honeywell.openqasm.v1", "honeywell.quantum-results.v1"]}
+
+        self.jobs = {}
+        self.session = Session() 
+    
+        self.quantum_access_token = AzureHelperFunctions.quantum_access_token(client_id, client_secret, tenant_id, self.session)
+        self.storage_access_token = AzureHelperFunctions.storage_access_token(client_id, client_secret, tenant_id, self.session)
+        self.base_url=f"https://{location_name}.quantum.azure.com",
 
         super().__init__(
             base_url=self.base_url
@@ -72,46 +65,42 @@ class AzureSession(Session):
         devices = r.json()
 
         devices_dict = AzureHelperFunctions.device_manager(devices)
-        return devices_dict
+        devices_list = [{'id': k, **v} for k, v in devices_dict.items()]
+
+        return devices_list
     
     def get_device(self, device_id: str) -> dict[str, Any]:
         """Get a specific Azure Quantum device."""
         devices = self.get_devices()
-        return devices.get(device_id)
+        for i in devices:
+            if i.get("id") == device_id:
+                return i
 
-    def create_job(self, name: str, backend: str, qubits: int) -> dict[str, Any]:
+    def create_job(self, input_run: Any, name: str, provider: str, backend: str, qubits: int) -> dict[str, Any]:
         """Create a new job on the Azure Quantum API."""
         container = AzureHelperFunctions.create_container(self.storage_access_token, self.subscription_id, self.resource_group_name, 
                                                           self.storage_account, self.session)
         
         job_id = container[0]; container_name = container[1]
         
-        job = AzureHelperFunctions.sample_circuit()
+        job = input_run
         routes = AzureHelperFunctions.create_job_routes(self.session, container_name, job, self.connection_string,
                                                         self.location_name, self.subscription_id, self.resource_group_name,
                                                         self.workspace_name, self.quantum_access_token)
     
-        
         containerSasUri = routes[0]; inputSasUri = routes[1]; outputSasUri = routes[2]; job_headers = routes[3]
 
-        
-
         job_payload = AzureHelperFunctions.create_payload(containerSasUri, inputSasUri, outputSasUri, job_id, job_name=name, 
-                                        input_data_format="honeywell.openqasm.v1", provider="quantinuum", 
+                                        input_data_format=self.formats[provider][0], provider=provider, 
                                         backend=self.backends[backend], num_qubits=qubits, 
-                                        num_shots=100, total_count=100, output_data_format="honeywell.quantum-results.v1")
+                                        num_shots=100, total_count=100, output_data_format=self.formats[provider][1])
         
         job_approval = AzureHelperFunctions.submit_job(job_id, job_payload, job_headers, self.location_name,
                                                        self.subscription_id, self.resource_group_name,
                                                        self. workspace_name, self.session)
-        print(type(job_approval))
-        job_json = json.loads(job_approval.decode('utf-8'))
 
-        print(type(job_json))
-        print(job_json)
+        self.jobs[job_id] = [job_headers, container_name]
 
-        self.jobs[job_id] = [job_headers, job_json["outputDataUri"]]
-        print(self.jobs)
         return job_approval
 
     def get_job(self, job_id: str) -> dict[str, Any]:
@@ -121,15 +110,14 @@ class AzureSession(Session):
         header = self.jobs[job_id][0]
         url = f"https://{self.location_name}.quantum.azure.com/subscriptions/{self.subscription_id}/resourceGroups/{self.resource_group_name}/providers/Microsoft.Quantum/workspaces/{self.workspace_name}/jobs/{job}?api-version=2022-09-12-preview"
 
-        header={"Content-Type": "application/octet-stream",
-                "Authorization": f"{self.storage_access_token}"}
-
-        print("the job id that we're trying to get is ", job)
-        print("the headers are ", header)
-
         response = self.session.get(url, headers=header)
-        print("the response is: ")
-        return response.content
+        return response.json()
+    
+    def get_job_data(self, job_id: str) -> dict[str, Any]:
+        """Get the data from a specific Azure Quantum job."""
+
+        data = AzureHelperFunctions.get_output_data(f"{self.jobs[job_id][1]}", self.connection_string)
+        return data
 
     def cancel_job(self, job_id: str):
         """Cancel a specific Azure Quantum job."""
@@ -140,25 +128,45 @@ class AzureSession(Session):
 
             self.session.delete(url, headers=header)
             return "Your job has been canceled."
+        
         except RequestsApiError:
             print("The job has already been submitted and cannot be canceled.")
-
-    
 
 class AzureQuantumProvider(QuantumProvider):
     """Azure provider class."""
 
-    def __init__(self, access_token: str, location_name: str):
+    def __init__(self, client_id: str, client_secret: str, tenant_id: str, 
+                 location_name: str, subscription_id: str, resource_group_name: str, 
+                 workspace_name: str, storage_account: str, connection_string: str):
         super().__init__()
-        self.session = AzureSession(access_token, location_name)
+        self.session = AzureSession(client_id=client_id, client_secret=client_secret, tenant_id=tenant_id,
+                       location_name=location_name, subscription_id=subscription_id, resource_group_name=resource_group_name,
+                       workspace_name=workspace_name, storage_account=storage_account, connection_string=connection_string)
 
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
         """Build a profile for an Azure device."""
+
+        device = data.get("id")
+
+        if "qpu" not in device:
+            device_type = DeviceType.SIMULATOR
+        else:
+            device_type = DeviceType.QPU
+
+        if "rigetti" in device:
+            program_spec=ProgramSpec(pyquil.ast.Program)
+        else:
+            program_spec=ProgramSpec(openqasm3.ast.Program)  
+              
+        queue_time = data.get("averageQueueTime")
+        status = data.get("status")
+        
         return TargetProfile(
-            device_id=data.get("backend"),
-            device_type=DeviceType.QPU,
-            num_qubits=data.get("qubits"),
-            program_spec=None,  # TODO: Add program spec
+            device_id=data.get("id"),
+            device_type=device_type,
+            program_spec=program_spec,
+            queue_time=queue_time,
+            status=status
         )
 
     def get_device(self, device_id: str) -> dict[str, Any]:
@@ -228,7 +236,9 @@ class AzureHelperFunctions():
  
         storage_access_token = token
 
-        # NOTE: This step can be replaced with any code that qBraid has to generate job IDs
+        # NOTE: This step can be replaced with any code that qBraid has to generate job IDs,
+        # but even the official Azure documentation uses UUIDs for job IDs
+
         job_id = str(uuid4())
         container_name = f"job-{job_id}" # name of the container to create
 
@@ -310,13 +320,13 @@ class AzureHelperFunctions():
         url = f"https://{location_name}.quantum.azure.com/subscriptions/{subscription_id}/resourceGroups/{resource_group_name}/providers/Microsoft.Quantum/workspaces/{workspace_name}/jobs/{job_id}?api-version=2022-09-12-preview"
 
         response = session.put(url, json=payload, headers=job_header)
-        return response.content
-    
-    def sample_circuit():
-        circuit = QuantumCircuit(2)
-        circuit.h(0)
-        circuit.cx(0, 1)
-        circuit.measure_all()
-        qasm_str = qasm2.dumps(circuit)
+        return response.json()
 
-        return qasm_str
+    def get_output_data(container_name: str, connection_string: str) -> dict[str, Any]:
+
+        blob_service_client = BlobServiceClient.from_connection_string(connection_string)
+        container_client = blob_service_client.get_container_client(container_name)
+        blob_client = container_client.get_blob_client("rawOutputData")
+        blob_data = blob_client.download_blob().readall().decode('utf-8')
+
+        return blob_data
