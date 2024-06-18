@@ -1,0 +1,33 @@
+# Copyright (C) 2024 qBraid
+#
+# This file is part of the qBraid-SDK
+#
+# The qBraid-SDK is free software released under the GNU General Public License v3
+# or later. You can redistribute and/or modify it under the terms of the GPL v3.
+# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#
+# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+
+"""
+Device class for IQM devices.
+
+"""
+
+from qbraid.runtime.device import QuantumDevice
+
+from .job import IQMJob
+
+class IQMDevice(QuantumDevice):
+    """Device class for IQM devices."""
+
+    def __init__(self, profile):
+        """Create an IQMDevice object."""
+        super().__init__(profile)
+
+    def status(self):
+        """Return the status of the device."""
+        raise NotImplementedError
+
+    def submit(self, run_input):
+        """Submit a run to the device."""
+        raise NotImplementedError
