@@ -194,3 +194,21 @@ def test_raise_program_type_error():
             OpenQasm2Program({})
     finally:
         unregister_program_type("dict")
+
+
+def test_num_classical_bits():
+    """Test calculating number of classical bits in qasm2 circuit"""
+    qasm = """
+OPENQASM 2.0;
+include "qelib1.inc";
+
+qreg q[2];
+creg c[2];
+
+h q[0];
+cx;
+
+measure q[0] -> c[0];
+measure q[1] -> c[1];
+"""
+    assert OpenQasm2Program(qasm).num_clbits == 2

@@ -55,7 +55,7 @@ class OpenQasm2Program(QbraidProgram):
     @property
     def num_clbits(self) -> int:
         """Return the number of classical bits in the circuit."""
-        return self._get_bits("c")
+        return len(self._get_bits("c"))
 
     @staticmethod
     def _get_max_count(counts_dict) -> int:
