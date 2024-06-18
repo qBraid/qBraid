@@ -77,7 +77,11 @@ class QbraidJobResult(GateModelJobResult):
 
     def raw_counts(self, decimal: bool = False, **kwargs):
         """Returns raw histogram data of the run"""
-        counts = self._array_to_histogram(self.measurements())
+        measurements = self.measurements()
+        if measurements is None:
+            raise ValueError("No measurement data available.")
+
+        counts = self._array_to_histogram(measurements)
 
         if decimal is True:
             counts = {int(key, 2): value for key, value in counts.items()}
