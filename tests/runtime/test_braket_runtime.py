@@ -134,6 +134,30 @@ class TestAwsDevice:
         return "us-east-1"
 
 
+class TestAwsQuantumTask:
+    """Test class for braket quantum task."""
+
+    def __init__(self):
+        self.id = "test"
+
+    def status(self):
+        return DeviceStatus.OFFLINE
+    
+    def run_batch(self, circuits, **kwargs):
+        return TestAwsJob(circuits)
+
+
+class TestAwsJob:
+    """Test class for braket job."""
+
+    def __init__(self, circuits):
+        self.circuits = circuits
+    
+    @property
+    def tasks(self):
+        return [TestAwsQuantumTask() for _ in range(len(self.circuits))]
+
+
 def test_device_wrapper_id_error(braket_provider):
     """Test raising device wrapper error due to invalid device ID."""
     with pytest.raises(ValueError):
@@ -178,6 +202,14 @@ def test_circuit_too_many_qubits(mock_aws_device, sv1_profile):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)
             device.run(circuit)
+
+@patch("qbraid.runtime.braket.device.AwsDevice")
+def test_batch_run(mock_aws_device, sv1_profile):
+    """Test batch run method for BraketDevice"""
+    mock_aws_device.return_value = TestAwsQuantumTask()
+    device = BraketDevice(sv1_profile)
+    circuits = [Circuit().h(0).cnot(0, 1), Circuit().h(0).cnot(0, 1)]
+    job = device.run(circuits, shots=10)
 
 
 def test_aws_device_available(braket_provider):
