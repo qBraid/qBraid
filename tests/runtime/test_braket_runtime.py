@@ -142,7 +142,7 @@ class TestAwsQuantumTask:
 
     def status(self):
         return DeviceStatus.OFFLINE
-    
+
     def run_batch(self, circuits, **kwargs):
         return TestAwsJob(circuits)
 
@@ -152,7 +152,7 @@ class TestAwsJob:
 
     def __init__(self, circuits):
         self.circuits = circuits
-    
+
     @property
     def tasks(self):
         return [TestAwsQuantumTask() for _ in range(len(self.circuits))]
@@ -210,6 +210,7 @@ def test_batch_run(mock_aws_device, sv1_profile):
     device = BraketDevice(sv1_profile)
     circuits = [Circuit().h(0).cnot(0, 1), Circuit().h(0).cnot(0, 1)]
     job = device.run(circuits, shots=10)
+    assert len(job) == 2
 
 
 def test_aws_device_available(braket_provider):
@@ -230,6 +231,30 @@ def test_aws_device_available(braket_provider):
             datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%SZ")
         except ValueError:
             pytest.fail("iso_str not in expected format")
+
+
+def test_aws_device_unavailable(braket_provider):
+    """Test BraketDevice availaibility functions when device is offline/available"""
+    with (
+        patch("qbraid.runtime.braket.provider.AwsDevice") as mock_aws_device,
+        patch("qbraid.runtime.braket.device.AwsDevice") as mock_aws_device_2,
+    ):
+        mock_device = TestAwsDevice(SV1_ARN)
+        mock_device.status = "OFFLINE"
+        mock_aws_device.return_value = mock_device
+        mock_aws_device_2.return_value = mock_device
+        device = braket_provider.get_device(SV1_ARN)
+        available, is_available_time, iso_str = device.availability_window()
+        assert not available
+        assert len(is_available_time) == 0
+        assert iso_str is None
+
+        mock_device.status = "ONLINE"
+        mock_device.is_available = True
+        available, is_available_time, iso_str = device.availability_window()
+        assert available
+        assert len(is_available_time) == 0
+        assert iso_str is None
 
 
 def test_get_aws_session():
@@ -470,3 +495,9 @@ def test_braket_ionq_transform(mock_aws_device):
     assert toffoli_circuit.depth == 1
     assert transformed_circuit.depth == 11
     assert circuits_allclose(transformed_circuit, toffoli_circuit)
+
+def test_save_config(braket_provider):
+    try:
+        braket_provider.save_config("test_key", "test_secret")
+    except Exception as e: # pylint: disable=broad-exception-caught
+        pytest.fail(f"Unexpected exception: {e}")
