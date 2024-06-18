@@ -93,7 +93,7 @@ class MockQbraidClient:
 @pytest.fixture
 def mock_provider():
     """Mock QbraidProvider class for testing."""
-    yield QbraidProvider(client=MockQbraidClient())
+    return QbraidProvider(client=MockQbraidClient())
 
 
 @pytest.fixture
@@ -160,7 +160,7 @@ def test_get_jobs_no_results(capfd, mock_provider, mock_ipython):
     """Test ``get_jobs`` stdout for results == 0.
     When no results are found, a single line is printed.
     """
-    mock_provider.display_jobs(device_id="non-existent-device")
+    mock_provider.display_jobs(device_id="non-existent-device", status="ONLINE")
     out, err = capfd.readouterr()
     assert out == "No jobs found matching given criteria\n"
     assert len(err) == 0
