@@ -18,6 +18,7 @@ import pytest
 
 from qbraid.programs.alias_manager import (
     _get_program_type_alias,
+    find_str_type_alias,
     get_program_type_alias,
     parse_qasm_type_alias,
 )
@@ -174,3 +175,37 @@ def test_get_program_type_alias_safe_flag_handling():
     """Test handling of 'safe' flag with non-matching program types."""
     result = get_program_type_alias(object(), safe=True)
     assert result is None, "Should return None when safe is True and no matching types are found"
+
+
+def test_find_single_str_type_alias():
+    """Test the case where there is exactly one valid string key."""
+    registry = {
+        "qasm2": int,
+        "qasm3": float,
+        "custom_alias": str,
+    }
+    assert find_str_type_alias(registry) == "custom_alias"
+
+
+def test_find_str_type_alias_raises_value_error():
+    """Test the case where there are multiple valid string keys, expecting a ValueError."""
+    registry = {
+        "qasm2": int,
+        "qasm3": float,
+        "alias1": str,
+        "alias2": str,
+    }
+    with pytest.raises(ValueError) as exc_info:
+        find_str_type_alias(registry)
+    assert "Multiple additional keys with type 'str' found: ['alias1', 'alias2']" in str(
+        exc_info.value
+    )
+
+
+def test_find_no_str_type_alias():
+    """Test the case where there are no valid string keys."""
+    registry = {
+        "qasm2": int,
+        "qasm3": float,
+    }
+    assert find_str_type_alias(registry) is None

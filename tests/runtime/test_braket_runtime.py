@@ -14,9 +14,9 @@
 Unit tests for BraketProvider class
 
 """
+import datetime
 import json
 import warnings
-from datetime import datetime, time
 from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
@@ -98,8 +98,8 @@ class ExecutionWindow:
     """Test class for execution window."""
 
     def __init__(self):
-        self.windowStartHour = time(0)
-        self.windowEndHour = time(23, 59, 59)
+        self.windowStartHour = datetime.time(0)
+        self.windowEndHour = datetime.time(23, 59, 59)
         self.executionDay = ExecutionDay.EVERYDAY
 
 
@@ -303,7 +303,7 @@ def test_device_run_circuit_too_many_qubits(mock_aws_device, sv1_profile):
 )
 def test_availability_future_utc_datetime(available_time, expected):
     """Test calculating future utc datetime"""
-    current_utc_datime = datetime(2024, 1, 1, 0, 0, 0)
+    current_utc_datime = datetime.datetime(2024, 1, 1, 0, 0, 0)
     _, datetime_str = _calculate_future_time(available_time, current_utc_datime)
     assert datetime_str == expected
 
@@ -323,7 +323,7 @@ def test_device_availability_window(braket_provider, mock_sv1):
         assert len(is_available_time.split(":")) == 3
         assert isinstance(iso_str, str)
         try:
-            datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%SZ")
+            datetime.datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%SZ")
         except ValueError:
             pytest.fail("iso_str not in expected format")
 
