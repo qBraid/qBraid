@@ -18,7 +18,7 @@ from qbraid.runtime.device import QuantumDevice
 
 if TYPE_CHECKING:
     import qbraid.runtime
-    import qbraid.runtime.azure.provider
+    from qbraid.runtime.azure.provider import AzureSession
 
 
 class AzureQuantumDevice(QuantumDevice):
@@ -41,11 +41,12 @@ class AzureQuantumDevice(QuantumDevice):
         """Return the current status of the Azure device."""
         device_data = self.session.get_device(self.id)
 
-        raise NotImplementedError
+        return device_data.get("status")
 
-    def submit(self, run_input, **kwargs):
+    def submit(self, run_input, name, provider, backend, qubits, **kwargs):
         """Submit a job to the Azure device."""
-        is_single_input = not isinstance(run_input, list)
-        run_input = [run_input] if is_single_input else run_input
+        #is_single_input = not isinstance(run_input, list)
+        #run_input = [run_input] if is_single_input else run_input
 
-        raise NotImplementedError
+        job = self._session.create_job(run_input, name, provider, backend, qubits)
+        return job
