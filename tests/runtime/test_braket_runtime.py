@@ -14,9 +14,9 @@
 Unit tests for BraketProvider class
 
 """
+import datetime
 import json
 import warnings
-from datetime import datetime, time
 from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
@@ -98,8 +98,8 @@ class ExecutionWindow:
     """Test class for execution window."""
 
     def __init__(self):
-        self.windowStartHour = time(0)
-        self.windowEndHour = time(23, 59, 59)
+        self.windowStartHour = datetime.time(0)
+        self.windowEndHour = datetime.time(23, 59, 59)
         self.executionDay = ExecutionDay.EVERYDAY
 
 
@@ -134,10 +134,123 @@ class TestAwsDevice:
         return "us-east-1"
 
 
-def test_device_wrapper_id_error(braket_provider):
+@pytest.fixture
+def mock_sv1():
+    """Return a mock SV1 device."""
+    return TestAwsDevice(SV1_ARN)
+
+
+@pytest.fixture
+def mock_aws_configure():
+    """Mock aws_conifugre function."""
+    with patch("qbraid.runtime.braket.provider.aws_configure") as mock:
+        yield mock
+
+
+@pytest.mark.parametrize(
+    "input_keys, expected_calls",
+    [
+        (
+            {"aws_access_key_id": "AKIA...", "aws_secret_access_key": "secret"},
+            {"aws_access_key_id": "AKIA...", "aws_secret_access_key": "secret"},
+        ),
+        ({}, {"aws_access_key_id": "default_key", "aws_secret_access_key": "default_secret"}),
+        (
+            {"aws_access_key_id": "AKIA..."},
+            {"aws_access_key_id": "AKIA...", "aws_secret_access_key": "default_secret"},
+        ),
+    ],
+)
+def test_save_config(mock_aws_configure, input_keys, expected_calls):
+    """Test save_config method of BraketProvider class."""
+    instance = BraketProvider()
+    instance.aws_access_key_id = "default_key"
+    instance.aws_secret_access_key = "default_secret"
+
+    instance.save_config(**input_keys)
+
+    mock_aws_configure.assert_called_once_with(**expected_calls)
+
+
+def test_provider_get_aws_session():
+    """Test getting an AWS session."""
+    with patch("boto3.session.Session") as mock_boto_session:
+        mock_boto_session.aws_access_key_id.return_value = "aws_access_key_id"
+        mock_boto_session.aws_secret_access_key.return_value = "aws_secret_access_key"
+        aws_session = BraketProvider()._get_aws_session()
+        assert aws_session.boto_session.region_name == "us-east-1"
+        assert isinstance(aws_session, AwsSession)
+
+
+def test_provider_get_devices_raises(braket_provider):
     """Test raising device wrapper error due to invalid device ID."""
     with pytest.raises(ValueError):
         braket_provider.get_device("Id123")
+
+
+def test_provider_build_runtime_profile(mock_sv1):
+    """Test building a runtime profile."""
+    provider = BraketProvider()
+    profile = provider._build_runtime_profile(device=mock_sv1, extra="data")
+    assert profile.get("device_type") == DeviceType.SIMULATOR.name
+    assert profile.get("provider_name") == "Amazon Braket"
+    assert profile.get("device_id") == SV1_ARN
+    assert profile.get("extra") == "data"
+
+
+@pytest.mark.parametrize(
+    "region_names, key, values, expected",
+    [(["us-west-1"], "Project", ["X"], ["arn:aws:resource1", "arn:aws:resource2"])],
+)
+@patch("boto3.client")
+def test_provider_get_tasks_by_tag(mock_boto_client, region_names, key, values, expected):
+    """Test fetching tagged resources from AWS."""
+    mock_client = MagicMock()
+    mock_boto_client.return_value = mock_client
+    mock_client.get_resources.return_value = {
+        "ResourceTagMappingList": [
+            {"ResourceARN": "arn:aws:resource1"},
+            {"ResourceARN": "arn:aws:resource2"},
+        ]
+    }
+
+    provider = BraketProvider()
+    result = provider.get_tasks_by_tag(key, values, region_names)
+
+    # Assert the results
+    mock_boto_client.assert_called_with("resourcegroupstaggingapi", region_name="us-west-1")
+    mock_client.get_resources.assert_called_once_with(TagFilters=[{"Key": key, "Values": values}])
+    assert result == expected
+
+
+def test_provider_get_device(mock_sv1):
+    """Test getting a Braket device."""
+    provider = BraketProvider()
+    with (
+        patch("qbraid.runtime.braket.provider.AwsDevice") as mock_aws_device,
+        patch("qbraid.runtime.braket.device.AwsDevice") as mock_aws_device_2,
+    ):
+        mock_aws_device.return_value = mock_sv1
+        mock_aws_device_2.return_value = mock_sv1
+        device = provider.get_device(SV1_ARN)
+        assert device.id == SV1_ARN
+        assert device.name == "SV1"
+        assert str(device) == "BraketDevice('Amazon Braket SV1')"
+        assert device.status() == DeviceStatus.ONLINE
+        assert isinstance(device, BraketDevice)
+
+
+def test_provider_get_devices(mock_sv1):
+    """Test getting list of Braket devices."""
+    with (
+        patch("qbraid.runtime.braket.provider.AwsDevice.get_devices", return_value=[mock_sv1]),
+        patch("qbraid.runtime.braket.device.AwsDevice") as mock_aws_device_2,
+    ):
+        provider = BraketProvider()
+        mock_aws_device_2.return_value = mock_sv1
+        devices = provider.get_devices()
+        assert len(devices) == 1
+        assert devices[0].id == SV1_ARN
 
 
 @patch("qbraid.runtime.braket.device.AwsDevice")
@@ -153,7 +266,7 @@ def test_device_profile_attributes(mock_aws_device, sv1_profile):
 
 
 @patch("qbraid.runtime.braket.device.AwsDevice")
-def test_queue_depth(mock_aws_device, sv1_profile):
+def test_device_queue_depth(mock_aws_device, sv1_profile):
     """Test getting queue_depth BraketDevice"""
     mock_aws_device.queue_depth.return_value = QueueDepthInfo(
         quantum_tasks={QueueType.NORMAL: "19", QueueType.PRIORITY: "3"},
@@ -165,7 +278,7 @@ def test_queue_depth(mock_aws_device, sv1_profile):
 
 
 @patch("qbraid.runtime.braket.device.AwsDevice")
-def test_circuit_too_many_qubits(mock_aws_device, sv1_profile):
+def test_device_run_circuit_too_many_qubits(mock_aws_device, sv1_profile):
     """Test that run method raises exception when input circuit
     num qubits exceeds that of wrapped AWS device."""
     mock_aws_device.return_value = Mock()
@@ -180,13 +293,28 @@ def test_circuit_too_many_qubits(mock_aws_device, sv1_profile):
             device.run(circuit)
 
 
-def test_aws_device_available(braket_provider):
+@pytest.mark.parametrize(
+    "available_time, expected",
+    [
+        (3600, "2024-01-01T01:00:00Z"),
+        (1800, "2024-01-01T00:30:00Z"),
+        (45, "2024-01-01T00:00:45Z"),
+    ],
+)
+def test_availability_future_utc_datetime(available_time, expected):
+    """Test calculating future utc datetime"""
+    current_utc_datime = datetime.datetime(2024, 1, 1, 0, 0, 0)
+    _, datetime_str = _calculate_future_time(available_time, current_utc_datime)
+    assert datetime_str == expected
+
+
+def test_device_availability_window(braket_provider, mock_sv1):
     """Test BraketDeviceWrapper avaliable output identical"""
     with (
         patch("qbraid.runtime.braket.provider.AwsDevice") as mock_aws_device,
         patch("qbraid.runtime.braket.device.AwsDevice") as mock_aws_device_2,
     ):
-        mock_device = TestAwsDevice(SV1_ARN)
+        mock_device = mock_sv1
         mock_device.is_available = False
         mock_aws_device.return_value = mock_device
         mock_aws_device_2.return_value = mock_device
@@ -195,63 +323,13 @@ def test_aws_device_available(braket_provider):
         assert len(is_available_time.split(":")) == 3
         assert isinstance(iso_str, str)
         try:
-            datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%SZ")
+            datetime.datetime.strptime(iso_str, "%Y-%m-%dT%H:%M:%SZ")
         except ValueError:
             pytest.fail("iso_str not in expected format")
 
 
-def test_get_aws_session():
-    """Test getting an AWS session."""
-    with patch("boto3.session.Session") as mock_boto_session:
-        mock_boto_session.aws_access_key_id.return_value = "aws_access_key_id"
-        mock_boto_session.aws_secret_access_key.return_value = "aws_secret_access_key"
-        aws_session = BraketProvider()._get_aws_session()
-        assert aws_session.boto_session.region_name == "us-east-1"
-        assert isinstance(aws_session, AwsSession)
-
-
-def test_build_runtime_profile():
-    """Test building a runtime profile."""
-    provider = BraketProvider()
-    device = TestAwsDevice(SV1_ARN)
-    profile = provider._build_runtime_profile(device=device, extra="data")
-    assert profile.get("device_type") == DeviceType.SIMULATOR.name
-    assert profile.get("provider_name") == "Amazon Braket"
-    assert profile.get("device_id") == SV1_ARN
-    assert profile.get("extra") == "data"
-
-
-def test_get_device():
-    """Test getting a Braket device."""
-    provider = BraketProvider()
-    with (
-        patch("qbraid.runtime.braket.provider.AwsDevice") as mock_aws_device,
-        patch("qbraid.runtime.braket.device.AwsDevice") as mock_aws_device_2,
-    ):
-        mock_aws_device.return_value = TestAwsDevice(SV1_ARN)
-        mock_aws_device_2.return_value = TestAwsDevice(SV1_ARN)
-        device = provider.get_device(SV1_ARN)
-        assert device.id == SV1_ARN
-        assert device.name == "SV1"
-        assert str(device) == "BraketDevice('Amazon Braket SV1')"
-        assert device.status() == DeviceStatus.ONLINE
-        assert isinstance(device, BraketDevice)
-
-
-@patch("qbraid.runtime.braket.job.AwsQuantumTask")
-def test_load_completed_job(mock_aws_quantum_task):
-    """Test is terminal state method for BraketQuantumTask."""
-    circuit = Circuit().h(0).cnot(0, 1)
-    mock_device = LocalSimulator()
-    mock_job = mock_device.run(circuit, shots=10)
-    mock_aws_quantum_task.return_value = mock_job
-    job = BraketQuantumTask(mock_job.id)
-    assert job.metadata()["job_id"] == mock_job.id
-    assert job.is_terminal_state()
-
-
 @patch("qbraid.runtime.braket.BraketProvider")
-def test_is_available(mock_provider):
+def test_device_is_available(mock_provider):
     """Test device availability function."""
     provider = mock_provider.return_value
 
@@ -271,8 +349,58 @@ def test_is_available(mock_provider):
         assert device._device.is_available == is_available_bool
 
 
+@patch("qbraid.runtime.braket.device.AwsDevice")
+def test_device_transform_circuit_sv1(mock_aws_device, sv1_profile):
+    """Test transform method for device with OpenQASM action type."""
+    mock_aws_device.return_value = Mock()
+    device = BraketDevice(sv1_profile)
+    circuit = Circuit().h(0).cnot(0, 2)
+    transformed_expected = Circuit().h(0).cnot(0, 1)
+    transformed_circuit = device.transform(circuit)
+    assert transformed_circuit == transformed_expected
+
+
+@patch("qbraid.runtime.braket.device.AwsDevice")
+def test_device_transform_raises_for_mismatch(mock_aws_device, braket_circuit):
+    """Test raising exception for mismatched action type AHS and program type circuit."""
+    mock_aws_device.return_value = Mock()
+    profile = TargetProfile(
+        device_type=DeviceType.SIMULATOR,
+        num_qubits=34,
+        program_spec=ProgramSpec(Circuit),
+        provider_name="Amazon Braket",
+        device_id=SV1_ARN,
+        action_type=DeviceActionType.AHS,
+    )
+    device = BraketDevice(profile)
+    with pytest.raises(DeviceProgramTypeMismatchError):
+        device.transform(braket_circuit)
+
+
+@patch("qbraid.runtime.braket.device.AwsDevice")
+def test_device_ionq_transform(mock_aws_device):
+    """Test converting Amazon Braket circuit to use only IonQ supprted gates"""
+    mock_aws_device.return_value = Mock()
+    profile = TargetProfile(
+        device_type=DeviceType.QPU,
+        num_qubits=11,
+        program_spec=ProgramSpec(Circuit),
+        provider_name="IonQ",
+        device_id="arn:aws:braket:us-east-1::device/qpu/ionq/Harmony",
+        action_type=DeviceActionType.OPENQASM,
+    )
+    device = BraketDevice(profile)
+
+    toffoli_circuit = Circuit().ccnot(0, 1, 2)
+    transformed_circuit = device.transform(toffoli_circuit)
+    assert isinstance(transformed_circuit, Circuit)
+    assert toffoli_circuit.depth == 1
+    assert transformed_circuit.depth == 11
+    assert circuits_allclose(transformed_circuit, toffoli_circuit)
+
+
 @patch("qbraid.runtime.braket.BraketProvider")
-def test_get_quantum_tasks_by_tag(mock_provider):
+def test_device_submit_task_with_tags(mock_provider):
     """Test getting tagged quantum tasks."""
     provider = mock_provider.return_value
     provider.REGIONS = ["us-east-1", "us-west-1"]
@@ -308,42 +436,21 @@ def test_get_quantum_tasks_by_tag(mock_provider):
     assert len(provider.get_tasks_by_tag(key, region_names=alt_regions)) == 0
 
 
-def test_braket_queue_visibility():
-    """Test methods that check Braket device/job queue."""
-    with patch("qbraid.runtime.braket.BraketProvider") as _:
-        circuit = Circuit().h(0).cnot(0, 1)
-
-        mock_device = Mock()
-        mock_job = Mock()
-        mock_job.queue_position.return_value = 5  # job is 5th in queue
-
-        mock_device.run.return_value = mock_job
-
-        device = mock_device
-        job = device.run(circuit, shots=10)
-        queue_position = job.queue_position()
-        job.cancel()
-        assert isinstance(queue_position, int)
-
-
-@pytest.mark.parametrize(
-    "available_time, expected",
-    [
-        (3600, "2024-01-01T01:00:00Z"),
-        (1800, "2024-01-01T00:30:00Z"),
-        (45, "2024-01-01T00:00:45Z"),
-    ],
-)
-def test_future_utc_datetime(available_time, expected):
-    """Test calculating future utc datetime"""
-    current_utc_datime = datetime(2024, 1, 1, 0, 0, 0)
-    _, datetime_str = _calculate_future_time(available_time, current_utc_datime)
-    assert datetime_str == expected
+@patch("qbraid.runtime.braket.job.AwsQuantumTask")
+def test_job_load_completed(mock_aws_quantum_task):
+    """Test is terminal state method for BraketQuantumTask."""
+    circuit = Circuit().h(0).cnot(0, 1)
+    mock_device = LocalSimulator()
+    mock_job = mock_device.run(circuit, shots=10)
+    mock_aws_quantum_task.return_value = mock_job
+    job = BraketQuantumTask(mock_job.id)
+    assert job.metadata()["job_id"] == mock_job.id
+    assert job.is_terminal_state()
 
 
 @pytest.mark.parametrize("position,expected", [(10, 10), (">2000", 2000)])
 @patch("qbraid.runtime.braket.job.AwsQuantumTask")
-def test_queue_position(mock_aws_quantum_task, position, expected):
+def test_job_queue_position(mock_aws_quantum_task, position, expected):
     """Test getting queue_depth BraketDevice"""
     mock_queue_position_return = MagicMock()
     mock_queue_position_return.queue_position = position
@@ -353,7 +460,7 @@ def test_queue_position(mock_aws_quantum_task, position, expected):
 
 
 @patch("qbraid.runtime.braket.job.AwsQuantumTask")
-def test_queue_position_raises_version_error(mock_aws_quantum_task):
+def test_job_queue_position_raises_version_error(mock_aws_quantum_task):
     """Test handling of AttributeError leads to raising AmazonBraketVersionError."""
     mock_aws_quantum_task.return_value.queue_position.side_effect = AttributeError
     job = BraketQuantumTask("job_id")
@@ -362,7 +469,7 @@ def test_queue_position_raises_version_error(mock_aws_quantum_task):
     assert "Queue visibility is only available for amazon-braket-sdk>=1.56.0" in str(excinfo.value)
 
 
-def test_aquila_job_raise_for_cancel_terminal():
+def test_job_raise_for_cancel_terminal():
     """Test raising an error when trying to cancel a completed/failed job."""
     with patch("qbraid.runtime.job.QuantumJob.is_terminal_state", return_value=True):
         job = BraketQuantumTask(SV1_ARN, task=Mock())
@@ -370,7 +477,7 @@ def test_aquila_job_raise_for_cancel_terminal():
             job.cancel()
 
 
-def test_measurements():
+def test_result_measurements():
     """Test measurements method of BraketGateModelJobResult class."""
     mock_measurements = np.array([[0, 1, 1], [1, 0, 1]])
     mock_result = MagicMock()
@@ -380,7 +487,7 @@ def test_measurements():
     np.testing.assert_array_equal(result.measurements(), expected_output)
 
 
-def test_raw_counts():
+def test_result_raw_counts():
     """Test raw_counts method of BraketGateModelJobResult class."""
     mock_measurement_counts = {(0, 1, 1): 10, (1, 0, 1): 5}
     mock_result = MagicMock()
@@ -388,53 +495,3 @@ def test_raw_counts():
     result = BraketGateModelJobResult(mock_result)
     expected_output = {"110": 10, "101": 5}
     assert result.raw_counts() == expected_output
-
-
-@patch("qbraid.runtime.braket.device.AwsDevice")
-def test_transform_circuit_sv1(mock_aws_device, sv1_profile):
-    """Test transform method for device with OpenQASM action type."""
-    mock_aws_device.return_value = Mock()
-    device = BraketDevice(sv1_profile)
-    circuit = Circuit().h(0).cnot(0, 2)
-    transformed_expected = Circuit().h(0).cnot(0, 1)
-    transformed_circuit = device.transform(circuit)
-    assert transformed_circuit == transformed_expected
-
-
-@patch("qbraid.runtime.braket.device.AwsDevice")
-def test_transform_raises_for_mismatch(mock_aws_device, braket_circuit):
-    """Test raising exception for mismatched action type AHS and program type circuit."""
-    mock_aws_device.return_value = Mock()
-    profile = TargetProfile(
-        device_type=DeviceType.SIMULATOR,
-        num_qubits=34,
-        program_spec=ProgramSpec(Circuit),
-        provider_name="Amazon Braket",
-        device_id=SV1_ARN,
-        action_type=DeviceActionType.AHS,
-    )
-    device = BraketDevice(profile)
-    with pytest.raises(DeviceProgramTypeMismatchError):
-        device.transform(braket_circuit)
-
-
-@patch("qbraid.runtime.braket.device.AwsDevice")
-def test_braket_ionq_transform(mock_aws_device):
-    """Test converting Amazon Braket circuit to use only IonQ supprted gates"""
-    mock_aws_device.return_value = Mock()
-    profile = TargetProfile(
-        device_type=DeviceType.QPU,
-        num_qubits=11,
-        program_spec=ProgramSpec(Circuit),
-        provider_name="IonQ",
-        device_id="arn:aws:braket:us-east-1::device/qpu/ionq/Harmony",
-        action_type=DeviceActionType.OPENQASM,
-    )
-    device = BraketDevice(profile)
-
-    toffoli_circuit = Circuit().ccnot(0, 1, 2)
-    transformed_circuit = device.transform(toffoli_circuit)
-    assert isinstance(transformed_circuit, Circuit)
-    assert toffoli_circuit.depth == 1
-    assert transformed_circuit.depth == 11
-    assert circuits_allclose(transformed_circuit, toffoli_circuit)

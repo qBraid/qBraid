@@ -191,3 +191,16 @@ def test_unregister_program_type_non_unique():
     assert alias not in QPROGRAM_REGISTRY
     assert alias not in QPROGRAM_ALIASES
     assert str in QPROGRAM_TYPES
+
+
+def test_program_spec_str_rep():
+    """Test string representation of ProgramSpec"""
+    spec = ProgramSpec(str, alias="qasm2")
+    assert str(spec) == "ProgramSpec for qasm2 str type."
+
+
+def test_program_spec_equality():
+    """Test equality of ProgramSpec instances"""
+    spec1 = ProgramSpec(str, alias="qasm2")
+    spec2 = {}
+    assert spec1 != spec2

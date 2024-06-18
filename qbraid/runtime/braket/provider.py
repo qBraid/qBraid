@@ -173,6 +173,24 @@ class BraketProvider(QuantumProvider):
         profile = self._build_runtime_profile(device)
         return BraketDevice(profile=profile, session=device.aws_session)
 
+    @staticmethod
+    def _fetch_resources(region_names: list[str], key: str, values: list[str]) -> list[str]:
+        """Fetch resources from AWS."""
+        tasks = []
+        for region_name in region_names:
+            client = boto3.client("resourcegroupstaggingapi", region_name=region_name)
+            response = client.get_resources(
+                TagFilters=[
+                    {
+                        "Key": key,
+                        "Values": values,
+                    }
+                ],
+            )
+            matches = [t["ResourceARN"] for t in response["ResourceTagMappingList"]]
+            tasks += matches
+        return tasks
+
     def get_tasks_by_tag(
         self, key: str, values: Optional[list[str]] = None, region_names: Optional[list[str]] = None
     ) -> list[str]:
@@ -210,18 +228,4 @@ class BraketProvider(QuantumProvider):
         )
         values = values if values is not None else []
 
-        tasks = []
-        for region_name in region_names:
-            client = boto3.client("resourcegroupstaggingapi", region_name=region_name)
-            response = client.get_resources(
-                TagFilters=[
-                    {
-                        "Key": key,
-                        "Values": values,
-                    }
-                ],
-            )
-            matches = [t["ResourceARN"] for t in response["ResourceTagMappingList"]]
-            tasks += matches
-
-        return tasks
+        return self._fetch_resources(region_names, key, values)

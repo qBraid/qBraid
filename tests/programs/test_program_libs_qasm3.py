@@ -297,6 +297,14 @@ def test_reverse_qubit_order():
     assert reverse_qasm == expected_qasm
 
 
+def test_apply_empty_qubit_mapping():
+    """Test applying empty qubit mapping"""
+    qasm = qasm3_bell()
+    program = OpenQasm3Program(qasm)
+    program.apply_qubit_mapping({})
+    assert program.program == qasm
+
+
 def test_remap_qubit_order():
     """Test the remapping of qubits in qasm string"""
     qubit_mapping = {"q1": {0: 1, 1: 0}, "q2": {0: 2, 1: 0, 2: 1}}

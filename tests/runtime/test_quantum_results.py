@@ -14,6 +14,7 @@ Unit tests for retrieving and post-processing experimental results.
 """
 import pytest
 
+from qbraid.runtime.native.result import ExperimentResult, QbraidJobResult
 from qbraid.runtime.result import GateModelJobResult, normalize_measurement_counts
 
 
@@ -102,3 +103,11 @@ def test_batch_measurement_counts():
     counts = result.measurement_counts(include_zero_values=False)
     expected = [{"0": 550}, {"0": 550, "1": 474}]
     assert counts == expected
+
+
+def test_raw_counts_raises_for_no_measurements():
+    """Test that raw_counts raises an error when no measurements are available."""
+    experiment = ExperimentResult({})
+    result = QbraidJobResult("device_id", "job_id", True, experiment)
+    with pytest.raises(ValueError):
+        result.raw_counts()
