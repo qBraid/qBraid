@@ -35,6 +35,7 @@ def test_contiguous_line_qubits():
 
     expected_qubits = [LineQubit(0), LineQubit(1), LineQubit(2)]
     assert set(program.qubits) == set(expected_qubits)
+    assert program.num_clbits == 0
 
 
 def test_remove_idle_grid_qubits_row():
