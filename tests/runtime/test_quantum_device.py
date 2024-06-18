@@ -14,6 +14,7 @@
 Unit tests for QbraidDevice, QbraidJob, and QbraidJobResult classes using the qbraid_qir_simulator
 
 """
+import logging
 import random
 from typing import Any, Optional
 from unittest.mock import patch
@@ -23,6 +24,7 @@ import numpy as np
 import pytest
 from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
+from qbraid.runtime import DeviceStatus, TargetProfile
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.native import (
@@ -32,7 +34,6 @@ from qbraid.runtime.native import (
     QbraidJobResult,
     QbraidProvider,
 )
-from qbraid.runtime.profile import TargetProfile
 from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme
 
 DEVICE_DATA = {
@@ -139,7 +140,7 @@ def mock_client():
 def mock_profile():
     """Mock profile for testing."""
     return TargetProfile(
-        device_id="mock",
+        device_id="qbraid_qir_simulator",
         device_type="SIMULATOR",
         action_type="OPENQASM",
         num_qubits=42,
@@ -279,7 +280,7 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert _is_uniform_comput_basis(measurements)
 
 
-def test_update_scheme(mock_qbraid_device):
+def test_device_update_scheme(mock_qbraid_device):
     """Test updating ConversionScheme."""
     graph = mock_qbraid_device.scheme.conversion_graph.copy()
     new_conversion = Conversion("charlie", "alice", lambda x: x)
@@ -292,13 +293,30 @@ def test_update_scheme(mock_qbraid_device):
     assert graph == mock_qbraid_device.scheme.conversion_graph
 
 
-def test_queue_depth_raises(mock_basic_device):
-    """Test raising exception when queue depth is unavailable."""
+def test_provider_initialize_client_raises_for_multiple_auth_params():
+    """Test raising exception when initializing client if provided
+    both an api key and a client object."""
+    with pytest.raises(ValueError):
+        QbraidProvider(api_key="abc123", client=MockClient())
+
+
+def test_provider_resource_not_found_error_for_bad_api_key():
+    """Test raising ResourceNotFoundError when the client fails to authenticate."""
+    provider = QbraidProvider(api_key="abc123")
     with pytest.raises(ResourceNotFoundError):
-        mock_basic_device.queue_depth()
+        _ = provider.client
 
 
-def test_get_devices(mock_client):
+@patch("qbraid.runtime.native.provider.QuantumClient")
+def test_provider_client_from_valid_api_key(client):
+    """Test a valid API key."""
+    mock_client = MockClient()
+    client.return_value = mock_client
+    provider = QbraidProvider(api_key="abc123")
+    assert provider.client == mock_client
+
+
+def test_provider_get_devices(mock_client):
     """Test getting devices from the client."""
     client = mock_client
     provider = QbraidProvider(client=client)
@@ -307,31 +325,45 @@ def test_get_devices(mock_client):
     assert devices[0].id == "qbraid_qir_simulator"
 
 
-def test_initialize_client_raises_for_multiple_auth_params():
-    """Test raising exception when initializing client if provided
-    both an api key and a client object."""
-    with pytest.raises(ValueError):
-        QbraidProvider(api_key="abc123", client=MockClient())
-
-
-def test_resource_not_found_error_for_bad_api_key():
-    """Test raising ResourceNotFoundError when the client fails to authenticate."""
-    provider = QbraidProvider(api_key="abc123")
-    with pytest.raises(ResourceNotFoundError):
-        _ = provider.client
-
-
-def test_search_devices_resource_not_found_for_bad_client():
+def test_provider_search_devices_raises_for_bad_client():
     """Test raising ResourceNotFoundError when the client fails to authenticate."""
     provider = QbraidProvider(client=MockClient())
     with pytest.raises(ResourceNotFoundError):
         provider.get_devices(qbraid_id="qbraid_qir_simulator", status="Bad status")
 
 
-@patch("qbraid.runtime.native.provider.QuantumClient")
-def test_client_from_valid_api_key(client):
-    """Test a valid API key."""
-    mock_client = MockClient()
-    client.return_value = mock_client
-    provider = QbraidProvider(api_key="abc123")
-    assert provider.client == mock_client
+def test_provider_program_spec_none():
+    """Test getting program spec when it is None."""
+    assert QbraidProvider._get_program_spec(None) is None
+
+
+def test_device_queue_depth_raises(mock_basic_device):
+    """Test raising exception when queue depth is unavailable."""
+    with pytest.raises(ResourceNotFoundError):
+        mock_basic_device.queue_depth()
+
+
+def test_device_queue_depth(mock_qbraid_device):
+    """Test getting queue depth."""
+    assert mock_qbraid_device.queue_depth() == 0
+
+
+def test_device_status(mock_qbraid_device):
+    """Test getting device status."""
+    assert mock_qbraid_device.status() == DeviceStatus.ONLINE
+
+
+def test_try_extracting_info_exception_handling(caplog, mock_qbraid_device):
+    """Test try_extracting_info exception handling."""
+    obj = mock_qbraid_device
+
+    def problematic_func():
+        raise ValueError("This is a test error")
+
+    caplog.set_level(logging.INFO)
+    result = obj.try_extracting_info(problematic_func, "Error encountered")
+    assert result is None
+    assert (
+        "Error encountered: This is a test error. Field will be omitted in job metadata."
+        in caplog.text
+    )
