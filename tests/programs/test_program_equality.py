@@ -12,7 +12,6 @@
 Test circuit equality helper functions
 
 """
-
 import numpy as np
 import pytest
 

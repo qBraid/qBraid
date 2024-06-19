@@ -8,11 +8,15 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# pylint: disable=redefined-outer-name
+
 """
 Tests of functions that create and operate on directed graph
 used to dictate transpiler conversions.
 
 """
+from unittest.mock import Mock
+
 import braket.circuits
 import pytest
 import rustworkx as rx
@@ -22,9 +26,35 @@ from qbraid.programs.registry import QPROGRAM_ALIASES
 from qbraid.transpiler.conversions import conversion_functions
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.edge import Conversion
+from qbraid.transpiler.exceptions import ConversionPathNotFoundError
 from qbraid.transpiler.graph import ConversionGraph
 
 qiskit_braket_provider = LazyLoader("qiskit_braket_provider", globals(), "qiskit_braket_provider")
+
+
+@pytest.fixture
+def mock_conversions() -> list[Conversion]:
+    """List of mock shortest paths for testing."""
+    conv1 = Conversion("a", "b", lambda x: x)
+    conv2 = Conversion("b", "c", lambda x: x)
+    conv3 = Conversion("a", "c", lambda x: x)
+    return [conv1, conv2, conv3]
+
+
+@pytest.fixture
+def basic_conversion_graph() -> ConversionGraph:
+    """Provides a ConversionGraph with basic conversions setup."""
+    conv1 = Conversion("a", "b", lambda x: x)
+    conv2 = Conversion("b", "c", lambda x: x)
+    conv3 = Conversion("a", "d", lambda x: x)
+    graph = ConversionGraph(conversions=[conv1, conv2, conv3])
+    return graph
+
+
+@pytest.fixture
+def mock_graph(mock_conversions) -> ConversionGraph:
+    """Graph made up of mock paths for testing."""
+    return ConversionGraph(conversions=mock_conversions)
 
 
 def bound_method_str(source, target):
@@ -151,3 +181,86 @@ def test_copy_conversion_graph():
     assert conversions_init == copy.conversions()
     assert require_native_init == copy.require_native
     assert node_alias_id_map_init == copy._node_alias_id_map
+
+
+def test_get_path_from_bound_method():
+    """Test formatted conversion path logging helper function."""
+    source, target = "cirq", "qasm2"
+    edge = Conversion(source, target, lambda x: x)
+    graph = ConversionGraph([edge])
+    edge_data = graph.get_edge_data(
+        graph._node_alias_id_map[source], graph._node_alias_id_map[target]
+    )
+    bound_method = edge_data["func"]
+    bound_method_list = [bound_method]
+    path = ConversionGraph._get_path_from_bound_methods(bound_method_list)
+    assert path == "cirq -> qasm2"
+
+
+def test_raise_index_error_bound_methods_empty():
+    """Test raising ValueError when bound_methods is empty."""
+    with pytest.raises(IndexError):
+        ConversionGraph._get_path_from_bound_methods([])
+
+
+def test_attr_error_bound_method_no_source_target():
+    """Test raising AttributeError when bound_methods has no source or target."""
+    with pytest.raises(AttributeError):
+        ConversionGraph._get_path_from_bound_methods([Mock()])
+
+
+def test_shortest_path(mock_graph):
+    """Test the string representation of the shortest path."""
+    path = mock_graph.shortest_path("a", "c")
+    assert path == "a -> c"
+
+
+def test_all_paths(mock_graph):
+    """Test the string representation of the shortest path."""
+    paths = mock_graph.all_paths("a", "c")
+    assert isinstance(paths, list)
+    assert len(paths) == 2
+    assert "a -> b -> c" in paths
+    assert "a -> c" in paths
+
+
+def test_raise_error_for_no_conversion_path(basic_conversion_graph):
+    """Test raising an error when there are no possible
+    conversion paths between two nodes that do not have a direct path."""
+    with pytest.raises(ConversionPathNotFoundError):
+        basic_conversion_graph.find_shortest_conversion_path("b", "d")
+    with pytest.raises(ConversionPathNotFoundError):
+        basic_conversion_graph.find_top_shortest_conversion_paths("b", "d")
+
+
+def test_raise_error_for_add_conversion_that_already_exists(basic_conversion_graph):
+    """Test raising an error when trying to add a conversion that already exists."""
+    conv1 = Conversion("a", "b", lambda x: x)
+    with pytest.raises(ValueError):
+        basic_conversion_graph.add_conversion(conv1)
+
+
+def test_raise_error_for_remove_conversion_that_does_not_exist(basic_conversion_graph):
+    """Test raising an error when trying to remove a conversion that does not exist."""
+    with pytest.raises(ValueError):
+        basic_conversion_graph.remove_conversion("a", "c")
+
+
+def test_reset_conversion_graph():
+    """Test resetting the ConversionGraph to its default state."""
+    graph = ConversionGraph()
+    graph.add_conversion(Conversion("a", "b", lambda x: x))
+    num_conversions = len(graph.conversions())
+    graph.reset()
+    num_conversions_after_reset = len(graph.conversions())
+    assert num_conversions_after_reset == num_conversions - 1
+
+
+def test_raise_attribute_error_no_source():
+    """
+    Test raising an AttributeError when there is no source
+    attribute in bound method.
+
+    """
+    with pytest.raises(AttributeError):
+        ConversionGraph._get_path_from_bound_methods([lambda x: x])

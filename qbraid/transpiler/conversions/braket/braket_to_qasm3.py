@@ -16,8 +16,10 @@ from braket.circuits import Circuit
 from braket.circuits.serialization import IRType
 
 from qbraid.programs import QasmError
+from qbraid.transpiler.annotations import weight
 
 
+@weight(1)
 def braket_to_qasm3(circuit: Circuit) -> str:
     """Converts a ``braket.circuits.Circuit`` to an OpenQASM 3.0 string.
 

@@ -16,10 +16,13 @@ from typing import TYPE_CHECKING
 
 from pytket.qasm import circuit_to_qasm_str
 
+from qbraid.transpiler.annotations import weight
+
 if TYPE_CHECKING:
     import pytket.circuit
 
 
+@weight(1)
 def pytket_to_qasm2(circuit: "pytket.circuit.Circuit") -> str:
     """Returns an OpenQASM 2 string equivalent to the input pytket circuit.
 

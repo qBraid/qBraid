@@ -12,6 +12,7 @@
 Module for OQC job class.
 
 """
+import json
 from typing import TYPE_CHECKING, Any, Optional
 
 from qbraid.runtime.enums import JobStatus
@@ -22,6 +23,37 @@ from .result import OQCJobResult
 
 if TYPE_CHECKING:
     from qcaas_client.client import OQCClient, QPUTaskErrors
+
+RESULTS_FORMAT = {
+    2: "raw",
+    3: "binary",
+}
+
+METRICS = {
+    1: "empty",
+    2: "optimized_circuit",
+    4: "optimized_instruction_count",
+    6: "default",
+}
+
+OPTIMIZATIONS = {
+    1: "empty",
+    2: "default_mapping_pass",
+    4: "full_peephole_optimise",
+    8: "context_simplify",
+    18: "one",
+    30: "two",
+    32: "clifford_simplify",
+    64: "decompose_controlled_gates",
+    128: "globalise_phased_x",
+    256: "kak_decomposition",
+    512: "peephole_optimise_2q",
+    1024: "remove_discarded",
+    2048: "remove_barriers",
+    4096: "remove_redundancies",
+    8192: "three_qubit_squash",
+    16384: "simplify_measured",
+}
 
 
 class OQCJob(QuantumJob):
@@ -83,9 +115,31 @@ class OQCJob(QuantumJob):
     def metadata(self, use_cache: bool = False) -> dict[str, Any]:
         """Get the metadata for the task."""
         if not use_cache:
-            self._cache_metadata = self._client.get_task_metadata(
-                task_id=self.id, qpu_id=self._qpu_id
-            )
+            status = self.status()
+            self._cache_metadata["status"] = status
+            provider_metadata = self._client.get_task_metadata(task_id=self.id, qpu_id=self._qpu_id)
+            del provider_metadata["id"]
+
+            config = json.loads(provider_metadata["config"])
+            del config["$type"]
+
+            provider_metadata["shots"] = config["$data"]["repeats"]
+            provider_metadata["repetition_period"] = config["$data"]["repetition_period"]
+            provider_metadata["results_format"] = RESULTS_FORMAT[
+                config["$data"]["results_format"]["$data"]["transforms"]["$value"]
+            ]
+            provider_metadata["metrics"] = METRICS[config["$data"]["metrics"]["$value"]]
+            provider_metadata["active_calibrations"] = config["$data"]["active_calibrations"]
+            try:
+                provider_metadata["optimizations"] = OPTIMIZATIONS[
+                    config["$data"]["optimizations"]["$data"]["tket_optimizations"]["$value"]
+                ]
+            except TypeError:
+                provider_metadata["optimizations"] = None
+            provider_metadata["error_mitigation"] = config["$data"]["error_mitigation"]
+
+            del provider_metadata["config"]
+            self._cache_metadata.update(provider_metadata)
         return self._cache_metadata
 
     def metrics(self) -> dict[str, Any]:

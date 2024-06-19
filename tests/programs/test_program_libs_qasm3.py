@@ -18,7 +18,9 @@ from qiskit.qasm3 import dumps, loads
 
 from qbraid.interface.random.qasm3_random import _qasm3_random
 from qbraid.interface.random.qiskit_random import _qiskit_random
+from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.libs.qasm3 import OpenQasm3Program
+from qbraid.programs.registry import unregister_program_type
 from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import _get_qasm3_gate_defs
 
 from ..fixtures.qasm3.circuits import qasm3_bell, qasm3_shared15
@@ -42,7 +44,6 @@ def test_qasm3_num_qubits():
     assert OpenQasm3Program(qasm3_str).num_qubits == num_qubits
 
 
-@pytest.mark.skip(reason="Not implemented")
 def test_qasm3_depth():
     """Test calculating qasm depth of qasm3 circuit"""
     depth = np.random.randint(2, 10)
@@ -50,7 +51,6 @@ def test_qasm3_depth():
     assert OpenQasm3Program(qasm3_str).depth == depth
 
 
-@pytest.mark.skip(reason="QASM3ImporterError")
 def test_qasm3_depth_alternate_qubit_syntax():
     """Test calculating qasm depth of qasm3 circuit"""
     qasm3_str = """OPENQASM 3.0;
@@ -58,7 +58,7 @@ bit[1] __bits__;
 qubit[1] __qubits__;
 h __qubits__[0];
 __bits__[0] = measure __qubits__[0];"""
-    assert OpenQasm3Program(qasm3_str).depth == 1
+    assert OpenQasm3Program(qasm3_str).depth == 2
 
 
 def _check_output(output, expected):
@@ -297,6 +297,14 @@ def test_reverse_qubit_order():
     assert reverse_qasm == expected_qasm
 
 
+def test_apply_empty_qubit_mapping():
+    """Test applying empty qubit mapping"""
+    qasm = qasm3_bell()
+    program = OpenQasm3Program(qasm)
+    program.apply_qubit_mapping({})
+    assert program.program == qasm
+
+
 def test_remap_qubit_order():
     """Test the remapping of qubits in qasm string"""
     qubit_mapping = {"q1": {0: 1, 1: 0}, "q2": {0: 2, 1: 0, 2: 1}}
@@ -388,3 +396,63 @@ measure q1 -> c1;
     program = OpenQasm3Program(qasm_input)
     program.replace_reset_with_ops()
     assert program.program == expected_output
+
+
+def test_qasm3_depth_sparse_operations():
+    """Test calculating depth of qasm3 circuit with sparse operations"""
+    qasm = """
+OPENQASM 3.0;
+bit[2] b;
+qubit[2] q;
+s q[0];
+iswap q[0], q[1];
+barrier;
+z q[1];
+    """
+    qprogram = OpenQasm3Program(qasm)
+    assert qprogram.depth == 3
+
+
+def test_qasm3_depth_measurement_direct():
+    """Test calculating depth of qasm3 circuit with direct measurements"""
+    qasm = """
+OPENQASM 3.0;
+bit[2] b;
+qubit[2] q;
+s q[0];
+iswap q[0], q[1];
+z q[1];
+b[0] = measure q[0];
+b[1] = measure q[1];
+    """
+    qprogram = OpenQasm3Program(qasm)
+    assert qprogram.depth == 4
+
+
+def test_qasm3_depth_measurement_indirect():
+    """Test calculating depth of qasm3 circuit with indirect measurements"""
+    qasm = """
+OPENQASM 3.0;
+include "stdgates.inc";
+bit[3] c;
+qubit[3] q;
+cry(4.2051581759108885) q[1], q[2];
+x q[0];
+cu(3.477667891331647, 4.2539794092334375, 3.436930389872277, 5.115111057204699) q[1], q[2];
+h q[0];
+rx(5.917500589065494) q[1];
+c[0] = measure q[0];
+c[1] = measure q[1];
+c[2] = measure q[2];
+    """
+    qprogram = OpenQasm3Program(qasm)
+    assert qprogram.depth == 4
+
+
+def test_raise_program_type_error():
+    """Test that initializing OpenQasm3Program with an invalid type raises ProgramTypeError."""
+    try:
+        with pytest.raises(ProgramTypeError):
+            OpenQasm3Program(42)
+    finally:
+        unregister_program_type("int")

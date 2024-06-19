@@ -100,6 +100,32 @@ def register_program_type(
     QPROGRAM_TYPES.add(program_type)
 
 
+def unregister_program_type(alias: str, raise_error: bool = True) -> None:
+    """
+    Unregisters the program type associated with the given alias.
+
+    Args:
+        alias (str): The alias to unregister.
+        raise_error (bool): If True, raises KeyError if the alias is not found. Defaults to True.
+
+    Raises:
+        KeyError: If the alias is not registered and raise_error is True.
+    """
+    normalized_alias = alias.lower()
+
+    QPROGRAM_ALIASES.discard(normalized_alias)
+
+    if normalized_alias not in QPROGRAM_REGISTRY:
+        if raise_error:
+            raise KeyError(f"No program type registered under the alias '{alias}'.")
+        return
+
+    program_type = QPROGRAM_REGISTRY.pop(normalized_alias)
+
+    if not any(pt == program_type for pt in QPROGRAM_REGISTRY.values()):
+        QPROGRAM_TYPES.discard(program_type)
+
+
 def is_registered_alias_native(alias: str) -> bool:
     """
     Determine if the registered program type for a given alias matches the native program type.

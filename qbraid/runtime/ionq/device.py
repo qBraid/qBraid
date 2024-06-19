@@ -20,10 +20,10 @@ from typing import TYPE_CHECKING
 
 import openqasm3
 
+from qbraid.passes.qasm3.compat import convert_qasm_pi_to_decimal
 from qbraid.programs import load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
-from qbraid.transforms.qasm3.compat import convert_qasm_pi_to_decimal
 
 from .job import IonQJob
 

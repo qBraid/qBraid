@@ -26,7 +26,7 @@ classifiers = [
 ]
 dependencies = [
     "rustworkx>=0.14.2",
-    "numpy>=1.17,<1.27",
+    "numpy>=1.17,<2.1",
     "openqasm3[parser]>=0.4.0,<0.6.0",
     "qbraid-core>=0.1.13"
 ]
@@ -42,8 +42,8 @@ Discord = "https://discord.gg/TPBU2sa8Et"
 
 [project.optional-dependencies]
 runtime = ["qbraid-qir>=0.2"]
-braket = ["amazon-braket-sdk>=1.74,<1.81", "pytket-braket>=0.30,<0.37"]
-qiskit = ["qiskit>=0.44,<1.2", "qiskit-ibm-runtime>=0.18,<0.24"]
+braket = ["amazon-braket-sdk>=1.74,<1.82", "pytket-braket>=0.30,<0.37"]
+qiskit = ["qiskit>=0.44,<1.2", "qiskit-ibm-runtime>=0.18,<0.25"]
 cirq = ["cirq-core>=1.3,<1.5", "cirq-ionq>=1.3,<1.5", "ply>=3.6"]
 oqc = ["oqc-qcaas-client>=3.5,<4.0"]
 visualization = ["ipython", "matplotlib", "pylatexenc"]
@@ -88,11 +88,10 @@ filterwarnings = [
 parallel = true
 source = ["qbraid"]
 omit = [
-  "**/qbraid/transforms/qasm3/format.py",
   "**/qbraid/runtime/braket/tracker.py",
   "**/qbraid/visualization/draw_circuit.py",
   "**/qbraid/_compat.py",
-  "**/qbraid/transpiler/conversions/qasm2/qasm2_extras.py"
+  "**/qbraid/transpiler/conversions/*/*_extras.py"
 ]
 
 [tool.coverage.paths]
@@ -109,9 +108,11 @@ exclude_lines = [
   "if __name__ == .__main__.:",
   "if TYPE_CHECKING:",
   "logger.debug",
+  "logger.info",
   "__all__",
   "def __getattr__",
-  "def __dir__"
+  "def __dir__",
+  "# pragma: no cover"
 ]
 
 [tool.coverage.html]

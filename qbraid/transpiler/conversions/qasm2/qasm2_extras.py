@@ -21,7 +21,7 @@ from qbraid.transpiler.annotations import requires_extras
 qibo = LazyLoader("qibo", globals(), "qibo")
 
 if TYPE_CHECKING:
-    import qibo as qibo_
+    import qibo as qibo_  # type: ignore
 
 
 @requires_extras("qibo")

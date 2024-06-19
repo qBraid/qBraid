@@ -17,7 +17,15 @@ import re
 from typing import Optional
 
 import numpy as np
-from openqasm3.ast import BitType, ClassicalDeclaration, QubitDeclaration
+from openqasm3.ast import (
+    BitType,
+    ClassicalDeclaration,
+    QuantumBarrier,
+    QuantumGate,
+    QuantumMeasurement,
+    QuantumMeasurementStatement,
+    QubitDeclaration,
+)
 from openqasm3.parser import parse
 
 from qbraid.programs.exceptions import ProgramTypeError
@@ -84,7 +92,40 @@ class OpenQasm3Program(QbraidProgram):
     @property
     def depth(self) -> int:
         """Return the circuit depth (i.e., length of critical path)."""
-        raise NotImplementedError
+        program = parse(self._program)
+        max_depth = 0
+        n = self._num_qubits
+        counts = [0] * n
+        new_measurement_moment = True
+
+        for statement in program.statements:
+            if isinstance(statement, (QubitDeclaration, ClassicalDeclaration)):
+                continue
+            if isinstance(statement, QuantumGate):
+                if len(statement.qubits) == 1:
+                    qubit = statement.qubits[0]
+                    counts[qubit.indices[0][0].value] += 1
+                    array_max = max(counts)
+                    max_depth = max(max_depth, array_max)
+                else:
+                    indices = [qubit.indices[0][0].value for qubit in statement.qubits]
+                    relevant_counts = [counts[idx] for idx in indices]
+                    curr_max_depth = max(relevant_counts)
+                    for idx in indices:
+                        counts[idx] = curr_max_depth + 1
+                    max_depth = max(max_depth, curr_max_depth + 1)
+            elif isinstance(statement, QuantumBarrier):
+                counts = [max_depth] * n
+                new_measurement_moment = True
+            elif isinstance(statement, QuantumMeasurement):
+                for i in range(n):
+                    counts[i] += 1
+            elif isinstance(statement, QuantumMeasurementStatement) and new_measurement_moment:
+                for i in range(n):
+                    counts[i] += 1
+                new_measurement_moment = False
+
+        return max(counts)
 
     def _unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""
@@ -403,3 +444,7 @@ class OpenQasm3Program(QbraidProgram):
             qubit_mapping[reg] = {old_id: size - old_id - 1 for old_id in range(size)}
 
         return self.apply_qubit_mapping(qubit_mapping)
+
+    def transform(self, device) -> None:
+        """Transform program to according to device target profile."""
+        raise NotImplementedError

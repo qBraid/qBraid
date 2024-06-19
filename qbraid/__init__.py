@@ -47,7 +47,7 @@ __all__ = [
     "__version__",
 ]
 
-_lazy_mods = ["interface", "programs", "runtime", "transforms", "transpiler", "visualization"]
+_lazy_mods = ["interface", "passes", "programs", "runtime", "transpiler", "visualization"]
 
 
 def __getattr__(name):

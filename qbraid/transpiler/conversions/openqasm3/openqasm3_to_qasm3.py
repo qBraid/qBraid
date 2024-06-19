@@ -14,7 +14,10 @@ Module containing OpenQASM conversion function
 """
 import openqasm3
 
+from qbraid.transpiler.annotations import weight
 
+
+@weight(1)
 def openqasm3_to_qasm3(program: openqasm3.ast.Program) -> str:
     """Dumps openqasm3.ast.Program to an OpenQASM 3.0 string
 

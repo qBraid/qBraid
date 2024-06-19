@@ -12,11 +12,14 @@
 Unit tests for qbraid.programs.cirq.CirqCircuit
 
 """
+from typing import Any
+
 import cirq
 import pytest
 from cirq import CNOT, Circuit, GridQubit, H, LineQubit, Moment, NamedQubit, X, Y, Z
 
 from qbraid.interface import circuits_allclose
+from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.libs.cirq import CirqCircuit
 
 
@@ -32,6 +35,7 @@ def test_contiguous_line_qubits():
 
     expected_qubits = [LineQubit(0), LineQubit(1), LineQubit(2)]
     assert set(program.qubits) == set(expected_qubits)
+    assert program.num_clbits == 0
 
 
 def test_remove_idle_grid_qubits_row():
@@ -185,3 +189,91 @@ def test_mixed_operations_and_measurements():
     assert (
         result_circuit == expected_circuit
     ), "All measurement gates should be removed, leaving other operations intact."
+
+
+def test_align_final_measurements():
+    """Test aligning measurements for a circuit with measurements."""
+    q0, q1 = cirq.LineQubit.range(2)
+    circuit = cirq.Circuit(
+        cirq.H(q0), cirq.CNOT(q0, q1), cirq.measure(q0, key="m0"), cirq.measure(q1, key="m1")
+    )
+    expected_circuit = cirq.Circuit(
+        cirq.H(q0),
+        cirq.CNOT(q0, q1),
+        cirq.Moment(cirq.measure(q0, key="m0"), cirq.measure(q1, key="m1")),
+    )
+    aligned_circuit = CirqCircuit.align_final_measurements(circuit)
+    assert (
+        aligned_circuit == expected_circuit
+    ), "The measurements should be aligned in the same moment"
+
+
+def test_align_measurements_for_no_measurement():
+    """Test aligning measurements for a circuit with no measurements."""
+    q0, q1 = cirq.LineQubit.range(2)
+    circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1))
+    expected_circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1))
+    aligned_circuit = CirqCircuit.align_final_measurements(circuit)
+    assert (
+        aligned_circuit == expected_circuit
+    ), "The circuit should remain unchanged as there are no measurements"
+
+
+def test_align_measurements_for_partial_measurement():
+    """Test aligning measurements from a circuit where not all qubits are measured."""
+    q0, q1 = cirq.LineQubit.range(2)
+    circuit = cirq.Circuit(cirq.H(q0), cirq.CNOT(q0, q1), cirq.measure(q0, key="m0"))
+    expected_circuit = circuit
+    aligned_circuit = CirqCircuit.align_final_measurements(circuit)
+    assert (
+        aligned_circuit == expected_circuit
+    ), "The circuit should remain unchanged as not all qubits are measured"
+
+
+def test_raise_program_type_error():
+    """Test raising ProgramTypeError"""
+    with pytest.raises(ProgramTypeError):
+        CirqCircuit("OPENQASM 2.0;qreg q[2];h q[0];cx q[0],q[1];")
+
+
+def test_key_from_line_qubit():
+    """Test generating a key from a LineQubit."""
+    qubit = cirq.LineQubit(1)
+    expected_key = "q(1)"
+    assert CirqCircuit._key_from_qubit(qubit) == expected_key
+
+
+def test_key_from_grid_qubit():
+    """Test generating a key from a GridQubit."""
+    qubit = cirq.GridQubit(3, 5)
+    expected_key = "3"
+    assert CirqCircuit._key_from_qubit(qubit) == expected_key
+
+
+def test_key_from_named_qubit():
+    """Test generating a key from a NamedQubit."""
+    qubit = cirq.NamedQubit("qubit7")
+    expected_key = "qubit7"
+    assert CirqCircuit._key_from_qubit(qubit) == expected_key
+
+
+def test_key_from_unsupported_qubit():
+    """Test generating a key from an unsupported qubit type."""
+
+    class UnsupportedQubit(cirq.Qid):
+        """Unsupported qubit type for testing."""
+
+        def _comparison_key(self) -> Any:
+            """Dummy abstract method implemented for testing."""
+            return 0
+
+        def dimension(self) -> int:
+            """Dummy abstract method implemented for testing."""
+            return 0
+
+    qubit = UnsupportedQubit()
+    with pytest.raises(ValueError) as exc_info:
+        CirqCircuit._key_from_qubit(qubit)
+
+    expected_message = "Expected qubit of type 'GridQubit' 'LineQubit' or 'NamedQubit'"
+    assert expected_message in str(exc_info.value)

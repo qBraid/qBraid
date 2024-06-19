@@ -82,7 +82,7 @@ class ConversionGraph(rx.PyDiGraph):
             self.add_edge(
                 self._node_alias_id_map[edge.source],
                 self._node_alias_id_map[edge.target],
-                {"native": edge.native, "func": edge.convert},
+                {"native": edge.native, "func": edge.convert, "weight": edge.weight},
             )
 
     def has_node(self, node: str) -> bool:
@@ -160,7 +160,7 @@ class ConversionGraph(rx.PyDiGraph):
         self.add_edge(
             self._node_alias_id_map[source],
             self._node_alias_id_map[target],
-            {"native": edge.native, "func": edge.convert},
+            {"native": edge.native, "func": edge.convert, "weight": edge.weight},
         )
 
     def remove_conversion(self, source: str, target: str) -> None:
@@ -192,9 +192,11 @@ class ConversionGraph(rx.PyDiGraph):
             ValueError: If no path is found between source and target.
         """
         path = rx.dijkstra_shortest_paths(
-            self, self._node_alias_id_map[source], target=self._node_alias_id_map[target]
+            self,
+            self._node_alias_id_map[source],
+            target=self._node_alias_id_map[target],
+            weight_fn=lambda edge: edge["weight"],
         )
-        # rx.dijkstra_shortest_paths returns an empty mapping if no path is found
         if len(path) == 0:
             raise ConversionPathNotFoundError(source, target)
         return [
@@ -249,6 +251,41 @@ class ConversionGraph(rx.PyDiGraph):
             return True  # nx.has_path returns True, but rx.has_path returns False
         return rx.has_path(self, self._node_alias_id_map[source], self._node_alias_id_map[target])
 
+    def shortest_path(self, source: str, target: str) -> str:
+        """
+        Return string representation of the shortest conversion path between two nodes.
+
+        Args:
+            source (str): The starting node for the path.
+            target (str): The target node for the path.
+
+        Returns:
+            str: String representation of shortest conversion path.
+
+        Raises:
+            ConversionPathNotFoundError: If no path is found between source and target.
+        """
+        path = self.find_shortest_conversion_path(source, target)
+        return self._get_path_from_bound_methods(path)
+
+    def all_paths(self, source: str, target: str) -> list[str]:
+        """
+        Return string representations of all conversion paths between two nodes.
+
+        Args:
+            source (str): The starting node for the path.
+            target (str): The target node for the path.
+
+        Returns:
+            list[str]: String representations of all conversion paths.
+
+        Raises:
+            ConversionPathNotFoundError: If no path is found between source and target.
+        """
+        num_conversions = len(self.conversions())
+        paths = self.find_top_shortest_conversion_paths(source, target, top_n=num_conversions)
+        return [self._get_path_from_bound_methods(path) for path in paths]
+
     def reset(self, conversions: Optional[list[Conversion]] = None) -> None:
         """
         Reset the graph to its default state.
@@ -276,6 +313,43 @@ class ConversionGraph(rx.PyDiGraph):
             and self.require_native == value.require_native
             and self._node_alias_id_map == value._node_alias_id_map
         )
+
+    @staticmethod
+    def _get_path_from_bound_methods(bound_methods: list[Callable]) -> str:
+        """
+        Constructs a path string from a list of bound methods of Conversion instances.
+
+        This function takes a list of bound methods (specifically 'convert' methods bound to
+        Conversion instances) and constructs a path string representing the sequence of
+        conversions. Each conversion is defined by the 'source' and 'target' properties of the
+        Conversion instance to which each method is bound.
+
+        Args:
+            bound_methods: A list of bound methods from Conversion instances.
+
+        Returns:
+            A string representing the path of conversions, formatted as
+            'source1 -> source2 -> ... -> targetN'.
+
+        Raises:
+            AttributeError: If the bound methods do not have the expected 'source'
+                            and 'target' attributes.
+            IndexError: If the list of bound methods is empty.
+        """
+        if not bound_methods:
+            raise IndexError("The list of bound methods is empty.")
+
+        path = []
+        for method in bound_methods:
+            instance = method.__self__  # Get the instance to which the method is bound
+            if not hasattr(instance, "source") or not hasattr(instance, "target"):
+                raise AttributeError("Bound method instance lacks 'source' or 'target' attributes.")
+            path.append(instance.source)  # Add the source node of the instance
+
+        # Add the target of the last method's instance to complete the path
+        path.append(bound_methods[-1].__self__.target)
+
+        return " -> ".join(path)
 
     def plot(self, **kwargs):
         """

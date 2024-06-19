@@ -16,12 +16,15 @@ from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
 
+from qbraid.transpiler.annotations import weight
+
 pytket_qasm = LazyLoader("pytket_qasm", globals(), "pytket.qasm")
 
 if TYPE_CHECKING:
     import pytket.circuit
 
 
+@weight(1)
 def qasm2_to_pytket(qasm: str) -> "pytket.circuit.Circuit":
     """Returns a pytket circuit equivalent to the input OpenQASM 2 string.
 
