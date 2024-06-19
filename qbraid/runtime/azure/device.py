@@ -43,10 +43,10 @@ class AzureQuantumDevice(QuantumDevice):
 
         return device_data.get("status")
 
-    def submit(self, run_input, name, provider, backend, qubits, **kwargs):
+    def submit(self, run_input, name, provider, backend, qubits, **kwargs): # pylint: disable=too-many-arguments
         """Submit a job to the Azure device."""
-        #is_single_input = not isinstance(run_input, list)
-        #run_input = [run_input] if is_single_input else run_input
+        # is_single_input = not isinstance(run_input, list)
+        # run_input = [run_input] if is_single_input else run_input
 
         job = self._session.create_job(run_input, name, provider, backend, qubits)
         return job
