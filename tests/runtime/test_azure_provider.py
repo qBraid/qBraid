@@ -8,122 +8,418 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# pylint: disable=redefined-outer-name
+
 """
 Unit tests for Azure session, provider, and device classes
 
 """
+from unittest.mock import patch
+
 import pytest
-from qbraid.runtime.azure import AzureQuantumDevice, AzureQuantumProvider, AzureSession
+from qiskit import QuantumCircuit, qasm2
 
-provider = AzureQuantumProvider(client_id=client_id, client_secret=client_secret, tenant_id=tenant_id,
-                                location_name=location_name, subscription_id=subscription_id, resource_group_name=resource_group,
-                                workspace_name=workspace_name, storage_account=storage_account, connection_string=connection_string)
+from qbraid.runtime.azure.provider import AzureQuantumProvider, AzureSession
 
-session = provider.session
+session = AzureSession(
+    client_id="client_id",
+    client_secret="client_secret",
+    tenant_id="tenant_id",
+    location_name="location_name",
+    subscription_id="subscription_id",
+    resource_group_name="resource_group",
+    workspace_name="workspace_name",
+    storage_account="storage_account",
+    connection_string="connection_string",
+)
+
+provider = AzureQuantumProvider(
+    client_id="client_id",
+    client_secret="client_secret",
+    tenant_id="tenant_id",
+    location_name="location_name",
+    subscription_id="subscription_id",
+    resource_group_name="resource_group",
+    workspace_name="workspace_name",
+    storage_account="storage_account",
+    connection_string="connection_string",
+)
+
 
 @pytest.fixture
-def test_session_get_devices():
+def circuit():
+    """Create a sample quantum circuit."""
+    test_circuit = QuantumCircuit(2)
+    test_circuit.h(0)
+    test_circuit.cx(0, 1)
+    test_circuit.measure_all()
+    qasm_str = qasm2.dumps(test_circuit)
+
+    return qasm_str
+
+
+@pytest.fixture
+def job_data():
+    """Create a sample job data for Azure Quantum."""
+    test_job_data = {
+        "containerUri": "mock.com",
+        "inputDataUri": "mock.net",
+        "inputDataFormat": "honeywell.openqasm.v1",
+        "inputParams": {"shots": 100, "count": 100},
+        "metadata": {
+            "qiskit": "True",
+            "name": "job-data-test-cases",
+            "num_qubits": "2",
+            "metadata": "null",
+            "meas_map": "[0]",
+        },
+        "sessionId": None,
+        "status": "Waiting",
+        "jobType": "QuantumComputing",
+        "outputDataFormat": "honeywell.quantum-results.v1",
+        "outputDataUri": "mock.org",
+        "beginExecutionTime": None,
+        "cancellationTime": None,
+        "quantumComputingData": None,
+        "errorData": None,
+        "isCancelling": False,
+        "tags": [],
+        "name": "job-data-test-cases",
+        "id": "mock_id",
+        "providerId": "quantinuum",
+        "target": "quantinuum.sim.h1-1e",
+        "creationTime": "2024-06-19T15:10:32.1074886+00:00",
+        "endExecutionTime": None,
+        "costEstimate": None,
+        "itemType": "Job",
+    }
+    return test_job_data
+
+
+@pytest.fixture
+def device_dict():
+    """Create a sample device dictionary for Azure Quantum."""
+    test_device_dict = {
+        "id": "microsoft.estimator",
+        "status": "Available",
+        "isAvailable": True,
+        "nextAvailable": None,
+        "availablilityCD": "",
+        "averageQueueTime": 0,
+    }
+    return test_device_dict
+
+
+@pytest.fixture
+def check_job_data():
+    """Check parameters for Azure Quantum job."""
+    test_check_parameters = [
+        "containerUri",
+        "inputDataUri",
+        "inputDataFormat",
+        "inputParams",
+        "metadata",
+        "sessionId",
+        "status",
+        "jobType",
+        "outputDataFormat",
+        "outputDataUri",
+        "beginExecutionTime",
+        "cancellationTime",
+        "quantumComputingData",
+        "errorData",
+        "isCancelling",
+        "tags",
+        "name",
+        "id",
+        "providerId",
+        "target",
+        "creationTime",
+        "endExecutionTime",
+        "costEstimate",
+        "itemType",
+    ]
+
+    return test_check_parameters
+
+
+@pytest.fixture
+def raw_devices_data():
+    """Check devices for Azure Quantum provider."""
+    test_raw_devices_data = {
+        "value": [
+            {
+                "id": "ionq",
+                "currentAvailability": "Degraded",
+                "targets": [
+                    {
+                        "id": "ionq.qpu",
+                        "currentAvailability": "Available",
+                        "averageQueueTime": 91639,
+                        "statusPage": "https://status.ionq.co",
+                    },
+                    {
+                        "id": "ionq.qpu.aria-1",
+                        "currentAvailability": "Unavailable",
+                        "averageQueueTime": 1525802,
+                        "statusPage": "https://status.ionq.co",
+                    },
+                    {
+                        "id": "ionq.qpu.aria-2",
+                        "currentAvailability": "Unavailable",
+                        "averageQueueTime": 1097474,
+                        "statusPage": "https://status.ionq.co",
+                    },
+                    {
+                        "id": "ionq.simulator",
+                        "currentAvailability": "Available",
+                        "averageQueueTime": 3,
+                        "statusPage": "https://status.ionq.co",
+                    },
+                ],
+            },
+            {
+                "id": "microsoft-qc",
+                "currentAvailability": "Available",
+                "targets": [
+                    {
+                        "id": "microsoft.estimator",
+                        "currentAvailability": "Available",
+                        "averageQueueTime": 0,
+                        "statusPage": None,
+                    }
+                ],
+            },
+            {
+                "id": "quantinuum",
+                "currentAvailability": "Degraded",
+                "targets": [
+                    {
+                        "id": "quantinuum.qpu.h1-1",
+                        "currentAvailability": "Degraded",
+                        "averageQueueTime": 0,
+                        "statusPage": "https://www.quantinuum.com/hardware/h1",
+                    },
+                    {
+                        "id": "quantinuum.sim.h1-1sc",
+                        "currentAvailability": "Available",
+                        "averageQueueTime": 0,
+                        "statusPage": "https://www.quantinuum.com/hardware/h1",
+                    },
+                    {
+                        "id": "quantinuum.sim.h1-1e",
+                        "currentAvailability": "Available",
+                        "averageQueueTime": 66,
+                        "statusPage": "https://www.quantinuum.com/hardware/h1",
+                    },
+                ],
+            },
+            {
+                "id": "rigetti",
+                "currentAvailability": "Degraded",
+                "targets": [
+                    {
+                        "id": "rigetti.sim.qvm",
+                        "currentAvailability": "Available",
+                        "averageQueueTime": 5,
+                        "statusPage": "https://rigetti.statuspage.io/",
+                    },
+                    {
+                        "id": "rigetti.qpu.ankaa-2",
+                        "currentAvailability": "Degraded",
+                        "averageQueueTime": 5,
+                        "statusPage": "https://rigetti.statuspage.io/",
+                    },
+                ],
+            },
+        ],
+        "nextLink": None,
+    }
+    return test_raw_devices_data
+
+
+@pytest.fixture
+def raw_device_data():
+    """Check device data for Azure Quantum provider."""
+    test_raw_device_data = {
+        "id": "microsoft.estimator",
+        "status": "Available",
+        "isAvailable": True,
+        "nextAvailable": None,
+        "availablilityCD": "",
+        "averageQueueTime": 0,
+    }
+    return test_raw_device_data
+
+
+@pytest.fixture
+def targets():
+    """Check targets for Azure Quantum provider."""
+    test_targets = [
+        "microsoft.estimator",
+        "quantinuum.qpu.h1-1",
+        "quantinuum.sim.h1-1sc",
+        "quantinuum.sim.h1-1e",
+        "rigetti.sim.qvm",
+        "rigetti.qpu.ankaa-2",
+    ]
+    return test_targets
+
+
+@pytest.fixture
+def expected_device_parameters():
+    """Expected parameters for Azure Quantum device."""
+    test_expected_device_parameters = [
+        "id",
+        "status",
+        "isAvailable",
+        "nextAvailable",
+        "availablilityCD",
+        "averageQueueTime",
+    ]
+    return test_expected_device_parameters
+
+
+@patch("qbraid.runtime.azure.provider.AzureHelperFunctions.quantum_access_token")
+@patch("qbraid.runtime.azure.provider.Session.get")
+def test_session_get_devices(mock_access_token, mock_device_data, raw_devices_data, targets):
     """Test getting data for all Azure Quantum devices."""
-    check_devices = ['microsoft.estimator', 'quantinuum.qpu.h1-1', 'quantinuum.sim.h1-1sc', 'quantinuum.sim.h1-1e', 'rigetti.sim.qvm', 'rigetti.qpu.ankaa-2']
-    all_devices = []
+    mock_access_token.return_value = "abc123"
+    mock_device_data.return_value = raw_devices_data
 
     devices = session.get_devices()
-    for device, data in devices.items():
-        all_devices.append(device)
-
-    assert all_devices == check_devices
+    all_devices = list(devices[0].keys())
+    assert all_devices == targets
 
 
-def test_session_get_device():
+@patch("qbraid.runtime.azure.provider.AzureHelperFunctions.quantum_access_token")
+@patch("qbraid.runtime.azure.provider.Session.get")
+def test_session_get_device(
+    mock_access_token, mock_device_data, raw_device_data, expected_device_parameters
+): # pylint: disable=too-many-arguments
     """Getting data for specific Azure Quantum device."""
-    check_parameters = ['status', 'isAvailable', 'nextAvailable', 'availablilityCD', 'averageQueueTime']
-    device_parameters = []
+    mock_access_token.return_value = "abc123"
+    mock_device_data.return_value = raw_device_data
 
     device = session.get_device("microsoft.estimator")
-    for parameter, status in device.items():
-        device_parameters.append(parameter)
+    device_parameters = list(device.keys())
 
-    assert device_parameters == check_parameters
+    assert device_parameters == expected_device_parameters
 
-def test_session_create_job():
+
+@patch("qbraid.runtime.azure.provider.AzureHelperFunctions.quantum_access_token")
+@patch("qbraid.runtime.azure.provider.AzureHelperFunctions.storage_access_token")
+@patch("qbraid.runtime.azure.provider.Session.post")
+def test_session_create_job(
+    mock_quantum_token, mock_storage_token, mock_job_data, job_data, circuit, check_job_data
+): # pylint: disable=too-many-arguments
     """Test creating a new job through the Azure Quantum API."""
+    mock_quantum_token.return_value = "abc123"
+    mock_storage_token.return_value = "def456"
+    mock_job_data.return_value = job_data
 
-    check_parameters = ['containerUri', 'inputDataUri', 'inputDataFormat', 
-                        'inputParams', 'metadata', 'sessionId', 'status', 
-                        'jobType', 'outputDataFormat', 'outputDataUri', 
-                        'beginExecutionTime', 'cancellationTime', 'quantumComputingData', 
-                        'errorData', 'isCancelling', 'tags', 'name', 
-                        'id', 'providerId', 'target', 'creationTime', 
-                        'endExecutionTime', 'costEstimate', 'itemType']
-    
-    job_parameters = []
+    job = session.create_job(circuit, "job-data-test-cases", "quantinuum", "Emulator", 2)
+    job_parameters = list(job.keys())
 
-    job = session.create_job("job-data-test-cases", "quantinuum", "Emulator", 2)
+    assert job_parameters == check_job_data
 
-    for parameter, status in job.items():
-            job_parameters.append(parameter)
 
-    assert job_parameters == check_parameters
+@patch("qbraid.runtime.azure.provider.AzureHelperFunctions.quantum_access_token")
+@patch("qbraid.runtime.azure.provider.AzureHelperFunctions.storage_access_token")
+@patch("qbraid.runtime.azure.provider.Session.post")
+@patch("qbraid.runtime.azure.provider.Session.get")
+def test_session_get_job(
+    mock_quantum_token,
+    mock_storage_token,
+    mock_job_data,
+    mock_get_job,
+    job_data,
+    circuit,
+    check_job_data,
+): # pylint: disable=too-many-arguments
+    """Test getting a specific Azure Quantum job."""
+    mock_quantum_token.return_value = "abc123"
+    mock_storage_token.return_value = "def456"
+    mock_job_data.return_value = job_data
+    mock_get_job.retirm_value = job_data
 
-def test_session_get_job():
-    """Teset getting a specific Azure Quantum job."""
-    check_parameters = ['containerUri', 'inputDataUri', 'inputDataFormat', 
-                        'inputParams', 'metadata', 'sessionId', 'status', 
-                        'jobType', 'outputDataFormat', 'outputDataUri', 
-                        'beginExecutionTime', 'cancellationTime', 'quantumComputingData', 
-                        'errorData', 'isCancelling', 'tags', 'name', 
-                        'id', 'providerId', 'target', 'creationTime', 
-                        'endExecutionTime', 'costEstimate', 'itemType']
-    
-    job_parameters = []
+    session.create_job(circuit, "job-data-test-cases", "quantinuum", "Emulator", 2)
 
-    session.create_job("job-data-test-cases", "quantinuum", "Emulator", 2)
-
-    for key, value in session.jobs.items():
-        job_id = key
-        break
-
+    job_id = next(iter(session.jobs))
     get_job = session.get_job(job_id)
+    job_parameters = list(get_job.keys())
 
-    for parameter, status in get_job.items():
-            job_parameters.append(parameter)
+    assert job_parameters == check_job_data
 
-    assert job_parameters == check_parameters
 
-def test_session_cancel_job():
+@patch("qbraid.runtime.azure.provider.AzureHelperFunctions.quantum_access_token")
+@patch("qbraid.runtime.azure.provider.AzureHelperFunctions.storage_access_token")
+@patch("qbraid.runtime.azure.provider.Session.post")
+@patch("qbraid.runtime.azure.provider.Session.get")
+@patch("qbraid.runtime.azure.provider.Session.delete")
+def test_session_cancel_job(
+    mock_quantum_token,
+    mock_storage_token,
+    mock_job_data,
+    mock_get_job,
+    mock_delete_job,
+    job_data,
+    circuit,
+): # pylint: disable=too-many-arguments
     """Test cancelling a specific Azure Quantum job."""
-    session.create_job("job-data-test-cases", "quantinuum", "Emulator", 2)
+    mock_quantum_token.return_value = "abc123"
+    mock_storage_token.return_value = "def456"
+    mock_job_data.return_value = job_data
+    mock_get_job.return_value = job_data
+    mock_delete_job.return_value = "Job has been cancelled"
 
-    for key, value in session.jobs.items():
-        job_id = key
-        break
+    session.create_job(circuit, "job-data-test-cases", "quantinuum", "Emulator", 2)
+    job_id = next(iter(session.jobs))
 
-    session.cancel_job(job_id)
-    metadata = session.get_job(job_id)
+    cancelled = session.cancel_job(job_id)
 
-    assert metadata["isCancelling"] == True
-    
-@pytest.fixture
-def test_provider_get_devices():
+    assert cancelled == "Job has been cancelled"
+
+
+@patch("qbraid.runtime.azure.provider.AzureHelperFunctions.quantum_access_token")
+@patch("qbraid.runtime.azure.provider.Session.get")
+def test_provider_get_devices(mock_access_token, mock_device_data, raw_devices_data, targets):
     """Test getting list of all AzureQuantumDevice objects."""
+    mock_access_token.return_value = "abc123"
+    mock_device_data.return_value = raw_devices_data
+
     devices = provider.get_devices()
-    assert len(devices) >= 1
+
+    all_devices = list(devices[0].keys())
+    assert all_devices == targets
 
 
-def test_provider_get_device():
+@patch("qbraid.runtime.azure.provider.AzureHelperFunctions.quantum_access_token")
+@patch("qbraid.runtime.azure.provider.Session.get")
+def test_provider_get_device(
+    mock_access_token, mock_device_data, raw_device_data
+):
     """Test getting a specific AzureQuantumDevice object."""
-    check_devices = ['id', 'status', 'isAvailable', 'nextAvailable', 'availablilityCD', 'averageQueueTime']
-    verify_devices = []
+    mock_access_token.return_value = "abc123"
+    mock_device_data.return_value = raw_device_data
 
-    devices = provider.get_device("microsoft.estimator")
+    check_device = "<qbraid.runtime.azure.device.AzureQuantumDevice('microsoft.estimator')>"
+    device = str(provider.get_device("microsoft.estimator"))
 
-    for parameter, status in devices.items():
-        verify_devices.append(parameter)
+    assert check_device == device
 
-    assert check_devices == verify_devices
-    
-def test_device_status():
+
+@patch("qbraid.runtime.azure.provider.AzureHelperFunctions.quantum_access_token")
+@patch("qbraid.runtime.azure.provider.Session.get")
+def test_device_status(mock_access_token, mock_device_data, device_dict):
     """Test getting status of AzureQuantumDevice."""
-    devices = provider.get_device("microsoft.estimator")
-    assert "status" in devices
-    
+    mock_access_token.return_value = "abc123"
+    mock_device_data.return_value = device_dict
+
+    devices = provider.session.get_device("microsoft.estimator")
+    check = None
+
+    if "status" in devices:
+        check = "exists"
+
+    assert check == "exists"
