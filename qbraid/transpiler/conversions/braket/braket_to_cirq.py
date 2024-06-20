@@ -35,7 +35,7 @@ try:
 except ImportError:
     cirq_ionq_ops = None
 
-from qbraid.programs.libs.cirq import CirqCircuit as QbraidCircuit
+from qbraid.programs.circuits.cirq import CirqCircuit as QbraidCircuit
 from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import CircuitConversionError
 

@@ -17,14 +17,15 @@ from typing import TYPE_CHECKING
 from braket.circuits import Circuit, Instruction, Qubit
 
 from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.program import QbraidProgram
+
+from ._model import GateModelProgram
 
 if TYPE_CHECKING:
     import braket.circuits
     import numpy as np
 
 
-class BraketCircuit(QbraidProgram):
+class BraketCircuit(GateModelProgram):
     """Wrapper class for ``braket.circuits.Circuit`` objects."""
 
     def __init__(self, program: "braket.circuits.Circuit"):

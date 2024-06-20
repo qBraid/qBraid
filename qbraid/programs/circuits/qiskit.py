@@ -22,7 +22,8 @@ from qiskit.converters import circuit_to_dag, dag_to_circuit
 from qiskit.quantum_info import Operator
 
 from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.program import QbraidProgram
+
+from ._model import GateModelProgram
 
 if TYPE_CHECKING:
     import numpy as np
@@ -30,7 +31,7 @@ if TYPE_CHECKING:
     from qbraid.runtime.qiskit import QiskitBackend
 
 
-class QiskitCircuit(QbraidProgram):
+class QiskitCircuit(GateModelProgram):
     """Wrapper class for ``qiskit.QuantumCircuit`` objects"""
 
     def __init__(self, program: "qiskit.QuantumCircuit"):

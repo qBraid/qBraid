@@ -20,10 +20,11 @@ from pyquil.quilbase import Declare, Measurement
 from pyquil.simulation.tools import program_unitary
 
 from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.program import QbraidProgram
+
+from ._model import GateModelProgram
 
 
-class PyQuilProgram(QbraidProgram):
+class PyQuilProgram(GateModelProgram):
     """Wrapper class for ``pyQuil.Program`` objects."""
 
     def __init__(self, program: "pyquil.Program"):
