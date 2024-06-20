@@ -126,7 +126,9 @@ class BraketProvider(QuantumProvider):
             program_spec = program_spec or ProgramSpec(Circuit)
         elif action.get("braket.ir.ahs.program") is not None:
             action_type = DeviceActionType.AHS
-            program_spec = program_spec or ProgramSpec(AnalogHamiltonianSimulation, alias="ahs")
+            program_spec = program_spec or ProgramSpec(
+                AnalogHamiltonianSimulation, alias="braket_ahs"
+            )
         else:
             raise QbraidError(
                 f"TargetProfile cannot be created for device '{device.arn}' as it does not "

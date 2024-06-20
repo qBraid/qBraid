@@ -88,7 +88,3 @@ class PennylaneTape(GateModelProgram):
         [tape], _ = qml.map_wires(tape, wire_map)
 
         self._program = tape
-
-    def transform(self, device) -> None:
-        """Transform program to according to device target profile."""
-        raise NotImplementedError

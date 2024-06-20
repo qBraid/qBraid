@@ -99,45 +99,37 @@ class BraketDevice(QuantumDevice):
 
         provider = (self.profile.get("provider_name") or "").upper()
         action_type = (self.profile.get("action_type") or "").upper()
-        device_type: str = self.device_type.name
 
-        if action_type == "OPENQASM":
-            if not isinstance(program, Circuit):
-                raise DeviceProgramTypeMismatchError(program, str(Circuit), action_type)
+        if action_type == "OPENQASM" and not isinstance(program, Circuit):
+            raise DeviceProgramTypeMismatchError(program, str(Circuit), action_type)
 
-            if provider == "IONQ":
-                graph = self.scheme.conversion_graph
-                if (
-                    graph is not None
-                    and graph.has_edge("pytket", "braket")
-                    and QPROGRAM_REGISTRY["pytket"] == NATIVE_REGISTRY["pytket"]
-                    and QPROGRAM_REGISTRY["braket"] == NATIVE_REGISTRY["braket"]
-                    and self._target_spec.alias == "braket"
-                ):
-                    tk_circuit = transpile(
-                        program, "pytket", max_path_depth=1, conversion_graph=graph
-                    )
-                    tk_program = load_program(tk_circuit)
-                    tk_program.transform(self)
-                    tk_transformed = tk_program.program
-                    braket_transformed = transpile(
-                        tk_transformed, "braket", max_path_depth=1, conversion_graph=graph
-                    )
-                    program = braket_transformed
+        if action_type == "AHS" and not isinstance(program, AnalogHamiltonianSimulation):
+            raise DeviceProgramTypeMismatchError(
+                program, str(AnalogHamiltonianSimulation), action_type
+            )
 
-            else:
-                qprogram = load_program(program)
-                qprogram.transform(self)
-                program = qprogram.program
-
-        elif action_type == "AHS":
-            if not isinstance(program, AnalogHamiltonianSimulation):
-                raise DeviceProgramTypeMismatchError(
-                    program, str(AnalogHamiltonianSimulation), action_type
+        if provider == "IONQ":
+            graph = self.scheme.conversion_graph
+            if (
+                graph is not None
+                and graph.has_edge("pytket", "braket")
+                and QPROGRAM_REGISTRY["pytket"] == NATIVE_REGISTRY["pytket"]
+                and QPROGRAM_REGISTRY["braket"] == NATIVE_REGISTRY["braket"]
+                and self._target_spec.alias == "braket"
+            ):
+                tk_circuit = transpile(program, "pytket", max_path_depth=1, conversion_graph=graph)
+                tk_program = load_program(tk_circuit)
+                tk_program.transform(self)
+                tk_transformed = tk_program.program
+                braket_transformed = transpile(
+                    tk_transformed, "braket", max_path_depth=1, conversion_graph=graph
                 )
+                program = braket_transformed
 
-            if device_type == "QPU":
-                program = program.discretize(self._device)
+        else:
+            qprogram = load_program(program)
+            qprogram.transform(self)
+            program = qprogram.program
 
         return program
 

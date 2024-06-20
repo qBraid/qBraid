@@ -71,7 +71,3 @@ class PyQuilProgram(GateModelProgram):
     def reverse_qubit_order(self) -> None:
         """Reverse the order of the qubits in the circuit."""
         raise NotImplementedError
-
-    def transform(self, device) -> None:
-        """Transform program to according to device target profile."""
-        raise NotImplementedError

@@ -248,8 +248,15 @@ class ConversionGraph(rx.PyDiGraph):
             bool: True if the conversion is supported, False otherwise.
         """
         if source == target:
-            return True  # nx.has_path returns True, but rx.has_path returns False
-        return rx.has_path(self, self._node_alias_id_map[source], self._node_alias_id_map[target])
+            return True
+
+        source_node = self._node_alias_id_map.get(source)
+        target_node = self._node_alias_id_map.get(target)
+
+        if source_node is None or target_node is None:
+            return False
+
+        return rx.has_path(self, source_node, target_node)
 
     def shortest_path(self, source: str, target: str) -> str:
         """

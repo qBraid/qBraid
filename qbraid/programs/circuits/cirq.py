@@ -274,7 +274,3 @@ class CirqCircuit(GateModelProgram):
             return circuit
 
         return new_circuit
-
-    def transform(self, device) -> None:
-        """Transform program to according to device target profile."""
-        raise NotImplementedError
