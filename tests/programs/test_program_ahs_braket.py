@@ -27,7 +27,7 @@ from braket.ahs.local_detuning import LocalDetuning
 from braket.ahs.pattern import Pattern
 from braket.timings.time_series import TimeSeries
 
-from qbraid.programs import load_program
+from qbraid.programs import ProgramTypeError, load_program
 from qbraid.programs.ahs import AHSEncoder
 from qbraid.programs.ahs.braket_ahs import BraketAHS, BraketAHSDecoder, BraketAHSEncoder
 
@@ -223,9 +223,16 @@ def test_ahs_serialization(
     assert ahs_fixture.to_ir() == ahs_reconstructed.to_ir()
 
 
+def test_decode_time_series_raises_for_length_mismatch(decoder: BraketAHSDecoder):
+    """Test that decoding a TimeSeries with mismatched lengths raises a ValueError."""
+    with pytest.raises(ValueError):
+        decoder.decode_time_series([0, 1], [0, 1, 2])
+
+
 def test_braket_ahs_wrapper_attributes(ahs_program, register_data, hamiltonian_data, ahs_data):
     """Test the attributes of the BraketAHS wrapper."""
     program = BraketAHS(ahs_program)
+    assert program.num_atoms == program.num_qubits == 8
     assert program.register == register_data
     assert program.hamiltonian == hamiltonian_data
     assert program.to_dict() == ahs_data
@@ -255,3 +262,18 @@ def test_load_braket_ahs_program(ahs_program):
     """Test loading a BraketAHS program."""
     program = load_program(ahs_program)
     assert isinstance(program, BraketAHS)
+
+
+def test_braket_ahs_wrapper_equality(ahs_program, ahs_program_local_detuning, decoder):
+    """Test equality comparison of the BraketAHS wrapper."""
+    program_1 = BraketAHS(ahs_program)
+    program_2 = BraketAHS(ahs_program_local_detuning)
+    assert program_1 == BraketAHS(decoder.decode_ahs(program_1.to_dict()))
+    assert program_1 != program_2
+    assert program_1 != 42
+
+
+def test_braket_ahs_wrapper_bad_type():
+    """Test that creating a BraketAHS wrapper with a bad type raises a TypeError."""
+    with pytest.raises(ProgramTypeError):
+        BraketAHS(())

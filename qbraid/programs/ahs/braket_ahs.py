@@ -31,7 +31,7 @@ if TYPE_CHECKING:
 class BraketAHS(AnalogHamiltonianProgram):
     """Wrapper class for ``braket.ahs.AnalogHamiltonianSimulation`` objects."""
 
-    def _init_(self, program: "braket.ahs.AnalogHamiltonianSimulation"):
+    def __init__(self, program: "braket.ahs.AnalogHamiltonianSimulation"):
         super().__init__(program)
         if not isinstance(program, AnalogHamiltonianSimulation):
             raise ProgramTypeError(
