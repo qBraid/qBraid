@@ -16,6 +16,7 @@ from unittest.mock import Mock
 
 import pytest
 
+from qbraid.programs._import import _assign_default_type_alias
 from qbraid.programs.alias_manager import (
     _get_program_type_alias,
     find_str_type_alias,
@@ -209,3 +210,78 @@ def test_find_no_str_type_alias():
         "qasm3": float,
     }
     assert find_str_type_alias(registry) is None
+
+
+class SinglePartModule:
+    """Test class with a single-part module name."""
+
+    __module__ = "quantum"
+
+
+class MultiPartModule:
+    """Test class with a multi-part module name."""
+
+    __module__ = "parent.child"
+
+
+class MainModule:
+    """Test class with the __main__ module."""
+
+    __module__ = "__main__"
+
+
+class BuiltinsModule:
+    """Test class with the builtins module."""
+
+    __module__ = "builtins"
+
+
+def test_submodule_multi_part():
+    """Check alias creation for multi-part module with submodule flag."""
+    assert derive_program_type_alias(MultiPartModule, use_submodule=True) == "parent_child"
+
+
+def test_submodule_single_part_error():
+    """Ensure ValueError for single-part module with submodule flag."""
+    with pytest.raises(
+        ValueError, match="Module name does not have at least two parts for submodule aliasing."
+    ):
+        derive_program_type_alias(SinglePartModule, use_submodule=True)
+
+
+def test_submodule_main_error():
+    """Ensure ValueError for __main__ module with submodule flag."""
+    with pytest.raises(
+        ValueError, match="Cannot use submodule aliasing with __main__ or builtins module."
+    ):
+        derive_program_type_alias(MainModule, use_submodule=True)
+
+
+def test_submodule_builtins_error():
+    """Ensure ValueError for builtins module with submodule flag."""
+    with pytest.raises(
+        ValueError, match="Cannot use submodule aliasing with __main__ or builtins module."
+    ):
+        derive_program_type_alias(BuiltinsModule, use_submodule=True)
+
+
+def test_submodule_insufficient_error():
+    """Ensure ValueError for insufficient module parts with submodule flag."""
+    with pytest.raises(
+        ValueError, match="Module name does not have at least two parts for submodule aliasing."
+    ):
+        derive_program_type_alias(SinglePartModule, use_submodule=True)
+
+
+def test_single_part_module_name():
+    """Test alias assignment with a single-part module name."""
+    imported_aliases = {"quantum": object}
+    alias = _assign_default_type_alias(imported_aliases, SinglePartModule)
+    assert alias == "quantum_singlepartmodule"
+
+
+def test_duplicate_alias_raises_value_error():
+    """Ensure ValueError is raised for duplicate alias."""
+    imported_aliases = {"quantum": object, "quantum_singlepartmodule": object}
+    with pytest.raises(ValueError, match="Duplicate alias quantum_singlepartmodule"):
+        _assign_default_type_alias(imported_aliases, SinglePartModule)

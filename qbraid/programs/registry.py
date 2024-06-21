@@ -22,23 +22,39 @@ QPROGRAM_ALIASES = _QPROGRAM_ALIASES
 QPROGRAM_TYPES = _QPROGRAM_TYPES
 
 
-def derive_program_type_alias(program_type: Type[Any]) -> str:
+def derive_program_type_alias(program_type: Type[Any], use_submodule: bool = False) -> str:
     """
     Determines an alias for the given program type based on its module or class name.
 
     Args:
         program_type (Type[Any]): The class or type for which to determine the alias.
+        use_submodule (bool): If True, alias will be based on first two parts of module name.
 
     Returns:
         str: The determined alias for the program type.
 
     Raises:
-        ValueError: If the alias cannot be automatically determined.
+        ValueError: If the alias cannot be determined, or if use_submodule is True and the
+                    module name is invalid or belongs to __main__ or builtins.
     """
     try:
-        alias = program_type.__module__.split(".")[0]
-        if alias in ["__main__", "builtins"]:
+        module_name = program_type.__module__
+        module_parts = module_name.split(".")
+
+        if module_parts[0] in ["__main__", "builtins"]:
+            if use_submodule:
+                raise ValueError("Cannot use submodule aliasing with __main__ or builtins module.")
             alias = program_type.__name__
+        else:
+            if use_submodule:
+                if len(module_parts) < 2:
+                    raise ValueError(
+                        "Module name does not have at least two parts for submodule aliasing."
+                    )
+                alias = f"{module_parts[0]}_{module_parts[1]}"
+            else:
+                alias = module_parts[0]
+
         return alias.lower()
     except (AttributeError, IndexError, TypeError) as err:
         raise ValueError(

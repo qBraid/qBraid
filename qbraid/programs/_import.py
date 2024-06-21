@@ -24,6 +24,36 @@ from types import ModuleType
 from typing import Any, Type
 
 
+def _assign_default_type_alias(imported: dict[str, Any], program_type: Type[Any]) -> str:
+    """
+    Determines a unique alias for the given program type based on its module name.
+
+    Args:
+        imported (dict[str, Any]): A dictionary of already imported program type aliases.
+        program_type (Type[Any]): The class or type for which to determine the alias.
+
+    Returns:
+        str: The determined alias for the program type.
+
+    Raises:
+        ValueError: If a unique alias cannot be determined due to duplicates.
+    """
+    module_name = program_type.__module__
+    module_parts = module_name.split(".")
+    alias = module_parts[0]
+
+    if alias in imported:
+        if len(module_parts) > 1:
+            alias = f"{alias}_{module_parts[1]}"
+        else:
+            alias = f"{alias}_{program_type.__name__.lower()}"
+
+        if alias in imported:
+            raise ValueError(f"Duplicate alias {alias}")
+
+    return alias
+
+
 def _dynamic_importer(opt_modules: list[str]) -> dict[str, Type[Any]]:
     imported: dict[str, Type[Any]] = {}
 
@@ -39,11 +69,8 @@ def _dynamic_importer(opt_modules: list[str]) -> dict[str, Type[Any]]:
             module: ModuleType = import_module(m)
             globals()[m] = module
             program_type = _get_class(module.__name__)
-            program_module_parts = module.__name__.split(".")
-            if program_module_parts[0] == "braket" and program_module_parts[1] == "ahs":
-                program_type_alias = "braket_ahs"
-            else:
-                program_type_alias = program_module_parts[0]
+            program_type_alias = _assign_default_type_alias(imported, program_type)
+            program_type_alias = data[0] if program_type_alias == "builtins" else program_type_alias
             imported[program_type_alias] = program_type
         except Exception:  # pylint: disable=broad-except
             pass

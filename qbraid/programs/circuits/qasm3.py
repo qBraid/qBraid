@@ -24,6 +24,7 @@ from openqasm3.ast import (
     QuantumGate,
     QuantumMeasurement,
     QuantumMeasurementStatement,
+    QuantumReset,
     QubitDeclaration,
 )
 from openqasm3.parser import parse
@@ -115,6 +116,10 @@ class OpenQasm3Program(GateModelProgram):
                     for idx in indices:
                         counts[idx] = curr_max_depth + 1
                     max_depth = max(max_depth, curr_max_depth + 1)
+            elif isinstance(statement, QuantumReset):
+                counts[statement.qubits.indices[0][0].value] += 1
+                array_max = max(counts)
+                max_depth = max(max_depth, array_max)
             elif isinstance(statement, QuantumBarrier):
                 counts = [max_depth] * n
                 new_measurement_moment = True
