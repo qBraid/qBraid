@@ -79,6 +79,9 @@ def braket_to_cirq(circuit: BKCircuit) -> "cirq_circuits.Circuit":
 
     Args:
         circuit: Braket circuit to convert to a Cirq circuit.
+
+    Returns:
+        Cirq circuit equivalent to the input Braket circuit.
     """
     bk_qubits = [int(q) for q in circuit.qubits]
     cirq_qubits = [cirq.LineQubit(x) for x in bk_qubits]

@@ -19,10 +19,8 @@ import numpy as np
 from qbraid._version import __version__
 from qbraid.exceptions import QbraidError
 
-QASMType = str
 
-
-def create_gateset_qasm(max_operands) -> np.ndarray:
+def create_gateset_qasm(max_operands: int) -> np.ndarray:
     """gets qasm for gateset with max_operands"""
 
     q1_gates = [
@@ -77,10 +75,10 @@ def _qasm3_random(
     num_qubits: Optional[int] = None,
     depth: Optional[int] = None,
     max_operands: Optional[int] = None,
-    seed=None,
-    measure=False,
-) -> QASMType:
-    """Generate random QASM3 circuit string.
+    seed: Optional[int] = None,
+    measure: bool = False,
+) -> str:
+    """Generate random OpenQASM 3 program.
 
     Args:
         num_qubits (int): number of quantum wires
@@ -90,16 +88,25 @@ def _qasm3_random(
         measure (bool): whether to include measurement gates
 
     Raises:
-        QbraidError: When invalid  random circuit options given
+        ValueError: When invalid  random circuit options given
+        QbraidError: When failed to create random OpenQASM 3 program
 
     Returns:
-        QASM3 random circuit string
+        str: OpenQASM 3 program
 
     """
 
-    num_qubits = np.random.randint(1, 4) if num_qubits is None else num_qubits
-    depth = np.random.randint(1, 4) if depth is None else depth
-    max_operands = np.random.randint(1, 3) if max_operands is None else max_operands
+    def validate_and_assign(value: Optional[int], name: str):
+        if value is None:
+            return np.random.randint(1, 4)
+        if value <= 0:
+            raise ValueError(f"Invalid random circuit options. {name} must be a positive integer.")
+        return value
+
+    num_qubits = validate_and_assign(num_qubits, "num_qubits")
+    depth = validate_and_assign(depth, "depth")
+    max_operands = validate_and_assign(max_operands, "max_operands")
+
     try:
         if seed is None:
             seed = np.random.randint(0, np.iinfo(np.int32).max)
@@ -165,6 +172,7 @@ include "stdgates.inc";
             for i in range(num_qubits):
                 rand_circuit += f"c[{i}] = measure q[{i}];\n"
 
-    except Exception as e:
-        raise QbraidError("Failed to create random OpenQASM 3 program") from e
-    return rand_circuit
+        return rand_circuit
+
+    except Exception as err:
+        raise QbraidError("Failed to create random OpenQASM 3 program") from err
