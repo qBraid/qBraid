@@ -12,7 +12,15 @@
 Module containing sub-modules for interfacing with
 various quantum software libraries and program types.
 
-.. currentmodule:: qbraid.programs.libs
+.. currentmodule:: qbraid.programs.circuits
+
+Classes
+--------
+
+.. autosummary::
+   :toctree: ../stubs/
+    
+   GateModelProgram
 
 Submodules
 ------------
@@ -32,11 +40,13 @@ Submodules
 """
 import importlib
 
+from ._model import GateModelProgram
+
 _qbraid = importlib.import_module("qbraid.programs._import")
 NATIVE_REGISTRY = getattr(_qbraid, "NATIVE_REGISTRY", {})
 
 submodules = []
-base_path = "qbraid.programs.libs."
+base_path = "qbraid.programs.circuits."
 
 for lib in NATIVE_REGISTRY:
     try:
@@ -47,4 +57,7 @@ for lib in NATIVE_REGISTRY:
     except ImportError:
         pass
 
-__all__ = submodules
+
+__all__ = ["GateModelProgram"]
+
+__all__.extend(submodules)

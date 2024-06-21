@@ -16,13 +16,14 @@ import re
 from typing import TYPE_CHECKING
 
 from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.program import QbraidProgram
+
+from ._model import GateModelProgram
 
 if TYPE_CHECKING:
     import numpy as np
 
 
-class OpenQasm2Program(QbraidProgram):
+class OpenQasm2Program(GateModelProgram):
     """Wrapper class for OpenQASM 2 strings."""
 
     def __init__(self, program: str):
@@ -156,8 +157,4 @@ class OpenQasm2Program(QbraidProgram):
 
     def reverse_qubit_order(self) -> None:
         """Reverses the qubit ordering of a openqasm program."""
-        raise NotImplementedError
-
-    def transform(self, device) -> None:
-        """Transform program to according to device target profile."""
         raise NotImplementedError

@@ -18,13 +18,14 @@ import pennylane as qml
 from pennylane.tape import QuantumTape
 
 from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.program import QbraidProgram
+
+from ._model import GateModelProgram
 
 if TYPE_CHECKING:
     import numpy as np
 
 
-class PennylaneTape(QbraidProgram):
+class PennylaneTape(GateModelProgram):
     """Wrapper class for Pennylane Quantum Tape programs."""
 
     def __init__(self, program: QuantumTape):
@@ -87,7 +88,3 @@ class PennylaneTape(QbraidProgram):
         [tape], _ = qml.map_wires(tape, wire_map)
 
         self._program = tape
-
-    def transform(self, device) -> None:
-        """Transform program to according to device target profile."""
-        raise NotImplementedError

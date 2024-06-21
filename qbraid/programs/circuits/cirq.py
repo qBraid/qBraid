@@ -17,10 +17,11 @@ import cirq
 import numpy as np
 
 from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.program import QbraidProgram
+
+from ._model import GateModelProgram
 
 
-class CirqCircuit(QbraidProgram):
+class CirqCircuit(GateModelProgram):
     """Wrapper class for ``cirq.Circuit`` objects."""
 
     def __init__(self, program: "cirq.Circuit"):
@@ -273,7 +274,3 @@ class CirqCircuit(QbraidProgram):
             return circuit
 
         return new_circuit
-
-    def transform(self, device) -> None:
-        """Transform program to according to device target profile."""
-        raise NotImplementedError

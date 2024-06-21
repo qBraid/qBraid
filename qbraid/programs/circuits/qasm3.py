@@ -29,10 +29,11 @@ from openqasm3.ast import (
 from openqasm3.parser import parse
 
 from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.program import QbraidProgram
+
+from ._model import GateModelProgram
 
 
-class OpenQasm3Program(QbraidProgram):
+class OpenQasm3Program(GateModelProgram):
     """Wrapper class for OpenQASM 3 strings."""
 
     def __init__(self, program: str):

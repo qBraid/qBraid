@@ -19,8 +19,8 @@ import pytest
 from pytket.circuit import Circuit
 from pytket.unit_id import Qubit
 
+from qbraid.programs.circuits.pytket import IONQ_GATES, PytketCircuit
 from qbraid.programs.exceptions import ProgramTypeError, TransformError
-from qbraid.programs.libs.pytket import IONQ_GATES, PytketCircuit
 
 
 def test_program_attributes():
@@ -84,7 +84,7 @@ def test_assertion_error_in_rebase():
     max_qubits = 5
 
     with patch(
-        "qbraid.programs.libs.pytket.CompilationUnit.check_all_predicates", return_value=False
+        "qbraid.programs.circuits.pytket.CompilationUnit.check_all_predicates", return_value=False
     ):
         with pytest.raises(TransformError) as excinfo:
             PytketCircuit.rebase(circuit, gates, max_qubits)

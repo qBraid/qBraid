@@ -31,7 +31,8 @@ from pytket.predicates import (
 from pytket.unit_id import Qubit
 
 from qbraid.programs.exceptions import ProgramTypeError, TransformError
-from qbraid.programs.program import QbraidProgram
+
+from ._model import GateModelProgram
 
 IONQ_GATES = {
     OpType.X,
@@ -59,7 +60,7 @@ IONQ_GATES = {
 }
 
 
-class PytketCircuit(QbraidProgram):
+class PytketCircuit(GateModelProgram):
     """Wrapper class for ``pytket.circuit.Circuit`` objects."""
 
     def __init__(self, program: Circuit):
