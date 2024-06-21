@@ -296,7 +296,7 @@ def test_session_get_devices(mock_access_token, mock_device_data, raw_devices_da
 @patch("qbraid.runtime.azure.provider.Session.get")
 def test_session_get_device(
     mock_access_token, mock_device_data, raw_device_data, expected_device_parameters
-): # pylint: disable=too-many-arguments
+):  # pylint: disable=too-many-arguments
     """Getting data for specific Azure Quantum device."""
     mock_access_token.return_value = "abc123"
     mock_device_data.return_value = raw_device_data
@@ -312,7 +312,7 @@ def test_session_get_device(
 @patch("qbraid.runtime.azure.provider.Session.post")
 def test_session_create_job(
     mock_quantum_token, mock_storage_token, mock_job_data, job_data, circuit, check_job_data
-): # pylint: disable=too-many-arguments
+):  # pylint: disable=too-many-arguments
     """Test creating a new job through the Azure Quantum API."""
     mock_quantum_token.return_value = "abc123"
     mock_storage_token.return_value = "def456"
@@ -336,7 +336,7 @@ def test_session_get_job(
     job_data,
     circuit,
     check_job_data,
-): # pylint: disable=too-many-arguments
+):  # pylint: disable=too-many-arguments
     """Test getting a specific Azure Quantum job."""
     mock_quantum_token.return_value = "abc123"
     mock_storage_token.return_value = "def456"
@@ -365,7 +365,7 @@ def test_session_cancel_job(
     mock_delete_job,
     job_data,
     circuit,
-): # pylint: disable=too-many-arguments
+):  # pylint: disable=too-many-arguments
     """Test cancelling a specific Azure Quantum job."""
     mock_quantum_token.return_value = "abc123"
     mock_storage_token.return_value = "def456"
@@ -396,9 +396,7 @@ def test_provider_get_devices(mock_access_token, mock_device_data, raw_devices_d
 
 @patch("qbraid.runtime.azure.provider.AzureHelperFunctions.quantum_access_token")
 @patch("qbraid.runtime.azure.provider.Session.get")
-def test_provider_get_device(
-    mock_access_token, mock_device_data, raw_device_data
-):
+def test_provider_get_device(mock_access_token, mock_device_data, raw_device_data):
     """Test getting a specific AzureQuantumDevice object."""
     mock_access_token.return_value = "abc123"
     mock_device_data.return_value = raw_device_data

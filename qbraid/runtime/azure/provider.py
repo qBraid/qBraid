@@ -8,6 +8,8 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# pylint: disable=too-many-arguments
+
 """
 Module defining Azure session and provider classes
 
@@ -43,7 +45,7 @@ class AzureSession(Session):
         workspace_name: str,
         storage_account: str,
         connection_string: str,
-    ): # pylint: disable= too-many-arguments
+    ):  # pylint: disable= too-many-arguments
 
         self.client_id = client_id
         self.client_secret = client_secret
@@ -103,7 +105,7 @@ class AzureSession(Session):
 
     def create_job(
         self, input_run: Any, name: str, provider: str, backend: str, qubits: int
-    ) -> dict[str, Any]: # pylint: disable=too-many-arguments
+    ) -> dict[str, Any]:  # pylint: disable=too-many-arguments
         """Create a new job on the Azure Quantum API."""
         quantum_access_token = self._helpers.quantum_access_token(
             self.client_id, self.client_secret, self.tenant_id, self.session
@@ -226,7 +228,7 @@ class AzureQuantumProvider(QuantumProvider):
         workspace_name: str,
         storage_account: str,
         connection_string: str,
-    ): # pylint: disable= too-many-arguments
+    ):  # pylint: disable= too-many-arguments
         super().__init__()
         self.session = AzureSession(
             client_id=client_id,
@@ -362,7 +364,7 @@ class AzureHelperFunctions:
 
         url = (
             f"https://management.azure.com/subscriptions/{subscription_id}/resourceGroups/"
-            f"{resource_group_name}/providers/Microsoft.Storage/storageAccounts/{storage_account_name}" # pylint: disable=line-too-long
+            f"{resource_group_name}/providers/Microsoft.Storage/storageAccounts/{storage_account_name}"  # pylint: disable=line-too-long
             f"/blobServices/default/containers/{container_name}?api-version=2022-09-01"
         )
 
@@ -380,7 +382,7 @@ class AzureHelperFunctions:
         resource_group_name: str,
         workspace_name: str,
         quantum_access_token: str,
-    ) -> list[str]: # pylint: disable=too-many-arguments
+    ) -> list[str]:  # pylint: disable=too-many-arguments
         """Create the routes for the job."""
         containerName = container
         qasm_str = qasm
@@ -435,7 +437,7 @@ class AzureHelperFunctions:
         num_shots: int,
         total_count: int,
         output_data_format: str,
-    ) -> dict: # pylint: disable=too-many-arguments
+    ) -> dict:  # pylint: disable=too-many-arguments
         """Create the payload for the job."""
         payload = {
             "containerUri": container_uri,
@@ -470,7 +472,7 @@ class AzureHelperFunctions:
         resource_group_name: str,
         workspace_name: str,
         session: Any,
-    ) -> dict: # pylint: disable=too-many-arguments
+    ) -> dict:  # pylint: disable=too-many-arguments
         """Submit the job to the Azure Quantum API."""
         url = (
             f"https://{location_name}.quantum.azure.com/subscriptions/{subscription_id}"
