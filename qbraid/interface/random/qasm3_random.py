@@ -125,9 +125,6 @@ include "stdgates.inc";
 */
 """
         max_operands = min(max_operands, num_qubits)
-        if num_qubits == 0:
-            rand_circuit = qasm_code_header
-            return rand_circuit
         rand_circuit = qasm_code_header + f"qubit[{num_qubits}] q;\n"
         if measure:
             rand_circuit += f"bit[{num_qubits}] c;\n"
