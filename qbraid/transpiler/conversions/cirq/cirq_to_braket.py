@@ -148,7 +148,7 @@ def _to_one_qubit_braket_instruction(
         target: Qubit index for the operation to act on. Must be specified and if only
             if `operation` is given as a numpy array.
         gate_name: Optional unitary gate display name for `operation` of type `np.ndarray`
-
+ 
     Raises:
         ValueError: If the operation cannot be converted to Braket.
     """
@@ -240,17 +240,6 @@ def _to_one_qubit_braket_instruction(
                 return [
                     BKInstruction(braket_gates.GPi2(angle=operation.gate.phi * 2 * np.pi), target)
                 ]
-            if isinstance(gate, cirq_ionq_ops.MSGate):
-                return [
-                    BKInstruction(
-                        braket_gates.MS(
-                            angle1=operation.gate.phi0,
-                            angle2=operation.gate.phi1,
-                            angle3=operation.gate.theta,
-                        ),
-                        target,
-                    )
-                ]
 
         matrix = protocols.unitary(gate)
         gate_name = "U" if isinstance(gate, cirq_ops.MatrixGate) else str(gate)
@@ -318,6 +307,17 @@ def _to_two_qubit_braket_instruction(
         return BKInstruction(braket_noise_gate.TwoQubitDepolarizing(operation.gate.p), [q1, q2])
     if isinstance(gate, cirq_ops.KrausChannel):
         return BKInstruction(braket_noise_gate.Kraus(matrices=operation.gate._kraus_ops), [q1, q2])
+    if isinstance(gate, cirq_ionq_ops.MSGate):
+        return [
+            BKInstruction(
+                braket_gates.MS(
+                    angle_1=operation.gate.phi0*2*np.pi,
+                    angle_2=operation.gate.phi1*2*np.pi,
+                    angle_3=operation.gate.theta*2*np.pi,
+                ),
+                [q1, q2],
+            )
+        ]
 
     # Fallback: arbitrary two-qubit unitary (KAK) decomposition
     unitary = protocols.unitary(operation)
