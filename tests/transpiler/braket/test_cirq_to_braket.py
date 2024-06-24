@@ -323,6 +323,7 @@ def test_braket_unitary_display_name():
     braket_circuit = cirq_to_braket(Circuit(ops.MatrixGate(unitary).on(LineQubit(0))))
     assert braket_circuit.instructions[0].operator.ascii_symbols[0] == "U"
 
+
 def test_ionq_gates():
     """Test IonQ Native Gates"""
     q0, q1, q2 = cirq.LineQubit.range(3)
