@@ -12,6 +12,7 @@
 Module defining IQM provider class
 
 """
+from iqm.iqm_client import IQMClient
 
 from qbraid.runtime.provider import QuantumProvider
 
@@ -22,12 +23,7 @@ class IQMProvider(QuantumProvider):
 
     def __init__(self, url):
         super().__init__()
-        self._url = url
-    
-    @property
-    def url(self):
-        """Return the URL of the provider."""
-        return self._url
+        self.client = IQMClient(url)
 
     def get_devices(self, **kwargs):
         """Get all IQM devices."""
