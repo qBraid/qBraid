@@ -234,9 +234,13 @@ def _to_one_qubit_braket_instruction(
             gate, (cirq_ionq_ops.GPIGate, cirq_ionq_ops.GPI2Gate, cirq_ionq_ops.MSGate)
         ):
             if isinstance(gate, cirq_ionq_ops.GPIGate):
-                return [BKInstruction(braket_gates.GPi(angle=operation.gate.phi*2*np.pi), target)]
+                return [
+                    BKInstruction(braket_gates.GPi(angle=operation.gate.phi * 2 * np.pi), target)
+                ]
             if isinstance(gate, cirq_ionq_ops.GPI2Gate):
-                return [BKInstruction(braket_gates.GPi2(angle=operation.gate.phi*2*np.pi), target)]
+                return [
+                    BKInstruction(braket_gates.GPi2(angle=operation.gate.phi * 2 * np.pi), target)
+                ]
             if isinstance(gate, cirq_ionq_ops.MSGate):
                 return [
                     BKInstruction(
