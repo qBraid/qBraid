@@ -331,6 +331,6 @@ def test_ionq_gates():
     gpi2 = GPI2Gate(phi=0.5).on(q1)
     ms = MSGate(phi0=0.5, phi1=0.5).on(q1, q2)
 
-    cirq_circuit = cirq.Circuit([gpi, gpi2])
+    cirq_circuit = cirq.Circuit([gpi, gpi2, ms])
     braket_circuit = cirq_to_braket(cirq_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit)
