@@ -22,6 +22,7 @@ import numpy as np
 import pytest
 from braket.circuits import noises as braket_noise_gate
 from cirq import Circuit, LineQubit, ops, testing
+from cirq_ionq.ionq_native_gates import GPIGate, GPI2Gate, MSGate
 
 from qbraid.interface import circuits_allclose
 from qbraid.interface.random import random_unitary_matrix
@@ -321,3 +322,14 @@ def test_braket_unitary_display_name():
     unitary = random_unitary_matrix(2)
     braket_circuit = cirq_to_braket(Circuit(ops.MatrixGate(unitary).on(LineQubit(0))))
     assert braket_circuit.instructions[0].operator.ascii_symbols[0] == "U"
+
+def test_ionq_gates():
+    """Test IonQ Native Gates"""
+    q0, q1, q2 = cirq.LineQubit.range(3)
+    gpi = GPIGate(phi=0.5).on(q0)
+    gpi2 = GPI2Gate(phi=0.5).on(q1)
+    ms = MSGate(phi0=0.5, phi1=0.5).on(q1, q2)
+
+    cirq_circuit = cirq.Circuit([gpi, gpi2])
+    braket_circuit = cirq_to_braket(cirq_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit)
