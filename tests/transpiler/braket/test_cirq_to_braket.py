@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 from braket.circuits import noises as braket_noise_gate
 from cirq import Circuit, LineQubit, ops, testing
-from cirq_ionq.ionq_native_gates import GPIGate, GPI2Gate, MSGate
+from cirq_ionq.ionq_native_gates import GPI2Gate, GPIGate, MSGate
 
 from qbraid.interface import circuits_allclose
 from qbraid.interface.random import random_unitary_matrix
