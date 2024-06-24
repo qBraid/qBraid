@@ -8,8 +8,7 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # This file includes code adapted from Mitiq (https://github.com/unitaryfund/mitiq)
-# with modifications by qBraid. TheThe line `ms = MSGate(phi0=0, phi1=0.25).on(q1, q2)` is creating a multi-controlled single-qubit gate using the `MSGate` class.
-# original copyright notice is included above.
+# with modifications by qBraid. The original copyright notice is included above.
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 # qbraid: skip-header
