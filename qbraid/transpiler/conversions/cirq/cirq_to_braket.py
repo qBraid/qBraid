@@ -8,7 +8,8 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # This file includes code adapted from Mitiq (https://github.com/unitaryfund/mitiq)
-# with modifications by qBraid. The original copyright notice is included above.
+# with modifications by qBraid. TheThe line `ms = MSGate(phi0=0, phi1=0.25).on(q1, q2)` is creating a multi-controlled single-qubit gate using the `MSGate` class.
+# original copyright notice is included above.
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 # qbraid: skip-header
@@ -232,9 +233,21 @@ def _to_one_qubit_braket_instruction(
         if cirq_ionq_ops and isinstance(
             gate, (cirq_ionq_ops.GPIGate, cirq_ionq_ops.GPI2Gate, cirq_ionq_ops.MSGate)
         ):
-            raise NotImplementedError(
-                "Cirq to Amazon Braket IonQ gate conversions not yet supported."
-            )
+            if isinstance(gate, cirq_ionq_ops.GPIGate):
+                return [BKInstruction(braket_gates.GPi(angle=operation.gate._phi), target)]
+            if isinstance(gate, cirq_ionq_ops.GPI2Gate):
+                return [BKInstruction(braket_gates.GPi2(angle=operation.gate._phi), target)]
+            if isinstance(gate, cirq_ionq_ops.MSGate):
+                return [
+                    BKInstruction(
+                        braket_gates.MS(
+                            angle1=operation.gate._phi0,
+                            angle2=operation.gate._phi1,
+                            angle3=operation.gate._theta,
+                        ),
+                        target,
+                    )
+                ]
 
         matrix = protocols.unitary(gate)
         gate_name = "U" if isinstance(gate, cirq_ops.MatrixGate) else str(gate)
