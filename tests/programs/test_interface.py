@@ -48,6 +48,10 @@ c[0] = measure q[0];
     )
     assert output == expected_output
 
+def test_bad_qasm3_random():
+    """Test that _qasm3_random raises a QbraidError when it fails."""
+    with pytest.raises(QbraidError):
+        random_circuit("qasm3", seed="12")
 
 @pytest.mark.parametrize("param", ["num_qubits", "depth", "max_operands"])
 def test_qasm3_zero_value_raises(param):
