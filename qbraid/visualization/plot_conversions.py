@@ -11,6 +11,7 @@
 Module for plotting qBraid transpiler quantum program conversion graphs.
 
 """
+import math
 from typing import TYPE_CHECKING, Optional
 
 import rustworkx as rx
@@ -36,6 +37,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     save_path: Optional[str] = None,
     colors: Optional[dict[str, str]] = None,
     edge_labels: Optional[bool] = False,
+    **kwargs,
 ) -> None:
     """
     Plot the conversion graph using matplotlib. The graph is displayed using node
@@ -95,7 +97,8 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         for edge in conversions_ordered
     ]
 
-    pos = rx.spring_layout(graph, seed=seed)  # good seeds: 123, 134
+    k = kwargs.pop("k", max(1 / math.sqrt(len(graph.nodes())), 3))
+    pos = rx.spring_layout(graph, seed=seed, k=k, **kwargs)  # good seeds: 123, 134
     kwargs = {}
     if edge_labels:
         kwargs["edge_labels"] = lambda edge: round(edge["weight"], 2)
