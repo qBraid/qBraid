@@ -43,7 +43,7 @@ def mock_graph():
 @patch("qbraid.visualization.plot_conversions.rx.visualization.mpl_draw", autospec=True)
 def test_plot_conversion_graph_show(mock_draw, mock_layout, mock_plt, mock_graph):
     """Test that the graph is displayed when show is True and not saved."""
-    plot_conversion_graph(graph=mock_graph, show=True)
+    plot_conversion_graph(graph=mock_graph, show=True, edge_labels=True)
     mock_plt.show.assert_called_once()
     mock_plt.savefig.assert_not_called()
 
