@@ -15,7 +15,7 @@ Unit tests for OpenQASM 3 circuit drawer
 
 import pytest
 
-from qbraid.visualization.draw_qasm3 import _qasm3_drawer, qasm3_drawer
+from qbraid.visualization.draw_qasm3 import _qasm3_drawer, is_valid_gate, qasm3_drawer
 
 qasm_str_1 = "\n".join(
     [
@@ -172,3 +172,9 @@ def test_circuit_print():
     qasm3_drawer(qasm_str_2)
     qasm3_drawer(qasm_str_3)
     qasm3_drawer(qasm_str_4)
+
+
+def test_is_not_valid_gate():
+    """Tests the is_valid_gate function with invalid gate."""
+    assert not is_valid_gate("d")
+    assert not is_valid_gate("//anything")
