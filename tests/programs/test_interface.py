@@ -77,3 +77,8 @@ def test_circuits_allclose():
 
     circuit2 = random_circuit("qiskit", num_qubits=3, depth=2)
     assert not circuits_allclose(circuit2, circuit0, index_contig = True, allow_rev_qubits=True)
+
+def test_bad_random_circuit():
+    """Test that random_circuit raises a PackageValueError when given a bad package."""
+    with pytest.raises(QbraidError):
+        random_circuit("bad_package")
