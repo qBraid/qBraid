@@ -176,7 +176,10 @@ class QuantumDevice(ABC):
             except CircuitConversionError as err:
                 raise QbraidRuntimeError from err
 
-        if not isinstance(run_input, (target_type, type(target_type))):
+        if not (
+            isinstance(run_input, list)
+            and all(isinstance(item, (target_type, type(target_type))) for item in run_input)
+        ) and not isinstance(run_input, (target_type, type(target_type))):
             raise CircuitConversionError(
                 f"Expected transpile step to produce program of type of {target_type}, "
                 f"but instead got program of type {type(run_input)}."
@@ -207,8 +210,10 @@ class QuantumDevice(ABC):
 
         self.validate(program)
         run_input = self.transpile(run_input, run_input_spec)
-        run_input = self.transform(run_input)
-
+        is_single_output = not isinstance(run_input, list)
+        run_input = [run_input] if is_single_output else run_input
+        run_input = [self.transform(p) for p in run_input]
+        run_input = run_input[0] if is_single_output else run_input
         return run_input
 
     @abstractmethod
