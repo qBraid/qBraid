@@ -19,7 +19,8 @@ Submodules
 
 .. autosummary::
    :toctree: ../stubs/
-
+   
+   braket_ahs
    braket
    cirq
    openqasm3
@@ -76,7 +77,12 @@ for lib in NATIVE_REGISTRY:
                 continue
 
             # Check if both p1 and p2 are in the set
-            if p1 in NATIVE_REGISTRY and p2 in QPROGRAM_REGISTRY:
+            if (
+                p1 in NATIVE_REGISTRY
+                and p2 in QPROGRAM_REGISTRY
+                or p2 in NATIVE_REGISTRY
+                and p1 in QPROGRAM_REGISTRY
+            ):
                 globals()[name] = getattr(sub_module, name)
                 conversion_functions.append(name)
                 # Add both the pair and its reverse to the cache
