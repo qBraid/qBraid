@@ -93,6 +93,28 @@ def test_convert_grid_to_line_qubits():
     expected_qubits = [LineQubit(0), LineQubit(1), LineQubit(2)]
     assert set(program.qubits) == set(expected_qubits)
 
+    circuit = Circuit()
+    circuit.append(X(GridQubit(0, 0)))
+    circuit.append(Y(GridQubit(1, 0)))
+    circuit.append(Z(GridQubit(2, 0)))
+
+    program = CirqCircuit(circuit)
+    program._convert_to_line_qubits()
+
+    expected_qubits = [LineQubit(0), LineQubit(1), LineQubit(2)]
+    assert set(program.qubits) == set(expected_qubits)
+
+    circuit = Circuit()
+    circuit.append(X(GridQubit(0, 0)))
+    circuit.append(Y(GridQubit(1, 1)))
+    circuit.append(Z(GridQubit(2, 2)))
+
+    program = CirqCircuit(circuit)
+    program._convert_to_line_qubits()
+
+    expected_qubits = [LineQubit(0), LineQubit(1), LineQubit(2)]
+    assert set(program.qubits) == set(expected_qubits)
+
 
 def test_mixed_qubit_types():
     """Test convert to contiguous method raises error for mixed qubit type."""
@@ -277,3 +299,24 @@ def test_key_from_unsupported_qubit():
 
     expected_message = "Expected qubit of type 'GridQubit' 'LineQubit' or 'NamedQubit'"
     assert expected_message in str(exc_info.value)
+
+
+def test_int_from_qubit_grid_qubit():
+    """Test generating an integer key from a GridQubit."""
+    qubit = cirq.GridQubit(3, 5)
+    expected_key = 3
+    assert CirqCircuit._int_from_qubit(qubit) == expected_key
+
+
+def test__bad_qubit():
+    """Test qubits that aren't a GridQubit, LineQubit, or NamedQubit."""
+    qubit = "bad qubit"
+    with pytest.raises(ValueError) as exc_info:
+        CirqCircuit._int_from_qubit(qubit)
+    expected_message = "Expected qubit of type 'GridQubit' 'LineQubit' or 'NamedQubit'"
+    assert expected_message in str(exc_info.value)
+
+    qubits = [qubit]
+    targets = [0]
+    with pytest.raises(ValueError) as exc_info:
+        CirqCircuit._make_qubits(qubits, targets)
