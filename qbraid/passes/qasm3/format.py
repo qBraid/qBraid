@@ -38,8 +38,6 @@ def _remove_gate_definition(qasm: str, gate_name: str) -> str:
             current_gate_name = re.search(r"gate\s+(\w+)", line).group(1)
             # remove lines from start curly brace to end curly brace
             if current_gate_name == gate_name:
-                while "{" not in line:
-                    line = next(lines)
                 while "}" not in line:
                     line = next(lines)
             else:
