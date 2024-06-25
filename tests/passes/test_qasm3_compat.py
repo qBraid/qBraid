@@ -17,6 +17,7 @@ import pytest
 from qbraid.passes.qasm3.compat import (
     add_stdgates_include,
     convert_qasm_pi_to_decimal,
+    insert_gate_def,
     remove_stdgates_include,
     replace_gate_name,
 )
@@ -56,6 +57,10 @@ def test_replace_gate_name_normal():
     qasm = "cnot q[0], q[1];"
     assert replace_gate_name(qasm, "cnot", "cx") == "cx q[0], q[1];"
 
+def test_replace_gate_name_forced():
+    """Test forced replace of gate name in qasm string"""
+    qasm = "x q[0];"
+    assert replace_gate_name(qasm, "x", "pauli_x", force_replace=True) == "pauli_x q[0];"
 
 def test_replace_gate_name_with_parameters():
     """Test replacing gate name with parameters in qasm string"""
@@ -147,5 +152,14 @@ def test_add_stdgates_include(qasm3_without, qasm3_with):
     test_without = _remove_empty_lines(remove_stdgates_include(qasm3_with))
     expected_without = _remove_empty_lines(qasm3_without)
 
+    test_redundant = add_stdgates_include(qasm3_with)
+
     assert test_with == expected_with
     assert test_without == expected_without
+    assert test_redundant == qasm3_with
+
+def test_bad_insert_gate_def():
+    """Test inserting gate definition with invalid qasm3 string"""
+    qasm3 = ""
+    with pytest.raises(ValueError):
+        insert_gate_def(qasm3, "bad_gate")

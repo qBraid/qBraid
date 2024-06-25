@@ -15,8 +15,8 @@ Unit tests for QASM transform to basic gates
 
 import pytest
 
+from qbraid.passes.exceptions import QasmDecompositionError
 from qbraid.passes.qasm3.decompose import decompose
-
 
 @pytest.mark.parametrize(
     "original_program, expected_program",
@@ -107,3 +107,15 @@ def test_convert_to_basis_gates(original_program, expected_program):
     """Test conversion of QASM3 program to basis gates"""
     converted_program = decompose(original_program)
     assert converted_program == expected_program
+
+
+def test_convert_bad_program():
+    """Test conversion of QASM3 program to basis gates"""
+    program = """
+OPENQASM 3.0;
+include "stdgates.inc";
+qubit[2] q;
+crx() q[0], q[1];
+"""
+    with pytest.raises(QasmDecompositionError):
+        decompose(program)
