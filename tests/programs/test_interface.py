@@ -48,10 +48,12 @@ c[0] = measure q[0];
     )
     assert output == expected_output
 
+
 def test_bad_qasm3_random():
     """Test that _qasm3_random raises a QbraidError when it fails."""
     with pytest.raises(QbraidError):
         random_circuit("qasm3", seed="12")
+
 
 @pytest.mark.parametrize("param", ["num_qubits", "depth", "max_operands"])
 def test_qasm3_zero_value_raises(param):
@@ -69,14 +71,16 @@ def test_random_circuit_raises_for_bad_params(package: str):
     with pytest.raises(QbraidError, match=expected_err):
         random_circuit(package, num_qubits=-1)
 
+
 def test_circuits_allclose():
     """Test circuit allclose function."""
     circuit0 = random_circuit("pytket", num_qubits=2, depth=2)
     circuit1 = transpile(circuit0, "braket")
-    assert circuits_allclose(circuit1, circuit0, index_contig = True, allow_rev_qubits=True)
+    assert circuits_allclose(circuit1, circuit0, index_contig=True, allow_rev_qubits=True)
 
     circuit2 = random_circuit("qiskit", num_qubits=3, depth=2)
-    assert not circuits_allclose(circuit2, circuit0, index_contig = True, allow_rev_qubits=True)
+    assert not circuits_allclose(circuit2, circuit0, index_contig=True, allow_rev_qubits=True)
+
 
 def test_bad_random_circuit():
     """Test that random_circuit raises a PackageValueError when given a bad package."""
