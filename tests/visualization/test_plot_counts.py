@@ -15,7 +15,6 @@ Unit tests for the qbraid visualization plot counts functions
 
 from unittest.mock import patch
 
-import matplotlib.pyplot as plt
 import pytest
 
 from qbraid.visualization.plot_counts import _counts_to_decimal, plot_distribution, plot_histogram

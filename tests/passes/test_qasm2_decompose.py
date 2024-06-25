@@ -49,6 +49,7 @@ rc3x q[0],q[1],q[2];
 
 @pytest.mark.parametrize("program", [cu, rxx, rccx, rc3x])
 def test_fail_decompose_instr(program):
+    """Test invalid instruction decomposition"""
     with pytest.raises(QasmDecompositionError):
         decompose_qasm_qelib1(program)
 
@@ -62,4 +63,5 @@ rxx( q[0], q[1];
 
 
 def test_decompose_none():
+    """Test no parameters in function decomposition."""
     assert "rz(None)" in decompose_qasm_qelib1(rxx_none)
