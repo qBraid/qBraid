@@ -24,6 +24,7 @@ from qbraid.programs import (
     QPROGRAM_REGISTRY,
     QPROGRAM_TYPES,
     ProgramSpec,
+    derive_program_type_alias,
     get_program_type_alias,
     register_program_type,
     unregister_program_type,
@@ -90,6 +91,13 @@ def test_error_on_duplicate_type_different_alias():
     finally:
         unregister_program_type("custom_str", raise_error=False)
         unregister_program_type("another_str", raise_error=False)
+
+
+def test_error_on_duplicate_type():
+    """Test error when trying to register a type that is already registered"""
+    register_program_type(int, "test_type_0")
+    with pytest.raises(ValueError):
+        register_program_type(int, "test_type_1")
 
 
 def test_re_registration_same_alias_type():
@@ -204,3 +212,14 @@ def test_program_spec_equality():
     spec1 = ProgramSpec(str, alias="qasm2")
     spec2 = {}
     assert spec1 != spec2
+
+
+class FakeType:
+    def __module__(self):
+        return None
+
+
+def test_error_on_automatic_alias():
+    """Test error when trying to register a program type with an automatic alias"""
+    with pytest.raises(ValueError):
+        derive_program_type_alias(FakeType)
