@@ -215,6 +215,7 @@ def test_program_spec_equality():
 
 
 class FakeType:
+    """Fake type for testing automatic alias registration"""
     def __module__(self):
         return None
 
