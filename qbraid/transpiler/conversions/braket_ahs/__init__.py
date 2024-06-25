@@ -11,7 +11,7 @@
 """
 Amazon Braket conversions
 
-.. currentmodule:: qbraid.transpiler.conversions.braket
+.. currentmodule:: qbraid.transpiler.conversions.braket_ahs
 
 Functions
 ----------
@@ -19,19 +19,9 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   braket_to_cirq
-   braket_to_qasm3
-   braket_to_pytket
-   braket_to_qiskit
+   bloqade_to_braket_ahs
 
 """
-from .braket_extras import braket_to_pytket, braket_to_qiskit
-from .braket_to_cirq import braket_to_cirq
-from .braket_to_qasm3 import braket_to_qasm3
+from .braket_ahs_extras import bloqade_to_braket_ahs
 
-__all__ = [
-    "braket_to_cirq",
-    "braket_to_qasm3",
-    "braket_to_pytket",
-    "braket_to_qiskit",
-]
+__all__ = ["bloqade_to_braket_ahs"]
