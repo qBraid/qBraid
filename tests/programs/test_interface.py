@@ -15,8 +15,9 @@ Unit tests for interfacing quantum programs
 import pytest
 
 from qbraid._version import __version__
-from qbraid.interface import random_circuit
+from qbraid.interface import circuits_allclose, random_circuit
 from qbraid.programs.exceptions import QbraidError
+from qbraid.transpiler import transpile
 
 
 @pytest.mark.parametrize("num_qubits, depth, max_operands, seed", [(1, 1, 1, 42)])
@@ -63,3 +64,12 @@ def test_random_circuit_raises_for_bad_params(package: str):
     expected_err = f"Failed to create {package.capitalize()} random circuit"
     with pytest.raises(QbraidError, match=expected_err):
         random_circuit(package, num_qubits=-1)
+
+def test_circuits_allclose():
+    """Test circuit allclose function."""
+    circuit0 = random_circuit("pytket", num_qubits=2, depth=2)
+    circuit1 = transpile(circuit0, "braket")
+    assert circuits_allclose(circuit1, circuit0, index_contig = True, allow_rev_qubits=True)
+
+    circuit2 = random_circuit("qiskit", num_qubits=3, depth=2)
+    assert not circuits_allclose(circuit2, circuit0, index_contig = True, allow_rev_qubits=True)
