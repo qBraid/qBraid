@@ -232,9 +232,14 @@ def _to_one_qubit_braket_instruction(
         if cirq_ionq_ops and isinstance(
             gate, (cirq_ionq_ops.GPIGate, cirq_ionq_ops.GPI2Gate, cirq_ionq_ops.MSGate)
         ):
-            raise NotImplementedError(
-                "Cirq to Amazon Braket IonQ gate conversions not yet supported."
-            )
+            if isinstance(gate, cirq_ionq_ops.GPIGate):
+                return [
+                    BKInstruction(braket_gates.GPi(angle=operation.gate.phi * 2 * np.pi), target)
+                ]
+            if isinstance(gate, cirq_ionq_ops.GPI2Gate):
+                return [
+                    BKInstruction(braket_gates.GPi2(angle=operation.gate.phi * 2 * np.pi), target)
+                ]
 
         matrix = protocols.unitary(gate)
         gate_name = "U" if isinstance(gate, cirq_ops.MatrixGate) else str(gate)
@@ -302,6 +307,17 @@ def _to_two_qubit_braket_instruction(
         return BKInstruction(braket_noise_gate.TwoQubitDepolarizing(operation.gate.p), [q1, q2])
     if isinstance(gate, cirq_ops.KrausChannel):
         return BKInstruction(braket_noise_gate.Kraus(matrices=operation.gate._kraus_ops), [q1, q2])
+    if isinstance(gate, cirq_ionq_ops.MSGate):
+        return [
+            BKInstruction(
+                braket_gates.MS(
+                    angle_1=operation.gate.phi0 * 2 * np.pi,
+                    angle_2=operation.gate.phi1 * 2 * np.pi,
+                    angle_3=operation.gate.theta * 2 * np.pi,
+                ),
+                [q1, q2],
+            )
+        ]
 
     # Fallback: arbitrary two-qubit unitary (KAK) decomposition
     unitary = protocols.unitary(operation)
