@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Amazon Braket conversions
+Amazon Braket AHS conversions
 
 .. currentmodule:: qbraid.transpiler.conversions.braket_ahs
 
