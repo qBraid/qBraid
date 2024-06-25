@@ -80,7 +80,7 @@ def _dynamic_importer(opt_modules: list[str]) -> dict[str, Type[Any]]:
 
 # pylint: disable=undefined-variable,inconsistent-return-statements
 def _get_class(module: str):
-    if module == "bloqade":
+    if module == "bloqade.builder.assign":
         return bloqade.builder.assign.BatchAssign  # type: ignore
     if module == "cirq":
         return cirq.Circuit  # type: ignore
@@ -116,7 +116,7 @@ dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
         "pyqir",
     ]
 )
-dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(["bloqade"])
+dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(["bloqade.builder.assign"])
 static_type_registry: dict[str, Type[Any]] = {"qasm2": str, "qasm3": str}
 
 NATIVE_REGISTRY: dict[str, Type[Any]] = dynamic_type_registry | static_type_registry

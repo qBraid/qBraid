@@ -18,7 +18,6 @@ from typing import Callable, Optional
 
 import rustworkx as rx
 
-from .conversions import conversion_functions
 from .edge import Conversion
 from .exceptions import ConversionPathNotFoundError
 
@@ -60,6 +59,7 @@ class ConversionGraph(rx.PyDiGraph):
             list[Conversion]: List of default conversion edges.
         """
         transpiler = import_module("qbraid.transpiler.conversions")
+        conversion_functions = getattr(transpiler, "conversion_functions", [])
         return [
             Conversion(*conversion.split("_to_"), getattr(transpiler, conversion))
             for conversion in conversion_functions
