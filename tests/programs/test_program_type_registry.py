@@ -98,6 +98,8 @@ def test_error_on_duplicate_type():
     register_program_type(int, "test_type_0")
     with pytest.raises(ValueError):
         register_program_type(int, "test_type_1")
+    
+    unregister_program_type("test_type_0", raise_error=False)
 
 
 def test_re_registration_same_alias_type():
