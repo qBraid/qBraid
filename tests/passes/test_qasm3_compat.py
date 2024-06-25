@@ -57,10 +57,12 @@ def test_replace_gate_name_normal():
     qasm = "cnot q[0], q[1];"
     assert replace_gate_name(qasm, "cnot", "cx") == "cx q[0], q[1];"
 
+
 def test_replace_gate_name_forced():
     """Test forced replace of gate name in qasm string"""
     qasm = "x q[0];"
     assert replace_gate_name(qasm, "x", "pauli_x", force_replace=True) == "pauli_x q[0];"
+
 
 def test_replace_gate_name_with_parameters():
     """Test replacing gate name with parameters in qasm string"""
@@ -157,6 +159,7 @@ def test_add_stdgates_include(qasm3_without, qasm3_with):
     assert test_with == expected_with
     assert test_without == expected_without
     assert test_redundant == qasm3_with
+
 
 def test_bad_insert_gate_def():
     """Test inserting gate definition with invalid qasm3 string"""

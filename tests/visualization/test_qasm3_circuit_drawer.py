@@ -165,6 +165,7 @@ def test_circuit_drawer(qasm_str, expected_output):
     """Tests the qasm circuit drawer."""
     assert _qasm3_drawer(qasm_str) == expected_output
 
+
 def test_circuit_print():
     """Tests the qasm circuit print."""
     qasm3_drawer(qasm_str_1)

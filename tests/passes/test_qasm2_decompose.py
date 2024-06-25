@@ -18,7 +18,6 @@ import pytest
 from qbraid.passes.exceptions import QasmDecompositionError
 from qbraid.passes.qasm2.decompose import decompose_qasm_qelib1
 
-
 cu = """
 OPENQASM 2.0;
 include "qelib1.inc";
@@ -47,6 +46,7 @@ qreg q[4];
 rc3x q[0],q[1],q[2];
 """
 
+
 @pytest.mark.parametrize("program", [cu, rxx, rccx, rc3x])
 def test_fail_decompose_instr(program):
     with pytest.raises(QasmDecompositionError):
@@ -59,6 +59,7 @@ include "qelib1.inc";
 qreg q[2];"
 rxx( q[0], q[1];
 """
+
 
 def test_decompose_none():
     assert "rz(None)" in decompose_qasm_qelib1(rxx_none)

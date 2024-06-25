@@ -18,6 +18,7 @@ import pytest
 from qbraid.passes.exceptions import QasmDecompositionError
 from qbraid.passes.qasm3.decompose import decompose
 
+
 @pytest.mark.parametrize(
     "original_program, expected_program",
     [
