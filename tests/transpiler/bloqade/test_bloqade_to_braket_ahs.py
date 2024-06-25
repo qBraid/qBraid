@@ -19,7 +19,7 @@ from bloqade.atom_arrangement import Square
 from bloqade.builder.assign import BatchAssign
 
 from qbraid.programs.ahs.braket_ahs import BraketAHS
-from qbraid.transpiler.conversions.braket import bloqade_to_braket_ahs
+from qbraid.transpiler.conversions.braket_ahs import bloqade_to_braket_ahs
 
 
 @pytest.fixture
