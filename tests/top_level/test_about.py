@@ -14,6 +14,7 @@ Unit tests for the about module.
 
 import sys
 from io import StringIO
+from unittest.mock import Mock, patch
 
 from qbraid import _about
 
@@ -48,3 +49,31 @@ def test_about():
     # Verify Python and platform information is present
     assert "Python:" in output
     assert "Platform:" in output
+
+
+def test_about_no_optional_dependencies():
+    """Test the about function when no optional dependencies are available."""
+    optional_dependencies = [
+        "qbraid_qir",
+        "braket._sdk",
+        "cirq",
+        "pyquil",
+        "pennylane",
+        "pytket",
+        "qiskit",
+        "qiskit_ibm_runtime",
+    ]
+
+    original_import = __builtins__["__import__"]
+
+    def custom_import(name, globals=None, locals=None, fromlist=(), level=0):
+        if any(dep in name for dep in optional_dependencies):
+            raise ImportError(f"No module named '{name}'")
+        else:
+            return original_import(name, globals, locals, fromlist, level)
+
+    with patch("builtins.__import__", side_effect=custom_import):
+        with patch("builtins.print") as mock_print:
+            _about.about()
+            actual_print_args = " ".join([str(arg[0]) for arg in mock_print.call_args_list])
+            assert "None" in actual_print_args

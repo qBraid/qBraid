@@ -23,6 +23,7 @@ from qbraid.interface.circuit_equality import circuits_allclose
 from qbraid.interface.random.random import random_circuit, random_unitary_matrix
 from qbraid.programs import get_program_type_alias, load_program
 from qbraid.programs.circuits import GateModelProgram
+from qbraid.programs.exceptions import ProgramTypeError
 
 from ..fixtures import packages_bell, packages_shared15
 
@@ -182,3 +183,15 @@ def test_unitary_little_endian_non_unitary_matrix_raises_value_error(matrix, fak
         fake_program.unitary = lambda: matrix
         fake_program.unitary_little_endian()
     assert expected_error_msg in str(excinfo.value)
+
+
+def test_program_type_error():
+    """Test error setting different type of same program"""
+    braket_circuit = BKCircuit()
+    braket_circuit.x(0)
+    braket_circuit.y(2)
+    braket_circuit.z(4)
+
+    qbraid_circuit = load_program(braket_circuit)
+    with pytest.raises(ProgramTypeError):
+        qbraid_circuit.program = "string"
