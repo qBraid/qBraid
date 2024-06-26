@@ -26,6 +26,7 @@ Functions
    add_stdgates_include
    remove_stdgates_include
    convert_qasm_pi_to_decimal
+   normalize_qasm_gate_params
    remove_unused_gates
 
 """
@@ -33,6 +34,7 @@ from .compat import (
     add_stdgates_include,
     convert_qasm_pi_to_decimal,
     insert_gate_def,
+    normalize_qasm_gate_params,
     remove_stdgates_include,
     replace_gate_name,
 )
@@ -47,5 +49,6 @@ __all__ = [
     "add_stdgates_include",
     "remove_stdgates_include",
     "convert_qasm_pi_to_decimal",
+    "normalize_qasm_gate_params",
     "remove_unused_gates",
 ]

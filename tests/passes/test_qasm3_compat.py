@@ -20,6 +20,7 @@ from qbraid.passes.qasm3.compat import (
     insert_gate_def,
     remove_stdgates_include,
     replace_gate_name,
+    simplify_parentheses_in_qasm,
 )
 from qbraid.passes.qasm3.format import _remove_empty_lines
 
@@ -30,19 +31,21 @@ from qbraid.passes.qasm3.format import _remove_empty_lines
         (
             """
         OPENQASM 3;
-        qubit[1] q;
+        qubit[2] q;
         h q[0];
         rx(pi / 4) q[0];
         ry(2*pi) q[0];
         rz(3 * pi/4) q[0];
+        cry(pi/4/2) q[0], q[1];
         """,
             """
         OPENQASM 3;
-        qubit[1] q;
+        qubit[2] q;
         h q[0];
         rx(0.7853981633974483) q[0];
         ry(6.283185307179586) q[0];
         rz(2.356194490192345) q[0];
+        cry(0.39269908169872414) q[0], q[1];
         """,
         ),
     ],
@@ -166,3 +169,22 @@ def test_bad_insert_gate_def():
     qasm3 = ""
     with pytest.raises(ValueError):
         insert_gate_def(qasm3, "bad_gate")
+
+
+def test_simplify_parentheses_in_qasm():
+    """Test simplifying parentheses in qasm string"""
+    qasm = """
+OPENQASM 3.0;
+include "stdgates.inc";
+qubit[2] q;
+cry((0.7853981633974483)) q[0], q[1];
+ry(-(0.39269908169872414)) q[1];
+"""
+    expected = """
+OPENQASM 3.0;
+include "stdgates.inc";
+qubit[2] q;
+cry(0.7853981633974483) q[0], q[1];
+ry(-0.39269908169872414) q[1];
+"""
+    assert simplify_parentheses_in_qasm(qasm) == expected

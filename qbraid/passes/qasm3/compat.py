@@ -145,14 +145,35 @@ def remove_stdgates_include(qasm: str) -> str:
 def convert_qasm_pi_to_decimal(qasm_str: str) -> str:
     """Convert all instances of 'pi' in the QASM string to their decimal value."""
 
-    pattern = r"(\d*\.?\d*\s*[*/+-]\s*)?pi(\s*[*/+-]\s*\d*\.?\d*)?"
+    pattern = r"(\d*\.?\d*\s*[*/+-]\s*)*pi(\s*[*/+-]\s*\d*\.?\d*)*"
 
     def replace_with_decimal(match):
         expr = match.group()
+        expr_with_pi_as_decimal = expr.replace("pi", str(math.pi))
         try:
-            value = eval(expr.replace("pi", str(math.pi)))  # pylint: disable=eval-used
+            value = eval(expr_with_pi_as_decimal)  # pylint: disable=eval-used
         except SyntaxError:
             return expr
         return str(value)
 
     return re.sub(pattern, replace_with_decimal, qasm_str)
+
+
+def simplify_parentheses_in_qasm(qasm_str: str) -> str:
+    """Simplifies unnecessary parentheses around numbers in QASM strings."""
+
+    pattern = r"\(\s*([-+]?\s*\d+(\.\d*)?)\s*\)"
+
+    def simplify(match):
+        number = match.group(1).replace(" ", "")
+        return number
+
+    simplified_qasm = re.sub(pattern, simplify, qasm_str)
+    return simplified_qasm
+
+
+def normalize_qasm_gate_params(qasm: str) -> str:
+    """Normalize the parameters of the gates in the QASM string."""
+    qasm = convert_qasm_pi_to_decimal(qasm)
+    qasm = simplify_parentheses_in_qasm(qasm)
+    return qasm

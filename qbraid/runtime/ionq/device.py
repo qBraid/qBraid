@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 
 import openqasm3
 
-from qbraid.passes.qasm3.compat import convert_qasm_pi_to_decimal
+from qbraid.passes.qasm3.compat import normalize_qasm_gate_params
 from qbraid.programs import load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
@@ -92,7 +92,7 @@ class IonQDevice(QuantumDevice):
                         gate_data = {
                             "gate": name,
                             "target": qubit_values[0],
-                            "rotation": float(convert_qasm_pi_to_decimal(angle_str)),
+                            "rotation": float(normalize_qasm_gate_params(angle_str)),
                         }
                     # OpenQASM 3 aliases:
                     elif name == "sdg":
@@ -135,8 +135,10 @@ class IonQDevice(QuantumDevice):
 
     def transform(self, run_input: "openqasm3.ast.Program") -> dict:
         """Transform the input to the IonQ device."""
-        num_qubits = load_program(run_input).num_qubits
-        gate_data = self.extract_gate_data(run_input)
+        program = load_program(run_input)
+        program.transform(device=self)
+        num_qubits = program.num_qubits
+        gate_data = self.extract_gate_data(program.parsed())
         return {"qubits": num_qubits, "circuit": gate_data}
 
     def submit(self, run_input: list[dict], *args, shots: int = 100, **kwargs) -> IonQJob:

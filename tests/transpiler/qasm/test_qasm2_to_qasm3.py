@@ -275,7 +275,10 @@ def test_reverse_qubit_order():
     x q3[0];
     """
 
-    reverse_qasm = load_program(qasm_str).reverse_qubit_order()
+    program = load_program(qasm_str)
+    program.reverse_qubit_order()
+    reverse_qasm = program.program
+
     expected_qasm = """
     OPENQASM 3.0;
     include "stdgates.inc";
@@ -306,7 +309,9 @@ def test_remap_qubit_order():
     x q2[0];
     """
 
-    remapped_qasm = load_program(qasm_str).apply_qubit_mapping(qubit_mapping)
+    program = load_program(qasm_str)
+    program.apply_qubit_mapping(qubit_mapping)
+    remapped_qasm = program.program
 
     expected_qasm = """
     OPENQASM 3.0;
@@ -339,10 +344,10 @@ def test_incorrect_remapping():
     """
 
     with pytest.raises(ValueError):
-        _ = load_program(qasm_str).apply_qubit_mapping(reg_not_there_mapping)
+        load_program(qasm_str).apply_qubit_mapping(reg_not_there_mapping)
 
     with pytest.raises(ValueError):
-        _ = load_program(qasm_str).apply_qubit_mapping(incomplete_reg_mapping)
+        load_program(qasm_str).apply_qubit_mapping(incomplete_reg_mapping)
 
     with pytest.raises(ValueError):
-        _ = load_program(qasm_str).apply_qubit_mapping(out_of_bounds_mapping)
+        load_program(qasm_str).apply_qubit_mapping(out_of_bounds_mapping)
