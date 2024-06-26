@@ -33,7 +33,4 @@ def braket_to_qasm3(circuit: Circuit) -> str:
         CircuitConversionError: If braket to qasm conversion fails
 
     """
-    try:
-        return circuit.to_ir(IRType.OPENQASM).source
-    except Exception as err:
-        raise QasmError("Error converting braket circuit to qasm3 string") from err
+    return circuit.to_ir(IRType.OPENQASM).source
