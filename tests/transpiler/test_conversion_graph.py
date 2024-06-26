@@ -293,6 +293,8 @@ def test_path_does_not_exist():
     graph.add_conversion(conversion)
     data = graph.get_edge_data(graph._node_alias_id_map["a"], graph._node_alias_id_map["b"])
     func = data["func"].__self__
+    setattr(func, "source", "a")
+    setattr(func, "target", "b")
     delattr(func, "source")
     delattr(func, "target")
     with pytest.raises(AttributeError):
