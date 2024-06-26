@@ -30,6 +30,7 @@ def test_datetime_no_utc_attr():
         type(mock_datetime).UTC = datetime.timezone.utc
         mock_datetime.utcnow.return_value = "datetime without UTC"
         mock_datetime.now.return_value = "datetime with UTC"
+        setattr(datetime, "UTC", datetime.timezone.utc)
 
         result = _current_utc_datetime()
         assert result == "datetime with UTC"
