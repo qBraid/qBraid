@@ -233,6 +233,7 @@ def test_error_on_automatic_alias():
 
 
 def test_load_entrypoint_not_found():
+    """Test error when trying to load a program type that is not found"""
     with unittest.mock.patch("importlib.metadata.entry_points") as mock_entry_points:
         mock_entry_points.return_value.select.return_value = []
         with pytest.raises(QbraidError):
