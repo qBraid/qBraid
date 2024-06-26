@@ -24,6 +24,28 @@ from qbraid.runtime.provider import QuantumProvider
 
 from .device import IonQDevice
 
+SUPPORTED_GATES = {
+    "x",
+    "y",
+    "z",
+    "rx",
+    "ry",
+    "rz",
+    "h",
+    "cx",
+    "s",
+    "sdg",
+    "t",
+    "tdg",
+    "sx",
+    "sxdg",
+    "swap",
+}
+
+NATIVE_GATES = {"ms", "gpi", "gpi2"}
+
+FORTE_1_GATES = NATIVE_GATES.union({"zz"})
+
 
 class IonQSession(Session):
     """IonQ session class."""

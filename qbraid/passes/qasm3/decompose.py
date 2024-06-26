@@ -20,24 +20,6 @@ from openqasm3.parser import QASM3ParsingError, parse
 
 from qbraid.passes.exceptions import CompilationError, QasmDecompositionError
 
-# IONQ_GATES = {
-#     "x",
-#     "y",
-#     "z",
-#     "rx",
-#     "ry",
-#     "rz",
-#     "h",
-#     "cx",
-#     "s",
-#     "sdg",
-#     "t",
-#     "tdg",
-#     "sx",
-#     "sxdg",
-#     "swap",
-# }
-
 
 def _decompose_crx(gate: ast.QuantumGate) -> list[ast.Statement]:
     """Decompose a crx gate into its basic gate equivalents."""
