@@ -19,7 +19,8 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   decompose
+   rebase
+   decompose_qasm3
    insert_gate_def
    replace_gate_name
    add_stdgates_include
@@ -35,11 +36,12 @@ from .compat import (
     remove_stdgates_include,
     replace_gate_name,
 )
-from .decompose import decompose
+from .decompose import decompose_qasm3, rebase
 from .format import remove_unused_gates
 
 __all__ = [
-    "decompose",
+    "rebase",
+    "decompose_qasm3",
     "insert_gate_def",
     "replace_gate_name",
     "add_stdgates_include",

@@ -14,7 +14,7 @@ Module for preprocessing qasm string to before it is passed to parser.
 """
 import re
 
-from .decompose import decompose_qasm_qelib1
+from .decompose import decompose_qasm2
 
 
 def remove_qasm_barriers(qasm_str: str) -> str:
@@ -149,7 +149,7 @@ def flatten_qasm_program(qasm_str):
         lines.pop(gate_line_idx)
 
     qasm = "\n".join(lines)
-    qasm_out = decompose_qasm_qelib1(qasm)
+    qasm_out = decompose_qasm2(qasm)
 
     return qasm_out
 

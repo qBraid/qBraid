@@ -13,13 +13,33 @@ Module for providing transforamtions with basis gates.
 across various other quantum software frameworks.
 
 """
+from typing import Optional, Union
+
 from openqasm3 import ast, dumps
-from openqasm3.parser import parse
+from openqasm3.parser import QASM3ParsingError, parse
 
-from qbraid.passes.exceptions import QasmDecompositionError
+from qbraid.passes.exceptions import CompilationError, QasmDecompositionError
+
+# IONQ_GATES = {
+#     "x",
+#     "y",
+#     "z",
+#     "rx",
+#     "ry",
+#     "rz",
+#     "h",
+#     "cx",
+#     "s",
+#     "sdg",
+#     "t",
+#     "tdg",
+#     "sx",
+#     "sxdg",
+#     "swap",
+# }
 
 
-def decompose_crx(gate: ast.QuantumGate) -> list[ast.Statement]:
+def _decompose_crx(gate: ast.QuantumGate) -> list[ast.Statement]:
     """Decompose a crx gate into its basic gate equivalents."""
     theta = gate.arguments[0]
     control = gate.qubits[0]
@@ -77,7 +97,7 @@ def decompose_crx(gate: ast.QuantumGate) -> list[ast.Statement]:
     return [rz_pos_pi_half, ry_pos_theta_half, cx, ry_neg_theta_half, cx, rz_neg_pi_half]
 
 
-def decompose_cry(gate: ast.QuantumGate) -> list[ast.Statement]:
+def _decompose_cry(gate: ast.QuantumGate) -> list[ast.Statement]:
     """Decompose a cry gate into its basic gate equivalents."""
     theta = gate.arguments[0]
     control = gate.qubits[0]
@@ -112,7 +132,7 @@ def decompose_cry(gate: ast.QuantumGate) -> list[ast.Statement]:
     return [ry_pos_theta_half, cx, ry_neg_theta_half, cx]
 
 
-def decompose_crz(gate: ast.QuantumGate) -> list[ast.Statement]:
+def _decompose_crz(gate: ast.QuantumGate) -> list[ast.Statement]:
     """Decompose a cry gate into its basic gate equivalents."""
     theta = gate.arguments[0]
     control = gate.qubits[0]
@@ -147,7 +167,7 @@ def decompose_crz(gate: ast.QuantumGate) -> list[ast.Statement]:
     return [rz_pos_theta_half, cx, rz_neg_theta_half, cx]
 
 
-def decompose_cy(gate: ast.QuantumGate) -> list[ast.Statement]:
+def _decompose_cy(gate: ast.QuantumGate, *args) -> list[ast.Statement]:
     """Decompose a cy gate into its basic gate equivalents."""
     control = gate.qubits[0]
     target = gate.qubits[1]
@@ -159,10 +179,10 @@ def decompose_cy(gate: ast.QuantumGate) -> list[ast.Statement]:
         qubits=[control, target],
     )
     s = ast.QuantumGate(modifiers=[], name=ast.Identifier(name="s"), arguments=[], qubits=[control])
-    return _decompose(ast.Program(statements=[cry_pi, s])).statements
+    return decompose(ast.Program(statements=[cry_pi, s]), *args).statements
 
 
-def decompose_cz(gate: ast.QuantumGate) -> list[ast.Statement]:
+def _decompose_cz(gate: ast.QuantumGate) -> list[ast.Statement]:
     """Decompose a cz gate into its basic gate equivalents."""
     control = gate.qubits[0]
     target = gate.qubits[1]
@@ -174,24 +194,27 @@ def decompose_cz(gate: ast.QuantumGate) -> list[ast.Statement]:
         qubits=[control, target],
     )
     s = ast.QuantumGate(modifiers=[], name=ast.Identifier(name="s"), arguments=[], qubits=[control])
-    return _decompose(ast.Program(statements=[crz_pi, s])).statements
+    return decompose(ast.Program(statements=[crz_pi, s])).statements
 
 
-def _decompose(program: ast.Program) -> ast.Program:
+def decompose(program: ast.Program, basis_gates: Optional[set[str]] = None) -> ast.Program:
     """Decompose a program into its basic gate equivalents."""
+    decomposition_map = {
+        "crx": _decompose_crx,
+        "cry": _decompose_cry,
+        "crz": _decompose_crz,
+        "cy": _decompose_cy,
+        "cz": _decompose_cz,
+    }
+
     transformed_statements = []
     for statement in program.statements:
         if isinstance(statement, ast.QuantumGate):
-            if statement.name.name == "crx":
-                transformed_statements.extend(decompose_crx(statement))
-            elif statement.name.name == "cry":
-                transformed_statements.extend(decompose_cry(statement))
-            elif statement.name.name == "crz":
-                transformed_statements.extend(decompose_crz(statement))
-            elif statement.name.name == "cy":
-                transformed_statements.extend(decompose_cy(statement))
-            elif statement.name.name == "cz":
-                transformed_statements.extend(decompose_cz(statement))
+            gate_name = statement.name.name
+            if gate_name in decomposition_map and (
+                basis_gates is None or gate_name not in basis_gates
+            ):
+                transformed_statements.extend(decomposition_map[gate_name](statement))
             else:
                 transformed_statements.append(statement)
         else:
@@ -200,27 +223,79 @@ def _decompose(program: ast.Program) -> ast.Program:
     return ast.Program(statements=transformed_statements, version=program.version)
 
 
-def decompose(qasm: str) -> str:
-    """
-    Decompose an OpenQASM 3 program to an equivalent program
-    using basis gates from the following set:
+def assert_gates_in_basis(program: ast.Program, basis_gates: set[str]) -> None:
+    """Verify that the program is represented only by gates in the given basis gate set."""
+    for statement in program.statements:
+        if isinstance(statement, ast.QuantumGate):
+            gate_name = statement.name.name
+            if gate_name not in basis_gates:
+                raise ValueError(
+                    f"OpenQASM program uses gate '{gate_name}' which is not in the basis gate set."
+                )
 
-    ["x","y","z","rx","ry","rz","h","cx","s","sdg","t","tdg","sx","sxdg","swap"]
+
+def rebase(qasm: str, basis_gates: Union[set[str], str], require_predicates: bool = True) -> str:
+    """
+    Rebases an OpenQASM 3 program according to a given basis gate set.
 
     Args:
         qasm (str): The original OpenQASM 3 program as a string.
+        basis_gates (set[str]): The target basis gates to decompose the program to.
+        require_predicates (bool): If True, raises an error if the program fails to meet compilation
+            predicates. If False, returns the original program on failure. Defaults to True.
 
     Returns:
         str: The decomposed OpenQASM 3 program.
 
     Raises:
-        ValueError: if the decomposition is not possible
+        ValueError: If no basis gates are provided or if the basis gate set identifier is invalid
+        TypeError: If the basis gate set is not a set of strings or a string identifier
+        QasmDecompositionError: If an error occurrs during the decomposition process
+        CompilationError: If the program cannot be rebased to the provided basis gate set
+
     """
-    program = parse(qasm)
+    # Validate basis gates
+    if isinstance(basis_gates, set):
+        if len(basis_gates) == 0:
+            raise ValueError("Basis gate set cannot be empty.")
+    elif isinstance(basis_gates, str):
+        if basis_gates.lower() == "any":
+            basis_gates = set()
+        else:
+            raise ValueError("Invalid basis gate set identifier.")
+    else:
+        raise TypeError("Basis gate set must be a set of strings or a string identifier.")
+
+    # Parse program and apply decomposition(s)
+    try:
+        program = parse(qasm)
+    except QASM3ParsingError as err:
+        raise ValueError("Invalid OpenQASM 3 program.") from err
 
     try:
-        converted_program = _decompose(program)
+        converted_program = decompose(program, basis_gates)
     except Exception as err:  # pylint: disable=broad-exception-caught
         raise QasmDecompositionError from err
 
+    # Check if the program meets the compilation predicates
+    try:
+        if len(basis_gates) > 0:
+            assert_gates_in_basis(converted_program, basis_gates)
+    except ValueError as err:
+        if require_predicates:
+            raise CompilationError(
+                "Rebasing the specified quantum program to the provided "
+                f"basis gate set {basis_gates} is not supported."
+            ) from err
+
+        return qasm
+
     return dumps(converted_program)
+
+
+def decompose_qasm3(qasm: str) -> str:
+    """Decompose an OpenQASM 3 program."""
+    return rebase(qasm, basis_gates="any", require_predicates=False)
+
+
+__all__ = ["decompose", "decompose_qasm3", "rebase", "assert_gates_in_basis"]

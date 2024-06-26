@@ -130,10 +130,10 @@ def _decompose_rc3x_instr(instr: str) -> str:
     return instr_out
 
 
-def decompose_qasm_qelib1(qasm_str: str) -> str:
+def decompose_qasm2(qasm: str) -> str:
     """Replace edge-case qelib1 gates with equivalent decomposition."""
     qasm_lst_out = []
-    qasm_lst = qasm_str.split("\n")
+    qasm_lst = qasm.split("\n")
 
     for _, qasm_line in enumerate(qasm_lst):
         line_str = qasm_line

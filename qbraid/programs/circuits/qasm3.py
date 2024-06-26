@@ -453,4 +453,7 @@ class OpenQasm3Program(GateModelProgram):
 
     def transform(self, device) -> None:
         """Transform program to according to device target profile."""
-        raise NotImplementedError
+        provider_name = device.profile.get("provider_name", "").upper()
+
+        if provider_name == "IONQ":
+            pass
