@@ -51,7 +51,7 @@ from cirq.ops import (
     rz,
 )
 from pyquil import Program
-from pyquil.quilbase import Declare, DefGate
+from pyquil.quilbase import Declare
 from pyquil.quilbase import Gate as PyQuilGate
 from pyquil.quilbase import Measurement as PyQuilMeasurement
 from pyquil.quilbase import Pragma, Reset, ResetQubit

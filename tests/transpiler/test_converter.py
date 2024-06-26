@@ -35,12 +35,10 @@ def test_transpile_bad_source():
 
     def mock_has_node(node):
         """Mock function for has_node"""
-        return False if node == "fake" else True
+        return not node == "fake"
 
     class FakeClass:
         """Fake class for testing"""
-
-        pass
 
     register_program_type(FakeClass, "fake")
     with unittest.mock.patch(

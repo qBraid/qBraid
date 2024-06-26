@@ -67,6 +67,7 @@ class FakeAwsDevice(AwsDevice):
 
     @property
     def is_available(self):
+        """Return availability of the device."""
         return self._is_available
 
     @is_available.setter
@@ -75,6 +76,7 @@ class FakeAwsDevice(AwsDevice):
 
     @property
     def status(self):
+        """Return status of the device."""
         return self._status
 
     @status.setter
@@ -83,6 +85,7 @@ class FakeAwsDevice(AwsDevice):
 
     @property
     def properties(self):
+        """Return properties of the device."""
         return self._properties
 
     @properties.setter

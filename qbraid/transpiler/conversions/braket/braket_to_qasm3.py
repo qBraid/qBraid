@@ -15,7 +15,6 @@ Module for converting Braket circuits to OpenQASM 3.0
 from braket.circuits import Circuit
 from braket.circuits.serialization import IRType
 
-from qbraid.programs import QasmError
 from qbraid.transpiler.annotations import weight
 
 

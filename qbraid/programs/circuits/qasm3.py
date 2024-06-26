@@ -22,7 +22,6 @@ from openqasm3.ast import (
     ClassicalDeclaration,
     QuantumBarrier,
     QuantumGate,
-    QuantumMeasurement,
     QuantumMeasurementStatement,
     QuantumReset,
     QubitDeclaration,

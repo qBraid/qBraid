@@ -273,12 +273,8 @@ def test_has_path_does_not_exist():
     class DummyA:
         """Dummy class for testing."""
 
-        pass
-
     class DummyB:
         """Dummy class for testing."""
-
-        pass
 
     register_program_type(DummyA, "a")
     register_program_type(DummyB, "b")

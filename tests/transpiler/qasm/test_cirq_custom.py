@@ -29,6 +29,7 @@ def test_u3_gate():
 
 
 class FakeArgs:
+    """Fake Args class for testing"""
     def __init__(self, precision=None):
         self.precision = precision
 
