@@ -48,7 +48,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         title (Optional[str]): Title of the plot. Defaults to
                                'qBraid Quantum Program Conversion Graph'.
         legend (bool): If True, display a legend on the graph. Defaults to False.
-        seed (Optional[int]): Seed for the node layout algorithm. Useful for consistent 
+        seed (Optional[int]): Seed for the node layout algorithm. Useful for consistent
                               positioning. Defaults to None.
         node_size (int): Size of the nodes. Defaults to 1200.
         min_target_margin (int): Minimum target margin for edges. Defaults to 18.
