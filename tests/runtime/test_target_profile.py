@@ -144,6 +144,9 @@ def test_target_profile_bad_basis_gates_raises(valid_program_spec):
 
 def test_target_profile_str(target_profile_openqasm):
     """Test the __str__ method of TargetProfile."""
+    # order of basis_gates is not guaranteed
+    basis_gates = target_profile_openqasm["basis_gates"]
+
     expected_str = (
         "{'device_id': 'device123', "
         "'device_type': 'SIMULATOR', "
@@ -151,7 +154,7 @@ def test_target_profile_str(target_profile_openqasm):
         "'num_qubits': 5, "
         "'program_spec': <ProgramSpec('qasm2', builtins)>, "
         "'provider_name': 'Heisenberg', "
-        "'basis_gates': ['gpi', 'ms', 'gpi2']}"
+        f"'basis_gates': {basis_gates}" + "}"
     )
     assert str(target_profile_openqasm).startswith(expected_str)
 
@@ -161,4 +164,14 @@ def test_target_profile_getitem(target_profile_openqasm):
     assert target_profile_openqasm["device_id"] == "device123"
     assert target_profile_openqasm["device_type"] == "SIMULATOR"
     assert target_profile_openqasm["action_type"] == "OPENQASM"
-    assert set(target_profile_openqasm["basis_gates"]) == {"gpi", "gpi2", "ms"}
+    assert target_profile_openqasm["basis_gates"] == {"gpi", "gpi2", "ms"}
+
+
+def test_duplicate_basis_gates_removed(valid_program_spec):
+    """Test that duplicate basis gates are removed."""
+    profile = create_target_profile(
+        action_type=DeviceActionType.OPENQASM,
+        basis_gates=["x", "x", "x", "y", "z"],
+        program_spec=valid_program_spec,
+    )
+    assert profile["basis_gates"] == {"x", "y", "z"}

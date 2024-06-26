@@ -109,14 +109,14 @@ class TargetProfile(Mapping):
             raise TypeError("action_type must be an instance of DeviceActionType")
         return action_type.name
 
-    def _validate_basis_gates(self, basis_gates: Optional[list[str]]) -> Optional[list[str]]:
+    def _validate_basis_gates(self, basis_gates: Optional[list[str]]) -> Optional[set[str]]:
         if basis_gates is None:
             return None
         if not isinstance(basis_gates, list) or not all(
             isinstance(gate, str) for gate in basis_gates
         ):
             raise TypeError("basis_gates must be a list of strings")
-        return list(set(gate.lower() for gate in basis_gates))
+        return set(gate.lower() for gate in basis_gates)
 
     def _validate_num_qubits(self, num_qubits: Optional[int]) -> Optional[int]:
         if num_qubits is not None and not isinstance(num_qubits, int):
