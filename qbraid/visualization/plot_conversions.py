@@ -92,9 +92,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             if graph.get_edge_data(
                 graph._node_alias_id_map[edge.source], graph._node_alias_id_map[edge.target]
             )["native"]
-            else colors["extras_edge"]
-            if len(edge._extras) > 0
-            else colors["external_edge"]
+            else colors["extras_edge"] if len(edge._extras) > 0 else colors["external_edge"]
         )
         for edge in conversions_ordered
     ]
