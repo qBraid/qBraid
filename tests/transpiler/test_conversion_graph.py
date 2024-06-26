@@ -22,6 +22,7 @@ import pytest
 import rustworkx as rx
 from qbraid_core._import import LazyLoader
 
+from qbraid.programs import register_program_type
 from qbraid.programs.registry import QPROGRAM_ALIASES
 from qbraid.transpiler.conversions import conversion_functions
 from qbraid.transpiler.converter import transpile
@@ -264,3 +265,33 @@ def test_raise_attribute_error_no_source():
     """
     with pytest.raises(AttributeError):
         ConversionGraph._get_path_from_bound_methods([lambda x: x])
+
+
+def test_has_path_does_not_exist():
+    """Test that has_path returns False when there is no path between two existing nodes."""
+
+    class DummyA:
+        """Dummy class for testing."""
+        pass
+
+    class DummyB:
+        """Dummy class for testing."""
+        pass
+
+    register_program_type(DummyA, "a")
+    register_program_type(DummyB, "b")
+    graph = ConversionGraph()
+    assert not graph.has_path("a", "b")
+
+
+def test_path_does_not_exist():
+    """Test that we raise an error when trying to get a path from methods."""
+    graph = ConversionGraph()
+    conversion = Conversion("a", "b", lambda x: x)
+    graph.add_conversion(conversion)
+    data = graph.get_edge_data(graph._node_alias_id_map["a"], graph._node_alias_id_map["b"])
+    func = data["func"].__self__
+    delattr(func, "source")
+    delattr(func, "target")
+    with pytest.raises(AttributeError):
+        graph._get_path_from_bound_methods([data["func"]])
