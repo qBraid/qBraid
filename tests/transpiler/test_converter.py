@@ -12,19 +12,48 @@
 Unit test for the graph-based transpiler
 
 """
+import unittest.mock
+
 import braket.circuits
 import pytest
 
-from qbraid.transpiler.converter import transpile
+from qbraid.programs import register_program_type
+from qbraid.transpiler.converter import _warn_if_unsupported, transpile
 from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.exceptions import ConversionPathNotFoundError, NodeNotFoundError
 from qbraid.transpiler.graph import ConversionGraph
 
 
-def test_unuspported_target_package():
+def test_unsupported_target_package():
     """Test that an error is raised if target package is not supported."""
     with pytest.raises(NodeNotFoundError):
         transpile(braket.circuits.Circuit(), "alice")
+
+
+def test_transpile_bad_source():
+    """Test raising ValueError for bad source package"""
+
+    def mock_has_node(node):
+        """Mock function for has_node"""
+        return False if node == "fake" else True
+
+    class FakeClass:
+        """Fake class for testing"""
+
+        pass
+
+    register_program_type(FakeClass, "fake")
+    with unittest.mock.patch(
+        "qbraid.transpiler.ConversionGraph.has_node", side_effect=mock_has_node
+    ):
+        with pytest.raises(NodeNotFoundError):
+            transpile(FakeClass(), "cirq")
+
+
+def test_warning():
+    """Test that a warning is raised if the program type is not supported."""
+    with pytest.warns(UserWarning):
+        _warn_if_unsupported("test", "bad")
 
 
 @pytest.mark.parametrize("bell_circuit", ["qiskit"], indirect=True)
