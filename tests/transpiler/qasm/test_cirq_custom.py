@@ -36,4 +36,4 @@ class FakeArgs:
 def test_rzz_gate():
     """Test RZZGate"""
     gate = RZZGate(0)
-    assert gate._circuit_diagram_info_(args=FakeArgs()).wire_symbols[0] == "RZZ(0.0)"
+    assert gate._circuit_diagram_info_(args=FakeArgs(1)).wire_symbols[0] == "RZZ(0.0)"

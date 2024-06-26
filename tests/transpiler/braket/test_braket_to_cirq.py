@@ -17,6 +17,7 @@
 Unit tests for converting Braket circuits to Cirq circuits
 
 """
+import cirq
 import numpy as np
 import pytest
 from braket.circuits import Circuit as BKCircuit
@@ -29,6 +30,10 @@ from cirq import ops as cirq_ops
 
 from qbraid.interface import circuits_allclose
 from qbraid.transpiler.conversions.braket import braket_to_cirq
+from qbraid.transpiler.conversions.braket.braket_to_cirq import (
+    _from_braket_instruction,
+    _give_cirq_gate_name,
+)
 from qbraid.transpiler.conversions.cirq.braket_custom import C as BKControl
 from qbraid.transpiler.exceptions import CircuitConversionError
 
@@ -284,3 +289,21 @@ def test_braket_control_custom():
     assert adjoint.qubit_count == 2
     unitary = control_gate._to_jaqcd(target=targets)
     assert isinstance(unitary, JaqcdUnitary)
+
+
+def test_cirq_circuit_diagram_info():
+    """Test that circuit diagram info is correctly set"""
+    id_gate = cirq_ops.IdentityGate(1)
+    _give_cirq_gate_name(id_gate, "I", 1)
+    assert id_gate._circuit_diagram_info_(None) == ("I",)
+
+
+def test_from_braket_instruction_measure():
+    """Test from_braket_instruction with Measure gate"""
+    circuit = BKCircuit().measure(0)
+    instr = circuit.instructions[0]
+    bk_qubits = [int(q) for q in circuit.qubits]
+    cirq_qubits = [cirq.LineQubit(x) for x in bk_qubits]
+    qubit_mapping = {q: cirq_qubits[i] for i, q in enumerate(bk_qubits)}
+    cirq_instr = _from_braket_instruction(instr, qubit_mapping)
+    assert isinstance(cirq_instr[0]._gate, cirq.MeasurementGate)
