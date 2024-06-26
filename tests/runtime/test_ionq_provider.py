@@ -139,6 +139,9 @@ def test_ionq_provider_device():
         assert test_device.profile["num_qubits"] == 11
         assert test_device.profile["program_spec"] == ProgramSpec(openqasm3.ast.Program)
 
+        dummy_provider = IonQProvider(api_key="fake_api_key")
+        assert provider == dummy_provider
+
 
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
 @patch("qbraid_core.sessions.Session.get")
