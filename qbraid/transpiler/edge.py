@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 from qbraid.programs import QPROGRAM_REGISTRY, get_program_type_alias
 
 if TYPE_CHECKING:
-    import qbraid
+    import qbraid.programs
 
 
 class Conversion:
@@ -63,23 +63,6 @@ class Conversion:
         """
         return self._source
 
-    @source.setter
-    def source(self, value: str) -> None:
-        """
-        Set the source package of the conversion.
-
-        Args:
-            value (str): The new source package name.
-        """
-        self._source = value
-
-    @source.deleter
-    def source(self) -> None:
-        """
-        Delete the source package of the conversion.
-        """
-        del self._source
-
     @property
     def target(self) -> str:
         """
@@ -89,23 +72,6 @@ class Conversion:
             str: The target package name.
         """
         return self._target
-
-    @target.setter
-    def target(self, value: str) -> None:
-        """
-        Set the target package of the conversion.
-
-        Args:
-            value (str): The new target package name.
-        """
-        self._target = value
-
-    @target.deleter
-    def target(self) -> None:
-        """
-        Delete the target package of the conversion.
-        """
-        del self._target
 
     @property
     def native(self) -> bool:

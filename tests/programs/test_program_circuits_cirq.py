@@ -308,7 +308,7 @@ def test_int_from_qubit_grid_qubit():
     assert CirqCircuit._int_from_qubit(qubit) == expected_key
 
 
-def test__bad_qubit():
+def test_bad_qubit():
     """Test qubits that aren't a GridQubit, LineQubit, or NamedQubit."""
     qubit = "bad qubit"
     with pytest.raises(ValueError) as exc_info:
