@@ -143,20 +143,22 @@ def remove_stdgates_include(qasm: str) -> str:
     return qasm.replace('include "stdgates.inc";', "")
 
 
+def _evaluate_expression(match):
+    """Helper function for simplifying arithmetic expressions within parentheses."""
+    expr = match.group(1)
+    try:
+        simplified_value = eval(expr)  # pylint: disable=eval-used
+        return f"({simplified_value})"
+    except SyntaxError:
+        return match.group(0)
+
+
 def simplify_arithmetic_expressions(qasm_str: str) -> str:
     """Simplifies arithmetic expressions within parentheses in a QASM string."""
 
     pattern = r"\(([0-9+\-*/. ]+)\)"
 
-    def evaluate_expression(match):
-        expr = match.group(1)
-        try:
-            simplified_value = eval(expr)  # pylint: disable=eval-used
-            return f"({simplified_value})"
-        except SyntaxError:
-            return match.group(0)
-
-    return re.sub(pattern, evaluate_expression, qasm_str)
+    return re.sub(pattern, _evaluate_expression, qasm_str)
 
 
 def convert_qasm_pi_to_decimal(qasm_str: str) -> str:
