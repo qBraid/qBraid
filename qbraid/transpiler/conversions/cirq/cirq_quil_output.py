@@ -295,7 +295,6 @@ def _twoqubitdiagonal_gate(op: cirq.Operation, formatter: QuilFormatter) -> Opti
             op.qubits[0],
             op.qubits[1],
         )
-    return None
 
 
 def _wait_gate(*args, **kwargs) -> str:  # pylint: disable=unused-argument
