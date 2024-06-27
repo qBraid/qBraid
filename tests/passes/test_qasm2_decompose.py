@@ -16,7 +16,7 @@ Unit tests for QASM transform to basic gates
 import pytest
 
 from qbraid.passes.exceptions import QasmDecompositionError
-from qbraid.passes.qasm2.decompose import decompose_qasm_qelib1
+from qbraid.passes.qasm2.decompose import decompose_qasm2
 
 cu = """
 OPENQASM 2.0;
@@ -51,7 +51,7 @@ rc3x q[0],q[1],q[2];
 def test_fail_decompose_instr(program):
     """Test invalid instruction decomposition"""
     with pytest.raises(QasmDecompositionError):
-        decompose_qasm_qelib1(program)
+        decompose_qasm2(program)
 
 
 rxx_none = """
@@ -64,4 +64,4 @@ rxx( q[0], q[1];
 
 def test_decompose_none():
     """Test no parameters in function decomposition."""
-    assert "rz(None)" in decompose_qasm_qelib1(rxx_none)
+    assert "rz(None)" in decompose_qasm2(rxx_none)

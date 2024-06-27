@@ -16,5 +16,9 @@ Module defining exceptions for errors raised by qBraid transforms.
 from qbraid.exceptions import QbraidError
 
 
+class CompilationError(QbraidError):
+    """Exception raised for errors that occur during the compilation of quantum programs."""
+
+
 class QasmDecompositionError(QbraidError):
-    """For errors raised during OpenQASM decomposition processes."""
+    """Exception raised for errors raised during OpenQASM decomposition processes."""

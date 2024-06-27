@@ -22,15 +22,15 @@ Functions
    remove_qasm_barriers
    unfold_qasm_gate_defs
    flatten_qasm_program
-   decompose_qasm_qelib1
+   decompose_qasm2
 
 """
 from .compat import flatten_qasm_program, remove_qasm_barriers, unfold_qasm_gate_defs
-from .decompose import decompose_qasm_qelib1
+from .decompose import decompose_qasm2
 
 __all__ = [
     "flatten_qasm_program",
     "remove_qasm_barriers",
     "unfold_qasm_gate_defs",
-    "decompose_qasm_qelib1",
+    "decompose_qasm2",
 ]

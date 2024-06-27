@@ -135,8 +135,10 @@ class IonQDevice(QuantumDevice):
 
     def transform(self, run_input: "openqasm3.ast.Program") -> dict:
         """Transform the input to the IonQ device."""
-        num_qubits = load_program(run_input).num_qubits
-        gate_data = self.extract_gate_data(run_input)
+        program = load_program(run_input)
+        program.transform(device=self)
+        num_qubits = program.num_qubits
+        gate_data = self.extract_gate_data(program.parsed())
         return {"qubits": num_qubits, "circuit": gate_data}
 
     def submit(self, run_input: list[dict], *args, shots: int = 100, **kwargs) -> IonQJob:

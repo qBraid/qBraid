@@ -20,6 +20,7 @@ import numpy as np
 from openqasm3.ast import (
     BitType,
     ClassicalDeclaration,
+    Program,
     QuantumBarrier,
     QuantumGate,
     QuantumMeasurement,
@@ -29,9 +30,22 @@ from openqasm3.ast import (
 )
 from openqasm3.parser import parse
 
+from qbraid.passes.qasm3 import normalize_qasm_gate_params, rebase
 from qbraid.programs.exceptions import ProgramTypeError
 
 from ._model import GateModelProgram
+
+
+def auto_reparse(func):
+    """Decorator that ensures the quantum circuit's state
+    is reparsed from QASM after method execution."""
+
+    def wrapper(self, *args, **kwargs):
+        result = func(self, *args, **kwargs)
+        self._parse_state()
+        return result
+
+    return wrapper
 
 
 class OpenQasm3Program(GateModelProgram):
@@ -41,11 +55,15 @@ class OpenQasm3Program(GateModelProgram):
         super().__init__(program)
         if not isinstance(program, str):
             raise ProgramTypeError(message=f"Expected 'str' object, got '{type(program)}'.")
-        self._parse_qasm()
+        self._parse_state()
 
-    def _parse_qasm(self) -> str:
+    def parsed(self) -> Program:
+        """Parse the program string."""
+        return parse(self._program)
+
+    def _parse_state(self) -> None:
         """Process the program string."""
-        program = parse(self._program)
+        program = self.parsed()
 
         num_qubits = 0
         num_clbits = 0
@@ -94,7 +112,7 @@ class OpenQasm3Program(GateModelProgram):
     @property
     def depth(self) -> int:
         """Return the circuit depth (i.e., length of critical path)."""
-        program = parse(self._program)
+        program = self.parsed()
         max_depth = 0
         n = self._num_qubits
         counts = [0] * n
@@ -251,6 +269,7 @@ class OpenQasm3Program(GateModelProgram):
 
         return qasm_str
 
+    @auto_reparse
     def populate_idle_qubits(self) -> None:
         """Converts OpenQASM 3 string to contiguous qasm3 string with gate expansion.
 
@@ -266,8 +285,8 @@ class OpenQasm3Program(GateModelProgram):
                 expansion_qasm += f"i {reg}[{index}];\n"
 
         self._program = self.program + expansion_qasm
-        self._parse_qasm()
 
+    @auto_reparse
     def remove_idle_qubits(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
@@ -296,7 +315,6 @@ class OpenQasm3Program(GateModelProgram):
             elif len(indices):
                 qasm_str = self._remap_qubits(qasm_str, reg, size, indices)
         self._program = qasm_str
-        self._parse_qasm()
 
     def _validate_qubit_mapping(self, qubit_decls, qubit_mapping: dict):
         """Validate the supplied qubit map
@@ -317,7 +335,7 @@ class OpenQasm3Program(GateModelProgram):
 
         for name, size in qubit_decls:
             size = 1 if size is None else size
-            # 1. Check if the registers are present in the mapping
+
             if name not in qubit_mapping:
                 raise ValueError(f"Register {name} not present in the qubit mapping.")
 
@@ -328,9 +346,6 @@ class OpenQasm3Program(GateModelProgram):
                 raise ValueError(
                     f"Mapping for register {name} is not exact. Map is {qubit_mapping[name]}."
                 )
-
-            # 2. If yes, then see whether all the indices of the register are present in the mapping
-            #    and are in range and unique
 
             old_indices = set(range(size))
             new_indices = []
@@ -344,13 +359,13 @@ class OpenQasm3Program(GateModelProgram):
                     )
                 new_indices.append(qubit_mapping[name][idx])
 
-            # 3. Check that all the new indices are unique
             if set(new_indices) != old_indices:
                 raise ValueError(
                     f"Index map of register {name} is not unique. Map is {qubit_mapping[name]}."
                 )
 
-    def apply_qubit_mapping(self, qubit_mapping: dict):
+    @auto_reparse
+    def apply_qubit_mapping(self, qubit_mapping: dict) -> None:
         """Apply qubit mapping for the qasm program
 
         Args:
@@ -361,8 +376,9 @@ class OpenQasm3Program(GateModelProgram):
             str: updated qasm string
         """
         if not qubit_mapping:
-            return self.program
+            return
 
+        qasm = self._program
         qubit_decls = self.qubits
         self._validate_qubit_mapping(qubit_decls, qubit_mapping)
 
@@ -383,17 +399,15 @@ class OpenQasm3Program(GateModelProgram):
         for name, _ in qubit_decls:
             for old_id, new_id in qubit_mapping[name].items():
                 if old_id != new_id:
-                    self._program = re.sub(
-                        rf"{name}\s*\[{old_id}\]", f"{name}[{marker}{new_id}]", self._program
-                    )
+                    qasm = re.sub(rf"{name}\s*\[{old_id}\]", f"{name}[{marker}{new_id}]", qasm)
 
         # remove the '-' markers
         for name, _ in qubit_decls:
-            self._program = re.sub(rf"{name}\[{marker}", f"{name}[", self._program)
+            qasm = re.sub(rf"{name}\[{marker}", f"{name}[", qasm)
 
-        self._parse_qasm()
-        return self.program
+        self._program = qasm
 
+    @auto_reparse
     def replace_reset_with_ops(self) -> None:
         """This function finds all the reset operations in QASM string,
         and replaces them with measurement and conditional X gate operations.
@@ -437,7 +451,6 @@ class OpenQasm3Program(GateModelProgram):
         transformed_qasm_string = "\n".join(transformed_lines)
 
         self._program = transformed_qasm_string
-        self._parse_qasm()
 
     def reverse_qubit_order(self) -> None:
         """Reverse the order of the qubits in the circuit."""
@@ -449,8 +462,13 @@ class OpenQasm3Program(GateModelProgram):
             size = 1 if size is None else size
             qubit_mapping[reg] = {old_id: size - old_id - 1 for old_id in range(size)}
 
-        return self.apply_qubit_mapping(qubit_mapping)
+        self.apply_qubit_mapping(qubit_mapping)
 
+    @auto_reparse
     def transform(self, device) -> None:
         """Transform program to according to device target profile."""
-        raise NotImplementedError
+        basis_gates = device.profile.get("basis_gates")
+
+        if basis_gates is not None and len(basis_gates) > 0:
+            transformed_qasm = rebase(self.program, basis_gates)
+            self._program = normalize_qasm_gate_params(transformed_qasm)
