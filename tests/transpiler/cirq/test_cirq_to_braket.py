@@ -29,6 +29,10 @@ from cirq_ionq.ionq_native_gates import GPI2Gate, GPIGate, MSGate
 from qbraid.interface import circuits_allclose
 from qbraid.interface.random import random_unitary_matrix
 from qbraid.transpiler.conversions.cirq import cirq_to_braket
+from qbraid.transpiler.conversions.cirq.cirq_to_braket import (
+    _to_one_qubit_braket_instruction,
+    _to_two_qubit_braket_instruction,
+)
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 
@@ -365,3 +369,12 @@ def test_three_qubit_error():
     with pytest.raises(CircuitConversionError):
         with patch("cirq.protocols.unitary", side_effect=TypeError):
             cirq_to_braket(cirq_circuit)
+
+
+def test_invalid_gate_instruction():
+    """Test error for invalid gate instruction"""
+    with pytest.raises(ValueError):
+        _to_one_qubit_braket_instruction(1, 1)
+
+    with pytest.raises(ValueError):
+        _to_two_qubit_braket_instruction(1, [0, 1])
