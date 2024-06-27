@@ -17,6 +17,7 @@
 Unit tests for converting Cirq circuits to Braket circuits
 
 """
+from unittest.mock import patch
 import cirq
 import numpy as np
 import pytest
@@ -27,6 +28,7 @@ from cirq_ionq.ionq_native_gates import GPI2Gate, GPIGate, MSGate
 from qbraid.interface import circuits_allclose
 from qbraid.interface.random import random_unitary_matrix
 from qbraid.transpiler.conversions.cirq import cirq_to_braket
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 
 def alpha_pump(sys, env):
@@ -334,3 +336,31 @@ def test_ionq_gates():
     cirq_circuit = cirq.Circuit([gpi, gpi2, ms])
     braket_circuit = cirq_to_braket(cirq_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit)
+
+
+def test_custom_controlled_three_qubit_gate():
+    """Test custom controlled three qubit gate"""
+    q0, q1, q2 = cirq.LineQubit.range(3)
+    cirq_circuit = cirq.Circuit(ops.ControlledGate(ops.CZ).on(q0, q1, q2))
+    braket_circuit = cirq_to_braket(cirq_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit)
+
+
+def test_three_qubit_matrix_gate():
+    """Test three qubit matrix gate"""
+    q0, q1, q2 = cirq.LineQubit.range(3)
+    matrix = np.eye(8)
+    cirq_circuit = cirq.Circuit(ops.MatrixGate(matrix).on(q0, q1, q2))
+    braket_circuit = cirq_to_braket(cirq_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit)
+
+
+def test_three_qubit_error():
+    """Test error for three qubit gate"""
+    q0, q1, q2 = cirq.LineQubit.range(3)
+    matrix = np.eye(8)
+    cirq_circuit = cirq.Circuit(ops.MatrixGate(matrix).on(q0, q1, q2))
+
+    with pytest.raises(CircuitConversionError):
+        with patch("cirq.protocols.unitary", side_effect=TypeError):
+            cirq_to_braket(cirq_circuit)
