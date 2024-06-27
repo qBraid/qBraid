@@ -19,6 +19,8 @@ import unittest.mock
 
 import pytest
 
+from qbraid.exceptions import QbraidError
+from qbraid.interface import random_circuit
 from qbraid.programs import (
     QPROGRAM_ALIASES,
     QPROGRAM_REGISTRY,
@@ -26,6 +28,7 @@ from qbraid.programs import (
     ProgramSpec,
     derive_program_type_alias,
     get_program_type_alias,
+    load_program,
     register_program_type,
     unregister_program_type,
 )
@@ -227,3 +230,12 @@ def test_error_on_automatic_alias():
     """Test error when trying to register a program type with an automatic alias"""
     with pytest.raises(ValueError):
         derive_program_type_alias(FakeType)
+
+
+def test_load_entrypoint_not_found():
+    """Test error when trying to load a program type that is not found"""
+    with unittest.mock.patch("importlib.metadata.entry_points") as mock_entry_points:
+        mock_entry_points.return_value.select.return_value = []
+        with pytest.raises(QbraidError):
+            program = random_circuit("qiskit")
+            load_program(program)

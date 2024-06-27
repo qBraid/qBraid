@@ -23,7 +23,6 @@ from openqasm3.ast import (
     Program,
     QuantumBarrier,
     QuantumGate,
-    QuantumMeasurement,
     QuantumMeasurementStatement,
     QuantumReset,
     QubitDeclaration,
@@ -141,9 +140,6 @@ class OpenQasm3Program(GateModelProgram):
             elif isinstance(statement, QuantumBarrier):
                 counts = [max_depth] * n
                 new_measurement_moment = True
-            elif isinstance(statement, QuantumMeasurement):
-                for i in range(n):
-                    counts[i] += 1
             elif isinstance(statement, QuantumMeasurementStatement) and new_measurement_moment:
                 for i in range(n):
                     counts[i] += 1

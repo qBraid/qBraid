@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 from qbraid.programs import QPROGRAM_REGISTRY, get_program_type_alias
 
 if TYPE_CHECKING:
-    import qbraid
+    import qbraid.programs
 
 
 class Conversion:

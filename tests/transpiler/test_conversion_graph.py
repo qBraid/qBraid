@@ -15,13 +15,14 @@ Tests of functions that create and operate on directed graph
 used to dictate transpiler conversions.
 
 """
-from unittest.mock import Mock
+from unittest.mock import Mock, PropertyMock, patch
 
 import braket.circuits
 import pytest
 import rustworkx as rx
 from qbraid_core._import import LazyLoader
 
+from qbraid.programs import register_program_type
 from qbraid.programs.registry import QPROGRAM_ALIASES
 from qbraid.transpiler.conversions import conversion_functions
 from qbraid.transpiler.converter import transpile
@@ -264,3 +265,39 @@ def test_raise_attribute_error_no_source():
     """
     with pytest.raises(AttributeError):
         ConversionGraph._get_path_from_bound_methods([lambda x: x])
+
+
+def test_has_path_does_not_exist():
+    """Test that has_path returns False when there is no path between two existing nodes."""
+
+    class DummyA:
+        """Dummy class for testing."""
+
+    class DummyB:
+        """Dummy class for testing."""
+
+    register_program_type(DummyA, "a")
+    register_program_type(DummyB, "b")
+    graph = ConversionGraph()
+    assert not graph.has_path("a", "b")
+
+
+def test_get_path_from_bound_methods_attribute_error():
+    """Test that AttributeError is raised when bound methods
+    lack 'source' or 'target' attributes."""
+    conversion = Conversion("a", "b", lambda x: x)
+    graph = ConversionGraph()
+    graph.add_conversion(conversion)
+
+    data = graph.get_edge_data(graph._node_alias_id_map["a"], graph._node_alias_id_map["b"])
+    func = data["func"].__self__
+
+    with (
+        patch.object(type(func), "source", new_callable=PropertyMock, side_effect=AttributeError),
+        patch.object(type(func), "target", new_callable=PropertyMock, side_effect=AttributeError),
+    ):
+
+        with pytest.raises(AttributeError) as excinfo:
+            graph._get_path_from_bound_methods([data["func"]])
+
+        assert "Bound method instance lacks 'source' or 'target' attributes." in str(excinfo.value)

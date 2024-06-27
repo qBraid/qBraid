@@ -140,3 +140,12 @@ def test_raise_program_type_error():
     """Test raising ProgramTypeError"""
     with pytest.raises(ProgramTypeError):
         BraketCircuit(Mock())
+
+
+def test_properties():
+    """Test properties of BraketCircuit"""
+    circuit = Circuit().h(0).cnot(0, 1)
+    qprogram = BraketCircuit(circuit)
+    assert qprogram.qubits == circuit.qubits
+    assert qprogram.num_clbits == 0
+    assert qprogram.depth == circuit.depth

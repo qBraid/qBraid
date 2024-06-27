@@ -232,6 +232,9 @@ def test_ionq_device_transform_run_input():
         program_json = device.transform(qasm_input)
         assert program_json == expected_output
 
+        dummy_provider = IonQProvider(api_key="fake_api_key")
+        assert provider == dummy_provider
+
 
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
 @patch("qbraid_core.sessions.Session.get")

@@ -351,3 +351,16 @@ def test_incorrect_remapping():
 
     with pytest.raises(ValueError):
         load_program(qasm_str).apply_qubit_mapping(out_of_bounds_mapping)
+
+
+def test_invalid_qasm2():
+    """Test that invalid qasm2 raises error"""
+    invalid_qasm2 = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    qubit[4] q2;
+    qubit q3;
+    """
+    with pytest.raises(ValueError):
+        qasm2_to_qasm3(invalid_qasm2)
