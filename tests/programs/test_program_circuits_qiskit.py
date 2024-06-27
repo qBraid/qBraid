@@ -61,6 +61,7 @@ def test_circuit_properties():
     circuit.h(0)
     circuit.cx(0, 1)
     qprogram = QiskitCircuit(circuit)
+    assert len(qprogram.qubits) == 2
     assert qprogram.num_qubits == 2
     assert qprogram.num_clbits == 0
     assert qprogram.depth == 2
