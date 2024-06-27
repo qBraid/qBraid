@@ -262,7 +262,7 @@ def _swappow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
     )
 
 
-def _twoqubitdiagonal_gate( # pylint: disable=inconsistent-return-statements
+def _twoqubitdiagonal_gate(  # pylint: disable=inconsistent-return-statements
     op: cirq.Operation, formatter: QuilFormatter
 ) -> Optional[str]:
     gate = cast(cirq.TwoQubitDiagonalGate, op.gate)
