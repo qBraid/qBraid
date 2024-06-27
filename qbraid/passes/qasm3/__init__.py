@@ -19,12 +19,14 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   decompose
+   rebase
+   decompose_qasm3
    insert_gate_def
    replace_gate_name
    add_stdgates_include
    remove_stdgates_include
    convert_qasm_pi_to_decimal
+   normalize_qasm_gate_params
    remove_unused_gates
 
 """
@@ -32,18 +34,21 @@ from .compat import (
     add_stdgates_include,
     convert_qasm_pi_to_decimal,
     insert_gate_def,
+    normalize_qasm_gate_params,
     remove_stdgates_include,
     replace_gate_name,
 )
-from .decompose import decompose
+from .decompose import decompose_qasm3, rebase
 from .format import remove_unused_gates
 
 __all__ = [
-    "decompose",
+    "rebase",
+    "decompose_qasm3",
     "insert_gate_def",
     "replace_gate_name",
     "add_stdgates_include",
     "remove_stdgates_include",
     "convert_qasm_pi_to_decimal",
+    "normalize_qasm_gate_params",
     "remove_unused_gates",
 ]
