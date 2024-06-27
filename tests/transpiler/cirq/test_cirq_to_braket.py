@@ -18,6 +18,7 @@ Unit tests for converting Cirq circuits to Braket circuits
 
 """
 from unittest.mock import patch
+
 import cirq
 import numpy as np
 import pytest
