@@ -15,7 +15,7 @@ Tests of functions that create and operate on directed graph
 used to dictate transpiler conversions.
 
 """
-from unittest.mock import Mock
+from unittest.mock import Mock, PropertyMock, patch
 
 import braket.circuits
 import pytest
@@ -282,16 +282,22 @@ def test_has_path_does_not_exist():
     assert not graph.has_path("a", "b")
 
 
-def test_path_does_not_exist():
-    """Test that we raise an error when trying to get a path from methods."""
-    graph = ConversionGraph()
+def test_get_path_from_bound_methods_attribute_error():
+    """Test that AttributeError is raised when bound methods
+    lack 'source' or 'target' attributes."""
     conversion = Conversion("a", "b", lambda x: x)
+    graph = ConversionGraph()
     graph.add_conversion(conversion)
+
     data = graph.get_edge_data(graph._node_alias_id_map["a"], graph._node_alias_id_map["b"])
     func = data["func"].__self__
-    setattr(func, "source", "a")
-    setattr(func, "target", "b")
-    delattr(func, "source")
-    delattr(func, "target")
-    with pytest.raises(AttributeError):
-        graph._get_path_from_bound_methods([data["func"]])
+
+    with (
+        patch.object(type(func), "source", new_callable=PropertyMock, side_effect=AttributeError),
+        patch.object(type(func), "target", new_callable=PropertyMock, side_effect=AttributeError),
+    ):
+
+        with pytest.raises(AttributeError) as excinfo:
+            graph._get_path_from_bound_methods([data["func"]])
+
+        assert "Bound method instance lacks 'source' or 'target' attributes." in str(excinfo.value)
