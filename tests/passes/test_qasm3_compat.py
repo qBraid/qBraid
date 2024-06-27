@@ -24,7 +24,6 @@ from qbraid.passes.qasm3.compat import (
     normalize_qasm_gate_params,
     remove_stdgates_include,
     replace_gate_name,
-    simplify_arithmetic_expressions,
     simplify_parentheses_in_qasm,
 )
 from qbraid.passes.qasm3.format import _remove_empty_lines
