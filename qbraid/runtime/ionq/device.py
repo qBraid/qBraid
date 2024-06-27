@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 
 import openqasm3
 
-from qbraid.passes.qasm3.compat import normalize_qasm_gate_params
+from qbraid.passes.qasm3.compat import convert_qasm_pi_to_decimal
 from qbraid.programs import load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
@@ -92,7 +92,7 @@ class IonQDevice(QuantumDevice):
                         gate_data = {
                             "gate": name,
                             "target": qubit_values[0],
-                            "rotation": float(normalize_qasm_gate_params(angle_str)),
+                            "rotation": float(convert_qasm_pi_to_decimal(angle_str)),
                         }
                     # OpenQASM 3 aliases:
                     elif name == "sdg":

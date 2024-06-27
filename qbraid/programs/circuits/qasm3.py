@@ -30,7 +30,7 @@ from openqasm3.ast import (
 )
 from openqasm3.parser import parse
 
-from qbraid.passes.qasm3 import rebase
+from qbraid.passes.qasm3 import normalize_qasm_gate_params, rebase
 from qbraid.programs.exceptions import ProgramTypeError
 
 from ._model import GateModelProgram
@@ -470,4 +470,5 @@ class OpenQasm3Program(GateModelProgram):
         basis_gates = device.profile.get("basis_gates")
 
         if basis_gates is not None and len(basis_gates) > 0:
-            self._program = rebase(self.program, basis_gates)
+            transformed_qasm = rebase(self.program, basis_gates)
+            self._program = normalize_qasm_gate_params(transformed_qasm)

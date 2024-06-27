@@ -15,6 +15,7 @@ across various other quantum software frameworks.
 """
 import math
 import re
+from functools import reduce
 
 GATE_DEFINITIONS = {
     "iswap": """
@@ -142,10 +143,28 @@ def remove_stdgates_include(qasm: str) -> str:
     return qasm.replace('include "stdgates.inc";', "")
 
 
+def simplify_arithmetic_expressions(qasm_str: str) -> str:
+    """Simplifies arithmetic expressions within parentheses in a QASM string."""
+
+    pattern = r"\(([0-9+\-*/. ]+)\)"
+
+    def evaluate_expression(match):
+        expr = match.group(1)
+        try:
+            simplified_value = eval(expr)  # pylint: disable=eval-used
+            return f"({simplified_value})"
+        except SyntaxError:
+            return match.group(0)
+
+    return re.sub(pattern, evaluate_expression, qasm_str)
+
+
 def convert_qasm_pi_to_decimal(qasm_str: str) -> str:
     """Convert all instances of 'pi' in the QASM string to their decimal value."""
 
-    pattern = r"(\d*\.?\d*\s*[*/+-]\s*)*pi(\s*[*/+-]\s*\d*\.?\d*)*"
+    pattern = r"(\d*\.?\d*\s*[*/+-]\s*)?pi(\s*[*/+-]\s*\d*\.?\d*)?"
+    # pattern = r"(\d*\.?\d*\s*[*/+-]\s*)*pi(\s*[*/+-]\s*\d*\.?\d*)*"
+    # pattern = r"([+-]?(\d+(\.\d*)?)?\s*[*/]\s*)*pi(\s*[*/+-]\s*[+-]?(\d+(\.\d*)?)?)*"
 
     def replace_with_decimal(match):
         expr = match.group()
@@ -159,21 +178,51 @@ def convert_qasm_pi_to_decimal(qasm_str: str) -> str:
     return re.sub(pattern, replace_with_decimal, qasm_str)
 
 
+def has_redundant_parentheses(qasm_str: str) -> bool:
+    """Checks if a QASM string contains gate parameters with redundant parentheses."""
+
+    pattern = r"\w+\(\(\s*[-+]?\d+(\.\d*)?\s*\)\)"
+    if re.search(pattern, qasm_str):
+        return True
+
+    pattern_neg = r"\w+\(-\(\d*\.?\d+\)\)"
+    if re.search(pattern_neg, qasm_str):
+        return True
+
+    return False
+
+
 def simplify_parentheses_in_qasm(qasm_str: str) -> str:
     """Simplifies unnecessary parentheses around numbers in QASM strings."""
+
+    lines = qasm_str.splitlines()
+    simplified_lines = []
 
     pattern = r"\(\s*([-+]?\s*\d+(\.\d*)?)\s*\)"
 
     def simplify(match):
-        number = match.group(1).replace(" ", "")
-        return number
+        return match.group(1).replace(" ", "")
 
-    simplified_qasm = re.sub(pattern, simplify, qasm_str)
-    return simplified_qasm
+    for line in lines:
+        if has_redundant_parentheses(line):
+            line = re.sub(pattern, simplify, line)
+        simplified_lines.append(line)
+
+    return "\n".join(simplified_lines)
+
+
+def compose(*functions):
+    """Compose multiple functions left to right."""
+
+    def compose_two(f, g):
+        return lambda x: g(f(x))
+
+    return reduce(compose_two, functions, lambda x: x)
 
 
 def normalize_qasm_gate_params(qasm: str) -> str:
-    """Normalize the parameters of the gates in the QASM string."""
-    qasm = convert_qasm_pi_to_decimal(qasm)
-    qasm = simplify_parentheses_in_qasm(qasm)
-    return qasm
+    """Normalize the parameters of the gates in the QASM string using function composition."""
+    transform_qasm = compose(
+        convert_qasm_pi_to_decimal, simplify_arithmetic_expressions, simplify_parentheses_in_qasm
+    )
+    return transform_qasm(qasm)
