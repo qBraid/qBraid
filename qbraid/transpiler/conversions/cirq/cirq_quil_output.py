@@ -262,7 +262,7 @@ def _swappow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
     )
 
 
-def _twoqubitdiagonal_gate(op: cirq.Operation, formatter: QuilFormatter) -> Optional[str]:
+def _twoqubitdiagonal_gate(op: cirq.Operation, formatter: QuilFormatter) -> Optional[str]: # pylint: disable=inconsistent-return-statements
     gate = cast(cirq.TwoQubitDiagonalGate, op.gate)
     diag_angles_radians = np.asarray(gate._diag_angles_radians)
     if np.count_nonzero(diag_angles_radians) != 1:
