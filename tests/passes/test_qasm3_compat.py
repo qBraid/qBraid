@@ -12,9 +12,12 @@
 Unit tests for QASM preprocessing functions
 
 """
+import re
+
 import pytest
 
 from qbraid.passes.qasm3.compat import (
+    _evaluate_expression,
     add_stdgates_include,
     has_redundant_parentheses,
     insert_gate_def,
@@ -231,3 +234,11 @@ ry(-0.39269908169872414) q[1];
 def test_has_redundant_parentheses(qasm_input, expected_result):
     """Test checking for redundant parentheses in QASM string."""
     assert has_redundant_parentheses(qasm_input) == expected_result
+
+
+def test_evaluate_expression_error():
+    """Test simplifying arithmetic expression with error in qasm string"""
+    qasm_str = "gate str(gate_name)(a, b) q {U(1*) q;}"
+    match = re.search(r"\(([0-9+\-*/. ]+)\)", qasm_str)
+
+    assert _evaluate_expression(match) == "(1*)"

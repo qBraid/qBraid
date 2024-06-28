@@ -175,3 +175,11 @@ def test_duplicate_basis_gates_removed(valid_program_spec):
         program_spec=valid_program_spec,
     )
     assert profile["basis_gates"] == {"x", "y", "z"}
+
+
+def test_validate_device_invalid():
+    """Test the validate methods of TargetProfile."""
+    with pytest.raises(TypeError):
+        TargetProfile(device_id="device123", device_type=1)
+    with pytest.raises(TypeError):
+        TargetProfile(device_id="device123", device_type="SIMULATOR", action_type=1)

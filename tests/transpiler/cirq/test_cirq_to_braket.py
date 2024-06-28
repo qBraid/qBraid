@@ -17,9 +17,12 @@
 Unit tests for converting Cirq circuits to Braket circuits
 
 """
+from unittest.mock import patch
+
 import cirq
 import numpy as np
 import pytest
+from braket.circuits import Gate, Instruction, QubitSet
 from braket.circuits import noises as braket_noise_gate
 from cirq import Circuit, LineQubit, ops, testing
 from cirq_ionq.ionq_native_gates import GPI2Gate, GPIGate, MSGate
@@ -27,6 +30,12 @@ from cirq_ionq.ionq_native_gates import GPI2Gate, GPIGate, MSGate
 from qbraid.interface import circuits_allclose
 from qbraid.interface.random import random_unitary_matrix
 from qbraid.transpiler.conversions.cirq import cirq_to_braket
+from qbraid.transpiler.conversions.cirq.braket_custom import C
+from qbraid.transpiler.conversions.cirq.cirq_to_braket import (
+    _to_one_qubit_braket_instruction,
+    _to_two_qubit_braket_instruction,
+)
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 
 def alpha_pump(sys, env):
@@ -334,3 +343,47 @@ def test_ionq_gates():
     cirq_circuit = cirq.Circuit([gpi, gpi2, ms])
     braket_circuit = cirq_to_braket(cirq_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit)
+
+
+def test_custom_controlled_three_qubit_gate():
+    """Test custom controlled three qubit gate"""
+    q0, q1, q2 = cirq.LineQubit.range(3)
+    cirq_circuit = cirq.Circuit(ops.ControlledGate(ops.CZ).on(q0, q1, q2))
+    braket_circuit = cirq_to_braket(cirq_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit)
+
+
+def test_three_qubit_matrix_gate():
+    """Test three qubit matrix gate"""
+    q0, q1, q2 = cirq.LineQubit.range(3)
+    matrix = np.eye(8)
+    cirq_circuit = cirq.Circuit(ops.MatrixGate(matrix).on(q0, q1, q2))
+    braket_circuit = cirq_to_braket(cirq_circuit)
+    assert circuits_allclose(braket_circuit, cirq_circuit)
+
+
+def test_three_qubit_error():
+    """Test error for three qubit gate"""
+    q0, q1, q2 = cirq.LineQubit.range(3)
+    matrix = np.eye(8)
+    cirq_circuit = cirq.Circuit(ops.MatrixGate(matrix).on(q0, q1, q2))
+
+    with pytest.raises(CircuitConversionError):
+        with patch("cirq.protocols.unitary", side_effect=TypeError):
+            cirq_to_braket(cirq_circuit)
+
+
+def test_invalid_gate_instruction():
+    """Test error for invalid gate instruction"""
+    with pytest.raises(ValueError):
+        _to_one_qubit_braket_instruction(1, 1)
+
+    with pytest.raises(ValueError):
+        _to_two_qubit_braket_instruction(1, [0, 1])
+
+
+def test_braket_custom_gate():
+    """Test custom gate"""
+    custom_gate = C(sub_gate=Gate(1, "a"), targets=QubitSet([0, 1]))
+    instr = custom_gate.c(QubitSet([0, 1]), sub_gate=Gate(1, "a"))
+    assert isinstance(instr, Instruction)

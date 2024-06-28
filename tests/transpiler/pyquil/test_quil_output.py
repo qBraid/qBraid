@@ -29,9 +29,11 @@ import pytest
 from cirq.ops.pauli_interaction_gate import PauliInteractionGate
 
 from qbraid.transpiler.conversions.cirq.cirq_quil_output import (
+    QuilFormatter,
     QuilOneQubitGate,
     QuilOutput,
     QuilTwoQubitGate,
+    _twoqubitdiagonal_gate,
     exponent_to_pi_string,
 )
 
@@ -504,3 +506,14 @@ def test_unconveritble_op():
 )
 def test_exponent_to_pi_string(input_exp, expected):
     assert exponent_to_pi_string(input_exp) == expected
+
+
+def test_two_qubit_diagonal_gate_none():
+    """ "Test that _twoqubitdiagonal_gate returns None for non-diagonal gates."""
+    (q0, q1) = _make_qubits(2)
+    gate = cirq.TwoQubitDiagonalGate(np.array([0, 0, 0, 0]))
+    formatter = QuilFormatter({q0: "q0", q1: "q1"}, {})
+    circuit = cirq.Circuit()
+    circuit.append(gate.on(q0, q1))
+    instr = next(circuit.all_operations())
+    assert _twoqubitdiagonal_gate(instr, formatter) is None

@@ -53,3 +53,15 @@ def test_raise_program_type_error():
     """Test raising ProgramTypeError"""
     with pytest.raises(ProgramTypeError):
         QiskitCircuit("OPENQASM 2.0;qreg q[2];h q[0];cx q[0],q[1];")
+
+
+def test_circuit_properties():
+    """Test properties of QiskitCircuit"""
+    circuit = QuantumCircuit(2)
+    circuit.h(0)
+    circuit.cx(0, 1)
+    qprogram = QiskitCircuit(circuit)
+    assert len(qprogram.qubits) == 2
+    assert qprogram.num_qubits == 2
+    assert qprogram.num_clbits == 0
+    assert qprogram.depth == 2
