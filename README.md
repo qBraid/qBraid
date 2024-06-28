@@ -71,9 +71,9 @@ The framework encourages community contributions and extensions, supporting an e
 For the best experience, install the qBraid-SDK environment on
 [lab.qbraid.com](https://lab.qbraid.com). Login (or
 [create an account](https://account.qbraid.com)) and follow the steps to
-[install an environment](https://docs.qbraid.com/projects/lab/en/latest/lab/environments.html#install-environment).
+[install an environment](https://docs.qbraid.com/lab/user-guide/environments#install-environment).
 
-Using the SDK on [qBraid Lab](https://docs.qbraid.com/projects/lab/en/latest/lab/overview.html) means direct, pre-configured access to QPUs from IonQ, Oxford Quantum Circuits, QuEra, Rigetti, and IQM, as well as on-demand simulators from AWS, all with no additional access keys or API tokens required. See [qBraid Quantum Jobs](https://docs.qbraid.com/projects/lab/en/latest/lab/quantum_jobs.html) for more.
+Using the SDK on [qBraid Lab](https://docs.qbraid.com/lab/user-guide/overview) means direct, pre-configured access to QPUs from IonQ, Oxford Quantum Circuits, QuEra, Rigetti, and IQM, as well as on-demand simulators from AWS, all with no additional access keys or API tokens required. See [qBraid Quantum Jobs](https://docs.qbraid.com/lab/user-guide/quantum-jobs) for more.
 
 ### Local install
 
@@ -95,7 +95,8 @@ pip install .
 
 If using locally, follow linked instructions to configure your
 [qBraid](#local-account-setup),
-[AWS](https://github.com/aws/amazon-braket-sdk-python#boto3-and-setting-up-aws-credentials), [IBM](https://github.com/Qiskit/qiskit-ibm-runtime?tab=readme-ov-file#account-setup), and/or [IonQ](https://cloud.ionq.com/settings/keys) credentials.
+[AWS](https://github.com/aws/amazon-braket-sdk-python#boto3-and-setting-up-aws-credentials), [IBM](https://github.com/Qiskit/qiskit-ibm-runtime?tab=readme-ov-file#account-setup), [IonQ](https://cloud.ionq.com/settings/keys), and/or
+[OQC](https://docs.oqc.app/account_management.html#access-tokens) credentials.
 
 ### Check version
 
@@ -109,13 +110,12 @@ In [2]: qbraid.__version__
 
 ## Documentation & Tutorials
 
-qBraid documentation is available at
-[docs.qbraid.com](https://docs.qbraid.com/en/stable/).
+Browse the full suite of qBraid platform and software solutions at [docs.qbraid.com](https://docs.qbraid.com).
 
 See also:
 
-- [API Reference](https://docs.qbraid.com/en/stable/api/qbraid.html)
-- [User Guide](https://docs.qbraid.com/en/stable/sdk/overview.html)
+- [User Guide](https://docs.qbraid.com/sdk/user-guide/)
+- [API Reference](https://sdk.qbraid.com/en/latest/api/qbraid.html)
 - [Example Notebooks](https://github.com/qBraid/qbraid-lab-demo)
 
 ## Quickstart
