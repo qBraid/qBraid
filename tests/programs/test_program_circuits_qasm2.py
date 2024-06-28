@@ -12,6 +12,8 @@
 Unit tests for qbraid.programs.qasm2.OpenQasm2Program
 
 """
+from unittest.mock import patch
+
 import pytest
 
 from qbraid.programs.circuits.qasm2 import OpenQasm2Program
@@ -212,3 +214,18 @@ measure q[0] -> c[0];
 measure q[1] -> c[1];
 """
     assert OpenQasm2Program(qasm).num_clbits == 2
+
+
+def test_depth_no_measure_arguments():
+    """Test calculating depth of circuit with no measure arguments"""
+    qasm = """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[2];
+creg c0[1];
+creg c1[1];
+h q[0];
+h q[1];
+measure;
+"""
+    assert OpenQasm2Program(qasm).depth == 1

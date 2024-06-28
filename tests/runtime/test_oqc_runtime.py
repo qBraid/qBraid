@@ -25,6 +25,7 @@ try:
     from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
     from qbraid.runtime import DeviceType, TargetProfile
     from qbraid.runtime.enums import DeviceActionType, DeviceStatus, JobStatus
+    from qbraid.runtime.exceptions import ResourceNotFoundError
     from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCJobResult, OQCProvider
     from qbraid.transpiler import ConversionScheme
 
@@ -157,6 +158,8 @@ def test_oqc_provider_device(lucy_simulator_data):
         assert isinstance(test_device.status(), DeviceStatus)
         assert isinstance(test_device, OQCDevice)
         assert test_device.profile["device_id"] == DEVICE_ID
+        with pytest.raises(ResourceNotFoundError):
+            provider.get_device("fake_id")
 
 
 def test_build_runtime_profile(lucy_simulator_data):
