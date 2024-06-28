@@ -21,8 +21,8 @@ import openqasm3
 import pytest
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
-from qbraid.runtime import DeviceType
-from qbraid.runtime.enums import JobStatus
+from qbraid.runtime import DeviceType, TargetProfile
+from qbraid.runtime.enums import DeviceStatus, JobStatus
 from qbraid.runtime.ionq import IonQDevice, IonQJob, IonQJobResult, IonQProvider, IonQSession
 from qbraid.runtime.ionq.job import IonQJobError
 from qbraid.runtime.ionq.provider import SUPPORTED_GATES
@@ -141,6 +141,36 @@ def test_ionq_provider_get_device():
         assert test_device.profile["num_qubits"] == 11
         assert test_device.profile["program_spec"] == ProgramSpec(openqasm3.ast.Program)
         assert test_device.profile["basis_gates"] == set(SUPPORTED_GATES)
+
+
+def test_ionq_provider_device_unavailable():
+    """Test getting IonQ provider and different status devices."""
+
+    class MockSession:
+        """Mock session class."""
+        def get_device(self, device_id: str):
+            """Mock get_device method."""
+            res = DEVICE_DATA[0]
+            match device_id:
+                case "qpu.harmony":
+                    res["status"] = "unavailable"
+                case "qpu.aria-1":
+                    res["status"] = "offline"
+                case "qpu.aria-2":
+                    res["status"] = "available"
+            return res
+
+    unavailable_profile = TargetProfile("qpu.harmony", DeviceType.QPU)
+    unavailable_device = IonQDevice(unavailable_profile, MockSession())
+    assert unavailable_device.status() == DeviceStatus.UNAVAILABLE
+
+    offline_profile = TargetProfile("qpu.aria-1", DeviceType.QPU)
+    offline_device = IonQDevice(offline_profile, MockSession())
+    assert offline_device.status() == DeviceStatus.OFFLINE
+
+    available_profile = TargetProfile("qpu.aria-2", DeviceType.QPU)
+    available_device = IonQDevice(available_profile, MockSession())
+    assert available_device.status() == DeviceStatus.ONLINE
 
 
 def test_ionq_device_extract_gate_data():
