@@ -16,6 +16,7 @@ from unittest.mock import patch
 
 import pytest
 
+from qbraid.programs import QPROGRAM_REGISTRY
 from qbraid.programs.circuits.qasm2 import OpenQasm2Program
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.registry import unregister_program_type
@@ -228,4 +229,10 @@ h q[0];
 h q[1];
 measure;
 """
+
+    original_registry = QPROGRAM_REGISTRY.copy()
+
     assert OpenQasm2Program(qasm).depth == 1
+
+    QPROGRAM_REGISTRY.clear()
+    QPROGRAM_REGISTRY.update(original_registry)

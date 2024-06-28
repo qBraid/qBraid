@@ -397,6 +397,9 @@ def test_failed_circuit_conversion(mock_basic_device, mock_scheme):
     mock_basic_device._target_spec = None
     assert mock_basic_device.transpile(mock_input, fake_spec) == mock_input
 
+    unregister_program_type("alice")
+    unregister_program_type("charlie")
+
 
 def test_wrong_type_conversion(mock_basic_device):
     """Test raising exception when circuit conversion fails due to wrong type."""
