@@ -137,8 +137,8 @@ class TestAwsDevice:
 class MockTask:
     """Mock task class."""
 
-    def __init__(self, id):
-        self.id = id
+    def __init__(self, arg):
+        self.id = arg
 
 
 @pytest.fixture

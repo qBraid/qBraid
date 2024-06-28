@@ -12,8 +12,6 @@
 Unit tests for qbraid.programs.qasm2.OpenQasm2Program
 
 """
-from unittest.mock import patch
-
 import pytest
 
 from qbraid.programs import QPROGRAM_REGISTRY

@@ -20,6 +20,7 @@ from qbraid.runtime._display import display_jobs_from_data
 
 
 def test_empty_table():
+    """Test displaying an empty table."""
     data = {}
     with patch("builtins.print") as mock_print:
         display_jobs_from_data(data)
@@ -28,6 +29,7 @@ def test_empty_table():
 
 
 def test_nonempty_table():
+    """Test displaying a nonempty table."""
     data = [("1", "2", "3")]
     with patch("builtins.print") as mock_print:
         display_jobs_from_data(data)

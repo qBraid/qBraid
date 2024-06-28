@@ -148,6 +148,7 @@ def test_ionq_provider_device_unavailable():
 
     class MockSession:
         """Mock session class."""
+
         def get_device(self, device_id: str):
             """Mock get_device method."""
             res = DEVICE_DATA[0]
