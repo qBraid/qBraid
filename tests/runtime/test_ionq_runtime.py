@@ -24,6 +24,7 @@ from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
 from qbraid.runtime import DeviceType
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.ionq import IonQDevice, IonQJob, IonQJobResult, IonQProvider, IonQSession
+from qbraid.runtime.ionq.job import IonQJobError
 from qbraid.runtime.ionq.provider import SUPPORTED_GATES
 
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
@@ -275,3 +276,38 @@ def test_ionq_device_run_submit_job(mock_post, mock_get, circuit):
     res = job.result()
     assert isinstance(res, IonQJobResult)
     np.testing.assert_array_equal(res.measurements(), np.array([[0, 0], [0, 1]]))
+
+
+@pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
+@patch("qbraid_core.sessions.Session.get")
+@patch("qbraid_core.sessions.Session.post")
+def test_ionq_failed_job(mock_post, mock_get, circuit):
+    """Test running a fake job."""
+    GET_JOB_RESPONSE["status"] = "failed"
+    mock_get_response = Mock()
+    mock_get_response.json.side_effect = [
+        DEVICE_DATA,  # provider.get_device("simulator")
+        DEVICE_DATA,  # ionq_device.run(circuit, shots=2)
+        {"status": "failed"},  # job.status()
+        GET_JOB_RESPONSE,  # job.metadata()
+        GET_JOB_RESPONSE,  # job.result()
+        GET_JOB_RESULT_RESPONSE,  # job.result()
+    ]
+    mock_get.return_value = mock_get_response
+
+    # Setup mock for post
+    mock_post_response = Mock()
+    mock_post_response.json.return_value = POST_JOB_RESPONSE
+    mock_post.return_value = mock_post_response
+
+    provider = IonQProvider(api_key="fake_api_key")
+    ionq_device = provider.get_device("simulator")
+    job = ionq_device.run(circuit, shots=2)
+    assert isinstance(job, IonQJob)
+
+    job_status = job.status()
+    assert isinstance(job_status, JobStatus)
+    assert job_status == JobStatus.FAILED
+
+    with pytest.raises(IonQJobError):
+        job.result()

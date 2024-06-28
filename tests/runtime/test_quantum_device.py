@@ -438,6 +438,6 @@ def test_wrong_type_conversion(mock_basic_device):
     mock_input = MockTypeA(1)
     with pytest.raises(CircuitConversionError):
         mock_basic_device.transpile(mock_input, fake_spec)
-    
+
     unregister_program_type("alice")
     unregister_program_type("charlie")
