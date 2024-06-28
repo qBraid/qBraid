@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
-from qbraid.programs import ProgramSpec
+from qbraid.programs import ProgramSpec, unregister_program_type
 from qbraid.runtime import DeviceStatus, TargetProfile
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
@@ -435,3 +435,6 @@ def test_wrong_type_conversion(mock_basic_device):
     mock_input = MockTypeA(1)
     with pytest.raises(CircuitConversionError):
         mock_basic_device.transpile(mock_input, fake_spec)
+    
+    unregister_program_type("alice")
+    unregister_program_type("charlie")
