@@ -262,9 +262,7 @@ def _swappow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
     )
 
 
-def _twoqubitdiagonal_gate(  # pylint: disable=inconsistent-return-statements
-    op: cirq.Operation, formatter: QuilFormatter
-) -> Optional[str]:
+def _twoqubitdiagonal_gate(op: cirq.Operation, formatter: QuilFormatter) -> Optional[str]:
     gate = cast(cirq.TwoQubitDiagonalGate, op.gate)
     diag_angles_radians = np.asarray(gate._diag_angles_radians)
     if np.count_nonzero(diag_angles_radians) != 1:
@@ -290,7 +288,7 @@ def _twoqubitdiagonal_gate(  # pylint: disable=inconsistent-return-statements
             op.qubits[0],
             op.qubits[1],
         )
-    if diag_angles_radians[3] != 0:
+    else:
         return formatter.format(
             "CPHASE({0}) {1} {2}\n",
             exponent_to_pi_string(diag_angles_radians[3]),
