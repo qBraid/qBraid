@@ -7,7 +7,7 @@
   <a href="https://codecov.io/gh/qBraid/qBraid">
     <img src="https://codecov.io/gh/qBraid/qBraid/branch/main/graph/badge.svg?token=1UTM0XZB7A" alt="codecov"/>
   </a>
-  <a href="https://sdk.qbraid.com/en/latest/?badge=latest">
+  <a href="https://sdk.qbraid.com/en/latest/">
     <img src="https://readthedocs.com/projects/qbraid-qbraid/badge/?version=latest" alt="Documentation Status"/>
   </a>
   <a href="https://pypi.org/project/qbraid/">
