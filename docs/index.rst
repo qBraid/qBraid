@@ -36,9 +36,9 @@ The qBraid-SDK, and all of its dependencies, can also be installed using `pip <h
 Resources
 ----------
 
-- `User guide <https://docs.qbraid.com/sdk/user-guide>`_
-- `Example notebooks <https://github.com/qBraid/qbraid-lab-demo>`_
-- `API reference <https://sdk.qbraid.com/en/latest/api/qbraid.html>`_
+- `User Guide <https://docs.qbraid.com/sdk/user-guide>`_
+- `Example Notebooks <https://github.com/qBraid/qbraid-lab-demo>`_
+- `API Reference <https://sdk.qbraid.com/en/latest/api/qbraid.html>`_
 
 
 .. toctree::
