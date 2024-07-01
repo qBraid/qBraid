@@ -15,7 +15,7 @@ Unit tests for quantum jobs functions and data types
 import pytest
 
 from qbraid.runtime.enums import JobStatus
-from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
+from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError, ResourceNotFoundError
 from qbraid.runtime.native.job import QbraidJob
 
 status_data = [
@@ -98,3 +98,24 @@ def test_device_program_type_mismatch_error(program, expected_type, action_type)
         raise DeviceProgramTypeMismatchError(program, expected_type, action_type)
 
     assert str(exc_info.value) == expected_message
+
+
+class FakeDevice:
+    """Fake device class for testing."""
+
+    def __init__(self, name, client):
+        self.name = name
+        self.client = client
+
+
+def test_qbraid_job_device():
+    """Test setting and getting device."""
+    job = QbraidJob("test_job")
+    with pytest.raises(ResourceNotFoundError):
+        job.device
+
+    fake_device = FakeDevice("test_device", "test_client")
+
+    job2 = QbraidJob("test_job", device=fake_device)
+    assert job2.device == fake_device
+    assert job2.client == "test_client"
