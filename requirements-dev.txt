@@ -5,6 +5,7 @@ pennylane<0.37
 pyquil>=4.4,<4.11; python_version < "3.12"
 pytket>=1.26,<1.30
 qiskit>=0.44,<1.2
+azure-quantum>=2.0.0,<2.1.0
 
 # transpiler extras
 ply>=3.6
