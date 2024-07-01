@@ -21,9 +21,10 @@ import openqasm3
 import pytest
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
-from qbraid.runtime import DeviceType
-from qbraid.runtime.enums import JobStatus
+from qbraid.runtime import DeviceType, TargetProfile
+from qbraid.runtime.enums import DeviceStatus, JobStatus
 from qbraid.runtime.ionq import IonQDevice, IonQJob, IonQJobResult, IonQProvider, IonQSession
+from qbraid.runtime.ionq.job import IonQJobError
 from qbraid.runtime.ionq.provider import SUPPORTED_GATES
 
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
@@ -140,6 +141,37 @@ def test_ionq_provider_get_device():
         assert test_device.profile["num_qubits"] == 11
         assert test_device.profile["program_spec"] == ProgramSpec(openqasm3.ast.Program)
         assert test_device.profile["basis_gates"] == set(SUPPORTED_GATES)
+
+
+def test_ionq_provider_device_unavailable():
+    """Test getting IonQ provider and different status devices."""
+
+    class MockSession:
+        """Mock session class."""
+
+        def get_device(self, device_id: str):
+            """Mock get_device method."""
+            res = DEVICE_DATA[0]
+            match device_id:
+                case "qpu.harmony":
+                    res["status"] = "unavailable"
+                case "qpu.aria-1":
+                    res["status"] = "offline"
+                case "qpu.aria-2":
+                    res["status"] = "available"
+            return res
+
+    unavailable_profile = TargetProfile("qpu.harmony", DeviceType.QPU)
+    unavailable_device = IonQDevice(unavailable_profile, MockSession())
+    assert unavailable_device.status() == DeviceStatus.UNAVAILABLE
+
+    offline_profile = TargetProfile("qpu.aria-1", DeviceType.QPU)
+    offline_device = IonQDevice(offline_profile, MockSession())
+    assert offline_device.status() == DeviceStatus.OFFLINE
+
+    available_profile = TargetProfile("qpu.aria-2", DeviceType.QPU)
+    available_device = IonQDevice(available_profile, MockSession())
+    assert available_device.status() == DeviceStatus.ONLINE
 
 
 def test_ionq_device_extract_gate_data():
@@ -275,3 +307,38 @@ def test_ionq_device_run_submit_job(mock_post, mock_get, circuit):
     res = job.result()
     assert isinstance(res, IonQJobResult)
     np.testing.assert_array_equal(res.measurements(), np.array([[0, 0], [0, 1]]))
+
+
+@pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
+@patch("qbraid_core.sessions.Session.get")
+@patch("qbraid_core.sessions.Session.post")
+def test_ionq_failed_job(mock_post, mock_get, circuit):
+    """Test running a fake job."""
+    GET_JOB_RESPONSE["status"] = "failed"
+    mock_get_response = Mock()
+    mock_get_response.json.side_effect = [
+        DEVICE_DATA,  # provider.get_device("simulator")
+        DEVICE_DATA,  # ionq_device.run(circuit, shots=2)
+        {"status": "failed"},  # job.status()
+        GET_JOB_RESPONSE,  # job.metadata()
+        GET_JOB_RESPONSE,  # job.result()
+        GET_JOB_RESULT_RESPONSE,  # job.result()
+    ]
+    mock_get.return_value = mock_get_response
+
+    # Setup mock for post
+    mock_post_response = Mock()
+    mock_post_response.json.return_value = POST_JOB_RESPONSE
+    mock_post.return_value = mock_post_response
+
+    provider = IonQProvider(api_key="fake_api_key")
+    ionq_device = provider.get_device("simulator")
+    job = ionq_device.run(circuit, shots=2)
+    assert isinstance(job, IonQJob)
+
+    job_status = job.status()
+    assert isinstance(job_status, JobStatus)
+    assert job_status == JobStatus.FAILED
+
+    with pytest.raises(IonQJobError):
+        job.result()

@@ -134,6 +134,13 @@ class TestAwsDevice:
         return "us-east-1"
 
 
+class MockTask:
+    """Mock task class."""
+
+    def __init__(self, arg):
+        self.id = arg
+
+
 @pytest.fixture
 def mock_sv1():
     """Return a mock SV1 device."""
@@ -293,6 +300,18 @@ def test_device_run_circuit_too_many_qubits(mock_aws_device, sv1_profile):
             device.run(circuit)
 
 
+@patch("qbraid.runtime.braket.device.AwsDevice")
+def test_batch_run(mock_aws_device, sv1_profile):
+    """Test batch run method of BraketDevice."""
+    mock_aws_device.return_value = MagicMock()
+    mock_aws_device.return_value.__iter__.return_value = [MockTask("task1"), MockTask("task2")]
+    mock_aws_device.return_value.status = "ONLINE"
+    device = BraketDevice(sv1_profile)
+    circuits = [Circuit().h(0).cnot(0, 1), Circuit().h(0).cnot(0, 1)]
+    tasks = device.run(circuits, shots=10)
+    assert isinstance(tasks, list)
+
+
 @pytest.mark.parametrize(
     "available_time, expected",
     [
@@ -446,6 +465,8 @@ def test_job_load_completed(mock_aws_quantum_task):
     job = BraketQuantumTask(mock_job.id)
     assert job.metadata()["job_id"] == mock_job.id
     assert job.is_terminal_state()
+    res = job.result()
+    assert res.measurements() is not None
 
 
 @pytest.mark.parametrize("position,expected", [(10, 10), (">2000", 2000)])

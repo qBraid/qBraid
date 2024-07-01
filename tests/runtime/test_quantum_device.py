@@ -24,9 +24,10 @@ import numpy as np
 import pytest
 from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
+from qbraid.programs import ProgramSpec, unregister_program_type
 from qbraid.runtime import DeviceStatus, TargetProfile
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.exceptions import ResourceNotFoundError
+from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import (
     ExperimentResult,
     QbraidDevice,
@@ -34,7 +35,7 @@ from qbraid.runtime.native import (
     QbraidJobResult,
     QbraidProvider,
 )
-from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme
+from qbraid.transpiler import CircuitConversionError, Conversion, ConversionGraph, ConversionScheme
 
 DEVICE_DATA = {
     "numberQubits": 64,
@@ -260,6 +261,11 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert isinstance(job, QbraidJob)
     assert job.is_terminal_state()
 
+    JOB_DATA["qbraidJobId"] = "qbraid_qir_simulator-jovyan-qjob-1234567890"
+    batch_job = device.run([circuit], shots=shots)
+    assert isinstance(batch_job, list)
+    assert all(isinstance(job, QbraidJob) for job in batch_job)
+
     result = job.result()
     assert isinstance(result, QbraidJobResult)
     assert isinstance(result.result, ExperimentResult)
@@ -348,9 +354,13 @@ def test_device_queue_depth(mock_qbraid_device):
     assert mock_qbraid_device.queue_depth() == 0
 
 
-def test_device_status(mock_qbraid_device):
+def test_device_status(mock_qbraid_device, mock_profile, mock_client):
     """Test getting device status."""
     assert mock_qbraid_device.status() == DeviceStatus.ONLINE
+    DEVICE_DATA["status"] = None
+    with pytest.raises(QbraidRuntimeError):
+        device = QbraidDevice(profile=mock_profile, client=mock_client)
+        device.status()
 
 
 def test_try_extracting_info_exception_handling(caplog, mock_qbraid_device):
@@ -367,3 +377,76 @@ def test_try_extracting_info_exception_handling(caplog, mock_qbraid_device):
         "Error encountered: This is a test error. Field will be omitted in job metadata."
         in caplog.text
     )
+
+
+def test_device_metadata(mock_basic_device):
+    """Test getting device metadata."""
+    metadata = mock_basic_device.metadata()
+    assert metadata["device_id"] == "qbraid_qir_simulator"
+    assert metadata["device_type"] == "SIMULATOR"
+    assert metadata["num_qubits"] == 42
+
+
+def test_failed_circuit_conversion(mock_basic_device, mock_scheme):
+    """Test raising exception when circuit conversion fails."""
+
+    class FailMockTypeA:
+        """Mock type for testing."""
+
+    class FailMockTypeB:
+        """Mock type for testing."""
+
+    fake_spec = ProgramSpec(FailMockTypeA, alias="alice")
+    mock_basic_device._target_spec = ProgramSpec(FailMockTypeB, alias="charlie")
+    mock_basic_device._scheme = mock_scheme
+    mock_input = FailMockTypeA()
+    with pytest.raises(QbraidRuntimeError):
+        mock_basic_device.transpile(mock_input, fake_spec)
+
+    mock_basic_device._target_spec = None
+    assert mock_basic_device.transpile(mock_input, fake_spec) == mock_input
+
+    unregister_program_type("alice")
+    unregister_program_type("charlie")
+
+
+def test_wrong_type_conversion(mock_basic_device):
+    """Test raising exception when circuit conversion fails due to wrong type."""
+
+    class MockTypeA:
+        """Mock type for testing."""
+
+        def __init__(self, x):
+            self.x = x
+
+        def __add__(self, other):
+            return MockTypeA(self.x + other.x)
+
+        def __eq__(self, other):
+            return self.x == other.x
+
+    class MockTypeB:
+        """Mock type for testing."""
+
+        def __init__(self, x):
+            self.x = x
+
+        def __add__(self, other):
+            return MockTypeB(self.x + other.x)
+
+        def __eq__(self, other):
+            return self.x == other.x
+
+    conv1 = Conversion("alice", "charlie", lambda x: x + MockTypeA(1))
+    graph = ConversionGraph(conversions=[conv1])
+    scheme = ConversionScheme(conversion_graph=graph)
+
+    fake_spec = ProgramSpec(MockTypeA, alias="alice", overwrite=True)
+    mock_basic_device._target_spec = ProgramSpec(MockTypeB, alias="charlie", overwrite=True)
+    mock_basic_device._scheme = scheme
+    mock_input = MockTypeA(1)
+    with pytest.raises(CircuitConversionError):
+        mock_basic_device.transpile(mock_input, fake_spec)
+
+    unregister_program_type("alice")
+    unregister_program_type("charlie")

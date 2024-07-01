@@ -25,6 +25,7 @@ try:
     from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
     from qbraid.runtime import DeviceType, TargetProfile
     from qbraid.runtime.enums import DeviceActionType, DeviceStatus, JobStatus
+    from qbraid.runtime.exceptions import ResourceNotFoundError
     from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCJobResult, OQCProvider
     from qbraid.transpiler import ConversionScheme
 
@@ -73,9 +74,12 @@ def oqc_device(lucy_simulator_data):
             """Schedule tasks for the QPU."""
             return task
 
-        def get_task_status(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
+        def get_task_status(
+            self, task_id: str, qpu_id: str, **kwargs
+        ):  # pylint: disable=unused-argument
             """Get task status."""
-            return "COMPLETED"
+            success = kwargs.get("success", True)
+            return "COMPLETED" if success else "FAILED"
 
         def get_task_timings(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
             """Get task timings."""
@@ -103,14 +107,26 @@ def oqc_device(lucy_simulator_data):
                 "tag": None,
             }
 
-        def get_task_errors(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
+        def get_task_errors(
+            self, task_id: str, qpu_id: str, **kwargs
+        ):  # pylint: disable=unused-argument
             """Get task errors."""
-            return None
+            success = kwargs.get("success", True)
+            attribute_error = kwargs.get("attribute_error", False)
+
+            class MockError:
+                """Mock error class."""
+
+                def __init__(self, error_message):
+                    self.error_message = error_message
+
+            return None if success else (MockError("Error") if not attribute_error else "Error")
 
         def get_task_results(
             self, task_id: str, qpu_id: str, **kwargs
         ):  # pylint: disable=unused-argument
             """Get task results."""
+            none = kwargs.get("none", False)
 
             class Result:
                 """Result class."""
@@ -118,7 +134,7 @@ def oqc_device(lucy_simulator_data):
                 def __init__(self, counts):
                     self.result = counts
 
-            return Result(counts={"c": {"0": 1, "1": 1}})
+            return Result(counts={"c": {"0": 1, "1": 1}}) if not none else None
 
     class TestOQCDevice(OQCDevice):
         """Test class for OQC device."""
@@ -157,6 +173,25 @@ def test_oqc_provider_device(lucy_simulator_data):
         assert isinstance(test_device.status(), DeviceStatus)
         assert isinstance(test_device, OQCDevice)
         assert test_device.profile["device_id"] == DEVICE_ID
+        with pytest.raises(ResourceNotFoundError):
+            provider.get_device("fake_id")
+        assert isinstance(test_device.client, OQCClient)
+        lucy_simulator_data["active"] = False
+        unavailable_device = provider.get_device(DEVICE_ID)
+        assert unavailable_device.status() == DeviceStatus.OFFLINE
+        # lucy_simulator_data["id"] = "fake_id"
+        fake_profile = TargetProfile(
+            device_id="fake_id",
+            device_name="Fake Device",
+            device_type=DeviceType.SIMULATOR,
+            action_type=DeviceActionType.OPENQASM,
+            endpoint_url="https://uk.cloud.oqc.app/fake_id",
+            num_qubits=8,
+            program_spec=ProgramSpec(str, alias="qasm2"),
+        )
+        fake_device = OQCDevice(profile=fake_profile, client=provider.client)
+        with pytest.raises(ResourceNotFoundError):
+            fake_device.status()
 
 
 def test_build_runtime_profile(lucy_simulator_data):
@@ -186,6 +221,14 @@ def test_run_fake_job(circuit, oqc_device):
     res = job.result()
     assert isinstance(res, OQCJobResult)
     assert np.array_equal(res.measurements(), np.array([[0], [1]]))
+
+    with pytest.raises(ResourceNotFoundError):
+        job.result(none=True)
+
+    assert job.get_errors(success=False) == "Error"
+    assert job.result(success=False)._result.get("error_details", None) == "Error"
+
+    assert job.get_errors(success=False, attribute_error=True) is None
 
 
 def test_run_batch_fake_job(run_inputs, oqc_device):
