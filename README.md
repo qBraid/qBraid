@@ -66,14 +66,11 @@ The framework encourages community contributions and extensions, supporting an e
 
 ## Installation & Setup
 
-<img align="right" width="300" alt="qbraid-sdk-env" src="https://github.com/qBraid/qBraid/assets/46977852/c82d61b4-2518-4c7e-8f48-05106afa708e">
-
-For the best experience, install the qBraid-SDK environment on
-[lab.qbraid.com](https://lab.qbraid.com). Login (or
+For the best experience, install the qBraid-SDK environment on [lab.qbraid.com](https://lab.qbraid.com). Login (or
 [create an account](https://account.qbraid.com)) and follow the steps to
 [install an environment](https://docs.qbraid.com/lab/user-guide/environments#install-environment).
 
-Using the SDK on [qBraid Lab](https://docs.qbraid.com/lab/user-guide/overview) means direct, pre-configured access to QPUs from IonQ, Oxford Quantum Circuits, QuEra, Rigetti, and IQM, as well as on-demand simulators from AWS, all with no additional access keys or API tokens required. See [qBraid Quantum Jobs](https://docs.qbraid.com/lab/user-guide/quantum-jobs) for more.
+Using the SDK on [qBraid Lab](https://docs.qbraid.com/lab/user-guide/overview) means direct, pre-configured access to QPUs from IonQ, Oxford Quantum Circuits, QuEra, Rigetti, and IQM, as well as on-demand simulators from qBraid and AWS. See [qBraid Quantum Jobs](https://docs.qbraid.com/lab/user-guide/quantum-jobs) for more.
 
 ### Local install
 
@@ -93,10 +90,7 @@ pip install .
 
 > *Note:* The qBraid-SDK requires Python 3.9 or greater.
 
-If using locally, follow linked instructions to configure your
-[qBraid](#local-account-setup),
-[AWS](https://github.com/aws/amazon-braket-sdk-python#boto3-and-setting-up-aws-credentials), [IBM](https://github.com/Qiskit/qiskit-ibm-runtime?tab=readme-ov-file#account-setup), [IonQ](https://cloud.ionq.com/settings/keys), and/or
-[OQC](https://docs.oqc.app/account_management.html#access-tokens) credentials.
+To use [qBraid runtime](https://docs.qbraid.com/sdk/user-guide/runtime) locally, you must also install the necessary extras and configure your account credentials according to the device(s) that you are targeting. Follow the linked, provider-specific, instructions for the [QbraidProvider](https://docs.qbraid.com/sdk/user-guide/runtime_native), [BraketProvider](https://docs.qbraid.com/sdk/user-guide/runtime_braket), [QiskitRuntimeProvider](https://docs.qbraid.com/sdk/user-guide/runtime_ibm), [IonQProvider](https://docs.qbraid.com/sdk/user-guide/runtime_ionq), and [OQCProvider](https://docs.qbraid.com/sdk/user-guide/runtime_oqc), as applicable.
 
 ### Check version
 
@@ -124,19 +118,19 @@ See also:
 
 Construct a quantum program of any supported program type.
 
-Below, `QPROGRAM_REGISTRY` maps shorthand identifiers for supported quantum programs, each corresponding to a type in the typed `QPROGRAM` Union.
-For example, 'qiskit' maps to `qiskit.QuantumCircuit` in `QPROGRAM`. Notably, 'qasm2' and 'qasm3' both represent raw OpenQASM strings.
-This arrangement simplifies targeting and transpiling between different quantum programming frameworks.
+Below, `QPROGRAM_REGISTRY` maps shorthand identifiers for supported quantum programs, each corresponding to a type in the typed `QPROGRAM` Union. For example, 'qiskit' maps to `qiskit.QuantumCircuit` in `QPROGRAM`. Notably, 'qasm2' and 'qasm3' both represent raw OpenQASM strings. This arrangement simplifies targeting and transpiling between different quantum programming frameworks.
 
 ```python
 >>> from qbraid.programs import QPROGRAM_REGISTRY
 >>> QPROGRAM_REGISTRY
 {'cirq': cirq.circuits.circuit.Circuit,
  'qiskit': qiskit.circuit.quantumcircuit.QuantumCircuit,
+ 'pennylane': pennylane.tape.tape.QuantumTape,
  'pyquil': pyquil.quil.Program,
  'pytket': pytket._tket.circuit.Circuit,
  'braket': braket.circuits.circuit.Circuit,
  'openqasm3': openqasm3.ast.Program,
+ 'pyqir': pyqir.Module,
  'qasm2': str,
  'qasm3': str}
 ```
@@ -161,12 +155,13 @@ q_1: ┤ H ├────┤ √X ├────
 1: ───H───X^0.5────────
 ```
 
-Behind the scenes, the qBraid-SDK uses ``rustworkx`` to create a directional graph that maps all possible conversions between supported program types:
+Behind the scenes, the qBraid-SDK uses [rustworkx](https://www.rustworkx.org/) to create a
+directional graph that maps all possible conversions between supported program types:
 
 ```python
 from qbraid.transpiler import ConversionGraph
-from qbraid.visualization import plot_conversion_graph
 
+# Loads native conversions from QPROGRAM_REGISTRY
 graph = ConversionGraph()
 
 graph.plot()
@@ -174,17 +169,27 @@ graph.plot()
 
 <img align="middle" width="full" alt="conversion_graph" src="https://qbraid-static.s3.amazonaws.com/conversion_graph_extras.png">
 
-You can use the native conversions supported by qBraid, or define your own custom nodes and/or edges. For [example](https://github.com/qBraid/qbraid-qir?tab=readme-ov-file#add-qir-node-to-qbraid-conversion-graph):
+You can use the native conversions supported by qBraid, or define your own custom nodes and/or edges.
+For [example](https://docs.qbraid.com/sdk/user-guide/transpiler#conversion-graph):
 
 ```python
+from unittest.mock import Mock
+
+from qbraid.programs import register_program_type
 from qbraid.transpiler import Conversion
 
-example_func = lambda x: x # replace with your custom conversion function
-conversion = Conversion("qasm3", "stim", example_func)
+# replace with any program type
+register_program_type(Mock, alias="mock")
+
+# replace with your custom conversion function
+example_qasm3_to_mock_func = lambda x: x
+
+conversion = Conversion("qasm3", "mock", example_qasm3_to_mock_func)
 
 graph.add_conversion(conversion)
 
-graph.plot(seed=42) # using a seed is helpful to ensure reproducibility
+# using a seed is helpful to ensure reproducibility
+graph.plot(seed=20, k=3, legend=True)
 ```
 
 ### QbraidProvider
@@ -210,52 +215,13 @@ print(results[0].measurement_counts())
 # {'00': 483, '01': 14, '10': 486, '11': 17}
 ```
 
-## Local account setup
-
-<img align="right" width="300" alt="api_key" src="https://qbraid-static.s3.amazonaws.com/manage-account.png">
-
-To use the qBraid-SDK locally (outside of qBraid Lab), you must add your account
-credentials:
-
-1. Create a qBraid account or log in to your existing account by visiting
-   [account.qbraid.com](https://account.qbraid.com/)
-2. Copy your API Key token from the left side of
-    your [account page](https://account.qbraid.com/):
-
-### Save account to disk
-
-Once you have your API key from step 2 by, you can save it locally in a configuration file `~/.qbraid/qbraidrc`,
-where `~` corresponds to your home (`$HOME`) directory:
-
-| :warning: Account credentials are saved in plain text, so only do so if you are using a trusted device. |
-|:---------------------------|
-
-```python
-from qbraid.runtime import QbraidProvider
-
-provider = QbraidProvider(api_key='API_KEY')
-provider.save_config()
-```
-
-Once the account is saved on disk, you can instantiate the `QbraidProvider` without any arguments.
-
-### Load account from environment variables
-
-Alternatively, the qBraid-SDK can discover credentials from environment variables:
-
-```bash
-export QBRAID_API_KEY='QBRAID_API_KEY'
-```
-
 ## Launch on qBraid
 
-The "Launch on qBraid" button (below) can be added to any public GitHub
+The "Launch on qBraid" button (top) can be added to any public GitHub
 repository. Clicking on it automaically opens qBraid Lab, and performs a
 `git clone` of the project repo into your account's home directory. Copy the
 code below, and replace `YOUR-USERNAME` and `YOUR-REPOSITORY` with your GitHub
 info.
-
-[<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/qBraid/qBraid.git)
 
 Use the badge in your project's `README.md`:
 
@@ -278,9 +244,7 @@ Use the badge in your project's `README.rst`:
 - For feature requests and bug reports:
   [Submit an issue](https://github.com/qBraid/qBraid/issues)
 - For discussions, and specific questions about the qBraid-SDK [join our discord community](https://discord.gg/TPBU2sa8Et)
-- For questions that are more suited for a forum, post to
-  [Quantum Computing Stack Exchange](https://quantumcomputing.stackexchange.com/)
-  with the [`qbraid`](https://quantumcomputing.stackexchange.com/questions/tagged/qbraid) tag.
+- For questions that are more suited for a forum, post to [QCSE](https://quantumcomputing.stackexchange.com/) with the [`qbraid`](https://quantumcomputing.stackexchange.com/questions/tagged/qbraid) tag.
 
 ## License
 
