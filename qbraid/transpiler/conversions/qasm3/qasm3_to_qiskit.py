@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING
 from qbraid_core._import import LazyLoader
 
 from qbraid.passes.qasm3.compat import add_stdgates_include, insert_gate_def, replace_gate_name
+from qbraid.transpiler.annotations import weight
 
 qiskit_qasm3 = LazyLoader("qiskit_qasm3", globals(), "qiskit.qasm3")
 
@@ -50,6 +51,7 @@ def transform_notation(qasm3: str) -> str:
     return qasm3
 
 
+@weight(1)
 def qasm3_to_qiskit(qasm3: str) -> "qiskit_.QuantumCircuit":
     """Convert QASM 3.0 string to a Qiskit QuantumCircuit representation.
 

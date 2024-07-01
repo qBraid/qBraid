@@ -20,9 +20,9 @@ from braket.aws import AwsDevice
 from braket.device_schema import ExecutionDay
 
 
-def _current_utc_datime() -> datetime.datetime:
+def _current_utc_datetime() -> datetime.datetime:
     """Return the current UTC datetime."""
-    if not hasattr(datetime, "UTC"):
+    if not hasattr(datetime, "UTC"):  # pragma: no cover
         # backwards compatibility for Python < 3.11
         return datetime.datetime.utcnow()  # pylint: disable=no-member
     return datetime.datetime.now(datetime.timezone.utc)
@@ -68,7 +68,7 @@ def next_available_time(device: AwsDevice) -> tuple[bool, str, Optional[str]]:
 
     day = 0
 
-    current_datetime_utc = _current_utc_datime()
+    current_datetime_utc = _current_utc_datetime()
     for execution_window in device.properties.service.executionWindows:
         weekday = current_datetime_utc.weekday()
         current_time_utc = current_datetime_utc.time().replace(microsecond=0)

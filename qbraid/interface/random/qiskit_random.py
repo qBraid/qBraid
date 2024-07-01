@@ -39,4 +39,4 @@ def _qiskit_random(num_qubits: int, depth: int, **kwargs) -> QuantumCircuit:
     try:
         return random_circuit(num_qubits, depth, **kwargs)
     except CircuitError as err:
-        raise QbraidError("Could not create Qiskit random circuit") from err
+        raise QbraidError("Failed to create Qiskit random circuit") from err

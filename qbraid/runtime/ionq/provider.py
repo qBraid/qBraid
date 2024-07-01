@@ -18,11 +18,29 @@ import openqasm3
 from qbraid_core.sessions import Session
 
 from qbraid.programs.spec import ProgramSpec
-from qbraid.runtime.enums import DeviceType
+from qbraid.runtime.enums import DeviceActionType, DeviceType
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
 from .device import IonQDevice
+
+SUPPORTED_GATES = [
+    "x",
+    "y",
+    "z",
+    "rx",
+    "ry",
+    "rz",
+    "h",
+    "cx",
+    "s",
+    "sdg",
+    "t",
+    "tdg",
+    "sx",
+    "sxdg",
+    "swap",
+]
 
 
 class IonQSession(Session):
@@ -72,9 +90,11 @@ class IonQProvider(QuantumProvider):
         return TargetProfile(
             device_id=data.get("backend"),
             device_type=DeviceType.QPU,
+            action_type=DeviceActionType.OPENQASM,
             num_qubits=data.get("qubits"),
             program_spec=ProgramSpec(openqasm3.ast.Program),
             provider_name="IonQ",
+            basis_gates=SUPPORTED_GATES,
         )
 
     def get_device(self, device_id: str) -> dict[str, Any]:

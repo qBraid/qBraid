@@ -488,7 +488,7 @@ def test_transform_raises_for_mismatch(mock_aws_device, ahs_program):
     profile = TargetProfile(
         device_type=DeviceType.QPU,
         num_qubits=256,
-        program_spec=ProgramSpec(AnalogHamiltonianSimulation, alias="ahs"),
+        program_spec=ProgramSpec(AnalogHamiltonianSimulation, alias="braket_ahs"),
         provider_name="QuEra",
         device_id=AQUILA_ARN,
         action_type=DeviceActionType.OPENQASM,

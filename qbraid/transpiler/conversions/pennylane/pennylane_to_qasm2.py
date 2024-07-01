@@ -14,7 +14,10 @@ Module defining Pennylane OpenQASM conversions
 """
 from pennylane.tape import QuantumTape
 
+from qbraid.transpiler.annotations import weight
 
+
+@weight(1)
 def pennylane_to_qasm2(tape: QuantumTape) -> str:
     """Converts a PennyLane tape to OpenQASM 2.0
 

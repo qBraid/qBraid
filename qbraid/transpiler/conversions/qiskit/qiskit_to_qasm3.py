@@ -15,7 +15,10 @@ Module defining Qiskit OpenQASM conversions
 import qiskit
 from qiskit.qasm3 import dumps
 
+from qbraid.transpiler.annotations import weight
 
+
+@weight(1)
 def qiskit_to_qasm3(circuit: qiskit.QuantumCircuit) -> str:
     """Convert qiskit QuantumCircuit to QASM 3.0 string"""
     return dumps(circuit)

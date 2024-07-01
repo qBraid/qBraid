@@ -19,8 +19,9 @@ suite of methods and functionality for supported program types.
 Data Types
 -----------
 
-.. autodata:: QPROGRAM
-   :annotation: = Type alias defining all supported quantum circuit / program types
+.. data:: QPROGRAM_REGISTRY
+   :type: dict[str, Type[Any]]
+   :annotation: = Maps aliases of quantum program types to their respective Python type objects.
 
 Functions
 ----------
@@ -41,7 +42,6 @@ Classes
 
    ProgramSpec
    QuantumProgram
-   QbraidProgram
 
 Exceptions
 -----------
@@ -59,7 +59,7 @@ from ._import import NATIVE_REGISTRY
 from .alias_manager import get_program_type_alias, parse_qasm_type_alias
 from .exceptions import PackageValueError, ProgramTypeError, QasmError, TransformError
 from .loader import load_program
-from .program import QbraidProgram, QuantumProgram
+from .program import QuantumProgram
 from .registry import (
     QPROGRAM,
     QPROGRAM_ALIASES,
@@ -82,7 +82,6 @@ __all__ = [
     "QPROGRAM_REGISTRY",
     "QPROGRAM_TYPES",
     "QasmError",
-    "QbraidProgram",
     "QuantumProgram",
     "derive_program_type_alias",
     "get_program_type_alias",
@@ -92,7 +91,7 @@ __all__ = [
     "unregister_program_type",
 ]
 
-_lazy_mods = ["libs"]
+_lazy_mods = ["circuits", "ahs"]
 
 
 def __getattr__(name):

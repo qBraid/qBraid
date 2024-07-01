@@ -295,11 +295,13 @@ def get_circuit_height(qasm_str):
     num_qregs = 0
     num_cregs = 0
     for line in qasm_str.split("\n"):
-        if re.match(r"qreg q\[.*\]", line):
-            num_qregs = int(re.match(r"qreg q\[.*\]", line)[0][7:-1])
+        qreg_match = re.match(r"qreg (\w+)\[\d+\];", line)
+        if qreg_match:
+            num_qregs = int(re.search(r"\[(\d+)\]", line).group(1))
             continue
-        if re.match(r"creg q\[.*\]", line):
-            num_cregs = int(re.match(r"creg q\[.*\]", line)[0][7:-1])
+        creg_match = re.match(r"creg (\w+)\[\d+\];", line)
+        if creg_match:
+            num_cregs = int(re.search(r"\[(\d+)\]", line).group(1))
             continue
         if re.match(r"qubit\[.*\]", line):
             num_qregs = int(re.match(r"qubit\[.*\]", line)[0][6:-1])

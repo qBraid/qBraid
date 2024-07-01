@@ -13,7 +13,7 @@ Module for OQC job class.
 
 """
 import json
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any
 
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
@@ -68,10 +68,10 @@ class OQCJob(QuantumJob):
         """Cancel the task."""
         self._client.cancel_task(task_id=self.id, qpu_id=self._qpu_id)
 
-    def result(self) -> OQCJobResult:
+    def result(self, **kwargs) -> OQCJobResult:
         """Get the result of the task."""
         self.wait_for_final_state()
-        status = self.status()
+        status = self.status(**kwargs)
         timings = self.get_timings()
         success = status == JobStatus.COMPLETED
 
@@ -83,7 +83,9 @@ class OQCJob(QuantumJob):
         }
 
         if success:
-            qpu_task_result = self._client.get_task_results(task_id=self.id, qpu_id=self._qpu_id)
+            qpu_task_result = self._client.get_task_results(
+                task_id=self.id, qpu_id=self._qpu_id, **kwargs
+            )
 
             if not qpu_task_result:
                 raise ResourceNotFoundError("No result found for the task")
@@ -91,13 +93,13 @@ class OQCJob(QuantumJob):
             result_data["counts"] = qpu_task_result.result.get("c")
 
         else:
-            result_data["error_details"] = self.get_errors()
+            result_data["error_details"] = self.get_errors(**kwargs)
 
         return OQCJobResult(result_data)
 
-    def status(self) -> JobStatus:
+    def status(self, **kwargs) -> JobStatus:
         """Get the status of the task."""
-        task_status = self._client.get_task_status(task_id=self.id, qpu_id=self._qpu_id)
+        task_status = self._client.get_task_status(task_id=self.id, qpu_id=self._qpu_id, **kwargs)
 
         status_map = {
             "CREATED": JobStatus.INITIALIZING,
@@ -142,20 +144,22 @@ class OQCJob(QuantumJob):
             self._cache_metadata.update(provider_metadata)
         return self._cache_metadata
 
-    def metrics(self) -> dict[str, Any]:
+    def metrics(self, **kwargs) -> dict[str, Any]:
         """Get the metrics for the task."""
-        return self._client.get_task_metrics(task_id=self.id, qpu_id=self._qpu_id)
+        return self._client.get_task_metrics(task_id=self.id, qpu_id=self._qpu_id, **kwargs)
 
-    def get_timings(self) -> dict[str, Any]:
+    def get_timings(self, **kwargs) -> dict[str, Any]:
         """Get the timings for the task."""
-        return self._client.get_task_timings(task_id=self.id, qpu_id=self._qpu_id)
+        return self._client.get_task_timings(task_id=self.id, qpu_id=self._qpu_id, **kwargs)
 
-    def get_errors(self) -> "Optional[QPUTaskErrors]":
+    def get_errors(self, **kwargs):
         """Get the error message for the task."""
-        if self.status() != JobStatus.FAILED:
+        if self.status(**kwargs) != JobStatus.FAILED:
             return None
 
         try:
-            return self._client.get_task_errors(task_id=self.id, qpu_id=self._qpu_id).error_message
+            return self._client.get_task_errors(
+                task_id=self.id, qpu_id=self._qpu_id, **kwargs
+            ).error_message
         except AttributeError:
             return None

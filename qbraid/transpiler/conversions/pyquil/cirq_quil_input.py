@@ -51,7 +51,7 @@ from cirq.ops import (
     rz,
 )
 from pyquil import Program
-from pyquil.quilbase import Declare, DefGate
+from pyquil.quilbase import Declare
 from pyquil.quilbase import Gate as PyQuilGate
 from pyquil.quilbase import Measurement as PyQuilMeasurement
 from pyquil.quilbase import Pragma, Reset, ResetQubit
@@ -290,16 +290,8 @@ def circuit_from_quil(quil: str) -> Circuit:
         defined_gates[gate_name] = MatrixGate(matrix)
 
     for inst in instructions:
-        # Add DEFGATE-defined gates to defgates dict using MatrixGate.
-        if isinstance(inst, DefGate):
-            if inst.parameters:
-                raise UnsupportedQuilInstruction(
-                    "Parameterized DEFGATEs are currently unsupported."
-                )
-            defined_gates[inst.name] = MatrixGate(inst.matrix)
-
         # Pass when encountering a DECLARE.
-        elif isinstance(inst, Declare):
+        if isinstance(inst, Declare):
             pass
 
         # Convert pyQuil gates to Cirq operations.

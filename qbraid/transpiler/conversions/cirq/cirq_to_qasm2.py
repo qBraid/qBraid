@@ -18,6 +18,7 @@ import cirq
 from cirq import ops, value
 
 from qbraid._version import __version__ as qbraid_version
+from qbraid.transpiler.annotations import weight
 
 
 @value.value_equality
@@ -25,10 +26,6 @@ class ZPowGate(cirq.ZPowGate):
     """A single qubit gate for rotations around the
     Z axis of the Bloch sphere.
     """
-
-    def num_qubits(self) -> int:
-        """The number of qubits this gate acts on."""
-        return 1
 
     def _qasm_(self, args: "cirq.QasmArgs", qubits: tuple["cirq.Qid", ...]) -> Optional[str]:
         args.validate_version("2.0")
@@ -88,6 +85,7 @@ def _to_qasm_output(
     )
 
 
+@weight(1)
 def cirq_to_qasm2(
     circuit: cirq.Circuit,
     header: Optional[str] = None,

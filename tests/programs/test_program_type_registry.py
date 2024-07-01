@@ -19,12 +19,16 @@ import unittest.mock
 
 import pytest
 
+from qbraid.exceptions import QbraidError
+from qbraid.interface import random_circuit
 from qbraid.programs import (
     QPROGRAM_ALIASES,
     QPROGRAM_REGISTRY,
     QPROGRAM_TYPES,
     ProgramSpec,
+    derive_program_type_alias,
     get_program_type_alias,
+    load_program,
     register_program_type,
     unregister_program_type,
 )
@@ -90,6 +94,15 @@ def test_error_on_duplicate_type_different_alias():
     finally:
         unregister_program_type("custom_str", raise_error=False)
         unregister_program_type("another_str", raise_error=False)
+
+
+def test_error_on_duplicate_type():
+    """Test error when trying to register a type that is already registered"""
+    register_program_type(int, "test_type_0")
+    with pytest.raises(ValueError):
+        register_program_type(int, "test_type_1")
+
+    unregister_program_type("test_type_0", raise_error=False)
 
 
 def test_re_registration_same_alias_type():
@@ -191,3 +204,38 @@ def test_unregister_program_type_non_unique():
     assert alias not in QPROGRAM_REGISTRY
     assert alias not in QPROGRAM_ALIASES
     assert str in QPROGRAM_TYPES
+
+
+def test_program_spec_str_rep():
+    """Test string representation of ProgramSpec"""
+    spec = ProgramSpec(str, alias="qasm2")
+    assert str(spec) == "ProgramSpec for qasm2 str type."
+
+
+def test_program_spec_equality():
+    """Test equality of ProgramSpec instances"""
+    spec1 = ProgramSpec(str, alias="qasm2")
+    spec2 = {}
+    assert spec1 != spec2
+
+
+class FakeType:
+    """Fake type for testing automatic alias registration"""
+
+    def __module__(self):
+        return None
+
+
+def test_error_on_automatic_alias():
+    """Test error when trying to register a program type with an automatic alias"""
+    with pytest.raises(ValueError):
+        derive_program_type_alias(FakeType)
+
+
+def test_load_entrypoint_not_found():
+    """Test error when trying to load a program type that is not found"""
+    with unittest.mock.patch("importlib.metadata.entry_points") as mock_entry_points:
+        mock_entry_points.return_value.select.return_value = []
+        with pytest.raises(QbraidError):
+            program = random_circuit("qiskit")
+            load_program(program)

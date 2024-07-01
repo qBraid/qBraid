@@ -42,4 +42,4 @@ def _cirq_random(num_qubits: int, depth: int, **kwargs) -> Circuit:
     try:
         return random_circuit(num_qubits, n_moments=depth, **kwargs)
     except ValueError as err:
-        raise QbraidError("Could not create Cirq random circuit") from err
+        raise QbraidError("Failed to create Cirq random circuit") from err

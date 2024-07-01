@@ -21,12 +21,12 @@ from copy import deepcopy
 
 import cirq
 
-import qbraid.programs.libs.cirq
+import qbraid.programs.circuits.cirq
 
 
 def _rev_qubits(circuit: cirq.Circuit) -> cirq.Circuit:
     """Reverses the qubit order of a circuit."""
-    program = qbraid.programs.libs.cirq.CirqCircuit(circuit)
+    program = qbraid.programs.circuits.cirq.CirqCircuit(circuit)
     program.reverse_qubit_order()
     return program.program
 

@@ -18,7 +18,6 @@ from typing import Callable, Optional
 
 import rustworkx as rx
 
-from .conversions import conversion_functions
 from .edge import Conversion
 from .exceptions import ConversionPathNotFoundError
 
@@ -60,6 +59,7 @@ class ConversionGraph(rx.PyDiGraph):
             list[Conversion]: List of default conversion edges.
         """
         transpiler = import_module("qbraid.transpiler.conversions")
+        conversion_functions = getattr(transpiler, "conversion_functions", [])
         return [
             Conversion(*conversion.split("_to_"), getattr(transpiler, conversion))
             for conversion in conversion_functions
@@ -82,7 +82,7 @@ class ConversionGraph(rx.PyDiGraph):
             self.add_edge(
                 self._node_alias_id_map[edge.source],
                 self._node_alias_id_map[edge.target],
-                {"native": edge.native, "func": edge.convert},
+                {"native": edge.native, "func": edge.convert, "weight": edge.weight},
             )
 
     def has_node(self, node: str) -> bool:
@@ -160,7 +160,7 @@ class ConversionGraph(rx.PyDiGraph):
         self.add_edge(
             self._node_alias_id_map[source],
             self._node_alias_id_map[target],
-            {"native": edge.native, "func": edge.convert},
+            {"native": edge.native, "func": edge.convert, "weight": edge.weight},
         )
 
     def remove_conversion(self, source: str, target: str) -> None:
@@ -192,9 +192,11 @@ class ConversionGraph(rx.PyDiGraph):
             ValueError: If no path is found between source and target.
         """
         path = rx.dijkstra_shortest_paths(
-            self, self._node_alias_id_map[source], target=self._node_alias_id_map[target]
+            self,
+            self._node_alias_id_map[source],
+            target=self._node_alias_id_map[target],
+            weight_fn=lambda edge: edge["weight"],
         )
-        # rx.dijkstra_shortest_paths returns an empty mapping if no path is found
         if len(path) == 0:
             raise ConversionPathNotFoundError(source, target)
         return [
@@ -246,8 +248,15 @@ class ConversionGraph(rx.PyDiGraph):
             bool: True if the conversion is supported, False otherwise.
         """
         if source == target:
-            return True  # nx.has_path returns True, but rx.has_path returns False
-        return rx.has_path(self, self._node_alias_id_map[source], self._node_alias_id_map[target])
+            return True
+
+        source_node = self._node_alias_id_map.get(source)
+        target_node = self._node_alias_id_map.get(target)
+
+        if source_node is None or target_node is None:
+            return False
+
+        return rx.has_path(self, source_node, target_node)
 
     def shortest_path(self, source: str, target: str) -> str:
         """

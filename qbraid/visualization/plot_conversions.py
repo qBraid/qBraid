@@ -11,6 +11,7 @@
 Module for plotting qBraid transpiler quantum program conversion graphs.
 
 """
+import math
 from typing import TYPE_CHECKING, Optional
 
 import rustworkx as rx
@@ -35,6 +36,8 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     show: bool = True,
     save_path: Optional[str] = None,
     colors: Optional[dict[str, str]] = None,
+    edge_labels: Optional[bool] = False,
+    **kwargs,
 ) -> None:
     """
     Plot the conversion graph using matplotlib. The graph is displayed using node
@@ -45,8 +48,8 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         title (Optional[str]): Title of the plot. Defaults to
                                'qBraid Quantum Program Conversion Graph'.
         legend (bool): If True, display a legend on the graph. Defaults to False.
-        seed (Optional[int]): Seed for the node layout algorithm. Useful for consistent positioning.
-                              Defaults to None.
+        seed (Optional[int]): Seed for the node layout algorithm. Useful for consistent
+                              positioning. Defaults to None.
         node_size (int): Size of the nodes. Defaults to 1200.
         min_target_margin (int): Minimum target margin for edges. Defaults to 18.
         show (bool): If True, display the figure. Defaults to True.
@@ -54,7 +57,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
                                    Defaults to None.
         colors (Optional[dict[str, str]]): Dictionary for node and edge colors. Expected keys are
             'qbraid_node', 'external_node', 'qbraid_edge', 'external_edge'. Defaults to None.
-
+        edge_labels (Optional[bool]): If True, display edge weights as labels. Defaults to False.
     Returns:
         None
     """
@@ -94,7 +97,11 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         for edge in conversions_ordered
     ]
 
-    pos = rx.spring_layout(graph, seed=seed)  # good seeds: 123, 134
+    k = kwargs.pop("k", max(1 / math.sqrt(len(graph.nodes())), 3))
+    pos = rx.spring_layout(graph, seed=seed, k=k, **kwargs)  # good seeds: 123, 134
+    kwargs = {}
+    if edge_labels:
+        kwargs["edge_labels"] = lambda edge: round(edge["weight"], 2)
     mpl_draw(
         graph,
         pos,
@@ -104,6 +111,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         with_labels=True,
         labels=str,
         min_target_margin=min_target_margin,
+        **kwargs,
     )
 
     if title:

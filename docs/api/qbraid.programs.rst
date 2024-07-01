@@ -12,4 +12,5 @@ Submodules
 .. autosummary::
    :toctree: ../stubs/
 
-   libs
+   ahs
+   circuits

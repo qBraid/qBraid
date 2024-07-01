@@ -13,6 +13,8 @@ Unit tests for the qbraid visualization plot counts functions
 
 """
 
+from unittest.mock import patch
+
 import pytest
 
 from qbraid.visualization.plot_counts import _counts_to_decimal, plot_distribution, plot_histogram
@@ -44,8 +46,24 @@ def test_counts_to_decimal_with_non_integer_values():
 @pytest.mark.parametrize("plot_function", PLOT_FNS)
 def test_plot_counts_single_dict(plot_function):
     """Test plotting histogram with single counts dict."""
-    counts_dict = {"00": 50, "01": 30, "10": 10, "11": 10}
-    plot_function(counts_dict, title="Single Dict Test", show_plot=False)
+    with (
+        patch("matplotlib.pyplot.show") as mock_show,
+        patch("matplotlib.pyplot.savefig") as mock_save,
+    ):
+        counts_dict = {"00": 50, "01": 30, "10": 10, "11": 10}
+        plot_function(
+            counts_dict,
+            legend="Dict",
+            colors="crimson",
+            x_label="States",
+            title="Single Dict Test",
+            save_path="fake/path",
+            show_plot=True,
+        )
+        mock_show.assert_called_once()
+        mock_save.assert_called_once()
+
+        plot_function(counts_dict)
 
 
 @pytest.mark.parametrize("plot_function", PLOT_FNS)

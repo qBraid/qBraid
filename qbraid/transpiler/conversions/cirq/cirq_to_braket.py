@@ -43,7 +43,8 @@ try:
 except ImportError:  # pragma: no cover
     cirq_ionq_ops = None
 
-import qbraid.programs.libs.cirq
+import qbraid.programs.circuits.cirq
+from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 try:
@@ -55,6 +56,7 @@ if TYPE_CHECKING:
     import braket.circuits
 
 
+@weight(0.85)
 def cirq_to_braket(circuit: Circuit) -> "braket.circuits.Circuit":
     """Returns a Braket circuit equivalent to the input Cirq circuit.
 
@@ -66,7 +68,7 @@ def cirq_to_braket(circuit: Circuit) -> "braket.circuits.Circuit":
     """
     cirq_qubits = list(circuit.all_qubits())
     cirq_int_qubits = [
-        qbraid.programs.libs.cirq.CirqCircuit._int_from_qubit(q) for q in cirq_qubits
+        qbraid.programs.circuits.cirq.CirqCircuit._int_from_qubit(q) for q in cirq_qubits
     ]
     braket_int_qubits = deepcopy(cirq_int_qubits)
     qubit_mapping = {q: braket_int_qubits[i] for i, q in enumerate(cirq_int_qubits)}
@@ -90,13 +92,13 @@ def _to_braket_instruction(
     """
     if isinstance(
         operation, (cirq_ops.MeasurementGate, cirq_ops.Operation)
-    ) and qbraid.programs.libs.cirq.CirqCircuit.is_measurement_gate(operation):
+    ) and qbraid.programs.circuits.cirq.CirqCircuit.is_measurement_gate(operation):
         return []
 
     nqubits = protocols.num_qubits(operation)
     cirq_qubits = operation.qubits
     cirq_qubits = [
-        qbraid.programs.libs.cirq.CirqCircuit._int_from_qubit(q) for q in operation.qubits
+        qbraid.programs.circuits.cirq.CirqCircuit._int_from_qubit(q) for q in operation.qubits
     ]
     qubits = [qubit_mapping[x] for x in cirq_qubits]
 
@@ -230,9 +232,14 @@ def _to_one_qubit_braket_instruction(
         if cirq_ionq_ops and isinstance(
             gate, (cirq_ionq_ops.GPIGate, cirq_ionq_ops.GPI2Gate, cirq_ionq_ops.MSGate)
         ):
-            raise NotImplementedError(
-                "Cirq to Amazon Braket IonQ gate conversions not yet supported."
-            )
+            if isinstance(gate, cirq_ionq_ops.GPIGate):
+                return [
+                    BKInstruction(braket_gates.GPi(angle=operation.gate.phi * 2 * np.pi), target)
+                ]
+            if isinstance(gate, cirq_ionq_ops.GPI2Gate):
+                return [
+                    BKInstruction(braket_gates.GPi2(angle=operation.gate.phi * 2 * np.pi), target)
+                ]
 
         matrix = protocols.unitary(gate)
         gate_name = "U" if isinstance(gate, cirq_ops.MatrixGate) else str(gate)
@@ -300,6 +307,17 @@ def _to_two_qubit_braket_instruction(
         return BKInstruction(braket_noise_gate.TwoQubitDepolarizing(operation.gate.p), [q1, q2])
     if isinstance(gate, cirq_ops.KrausChannel):
         return BKInstruction(braket_noise_gate.Kraus(matrices=operation.gate._kraus_ops), [q1, q2])
+    if isinstance(gate, cirq_ionq_ops.MSGate):
+        return [
+            BKInstruction(
+                braket_gates.MS(
+                    angle_1=operation.gate.phi0 * 2 * np.pi,
+                    angle_2=operation.gate.phi1 * 2 * np.pi,
+                    angle_3=operation.gate.theta * 2 * np.pi,
+                ),
+                [q1, q2],
+            )
+        ]
 
     # Fallback: arbitrary two-qubit unitary (KAK) decomposition
     unitary = protocols.unitary(operation)

@@ -288,14 +288,12 @@ def _twoqubitdiagonal_gate(op: cirq.Operation, formatter: QuilFormatter) -> Opti
             op.qubits[0],
             op.qubits[1],
         )
-    if diag_angles_radians[3] != 0:
-        return formatter.format(
-            "CPHASE({0}) {1} {2}\n",
-            exponent_to_pi_string(diag_angles_radians[3]),
-            op.qubits[0],
-            op.qubits[1],
-        )
-    return None
+    return formatter.format(
+        "CPHASE({0}) {1} {2}\n",
+        exponent_to_pi_string(diag_angles_radians[3]),
+        op.qubits[0],
+        op.qubits[1],
+    )
 
 
 def _wait_gate(*args, **kwargs) -> str:  # pylint: disable=unused-argument

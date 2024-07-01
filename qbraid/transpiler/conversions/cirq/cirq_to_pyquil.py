@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 from cirq import LineQubit, QubitOrder
 from qbraid_core._import import LazyLoader
 
+from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 try:
@@ -32,6 +33,7 @@ if TYPE_CHECKING:
     import pyquil as pyquil_
 
 
+@weight(0.74)
 def cirq_to_pyquil(circuit: "cirq.circuits.Circuit") -> "pyquil_.Program":
     """Returns a pyQuil Program equivalent to the input Cirq circuit.
 
