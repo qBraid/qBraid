@@ -87,8 +87,7 @@ class OQCDevice(QuantumDevice):
             if device["id"] == self.id:
                 if device["active"]:
                     return DeviceStatus.ONLINE
-                return DeviceStatus.OFFLINE
-        return DeviceStatus.UNAVAILABLE
+        return DeviceStatus.OFFLINE
 
     def transform(self, run_input: str) -> str:
         """Transforms the input program before submitting it to the device."""

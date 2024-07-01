@@ -175,6 +175,10 @@ def test_oqc_provider_device(lucy_simulator_data):
         assert test_device.profile["device_id"] == DEVICE_ID
         with pytest.raises(ResourceNotFoundError):
             provider.get_device("fake_id")
+        assert isinstance(test_device.client, OQCClient)
+        lucy_simulator_data["active"] = False
+        unavailable_device = provider.get_device(DEVICE_ID)
+        assert unavailable_device.status() == DeviceStatus.OFFLINE
 
 
 def test_build_runtime_profile(lucy_simulator_data):
