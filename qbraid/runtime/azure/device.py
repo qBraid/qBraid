@@ -49,5 +49,4 @@ class AzureQuantumDevice(QuantumDevice):
         # is_single_input = not isinstance(run_input, list)
         # run_input = [run_input] if is_single_input else run_input
 
-        job = self._session.create_job(run_input, name, provider, backend, qubits)
-        return job
+        return self._session.create_job(run_input, name, provider, backend, qubits)
