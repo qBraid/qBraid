@@ -51,7 +51,10 @@ class ProgramSpec:
         return f"ProgramSpec for {self.alias} {self._program_type.__name__} type."
 
     def __repr__(self) -> str:
-        return f"<ProgramSpec('{self.alias}', {self._program_type.__module__})>"
+        return (
+            f"<ProgramSpec('{self.alias}', "
+            f"{self._program_type.__module__}.{self._program_type.__name__})>"
+        )
 
     def __eq__(self, other: object) -> bool:
         """

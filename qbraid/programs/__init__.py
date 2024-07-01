@@ -19,8 +19,9 @@ suite of methods and functionality for supported program types.
 Data Types
 -----------
 
-.. autodata:: QPROGRAM
-   :annotation: = Type alias defining all supported quantum circuit / program types
+.. data:: QPROGRAM_REGISTRY
+   :type: dict[str, Type[Any]]
+   :annotation: = Maps aliases of quantum program types to their respective Python type objects.
 
 Functions
 ----------
