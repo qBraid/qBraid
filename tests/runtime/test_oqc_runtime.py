@@ -215,7 +215,7 @@ def test_run_fake_job(circuit, oqc_device):
     assert job.get_errors(success=False) == "Error"
     assert job.result(success=False)._result.get("error_details", None) == "Error"
 
-    assert job.get_errors(success=False, attribute_error=True) == None
+    assert job.get_errors(success=False, attribute_error=True) is None
 
 
 def test_run_batch_fake_job(run_inputs, oqc_device):
