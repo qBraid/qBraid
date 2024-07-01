@@ -12,23 +12,57 @@
 Module defining IQM provider class
 
 """
-from iqm.iqm_client import IQMClient
+import qiskit
+from iqm.qiskit_iqm import IQMProvider as ClientProvider
 
+from qbraid.programs.spec import ProgramSpec
+from qbraid.runtime.enums import DeviceActionType, DeviceType
+from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
 from .device import IQMDevice
 
+
 class IQMProvider(QuantumProvider):
     """IQM provider class."""
 
-    def __init__(self, url):
+    def __init__(self, token):
         super().__init__()
-        self.client = IQMClient(url)
+        self.token = token
+
+    def _build_profile(self, data):
+        """Build a profile for IQM device."""
+        backend_num_qubits = {"deneb": 6, "garnet": 20}
+        device_id = data
+        return TargetProfile(
+            device_id=device_id,
+            device_type=DeviceType.QPU,
+            action_type=DeviceActionType.OPENQASM,
+            num_qubits=backend_num_qubits.get(device_id),
+            program_spec=ProgramSpec(qiskit.QuantumCircuit, alias="qiskit"),
+            device_name=device_id,
+            endpoint_url="https://cocos.resonance.meetiqm.com/" + device_id,
+            provider_name="IQM",
+        )
 
     def get_devices(self, **kwargs):
         """Get all IQM devices."""
-        raise NotImplementedError
-    
+        # TODO: dyanmically retrieve the devices from the IQM provider
+        devices = ["deneb", "garnet"]
+        backends = [
+            ClientProvider(
+                url="https://cocos.resonance.meetiqm.com/" + device, token=self.token
+            ).get_backend()
+            for device in devices
+        ]
+
+        return [
+            IQMDevice(profile=device, backend=backend)
+            for (device, backend) in zip(devices, backends)
+        ]
+
     def get_device(self, device_id: str):
         """Get an IQM device."""
-        raise NotImplementedError   
+        return ClientProvider(
+            url="https://cocos.resonance.meetiqm.com/" + device_id, token=self.token
+        ).get_backend()

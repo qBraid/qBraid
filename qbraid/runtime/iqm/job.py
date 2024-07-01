@@ -18,11 +18,13 @@ from qbraid.runtime.job import QuantumJob
 
 from .result import IQMJobResult
 
+
 class IQMJob(QuantumJob):
     """IQM job class."""
 
-    def __init__(self, job_id, **kwargs):
+    def __init__(self, job_id, job, **kwargs):
         super().__init__(job_id, **kwargs)
+        self.job = job
 
     def status(self) -> JobStatus:
         """Return the status of the job."""
@@ -30,8 +32,8 @@ class IQMJob(QuantumJob):
 
     def result(self) -> IQMJobResult:
         """Return the result of the job."""
-        raise NotImplementedError
-    
+        return IQMJobResult(self.job.result())
+
     def cancel(self):
         """Cancel the job."""
         raise NotImplementedError

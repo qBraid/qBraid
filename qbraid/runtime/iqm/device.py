@@ -12,17 +12,21 @@
 Device class for IQM devices.
 
 """
+from iqm.qiskit_iqm import transpile_to_IQM
+from qiskit import execute
 
 from qbraid.runtime.device import QuantumDevice
 
 from .job import IQMJob
 
+
 class IQMDevice(QuantumDevice):
     """Device class for IQM devices."""
 
-    def __init__(self, profile):
+    def __init__(self, profile, backend):
         """Create an IQMDevice object."""
         super().__init__(profile)
+        self.backend = backend
 
     def status(self):
         """Return the status of the device."""
@@ -30,4 +34,6 @@ class IQMDevice(QuantumDevice):
 
     def submit(self, run_input):
         """Submit a run to the device."""
-        raise NotImplementedError
+        qobj = transpile_to_IQM(run_input)
+        job = execute(qobj, backend=self.backend)
+        return IQMJob(job_id=job.job_id(), job=job)
