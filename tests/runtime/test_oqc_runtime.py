@@ -74,9 +74,12 @@ def oqc_device(lucy_simulator_data):
             """Schedule tasks for the QPU."""
             return task
 
-        def get_task_status(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
+        def get_task_status(
+            self, task_id: str, qpu_id: str, **kwargs
+        ):  # pylint: disable=unused-argument
             """Get task status."""
-            return "COMPLETED"
+            success = kwargs.get("success", True)
+            return "COMPLETED" if success else "FAILED"
 
         def get_task_timings(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
             """Get task timings."""
@@ -104,14 +107,26 @@ def oqc_device(lucy_simulator_data):
                 "tag": None,
             }
 
-        def get_task_errors(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
+        def get_task_errors(
+            self, task_id: str, qpu_id: str, **kwargs
+        ):  # pylint: disable=unused-argument
             """Get task errors."""
-            return None
+            success = kwargs.get("success", True)
+            attribute_error = kwargs.get("attribute_error", False)
+
+            class MockError:
+                """Mock error class."""
+
+                def __init__(self, error_message):
+                    self.error_message = error_message
+
+            return None if success else (MockError("Error") if not attribute_error else "Error")
 
         def get_task_results(
             self, task_id: str, qpu_id: str, **kwargs
         ):  # pylint: disable=unused-argument
             """Get task results."""
+            none = kwargs.get("none", False)
 
             class Result:
                 """Result class."""
@@ -119,7 +134,7 @@ def oqc_device(lucy_simulator_data):
                 def __init__(self, counts):
                     self.result = counts
 
-            return Result(counts={"c": {"0": 1, "1": 1}})
+            return Result(counts={"c": {"0": 1, "1": 1}}) if not none else None
 
     class TestOQCDevice(OQCDevice):
         """Test class for OQC device."""
@@ -189,6 +204,14 @@ def test_run_fake_job(circuit, oqc_device):
     res = job.result()
     assert isinstance(res, OQCJobResult)
     assert np.array_equal(res.measurements(), np.array([[0], [1]]))
+
+    with pytest.raises(ResourceNotFoundError):
+        job.result(none=True)
+
+    assert job.get_errors(success=False) == "Error"
+    assert job.result(success=False)._result.get("error_details", None) == "Error"
+
+    assert job.get_errors(success=False, attribute_error=True) == None
 
 
 def test_run_batch_fake_job(run_inputs, oqc_device):
