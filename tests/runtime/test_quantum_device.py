@@ -261,6 +261,11 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert isinstance(job, QbraidJob)
     assert job.is_terminal_state()
 
+    JOB_DATA["qbraidJobId"] = "qbraid_qir_simulator-jovyan-qjob-1234567890"
+    batch_job = device.run([circuit], shots=shots)
+    assert isinstance(batch_job, list)
+    assert all(isinstance(job, QbraidJob) for job in batch_job)
+
     result = job.result()
     assert isinstance(result, QbraidJobResult)
     assert isinstance(result.result, ExperimentResult)
@@ -349,9 +354,13 @@ def test_device_queue_depth(mock_qbraid_device):
     assert mock_qbraid_device.queue_depth() == 0
 
 
-def test_device_status(mock_qbraid_device):
+def test_device_status(mock_qbraid_device, mock_profile, mock_client):
     """Test getting device status."""
     assert mock_qbraid_device.status() == DeviceStatus.ONLINE
+    DEVICE_DATA["status"] = None
+    with pytest.raises(QbraidRuntimeError):
+        device = QbraidDevice(profile=mock_profile, client=mock_client)
+        device.status()
 
 
 def test_try_extracting_info_exception_handling(caplog, mock_qbraid_device):
