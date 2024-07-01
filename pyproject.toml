@@ -42,7 +42,7 @@ Discord = "https://discord.gg/TPBU2sa8Et"
 
 [project.optional-dependencies]
 runtime = ["qbraid-qir>=0.2"]
-braket = ["amazon-braket-sdk>=1.80.1,<1.83.0", "pytket-braket>=0.30,<0.37"]
+braket = ["amazon-braket-sdk>=1.83.0,<1.84.0", "pytket-braket>=0.30,<0.37"]
 qiskit = ["qiskit>=0.44,<1.2", "qiskit-ibm-runtime>=0.18,<0.25"]
 cirq = ["cirq-core>=1.3,<1.5", "cirq-ionq>=1.3,<1.5", "ply>=3.6", "attrs>=21.3.0"]
 oqc = ["oqc-qcaas-client>=3.5,<4.0"]
