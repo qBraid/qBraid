@@ -179,6 +179,19 @@ def test_oqc_provider_device(lucy_simulator_data):
         lucy_simulator_data["active"] = False
         unavailable_device = provider.get_device(DEVICE_ID)
         assert unavailable_device.status() == DeviceStatus.OFFLINE
+        # lucy_simulator_data["id"] = "fake_id"
+        fake_profile = TargetProfile(
+            device_id="fake_id",
+            device_name="Fake Device",
+            device_type=DeviceType.SIMULATOR,
+            action_type=DeviceActionType.OPENQASM,
+            endpoint_url="https://uk.cloud.oqc.app/fake_id",
+            num_qubits=8,
+            program_spec=ProgramSpec(str, alias="qasm2"),
+        )
+        fake_device = OQCDevice(profile=fake_profile, client=provider.client)
+        with pytest.raises(ResourceNotFoundError):
+            fake_device.status()
 
 
 def test_build_runtime_profile(lucy_simulator_data):

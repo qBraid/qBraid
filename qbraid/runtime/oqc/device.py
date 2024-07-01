@@ -26,6 +26,7 @@ from scc.compiler.config import (
 from qbraid.passes.qasm2.compat import rename_qasm_registers
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.exceptions import ResourceNotFoundError
 
 from .job import OQCJob
 
@@ -87,7 +88,8 @@ class OQCDevice(QuantumDevice):
             if device["id"] == self.id:
                 if device["active"]:
                     return DeviceStatus.ONLINE
-        return DeviceStatus.OFFLINE
+                return DeviceStatus.OFFLINE
+        raise ResourceNotFoundError(f"Device {self.id} not found")
 
     def transform(self, run_input: str) -> str:
         """Transforms the input program before submitting it to the device."""
