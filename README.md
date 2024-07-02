@@ -29,15 +29,15 @@ By addressing the full scope of client-side software requirements necessary for 
 
 [<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/qBraid/qBraid.git)
 
+---
+
+![Runtime Diagram](https://qbraid-static.s3.amazonaws.com/qbraid-runtime.png)
+
 ## Resources
 
 - [User Guide](https://docs.qbraid.com/sdk/user-guide/)
 - [API Reference](https://sdk.qbraid.com/en/stable/api/qbraid.html)
 - [Example Notebooks](https://github.com/qBraid/qbraid-lab-demo)
-
----
-
-![Runtime Diagram](https://qbraid-static.s3.amazonaws.com/qbraid-runtime.png)
 
 ## Installation & Setup
 
@@ -69,12 +69,14 @@ To use [qBraid Runtime](https://docs.qbraid.com/sdk/user-guide/runtime) locally,
 
 ### Check version
 
-You can view the version of the qBraid-SDK you have installed within Python using the following:
+You can view the version of the qBraid-SDK you have installed and get detailed information about the installation within Python using the following commands:
 
 ```python
 In [1]: import qbraid
 
 In [2]: qbraid.__version__
+
+In [3]: qbraid.about()
 ```
 
 ### Transpiler
@@ -130,7 +132,7 @@ graph = ConversionGraph()
 graph.plot()
 ```
 
-<img align="middle" width="full" alt="conversion_graph" src="https://qbraid-static.s3.amazonaws.com/conversion_graph_extras.png">
+![ConversionGraph](https://qbraid-static.s3.amazonaws.com/conversion_graph_extras_legend.png)
 
 You can use the native conversions supported by qBraid, or define your own. For [example](https://docs.qbraid.com/sdk/user-guide/transpiler#conversion-graph):
 
@@ -156,7 +158,7 @@ graph.plot(seed=20, k=3, legend=True)
 
 ### QbraidProvider
 
-Run experiements using on-demand simulators provided by qBraid using the `qbraid.runtime.QbraidProvider`. You can get a Python list of device objects using:
+Run experiements using on-demand simulators provided by qBraid. Retrieve a list of available devices:
 
 ```python
 from qbraid.runtime import QbraidProvider
@@ -170,11 +172,37 @@ Or, instantiate a known device by ID and submit quantum jobs from any supported 
 ```python
 device = provider.get_device("qbraid_qir_simulator")
 jobs = device.run([qiskit_circuit, braket_circuit, cirq_circuit, qasm3_str], shots=1000)
-results = [job.result() for job in jobs]
 
-print(results[0].measurement_counts())
+results = [job.result() for job in jobs]
+batch_counts = [result.measurement_counts() for result in results]
+
+print(batch_counts[0])
 # {'00': 483, '01': 14, '10': 486, '11': 17}
 ```
+
+And visualize the results:
+
+```python
+from qbraid.visualization import plot_distribution, plot_histogram
+
+plot_distribution(batch_counts)
+
+plot_histogram(batch_counts)
+```
+
+## Get Involved
+
+[![Community](https://img.shields.io/badge/Community-DF0982)](https://github.com/qBraid/community)
+[![GitHub Issues](https://img.shields.io/badge/issue_tracking-github-blue?logo=github)](https://github.com/qBraid/qBraid/issues)
+[![Stack Exchange](https://img.shields.io/badge/StackExchange-qbraid-orange?logo=stackexchange)](https://quantumcomputing.stackexchange.com/questions/tagged/qbraid)
+[![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.gg/TPBU2sa8Et)
+
+- Interested in contributing code, or making a PR? See
+  [CONTRIBUTING.md](CONTRIBUTING.md)
+- For feature requests and bug reports:
+  [Submit an issue](https://github.com/qBraid/qBraid/issues)
+- For discussions, and specific questions about the qBraid-SDK [join our discord community](https://discord.gg/TPBU2sa8Et)
+- For questions that are more suited for a forum, post to [QCSE](https://quantumcomputing.stackexchange.com/) with the [`qbraid`](https://quantumcomputing.stackexchange.com/questions/tagged/qbraid) tag.
 
 ## Launch on qBraid
 
@@ -197,20 +225,6 @@ Use the badge in your project's `README.rst`:
     :target: https://account.qbraid.com?gitHubUrl=https://github.com/YOUR-USERNAME/YOUR-REPOSITORY.git
     :width: 150px
 ```
-
-## Get Involved
-
-[![Community](https://img.shields.io/badge/Community-DF0982)](https://github.com/qBraid/community)
-[![GitHub Issues](https://img.shields.io/badge/issue_tracking-github-blue?logo=github)](https://github.com/qBraid/qBraid/issues)
-[![Stack Exchange](https://img.shields.io/badge/StackExchange-qbraid-orange?logo=stackexchange)](https://quantumcomputing.stackexchange.com/questions/tagged/qbraid)
-[![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.gg/TPBU2sa8Et)
-
-- Interested in contributing code, or making a PR? See
-  [CONTRIBUTING.md](CONTRIBUTING.md)
-- For feature requests and bug reports:
-  [Submit an issue](https://github.com/qBraid/qBraid/issues)
-- For discussions, and specific questions about the qBraid-SDK [join our discord community](https://discord.gg/TPBU2sa8Et)
-- For questions that are more suited for a forum, post to [QCSE](https://quantumcomputing.stackexchange.com/) with the [`qbraid`](https://quantumcomputing.stackexchange.com/questions/tagged/qbraid) tag.
 
 ## License
 
