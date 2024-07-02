@@ -112,7 +112,7 @@ def test_qbraid_job_device():
     """Test setting and getting device."""
     job = QbraidJob("test_job")
     with pytest.raises(ResourceNotFoundError):
-        job.device # pylint: disable=pointless-statement
+        job.device  # pylint: disable=pointless-statement
 
     fake_device = FakeDevice("test_device", "test_client")
 
