@@ -532,3 +532,13 @@ def test_get_s3_default_bucket():
         mock_instance = mock_aws_session.return_value
         mock_instance.default_bucket.return_value = "default bucket"
         assert BraketProvider()._get_s3_default_bucket() == "default bucket"
+
+
+def test_get_quantum_task_cost():
+    """Test getting quantum task cost."""
+    task_mock = Mock()
+    task_mock.arn = "fake_arn"
+    task_mock.state.return_value = "COMPLETED"
+    job = BraketQuantumTask("task_arn", task_mock)
+    with patch("qbraid.runtime.braket.job.get_quantum_task_cost", return_value=0.1):
+        assert job.get_cost() == 0.1
