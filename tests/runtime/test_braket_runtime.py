@@ -516,3 +516,29 @@ def test_result_raw_counts():
     result = BraketGateModelJobResult(mock_result)
     expected_output = {"110": 10, "101": 5}
     assert result.raw_counts() == expected_output
+
+
+def test_get_default_region_error():
+    """Test getting default region when an exception is raised."""
+    with patch("qbraid.runtime.braket.provider.Session") as mock_boto_session:
+        mock_boto_session.side_effect = Exception
+        mock_boto_session.region_name.return_value = "not us-east-1"
+        assert BraketProvider()._get_default_region() == "us-east-1"
+
+
+def test_get_s3_default_bucket():
+    """Test getting default S3 bucket."""
+    with patch("qbraid.runtime.braket.provider.AwsSession") as mock_aws_session:
+        mock_instance = mock_aws_session.return_value
+        mock_instance.default_bucket.return_value = "default bucket"
+        assert BraketProvider()._get_s3_default_bucket() == "default bucket"
+
+
+def test_get_quantum_task_cost():
+    """Test getting quantum task cost."""
+    task_mock = Mock()
+    task_mock.arn = "fake_arn"
+    task_mock.state.return_value = "COMPLETED"
+    job = BraketQuantumTask("task_arn", task_mock)
+    with patch("qbraid.runtime.braket.job.get_quantum_task_cost", return_value=0.1):
+        assert job.get_cost() == 0.1

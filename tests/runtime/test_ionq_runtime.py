@@ -159,6 +159,8 @@ def test_ionq_provider_device_unavailable():
                     res["status"] = "offline"
                 case "qpu.aria-2":
                     res["status"] = "available"
+                case "fake_device":
+                    res["status"] = "fake_status"
             return res
 
     unavailable_profile = TargetProfile("qpu.harmony", DeviceType.QPU)
@@ -172,6 +174,11 @@ def test_ionq_provider_device_unavailable():
     available_profile = TargetProfile("qpu.aria-2", DeviceType.QPU)
     available_device = IonQDevice(available_profile, MockSession())
     assert available_device.status() == DeviceStatus.ONLINE
+
+    fake_profile = TargetProfile("fake_device", DeviceType.QPU)
+    fake_device = IonQDevice(fake_profile, MockSession())
+    with pytest.raises(ValueError):
+        fake_device.status()
 
 
 def test_ionq_device_extract_gate_data():

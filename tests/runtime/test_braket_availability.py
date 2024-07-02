@@ -16,7 +16,7 @@ Unit tests for Braket Availability
 """
 
 import datetime
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from braket.aws.aws_device import AwsDevice
 from braket.device_schema import ExecutionDay
@@ -107,3 +107,35 @@ def test_next_available_time_available():
     device = FakeAwsDevice(online=True, available=True)
     result = next_available_time(device)
     assert result == (True, "", None)
+
+
+def mock_execution_window(execution_day, start_hour, start_minute, end_hour, end_minute):
+    """Mock execution window."""
+    return Mock(
+        executionDay=execution_day,
+        windowStartHour=datetime.time(start_hour, start_minute),
+        windowEndHour=datetime.time(end_hour, end_minute),
+    )
+
+
+@patch(
+    "qbraid.runtime.braket.availability._current_utc_datetime",
+    return_value=datetime.datetime(2024, 7, 1, 15, 30, 0, tzinfo=datetime.timezone.utc),
+)
+def test_next_available_time_day_factor(mock_utc_datetime):  # pylint: disable=unused-argument
+    """Test next_available_time with day factor."""
+    execution_window = mock_execution_window(ExecutionDay.MONDAY, 16, 0, 17, 0)
+    device = Mock(status="ONLINE", is_available=False)
+    device.properties.service.executionWindows = [execution_window]
+
+    result = next_available_time(device)
+    assert result == (False, "00:30:00", "2024-07-01T16:00:00Z")
+
+
+def test_next_available_time_no_execution_window():  # pylint: disable=unused-argument
+    """Test next_available_time when there is no execution window."""
+    device = Mock(status="ONLINE", is_available=False)
+    device.properties.service.executionWindows = []
+
+    result = next_available_time(device)
+    assert result == (False, "", None)

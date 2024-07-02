@@ -132,7 +132,7 @@ graph = ConversionGraph()
 graph.plot()
 ```
 
-![ConversionGraph](https://qbraid-static.s3.amazonaws.com/conversion_graph_extras_legend.png)
+<img src="https://qbraid-static.s3.amazonaws.com/conversion_graph_extras_legend.png" style="width: 65%;">
 
 You can use the native conversions supported by qBraid, or define your own. For [example](https://docs.qbraid.com/sdk/user-guide/transpiler#conversion-graph):
 
