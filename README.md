@@ -132,7 +132,7 @@ from qbraid.transpiler import ConversionGraph
 # Loads native conversions from QPROGRAM_REGISTRY
 graph = ConversionGraph()
 
-graph.plot()
+graph.plot(legend=True)
 ```
 
 <img src="https://qbraid-static.s3.amazonaws.com/conversion_graph_extras_legend.png" style="width: 65%;">
