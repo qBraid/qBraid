@@ -19,6 +19,7 @@ import pytest
 
 from qbraid._import import _load_entrypoint
 from qbraid.exceptions import QbraidError
+from qbraid.programs._import import _dynamic_importer
 
 
 def test_load_entrypoint_success():
@@ -49,3 +50,24 @@ def test_load_entrypoint_raise_qbraid_error():
         with pytest.raises(QbraidError) as excinfo:
             _load_entrypoint(module, name)
         assert f"Failed to load entrypoint '{name}' from module '{module}'." in str(excinfo.value)
+
+
+def mock_get_class(name):
+    return type(name, (), {})
+
+
+def mock_assign_default_type_alias(imported, program_type):
+    return "mock_alias"
+
+
+def test_dynamic_importer_exception():
+    opt_modules = ["nonexistent.module"]
+
+    with patch("qbraid.programs._import.import_module", side_effect=Exception("Import error")):
+        with patch("qbraid.programs._import._get_class", side_effect=mock_get_class):
+            with patch(
+                "qbraid.programs._import._assign_default_type_alias",
+                side_effect=mock_assign_default_type_alias,
+            ):
+                imported = _dynamic_importer(opt_modules)
+                assert imported == {}
