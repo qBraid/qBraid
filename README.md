@@ -19,46 +19,21 @@
   <a href="https://www.gnu.org/licenses/gpl-3.0.html">
     <img src="https://img.shields.io/github/license/qBraid/qbraid.svg" alt="License"/>
   </a>
-  <a href="https://discord.gg/TPBU2sa8Et">
-    <img src="https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white" alt="Discord"/>
-  </a>
-  <!-- <a href="https://quantumcomputing.stackexchange.com/questions/tagged/qbraid">
-    <img src="https://img.shields.io/badge/StackExchange-Ask%20questions-blue?logo=stackexchange" alt="Stack Overflow"/>
-  </a> -->
 </p>
 
 The qBraid-SDK is a platform-agnostic quantum runtime framework designed for both quantum software and hardware providers.
 
-This Python-based tool streamlines the full lifecycle management of quantum jobs&mdash;from defining program specifications to job submission and through to the post-processing and visualization of results. Distinguishing itself through a streamlined and highly-configurable approach to cross-platform integration, the qBraid-SDK *does not assume a fixed target software framework*. Instead, it allows providers to dynamically register any desired run input program type as the target, depending on their specific needs. These program types are interconnected via a graph-based transpiler, where each program type is represented as a node and supported conversions as edges. The breadth, depth, and connectivity of this `ConversionGraph` can be customized by the provider.
+This Python-based tool streamlines the full lifecycle management of quantum jobs&mdash;from defining program specifications to job submission and through to the post-processing and visualization of results. Unlike existing runtime frameworks that focus their automation and abstractions on quantum components, qBraid adds an extra layer of abstractions that considers the ultimate IR needed to encode the quantum program and securely submit it to a remote API. Notably, the qBraid-SDK does not adhere to a fixed circuit-building library, or quantum program representation. Instead, it empowers providers to dynamically register any desired input program type as the target based on their specific needs. This flexibility is extended by the framework’s modular pipeline, which facilitates any number of additional program validations, transpilation, and compilation steps.
 
-The framework also facilitates the insertion of additional program validations, circuit transformations, and transpiler/compiler steps into its modular pipeline through a comprehensive `TargetProfile`. This profile encapsulates both device properties (such as number of qubits, maximum shots, native gate set) and the software requirements (`ProgramSpec`) needed to submit a job, vastly reducing the overhead and redundancy typically associated with cross-platform integrations in quantum computing.
+By addressing the full scope of client-side software requirements necessary for secure submission and management of quantum jobs, the qBraid-SDK vastly reduces the overhead and redundancy typically associated with cross-platform integrations and the development of pipelines for remote hardware access in quantum computing.
 
 [<img src="https://qbraid-static.s3.amazonaws.com/logos/Launch_on_qBraid_white.png" width="150">](https://account.qbraid.com?gitHubUrl=https://github.com/qBraid/qBraid.git)
 
-## Key Features
+## Resources
 
-### 1. Quantum Program Integration
-
-Offers native support for 10 major quantum programming libraries, including 20+ inter-library conversions with the ability to
-dynamically register new program types and conversions on the fly. This enables flexible program submissions to cater to the unique capabilities and constraints of your preferred framework, facilitated by a unique conversion map that automatically adapts quantum programs during runtime according to the given specifications.
-
-### 2. Modular Design
-
-| Module                  | Description                                                                                       |
-|-------------------------|---------------------------------------------------------------------------------------------------|
-| `qbraid.programs`       | Extracts and manages metadata from supported quantum program types, with the flexibility to introduce new types. |
-| `qbraid.transpiler`     | Bridges different quantum programming IRs through native and customizable circuit conversions.    |
-| `qbraid.passes`     | Ensures quantum programs conform to hardware specifications through essential runtime transformations. |
-| `qbraid.runtime`        | Defines essential abstractions for providers, devices, jobs, and results, integrated through a coherent runtime profile. |
-| `qbraid.visualization`  | Provides tools for visualizing quantum circuits and experimental data, enhancing data interpretation. |
-
-### 3. Extensibility and Customization
-
-The framework encourages community contributions and extensions, supporting an evolving ecosystem of program types and conversions, adaptable to specific provider needs. By providing a comprehensive runtime solution, the qBraid-SDK offers significant advantages to *both hardware and software providers*:
-
-- **Reduces Overhead**: Minimizes the effort required to develop client-side applications for securely submitting and managing quantum experiments remotely.
-- **Enhances Integration**: Facilitates seamless integration and interoperability of quantum software tools across all layers of the stack.
-- **Broad Compatibility**: Supports a diverse range of API complexities, catering to both established players like IBM and AWS, as well as emerging providers.
+- [User Guide](https://docs.qbraid.com/sdk/user-guide/)
+- [API Reference](https://sdk.qbraid.com/en/stable/api/qbraid.html)
+- [Example Notebooks](https://github.com/qBraid/qbraid-lab-demo)
 
 ---
 
@@ -68,9 +43,7 @@ The framework encourages community contributions and extensions, supporting an e
 
 For the best experience, install the qBraid-SDK environment on [lab.qbraid.com](https://lab.qbraid.com). Login (or
 [create an account](https://account.qbraid.com)) and follow the steps to
-[install an environment](https://docs.qbraid.com/lab/user-guide/environments#install-environment).
-
-Using the SDK on [qBraid Lab](https://docs.qbraid.com/lab/user-guide/overview) means direct, pre-configured access to QPUs from IonQ, Oxford Quantum Circuits, QuEra, Rigetti, and IQM, as well as on-demand simulators from qBraid and AWS. See [qBraid Quantum Jobs](https://docs.qbraid.com/lab/user-guide/quantum-jobs) for more.
+[install an environment](https://docs.qbraid.com/lab/user-guide/environments#install-environment). Using the SDK on [qBraid Lab](https://docs.qbraid.com/lab/user-guide/overview) means direct, pre-configured access to QPUs from IonQ, Oxford Quantum Circuits, QuEra, Rigetti, and IQM, as well as on-demand simulators from qBraid and AWS. See [qBraid Quantum Jobs](https://docs.qbraid.com/lab/user-guide/quantum-jobs) for more.
 
 ### Local install
 
@@ -90,7 +63,9 @@ pip install .
 
 > *Note:* The qBraid-SDK requires Python 3.9 or greater.
 
-To use [qBraid runtime](https://docs.qbraid.com/sdk/user-guide/runtime) locally, you must also install the necessary extras and configure your account credentials according to the device(s) that you are targeting. Follow the linked, provider-specific, instructions for the [QbraidProvider](https://docs.qbraid.com/sdk/user-guide/runtime_native), [BraketProvider](https://docs.qbraid.com/sdk/user-guide/runtime_braket), [QiskitRuntimeProvider](https://docs.qbraid.com/sdk/user-guide/runtime_ibm), [IonQProvider](https://docs.qbraid.com/sdk/user-guide/runtime_ionq), and [OQCProvider](https://docs.qbraid.com/sdk/user-guide/runtime_oqc), as applicable.
+To use [qBraid Runtime](https://docs.qbraid.com/sdk/user-guide/runtime) locally, you must also install the necessary extras and configure your account credentials according to the device(s) that you are targeting. Follow the linked, provider-specific, instructions for the [QbraidProvider](https://docs.qbraid.com/sdk/user-guide/runtime_native), [BraketProvider](https://docs.qbraid.com/sdk/user-guide/runtime_braket), [QiskitRuntimeProvider](https://docs.qbraid.com/sdk/user-guide/runtime_ibm), [IonQProvider](https://docs.qbraid.com/sdk/user-guide/runtime_ionq), and [OQCProvider](https://docs.qbraid.com/sdk/user-guide/runtime_oqc), as applicable.
+
+## Quickstart
 
 ### Check version
 
@@ -102,21 +77,9 @@ In [1]: import qbraid
 In [2]: qbraid.__version__
 ```
 
-## Documentation & Tutorials
-
-Browse the full suite of qBraid platform and software solutions at [docs.qbraid.com](https://docs.qbraid.com).
-
-See also:
-
-- [User Guide](https://docs.qbraid.com/sdk/user-guide/)
-- [API Reference](https://sdk.qbraid.com/en/latest/api/qbraid.html)
-- [Example Notebooks](https://github.com/qBraid/qbraid-lab-demo)
-
-## Quickstart
-
 ### Transpiler
 
-Construct a quantum program of any supported program type.
+Graph-based approach to quantum program type conversions.
 
 Below, `QPROGRAM_REGISTRY` maps shorthand identifiers for supported quantum programs, each corresponding to a type in the typed `QPROGRAM` Union. For example, 'qiskit' maps to `qiskit.QuantumCircuit` in `QPROGRAM`. Notably, 'qasm2' and 'qasm3' both represent raw OpenQASM strings. This arrangement simplifies targeting and transpiling between different quantum programming frameworks.
 
@@ -169,8 +132,7 @@ graph.plot()
 
 <img align="middle" width="full" alt="conversion_graph" src="https://qbraid-static.s3.amazonaws.com/conversion_graph_extras.png">
 
-You can use the native conversions supported by qBraid, or define your own custom nodes and/or edges.
-For [example](https://docs.qbraid.com/sdk/user-guide/transpiler#conversion-graph):
+You can use the native conversions supported by qBraid, or define your own. For [example](https://docs.qbraid.com/sdk/user-guide/transpiler#conversion-graph):
 
 ```python
 from unittest.mock import Mock
@@ -200,11 +162,10 @@ Run experiements using on-demand simulators provided by qBraid using the `qbraid
 from qbraid.runtime import QbraidProvider
 
 provider = QbraidProvider()
-qdevices = provider.get_devices()
+devices = provider.get_devices()
 ```
 
-Or, instantiate a known device by ID via the `QbraidProvider.get_device()` method,
-and submit quantum jobs from any supported program type:
+Or, instantiate a known device by ID and submit quantum jobs from any supported program type:
 
 ```python
 device = provider.get_device("qbraid_qir_simulator")
@@ -237,7 +198,12 @@ Use the badge in your project's `README.rst`:
     :width: 150px
 ```
 
-## Contributing
+## Get Involved
+
+[![Community](https://img.shields.io/badge/Community-DF0982)](https://github.com/qBraid/community)
+[![GitHub Issues](https://img.shields.io/badge/issue_tracking-github-blue?logo=github)](https://github.com/qBraid/qBraid/issues)
+[![Stack Exchange](https://img.shields.io/badge/StackExchange-qbraid-orange?logo=stackexchange)](https://quantumcomputing.stackexchange.com/questions/tagged/qbraid)
+[![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white)](https://discord.gg/TPBU2sa8Et)
 
 - Interested in contributing code, or making a PR? See
   [CONTRIBUTING.md](CONTRIBUTING.md)
