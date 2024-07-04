@@ -461,3 +461,85 @@ def test_raise_program_type_error():
             OpenQasm3Program(42)
     finally:
         unregister_program_type("int")
+
+
+def test_get_unused_qubit_indices():
+    """Test getting indices of unused qubits in qasm3 string"""
+    program = """
+OPENQASM 3;
+include "stdgates.inc";
+
+qubit[3] q;
+cbit[3] c;
+
+h q[0];
+h q[1];
+h q[2];
+"""
+    qprogram = OpenQasm3Program(program)
+    assert qprogram._get_unused_qubit_indices() == {"q": set()}
+
+
+def test_validate_qubit_mapping():
+    """Test that validate_qubit_mapping raises an error for invalid mappings"""
+    program = """
+OPENQASM 3;
+include "stdgates.inc";
+
+qubit[3] q;
+cbit[3] c;
+
+h q[0];
+h q[1];
+h q[2];
+"""
+    qprogram = OpenQasm3Program(program)
+    qubit_decls = [("q", 3), ("r", 2)]
+    qubit_mapping = {"q": {0: 2, 1: 0, 2: 1}, "r": 2}
+
+    with pytest.raises(ValueError):
+        qprogram._validate_qubit_mapping(qubit_decls, qubit_mapping)
+
+    qubit_decls = [("q", 3)]
+    qubit_mapping = {"q": {1: 3, 2: 1, 3: 2}}
+
+    with pytest.raises(ValueError):
+        qprogram._validate_qubit_mapping(qubit_decls, qubit_mapping)
+
+    qubit_mapping = {"q": {0: 0, 1: 1, 2: 1}}
+
+    with pytest.raises(ValueError):
+        qprogram._validate_qubit_mapping(qubit_decls, qubit_mapping)
+
+
+def test_replace_reset_with_ops():
+    """Test replacing reset gate with measure and conditional x gate"""
+    program = """
+OPENQASM 3;
+include "stdgates.inc";
+
+qubit[3] q;
+cbit[3] c;
+
+h q[0];
+h q[1];
+h q[2];
+reset q[0];
+"""
+
+    expected_program = """
+OPENQASM 3;
+include "stdgates.inc";
+
+qubit[3] q;
+cbit[3] c;
+
+h q[0];
+h q[1];
+h q[2];
+measure q[0] -> c0;
+if (c0 == 1) x q[0];
+"""
+    qprogram = OpenQasm3Program(program)
+    qprogram.replace_reset_with_ops()
+    assert qprogram.program == expected_program
