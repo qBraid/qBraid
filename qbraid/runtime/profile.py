@@ -87,7 +87,7 @@ class TargetProfile(BaseModel):
         return self._data.get(key, default)
 
     def items(self):
-        """Return the items of the configuration as a set-like object providing a view on D's items."""
+        """Return the items of the configuration as a set-like object."""
         return self._data.items()
 
     def _validate_device_id(self, device_id: str) -> str:
