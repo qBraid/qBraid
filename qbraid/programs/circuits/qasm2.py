@@ -66,16 +66,18 @@ class OpenQasm2Program(GateModelProgram):
     def depth(self) -> int:  # pylint: disable=too-many-statements
         """Calculates circuit depth of OpenQASM 2 string"""
         qasm_str = self.program
+        if not isinstance(qasm_str, str):
+            raise ProgramTypeError(message=f"Expected 'str' object, got '{type(qasm_str)}'.")
         lines = qasm_str.splitlines()
 
-        # Keywords marking lines to ommit from depth calculation.
+        # Keywords marking lines to omit from depth calculation.
         not_counted = ("OPENQASM", "include", "qreg", "creg", "gate", "opaque", "//")
         gate_lines = [s for s in lines if s.strip() and not s.startswith(not_counted)]
 
         all_qubits = self.qubits
         depth_counts = {qubit: 0 for qubit in all_qubits}
 
-        track_measured = {}
+        track_measured: dict[str, tuple[list[str], int]] = {}
 
         for _, s in enumerate(gate_lines):
             if s.startswith("barrier"):

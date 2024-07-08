@@ -45,7 +45,10 @@ def _decompose_cu_instr(instr: str) -> str:
         instr = _remove_spaces_in_parentheses(instr)
         cu_gate, qs = instr.split(" ")
         a, b = qs.strip(";").split(",")
-        params_lst = _get_param(cu_gate).split(",")
+        params_str = _get_param(cu_gate)
+        if params_str is None:
+            raise QasmDecompositionError("Invalid parameters in cu gate")
+        params_lst = params_str.split(",")
         params = [float(x) for x in params_lst]
         theta, phi, lam, gamma = params
     except (AttributeError, ValueError) as err:

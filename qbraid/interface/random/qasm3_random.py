@@ -23,51 +23,58 @@ from qbraid.exceptions import QbraidError
 def create_gateset_qasm(max_operands: int) -> np.ndarray:
     """gets qasm for gateset with max_operands"""
 
-    q1_gates = [
-        ("id", 1, 0),
-        ("x", 1, 0),
-        ("y", 1, 0),
-        ("z", 1, 0),
-        ("h", 1, 0),
-        ("s", 1, 0),
-        ("t", 1, 0),
-        ("sdg", 1, 0),
-        ("tdg", 1, 0),
-        ("sx", 1, 0),
-        ("rx", 1, 1),
-        ("ry", 1, 1),
-        ("rz", 1, 1),
-        ("p", 1, 1),
-        ("u1", 1, 1),
-        ("u2", 1, 2),
-        ("u3", 1, 3),
-        ("reset", 1, 0),
-    ]
+    q1_gates = np.array(
+        [
+            ("id", 1, 0),
+            ("x", 1, 0),
+            ("y", 1, 0),
+            ("z", 1, 0),
+            ("h", 1, 0),
+            ("s", 1, 0),
+            ("t", 1, 0),
+            ("sdg", 1, 0),
+            ("tdg", 1, 0),
+            ("sx", 1, 0),
+            ("rx", 1, 1),
+            ("ry", 1, 1),
+            ("rz", 1, 1),
+            ("p", 1, 1),
+            ("u1", 1, 1),
+            ("u2", 1, 2),
+            ("u3", 1, 3),
+            ("reset", 1, 0),
+        ],
+        dtype=[("gate", object), ("num_qubits", np.int64), ("num_params", np.int64)],
+    )
 
-    q2_gates = [
-        ("cx", 2, 0),
-        ("cy", 2, 0),
-        ("cz", 2, 0),
-        ("ch", 2, 0),
-        ("cp", 2, 1),
-        ("crx", 2, 1),
-        ("cry", 2, 1),
-        ("crz", 2, 1),
-        ("swap", 2, 0),
-        ("cu", 2, 4),
-    ]
+    q2_gates = np.array(
+        [
+            ("cx", 2, 0),
+            ("cy", 2, 0),
+            ("cz", 2, 0),
+            ("ch", 2, 0),
+            ("cp", 2, 1),
+            ("crx", 2, 1),
+            ("cry", 2, 1),
+            ("crz", 2, 1),
+            ("swap", 2, 0),
+            ("cu", 2, 4),
+        ],
+        dtype=[("gate", object), ("num_qubits", np.int64), ("num_params", np.int64)],
+    )
 
-    q3_gates = [("ccx", 3, 0), ("cswap", 3, 0)]
+    q3_gates = np.array(
+        [("ccx", 3, 0), ("cswap", 3, 0)],
+        dtype=[("gate", object), ("num_qubits", np.int64), ("num_params", np.int64)],
+    )
 
-    gates = q1_gates.copy()
+    gates = q1_gates
 
     if max_operands >= 2:
-        gates.extend(q2_gates)
+        gates = np.concatenate((gates, q2_gates))
     if max_operands >= 3:
-        gates.extend(q3_gates)
-    gates = np.array(
-        gates, dtype=[("gate", object), ("num_qubits", np.int64), ("num_params", np.int64)]
-    )
+        gates = np.concatenate((gates, q3_gates))
+
     return gates
 
 
@@ -96,7 +103,7 @@ def _qasm3_random(
 
     """
 
-    def validate_and_assign(value: Optional[int], name: str):
+    def validate_and_assign(value: Optional[int], name: str) -> int:
         if value is None:
             return np.random.randint(1, 4)
         if value <= 0:

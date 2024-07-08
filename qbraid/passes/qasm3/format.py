@@ -33,9 +33,10 @@ def _remove_gate_definition(qasm: str, gate_name: str) -> str:
     new_qasm = ""
 
     for line in lines:
-        if re.search(r"gate\s+(\w+)", line) is not None:
+        match = re.search(r"gate\s+(\w+)", line)
+        if match is not None:
             # extract the gate name
-            current_gate_name = re.search(r"gate\s+(\w+)", line).group(1)
+            current_gate_name = match.group(1)
             # remove lines from start curly brace to end curly brace
             if current_gate_name == gate_name:
                 while "}" not in line:
@@ -56,8 +57,9 @@ def remove_unused_gates(qasm: str) -> str:
     all_gates = {}
 
     for line in lines:
-        if re.search(r"^\s*gate\s+(\w+)", line) is not None:
-            gate_name = re.search(r"^\s*gate\s+(\w+)", line).group(1)
+        match = re.search(r"^\s*gate\s+(\w+)", line)
+        if match is not None:
+            gate_name = match.group(1)
             all_gates[gate_name] = -1
         for gate in all_gates:
             if re.search(r"\b" + re.escape(gate) + r"\b", line):

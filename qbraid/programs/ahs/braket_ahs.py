@@ -41,7 +41,7 @@ class BraketAHS(AnalogHamiltonianProgram):
     def to_dict(self) -> dict:
         return BraketAHSEncoder().encode_ahs(self.program)
 
-    def transform(self, device: "qbraid.runtime.braket.BraketDevice") -> None:
+    def transform(self, device: "qbraid.runtime.QuantumDevice") -> None:
         """Transform program to according to device target profile."""
         device_type = device.profile.get("device_type")
         if device_type == "QPU":

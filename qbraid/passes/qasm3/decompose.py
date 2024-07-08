@@ -13,7 +13,7 @@ Module for providing transforamtions with basis gates.
 across various other quantum software frameworks.
 
 """
-from typing import Optional, Union
+from typing import Optional, Union, Callable
 
 from openqasm3 import ast, dumps
 from openqasm3.parser import QASM3ParsingError, parse
@@ -181,7 +181,7 @@ def _decompose_cz(gate: ast.QuantumGate) -> list[ast.Statement]:
 
 def decompose(program: ast.Program, basis_gates: Optional[set[str]] = None) -> ast.Program:
     """Decompose a program into its basic gate equivalents."""
-    decomposition_map = {
+    decomposition_map: dict[str, Callable[[ast.QuantumGate], list[ast.Statement]]] = {
         "crx": _decompose_crx,
         "cry": _decompose_cry,
         "crz": _decompose_crz,

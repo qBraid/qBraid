@@ -124,11 +124,15 @@ def circuits_allclose(  # pylint: disable=too-many-arguments
     program1 = load_program(circuit1)
 
     if index_contig:
-        program0.remove_idle_qubits()
-        program1.remove_idle_qubits()
+        if hasattr(program0, "remove_idle_qubits"):
+            program0.remove_idle_qubits()
+        if hasattr(program1, "remove_idle_qubits"):
+            program1.remove_idle_qubits()
+    unitary0 = program0.unitary() if hasattr(program0, "unitary") else None
+    unitary1 = program1.unitary() if hasattr(program1, "unitary") else None
+    unitary_rev = program1.unitary_rev_qubits() if hasattr(program1, "unitary_rev_qubits") else None
 
-    unitary0 = program0.unitary()
-    unitary1 = program1.unitary()
-    unitary_rev = program1.unitary_rev_qubits()
+    if unitary0 is None or unitary1 is None:
+        raise AttributeError("One of the programs does not have the required 'unitary' method.")
 
     return unitary_equivalence_check(unitary0, unitary1, unitary_rev)

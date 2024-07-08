@@ -47,7 +47,7 @@ class ConversionGraph(rx.PyDiGraph):
         super().__init__()
         self.require_native = require_native
         self._conversions = conversions or self.load_default_conversions()
-        self._node_alias_id_map = {}
+        self._node_alias_id_map: dict[str, int] = {}  # Add type annotation
         self.create_conversion_graph()
 
     @staticmethod
@@ -61,7 +61,11 @@ class ConversionGraph(rx.PyDiGraph):
         transpiler = import_module("qbraid.transpiler.conversions")
         conversion_functions = getattr(transpiler, "conversion_functions", [])
         return [
-            Conversion(*conversion.split("_to_"), getattr(transpiler, conversion))
+            Conversion(
+                conversion.split("_to_")[0],
+                conversion.split("_to_")[1],
+                getattr(transpiler, conversion),
+            )
             for conversion in conversion_functions
         ]
 
@@ -95,7 +99,7 @@ class ConversionGraph(rx.PyDiGraph):
         Returns:
             bool: True if the node exists, False otherwise.
         """
-        return node in set(self.nodes())
+        return node in self._node_alias_id_map  # Adjust to check in _node_alias_id_map
 
     def has_edge(self, node_a: str, node_b: str) -> bool:
         """
@@ -110,7 +114,6 @@ class ConversionGraph(rx.PyDiGraph):
         """
         if not self.has_node(node_a) or not self.has_node(node_b):
             return False
-
         return super().has_edge(self._node_alias_id_map[node_a], self._node_alias_id_map[node_b])
 
     def conversions(self) -> list[Conversion]:
@@ -314,6 +317,8 @@ class ConversionGraph(rx.PyDiGraph):
         return ConversionGraph(copied_conversions, self.require_native)
 
     def __eq__(self, value: object) -> bool:
+        if not isinstance(value, ConversionGraph):
+            return NotImplemented
         return (
             super().__eq__(value)
             and self.conversions() == value.conversions()
@@ -348,13 +353,13 @@ class ConversionGraph(rx.PyDiGraph):
 
         path = []
         for method in bound_methods:
-            instance = method.__self__  # Get the instance to which the method is bound
+            instance = getattr(method, "__self__", None)  # Use getattr to safely access __self__
             if not hasattr(instance, "source") or not hasattr(instance, "target"):
                 raise AttributeError("Bound method instance lacks 'source' or 'target' attributes.")
             path.append(instance.source)  # Add the source node of the instance
 
         # Add the target of the last method's instance to complete the path
-        path.append(bound_methods[-1].__self__.target)
+        path.append(getattr(bound_methods[-1], "__self__", None).target)
 
         return " -> ".join(path)
 

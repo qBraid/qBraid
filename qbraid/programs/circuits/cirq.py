@@ -24,7 +24,7 @@ from ._model import GateModelProgram
 class CirqCircuit(GateModelProgram):
     """Wrapper class for ``cirq.Circuit`` objects."""
 
-    def __init__(self, program: "cirq.Circuit"):
+    def __init__(self, program: cirq.Circuit):
         super().__init__(program)
         if not isinstance(program, cirq.Circuit):
             raise ProgramTypeError(
@@ -48,7 +48,7 @@ class CirqCircuit(GateModelProgram):
 
     def _unitary(self) -> np.ndarray:
         """Calculate unitary of circuit."""
-        return self.program.unitary()
+        return cirq.unitary(self.program)
 
     @staticmethod
     def is_measurement_gate(op: cirq.Operation) -> bool:
@@ -206,11 +206,11 @@ class CirqCircuit(GateModelProgram):
     def remove_idle_qubits(self) -> None:
         """If circuit does not use contiguous qubits/indices, reduces dimension accordingly."""
         qubits = sorted(self.qubits)
-        qubit_map = dict(zip(qubits, self._make_qubits(qubits, range(len(qubits)))))
+        qubit_map = dict(zip(qubits, self._make_qubits(qubits, list(range(len(qubits))))))
         self._program = self.program.transform_qubits(lambda q: qubit_map[q])
 
     def reverse_qubit_order(self) -> None:
-        """Rerverse qubit ordering of circuit."""
+        """Reverse qubit ordering of circuit."""
         qubits = self.qubits
         qubits.sort()
         qubits_rev = qubits.copy()
