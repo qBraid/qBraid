@@ -13,15 +13,16 @@ Module defining the Configuration class for quantum devices, providing necessary
 parameters for integration with the qBraid runtime.
 
 """
-from collections.abc import Mapping
 from typing import Any, Iterator, Optional, Union
+
+from pydantic import BaseModel
 
 from qbraid.programs import ProgramSpec
 
 from .enums import DeviceActionType, DeviceType
 
 
-class TargetProfile(Mapping):
+class TargetProfile(BaseModel):
     """
     Encapsulates configuration settings for a quantum device, presenting them as a read-only
     dictionary. This class primarily stores and manages settings that are crucial for the proper
@@ -62,6 +63,7 @@ class TargetProfile(Mapping):
             TypeError: If any of the inputs are not of the expected type.
             ValueError: If the device type or action type is invalid.
         """
+        super().__init__()
         self._data = {
             "device_id": self._validate_device_id(device_id),
             "device_type": self._validate_device_type(device_type),
@@ -79,6 +81,14 @@ class TargetProfile(Mapping):
             raise ValueError(
                 "basis_gates can only be set for devices with the OPENQASM action type"
             )
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """Return the value associated with the key if it exists, otherwise return default."""
+        return self._data.get(key, default)
+
+    def items(self):
+        """Return the items of the configuration as a set-like object providing a view on D's items."""
+        return self._data.items()
 
     def _validate_device_id(self, device_id: str) -> str:
         if not isinstance(device_id, str):
