@@ -24,7 +24,7 @@ from qbraid.transpiler.exceptions import CircuitConversionError
 try:
     from .cirq_quil_output import QuilOutput
 except ImportError:
-    QuilOutput = None
+    QuilOutput = None  # type: ignore
 
 pyquil = LazyLoader("pyquil", globals(), "pyquil")
 
@@ -48,7 +48,7 @@ def cirq_to_pyquil(circuit: "cirq.circuits.Circuit") -> "pyquil_.Program":
     # if we are using LineQubits, keep the qubit labeling the same
     if isinstance(max_qubit, LineQubit):
         qubit_range = max_qubit.x + 1
-        qubit_order = LineQubit.range(qubit_range)
+        qubit_order = list(LineQubit.range(qubit_range))  # Ensure qubit_order is a list
     # otherwise, use the default ordering (starting from zero)
     else:
         qubit_order = QubitOrder.DEFAULT

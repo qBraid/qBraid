@@ -71,7 +71,7 @@ def cirq_to_braket(circuit: Circuit) -> "braket.circuits.Circuit":
         qbraid.programs.circuits.cirq.CirqCircuit._int_from_qubit(q) for q in cirq_qubits
     ]
     braket_int_qubits = deepcopy(cirq_int_qubits)
-    qubit_mapping = {q: braket_int_qubits[i] for i, q in enumerate(cirq_int_qubits)}
+    qubit_mapping = {cirq_int_qubits[i]: braket_int_qubits[i] for i in range(len(cirq_int_qubits))}
     return BKCircuit(
         _to_braket_instruction(operation, qubit_mapping) for operation in circuit.all_operations()
     )
@@ -96,11 +96,10 @@ def _to_braket_instruction(
         return []
 
     nqubits = protocols.num_qubits(operation)
-    cirq_qubits = operation.qubits
     cirq_qubits = [
         qbraid.programs.circuits.cirq.CirqCircuit._int_from_qubit(q) for q in operation.qubits
     ]
-    qubits = [qubit_mapping[x] for x in cirq_qubits]
+    qubits = [qubit_mapping[q] for q in cirq_qubits]
 
     if nqubits == 1:
         target = qubits[0]
@@ -202,43 +201,37 @@ def _to_one_qubit_braket_instruction(
             return [BKInstruction(braket_gates.I(), target)]
 
         if isinstance(gate, cirq_ops.BitFlipChannel):
-            return [BKInstruction(braket_noise_gate.BitFlip(float(operation.gate._p)), target)]
+            return [BKInstruction(braket_noise_gate.BitFlip(float(gate._p)), target)]
 
         if isinstance(gate, cirq_ops.PhaseFlipChannel):
-            return [BKInstruction(braket_noise_gate.PhaseFlip(float(operation.gate._p)), target)]
+            return [BKInstruction(braket_noise_gate.PhaseFlip(float(gate._p)), target)]
 
         if isinstance(gate, cirq_ops.DepolarizingChannel):
-            return [BKInstruction(braket_noise_gate.Depolarizing(float(operation.gate._p)), target)]
+            return [BKInstruction(braket_noise_gate.Depolarizing(float(gate._p)), target)]
 
         if isinstance(gate, cirq_ops.AmplitudeDampingChannel):
-            return [
-                BKInstruction(braket_noise_gate.AmplitudeDamping(float(operation.gate._gamma)), target)
-            ]
+            return [BKInstruction(braket_noise_gate.AmplitudeDamping(float(gate._gamma)), target)]
 
         if isinstance(gate, cirq_ops.GeneralizedAmplitudeDampingChannel):
             return [
                 BKInstruction(
                     braket_noise_gate.GeneralizedAmplitudeDamping(
-                        gamma=float(operation.gate._gamma), probability=float(operation.gate._p)
+                        gamma=float(gate._gamma), probability=float(gate._p)
                     ),
                     target,
                 )
             ]
 
         if isinstance(gate, cirq_ops.PhaseDampingChannel):
-            return [BKInstruction(braket_noise_gate.PhaseDamping(float(operation.gate._gamma)), target)]
+            return [BKInstruction(braket_noise_gate.PhaseDamping(float(gate._gamma)), target)]
 
         if cirq_ionq_ops and isinstance(
             gate, (cirq_ionq_ops.GPIGate, cirq_ionq_ops.GPI2Gate, cirq_ionq_ops.MSGate)
         ):
             if isinstance(gate, cirq_ionq_ops.GPIGate):
-                return [
-                    BKInstruction(braket_gates.GPi(angle=float(operation.gate.phi) * 2 * np.pi), target)
-                ]
+                return [BKInstruction(braket_gates.GPi(angle=float(gate.phi) * 2 * np.pi), target)]
             if isinstance(gate, cirq_ionq_ops.GPI2Gate):
-                return [
-                    BKInstruction(braket_gates.GPi2(angle=float(operation.gate.phi) * 2 * np.pi), target)
-                ]
+                return [BKInstruction(braket_gates.GPi2(angle=float(gate.phi) * 2 * np.pi), target)]
 
         matrix = protocols.unitary(gate)
         gate_name = "U" if isinstance(gate, cirq_ops.MatrixGate) else str(gate)
@@ -272,10 +265,8 @@ def _to_two_qubit_braket_instruction(
     """
     if isinstance(operation, cirq_ops.Operation):
         gate = operation.gate
-
     elif isinstance(operation, cirq_ops.Gate):
         gate = operation
-
     else:
         raise ValueError(f"Unable to convert {operation} to Braket")
 
@@ -302,16 +293,16 @@ def _to_two_qubit_braket_instruction(
         sub_gate = sub_gate_instr[0].operator
         return [BKInstruction(BKControl(sub_gate, [0, 1]), [q1, q2])]
     if isinstance(gate, cirq_ops.DepolarizingChannel):
-        return BKInstruction(braket_noise_gate.TwoQubitDepolarizing(float(operation.gate.p)), [q1, q2])
+        return [BKInstruction(braket_noise_gate.TwoQubitDepolarizing(float(gate.p)), [q1, q2])]
     if isinstance(gate, cirq_ops.KrausChannel):
-        return BKInstruction(braket_noise_gate.Kraus(matrices=operation.gate._kraus_ops), [q1, q2])
+        return [BKInstruction(braket_noise_gate.Kraus(matrices=gate._kraus_ops), [q1, q2])]
     if isinstance(gate, cirq_ionq_ops.MSGate):
         return [
             BKInstruction(
                 braket_gates.MS(
-                    angle_1=float(operation.gate.phi0) * 2 * np.pi,
-                    angle_2=float(operation.gate.phi1) * 2 * np.pi,
-                    angle_3=float(operation.gate.theta) * 2 * np.pi,
+                    angle_1=float(gate.phi0) * 2 * np.pi,
+                    angle_2=float(gate.phi1) * 2 * np.pi,
+                    angle_3=float(gate.theta) * 2 * np.pi,
                 ),
                 [q1, q2],
             )
