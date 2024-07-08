@@ -14,6 +14,9 @@ Module for drawing quantum circuit diagrams
 """
 from typing import TYPE_CHECKING, Optional
 
+from cirq.contrib.svg import SVGCircuit
+from IPython.display import Image
+
 from qbraid.programs import QPROGRAM_ALIASES, ProgramTypeError, get_program_type_alias
 from qbraid.transpiler.converter import transpile
 
@@ -29,7 +32,7 @@ def circuit_drawer(
     as_package: Optional[str] = None,
     output: Optional[str] = None,
     **kwargs,
-) -> None:
+) -> str | SVGCircuit | Image | None:
     """Draws circuit diagram.
 
     Args:
@@ -55,15 +58,15 @@ def circuit_drawer(
         if output in (None, "ascii"):
             from braket.circuits.ascii_circuit_diagram import AsciiCircuitDiagram
 
-            return print(AsciiCircuitDiagram.build_diagram(program))
+            print(AsciiCircuitDiagram.build_diagram(program))
+            return None
         raise VisualizationError('The only valid option for braket are "ascii"')
 
     if package == "cirq":
         if output in (None, "text"):
-            return print(program.to_text_diagram(**kwargs))
+            print(program.to_text_diagram(**kwargs))
+            return None
         if output == "svg":
-            from cirq.contrib.svg import SVGCircuit
-
             # coverage: ignore
             return SVGCircuit(program)
         if output == "svg_source":
@@ -74,7 +77,8 @@ def circuit_drawer(
 
     if package == "pyquil":
         if output is None or output == "text":
-            return print(program)
+            print(program)
+            return None
         if output == "latex":
             from pyquil.latex import display
 
@@ -87,12 +91,14 @@ def circuit_drawer(
             from pytket.circuit.display import render_circuit_jupyter
 
             # coverage: ignore
-            return render_circuit_jupyter(program)  # Render interactive display
+            render_circuit_jupyter(program)
+            return None
         if output == "view_browser":
             from pytket.circuit.display import view_browser
 
             # coverage: ignore
-            return view_browser(program, **kwargs)
+            view_browser(program, **kwargs)
+            return None
         if output == "html":
             from pytket.circuit.display import render_circuit_as_html
 
@@ -103,7 +109,8 @@ def circuit_drawer(
         )
 
     if package == "qasm3":
-        return qasm3_drawer(program)
+        qasm3_drawer(program)
+        return None
 
     if package == "qasm2":
         # coverage: ignore
