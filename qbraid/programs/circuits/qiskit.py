@@ -40,6 +40,7 @@ class QiskitCircuit(GateModelProgram):
             raise ProgramTypeError(
                 message=f"Expected 'qiskit.QuantumCircuit' object, got '{type(program)}'."
             )
+        self.program: qiskit.QuantumCircuit = program  # Ensure correct type
 
     @property
     def qubits(self) -> list[Qubit]:

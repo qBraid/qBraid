@@ -25,7 +25,7 @@ from qbraid._display import running_in_jupyter
 logger = logging.getLogger(__name__)
 
 
-def _job_table_basic(data: list[str], message: str) -> None:
+def _job_table_basic(data: list[tuple[str, str, str]], message: str) -> None:
     if len(data) == 0:
         print(message)
     else:
@@ -48,7 +48,9 @@ def _job_table_basic(data: list[str], message: str) -> None:
             print(row_format.format(job_id, timestamp, status))
 
 
-def _job_table_jupyter(data: list[str], message: Optional[str] = None, align: str = "right"):
+def _job_table_jupyter(
+    data: list[tuple[str, str, str]], message: Optional[str] = None, align: str = "right"
+):
     clear_output(wait=True)
 
     html = """<h3>Quantum Jobs</h3><table><tr>
@@ -89,7 +91,7 @@ def _job_table_jupyter(data: list[str], message: Optional[str] = None, align: st
     return display(HTML(html))
 
 
-def display_jobs_from_data(job_data: list[list[str]], message: Optional[str] = None):
+def display_jobs_from_data(job_data: list[tuple[str, str, str]], message: Optional[str] = None):
     """Displays a list of quantum jobs submitted by user, tabulated by job ID,
     the date/time it was submitted, and status."""
     align = "center" if len(job_data) == 0 else "right"

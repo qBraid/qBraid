@@ -33,7 +33,7 @@ def requires_extras(dependency: str) -> Callable[[Callable], Callable]:
         if hasattr(func, "requires_extras"):
             func.requires_extras.append(dependency)
         else:
-            func.requires_extras = [dependency]
+            setattr(func, "requires_extras", [dependency])
         return func
 
     return decorator
@@ -54,7 +54,7 @@ def weight(value: float) -> Callable[[Callable], Callable]:
         raise ValueError("Weight value must be between 0 and 1.")
 
     def decorator(func: Callable) -> Callable:
-        func.weight = value
+        setattr(func, "weight", value)
         return func
 
     return decorator

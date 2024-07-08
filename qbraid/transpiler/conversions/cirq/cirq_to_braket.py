@@ -50,7 +50,7 @@ from qbraid.transpiler.exceptions import CircuitConversionError
 try:
     from .braket_custom import C as BKControl
 except ImportError:  # pragma: no cover
-    BKControl = None
+    BKControl = None  # type: ignore
 
 if TYPE_CHECKING:
     import braket.circuits
@@ -117,7 +117,6 @@ def _to_braket_instruction(
         if isinstance(operation.gate, cirq_ops.ControlledGate):
             sub_gate_instr = _to_two_qubit_braket_instruction(operation.gate.sub_gate, qubits[1:])
             sub_gate = sub_gate_instr[0].operator
-            # return [BKInstruction(sub_gate, target=qubits[1:], control=qubits[:1])]
             return [BKInstruction(BKControl(sub_gate, qubits), qubits)]
 
         try:
@@ -159,7 +158,7 @@ def _to_one_qubit_braket_instruction(
 
     def convert_one_qubit_gate(gate, target):
         if isinstance(gate, cirq_ops.XPowGate):
-            exponent = gate.exponent
+            exponent = float(gate.exponent)
             if np.isclose(exponent, 1.0) or np.isclose(exponent, -1.0):
                 return [BKInstruction(braket_gates.X(), target)]
             if np.isclose(exponent, 0.5):
@@ -170,7 +169,7 @@ def _to_one_qubit_braket_instruction(
             return [BKInstruction(braket_gates.Rx(exponent * np.pi), target)]
 
         if isinstance(gate, cirq_ops.YPowGate):
-            exponent = gate.exponent
+            exponent = float(gate.exponent)
 
             if np.isclose(exponent, 1.0) or np.isclose(exponent, -1.0):
                 return [BKInstruction(braket_gates.Y(), target)]
@@ -178,8 +177,8 @@ def _to_one_qubit_braket_instruction(
             return [BKInstruction(braket_gates.Ry(exponent * np.pi), target)]
 
         if isinstance(gate, cirq_ops.ZPowGate):
-            global_shift = gate.global_shift
-            exponent = gate.exponent
+            global_shift = float(gate.global_shift)
+            exponent = float(gate.exponent)
 
             if np.isclose(global_shift, 0.0):
                 if np.isclose(exponent, 1.0) or np.isclose(exponent, -1.0):
@@ -196,49 +195,49 @@ def _to_one_qubit_braket_instruction(
             if np.isclose(global_shift, -0.5):
                 return [BKInstruction(braket_gates.Rz(exponent * np.pi), target)]
 
-        if isinstance(gate, cirq_ops.HPowGate) and np.isclose(abs(gate.exponent), 1.0):
+        if isinstance(gate, cirq_ops.HPowGate) and np.isclose(abs(float(gate.exponent)), 1.0):
             return [BKInstruction(braket_gates.H(), target)]
 
         if isinstance(gate, cirq_ops.IdentityGate):
             return [BKInstruction(braket_gates.I(), target)]
 
         if isinstance(gate, cirq_ops.BitFlipChannel):
-            return [BKInstruction(braket_noise_gate.BitFlip(operation.gate._p), target)]
+            return [BKInstruction(braket_noise_gate.BitFlip(float(operation.gate._p)), target)]
 
         if isinstance(gate, cirq_ops.PhaseFlipChannel):
-            return [BKInstruction(braket_noise_gate.PhaseFlip(operation.gate._p), target)]
+            return [BKInstruction(braket_noise_gate.PhaseFlip(float(operation.gate._p)), target)]
 
         if isinstance(gate, cirq_ops.DepolarizingChannel):
-            return [BKInstruction(braket_noise_gate.Depolarizing(operation.gate._p), target)]
+            return [BKInstruction(braket_noise_gate.Depolarizing(float(operation.gate._p)), target)]
 
         if isinstance(gate, cirq_ops.AmplitudeDampingChannel):
             return [
-                BKInstruction(braket_noise_gate.AmplitudeDamping(operation.gate._gamma), target)
+                BKInstruction(braket_noise_gate.AmplitudeDamping(float(operation.gate._gamma)), target)
             ]
 
         if isinstance(gate, cirq_ops.GeneralizedAmplitudeDampingChannel):
             return [
                 BKInstruction(
                     braket_noise_gate.GeneralizedAmplitudeDamping(
-                        gamma=operation.gate._gamma, probability=operation.gate._p
+                        gamma=float(operation.gate._gamma), probability=float(operation.gate._p)
                     ),
                     target,
                 )
             ]
 
         if isinstance(gate, cirq_ops.PhaseDampingChannel):
-            return [BKInstruction(braket_noise_gate.PhaseDamping(operation.gate._gamma), target)]
+            return [BKInstruction(braket_noise_gate.PhaseDamping(float(operation.gate._gamma)), target)]
 
         if cirq_ionq_ops and isinstance(
             gate, (cirq_ionq_ops.GPIGate, cirq_ionq_ops.GPI2Gate, cirq_ionq_ops.MSGate)
         ):
             if isinstance(gate, cirq_ionq_ops.GPIGate):
                 return [
-                    BKInstruction(braket_gates.GPi(angle=operation.gate.phi * 2 * np.pi), target)
+                    BKInstruction(braket_gates.GPi(angle=float(operation.gate.phi) * 2 * np.pi), target)
                 ]
             if isinstance(gate, cirq_ionq_ops.GPI2Gate):
                 return [
-                    BKInstruction(braket_gates.GPi2(angle=operation.gate.phi * 2 * np.pi), target)
+                    BKInstruction(braket_gates.GPi2(angle=float(operation.gate.phi) * 2 * np.pi), target)
                 ]
 
         matrix = protocols.unitary(gate)
@@ -284,36 +283,35 @@ def _to_two_qubit_braket_instruction(
     q1, q2 = qubits
 
     # Check common two-qubit gates.
-    if isinstance(gate, cirq_ops.CNotPowGate) and np.isclose(abs(gate.exponent), 1.0):
+    if isinstance(gate, cirq_ops.CNotPowGate) and np.isclose(abs(float(gate.exponent)), 1.0):
         return [BKInstruction(braket_gates.CNot(), [q1, q2])]
-    if isinstance(gate, cirq_ops.CZPowGate) and np.isclose(abs(gate.exponent), 1.0):
+    if isinstance(gate, cirq_ops.CZPowGate) and np.isclose(abs(float(gate.exponent)), 1.0):
         return [BKInstruction(braket_gates.CZ(), [q1, q2])]
-    if isinstance(gate, cirq_ops.SwapPowGate) and np.isclose(gate.exponent, 1.0):
+    if isinstance(gate, cirq_ops.SwapPowGate) and np.isclose(float(gate.exponent), 1.0):
         return [BKInstruction(braket_gates.Swap(), [q1, q2])]
-    if isinstance(gate, cirq_ops.ISwapPowGate) and np.isclose(gate.exponent, 1.0):
+    if isinstance(gate, cirq_ops.ISwapPowGate) and np.isclose(float(gate.exponent), 1.0):
         return [BKInstruction(braket_gates.ISwap(), [q1, q2])]
     if isinstance(gate, cirq_ops.XXPowGate):
-        return [BKInstruction(braket_gates.XX(gate.exponent * np.pi), [q1, q2])]
+        return [BKInstruction(braket_gates.XX(float(gate.exponent) * np.pi), [q1, q2])]
     if isinstance(gate, cirq_ops.YYPowGate):
-        return [BKInstruction(braket_gates.YY(gate.exponent * np.pi), [q1, q2])]
+        return [BKInstruction(braket_gates.YY(float(gate.exponent) * np.pi), [q1, q2])]
     if isinstance(gate, cirq_ops.ZZPowGate):
-        return [BKInstruction(braket_gates.ZZ(gate.exponent * np.pi), [q1, q2])]
+        return [BKInstruction(braket_gates.ZZ(float(gate.exponent) * np.pi), [q1, q2])]
     if isinstance(gate, cirq_ops.ControlledGate):
         sub_gate_instr = _to_one_qubit_braket_instruction(gate.sub_gate, q2)
         sub_gate = sub_gate_instr[0].operator
-        # return [BKInstruction(sub_gate, target=q2, control=q1)]
         return [BKInstruction(BKControl(sub_gate, [0, 1]), [q1, q2])]
     if isinstance(gate, cirq_ops.DepolarizingChannel):
-        return BKInstruction(braket_noise_gate.TwoQubitDepolarizing(operation.gate.p), [q1, q2])
+        return BKInstruction(braket_noise_gate.TwoQubitDepolarizing(float(operation.gate.p)), [q1, q2])
     if isinstance(gate, cirq_ops.KrausChannel):
         return BKInstruction(braket_noise_gate.Kraus(matrices=operation.gate._kraus_ops), [q1, q2])
     if isinstance(gate, cirq_ionq_ops.MSGate):
         return [
             BKInstruction(
                 braket_gates.MS(
-                    angle_1=operation.gate.phi0 * 2 * np.pi,
-                    angle_2=operation.gate.phi1 * 2 * np.pi,
-                    angle_3=operation.gate.theta * 2 * np.pi,
+                    angle_1=float(operation.gate.phi0) * 2 * np.pi,
+                    angle_2=float(operation.gate.phi1) * 2 * np.pi,
+                    angle_3=float(operation.gate.theta) * 2 * np.pi,
                 ),
                 [q1, q2],
             )

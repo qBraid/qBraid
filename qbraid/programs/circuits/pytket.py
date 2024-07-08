@@ -69,16 +69,17 @@ class PytketCircuit(GateModelProgram):
             raise ProgramTypeError(
                 message=f"Expected 'pytket.Circuit' object, got '{type(program)}'."
             )
+        self._program: Circuit = program  # Ensure the program is typed as Circuit
 
     @property
     def qubits(self) -> list[Qubit]:
         """Return the qubits acted upon by the operations in this circuit"""
-        return self.program.qubits
+        return self._program.qubits  # Use self._program
 
     @property
     def num_qubits(self) -> int:
         """Return the number of qubits in the circuit."""
-        return self.program.n_qubits
+        return self._program.n_qubits  # Use self._program
 
     @property
     def num_clbits(self) -> int:
