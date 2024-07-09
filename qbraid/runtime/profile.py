@@ -13,6 +13,7 @@ Module defining the Configuration class for quantum devices, providing necessary
 parameters for integration with the qBraid runtime.
 
 """
+# pylint: disable=no-self-argument
 from typing import Any, Iterator, Optional, Set
 
 from pydantic import BaseModel, field_validator
@@ -38,17 +39,17 @@ class TargetProfile(BaseModel):
     basis_gates: Optional[Set[str]] = None
 
     @field_validator("device_id", "provider_name")
-    def validate_device_id(self, value: str) -> str:
+    def validate_device_id(cls, value: str) -> str:
         """Validate the device ID and provider name."""
         return value
 
     @field_validator("device_type")
-    def validate_device_type(self, value: DeviceType) -> str:
+    def validate_device_type(cls, value: DeviceType) -> str:
         """Validate the device type."""
         return value
 
     @field_validator("action_type")
-    def validate_action_type(self, value: Optional[DeviceActionType]) -> Optional[str]:
+    def validate_action_type(cls, value: Optional[DeviceActionType]) -> Optional[str]:
         """Validate the action type."""
         if value is None:
             return None
@@ -56,7 +57,7 @@ class TargetProfile(BaseModel):
         return value
 
     @field_validator("basis_gates", mode="before")
-    def validate_basis_gates(self, value):
+    def validate_basis_gates(cls, value):
         """Validate the basis gates."""
         if value is None:
             return None
@@ -65,17 +66,17 @@ class TargetProfile(BaseModel):
         return [gate.lower() for gate in value]
 
     @field_validator("num_qubits")
-    def validate_num_qubits(self, value):
+    def validate_num_qubits(cls, value):
         """Validate the number of qubits."""
         return value
 
     @field_validator("program_spec")
-    def validate_program_spec(self, value):
+    def validate_program_spec(cls, value):
         """Validate the program spec."""
         return value
 
     @field_validator("basis_gates", mode="after")
-    def validate_basis_gates_after(self, value, info):
+    def validate_basis_gates_after(cls, value, info):
         """Validate the basis gates after the action type is set."""
         try:
             action_type = info.data["action_type"]
