@@ -13,9 +13,9 @@ Module defining the Configuration class for quantum devices, providing necessary
 parameters for integration with the qBraid runtime.
 
 """
-from typing import Any, Iterator, List, Optional, Set, Union
+from typing import Any, Iterator, Optional, Set
 
-from pydantic import BaseModel, field_validator, model_validator
+from pydantic import BaseModel, field_validator
 
 from qbraid.programs import ProgramSpec
 
