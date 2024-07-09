@@ -201,10 +201,10 @@ def test_build_runtime_profile(lucy_simulator_data):
         provider = OQCProvider(token="fake_token")
         profile = provider._build_profile(lucy_simulator_data)
         assert isinstance(profile, TargetProfile)
-        assert profile._data["device_id"] == DEVICE_ID
-        assert profile._data["device_type"] == DeviceType.SIMULATOR.name
-        assert profile._data["num_qubits"] == 8
-        assert profile._data["program_spec"] == ProgramSpec(str, alias="qasm2")
+        assert profile["device_id"] == DEVICE_ID
+        assert profile["device_type"] == DeviceType.SIMULATOR.name
+        assert profile["num_qubits"] == 8
+        assert profile["program_spec"] == ProgramSpec(str, alias="qasm2")
 
 
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
