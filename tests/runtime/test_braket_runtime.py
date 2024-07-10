@@ -21,6 +21,7 @@ from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 import pytest
+from braket.aws import AwsDevice
 from braket.aws.aws_session import AwsSession
 from braket.aws.queue_information import QueueDepthInfo, QueueType
 from braket.circuits import Circuit
@@ -28,6 +29,7 @@ from braket.device_schema import ExecutionDay
 from braket.devices import Devices, LocalSimulator
 from qiskit import QuantumCircuit as QiskitCircuit
 
+from qbraid.exceptions import QbraidError
 from qbraid.interface import circuits_allclose
 from qbraid.programs import ProgramSpec
 from qbraid.runtime import (
@@ -533,6 +535,9 @@ def test_get_s3_default_bucket():
         mock_instance.default_bucket.return_value = "default bucket"
         assert BraketProvider()._get_s3_default_bucket() == "default bucket"
 
+        mock_instance.default_bucket.side_effect = Exception
+        assert BraketProvider()._get_s3_default_bucket() == "amazon-braket-qbraid-jobs"
+
 
 def test_get_quantum_task_cost():
     """Test getting quantum task cost."""
@@ -542,3 +547,51 @@ def test_get_quantum_task_cost():
     job = BraketQuantumTask("task_arn", task_mock)
     with patch("qbraid.runtime.braket.job.get_quantum_task_cost", return_value=0.1):
         assert job.get_cost() == 0.1
+
+
+def test_built_runtime_profile_fail():
+    """Test building a runtime profile with invalid device."""
+
+    class FakeSession(AwsSession):
+        """Fake Session for testing."""
+
+        def __init__(
+            self,
+            boto_session=None,
+            braket_client=None,
+            config=None,
+            default_bucket=None,
+        ):
+            super().__init__(boto_session, braket_client, config, default_bucket)
+
+        def get_device(self, arn):
+            """Fake get_device method."""
+            return {
+                "deviceType": "SIMULATOR",
+                "providerName": "Amazon Braket",
+                "deviceCapabilities": "{}",
+            }
+
+    class FakeDevice:
+        """Fake AWS Device for testing."""
+
+        def __init__(self, arn, aws_session=None):
+            self.arn = arn
+            self.aws_session = aws_session or FakeSession()
+            self.status = "ONLINE"
+            self.properties = TestProperties()
+            self.is_available = True
+
+        @staticmethod
+        def get_device_region(arn):
+            """Fake get_device_region method."""
+            return "us-east-1"
+
+    provider = BraketProvider(
+        aws_access_key_id="aws_access_key_id",
+        aws_secret_access_key="aws_secret_access_key",
+    )
+
+    device = FakeDevice(arn=SV1_ARN, aws_session=FakeSession())
+    with pytest.raises(QbraidError):
+        assert provider._build_runtime_profile(device=device)
