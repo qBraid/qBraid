@@ -176,3 +176,10 @@ def test_duplicate_basis_gates_removed(valid_program_spec):
         program_spec=valid_program_spec,
     )
     assert profile["basis_gates"] == {"x", "y", "z"}
+
+
+def test_target_profile_iter():
+    """Test the __iter__ method of TargetProfile."""
+    target_profile = TargetProfile(device_id="simulator", device_type=DeviceType.SIMULATOR)
+
+    assert list(iter(target_profile)) == ["device_id", "device_type"]

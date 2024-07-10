@@ -78,15 +78,12 @@ class TargetProfile(BaseModel):
     @field_validator("basis_gates", mode="after")
     def validate_basis_gates_after(cls, value, info):
         """Validate the basis gates after the action type is set."""
-        try:
-            action_type = info.data["action_type"]
-        except KeyError:
-            action_type = None
+        action_type = info.data["action_type"]
 
         if action_type is None or action_type != "OpenQASM":
             if value is not None:
-
                 raise ValueError("basis_gates can only be specified for OPENQASM action type")
+
         return value
 
     def items(self) -> Iterator[tuple[str, Any]]:
@@ -101,7 +98,8 @@ class TargetProfile(BaseModel):
         return getattr(self, key)
 
     def __iter__(self) -> Iterator[str]:
-        return iter(self.__dict__)
+        dict_without_nones = {k: v for k, v in self.__dict__.items() if v is not None}
+        return iter(dict_without_nones)
 
     def __len__(self) -> int:
         dict_without_nones = {k: v for k, v in self.__dict__.items() if v is not None}
