@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING
 
 import openqasm3
 
-from qbraid._import import _load_entrypoint
+from qbraid._import import load_entrypoint
 from qbraid.exceptions import QbraidError
 
 from .alias_manager import get_program_type_alias
@@ -53,7 +53,7 @@ def load_program(program: "qbraid.programs.QPROGRAM") -> "qbraid.programs.Quantu
         raise QbraidError(f"Error loading quantum program of type {type(program)}") from err
 
     try:
-        load_program_class = _load_entrypoint("programs", package)
+        load_program_class = load_entrypoint("programs", package)
     except Exception as err:
         raise QbraidError(f"Error loading quantum program of type {type(program)}") from err
 

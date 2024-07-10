@@ -12,9 +12,9 @@
 Unit test for quantum program registry
 
 """
-
 import random
 import string
+import sys
 import unittest.mock
 
 import pytest
@@ -232,6 +232,7 @@ def test_error_on_automatic_alias():
         derive_program_type_alias(FakeType)
 
 
+@pytest.mark.skipif(sys.version_info < (3, 10), reason="Requires Python 3.10 or higher")
 def test_load_entrypoint_not_found():
     """Test error when trying to load a program type that is not found"""
     with unittest.mock.patch("importlib.metadata.entry_points") as mock_entry_points:
