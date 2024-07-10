@@ -503,6 +503,11 @@ qubit[1] q;
     with pytest.raises(ValueError):
         qprogram._validate_qubit_mapping(qubit_decls, qubit_mapping)
 
+    qubit_mapping = {"q": {1: 1}}
+    with pytest.raises(ValueError):
+        qprogram._validate_qubit_mapping(qubit_decls, qubit_mapping)
+
+    qubit_decls = [("q", 2)]
     qubit_mapping = {"q": {0: 1, 1: 1}}
 
     with pytest.raises(ValueError):
