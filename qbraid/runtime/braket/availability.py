@@ -17,7 +17,17 @@ import datetime
 from typing import Optional
 
 from braket.aws import AwsDevice
-from braket.device_schema import ExecutionDay
+from braket.device_schema import DeviceExecutionWindow, ExecutionDay
+
+ORDERED_DAYS = (
+    ExecutionDay.MONDAY,
+    ExecutionDay.TUESDAY,
+    ExecutionDay.WEDNESDAY,
+    ExecutionDay.THURSDAY,
+    ExecutionDay.FRIDAY,
+    ExecutionDay.SATURDAY,
+    ExecutionDay.SUNDAY,
+)
 
 
 def _current_utc_datetime() -> datetime.datetime:
@@ -25,7 +35,36 @@ def _current_utc_datetime() -> datetime.datetime:
     if not hasattr(datetime, "UTC"):  # pragma: no cover
         # backwards compatibility for Python < 3.11
         return datetime.datetime.utcnow()  # pylint: disable=no-member
-    return datetime.datetime.now(datetime.timezone.utc)
+    return datetime.datetime.now(datetime.UTC)
+
+
+def _is_day_matched(window: DeviceExecutionWindow, weekday: int):
+    """Determine if the current day matches the execution day."""
+    if window.executionDay == ExecutionDay.EVERYDAY:
+        return True
+    if window.executionDay == ExecutionDay.WEEKDAYS:
+        return weekday < 5
+    if window.executionDay == ExecutionDay.WEEKENDS:
+        return weekday > 4
+    return (
+        window.executionDay in ORDERED_DAYS and ORDERED_DAYS.index(window.executionDay) == weekday
+    )
+
+
+def _is_time_matched(window: DeviceExecutionWindow, current_time_utc: datetime.time):
+    """Determine if the current time is within the execution window."""
+    if window.windowStartHour < window.windowEndHour:
+        return window.windowStartHour <= current_time_utc <= window.windowEndHour
+    return current_time_utc >= window.windowStartHour or current_time_utc <= window.windowEndHour
+
+
+def _calculate_day_factor(day: int, start_time: datetime.time, end_time: datetime.time) -> int:
+    """Calculate the day factor based on the current day and execution window."""
+    if day == 0:
+        return day
+    if start_time < end_time:
+        return day - 1
+    return day
 
 
 def _calculate_future_time(
@@ -79,59 +118,15 @@ def next_available_time(device: AwsDevice) -> tuple[bool, str, Optional[str]]:
         ):
             weekday = (weekday - 1) % 7
 
-        matched_day = execution_window.executionDay == ExecutionDay.EVERYDAY
-        matched_day = matched_day or (
-            execution_window.executionDay == ExecutionDay.WEEKDAYS and weekday < 5
-        )
-        matched_day = matched_day or (
-            execution_window.executionDay == ExecutionDay.WEEKENDS and weekday > 4
-        )
-        ordered_days = (
-            ExecutionDay.MONDAY,
-            ExecutionDay.TUESDAY,
-            ExecutionDay.WEDNESDAY,
-            ExecutionDay.THURSDAY,
-            ExecutionDay.FRIDAY,
-            ExecutionDay.SATURDAY,
-            ExecutionDay.SUNDAY,
-        )
-        matched_day = matched_day or (
-            execution_window.executionDay in ordered_days
-            and ordered_days.index(execution_window.executionDay) == weekday
-        )
+        matched_day = _is_day_matched(execution_window, weekday)
+        matched_time = _is_time_matched(execution_window, current_time_utc)
 
-        matched_time = (
-            execution_window.windowStartHour < execution_window.windowEndHour
-            and execution_window.windowStartHour
-            <= current_time_utc
-            <= execution_window.windowEndHour
-        ) or (
-            execution_window.windowEndHour < execution_window.windowStartHour
-            and (
-                current_time_utc >= execution_window.windowStartHour
-                or current_time_utc <= execution_window.windowEndHour
-            )
-        )
-
-        if execution_window.executionDay in ordered_days:
-            day = (ordered_days.index(execution_window.executionDay) - weekday) % 6
+        if execution_window.executionDay in ORDERED_DAYS:
+            day = (ORDERED_DAYS.index(execution_window.executionDay) - weekday) % 7
 
         start_time = execution_window.windowStartHour
         end_time = current_time_utc
-        day_factor = 0
-
-        if day == 0:
-            day_factor = day
-        elif start_time.hour < end_time.hour:
-            day_factor = day - 1
-        elif start_time.hour == end_time.hour:
-            if start_time.minute < end_time.minute:
-                day_factor = day - 1
-            elif start_time.minute == end_time.minute:
-                if start_time.second <= end_time.second:
-                    day_factor = day - 1
-        else:
-            day_factor = day
+        day_factor = _calculate_day_factor(day, start_time, end_time)
 
         td = datetime.timedelta(
             hours=start_time.hour,
