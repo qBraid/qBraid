@@ -20,6 +20,7 @@ if TYPE_CHECKING:
     import qbraid.runtime
     from qbraid.runtime.azure.provider import AzureSession
 
+
 class AzureQuantumDevice(QuantumDevice):
     """Azure quantum device interface."""
 
@@ -38,15 +39,14 @@ class AzureQuantumDevice(QuantumDevice):
 
     def status(self) -> "qbraid.runtime.DeviceStatus":
         """Return the current status of the Azure device."""
-        device_data = self.session.get_device(self.id)
-
-        return device_data.get("status")
+        return self.profile.get("status")
 
     def submit(
         self, run_input, name, provider, backend, qubits, **kwargs
-    ):  # pylint: disable=too-many-arguments
+    ):  # pylint: disable=too-many-arguments, disable=arguments-differ
         """Submit a job to the Azure device."""
         # is_single_input = not isinstance(run_input, list)
         # run_input = [run_input] if is_single_input else run_input
 
-        return self._session.create_job(run_input, name, provider, backend, qubits)
+        job = self._session.create_job(run_input, name, provider, backend, qubits)
+        return job
