@@ -49,7 +49,7 @@ class TargetProfile(BaseModel):
         return value
 
     @field_validator("action_type")
-    def validate_action_type(cls, value: Optional[DeviceActionType]) -> Optional[str]:
+    def validate_action_type(cls, value: Optional[DeviceActionType]) -> Optional[DeviceActionType]:
         """Validate the action type."""
         if value is None:
             return None
@@ -98,18 +98,22 @@ class TargetProfile(BaseModel):
         return getattr(self, key)
 
     def __iter__(self) -> Iterator[str]:
-        dict_without_nones = {k: v for k, v in self.__dict__.items() if v is not None}
-        return iter(dict_without_nones)
+        for key, value in self.__dict__.items():
+            if value is not None:
+                yield key, value
 
     def __len__(self) -> int:
-        dict_without_nones = {k: v for k, v in self.__dict__.items() if v is not None}
-        return len(dict_without_nones)
+        return sum(1 for v in self.__dict__.values() if v is not None)
 
     def __str__(self) -> str:
-        return str(self.__dict__)
+        return f"{self.__class__.__name__}({', '.join(f'{k}={v}' 
+                                                      for k, v in self.__dict__.items() 
+                                                      if v is not None)})"
 
     def __repr__(self) -> str:
-        return f"<TargetProfile({self.__dict__})>"
+        return f"<{self.__class__.__name__} {', '.join(f'{k}={v!r}' 
+                                                       for k, v in self.__dict__.items() 
+                                                       if v is not None)}>"
 
     class Config:
         """Pydantic configuration settings for the TargetProfile class."""
