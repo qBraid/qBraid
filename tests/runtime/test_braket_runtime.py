@@ -551,17 +551,10 @@ def test_get_quantum_task_cost():
 def test_built_runtime_profile_fail():
     """Test building a runtime profile with invalid device."""
 
-    class FakeSession(AwsSession):
+    class FakeSession:
         """Fake Session for testing."""
 
-        def __init__(  # pylint: disable=useless-parent-delegation
-            self,
-            boto_session=None,
-            braket_client=None,
-            config=None,
-            default_bucket=None,
-        ):
-            super().__init__(boto_session, braket_client, config, default_bucket)
+        def __init__(self):
             self.region = "us-east-1"
 
         def get_device(self, arn):  # pylint: disable=unused-argument
