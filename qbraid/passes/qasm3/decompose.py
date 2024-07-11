@@ -13,7 +13,7 @@ Module for providing transforamtions with basis gates.
 across various other quantum software frameworks.
 
 """
-from typing import Optional, Union, Callable
+from typing import Callable, Optional, Union
 
 from openqasm3 import ast, dumps
 from openqasm3.parser import QASM3ParsingError, parse

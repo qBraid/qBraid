@@ -13,6 +13,7 @@ Module for defining custom Amazon Braket control gate
 
 """
 import itertools
+import sys
 from typing import Any
 
 import braket.ir.jaqcd as ir
@@ -78,7 +79,7 @@ class C(Gate):
             self.to_matrix(),
             separator=", ",
             formatter={"all": lambda x: format_complex(x)},  # pylint: disable=unnecessary-lambda
-            threshold=float("inf"),
+            threshold=sys.maxsize,
         ).replace("\n", "")
 
         return f"#pragma braket unitary({formatted_matrix}) {', '.join(qubits)}"

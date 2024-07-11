@@ -53,7 +53,7 @@ QPROGRAM_REGISTRY = getattr(_registry, "QPROGRAM_REGISTRY", {})
 # Cache for storing previously seen valid combinations, including reversed pairs
 valid_combinations_cache = set()
 
-conversion_functions = []
+conversion_functions: list[str] = []
 
 
 def update_registered_conversions() -> None:
