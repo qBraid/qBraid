@@ -35,7 +35,7 @@ def _current_utc_datetime() -> datetime.datetime:
     if not hasattr(datetime, "UTC"):  # pragma: no cover
         # backwards compatibility for Python < 3.11
         return datetime.datetime.utcnow()  # pylint: disable=no-member
-    return datetime.datetime.now(datetime.UTC)
+    return datetime.datetime.now(datetime.timezone.utc)
 
 
 def _is_day_matched(window: DeviceExecutionWindow, weekday: int):

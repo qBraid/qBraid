@@ -21,7 +21,6 @@ from unittest.mock import MagicMock, Mock, patch
 
 import numpy as np
 import pytest
-from braket.aws import AwsDevice
 from braket.aws.aws_session import AwsSession
 from braket.aws.queue_information import QueueDepthInfo, QueueType
 from braket.circuits import Circuit
@@ -562,9 +561,11 @@ def test_built_runtime_profile_fail():
             config=None,
             default_bucket=None,
         ):
-            super().__init__(boto_session, braket_client, config, default_bucket)
+            super().__init__(
+                boto_session, braket_client, config, default_bucket
+            )  # pylint: disable=useless-parent-delegation
 
-        def get_device(self, arn):
+        def get_device(self, arn):  # pylint: disable=unused-argument
             """Fake get_device method."""
             return {
                 "deviceType": "SIMULATOR",
@@ -583,7 +584,7 @@ def test_built_runtime_profile_fail():
             self.is_available = True
 
         @staticmethod
-        def get_device_region(arn):
+        def get_device_region(arn):  # pylint: disable=unused-argument
             """Fake get_device_region method."""
             return "us-east-1"
 
