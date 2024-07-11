@@ -15,12 +15,15 @@ Unit tests for Azure session, provider, and device classes
 
 """
 from unittest.mock import MagicMock, patch
+from uuid import UUID
 
+import openqasm3
 import pytest
 from qiskit import QuantumCircuit, qasm2
 
 from qbraid.runtime.azure.device import AzureQuantumDevice
-from qbraid.runtime.azure.provider import AzureQuantumProvider, AzureSession
+from qbraid.runtime.azure.provider import AzureHelperFunctions, AzureQuantumProvider, AzureSession
+from qbraid.runtime.profile import ProgramSpec, TargetProfile
 
 session = AzureSession(
     client_id="client_id",
@@ -45,6 +48,18 @@ provider = AzureQuantumProvider(
     storage_account="storage_account",
     connection_string="connection_string",
 )
+
+device = AzureQuantumDevice(
+    profile=TargetProfile(
+        device_id="microsoft.estimator",
+        device_type="SIMULATOR",
+        program_spec=ProgramSpec(openqasm3.ast.Program),
+        queue_time=0,
+        status="Available",
+    ),
+    session=session,
+)
+helper_functions = AzureHelperFunctions()
 
 
 @pytest.fixture
@@ -403,7 +418,6 @@ def test_session_create_job(mock_helpers):  # pylint: disable=too-many-arguments
 @patch("qbraid.runtime.azure.provider.Session.get")  # Patch the get method of the global session
 def test_session_get_job(mock_get, mock_helpers):
     """Test getting job data from the Azure Quantum API."""
-    # Mock data for create_job
     mock_helpers.quantum_access_token.return_value = "quantum_token"
     mock_helpers.storage_access_token.return_value = "storage_token"
     mock_helpers.create_container.return_value = ("job_id", "container_name")
@@ -416,31 +430,24 @@ def test_session_get_job(mock_get, mock_helpers):
     mock_helpers.create_payload.return_value = "job_payload"
     mock_helpers.submit_job.return_value = {"job": "approved", "id": "job_id"}
 
-    # Attach the mocked helpers to the session
     session._helpers = mock_helpers
 
-    # Mock the formats and backends attributes
     session.formats = {"quantinuum": ("input_format", "output_format")}
     session.backends = {"Emulator": "emulator_backend"}
 
-    # Call create_job
     input_run = "input_data"
     created_job = session.create_job(input_run, "job_name", "quantinuum", "Emulator", 2)
 
-    # Verify create_job
     assert created_job == {"job": "approved", "id": "job_id"}
     assert session.jobs["job_id"] == [{"Authorization": "Bearer test_token"}, "container_name"]
 
-    # Mock data for get_job
     job_data = {"id": "job_id", "status": "Completed"}
     mock_response = MagicMock()
     mock_response.json.return_value = job_data
     mock_get.return_value = mock_response
 
-    # Call get_job
     retrieved_job = session.get_job("job_id")
 
-    # Verify get_job
     expected_url = (
         f"https://{session.location_name}.quantum.azure.com/subscriptions/{session.subscription_id}"
         f"/resourceGroups/{session.resource_group_name}/providers/Microsoft.Quantum/workspaces/"
@@ -449,16 +456,35 @@ def test_session_get_job(mock_get, mock_helpers):
     mock_get.assert_called_once_with(expected_url, headers={"Authorization": "Bearer test_token"})
     assert retrieved_job == job_data
 
-    # Test for job not found
     with pytest.raises(KeyError):
         session.get_job("non_existent_job_id")
+
+
+def test_get_job_data():
+    """Test getting data from a specific Azure Quantum job."""
+    job_id = "test_job_id"
+    container_name = "test_container"
+    session.jobs = {job_id: [{"some": "header"}, container_name]}
+    session.connection_string = "test_connection_string"
+
+    mock_helpers = MagicMock()
+    mock_data = {"result": "quantum_data"}
+    mock_helpers.get_output_data.return_value = mock_data
+
+    session._helpers = mock_helpers
+
+    result = session.get_job_data(job_id)
+
+    session._helpers.get_output_data.assert_called_once_with(
+        container_name, session.connection_string
+    )
+    assert result == mock_data
 
 
 @patch("qbraid.runtime.azure.provider.AzureHelperFunctions")
 @patch("qbraid.runtime.azure.provider.Session.delete")  # Patch the get method of the global session
 def test_session_cancel_job(mock_delete, mock_helpers):
     """Test cancelling a job through the Azure Quantum API."""
-    # Mock data for create_job
     mock_helpers.quantum_access_token.return_value = "quantum_token"
     mock_helpers.storage_access_token.return_value = "storage_token"
     mock_helpers.create_container.return_value = ("job_id", "container_name")
@@ -471,30 +497,23 @@ def test_session_cancel_job(mock_delete, mock_helpers):
     mock_helpers.create_payload.return_value = "job_payload"
     mock_helpers.submit_job.return_value = {"job": "approved", "id": "job_id"}
 
-    # Attach the mocked helpers to the session
     session._helpers = mock_helpers
 
-    # Mock the formats and backends attributes
     session.formats = {"quantinuum": ("input_format", "output_format")}
     session.backends = {"Emulator": "emulator_backend"}
 
-    # Call create_job
     input_run = "input_data"
     created_job = session.create_job(input_run, "job_name", "quantinuum", "Emulator", 2)
 
-    # Verify create_job
     assert created_job == {"job": "approved", "id": "job_id"}
     assert session.jobs["job_id"] == [{"Authorization": "Bearer test_token"}, "container_name"]
 
-    # Mock data for get_job
     mock_response = MagicMock()
     mock_response.status_code = 204  # Assuming 204 No Content for successful cancellation
     mock_delete.return_value = mock_response
 
-    # Call cancel_job
     cancelled_job = session.cancel_job("job_id")
 
-    # Verify cancel_job
     expected_url = (
         f"https://{session.location_name}.quantum.azure.com/subscriptions/{session.subscription_id}"
         f"/resourceGroups/{session.resource_group_name}/providers/Microsoft.Quantum/workspaces/"
@@ -504,6 +523,248 @@ def test_session_cancel_job(mock_delete, mock_helpers):
         expected_url, headers={"Authorization": "Bearer test_token"}
     )
     assert cancelled_job == str(mock_response)
+
+
+@patch("qbraid.runtime.azure.provider.Session.post")
+def test_quantum_access_token(mock_post):
+    """Test getting an access token for the Azure Quantum API."""
+    client_id = "test_client_id"
+    client_secret = "test_client_secret"
+    tenant_id = "test_tenant_id"
+
+    expected_token = "mock_access_token"
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"access_token": expected_token}
+    mock_post.return_value = mock_response
+
+    actual_token = helper_functions.quantum_access_token(
+        client_id, client_secret, tenant_id, session
+    )
+
+    assert actual_token == expected_token
+    mock_post.assert_called_once_with(
+        f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        data={
+            "grant_type": "client_credentials",
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "scope": "https://quantum.microsoft.com/.default",
+        },
+        verify=True,
+    )
+
+
+@patch("qbraid.runtime.azure.provider.Session.post")
+def test_storage_access_token(mock_post):
+    """Test getting an access token for the Azure Storage API."""
+    client_id = "test_client_id"
+    client_secret = "test_client_secret"
+    tenant_id = "test_tenant_id"
+
+    expected_token = "mock_access_token"
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"access_token": expected_token}
+    mock_post.return_value = mock_response
+
+    actual_token = helper_functions.storage_access_token(
+        client_id, client_secret, tenant_id, session
+    )
+
+    assert actual_token == expected_token
+    mock_post.assert_called_once_with(
+        f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token",
+        headers={"Content-Type": "application/x-www-form-urlencoded"},
+        data={
+            "grant_type": "client_credentials",
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "scope": "https://management.azure.com/.default",
+        },
+        verify=True,
+    )
+
+
+@patch("uuid.uuid4")
+@patch("qbraid.runtime.azure.provider.Session.put")  # Patch the get method of the global session
+def test_create_container(mock_uuid4, mock_put):
+    """Test creating a container for an Azure Quantum job."""
+    mock_uuid4.return_value = UUID("ed8d6ef0-c3d8-4f34-8893-d133eb165177")
+
+    token = "dummy_token"
+    subscription_id = "dummy_subscription_id"
+    resource_group_name = "dummy_resource_group"
+    storage_account_name = "dummy_storage_account"
+
+    mock_put.put.return_value = MagicMock()
+
+    result = AzureHelperFunctions.create_container(
+        token, subscription_id, resource_group_name, storage_account_name, session
+    )
+
+    assert isinstance(result, list)
+    assert len(result) == 2
+    assert len(result[0]) == 36
+    assert len(result[1]) == 40  # Check if container name is correctly formatted
+
+
+@patch("azure.storage.blob.BlobServiceClient.from_connection_string")
+@patch("qbraid.runtime.azure.provider.Session.post")
+# pylint: disable=unused-argument
+def test_create_job_routes(mock_connection_string, mock_session_post):
+    """Test creating routes for an Azure Quantum job."""
+    container = "test_container"
+    qasm = "test_qasm"
+    connection_string = "test_connection_string"
+    location_name = "test_location"
+    subscription_id = "test_subscription"
+    resource_group_name = "test_resource_group"
+    workspace_name = "test_workspace"
+    quantum_access_token = "test_token"
+
+    mock_session_post.return_value = MagicMock()
+    mock_session_post.return_value.json.return_value = {"sasUri": "mock_sas_uri"}
+
+    result = helper_functions.create_job_routes(
+        session,
+        container,
+        qasm,
+        connection_string,
+        location_name,
+        subscription_id,
+        resource_group_name,
+        workspace_name,
+        quantum_access_token,
+    )
+    assert len(result) == 4
+
+
+def test_create_payload():
+    """Test creating a payload for an Azure Quantum job."""
+    # Test data
+    container_uri = "https://example.com/container"
+    input_uri = "https://example.com/input"
+    output_uri = "https://example.com/output"
+    job_id = "Test-Job"
+    job_name = "job-Test-Job"
+    input_data_format = "honeywell.openqasm.v1"
+    provider = "dummy_provider"
+    backend = "dummy_backend"
+    num_qubits = "5"
+    num_shots = 100
+    total_count = 100
+    output_data_format = "honeywell.quantum-results.v1"
+
+    # Call the function under test
+    payload = AzureHelperFunctions.create_payload(
+        container_uri,
+        input_uri,
+        output_uri,
+        job_id,
+        job_name,
+        input_data_format,
+        provider,
+        backend,
+        num_qubits,
+        num_shots,
+        total_count,
+        output_data_format,
+    )
+
+    # Assertions
+    assert isinstance(payload, dict)
+    assert payload["containerUri"] == container_uri
+    assert payload["id"] == "Test-Job"
+    assert payload["inputDataFormat"] == input_data_format
+    assert payload["itemType"] == "Job"
+    assert payload["name"] == job_name
+    assert payload["providerId"] == provider
+    assert payload["target"] == backend
+    assert payload["inputDataUri"] == input_uri
+    assert payload["inputParams"]["shots"] == num_shots
+    assert payload["inputParams"]["count"] == total_count
+    assert payload["outputDataFormat"] == output_data_format
+    assert payload["outputDataUri"] == output_uri
+    assert payload["metadata"]["qiskit"] == "True"
+    assert payload["metadata"]["name"] == job_name
+    assert payload["metadata"]["num_qubits"] == num_qubits
+    assert payload["metadata"]["metadata"] == "null"
+    assert payload["metadata"]["meas_map"] == "[0]"
+
+
+@patch(
+    "qbraid.runtime.azure.provider.Session.put"
+)  # Adjust the import based on your project structure
+def test_submit_job(mock_put):
+    """Test submitting a job to the Azure Quantum API."""
+    job_id = "job_id"
+    payload = {"key": "value"}
+    job_header = {"Authorization": "Bearer test_token"}
+    location_name = "location_name"
+    subscription_id = "subscription_id"
+    resource_group_name = "resource_group_name"
+    workspace_name = "workspace_name"
+
+    mock_response = MagicMock()
+    mock_response.json.return_value = {"status": "success"}
+    mock_put.return_value = mock_response
+
+    result = AzureHelperFunctions.submit_job(
+        job_id,
+        payload,
+        job_header,
+        location_name,
+        subscription_id,
+        resource_group_name,
+        workspace_name,
+        session,
+    )
+
+    expected_url = (
+        f"https://{location_name}.quantum.azure.com/subscriptions/{subscription_id}"
+        f"/resourceGroups/{resource_group_name}/providers/Microsoft.Quantum/workspaces/"
+        f"{workspace_name}/jobs/{job_id}?api-version=2022-09-12-preview"
+    )
+    mock_put.assert_called_once_with(expected_url, json=payload, headers=job_header)
+    assert result == {"status": "success"}
+
+
+@patch("qbraid.runtime.azure.provider.BlobServiceClient")
+def test_get_output_data(mock_blob_service_client_class):
+    """Test getting output data from an Azure Quantum job."""
+    # Mock the BlobServiceClient instance
+    mock_blob_service_client = MagicMock()
+    mock_blob_service_client_class.from_connection_string.return_value = mock_blob_service_client
+
+    # Mock the container client
+    mock_container_client = MagicMock()
+    mock_blob_service_client.get_container_client.return_value = mock_container_client
+
+    # Mock the blob client
+    mock_blob_client = MagicMock()
+    mock_container_client.get_blob_client.return_value = mock_blob_client
+
+    # Mock the download_blob method and its return value
+    mock_blob_data = MagicMock()
+    mock_blob_data.readall.return_value = b'{"result": "quantum data"}'
+    mock_blob_client.download_blob.return_value = mock_blob_data
+
+    # Test data
+    container_name = "test_container"
+    connection_string = "test_connection_string"
+
+    # Call the method
+    result = AzureHelperFunctions.get_output_data(container_name, connection_string)
+
+    # Assertions
+    assert result == '{"result": "quantum data"}'
+
+    # Verify that all methods were called with correct arguments
+    mock_blob_service_client_class.from_connection_string.assert_called_once_with(connection_string)
+    mock_blob_service_client.get_container_client.assert_called_once_with(container_name)
+    mock_container_client.get_blob_client.assert_called_once_with("rawOutputData")
+    mock_blob_client.download_blob.assert_called_once()
+    mock_blob_data.readall.assert_called_once()
 
 
 @patch("qbraid.runtime.azure.provider.AzureHelperFunctions.quantum_access_token")
@@ -519,7 +780,6 @@ def test_provider_get_devices(mock_get, mock_access_token, raw_devices_data):
     assert isinstance(devices[0], AzureQuantumDevice)
 
 
-# @pytest.mark.skip('almost bruh')
 @patch("qbraid.runtime.azure.provider.AzureHelperFunctions.quantum_access_token")
 @patch("qbraid.runtime.azure.provider.Session.get")
 def test_provider_get_device(
@@ -536,7 +796,6 @@ def test_provider_get_device(
     assert isinstance(device, AzureQuantumDevice)
 
 
-# @pytest.mark.skip('almost bruh')
 @patch("qbraid.runtime.azure.provider.AzureHelperFunctions.quantum_access_token")
 @patch("qbraid.runtime.azure.provider.Session.get")
 def test_device_status(mock_get, mock_access_token, raw_devices_data):
@@ -549,3 +808,20 @@ def test_device_status(mock_get, mock_access_token, raw_devices_data):
     device = provider.get_device("microsoft.estimator")
 
     assert "status" in device.profile
+
+
+def test_device_session():
+    """Test the session property of the AzureProvider class."""
+    assert device.session == session
+
+
+def test_device_class_status():
+    """Test the status method of the AzureQuantumDevice class."""
+    assert device.status() == "Available"
+
+
+@patch("qbraid.runtime.azure.provider.AzureSession.create_job")
+def test_device_job(mock_job):
+    """Test the submit method of the AzureQuantumDevice class."""
+    mock_job.return_value = "job"
+    assert device.submit("run_input", "name", "provider", "backend", "qubits") == "job"
