@@ -145,7 +145,9 @@ def test_invalid_weight(mock_conversion_func, invalid_weight):
         Conversion("source_pkg", "target_pkg", mock_conversion_func, weight=invalid_weight)
 
 
-@pytest.mark.parametrize("valid_weight,expected_value", [(0.8, np.log(1.25)), (None, np.log(2)), (0, float("inf"))])
+@pytest.mark.parametrize(
+    "valid_weight,expected_value", [(0.8, np.log(1.25)), (None, np.log(2)), (0, float("inf"))]
+)
 def test_valid_weight(mock_conversion_func, valid_weight, expected_value):
     """Test the default weight from the conversion function if not specified."""
     conversion = Conversion("source_pkg", "target_pkg", mock_conversion_func, weight=valid_weight)
