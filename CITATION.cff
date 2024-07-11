@@ -9,6 +9,7 @@ authors:
   - given-names: Ryan James
     family-names: Hill
     affiliation: qBraid Co.
+    orcid: https://orcid.org/0009-0006-9222-0810
   - given-names: Rohan
     family-names: Jain
     affiliation: Carnegie Mellon University
@@ -56,6 +57,7 @@ authors:
   - given-names: Kanav
     family-names: Setia
     affiliation: qBraid Co.
+    orcid: https://orcid.org/0000-0003-2032-3993
 repository-code: 'https://github.com/qBraid/qBraid'
 url: 'https://sdk.qbraid.com/en/v0.7.0/'
 repository-artifact: 'https://github.com/qBraid/qBraid/releases/tag/v0.7.0'
@@ -68,4 +70,5 @@ keywords:
   - runtime
 license: GPL-3.0
 version: 0.7.0
+doi: 10.5281/zenodo.12627596
 date-released: '2024-07-02'
