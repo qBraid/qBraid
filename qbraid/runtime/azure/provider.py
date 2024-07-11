@@ -18,7 +18,6 @@ from uuid import uuid4
 import openqasm3
 from azure.storage.blob import BlobServiceClient, ContentSettings
 from qbraid_core._import import LazyLoader
-from qbraid_core.exceptions import RequestsApiError
 from qbraid_core.sessions import Session
 
 from qbraid.programs.spec import ProgramSpec
@@ -87,7 +86,6 @@ class AzureSession(Session):
         r = self.session.get(url, headers=auth_headers)
         devices = r.json()
 
-
         devices_dict = self._helpers.device_manager(devices)
         devices_list = [{"id": k, **v} for k, v in devices_dict.items()]
 
@@ -104,9 +102,10 @@ class AzureSession(Session):
 
         return device
 
+    # pylint: disable=too-many-arguments
     def create_job(
         self, input_run: Any, name: str, provider: str, backend: str, qubits: int
-    ) -> dict[str, Any]:   # pylint: disable=too-many-arguments
+    ) -> dict[str, Any]:
         """Create a new job on the Azure Quantum API."""
         quantum_access_token = self._helpers.quantum_access_token(
             self.client_id, self.client_secret, self.tenant_id, self.session
@@ -197,22 +196,18 @@ class AzureSession(Session):
 
     def cancel_job(self, job_id: str):
         """Cancel a specific Azure Quantum job."""
-        try:
-            job = job_id
-            header = self.jobs[job_id][0]
-            url = (
-                f"https://{self.location_name}.quantum.azure.com/subscriptions/"
-                f"{self.subscription_id}/resourceGroups/{self.resource_group_name}/"
-                f"providers/Microsoft.Quantum/workspaces/{self.workspace_name}/jobs/"
-                f"{job}?api-version=2022-09-12-preview"
-            )
+        job = job_id
+        header = self.jobs[job_id][0]
+        url = (
+            f"https://{self.location_name}.quantum.azure.com/subscriptions/"
+            f"{self.subscription_id}/resourceGroups/{self.resource_group_name}/"
+            f"providers/Microsoft.Quantum/workspaces/{self.workspace_name}/jobs/"
+            f"{job}?api-version=2022-09-12-preview"
+        )
 
-            response = self.session.delete(url, headers=header)
-            print("Job has been cancelled.")
-            return str(response)
-
-        except RequestsApiError:
-            return "The job has already been submitted and cannot be cancelled."
+        response = self.session.delete(url, headers=header)
+        print("Job has been cancelled.")
+        return str(response)
 
 
 class AzureQuantumProvider(QuantumProvider):
@@ -373,6 +368,7 @@ class AzureHelperFunctions:
         session.put(url, json={}, headers=container_headers)
         return [job_id, container_name]
 
+    # pylint: disable=too-many-arguments
     @staticmethod
     def create_job_routes(
         session: str,
@@ -384,7 +380,7 @@ class AzureHelperFunctions:
         resource_group_name: str,
         workspace_name: str,
         quantum_access_token: str,
-    ) -> list[str]:  # pylint: disable=too-many-arguments
+    ) -> list[str]:
         """Create the routes for the job."""
         containerName = container
         qasm_str = qasm
@@ -425,6 +421,7 @@ class AzureHelperFunctions:
 
         return [containerSasUri, inputSasUri, outputSasUri, quantum_headers]
 
+    # pylint: disable=too-many-arguments
     @staticmethod
     def create_payload(
         container_uri: str,
@@ -439,7 +436,7 @@ class AzureHelperFunctions:
         num_shots: int,
         total_count: int,
         output_data_format: str,
-    ) -> dict:  # pylint: disable=too-many-arguments
+    ) -> dict:
         """Create the payload for the job."""
         payload = {
             "containerUri": container_uri,
@@ -464,6 +461,7 @@ class AzureHelperFunctions:
 
         return payload
 
+    # pylint: disable=too-many-arguments
     @staticmethod
     def submit_job(
         job_id: str,
@@ -474,7 +472,7 @@ class AzureHelperFunctions:
         resource_group_name: str,
         workspace_name: str,
         session: Any,
-    ) -> dict:  # pylint: disable=too-many-arguments
+    ) -> dict:
         """Submit the job to the Azure Quantum API."""
         url = (
             f"https://{location_name}.quantum.azure.com/subscriptions/{subscription_id}"
