@@ -451,3 +451,38 @@ def test_wrong_type_conversion(mock_basic_device):
 
     unregister_program_type("alice")
     unregister_program_type("charlie")
+
+
+class FakeSession:
+    """Mock session for testing."""
+
+    def save_config(self, **kwargs):  # pylint: disable=unused-argument
+        """Mock save configuration."""
+        return None
+
+
+class FakeClient:
+    """Mock client for testing."""
+
+    def __init__(self, api_key=None):  # pylint: disable=unused-argument
+        self.session = FakeSession()
+
+    def get_device(self, qbraid_id):
+        """Mock get device."""
+        raise ValueError("Device not found")
+
+
+def test_save_config():
+    """Test saving configuration."""
+    provider = QbraidProvider(client=FakeClient())
+    try:
+        provider.save_config(param1="value1", param2="value2")
+    except Exception:  # pylint: disable=broad-except
+        pytest.fail("save_config raised an exception unexpectedly")
+
+
+def test_get_device_fail():
+    """Test raising exception when device is not found."""
+    provider = QbraidProvider(client=FakeClient())
+    with pytest.raises(ResourceNotFoundError):
+        provider.get_device("qbraid_qir_simulator")

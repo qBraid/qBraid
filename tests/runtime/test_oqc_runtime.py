@@ -136,6 +136,10 @@ def oqc_device(lucy_simulator_data):
 
             return Result(counts={"c": {"0": 1, "1": 1}}) if not none else None
 
+        def cancel_task(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
+            """Cancel task."""
+            return None
+
     class TestOQCDevice(OQCDevice):
         """Test class for OQC device."""
 
@@ -237,3 +241,10 @@ def test_run_batch_fake_job(run_inputs, oqc_device):
     assert isinstance(job, list)
     assert len(job) == len(run_inputs)
     assert all(isinstance(j, OQCJob) for j in job)
+
+
+def test_cancel_job(oqc_device):
+    """Test cancelling a fake job."""
+    job = oqc_device.run("OPENQASM 2.0;\nqreg q[2];\ncreg c[2];\nh q[0];\nmeasure q[0] -> c[0];\n")
+    assert isinstance(job, OQCJob)
+    assert job.cancel() is None
