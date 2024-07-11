@@ -554,16 +554,14 @@ def test_built_runtime_profile_fail():
     class FakeSession(AwsSession):
         """Fake Session for testing."""
 
-        def __init__(
+        def __init__(  # pylint: disable=useless-parent-delegation
             self,
             boto_session=None,
             braket_client=None,
             config=None,
             default_bucket=None,
         ):
-            super().__init__(
-                boto_session, braket_client, config, default_bucket
-            )  # pylint: disable=useless-parent-delegation
+            super().__init__(boto_session, braket_client, config, default_bucket)
 
         def get_device(self, arn):  # pylint: disable=unused-argument
             """Fake get_device method."""
