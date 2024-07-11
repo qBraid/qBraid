@@ -149,13 +149,13 @@ def test_target_profile_str(target_profile_openqasm):
     basis_gates = target_profile_openqasm["basis_gates"]
 
     expected_str = (
-        "{'device_id': 'device123', "
-        "'device_type': 'SIMULATOR', "
-        "'action_type': 'OpenQASM', "
-        "'num_qubits': 5, "
-        "'program_spec': <ProgramSpec('qasm2', builtins.str)>, "
-        "'provider_name': 'Heisenberg', "
-        f"'basis_gates': {basis_gates}" + "}"
+        "TargetProfile(device_id=device123, "
+        "device_type=SIMULATOR, "
+        "action_type=OpenQASM, "
+        "num_qubits=5, "
+        "program_spec=ProgramSpec for qasm2 str type., "
+        "provider_name=Heisenberg, "
+        f"basis_gates={basis_gates}" + ")"
     )
     assert str(target_profile_openqasm).startswith(expected_str)
 
@@ -182,4 +182,4 @@ def test_target_profile_iter():
     """Test the __iter__ method of TargetProfile."""
     target_profile = TargetProfile(device_id="simulator", device_type=DeviceType.SIMULATOR)
 
-    assert list(iter(target_profile)) == ["device_id", "device_type"]
+    assert list(iter(target_profile)) == [("device_id", "simulator"), ("device_type", "SIMULATOR")]

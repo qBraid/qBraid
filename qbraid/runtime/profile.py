@@ -88,7 +88,7 @@ class TargetProfile(BaseModel):
 
     def items(self) -> Iterator[tuple[str, Any]]:
         """Return an iterator of key-value pairs of the profile."""
-        return self.__dict__.items()
+        return [(k, v) for k, v in self.__dict__.items() if v is not None]
 
     def get(self, key: str, default: Any = None) -> Any:
         """Return the value of the key if it exists."""
@@ -106,10 +106,12 @@ class TargetProfile(BaseModel):
         return sum(1 for v in self.__dict__.values() if v is not None)
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__}({', '.join(f'{k}={v}' for k, v in self.__dict__.items() if v is not None)})"
+        return (
+            f"TargetProfile({', '.join(f'{k}={v}' for k, v in self.__dict__.items())})"
+        )
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} {', '.join(f'{k}={v!r}' for k, v in self.__dict__.items() if v is not None)}>"
+        return f"TargetProfile {', '.join(f'{k}={v!r}' for k, v in self.__dict__.items())}>"
 
     class Config:
         """Pydantic configuration settings for the TargetProfile class."""
