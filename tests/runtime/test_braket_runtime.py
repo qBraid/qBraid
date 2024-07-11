@@ -562,6 +562,7 @@ def test_built_runtime_profile_fail():
             default_bucket=None,
         ):
             super().__init__(boto_session, braket_client, config, default_bucket)
+            self.region = "us-east-1"
 
         def get_device(self, arn):  # pylint: disable=unused-argument
             """Fake get_device method."""
