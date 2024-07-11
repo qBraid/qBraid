@@ -165,7 +165,7 @@ class QbraidDevice(QuantumDevice):
         run_input: "Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]]",
         *args,
         **kwargs,
-    ) -> "Union[qbraid.runtime.job.QbraidJob, list[qbraid.runtime.job.QbraidJob]]":
+    ) -> "Union[qbraid.runtime.QbraidJob, list[qbraid.runtime.QbraidJob]]":
         """
         Run a quantum job or a list of quantum jobs on this quantum device.
 

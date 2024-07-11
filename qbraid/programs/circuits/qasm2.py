@@ -65,7 +65,7 @@ class OpenQasm2Program(GateModelProgram):
     @property
     def depth(self) -> int:  # pylint: disable=too-many-statements
         """Calculates circuit depth of OpenQASM 2 string"""
-        qasm_str = self.program
+        qasm_str: str = self.program
         if not isinstance(qasm_str, str):
             raise ProgramTypeError(message=f"Expected 'str' object, got '{type(qasm_str)}'.")
         lines = qasm_str.splitlines()
