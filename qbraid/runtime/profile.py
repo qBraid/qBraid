@@ -106,14 +106,10 @@ class TargetProfile(BaseModel):
         return sum(1 for v in self.__dict__.values() if v is not None)
 
     def __str__(self) -> str:
-        return f"{self.__class__.__name__}({', '.join(f'{k}={v}' 
-                                                      for k, v in self.__dict__.items() 
-                                                      if v is not None)})"
+        return f"{self.__class__.__name__}({', '.join(f'{k}={v}' for k, v in self.__dict__.items() if v is not None)})"
 
     def __repr__(self) -> str:
-        return f"<{self.__class__.__name__} {', '.join(f'{k}={v!r}' 
-                                                       for k, v in self.__dict__.items() 
-                                                       if v is not None)}>"
+        return f"<{self.__class__.__name__} {', '.join(f'{k}={v!r}' for k, v in self.__dict__.items() if v is not None)}>"
 
     class Config:
         """Pydantic configuration settings for the TargetProfile class."""
