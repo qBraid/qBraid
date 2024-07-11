@@ -349,3 +349,14 @@ def test_ionq_failed_job(mock_post, mock_get, circuit):
 
     with pytest.raises(IonQJobError):
         job.result()
+
+
+def test_ionq_job_cancel():
+    """Test cancelling a job."""
+    class FakeSession:
+        def cancel_job(self, job_id: str):
+            """Fake cancel job."""
+            return None
+    
+    job = IonQJob("fake_job_id", FakeSession())
+    assert job.cancel() is None
