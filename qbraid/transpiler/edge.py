@@ -16,6 +16,8 @@ import importlib
 import inspect
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
+import numpy as np
+
 from qbraid.programs import QPROGRAM_REGISTRY, get_program_type_alias
 
 if TYPE_CHECKING:
@@ -51,7 +53,7 @@ class Conversion:
         self._weight = weight if weight is not None else default_weight
         if not 0 <= self._weight <= 1:
             raise ValueError("Weight must be a float between 0 and 1, inclusive.")
-        self._weight = 1 / max(self._weight, 1e-10)
+        self._weight = float("inf") if self._weight == 0 else np.log(1 / self._weight)
 
     @property
     def source(self) -> str:
