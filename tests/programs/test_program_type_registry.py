@@ -209,7 +209,7 @@ def test_unregister_program_type_non_unique():
 def test_program_spec_str_rep():
     """Test string representation of ProgramSpec"""
     spec = ProgramSpec(str, alias="qasm2")
-    assert str(spec) == "ProgramSpec for qasm2 str type."
+    assert str(spec) == "ProgramSpec(str, qasm2)"
 
 
 def test_program_spec_equality():

@@ -270,7 +270,7 @@ def test_device_profile_attributes(mock_aws_device, sv1_profile):
     assert device.num_qubits == sv1_profile.get("num_qubits")
     assert device._target_spec == sv1_profile.get("program_spec")
     assert device.device_type == DeviceType(sv1_profile.get("device_type"))
-    assert device.profile.get("action_type") == "OPENQASM"
+    assert device.profile.get("action_type") == "OpenQASM"
 
 
 @patch("qbraid.runtime.braket.device.AwsDevice")
