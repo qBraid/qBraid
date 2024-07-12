@@ -9,12 +9,12 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for qbraid.programs.qasm2.OpenQasm2Program
+Unit tests for qbraid.programs.qasm.OpenQasm2Program
 
 """
 import pytest
 
-from qbraid.programs.circuits.qasm2 import OpenQasm2Program
+from qbraid.programs.circuits.qasm import OpenQasm2Program
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.registry import unregister_program_type
 

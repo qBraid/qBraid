@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for qbraid.programs.qasm3.OpenQasm3Program
+Unit tests for qbraid.programs.qasm.OpenQasm3Program
 
 """
 import numpy as np
@@ -18,7 +18,7 @@ from qiskit.qasm3 import dumps, loads
 
 from qbraid.interface.random.qasm3_random import _qasm3_random
 from qbraid.interface.random.qiskit_random import _qiskit_random
-from qbraid.programs.circuits.qasm3 import OpenQasm3Program
+from qbraid.programs.circuits.qasm import OpenQasm3Program
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.registry import unregister_program_type
 from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import _get_qasm3_gate_defs
