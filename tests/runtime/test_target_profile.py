@@ -153,7 +153,7 @@ def test_target_profile_str(target_profile_openqasm):
         "device_type=SIMULATOR, "
         "action_type=OpenQASM, "
         "num_qubits=5, "
-        "program_spec=ProgramSpec for qasm2 str type., "
+        "program_spec=ProgramSpec(str, qasm2), "
         "provider_name=Heisenberg, "
         f"basis_gates={basis_gates}" + ")"
     )
