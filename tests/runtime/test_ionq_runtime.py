@@ -163,19 +163,19 @@ def test_ionq_provider_device_unavailable():
                     res["status"] = "fake_status"
             return res
 
-    unavailable_profile = TargetProfile("qpu.harmony", DeviceType.QPU)
+    unavailable_profile = TargetProfile(device_id="qpu.harmony", device_type=DeviceType.QPU)
     unavailable_device = IonQDevice(unavailable_profile, MockSession())
     assert unavailable_device.status() == DeviceStatus.UNAVAILABLE
 
-    offline_profile = TargetProfile("qpu.aria-1", DeviceType.QPU)
+    offline_profile = TargetProfile(device_id="qpu.aria-1", device_type=DeviceType.QPU)
     offline_device = IonQDevice(offline_profile, MockSession())
     assert offline_device.status() == DeviceStatus.OFFLINE
 
-    available_profile = TargetProfile("qpu.aria-2", DeviceType.QPU)
+    available_profile = TargetProfile(device_id="qpu.aria-2", device_type=DeviceType.QPU)
     available_device = IonQDevice(available_profile, MockSession())
     assert available_device.status() == DeviceStatus.ONLINE
 
-    fake_profile = TargetProfile("fake_device", DeviceType.QPU)
+    fake_profile = TargetProfile(device_id="fake_device", device_type=DeviceType.QPU)
     fake_device = IonQDevice(fake_profile, MockSession())
     with pytest.raises(ValueError):
         fake_device.status()
@@ -349,3 +349,17 @@ def test_ionq_failed_job(mock_post, mock_get, circuit):
 
     with pytest.raises(IonQJobError):
         job.result()
+
+
+def test_ionq_job_cancel():
+    """Test cancelling a job."""
+
+    class FakeSession:
+        """Fake session class."""
+
+        def cancel_job(self, job_id: str):  # pylint: disable=unused-argument
+            """Fake cancel job."""
+            return None
+
+    job = IonQJob("fake_job_id", FakeSession())
+    assert job.cancel() is None
