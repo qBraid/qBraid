@@ -73,7 +73,7 @@ class IonQDevice(QuantumDevice):
             if isinstance(statement, openqasm3.ast.QuantumGate):
                 name = statement.name.name
                 qubits = statement.qubits
-                qubit_values = []
+                qubit_values: list[int] = []
 
                 for qubit in qubits:
                     _ = qubit.name.name

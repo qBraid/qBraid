@@ -45,7 +45,7 @@ if TYPE_CHECKING:
     import cirq.ops as cirq_ops
 
 
-def _give_cirq_gate_name(gate: "cirq_ops.Gate", name: str, n_qubits: int) -> "cirq_ops.Gate":
+def _give_cirq_gate_name(gate: "cirq_ops.Gate", name: str, n_qubits: int) -> None:
     def _circuit_diagram_info_(args):  # pylint: disable=unused-argument
         return name, *(name,) * (n_qubits - 1)
 

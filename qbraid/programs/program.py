@@ -33,7 +33,7 @@ class QuantumProgram(ABC):
 
     def __init__(self, program: "qbraid.programs.QPROGRAM"):
         self.spec = self.get_spec(program)
-        self._program = None
+        self._program = program
         self.program = program
 
     @property
