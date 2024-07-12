@@ -103,7 +103,9 @@ class BraketDevice(QuantumDevice):
         if action_type == "OPENQASM" and not isinstance(program, Circuit):
             raise DeviceProgramTypeMismatchError(program, str(Circuit), action_type)
 
-        if action_type == "AHS" and not isinstance(program, AnalogHamiltonianSimulation):
+        if action_type == "ANALOG HAMILTONIAN SIMULATION" and not isinstance(
+            program, AnalogHamiltonianSimulation
+        ):
             raise DeviceProgramTypeMismatchError(
                 program, str(AnalogHamiltonianSimulation), action_type
             )
