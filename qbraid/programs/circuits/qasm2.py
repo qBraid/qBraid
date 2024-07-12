@@ -16,7 +16,6 @@ import re
 from typing import TYPE_CHECKING
 
 from openqasm3.ast import (
-    BinaryExpression,
     BranchingStatement,
     ClassicalDeclaration,
     IndexedIdentifier,
@@ -77,11 +76,12 @@ class OpenQasm2Program(GateModelProgram):
         return len(self._get_bits("c"))
 
     @property
-    def depth(self) -> int:
+    def depth(self) -> int:  # pylint: disable=too-many-statements
         """Return the circuit depth (i.e., length of critical path)."""
-        def _depth(qasm_statements) -> dict:
+
+        def _depth(qasm_statements) -> dict:  # pylint: disable=too-many-statements
             """Return the depth of a list ofgiven qasm statements."""
-            counts = {}
+            counts = {q: 0 for q in self.qubits}
             qreg_sizes = {}
             creg_sizes = {}
             track_measured = {}
@@ -91,15 +91,14 @@ class OpenQasm2Program(GateModelProgram):
                     qreg_name = statement.qubit.name
                     qreg_size = statement.size.value
                     qreg_sizes[qreg_name] = qreg_size
-                    for i in range(qreg_size):
-                        counts[f"{qreg_name}[{i}]"] = 0
+                    continue
                 if isinstance(statement, ClassicalDeclaration):
                     creg_name = statement.identifier.name
                     creg_size = statement.type.size.value
                     creg_sizes[creg_name] = creg_size
                     for i in range(creg_size):
-                        counts[f"{creg_name}[{i}]"] = 0
                         track_measured[f"{creg_name}[{i}]"] = 0
+                    continue
                 if isinstance(statement, QuantumGate):
                     qubits_involved = set()
                     if isinstance(statement.qubits[0], IndexedIdentifier):
@@ -108,7 +107,7 @@ class OpenQasm2Program(GateModelProgram):
                             qubit_index = qubit.indices[0][0].value
                             counts[f"{qreg_name}[{qubit_index}]"] += 1
                             qubits_involved.add(f"{qreg_name}[{qubit_index}]")
-                        max_involved_depth = max([counts[qubit] for qubit in qubits_involved])
+                        max_involved_depth = max(counts[qubit] for qubit in qubits_involved)
                         for qubit in qubits_involved:
                             counts[qubit] = max_involved_depth
                     else:
@@ -118,9 +117,14 @@ class OpenQasm2Program(GateModelProgram):
                                 counts[f"{qreg_name}[{i}]"] += 1
                     max_depth = max(counts.values())
                 elif isinstance(statement, QuantumReset):
-                    counts[statement.qubits.indices[0][0].value] += 1
-                    array_max = max(counts.values())
-                    max_depth = max(max_depth, array_max)
+                    if isinstance(statement.qubits, IndexedIdentifier):
+                        qreg_name = statement.qubits.name.name
+                        qubit_index = statement.qubits.indices[0][0].value
+                        counts[f"{qreg_name}[{qubit_index}]"] += 1
+                    else:
+                        qreg_name = statement.qubits.name
+                        for i in range(qreg_sizes[qreg_name]):
+                            counts[f"{qreg_name}[{i}]"] += 1
                 elif isinstance(statement, QuantumBarrier):
                     for qubit in statement.qubits:
                         qreg_name = qubit.name
@@ -145,17 +149,14 @@ class OpenQasm2Program(GateModelProgram):
                         for i in range(creg_sizes[creg]):
                             track_measured[f"{creg}[{i}]"] = max_depth
                 elif isinstance(statement, BranchingStatement):
-                    if isinstance(statement.condition, BinaryExpression):
-                        creg_name = statement.condition.lhs.name
-                        required_depth = max([
-                            track_measured[f"{creg_name}[{creg_index}]"]
-                            for creg_index in range(creg_sizes[creg_name])
-                        ])
-                    else:
-                        creg_name = statement.condition.collection.name
-                        creg_index = statement.condition.index[0].value
-                        required_depth = track_measured[f"{creg_name}[{creg_index}]"]
-
+                    creg_name = statement.condition.lhs.name
+                    required_depth = max(
+                        track_measured[f"{creg_name}[{creg_index}]"]
+                        for creg_index in range(creg_sizes[creg_name])
+                    )
+                    required_depth = max(required_depth, max_depth)
+                    for i in range(creg_sizes[creg_name]):
+                        track_measured[f"{creg_name}[{i}]"] = required_depth
                     qubits = set()
                     for sub_statement in statement.if_block + statement.else_block:
                         if isinstance(sub_statement, QuantumGate):
@@ -172,7 +173,6 @@ class OpenQasm2Program(GateModelProgram):
                         counts[qubit] = max(required_depth, counts[qubit]) + 1
 
                     max_depth = max(counts.values())
-                print(counts, type(statement))
             return counts
 
         program = self.parsed()

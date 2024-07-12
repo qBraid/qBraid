@@ -19,7 +19,9 @@ from typing import Optional
 import numpy as np
 from openqasm3.ast import (
     BitType,
+    BranchingStatement,
     ClassicalDeclaration,
+    IndexedIdentifier,
     Program,
     QuantumBarrier,
     QuantumGate,
@@ -109,43 +111,109 @@ class OpenQasm3Program(GateModelProgram):
         return self._num_clbits
 
     @property
-    def depth(self) -> int:
+    def depth(self) -> int:  # pylint: disable=too-many-statements
         """Return the circuit depth (i.e., length of critical path)."""
+
+        def _depth(qasm_statements) -> dict:  # pylint: disable=too-many-statements
+            """Return the depth of a list ofgiven qasm statements."""
+            counts = {f"{q}[{i}]": 0 for q, s in self.qubits for i in range(s or 1)}
+            qreg_sizes = {}
+            creg_sizes = {}
+            track_measured = {}
+            max_depth = 0
+            for statement in qasm_statements:
+                if isinstance(statement, QubitDeclaration):
+                    qreg_name = statement.qubit.name
+                    qreg_size = statement.size.value
+                    qreg_sizes[qreg_name] = qreg_size
+                    continue
+                if isinstance(statement, ClassicalDeclaration):
+                    creg_name = statement.identifier.name
+                    creg_size = statement.type.size.value
+                    creg_sizes[creg_name] = creg_size
+                    for i in range(creg_size):
+                        track_measured[f"{creg_name}[{i}]"] = 0
+                    continue
+                if isinstance(statement, QuantumGate):
+                    qubits_involved = set()
+                    if isinstance(statement.qubits[0], IndexedIdentifier):
+                        for qubit in statement.qubits:
+                            qreg_name = qubit.name.name
+                            qubit_index = qubit.indices[0][0].value
+                            counts[f"{qreg_name}[{qubit_index}]"] += 1
+                            qubits_involved.add(f"{qreg_name}[{qubit_index}]")
+                        max_involved_depth = max(counts[qubit] for qubit in qubits_involved)
+                        for qubit in qubits_involved:
+                            counts[qubit] = max_involved_depth
+                    else:
+                        for qubit in statement.qubits:
+                            qreg_name = qubit.name
+                            for i in range(qreg_sizes[qreg_name]):
+                                counts[f"{qreg_name}[{i}]"] += 1
+                    max_depth = max(counts.values())
+                elif isinstance(statement, QuantumReset):
+                    if isinstance(statement.qubits, IndexedIdentifier):
+                        qreg_name = statement.qubits.name.name
+                        qubit_index = statement.qubits.indices[0][0].value
+                        counts[f"{qreg_name}[{qubit_index}]"] += 1
+                    else:
+                        qreg_name = statement.qubits.name
+                        for i in range(qreg_sizes[qreg_name]):
+                            counts[f"{qreg_name}[{i}]"] += 1
+                elif isinstance(statement, QuantumBarrier):
+                    for qubit in statement.qubits:
+                        qreg_name = qubit.name
+                        for i in range(qreg_sizes[qreg_name]):
+                            counts[f"{qreg_name}[{i}]"] = max_depth
+                elif isinstance(statement, QuantumMeasurementStatement):
+                    qubit = statement.measure.qubit
+                    if isinstance(qubit, IndexedIdentifier):
+                        qreg_name = qubit.name.name
+                        qubit_index = qubit.indices[0][0].value
+                        counts[f"{qreg_name}[{qubit_index}]"] += 1
+                        creg_name = statement.target.name.name
+                        creg_index = statement.target.indices[0][0].value
+                        max_depth = max(counts.values())
+                        track_measured[f"{creg_name}[{creg_index}]"] = max_depth
+                    else:
+                        qreg_name = qubit.name
+                        for i in range(qreg_sizes[qreg_name]):
+                            counts[f"{qreg_name}[{i}]"] += 1
+                        creg = statement.target.name
+                        max_depth = max(counts.values())
+                        for i in range(creg_sizes[creg]):
+                            track_measured[f"{creg}[{i}]"] = max_depth
+                elif isinstance(statement, BranchingStatement):
+                    creg_name = statement.condition.lhs.name
+                    required_depth = max(
+                        track_measured[f"{creg_name}[{creg_index}]"]
+                        for creg_index in range(creg_sizes[creg_name])
+                    )
+                    required_depth = max(required_depth, max_depth)
+                    for i in range(creg_sizes[creg_name]):
+                        track_measured[f"{creg_name}[{i}]"] = required_depth
+                    qubits = set()
+                    for sub_statement in statement.if_block + statement.else_block:
+                        if isinstance(sub_statement, QuantumGate):
+                            for qubit in sub_statement.qubits:
+                                qreg_name = qubit.name.name
+                                qubit_index = qubit.indices[0][0].value
+                                qubits.add(f"{qreg_name}[{qubit_index}]")
+                        elif isinstance(sub_statement, QuantumMeasurementStatement):
+                            qreg_name = sub_statement.measure.qubit.name.name
+                            qubit_index = sub_statement.measure.qubit.indices[0][0].value
+                            qubits.add(f"{qreg_name}[{qubit_index}]")
+
+                    for qubit in qubits:
+                        counts[qubit] = max(required_depth, counts[qubit]) + 1
+
+                    max_depth = max(counts.values())
+            return counts
+
         program = self.parsed()
-        max_depth = 0
-        n = self._num_qubits
-        counts = [0] * n
-        new_measurement_moment = True
+        counts = _depth(program.statements)
 
-        for statement in program.statements:
-            if isinstance(statement, (QubitDeclaration, ClassicalDeclaration)):
-                continue
-            if isinstance(statement, QuantumGate):
-                if len(statement.qubits) == 1:
-                    qubit = statement.qubits[0]
-                    counts[qubit.indices[0][0].value] += 1
-                    array_max = max(counts)
-                    max_depth = max(max_depth, array_max)
-                else:
-                    indices = [qubit.indices[0][0].value for qubit in statement.qubits]
-                    relevant_counts = [counts[idx] for idx in indices]
-                    curr_max_depth = max(relevant_counts)
-                    for idx in indices:
-                        counts[idx] = curr_max_depth + 1
-                    max_depth = max(max_depth, curr_max_depth + 1)
-            elif isinstance(statement, QuantumReset):
-                counts[statement.qubits.indices[0][0].value] += 1
-                array_max = max(counts)
-                max_depth = max(max_depth, array_max)
-            elif isinstance(statement, QuantumBarrier):
-                counts = [max_depth] * n
-                new_measurement_moment = True
-            elif isinstance(statement, QuantumMeasurementStatement) and new_measurement_moment:
-                for i in range(n):
-                    counts[i] += 1
-                new_measurement_moment = False
-
-        return max(counts)
+        return max(counts.values())
 
     def _unitary(self) -> "np.ndarray":
         """Calculate unitary of circuit."""

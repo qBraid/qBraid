@@ -14,7 +14,6 @@ Unit tests for qbraid.programs.qasm2.OpenQasm2Program
 """
 import pytest
 
-from qbraid.programs import QPROGRAM_REGISTRY
 from qbraid.programs.circuits.qasm2 import OpenQasm2Program
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.registry import unregister_program_type
@@ -177,6 +176,22 @@ h q[3];
 measure q[3] -> c[3];
         """,
         20,
+    ),
+    (
+        """
+OPENQASM 2.0;
+include "qelib1.inc";
+
+qreg q[2];
+creg c[2];
+
+h q[0];
+cx q[0],q[1];
+reset q[0];
+reset q;
+measure q[1] -> c[1];
+""",
+        4,
     ),
 ]
 
