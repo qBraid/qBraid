@@ -102,6 +102,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     kwargs = {}
     if edge_labels:
         kwargs["edge_labels"] = lambda edge: round(edge["weight"], 2)
+    kwargs["min_target_margin"] = min_target_margin
     mpl_draw(
         graph,
         pos,
@@ -110,7 +111,6 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         node_size=node_size,
         with_labels=True,
         labels=str,
-        min_target_margin=min_target_margin,
         **kwargs,
     )
 
