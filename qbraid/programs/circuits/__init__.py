@@ -33,8 +33,7 @@ Submodules
    pennylane
    pyquil
    pytket
-   qasm2
-   qasm3
+   qasm
    qiskit
 
 """
