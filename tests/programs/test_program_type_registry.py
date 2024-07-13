@@ -22,6 +22,7 @@ import pytest
 from qbraid.exceptions import QbraidError
 from qbraid.interface import random_circuit
 from qbraid.programs import (
+    NATIVE_REGISTRY,
     QPROGRAM_ALIASES,
     QPROGRAM_REGISTRY,
     QPROGRAM_TYPES,
@@ -32,6 +33,8 @@ from qbraid.programs import (
     register_program_type,
     unregister_program_type,
 )
+from qbraid.programs.circuits import key_set
+from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.registry import is_registered_alias_native
 
 
@@ -239,3 +242,21 @@ def test_load_entrypoint_not_found():
         with pytest.raises(QbraidError):
             program = random_circuit("qiskit")
             load_program(program)
+
+
+def test_program_type_error():
+    """Test the ProgramTypeError class."""
+    error = ProgramTypeError(program="test")
+    message = error.generate_message()
+    assert message == "Quantum program of type '<class 'str'>' is not supported."
+
+    error = ProgramTypeError()
+    message = error.generate_message()
+    assert message == "Unsupported quantum program type."
+
+
+def test_circuits_init():
+    """Test the initialization of the circuits module."""
+    assert "qasm" in key_set and "qasm" not in NATIVE_REGISTRY
+    assert all(key in NATIVE_REGISTRY for key in ["qasm2", "qasm3"])
+    assert all(key not in key_set for key in ["qasm2", "qasm3"])

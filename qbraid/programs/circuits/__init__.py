@@ -41,33 +41,28 @@ import importlib
 
 from ._model import GateModelProgram
 
-
-def try_import_module(base_path: str, module_name: str) -> None:
-    """Attempt to import a module and append to submodules if successful."""
-    try:
-        imported_module = importlib.import_module(base_path + module_name)
-        submodules.append(module_name)
-        globals()[module_name] = imported_module
-    except ImportError:
-        pass
-
-
 _qbraid = importlib.import_module("qbraid.programs._import")
 NATIVE_REGISTRY = getattr(_qbraid, "NATIVE_REGISTRY", {})
+CIRCUIT_SUBMODULE_CHECKS = NATIVE_REGISTRY.copy()
 
 submodules = []
-circuits_module = "qbraid.programs.circuits."
-qasm_in_registry = False
+base_path = "qbraid.programs.circuits."
 
-for lib in list(NATIVE_REGISTRY.keys()):
-    if lib in ["qasm2", "qasm3"]:
-        qasm_in_registry = True
-        continue
+qasm2 = CIRCUIT_SUBMODULE_CHECKS.pop("qasm2", None)
+qasm3 = CIRCUIT_SUBMODULE_CHECKS.pop("qasm3", None)
 
-    try_import_module(circuits_module, lib)
+key_set = set(CIRCUIT_SUBMODULE_CHECKS.keys())
+if qasm2 or qasm3:
+    key_set.add("qasm")
 
-if qasm_in_registry:
-    try_import_module(circuits_module, "qasm")
+for lib in key_set:
+    try:
+        imported_lib = importlib.import_module(base_path + lib)
+        submodules.append(lib)
+        globals()[lib] = imported_lib
+
+    except ImportError:
+        pass
 
 
 __all__ = ["GateModelProgram"]
