@@ -43,7 +43,7 @@ def load_entrypoint(module: str, name: str) -> Optional[Type]:
             entry_points = {
                 ep.name: ep for ep in importlib.metadata.entry_points().select(group=group)
             }
-        else:  # coverage: ignore
+        else:
             entry_points = {ep.name: ep for ep in pkg_resources.iter_entry_points(group)}
 
         entry_point = entry_points[name]
