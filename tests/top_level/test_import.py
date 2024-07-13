@@ -12,12 +12,14 @@
 Unit tests for lazy imports and loading entry points.
 
 """
+import sys
+from unittest.mock import MagicMock
 from unittest.mock import Mock as MockEntryPoint
 from unittest.mock import patch
 
 import pytest
 
-from qbraid._import import _load_entrypoint
+from qbraid._import import load_entrypoint
 from qbraid.exceptions import QbraidError
 from qbraid.programs._import import _dynamic_importer
 
@@ -26,7 +28,7 @@ def test_load_entrypoint_success():
     """Test that an entrypoint is successfully loaded."""
     module = "programs"
     name = "qasm3"
-    assert _load_entrypoint(module, name).__name__ == "OpenQasm3Program"
+    assert load_entrypoint(module, name).__name__ == "OpenQasm3Program"
 
 
 def test_load_entrypoint_raise_value_error():
@@ -35,10 +37,11 @@ def test_load_entrypoint_raise_value_error():
     name = "nonexistent"
 
     with pytest.raises(ValueError) as excinfo:
-        _load_entrypoint(module, name)
+        load_entrypoint(module, name)
     assert f"Entrypoint '{name}' not found in module '{module}'." in str(excinfo.value)
 
 
+@pytest.mark.skipif(sys.version_info < (3, 10), reason="Requires Python 3.10 or higher")
 def test_load_entrypoint_raise_qbraid_error():
     """Test that a QbraidError is raised when loading an entrypoint fails."""
     module = "programs"
@@ -48,7 +51,7 @@ def test_load_entrypoint_raise_qbraid_error():
         "importlib.metadata.entry_points", return_value={"qbraid.programs": [MockEntryPoint()]}
     ):
         with pytest.raises(QbraidError) as excinfo:
-            _load_entrypoint(module, name)
+            load_entrypoint(module, name)
         assert f"Failed to load entrypoint '{name}' from module '{module}'." in str(excinfo.value)
 
 
@@ -71,3 +74,24 @@ def test_dynamic_importer_exception():
             ):
                 imported = _dynamic_importer(opt_modules)
                 assert imported == {}
+
+
+@patch("qbraid._import.importlib.metadata.entry_points")
+@patch("qbraid._import.pkg_resources.iter_entry_points")
+@patch("qbraid._import.sys.version_info")
+def test_load_entrypoint_with_old_python_version(
+    mock_version_info, mock_pkg_resources_eps, mock_importlib_eps
+):
+    """Test that the entrypoint is loaded correctly with an old Python version."""
+    mock_version_info.__ge__.return_value = False
+
+    mock_entry_point = MagicMock()
+    mock_entry_point.name = "qasm2"
+    mock_entry_point.load.return_value = "MockedEntryPoint"
+    mock_pkg_resources_eps.return_value = [mock_entry_point]
+
+    result = load_entrypoint("programs", "qasm2")
+
+    assert result == "MockedEntryPoint"
+    mock_pkg_resources_eps.assert_called_once_with("qbraid.programs")
+    mock_importlib_eps.assert_not_called()
