@@ -60,8 +60,8 @@ pennylane = "qbraid.programs.circuits.pennylane:PennylaneTape"
 pyquil = "qbraid.programs.circuits.pyquil:PyQuilProgram"
 qiskit = "qbraid.programs.circuits.qiskit:QiskitCircuit"
 pytket = "qbraid.programs.circuits.pytket:PytketCircuit"
-qasm2 = "qbraid.programs.circuits.qasm2:OpenQasm2Program"
-qasm3 = "qbraid.programs.circuits.qasm3:OpenQasm3Program"
+qasm2 = "qbraid.programs.circuits.qasm:OpenQasm2Program"
+qasm3 = "qbraid.programs.circuits.qasm:OpenQasm3Program"
 
 [tool.setuptools.dynamic]
 version = {attr = "qbraid._version.__version__"}
