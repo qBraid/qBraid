@@ -147,9 +147,8 @@ class QbraidDevice(QuantumDevice):
         jobs = [
             self._create_and_return_job(module, entrypoint, shots, **kwargs) for module in run_input
         ]
-        if is_single_input:
-            return jobs[0]
-        return jobs
+
+        return jobs[0] if is_single_input else jobs
 
     def try_extracting_info(self, func, error_message):
         """Try to extract information from a function/attribute,

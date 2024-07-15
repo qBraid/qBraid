@@ -94,6 +94,10 @@ class TestAwsSession:
 
         return metadata
 
+    def cancel_quantum_task(self, arn):  # pylint: disable=unused-argument
+        """Cancel a quantum task."""
+        return None
+
 
 class ExecutionWindow:
     """Test class for execution window."""
@@ -140,6 +144,20 @@ class MockTask:
 
     def __init__(self, arg):
         self.id = arg
+        self.arn = arg
+        self._aws_session = TestAwsSession()
+
+    def result(self):
+        """Mock result method."""
+        return "not a result"
+
+    def state(self):
+        """Mock state method."""
+        return "COMPLETED" if self.id == "task1" else "RUNNING"
+
+    def cancel(self):
+        """Mock cancel method."""
+        raise RuntimeError
 
 
 @pytest.fixture
@@ -588,3 +606,41 @@ def test_built_runtime_profile_fail():
     device = FakeDevice(arn=SV1_ARN, aws_session=FakeSession())
     with pytest.raises(QbraidError):
         assert provider._build_runtime_profile(device=device)
+
+
+def test_braket_result_error():
+    """Test Braket result decoding error."""
+    task = MockTask("task1")
+    braket_task = BraketQuantumTask("task1", task)
+    with pytest.raises(ValueError):
+        braket_task.result()
+
+
+def test_braket_job_cancel():
+    """Test Braket job cancel method."""
+    task = MockTask("task2")
+    braket_task = BraketQuantumTask("task2", task)
+    assert braket_task.cancel() is None
+
+
+def test_get_tasks_by_tag_value_error():
+    """Test getting tagged quantum tasks with invalid values."""
+    with patch("qbraid.runtime.braket.provider.quantum_lib_proxy_state") as mock_proxy_state:
+        mock_proxy_state.side_effect = ValueError
+
+        provider = BraketProvider()
+
+        result = provider.get_tasks_by_tag("key", ["value1", "value2"])
+
+        assert isinstance(result, list)
+
+
+def test_get_tasks_by_tag_qbraid_error():
+    """Test getting tagged quantum tasks with jobs enabled."""
+    with patch("qbraid.runtime.braket.provider.quantum_lib_proxy_state") as mock_proxy_state:
+        mock_proxy_state.return_value = {"enabled": True}
+
+        provider = BraketProvider()
+
+        with pytest.raises(QbraidError):
+            provider.get_tasks_by_tag("key", ["value1", "value2"])

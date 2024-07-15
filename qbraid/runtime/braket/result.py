@@ -58,14 +58,14 @@ class BraketAhsJobResult(QuantumJobResult):
         measurements = []
         for measurement in self._result.measurements:
             status = AnalogHamiltonianSimulationShotStatus(measurement.shotMetadata.shotStatus)
+            pre_sequence = None
             if measurement.shotResult.preSequence:
                 pre_sequence = np.asarray(measurement.shotResult.preSequence, dtype=int)
-            else:
-                pre_sequence = None
+
+            post_sequence = None
             if measurement.shotResult.postSequence:
                 post_sequence = np.asarray(measurement.shotResult.postSequence, dtype=int)
-            else:
-                post_sequence = None
+
             measurements.append(ShotResult(status, pre_sequence, post_sequence))
         return measurements
 
