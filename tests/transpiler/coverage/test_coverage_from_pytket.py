@@ -141,7 +141,7 @@ def get_pytket_circuits():
 ### TESTS ###
 #############
 
-TARGETS = [("braket", 0.64), ("cirq", 0.64), ("pyquil", 0.64), ("qiskit", 0.64)]
+TARGETS = [("braket", 0.64), ("cirq", 0.66), ("pyquil", 0.66), ("qiskit", 0.66)]
 pytket_circuits = get_pytket_circuits()
 
 graph = ConversionGraph(require_native=True)
