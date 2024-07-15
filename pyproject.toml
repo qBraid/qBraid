@@ -114,7 +114,8 @@ exclude_lines = [
   "__all__",
   "def __getattr__",
   "def __dir__",
-  "# pragma: no cover"
+  "# pragma: no cover",
+  "# coverage: ignore"
 ]
 
 [tool.coverage.html]

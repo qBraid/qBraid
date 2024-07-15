@@ -23,7 +23,7 @@ from qbraid.transpiler.exceptions import CircuitConversionError
 
 try:
     from .cirq_quil_output import QuilOutput
-except ImportError:
+except ImportError:  # coverage: ignore
     QuilOutput = None
 
 pyquil = LazyLoader("pyquil", globals(), "pyquil")

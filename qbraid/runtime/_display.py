@@ -17,7 +17,7 @@ from typing import Optional
 
 try:
     from IPython.display import HTML, clear_output, display
-except ImportError:
+except ImportError:  # coverage: ignore
     pass
 
 from qbraid._display import running_in_jupyter

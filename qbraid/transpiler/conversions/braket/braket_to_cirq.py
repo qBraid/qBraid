@@ -27,12 +27,12 @@ from braket.circuits import noises as braket_noise_gate
 
 try:
     import cirq
-except ImportError:
+except ImportError:  # coverage: ignore
     cirq = None
 
 try:
     import cirq_ionq.ionq_native_gates as cirq_ionq_ops
-except ImportError:
+except ImportError:  # coverage: ignore
     cirq_ionq_ops = None
 
 from qbraid.programs.circuits.cirq import CirqCircuit as QbraidCircuit
