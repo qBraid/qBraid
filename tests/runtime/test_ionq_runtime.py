@@ -363,3 +363,33 @@ def test_ionq_job_cancel():
 
     job = IonQJob("fake_job_id", FakeSession())
     assert job.cancel() is None
+
+
+def test_ionq_session_cancel():
+    """Test cancelling a job."""
+    with patch("qbraid_core.sessions.Session.put") as mock_put:
+        mock_put.return_value.json.return_value = None
+
+        session = IonQSession(api_key="fake_api_key")
+        assert session.cancel_job("fake_job_id") is None
+
+
+def test_ionq_submit_fail():
+    """Test submitting a job that fails."""
+    circuit = """
+OPENQASM 3.0;
+include "stdgates.inc";
+
+qubit[2] q;
+
+ry(pi/4) q[0];
+"""
+    device = IonQDevice(
+        TargetProfile(device_id="simulator", device_type=DeviceType.QPU),
+        IonQSession("fake_api_key"),
+    )
+    with patch("qbraid_core.sessions.Session.post") as mock_post:
+        mock_post.return_value.json.return_value = {"error": "fake_error"}
+
+        with pytest.raises(ValueError):
+            device.run(circuit, shots=2)

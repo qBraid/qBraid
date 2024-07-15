@@ -43,7 +43,7 @@ from qbraid.programs import ProgramSpec
 from qbraid.runtime.braket.device import BraketDevice
 from qbraid.runtime.braket.job import BraketQuantumTask
 from qbraid.runtime.braket.provider import BraketProvider
-from qbraid.runtime.braket.result import BraketAhsJobResult
+from qbraid.runtime.braket.result import BraketAhsJobResult, ResultDecodingError
 from qbraid.runtime.enums import DeviceActionType, DeviceStatus, DeviceType
 from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
 from qbraid.runtime.profile import TargetProfile
@@ -513,3 +513,19 @@ def test_get_counts(ahs_result):
     counts = result.get_counts()
     expected_counts = {"rrrgeggrrgr": 1, "grggrgrrrrg": 1}
     assert counts == expected_counts
+
+
+def test_get_counts_error():
+    """Test getting counts from an AHS job result."""
+    with patch("qbraid.runtime.braket.result.BraketAhsJobResult.measurements") as mock_measurements:
+        mock_measurement = Mock()
+        mock_measurement.status.name = "SUCCESS"
+        del mock_measurement.pre_sequence
+        mock_measurement.post_sequence = [0]
+
+        mock_measurements.return_value = [mock_measurement]
+        result = BraketAhsJobResult()
+        result._result = Mock()
+
+        with pytest.raises(ResultDecodingError):
+            result.get_counts()
