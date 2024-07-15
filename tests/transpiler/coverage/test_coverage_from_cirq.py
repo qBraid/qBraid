@@ -100,7 +100,7 @@ def get_cirq_gates():
 ### TESTS ###
 #############
 
-TARGETS = [("braket", 0.85), ("pyquil", 0.74), ("pytket", 0.85), ("qiskit", 0.85)]
+TARGETS = [("braket", 0.85), ("pyquil", 0.74), ("pytket", 0.87), ("qiskit", 0.87)]
 cirq_gates = get_cirq_gates()
 
 graph = ConversionGraph(require_native=True)
