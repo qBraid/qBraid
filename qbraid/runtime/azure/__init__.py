@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Mdule submiting and managing jobs through the Azure Quantum API.
+Module for submitting and managing jobs through the Azure Quantum API.
 
 .. currentmodule:: qbraid.runtime.azure
 
@@ -19,15 +19,15 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-	   AzureSession
-	   AzureQuantumProvider
-      AzureQuantumDevice
-      AzureQuantumJob
+       AzureSession
+       AzureQuantumProvider
+       AzureQuantumDevice
+       AzureQuantumJob
 
 """
 from .device import AzureQuantumDevice
+from .job import AzureJob
 from .provider import AzureQuantumProvider
 from .session import AzureSession
-from .job import AzureJob
 
 __all__ = ["AzureSession", "AzureQuantumProvider", "AzureQuantumDevice", "AzureJob"]
