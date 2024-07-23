@@ -76,7 +76,7 @@ class AzureQuantumDevice(QuantumDevice):
                 "Please provide a single job input."
             )
 
-        device_type = self.profile._data["device_id"].split(".")[0]
+        device_type = self.profile.get("device_id").split(".")[0]
 
         container = self.create_container()
 
