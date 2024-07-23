@@ -254,8 +254,8 @@ def test_build_profile(azure_provider):
     data = {"id": "fake_device_id_qpu_rigetti", "averageQueueTime": 1234, "status": "Available"}
     profile = azure_provider._build_profile(data)
 
-    assert profile._data["device_id"] == data["id"]
-    assert profile._data["device_type"] == "QPU"
+    assert profile.get("device_id") == data["id"]
+    assert profile.get("device_type") == "QPU"
 
 
 def test_get_devices(azure_provider, azure_session):
@@ -314,7 +314,7 @@ def test_get_device(azure_provider):
     with patch.object(AzureSession, "get", return_value=Mock(json=lambda: devices_response)):
         device = azure_provider.get_device("fake_device_id")
         assert isinstance(device, AzureQuantumDevice)
-        assert device.profile._data["device_id"] == "fake_device_id"
+        assert device.profile.get("device_id") == "fake_device_id"
 
 
 def test_get_device_not_found(azure_provider):
