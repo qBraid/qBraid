@@ -8,8 +8,6 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint: disable=line-too-long
-
 """
 Module defining Azure Quantum device class for all devices managed by Azure Quantum.
 
@@ -24,6 +22,7 @@ from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 
 from .job import AzureJob
+from .session import ResourceScope
 
 if TYPE_CHECKING:
     import qbraid.runtime
@@ -62,8 +61,6 @@ class AzureQuantumDevice(QuantumDevice):
             "Unavailable": DeviceStatus.OFFLINE,
         }
         return status_map.get(status)
-
-        # pylint: disable=too-many-arguments, disable=arguments-differ
 
     def submit(self, input_run: Any, name: str, backend: str, qubits: int, num_shots: int = 100):
         """Submit a job to the Azure device."""
@@ -107,9 +104,12 @@ class AzureQuantumDevice(QuantumDevice):
         )
 
         url = (
-            f"https://{self._session.location_name}.quantum.azure.com/subscriptions/{self._session.subscription_id}"
-            f"/resourceGroups/{self._session.resource_group}/providers/Microsoft.Quantum/workspaces/"
-            f"{self._session.workspace_name}/jobs/{job_id}?api-version=2022-09-12-preview"
+            f"https://{self._session.auth_data.location_name}.quantum.azure.com/"
+            f"subscriptions/{self._session.auth_data.subscription_id}/"
+            f"resourceGroups/{self._session.auth_data.resource_group}/"
+            f"providers/Microsoft.Quantum/workspaces/"
+            f"{self._session.auth_data.workspace_name}/jobs/{job_id}"
+            f"?api-version=2022-09-12-preview"
         )
 
         response = self._session.put(url, payload=payload, put_type="quantum")
@@ -123,19 +123,26 @@ class AzureQuantumDevice(QuantumDevice):
         job_id = str(uuid4())
         container_name = f"job-{job_id}"  # name of the container to create
 
+        auth_data = self._session.auth_data
+
         url = (
-            f"https://management.azure.com/subscriptions/{self._session.subscription_id}/resourceGroups/"
-            f"{self._session.resource_group}/providers/Microsoft.Storage/storageAccounts/{self._session.storage_account}"  # pylint: disable=line-too-long
-            f"/blobServices/default/containers/{container_name}?api-version=2022-09-01"
+            f"https://management.azure.com/"
+            f"subscriptions/{auth_data.subscription_id}/"
+            f"resourceGroups/{auth_data.resource_group}/"
+            f"providers/Microsoft.Storage/storageAccounts/{auth_data.storage_account}/"
+            f"blobServices/default/containers/{container_name}"
+            f"?api-version=2022-09-01"
         )
 
-        self._session.put(url, payload={}, put_type="storage")
+        self._session.put(url, payload={}, put_type=ResourceScope.MANAGEMENT)
         return [job_id, container_name]
 
     def create_job_routes(self, container: str, qasm: str) -> list[str]:
         """Create the routes for the job."""
 
-        blob_service_client = BlobServiceClient.from_connection_string(self._session.api_connection)
+        blob_service_client = BlobServiceClient.from_connection_string(
+            self._session.auth_data.api_connection
+        )
 
         blob_client = blob_service_client.get_blob_client(container, "inputData")
         blob_client.upload_blob(

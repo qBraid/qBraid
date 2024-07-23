@@ -8,9 +8,6 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint:disable=invalid-name
-# pylint: disable=line-too-long
-
 """
 Module defining Azure job class
 
@@ -42,10 +39,14 @@ class AzureJob(QuantumJob):
 
     def get_job_info(self):
         """Get the information for the Azure job."""
+
         url = (
-            f"https://{self._session.location_name}.quantum.azure.com/subscriptions/{self._session.subscription_id}"
-            f"/resourceGroups/{self._session.resource_group}/providers/Microsoft.Quantum/workspaces/"
-            f"{self._session.workspace_name}/jobs/{self._job_id}?api-version=2022-09-12-preview"
+            f"https://{self._session.auth_data.location_name}.quantum.azure.com/"
+            f"subscriptions/{self._session.auth_data.subscription_id}/"
+            f"resourceGroups/{self._session.auth_data.resource_group}/"
+            f"providers/Microsoft.Quantum/workspaces/"
+            f"{self._session.auth_data.workspace_name}/jobs/{self._job_id}"
+            f"?api-version=2022-09-12-preview"
         )
 
         response = self._session.get(url)
@@ -78,12 +79,14 @@ class AzureJob(QuantumJob):
         success = job_info.get("status") == "Succeeded"
 
         if not success:
-            failure = job_info.get("Failed", {})
+            failure: dict = job_info.get("Failed", {})
             code = failure.get("code")
             message = failure.get("error")
             raise ValueError(f"Job failed with code {code}: {message}")
 
-        blob_service_client = BlobServiceClient.from_connection_string(self._session.api_connection)
+        blob_service_client = BlobServiceClient.from_connection_string(
+            self._session.auth_data.api_connection
+        )
         container_client = blob_service_client.get_container_client(f"job-{self._job_id}")
         blob_client = container_client.get_blob_client("rawOutputData")
         blob_data = blob_client.download_blob().readall().decode("utf-8")

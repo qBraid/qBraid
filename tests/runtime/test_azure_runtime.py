@@ -9,7 +9,6 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 # pylint: disable=redefined-outer-name
-# pylint: disable=line-too-long
 
 """
 Unit tests for Azure Session, Provider, Device, and Job classes.
@@ -21,20 +20,17 @@ from unittest.mock import Mock, patch
 from uuid import uuid4
 
 import openqasm3
+import pyquil
 import pytest
 from azure.storage.blob import BlobServiceClient, ContentSettings
-from qbraid_core._import import LazyLoader
 from qbraid_core.sessions import Session
 
 from qbraid.runtime.azure.device import AzureQuantumDevice
 from qbraid.runtime.azure.job import AzureJob
 from qbraid.runtime.azure.provider import AzureQuantumProvider
-from qbraid.runtime.azure.session import AzureSession
+from qbraid.runtime.azure.session import AuthData, AzureSession, ResourceScope
 from qbraid.runtime.enums import DeviceStatus, DeviceType, JobStatus
 from qbraid.runtime.profile import ProgramSpec, TargetProfile
-
-pyquil = LazyLoader("pyquil", globals(), "pyquil")
-openqasm3 = LazyLoader("openqasm3", globals(), "openqasm3")
 
 # ---------------ALL FIXTURES---------------------
 # Fixtures for all tests.
@@ -42,9 +38,9 @@ openqasm3 = LazyLoader("openqasm3", globals(), "openqasm3")
 
 
 @pytest.fixture
-def auth_data():
+def auth_data() -> AuthData:
     """Return a dictionary with fake authentication data."""
-    return {
+    raw_auth_data = {
         "client_id": "fake_client_id",
         "client_secret": "fake_client_secret",
         "tenant_id": "fake_tenant_id",
@@ -56,15 +52,17 @@ def auth_data():
         "api_connection": "fake_api_connection",
     }
 
+    return AuthData(**raw_auth_data)
+
 
 @pytest.fixture
-def azure_session(auth_data):
+def azure_session(auth_data: AuthData) -> AzureSession:
     """Return an AzureSession object."""
     return AzureSession(auth_data)
 
 
 @pytest.fixture
-def azure_provider(auth_data):
+def azure_provider(auth_data: AuthData) -> AzureQuantumProvider:
     """Return an AzureQuantumProvider object."""
     return AzureQuantumProvider(auth_data)
 
@@ -98,7 +96,9 @@ def build_profile(data: dict[str, Any]) -> TargetProfile:
 
 
 @pytest.fixture
-def azure_device(azure_provider, azure_session):
+def azure_device(
+    azure_provider: AzureQuantumProvider, azure_session: AzureSession
+) -> AzureQuantumDevice:
     """Return an AzureQuantumDevice object."""
     target_profile = azure_provider._build_profile(
         {
@@ -117,7 +117,7 @@ def azure_device(azure_provider, azure_session):
 def create_azure_device_for_status_test(azure_session):
     """Return a function to create an AzureQuantumDevice object for status tests."""
 
-    def _create_device(status):
+    def _create_device(status) -> AzureQuantumDevice:
         """Create an AzureQuantumDevice object with the given status."""
         data = {
             "id": "quantinuum.sim.h1-1e",
@@ -150,7 +150,7 @@ def create_azure_device_for_status_test(azure_session):
 
 
 @pytest.fixture
-def azure_job(azure_session):
+def azure_job(azure_session) -> AzureJob:
     """Return an AzureJob object."""
     return AzureJob(job_id="fake_job_id", session=azure_session)
 
@@ -160,53 +160,62 @@ def azure_job(azure_session):
 # --------------------------------------------------
 
 
-def test_get_access_token(azure_session):
+def test_get_access_token(azure_session: AzureSession):
     """Test get_access_token method of AzureSession."""
+    fake_token = "fake_token"
+
     with patch.object(
-        Session, "post", return_value=Mock(json=lambda: {"access_token": "fake_token"})
+        Session, "post", return_value=Mock(json=lambda: {"access_token": fake_token})
     ) as mock_post:
-        token = azure_session.get_access_token("quantum")
-        assert token == "fake_token"
+        token = azure_session.get_access_token(ResourceScope.QUANTUM)
+        assert token == fake_token
         mock_post.assert_called_once()
 
 
-def test_get_auth_headers(azure_session):
+def test_get_auth_headers(azure_session: AzureSession):
     """Test get_auth_headers method of AzureSession."""
-    with patch.object(AzureSession, "get_access_token", return_value="fake_token"):
-        headers = azure_session.get_auth_headers("quantum")
+    fake_token = "fake_token"
+    with patch.object(AzureSession, "get_access_token", return_value=fake_token):
+        headers = azure_session.get_auth_headers(ResourceScope.QUANTUM)
         assert headers == {
             "Content-type": "application/json",
-            "Authorization": "Bearer fake_token",
+            "Authorization": f"Bearer {fake_token}",
         }
 
 
-def test_get_request(azure_session):
+def test_get_request(azure_session: AzureSession):
     """Test get method of AzureSession."""
-    with patch.object(Session, "get", return_value="response") as mock_get:
+    fake_url = "fake_url"
+    fake_token = "fake_token"
+    fake_response = "response"
+
+    with patch.object(Session, "get", return_value=fake_response) as mock_get:
         with patch.object(
-            AzureSession, "get_auth_headers", return_value={"Authorization": "Bearer fake_token"}
+            AzureSession, "get_auth_headers", return_value={"Authorization": f"Bearer {fake_token}"}
         ):
-            response = azure_session.get("fake_url")
-            assert response == "response"
+            response = azure_session.get(fake_url)
+            assert response == fake_response
             mock_get.assert_called_once_with(
-                "fake_url", headers={"Authorization": "Bearer fake_token"}
+                fake_url, headers={"Authorization": f"Bearer {fake_token}"}
             )
 
 
-def test_put_request(azure_session):
+def test_put_request(azure_session: AzureSession):
     """Test put method of AzureSession."""
-    with patch.object(Session, "put", return_value="response") as mock_put:
-        with patch.object(
-            AzureSession, "get_auth_headers", return_value={"Authorization": "Bearer fake_token"}
-        ):
-            response = azure_session.put("fake_url", {"data": "value"}, "put_type")
-            assert response == "response"
-            mock_put.assert_called_once_with(
-                "fake_url", json={"data": "value"}, headers={"Authorization": "Bearer fake_token"}
-            )
+    fake_url = "fake_url"
+    fake_token = "fake_token"
+    fake_response = "response"
+    fake_body = {"data": "value"}
+    fake_headers = {"Authorization": f"Bearer {fake_token}"}
+
+    with patch.object(Session, "put", return_value=fake_response) as mock_put:
+        with patch.object(AzureSession, "get_auth_headers", return_value=fake_headers):
+            response = azure_session.put(fake_url, fake_body, "put_type")
+            assert response == fake_response
+            mock_put.assert_called_once_with(fake_url, json=fake_body, headers=fake_headers)
 
 
-def test_post_request(azure_session):
+def test_post_request(azure_session: AzureSession):
     """Test post method of AzureSession."""
     with patch.object(Session, "post", return_value="response") as mock_post:
         with patch.object(
@@ -216,31 +225,39 @@ def test_post_request(azure_session):
             response = azure_session.post(payload)
             assert response == "response"
             expected_url = (
-                f"https://{azure_session.location_name}.quantum.azure.com/subscriptions/{azure_session.subscription_id}"
-                f"/resourceGroups/{azure_session.resource_group}/providers/Microsoft.Quantum/workspaces/"
-                f"{azure_session.workspace_name}/storage/sasUri?api-version=2022-09-12-preview"
+                f"https://{azure_session.auth_data.location_name}.quantum.azure.com/"
+                f"subscriptions/{azure_session.auth_data.subscription_id}/"
+                f"resourceGroups/{azure_session.auth_data.resource_group}/"
+                f"providers/Microsoft.Quantum/workspaces/"
+                f"{azure_session.auth_data.workspace_name}/storage/sasUri"
+                f"?api-version=2022-09-12-preview"
             )
             mock_post.assert_called_once_with(
                 expected_url, json=payload, headers={"Authorization": "Bearer fake_token"}
             )
 
 
-def test_delete_request(azure_session):
+def test_delete_request(azure_session: AzureSession):
     """Test delete method of AzureSession."""
+    job_id = "fake_job"
+    token = "fake_token"
+
     with patch.object(Session, "delete", return_value="response") as mock_delete:
         with patch.object(
-            AzureSession, "get_auth_headers", return_value={"Authorization": "Bearer fake_token"}
+            AzureSession, "get_auth_headers", return_value={"Authorization": f"Bearer {token}"}
         ):
-            response = azure_session.delete("fake_job")
+            response = azure_session.delete(job_id)
             assert response == "response"
             expected_url = (
-                f"https://{azure_session.location_name}.quantum.azure.com/subscriptions/"
-                f"{azure_session.subscription_id}/resourceGroups/{azure_session.resource_group}/"
-                f"providers/Microsoft.Quantum/workspaces/{azure_session.workspace_name}/jobs/"
-                f"fake_job?api-version=2022-09-12-preview"
+                f"https://{azure_session.auth_data.location_name}.quantum.azure.com/"
+                f"subscriptions/{azure_session.auth_data.subscription_id}/"
+                f"resourceGroups/{azure_session.auth_data.resource_group}/"
+                f"providers/Microsoft.Quantum/workspaces/"
+                f"{azure_session.auth_data.workspace_name}/jobs/{job_id}"
+                f"?api-version=2022-09-12-preview"
             )
             mock_delete.assert_called_once_with(
-                expected_url, headers={"Authorization": "Bearer fake_token"}
+                expected_url, headers={"Authorization": f"Bearer {token}"}
             )
 
 
@@ -249,7 +266,7 @@ def test_delete_request(azure_session):
 # --------------------------------------------------
 
 
-def test_build_profile(azure_provider):
+def test_build_profile(azure_provider: AzureQuantumProvider):
     """Test _build_profile method of AzureQuantumProvider."""
     data = {"id": "fake_device_id_qpu_rigetti", "averageQueueTime": 1234, "status": "Available"}
     profile = azure_provider._build_profile(data)
@@ -258,7 +275,7 @@ def test_build_profile(azure_provider):
     assert profile.get("device_type") == "QPU"
 
 
-def test_get_devices(azure_provider, azure_session):
+def test_get_devices(azure_provider: AzureQuantumProvider, azure_session: AzureSession):
     """Test get_devices method of AzureQuantumProvider."""
     devices_response = {
         "value": [
@@ -287,22 +304,27 @@ def test_get_devices(azure_provider, azure_session):
         assert len(devices[1]) == 2  # all_devices
 
         expected_url = (
-            f"https://{azure_session.location_name}.quantum.azure.com/subscriptions/{azure_session.subscription_id}"
-            f"/resourceGroups/{azure_session.resource_group}/providers/Microsoft.Quantum/"
-            f"workspaces/{azure_session.workspace_name}/providerStatus?api-version=2022-09-12-preview"
+            f"https://{azure_session.auth_data.location_name}.quantum.azure.com/"
+            f"subscriptions/{azure_session.auth_data.subscription_id}/"
+            f"resourceGroups/{azure_session.auth_data.resource_group}/"
+            f"providers/Microsoft.Quantum/"
+            f"workspaces/{azure_session.auth_data.workspace_name}/providerStatus"
+            f"?api-version=2022-09-12-preview"
         )
 
         mock_get.assert_called_once_with(expected_url)
 
 
-def test_get_device(azure_provider):
+def test_get_device(azure_provider: AzureQuantumProvider):
     """Test get_device method of AzureQuantumProvider."""
+    device_id = "fake_device_id"
+
     devices_response = {
         "value": [
             {
                 "targets": [
                     {
-                        "id": "fake_device_id",
+                        "id": device_id,
                         "currentAvailability": "Available",
                         "averageQueueTime": 1234,
                     }
@@ -312,12 +334,12 @@ def test_get_device(azure_provider):
     }
 
     with patch.object(AzureSession, "get", return_value=Mock(json=lambda: devices_response)):
-        device = azure_provider.get_device("fake_device_id")
+        device = azure_provider.get_device(device_id)
         assert isinstance(device, AzureQuantumDevice)
-        assert device.profile.get("device_id") == "fake_device_id"
+        assert device.profile.get("device_id") == device_id
 
 
-def test_get_device_not_found(azure_provider):
+def test_get_device_not_found(azure_provider: AzureQuantumProvider):
     """Test get_device method of AzureQuantumProvider with non-existent device."""
     devices_response = {
         "value": [
@@ -345,63 +367,68 @@ def test_get_device_not_found(azure_provider):
 
 def test_status_available(create_azure_device_for_status_test):
     """Test status method of AzureQuantumDevice with status 'Available'."""
-    device = create_azure_device_for_status_test("Available")
+    device: AzureQuantumDevice = create_azure_device_for_status_test("Available")
     assert device.status() == DeviceStatus.ONLINE
 
 
 def test_status_deprecated(create_azure_device_for_status_test):
     """Test status method of AzureQuantumDevice with status 'Deprecated'."""
-    device = create_azure_device_for_status_test("Deprecated")
+    device: AzureQuantumDevice = create_azure_device_for_status_test("Deprecated")
     assert device.status() == DeviceStatus.UNAVAILABLE
 
 
 def test_status_unavailable(create_azure_device_for_status_test):
     """Test status method of AzureQuantumDevice with status 'Unavailable'."""
-    device = create_azure_device_for_status_test("Unavailable")
+    device: AzureQuantumDevice = create_azure_device_for_status_test("Unavailable")
     assert device.status() == DeviceStatus.OFFLINE
 
 
 def test_status_unknown(create_azure_device_for_status_test):
     """Test status method of AzureQuantumDevice with status 'Unknown'."""
-    device = create_azure_device_for_status_test("Unknown")
+    device: AzureQuantumDevice = create_azure_device_for_status_test("Unknown")
     assert device.status() is None
 
 
 @pytest.mark.parametrize("status", [None, "", 123])
 def test_status_invalid(create_azure_device_for_status_test, status):
     """Test status method of AzureQuantumDevice with invalid status."""
-    device = create_azure_device_for_status_test(status)
+    device: AzureQuantumDevice = create_azure_device_for_status_test(status)
     assert device.status() is None
 
 
-def test_status(azure_device):
+def test_status(azure_device: AzureQuantumDevice):
     """Test status method of AzureQuantumDevice."""
     assert azure_device.status() == DeviceStatus.ONLINE
 
 
-def test_session_property(azure_device, azure_session):
+def test_session_property(azure_device: AzureQuantumDevice, azure_session: AzureSession):
     """Test session property of AzureQuantumDevice."""
     assert azure_device.session == azure_session
 
 
-def test_create_container(azure_device, azure_session):
+def test_create_container(azure_device: AzureQuantumDevice, azure_session: AzureSession):
     """Test create_container method of AzureQuantumDevice."""
     with patch.object(AzureSession, "put", return_value=Mock()) as mock_put:
         with patch("uuid.uuid4", return_value=uuid4()):
             job_id, container_name = azure_device.create_container()
 
             expected_url = (
-                f"https://management.azure.com/subscriptions/{azure_session.subscription_id}/resourceGroups/"
-                f"{azure_session.resource_group}/providers/Microsoft.Storage/storageAccounts/{azure_session.storage_account}"
-                f"/blobServices/default/containers/{container_name}?api-version=2022-09-01"
+                f"https://management.azure.com/"
+                f"subscriptions/{azure_session.auth_data.subscription_id}/"
+                f"resourceGroups/{azure_session.auth_data.resource_group}/"
+                f"providers/Microsoft.Storage/"
+                f"storageAccounts/{azure_session.auth_data.storage_account}/"
+                f"blobServices/default/containers/{container_name}"
+                f"?api-version=2022-09-01"
             )
 
-            mock_put.assert_called_once_with(expected_url, payload={}, put_type="storage")
+            mock_put.assert_called_once_with(
+                expected_url, payload={}, put_type=ResourceScope.MANAGEMENT
+            )
             assert job_id in container_name
 
 
-# pylint: disable=unused-argument, disable=unused-variable
-def test_create_job_routes(azure_device, azure_session):
+def test_create_job_routes(azure_device: AzureQuantumDevice):
     """Test create_job_routes method of AzureQuantumDevice."""
     blob_service_client_mock = Mock(spec=BlobServiceClient)
     blob_client_mock = Mock()
@@ -412,7 +439,7 @@ def test_create_job_routes(azure_device, azure_session):
     ):
         with patch.object(
             AzureSession, "post", return_value=Mock(json=lambda: {"sasUri": "fake_sas_uri"})
-        ) as mock_post:
+        ):
             container_sas_uri, input_sas_uri, output_sas_uri = azure_device.create_job_routes(
                 "fake_container", "fake_qasm"
             )
@@ -427,7 +454,7 @@ def test_create_job_routes(azure_device, azure_session):
             blob_client_mock.upload_blob.assert_any_call("")
 
 
-def test_create_payload(azure_device):
+def test_create_payload(azure_device: AzureQuantumDevice):
     """Test create_payload method of AzureQuantumDevice."""
     payload = azure_device.create_payload(
         container_uri="fake_container_uri",
@@ -456,7 +483,7 @@ def test_create_payload(azure_device):
     assert payload["outputDataUri"] == "fake_output_uri"
 
 
-def test_submit(azure_device, azure_session):
+def test_submit(azure_device: AzureQuantumDevice):
     """Test submit method of AzureQuantumDevice."""
     with patch.object(
         AzureQuantumDevice, "create_container", return_value=["fake_job_id", "fake_container"]
@@ -488,12 +515,13 @@ def test_submit(azure_device, azure_session):
                     mock_put.assert_called_once()
 
 
-def test_submit_batch_job(azure_device):
+def test_submit_batch_job(azure_device: AzureQuantumDevice):
     """Test submit method of AzureQuantumDevice with batch job."""
     with pytest.raises(
         ValueError,
         match=re.escape(
-            "Batch jobs (list of inputs) are not supported for this device. Please provide a single job input."
+            "Batch jobs (list of inputs) are not supported for this device. "
+            "Please provide a single job input."
         ),
     ):
         azure_device.submit(["fake_input_run1", "fake_input_run2"], "fake_name", "QPU", 5, 100)
@@ -504,13 +532,12 @@ def test_submit_batch_job(azure_device):
 # --------------------------------------------------
 
 
-def test_job_session(azure_job, azure_session):
+def test_job_session(azure_job: AzureJob, azure_session: AzureSession):
     """Test session property of AzureJob."""
     assert azure_job.session == azure_session
 
 
-# pylint: disable=function-redefined
-def test_get_job_info(azure_job, azure_session):
+def test_get_job_info(azure_job: AzureJob, azure_session: AzureSession):
     """Test get_job_info method of AzureJob."""
     mock_response = Mock()
     mock_response.json.return_value = {"status": "Executing"}
@@ -518,13 +545,19 @@ def test_get_job_info(azure_job, azure_session):
     with patch.object(azure_session, "get", return_value=mock_response) as mock_get:
         job_info = azure_job.get_job_info()
 
-        expected_url = "https://fake_location_name.quantum.azure.com/subscriptions/fake_subscription_id/resourceGroups/fake_resource_group/providers/Microsoft.Quantum/workspaces/fake_workspace_name/jobs/fake_job_id?api-version=2022-09-12-preview"
+        expected_url = (
+            "https://fake_location_name.quantum.azure.com/"
+            "subscriptions/fake_subscription_id/"
+            "resourceGroups/fake_resource_group/"
+            "providers/Microsoft.Quantum/"
+            "workspaces/fake_workspace_name/jobs/fake_job_id"
+            "?api-version=2022-09-12-preview"
+        )
         mock_get.assert_called_once_with(expected_url)
         assert job_info == {"status": "Executing"}
 
 
-# pylint: disable=unused-argument
-def test_status(azure_job, azure_session):
+def test_job_status(azure_job: AzureJob):
     """Test status method of AzureJob."""
     statuses = {
         "Waiting": JobStatus.QUEUED,
@@ -539,7 +572,7 @@ def test_status(azure_job, azure_session):
             assert azure_job.status() == expected_status
 
 
-def test_cancel(azure_job, azure_session):
+def test_cancel(azure_job: AzureJob, azure_session: AzureSession):
     """Test cancel method of AzureJob."""
     mock_response = Mock()
 
@@ -549,7 +582,7 @@ def test_cancel(azure_job, azure_session):
         assert response == mock_response
 
 
-def test_result(azure_job):
+def test_result(azure_job: AzureJob):
     """Test result method of AzureJob."""
     azure_job.wait_for_final_state = Mock()
 
@@ -581,7 +614,7 @@ def test_result(azure_job):
     mock_blob_client.download_blob.assert_called_once()
 
 
-def test_result_failure(azure_job):
+def test_result_failure(azure_job: AzureJob):
     """Test result method of AzureJob with failed job."""
     azure_job.wait_for_final_state = Mock()
 

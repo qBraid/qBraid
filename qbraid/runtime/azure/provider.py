@@ -8,8 +8,6 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint: disable=line-too-long
-# pylint: disable=arguments-differ
 """
 Module defining Azure Provider class for retrieving all Azure backends.
 
@@ -26,7 +24,7 @@ from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
 from .device import AzureQuantumDevice
-from .session import AzureSession
+from .session import AuthData, AzureSession
 
 pyquil = LazyLoader("pyquil", globals(), "pyquil")
 
@@ -34,7 +32,7 @@ pyquil = LazyLoader("pyquil", globals(), "pyquil")
 class AzureQuantumProvider(QuantumProvider):
     """Azure provider class."""
 
-    def __init__(self, auth_data: dict, *args, **kwargs):  # pylint: disable=unused-argument
+    def __init__(self, auth_data: AuthData):
         super().__init__()
         self.session = AzureSession(auth_data)
 
@@ -66,11 +64,15 @@ class AzureQuantumProvider(QuantumProvider):
 
     def get_devices(self) -> list[dict[str, Any]]:
         """Get all Azure Quantum devices."""
+        auth_data = self.session.auth_data
 
         url = (
-            f"https://{self.session.location_name}.quantum.azure.com/subscriptions/{self.session.subscription_id}"  # pylint: disable=line-too-long
-            f"/resourceGroups/{self.session.resource_group}/providers/Microsoft.Quantum/"
-            f"workspaces/{self.session.workspace_name}/providerStatus?api-version=2022-09-12-preview"  # pylint: disable=line-too-long
+            f"https://{auth_data.location_name}.quantum.azure.com/"
+            f"subscriptions/{auth_data.subscription_id}/"
+            f"resourceGroups/{auth_data.resource_group}/"
+            f"providers/Microsoft.Quantum/"
+            f"workspaces/{auth_data.workspace_name}/"
+            f"providerStatus?api-version=2022-09-12-preview"
         )
 
         r = self.session.get(url)
