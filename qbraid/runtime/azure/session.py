@@ -13,15 +13,15 @@ Module defining Azure Session class for all Azure Quantum API calls.
 
 """
 import re
-from uuid import uuid4
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional, Union, AnyStr, IO, Iterable
-from qbraid_core.exceptions import RequestsApiError
+from typing import IO, Any, AnyStr, Iterable, Optional, Union
+from uuid import uuid4
 
 import requests
+from azure.storage.blob import BlobServiceClient, ContainerProperties, ContentSettings
+from qbraid_core.exceptions import RequestsApiError
 
-from azure.storage.blob import BlobServiceClient, ContentSettings, ContainerProperties
 from qbraid.runtime.exceptions import ResourceNotFoundError
 
 
@@ -286,13 +286,10 @@ class AzureClient:
         Uploads a blob to Azure Blob Storage and retrieves a SAS URI for the blob.
 
         Args:
-            container (Union[ContainerProperties, str]): The container within which the blob will be stored.
-                Can be a ContainerProperties object or the name of the container as a string.
-            blob (str): The name of the blob (file) to create and upload data into.
-            data (Union[bytes, str, Iterable[AnyStr], IO[bytes]]): The content to upload into the blob.
-                This can be a bytes object, a string, any iterable of bytes or strings, or a file-like object.
-            content_settings (Optional[ContentSettings]): Optional content settings to apply to the blob.
-                This can include settings such as content type, content disposition, etc.
+            container (Union[ContainerProperties, str]): Container where the blob will be stored.
+            blob (str): Name of the blob (file) to create and upload data into.
+            data (Union[bytes, str, Iterable[AnyStr], IO[bytes]]): Content to upload into the blob.
+            content_settings (Optional[ContentSettings]): Content settings to apply to the blob.
         """
         conn_str = self._auth_data.api_connection
         blob_service_client = BlobServiceClient.from_connection_string(conn_str)
@@ -307,8 +304,8 @@ class AzureClient:
 
         Args:
             container (Union[ContainerProperties, str]): The container's properties object or name.
-            blob (Optional[str]): Optional name of a blob within the container. If provided, generates
-                a SAS URI for this blob; otherwise, for the container.
+            blob (Optional[str]): Optional name of a blob within the container. If provided,
+                generates a SAS URI for this blob; otherwise, for the container.
 
         Returns:
             str: The SAS URI providing access under the current access policy.
@@ -329,7 +326,8 @@ class AzureClient:
         self, data: Union[bytes, str, Iterable[AnyStr], IO[bytes]], content_type: str
     ) -> dict[str, Any]:
         """
-        Initializes storage for a job, uploads input data, and generates SAS URIs for the container and blobs.
+        Initializes storage for a job, uploads input data, and generates SAS URIs
+        for the container and blobs.
 
         Args:
             data (Union[bytes, str, Iterable[AnyStr], IO[bytes]]): The input data to be uploaded.
