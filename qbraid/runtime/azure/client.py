@@ -13,12 +13,13 @@ Module defining Azure Session class for all Azure Quantum API calls.
 
 """
 import re
-from dataclasses import dataclass
 from enum import Enum
 from typing import IO, Any, AnyStr, Iterable, Optional, Union
 from uuid import uuid4
 
 import requests
+from azure.identity import ClientSecretCredential
+from azure.quantum import Workspace
 from azure.storage.blob import BlobServiceClient, ContainerProperties, ContentSettings
 from qbraid_core.exceptions import RequestsApiError
 
@@ -38,59 +39,29 @@ class ResourceScope(Enum):
     MANAGEMENT = "https://management.azure.com/.default"
 
 
-@dataclass(frozen=True)
-class AuthData:
-    """
-    Dataclass for storing the authentication data
-    for the Azure Quantum API.
-
-    Attributes:
-        client_id (str): The client ID for the Azure Quantum API.
-        client_secret (str): The client secret for the Azure Quantum API.
-        tenant_id (str): The tenant ID for the Azure Quantum API.
-        location_name (str): The location name for the Azure Quantum API.
-        subscription_id (str): The subscription ID for the Azure Quantum API.
-        resource_group (str): The resource group for the Azure Quantum API.
-        workspace_name (str): The workspace name for the Azure Quantum API.
-        storage_account (str): The storage account for the Azure Quantum API.
-        api_connection (str): The API connection for the Azure Quantum API.
-
-    """
-
-    client_id: str
-    client_secret: str
-    tenant_id: str
-    location_name: str
-    subscription_id: str
-    resource_group: str
-    workspace_name: str
-    storage_account: str
-    api_connection: str
-
-
 class AzureSession(requests.Session):
     """Class for managing Azure Quantum API calls."""
 
-    def __init__(self, auth_data: AuthData, *args, **kwargs):
+    def __init__(self, credential: ClientSecretCredential, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._auth_data = auth_data
+        self._credential = credential
 
     @property
-    def auth_data(self) -> AuthData:
+    def credential(self) -> ClientSecretCredential:
         """Get the authentication data for the Azure Quantum API."""
-        return self._auth_data
+        return self._credential
 
     def get_access_token(self, scope: ResourceScope) -> str:
         """Function to get the access token for the Azure Quantum API."""
-        url = f"https://login.microsoftonline.com/{self.auth_data.tenant_id}/oauth2/v2.0/token"
+        url = f"https://login.microsoftonline.com/{self.credential._tenant_id}/oauth2/v2.0/token"
         data = {
             "grant_type": "client_credentials",
-            "client_id": self.auth_data.client_id,
-            "client_secret": self.auth_data.client_secret,
+            "client_id": self.credential._client_id,
+            "client_secret": self.credential._client_credential,
             "scope": scope.value,
         }
-        static_headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        response = super().post(url, headers=static_headers, data=data, verify=True)
+        headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        response = super().post(url, headers=headers, data=data, verify=True)
         return response.json()["access_token"]
 
     def get_auth_headers(self, scope: ResourceScope) -> dict[str, str]:
@@ -101,7 +72,7 @@ class AzureSession(requests.Session):
             "Authorization": f"Bearer {token}",
         }
 
-    def _determine_scope(self, url: str) -> ResourceScope:
+    def _get_scope(self, url: str) -> ResourceScope:
         """Determines the scope based on the URL by matching against
         known Azure Quantum service requests pattern."""
         quantum_pattern = re.compile(r"https://[a-zA-Z0-9-]+\.quantum\.azure\.com.*")
@@ -138,7 +109,7 @@ class AzureSession(requests.Session):
             qbraid_core.RequestsApiError: If the response status code indicates an error.
         """
         headers = headers or {}
-        scope = self._determine_scope(url)
+        scope = self._get_scope(url)
         headers.update(self.get_auth_headers(scope))
 
         params = kwargs.pop("params", {})
@@ -175,34 +146,105 @@ class AzureSession(requests.Session):
 
 
 class AzureClient:
-    """Class for managing Azure Quantum API calls."""
+    """
+    Manages interactions with Azure Quantum services, encapsulating API calls,
+    and handling Azure Storage and session management.
 
-    def __init__(self, auth_data: AuthData, *args, **kwargs):
-        self._auth_data = auth_data
-        self._session = AzureSession(auth_data, *args, **kwargs)
+    Attributes:
+        workspace (Workspace): The configured Azure Quantum workspace.
+        service (BlobServiceClient): Client for Azure Blob Storage service.
+        session (AzureSession): Session object managing HTTP requests.
+        storage_account (str): Name of the Azure storage account being used.
+    """
+
+    def __init__(self, workspace: Workspace, service: BlobServiceClient, session: AzureSession):
+        """
+        Initializes an AzureClient instance with specified Workspace, BlobServiceClient, and session.
+
+        Args:
+            workspace (Workspace): An initialized Azure Quantum Workspace object.
+            service (BlobServiceClient): An initialized BlobServiceClient for interacting with Azure Blob Storage.
+            session (AzureSession): A session object for managing authentication to Azure services.
+        """
+        self._workspace = workspace
+        self._service = service
+        self._session = session
+        self._storage_account = self._get_storage_account(service)
+
+    @classmethod
+    def from_workspace(
+        cls, workspace: Workspace, credential: Optional[ClientSecretCredential] = None
+    ) -> "AzureClient":
+        """
+        Class method to instantiate an AzureClient based on a Workspace object, optionally with an
+        explicit credential if the Workspace does not already include one.
+
+        Args:
+            workspace (Workspace): The Azure Quantum workspace object, potentially lacking a credential.
+            credential (Optional[ClientSecretCredential]): Optional Azure ID credential to authenticate requests.
+
+        Returns:
+            AzureClient: An instance of AzureClient configured with the provided workspace and credentials.
+
+        Raises:
+            ValueError: If the workspace does not have a storage account specified, which is required for operations.
+        """
+        if workspace.credential is None and credential:
+            workspace.credential = credential
+
+        if workspace.storage is None:
+            raise ValueError("Workspace must have a storage account specified.")
+
+        service = BlobServiceClient.from_connection_string(
+            workspace.storage, credential=workspace.credential
+        )
+        session = AzureSession(credential)
+        return cls(workspace, service, session)
+
+    @property
+    def workspace(self) -> Workspace:
+        """Get the Azure Quantum workspace."""
+        return self._workspace
+
+    @property
+    def service(self) -> BlobServiceClient:
+        """Get the Azure Blob Service client."""
+        return self._service
 
     @property
     def session(self) -> AzureSession:
         """Get the authentication data for the Azure Quantum API."""
         return self._session
 
+    @property
+    def storage_account(self) -> str:
+        """Get the storage account name for the Azure Quantum workspace."""
+        return self._storage_account
+
+    @staticmethod
+    def _get_storage_account(service: BlobServiceClient) -> str:
+        """Parse the storage account name from a blob service client's URL."""
+        account_url: str = service.url
+        account_name = account_url.split(".")[0].split("//")[1]
+        return account_name
+
     def _construct_request_url(self, route: str, scope: ResourceScope) -> str:
         """Constructs a URL for an Azure Quantum API request."""
         base_url = (
-            f"https://{self._auth_data.location_name}.quantum.azure.com/"
+            f"https://{self.workspace.location}.quantum.azure.com/"
             if scope == ResourceScope.QUANTUM
             else "https://management.azure.com/"
         )
 
         shared_path = (
-            f"subscriptions/{self._auth_data.subscription_id}/"
-            f"resourceGroups/{self._auth_data.resource_group}/"
+            f"subscriptions/{self.workspace.subscription_id}/"
+            f"resourceGroups/{self.workspace.resource_group}/"
         )
 
         specific_path = (
-            f"providers/Microsoft.Quantum/workspaces/{self._auth_data.workspace_name}"
+            f"providers/Microsoft.Quantum/workspaces/{self.workspace.name}"
             if scope == ResourceScope.QUANTUM
-            else f"providers/Microsoft.Storage/storageAccounts/{self._auth_data.storage_account}"
+            else f"providers/Microsoft.Storage/storageAccounts/{self._storage_account}"
         )
 
         route = "/" + route.lstrip("/")
@@ -291,9 +333,7 @@ class AzureClient:
             data (Union[bytes, str, Iterable[AnyStr], IO[bytes]]): Content to upload into the blob.
             content_settings (Optional[ContentSettings]): Content settings to apply to the blob.
         """
-        conn_str = self._auth_data.api_connection
-        blob_service_client = BlobServiceClient.from_connection_string(conn_str)
-        blob_client = blob_service_client.get_blob_client(container, blob)
+        blob_client = self.service.get_blob_client(container, blob)
         blob_client.upload_blob(data, content_settings=content_settings)
 
     def generate_sas_uri(

@@ -18,8 +18,9 @@ bloqade>=0.15.13
 # optional runtime dependencies
 oqc-qcaas-client>=3.5,<4.0; python_version < "3.11"
 qiskit-ibm-runtime>=0.25.0,<0.26
-azure-quantum>=1.0.0,<2.0.2
-azure-storage-blob>=12.19.1,<13.0
+azure-quantum>=2.0,<2.2
+azure-storage-blob>=12.20,<13.0
+azure-identity>=1.17,<2.0
 
 # visualization
 matplotlib>=3.3
@@ -29,7 +30,3 @@ ipython
 sympy
 pytest
 pytest-cov
-pytest-xdist
-
-# other
-# attrs>=21.3.0; python_version < "3.11"

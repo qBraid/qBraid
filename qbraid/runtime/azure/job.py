@@ -14,47 +14,29 @@ Module defining Azure job class
 """
 from typing import TYPE_CHECKING
 
-from azure.storage.blob import BlobServiceClient
-
 from qbraid.runtime.enums import JobStatus
+from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 
 if TYPE_CHECKING:
-    import qbraid.runtime.azure.provider
+    import qbraid.runtime.azure
 
 
 class AzureJob(QuantumJob):
     """Azure job class."""
 
-    def __init__(
-        self, job_id: str, session: "qbraid.runtime.azure.provider.AzureSession", **kwargs
-    ):
+    def __init__(self, job_id: str, client: "qbraid.runtime.azure.AzureClient", **kwargs):
         super().__init__(job_id=job_id, **kwargs)
-        self._session = session
+        self._client = client
 
     @property
-    def session(self) -> "qbraid.runtime.azure.provider.AzureSession":
-        """Return the Azure session."""
-        return self._session
-
-    def get_job_info(self):
-        """Get the information for the Azure job."""
-
-        url = (
-            f"https://{self._session.auth_data.location_name}.quantum.azure.com/"
-            f"subscriptions/{self._session.auth_data.subscription_id}/"
-            f"resourceGroups/{self._session.auth_data.resource_group}/"
-            f"providers/Microsoft.Quantum/workspaces/"
-            f"{self._session.auth_data.workspace_name}/jobs/{self._job_id}"
-            f"?api-version=2022-09-12-preview"
-        )
-
-        response = self._session.get(url)
-        return response.json()
+    def client(self) -> "qbraid.runtime.azure.AzureClient":
+        """Return the Azure client."""
+        return self._client
 
     def status(self) -> JobStatus:
         """Return the current status of the Azure job."""
-        job_info = self.get_job_info()
+        job_info = self.client.get_job(self.id)
         status = job_info.get("status")
 
         status_map = {
@@ -68,27 +50,21 @@ class AzureJob(QuantumJob):
 
     def cancel(self) -> None:
         """Cancel the Azure job."""
-        response = self._session.delete(self._job_id)
-        return response
+        self.client.cancel_job(self.id)
 
-    def result(self) -> dict:
+    def result(self) -> str:
         """Return the result of the Azure job."""
         self.wait_for_final_state()
-        job_info = self.get_job_info()
+        status = self.status()
 
-        success = job_info.get("status") == "Succeeded"
-
-        if not success:
-            failure: dict = job_info.get("Failed", {})
+        if not status == JobStatus.COMPLETED:
+            job_data = self.client.get_job(self.id)
+            failure: dict = job_data.get("Failed", {})
             code = failure.get("code")
             message = failure.get("error")
-            raise ValueError(f"Job failed with code {code}: {message}")
+            raise JobStateError(f"Job failed with code {code}: {message}")
 
-        blob_service_client = BlobServiceClient.from_connection_string(
-            self._session.auth_data.api_connection
-        )
-        container_client = blob_service_client.get_container_client(f"job-{self._job_id}")
+        blob_service_client = self.client.service
+        container_client = blob_service_client.get_container_client(f"job-{self.id}")
         blob_client = container_client.get_blob_client("rawOutputData")
-        blob_data = blob_client.download_blob().readall().decode("utf-8")
-
-        return blob_data
+        return blob_client.download_blob().readall().decode("utf-8")

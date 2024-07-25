@@ -35,12 +35,14 @@ class DeviceActionType(Enum):
     Enumeration for different quantum device action types
 
     Attributes:
-        OPENQASM (str): Actions compatible with OpenQASM.
+        OPENQASM (str): Actions compatible with OpenQASM (gate-model).
         AHS (str): Actions using analog Hamiltonian simulation.
+        ANNEALING (str): Actions using quantum annealing.
     """
 
     OPENQASM = "OpenQASM"
     AHS = "Analog Hamiltonian Simulation"
+    ANNEALING = "Quantum Annealing"
 
 
 class DeviceStatus(Enum):
