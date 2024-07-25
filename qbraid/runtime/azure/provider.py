@@ -18,8 +18,8 @@ from qbraid.runtime.enums import DeviceType
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
-from .device import AzureQuantumDevice
 from .client import AzureClient
+from .device import AzureQuantumDevice
 
 
 class AzureQuantumProvider(QuantumProvider):

@@ -25,9 +25,16 @@ Classes
    AzureQuantumJob
 
 """
+from .client import AzureClient, AzureSession, ResourceScope
 from .device import AzureQuantumDevice
 from .job import AzureJob
 from .provider import AzureQuantumProvider
-from .client import AzureSession, ResourceScope, AzureClient
 
-__all__ = ["AzureSession", "AzureClient", "ResourceScope", "AzureQuantumProvider", "AzureQuantumDevice", "AzureJob"]
+__all__ = [
+    "AzureSession",
+    "AzureClient",
+    "ResourceScope",
+    "AzureQuantumProvider",
+    "AzureQuantumDevice",
+    "AzureJob",
+]

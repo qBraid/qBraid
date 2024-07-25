@@ -53,7 +53,9 @@ class AzureQuantumDevice(QuantumDevice):
         }
         return status_map.get(status, DeviceStatus.UNAVAILABLE)
 
-    def submit(self, run_input: str, *args, shots: int = 100, name: Optional[str] = None, **kwargs) -> AzureJob:
+    def submit(
+        self, run_input: str, *args, shots: int = 100, name: Optional[str] = None, **kwargs
+    ) -> AzureJob:
         """Submit a job to the Azure device."""
 
         if isinstance(run_input, list):
@@ -97,7 +99,7 @@ class AzureQuantumDevice(QuantumDevice):
         return AzureJob(job_id=job_id, client=self.client, device=self)
 
     @staticmethod
-    def create_payload(
+    def create_payload(  # pylint: disable=too-many-arguments
         container_uri: str,
         input_uri: str,
         output_uri: str,

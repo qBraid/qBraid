@@ -25,10 +25,10 @@ import pytest
 from azure.storage.blob import BlobServiceClient, ContentSettings
 from qbraid_core.sessions import Session
 
+from qbraid.runtime.azure.client import AzureSession, ResourceScope
 from qbraid.runtime.azure.device import AzureQuantumDevice
 from qbraid.runtime.azure.job import AzureJob
 from qbraid.runtime.azure.provider import AzureQuantumProvider
-from qbraid.runtime.azure.client import AzureSession, ResourceScope
 from qbraid.runtime.enums import DeviceStatus, DeviceType, JobStatus
 from qbraid.runtime.profile import ProgramSpec, TargetProfile
 

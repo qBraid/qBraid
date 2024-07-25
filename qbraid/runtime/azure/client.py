@@ -159,11 +159,12 @@ class AzureClient:
 
     def __init__(self, workspace: Workspace, service: BlobServiceClient, session: AzureSession):
         """
-        Initializes an AzureClient instance with specified Workspace, BlobServiceClient, and session.
+        Initializes an AzureClient instance with specified Workspace,
+        BlobServiceClient, and session.
 
         Args:
             workspace (Workspace): An initialized Azure Quantum Workspace object.
-            service (BlobServiceClient): An initialized BlobServiceClient for interacting with Azure Blob Storage.
+            service (BlobServiceClient): Blob service client for Azure Storage operations.
             session (AzureSession): A session object for managing authentication to Azure services.
         """
         self._workspace = workspace
@@ -180,14 +181,14 @@ class AzureClient:
         explicit credential if the Workspace does not already include one.
 
         Args:
-            workspace (Workspace): The Azure Quantum workspace object, potentially lacking a credential.
-            credential (Optional[ClientSecretCredential]): Optional Azure ID credential to authenticate requests.
+            workspace (Workspace): Azure Quantum workspace object, potentially lacking credential.
+            credential (Optional[ClientSecretCredential]): Optional Azure ID credential.
 
         Returns:
-            AzureClient: An instance of AzureClient configured with the provided workspace and credentials.
+            AzureClient: Instance of AzureClient configured with provided workspace and credentials.
 
         Raises:
-            ValueError: If the workspace does not have a storage account specified, which is required for operations.
+            ValueError: If the workspace does not have a storage account specified.
         """
         if workspace.credential is None and credential:
             workspace.credential = credential
