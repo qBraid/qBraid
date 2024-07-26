@@ -14,8 +14,8 @@ Module defining Azure job class
 """
 from typing import TYPE_CHECKING
 
+from qbraid.runtime.azure.result import AzureResult
 from qbraid.runtime.enums import JobStatus
-from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 
 if TYPE_CHECKING:
@@ -28,6 +28,7 @@ class AzureJob(QuantumJob):
     def __init__(self, job_id: str, client: "qbraid.runtime.azure.AzureClient", **kwargs):
         super().__init__(job_id=job_id, **kwargs)
         self._client = client
+        self.azure_job = self.client.get_job(self.id)
 
     @property
     def client(self) -> "qbraid.runtime.azure.AzureClient":
@@ -35,9 +36,10 @@ class AzureJob(QuantumJob):
         return self._client
 
     def status(self) -> JobStatus:
-        """Return the current status of the Azure job."""
-        job_info = self.client.get_job(self.id)
-        status = job_info.get("status")
+        """Return the current status of the Azure job.
+
+        Returns: JobStatus: The current status of the job."""
+        job_info = self.client.get_job(self.id).details
 
         status_map = {
             "Waiting": JobStatus.QUEUED,
@@ -46,25 +48,17 @@ class AzureJob(QuantumJob):
             "Cancelled": JobStatus.CANCELLED,
             "Succeeded": JobStatus.COMPLETED,
         }
-        return status_map.get(status, JobStatus.UNKNOWN)
+        return status_map.get(job_info.status, JobStatus.UNKNOWN)
 
     def cancel(self) -> None:
-        """Cancel the Azure job."""
-        self.client.cancel_job(self.id)
+        """Cancel the Azure job.
+
+        Returns: None"""
+        return self.client.cancel_job(self.azure_job)
 
     def result(self) -> str:
-        """Return the result of the Azure job."""
-        self.wait_for_final_state()
-        status = self.status()
+        """Return the result of the Azure job.
 
-        if not status == JobStatus.COMPLETED:
-            job_data = self.client.get_job(self.id)
-            failure: dict = job_data.get("Failed", {})
-            code = failure.get("code")
-            message = failure.get("error")
-            raise JobStateError(f"Job failed with code {code}: {message}")
-
-        blob_service_client = self.client.service
-        container_client = blob_service_client.get_container_client(f"job-{self.id}")
-        blob_client = container_client.get_blob_client("rawOutputData")
-        return blob_client.download_blob().readall().decode("utf-8")
+        Returns: str: The result of the job."""
+        result = self.client.get_job_results(self.azure_job)
+        return AzureResult(result)
