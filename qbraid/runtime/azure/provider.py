@@ -12,8 +12,6 @@
 Module defining Azure Provider class for retrieving all Azure backends.
 
 """
-from typing import Any
-
 from qbraid.runtime.enums import DeviceType
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
@@ -34,12 +32,16 @@ class AzureQuantumProvider(QuantumProvider):
         """Get the Azure client."""
         return self._client
 
-    def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
-        """Build a profile for an Azure device."""
-        device_id: str = data.get("id")
-        device_id_parts = device_id.split(".")
-        provider_name = device_id_parts[0]
-        is_qpu = device_id_parts[1] == "qpu"
+    def _build_profile(self, data: str) -> TargetProfile:
+        """Builds a profile for an Azure device.
+
+        Args: data (str): The device data to build profile from.
+
+        Returns: TargetProfile: The built profile.
+        """
+        device_id = data
+        provider_name = device_id.split(".", 1)[0]
+        is_qpu = device_id.split(".", 1)[1] == "qpu"
         device_type = DeviceType.QPU if is_qpu else DeviceType.SIMULATOR
 
         return TargetProfile(
@@ -49,17 +51,24 @@ class AzureQuantumProvider(QuantumProvider):
         )
 
     def get_devices(self, **kwargs) -> list[AzureQuantumDevice]:
-        """Get all Azure Quantum devices."""
+        """Get all Azure Quantum devices.
+
+        Args: **kwargs: Additional keyword arguments.
+
+        Returns: list[AzureQuantumDevice]: The list of Azure Quantum devices."""
         devices_map = self.client.get_devices(**kwargs)
-        devices_data = list(devices_map.values())
+        devices_data = list(devices_map.keys())
         return [
             AzureQuantumDevice(self._build_profile(device), self.client) for device in devices_data
         ]
 
     def get_device(self, device_id: str) -> AzureQuantumDevice:
-        """Get a specific Azure Quantum device."""
-        devices_map = self.client.get_devices()
-        device_data = devices_map.get(device_id)
+        """Get a specific Azure Quantum device.
+
+        Args: device_id (str): The ID of the device to retrieve.
+
+        Returns: AzureQuantumDevice: The Azure Quantum device."""
+        device_data = self.client.get_device(device_id)
         if device_data is None:
             raise ValueError(f"Device {device_id} not found.")
-        return AzureQuantumDevice(self._build_profile(device_data), self.client)
+        return AzureQuantumDevice(self._build_profile(device_data["name"]), self.client)
