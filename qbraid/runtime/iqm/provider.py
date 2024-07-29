@@ -45,15 +45,14 @@ class IQMProvider(QuantumProvider):
             provider_name="IQM",
         )
 
-    def get_devices(self, **kwargs):
+    def get_devices(self, **kwargs):  # pylint: disable=unused-argument
         """Get all IQM devices."""
-        # TODO: dyanmically retrieve the devices from the IQM provider
         devices = ["deneb", "garnet"]
         backends = [
             ClientProvider(
-                url="https://cocos.resonance.meetiqm.com/" + device, token=self.token
+                url="https://cocos.resonance.meetiqm.com/" + device_name, token=self.token
             ).get_backend()
-            for device in devices
+            for device_name in devices
         ]
 
         return [

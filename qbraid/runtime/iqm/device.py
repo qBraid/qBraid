@@ -34,6 +34,6 @@ class IQMDevice(QuantumDevice):
 
     def submit(self, run_input):
         """Submit a run to the device."""
-        qobj = transpile_to_IQM(run_input)
-        job = execute(qobj, backend=self.backend)
+        qjob = transpile_to_IQM(run_input)
+        job = execute(qjob, backend=self.backend)
         return IQMJob(job_id=job.job_id(), job=job)
