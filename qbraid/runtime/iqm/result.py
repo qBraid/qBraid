@@ -19,7 +19,7 @@ from qbraid.runtime.result import GateModelJobResult
 class IQMJobResult(GateModelJobResult):
     """OQC result class."""
 
-    def raw_counts(self, **kwargs):
+    def raw_counts(self, **kwargs):  # pylint: disable=unused-argument
         """Get the raw measurement counts of the task."""
         return self._result.get_counts()
 

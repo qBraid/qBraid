@@ -56,7 +56,7 @@ class IQMProvider(QuantumProvider):
         ]
 
         return [
-            IQMDevice(profile=device, backend=backend)
+            IQMDevice(profile=self._build_profile(device), backend=backend)
             for (device, backend) in zip(devices, backends)
         ]
 
