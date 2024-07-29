@@ -41,7 +41,7 @@ class AzureClient:
 
     @classmethod
     def from_workspace(
-        cls, workspace: Workspace, credential: Optional[ClientSecretCredential] = None
+        cls, workspace: Workspace, credential: ClientSecretCredential
     ) -> "AzureClient":
         """
         Class method to instantiate an AzureClient based on a Workspace object, optionally with an
@@ -54,8 +54,7 @@ class AzureClient:
         Returns:
             AzureClient: Instance of AzureClient configured with provided workspace and credentials.
         """
-        if workspace.credential is None and credential:
-            workspace.credential = credential
+        workspace.credential = credential
 
         return cls(workspace)
 
