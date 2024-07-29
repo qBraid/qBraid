@@ -12,63 +12,125 @@
 Module defining Azure Provider class for retrieving all Azure backends.
 
 """
-from qbraid.runtime.enums import DeviceType
+import warnings
+from typing import Optional
+
+from azure.identity import ClientSecretCredential
+from azure.quantum import Workspace
+from azure.quantum.target import Target
+
+from qbraid.runtime.enums import DeviceActionType, DeviceType
+from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
-from .client import AzureClient
 from .device import AzureQuantumDevice
 
 
 class AzureQuantumProvider(QuantumProvider):
-    """Azure provider class."""
+    """
+    Manages interactions with Azure Quantum services, encapsulating API calls,
+    handling Azure Storage, and managing sessions.
 
-    def __init__(self, client: AzureClient):
+    Attributes:
+        workspace (Workspace): The configured Azure Quantum workspace.
+    """
+
+    def __init__(self, workspace: Workspace, credential: Optional[ClientSecretCredential] = None):
+        """
+        Initializes an AzureQuantumProvider instance with a specified Workspace. It sets the
+        credential for the workspace if it is not already set and a credential is provided.
+
+        Args:
+            workspace (Workspace): An initialized Azure Quantum Workspace object.
+            credential (Optional[ClientSecretCredential]): Optional credential to be used
+                if the workspace lacks one.
+        """
         super().__init__()
-        self._client = client
+        if not workspace.credential:
+            if credential:
+                workspace.credential = credential
+            else:
+                warnings.warn(
+                    "No credential provided; interactive authentication via a "
+                    "web browser may be required. To avoid interactive authentication, "
+                    "provide a ClientSecretCredential."
+                )
+        workspace.append_user_agent("qbraid")
+        self._workspace = workspace
 
     @property
-    def client(self) -> AzureClient:
-        """Get the Azure client."""
-        return self._client
+    def workspace(self) -> Workspace:
+        """Get the Azure Quantum workspace."""
+        return self._workspace
 
-    def _build_profile(self, data: str) -> TargetProfile:
+    def _build_profile(self, target: Target) -> TargetProfile:
         """Builds a profile for an Azure device.
 
-        Args: data (str): The device data to build profile from.
+        Args:
+            target (Target): The Target object to build profile from.
 
-        Returns: TargetProfile: The built profile.
+        Returns:
+            TargetProfile: The completed profile.
         """
-        device_id = data
-        provider_name = device_id.split(".", 1)[0]
+        device_id = target.name
+        provider_name = target.provider_id
         is_qpu = device_id.split(".", 1)[1] == "qpu"
         device_type = DeviceType.QPU if is_qpu else DeviceType.SIMULATOR
+        capability = target.capability
+        input_data_format = target.input_data_format
+        output_data_format = target.output_data_format
+        content_type = target.content_type
+
+        if content_type == "application/qasm" or provider_name.lower() == "ionq":
+            action_type = DeviceActionType.OPENQASM
+        else:
+            action_type = None
 
         return TargetProfile(
             device_id=device_id,
             device_type=device_type,
             provider_name=provider_name,
+            capability=capability,
+            input_data_format=input_data_format,
+            output_data_format=output_data_format,
+            action_type=action_type,
         )
 
     def get_devices(self, **kwargs) -> list[AzureQuantumDevice]:
         """Get all Azure Quantum devices.
 
-        Args: **kwargs: Additional keyword arguments.
+        Args:
+            **kwargs: Filters for the devices to retrieve.
 
-        Returns: list[AzureQuantumDevice]: The list of Azure Quantum devices."""
-        devices_map = self.client.get_devices(**kwargs)
-        devices_data = list(devices_map.keys())
+        Returns:
+            list[AzureQuantumDevice]: The Azure Quantum devices.
+
+        """
+        targets = self.workspace.get_targets(**kwargs)
+        if isinstance(targets, Target):
+            targets = [targets]
+
+        if len(targets) == 0:
+            if len(kwargs) > 0:
+                raise ValueError("No devices found with the specified filters.")
+            raise ResourceNotFoundError("No devices found.")
+
         return [
-            AzureQuantumDevice(self._build_profile(device), self.client) for device in devices_data
+            AzureQuantumDevice(self._build_profile(target), self.workspace) for target in targets
         ]
 
     def get_device(self, device_id: str) -> AzureQuantumDevice:
         """Get a specific Azure Quantum device.
 
-        Args: device_id (str): The ID of the device to retrieve.
+        Args:
+            device_id (str): The ID of the device to retrieve.
 
-        Returns: AzureQuantumDevice: The Azure Quantum device."""
-        device_data = self.client.get_device(device_id)
-        if device_data is None:
+        Returns:
+            AzureQuantumDevice: The Azure Quantum device.
+
+        """
+        target = self.workspace.get_targets(name=device_id)
+        if not target:
             raise ValueError(f"Device {device_id} not found.")
-        return AzureQuantumDevice(self._build_profile(device_data["name"]), self.client)
+        return AzureQuantumDevice(self._build_profile(target), self.workspace)

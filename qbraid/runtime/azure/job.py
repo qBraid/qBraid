@@ -12,34 +12,42 @@
 Module defining Azure job class
 
 """
-from typing import TYPE_CHECKING
+import logging
+from typing import TYPE_CHECKING, Any, Union
 
 from qbraid.runtime.azure.result import AzureResult
 from qbraid.runtime.enums import JobStatus
+from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 
 if TYPE_CHECKING:
-    import qbraid.runtime.azure
+    import azure.quantum
+
+
+logger = logging.getLogger(__name__)
 
 
 class AzureJob(QuantumJob):
     """Azure job class."""
 
-    def __init__(self, job_id: str, client: "qbraid.runtime.azure.AzureClient", **kwargs):
+    def __init__(self, job_id: str, workspace: "azure.quantum.Workspace", **kwargs):
         super().__init__(job_id=job_id, **kwargs)
-        self._client = client
-        self.azure_job = self.client.get_job(self.id)
+        self._workspace = workspace
+        self._job = self.workspace.get_job(self.id)
 
     @property
-    def client(self) -> "qbraid.runtime.azure.AzureClient":
-        """Return the Azure client."""
-        return self._client
+    def workspace(self) -> "azure.quantum.Workspace":
+        """Return the Azure Quantum Workspace."""
+        return self._workspace
 
     def status(self) -> JobStatus:
         """Return the current status of the Azure job.
 
-        Returns: JobStatus: The current status of the job."""
-        job_info = self.client.get_job(self.id).details
+        Returns:
+            JobStatus: The current status of the job.
+        """
+        self._job.refresh()
+        status: str = self._job.details.status
 
         status_map = {
             "Waiting": JobStatus.QUEUED,
@@ -48,17 +56,24 @@ class AzureJob(QuantumJob):
             "Cancelled": JobStatus.CANCELLED,
             "Succeeded": JobStatus.COMPLETED,
         }
-        return status_map.get(job_info.status, JobStatus.UNKNOWN)
+        return status_map.get(status, JobStatus.UNKNOWN)
 
-    def cancel(self) -> None:
-        """Cancel the Azure job.
-
-        Returns: None"""
-        return self.client.cancel_job(self.azure_job)
-
-    def result(self) -> str:
+    def result(self) -> AzureResult:
         """Return the result of the Azure job.
 
-        Returns: str: The result of the job."""
-        result = self.client.get_job_results(self.azure_job)
+        Returns:
+            str: The result of the job.
+        """
+        if not self.is_terminal_state():
+            logger.info("Result will be available when job has reached final state.")
+
+        result: Union[dict[str, float], Any] = self._job.get_results()
+
         return AzureResult(result)
+
+    def cancel(self) -> None:
+        """Cancel the Azure job."""
+        if self.is_terminal_state():
+            raise JobStateError("Cannot cancel job in terminal state.")
+
+        self._job = self.workspace.cancel_job(self._job)

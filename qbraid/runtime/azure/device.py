@@ -13,7 +13,7 @@ Module defining Azure Quantum device class for all devices managed by Azure Quan
 
 """
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
@@ -21,8 +21,9 @@ from qbraid.runtime.enums import DeviceStatus
 from .job import AzureJob
 
 if TYPE_CHECKING:
+    import azure.quantum
+
     import qbraid.runtime
-    import qbraid.runtime.azure
 
 
 class AzureQuantumDevice(QuantumDevice):
@@ -31,23 +32,24 @@ class AzureQuantumDevice(QuantumDevice):
     def __init__(
         self,
         profile: "qbraid.runtime.TargetProfile",
-        client: "qbraid.runtime.azure.AzureClient",
+        workspace: "azure.quantum.Workspace",
     ):
         super().__init__(profile=profile)
-        self._client = client
+        self._workspace = workspace
+        self._device = self.workspace.get_targets(name=self.id)
 
     @property
-    def client(self) -> "qbraid.runtime.azure.AzureClient":
-        """Return the Azure session."""
-        return self._client
+    def workspace(self) -> "azure.quantum.Workspace":
+        """Return the Azure Quantum Workspace."""
+        return self._workspace
 
     def status(self) -> "qbraid.runtime.enums.DeviceStatus":
         """Return the current status of the Azure device.
 
-        Returns: DeviceStatus: The current status of the device.
+        Returns:
+            DeviceStatus: The current status of the device.
         """
-        device_data = self.client.get_device(self.id)
-        status = device_data["_current_availability"]
+        status = self._device["current_availability"]
         status_map = {
             "Available": DeviceStatus.ONLINE,
             "Deprecated": DeviceStatus.UNAVAILABLE,
@@ -55,25 +57,20 @@ class AzureQuantumDevice(QuantumDevice):
         }
         return status_map.get(status, DeviceStatus.UNAVAILABLE)
 
-    # pylint:disable=arguments-differ
-    def submit(self, program: Any, job_name: str, shots: int = 100) -> AzureJob:
+    def submit(self, run_input, *args, **kwargs) -> AzureJob:
         """Submit a job to the Azure device.
 
-        Args: program (Any): The program to submit.
-              job_name (str): The name of the job.
-              shots (int): The number of shots to run.
+        Args:
+            run_input (Any): The program to submit.
 
-        Returns: AzureJob: The submitted job.
+        Returns:
+            AzureJob: The submitted job.
         """
-
-        if isinstance(program, list):
+        if isinstance(run_input, list):
             raise ValueError(
                 "Batch jobs (list of inputs) are not supported for this device. "
                 "Please provide a single job input."
             )
 
-        job = self.client.submit_job(
-            {"device_name": self.id, "program": program, "job_name": job_name, "shots": shots}
-        )
-
-        return AzureJob(job_id=job.id, client=self.client, device=self)
+        job = self._device.submit(run_input, *args, **kwargs)
+        return AzureJob(job_id=job.id, workspace=self.workspace, device=self)

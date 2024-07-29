@@ -19,22 +19,20 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-   AzureSession
    AzureQuantumProvider
    AzureQuantumDevice
    AzureQuantumJob
+   AzureResult
 
 """
-from .client import AzureClient, AzureSession, ResourceScope
 from .device import AzureQuantumDevice
 from .job import AzureJob
 from .provider import AzureQuantumProvider
+from .result import AzureResult
 
 __all__ = [
-    "AzureSession",
-    "AzureClient",
-    "ResourceScope",
     "AzureQuantumProvider",
     "AzureQuantumDevice",
     "AzureJob",
+    "AzureResult",
 ]
