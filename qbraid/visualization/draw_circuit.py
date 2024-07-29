@@ -12,7 +12,7 @@
 Module for drawing quantum circuit diagrams
 
 """
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from qbraid.programs import QPROGRAM_ALIASES, ProgramTypeError, get_program_type_alias
 from qbraid.transpiler.converter import transpile
@@ -29,7 +29,7 @@ def circuit_drawer(
     as_package: Optional[str] = None,
     output: Optional[str] = None,
     **kwargs,
-) -> None:
+) -> Any:
     """Draws circuit diagram.
 
     Args:
@@ -60,7 +60,7 @@ def circuit_drawer(
 
     if package == "cirq":
         if output in (None, "text"):
-            return print(program.to_text_diagram(**kwargs))
+            return print(program.to_text_diagram(**kwargs))  # type: ignore[attr-defined]
         if output == "svg":
             from cirq.contrib.svg import SVGCircuit
 

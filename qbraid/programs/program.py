@@ -14,7 +14,7 @@ Module defining QuantumProgram Class
 """
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .alias_manager import get_program_type_alias
 from .exceptions import ProgramTypeError
@@ -33,7 +33,7 @@ class QuantumProgram(ABC):
 
     def __init__(self, program: "qbraid.programs.QPROGRAM"):
         self.spec = self.get_spec(program)
-        self._program = None
+        self._program: Any = None
         self.program = program
 
     @property
