@@ -26,9 +26,10 @@ classifiers = [
 ]
 dependencies = [
     "rustworkx>=0.14.2",
-    "numpy>=1.17,<2.1",
-    "openqasm3[parser]>=0.4.0,<1.1.0",
-    "qbraid-core>=0.1.13"
+    "numpy>=1.17",
+    "openqasm3[parser]>=0.4.0",
+    "qbraid-core>=0.1.13",
+    "pydantic>2.0.0"
 ]
 requires-python = ">=3.9,<3.13"
 
@@ -41,15 +42,15 @@ Discord = "https://discord.gg/TPBU2sa8Et"
 "Launch on Lab" = "https://account.qbraid.com/?gitHubUrl=https://github.com/qBraid/qBraid.git"
 
 [project.optional-dependencies]
-runtime = ["qbraid-qir>=0.2"]
-braket = ["amazon-braket-sdk>=1.80.1,<1.83.0", "pytket-braket>=0.30,<0.37"]
-qiskit = ["qiskit>=0.44,<1.2", "qiskit-ibm-runtime>=0.18,<0.25"]
+qir = ["qbraid-qir>=0.2"]
+braket = ["amazon-braket-sdk>=1.83.0,<1.84.0", "pytket-braket>=0.30,<0.38"]
+qiskit = ["qiskit>=0.44,<1.2", "qiskit-ibm-runtime>=0.25.0,<0.26"]
 cirq = ["cirq-core>=1.3,<1.5", "cirq-ionq>=1.3,<1.5", "ply>=3.6", "attrs>=21.3.0"]
 oqc = ["oqc-qcaas-client>=3.5,<4.0"]
 visualization = ["ipython", "matplotlib", "pylatexenc"]
 test = ["pytest", "pytest-cov", "pytest-xdist"]
 lint = ["black", "isort", "pylint", "qbraid-cli>=0.8.2"]
-docs = ["sphinx>=7.2,<7.4", "sphinx-autodoc-typehints>=1.24,<2.3", "sphinx-rtd-theme>=1.3,<2.1", "docutils<0.22", "sphinx-copybutton"]
+docs = ["sphinx>=7.2,<7.5", "sphinx-autodoc-typehints>=1.24,<2.3", "sphinx-rtd-theme>=1.3,<2.1", "docutils<0.22", "sphinx-copybutton"]
 
 [project.entry-points."qbraid.programs"]
 braket_ahs = "qbraid.programs.ahs.braket_ahs:BraketAHS"
@@ -59,8 +60,8 @@ pennylane = "qbraid.programs.circuits.pennylane:PennylaneTape"
 pyquil = "qbraid.programs.circuits.pyquil:PyQuilProgram"
 qiskit = "qbraid.programs.circuits.qiskit:QiskitCircuit"
 pytket = "qbraid.programs.circuits.pytket:PytketCircuit"
-qasm2 = "qbraid.programs.circuits.qasm2:OpenQasm2Program"
-qasm3 = "qbraid.programs.circuits.qasm3:OpenQasm3Program"
+qasm2 = "qbraid.programs.circuits.qasm:OpenQasm2Program"
+qasm3 = "qbraid.programs.circuits.qasm:OpenQasm3Program"
 
 [tool.setuptools.dynamic]
 version = {attr = "qbraid._version.__version__"}

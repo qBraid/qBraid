@@ -28,6 +28,7 @@ from braket.device_schema import ExecutionDay
 from braket.devices import Devices, LocalSimulator
 from qiskit import QuantumCircuit as QiskitCircuit
 
+from qbraid.exceptions import QbraidError
 from qbraid.interface import circuits_allclose
 from qbraid.programs import ProgramSpec
 from qbraid.runtime import (
@@ -93,6 +94,10 @@ class TestAwsSession:
 
         return metadata
 
+    def cancel_quantum_task(self, arn):  # pylint: disable=unused-argument
+        """Cancel a quantum task."""
+        return None
+
 
 class ExecutionWindow:
     """Test class for execution window."""
@@ -139,6 +144,20 @@ class MockTask:
 
     def __init__(self, arg):
         self.id = arg
+        self.arn = arg
+        self._aws_session = TestAwsSession()
+
+    def result(self):
+        """Mock result method."""
+        return "not a result"
+
+    def state(self):
+        """Mock state method."""
+        return "COMPLETED" if self.id == "task1" else "RUNNING"
+
+    def cancel(self):
+        """Mock cancel method."""
+        raise RuntimeError
 
 
 @pytest.fixture
@@ -269,7 +288,7 @@ def test_device_profile_attributes(mock_aws_device, sv1_profile):
     assert device.num_qubits == sv1_profile.get("num_qubits")
     assert device._target_spec == sv1_profile.get("program_spec")
     assert device.device_type == DeviceType(sv1_profile.get("device_type"))
-    assert device.profile.get("action_type") == "OPENQASM"
+    assert device.profile.get("action_type") == "OpenQASM"
 
 
 @patch("qbraid.runtime.braket.device.AwsDevice")
@@ -516,3 +535,112 @@ def test_result_raw_counts():
     result = BraketGateModelJobResult(mock_result)
     expected_output = {"110": 10, "101": 5}
     assert result.raw_counts() == expected_output
+
+
+def test_get_default_region_error():
+    """Test getting default region when an exception is raised."""
+    with patch("qbraid.runtime.braket.provider.Session") as mock_boto_session:
+        mock_boto_session.side_effect = Exception
+        mock_boto_session.region_name.return_value = "not us-east-1"
+        assert BraketProvider()._get_default_region() == "us-east-1"
+
+
+def test_get_s3_default_bucket():
+    """Test getting default S3 bucket."""
+    with patch("qbraid.runtime.braket.provider.AwsSession") as mock_aws_session:
+        mock_instance = mock_aws_session.return_value
+        mock_instance.default_bucket.return_value = "default bucket"
+        assert BraketProvider()._get_s3_default_bucket() == "default bucket"
+
+        mock_instance.default_bucket.side_effect = Exception
+        assert BraketProvider()._get_s3_default_bucket() == "amazon-braket-qbraid-jobs"
+
+
+def test_get_quantum_task_cost():
+    """Test getting quantum task cost."""
+    task_mock = Mock()
+    task_mock.arn = "fake_arn"
+    task_mock.state.return_value = "COMPLETED"
+    job = BraketQuantumTask("task_arn", task_mock)
+    with patch("qbraid.runtime.braket.job.get_quantum_task_cost", return_value=0.1):
+        assert job.get_cost() == 0.1
+
+
+def test_built_runtime_profile_fail():
+    """Test building a runtime profile with invalid device."""
+
+    class FakeSession:
+        """Fake Session for testing."""
+
+        def __init__(self):
+            self.region = "us-east-1"
+
+        def get_device(self, arn):  # pylint: disable=unused-argument
+            """Fake get_device method."""
+            return {
+                "deviceType": "SIMULATOR",
+                "providerName": "Amazon Braket",
+                "deviceCapabilities": "{}",
+            }
+
+    class FakeDevice:
+        """Fake AWS Device for testing."""
+
+        def __init__(self, arn, aws_session=None):
+            self.arn = arn
+            self.aws_session = aws_session or FakeSession()
+            self.status = "ONLINE"
+            self.properties = TestProperties()
+            self.is_available = True
+
+        @staticmethod
+        def get_device_region(arn):  # pylint: disable=unused-argument
+            """Fake get_device_region method."""
+            return "us-east-1"
+
+    provider = BraketProvider(
+        aws_access_key_id="aws_access_key_id",
+        aws_secret_access_key="aws_secret_access_key",
+    )
+
+    device = FakeDevice(arn=SV1_ARN, aws_session=FakeSession())
+    with pytest.raises(QbraidError):
+        assert provider._build_runtime_profile(device=device)
+
+
+def test_braket_result_error():
+    """Test Braket result decoding error."""
+    task = MockTask("task1")
+    braket_task = BraketQuantumTask("task1", task)
+    with pytest.raises(ValueError):
+        braket_task.result()
+
+
+def test_braket_job_cancel():
+    """Test Braket job cancel method."""
+    task = MockTask("task2")
+    braket_task = BraketQuantumTask("task2", task)
+    assert braket_task.cancel() is None
+
+
+def test_get_tasks_by_tag_value_error():
+    """Test getting tagged quantum tasks with invalid values."""
+    with patch("qbraid.runtime.braket.provider.quantum_lib_proxy_state") as mock_proxy_state:
+        mock_proxy_state.side_effect = ValueError
+
+        provider = BraketProvider()
+
+        result = provider.get_tasks_by_tag("key", ["value1", "value2"])
+
+        assert isinstance(result, list)
+
+
+def test_get_tasks_by_tag_qbraid_error():
+    """Test getting tagged quantum tasks with jobs enabled."""
+    with patch("qbraid.runtime.braket.provider.quantum_lib_proxy_state") as mock_proxy_state:
+        mock_proxy_state.return_value = {"enabled": True}
+
+        provider = BraketProvider()
+
+        with pytest.raises(QbraidError):
+            provider.get_tasks_by_tag("key", ["value1", "value2"])

@@ -159,19 +159,26 @@ def test_ionq_provider_device_unavailable():
                     res["status"] = "offline"
                 case "qpu.aria-2":
                     res["status"] = "available"
+                case "fake_device":
+                    res["status"] = "fake_status"
             return res
 
-    unavailable_profile = TargetProfile("qpu.harmony", DeviceType.QPU)
+    unavailable_profile = TargetProfile(device_id="qpu.harmony", device_type=DeviceType.QPU)
     unavailable_device = IonQDevice(unavailable_profile, MockSession())
     assert unavailable_device.status() == DeviceStatus.UNAVAILABLE
 
-    offline_profile = TargetProfile("qpu.aria-1", DeviceType.QPU)
+    offline_profile = TargetProfile(device_id="qpu.aria-1", device_type=DeviceType.QPU)
     offline_device = IonQDevice(offline_profile, MockSession())
     assert offline_device.status() == DeviceStatus.OFFLINE
 
-    available_profile = TargetProfile("qpu.aria-2", DeviceType.QPU)
+    available_profile = TargetProfile(device_id="qpu.aria-2", device_type=DeviceType.QPU)
     available_device = IonQDevice(available_profile, MockSession())
     assert available_device.status() == DeviceStatus.ONLINE
+
+    fake_profile = TargetProfile(device_id="fake_device", device_type=DeviceType.QPU)
+    fake_device = IonQDevice(fake_profile, MockSession())
+    with pytest.raises(ValueError):
+        fake_device.status()
 
 
 def test_ionq_device_extract_gate_data():
@@ -342,3 +349,47 @@ def test_ionq_failed_job(mock_post, mock_get, circuit):
 
     with pytest.raises(IonQJobError):
         job.result()
+
+
+def test_ionq_job_cancel():
+    """Test cancelling a job."""
+
+    class FakeSession:
+        """Fake session class."""
+
+        def cancel_job(self, job_id: str):  # pylint: disable=unused-argument
+            """Fake cancel job."""
+            return None
+
+    job = IonQJob("fake_job_id", FakeSession())
+    assert job.cancel() is None
+
+
+def test_ionq_session_cancel():
+    """Test cancelling a job."""
+    with patch("qbraid_core.sessions.Session.put") as mock_put:
+        mock_put.return_value.json.return_value = None
+
+        session = IonQSession(api_key="fake_api_key")
+        assert session.cancel_job("fake_job_id") is None
+
+
+def test_ionq_submit_fail():
+    """Test submitting a job that fails."""
+    circuit = """
+OPENQASM 3.0;
+include "stdgates.inc";
+
+qubit[2] q;
+
+ry(pi/4) q[0];
+"""
+    device = IonQDevice(
+        TargetProfile(device_id="simulator", device_type=DeviceType.QPU),
+        IonQSession("fake_api_key"),
+    )
+    with patch("qbraid_core.sessions.Session.post") as mock_post:
+        mock_post.return_value.json.return_value = {"error": "fake_error"}
+
+        with pytest.raises(ValueError):
+            device.run(circuit, shots=2)

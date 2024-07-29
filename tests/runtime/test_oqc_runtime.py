@@ -136,6 +136,10 @@ def oqc_device(lucy_simulator_data):
 
             return Result(counts={"c": {"0": 1, "1": 1}}) if not none else None
 
+        def cancel_task(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
+            """Cancel task."""
+            return None
+
     class TestOQCDevice(OQCDevice):
         """Test class for OQC device."""
 
@@ -201,10 +205,10 @@ def test_build_runtime_profile(lucy_simulator_data):
         provider = OQCProvider(token="fake_token")
         profile = provider._build_profile(lucy_simulator_data)
         assert isinstance(profile, TargetProfile)
-        assert profile._data["device_id"] == DEVICE_ID
-        assert profile._data["device_type"] == DeviceType.SIMULATOR.name
-        assert profile._data["num_qubits"] == 8
-        assert profile._data["program_spec"] == ProgramSpec(str, alias="qasm2")
+        assert profile["device_id"] == DEVICE_ID
+        assert profile["device_type"] == DeviceType.SIMULATOR.name
+        assert profile["num_qubits"] == 8
+        assert profile["program_spec"] == ProgramSpec(str, alias="qasm2")
 
 
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
@@ -237,3 +241,10 @@ def test_run_batch_fake_job(run_inputs, oqc_device):
     assert isinstance(job, list)
     assert len(job) == len(run_inputs)
     assert all(isinstance(j, OQCJob) for j in job)
+
+
+def test_cancel_job(oqc_device):
+    """Test cancelling a fake job."""
+    job = oqc_device.run("OPENQASM 2.0;\nqreg q[2];\ncreg c[2];\nh q[0];\nmeasure q[0] -> c[0];\n")
+    assert isinstance(job, OQCJob)
+    assert job.cancel() is None

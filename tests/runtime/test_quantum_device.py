@@ -27,6 +27,7 @@ from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 from qbraid.programs import ProgramSpec, unregister_program_type
 from qbraid.runtime import DeviceStatus, TargetProfile
 from qbraid.runtime.device import QuantumDevice
+from qbraid.runtime.enums import DeviceActionType, DeviceType
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import (
     ExperimentResult,
@@ -142,8 +143,8 @@ def mock_profile():
     """Mock profile for testing."""
     return TargetProfile(
         device_id="qbraid_qir_simulator",
-        device_type="SIMULATOR",
-        action_type="OPENQASM",
+        device_type=DeviceType.SIMULATOR,
+        action_type=DeviceActionType.OPENQASM,
         num_qubits=42,
         program_spec=None,
     )
@@ -450,3 +451,38 @@ def test_wrong_type_conversion(mock_basic_device):
 
     unregister_program_type("alice")
     unregister_program_type("charlie")
+
+
+class FakeSession:
+    """Mock session for testing."""
+
+    def save_config(self, **kwargs):  # pylint: disable=unused-argument
+        """Mock save configuration."""
+        return None
+
+
+class FakeClient:
+    """Mock client for testing."""
+
+    def __init__(self, api_key=None):  # pylint: disable=unused-argument
+        self.session = FakeSession()
+
+    def get_device(self, qbraid_id):
+        """Mock get device."""
+        raise ValueError("Device not found")
+
+
+def test_save_config():
+    """Test saving configuration."""
+    provider = QbraidProvider(client=FakeClient())
+    try:
+        provider.save_config(param1="value1", param2="value2")
+    except Exception:  # pylint: disable=broad-except
+        pytest.fail("save_config raised an exception unexpectedly")
+
+
+def test_get_device_fail():
+    """Test raising exception when device is not found."""
+    provider = QbraidProvider(client=FakeClient())
+    with pytest.raises(ResourceNotFoundError):
+        provider.get_device("qbraid_qir_simulator")

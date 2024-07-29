@@ -12,9 +12,9 @@
 Unit test for quantum program registry
 
 """
-
 import random
 import string
+import sys
 import unittest.mock
 
 import pytest
@@ -22,6 +22,7 @@ import pytest
 from qbraid.exceptions import QbraidError
 from qbraid.interface import random_circuit
 from qbraid.programs import (
+    NATIVE_REGISTRY,
     QPROGRAM_ALIASES,
     QPROGRAM_REGISTRY,
     QPROGRAM_TYPES,
@@ -32,6 +33,8 @@ from qbraid.programs import (
     register_program_type,
     unregister_program_type,
 )
+from qbraid.programs.circuits import key_set
+from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.registry import is_registered_alias_native
 
 
@@ -209,7 +212,7 @@ def test_unregister_program_type_non_unique():
 def test_program_spec_str_rep():
     """Test string representation of ProgramSpec"""
     spec = ProgramSpec(str, alias="qasm2")
-    assert str(spec) == "ProgramSpec for qasm2 str type."
+    assert str(spec) == "ProgramSpec(str, qasm2)"
 
 
 def test_program_spec_equality():
@@ -232,6 +235,7 @@ def test_error_on_automatic_alias():
         derive_program_type_alias(FakeType)
 
 
+@pytest.mark.skipif(sys.version_info < (3, 10), reason="Requires Python 3.10 or higher")
 def test_load_entrypoint_not_found():
     """Test error when trying to load a program type that is not found"""
     with unittest.mock.patch("importlib.metadata.entry_points") as mock_entry_points:
@@ -239,3 +243,21 @@ def test_load_entrypoint_not_found():
         with pytest.raises(QbraidError):
             program = random_circuit("qiskit")
             load_program(program)
+
+
+def test_program_type_error():
+    """Test the ProgramTypeError class."""
+    error = ProgramTypeError(program="test")
+    message = error.generate_message()
+    assert message == "Quantum program of type '<class 'str'>' is not supported."
+
+    error = ProgramTypeError()
+    message = error.generate_message()
+    assert message == "Unsupported quantum program type."
+
+
+def test_circuits_init():
+    """Test the initialization of the circuits module."""
+    assert "qasm" in key_set and "qasm" not in NATIVE_REGISTRY
+    assert all(key in NATIVE_REGISTRY for key in ["qasm2", "qasm3"])
+    assert all(key not in key_set for key in ["qasm2", "qasm3"])

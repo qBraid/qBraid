@@ -12,10 +12,18 @@
 Unit tests for quantum jobs functions and data types
 
 """
+# pylint: disable=redefined-outer-name
+from unittest.mock import patch
+
 import pytest
 
+from qbraid.runtime import QuantumJob
 from qbraid.runtime.enums import JobStatus
-from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
+from qbraid.runtime.exceptions import (
+    DeviceProgramTypeMismatchError,
+    JobStateError,
+    ResourceNotFoundError,
+)
 from qbraid.runtime.native.job import QbraidJob
 
 status_data = [
@@ -98,3 +106,95 @@ def test_device_program_type_mismatch_error(program, expected_type, action_type)
         raise DeviceProgramTypeMismatchError(program, expected_type, action_type)
 
     assert str(exc_info.value) == expected_message
+
+
+class FakeDevice:
+    """Fake device class for testing."""
+
+    def __init__(self, name, client):
+        self.name = name
+        self.client = client
+
+
+def test_qbraid_job_device():
+    """Test setting and getting device."""
+    job = QbraidJob("test_job")
+    with pytest.raises(ResourceNotFoundError):
+        job.device  # pylint: disable=pointless-statement
+
+    fake_device = FakeDevice("test_device", "test_client")
+
+    job2 = QbraidJob("test_job", device=fake_device)
+    assert job2.device == fake_device
+    assert job2.client == "test_client"
+
+
+class FakeQbraidJob(QbraidJob):
+    """Fake QbraidJob class for testing."""
+
+    def __init__(self, job_id, terminal, device=None, client=None):
+        super().__init__(job_id, device)
+        self._terminal = terminal
+        self._client = client
+
+    def is_terminal_state(self):
+        """Check if the job is in a terminal state."""
+        return self._terminal
+
+
+class FakeQbraidClient:
+    """Fake QbraidClient class for testing"""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def cancel_job(self, qbraid_id=None, object_id=None):  # pylint: disable=unused-argument
+        """Cancel a job."""
+        return None
+
+
+def test_cancel_job():
+    """Test cancelling a job."""
+    terminal_job = FakeQbraidJob("test_job", True)
+    with pytest.raises(JobStateError):
+        terminal_job.cancel()
+
+    nonterminal_job = FakeQbraidJob("test_job", False, client=FakeQbraidClient())
+    assert nonterminal_job.cancel() is None
+
+
+class MockQuantumJob(QuantumJob):
+    """Mock class for testing QuantumJob functions."""
+
+    def __init__(self, job_id, device=None, **kwargs):
+        super().__init__(job_id, device, **kwargs)
+        self._status = "PENDING"
+
+    def status(self):
+        return self._status
+
+    def cancel(self):
+        pass
+
+    def result(self):
+        pass
+
+
+@pytest.fixture
+def quantum_job():
+    """Return a mock QuantumJob object"""
+    job = MockQuantumJob(job_id="test_job_id")
+    return job
+
+
+def test_wait_for_final_state_success(quantum_job):
+    """Mocking the status to change to a final state after some time"""
+    with patch.object(quantum_job, "is_terminal_state", side_effect=[False, False, True]):
+        quantum_job.wait_for_final_state(timeout=1, poll_interval=0.1)
+
+
+def test_wait_for_final_state_timeout(quantum_job):
+    """Mocking the status to never change to a final state"""
+    with patch.object(quantum_job, "is_terminal_state", return_value=False):
+        with pytest.raises(JobStateError):
+            quantum_job.wait_for_final_state(timeout=0.2, poll_interval=0.1)

@@ -17,6 +17,7 @@ Unit tests for defining custom conversions
 from unittest.mock import Mock
 
 import cirq
+import numpy as np
 import pytest
 
 from qbraid.interface.random import random_circuit
@@ -144,7 +145,9 @@ def test_invalid_weight(mock_conversion_func, invalid_weight):
         Conversion("source_pkg", "target_pkg", mock_conversion_func, weight=invalid_weight)
 
 
-@pytest.mark.parametrize("valid_weight,expected_value", [(0.8, 1.25), (None, 2), (0, 1e10)])
+@pytest.mark.parametrize(
+    "valid_weight,expected_value", [(0.8, np.log(1.25)), (None, np.log(2)), (0, float("inf"))]
+)
 def test_valid_weight(mock_conversion_func, valid_weight, expected_value):
     """Test the default weight from the conversion function if not specified."""
     conversion = Conversion("source_pkg", "target_pkg", mock_conversion_func, weight=valid_weight)
@@ -158,7 +161,7 @@ def test_weight_without_specified_and_no_default():
         pass  # No weight attribute
 
     conversion = Conversion("source_pkg", "target_pkg", simple_conversion_func)
-    assert conversion.weight == 1
+    assert conversion.weight == 0
 
 
 class TestConversionEquality:

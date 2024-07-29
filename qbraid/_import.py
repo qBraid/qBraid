@@ -7,18 +7,23 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+
 """
-Module used for lazy loading of submodules.
+Module used for loading entry points and other dynamic imports.
 
 """
 import importlib.metadata
+import sys
 from typing import Optional, Type
+
+import pkg_resources
 
 from .exceptions import QbraidError
 
 
-def _load_entrypoint(module: str, name: str) -> Optional[Type]:
-    """Load an entrypoint given its category and name, optionally with a vendor.
+def load_entrypoint(module: str, name: str) -> Optional[Type]:
+    """
+    Load an entrypoint given its module and name.
 
     Args:
         module (str): Module of entrypoint to load, e.g., "programs"
@@ -34,7 +39,13 @@ def _load_entrypoint(module: str, name: str) -> Optional[Type]:
     group = f"qbraid.{module}"
 
     try:
-        entry_points = {ep.name: ep for ep in importlib.metadata.entry_points().select(group=group)}
+        if sys.version_info >= (3, 10):
+            entry_points = {
+                ep.name: ep for ep in importlib.metadata.entry_points().select(group=group)
+            }
+        else:
+            entry_points = {ep.name: ep for ep in pkg_resources.iter_entry_points(group)}
+
         entry_point = entry_points[name]
         return entry_point.load()
     except KeyError as err:

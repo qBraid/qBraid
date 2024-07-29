@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for qbraid.programs.qasm3.OpenQasm3Program
+Unit tests for qbraid.programs.qasm.OpenQasm3Program
 
 """
 import numpy as np
@@ -18,7 +18,7 @@ from qiskit.qasm3 import dumps, loads
 
 from qbraid.interface.random.qasm3_random import _qasm3_random
 from qbraid.interface.random.qiskit_random import _qiskit_random
-from qbraid.programs.circuits.qasm3 import OpenQasm3Program
+from qbraid.programs.circuits.qasm import OpenQasm3Program
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.registry import unregister_program_type
 from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import _get_qasm3_gate_defs
@@ -42,13 +42,6 @@ def test_qasm3_num_qubits():
     qiskit_circuit = _qiskit_random(num_qubits=num_qubits, depth=depth)
     qasm3_str = dumps(qiskit_circuit)
     assert OpenQasm3Program(qasm3_str).num_qubits == num_qubits
-
-
-def test_qasm3_depth():
-    """Test calculating qasm depth of qasm3 circuit"""
-    depth = np.random.randint(2, 10)
-    qasm3_str = _qasm3_random(depth=depth, seed=42)
-    assert OpenQasm3Program(qasm3_str).depth == depth
 
 
 def test_qasm3_depth_alternate_qubit_syntax():
@@ -461,3 +454,198 @@ def test_raise_program_type_error():
             OpenQasm3Program(42)
     finally:
         unregister_program_type("int")
+
+
+def test_replace_reset_with_ops():
+    """Test replacing reset gate with operations in qasm3 string"""
+    expected_qasm = """
+OPENQASM 3.0;
+include "stdgates.inc";
+
+qubit[1] q;
+
+measure q[0] -> c0;
+if (c0 == 1) x q[0];
+"""
+    qasm = """
+OPENQASM 3.0;
+include "stdgates.inc";
+
+qubit[1] q;
+
+reset q[0];
+"""
+    qprogram = OpenQasm3Program(qasm)
+    qprogram.replace_reset_with_ops()
+    assert qprogram.program == expected_qasm
+
+
+def test_validate_qubit_mapping_fail():
+    """Test that invalid qubit mapping raises ValueError"""
+    program = """
+OPENQASM 3.0;
+include "stdgates.inc";
+
+qubit[1] q;
+"""
+
+    qubit_decls = [("q", 1)]
+    qubit_mapping = {"q": 0}
+
+    qprogram = OpenQasm3Program(program)
+    with pytest.raises(ValueError):
+        qprogram._validate_qubit_mapping(qubit_decls, qubit_mapping)
+
+    qubit_mapping = {"q": {1: 1}}
+    with pytest.raises(ValueError):
+        qprogram._validate_qubit_mapping(qubit_decls, qubit_mapping)
+
+    qubit_decls = [("q", 2)]
+    qubit_mapping = {"q": {0: 1, 1: 1}}
+
+    with pytest.raises(ValueError):
+        qprogram._validate_qubit_mapping(qubit_decls, qubit_mapping)
+
+
+def test_get_unused_qubits():
+    """Test getting unused qubits in qasm3 string"""
+    program = """
+OPENQASM 3.0;
+include "stdgates.inc";
+
+qubit[1] q;
+
+h q[0];
+"""
+    qprogram = OpenQasm3Program(program)
+    assert qprogram._get_unused_qubit_indices() == {"q": set()}
+
+
+@pytest.mark.parametrize(
+    "program, expected_depth",
+    [
+        (
+            """
+OPENQASM 3.0;
+include "stdgates.inc";
+         
+qubit[2] q;
+qubit[2] r;
+qubit[2] s;
+         
+h q[0];
+h q[1];
+h r[0];
+""",
+            1,
+        ),
+        (
+            """
+OPENQASM 3.0;
+include "stdgates.inc";
+
+qreg q[2];
+creg c[2];
+
+h q[0];
+cx q[0], q[1];
+h q;
+
+measure q -> c;
+     """,
+            4,
+        ),
+        (
+            """
+OPENQASM 3.0;
+include "stdgates.inc";
+
+qreg q[2];
+
+reset q;
+reset q[0];
+""",
+            2,
+        ),
+        (
+            """
+OPENQASM 3.0;
+include "stdgates.inc";
+
+qreg q[2];
+
+h q[0];
+h q[0];
+h q[0];
+h q[0];
+
+barrier q;
+
+h q[1];
+""",
+            5,
+        ),
+        (
+            """
+OPENQASM 3.0;
+include "stdgates.inc";
+
+qreg q[2];
+creg c[2];
+
+h q[0];
+cx q[0], q[1];
+measure q[0] -> c[0];
+measure q[1] -> c[1];
+
+if (c==1) x q[0];
+""",
+            4,
+        ),
+        (
+            """
+OPENQASM 3.0;
+include "stdgates.inc";
+
+qreg q[2];
+creg c[2];
+
+h q[0];
+cx q[0], q[1];
+measure q[0] -> c[0];
+
+if (c==1) measure q[1] -> c[1];
+""",
+            4,
+        ),
+        (
+            """
+OPENQASM 3.0;
+include "stdgates.inc";
+qreg q1[3];
+qreg q2[3];
+creg c1[3];
+creg c2[3];
+
+gate big_gate a1, a2, a3, b1, b2, b3
+{
+    h a1;
+}
+x q1[0];
+barrier q1;
+big_gate q1[0],q1[1],q1[2],q2[0],q2[1],q2[2];
+x q1[0];
+measure q1 -> c1;
+if(c1==1) x q2[0];
+if(c1==2) x q2[2];
+if(c1==3) x q2[1];
+measure q2 -> c2;
+""",
+            8,
+        ),
+    ],
+)
+def test_qasm3_depth(program, expected_depth):
+    """Test calculating depth of qasm3 circuit"""
+    qprogram = OpenQasm3Program(program)
+    assert qprogram.depth == expected_depth

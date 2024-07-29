@@ -111,3 +111,21 @@ def test_raw_counts_raises_for_no_measurements():
     result = QbraidJobResult("device_id", "job_id", True, experiment)
     with pytest.raises(ValueError):
         result.raw_counts()
+
+
+class MockQbraidResult(QbraidJobResult):
+    """ "Mock Qbraid result for testing."""
+
+    def __init__(self, device_id, job_id, success, result):
+        """Create a new Result object."""
+        super().__init__(device_id, job_id, success, result)
+        self._measurements = [{" 1": 0, "0": 550}, {" 1": 474, "0": 550}]
+
+
+def test_decimal_raw_counts():
+    """Test decimal raw counts."""
+    experiment = ExperimentResult({})
+    result = MockQbraidResult("device_id", "job_id", True, experiment)
+    counts = result.raw_counts(decimal=True)
+    expected = {2: 2}
+    assert counts == expected

@@ -33,8 +33,7 @@ Submodules
    pennylane
    pyquil
    pytket
-   qasm2
-   qasm3
+   qasm
    qiskit
 
 """
@@ -44,11 +43,19 @@ from ._model import GateModelProgram
 
 _qbraid = importlib.import_module("qbraid.programs._import")
 NATIVE_REGISTRY = getattr(_qbraid, "NATIVE_REGISTRY", {})
+CIRCUIT_SUBMODULE_CHECKS = NATIVE_REGISTRY.copy()
 
 submodules = []
 base_path = "qbraid.programs.circuits."
 
-for lib in NATIVE_REGISTRY:
+qasm2 = CIRCUIT_SUBMODULE_CHECKS.pop("qasm2", None)
+qasm3 = CIRCUIT_SUBMODULE_CHECKS.pop("qasm3", None)
+
+key_set = set(CIRCUIT_SUBMODULE_CHECKS.keys())
+if qasm2 or qasm3:
+    key_set.add("qasm")
+
+for lib in key_set:
     try:
         imported_lib = importlib.import_module(base_path + lib)
         submodules.append(lib)

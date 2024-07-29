@@ -296,7 +296,6 @@ def test_get_path_from_bound_methods_attribute_error():
         patch.object(type(func), "source", new_callable=PropertyMock, side_effect=AttributeError),
         patch.object(type(func), "target", new_callable=PropertyMock, side_effect=AttributeError),
     ):
-
         with pytest.raises(AttributeError) as excinfo:
             graph._get_path_from_bound_methods([data["func"]])
 
