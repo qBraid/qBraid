@@ -83,10 +83,10 @@ class OQCDevice(QuantumDevice):
 
     def status(self) -> DeviceStatus:
         """Returns the status of the device."""
-        endpoint = self._client._get_qpu_endpoint("qpu:uk:2:d865b5a184")
-        next_window_dict = self._client._get(  # pylint: disable=unused-variable
-            endpoint + "/windows/next"
-        ).json()
+        # endpoint = self._client._get_qpu_endpoint("qpu:uk:2:d865b5a184")
+        # next_window_dict = self._client._get(  # pylint: disable=unused-variable
+        #     endpoint + "/windows/next"
+        # ).json()
         devices = self._client.get_qpus()
         for device in devices:
             if device["id"] == self.id:
