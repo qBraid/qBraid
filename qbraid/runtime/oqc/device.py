@@ -86,7 +86,7 @@ class OQCDevice(QuantumDevice):
         devices = self._client.get_qpus()
         for device in devices:
             if device["id"] == self.id:
-                if device["active"]:
+                if device["feature_set"]["always_on"]:
                     return DeviceStatus.ONLINE
                 return DeviceStatus.OFFLINE
         raise ResourceNotFoundError(f"Device {self.id} not found")

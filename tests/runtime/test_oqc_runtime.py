@@ -48,6 +48,7 @@ def lucy_simulator_data():
     """Return data for Lucy Simulator."""
     return {
         "active": True,
+        "feature_set": {"always_on": True, "qubit_count": 8, "simulator": True},
         "generation": 2,
         "id": "qpu:uk:2:d865b5a184",
         "name": "Lucy Simulator",
@@ -180,10 +181,9 @@ def test_oqc_provider_device(lucy_simulator_data):
         with pytest.raises(ResourceNotFoundError):
             provider.get_device("fake_id")
         assert isinstance(test_device.client, OQCClient)
-        lucy_simulator_data["active"] = False
+        lucy_simulator_data["feature_set"]["always_on"] = False
         unavailable_device = provider.get_device(DEVICE_ID)
         assert unavailable_device.status() == DeviceStatus.OFFLINE
-        # lucy_simulator_data["id"] = "fake_id"
         fake_profile = TargetProfile(
             device_id="fake_id",
             device_name="Fake Device",
