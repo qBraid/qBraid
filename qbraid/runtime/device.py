@@ -14,10 +14,12 @@
 Module defining abstract QuantumDevice Class
 
 """
+from __future__ import annotations
+
 import logging
 import warnings
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
 from qbraid.transpiler import CircuitConversionError, ConversionGraph, ConversionScheme, transpile
@@ -39,7 +41,7 @@ class QuantumDevice(ABC):
 
     def __init__(  # pylint: disable-next=unused-argument
         self,
-        profile: "qbraid.runtime.TargetProfile",
+        profile: qbraid.runtime.TargetProfile,
         scheme: Optional[ConversionScheme] = None,
         **kwargs,
     ):
@@ -52,11 +54,11 @@ class QuantumDevice(ABC):
 
         """
         self._profile = profile
-        self._target_spec = profile.get("program_spec")
+        self._target_spec: Optional[ProgramSpec] = profile.get("program_spec")
         self._scheme = scheme or ConversionScheme()
 
     @property
-    def profile(self) -> "qbraid.runtime.TargetProfile":
+    def profile(self) -> qbraid.runtime.TargetProfile:
         """Return the runtime profile."""
         return self._profile
 
@@ -71,7 +73,7 @@ class QuantumDevice(ABC):
         return self.profile.get("num_qubits")
 
     @property
-    def device_type(self) -> "qbraid.runtime.DeviceType":
+    def device_type(self) -> qbraid.runtime.DeviceType:
         """The device type, Simulator, Fake_device or QPU."""
         return DeviceType(self.profile.get("device_type"))
 
@@ -87,7 +89,7 @@ class QuantumDevice(ABC):
         return f"<{self.__module__}.{self.__class__.__name__}('{self.id}')>"
 
     @abstractmethod
-    def status(self) -> "qbraid.runtime.DeviceStatus":
+    def status(self) -> qbraid.runtime.DeviceStatus:
         """Return device status."""
 
     def queue_depth(self) -> int:
@@ -125,7 +127,7 @@ class QuantumDevice(ABC):
 
         return metadata
 
-    def validate(self, program: "Optional[qbraid.programs.QuantumProgram]"):
+    def validate(self, program: Optional[qbraid.programs.QuantumProgram]):
         """Verifies device status and circuit compatibility.
 
         Raises:
@@ -150,8 +152,8 @@ class QuantumDevice(ABC):
             )
 
     def transpile(
-        self, run_input: "qbraid.programs.QPROGRAM", run_input_spec: "qbraid.programs.ProgramSpec"
-    ) -> "qbraid.programs.QPROGRAM":
+        self, run_input: qbraid.programs.QPROGRAM, run_input_spec: qbraid.programs.ProgramSpec
+    ) -> qbraid.programs.QPROGRAM:
         """Convert circuit to package compatible with target device and pass through any
         provider transpile methods to match topology of device and/or optimize as applicable.
 
@@ -178,7 +180,9 @@ class QuantumDevice(ABC):
 
         if not (
             isinstance(run_input, list)
-            and all(isinstance(item, (target_type, type(target_type))) for item in run_input)
+            and all(
+                isinstance(item, (target_type, type(target_type))) for item in cast(list, run_input)
+            )
         ) and not isinstance(run_input, (target_type, type(target_type))):
             raise CircuitConversionError(
                 f"Expected transpile step to produce program of type of {target_type}, "
@@ -187,7 +191,7 @@ class QuantumDevice(ABC):
 
         return run_input
 
-    def transform(self, run_input: "qbraid.programs.QPROGRAM") -> "qbraid.programs.QPROGRAM":
+    def transform(self, run_input: qbraid.programs.QPROGRAM) -> qbraid.programs.QPROGRAM:
         """
         Override this method with any runtime transformations to apply to the run
         input, e.g. circuit optimizations, device-specific gate set conversions, etc.
@@ -197,8 +201,8 @@ class QuantumDevice(ABC):
         return run_input
 
     def apply_runtime_profile(
-        self, run_input: "qbraid.programs.QPROGRAM"
-    ) -> "qbraid.programs.QPROGRAM":
+        self, run_input: qbraid.programs.QPROGRAM
+    ) -> qbraid.programs.QPROGRAM:
         """Process quantum program before passing to device run method.
 
         Returns:
@@ -212,22 +216,25 @@ class QuantumDevice(ABC):
         run_input = self.transpile(run_input, run_input_spec)
         is_single_output = not isinstance(run_input, list)
         run_input = [run_input] if is_single_output else run_input
-        run_input = [self.transform(p) for p in run_input]
+        run_input = [self.transform(p) for p in cast(list, run_input)]
         run_input = run_input[0] if is_single_output else run_input
         return run_input
 
     @abstractmethod
     def submit(
-        self, run_input: "list[qbraid.programs.QPROGRAM]", *args, **kwargs
-    ) -> "Union[qbraid.runtime.QuantumJob, list[qbraid.runtime.QuantumJob]]":
+        self,
+        run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
+        *args,
+        **kwargs,
+    ) -> Union[qbraid.runtime.QuantumJob, list[qbraid.runtime.QuantumJob]]:
         """Vendor run method. Should return dictionary with the following keys."""
 
     def run(
         self,
-        run_input: "Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]]",
+        run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
         *args,
         **kwargs,
-    ) -> "Union[qbraid.runtime.QuantumJob, list[qbraid.runtime.QuantumJob]]":
+    ) -> Union[qbraid.runtime.QuantumJob, list[qbraid.runtime.QuantumJob]]:
         """
         Run a quantum job or a list of quantum jobs on this quantum device.
 

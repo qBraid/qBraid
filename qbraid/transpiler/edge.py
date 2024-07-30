@@ -12,6 +12,8 @@
 Module for defining custom conversions
 
 """
+from __future__ import annotations
+
 import importlib
 import inspect
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union
@@ -140,9 +142,7 @@ class Conversion:
                 return False
         return True
 
-    def convert(
-        self, program: "qbraid.programs.QPROGRAM"
-    ) -> Union["qbraid.programs.QPROGRAM", Any]:
+    def convert(self, program: qbraid.programs.QPROGRAM) -> Union[qbraid.programs.QPROGRAM, Any]:
         """
         Convert a quantum program from the source package to the target package.
 

@@ -63,7 +63,7 @@ DEVICE_DATA = [
     {
         "backend": "qpu.forte-1",
         "status": "available",
-        "qubits": 30,
+        "qubits": 36,
         "average_queue_time": 1533413000,
         "last_updated": 1717253790,
         "has_access": False,
@@ -114,7 +114,7 @@ GET_JOB_RESULT_RESPONSE = {"0": 0.5, "1": 0.5}
 
 def test_ionq_provider_get_device():
     """Test getting IonQ provider and device."""
-    with patch("qbraid_core.sessions.Session") as mock_session:
+    with patch("qbraid.runtime.ionq.provider.Session") as mock_session:
         mock_session.return_value.get.return_value.json.return_value = DEVICE_DATA
 
         provider = IonQProvider(api_key="fake_api_key")

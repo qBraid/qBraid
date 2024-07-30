@@ -12,6 +12,8 @@
 Module for drawing quantum circuit diagrams
 
 """
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, Optional
 
 from qbraid.programs import QPROGRAM_ALIASES, ProgramTypeError, get_program_type_alias
@@ -25,7 +27,7 @@ if TYPE_CHECKING:
 
 
 def circuit_drawer(
-    program: "qbraid.programs.QPROGRAM",
+    program: qbraid.programs.QPROGRAM,
     as_package: Optional[str] = None,
     output: Optional[str] = None,
     **kwargs,

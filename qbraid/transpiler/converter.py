@@ -12,6 +12,8 @@
 Module for transpiling quantum programs between different quantum programming languages
 
 """
+from __future__ import annotations
+
 import logging
 import warnings
 from copy import deepcopy
@@ -44,13 +46,13 @@ def _format_exception(err: Exception) -> str:
 
 
 def transpile(
-    program: "qbraid.programs.QPROGRAM",
+    program: qbraid.programs.QPROGRAM,
     target: str,
     conversion_graph: Optional[ConversionGraph] = None,
     max_path_attempts: int = 3,
     max_path_depth: Optional[int] = None,
     **kwargs,
-) -> "qbraid.programs.QPROGRAM":
+) -> qbraid.programs.QPROGRAM:
     """
     Transpile a quantum program to a target language using a conversion graph.
     This function attempts to find a conversion path from the program's current
