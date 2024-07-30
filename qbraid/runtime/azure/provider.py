@@ -26,6 +26,7 @@ from qbraid.runtime.provider import QuantumProvider
 
 from .device import AzureQuantumDevice
 
+warnings.simplefilter("always")
 
 class AzureQuantumProvider(QuantumProvider):
     """
