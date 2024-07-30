@@ -28,6 +28,7 @@ from .device import AzureQuantumDevice
 
 warnings.simplefilter("always")
 
+
 class AzureQuantumProvider(QuantumProvider):
     """
     Manages interactions with Azure Quantum services, encapsulating API calls,
