@@ -69,11 +69,16 @@ class AzureJob(QuantumJob):
 
         result: Union[dict[str, float], Any] = self._job.get_results()
 
-        return AzureResult(result)
+        if "meas" in result:
+            return AzureResult(result)
 
-    def cancel(self) -> None:
+        raise TypeError("The result did not process properly. Please try again.")
+
+    def cancel(self) -> str:
         """Cancel the Azure job."""
         if self.is_terminal_state():
-            raise JobStateError("Cannot cancel job in terminal state.")
+            raise JobStateError("Cannot cancel; job in terminal state.")
 
         self._job = self.workspace.cancel_job(self._job)
+
+        return "Job canceled successfully."
