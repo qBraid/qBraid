@@ -12,6 +12,7 @@
 Device class for OQC devices.
 
 """
+import datetime
 from typing import TYPE_CHECKING, Union
 
 from qcaas_client.client import QPUTask
@@ -83,15 +84,20 @@ class OQCDevice(QuantumDevice):
 
     def status(self) -> DeviceStatus:
         """Returns the status of the device."""
-        # endpoint = self._client._get_qpu_endpoint("qpu:uk:2:d865b5a184")
-        # next_window_dict = self._client._get(  # pylint: disable=unused-variable
-        #     endpoint + "/windows/next"
-        # ).json()
         devices = self._client.get_qpus()
         for device in devices:
             if device["id"] == self.id:
                 if device["feature_set"]["always_on"]:
                     return DeviceStatus.ONLINE
+                else:
+                    now = datetime.datetime.now()
+                    start_time = self._client.get_next_window()
+                    temp = start_time.split(" ")
+                    year, month, day = map(int, temp[0].split("-"))
+                    hour, minute, second = map(int, temp[1].split(":"))
+                    start_time = datetime.datetime(year, month, day, hour, minute, second)
+                    if now > start_time:
+                        return DeviceStatus.ONLINE
                 return DeviceStatus.OFFLINE
         raise ResourceNotFoundError(f"Device {self.id} not found")
 
