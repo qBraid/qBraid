@@ -135,7 +135,7 @@ class QbraidProvider(QuantumProvider):
             status (optional, str): The status of the job.
             max_results (optional, int): Maximum number of results to display. Defaults to 10.
         """
-        query = {}
+        query: dict[str, Any] = {}
 
         if provider:
             query["provider"] = provider.lower()

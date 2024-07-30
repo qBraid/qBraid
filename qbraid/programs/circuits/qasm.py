@@ -42,17 +42,20 @@ from qbraid.programs.exceptions import ProgramTypeError
 from ._model import GateModelProgram
 
 
-def expression_value(expression: Optional[Expression]) -> Optional[int]:
+def expression_value(expression: Optional[Expression]) -> int:
+    """Return the size of an expression."""
+    if isinstance(expression, IntegerLiteral):
+        return expression.value
+
+    raise ValueError(f"Invalid expression type: {type(expression)}. Expected IntegerLiteral.")
+
+
+def expression_value_option(expression: Optional[Expression]) -> Optional[int]:
     """Return the size of an expression."""
     if expression is None:
         return None
 
-    if isinstance(expression, IntegerLiteral):
-        return expression.value
-
-    raise ValueError(
-        f"Invalid expression type: {type(expression)}. Expected IntegerLiteral or None."
-    )
+    return expression_value(expression)
 
 
 # pylint: disable-next=too-many-statements
@@ -71,7 +74,7 @@ def depth(qasm_statements: list[Statement], counts: dict[str, int]) -> dict[str,
             continue
         if isinstance(statement, ClassicalDeclaration) and isinstance(statement.type, BitType):
             creg_name = statement.identifier.name
-            creg_size = expression_value(statement.type.size)
+            creg_size: int = expression_value(statement.type.size)
             creg_sizes[creg_name] = creg_size
             for i in range(creg_size):
                 track_measured[f"{creg_name}[{i}]"] = 0
@@ -143,7 +146,7 @@ def depth(qasm_statements: list[Statement], counts: dict[str, int]) -> dict[str,
                 required_depth = max(required_depth, max_depth)
                 for i in range(creg_sizes[creg_name]):
                     track_measured[f"{creg_name}[{i}]"] = required_depth
-                qubits = set()
+                qubits: set[str] = set()
                 for sub_statement in statement.if_block + statement.else_block:
                     if isinstance(sub_statement, QuantumGate):
                         for qubit in sub_statement.qubits:
@@ -154,11 +157,13 @@ def depth(qasm_statements: list[Statement], counts: dict[str, int]) -> dict[str,
                     elif isinstance(sub_statement, QuantumMeasurementStatement):
                         qreg_name = sub_statement.measure.qubit.name.name
                         expression = sub_statement.measure.qubit.indices[0][0]
-                        qubit_index = expression_value(expression)
-                        qubits.add(f"{qreg_name}[{qubit_index}]")
+                        if isinstance(expression, Expression):
+                            qubit_index = expression_value(expression)
+                            qubits.add(f"{qreg_name}[{qubit_index}]")
 
                 for qubit in qubits:
-                    counts[qubit] = max(required_depth, counts[qubit]) + 1
+                    qubit_id: str = str(qubit)
+                    counts[qubit_id] = max(required_depth, counts[qubit_id]) + 1
 
                 max_depth = max(counts.values())
     return counts
@@ -266,14 +271,14 @@ class OpenQasm3Program(GateModelProgram):
         for statement in program.statements:
             if isinstance(statement, QubitDeclaration):
                 name = statement.qubit.name
-                size = expression_value(statement.size)
+                size = expression_value_option(statement.size)
                 qubits.append((name, size))
                 num_qubits += 1 if size is None else size
             elif isinstance(statement, ClassicalDeclaration) and isinstance(
                 statement.type, BitType
             ):
                 name = statement.identifier.name
-                size = expression_value(statement.type.size)
+                size = expression_value_option(statement.type.size)
                 clbits.append((name, size))
                 num_clbits += 1 if size is None else size
 

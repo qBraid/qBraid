@@ -12,6 +12,8 @@
 Module defining QbraidDevice class
 
 """
+from __future__ import annotations
+
 import json
 import logging
 from typing import TYPE_CHECKING, Any, Optional, Union
@@ -43,8 +45,8 @@ class QbraidDevice(QuantumDevice):
 
     def __init__(
         self,
-        profile: "qbraid.runtime.TargetProfile",
-        client: "Optional[qbraid_core.services.quantum.QuantumClient]" = None,
+        profile: qbraid.runtime.TargetProfile,
+        client: Optional[qbraid_core.services.quantum.QuantumClient] = None,
         **kwargs,
     ):
         """Create a new QbraidDevice object."""
@@ -56,7 +58,7 @@ class QbraidDevice(QuantumDevice):
         """Return the QuantumClient object."""
         return self._client
 
-    def status(self) -> "qbraid.runtime.DeviceStatus":
+    def status(self) -> qbraid.runtime.DeviceStatus:
         """Return device status."""
         device_data = self.client.get_device(self.id)
         status = device_data.get("status")
@@ -112,7 +114,7 @@ class QbraidDevice(QuantumDevice):
 
     def _create_and_return_job(
         self,
-        module: "pyqir.Module",
+        module: pyqir.Module,
         entrypoint: Optional[str] = None,
         shots: Optional[int] = None,
         **kwargs,
@@ -125,7 +127,7 @@ class QbraidDevice(QuantumDevice):
 
     def submit(
         self,
-        run_input: "Union[pyqir.Module, list[pyqir.Module]]",
+        run_input: Union[pyqir.Module, list[pyqir.Module]],
         *args,
         entrypoint: Optional[str] = None,
         shots: Optional[int] = None,
@@ -143,9 +145,9 @@ class QbraidDevice(QuantumDevice):
             Union[QbraidJob, list[QbraidJob]: The job object(s) representing the submitted job(s).
         """
         is_single_input = not isinstance(run_input, list)
-        run_input = [run_input] if is_single_input else run_input
+        modules: list[pyqir.Module] = [run_input] if is_single_input else run_input
         jobs = [
-            self._create_and_return_job(module, entrypoint, shots, **kwargs) for module in run_input
+            self._create_and_return_job(module, entrypoint, shots, **kwargs) for module in modules
         ]
 
         return jobs[0] if is_single_input else jobs
@@ -161,10 +163,10 @@ class QbraidDevice(QuantumDevice):
 
     def run(
         self,
-        run_input: "Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]]",
+        run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
         *args,
         **kwargs,
-    ) -> "Union[qbraid.runtime.job.QbraidJob, list[qbraid.runtime.job.QbraidJob]]":
+    ) -> "Union[qbraid.runtime.QbraidJob, list[qbraid.runtime.QbraidJob]]":
         """
         Run a quantum job or a list of quantum jobs on this quantum device.
 
@@ -181,7 +183,7 @@ class QbraidDevice(QuantumDevice):
             run_input_list = run_input
             is_single_input = False
 
-        jobs = []
+        jobs: list[QbraidJob] = []
 
         for program in run_input_list:
             program_alias = get_program_type_alias(program, safe=True)
@@ -210,6 +212,9 @@ class QbraidDevice(QuantumDevice):
             transpiled_program = self.transpile(program, program_spec)
             transformed_program = self.transform(transpiled_program)
             job = self.submit(transformed_program, **program_data, **kwargs)
-            jobs.append(job)
+            if isinstance(job, list):
+                jobs.extend(job)
+            else:
+                jobs.append(job)
 
         return jobs[0] if is_single_input else jobs
