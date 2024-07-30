@@ -14,6 +14,7 @@
 Unit tests for OQCProvider class
 
 """
+import datetime
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -48,6 +49,7 @@ def lucy_simulator_data():
     """Return data for Lucy Simulator."""
     return {
         "active": True,
+        "feature_set": {"always_on": True, "qubit_count": 8, "simulator": True},
         "generation": 2,
         "id": "qpu:uk:2:d865b5a184",
         "name": "Lucy Simulator",
@@ -73,6 +75,10 @@ def oqc_device(lucy_simulator_data):
         def schedule_tasks(self, task: QPUTask, qpu_id: str):  # pylint: disable=unused-argument
             """Schedule tasks for the QPU."""
             return task
+
+        def get_next_window(self, qpu_id: str):  # pylint: disable=unused-argument
+            """Get next window."""
+            return "2024-07-30 00:50:00"
 
         def get_task_status(
             self, task_id: str, qpu_id: str, **kwargs
@@ -180,10 +186,13 @@ def test_oqc_provider_device(lucy_simulator_data):
         with pytest.raises(ResourceNotFoundError):
             provider.get_device("fake_id")
         assert isinstance(test_device.client, OQCClient)
-        lucy_simulator_data["active"] = False
+        lucy_simulator_data["feature_set"]["always_on"] = False
+        now = datetime.datetime.now()
+        year, month, day = now.year, now.month, now.day
+        window = f"{year + 1}-{month}-{day} 00:50:00"
+        mock_client.return_value.get_next_window.return_value = window
         unavailable_device = provider.get_device(DEVICE_ID)
         assert unavailable_device.status() == DeviceStatus.OFFLINE
-        # lucy_simulator_data["id"] = "fake_id"
         fake_profile = TargetProfile(
             device_id="fake_id",
             device_name="Fake Device",
@@ -196,6 +205,11 @@ def test_oqc_provider_device(lucy_simulator_data):
         fake_device = OQCDevice(profile=fake_profile, client=provider.client)
         with pytest.raises(ResourceNotFoundError):
             fake_device.status()
+
+        window = f"{year - 1}-{month}-{day} 00:50:00"
+        mock_client.return_value.get_next_window.return_value = window
+        always_on_false_available_device = provider.get_device(DEVICE_ID)
+        assert always_on_false_available_device.status() == DeviceStatus.ONLINE
 
 
 def test_build_runtime_profile(lucy_simulator_data):
