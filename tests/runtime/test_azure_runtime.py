@@ -270,14 +270,14 @@ def test_azure_device_submit(azure_device, mock_target):
     mock_target.submit.return_value = mock_job
 
     run_input = "test_input"
-    job = azure_device.submit(run_input, name="test_job")
+    job = azure_device.submit(run_input)
 
     assert isinstance(job, AzureJob)
     assert job.id == "test_job_id"
     assert job.workspace == azure_device.workspace
     assert job.device == azure_device
 
-    mock_target.submit.assert_called_once_with(input_data=run_input, name="test_job")
+    mock_target.submit.assert_called_once_with(run_input)
 
 
 def test_azure_device_submit_batch_job(azure_device):
