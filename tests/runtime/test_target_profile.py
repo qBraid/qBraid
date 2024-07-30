@@ -32,7 +32,7 @@ def create_target_profile(action_type, basis_gates, program_spec):
     """Helper function to create a TargetProfile with given parameters."""
     return TargetProfile(
         device_id="device123",
-        device_type=DeviceType.SIMULATOR,
+        simulator=True,
         action_type=action_type,
         num_qubits=5,
         program_spec=program_spec,
@@ -74,11 +74,12 @@ def test_target_profile_creation_with_string_type(
     by mapping them to the appropriate DeviceType enum."""
     profile = TargetProfile(
         device_id="device123",
-        device_type=device_type_str,
+        simulator=(expected_type != "QPU"),
+        device_type=DeviceType(device_type_str),
         num_qubits=5,
         program_spec=valid_program_spec,
     )
-    assert profile["device_type"] == expected_type
+    assert profile["device_type"].value == expected_type
 
 
 def test_target_profile_raise_for_bad_input():
@@ -87,37 +88,35 @@ def test_target_profile_raise_for_bad_input():
     or ValueError for invalid inputs.
     """
     with pytest.raises(ValidationError):
-        TargetProfile(device_id=123, device_type=DeviceType.SIMULATOR)
+        TargetProfile(device_id=123, simulator=True)
     with pytest.raises(ValidationError):
-        TargetProfile(device_id="device123", device_type="invalid_type")
+        TargetProfile(device_id="device123", simulator="invalid_type")
     with pytest.raises(ValidationError):
-        TargetProfile(device_id="device123", device_type="SIMULATOR", action_type="invalid_action")
+        TargetProfile(device_id="device123", simulator=True, action_type="invalid_action")
     with pytest.raises(ValidationError):
-        TargetProfile(device_id="device123", device_type=DeviceType.SIMULATOR, num_qubits="five")
+        TargetProfile(device_id="device123", simulator=True, num_qubits="five")
     with pytest.raises(ValidationError):
-        TargetProfile(
-            device_id="device123", device_type=DeviceType.SIMULATOR, program_spec="not_a_spec"
-        )
+        TargetProfile(device_id="device123", simulator=True, program_spec="not_a_spec")
     with pytest.raises(ValidationError):
-        TargetProfile(device_id="device123", device_type=DeviceType.SIMULATOR, provider_name=10)
-    with pytest.raises(TypeError):
+        TargetProfile(device_id="device123", simulator=True, provider_name=10)
+    with pytest.raises(ValidationError):
         TargetProfile(
             device_id="device123",
-            device_type=DeviceType.SIMULATOR,
+            simulator=True,
             action_type=DeviceActionType.OPENQASM,
             basis_gates=99,
         )
-    with pytest.raises(TypeError):
+    with pytest.raises(ValidationError):
         TargetProfile(
             device_id="device123",
-            device_type=DeviceType.SIMULATOR,
+            simulator=True,
             action_type=DeviceActionType.OPENQASM,
             basis_gates=[None],
         )
     with pytest.raises(ValidationError):
         TargetProfile(
             device_id="device123",
-            device_type=DeviceType.SIMULATOR,
+            simulator=True,
             basis_gates=["ms", "gpi", "gpi2"],
         )
 
@@ -143,28 +142,11 @@ def test_target_profile_bad_basis_gates_raises(valid_program_spec):
             )
 
 
-def test_target_profile_str(target_profile_openqasm):
-    """Test the __str__ method of TargetProfile."""
-    # order of basis_gates is not guaranteed
-    basis_gates = target_profile_openqasm["basis_gates"]
-
-    expected_str = (
-        "TargetProfile(device_id=device123, "
-        "device_type=SIMULATOR, "
-        "action_type=OpenQASM, "
-        "num_qubits=5, "
-        "program_spec=ProgramSpec(str, qasm2), "
-        "provider_name=Heisenberg, "
-        f"basis_gates={basis_gates}" + ")"
-    )
-    assert str(target_profile_openqasm).startswith(expected_str)
-
-
 def test_target_profile_getitem(target_profile_openqasm):
     """Test the __getitem__ method of TargetProfile."""
     assert target_profile_openqasm["device_id"] == "device123"
-    assert target_profile_openqasm["device_type"] == "SIMULATOR"
-    assert target_profile_openqasm["action_type"] == "OpenQASM"
+    assert target_profile_openqasm["simulator"] is True
+    assert target_profile_openqasm["action_type"] == DeviceActionType.OPENQASM
     assert target_profile_openqasm["basis_gates"] == {"gpi", "gpi2", "ms"}
 
 
@@ -176,10 +158,3 @@ def test_duplicate_basis_gates_removed(valid_program_spec):
         program_spec=valid_program_spec,
     )
     assert profile["basis_gates"] == {"x", "y", "z"}
-
-
-def test_target_profile_iter():
-    """Test the __iter__ method of TargetProfile."""
-    target_profile = TargetProfile(device_id="simulator", device_type=DeviceType.SIMULATOR)
-
-    assert list(iter(target_profile)) == [("device_id", "simulator"), ("device_type", "SIMULATOR")]

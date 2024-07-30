@@ -24,7 +24,7 @@ from typing import TYPE_CHECKING, Any, Optional, Union, cast
 from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
 from qbraid.transpiler import CircuitConversionError, ConversionGraph, ConversionScheme, transpile
 
-from .enums import DeviceStatus, DeviceType
+from .enums import DeviceStatus
 from .exceptions import ProgramValidationError, QbraidRuntimeError, ResourceNotFoundError
 
 if TYPE_CHECKING:
@@ -54,7 +54,7 @@ class QuantumDevice(ABC):
 
         """
         self._profile = profile
-        self._target_spec: Optional[ProgramSpec] = profile.get("program_spec")
+        self._target_spec: Optional[ProgramSpec] = profile.program_spec
         self._scheme = scheme or ConversionScheme()
 
     @property
@@ -65,17 +65,17 @@ class QuantumDevice(ABC):
     @property
     def id(self) -> str:
         """Return the device ID."""
-        return self.profile.get("device_id")
+        return self.profile.device_id
 
     @property
-    def num_qubits(self) -> int:
+    def num_qubits(self) -> Optional[int]:
         """The number of qubits supported by the device."""
-        return self.profile.get("num_qubits")
+        return self.profile.num_qubits
 
     @property
-    def device_type(self) -> qbraid.runtime.DeviceType:
+    def simulator(self) -> bool:
         """The device type, Simulator, Fake_device or QPU."""
-        return DeviceType(self.profile.get("device_type"))
+        return self.profile.simulator
 
     @property
     def scheme(self) -> ConversionScheme:
@@ -111,7 +111,7 @@ class QuantumDevice(ABC):
             dict[str, Any]: A dictionary with device status and queue depth among other details.
         """
         # Exclude certain keys from the profile and directly construct the desired dictionary
-        metadata = {key: value for key, value in self.profile.items() if key != "program_spec"}
+        metadata = {key: value for key, value in self.profile if key != "program_spec"}
 
         try:
             metadata["status"] = self.status().name

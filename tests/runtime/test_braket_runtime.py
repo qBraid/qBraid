@@ -35,7 +35,6 @@ from qbraid.runtime import (
     DeviceActionType,
     DeviceProgramTypeMismatchError,
     DeviceStatus,
-    DeviceType,
     TargetProfile,
 )
 from qbraid.runtime.braket.availability import _calculate_future_time
@@ -62,7 +61,7 @@ def braket_provider():
 def sv1_profile():
     """Target profile for AWS SV1 device."""
     return TargetProfile(
-        device_type=DeviceType.SIMULATOR,
+        simulator=True,
         num_qubits=34,
         program_spec=ProgramSpec(Circuit),
         provider_name="Amazon Braket",
@@ -218,7 +217,7 @@ def test_provider_build_runtime_profile(mock_sv1):
     """Test building a runtime profile."""
     provider = BraketProvider()
     profile = provider._build_runtime_profile(device=mock_sv1, extra="data")
-    assert profile.get("device_type") == DeviceType.SIMULATOR.name
+    assert profile.get("simulator") is True
     assert profile.get("provider_name") == "Amazon Braket"
     assert profile.get("device_id") == SV1_ARN
     assert profile.get("extra") == "data"
@@ -287,8 +286,8 @@ def test_device_profile_attributes(mock_aws_device, sv1_profile):
     assert device.id == sv1_profile.get("device_id")
     assert device.num_qubits == sv1_profile.get("num_qubits")
     assert device._target_spec == sv1_profile.get("program_spec")
-    assert device.device_type == DeviceType(sv1_profile.get("device_type"))
-    assert device.profile.get("action_type") == "OpenQASM"
+    assert device.simulator == sv1_profile.get("simulator")
+    assert device.profile.get("action_type").value == "qbraid.programs.circuits"
 
 
 @patch("qbraid.runtime.braket.device.AwsDevice")
@@ -403,7 +402,7 @@ def test_device_transform_raises_for_mismatch(mock_aws_device, braket_circuit):
     """Test raising exception for mismatched action type AHS and program type circuit."""
     mock_aws_device.return_value = Mock()
     profile = TargetProfile(
-        device_type=DeviceType.SIMULATOR,
+        simulator=True,
         num_qubits=34,
         program_spec=ProgramSpec(Circuit),
         provider_name="Amazon Braket",
@@ -420,7 +419,7 @@ def test_device_ionq_transform(mock_aws_device):
     """Test converting Amazon Braket circuit to use only IonQ supprted gates"""
     mock_aws_device.return_value = Mock()
     profile = TargetProfile(
-        device_type=DeviceType.QPU,
+        simulator=False,
         num_qubits=11,
         program_spec=ProgramSpec(Circuit),
         provider_name="IonQ",

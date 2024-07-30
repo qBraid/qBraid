@@ -12,6 +12,7 @@
 Module defining all :mod:`~qbraid.runtime` enumerated types.
 
 """
+import warnings
 from enum import Enum
 
 
@@ -29,18 +30,27 @@ class DeviceType(Enum):
     SIMULATOR = "SIMULATOR"
     LOCAL_SIMULATOR = "LOCAL_SIMULATOR"
 
+    def __getattribute__(self, name):
+        warnings.warn(
+            "The 'DeviceType' enum is deprecated and will be removed in a future version.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        return super().__getattribute__(name)
+
 
 class DeviceActionType(Enum):
     """
-    Enumeration for different quantum device action types
+    Enumeration for the quantum device action types
+    supported natively by qBraid.
 
     Attributes:
         OPENQASM (str): Actions compatible with OpenQASM.
         AHS (str): Actions using analog Hamiltonian simulation.
     """
 
-    OPENQASM = "OpenQASM"
-    AHS = "Analog Hamiltonian Simulation"
+    OPENQASM = "qbraid.programs.circuits"
+    AHS = "qbraid.programs.ahs"
 
 
 class DeviceStatus(Enum):

@@ -155,7 +155,7 @@ def oqc_device(lucy_simulator_data):
             self._profile = TargetProfile(
                 device_id=device_id,
                 device_name="Lucy Simulator",
-                device_type=DeviceType.SIMULATOR,
+                simulator=True,
                 action_type=DeviceActionType.OPENQASM,
                 endpoint_url="https://uk.cloud.oqc.app/d865b5a184",
                 num_qubits=8,
@@ -196,7 +196,7 @@ def test_oqc_provider_device(lucy_simulator_data):
         fake_profile = TargetProfile(
             device_id="fake_id",
             device_name="Fake Device",
-            device_type=DeviceType.SIMULATOR,
+            simulator=True,
             action_type=DeviceActionType.OPENQASM,
             endpoint_url="https://uk.cloud.oqc.app/fake_id",
             num_qubits=8,
