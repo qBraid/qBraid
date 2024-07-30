@@ -30,10 +30,12 @@ from qbraid.runtime.enums import DeviceActionType, DeviceStatus, DeviceType, Job
 from qbraid.runtime.exceptions import JobStateError, ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 
+
 @pytest.fixture
 def mock_workspace():
     """Return a mock Azure Quantum workspace."""
     return Mock(spec=Workspace)
+
 
 @pytest.fixture
 def mock_workspace_credential_free():
@@ -45,6 +47,7 @@ def mock_workspace_credential_free():
         location="something",
         # credential=credential,
     )
+
 
 @pytest.fixture
 def mock_target():
@@ -59,6 +62,7 @@ def mock_target():
     target._current_availability = "Available"
     return target
 
+
 @pytest.fixture
 def mock_invalid_target():
     """Return a mock Azure Quantum target with invalid content type."""
@@ -72,10 +76,12 @@ def mock_invalid_target():
     target._current_availability = "Available"
     return target
 
+
 @pytest.fixture
 def azure_provider(mock_workspace):
     """Return an AzureQuantumProvider instance with a mock workspace."""
     return AzureQuantumProvider(mock_workspace)
+
 
 @pytest.fixture
 def azure_device(mock_workspace, mock_target):
@@ -92,6 +98,7 @@ def azure_device(mock_workspace, mock_target):
     mock_workspace.get_targets.return_value = mock_target
     return AzureQuantumDevice(profile, mock_workspace)
 
+
 @pytest.fixture
 def mock_azure_job():
     """Return a mock AzureJob instance."""
@@ -102,13 +109,16 @@ def mock_azure_job():
     mock_workspace.get_job.return_value = mock_job
     return AzureJob(job_id="test_job_id", workspace=mock_workspace)
 
+
 @pytest.fixture
 def azure_result():
     """Return an AzureResult instance."""
     result_data = {"meas": ["00", "01", "00", "10", "00", "01"], "other_data": [1, 2, 3]}
     return AzureResult(result_data)
 
+
 # AzureQuantumProvider tests
+
 
 def test_azure_provider_init_with_credential():
     """Test initializing an AzureQuantumProvider with a credential."""
@@ -121,14 +131,17 @@ def test_azure_provider_init_with_credential():
     assert provider.workspace.credential == credential
     assert "qbraid" in workspace.append_user_agent.call_args[0][0]
 
+
 def test_init_without_credential(mock_workspace_credential_free):
     """Test initializing an AzureQuantumProvider without a credential."""
     with pytest.warns(Warning):
         AzureQuantumProvider(mock_workspace_credential_free)
 
+
 def test_azure_provider_workspace_property(azure_provider, mock_workspace):
     """Test the workspace property of an AzureQuantumProvider."""
     assert azure_provider.workspace == mock_workspace
+
 
 def test_build_profile(azure_provider, mock_target):
     """Test building a profile for an AzureQuantumProvider."""
@@ -137,12 +150,14 @@ def test_build_profile(azure_provider, mock_target):
     assert isinstance(profile, TargetProfile)
     assert profile.action_type == "OpenQASM"
 
+
 def test_build_profile_invalid(azure_provider, mock_invalid_target):
     """Test building a profile for an AzureQuantumProvider with an invalid target."""
     profile = azure_provider._build_profile(mock_invalid_target)
 
     assert isinstance(profile, TargetProfile)
     assert profile.action_type is None
+
 
 def test_azure_provider_get_devices(azure_provider, mock_workspace, mock_target):
     """Test getting devices from an AzureQuantumProvider."""
@@ -153,12 +168,14 @@ def test_azure_provider_get_devices(azure_provider, mock_workspace, mock_target)
     assert len(devices) == 1
     assert isinstance(devices[0], AzureQuantumDevice)
 
+
 def test_azure_provider_get_devices_no_results(azure_provider, mock_workspace):
     """Test getting devices from an AzureQuantumProvider with no results."""
     mock_workspace.get_targets.return_value = []
 
     with pytest.raises(ResourceNotFoundError):
         azure_provider.get_devices()
+
 
 def test_azure_provider_get_device(azure_provider, mock_workspace, mock_target):
     """Test getting a device from an AzureQuantumProvider."""
@@ -168,12 +185,14 @@ def test_azure_provider_get_device(azure_provider, mock_workspace, mock_target):
 
     assert isinstance(device, AzureQuantumDevice)
 
+
 def test_azure_provider_get_device_not_found(azure_provider, mock_workspace):
     """Test getting a nonexistent device from an AzureQuantumProvider."""
     mock_workspace.get_targets.return_value = None
 
     with pytest.raises(ValueError):
         azure_provider.get_device("nonexistent.qpu")
+
 
 def test_get_devices_single_target(mock_workspace):
     """Test getting devices when a single Target object is returned."""
@@ -202,6 +221,7 @@ def test_get_devices_single_target(mock_workspace):
     assert devices[0].profile.device_id == "test_target.qpu.test"
     assert devices[0].profile.provider_name == "test_provider"
 
+
 def test_get_devices_no_results_with_filters(mock_workspace):
     """Test getting devices with no results and filters applied."""
     mock_workspace.get_targets.return_value = []
@@ -209,6 +229,7 @@ def test_get_devices_no_results_with_filters(mock_workspace):
 
     with pytest.raises(ValueError, match="No devices found with the specified filters."):
         provider.get_devices(filter="some_filter")
+
 
 def test_get_devices_no_results_no_filters(mock_workspace):
     """Test getting devices with no results and no filters applied."""
@@ -218,12 +239,15 @@ def test_get_devices_no_results_no_filters(mock_workspace):
     with pytest.raises(ResourceNotFoundError, match="No devices found."):
         provider.get_devices()
 
+
 # AzureQuantumDevice tests
+
 
 def test_azure_device_init(azure_device, mock_workspace):
     """Test initializing an AzureQuantumDevice."""
     assert azure_device.workspace == mock_workspace
     mock_workspace.get_targets.assert_called_once_with(name="test.qpu")
+
 
 def test_azure_device_status(azure_device, mock_target):
     """Test getting the status of an AzureQuantumDevice."""
@@ -237,6 +261,7 @@ def test_azure_device_status(azure_device, mock_target):
 
     mock_target._current_availability = "Unknown"
     assert azure_device.status() == DeviceStatus.UNAVAILABLE
+
 
 def test_azure_device_submit(azure_device, mock_target):
     """Test submitting a job to an AzureQuantumDevice."""
@@ -254,17 +279,21 @@ def test_azure_device_submit(azure_device, mock_target):
 
     mock_target.submit.assert_called_once_with(input_data=run_input, name="test_job")
 
+
 def test_azure_device_submit_batch_job(azure_device):
     """Test submitting a batch job to an AzureQuantumDevice."""
     with pytest.raises(ValueError):
         azure_device.submit(["job1", "job2"], name="batch_job")
 
+
 # AzureJob tests
+
 
 def test_azure_job_init(mock_azure_job):
     """Test initializing an AzureJob."""
     assert mock_azure_job.id == "test_job_id"
     assert isinstance(mock_azure_job.workspace, Workspace)
+
 
 def test_azure_job_status(mock_azure_job):
     """Test getting the status of an AzureJob."""
@@ -285,6 +314,7 @@ def test_azure_job_status(mock_azure_job):
     mock_azure_job._job.details.status = "Unknown"
     assert mock_azure_job.status() == JobStatus.UNKNOWN
 
+
 def test_azure_job_result(mock_azure_job):
     """Test getting the result of an AzureJob."""
     mock_azure_job._job.get_results.return_value = {
@@ -295,16 +325,19 @@ def test_azure_job_result(mock_azure_job):
     assert isinstance(result, AzureResult)
     assert np.array_equal(result.measurements(), np.array(["00", "01", "00", "10", "00", "01"]))
 
+
 def test_azure_job_result_error(mock_azure_job):
     """Test getting the result of an AzureJob in a non-terminal state."""
     mock_azure_job._job.get_results.return_value = {"no_meas": [1, 2, 3]}
     with pytest.raises(TypeError):
         mock_azure_job.result()
 
+
 def test_azure_job_cancel(mock_azure_job):
     """Test canceling an AzureJob."""
     canceled = mock_azure_job.cancel()
     assert canceled == "Job canceled successfully."
+
 
 def test_azure_job_cancel_terminal_state(mock_azure_job):
     """Test canceling an AzureJob in a terminal state."""
@@ -312,7 +345,9 @@ def test_azure_job_cancel_terminal_state(mock_azure_job):
     with pytest.raises(JobStateError):
         mock_azure_job.cancel()
 
+
 # AzureResult tests
+
 
 def test_azure_result_init(azure_result):
     """Test initializing an AzureResult."""
@@ -322,16 +357,19 @@ def test_azure_result_init(azure_result):
         "other_data": [1, 2, 3],
     }
 
+
 def test_azure_result_measurements(azure_result):
     """Test getting measurements from an AzureResult."""
     measurements = azure_result.measurements()
     assert isinstance(measurements, np.ndarray)
     assert np.array_equal(measurements, np.array(["00", "01", "00", "10", "00", "01"]))
 
+
 def test_azure_result_measurement_counts(azure_result):
     """Test getting measurement counts from an AzureResult."""
     counts = azure_result.measurement_counts()
     assert counts == {"00": 3, "01": 2, "10": 1}
+
 
 def test_azure_result_raw_counts(azure_result):
     """Test getting raw counts from an AzureResult."""
