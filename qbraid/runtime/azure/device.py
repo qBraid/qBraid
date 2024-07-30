@@ -49,7 +49,7 @@ class AzureQuantumDevice(QuantumDevice):
         Returns:
             DeviceStatus: The current status of the device.
         """
-        status = self._device["current_availability"]
+        status = self._device._current_availability
         status_map = {
             "Available": DeviceStatus.ONLINE,
             "Deprecated": DeviceStatus.UNAVAILABLE,
@@ -74,3 +74,4 @@ class AzureQuantumDevice(QuantumDevice):
 
         job = self._device.submit(run_input, *args, **kwargs)
         return AzureJob(job_id=job.id, workspace=self.workspace, device=self)
+    
