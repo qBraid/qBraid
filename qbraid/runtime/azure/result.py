@@ -15,8 +15,7 @@
 Module defining Azure Results class
 
 """
-
-from collections import Counter
+from typing import Any
 
 import numpy as np
 
@@ -26,13 +25,22 @@ from qbraid.runtime.result import GateModelJobResult
 class AzureQuantumResult(GateModelJobResult):
     """Azure result class."""
 
-    def measurements(self):
-        """Return the measurements from the result data."""
-        return np.array(self._result["meas"])
+    def __init__(self, result: dict[str, Any]):
+        super().__init__(result)
+        self._counts = None
+        self._measurements = None
 
-    def measurement_counts(self):
-        return dict(Counter(self.measurements()))
+    def measurements(self) -> np.ndarray:
+        """Return the measurements as a 2D numpy array."""
+        if self._measurements is None:
+            counts = self.raw_counts()
+            if counts:
+                measurements = []
+                for state, count in counts.items():
+                    measurements.extend([list(map(int, state))] * count)
+                self._measurements = np.array(measurements, dtype=int)
+        return self._measurements
 
-    def raw_counts(self, **kwargs):
+    def raw_counts(self, **kwargs) -> dict[str, int]:
         """Return the raw counts from the result data."""
-        return self._result.values()
+        return self._result["results"][0]["data"]["counts"]

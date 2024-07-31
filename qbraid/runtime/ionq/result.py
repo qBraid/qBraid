@@ -16,7 +16,7 @@ from typing import Any, Optional
 
 import numpy as np
 
-from qbraid.runtime.result import GateModelJobResult
+from qbraid.runtime.result import GateModelJobResult, normalize_measurement_counts
 
 
 class IonQJobResult(GateModelJobResult):
@@ -47,5 +47,6 @@ class IonQJobResult(GateModelJobResult):
                 probs_binary = {
                     bin(int(key))[2:].zfill(2): value for key, value in probs_int.items()
                 }
-                self._counts = {state: int(prob * shots) for state, prob in probs_binary.items()}
+                probs_normal = normalize_measurement_counts([probs_binary])[0]
+                self._counts = {state: int(prob * shots) for state, prob in probs_normal.items()}
         return self._counts

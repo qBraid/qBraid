@@ -13,7 +13,7 @@ Module defining abstract GateModelJobResult Class
 
 """
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 import numpy as np
 
@@ -64,11 +64,11 @@ class GateModelJobResult(ABC, QuantumJobResult):
         """Return measurements as list"""
 
     @abstractmethod
-    def raw_counts(self, **kwargs):
+    def raw_counts(self, **kwargs) -> Union[dict[str, int], list[dict[str, int]]]:
         """Returns raw histogram data of the run"""
 
     @staticmethod
-    def format_counts(counts: dict, include_zero_values: bool = False) -> dict:
+    def format_counts(counts: dict[str, int], include_zero_values: bool = False) -> dict[str, int]:
         """Formats, sorts, and adds missing bit indices to counts dictionary
         Can pass in a 'include_zero_values' parameter to decide whether to include the states
         with zero counts.
@@ -96,7 +96,9 @@ class GateModelJobResult(ABC, QuantumJobResult):
 
         return final_counts
 
-    def measurement_counts(self, include_zero_values: bool = False, **kwargs) -> dict:
+    def measurement_counts(
+        self, include_zero_values: bool = False, **kwargs
+    ) -> Union[dict[str, int], list[dict[str, int]]]:
         """Returns the sorted histogram data of the run"""
         raw_counts = self.raw_counts(**kwargs)
         if isinstance(raw_counts, dict):
