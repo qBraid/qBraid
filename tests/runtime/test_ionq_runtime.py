@@ -63,7 +63,7 @@ DEVICE_DATA = [
     {
         "backend": "qpu.forte-1",
         "status": "available",
-        "qubits": 30,
+        "qubits": 36,
         "average_queue_time": 1533413000,
         "last_updated": 1717253790,
         "has_access": False,

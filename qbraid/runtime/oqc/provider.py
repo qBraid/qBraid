@@ -34,25 +34,22 @@ class OQCProvider(QuantumProvider):
 
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
         """Build a profile for OQC device."""
-        # TODO: dynamically get the number of qubits of device endpoint url.
-        qpu_num_qubits = {"qpu:uk:2:d865b5a184": 8}
-
         device_id: str = data["id"]
         device_name: str = data["name"]
-        device_type = DeviceType.SIMULATOR if "simulator" in device_name.lower() else DeviceType.QPU
+        device_type = DeviceType.SIMULATOR if data["feature_set"]["simulator"] else DeviceType.QPU
 
         return TargetProfile(
             device_id=device_id,
             device_type=device_type,
             action_type=DeviceActionType.OPENQASM,
-            num_qubits=qpu_num_qubits.get(device_id),
+            num_qubits=data["feature_set"]["qubit_count"],
             program_spec=ProgramSpec(str, alias="qasm2"),
             device_name=device_name,
             endpoint_url=data["url"],
-            provider_name="Oxford",
+            provider_name="OQC",
         )
 
-    def get_devices(self, **kwargs) -> list[OQCDevice]:
+    def get_devices(self, **kwargs) -> list[OQCDevice]:  # pylint: disable=unused-argument
         """Get all OQC devices."""
         devices: list[dict] = self.client.get_qpus()
         return [

@@ -51,7 +51,7 @@ azure = ["azure-quantum>=2.0,<2.2", "azure-storage-blob>=12.20,<13.0", "azure-id
 visualization = ["ipython", "matplotlib", "pylatexenc"]
 test = ["pytest", "pytest-cov"]
 lint = ["black", "isort", "pylint", "qbraid-cli>=0.8.2"]
-docs = ["sphinx>=7.2,<7.5", "sphinx-autodoc-typehints>=1.24,<2.3", "sphinx-rtd-theme>=1.3,<2.1", "docutils<0.22", "sphinx-copybutton"]
+docs = ["sphinx>=7.2,<8.1", "sphinx-autodoc-typehints>=1.24,<2.3", "sphinx-rtd-theme>=1.3,<2.1", "docutils<0.22", "sphinx-copybutton"]
 
 [project.entry-points."qbraid.programs"]
 braket_ahs = "qbraid.programs.ahs.braket_ahs:BraketAHS"
