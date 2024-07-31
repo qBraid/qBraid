@@ -7,7 +7,7 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
-#
+
 # pylint:disable=redefined-outer-name
 
 """
@@ -24,7 +24,7 @@ from azure.quantum import Workspace
 from azure.quantum.target import Target
 
 from qbraid.runtime.azure.device import AzureQuantumDevice
-from qbraid.runtime.azure.job import AzureJob, AzureResult
+from qbraid.runtime.azure.job import AzureQuantumJob, AzureQuantumResult
 from qbraid.runtime.azure.provider import AzureQuantumProvider
 from qbraid.runtime.enums import DeviceActionType, DeviceStatus, DeviceType, JobStatus
 from qbraid.runtime.exceptions import JobStateError, ResourceNotFoundError
@@ -101,23 +101,27 @@ def azure_device(mock_workspace, mock_target):
 
 @pytest.fixture
 def mock_azure_job():
-    """Return a mock AzureJob instance."""
+    """Return a mock AzureQuantumJob instance."""
     mock_workspace = Mock(spec=Workspace)
     mock_job = Mock()
     mock_job.id = "test_job_id"
     mock_job.details.status = "Waiting"
+
+    mock_job_cancelled = Mock()
+    mock_job_cancelled.id = "test_job_id"
+    mock_job_cancelled.details.status = "Cancelled"
+
     mock_workspace.get_job.return_value = mock_job
-    return AzureJob(job_id="test_job_id", workspace=mock_workspace)
+    mock_workspace.cancel_job.return_value = mock_job_cancelled
+
+    return AzureQuantumJob(job_id="test_job_id", workspace=mock_workspace)
 
 
 @pytest.fixture
 def azure_result():
-    """Return an AzureResult instance."""
+    """Return an AzureQuantumResult instance."""
     result_data = {"meas": ["00", "01", "00", "10", "00", "01"], "other_data": [1, 2, 3]}
-    return AzureResult(result_data)
-
-
-# AzureQuantumProvider tests
+    return AzureQuantumResult(result_data)
 
 
 def test_azure_provider_init_with_credential():
@@ -196,7 +200,6 @@ def test_azure_provider_get_device_not_found(azure_provider, mock_workspace):
 
 def test_get_devices_single_target(mock_workspace):
     """Test getting devices when a single Target object is returned."""
-    # Create a mock target object with necessary attributes
     single_target = Mock(spec=Target)
     single_target.name = "test_target.qpu.test"
     single_target.provider_id = "test_provider"
@@ -206,16 +209,12 @@ def test_get_devices_single_target(mock_workspace):
     single_target._current_availability = "Available"
     single_target.content_type = "application/json"
 
-    # Mock the get_targets method to return a single Target object
     mock_workspace.get_targets.return_value = single_target
 
-    # Initialize the provider with the mock workspace
     provider = AzureQuantumProvider(mock_workspace)
 
-    # Call the get_devices method
     devices = provider.get_devices()
 
-    # Assertions to check if the device is correctly wrapped in a list
     assert len(devices) == 1
     assert isinstance(devices[0], AzureQuantumDevice)
     assert devices[0].profile.device_id == "test_target.qpu.test"
@@ -238,9 +237,6 @@ def test_get_devices_no_results_no_filters(mock_workspace):
 
     with pytest.raises(ResourceNotFoundError, match="No devices found."):
         provider.get_devices()
-
-
-# AzureQuantumDevice tests
 
 
 def test_azure_device_init(azure_device, mock_workspace):
@@ -272,7 +268,7 @@ def test_azure_device_submit(azure_device, mock_target):
     run_input = "test_input"
     job = azure_device.submit(run_input)
 
-    assert isinstance(job, AzureJob)
+    assert isinstance(job, AzureQuantumJob)
     assert job.id == "test_job_id"
     assert job.workspace == azure_device.workspace
     assert job.device == azure_device
@@ -286,17 +282,14 @@ def test_azure_device_submit_batch_job(azure_device):
         azure_device.submit(["job1", "job2"], name="batch_job")
 
 
-# AzureJob tests
-
-
 def test_azure_job_init(mock_azure_job):
-    """Test initializing an AzureJob."""
+    """Test initializing an AzureQuantumJob."""
     assert mock_azure_job.id == "test_job_id"
     assert isinstance(mock_azure_job.workspace, Workspace)
 
 
 def test_azure_job_status(mock_azure_job):
-    """Test getting the status of an AzureJob."""
+    """Test getting the status of an AzureQuantumJob."""
     assert mock_azure_job.status() == JobStatus.QUEUED
 
     mock_azure_job._job.details.status = "Executing"
@@ -316,42 +309,39 @@ def test_azure_job_status(mock_azure_job):
 
 
 def test_azure_job_result(mock_azure_job):
-    """Test getting the result of an AzureJob."""
+    """Test getting the result of an AzureQuantumJob."""
     mock_azure_job._job.get_results.return_value = {
         "meas": ["00", "01", "00", "10", "00", "01"],
         "other_data": [1, 2, 3],
     }
     result = mock_azure_job.result()
-    assert isinstance(result, AzureResult)
+    assert isinstance(result, AzureQuantumResult)
     assert np.array_equal(result.measurements(), np.array(["00", "01", "00", "10", "00", "01"]))
 
 
 def test_azure_job_result_error(mock_azure_job):
-    """Test getting the result of an AzureJob in a non-terminal state."""
+    """Test getting the result of an AzureQuantumJob in a non-terminal state."""
     mock_azure_job._job.get_results.return_value = {"no_meas": [1, 2, 3]}
-    with pytest.raises(TypeError):
+    with pytest.raises(RuntimeError):
         mock_azure_job.result()
 
 
 def test_azure_job_cancel(mock_azure_job):
-    """Test canceling an AzureJob."""
-    canceled = mock_azure_job.cancel()
-    assert canceled == "Job canceled successfully."
+    """Test canceling an AzureQuantumJob."""
+    mock_azure_job.cancel()
+    assert mock_azure_job._job.details.status == "Cancelled"
 
 
 def test_azure_job_cancel_terminal_state(mock_azure_job):
-    """Test canceling an AzureJob in a terminal state."""
+    """Test canceling an AzureQuantumJob in a terminal state."""
     mock_azure_job._job.details.status = "Succeeded"
     with pytest.raises(JobStateError):
         mock_azure_job.cancel()
 
 
-# AzureResult tests
-
-
 def test_azure_result_init(azure_result):
-    """Test initializing an AzureResult."""
-    assert isinstance(azure_result, AzureResult)
+    """Test initializing an AzureQuantumResult."""
+    assert isinstance(azure_result, AzureQuantumResult)
     assert azure_result._result == {
         "meas": ["00", "01", "00", "10", "00", "01"],
         "other_data": [1, 2, 3],
@@ -359,19 +349,19 @@ def test_azure_result_init(azure_result):
 
 
 def test_azure_result_measurements(azure_result):
-    """Test getting measurements from an AzureResult."""
+    """Test getting measurements from an AzureQuantumResult."""
     measurements = azure_result.measurements()
     assert isinstance(measurements, np.ndarray)
     assert np.array_equal(measurements, np.array(["00", "01", "00", "10", "00", "01"]))
 
 
 def test_azure_result_measurement_counts(azure_result):
-    """Test getting measurement counts from an AzureResult."""
+    """Test getting measurement counts from an AzureQuantumResult."""
     counts = azure_result.measurement_counts()
     assert counts == {"00": 3, "01": 2, "10": 1}
 
 
 def test_azure_result_raw_counts(azure_result):
-    """Test getting raw counts from an AzureResult."""
+    """Test getting raw counts from an AzureQuantumResult."""
     raw_counts = list(azure_result.raw_counts())
     assert raw_counts == [["00", "01", "00", "10", "00", "01"], [1, 2, 3]]

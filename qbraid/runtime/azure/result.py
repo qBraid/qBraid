@@ -23,12 +23,8 @@ import numpy as np
 from qbraid.runtime.result import GateModelJobResult
 
 
-class AzureResult(GateModelJobResult):
+class AzureQuantumResult(GateModelJobResult):
     """Azure result class."""
-
-    def __init__(self, result: dict):
-        super().__init__(result=result)
-        self._result = result
 
     def measurements(self):
         """Return the measurements from the result data."""

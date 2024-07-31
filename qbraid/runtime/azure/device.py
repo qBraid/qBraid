@@ -12,13 +12,14 @@
 Module defining Azure Quantum device class for all devices managed by Azure Quantum.
 
 """
+from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 
-from .job import AzureJob
+from .job import AzureQuantumJob
 
 if TYPE_CHECKING:
     import azure.quantum
@@ -31,19 +32,19 @@ class AzureQuantumDevice(QuantumDevice):
 
     def __init__(
         self,
-        profile: "qbraid.runtime.TargetProfile",
-        workspace: "azure.quantum.Workspace",
+        profile: qbraid.runtime.TargetProfile,
+        workspace: azure.quantum.Workspace,
     ):
         super().__init__(profile=profile)
         self._workspace = workspace
         self._device = self.workspace.get_targets(name=self.id)
 
     @property
-    def workspace(self) -> "azure.quantum.Workspace":
+    def workspace(self) -> azure.quantum.Workspace:
         """Return the Azure Quantum Workspace."""
         return self._workspace
 
-    def status(self) -> "qbraid.runtime.enums.DeviceStatus":
+    def status(self) -> qbraid.runtime.enums.DeviceStatus:
         """Return the current status of the Azure device.
 
         Returns:
@@ -57,14 +58,14 @@ class AzureQuantumDevice(QuantumDevice):
         }
         return status_map.get(status, DeviceStatus.UNAVAILABLE)
 
-    def submit(self, run_input, *args, **kwargs) -> AzureJob:
+    def submit(self, run_input, *args, **kwargs) -> AzureQuantumJob:
         """Submit a job to the Azure device.
 
         Args:
             run_input (Any): The program to submit.
 
         Returns:
-            AzureJob: The submitted job.
+            AzureQuantumJob: The submitted job.
         """
         if isinstance(run_input, list):
             raise ValueError(
@@ -73,4 +74,4 @@ class AzureQuantumDevice(QuantumDevice):
             )
 
         job = self._device.submit(run_input, *args, **kwargs)
-        return AzureJob(job_id=job.id, workspace=self.workspace, device=self)
+        return AzureQuantumJob(job_id=job.id, workspace=self.workspace, device=self)

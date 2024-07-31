@@ -22,17 +22,17 @@ Classes
    AzureQuantumProvider
    AzureQuantumDevice
    AzureQuantumJob
-   AzureResult
+   AzureQuantumResult
 
 """
 from .device import AzureQuantumDevice
-from .job import AzureJob
+from .job import AzureQuantumJob
 from .provider import AzureQuantumProvider
-from .result import AzureResult
+from .result import AzureQuantumResult
 
 __all__ = [
     "AzureQuantumProvider",
     "AzureQuantumDevice",
-    "AzureJob",
-    "AzureResult",
+    "AzureQuantumJob",
+    "AzureQuantumResult",
 ]

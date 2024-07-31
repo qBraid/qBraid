@@ -15,7 +15,7 @@ Module defining Azure job class
 import logging
 from typing import TYPE_CHECKING, Any, Union
 
-from qbraid.runtime.azure.result import AzureResult
+from qbraid.runtime.azure.result import AzureQuantumResult
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
@@ -27,7 +27,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class AzureJob(QuantumJob):
+class AzureQuantumJob(QuantumJob):
     """Azure job class."""
 
     def __init__(self, job_id: str, workspace: "azure.quantum.Workspace", **kwargs):
@@ -58,7 +58,7 @@ class AzureJob(QuantumJob):
         }
         return status_map.get(status, JobStatus.UNKNOWN)
 
-    def result(self) -> AzureResult:
+    def result(self) -> AzureQuantumResult:
         """Return the result of the Azure job.
 
         Returns:
@@ -69,16 +69,16 @@ class AzureJob(QuantumJob):
 
         result: Union[dict[str, float], Any] = self._job.get_results()
 
-        if "meas" in result:
-            return AzureResult(result)
+        if "meas" not in result:
+            raise RuntimeError("No measurement results found.")
 
-        raise TypeError("The result did not process properly. Please try again.")
+        return AzureQuantumResult(result)
 
-    def cancel(self) -> str:
+    def cancel(self) -> None:
         """Cancel the Azure job."""
         if self.is_terminal_state():
             raise JobStateError("Cannot cancel; job in terminal state.")
 
         self._job = self.workspace.cancel_job(self._job)
 
-        return "Job canceled successfully."
+        logger.info("Job canceled successfully.")
