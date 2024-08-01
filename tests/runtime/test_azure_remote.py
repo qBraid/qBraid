@@ -49,6 +49,7 @@ def provider():
     return AzureQuantumProvider(workspace)
 
 
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
     """Test submitting an OpenQASM 2 string to run on the Quantinuum simulator."""
     device = provider.get_device("quantinuum.sim.h1-1sc")
@@ -76,6 +77,7 @@ def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
     assert result.measurement_counts() == {"000": 100}
 
 
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_submit_json_to_ionq(provider: AzureQuantumProvider):
     """Test submitting a circuit JSON to run on the IonQ simulator."""
     device = provider.get_device("ionq.simulator")
@@ -99,6 +101,7 @@ def test_submit_json_to_ionq(provider: AzureQuantumProvider):
     assert result.measurement_counts() == {"000": 50, "111": 50}
 
 
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_submit_qir_to_microsoft(provider: AzureQuantumProvider):
     """Test submitting QIR bitcode to run on the Microsoft resource estimator."""
     device = provider.get_device("microsoft.estimator")
@@ -127,6 +130,7 @@ def test_submit_qir_to_microsoft(provider: AzureQuantumProvider):
     assert isinstance(result, MicrosoftEstimatorResult)
 
 
+@pytest.mark.skipif(skip_remote_tests, reason=REASON)
 def test_submit_quil_to_rigetti(provider: AzureQuantumProvider):
     """Test submitting a Quil string to run on the Rigetti simulator."""
     device = provider.get_device("rigetti.sim.qvm")
