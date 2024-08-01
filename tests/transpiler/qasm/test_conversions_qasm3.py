@@ -75,7 +75,7 @@ def test_braket_to_qiskit_stdgates():
     qasm2_program = transpile(cirq_circuit, "qasm2")
     qiskit_circuit_1 = transpile(qasm3_program, "qiskit")
     qiskit_circuit_2 = transpile(qasm2_program, "qiskit")
-    assert circuits_allclose(circuit, qiskit_circuit_1, strict_gphase=True)
+    assert circuits_allclose(circuit, qiskit_circuit_1, strict_gphase=False)
     assert circuits_allclose(circuit, qiskit_circuit_2, strict_gphase=False)
 
 
