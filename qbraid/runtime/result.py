@@ -18,15 +18,17 @@ from typing import Any, Optional, Union
 import numpy as np
 
 
-def normalize_measurement_counts(measurements: list[dict[str, int]]) -> list[dict[str, int]]:
+def normalize_batch_bit_lengths(measurements: list[dict[str, int]]) -> list[dict[str, int]]:
     """
-    Normalizes measurement count dictionaries to have the same bit length across all keys.
+    Normalizes the bit lengths of binary keys in measurement count dictionaries
+    to ensure uniformity across all keys.
 
     Args:
-        measurements (list[dict[str, int]]): A list of dicts with binary keys and integer values.
+        measurements (list[dict[str, int]]): A list of dictionaries where each dictionary
+            contains binary string keys and integer values.
 
     Returns:
-        list[dict[str, int]]: A new list of dictionaries with normalized key lengths.
+        list[dict[str, int]]: A new list of dictionaries with uniformly lengthened binary keys.
     """
     if len(measurements) == 0:
         return measurements
@@ -36,12 +38,28 @@ def normalize_measurement_counts(measurements: list[dict[str, int]]) -> list[dic
     normalized_counts_list = []
     for counts in measurements:
         normalized_counts = {}
-        for key, true_value in counts.items():
+        for key, value in counts.items():
             normalized_key = key.zfill(max_bit_length)
-            normalized_counts[normalized_key] = true_value
+            normalized_counts[normalized_key] = value
         normalized_counts_list.append(normalized_counts)
 
     return normalized_counts_list
+
+
+def normalize_bit_lengths(measurement: dict[str, int]) -> dict[str, int]:
+    """
+    Normalizes the bit lengths of binary keys in a single measurement count dictionary
+        to ensure uniformity across all keys.
+
+    Args:
+        measurement (dict[str, int]): A dictionary with binary string keys and integer values.
+
+    Returns:
+        dict[str, int]: A dictionary with uniformly lengthened binary keys.
+    """
+    normalized_list = normalize_batch_bit_lengths([measurement])
+
+    return normalized_list[0] if normalized_list else measurement
 
 
 class QuantumJobResult:
@@ -59,13 +77,25 @@ class QuantumJobResult:
 class GateModelJobResult(ABC, QuantumJobResult):
     """Abstract interface for gate model quantum job results."""
 
-    @abstractmethod
-    def measurements(self) -> np.ndarray:
-        """Return measurements as list"""
+    def measurements(self) -> Optional[np.ndarray]:
+        """
+        Return measurements as a 2d array where each row is a
+        shot and each column is qubit. Defaults to None.
+
+        """
+        return None
 
     @abstractmethod
-    def raw_counts(self, **kwargs) -> Union[dict[str, int], list[dict[str, int]]]:
-        """Returns raw histogram data of the run"""
+    def get_counts(self) -> Union[dict[str, int], list[dict[str, int]]]:
+        """Returns histogram data of the run"""
+
+    @staticmethod
+    def counts_to_measurements(counts: dict[str, Any]) -> np.ndarray:
+        """Convert counts dictionary to measurements array."""
+        measurements = []
+        for state, count in counts.items():
+            measurements.extend([list(map(int, state))] * count)
+        return np.array(measurements, dtype=int)
 
     @staticmethod
     def format_counts(counts: dict[str, int], include_zero_values: bool = False) -> dict[str, int]:
@@ -97,16 +127,16 @@ class GateModelJobResult(ABC, QuantumJobResult):
         return final_counts
 
     def measurement_counts(
-        self, include_zero_values: bool = False, **kwargs
+        self, include_zero_values: bool = False
     ) -> Union[dict[str, int], list[dict[str, int]]]:
         """Returns the sorted histogram data of the run"""
-        raw_counts = self.raw_counts(**kwargs)
-        if isinstance(raw_counts, dict):
-            return self.format_counts(raw_counts, include_zero_values=include_zero_values)
+        get_counts = self.get_counts()
+        if isinstance(get_counts, dict):
+            return self.format_counts(get_counts, include_zero_values=include_zero_values)
 
         batch_counts = [
             self.format_counts(counts, include_zero_values=include_zero_values)
-            for counts in raw_counts
+            for counts in get_counts
         ]
 
-        return normalize_measurement_counts(batch_counts)
+        return normalize_batch_bit_lengths(batch_counts)

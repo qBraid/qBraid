@@ -527,14 +527,14 @@ def test_result_measurements():
     np.testing.assert_array_equal(result.measurements(), expected_output)
 
 
-def test_result_raw_counts():
-    """Test raw_counts method of BraketGateModelJobResult class."""
+def test_result_get_counts():
+    """Test get_counts method of BraketGateModelJobResult class."""
     mock_measurement_counts = {(0, 1, 1): 10, (1, 0, 1): 5}
     mock_result = MagicMock()
     mock_result.measurement_counts = mock_measurement_counts
     result = BraketGateModelJobResult(mock_result)
     expected_output = {"110": 10, "101": 5}
-    assert result.raw_counts() == expected_output
+    assert result.get_counts() == expected_output
 
 
 def test_get_default_region_error():

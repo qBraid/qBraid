@@ -12,9 +12,16 @@
 Module defining QiskitResult Class
 
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import numpy as np
 
 from qbraid.runtime.result import GateModelJobResult
+
+if TYPE_CHECKING:
+    from qiskit.result import Result
 
 
 class QiskitResult(GateModelJobResult):
@@ -55,10 +62,11 @@ class QiskitResult(GateModelJobResult):
             formatted_meas.append(lst_shot)
         return formatted_meas
 
-    def measurements(self):
-        """Return measurements as list"""
-        num_circuits = len(self._result.results)
-        qiskit_meas = [self._result.get_memory(i) for i in range(num_circuits)]
+    def measurements(self) -> np.ndarray:
+        """Return measurements a 2D numpy array"""
+        result: Result = self._result
+        num_circuits = len(result.results)
+        qiskit_meas = [result.get_memory(i) for i in range(num_circuits)]
         qbraid_meas = [self._format_measurements(qiskit_meas[i]) for i in range(num_circuits)]
 
         if num_circuits == 1:
@@ -68,6 +76,7 @@ class QiskitResult(GateModelJobResult):
 
         return np.array(qbraid_meas)
 
-    def raw_counts(self, **kwargs):
+    def get_counts(self) -> dict[str, int]:
         """Returns the histogram data of the run"""
-        return self._result.get_counts()
+        result: Result = self._result
+        return result.get_counts()

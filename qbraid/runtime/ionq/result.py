@@ -16,7 +16,7 @@ from typing import Any, Optional
 
 import numpy as np
 
-from qbraid.runtime.result import GateModelJobResult, normalize_measurement_counts
+from qbraid.runtime.result import GateModelJobResult, normalize_bit_lengths
 
 
 class IonQJobResult(GateModelJobResult):
@@ -30,23 +30,21 @@ class IonQJobResult(GateModelJobResult):
     def measurements(self) -> np.ndarray:
         """Return the measurements as a 2D numpy array."""
         if self._measurements is None:
-            counts = self.raw_counts()
+            counts = self.get_counts()
             if counts:
-                measurements = []
-                for state, count in counts.items():
-                    measurements.extend([list(map(int, state))] * count)
-                self._measurements = np.array(measurements, dtype=int)
+                self._measurements = self.counts_to_measurements(counts)
         return self._measurements
 
-    def raw_counts(self, **kwargs) -> dict[str, int]:
+    def get_counts(self) -> dict[str, int]:
         """Return the raw counts of the run."""
         if self._counts is None:
-            shots: Optional[int] = self._result.get("shots")
-            probs_int: Optional[dict] = self._result.get("probabilities")
+            result: dict[str, Any] = self._result
+            shots: Optional[int] = result.get("shots")
+            probs_int: Optional[dict] = result.get("probabilities")
             if shots and probs_int:
                 probs_binary = {
                     bin(int(key))[2:].zfill(2): value for key, value in probs_int.items()
                 }
-                probs_normal = normalize_measurement_counts([probs_binary])[0]
+                probs_normal = normalize_bit_lengths(probs_binary)
                 self._counts = {state: int(prob * shots) for state, prob in probs_normal.items()}
         return self._counts

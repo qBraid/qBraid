@@ -389,7 +389,7 @@ def test_azure_result_measurement_counts(azure_result):
 
 
 @pytest.mark.skip(reason="Now using results builder")
-def test_azure_result_raw_counts(azure_result):
+def test_azure_result_get_counts(azure_result):
     """Test getting raw counts from an AzureQuantumResult."""
-    raw_counts = list(azure_result.raw_counts())
-    assert raw_counts == [["00", "01", "00", "10", "00", "01"], [1, 2, 3]]
+    get_counts = list(azure_result.get_counts())
+    assert get_counts == [["00", "01", "00", "10", "00", "01"], [1, 2, 3]]

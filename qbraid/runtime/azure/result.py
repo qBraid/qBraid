@@ -33,14 +33,11 @@ class AzureQuantumResult(GateModelJobResult):
     def measurements(self) -> np.ndarray:
         """Return the measurements as a 2D numpy array."""
         if self._measurements is None:
-            counts = self.raw_counts()
+            counts = self.get_counts()
             if counts:
-                measurements = []
-                for state, count in counts.items():
-                    measurements.extend([list(map(int, state))] * count)
-                self._measurements = np.array(measurements, dtype=int)
+                self._measurements = self.counts_to_measurements(counts)
         return self._measurements
 
-    def raw_counts(self, **kwargs) -> dict[str, int]:
+    def get_counts(self) -> dict[str, int]:
         """Return the raw counts from the result data."""
         return self._result["results"][0]["data"]["counts"]

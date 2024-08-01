@@ -12,7 +12,10 @@
 Module defining BraketGateModelJobResult Class
 
 """
+from __future__ import annotations
+
 from collections import Counter
+from typing import TYPE_CHECKING
 
 import numpy as np
 from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
@@ -23,6 +26,12 @@ from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.result import GateModelJobResult, QuantumJobResult
 
+if TYPE_CHECKING:
+    from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
+        AnalogHamiltonianSimulationQuantumTaskResult,
+    )
+    from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
+
 
 class ResultDecodingError(QbraidRuntimeError):
     """Exception raised for errors that occur during the decoding of result data."""
@@ -31,18 +40,20 @@ class ResultDecodingError(QbraidRuntimeError):
 class BraketGateModelJobResult(GateModelJobResult):
     """Wrapper class for Amazon Braket result objects."""
 
-    def measurements(self):
+    def measurements(self) -> np.ndarray:
         """
         2d array - row is shot and column is qubit. Default is None.
         Only available when shots > 0. The qubits in `measurements` are
         the ones in `GateModelQuantumTaskResult.measured_qubits`.
 
         """
-        return np.flip(self._result.measurements, 1)
+        result: GateModelQuantumTaskResult = self._result
+        return np.flip(result.measurements, 1)
 
-    def raw_counts(self, **kwargs):
+    def get_counts(self):
         """Returns the histogram data of the run"""
-        braket_counts = dict(self._result.measurement_counts)
+        result: GateModelQuantumTaskResult = self._result
+        braket_counts = dict(result.measurement_counts)
         qbraid_counts = {}
         for key in braket_counts:
             str_key = "".join(reversed([str(i) for i in key]))
@@ -53,10 +64,12 @@ class BraketGateModelJobResult(GateModelJobResult):
 class BraketAhsJobResult(QuantumJobResult):
     """Result from an Analog Hamiltonian Simulation (AHS)."""
 
-    def measurements(self):
+    def measurements(self) -> list[ShotResult]:
         """Get the list of shot results from the AHS job."""
+        result: AnalogHamiltonianSimulationQuantumTaskResult = self._result
+
         measurements = []
-        for measurement in self._result.measurements:
+        for measurement in result.measurements:
             status = AnalogHamiltonianSimulationShotStatus(measurement.shotMetadata.shotStatus)
             pre_sequence = None
             if measurement.shotResult.preSequence:
