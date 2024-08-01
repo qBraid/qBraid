@@ -15,7 +15,7 @@ Module defining Azure Quantum device class for all devices managed by Azure Quan
 
 """
 
-from unittest.mock import Mock
+from unittest.mock import MagicMock, Mock
 
 import numpy as np
 import pytest
@@ -301,25 +301,28 @@ def test_azure_job_init(mock_azure_job):
     assert isinstance(mock_azure_job.workspace, Workspace)
 
 
-@pytest.mark.skip(reason="Switched status method logic")
-def test_azure_job_status(mock_azure_job):
+@pytest.mark.parametrize(
+    "job_status, expected_status",
+    [
+        ("Succeeded", JobStatus.COMPLETED),
+        ("Waiting", JobStatus.QUEUED),
+        ("Executing", JobStatus.RUNNING),
+        ("Failed", JobStatus.FAILED),
+        ("Cancelled", JobStatus.CANCELLED),
+        ("Finishing", JobStatus.RUNNING),
+        ("NonExistentStatus", JobStatus.UNKNOWN),
+    ],
+)
+def test_azure_job_status(job_status, expected_status):
     """Test getting the status of an AzureQuantumJob."""
-    assert mock_azure_job.status() == JobStatus.QUEUED
+    mock_workspace = MagicMock()
+    mock_job = MagicMock()
+    mock_job.details.as_dict.return_value = {"status": job_status}
+    mock_workspace.get_job.return_value = mock_job
 
-    mock_azure_job._job.details.status = "Executing"
-    assert mock_azure_job.status() == JobStatus.RUNNING
-
-    mock_azure_job._job.details.status = "Failed"
-    assert mock_azure_job.status() == JobStatus.FAILED
-
-    mock_azure_job._job.details.status = "Cancelled"
-    assert mock_azure_job.status() == JobStatus.CANCELLED
-
-    mock_azure_job._job.details.status = "Succeeded"
-    assert mock_azure_job.status() == JobStatus.COMPLETED
-
-    mock_azure_job._job.details.status = "Unknown"
-    assert mock_azure_job.status() == JobStatus.UNKNOWN
+    job = AzureQuantumJob(job_id="123", workspace=mock_workspace)
+    assert job.status() == expected_status
+    mock_job.refresh.assert_called_once()
 
 
 def test_azure_job_cancel(mock_azure_job):
@@ -328,12 +331,16 @@ def test_azure_job_cancel(mock_azure_job):
     assert mock_azure_job._job.details.status == "Cancelled"
 
 
-@pytest.mark.skip(reason="Switched status method logic")
-def test_azure_job_cancel_terminal_state(mock_azure_job):
+def test_azure_job_cancel_terminal_state_raises():
     """Test canceling an AzureQuantumJob in a terminal state."""
-    mock_azure_job._job.details.status = "Succeeded"
+    mock_workspace = MagicMock()
+    mock_job = MagicMock()
+    mock_job.details.as_dict.return_value = {"status": "Succeeded"}
+    mock_workspace.get_job.return_value = mock_job
+
+    job = AzureQuantumJob(job_id="123", workspace=mock_workspace)
     with pytest.raises(JobStateError):
-        mock_azure_job.cancel()
+        job.cancel()
 
 
 @pytest.mark.skip(reason="Now using results builder")
