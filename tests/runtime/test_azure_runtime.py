@@ -11,7 +11,7 @@
 # pylint:disable=redefined-outer-name
 
 """
-Module defining Azure Quantum device class for all devices managed by Azure Quantum.
+Unit tests for the Azure Quantum runtime module.
 
 """
 

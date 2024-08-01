@@ -45,6 +45,7 @@ MICROSOFT_OUTPUT_DATA_FORMAT_V2 = "microsoft.quantum-results.v2"
 IONQ_OUTPUT_DATA_FORMAT = "ionq.quantum-results.v1"
 QUANTINUUM_OUTPUT_DATA_FORMAT = "honeywell.quantum-results.v1"
 RESOURCE_ESTIMATOR_OUTPUT_DATA_FORMAT = "microsoft.resource-estimates.v1"
+RIGETTI_OUTPUT_DATA_FORMAT = "rigetti.quil-results.v1"
 
 
 class AzureResultBuilder:
@@ -140,6 +141,9 @@ class AzureResultBuilder:
 
             elif self.job.details.output_data_format == QUANTINUUM_OUTPUT_DATA_FORMAT:
                 job_result["data"] = self._format_quantinuum_results()
+
+            elif self.job.details.output_data_format == RIGETTI_OUTPUT_DATA_FORMAT:
+                job_result["data"] = self._format_rigetti_results()
 
             else:
                 job_result["data"] = self._format_unknown_results()
@@ -294,6 +298,20 @@ class AzureResultBuilder:
         histogram = {bitstring: count / shots for bitstring, count in counts.items()}
 
         return {"counts": counts, "probabilities": histogram}
+
+    def _format_rigetti_results(self) -> dict[str, Any]:
+        """
+        Translate Rigetti's readout data into a format that
+        can be consumed by qBraid runtime.
+
+        """
+        az_result = self.job.get_results()
+        readout = az_result["ro"]
+        measurements = ["".join(map(str, row)) for row in readout]
+        counts = {row: measurements.count(row) for row in set(measurements)}
+        total_counts = sum(counts.values())
+        probabilities = {outcome: count / total_counts for outcome, count in counts.items()}
+        return {"counts": counts, "probabilities": probabilities}
 
     def _format_unknown_results(self):
         """Format Job results data when the job output is in an unknown format."""
