@@ -20,11 +20,11 @@
 Module defining AzureResultBuilder class
 
 """
-
 import ast
-import hashlib
+import datetime
 import json
 import logging
+import os
 import re
 from collections import defaultdict
 from typing import Any, Optional, Union
@@ -166,8 +166,9 @@ class AzureResultBuilder:
                 raise ValueError(f"Probabilities do not add up to 1: {probabilities}")
             probabilities = {k: v / norm for k, v in probabilities.items()}
         if not sampler_seed:
-            hash_value = int(hashlib.sha256(self.job.id.encode("utf-8")).hexdigest(), 16)
-            sampler_seed = hash_value % (2**32 - 1)
+            current_microtime = int(datetime.datetime.now().timestamp() * 1_000_000)
+            random_bytes = os.urandom(4) + current_microtime.to_bytes(8, "little")
+            sampler_seed = int.from_bytes(random_bytes, "little") % (2**32 - 1)
 
         rng = np.random.default_rng(sampler_seed)
         rand_values = rng.choice(list(probabilities.keys()), shots, p=list(probabilities.values()))

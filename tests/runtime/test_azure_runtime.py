@@ -17,11 +17,11 @@ Unit tests for the Azure Quantum runtime module.
 
 from unittest.mock import MagicMock, Mock
 
-import numpy as np
 import pytest
 from azure.identity import ClientSecretCredential
-from azure.quantum import Workspace
-from azure.quantum.target import Target
+from azure.quantum import Job, JobDetails, Workspace
+from azure.quantum.target.microsoft import MicrosoftEstimatorResult
+from azure.quantum.target.target import Target
 
 from qbraid.runtime import (
     DeviceActionType,
@@ -36,6 +36,7 @@ from qbraid.runtime.azure import (
     AzureQuantumJob,
     AzureQuantumProvider,
     AzureQuantumResult,
+    AzureResultBuilder,
 )
 
 
@@ -43,18 +44,6 @@ from qbraid.runtime.azure import (
 def mock_workspace():
     """Return a mock Azure Quantum workspace."""
     return Mock(spec=Workspace)
-
-
-@pytest.fixture
-def mock_workspace_credential_free():
-    """Return a mock Azure Quantum workspace without a credential."""
-    return Workspace(
-        subscription_id="something",
-        resource_group="something",
-        name="something",
-        location="something",
-        # credential=credential,
-    )
 
 
 @pytest.fixture
@@ -148,10 +137,16 @@ def test_azure_provider_init_with_credential():
     assert "qbraid" in workspace.append_user_agent.call_args[0][0]
 
 
-def test_init_without_credential(mock_workspace_credential_free):
+def test_init_without_credential():
     """Test initializing an AzureQuantumProvider without a credential."""
+    workspace = Workspace(
+        subscription_id="something",
+        resource_group="something",
+        name="something",
+        location="something",
+    )
     with pytest.warns(Warning):
-        AzureQuantumProvider(mock_workspace_credential_free)
+        AzureQuantumProvider(workspace)
 
 
 def test_azure_provider_workspace_property(azure_provider, mock_workspace):
@@ -342,53 +337,201 @@ def test_azure_job_cancel_terminal_state_raises():
         job.cancel()
 
 
-@pytest.mark.skip(reason="Now using results builder")
-def test_azure_job_result(mock_azure_job):
-    """Test getting the result of an AzureQuantumJob."""
-    mock_azure_job._job.get_results.return_value = {
-        "meas": ["00", "01", "00", "10", "00", "01"],
-        "other_data": [1, 2, 3],
+@pytest.fixture
+def mock_result_builder() -> AzureResultBuilder:
+    """Create a mock Azure result builder."""
+    job = Mock(id="test123")
+    return AzureResultBuilder(job)
+
+
+@pytest.fixture
+def mock_result() -> AzureQuantumResult:
+    """Create a mock result data."""
+    data = {
+        "results": [
+            {
+                "data": {
+                    "counts": {"000": 50, "111": 50},
+                    "probabilities": {"000": 0.5, "111": 0.5},
+                },
+                "success": True,
+                "header": {},
+                "shots": 100,
+            }
+        ],
+        "job_id": "test123",
+        "target": "ionq.simulator",
+        "job_name": "ionq-job",
+        "success": True,
+        "error_data": None,
     }
-    result = mock_azure_job.result()
-    assert isinstance(result, AzureQuantumResult)
-    assert np.array_equal(result.measurements(), np.array(["00", "01", "00", "10", "00", "01"]))
+    return AzureQuantumResult(data)
 
 
-@pytest.mark.skip(reason="Now using results builder")
-def test_azure_job_result_error(mock_azure_job):
-    """Test getting the result of an AzureQuantumJob in a non-terminal state."""
-    mock_azure_job._job.get_results.return_value = {"no_meas": [1, 2, 3]}
-    with pytest.raises(RuntimeError):
-        mock_azure_job.result()
+class DowloadDataMock:
+    """Mock download data method."""
+
+    def decode(self) -> str:
+        """Mock decode method."""
 
 
-@pytest.mark.skip(reason="Now using results builder")
-def test_azure_result_init(azure_result):
-    """Test initializing an AzureQuantumResult."""
-    assert isinstance(azure_result, AzureQuantumResult)
-    assert azure_result._result == {
-        "meas": ["00", "01", "00", "10", "00", "01"],
-        "other_data": [1, 2, 3],
+def mock_job(job_id: str, target: str, output_data_format: str, results_as_json_str: str) -> Job:
+    """Create a mock Azure Quantum Job."""
+    job_details = JobDetails(
+        id=job_id,
+        name="azure-quantum-job",
+        provider_id="",
+        target=target,
+        container_uri="",
+        input_params={"shots": 100},
+        input_data_format="",
+        output_data_format=output_data_format,
+    )
+    job_details.status = "Succeeded"
+    job = Job(workspace=Mock(spec=Workspace), job_details=job_details)
+
+    job.has_completed = Mock(return_value=True)
+    job.wait_until_completed = Mock()
+
+    download_data = DowloadDataMock()
+    download_data.decode = Mock(return_value=results_as_json_str)
+    job.download_data = Mock(return_value=download_data)
+
+    return job
+
+
+def test_job_for_microsoft_quantum_results_v1_success():
+    """Test getting job for microsoft.quantum-results.v1 output data format."""
+    job_id = "test123"
+    target = "microsoft.estimator"
+    output_data_format = "microsoft.quantum-results.v1"
+    results_as_json_str = '{"Histogram": ["[0]", 0.50, "[1]", 0.50]}'
+    job = mock_job(job_id, target, output_data_format, results_as_json_str)
+
+    builder = AzureResultBuilder(job)
+    assert isinstance(builder.job, Job)
+    assert builder.job == job
+    assert builder.from_simulator is True
+    assert builder._shots_count() == 100
+
+
+def test_make_estimator_result_with_failure():
+    """Test making an estimator result with a failed job."""
+    data = {
+        "success": False,
+        "error_data": {
+            "code": "ResourceUnavailable",
+            "message": "The resource is currently unavailable.",
+        },
     }
+    with pytest.raises(RuntimeError) as exc_info:
+        AzureResultBuilder.make_estimator_result(data)
+    assert (
+        "Cannot retrieve results as job execution failed (ResourceUnavailable: "
+        "The resource is currently unavailable.)" in str(exc_info.value)
+    )
 
 
-@pytest.mark.skip(reason="Now using results builder")
-def test_azure_result_measurements(azure_result):
-    """Test getting measurements from an AzureQuantumResult."""
-    measurements = azure_result.measurements()
-    assert isinstance(measurements, np.ndarray)
-    assert np.array_equal(measurements, np.array(["00", "01", "00", "10", "00", "01"]))
+def test_make_estimator_result_with_incorrect_results_length():
+    """Test making an estimator result with incorrect results length."""
+    data = {"success": True, "results": [{"data": 42}, {"data": 43}]}
+    with pytest.raises(ValueError) as exc_info:
+        AzureResultBuilder.make_estimator_result(data)
+    assert "Expected resource estimator results to be of length 1" in str(exc_info.value)
 
 
-@pytest.mark.skip(reason="Now using results builder")
-def test_azure_result_measurement_counts(azure_result):
-    """Test getting measurement counts from an AzureQuantumResult."""
-    counts = azure_result.measurement_counts()
-    assert counts == {"00": 3, "01": 2, "10": 1}
+def test_make_estimator_result_successful():
+    """Test making an estimator result with successful job."""
+    data = {
+        "job_id": "123-456-798",
+        "target": "microsoft.estimator",
+        "job_name": "azure-quantum-job",
+        "success": True,
+        "error_data": None,
+        "results": [
+            {
+                "data": {
+                    "status": "success",
+                    "jobParams": {},
+                    "physicalCounts": {},
+                    "physicalCountsFormatted": {},
+                    "logicalQubit": {},
+                    "tfactory": {},
+                    "errorBudget": {},
+                    "logicalCounts": {},
+                    "reportData": {"groups": [], "assumptions": []},
+                }
+            }
+        ],
+    }
+    result = AzureResultBuilder.make_estimator_result(data)
+    assert isinstance(result, MicrosoftEstimatorResult)
+    assert result["status"] == "success"
 
 
-@pytest.mark.skip(reason="Now using results builder")
-def test_azure_result_get_counts(azure_result):
-    """Test getting raw counts from an AzureQuantumResult."""
-    get_counts = list(azure_result.get_counts())
-    assert get_counts == [["00", "01", "00", "10", "00", "01"], [1, 2, 3]]
+@pytest.mark.parametrize("probabilities", [{"00": 0.5, "11": 0.5}, {"00": 0.4999, "11": 0.5001}])
+def test_draw_random_sample_probabilities(mock_result_builder: AzureResultBuilder, probabilities):
+    """Test that the random sample handles both normalized and unnormalized probabilities."""
+    shots = 1000
+    sample = mock_result_builder._draw_random_sample(None, probabilities, shots)
+    assert sum(sample.values()) == shots
+    assert set(sample.keys()) == {"00", "11"}
+
+
+@pytest.mark.parametrize("seed, should_match", [(42, True), (None, False)])
+def test_draw_random_sample_consistency(
+    mock_result_builder: AzureResultBuilder, seed, should_match
+):
+    """Test drawing random samples with and without a specific seed."""
+    shots = 10
+    probabilities = {"00": 0.5, "11": 0.5}
+    sample1 = mock_result_builder._draw_random_sample(seed, probabilities, shots)
+    sample2 = mock_result_builder._draw_random_sample(seed, probabilities, shots)
+    sample3 = mock_result_builder._draw_random_sample(seed, probabilities, shots)
+
+    if should_match:
+        assert sample1 == sample2 == sample3
+    else:
+        assert not sample1 == sample2 == sample3
+
+
+def test_draw_random_sample_with_invalid_probabilities(mock_result_builder: AzureResultBuilder):
+    """Test the method raises an error when probabilities don't sum close to one."""
+    probabilities = {"00": 0.3, "11": 0.4}
+    shots = 1000
+    with pytest.raises(ValueError) as exc_info:
+        mock_result_builder._draw_random_sample(None, probabilities, shots)
+    assert "Probabilities do not add up to 1" in str(exc_info.value)
+
+
+def test_to_bitstring_basic():
+    """Test that _to_bitstring handles a basic conversion and mapping correctly."""
+    k = "101"
+    num_qubits = 3
+    meas_map = {0: 2, 1: 1, 2: 0}
+    expected = "101"
+    result = AzureResultBuilder._to_bitstring(k, num_qubits, meas_map)
+    assert result == expected, f"Expected {expected}, got {result}"
+
+
+@pytest.mark.parametrize(
+    "input_data, expected_output",
+    [
+        ("[0, 1, 0, 1]", "0101"),
+        ((["1", "0"], ["0", "1"]), "01 10"),
+        ([1, 0, 1, 0], "1010"),
+        (42, "42"),
+    ],
+)
+def test_qir_to_qbraid_bitstring(input_data, expected_output):
+    """Test various inputs for _qir_to_qbraid_bitstring method."""
+    assert AzureResultBuilder._qir_to_qbraid_bitstring(input_data) == expected_output
+
+
+def test_azure_quantum_result(mock_result: AzureQuantumResult):
+    """Test Azure Quantum Job result methods."""
+    measurements = mock_result.measurements()
+    raw_counts = mock_result.get_counts()
+    formatted_counts = mock_result.measurement_counts()
+    assert measurements.shape == (100, 3)
+    assert raw_counts == formatted_counts == {"000": 50, "111": 50}
