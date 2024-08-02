@@ -355,8 +355,6 @@ class ConversionGraph(rx.PyDiGraph):
 
         path = []
         for index, method in enumerate(bound_methods):
-            if not hasattr(method, "__self__"):
-                raise TypeError("Expected a bound method, got something else.")
             instance = method.__self__  # Get the instance to which the method is bound
             if not hasattr(instance, "source") or not hasattr(instance, "target"):
                 raise AttributeError("Bound method instance lacks 'source' or 'target' attributes.")
