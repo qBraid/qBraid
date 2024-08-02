@@ -18,7 +18,7 @@ import pytest
 from pydantic import ValidationError
 
 from qbraid.programs.spec import ProgramSpec
-from qbraid.runtime.enums import DeviceActionType, DeviceType
+from qbraid.runtime.enums import DeviceActionType
 from qbraid.runtime.profile import TargetProfile
 
 
@@ -60,26 +60,24 @@ def target_profile_ahs(valid_program_spec) -> list[TargetProfile]:
 
 
 @pytest.mark.parametrize(
-    "device_type_str, expected_type",
+    "simulator, local",
     [
-        ("SIMULATOR", "SIMULATOR"),
-        ("QPU", "QPU"),
-        ("LOCAL_SIMULATOR", "LOCAL_SIMULATOR"),
+        (True, False),  # simulator
+        (False, False),  # QPU
+        (True, True),  # local simulator
     ],
 )
-def test_target_profile_creation_with_string_type(
-    device_type_str, expected_type, valid_program_spec
-):
-    """Ensure that the constructor correctly interprets string inputs for device_type
-    by mapping them to the appropriate DeviceType enum."""
+def test_target_profile_simulator_and_local_fields(simulator, local, valid_program_spec):
+    """Ensure that the constructor correctly populates simulator and local fields."""
     profile = TargetProfile(
         device_id="device123",
-        simulator=(expected_type != "QPU"),
-        device_type=DeviceType(device_type_str),
+        simulator=simulator,
+        local=local,
         num_qubits=5,
         program_spec=valid_program_spec,
     )
-    assert profile["device_type"].value == expected_type
+    assert profile.simulator == simulator
+    assert profile.get("local") == local
 
 
 def test_target_profile_raise_for_bad_input():

@@ -414,7 +414,7 @@ def aquila_profile():
     return provider._build_runtime_profile(device=device)
 
 
-def test_aquila_runtime_profile(aquila_profile):
+def test_aquila_runtime_profile(aquila_profile: TargetProfile):
     """Test building a runtime profile."""
     assert aquila_profile.device_id == METADATA["deviceArn"]
     assert aquila_profile.simulator is False if METADATA["deviceType"] == "QPU" else True

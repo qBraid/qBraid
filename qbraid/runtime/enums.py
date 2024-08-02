@@ -12,31 +12,7 @@
 Module defining all :mod:`~qbraid.runtime` enumerated types.
 
 """
-import warnings
 from enum import Enum
-
-
-class DeviceType(Enum):
-    """
-    Enumeration for different types of quantum computing devices.
-
-    Attributes:
-        QPU (str): A Quantum Processing Unit (QPU) hardware device located remotely.
-        SIMULATOR (str): A simulator that runs on remote servers.
-        LOCAL_SIMULATOR (str): A simulator that runs locally on the user's machine.
-    """
-
-    QPU = "QPU"
-    SIMULATOR = "SIMULATOR"
-    LOCAL_SIMULATOR = "LOCAL_SIMULATOR"
-
-    def __getattribute__(self, name):
-        warnings.warn(
-            "The 'DeviceType' enum is deprecated and will be removed in a future version.",
-            DeprecationWarning,
-            stacklevel=2,
-        )
-        return super().__getattribute__(name)
 
 
 class DeviceActionType(Enum):

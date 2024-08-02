@@ -8,12 +8,16 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# pylint: disable=unused-import
+
 """
 Fixtures imported/defined in this file can be used by any test in this directory
 without needing to import them (pytest will automatically discover them).
 
 """
-# pylint: disable=unused-import
+import os
+
+import pytest
 
 from .fixtures import (
     bell_circuit,
@@ -25,3 +29,28 @@ from .fixtures import (
     two_bell_circuits,
     two_shared15_circuits,
 )
+
+
+def pytest_addoption(parser):
+    """Adds custom remote testing command-line option to pytest."""
+    parser.addoption(
+        "--remote",
+        action="store",
+        default=None,
+        help="Run tests that interface with remote, credentialed services: true or false",
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    """Skip tests marked with `remote` if remote tests are disabled."""
+    remote_option = config.getoption("--remote")
+    if remote_option is None:
+        remote_option = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() == "true"
+    else:
+        remote_option = remote_option.lower() == "true"
+
+    if not remote_option:
+        skip_remote = pytest.mark.skip(reason="Remote tests are disabled.")
+        for item in items:
+            if "remote" in item.keywords:
+                item.add_marker(skip_remote)

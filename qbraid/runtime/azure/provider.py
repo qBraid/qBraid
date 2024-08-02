@@ -19,7 +19,7 @@ from azure.identity import ClientSecretCredential
 from azure.quantum import Workspace
 from azure.quantum.target import Target
 
-from qbraid.runtime.enums import DeviceActionType, DeviceType
+from qbraid.runtime.enums import DeviceActionType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
@@ -77,8 +77,7 @@ class AzureQuantumProvider(QuantumProvider):
         """
         device_id = target.name
         provider_name = target.provider_id
-        is_qpu = device_id.split(".", 1)[1] == "qpu"
-        device_type = DeviceType.QPU if is_qpu else DeviceType.SIMULATOR
+        simulator = device_id.split(".", 1)[1] != "qpu"
         capability = target.capability
         input_data_format = target.input_data_format
         output_data_format = target.output_data_format
@@ -91,7 +90,7 @@ class AzureQuantumProvider(QuantumProvider):
 
         return TargetProfile(
             device_id=device_id,
-            device_type=device_type,
+            simulator=simulator,
             provider_name=provider_name,
             capability=capability,
             input_data_format=input_data_format,

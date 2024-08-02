@@ -24,7 +24,7 @@ try:
     from qcaas_client.client import OQCClient, QPUTask  # type: ignore
 
     from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
-    from qbraid.runtime import DeviceType, TargetProfile
+    from qbraid.runtime import TargetProfile
     from qbraid.runtime.enums import DeviceActionType, DeviceStatus, JobStatus
     from qbraid.runtime.exceptions import ResourceNotFoundError
     from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCJobResult, OQCProvider
@@ -220,7 +220,7 @@ def test_build_runtime_profile(lucy_simulator_data):
         profile = provider._build_profile(lucy_simulator_data)
         assert isinstance(profile, TargetProfile)
         assert profile["device_id"] == DEVICE_ID
-        assert profile["device_type"] == DeviceType.SIMULATOR.name
+        assert profile["simulator"] is False
         assert profile["num_qubits"] == 8
         assert profile["program_spec"] == ProgramSpec(str, alias="qasm2")
 

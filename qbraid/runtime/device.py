@@ -208,12 +208,14 @@ class QuantumDevice(ABC):
         Returns:
             Transpiled and transformed quantum program
         """
-        run_input_alias = get_program_type_alias(run_input, safe=True)
-        run_input_spec = ProgramSpec(type(run_input), alias=run_input_alias)
-        program = load_program(run_input) if run_input_spec.native else None
+        if self._target_spec is not None:
+            run_input_alias = get_program_type_alias(run_input, safe=True)
+            run_input_spec = ProgramSpec(type(run_input), alias=run_input_alias)
+            program = load_program(run_input) if run_input_spec.native else None
 
-        self.validate(program)
-        run_input = self.transpile(run_input, run_input_spec)
+            self.validate(program)
+            run_input = self.transpile(run_input, run_input_spec)
+
         is_single_output = not isinstance(run_input, list)
         run_input = [run_input] if is_single_output else run_input
         run_input = [self.transform(p) for p in cast(list, run_input)]

@@ -26,7 +26,6 @@ from azure.quantum.target import Target
 from qbraid.runtime import (
     DeviceActionType,
     DeviceStatus,
-    DeviceType,
     JobStateError,
     JobStatus,
     ResourceNotFoundError,
@@ -97,7 +96,7 @@ def azure_device(mock_workspace, mock_target):
     """Return an AzureQuantumDevice instance with a mock workspace and target."""
     profile = TargetProfile(
         device_id="test.qpu",
-        device_type=DeviceType.QPU,
+        simulator=False,
         provider_name="test_provider",
         capability="test_capability",
         input_data_format="test_input",
@@ -165,7 +164,7 @@ def test_build_profile(azure_provider, mock_target):
     profile = azure_provider._build_profile(mock_target)
 
     assert isinstance(profile, TargetProfile)
-    assert profile.action_type == "OpenQASM"
+    assert profile.action_type.value == "qbraid.programs.circuits"
 
 
 def test_build_profile_invalid(azure_provider, mock_invalid_target):

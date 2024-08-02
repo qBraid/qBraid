@@ -16,10 +16,12 @@ Unit tests for Azure Quantum runtime (remote)
 """
 import os
 import textwrap
+from typing import Optional
 
 import pytest
 from azure.identity import ClientSecretCredential
 from azure.quantum import Workspace
+from azure.quantum._constants import ConnectionConstants, EnvironmentVariables
 from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 from qiskit import QuantumCircuit
 from qiskit_qir import to_qir_module
@@ -27,29 +29,51 @@ from qiskit_qir import to_qir_module
 from qbraid.runtime import DeviceStatus, JobStatus
 from qbraid.runtime.azure import AzureQuantumProvider, AzureQuantumResult
 
-# Skip tests if Azure account auth/creds not configured
-skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
-REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of Azure Quantum Workspace)"
+
+@pytest.fixture
+def credential() -> Optional[ClientSecretCredential]:
+    """Fixture for Azure client secret credential."""
+    tenant_id = os.getenv(EnvironmentVariables.AZURE_TENANT_ID)
+    client_id = os.getenv(EnvironmentVariables.AZURE_CLIENT_ID)
+    client_secret = os.getenv(EnvironmentVariables.AZURE_CLIENT_SECRET)
+    if client_id and tenant_id and client_secret:
+        return ClientSecretCredential(
+            tenant_id=tenant_id, client_id=client_id, client_secret=client_secret
+        )
+    return None
 
 
 @pytest.fixture
-def provider():
+def resource_id() -> Optional[str]:
+    """Fixture for Azure Quantum resource ID."""
+    subscription_id = os.getenv(EnvironmentVariables.QUANTUM_SUBSCRIPTION_ID)
+    resource_group = os.getenv(EnvironmentVariables.QUANTUM_RESOURCE_GROUP, "AzureQuantum")
+    workspace_name = os.getenv(EnvironmentVariables.WORKSPACE_NAME)
+    if subscription_id and resource_group and workspace_name:
+        return ConnectionConstants.VALID_RESOURCE_ID(
+            subscription_id=subscription_id,
+            resource_group=resource_group,
+            workspace_name=workspace_name,
+        )
+    return None
+
+
+@pytest.fixture
+def workspace(
+    credential: Optional[ClientSecretCredential], resource_id: Optional[str]
+) -> Workspace:
+    """Fixture for Azure Quantum workspace."""
+    location = os.getenv(EnvironmentVariables.QUANTUM_LOCATION, "eastus")
+    return Workspace(resource_id=resource_id, location=location, credential=credential)
+
+
+@pytest.fixture
+def provider(workspace: Workspace) -> AzureQuantumProvider:
     """Fixture for AzureQuantumProvider."""
-
-    client_id = os.getenv("AZURE_CLIENT_ID")
-    tenant_id = os.getenv("AZURE_TENANT_ID")
-    client_secret = os.getenv("AZURE_CLIENT_SECRET")
-    resource_id = os.getenv("AZURE_RESOURCE_ID")
-    location = os.getenv("AZURE_LOCATION")
-
-    credential = ClientSecretCredential(
-        tenant_id=tenant_id, client_id=client_id, client_secret=client_secret
-    )
-    workspace = Workspace(resource_id=resource_id, location=location, credential=credential)
     return AzureQuantumProvider(workspace)
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+@pytest.mark.remote
 def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
     """Test submitting an OpenQASM 2 string to run on the Quantinuum simulator."""
     device = provider.get_device("quantinuum.sim.h1-1sc")
@@ -77,7 +101,7 @@ def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
     assert result.measurement_counts() == {"000": 100}
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+@pytest.mark.remote
 def test_submit_json_to_ionq(provider: AzureQuantumProvider):
     """Test submitting a circuit JSON to run on the IonQ simulator."""
     device = provider.get_device("ionq.simulator")
@@ -101,7 +125,7 @@ def test_submit_json_to_ionq(provider: AzureQuantumProvider):
     assert result.measurement_counts() == {"000": 50, "111": 50}
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+@pytest.mark.remote
 def test_submit_qir_to_microsoft(provider: AzureQuantumProvider):
     """Test submitting QIR bitcode to run on the Microsoft resource estimator."""
     device = provider.get_device("microsoft.estimator")
@@ -130,7 +154,7 @@ def test_submit_qir_to_microsoft(provider: AzureQuantumProvider):
     assert isinstance(result, MicrosoftEstimatorResult)
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+@pytest.mark.remote
 def test_submit_quil_to_rigetti(provider: AzureQuantumProvider):
     """Test submitting a Quil string to run on the Rigetti simulator."""
     device = provider.get_device("rigetti.sim.qvm")

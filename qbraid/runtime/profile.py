@@ -22,7 +22,7 @@ from typing_extensions import Self
 
 from qbraid.programs import ProgramSpec
 
-from .enums import DeviceActionType, DeviceType
+from .enums import DeviceActionType
 
 
 class TargetProfile(BaseModel):
@@ -37,7 +37,6 @@ class TargetProfile(BaseModel):
 
     device_id: str
     simulator: bool
-    device_type: Optional[DeviceType] = None
     action_type: Optional[DeviceActionType] = None
     num_qubits: Optional[int] = None
     program_spec: Optional[ProgramSpec] = None

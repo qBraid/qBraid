@@ -14,7 +14,6 @@
 Unit tests for BraketProvider (remote)
 
 """
-import os
 from decimal import Decimal
 
 import pytest
@@ -24,10 +23,6 @@ from braket.tracking.tracker import Tracker
 from qbraid.runtime.braket.provider import BraketProvider
 from qbraid.runtime.braket.tracker import get_quantum_task_cost
 from qbraid.runtime.exceptions import JobStateError
-
-# Skip tests if AWS account auth/creds not configured
-skip_remote_tests: bool = os.getenv("QBRAID_RUN_REMOTE_TESTS", "False").lower() != "true"
-REASON = "QBRAID_RUN_REMOTE_TESTS not set (requires configuration of AWS storage)"
 
 
 @pytest.fixture
@@ -48,7 +43,7 @@ def braket_most_busy():
     return qbraid_device
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+@pytest.mark.remote
 def test_get_quantum_task_cost_simulator(braket_circuit):
     """Test getting cost of quantum task run on an AWS simulator."""
     provider = BraketProvider()
@@ -63,7 +58,7 @@ def test_get_quantum_task_cost_simulator(braket_circuit):
     assert expected == calculated
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+@pytest.mark.remote
 def test_get_quantum_task_cost_cancelled(braket_most_busy, braket_circuit):
     """Test getting cost of quantum task that was cancelled."""
     if braket_most_busy is None:
@@ -102,7 +97,7 @@ def test_get_quantum_task_cost_cancelled(braket_most_busy, braket_circuit):
         ), "Unexpected error message for non-final job state"
 
 
-@pytest.mark.skipif(skip_remote_tests, reason=REASON)
+@pytest.mark.remote
 def test_get_quantum_task_cost_region_mismatch(braket_most_busy, braket_circuit):
     """Test getting cost of quantum task raises value error on region mismatch."""
     if braket_most_busy is None:
