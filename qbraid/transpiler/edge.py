@@ -14,8 +14,8 @@ Module for defining custom conversions
 """
 from __future__ import annotations
 
-import inspect
 import importlib.util
+import inspect
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 import numpy as np
