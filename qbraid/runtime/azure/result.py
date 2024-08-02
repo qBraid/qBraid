@@ -7,20 +7,23 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+#
+# pylint: disable=arguments-differ
+
 
 """
-Module defining IonQ result class
+Module defining Azure Results class
 
 """
-from typing import Any, Optional
+from typing import Any
 
 import numpy as np
 
-from qbraid.runtime.result import GateModelJobResult, normalize_bit_lengths
+from qbraid.runtime.result import GateModelJobResult
 
 
-class IonQJobResult(GateModelJobResult):
-    """IonQ result class."""
+class AzureQuantumResult(GateModelJobResult):
+    """Azure result class."""
 
     def __init__(self, result: dict[str, Any]):
         super().__init__(result)
@@ -36,15 +39,5 @@ class IonQJobResult(GateModelJobResult):
         return self._measurements
 
     def get_counts(self) -> dict[str, int]:
-        """Return the raw counts of the run."""
-        if self._counts is None:
-            result: dict[str, Any] = self._result
-            shots: Optional[int] = result.get("shots")
-            probs_int: Optional[dict] = result.get("probabilities")
-            if shots and probs_int:
-                probs_binary = {
-                    bin(int(key))[2:].zfill(2): value for key, value in probs_int.items()
-                }
-                probs_normal = normalize_bit_lengths(probs_binary)
-                self._counts = {state: int(prob * shots) for state, prob in probs_normal.items()}
-        return self._counts
+        """Return the raw counts from the result data."""
+        return self._result["results"][0]["data"]["counts"]

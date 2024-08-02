@@ -45,8 +45,9 @@ class DeviceActionType(Enum):
     supported natively by qBraid.
 
     Attributes:
-        OPENQASM (str): Actions compatible with OpenQASM.
+        OPENQASM (str): Actions compatible with OpenQASM (gate-model).
         AHS (str): Actions using analog Hamiltonian simulation.
+        ANNEALING (str): Actions using quantum annealing.
     """
 
     OPENQASM = "qbraid.programs.circuits"

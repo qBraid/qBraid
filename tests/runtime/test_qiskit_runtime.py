@@ -394,16 +394,16 @@ def test_result_from_job(mock_runtime_job, mock_runtime_result):
     mock_runtime_job.result.return_value = mock_runtime_result
     result = mock_job.result()
     assert isinstance(result, QiskitResult)
-    assert isinstance(result.raw_counts(), dict)
+    assert isinstance(result.get_counts(), dict)
     assert isinstance(result.measurements(), np.ndarray)
 
 
-def test_result_raw_counts(mock_runtime_result):
+def test_result_get_counts(mock_runtime_result):
     """Test getting raw counts from a Qiskit result."""
     qr = QiskitResult()
     qr._result = mock_runtime_result
     expected = {"01": 9, "10": 1, "11": 4, "00": 6}
-    assert qr.raw_counts() == expected
+    assert qr.get_counts() == expected
 
 
 def test_result_format_measurements():
