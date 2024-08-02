@@ -17,20 +17,18 @@ used to dictate transpiler conversions.
 """
 from unittest.mock import Mock, PropertyMock, patch
 
-import braket.circuits
 import pytest
 import rustworkx as rx
-from qbraid_core._import import LazyLoader
+from pyqir import Module
 
 from qbraid.programs import register_program_type
 from qbraid.programs.registry import QPROGRAM_ALIASES
 from qbraid.transpiler.conversions import conversion_functions
+from qbraid.transpiler.conversions.qiskit import qiskit_to_pyqir
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.exceptions import ConversionPathNotFoundError
 from qbraid.transpiler.graph import ConversionGraph
-
-qiskit_braket_provider = LazyLoader("qiskit_braket_provider", globals(), "qiskit_braket_provider")
 
 
 @pytest.fixture
@@ -93,9 +91,9 @@ def test_add_conversion():
     3. The correctness of the shortest conversion path after adding the new edge.
     """
     # Setup - preparing Conversion and ConversionGraph instances
-    source, target = "cirq", "qir"
+    target = "any"
     conversion_func = lambda x: x  # pylint: disable=unnecessary-lambda-assignment
-    new_edge = Conversion(source, target, conversion_func)
+    new_edge = Conversion("cirq", target, conversion_func)
     conversions = ConversionGraph.load_default_conversions()
     initial_conversions = [e for e in conversions if e.native]
     graph_with_new_edge = ConversionGraph(initial_conversions + [new_edge])
@@ -105,7 +103,7 @@ def test_add_conversion():
     graph_without_new_edge.add_conversion(new_edge)
 
     # Assertion 1 - Check if the new edge is added to the graph
-    assert graph_without_new_edge.has_edge(source, target)
+    assert graph_without_new_edge.has_edge("cirq", target)
 
     # Assertion 2 - Check if the updated graph matches the expected graph structure
     expected_graph = graph_with_new_edge
@@ -116,41 +114,31 @@ def test_add_conversion():
     expected_shortest_path = [
         bound_method_str("qiskit", "qasm2"),
         bound_method_str("qasm2", "cirq"),
-        bound_method_str("cirq", "qir"),
+        bound_method_str("cirq", target),
     ]
-    actual_shortest_path = graph_without_new_edge.find_shortest_conversion_path("qiskit", "qir")
+    actual_shortest_path = graph_without_new_edge.find_shortest_conversion_path("qiskit", target)
     assert [str(bound_method) for bound_method in actual_shortest_path] == expected_shortest_path
 
 
-@pytest.mark.parametrize("bell_circuit", ["qiskit"], indirect=True)
-def test_initialize_new_conversion(bell_circuit):
+def test_initialize_new_conversion():
     """Test initializing the conversion graph with a new conversion"""
-    qiskit_circuit, _ = bell_circuit
-    conversions = [
-        Conversion(
-            "qiskit",
-            "braket",
-            qiskit_braket_provider.providers.adapter.to_braket,
-        )
-    ]
+    conversions = [Conversion("qiskit", "pyqir", qiskit_to_pyqir)]
     graph = ConversionGraph(conversions)
     assert graph.num_edges() == 1
-    braket_circuit = transpile(qiskit_circuit, "braket", conversion_graph=graph)
-    assert isinstance(braket_circuit, braket.circuits.Circuit)
 
 
 @pytest.mark.parametrize("bell_circuit", ["qiskit"], indirect=True)
 def test_overwrite_new_conversion(bell_circuit):
-    """Test dynamically adding a new conversion  the conversion graph"""
+    """Test dynamically overwriting a new conversion in the conversion graph"""
     qiskit_circuit, _ = bell_circuit
-    conversions = [Conversion("qiskit", "braket", lambda x: x)]
+    conversions = [Conversion("qiskit", "pyqir", lambda x: x)]
     graph = ConversionGraph(conversions)
     assert graph.num_edges() == 1
-    edge = Conversion("qiskit", "braket", qiskit_braket_provider.providers.adapter.to_braket)
+    edge = Conversion("qiskit", "pyqir", qiskit_to_pyqir)
     graph.add_conversion(edge, overwrite=True)
     assert graph.num_edges() == 1
-    braket_circuit = transpile(qiskit_circuit, "braket", conversion_graph=graph)
-    assert isinstance(braket_circuit, braket.circuits.Circuit)
+    module = transpile(qiskit_circuit, "pyqir", conversion_graph=graph)
+    assert isinstance(module, Module)
 
 
 def test_remove_conversion():
