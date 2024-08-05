@@ -12,6 +12,8 @@
 Module defining QbraidDevice class
 
 """
+from __future__ import annotations
+
 import json
 import logging
 from typing import TYPE_CHECKING, Any, Optional, Union
@@ -43,8 +45,8 @@ class QbraidDevice(QuantumDevice):
 
     def __init__(
         self,
-        profile: "qbraid.runtime.TargetProfile",
-        client: "Optional[qbraid_core.services.quantum.QuantumClient]" = None,
+        profile: qbraid.runtime.TargetProfile,
+        client: Optional[qbraid_core.services.quantum.QuantumClient] = None,
         **kwargs,
     ):
         """Create a new QbraidDevice object."""
@@ -56,7 +58,7 @@ class QbraidDevice(QuantumDevice):
         """Return the QuantumClient object."""
         return self._client
 
-    def status(self) -> "qbraid.runtime.DeviceStatus":
+    def status(self) -> qbraid.runtime.DeviceStatus:
         """Return device status."""
         device_data = self.client.get_device(self.id)
         status = device_data.get("status")
@@ -71,7 +73,7 @@ class QbraidDevice(QuantumDevice):
         return int(pending_jobs)
 
     # pylint: disable-next=too-many-arguments
-    def create_job(
+    def _create_job(
         self,
         tags: Optional[dict[str, str]] = None,
         shots: Optional[int] = None,
@@ -92,7 +94,7 @@ class QbraidDevice(QuantumDevice):
             depth (optional, int): The depth of the circuit.
 
         Returns:
-            The qbraid job ID associated with this job
+            dict: The job data returned by the qBraid API.
 
         """
         tags = tags or {}
@@ -108,47 +110,37 @@ class QbraidDevice(QuantumDevice):
             **kwargs,
         }
 
-        return self.client.create_job(data=init_data)
+        job_data = self.client.create_job(data=init_data)
+        job_id: str = job_data.pop("qbraidJobId")
+        job_data["job_id"] = job_id
 
-    def _create_and_return_job(
-        self,
-        module: "pyqir.Module",
-        entrypoint: Optional[str] = None,
-        shots: Optional[int] = None,
-        **kwargs,
-    ):
-        job_data = self.create_job(
-            bitcode=module.bitcode, entrypoint=entrypoint, shots=shots, **kwargs
-        )
-        job_id = job_data.pop("qbraidJobId")
-        return QbraidJob(job_id, device=self, client=self.client, **job_data)
+        return job_data
 
     def submit(
         self,
-        run_input: "Union[pyqir.Module, list[pyqir.Module]]",
+        run_input: pyqir.Module,
         *args,
         entrypoint: Optional[str] = None,
         shots: Optional[int] = None,
         **kwargs,
-    ) -> "Union[qbraid.runtime.QbraidJob, list[qbraid.runtime.QbraidJob]]":
-        """Runs the qir-runner executable with the given QIR file and shots.
+    ) -> qbraid.runtime.QbraidJob:
+        """Runs the qir-runner executable with the given QIR file and shots, each module
+        paired with a specific entrypoint.
 
         Args:
-            run_input (Union[pyqir.Module, list[pyqir.Module,]): QIR module to run in the simulator.
-            entrypoint (optional, str): Name of the entrypoint function to execute in the QIR file.
-            shots (optional, int): The number of times to repeat the execution of the chosen entry
-                                   point in the program. Defaults to 1.
+            run_input (pyqir.Module): QIR modules to run in the simulator.
+            entrypoint (optional, str): Name of the entrypoint function to execute in
+                the QIR program. Defaults to None if not specified.
+            shots (optional, int): The number of times to repeat the execution of the chosen
+                entry point in the program. Defaults to 1 if not specified.
 
         Returns:
-            Union[QbraidJob, list[QbraidJob]: The job object(s) representing the submitted job(s).
+            QbraidJob: The job objects representing the submitted job.
         """
-        is_single_input = not isinstance(run_input, list)
-        run_input = [run_input] if is_single_input else run_input
-        jobs = [
-            self._create_and_return_job(module, entrypoint, shots, **kwargs) for module in run_input
-        ]
-
-        return jobs[0] if is_single_input else jobs
+        job_data = self._create_job(
+            bitcode=run_input.bitcode, entrypoint=entrypoint, shots=shots, **kwargs
+        )
+        return QbraidJob(**job_data, device=self, client=self.client)
 
     def try_extracting_info(self, func, error_message):
         """Try to extract information from a function/attribute,
@@ -161,10 +153,10 @@ class QbraidDevice(QuantumDevice):
 
     def run(
         self,
-        run_input: "Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]]",
+        run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
         *args,
         **kwargs,
-    ) -> "Union[qbraid.runtime.job.QbraidJob, list[qbraid.runtime.job.QbraidJob]]":
+    ) -> "Union[qbraid.runtime.QbraidJob, list[qbraid.runtime.QbraidJob]]":
         """
         Run a quantum job or a list of quantum jobs on this quantum device.
 
@@ -173,7 +165,17 @@ class QbraidDevice(QuantumDevice):
 
         Returns:
             A QuantumJob object or a list of QuantumJob objects corresponding to the input.
+
+        Raises:
+            ValueError: If "num_qubits", "depth", or "openqasm" are included in kwargs.
         """
+        forbidden_keys = {"num_qubits", "depth", "openqasm"}
+        if any(key in kwargs for key in forbidden_keys):
+            raise ValueError(
+                f"You cannot specify {', '.join(forbidden_keys)} "
+                "as they are dynamically determined."
+            )
+
         if not isinstance(run_input, list):
             run_input_list = [run_input]
             is_single_input = True
@@ -181,7 +183,7 @@ class QbraidDevice(QuantumDevice):
             run_input_list = run_input
             is_single_input = False
 
-        jobs = []
+        jobs: list[qbraid.runtime.QbraidJob] = []
 
         for program in run_input_list:
             program_alias = get_program_type_alias(program, safe=True)
@@ -209,7 +211,7 @@ class QbraidDevice(QuantumDevice):
             self.validate(qbraid_program)
             transpiled_program = self.transpile(program, program_spec)
             transformed_program = self.transform(transpiled_program)
-            job = self.submit(transformed_program, **program_data, **kwargs)
+            job = self.submit(transformed_program, *args, **program_data, **kwargs)
             jobs.append(job)
 
         return jobs[0] if is_single_input else jobs

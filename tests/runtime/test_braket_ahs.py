@@ -44,7 +44,7 @@ from qbraid.runtime.braket.device import BraketDevice
 from qbraid.runtime.braket.job import BraketQuantumTask
 from qbraid.runtime.braket.provider import BraketProvider
 from qbraid.runtime.braket.result import BraketAhsJobResult, ResultDecodingError
-from qbraid.runtime.enums import DeviceActionType, DeviceStatus, DeviceType
+from qbraid.runtime.enums import DeviceActionType, DeviceStatus
 from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
 from qbraid.runtime.profile import TargetProfile
 
@@ -414,11 +414,11 @@ def aquila_profile():
     return provider._build_runtime_profile(device=device)
 
 
-def test_aquila_runtime_profile(aquila_profile):
+def test_aquila_runtime_profile(aquila_profile: TargetProfile):
     """Test building a runtime profile."""
-    assert aquila_profile.get("device_id") == METADATA["deviceArn"]
-    assert aquila_profile.get("device_type") == METADATA["deviceType"]
-    assert aquila_profile.get("provider_name") == METADATA["providerName"]
+    assert aquila_profile.device_id == METADATA["deviceArn"]
+    assert aquila_profile.simulator is False if METADATA["deviceType"] == "QPU" else True
+    assert aquila_profile.provider_name == METADATA["providerName"]
 
 
 @pytest.mark.parametrize(
@@ -486,7 +486,7 @@ def test_transform_raises_for_mismatch(mock_aws_device, ahs_program):
     """Test raising exception for mismatched action type OPENQASM and program type AHS."""
     mock_aws_device.return_value = Mock()
     profile = TargetProfile(
-        device_type=DeviceType.QPU,
+        simulator=False,
         num_qubits=256,
         program_spec=ProgramSpec(AnalogHamiltonianSimulation, alias="braket_ahs"),
         provider_name="QuEra",

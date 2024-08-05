@@ -12,13 +12,15 @@
 Module defining QiskitBackend Class
 
 """
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Optional, Union
 
 from qiskit_ibm_runtime import QiskitRuntimeService
 
 from qbraid.programs import load_program
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import DeviceStatus, DeviceType
+from qbraid.runtime.enums import DeviceStatus
 
 from .job import QiskitJob
 
@@ -34,13 +36,15 @@ class QiskitBackend(QuantumDevice):
 
     def __init__(
         self,
-        profile: "qbraid.runtime.TargetProfile",
-        service: "Optional[qiskit_ibm_runtime.QiskitRuntimeService]" = None,
+        profile: qbraid.runtime.TargetProfile,
+        service: Optional[qiskit_ibm_runtime.QiskitRuntimeService] = None,
     ):
         """Create a QiskitBackend."""
         super().__init__(profile=profile)
         self._service = service or QiskitRuntimeService()
-        self._backend = self._service.backend(self.id, instance=self.profile.get("instance"))
+        self._backend = self._service.backend(
+            self.id, instance=getattr(self.profile, "instance", None)
+        )
 
     def __str__(self):
         """Official string representation of QuantumDevice object."""
@@ -52,7 +56,7 @@ class QiskitBackend(QuantumDevice):
         Returns:
             str: The status of this Device
         """
-        if self.device_type == DeviceType.LOCAL_SIMULATOR:
+        if getattr(self.profile, "local", False):
             return DeviceStatus.ONLINE
 
         status = self._backend.status()
@@ -64,11 +68,11 @@ class QiskitBackend(QuantumDevice):
 
     def queue_depth(self) -> int:
         """Return the number of jobs in the queue for the ibm backend"""
-        if self.device_type == DeviceType.LOCAL_SIMULATOR:
+        if getattr(self.profile, "local", False):
             return 0
         return self._backend.status().pending_jobs
 
-    def transform(self, run_input: "qiskit.QuantumCircuit") -> "qiskit.QuantumCircuit":
+    def transform(self, run_input: qiskit.QuantumCircuit) -> qiskit.QuantumCircuit:
         """Transpile a circuit for the device."""
         program = load_program(run_input)
         program.transform(self)
@@ -76,10 +80,10 @@ class QiskitBackend(QuantumDevice):
 
     def submit(
         self,
-        run_input: "Union[qiskit.QuantumCircuit, list[qiskit.QuantumCircuit]]",
+        run_input: Union[qiskit.QuantumCircuit, list[qiskit.QuantumCircuit]],
         *args,
         **kwargs,
-    ) -> "qbraid.runtime.qiskit.QiskitJob":
+    ) -> qbraid.runtime.qiskit.QiskitJob:
         """Runs circuit(s) on qiskit backend via :meth:`~qiskit.execute`
 
         Uses the :meth:`~qiskit.execute` method to create a :class:`~qiskit.providers.QuantumJob`

@@ -27,7 +27,7 @@ from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 from qbraid.programs import ProgramSpec, unregister_program_type
 from qbraid.runtime import DeviceStatus, TargetProfile
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import DeviceActionType, DeviceType
+from qbraid.runtime.enums import DeviceActionType
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import (
     ExperimentResult,
@@ -143,7 +143,7 @@ def mock_profile():
     """Mock profile for testing."""
     return TargetProfile(
         device_id="qbraid_qir_simulator",
-        device_type=DeviceType.SIMULATOR,
+        simulator=True,
         action_type=DeviceActionType.OPENQASM,
         num_qubits=42,
         program_spec=None,
@@ -384,7 +384,7 @@ def test_device_metadata(mock_basic_device):
     """Test getting device metadata."""
     metadata = mock_basic_device.metadata()
     assert metadata["device_id"] == "qbraid_qir_simulator"
-    assert metadata["device_type"] == "SIMULATOR"
+    assert metadata["simulator"] is True
     assert metadata["num_qubits"] == 42
 
 

@@ -45,7 +45,8 @@ class BraketAHS(AnalogHamiltonianProgram):
         """Transform program to according to device target profile."""
         device_type = device.profile.get("device_type")
         if device_type == "QPU":
-            self._program = self.program.discretize(device._device)
+            program: AnalogHamiltonianSimulation = self.program
+            self._program = program.discretize(device._device)
 
 
 class BraketAHSEncoder:

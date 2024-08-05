@@ -33,7 +33,7 @@ class ProgramSpec:
         self._native = is_registered_alias_native(self._alias)
 
     @property
-    def program_type(self) -> str:
+    def program_type(self) -> Type[Any]:
         """Return the registered program type."""
         return self._program_type
 

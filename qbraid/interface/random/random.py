@@ -12,6 +12,8 @@
 Module for generate random quantum circuits used for testing
 
 """
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import numpy as np
@@ -28,7 +30,7 @@ if TYPE_CHECKING:
 
 def random_circuit(
     package: str, num_qubits: Optional[int] = None, depth: Optional[int] = None, **kwargs
-) -> "qbraid.programs.QPROGRAM":
+) -> qbraid.programs.QPROGRAM:
     """Generate random circuit of arbitrary size and form.
 
     Args:

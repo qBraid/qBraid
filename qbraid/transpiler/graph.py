@@ -14,7 +14,7 @@ quantum programs available through the qbraid.transpiler using directed graphs.
 
 """
 from importlib import import_module
-from typing import Callable, Optional
+from typing import Any, Callable, Optional
 
 import rustworkx as rx
 
@@ -47,7 +47,7 @@ class ConversionGraph(rx.PyDiGraph):
         super().__init__()
         self.require_native = require_native
         self._conversions = conversions or self.load_default_conversions()
-        self._node_alias_id_map = {}
+        self._node_alias_id_map: dict[str, int] = {}
         self.create_conversion_graph()
 
     @staticmethod
@@ -59,11 +59,14 @@ class ConversionGraph(rx.PyDiGraph):
             list[Conversion]: List of default conversion edges.
         """
         transpiler = import_module("qbraid.transpiler.conversions")
-        conversion_functions = getattr(transpiler, "conversion_functions", [])
-        return [
-            Conversion(*conversion.split("_to_"), getattr(transpiler, conversion))
-            for conversion in conversion_functions
-        ]
+        conversion_functions: list[str] = getattr(transpiler, "conversion_functions", [])
+
+        def construct_conversion(name: str) -> Conversion:
+            source, target = name.split("_to_")
+            conversion_func = getattr(transpiler, name)
+            return Conversion(source, target, conversion_func)
+
+        return [construct_conversion(conversion) for conversion in conversion_functions]
 
     def create_conversion_graph(self) -> None:
         """
@@ -316,13 +319,14 @@ class ConversionGraph(rx.PyDiGraph):
     def __eq__(self, value: object) -> bool:
         return (
             super().__eq__(value)
+            and isinstance(value, ConversionGraph)
             and self.conversions() == value.conversions()
             and self.require_native == value.require_native
             and self._node_alias_id_map == value._node_alias_id_map
         )
 
     @staticmethod
-    def _get_path_from_bound_methods(bound_methods: list[Callable]) -> str:
+    def _get_path_from_bound_methods(bound_methods: list[Callable[..., Any]]) -> str:
         """
         Constructs a path string from a list of bound methods of Conversion instances.
 
@@ -342,19 +346,23 @@ class ConversionGraph(rx.PyDiGraph):
             AttributeError: If the bound methods do not have the expected 'source'
                             and 'target' attributes.
             IndexError: If the list of bound methods is empty.
+            TypeError: If an item in the bound_methods list is not a bound method.
         """
         if not bound_methods:
             raise IndexError("The list of bound methods is empty.")
 
+        total_methods = len(bound_methods)
+
         path = []
-        for method in bound_methods:
+        for index, method in enumerate(bound_methods):
             instance = method.__self__  # Get the instance to which the method is bound
             if not hasattr(instance, "source") or not hasattr(instance, "target"):
                 raise AttributeError("Bound method instance lacks 'source' or 'target' attributes.")
             path.append(instance.source)  # Add the source node of the instance
 
-        # Add the target of the last method's instance to complete the path
-        path.append(bound_methods[-1].__self__.target)
+            # Add the target of the last method's instance to complete the path
+            if index == total_methods - 1:
+                path.append(instance.target)
 
         return " -> ".join(path)
 

@@ -12,6 +12,7 @@
 Module for configuring IBM provider credentials and authentication.
 
 """
+from __future__ import annotations
 
 import os
 from typing import TYPE_CHECKING, Optional
@@ -21,7 +22,6 @@ from qiskit_ibm_runtime import QiskitRuntimeService
 from qiskit_ibm_runtime.accounts import ChannelType
 
 from qbraid.programs import ProgramSpec
-from qbraid.runtime.enums import DeviceType
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
@@ -59,7 +59,7 @@ class QiskitRuntimeProvider(QuantumProvider):
         )
 
     @property
-    def runtime_service(self) -> "qiskit_ibm_runtime.QiskitRuntimeService":
+    def runtime_service(self) -> qiskit_ibm_runtime.QiskitRuntimeService:
         """Returns the IBM Quantum runtime service."""
         return self._runtime_service
 
@@ -78,22 +78,19 @@ class QiskitRuntimeProvider(QuantumProvider):
         )
 
     def _build_runtime_profile(
-        self, backend: "qiskit_ibm_runtime.IBMBackend", program_spec: Optional[ProgramSpec] = None
+        self, backend: qiskit_ibm_runtime.IBMBackend, program_spec: Optional[ProgramSpec] = None
     ) -> TargetProfile:
         """Builds a runtime profile from a backend."""
         program_spec = program_spec or ProgramSpec(qiskit.QuantumCircuit)
         config = backend.configuration()
 
-        if config.local:
-            device_type = DeviceType.LOCAL_SIMULATOR
-        elif config.simulator:
-            device_type = DeviceType.SIMULATOR
-        else:
-            device_type = DeviceType.QPU
+        local = config.local
+        simulator = config.local or config.simulator
 
         return TargetProfile(
             device_id=backend.name,
-            device_type=device_type,
+            simulator=simulator,
+            local=local,
             num_qubits=config.n_qubits,
             program_spec=program_spec,
             instance=backend._instance,
@@ -101,9 +98,7 @@ class QiskitRuntimeProvider(QuantumProvider):
             provider_name="IBM",
         )
 
-    def get_devices(
-        self, operational=True, **kwargs
-    ) -> list["qbraid.runtime.qiskit.QiskitBackend"]:
+    def get_devices(self, operational=True, **kwargs) -> list[qbraid.runtime.qiskit.QiskitBackend]:
         """Returns the IBM Quantum provider backends."""
         backends = self.runtime_service.backends(operational=operational, **kwargs)
         program_spec = ProgramSpec(qiskit.QuantumCircuit)
@@ -117,7 +112,7 @@ class QiskitRuntimeProvider(QuantumProvider):
 
     def get_device(
         self, device_id: str, instance: Optional[str] = None
-    ) -> "qbraid.runtime.qiskit.QiskitBackend":
+    ) -> qbraid.runtime.qiskit.QiskitBackend:
         """Returns the IBM Quantum provider backends."""
         backend = self.runtime_service.backend(device_id, instance=instance)
         return QiskitBackend(
@@ -126,7 +121,7 @@ class QiskitRuntimeProvider(QuantumProvider):
 
     def least_busy(
         self, simulator=False, operational=True, **kwargs
-    ) -> "qbraid.runtime.qiskit.QiskitBackend":
+    ) -> qbraid.runtime.qiskit.QiskitBackend:
         """Return the least busy IBMQ QPU."""
         backend = self.runtime_service.least_busy(
             simulator=simulator, operational=operational, **kwargs

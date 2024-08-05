@@ -12,9 +12,11 @@
 Module defining QuantumProgram Class
 
 """
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from .alias_manager import get_program_type_alias
 from .exceptions import ProgramTypeError
@@ -31,18 +33,18 @@ logger = logging.getLogger(__name__)
 class QuantumProgram(ABC):
     """Abstract class for qbraid program wrapper objects."""
 
-    def __init__(self, program: "qbraid.programs.QPROGRAM"):
+    def __init__(self, program: qbraid.programs.QPROGRAM):
         self.spec = self.get_spec(program)
-        self._program = None
+        self._program: Any = None
         self.program = program
 
     @property
-    def program(self) -> "qbraid.programs.QPROGRAM":
+    def program(self) -> qbraid.programs.QPROGRAM:
         """Return the quantum program."""
         return self._program
 
     @program.setter
-    def program(self, value: "qbraid.programs.QPROGRAM") -> None:
+    def program(self, value: qbraid.programs.QPROGRAM) -> None:
         """Set the quantum program."""
         expected_type = QPROGRAM_REGISTRY.get(self.spec.alias)
         if not isinstance(value, expected_type):
@@ -55,7 +57,7 @@ class QuantumProgram(ABC):
         self._program = value
 
     @staticmethod
-    def get_spec(program: "qbraid.programs.QPROGRAM") -> ProgramSpec:
+    def get_spec(program: qbraid.programs.QPROGRAM) -> ProgramSpec:
         """Return the program spec."""
         try:
             alias = get_program_type_alias(program)
