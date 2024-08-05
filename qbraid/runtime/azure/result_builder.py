@@ -26,7 +26,6 @@ import json
 import logging
 import os
 import re
-from collections import defaultdict
 from typing import Any, Optional, Union
 
 import numpy as np
@@ -135,16 +134,12 @@ class AzureResultBuilder:
         if success:
             if self.job.details.output_data_format == MICROSOFT_OUTPUT_DATA_FORMAT:
                 job_result["data"] = self._format_microsoft_results(sampler_seed=sampler_seed)
-
             elif self.job.details.output_data_format == IONQ_OUTPUT_DATA_FORMAT:
-                job_result["data"] = self._format_ionq_results(sampler_seed=sampler_seed)
-
+                job_result["data"] = self._format_ionq_results()
             elif self.job.details.output_data_format == QUANTINUUM_OUTPUT_DATA_FORMAT:
                 job_result["data"] = self._format_quantinuum_results()
-
             elif self.job.details.output_data_format == RIGETTI_OUTPUT_DATA_FORMAT:
                 job_result["data"] = self._format_rigetti_results()
-
             else:
                 job_result["data"] = self._format_unknown_results()
 
@@ -174,15 +169,7 @@ class AzureResultBuilder:
         rand_values = rng.choice(list(probabilities.keys()), shots, p=list(probabilities.values()))
         return dict(zip(*np.unique(rand_values, return_counts=True)))
 
-    @staticmethod
-    def _to_bitstring(k: str, num_qubits: int, meas_map: dict) -> str:
-        """Convert bitstring to big Endian format using meas_map."""
-        # flip bitstring to convert to little Endian
-        bitstring = format(int(k), f"0{num_qubits}b")[::-1]
-        # flip bitstring to convert back to big Endian
-        return "".join([bitstring[n] for n in meas_map])[::-1]
-
-    def _format_ionq_results(self, sampler_seed: Optional[int] = None) -> dict[str, Any]:
+    def _format_ionq_results(self) -> dict[str, Any]:
         """
         Translate IonQ's histogram data into a format that
         can be consumed by qBraid runtime.
@@ -197,37 +184,14 @@ class AzureResultBuilder:
         if not "histogram" in az_result:
             raise ValueError("Histogram missing from IonQ Job results")
 
-        if self.job.details.metadata is None or "num_qubits" not in self.job.details.metadata:
-            data = {
-                "shots": shots,
-                "probabilities": az_result["histogram"],
-            }
-            result = IonQJobResult(data)
-            counts = result.measurement_counts()
-            total_count = sum(counts.values())
-            probabilities = {key: value / total_count for key, value in counts.items()}
-
-        else:
-            meas_map = (
-                json.loads(self.job.details.metadata.get("meas_map"))
-                if "meas_map" in self.job.details.metadata
-                else None
-            )
-            num_qubits = self.job.details.metadata.get("num_qubits")
-
-            counts = defaultdict(int)
-            probabilities = defaultdict(int)
-            histogram_data: dict = az_result["histogram"]
-            for key, value in histogram_data.items():
-                bitstring = self._to_bitstring(key, num_qubits, meas_map) if meas_map else key
-                probabilities[bitstring] += value
-
-            if self.from_simulator:
-                counts = self._draw_random_sample(sampler_seed, probabilities, shots)
-            else:
-                counts = {
-                    bitstring: np.round(shots * value) for bitstring, value in probabilities.items()
-                }
+        data = {
+            "shots": shots,
+            "probabilities": az_result["histogram"],
+        }
+        result = IonQJobResult(data)
+        counts = result.measurement_counts()
+        total_count = sum(counts.values())
+        probabilities = {key: value / total_count for key, value in counts.items()}
 
         return {"counts": counts, "probabilities": probabilities}
 

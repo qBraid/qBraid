@@ -504,16 +504,6 @@ def test_draw_random_sample_with_invalid_probabilities(mock_result_builder: Azur
     assert "Probabilities do not add up to 1" in str(exc_info.value)
 
 
-def test_to_bitstring_basic():
-    """Test that _to_bitstring handles a basic conversion and mapping correctly."""
-    k = "101"
-    num_qubits = 3
-    meas_map = {0: 2, 1: 1, 2: 0}
-    expected = "101"
-    result = AzureResultBuilder._to_bitstring(k, num_qubits, meas_map)
-    assert result == expected, f"Expected {expected}, got {result}"
-
-
 @pytest.mark.parametrize(
     "input_data, expected_output",
     [
