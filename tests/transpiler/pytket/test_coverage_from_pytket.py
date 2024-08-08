@@ -12,7 +12,7 @@
 Benchmarking tests for PyTKET conversions
 
 """
-
+import importlib.util
 import string
 
 import numpy as np
@@ -137,11 +137,14 @@ def get_pytket_circuits():
     return {k: v for k, v in pytket_gates.items() if v is not None}
 
 
-#############
-### TESTS ###
-#############
+def is_package_installed(package_name: str) -> bool:
+    """Check if a package is installed."""
+    return importlib.util.find_spec(package_name) is not None
 
-TARGETS = [("braket", 0.64), ("cirq", 0.66), ("pyquil", 0.66), ("qiskit", 0.66)]
+
+ALL_TARGETS = [("braket", 0.64), ("cirq", 0.66), ("pyquil", 0.66), ("qiskit", 0.66)]
+AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
+
 pytket_circuits = get_pytket_circuits()
 
 graph = ConversionGraph(require_native=True)
@@ -159,7 +162,7 @@ def convert_from_pytket_to_x(target, circuit_name):
     assert circuits_allclose(cirq_circuit, target_circuit, strict_gphase=False)
 
 
-@pytest.mark.parametrize(("target", "baseline"), TARGETS)
+@pytest.mark.parametrize(("target", "baseline"), AVAILABLE_TARGETS)
 def test_pytket_coverage(target, baseline):
     """Test converting PyTKET circuits to supported target program type over
     all PyTKET gates and check against baseline expecte accuracy.

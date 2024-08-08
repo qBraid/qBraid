@@ -12,6 +12,7 @@
 Benchmarking tests for pyQuil conversions
 
 """
+import importlib.util
 import string
 
 import numpy as np
@@ -61,11 +62,14 @@ def get_pyquil_gates():
     return {k: v for k, v in pyquil_gate_dict.items() if v is not None}
 
 
-#############
-### TESTS ###
-#############
+def is_package_installed(package_name: str) -> bool:
+    """Check if a package is installed."""
+    return importlib.util.find_spec(package_name) is not None
 
-TARGETS = [("braket", 0.77), ("cirq", 0.77), ("pytket", 0.77), ("qiskit", 0.77)]
+
+ALL_TARGETS = [("braket", 0.77), ("cirq", 0.77), ("pytket", 0.77), ("qiskit", 0.77)]
+AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
+
 pyquil_gates = get_pyquil_gates()
 
 graph = ConversionGraph(require_native=True)
@@ -82,7 +86,7 @@ def convert_from_pyquil_to_x(target, gate_name):
     assert circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
 
 
-@pytest.mark.parametrize(("target", "baseline"), TARGETS)
+@pytest.mark.parametrize(("target", "baseline"), AVAILABLE_TARGETS)
 def test_pyquil_coverage(target, baseline):
     """Test converting pyQuil programs to supported target program type over
     all pyQuil gates and check against baseline expecte accuracy.
