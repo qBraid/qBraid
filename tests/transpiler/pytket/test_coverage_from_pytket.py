@@ -8,6 +8,8 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# pylint: disable=redefined-outer-name
+
 """
 Benchmarking tests for PyTKET conversions
 
@@ -145,6 +147,12 @@ def get_pytket_circuits():
     return {k: v for k, v in pytket_gates.items() if v is not None}
 
 
+@pytest.fixture
+def pytket_circuits():
+    """Fixture to generate PyTKET circuits only when called."""
+    return get_pytket_circuits()
+
+
 def is_package_installed(package_name: str) -> bool:
     """Check if a package is installed."""
     return importlib.util.find_spec(package_name) is not None
@@ -153,16 +161,14 @@ def is_package_installed(package_name: str) -> bool:
 ALL_TARGETS = [("braket", 0.64), ("cirq", 0.66), ("pyquil", 0.66), ("qiskit", 0.66)]
 AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
 
-pytket_circuits = get_pytket_circuits()
-
 graph = ConversionGraph(require_native=True)
 
 
-def convert_from_pytket_to_x(target, circuit_name):
+def convert_from_pytket_to_x(target, circuit_name, circuits):
     """Construct a PyTKET circuit with the given gate, transpile it to
     target program type, and check equivalence.
     """
-    source_circuit = pytket_circuits[circuit_name]
+    source_circuit = circuits[circuit_name]
     circuit = transpile(source_circuit, "cirq", conversion_graph=graph)
     qasm = circuit.to_qasm()
     cirq_circuit = circuit_from_qasm(qasm)
@@ -171,7 +177,7 @@ def convert_from_pytket_to_x(target, circuit_name):
 
 
 @pytest.mark.parametrize(("target", "baseline"), AVAILABLE_TARGETS)
-def test_pytket_coverage(target, baseline):
+def test_pytket_coverage(target, baseline, pytket_circuits):
     """Test converting PyTKET circuits to supported target program type over
     all PyTKET gates and check against baseline expecte accuracy.
     """
@@ -180,7 +186,7 @@ def test_pytket_coverage(target, baseline):
     failures = {}
     for gate_name in pytket_circuits:
         try:
-            convert_from_pytket_to_x(target, gate_name)
+            convert_from_pytket_to_x(target, gate_name, pytket_circuits)
         except Exception as e:  # pylint: disable=broad-exception-caught
             failures[f"{target}-{gate_name}"] = e
 

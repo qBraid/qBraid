@@ -14,6 +14,7 @@
 Unit tests for OQCProvider class
 
 """
+import sys
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -26,6 +27,11 @@ from qbraid.runtime.enums import DeviceStatus, JobStatus
 from qbraid.runtime.ionq import IonQDevice, IonQJob, IonQJobResult, IonQProvider, IonQSession
 from qbraid.runtime.ionq.job import IonQJobError
 from qbraid.runtime.ionq.provider import SUPPORTED_GATES
+
+major, minor = sys.version_info[:2]
+skip_if_below_py310 = pytest.mark.skipif(
+    major < 3 or (major == 3 and minor < 10), reason="Requires Python 3.10 or higher"
+)
 
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
@@ -143,6 +149,7 @@ def test_ionq_provider_get_device():
         assert test_device.profile["basis_gates"] == set(SUPPORTED_GATES)
 
 
+@skip_if_below_py310
 def test_ionq_provider_device_unavailable():
     """Test getting IonQ provider and different status devices."""
 
