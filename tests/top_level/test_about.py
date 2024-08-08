@@ -56,7 +56,7 @@ def test_about():
 def test_about_no_optional_dependencies():
     """Test the about function when no optional dependencies are available."""
     optional_packages = [
-        "qbraid_qir",
+        "qbraid-qir",
         "amazon-braket-sdk",
         "cirq-core",
         "pyquil",
