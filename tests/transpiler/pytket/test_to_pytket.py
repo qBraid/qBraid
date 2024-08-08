@@ -12,12 +12,20 @@
 Unit tests for conversions between Cirq circuits and pytket circuits.
 
 """
-import numpy as np
 import pytest
-from cirq import Circuit, LineQubit, ops, testing
 
-from qbraid.interface import circuits_allclose
-from qbraid.transpiler import CircuitConversionError, transpile
+try:
+    import numpy as np
+    from cirq import Circuit, LineQubit, ops, testing
+
+    from qbraid.interface import circuits_allclose
+    from qbraid.transpiler import CircuitConversionError, transpile
+
+    pytket_not_installed = False
+except ImportError:
+    pytket_not_installed = True
+
+pytestmark = pytest.mark.skipif(pytket_not_installed, reason="pytket not installed")
 
 
 def test_bell_state_to_pytket():

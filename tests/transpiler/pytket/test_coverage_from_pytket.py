@@ -12,16 +12,24 @@
 Benchmarking tests for PyTKET conversions
 
 """
-import importlib.util
-import string
-
-import numpy as np
 import pytest
-import pytket
-from cirq.contrib.qasm_import import circuit_from_qasm
 
-from qbraid.interface import circuits_allclose
-from qbraid.transpiler import ConversionGraph, transpile
+try:
+    import importlib.util
+    import string
+
+    import numpy as np
+    import pytket
+    from cirq.contrib.qasm_import import circuit_from_qasm
+
+    from qbraid.interface import circuits_allclose
+    from qbraid.transpiler import ConversionGraph, transpile
+
+    pytket_not_installed = False
+except ImportError:
+    pytket_not_installed = True
+
+pytestmark = pytest.mark.skipif(pytket_not_installed, reason="pytket not installed")
 
 np.random.seed(0)
 

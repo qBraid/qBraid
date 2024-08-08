@@ -12,15 +12,24 @@
 Benchmarking tests for pyQuil conversions
 
 """
-import importlib.util
-import string
-
-import numpy as np
-import pyquil
 import pytest
 
-from qbraid.interface import circuits_allclose
-from qbraid.transpiler import ConversionGraph, transpile
+try:
+    import importlib.util
+    import string
+
+    import numpy as np
+    import pyquil
+    import pytest
+
+    from qbraid.interface import circuits_allclose
+    from qbraid.transpiler import ConversionGraph, transpile
+
+    pyquil_not_installed = False
+except ImportError:
+    pyquil_not_installed = True
+
+pytestmark = pytest.mark.skipif(pyquil_not_installed, reason="pyquil not installed")
 
 
 def generate_params(varnames, seed=0):
@@ -62,6 +71,16 @@ def get_pyquil_gates():
     return {k: v for k, v in pyquil_gate_dict.items() if v is not None}
 
 
+@pytest.fixture
+def pyquil_gates():
+    return get_pyquil_gates()
+
+
+@pytest.fixture
+def conversion_graph():
+    return ConversionGraph(require_native=True)
+
+
 def is_package_installed(package_name: str) -> bool:
     """Check if a package is installed."""
     return importlib.util.find_spec(package_name) is not None
@@ -70,16 +89,12 @@ def is_package_installed(package_name: str) -> bool:
 ALL_TARGETS = [("braket", 0.77), ("cirq", 0.77), ("pytket", 0.77), ("qiskit", 0.77)]
 AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
 
-pyquil_gates = get_pyquil_gates()
 
-graph = ConversionGraph(require_native=True)
-
-
-def convert_from_pyquil_to_x(target, gate_name):
+def convert_from_pyquil_to_x(target, gate_name, gates, graph):
     """Construct a pyQuil programs with the given gate, transpile it to
     target program type, and check equivalence.
     """
-    gate = pyquil_gates[gate_name]
+    gate = gates[gate_name]
     source_circuit = pyquil.Program()
     source_circuit += gate
     target_circuit = transpile(source_circuit, target, conversion_graph=graph)
@@ -87,7 +102,7 @@ def convert_from_pyquil_to_x(target, gate_name):
 
 
 @pytest.mark.parametrize(("target", "baseline"), AVAILABLE_TARGETS)
-def test_pyquil_coverage(target, baseline):
+def test_pyquil_coverage(target, baseline, pyquil_gates, conversion_graph):
     """Test converting pyQuil programs to supported target program type over
     all pyQuil gates and check against baseline expecte accuracy.
     """
@@ -96,7 +111,7 @@ def test_pyquil_coverage(target, baseline):
     failures = {}
     for gate_name in pyquil_gates:
         try:
-            convert_from_pyquil_to_x(target, gate_name)
+            convert_from_pyquil_to_x(target, gate_name, pyquil_gates, conversion_graph)
         except Exception as e:  # pylint: disable=broad-exception-caught
             failures[f"{target}-{gate_name}"] = e
 

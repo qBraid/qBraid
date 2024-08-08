@@ -12,19 +12,26 @@
 Unt tests for conversions to/from pyQuil circuits.
 
 """
-import numpy as np
-import pytest
-from cirq import Circuit, LineQubit
-from cirq import ops as cirq_ops
-from cirq.contrib.qasm_import import circuit_from_qasm
-from pyquil import Program
-from pyquil.gates import CNOT, CZ, RX, RZ, H, X, Y, Z
-from pyquil.noise import _decoherence_noise_model, _get_program_gates, apply_noise_model
+try:
+    import numpy as np
+    import pytest
+    from cirq import Circuit, LineQubit
+    from cirq import ops as cirq_ops
+    from cirq.contrib.qasm_import import circuit_from_qasm
+    from pyquil import Program
+    from pyquil.gates import CNOT, CZ, RX, RZ, H, X, Y, Z
+    from pyquil.noise import _decoherence_noise_model, _get_program_gates, apply_noise_model
 
-from qbraid.interface import circuits_allclose
-from qbraid.transpiler.conversions.cirq import cirq_to_pyquil
-from qbraid.transpiler.conversions.pyquil import pyquil_to_cirq
-from qbraid.transpiler.exceptions import CircuitConversionError
+    from qbraid.interface import circuits_allclose
+    from qbraid.transpiler.conversions.cirq import cirq_to_pyquil
+    from qbraid.transpiler.conversions.pyquil import pyquil_to_cirq
+    from qbraid.transpiler.exceptions import CircuitConversionError
+
+    pyquil_not_installed = False
+except ImportError:
+    pyquil_not_installed = True
+
+pytestmark = pytest.mark.skipif(pyquil_not_installed, reason="pyquil not installed")
 
 
 def test_to_from_pyquil():

@@ -20,22 +20,29 @@
 Module for testing qBraid QuilOutput.
 
 """
-
-import os
-
-import cirq
-import numpy as np
 import pytest
-from cirq.ops.pauli_interaction_gate import PauliInteractionGate
 
-from qbraid.transpiler.conversions.cirq.cirq_quil_output import (
-    QuilFormatter,
-    QuilOneQubitGate,
-    QuilOutput,
-    QuilTwoQubitGate,
-    _twoqubitdiagonal_gate,
-    exponent_to_pi_string,
-)
+try:
+    import os
+
+    import cirq
+    import numpy as np
+    from cirq.ops.pauli_interaction_gate import PauliInteractionGate
+
+    from qbraid.transpiler.conversions.cirq.cirq_quil_output import (
+        QuilFormatter,
+        QuilOneQubitGate,
+        QuilOutput,
+        QuilTwoQubitGate,
+        _twoqubitdiagonal_gate,
+        exponent_to_pi_string,
+    )
+
+    pyquil_not_installed = False
+except ImportError:
+    pyquil_not_installed = True
+
+pytestmark = pytest.mark.skipif(pyquil_not_installed, reason="pyquil not installed")
 
 
 def _make_qubits(n):

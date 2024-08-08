@@ -20,43 +20,50 @@
 Module for testing qBraid quil input.
 
 """
-
-import numpy as np
 import pytest
-from cirq import Circuit, LineQubit
-from cirq.ops import (
-    CCNOT,
-    CNOT,
-    CSWAP,
-    CZ,
-    ISWAP,
-    SWAP,
-    H,
-    I,
-    MeasurementGate,
-    S,
-    T,
-    X,
-    Y,
-    Z,
-    rx,
-    ry,
-    rz,
-)
-from pyquil import Program
-from pyquil.simulation.tools import program_unitary
 
-from qbraid.transpiler.conversions.pyquil.cirq_quil_input import (
-    UndefinedQuilGate,
-    UnsupportedQuilInstruction,
-    circuit_from_quil,
-    cphase,
-    cphase00,
-    cphase01,
-    cphase10,
-    pswap,
-    xy,
-)
+try:
+    import numpy as np
+    from cirq import Circuit, LineQubit
+    from cirq.ops import (
+        CCNOT,
+        CNOT,
+        CSWAP,
+        CZ,
+        ISWAP,
+        SWAP,
+        H,
+        I,
+        MeasurementGate,
+        S,
+        T,
+        X,
+        Y,
+        Z,
+        rx,
+        ry,
+        rz,
+    )
+    from pyquil import Program
+    from pyquil.simulation.tools import program_unitary
+
+    from qbraid.transpiler.conversions.pyquil.cirq_quil_input import (
+        UndefinedQuilGate,
+        UnsupportedQuilInstruction,
+        circuit_from_quil,
+        cphase,
+        cphase00,
+        cphase01,
+        cphase10,
+        pswap,
+        xy,
+    )
+
+    pyquil_not_installed = False
+except ImportError:
+    pyquil_not_installed = True
+
+pytestmark = pytest.mark.skipif(pyquil_not_installed, reason="pyquil not installed")
 
 QUIL_PROGRAM = """
 DECLARE ro BIT[3]
