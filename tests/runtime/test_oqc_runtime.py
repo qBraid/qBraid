@@ -43,8 +43,10 @@ except ImportError as err:
 
     logger.warning("OQC runtime tests will be skipped: %s", err)
 
+    print(err)
 
-pytestmark = pytest.mark.skipif(oqc_not_installed, reason="qcaas_client not installed")
+
+# pytestmark = pytest.mark.skipif(oqc_not_installed, reason="qcaas_client not installed")
 
 DEVICE_ID = "qpu:uk:2:d865b5a184"
 
