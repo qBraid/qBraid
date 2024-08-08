@@ -153,3 +153,9 @@ include_trailing_comma = true
 force_grid_wrap = 0
 use_parentheses = true
 line_length = 100
+
+[tool.mypy]
+disable_error_code = [
+    "valid-type",
+    "import-untyped"
+]

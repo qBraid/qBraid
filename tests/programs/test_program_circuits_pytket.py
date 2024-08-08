@@ -16,11 +16,20 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-from pytket.circuit import Circuit
-from pytket.unit_id import Qubit
 
-from qbraid.programs.circuits.pytket import IONQ_GATES, PytketCircuit
-from qbraid.programs.exceptions import ProgramTypeError, TransformError
+try:
+    from pytket.circuit import Circuit
+    from pytket.unit_id import Qubit
+
+    from qbraid.programs.circuits.pytket import IONQ_GATES, PytketCircuit
+    from qbraid.programs.exceptions import ProgramTypeError, TransformError
+
+    pytket_not_installed = False
+except ImportError:
+    pytket_not_installed = True
+
+
+pytestmark = pytest.mark.skipif(pytket_not_installed, reason="pytket not installed")
 
 
 def test_program_attributes():
