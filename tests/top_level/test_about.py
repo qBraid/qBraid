@@ -7,6 +7,7 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+
 """
 Unit tests for the about module.
 
@@ -17,7 +18,14 @@ from importlib.metadata import PackageNotFoundError, distribution
 from io import StringIO
 from unittest.mock import patch
 
+import numpy
+import openqasm3
+import pydantic
+import qbraid_core
+import rustworkx
+
 from qbraid import _about
+from qbraid._version import __version__
 
 
 def test_about():
@@ -26,7 +34,6 @@ def test_about():
     captured_output = StringIO()
     sys.stdout = captured_output
 
-    # Call the about function
     _about.about()
 
     # Restore stdout
@@ -35,37 +42,28 @@ def test_about():
     # Get the captured output as a string
     output = captured_output.getvalue()
 
-    assert "qbraid:" in output
+    core_dependencies = {
+        "numpy": numpy.__version__,
+        "openqasm3": openqasm3.__version__,
+        "pydantic": pydantic.__version__,
+        "qbraid-core": qbraid_core.__version__,
+        "rustworkx": rustworkx.__version__,
+    }
 
-    # Verify core dependencies are mentioned in the output
+    dep_versions = "\n".join([f"{k}: {v}" for k, v in core_dependencies.items()])
+
+    assert f"qbraid:\t{__version__}\n\n" in output
     assert "Core Dependencies" in output
-    assert "rustworkx:" in output
-    assert "numpy:" in output
-    assert "openqasm3:" in output
-    assert "qbraid-core:" in output
-    assert "pydantic:" in output
-
-    # Verify the presence of optional dependencies section
+    assert dep_versions in output
     assert "Optional Dependencies" in output
-
-    # Verify Python and platform information is present
     assert "Python:" in output
     assert "Platform:" in output
 
 
 def test_about_no_optional_dependencies():
     """Test the about function when no optional dependencies are available."""
-    optional_packages = [
-        "qbraid-qir",
-        "amazon-braket-sdk",
-        "cirq-core",
-        "pyquil",
-        "pennylane",
-        "pytket",
-        "qiskit",
-        "qiskit-ibm-runtime",
-        "oqc-qcaas-client",
-    ]
+    _, extras = _about.get_dependencies("qbraid")
+    optional_packages = {item for subset in extras.values() for item in subset}
 
     def custom_distribution(name):
         if any(dep in name for dep in optional_packages):

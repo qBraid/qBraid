@@ -12,8 +12,10 @@
 Module for OQC job class.
 
 """
+from __future__ import annotations
+
 import json
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
@@ -59,7 +61,7 @@ OPTIMIZATIONS = {
 class OQCJob(QuantumJob):
     """Oxford Quantum Circuit job class."""
 
-    def __init__(self, job_id: str, qpu_id: str, client: "OQCClient", **kwargs):
+    def __init__(self, job_id: str, qpu_id: str, client: OQCClient, **kwargs):
         super().__init__(job_id=job_id, **kwargs)
         self._qpu_id = qpu_id
         self._client = client
@@ -152,7 +154,7 @@ class OQCJob(QuantumJob):
         """Get the timings for the task."""
         return self._client.get_task_timings(task_id=self.id, qpu_id=self._qpu_id, **kwargs)
 
-    def get_errors(self, **kwargs):
+    def get_errors(self, **kwargs) -> Optional[QPUTaskErrors]:
         """Get the error message for the task."""
         if self.status(**kwargs) != JobStatus.FAILED:
             return None
