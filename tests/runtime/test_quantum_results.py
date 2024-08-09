@@ -133,3 +133,18 @@ def test_decimal_get_counts():
     counts = result.get_counts(decimal=True)
     expected = {2: 2}
     assert counts == expected
+
+
+class CustomResult(GateModelJobResult):
+    """Custom result for testing."""
+
+    def get_counts(self):
+        """Returns raw histogram data of the run."""
+        return {"1": 0, "0": 550}
+
+
+def test_default_measurements_none():
+    """Test default measurements."""
+    result = CustomResult("any")
+    assert result._result == "any"
+    assert result.measurements() is None

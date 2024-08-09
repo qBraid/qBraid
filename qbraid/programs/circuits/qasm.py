@@ -125,15 +125,13 @@ def depth(qasm_statements: list[Statement], counts: dict[str, int]) -> dict[str,
                     qubit_expr = qubit.indices[0][0]
                 qubit_index = expression_value(qubit_expr)
                 counts[f"{qreg_name}[{qubit_index}]"] += 1
-                if isinstance(statement.target, Identifier):
-                    if isinstance(statement.target.name, Identifier):
-                        creg_name = statement.target.name.name
+                max_depth = max(counts.values())
                 if isinstance(statement.target, IndexedIdentifier):
                     if isinstance(statement.target.indices[0], list):
                         creg_expr = statement.target.indices[0][0]
-                creg_index = expression_value(creg_expr)
-                max_depth = max(counts.values())
-                track_measured[f"{creg_name}[{creg_index}]"] = max_depth
+                        creg_index = expression_value(creg_expr)
+                        creg_name = statement.target.name.name
+                        track_measured[f"{creg_name}[{creg_index}]"] = max_depth
             else:
                 qreg_name = qubit.name
                 for i in range(qreg_sizes[qreg_name]):

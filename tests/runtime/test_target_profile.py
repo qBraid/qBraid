@@ -98,6 +98,10 @@ def test_target_profile_raise_for_bad_input():
     with pytest.raises(ValidationError):
         TargetProfile(device_id="device123", simulator=True, provider_name=10)
     with pytest.raises(ValidationError):
+        TargetProfile(device_id="1234", simulator=True, basis_gates=123)
+    with pytest.raises(ValidationError):
+        TargetProfile(device_id="1234", simulator=True, basis_gates=[1, 2, 3])
+    with pytest.raises(ValidationError):
         TargetProfile(
             device_id="device123",
             simulator=True,
@@ -156,3 +160,9 @@ def test_duplicate_basis_gates_removed(valid_program_spec):
         program_spec=valid_program_spec,
     )
     assert profile["basis_gates"] == {"x", "y", "z"}
+
+
+def test_basis_gates_none():
+    """Test that passing None to basis_gates does not raise an error."""
+    profile = TargetProfile(device_id="1234", simulator=True, basis_gates=None)
+    assert profile.basis_gates is None
