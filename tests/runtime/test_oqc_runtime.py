@@ -225,7 +225,7 @@ def test_build_runtime_profile(lucy_simulator_data):
         profile = provider._build_profile(lucy_simulator_data)
         assert isinstance(profile, TargetProfile)
         assert profile["device_id"] == DEVICE_ID
-        assert profile["simulator"] is False
+        assert profile["simulator"] is True
         assert profile["num_qubits"] == 8
         assert profile["program_spec"] == ProgramSpec(str, alias="qasm2")
 

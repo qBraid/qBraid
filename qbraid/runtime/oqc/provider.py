@@ -42,7 +42,7 @@ class OQCProvider(QuantumProvider):
             device_id=device_id,
             simulator=feature_set["simulator"],
             action_type=DeviceActionType.OPENQASM,
-            num_qubits=feature_set["qubits"],
+            num_qubits=feature_set["qubit_count"],
             program_spec=ProgramSpec(str, alias="qasm2"),
             device_name=device_name,
             endpoint_url=data["url"],
