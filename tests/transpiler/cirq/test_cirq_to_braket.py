@@ -124,7 +124,7 @@ def test_to_braket_non_parameterized_two_qubit_gates():
         ops.SWAP(*qreg[1:]),
         ops.ISWAP(*qreg[:2]),
         ops.CZ(*qreg[1:]),
-        ops.Controlledgate(ops.Y).on(*qreg[:2]),
+        ops.ControlledGate(ops.Y).on(*qreg[:2]),
     )
     braket_circuit = cirq_to_braket(cirq_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
@@ -166,7 +166,7 @@ def test_to_braket_common_one_qubit_gates():
     assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
 
 
-@pytest.mark.parametrize("uncommon_gate", [ops.HPowgate(exponent=-1 / 14)])
+@pytest.mark.parametrize("uncommon_gate", [ops.HPowGate(exponent=-1 / 14)])
 def test_to_braket_uncommon_one_qubit_gates(uncommon_gate):
     """These gates get decomposed when converting Cirq -> Braket, but
     the unitaries should be equal up to global phase.
@@ -186,9 +186,9 @@ def test_to_braket_uncommon_one_qubit_gates(uncommon_gate):
         ops.CNOT,
         ops.CZ,
         ops.ISWAP,
-        ops.XXPowgate(exponent=-0.2),
-        ops.YYPowgate(exponent=0.3),
-        ops.ZZPowgate(exponent=-0.1),
+        ops.XXPowGate(exponent=-0.2),
+        ops.YYPowGate(exponent=0.3),
+        ops.ZZPowGate(exponent=-0.1),
     ],
 )
 def test_to_braket_common_two_qubit_gates(common_gate):
@@ -197,7 +197,7 @@ def test_to_braket_common_two_qubit_gates(common_gate):
     """
     cirq_circuit = Circuit(common_gate.on(*LineQubit.range(2)))
     braket_circuit = cirq_to_braket(cirq_circuit)
-    if not isinstance(common_gate, (ops.XXPowgate, ops.YYPowgate, ops.ZZPowgate)):
+    if not isinstance(common_gate, (ops.XXPowGate, ops.YYPowGate, ops.ZZPowGate)):
         assert circuits_allclose(braket_circuit, cirq_circuit, strict_gphase=True)
     else:
         assert circuits_allclose(braket_circuit, cirq_circuit)
@@ -205,7 +205,7 @@ def test_to_braket_common_two_qubit_gates(common_gate):
 
 @pytest.mark.parametrize(
     "uncommon_gate",
-    [ops.CNotPowgate(exponent=-1 / 17), ops.CZPowgate(exponent=2 / 7)],
+    [ops.CNotPowGate(exponent=-1 / 17), ops.CZPowGate(exponent=2 / 7)],
 )
 def test_to_braket_uncommon_two_qubit_gates(uncommon_gate):
     """These gates get decomposed when converting Cirq -> Braket, but
@@ -335,7 +335,7 @@ def test_to_braket_kraus_gates():
 def test_braket_unitary_display_name():
     """Test braket unitary gate uses correct display name"""
     unitary = random_unitary_matrix(2)
-    braket_circuit = cirq_to_braket(Circuit(ops.Matrixgate(unitary).on(LineQubit(0))))
+    braket_circuit = cirq_to_braket(Circuit(ops.MatrixGate(unitary).on(LineQubit(0))))
     assert braket_circuit.instructions[0].operator.ascii_symbols[0] == "U"
 
 
@@ -354,7 +354,7 @@ def test_ionq_gates():
 def test_custom_controlled_three_qubit_gate():
     """Test custom controlled three qubit gate"""
     q0, q1, q2 = cirq.LineQubit.range(3)
-    cirq_circuit = cirq.Circuit(ops.Controlledgate(ops.CZ).on(q0, q1, q2))
+    cirq_circuit = cirq.Circuit(ops.ControlledGate(ops.CZ).on(q0, q1, q2))
     braket_circuit = cirq_to_braket(cirq_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit)
 
@@ -363,7 +363,7 @@ def test_three_qubit_matrix_gate():
     """Test three qubit matrix gate"""
     q0, q1, q2 = cirq.LineQubit.range(3)
     matrix = np.eye(8)
-    cirq_circuit = cirq.Circuit(ops.Matrixgate(matrix).on(q0, q1, q2))
+    cirq_circuit = cirq.Circuit(ops.MatrixGate(matrix).on(q0, q1, q2))
     braket_circuit = cirq_to_braket(cirq_circuit)
     assert circuits_allclose(braket_circuit, cirq_circuit)
 
@@ -372,7 +372,7 @@ def test_three_qubit_error():
     """Test error for three qubit gate"""
     q0, q1, q2 = cirq.LineQubit.range(3)
     matrix = np.eye(8)
-    cirq_circuit = cirq.Circuit(ops.Matrixgate(matrix).on(q0, q1, q2))
+    cirq_circuit = cirq.Circuit(ops.MatrixGate(matrix).on(q0, q1, q2))
 
     with pytest.raises(CircuitConversionError):
         with patch("cirq.protocols.unitary", side_effect=TypeError):
