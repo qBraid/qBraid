@@ -12,18 +12,17 @@
 Benchmarking tests for pyQuil conversions
 
 """
+import importlib.util
+import string
+
+import numpy as np
 import pytest
 
+from qbraid.interface import circuits_allclose
+from qbraid.transpiler import ConversionGraph, transpile
+
 try:
-    import importlib.util
-    import string
-
-    import numpy as np
     import pyquil
-    import pytest
-
-    from qbraid.interface import circuits_allclose
-    from qbraid.transpiler import ConversionGraph, transpile
 
     pyquil_not_installed = False
 except ImportError:
@@ -55,7 +54,8 @@ def generate_params(varnames, seed=0):
     return params
 
 
-def get_pyquil_gates():
+@pytest.fixture
+def pyquil_gates():
     """Construct a dictionary of all pyQuil gates and assign random parameters as applicable"""
     pyquil_gate_dict = {
         attr: None for attr in dir(pyquil.gates) if attr[0] in string.ascii_uppercase
@@ -72,12 +72,8 @@ def get_pyquil_gates():
 
 
 @pytest.fixture
-def pyquil_gates():
-    return get_pyquil_gates()
-
-
-@pytest.fixture
 def conversion_graph():
+    """Construct a conversion graph with native support for all target program types"""
     return ConversionGraph(require_native=True)
 
 

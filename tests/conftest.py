@@ -8,12 +8,16 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# pylint: disable=unused-import
+
 """
 Fixtures imported/defined in this file can be used by any test in this directory
 without needing to import them (pytest will automatically discover them).
 
 """
-# pylint: disable=unused-import
+import importlib.util
+
+import pytest
 
 from .fixtures import (
     bell_circuit,
@@ -25,3 +29,15 @@ from .fixtures import (
     two_bell_circuits,
     two_shared15_circuits,
 )
+
+
+def _is_package_installed(package_name: str) -> bool:
+    """Check if a package is installed."""
+    return importlib.util.find_spec(package_name) is not None
+
+
+@pytest.fixture
+def available_targets():
+    """Return a list of available quantum packages."""
+    packages = ["braket", "cirq", "pyquil", "pytket", "qiskit"]
+    return [pkg for pkg in packages if _is_package_installed(pkg)]
