@@ -12,11 +12,13 @@
 Device class for OQC devices.
 
 """
+from __future__ import annotations
+
 import datetime
 from typing import TYPE_CHECKING, Union
 
 from qcaas_client.client import QPUTask
-from scc.compiler.config import (
+from qcaas_client.compiler_config import (
     CompilerConfig,
     MetricsType,
     QuantumResultsFormat,
@@ -72,7 +74,7 @@ class OQCDevice(QuantumDevice):
     """Device class for OQC devices."""
 
     def __init__(
-        self, profile: "qbraid.runtime.TargetProfile", client: "qcaas_client.client.OQCClient"
+        self, profile: qbraid.runtime.TargetProfile, client: qcaas_client.client.OQCClient
     ):
         super().__init__(profile=profile)
         self._client = client
@@ -122,6 +124,7 @@ class OQCDevice(QuantumDevice):
             )
         else:
             custom_config = None
+
         for program in run_input:
             task = QPUTask(program=program, config=custom_config)
             tasks.append(task)

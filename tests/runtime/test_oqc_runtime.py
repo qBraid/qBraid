@@ -15,10 +15,13 @@ Unit tests for OQCProvider class
 
 """
 import datetime
+import logging
 from unittest.mock import Mock, patch
 
 import numpy as np
 import pytest
+
+logger = logging.getLogger(__name__)
 
 try:
     from qcaas_client.client import OQCClient, QPUTask  # type: ignore
@@ -33,10 +36,12 @@ try:
     FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
     oqc_not_installed = False
-except ImportError:
+except ImportError as err:
     FIXTURE_COUNT = 0
 
     oqc_not_installed = True
+
+    logger.warning("OQC runtime tests will be skipped: %s", err)
 
 
 pytestmark = pytest.mark.skipif(oqc_not_installed, reason="qcaas_client not installed")

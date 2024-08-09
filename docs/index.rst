@@ -39,6 +39,7 @@ Resources
 - `User Guide <https://docs.qbraid.com/sdk/user-guide>`_
 - `Example Notebooks <https://github.com/qBraid/qbraid-lab-demo>`_
 - `API Reference <https://sdk.qbraid.com/en/latest/api/qbraid.html>`_
+- `Source Code <https://github.com/qBraid/qBraid>`_
 
 
 .. toctree::

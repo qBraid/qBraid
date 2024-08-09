@@ -13,10 +13,19 @@ Unit tests for qbraid.programs.pyquil.PyQuilProgram
 
 """
 import pytest
-from pyquil import Program
 
-from qbraid.programs.circuits.pyquil import PyQuilProgram
-from qbraid.programs.exceptions import ProgramTypeError
+try:
+    from pyquil import Program
+
+    from qbraid.programs.circuits.pyquil import PyQuilProgram
+    from qbraid.programs.exceptions import ProgramTypeError
+
+    pyquil_not_installed = False
+except ImportError:
+    pyquil_not_installed = True
+
+
+pytestmark = pytest.mark.skipif(pyquil_not_installed, reason="pyquil not installed")
 
 
 def test_invalid_program_type():

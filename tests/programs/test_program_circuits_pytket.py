@@ -8,6 +8,8 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# pylint: disable=redefined-outer-name
+
 """
 Unit tests for qbraid.programs.pytket.PytketCircuit
 
@@ -16,11 +18,20 @@ from unittest.mock import patch
 
 import numpy as np
 import pytest
-from pytket.circuit import Circuit
-from pytket.unit_id import Qubit
 
-from qbraid.programs.circuits.pytket import IONQ_GATES, PytketCircuit
-from qbraid.programs.exceptions import ProgramTypeError, TransformError
+try:
+    from pytket.circuit import Circuit
+    from pytket.unit_id import Qubit
+
+    from qbraid.programs.circuits.pytket import IONQ_GATES, PytketCircuit
+    from qbraid.programs.exceptions import ProgramTypeError, TransformError
+
+    pytket_not_installed = False
+except ImportError:
+    pytket_not_installed = True
+
+
+pytestmark = pytest.mark.skipif(pytket_not_installed, reason="pytket not installed")
 
 
 def test_program_attributes():
@@ -35,15 +46,19 @@ def test_program_attributes():
     assert qprogram.depth == 2
 
 
-@pytest.mark.parametrize(
-    "input_circuit, expected_circuit",
-    [
-        (Circuit(2).CX(0, 1), Circuit(2).CX(1, 0)),
-        (Circuit(3).CCX(0, 1, 2), Circuit(3).CCX(2, 1, 0)),
-    ],
-)
-def test_reverse_qubit_order(input_circuit, expected_circuit):
-    """Test reversing qubit ordering of pytket circuit."""
+@pytest.fixture
+def circuits():
+    """Fixture to generate circuits only when called."""
+    return {
+        "simple": (Circuit(2).CX(0, 1), Circuit(2).CX(1, 0)),
+        "ccx": (Circuit(3).CCX(0, 1, 2), Circuit(3).CCX(2, 1, 0)),
+    }
+
+
+@pytest.mark.parametrize("circuit_key", ["simple", "ccx"])
+def test_reverse_qubit_order(circuits, circuit_key):
+    """Test reversing qubit ordering of pytket circuit using a fixture."""
+    input_circuit, expected_circuit = circuits[circuit_key]
     qprogram = PytketCircuit(input_circuit)
     qprogram.reverse_qubit_order()
     result_circuit = qprogram.program

@@ -12,6 +12,7 @@
 Benchmarking tests for Cirq conversions
 
 """
+import importlib.util
 import string
 
 import cirq
@@ -96,11 +97,14 @@ def get_cirq_gates():
     return {k: v for k, v in cirq_gate_dict.items() if v is not None}
 
 
-#############
-### TESTS ###
-#############
+def is_package_installed(package_name: str) -> bool:
+    """Check if a package is installed."""
+    return importlib.util.find_spec(package_name) is not None
 
-TARGETS = [("braket", 0.85), ("pyquil", 0.74), ("pytket", 0.87), ("qiskit", 0.87)]
+
+ALL_TARGETS = [("braket", 0.85), ("pyquil", 0.74), ("pytket", 0.87), ("qiskit", 0.87)]
+AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
+
 cirq_gates = get_cirq_gates()
 
 graph = ConversionGraph(require_native=True)
@@ -117,7 +121,7 @@ def convert_from_cirq_to_x(target, gate_name):
     assert circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
 
 
-@pytest.mark.parametrize(("target", "baseline"), TARGETS)
+@pytest.mark.parametrize(("target", "baseline"), AVAILABLE_TARGETS)
 def test_cirq_coverage(target, baseline):
     """Test converting Cirq circuits to supported target program type over
     all Cirq gates and check against baseline expecte accuracy.

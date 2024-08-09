@@ -12,17 +12,25 @@
 Unit tests for conversions between Cirq circuits and pytket circuits.
 
 """
-import numpy as np
 import pytest
-from cirq import Circuit, LineQubit, ops, testing
-from pytket.circuit import Circuit as TKCircuit
-from pytket.qasm import circuit_to_qasm_str
 
-from qbraid.interface import circuits_allclose
-from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
-from qbraid.transpiler.converter import transpile
+try:
+    import numpy as np
+    from cirq import Circuit, LineQubit, ops, testing
+    from pytket.circuit import Circuit as TKCircuit
+    from pytket.qasm import circuit_to_qasm_str
 
-from ..cirq_utils import _equal
+    from qbraid.interface import circuits_allclose
+    from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
+    from qbraid.transpiler.converter import transpile
+
+    from ..cirq_utils import _equal
+
+    pytket_not_installed = False
+except ImportError:
+    pytket_not_installed = True
+
+pytestmark = pytest.mark.skipif(pytket_not_installed, reason="pytket not installed")
 
 
 def test_bell_state_to_from_circuits():

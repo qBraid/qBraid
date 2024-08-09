@@ -12,6 +12,8 @@
 Benchmarking tests for Amazon Braket conversions
 
 """
+import importlib.util
+
 import braket.circuits
 import pytest
 
@@ -20,7 +22,15 @@ from qbraid.transpiler import ConversionGraph, transpile
 
 from ...fixtures.braket.gates import get_braket_gates
 
-TARGETS = [("cirq", 1.0), ("pyquil", 0.84), ("pytket", 1.0), ("qiskit", 1.0)]
+
+def is_package_installed(package_name: str) -> bool:
+    """Check if a package is installed."""
+    return importlib.util.find_spec(package_name) is not None
+
+
+ALL_TARGETS = [("cirq", 1.0), ("pyquil", 0.84), ("pytket", 1.0), ("qiskit", 1.0)]
+AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
+
 braket_gates = get_braket_gates(seed=0)
 
 graph = ConversionGraph(require_native=True)
@@ -43,7 +53,7 @@ def convert_from_braket_to_x(target, gate_name):
     assert circuits_allclose(source_circuit, target_circuit, strict_gphase=False)
 
 
-@pytest.mark.parametrize(("target", "baseline"), TARGETS)
+@pytest.mark.parametrize(("target", "baseline"), AVAILABLE_TARGETS)
 def test_braket_coverage(target, baseline):
     """Test converting Amazon Braket circuits to supported target program type over
     all Amazon Braket gates and check against baseline expecte accuracy.

@@ -8,60 +8,97 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-"""Information about qBraid and dependencies."""
+"""
+Information about qBraid and dependencies.
+
+"""
+import datetime
+import importlib.metadata
+import platform
+import re
+from typing import Optional
 
 from ._compat import check_warn_version_update
+from ._version import __version__
+
+
+def get_dependencies(
+    package_name, exclude_extras: Optional[set[str]] = None
+) -> tuple[set[str], dict[str, set[str]]]:
+    """
+    Extracts core and optional dependencies of a package using importlib.metadata.
+
+    Args:
+        package_name (str): Name of the package to analyze.
+        exclude_extras (optional, set[str]): Optional set of extras to exclude from the analysis.
+
+    Returns:
+        Tuple containing two elements:
+        - set[str]: Core dependencies without any extras.
+        - dict[str, set[str]]: Dependencies categorized by their extras
+    """
+    dist = importlib.metadata.distribution(package_name)
+    requires = dist.requires or []
+
+    core_dependencies = set()
+    optional_dependencies = {}
+    extras_regex = re.compile(r'^(.+?); extra == "([^"]+)"$')
+    package_name_pattern = re.compile(r"^([^>=<\[\]]+)")
+
+    exclude_extras = exclude_extras or set()
+
+    for req in requires:
+        req = req.strip()
+        match = extras_regex.match(req)
+        if match:
+            dependency, extra = match.groups()
+            if extra not in exclude_extras:
+                dependency = package_name_pattern.match(dependency.strip()).group(0)
+                if extra in optional_dependencies:
+                    extras: set[str] = optional_dependencies[extra]
+                    extras.add(dependency)
+                    optional_dependencies[extra] = extras
+                else:
+                    optional_dependencies[extra] = {dependency}
+        else:
+            dependency = package_name_pattern.match(req).group(0)
+            core_dependencies.add(dependency)
+
+    return core_dependencies, optional_dependencies
 
 
 def about() -> None:
-    """Displays information about qBraid, core/optional packages, and Python
-    version/platform information.
     """
-    # pylint: disable=import-outside-toplevel
-    import platform
+    Displays information about the qBraid-SDK including the installed versions
+    of its core and optional dependencies, as well as the Python version and
+    operating platform on which it is running.
+    """
+    check_warn_version_update()
+    exclude_extras = {"test", "lint", "docs", "visualization"}
+    core_packages, extras = get_dependencies("qbraid", exclude_extras=exclude_extras)
+    optional_packages = {item for subset in extras.values() for item in subset}
+    all_packages = core_packages | optional_packages
 
-    from numpy import __version__ as numpy_version
-    from openqasm3 import __version__ as openqasm3_version
-    from qbraid_core import __version__ as qbraid_core_version
-    from rustworkx import __version__ as rustworkx_version  # pylint: disable=no-name-in-module
-
-    from ._version import __version__ as qbraid_version
-
-    # Core dependencies
-    core_dependencies = {
-        "rustworkx": rustworkx_version,
-        "openqasm3": openqasm3_version,
-        "numpy": numpy_version,
-        "qbraid_core": qbraid_core_version,
-    }
-
-    # Optional dependencies
-    optional_packages = {
-        "qbraid_qir": "qbraid_qir",
-        "braket": "braket._sdk",
-        "cirq": "cirq",
-        "pyquil": "pyquil",
-        "pennylane": "pennylane",
-        "pytket": "pytket",
-        "qiskit": "qiskit",
-        "qiskit_ibm_runtime": "qiskit_ibm_runtime",
-    }
-
-    check_warn_version = False
+    core_dependencies = {}
     optional_dependencies = {}
-    for package_name, import_path in optional_packages.items():
+
+    for pkg in sorted(all_packages):
         try:
-            package = __import__(import_path, fromlist=[""])
-            optional_dependencies[package_name] = package.__version__
-            check_warn_version = check_warn_version or package_name == "qbraid_core"
-        except ImportError:  # pragma: no cover
+            version = importlib.metadata.distribution(pkg).version
+            if pkg in core_packages:
+                core_dependencies[pkg] = version
+            if pkg in optional_packages:
+                optional_dependencies[pkg] = version
+        except importlib.metadata.PackageNotFoundError:
             continue
+
+    current_year = datetime.datetime.now().year
 
     about_str = (
         "\nqBraid-SDK: A platform-agnostic quantum runtime framework\n"
-        "======================================================================\n"
-        f"(C) 2024 qBraid Development Team (https://github.com/qBraid/qBraid)\n\n"
-        f"qbraid:\t{qbraid_version}\n\n"
+        "=========================================================\n"
+        f"(C) {current_year} qBraid Development Team (https://sdk.qbraid.com)\n\n"
+        f"qbraid:\t{__version__}\n\n"
         "Core Dependencies\n"
         "-----------------\n"
         + "\n".join([f"{k}: {v}" for k, v in core_dependencies.items()])
@@ -79,7 +116,5 @@ def about() -> None:
         f"\n\nPython: {platform.python_version()}\n"
         f"Platform: {platform.system()} ({platform.machine()})"
     )
-    print(about_str)
 
-    if check_warn_version:
-        check_warn_version_update()  # pragma: no cover
+    print(about_str)
