@@ -103,9 +103,14 @@ When coding:
 
 ## Pull Requests
 
-### Preparation
+Before submitting a pull request (PR), ensure your contributions comply with the [Developer's Certificate of Origin](https://developercertificate.org/), confirming your right to submit the work under this project's [LICENSE](LICENSE). Contributors are encouraged to [sign commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits), however, it is not required.
 
-Before submitting a pull request (PR), ensure your contributions comply with the [Developer's Certificate of Origin](https://developercertificate.org/), confirming your right to submit the work under the project's license. Contributors are encouraged to[sign commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits), however, it is not required.
+For code changes, please ensure that:
+1. All new code includes corresponding unit tests and satisfies code coverage.
+2. Docstrings are thorough and accurate for both new and updated features.
+3. All integration tests, including remote tests (as applicable), are passing.
+4. New functions and classes are annotated with Python type hints to support `py.typed`.
+5. (Optional) Yor name and affiliation are added to [CITATION.cff](CITATION.cff).
 
 ### Integration Tests
 
@@ -126,8 +131,8 @@ Run the following commands locally to confirm that your changes meet our quality
 ### Submitting a Pull Request
 When you are ready to submit a PR:
 
-- **Title**: Choose a title that is short, detailed, and understandable for all.
+- **Title**: Choose a title that is short, detailed, and easily understandable.
 - **Description**: Provide a brief description of the changes. Include the context and motivation behind the PR, if relevant.
-- **Link Issues**: If your PR resolves an open issue, link it using the phrase "Closes" followed by the issue number (e.g., `Closes #123`).
+- **Link Issues**: If your PR resolves an open issue, link it using the keyword "Closes" followed by the issue number (e.g., `Closes #123`).
 
 Remember, it's perfectly fine to submit a draft pull request if your code is still a work-in-progress. We're here to help!

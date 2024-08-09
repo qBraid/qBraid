@@ -8,6 +8,8 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# pylint: disable=redefined-outer-name
+
 """
 Benchmarking tests for pyQuil conversions
 
