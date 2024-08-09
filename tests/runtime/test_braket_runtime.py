@@ -15,6 +15,7 @@ Unit tests for BraketProvider class
 
 """
 import datetime
+import importlib.util
 import json
 import warnings
 from unittest.mock import MagicMock, Mock, patch
@@ -48,6 +49,8 @@ from qbraid.runtime.exceptions import JobStateError, ProgramValidationError
 from ..fixtures.braket.gates import get_braket_gates
 
 braket_gates = get_braket_gates()
+
+pytket_not_installed = importlib.util.find_spec("pytket") is None
 
 SV1_ARN = Devices.Amazon.SV1
 
@@ -415,6 +418,7 @@ def test_device_transform_raises_for_mismatch(mock_aws_device, braket_circuit):
         device.transform(braket_circuit)
 
 
+@pytest.mark.skipif(pytket_not_installed, reason="pytket not installed")
 @patch("qbraid.runtime.braket.device.AwsDevice")
 def test_device_ionq_transform(mock_aws_device):
     """Test converting Amazon Braket circuit to use only IonQ supprted gates"""

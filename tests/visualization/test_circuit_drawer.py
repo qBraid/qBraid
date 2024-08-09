@@ -14,11 +14,22 @@ Unit tests for circuit drawer
 # TODO: shared15 draw testcase, after fixing circuit decomposition problem from cirq
 
 """
+import importlib.util
+
 import pytest
 
 from qbraid.programs import ProgramTypeError, load_program
 from qbraid.visualization.draw_circuit import circuit_drawer
 from qbraid.visualization.exceptions import VisualizationError
+
+
+def is_package_installed(package_name: str) -> bool:
+    """Check if a package is installed."""
+    return importlib.util.find_spec(package_name) is not None
+
+
+ALL_TARGETS = ["braket", "cirq", "qiskit", "pytket", "pyquil"]
+AVAILABLE_TARGETS = [pkg for pkg in ALL_TARGETS if is_package_installed(pkg)] + ["qasm2"]
 
 
 def test_draw_raises():
@@ -33,6 +44,7 @@ def test_draw_program_raises():
         circuit_drawer(None)
 
 
+@pytest.mark.skipif("qiskit" not in AVAILABLE_TARGETS, reason="qiskit not installed")
 @pytest.mark.parametrize("bell_circuit", ["qiskit"], indirect=True)
 def test_qiskit_draw(bell_circuit):
     """Test draw function standard output for qiskit bell circuit."""
@@ -48,12 +60,10 @@ q_1: ┤ H ├──■──
     assert str(result) == expected
 
 
-@pytest.mark.parametrize(
-    "bell_circuit", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm2"], indirect=True
-)
+@pytest.mark.skipif("braket" not in AVAILABLE_TARGETS, reason="braket not installed")
+@pytest.mark.parametrize("bell_circuit", AVAILABLE_TARGETS, indirect=True)
 def test_braket_bell_draw(capfd, bell_circuit):
     """Test using Amazon Braket to draw using ascii output is of the expected length."""
-    # pylint: disable=eval-used
     circuit, _ = bell_circuit
     circuit_drawer(circuit, as_package="braket", output="ascii")
 
@@ -61,6 +71,7 @@ def test_braket_bell_draw(capfd, bell_circuit):
     assert len(err) == 0
 
 
+@pytest.mark.skipif("braket" not in AVAILABLE_TARGETS, reason="braket not installed")
 @pytest.mark.parametrize("bell_circuit", ["braket"], indirect=True)
 def test_braket_raises(bell_circuit):
     """Test that drawing braket circuit with non-supported output raises error"""
@@ -69,12 +80,10 @@ def test_braket_raises(bell_circuit):
         circuit_drawer(braket_bell, output="bad_input")
 
 
-@pytest.mark.parametrize(
-    "bell_circuit", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm2"], indirect=True
-)
+@pytest.mark.skipif("cirq" not in AVAILABLE_TARGETS, reason="cirq not installed")
+@pytest.mark.parametrize("bell_circuit", AVAILABLE_TARGETS, indirect=True)
 def test_cirq_bell_text_draw(capfd, bell_circuit):
     """Test using Cirq to draw circuit using text output is of the expected length."""
-    # pylint: disable=eval-used
     circuit, _ = bell_circuit
     circuit_drawer(circuit, as_package="cirq", output="text")
 
@@ -82,6 +91,7 @@ def test_cirq_bell_text_draw(capfd, bell_circuit):
     assert len(err) == 0
 
 
+@pytest.mark.skipif("cirq" not in AVAILABLE_TARGETS, reason="cirq not installed")
 @pytest.mark.parametrize("bell_circuit", ["cirq"], indirect=True)
 def test_cirq_bell_svg_draw(bell_circuit):
     """Test drawing Cirq circuit using SVG source output"""
@@ -90,6 +100,7 @@ def test_cirq_bell_svg_draw(bell_circuit):
     assert svg_str.startswith("<svg") and svg_str.endswith("</svg>")
 
 
+@pytest.mark.skipif("cirq" not in AVAILABLE_TARGETS, reason="cirq not installed")
 @pytest.mark.parametrize("bell_circuit", ["cirq"], indirect=True)
 def test_cirq_raises(bell_circuit):
     """Test that drawing Cirq circuit with non-supported output raises error"""
@@ -98,12 +109,10 @@ def test_cirq_raises(bell_circuit):
         circuit_drawer(cirq_bell, output="bad_input")
 
 
-@pytest.mark.parametrize(
-    "bell_circuit", ["braket", "cirq", "qiskit", "pytket", "pyquil", "qasm2"], indirect=True
-)
+@pytest.mark.skipif("pyquil" not in AVAILABLE_TARGETS, reason="pyquil not installed")
+@pytest.mark.parametrize("bell_circuit", AVAILABLE_TARGETS, indirect=True)
 def test_pyquil_bell_draw(capfd, bell_circuit):
     """Test using pyquil to draw circuit using text output is of the expected length."""
-    # pylint: disable=eval-used
     circuit, _ = bell_circuit
     circuit_drawer(circuit, as_package="pyquil", output="text")
 
@@ -111,6 +120,7 @@ def test_pyquil_bell_draw(capfd, bell_circuit):
     assert len(err) == 0
 
 
+@pytest.mark.skipif("pyquil" not in AVAILABLE_TARGETS, reason="pyquil not installed")
 @pytest.mark.parametrize("bell_circuit", ["pyquil"], indirect=True)
 def test_pyquil_raises(bell_circuit):
     """Test that drawing pyQuil program with non-supported output raises error"""
@@ -119,6 +129,7 @@ def test_pyquil_raises(bell_circuit):
         circuit_drawer(pyquil_bell, output="bad_input")
 
 
+@pytest.mark.skipif("pytket" not in AVAILABLE_TARGETS, reason="pytket not installed")
 @pytest.mark.parametrize("bell_circuit", ["pytket"], indirect=True)
 def test_pytket_draw(bell_circuit):
     """Test draw function html output for pytket bell circuit."""
@@ -126,6 +137,7 @@ def test_pytket_draw(bell_circuit):
     assert len(circuit_drawer(pytket_bell, output="html")) == 2381
 
 
+@pytest.mark.skipif("pytket" not in AVAILABLE_TARGETS, reason="pytket not installed")
 @pytest.mark.parametrize("bell_circuit", ["pytket"], indirect=True)
 def test_pytket_raises(bell_circuit):
     """Test that drawing pytket circuit with non-supported output raises error"""
