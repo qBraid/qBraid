@@ -22,8 +22,7 @@ from unittest.mock import patch
 import cirq
 import numpy as np
 import pytest
-from braket.circuits import Instruction, QubitSet
-from braket.circuits import gate as bk_gate
+from braket.circuits import Gate, Instruction, QubitSet
 from braket.circuits import noises as braket_noise_gate
 from cirq import Circuit, LineQubit, ops, testing
 from cirq_ionq.ionq_native_gates import GPI2Gate, GPIGate, MSGate
@@ -390,6 +389,6 @@ def test_invalid_gate_instruction():
 
 def test_braket_custom_gate():
     """Test custom gate"""
-    custom_gate = C(sub_gate=bk_gate(1, "a"), targets=QubitSet([0, 1]))
-    instr = custom_gate.c(QubitSet([0, 1]), sub_gate=bk_gate(1, "a"))
+    custom_gate = C(sub_gate=Gate(1, "a"), targets=QubitSet([0, 1]))
+    instr = custom_gate.c(QubitSet([0, 1]), sub_gate=Gate(1, "a"))
     assert isinstance(instr, Instruction)
