@@ -17,17 +17,26 @@ import pytest
 from cirq import Circuit, LineQubit
 from cirq import ops as cirq_ops
 from cirq.contrib.qasm_import import circuit_from_qasm
-from pyquil import Program
-from pyquil.gates import CNOT, CZ, RX, RZ, H, X, Y, Z
-from pyquil.noise import _decoherence_noise_model, _get_program_gates, apply_noise_model
 
-from qbraid.interface import circuits_allclose
-from qbraid.transpiler.conversions.cirq import cirq_to_pyquil
-from qbraid.transpiler.conversions.pyquil import pyquil_to_cirq
-from qbraid.transpiler.exceptions import CircuitConversionError
+try:
+    from pyquil import Program
+    from pyquil.gates import CNOT, CZ, RX, RZ, H, X, Y, Z
+    from pyquil.noise import _decoherence_noise_model, _get_program_gates, apply_noise_model
+
+    from qbraid.interface import circuits_allclose
+    from qbraid.transpiler.conversions.cirq import cirq_to_pyquil
+    from qbraid.transpiler.conversions.pyquil import pyquil_to_cirq
+    from qbraid.transpiler.exceptions import CircuitConversionError
+
+    pyquil_not_installed = False
+except ImportError:
+    pyquil_not_installed = True
+
+pytestmark = pytest.mark.skipif(pyquil_not_installed, reason="pyquil not installed")
 
 
 def test_to_from_pyquil():
+    """Test round trip pyQuil-Cirq conversions."""
     p = Program()
     p += X(0)
     p += Y(1)
@@ -40,6 +49,7 @@ def test_to_from_pyquil():
 
 
 def test_to_from_pyquil_parameterized():
+    """Test round trip pyQuil-Cirq conversions with parameterized gates."""
     q0, q1 = (0, 1)
     p = Program()
     p += H(q0)
@@ -93,7 +103,8 @@ def test_to_from_pyquil_quil_string():
     assert circuits_allclose(p, p_test)
 
 
-def test_to_pyquil_from_pyquil_no_zero_qubit():
+def test_from_pyquil_no_zero_qubit():
+    """Test converting a pyQuil program with a non-zero qubit index to Cirq."""
     p = Program()
     p += X(10)
     p += Y(11)
@@ -104,14 +115,18 @@ def test_to_pyquil_from_pyquil_no_zero_qubit():
     assert p.out() == p_test.out()
 
 
-def test_raise_error_to_pyquil():
+def test_raise_error_to_pyquil_bit_flip():
+    """Test raising an error when converting a Cirq circuit with a bit flip to pyQuil."""
+
     with pytest.raises(CircuitConversionError):
         q0 = LineQubit(0)
         circuit = Circuit(cirq_ops.bit_flip(p=0.2).on(q0), cirq_ops.measure(q0, key="result"))
         cirq_to_pyquil(circuit)
 
 
-def test_raise_error_from_pyquil():
+def test_raise_error_from_pyquil_noisey():
+    """Test raising an error when converting a noisey pyQuil program to Cirq."""
+
     with pytest.raises(CircuitConversionError):
         p = Program()
         p += RX(-np.pi / 2, 0)

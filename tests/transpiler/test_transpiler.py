@@ -8,6 +8,8 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# pylint: disable=redefined-outer-name
+
 """
 Unit tests for the qbraid transpiler.
 
@@ -37,7 +39,11 @@ from ..fixtures.cirq.gates import create_cirq_gate
 from ..fixtures.qiskit.gates import qiskit_gates as qiskit_gates_dict
 from .cirq_utils import _equal
 
-conversion_graph = ConversionGraph()
+
+@pytest.fixture
+def conversion_graph():
+    """Return the conversion graph."""
+    return ConversionGraph()
 
 
 @pytest.mark.parametrize(
@@ -48,6 +54,9 @@ conversion_graph = ConversionGraph()
 def test_to_cirq(two_bell_circuits):
     """Test coverting circuits to Cirq."""
     circuit1, circuit2, _, _ = two_bell_circuits
+    if circuit1 is None or circuit2 is None:
+        pytest.skip("Necessary packages not installed")
+
     converted_circuit = transpile(circuit1, "cirq", require_native=True)
     assert _equal(converted_circuit, circuit2, allow_reversed_qubit_order=True)
 
@@ -71,7 +80,7 @@ def test_to_cirq_bad_openqasm_program(item):
 
 @pytest.mark.parametrize("bell_circuit", ["cirq"], indirect=True)
 @pytest.mark.parametrize("to_type", QPROGRAM_ALIASES)
-def test_cirq_round_trip(bell_circuit, to_type):
+def test_cirq_round_trip(bell_circuit, to_type, conversion_graph: ConversionGraph):
     """Test converting Cirq circuits to other supported types."""
     if not conversion_graph.has_path("cirq", to_type) or not conversion_graph.has_path(
         to_type, "cirq"
@@ -133,7 +142,7 @@ def test_15(shared15_circuit, shared15_unitary, target_package):
 
 @pytest.mark.parametrize("target", packages_bell)
 @pytest.mark.parametrize("bell_circuit", packages_bell, indirect=True)
-def test_bell(bell_circuit, bell_unitary, target):
+def test_bell(bell_circuit, bell_unitary, target, conversion_graph: ConversionGraph):
     """Tests transpiling bell circuits."""
     circuit, source = bell_circuit
     if not conversion_graph.has_path(source, target):
