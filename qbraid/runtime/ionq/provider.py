@@ -18,7 +18,7 @@ import openqasm3
 from qbraid_core.sessions import Session
 
 from qbraid.programs.spec import ProgramSpec
-from qbraid.runtime.enums import DeviceActionType, DeviceType
+from qbraid.runtime.enums import DeviceActionType
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
@@ -87,9 +87,13 @@ class IonQProvider(QuantumProvider):
 
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
         """Build a profile for an IonQ device."""
+        device_id = data.get("backend")
+        simulator = device_id == "simulator"
+        print(device_id, simulator)
+
         return TargetProfile(
-            device_id=data.get("backend"),
-            device_type=DeviceType.QPU,
+            device_id=device_id,
+            simulator=simulator,
             action_type=DeviceActionType.OPENQASM,
             num_qubits=data.get("qubits"),
             program_spec=ProgramSpec(openqasm3.ast.Program),

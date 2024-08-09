@@ -12,6 +12,8 @@
 Module for calculating unitary of quantum circuit/program
 
 """
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -79,8 +81,8 @@ def assert_allclose_up_to_global_phase(a: np.ndarray, b: np.ndarray, atol: float
 
 
 def circuits_allclose(  # pylint: disable=too-many-arguments
-    circuit0: "qbraid.programs.QPROGRAM",
-    circuit1: "qbraid.programs.QPROGRAM",
+    circuit0: qbraid.programs.QPROGRAM,
+    circuit1: qbraid.programs.QPROGRAM,
     index_contig: bool = False,
     allow_rev_qubits: bool = False,
     strict_gphase: bool = False,

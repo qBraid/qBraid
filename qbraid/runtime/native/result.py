@@ -69,13 +69,10 @@ class QbraidJobResult(GateModelJobResult):
         if self._measurements is None:
             counts = self.result.measurement_counts
             if counts:
-                measurements = []
-                for state, count in counts.items():
-                    measurements.extend([list(map(int, state))] * count)
-                self._measurements = np.array(measurements, dtype=int)
+                self._measurements = self.counts_to_measurements(counts)
         return self._measurements
 
-    def raw_counts(self, decimal: bool = False, **kwargs):
+    def get_counts(self, decimal: bool = False):
         """Returns raw histogram data of the run"""
         measurements = self.measurements()
         if measurements is None:
@@ -95,7 +92,7 @@ class QbraidJobResult(GateModelJobResult):
         return probabilities
 
     def _array_to_histogram(self, arr: np.ndarray) -> dict[str, int]:
-        """Implement caching mechanism here."""
+        """Convert a 2D numpy array to a histogram and cache the result."""
         if self._cached_histogram is None:
             row_strings = ["".join(map(str, row)) for row in arr]
             self._cached_histogram = {row: row_strings.count(row) for row in set(row_strings)}
@@ -107,12 +104,12 @@ class QbraidJobResult(GateModelJobResult):
         Convert histogram counts to probabilities.
 
         Args:
-            counts (Dict[str, int]): A dictionary with measurement outcomes as keys and
-                                     their counts as values.
+            counts (dict[str, int]): A dictionary with measurement outcomes as keys
+                and their counts as values.
 
         Returns:
-            Dict[str, float]: A dictionary with measurement outcomes as keys and their
-                              probabilities as values.
+            dict[str, float]: A dictionary with measurement outcomes as keys and their
+                probabilities as values.
         """
         total_counts = sum(counts.values())
         measurement_probabilities = {
