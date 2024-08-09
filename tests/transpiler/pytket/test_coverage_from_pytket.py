@@ -14,18 +14,18 @@
 Benchmarking tests for PyTKET conversions
 
 """
+import importlib.util
+import string
+
+import numpy as np
 import pytest
+from cirq.contrib.qasm_import import circuit_from_qasm
+
+from qbraid.interface import circuits_allclose
+from qbraid.transpiler import ConversionGraph, transpile
 
 try:
-    import importlib.util
-    import string
-
-    import numpy as np
     import pytket
-    from cirq.contrib.qasm_import import circuit_from_qasm
-
-    from qbraid.interface import circuits_allclose
-    from qbraid.transpiler import ConversionGraph, transpile
 
     pytket_not_installed = False
 except ImportError:
@@ -132,7 +132,8 @@ gates_param_map = {
 }
 
 
-def get_pytket_circuits():
+@pytest.fixture
+def pytket_circuits():
     """Construct a dictionary of PyTKET circuits over all supported gates
     using random parameters as applicable.
     """
@@ -148,9 +149,9 @@ def get_pytket_circuits():
 
 
 @pytest.fixture
-def pytket_circuits():
-    """Fixture to generate PyTKET circuits only when called."""
-    return get_pytket_circuits()
+def conversion_graph():
+    """Return a conversion graph of natively supported conversions."""
+    return ConversionGraph(require_native=True)
 
 
 def is_package_installed(package_name: str) -> bool:
@@ -161,10 +162,8 @@ def is_package_installed(package_name: str) -> bool:
 ALL_TARGETS = [("braket", 0.64), ("cirq", 0.66), ("pyquil", 0.66), ("qiskit", 0.66)]
 AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
 
-graph = ConversionGraph(require_native=True)
 
-
-def convert_from_pytket_to_x(target, circuit_name, circuits):
+def convert_from_pytket_to_x(target, circuit_name, circuits, graph):
     """Construct a PyTKET circuit with the given gate, transpile it to
     target program type, and check equivalence.
     """
@@ -177,7 +176,7 @@ def convert_from_pytket_to_x(target, circuit_name, circuits):
 
 
 @pytest.mark.parametrize(("target", "baseline"), AVAILABLE_TARGETS)
-def test_pytket_coverage(target, baseline, pytket_circuits):
+def test_pytket_coverage(target, baseline, pytket_circuits, conversion_graph):
     """Test converting PyTKET circuits to supported target program type over
     all PyTKET gates and check against baseline expecte accuracy.
     """
@@ -186,7 +185,7 @@ def test_pytket_coverage(target, baseline, pytket_circuits):
     failures = {}
     for gate_name in pytket_circuits:
         try:
-            convert_from_pytket_to_x(target, gate_name, pytket_circuits)
+            convert_from_pytket_to_x(target, gate_name, pytket_circuits, conversion_graph)
         except Exception as e:  # pylint: disable=broad-exception-caught
             failures[f"{target}-{gate_name}"] = e
 
