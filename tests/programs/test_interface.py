@@ -65,21 +65,34 @@ def test_qasm3_zero_value_raises(param):
 
 
 @pytest.mark.parametrize("package", ["qiskit", "cirq"])
-def test_random_circuit_raises_for_bad_params(package: str):
+def test_random_circuit_raises_for_bad_params(package: str, available_targets):
     """Test that _cirq_random raises a QbraidError for invalid parameters."""
+    if package not in available_targets:
+        pytest.skip(f"{package} not installed")
+
     expected_err = f"Failed to create {package.capitalize()} random circuit"
     with pytest.raises(QbraidError, match=expected_err):
         random_circuit(package, num_qubits=-1)
 
 
-def test_circuits_allclose():
+def test_circuits_allclose(available_targets):
     """Test circuit allclose function."""
-    circuit0 = random_circuit("pytket", num_qubits=2, depth=2)
-    circuit1 = transpile(circuit0, "braket")
-    assert circuits_allclose(circuit1, circuit0, index_contig=True, allow_rev_qubits=True)
+    pytket_available = "pytket" in available_targets
+    braket_available = "braket" in available_targets
+    qiskit_available = "qiskit" in available_targets
 
-    circuit2 = random_circuit("qiskit", num_qubits=3, depth=2)
-    assert not circuits_allclose(circuit2, circuit0, index_contig=True, allow_rev_qubits=True)
+    if not (pytket_available and (braket_available or qiskit_available)):
+        pytest.skip("Required quantum package(s) are not available")
+
+    circuit0 = random_circuit("pytket", num_qubits=2, depth=2)
+
+    if braket_available:
+        circuit1 = transpile(circuit0, "braket")
+        assert circuits_allclose(circuit1, circuit0, index_contig=True, allow_rev_qubits=True)
+
+    if qiskit_available:
+        circuit2 = random_circuit("qiskit", num_qubits=3, depth=2)
+        assert not circuits_allclose(circuit2, circuit0, index_contig=True, allow_rev_qubits=True)
 
 
 def test_bad_random_circuit():

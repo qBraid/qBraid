@@ -22,7 +22,8 @@ class OQCJobResult(GateModelJobResult):
 
     def raw_counts(self, **kwargs) -> dict[str, int]:
         """Get the raw measurement counts of the task."""
-        return self._result.get("counts", {})
+        result: dict = self._result
+        return result.get("counts", {})
 
     def measurements(self) -> np.ndarray:
         """Get the measurements of the task."""

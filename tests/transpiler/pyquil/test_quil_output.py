@@ -20,7 +20,6 @@
 Module for testing qBraid QuilOutput.
 
 """
-
 import os
 
 import cirq
@@ -28,21 +27,30 @@ import numpy as np
 import pytest
 from cirq.ops.pauli_interaction_gate import PauliInteractionGate
 
-from qbraid.transpiler.conversions.cirq.cirq_quil_output import (
-    QuilFormatter,
-    QuilOneQubitGate,
-    QuilOutput,
-    QuilTwoQubitGate,
-    _twoqubitdiagonal_gate,
-    exponent_to_pi_string,
-)
+try:
+    from qbraid.transpiler.conversions.cirq.cirq_quil_output import (
+        QuilFormatter,
+        QuilOneQubitGate,
+        QuilOutput,
+        QuilTwoQubitGate,
+        _twoqubitdiagonal_gate,
+        exponent_to_pi_string,
+    )
+
+    pyquil_not_installed = False
+except ImportError:
+    pyquil_not_installed = True
+
+pytestmark = pytest.mark.skipif(pyquil_not_installed, reason="pyquil not installed")
 
 
 def _make_qubits(n):
+    """Create a list of named qubits."""
     return [cirq.NamedQubit(f"q{i}") for i in range(n)]
 
 
 def test_single_gate_no_parameter():
+    """Test that a single gate with no parameter is correctly converted to Quil."""
     (q0,) = _make_qubits(1)
     output = QuilOutput((cirq.X(q0),), (q0,))
     assert (
@@ -54,6 +62,7 @@ X 0\n"""
 
 
 def test_single_gate_with_parameter():
+    """Test that a single gate with a parameter is correctly converted to Quil."""
     (q0,) = _make_qubits(1)
     output = QuilOutput((cirq.X(q0) ** 0.5,), (q0,))
     assert (
@@ -65,6 +74,7 @@ RX({np.pi / 2}) 0\n"""
 
 
 def test_single_gate_named_qubit():
+    """Test that a single gate with a named qubit is correctly converted to Quil."""
     q = cirq.NamedQubit("qTest")
     output = QuilOutput((cirq.X(q),), (q,))
 
@@ -77,6 +87,7 @@ X 0\n"""
 
 
 def test_h_gate_with_parameter():
+    """Test that a Hadamard gate with a parameter is correctly converted to Quil."""
     (q0,) = _make_qubits(1)
     output = QuilOutput((cirq.H(q0) ** 0.25,), (q0,))
     assert (
@@ -90,11 +101,12 @@ RY({-np.pi / 4}) 0\n"""
 
 
 def test_save_to_file(tmpdir):
+    """Test that a QuilOutput can be saved to a file."""
     file_path = os.path.join(tmpdir, "test.quil")
     (q0,) = _make_qubits(1)
     output = QuilOutput((cirq.X(q0)), (q0,))
     output.save_to_file(file_path)
-    with open(file_path, "r") as f:
+    with open(file_path, "r", encoding="utf-8") as f:
         file_content = f.read()
     assert (
         file_content
@@ -105,6 +117,7 @@ X 0\n"""
 
 
 def test_quil_one_qubit_gate_repr():
+    """Test that the QuilOneQubitGate __repr__ method works as expected."""
     gate = QuilOneQubitGate(np.array([[1, 0], [0, 1]]))
     assert repr(gate) == (
         """cirq.circuits.quil_output.QuilOneQubitGate(matrix=
@@ -115,6 +128,7 @@ def test_quil_one_qubit_gate_repr():
 
 
 def test_quil_two_qubit_gate_repr():
+    """Test that the QuilTwoQubitGate __repr__ method works as expected."""
     gate = QuilTwoQubitGate(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]))
     assert repr(gate) == (
         """cirq.circuits.quil_output.QuilTwoQubitGate(matrix=
@@ -127,6 +141,7 @@ def test_quil_two_qubit_gate_repr():
 
 
 def test_quil_one_qubit_gate_eq():
+    """Test that the QuilOneQubitGate __eq__ method works as expected."""
     gate = QuilOneQubitGate(np.array([[1, 0], [0, 1]]))
     gate2 = QuilOneQubitGate(np.array([[1, 0], [0, 1]]))
     assert cirq.approx_eq(gate, gate2, atol=1e-16)
@@ -136,6 +151,7 @@ def test_quil_one_qubit_gate_eq():
 
 
 def test_quil_two_qubit_gate_eq():
+    """Test that the QuilTwoQubitGate __eq__ method works as expected."""
     gate = QuilTwoQubitGate(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]))
     gate2 = QuilTwoQubitGate(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]))
     assert cirq.approx_eq(gate, gate2, atol=1e-8)
@@ -145,6 +161,7 @@ def test_quil_two_qubit_gate_eq():
 
 
 def test_quil_one_qubit_gate_output():
+    """Test that a QuilOneQubitGate can be correctly converted to Quil."""
     (q0,) = _make_qubits(1)
     gate = QuilOneQubitGate(np.array([[1, 0], [0, 1]]))
     output = QuilOutput((gate.on(q0),), (q0,))
@@ -161,6 +178,7 @@ USERGATE1 0
 
 
 def test_two_quil_one_qubit_gate_output():
+    """Test that two QuilOneQubitGates can be correctly converted to Quil."""
     (q0,) = _make_qubits(1)
     gate = QuilOneQubitGate(np.array([[1, 0], [0, 1]]))
     gate1 = QuilOneQubitGate(np.array([[2, 0], [0, 3]]))
@@ -182,6 +200,7 @@ USERGATE2 0
 
 
 def test_quil_two_qubit_gate_output():
+    """Test that a QuilTwoQubitGate can be correctly converted to Quil."""
     (q0, q1) = _make_qubits(2)
     gate = QuilTwoQubitGate(np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]))
     output = QuilOutput((gate.on(q0, q1),), (q0, q1))
@@ -200,9 +219,12 @@ USERGATE1 0 1
 
 
 def test_unsupported_operation():
+    """Test that an unsupported operation raises an error."""
     (q0,) = _make_qubits(1)
 
     class UnsupportedOperation(cirq.Operation):
+        """Mock class for an unsupported operation."""
+
         qubits = (q0,)
         with_qubits = NotImplemented
 
@@ -212,6 +234,7 @@ def test_unsupported_operation():
 
 
 def test_i_swap_with_power():
+    """Test that an ISWAP gate with a power is correctly converted to Quil."""
     q0, q1 = _make_qubits(2)
 
     output = QuilOutput((cirq.ISWAP(q0, q1) ** 0.25,), (q0, q1))
@@ -224,9 +247,54 @@ XY({np.pi / 4}) 0 1
     )
 
 
+# pylint: disable-next=unused-argument
+def _all_operations(q0, q1, q2, q3, q4):
+    """Create a list of all supported operations."""
+    return (
+        cirq.Z(q0),
+        cirq.Z(q0) ** 0.625,
+        cirq.Y(q0),
+        cirq.Y(q0) ** 0.375,
+        cirq.X(q0),
+        cirq.X(q0) ** 0.875,
+        cirq.H(q1),
+        cirq.CZ(q0, q1),
+        cirq.CZ(q0, q1) ** 0.25,  # Requires 2-qubit decomposition
+        cirq.CNOT(q0, q1),
+        cirq.CNOT(q0, q1) ** 0.5,  # Requires 2-qubit decomposition
+        cirq.SWAP(q0, q1),
+        cirq.SWAP(q1, q0) ** -1,
+        cirq.SWAP(q0, q1) ** 0.75,  # Requires 2-qubit decomposition
+        cirq.CCZ(q0, q1, q2),
+        cirq.CCX(q0, q1, q2),
+        cirq.CCZ(q0, q1, q2) ** 0.5,
+        cirq.CCX(q0, q1, q2) ** 0.5,
+        cirq.CSWAP(q0, q1, q2),
+        cirq.XX(q0, q1),
+        cirq.XX(q0, q1) ** 0.75,
+        cirq.YY(q0, q1),
+        cirq.YY(q0, q1) ** 0.75,
+        cirq.ZZ(q0, q1),
+        cirq.ZZ(q0, q1) ** 0.75,
+        cirq.IdentityGate(1).on(q0),
+        cirq.IdentityGate(3).on(q0, q1, q2),
+        cirq.ISWAP(q2, q0),  # Requires 2-qubit decomposition
+        cirq.PhasedXPowGate(phase_exponent=0.111, exponent=0.25).on(q1),
+        cirq.PhasedXPowGate(phase_exponent=0.333, exponent=0.5).on(q1),
+        cirq.PhasedXPowGate(phase_exponent=0.777, exponent=-0.5).on(q1),
+        cirq.wait(q0, nanos=0),
+        cirq.measure(q0, key="xX"),
+        cirq.measure(q2, key="x_a"),
+        cirq.measure(q3, key="X"),
+        cirq.measure(q2, key="x_a"),
+        cirq.measure(q1, q2, q3, key="multi", invert_mask=(False, True)),
+    )
+
+
 def test_all_operations():
+    """Test that all operations are correctly converted to Quil."""
     qubits = tuple(_make_qubits(5))
-    operations = _all_operations(*qubits, include_measurements=False)
+    operations = _all_operations(*qubits)
     output = QuilOutput(operations, qubits)
 
     assert (
@@ -330,51 +398,11 @@ MEASURE 3 m3[2]
     )
 
 
-def _all_operations(q0, q1, q2, q3, q4, include_measurements=True):
-    return (
-        cirq.Z(q0),
-        cirq.Z(q0) ** 0.625,
-        cirq.Y(q0),
-        cirq.Y(q0) ** 0.375,
-        cirq.X(q0),
-        cirq.X(q0) ** 0.875,
-        cirq.H(q1),
-        cirq.CZ(q0, q1),
-        cirq.CZ(q0, q1) ** 0.25,  # Requires 2-qubit decomposition
-        cirq.CNOT(q0, q1),
-        cirq.CNOT(q0, q1) ** 0.5,  # Requires 2-qubit decomposition
-        cirq.SWAP(q0, q1),
-        cirq.SWAP(q1, q0) ** -1,
-        cirq.SWAP(q0, q1) ** 0.75,  # Requires 2-qubit decomposition
-        cirq.CCZ(q0, q1, q2),
-        cirq.CCX(q0, q1, q2),
-        cirq.CCZ(q0, q1, q2) ** 0.5,
-        cirq.CCX(q0, q1, q2) ** 0.5,
-        cirq.CSWAP(q0, q1, q2),
-        cirq.XX(q0, q1),
-        cirq.XX(q0, q1) ** 0.75,
-        cirq.YY(q0, q1),
-        cirq.YY(q0, q1) ** 0.75,
-        cirq.ZZ(q0, q1),
-        cirq.ZZ(q0, q1) ** 0.75,
-        cirq.IdentityGate(1).on(q0),
-        cirq.IdentityGate(3).on(q0, q1, q2),
-        cirq.ISWAP(q2, q0),  # Requires 2-qubit decomposition
-        cirq.PhasedXPowGate(phase_exponent=0.111, exponent=0.25).on(q1),
-        cirq.PhasedXPowGate(phase_exponent=0.333, exponent=0.5).on(q1),
-        cirq.PhasedXPowGate(phase_exponent=0.777, exponent=-0.5).on(q1),
-        cirq.wait(q0, nanos=0),
-        cirq.measure(q0, key="xX"),
-        cirq.measure(q2, key="x_a"),
-        cirq.measure(q3, key="X"),
-        cirq.measure(q2, key="x_a"),
-        cirq.measure(q1, q2, q3, key="multi", invert_mask=(False, True)),
-    )
-
-
 def test_fails_on_big_unknowns():
+    """Test that an error is raised when trying to convert an operation that is not supported."""
+
     class UnrecognizedGate(cirq.testing.ThreeQubitGate):
-        pass
+        """Mock class for an unsupported 3 qubit gate."""
 
     q0, q1, q2 = _make_qubits(3)
     res = QuilOutput(UnrecognizedGate().on(q0, q1, q2), (q0, q1, q2))
@@ -383,6 +411,7 @@ def test_fails_on_big_unknowns():
 
 
 def test_pauli_interaction_gate():
+    """Test that a PauliInteractionGate is correctly converted to Quil."""
     (q0, q1) = _make_qubits(2)
     output = QuilOutput(PauliInteractionGate.CZ.on(q0, q1), (q0, q1))
     assert (
@@ -439,6 +468,7 @@ X 1
 
 
 def test_two_qubit_diagonal_gate_quil_output():
+    """Test that a TwoQubitDiagonalGate is correctly converted to Quil."""
     pyquil = pytest.importorskip("pyquil")
     pyquil_simulation_tools = pytest.importorskip("pyquil.simulation.tools")
     q0, q1 = _make_qubits(2)
@@ -464,6 +494,7 @@ def test_two_qubit_diagonal_gate_quil_output():
 
 
 def test_parseable_defgate_output():
+    """Test that a QuilOutput with a DEFGATE definition is correctly parsed."""
     pyquil = pytest.importorskip("pyquil")
     q0, q1 = _make_qubits(2)
     operations = [
@@ -478,10 +509,14 @@ def test_parseable_defgate_output():
 
 
 def test_unconveritble_op():
+    """Test that an operation that cannot be converted to Quil raises an error."""
     (q0,) = _make_qubits(1)
 
     class MyGate(cirq.Gate):
+        """Mock class for an one qubit gate."""
+
         def num_qubits(self) -> int:
+            """Return the number of qubits."""
             return 1
 
     op = MyGate()(q0)
@@ -505,6 +540,7 @@ def test_unconveritble_op():
     ],
 )
 def test_exponent_to_pi_string(input_exp, expected):
+    """Test that an exponent is correctly converted to a string with pi."""
     assert exponent_to_pi_string(input_exp) == expected
 
 

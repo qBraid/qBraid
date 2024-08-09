@@ -2,15 +2,7 @@
 
 Welcome! Happy to see you want to help us make the project better.
 
-The following is a summary of important commands and protocols for developers contributing to qBraid. Note that all
-commands assume a Debian environment, and that all commands (except the initial repository cloning command) assume
-your current working directory is the qBraid repo root.
-
-## Pull request checklist
-
-1. `tox -e unit-tests`: All unit tests are passing. New + modified code has corresponding unit tests and satisfy `codecov` checks. To run remote tests (i.e. those requiring qBraid/AWS/IBM credentials), set environment variable `QBRAID_RUN_REMOTE_TESTS=True`.
-2. `tox -e docs`: Doc builds are passing. New + modified code has appropriate docstrings and tree stubs are updated, if applicable.
-3. `tox -e format-check`: Code passes linters, formatters, and headers checks. Any exceptions or updates to code style configs are documented.
+The following is a summary of relevant commands, procedures, and best practices for developers contributing to qBraid. *Note:* Some commands are specific to a Debian environment, and unless stated otherwise, all commands are assumed to be executed from the qBraid repository root.
 
 ## Installing from source
 
@@ -103,5 +95,44 @@ tox
 
 ## Code Style
 
-For code style, our project uses a combination of [isort](https://github.com/PyCQA/isort), [pylint](https://github.com/pylint-dev/pylint),
-and [black](https://github.com/psf/black). Each of these tools is setup with its own default configuration specific to this project in `pyproject.toml`.
+Our project enforces code style using a combination of tools including [isort](https://github.com/PyCQA/isort), [pylint](https://github.com/pylint-dev/pylint), [black](https://github.com/psf/black), and [mypy](https://github.com/python/mypy). These tools are configured according to project-specific settings in `pyproject.toml`.
+
+When coding:
+- Use annotations like `pylint: disable`, `fmt: off`, `type: ignore`, or `pragma: no cover` only as a last resort.
+- Ensure all functions and classes include Python type hints to support `py.typed` and improve type-checking accuracy.
+
+## Pull Requests
+
+Before submitting a pull request (PR), ensure your contributions comply with the [Developer's Certificate of Origin](https://developercertificate.org/), confirming your right to submit the work under this project's [LICENSE](LICENSE). Contributors are encouraged to [sign commits](https://docs.github.com/en/authentication/managing-commit-signature-verification/signing-commits), however, it is not required.
+
+For code changes, please ensure that:
+1. All new code includes corresponding unit tests and satisfies code coverage.
+2. Docstrings are thorough and accurate for both new and updated features.
+3. All integration tests, including remote tests (as applicable), are passing.
+4. New functions and classes are annotated with Python type hints to support `py.typed`.
+5. (Optional) Yor name and affiliation are added to [CITATION.cff](CITATION.cff).
+
+### Integration Tests
+
+Run the following commands locally to confirm that your changes meet our quality standards and will pass all integration tests:
+
+1. **Unit Tests**
+   - Command: `tox -e unit-tests`
+   - Ensure all unit tests pass and new or modified code meets `codecov` requirements. For remote tests that require credentials, set the `QBRAID_RUN_REMOTE_TESTS=true` environment variable.
+
+2. **Documentation**
+   - Command: `tox -e docs`
+   - Check that documentation builds successfully. Include thorough and accurate docstrings for all new or updated code. Update Sphinx tree stubs as needed to reflect any changes to the structure of package modules.
+
+3. **Code Style**
+   - Command: `tox -e format-check`
+   - Verify that code formatting complies with project standards. Use `pylint: disable` only when neccessary, and document any exceptions or updates to the project's code style configurations. New functions and classes must be annotated with Python type hints to support `py.typed`.
+
+### Submitting a Pull Request
+When you are ready to submit a PR:
+
+- **Title**: Choose a title that is short, detailed, and easily understandable.
+- **Description**: Provide a brief description of the changes. Include the context and motivation behind the PR, if relevant.
+- **Link Issues**: If your PR resolves an open issue, link it using the keyword "Closes" followed by the issue number (e.g., `Closes #123`).
+
+Remember, it's perfectly fine to submit a draft pull request if your code is still a work-in-progress. We're here to help!

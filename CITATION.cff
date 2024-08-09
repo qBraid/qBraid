@@ -59,8 +59,8 @@ authors:
     affiliation: qBraid Co.
     orcid: https://orcid.org/0000-0003-2032-3993
 repository-code: 'https://github.com/qBraid/qBraid'
-url: 'https://sdk.qbraid.com/en/v0.7.0/'
-repository-artifact: 'https://github.com/qBraid/qBraid/releases/tag/v0.7.0'
+url: 'https://sdk.qbraid.com/en/v0.7.2/'
+repository-artifact: 'https://github.com/qBraid/qBraid/releases/tag/v0.7.2'
 keywords:
   - python
   - quantum-computing
@@ -69,6 +69,6 @@ keywords:
   - qir
   - runtime
 license: GPL-3.0
-version: 0.7.0
+version: 0.7.2
 doi: 10.5281/zenodo.12627596
-date-released: '2024-07-02'
+date-released: '2024-08-09'

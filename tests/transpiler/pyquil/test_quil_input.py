@@ -20,7 +20,6 @@
 Module for testing qBraid quil input.
 
 """
-
 import numpy as np
 import pytest
 from cirq import Circuit, LineQubit
@@ -43,20 +42,28 @@ from cirq.ops import (
     ry,
     rz,
 )
-from pyquil import Program
-from pyquil.simulation.tools import program_unitary
 
-from qbraid.transpiler.conversions.pyquil.cirq_quil_input import (
-    UndefinedQuilGate,
-    UnsupportedQuilInstruction,
-    circuit_from_quil,
-    cphase,
-    cphase00,
-    cphase01,
-    cphase10,
-    pswap,
-    xy,
-)
+try:
+    from pyquil import Program
+    from pyquil.simulation.tools import program_unitary
+
+    from qbraid.transpiler.conversions.pyquil.cirq_quil_input import (
+        UndefinedQuilGate,
+        UnsupportedQuilInstruction,
+        circuit_from_quil,
+        cphase,
+        cphase00,
+        cphase01,
+        cphase10,
+        pswap,
+        xy,
+    )
+
+    pyquil_not_installed = False
+except ImportError:
+    pyquil_not_installed = True
+
+pytestmark = pytest.mark.skipif(pyquil_not_installed, reason="pyquil not installed")
 
 QUIL_PROGRAM = """
 DECLARE ro BIT[3]
@@ -94,6 +101,7 @@ MEASURE 2 ro[2]
 
 
 def test_circuit_from_quil():
+    """Test conversion of a Quil program to a Cirq Circuit."""
     q0, q1, q2 = LineQubit.range(3)
     cirq_circuit = Circuit(
         [
@@ -156,6 +164,7 @@ MYZ 0
 
 
 def test_quil_with_defgate():
+    """Test conversion of a Quil program with DEFGATE to a Cirq Circuit."""
     q0 = LineQubit(0)
     cirq_circuit = Circuit([X(q0), Z(q0)])
     quil_circuit = circuit_from_quil(QUIL_PROGRAM_WITH_DEFGATE)
@@ -173,6 +182,8 @@ MYPHASE 0
 
 
 def test_unsupported_quil_instruction():
+    """Test that unsupported Quil instructions raise an exception."""
+
     with pytest.raises(UnsupportedQuilInstruction):
         circuit_from_quil("NOP")
 

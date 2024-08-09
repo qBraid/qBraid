@@ -75,8 +75,15 @@ def bell_circuit(request):
 def two_bell_circuits(request):
     """Fixture for getting two bell circuits from two different packages."""
     package1, package2 = request.param
-    circuit1 = bell_circuit_functions[package1]()
-    circuit2 = bell_circuit_functions[package2]()
+    try:
+        circuit1 = bell_circuit_functions[package1]()
+    except KeyError:
+        circuit1 = None
+    try:
+        circuit2 = bell_circuit_functions[package2]()
+    except KeyError:
+        circuit2 = None
+
     return circuit1, circuit2, package1, package2
 
 

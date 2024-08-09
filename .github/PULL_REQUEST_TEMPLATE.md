@@ -1,17 +1,13 @@
 <!--
-Please link any issues that this PR aims to close, if applicable. You can use the keyword 'Closes' followed
-by the issue number to automatically close the issue when this PR is merged, e.g., 'Closes #123'.
+Before submitting a pull request, please complete the following checklist:
 
-Review the checklist below and mark items with an `x` in the brackets that apply. Remember, it's perfectly fine
-to submit a draft pull request if you're still working through some items on the checklist. We're here to help!
+1. Read PR Guidelines: https://github.com/qBraid/qBraid/blob/main/CONTRIBUTING.md#pull-requests
+2. Link Issues: Please link any issues that this PR aims to resolve or is related to.
+3. Update Changelog: Add an entry to `CHANGELOG.md` summarizing the change, and including a link back to the PR.
+
+Draft PRs are welcome if your code is still a work-in-progress.
 -->
 
-# Changes
+## Summary of changes
 
-## PR Checklist
-
-- [ ] I have read `CONTRIBUTING.md`.
-- [ ] All new code includes corresponding unit tests and satisfies code coverage.
-- [ ] API Reference docstrings have been updated for new features and changes in functionality.
-- [ ] All integration tests, including remote tests, are passing.
-- [ ] (Optional) My name and affiliation are added to `CITATION.cff`.
+<!-- Replace this comment with a brief overview of the changes introduced by this PR. -->

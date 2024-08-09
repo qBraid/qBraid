@@ -152,15 +152,14 @@ def test_ionq_provider_device_unavailable():
         def get_device(self, device_id: str):
             """Mock get_device method."""
             res = DEVICE_DATA[0]
-            match device_id:
-                case "qpu.harmony":
-                    res["status"] = "unavailable"
-                case "qpu.aria-1":
-                    res["status"] = "offline"
-                case "qpu.aria-2":
-                    res["status"] = "available"
-                case "fake_device":
-                    res["status"] = "fake_status"
+            if device_id == "qpu.harmony":
+                res["status"] = "unavailable"
+            elif device_id == "qpu.aria-1":
+                res["status"] = "offline"
+            elif device_id == "qpu.aria-2":
+                res["status"] = "available"
+            elif device_id == "fake_device":
+                res["status"] = "fake_status"
             return res
 
     unavailable_profile = TargetProfile(device_id="qpu.harmony", device_type=DeviceType.QPU)

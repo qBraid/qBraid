@@ -27,6 +27,8 @@ from braket.circuits import gates as braket_gates
 from braket.circuits import noises as braket_noise_gate
 from braket.circuits.serialization import OpenQASMSerializationProperties
 from braket.ir.jaqcd.instructions import Unitary as JaqcdUnitary
+from braket.pulse import Frame, Port
+from braket.pulse.pulse_sequence import PulseSequence
 from cirq import LineQubit
 from cirq import ops as cirq_ops
 
@@ -156,9 +158,9 @@ def test_single_probability_noise_gate(noise_gate, target_gate):
     instructions = Instruction(noise_gate(probs), target=[0])
     braket_circuit.add_instruction(instructions)
     cirq_circuit = braket_to_cirq(braket_circuit)
-    Gate = list(cirq_circuit.all_operations())[0].gate
-    assert type(Gate) == target_gate
-    assert Gate.p == probs
+    gate = list(cirq_circuit.all_operations())[0].gate
+    assert isinstance(gate, target_gate)
+    assert gate.p == probs
 
 
 @pytest.mark.parametrize(
@@ -175,9 +177,9 @@ def test_single_gamma_noise_gate(noise_gate, target_gate):
     instructions = Instruction(noise_gate(probs), target=[0])
     braket_circuit.add_instruction(instructions)
     cirq_circuit = braket_to_cirq(braket_circuit)
-    Gate = list(cirq_circuit.all_operations())[0].gate
-    assert type(Gate) == target_gate
-    assert Gate.gamma == probs
+    gate = list(cirq_circuit.all_operations())[0].gate
+    assert isinstance(gate, target_gate)
+    assert gate.gamma == probs
 
 
 def test_kraus_gates():
@@ -187,38 +189,38 @@ def test_kraus_gates():
     instructions = Instruction(braket_noise_gate.Kraus(matrices=[K0, K1]), target=[0, 1])
     braket_circuit = BKCircuit().add_instruction(instructions)
     cirq_circuit = braket_to_cirq(braket_circuit)
-    Gate = list(cirq_circuit.all_operations())[0].gate
-    assert type(Gate) == cirq_ops.kraus_channel.KrausChannel
-    assert np.allclose(Gate._kraus_ops, [K0, K1])
+    gate = list(cirq_circuit.all_operations())[0].gate
+    assert isinstance(gate, cirq_ops.kraus_channel.KrausChannel)
+    assert np.allclose(gate._kraus_ops, [K0, K1])
 
 
 def test_generalized_amplitude_damping_channel_gate():
     """Testing converting Kraus noise gates"""
-    probs = np.random.uniform(low=0, high=0.5, size=(2))
+    probs = np.random.uniform(low=0, high=0.5, size=2)
     instruction = Instruction(
         braket_noise_gate.GeneralizedAmplitudeDamping(gamma=probs[0], probability=probs[1]),
         target=[0],
     )
     braket_circuit = BKCircuit().add_instruction(instruction)
     cirq_circuit = braket_to_cirq(braket_circuit)
-    Gate = list(cirq_circuit.all_operations())[0].gate
-    assert type(Gate) == cirq_ops.GeneralizedAmplitudeDampingChannel
-    assert Gate.gamma == probs[0]
-    assert Gate.p == probs[1]
+    gate = list(cirq_circuit.all_operations())[0].gate
+    assert isinstance(gate, cirq_ops.GeneralizedAmplitudeDampingChannel)
+    assert gate.gamma == probs[0]
+    assert gate.p == probs[1]
 
 
 def test_depolarizing_channel_gate():
     """Testing converting Kraus noise gates"""
-    probs = np.random.uniform(low=0, high=0.5, size=(1))
+    probs = np.random.uniform(low=0, high=0.5, size=1)
     instruction = Instruction(
         braket_noise_gate.TwoQubitDepolarizing(probability=probs[0]), target=[0, 1]
     )
     braket_circuit = BKCircuit().add_instruction(instruction)
     cirq_circuit = braket_to_cirq(braket_circuit)
-    Gate = list(cirq_circuit.all_operations())[0].gate
-    assert type(Gate) == cirq_ops.common_channels.DepolarizingChannel
-    assert Gate.p == probs
-    assert Gate.n_qubits == 2
+    gate = list(cirq_circuit.all_operations())[0].gate
+    assert isinstance(gate, cirq_ops.common_channels.DepolarizingChannel)
+    assert gate.p == probs
+    assert gate.n_qubits == 2
 
 
 def test_convert_ionq_gates():
@@ -234,9 +236,6 @@ def test_convert_ionq_gates():
 def test_raise_error():
     """Test raising error when converting unsupported Pulse sequences"""
     with pytest.raises(CircuitConversionError):
-        from braket.pulse import Frame, Port
-        from braket.pulse.pulse_sequence import PulseSequence
-
         pre_fram = Frame(
             frame_id="predefined_frame_1",
             frequency=2e9,
@@ -281,10 +280,11 @@ def test_braket_control_custom():
     props = OpenQASMSerializationProperties()
     control_gate = BKControl(sub_gate, targets)
     qasm = control_gate._to_openqasm(target=targets, serialization_properties=props)
-    assert (
-        qasm
-        == "#pragma braket unitary([[1.0, 0, 0, 0], [0, 1.0, 0, 0], [0, 0, 0, 1.0], [0, 0, 1.0, 0]]) q[0], q[1]"
+    expected = (
+        "#pragma braket unitary([[1.0, 0, 0, 0], [0, 1.0, 0, 0], "
+        "[0, 0, 0, 1.0], [0, 0, 1.0, 0]]) q[0], q[1]"
     )
+    assert qasm == expected
     adjoint_gates = control_gate.adjoint()
     assert isinstance(adjoint_gates, list)
     assert len(adjoint_gates) == 1
