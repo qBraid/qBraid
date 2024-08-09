@@ -18,7 +18,7 @@ from qiskit.qasm3 import dumps, loads
 
 from qbraid.interface.random.qasm3_random import _qasm3_random
 from qbraid.interface.random.qiskit_random import _qiskit_random
-from qbraid.programs.circuits.qasm import OpenQasm3Program
+from qbraid.programs.circuits.qasm import OpenQasm3Program, expression_value
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.registry import unregister_program_type
 from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import _get_qasm3_gate_defs
@@ -649,3 +649,9 @@ def test_qasm3_depth(program, expected_depth):
     """Test calculating depth of qasm3 circuit"""
     qprogram = OpenQasm3Program(program)
     assert qprogram.depth == expected_depth
+
+
+def test_expression_value_raises():
+    """Test that expression_value raises ValueError for invalid expression"""
+    with pytest.raises(ValueError):
+        expression_value(0)

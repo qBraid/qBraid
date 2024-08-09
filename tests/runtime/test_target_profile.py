@@ -102,6 +102,8 @@ def test_target_profile_raise_for_bad_input():
     with pytest.raises(ValidationError):
         TargetProfile(device_id="1234", simulator=True, basis_gates=[1, 2, 3])
     with pytest.raises(ValidationError):
+        TargetProfile(device_id="1234", simulator=True, basis_gates=[1, "cx", "h"])
+    with pytest.raises(ValidationError):
         TargetProfile(
             device_id="device123",
             simulator=True,
@@ -156,7 +158,7 @@ def test_duplicate_basis_gates_removed(valid_program_spec):
     """Test that duplicate basis gates are removed."""
     profile = create_target_profile(
         action_type=DeviceActionType.OPENQASM,
-        basis_gates=["x", "x", "x", "y", "z"],
+        basis_gates=["X", "x", "x", "Y", "z"],
         program_spec=valid_program_spec,
     )
     assert profile["basis_gates"] == {"x", "y", "z"}

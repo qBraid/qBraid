@@ -50,16 +50,7 @@ class TargetProfile(BaseModel):
         if value is None:
             return None
 
-        if not isinstance(value, (list, set, tuple)):
-            raise ValueError("basis_gates must be a list, set, or tuple of strings.")
-
-        normalized_gates = set()
-        for gate in value:
-            if not isinstance(gate, str):
-                raise ValueError("All elements of basis_gates must be strings.")
-            normalized_gates.add(gate.lower())
-
-        return normalized_gates
+        return {gate.lower() for gate in value}
 
     @model_validator(mode="after")
     def validate_basis_gates_for_action_type(self) -> Self:
