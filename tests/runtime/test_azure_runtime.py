@@ -40,7 +40,6 @@ from qbraid.runtime.azure import (
 )
 
 
-
 @pytest.fixture
 def mock_workspace():
     """Return a mock Azure Quantum workspace."""
@@ -294,6 +293,7 @@ def test_azure_job_init(mock_azure_job):
     """Test initializing an AzureQuantumJob."""
     assert mock_azure_job.id == "mock_job_id"
 
+
 @pytest.mark.parametrize(
     "job_status, expected_status",
     [
@@ -512,9 +512,10 @@ def test_draw_random_sample_with_invalid_probabilities(mock_result_builder: Azur
         (42, "42"),
     ],
 )
-
 def test_qir_to_qbraid_bitstring():
-    assert AzureResultBuilder._qir_to_qbraid_bitstring("((1, 0), (1, 0))") == "0 1 0 1"  # Adjusted expectation
+    assert (
+        AzureResultBuilder._qir_to_qbraid_bitstring("((1, 0), (1, 0))") == "0 1 0 1"
+    )  # Adjusted expectation
 
 
 def test_azure_quantum_result(mock_result: AzureQuantumResult):
@@ -525,12 +526,14 @@ def test_azure_quantum_result(mock_result: AzureQuantumResult):
     assert measurements.shape == (100, 3)
     assert raw_counts == formatted_counts == {"000": 50, "111": 50}
 
+
 # Constants for mocking
 MOCK_JOB_ID = "mock_job_id"
 MOCK_JOB_STATUS_SUCCEEDED = "Succeeded"
 MOCK_TARGET = "mock.target"
 MOCK_METADATA = {"some": "metadata"}
 MOCK_OUTPUT_FORMAT = "microsoft.quantum-results.v1"
+
 
 @pytest.fixture
 def mock_azure_job():
@@ -543,49 +546,56 @@ def mock_azure_job():
     job.id = MOCK_JOB_ID
     return job
 
+
 @pytest.fixture
 def azure_result_builder(mock_azure_job):
     return AzureResultBuilder(mock_azure_job)
 
+
 def test_job_property(azure_result_builder, mock_azure_job):
     assert azure_result_builder.job == mock_azure_job
+
 
 def test_from_simulator_true(azure_result_builder, mock_azure_job):
     mock_azure_job.details.target = "mock.simulator"
     assert azure_result_builder.from_simulator is True
 
+
 def test_from_simulator_false(azure_result_builder, mock_azure_job):
     mock_azure_job.details.target = "mock.qpu"
     assert azure_result_builder.from_simulator is False
 
+
 def test_shots_count(azure_result_builder, mock_azure_job):
     assert azure_result_builder._shots_count() == 1000
 
+
 def test_make_estimator_result(azure_result_builder):
-    mock_data = {
-        "success": True,
-        "results": [{"data": {"mock_data_key": "mock_data_value"}}]
-    }
+    mock_data = {"success": True, "results": [{"data": {"mock_data_key": "mock_data_value"}}]}
     result = azure_result_builder.make_estimator_result(mock_data)
     assert isinstance(result, MicrosoftEstimatorResult)
-    assert result.data()["mock_data_key"] == "mock_data_value"  # Call data() method if it's a method
-
+    assert (
+        result.data()["mock_data_key"] == "mock_data_value"
+    )  # Call data() method if it's a method
 
 
 def test_make_estimator_result_failure(azure_result_builder):
-    mock_data = {
-        "success": False,
-        "error_data": {"code": "MockError", "message": "Job failed"}
-    }
+    mock_data = {"success": False, "error_data": {"code": "MockError", "message": "Job failed"}}
     with pytest.raises(RuntimeError, match="Cannot retrieve results as job execution failed"):
         azure_result_builder.make_estimator_result(mock_data)
 
+
 @pytest.fixture
 def mock_qir_to_qbraid_bitstring():
-    with patch("qbraid.runtime.azure.result_builder.AzureResultBuilder._qir_to_qbraid_bitstring") as mock:
+    with patch(
+        "qbraid.runtime.azure.result_builder.AzureResultBuilder._qir_to_qbraid_bitstring"
+    ) as mock:
         yield mock
 
-def test_format_microsoft_results(mock_qir_to_qbraid_bitstring, azure_result_builder, mock_azure_job):
+
+def test_format_microsoft_results(
+    mock_qir_to_qbraid_bitstring, azure_result_builder, mock_azure_job
+):
     mock_azure_job.get_results.return_value = {"00": 0.5, "11": 0.5}
     mock_qir_to_qbraid_bitstring.side_effect = lambda x: x
 
@@ -595,7 +605,6 @@ def test_format_microsoft_results(mock_qir_to_qbraid_bitstring, azure_result_bui
     assert "probabilities" in result
     assert abs(result["counts"]["00"] - 500) >= 0  # Allow some tolerance
     assert abs(result["counts"]["11"] - 500) >= 0
-
 
 
 def test_format_rigetti_results(azure_result_builder, mock_azure_job):
@@ -608,6 +617,7 @@ def test_format_rigetti_results(azure_result_builder, mock_azure_job):
     assert result["counts"] == {"01": 2, "10": 2}
     assert result["probabilities"] == {"01": 0.5, "10": 0.5}
 
+
 def test_format_unknown_results(azure_result_builder, mock_azure_job):
     mock_azure_job.get_results.return_value = {"mock_key": "mock_value"}
 
@@ -615,8 +625,11 @@ def test_format_unknown_results(azure_result_builder, mock_azure_job):
 
     assert result == {"mock_key": "mock_value"}
 
+
 @patch("qbraid.runtime.azure.result_builder.AzureResultBuilder._qir_to_qbraid_bitstring")
-def test_format_quantinuum_results(mock_qir_to_qbraid_bitstring, azure_result_builder, mock_azure_job):
+def test_format_quantinuum_results(
+    mock_qir_to_qbraid_bitstring, azure_result_builder, mock_azure_job
+):
     mock_azure_job.get_results.return_value = {"qreg0": ["0", "1", "1"], "qreg1": ["1", "0", "1"]}
     mock_qir_to_qbraid_bitstring.side_effect = lambda x: x
 
@@ -625,7 +638,8 @@ def test_format_quantinuum_results(mock_qir_to_qbraid_bitstring, azure_result_bu
     assert "counts" in result
     assert "probabilities" in result
     assert result["counts"] == {"01": 1, "10": 1, "11": 1}
-    assert result["probabilities"] == {"01": 1/3, "10": 1/3, "11": 1/3}
+    assert result["probabilities"] == {"01": 1 / 3, "10": 1 / 3, "11": 1 / 3}
+
 
 def test_translate_microsoft_v2_results(azure_result_builder, mock_azure_job):
     mock_azure_job.get_results.return_value = {
@@ -633,12 +647,9 @@ def test_translate_microsoft_v2_results(azure_result_builder, mock_azure_job):
         "Results": [
             {
                 "TotalCount": 1000,
-                "Histogram": [
-                    {"Display": "00", "Count": 700},
-                    {"Display": "11", "Count": 300}
-                ]
+                "Histogram": [{"Display": "00", "Count": 700}, {"Display": "11", "Count": 300}],
             }
-        ]
+        ],
     }
 
     results = azure_result_builder._translate_microsoft_v2_results()
@@ -648,6 +659,7 @@ def test_translate_microsoft_v2_results(azure_result_builder, mock_azure_job):
     assert total_count == 1000
     assert result["counts"] == {"00": 700, "11": 300}
     assert result["probabilities"] == {"00": 0.7, "11": 0.3}
+
 
 def test_format_microsoft_v2_results(azure_result_builder, mock_azure_job):
     azure_result_builder._get_entry_point_names = Mock(return_value=["main"])
@@ -664,9 +676,7 @@ def test_format_microsoft_v2_results(azure_result_builder, mock_azure_job):
     assert result_item["data"]["counts"] == {"00": 700, "11": 300}
     assert result_item["data"]["probabilities"] == {"00": 0.7, "11": 0.3}
 
+
 def test_qir_to_qbraid_bitstring():
     assert AzureResultBuilder._qir_to_qbraid_bitstring("((1, 0), (1, 0))") == "0 1 0 1"
     assert AzureResultBuilder._qir_to_qbraid_bitstring("[1, 0]") == "10"
-
-
-
