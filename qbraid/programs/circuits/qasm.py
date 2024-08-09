@@ -13,7 +13,7 @@ Module defining OpenQasm2Program and OpenQasm3Program classes.
 
 """
 import re
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 from openqasm3.ast import (
@@ -43,7 +43,7 @@ from qbraid.programs.exceptions import ProgramTypeError
 from ._model import GateModelProgram
 
 
-def expression_value(expression: Optional[Expression | RangeDefinition]) -> int:
+def expression_value(expression: Optional[Union[Expression, RangeDefinition]]) -> int:
     """Return the size of an expression."""
     if isinstance(expression, IntegerLiteral):
         return expression.value
