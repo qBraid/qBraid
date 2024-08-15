@@ -8,16 +8,18 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint:disable=redefined-outer-name
+# pylint:disable=redefined-outer-name,too-many-arguments
 
 """
 Unit tests for the Azure Quantum runtime module.
 
 """
 
+from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from azure.core.exceptions import ResourceExistsError
 from azure.identity import ClientSecretCredential
 from azure.quantum import Job, JobDetails, Workspace
 from azure.quantum.target.microsoft import MicrosoftEstimatorResult
@@ -97,25 +99,147 @@ def azure_device(mock_workspace, mock_target):
 
 
 @pytest.fixture
-def mock_azure_job():
-    """Return a mock AzureQuantumJob instance."""
-    mock_workspace = Mock(spec=Workspace)
+def mock_job_id() -> str:
+    """Return a mock job ID."""
+    return "123-456-798"
+
+
+@pytest.fixture
+def mock_estimator_job_data(mock_job_id) -> dict[str, str]:
+    """Return dictionary data for a Microsoft resource estimator job."""
+    return {
+        "job_id": mock_job_id,
+        "job_name": "azure-quantum-job",
+        "target": "microsoft.estimator",
+        "output_data_format": "microsoft.resource-estimates.v1",
+    }
+
+
+@pytest.fixture
+def mock_msft_v1_job_data(mock_job_id) -> dict[str, str]:
+    """Return dictionary data for a Rigetti job with Microsoft result format V1."""
+    return {
+        "job_id": mock_job_id,
+        "job_name": "azure-quantum-job",
+        "target": "rigetti.sim.qvm",
+        "output_data_format": "microsoft.quantum-results.v1",
+    }
+
+
+@pytest.fixture
+def estimator_result_data(mock_estimator_job_data: dict[str, str]) -> dict[str, Any]:
+    """Return a dictionary with the data for a MicrosoftEstimatorResult."""
+    return {
+        "success": True,
+        "error_data": None,
+        "results": [
+            {
+                "data": {
+                    "status": "success",
+                    "jobParams": {},
+                    "physicalCounts": {},
+                    "physicalCountsFormatted": {},
+                    "logicalQubit": {},
+                    "tfactory": {},
+                    "errorBudget": {},
+                    "logicalCounts": {},
+                    "reportData": {"groups": [], "assumptions": []},
+                }
+            }
+        ],
+        **mock_estimator_job_data,
+    }
+
+
+def create_mock_azure_job(
+    job_id: str,
+    job_name: str,
+    target: str,
+    output_data_format: str,
+    status: str,
+    result_data: dict[str, Any],
+) -> Mock:
+    """Return a mock azure.quantum.Job instance."""
     mock_job = Mock()
-    mock_job.id = "mock_job_id"
+    mock_job.id = job_id
     mock_job.details = Mock()
-    mock_job.details.status = "Waiting"
-    mock_job.details.as_dict.return_value = {"id": "mock_job_id", "status": "Waiting"}
+    mock_job.details.status = status
+    mock_job.details.target = target
+    mock_job.details.output_data_format = output_data_format
+    mock_job.details.input_params = {"count": 1000, "shots": 1000}
+    mock_job.details.error_data = None
+    mock_job.details.name = job_name
+    mock_job.details.metadata = {}
+    mock_job.details.as_dict.return_value = {"id": job_id, "status": status}
+    mock_job.wait_until_completed = MagicMock()
+    mock_job.wait_until_completed.return_value = None
+    mock_job.get_results = MagicMock()
+    mock_job.get_results.return_value = result_data
 
-    mock_job_cancelled = Mock()
-    mock_job_cancelled.id = "mock_job_id"
-    mock_job_cancelled.details = Mock()
-    mock_job_cancelled.details.status = "Cancelled"
-    mock_job_cancelled.details.as_dict.return_value = {"id": "mock_job_id", "status": "Cancelled"}
+    return mock_job
 
+
+def create_mock_job(
+    job_id: str,
+    job_name: str,
+    target: str,
+    output_data_format: str,
+    status: str,
+    result_data: dict[str, Any],
+) -> AzureQuantumJob:
+    """Return a mock AzureQuantumJob instance."""
+    mock_job = create_mock_azure_job(
+        job_id, job_name, target, output_data_format, status, result_data
+    )
+
+    mock_workspace = Mock(spec=Workspace)
     mock_workspace.get_job.return_value = mock_job
-    mock_workspace.cancel_job.return_value = mock_job_cancelled
+
+    if status == "Waiting":
+        mock_job_cancelled = Mock()
+        mock_job_cancelled.id = job_id
+        mock_job_cancelled.details = Mock()
+        mock_job_cancelled.details.status = "Cancelled"
+        mock_job_cancelled.details.as_dict.return_value = {"id": job_id, "status": "Cancelled"}
+        mock_workspace.cancel_job.return_value = mock_job_cancelled
+    else:
+        mock_workspace.cancel_job.side_effect = ResourceExistsError(
+            "(CancellationNotAllowed) Failed to cancel the job from its current state."
+        )
 
     return AzureQuantumJob(job_id=mock_job.id, workspace=mock_workspace)
+
+
+@pytest.fixture
+def mock_estimator_job_waiting(mock_estimator_job_data: dict[str, str]) -> AzureQuantumJob:
+    """Return a mock AzureQuantumJob instance with status 'Waiting'."""
+    return create_mock_job(**mock_estimator_job_data, status="Waiting", result_data={})
+
+
+@pytest.fixture
+def mock_estimator_job(
+    mock_estimator_job_data: dict[str, str], estimator_result_data: dict[str, Any]
+) -> AzureQuantumJob:
+    """Return a mock AzureQuantumJob instance with status 'Succeeded'."""
+    return create_mock_job(
+        **mock_estimator_job_data, status="Succeeded", result_data=estimator_result_data
+    )
+
+
+@pytest.fixture
+def mock_azure_job(
+    mock_estimator_job_data: dict[str, str], estimator_result_data: dict[str, Any]
+) -> Mock:
+    """Return a mock azure.quantum.Job instance."""
+    return create_mock_azure_job(
+        **mock_estimator_job_data, status="Succeeded", result_data=estimator_result_data
+    )
+
+
+@pytest.fixture
+def azure_result_builder(mock_azure_job):
+    """Return an AzureResultBuilder instance with a mock AzureQuantumJob."""
+    return AzureResultBuilder(mock_azure_job)
 
 
 @pytest.fixture
@@ -289,10 +413,10 @@ def test_azure_device_submit_batch_job(azure_device):
         azure_device.submit(["job1", "job2"], name="batch_job")
 
 
-def test_azure_job_init(mock_azure_job):
+def test_azure_job_init(mock_estimator_job, mock_job_id):
     """Test initializing an AzureQuantumJob."""
-    assert mock_azure_job.id == "mock_job_id"
-    assert isinstance(mock_azure_job.workspace, Workspace)
+    assert mock_estimator_job.id == mock_job_id
+    assert isinstance(mock_estimator_job.workspace, Workspace)
 
 
 @pytest.mark.parametrize(
@@ -319,10 +443,10 @@ def test_azure_job_status(job_status, expected_status):
     mock_job.refresh.assert_called_once()
 
 
-def test_azure_job_cancel(mock_azure_job):
+def test_azure_job_cancel(mock_estimator_job_waiting):
     """Test canceling an AzureQuantumJob."""
-    mock_azure_job.cancel()
-    assert mock_azure_job._job.details.status == "Cancelled"
+    mock_estimator_job_waiting.cancel()
+    assert mock_estimator_job_waiting._job.details.status == "Cancelled"
 
 
 def test_azure_job_cancel_terminal_state_raises():
@@ -338,14 +462,14 @@ def test_azure_job_cancel_terminal_state_raises():
 
 
 @pytest.fixture
-def mock_result_builder() -> AzureResultBuilder:
+def mock_result_builder(mock_job_id) -> AzureResultBuilder:
     """Create a mock Azure result builder."""
-    job = Mock(id="test123")
+    job = Mock(id=mock_job_id)
     return AzureResultBuilder(job)
 
 
 @pytest.fixture
-def mock_result() -> AzureQuantumResult:
+def mock_result(mock_job_id) -> AzureQuantumResult:
     """Create a mock result data."""
     data = {
         "results": [
@@ -359,7 +483,7 @@ def mock_result() -> AzureQuantumResult:
                 "shots": 100,
             }
         ],
-        "job_id": "test123",
+        "job_id": mock_job_id,
         "target": "ionq.simulator",
         "job_name": "ionq-job",
         "success": True,
@@ -375,11 +499,13 @@ class DowloadDataMock:
         """Mock decode method."""
 
 
-def mock_job(job_id: str, target: str, output_data_format: str, results_as_json_str: str) -> Job:
+def mock_job(
+    job_id: str, job_name: str, target: str, output_data_format: str, results_as_json_str: str
+) -> Job:
     """Create a mock Azure Quantum Job."""
     job_details = JobDetails(
         id=job_id,
-        name="azure-quantum-job",
+        name=job_name,
         provider_id="",
         target=target,
         container_uri="",
@@ -400,13 +526,10 @@ def mock_job(job_id: str, target: str, output_data_format: str, results_as_json_
     return job
 
 
-def test_job_for_microsoft_quantum_results_v1_success():
+def test_job_for_microsoft_quantum_results_v1_success(mock_msft_v1_job_data):
     """Test getting job for microsoft.quantum-results.v1 output data format."""
-    job_id = "test123"
-    target = "microsoft.estimator"
-    output_data_format = "microsoft.quantum-results.v1"
     results_as_json_str = '{"Histogram": ["[0]", 0.50, "[1]", 0.50]}'
-    job = mock_job(job_id, target, output_data_format, results_as_json_str)
+    job = mock_job(**mock_msft_v1_job_data, results_as_json_str=results_as_json_str)
 
     builder = AzureResultBuilder(job)
     assert isinstance(builder.job, Job)
@@ -440,31 +563,15 @@ def test_make_estimator_result_with_incorrect_results_length():
     assert "Expected resource estimator results to be of length 1" in str(exc_info.value)
 
 
-def test_make_estimator_result_successful():
+def test_get_job_result(mock_estimator_job):
+    """Test getting the result of an AzureQuantumJob."""
+    result = mock_estimator_job.result()
+    assert isinstance(result, MicrosoftEstimatorResult)
+
+
+def test_make_estimator_result_successful(estimator_result_data):
     """Test making an estimator result with successful job."""
-    data = {
-        "job_id": "123-456-798",
-        "target": "microsoft.estimator",
-        "job_name": "azure-quantum-job",
-        "success": True,
-        "error_data": None,
-        "results": [
-            {
-                "data": {
-                    "status": "success",
-                    "jobParams": {},
-                    "physicalCounts": {},
-                    "physicalCountsFormatted": {},
-                    "logicalQubit": {},
-                    "tfactory": {},
-                    "errorBudget": {},
-                    "logicalCounts": {},
-                    "reportData": {"groups": [], "assumptions": []},
-                }
-            }
-        ],
-    }
-    result = AzureResultBuilder.make_estimator_result(data)
+    result = AzureResultBuilder.make_estimator_result(estimator_result_data)
     assert isinstance(result, MicrosoftEstimatorResult)
     assert result["status"] == "success"
 
@@ -529,47 +636,20 @@ def test_azure_quantum_result(mock_result: AzureQuantumResult):
     assert raw_counts == formatted_counts == {"000": 50, "111": 50}
 
 
-# Constants for mocking
-MOCK_JOB_ID = "mock_job_id"
-MOCK_JOB_STATUS_SUCCEEDED = "Succeeded"
-MOCK_TARGET = "mock.target"
-MOCK_METADATA = {"some": "metadata"}
-MOCK_OUTPUT_FORMAT = "microsoft.quantum-results.v1"
-
-
-@pytest.fixture
-def mock_azure_job2():
-    """Return a mock AzureQuantumJob instance."""
-    job = Mock(spec=Job)
-    job.details.status = MOCK_JOB_STATUS_SUCCEEDED
-    job.details.target = MOCK_TARGET
-    job.details.metadata = MOCK_METADATA
-    job.details.output_data_format = MOCK_OUTPUT_FORMAT
-    job.details.input_params = {"count": 1000, "shots": 1000}
-    job.id = MOCK_JOB_ID
-    return job
-
-
-@pytest.fixture
-def azure_result_builder(mock_azure_job2):
-    """Return an AzureResultBuilder instance with a mock AzureQuantumJob."""
-    return AzureResultBuilder(mock_azure_job2)
-
-
-def test_job_property(azure_result_builder, mock_azure_job2):
+def test_job_property(azure_result_builder, mock_azure_job):
     """Test the job property of an AzureResultBuilder."""
-    assert azure_result_builder.job == mock_azure_job2
+    assert azure_result_builder.job == mock_azure_job
 
 
-def test_from_simulator_true(azure_result_builder, mock_azure_job2):
+def test_from_simulator_true(azure_result_builder, mock_azure_job):
     """Test the from_simulator property of an AzureResultBuilder."""
-    mock_azure_job2.details.target = "mock.simulator"
+    mock_azure_job.details.target = "mock.simulator"
     assert azure_result_builder.from_simulator is True
 
 
-def test_from_simulator_false(azure_result_builder, mock_azure_job2):
+def test_from_simulator_false(azure_result_builder, mock_azure_job):
     """Test the from_simulator property of an AzureResultBuilder."""
-    mock_azure_job2.details.target = "mock.qpu"
+    mock_azure_job.details.target = "mock.qpu"
     assert azure_result_builder.from_simulator is False
 
 
@@ -603,10 +683,10 @@ def mock_qir_to_qbraid_bitstring():
 
 
 def test_format_microsoft_results(
-    mock_qir_to_qbraid_bitstring, azure_result_builder, mock_azure_job2
+    mock_qir_to_qbraid_bitstring, azure_result_builder, mock_azure_job
 ):
     """Test formatting Microsoft Quantum results."""
-    mock_azure_job2.get_results.return_value = {"00": 0.5, "11": 0.5}
+    mock_azure_job.get_results.return_value = {"00": 0.5, "11": 0.5}
     mock_qir_to_qbraid_bitstring.side_effect = lambda x: x
 
     result = azure_result_builder._format_microsoft_results()
@@ -617,9 +697,9 @@ def test_format_microsoft_results(
     assert abs(result["counts"]["11"] - 500) >= 0
 
 
-def test_format_rigetti_results(azure_result_builder, mock_azure_job2):
+def test_format_rigetti_results(azure_result_builder, mock_azure_job):
     """Test formatting Rigetti results."""
-    mock_azure_job2.get_results.return_value = {"ro": [[0, 1], [1, 0], [0, 1], [1, 0]]}
+    mock_azure_job.get_results.return_value = {"ro": [[0, 1], [1, 0], [0, 1], [1, 0]]}
 
     result = azure_result_builder._format_rigetti_results()
 
@@ -629,9 +709,9 @@ def test_format_rigetti_results(azure_result_builder, mock_azure_job2):
     assert result["probabilities"] == {"01": 0.5, "10": 0.5}
 
 
-def test_format_unknown_results(azure_result_builder, mock_azure_job2):
+def test_format_unknown_results(azure_result_builder, mock_azure_job):
     """Test formatting unknown results."""
-    mock_azure_job2.get_results.return_value = {"mock_key": "mock_value"}
+    mock_azure_job.get_results.return_value = {"mock_key": "mock_value"}
 
     result = azure_result_builder._format_unknown_results()
 
@@ -640,10 +720,10 @@ def test_format_unknown_results(azure_result_builder, mock_azure_job2):
 
 @patch("qbraid.runtime.azure.result_builder.AzureResultBuilder._qir_to_qbraid_bitstring")
 def test_format_quantinuum_results(
-    mock_qir_to_qbraid_bitstring, azure_result_builder, mock_azure_job2
+    mock_qir_to_qbraid_bitstring, azure_result_builder, mock_azure_job
 ):
     """Test formatting Quantinuum results."""
-    mock_azure_job2.get_results.return_value = {"qreg0": ["0", "1", "1"], "qreg1": ["1", "0", "1"]}
+    mock_azure_job.get_results.return_value = {"qreg0": ["0", "1", "1"], "qreg1": ["1", "0", "1"]}
     mock_qir_to_qbraid_bitstring.side_effect = lambda x: x
 
     result = azure_result_builder._format_quantinuum_results()
@@ -654,9 +734,9 @@ def test_format_quantinuum_results(
     assert result["probabilities"] == {"01": 1 / 3, "10": 1 / 3, "11": 1 / 3}
 
 
-def test_translate_microsoft_v2_results(azure_result_builder, mock_azure_job2):
+def test_translate_microsoft_v2_results(azure_result_builder, mock_azure_job):
     """Test translating Microsoft Quantum v2 results."""
-    mock_azure_job2.get_results.return_value = {
+    mock_azure_job.get_results.return_value = {
         "DataFormat": "v2",
         "Results": [
             {
