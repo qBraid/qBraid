@@ -17,7 +17,7 @@ qiskit-qir
 
 # optional runtime dependencies
 oqc-qcaas-client>=3.9.1
-qiskit-ibm-runtime>=0.25.0,<0.27
+qiskit-ibm-runtime>=0.25.0,<0.28
 azure-quantum>=2.0,<2.2
 azure-storage-blob>=12.20,<13.0
 azure-identity>=1.17,<2.0
