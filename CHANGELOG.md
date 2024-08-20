@@ -14,11 +14,14 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Custom pytest decorator to mark remote tests ([#735](https://github.com/qBraid/qBraid/pull/735))
 
 ### Improved
+- Static type checking in compliance with `mypy` ([#735](https://github.com/qBraid/qBraid/pull/735))
 
 ### Deprecated
 
 ### Removed
+- PR compliance workflow ([#735](https://github.com/qBraid/qBraid/pull/735))
 
 ### Fixed

@@ -9,5 +9,3 @@ Draft PRs are welcome if your code is still a work-in-progress.
 -->
 
 ## Summary of changes
-
-<!-- Replace this comment with a brief overview of the changes introduced by this PR. -->
