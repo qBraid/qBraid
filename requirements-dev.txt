@@ -17,7 +17,7 @@ qiskit-qir
 
 # optional runtime dependencies
 oqc-qcaas-client>=3.9.1
-qiskit-ibm-runtime>=0.25.0,<0.28
+qiskit-ibm-runtime>=0.25.0,<0.29
 
 # visualization
 matplotlib>=3.3
