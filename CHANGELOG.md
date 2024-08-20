@@ -18,6 +18,40 @@ Types of changes:
 - Attribute `simulator` of type `bool` to `qbraid.runtime.TargetProfile` to replace `qbraid.runtime.DeviceType` ([#735](https://github.com/qBraid/qBraid/pull/735))
 - Attribute `local` of type `bool` to `qbraid.runtime.qiskit.QiskitBackend.profile` to replace `qbraid.runtime.DeviceType` ([#735](https://github.com/qBraid/qBraid/pull/735))
 - Method `qbraid.runtime.GateModelJobResult.counts_to_measurements` to abstract redundant code from subclasses ([#735](https://github.com/qBraid/qBraid/pull/735))
+- `qbraid.runtime.azure` module with `AzureQuantumProvider` class to enable access to QPUs and simulators from IonQ, Quantinuum, and Rigetti, as well as the Microsoft resource estimator, using Azure credentials ([#723](https://github.com/qBraid/qBraid/pull/723))
+
+```python
+from azure.quantum import Workspace
+
+from qbraid.runtime.azure import AzureQuantumProvider
+
+workspace = Workspace(...)
+
+provider = AzureQuantumProvider(workspace)
+
+device = provider.get_device("quantinuum.sim.h1-1sc")
+
+circuit = """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[3];
+creg c0[3];
+h q[0];
+cx q[0], q[1];
+cx q[1], q[2];
+measure q[0] -> c0[0];
+measure q[1] -> c0[1];
+measure q[2] -> c0[2];
+"""
+
+job = device.run(circuit, shots=100)
+job.wait_for_final_state()
+
+result = job.result()
+counts = result.measurement_counts()
+
+print(counts) # {"000": 100}
+```
 
 ### Improved / modified
 - Values of `qbraid.runtime.DeviceActionType` Enum to correspond to programs modules ([#735](https://github.com/qBraid/qBraid/pull/735))
