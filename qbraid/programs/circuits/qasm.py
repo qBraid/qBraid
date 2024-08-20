@@ -13,20 +13,27 @@ Module defining OpenQasm2Program and OpenQasm3Program classes.
 
 """
 import re
-from typing import Optional
+from typing import Optional, Union
 
 import numpy as np
 from openqasm3.ast import (
+    BinaryExpression,
     BitType,
     BranchingStatement,
     ClassicalDeclaration,
+    Concatenation,
+    Expression,
+    Identifier,
     IndexedIdentifier,
+    IntegerLiteral,
     Program,
     QuantumBarrier,
     QuantumGate,
     QuantumMeasurementStatement,
     QuantumReset,
     QubitDeclaration,
+    RangeDefinition,
+    Statement,
 )
 from openqasm3.parser import parse
 
@@ -36,99 +43,143 @@ from qbraid.programs.exceptions import ProgramTypeError
 from ._model import GateModelProgram
 
 
-def depth(qasm_statements, counts) -> dict:  # pylint: disable=too-many-statements
+def expression_value(expression: Optional[Union[Expression, RangeDefinition]]) -> int:
+    """Return the size of an expression."""
+    if isinstance(expression, IntegerLiteral):
+        return expression.value
+
+    raise ValueError(f"Invalid expression type: {type(expression)}. Expected IntegerLiteral.")
+
+
+def expression_value_option(expression: Optional[Expression]) -> Optional[int]:
+    """Return the size of an expression."""
+    if expression is None:
+        return None
+
+    return expression_value(expression)
+
+
+# pylint: disable-next=too-many-statements
+def depth(qasm_statements: list[Statement], counts: dict[str, int]) -> dict[str, int]:
     """Return the depth of a list of given qasm statements."""
     qreg_sizes = {}
     creg_sizes = {}
     track_measured = {}
     max_depth = 0
+    # pylint: disable-next=too-many-nested-blocks
     for statement in qasm_statements:
         if isinstance(statement, QubitDeclaration):
             qreg_name = statement.qubit.name
-            qreg_size = statement.size.value
+            qreg_size = expression_value(statement.size)
             qreg_sizes[qreg_name] = qreg_size
             continue
-        if isinstance(statement, ClassicalDeclaration):
+        if isinstance(statement, ClassicalDeclaration) and isinstance(statement.type, BitType):
             creg_name = statement.identifier.name
-            creg_size = statement.type.size.value
+            creg_size: int = expression_value(statement.type.size)
             creg_sizes[creg_name] = creg_size
             for i in range(creg_size):
                 track_measured[f"{creg_name}[{i}]"] = 0
             continue
         if isinstance(statement, QuantumGate):
             qubits_involved = set()
-            if isinstance(statement.qubits[0], IndexedIdentifier):
+            if all(isinstance(qubit, IndexedIdentifier) for qubit in statement.qubits):
                 for qubit in statement.qubits:
-                    qreg_name = qubit.name.name
-                    qubit_index = qubit.indices[0][0].value
-                    counts[f"{qreg_name}[{qubit_index}]"] += 1
-                    qubits_involved.add(f"{qreg_name}[{qubit_index}]")
+                    if isinstance(qubit.name, Identifier):
+                        qreg_name = qubit.name.name
+                        if isinstance(qubit.indices[0], list):
+                            expression = qubit.indices[0][0]
+                        qubit_index = expression_value(expression)
+                        counts[f"{qreg_name}[{qubit_index}]"] += 1
+                        qubits_involved.add(f"{qreg_name}[{qubit_index}]")
                 max_involved_depth = max(counts[qubit] for qubit in qubits_involved)
-                for qubit in qubits_involved:
-                    counts[qubit] = max_involved_depth
+                for qubit_name in qubits_involved:
+                    counts[str(qubit_name)] = max_involved_depth
             else:
                 for qubit in statement.qubits:
-                    qreg_name = qubit.name
+                    qreg_name = str(qubit.name)
                     for i in range(qreg_sizes[qreg_name]):
                         counts[f"{qreg_name}[{i}]"] += 1
             max_depth = max(counts.values())
         elif isinstance(statement, QuantumReset):
             if isinstance(statement.qubits, IndexedIdentifier):
                 qreg_name = statement.qubits.name.name
-                qubit_index = statement.qubits.indices[0][0].value
+                if isinstance(statement.qubits.indices[0], list):
+                    expression = statement.qubits.indices[0][0]
+                qubit_index = expression_value(expression)
                 counts[f"{qreg_name}[{qubit_index}]"] += 1
             else:
                 qreg_name = statement.qubits.name
                 for i in range(qreg_sizes[qreg_name]):
                     counts[f"{qreg_name}[{i}]"] += 1
         elif isinstance(statement, QuantumBarrier):
-            for qubit in statement.qubits:
-                qreg_name = qubit.name
-                for i in range(qreg_sizes[qreg_name]):
-                    counts[f"{qreg_name}[{i}]"] = max_depth
+            for qubit_identifier in statement.qubits:
+                if isinstance(qubit_identifier, (IndexedIdentifier, Identifier)):
+                    qreg_name = str(qubit_identifier.name)
+                    for i in range(qreg_sizes[qreg_name]):
+                        counts[f"{qreg_name}[{i}]"] = max_depth
         elif isinstance(statement, QuantumMeasurementStatement):
             qubit = statement.measure.qubit
             if isinstance(qubit, IndexedIdentifier):
                 qreg_name = qubit.name.name
-                qubit_index = qubit.indices[0][0].value
+                if isinstance(qubit.indices[0], list):
+                    qubit_expr = qubit.indices[0][0]
+                qubit_index = expression_value(qubit_expr)
                 counts[f"{qreg_name}[{qubit_index}]"] += 1
-                creg_name = statement.target.name.name
-                creg_index = statement.target.indices[0][0].value
                 max_depth = max(counts.values())
-                track_measured[f"{creg_name}[{creg_index}]"] = max_depth
+                if isinstance(statement.target, IndexedIdentifier):
+                    if isinstance(statement.target.indices[0], list):
+                        creg_expr = statement.target.indices[0][0]
+                        creg_index = expression_value(creg_expr)
+                        creg_name = statement.target.name.name
+                        track_measured[f"{creg_name}[{creg_index}]"] = max_depth
             else:
                 qreg_name = qubit.name
                 for i in range(qreg_sizes[qreg_name]):
                     counts[f"{qreg_name}[{i}]"] += 1
-                creg = statement.target.name
+                if isinstance(statement.target, Identifier):
+                    creg = str(statement.target.name)
                 max_depth = max(counts.values())
                 for i in range(creg_sizes[creg]):
                     track_measured[f"{creg}[{i}]"] = max_depth
-        elif isinstance(statement, BranchingStatement):
-            creg_name = statement.condition.lhs.name
-            required_depth = max(
-                track_measured[f"{creg_name}[{creg_index}]"]
-                for creg_index in range(creg_sizes[creg_name])
-            )
-            required_depth = max(required_depth, max_depth)
-            for i in range(creg_sizes[creg_name]):
-                track_measured[f"{creg_name}[{i}]"] = required_depth
-            qubits = set()
-            for sub_statement in statement.if_block + statement.else_block:
-                if isinstance(sub_statement, QuantumGate):
-                    for qubit in sub_statement.qubits:
-                        qreg_name = qubit.name.name
-                        qubit_index = qubit.indices[0][0].value
-                        qubits.add(f"{qreg_name}[{qubit_index}]")
-                elif isinstance(sub_statement, QuantumMeasurementStatement):
-                    qreg_name = sub_statement.measure.qubit.name.name
-                    qubit_index = sub_statement.measure.qubit.indices[0][0].value
-                    qubits.add(f"{qreg_name}[{qubit_index}]")
+        elif isinstance(statement, BranchingStatement) and isinstance(
+            statement.condition, (BinaryExpression, Concatenation)
+        ):
+            expression = statement.condition.lhs
+            if isinstance(expression, (IndexedIdentifier, Identifier)):
+                creg_name = expression.name
+                required_depth = max(
+                    track_measured[f"{creg_name}[{creg_index}]"]
+                    for creg_index in range(creg_sizes[creg_name])
+                )
+                required_depth = max(required_depth, max_depth)
+                for i in range(creg_sizes[creg_name]):
+                    track_measured[f"{creg_name}[{i}]"] = required_depth
+                qubits: set[str] = set()
+                for sub_statement in statement.if_block + statement.else_block:
+                    if isinstance(sub_statement, QuantumGate):
+                        for qubit in sub_statement.qubits:
+                            if isinstance(qubit.name, Identifier):
+                                qreg_name = qubit.name.name
+                            if isinstance(qubit, IndexedIdentifier):
+                                if isinstance(qubit.indices[0], list):
+                                    expression = qubit.indices[0][0]
+                            qubit_index = expression_value(expression)
+                            qubits.add(f"{qreg_name}[{qubit_index}]")
+                    elif isinstance(sub_statement, QuantumMeasurementStatement):
+                        if isinstance(sub_statement.measure.qubit.name, Identifier):
+                            qreg_name = sub_statement.measure.qubit.name.name
+                        if isinstance(sub_statement.measure.qubit, IndexedIdentifier):
+                            if isinstance(sub_statement.measure.qubit.indices[0], list):
+                                expression = sub_statement.measure.qubit.indices[0][0]
+                        if isinstance(expression, Expression):
+                            qubit_index = expression_value(expression)
+                            qubits.add(f"{qreg_name}[{qubit_index}]")
 
-            for qubit in qubits:
-                counts[qubit] = max(required_depth, counts[qubit]) + 1
+                for qubit_name in qubits:
+                    qubit_id = str(qubit_name)
+                    counts[qubit_id] = max(required_depth, counts[qubit_id]) + 1
 
-            max_depth = max(counts.values())
+                max_depth = max(counts.values())
     return counts
 
 
@@ -215,6 +266,7 @@ class OpenQasm3Program(GateModelProgram):
         super().__init__(program)
         if not isinstance(program, str):
             raise ProgramTypeError(message=f"Expected 'str' object, got '{type(program)}'.")
+        self._program: str = program
         self._parse_state()
 
     def parsed(self) -> Program:
@@ -233,14 +285,14 @@ class OpenQasm3Program(GateModelProgram):
         for statement in program.statements:
             if isinstance(statement, QubitDeclaration):
                 name = statement.qubit.name
-                size = None if statement.size is None else statement.size.value
+                size = expression_value_option(statement.size)
                 qubits.append((name, size))
                 num_qubits += 1 if size is None else size
             elif isinstance(statement, ClassicalDeclaration) and isinstance(
                 statement.type, BitType
             ):
                 name = statement.identifier.name
-                size = None if statement.type.size is None else statement.type.size.value
+                size = expression_value_option(statement.type.size)
                 clbits.append((name, size))
                 num_clbits += 1 if size is None else size
 
@@ -250,12 +302,12 @@ class OpenQasm3Program(GateModelProgram):
         self._clbits = clbits
 
     @property
-    def qubits(self) -> list[tuple[str, int]]:
+    def qubits(self) -> list[tuple[str, Optional[int]]]:
         """Return the qubits acted upon by the operations in this circuit"""
         return self._qubits
 
     @property
-    def clbits(self) -> list[tuple[str, int]]:
+    def clbits(self) -> list[tuple[str, Optional[int]]]:
         """Return the qubits acted upon by the operations in this circuit"""
         return self._clbits
 
@@ -410,13 +462,14 @@ class OpenQasm3Program(GateModelProgram):
             for index in indices:
                 expansion_qasm += f"i {reg}[{index}];\n"
 
-        self._program = self.program + expansion_qasm
+        qasm: str = self.program
+        self._program = qasm + expansion_qasm
 
     @auto_reparse
     def remove_idle_qubits(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
         and if not, reduces dimension accordingly."""
-        qasm_str = self.program
+        qasm_str: str = self.program
         qreg_list = set(self.qubits)
         qubit_indices = self._get_unused_qubit_indices()
         for reg, indices in qubit_indices.items():
@@ -540,7 +593,7 @@ class OpenQasm3Program(GateModelProgram):
 
         TODO: Does not account for bits named with identifiers or than 'c'
         """
-        qasm_string = self.program
+        qasm_string: str = self.program
         lines = qasm_string.split("\n")
         transformed_lines = []
         classical_bit_counter = 0

@@ -12,6 +12,8 @@
 Module for managing and retrieving custom program type aliases
 
 """
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Optional, Type
 
 from openqasm3.parser import QASM3ParsingError, parse
@@ -58,7 +60,7 @@ def parse_qasm_type_alias(qasm: str) -> str:
     return f"qasm{verion}"
 
 
-def _get_program_type_alias(program: "qbraid.programs.QPROGRAM") -> str:
+def _get_program_type_alias(program: qbraid.programs.QPROGRAM) -> str:
     """
     Get the type alias of a quantum program from registry.
 
@@ -112,9 +114,7 @@ def _get_program_type_alias(program: "qbraid.programs.QPROGRAM") -> str:
     )
 
 
-def get_program_type_alias(
-    program: "qbraid.programs.QPROGRAM", safe: bool = False
-) -> Optional[str]:
+def get_program_type_alias(program: qbraid.programs.QPROGRAM, safe: bool = False) -> Optional[str]:
     """
     Get the type alias of a quantum program from registry.
 

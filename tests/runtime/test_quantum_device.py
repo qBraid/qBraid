@@ -17,7 +17,7 @@ Unit tests for QbraidDevice, QbraidJob, and QbraidJobResult classes using the qb
 import logging
 import random
 from typing import Any, Optional
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 import cirq
 import numpy as np
@@ -27,7 +27,7 @@ from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 from qbraid.programs import ProgramSpec, unregister_program_type
 from qbraid.runtime import DeviceStatus, TargetProfile
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import DeviceActionType, DeviceType
+from qbraid.runtime.enums import DeviceActionType
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import (
     ExperimentResult,
@@ -143,7 +143,7 @@ def mock_profile():
     """Mock profile for testing."""
     return TargetProfile(
         device_id="qbraid_qir_simulator",
-        device_type=DeviceType.SIMULATOR,
+        simulator=True,
         action_type=DeviceActionType.OPENQASM,
         num_qubits=42,
         program_spec=None,
@@ -287,6 +287,16 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert _is_uniform_comput_basis(measurements)
 
 
+def test_run_forbidden_kwarg(mock_client):
+    """Test that invoking run method with forbidden kwarg raises value error."""
+    circuit = Mock()
+    provider = QbraidProvider(client=mock_client)
+    device = provider.get_device("qbraid_qir_simulator")
+
+    with pytest.raises(ValueError):
+        device.run(circuit, shots=10, num_qubits=5)
+
+
 def test_device_update_scheme(mock_qbraid_device):
     """Test updating ConversionScheme."""
     graph = mock_qbraid_device.scheme.conversion_graph.copy()
@@ -384,7 +394,7 @@ def test_device_metadata(mock_basic_device):
     """Test getting device metadata."""
     metadata = mock_basic_device.metadata()
     assert metadata["device_id"] == "qbraid_qir_simulator"
-    assert metadata["device_type"] == "SIMULATOR"
+    assert metadata["simulator"] is True
     assert metadata["num_qubits"] == 42
 
 

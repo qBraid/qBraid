@@ -92,8 +92,7 @@ class QiskitCircuit(GateModelProgram):
 
     def transform(self, device) -> None:
         """Transform program to according to device target profile."""
-        device_type = device.profile.get("device_type")
-        if device_type == "LOCAL_SIMULATOR":
+        if getattr(device.profile, "local", False) is True:
             self.remove_idle_qubits()
 
         self._program = qiskit.transpile(self.program, backend=device._backend)

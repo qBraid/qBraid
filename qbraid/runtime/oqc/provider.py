@@ -17,7 +17,7 @@ from typing import Any
 from qcaas_client.client import OQCClient
 
 from qbraid.programs.spec import ProgramSpec
-from qbraid.runtime.enums import DeviceActionType, DeviceType
+from qbraid.runtime.enums import DeviceActionType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
@@ -36,13 +36,13 @@ class OQCProvider(QuantumProvider):
         """Build a profile for OQC device."""
         device_id: str = data["id"]
         device_name: str = data["name"]
-        device_type = DeviceType.SIMULATOR if data["feature_set"]["simulator"] else DeviceType.QPU
+        feature_set: dict = data.get("feature_set", {})
 
         return TargetProfile(
             device_id=device_id,
-            device_type=device_type,
+            simulator=feature_set["simulator"],
             action_type=DeviceActionType.OPENQASM,
-            num_qubits=data["feature_set"]["qubit_count"],
+            num_qubits=feature_set["qubit_count"],
             program_spec=ProgramSpec(str, alias="qasm2"),
             device_name=device_name,
             endpoint_url=data["url"],

@@ -20,14 +20,14 @@ from qbraid.runtime.result import GateModelJobResult
 class OQCJobResult(GateModelJobResult):
     """OQC result class."""
 
-    def raw_counts(self, **kwargs) -> dict[str, int]:
+    def get_counts(self) -> dict[str, int]:
         """Get the raw measurement counts of the task."""
-        result: dict = self._result
+        result: dict[str, int] = self._result
         return result.get("counts", {})
 
     def measurements(self) -> np.ndarray:
         """Get the measurements of the task."""
-        counts = self.raw_counts()
+        counts = self.get_counts()
         res = []
         for state in counts:
             new_state = []

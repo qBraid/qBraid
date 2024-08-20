@@ -19,7 +19,6 @@ from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestErr
 
 from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
 from qbraid.runtime._display import display_jobs_from_data
-from qbraid.runtime.enums import DeviceType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
@@ -74,11 +73,11 @@ class QbraidProvider(QuantumProvider):
     def _build_runtime_profile(self, device_data: dict[str, Any]) -> TargetProfile:
         """Builds a runtime profile from qBraid device data."""
         num_qubits = device_data.get("numberQubits")
-        device_type = DeviceType(device_data.get("type", "").upper())
+        simulator = device_data.get("type") == "SIMULATOR"
         program_type_alias = device_data.get("runPackage")
         program_spec = self._get_program_spec(program_type_alias)
         return TargetProfile(
-            device_type=device_type,
+            simulator=simulator,
             device_id=device_data["qbraid_id"],
             num_qubits=num_qubits,
             program_spec=program_spec,
@@ -135,7 +134,7 @@ class QbraidProvider(QuantumProvider):
             status (optional, str): The status of the job.
             max_results (optional, int): Maximum number of results to display. Defaults to 10.
         """
-        query = {}
+        query: dict[str, Any] = {}
 
         if provider:
             query["provider"] = provider.lower()

@@ -21,7 +21,7 @@ import openqasm3
 import pytest
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
-from qbraid.runtime import DeviceType, TargetProfile
+from qbraid.runtime import TargetProfile
 from qbraid.runtime.enums import DeviceStatus, JobStatus
 from qbraid.runtime.ionq import IonQDevice, IonQJob, IonQJobResult, IonQProvider, IonQSession
 from qbraid.runtime.ionq.job import IonQJobError
@@ -114,7 +114,7 @@ GET_JOB_RESULT_RESPONSE = {"0": 0.5, "1": 0.5}
 
 def test_ionq_provider_get_device():
     """Test getting IonQ provider and device."""
-    with patch("qbraid_core.sessions.Session") as mock_session:
+    with patch("qbraid.runtime.ionq.provider.Session") as mock_session:
         mock_session.return_value.get.return_value.json.return_value = DEVICE_DATA
 
         provider = IonQProvider(api_key="fake_api_key")
@@ -130,14 +130,14 @@ def test_ionq_provider_get_device():
         for test_device in test_devices:
             assert isinstance(test_device, IonQDevice)
             assert test_device.profile["device_id"] in [device["backend"] for device in DEVICE_DATA]
-            assert test_device.profile["device_type"] == DeviceType.QPU.name
+            assert test_device.profile["simulator"] is False or test_device.id == "simulator"
             assert test_device.profile["num_qubits"] in [device["qubits"] for device in DEVICE_DATA]
             assert test_device.profile["program_spec"] == ProgramSpec(openqasm3.ast.Program)
 
         test_device = provider.get_device("qpu.harmony")
         assert isinstance(test_device, IonQDevice)
         assert test_device.profile["device_id"] == "qpu.harmony"
-        assert test_device.profile["device_type"] == DeviceType.QPU.name
+        assert test_device.profile["simulator"] is False
         assert test_device.profile["num_qubits"] == 11
         assert test_device.profile["program_spec"] == ProgramSpec(openqasm3.ast.Program)
         assert test_device.profile["basis_gates"] == set(SUPPORTED_GATES)
@@ -162,19 +162,19 @@ def test_ionq_provider_device_unavailable():
                 res["status"] = "fake_status"
             return res
 
-    unavailable_profile = TargetProfile(device_id="qpu.harmony", device_type=DeviceType.QPU)
+    unavailable_profile = TargetProfile(device_id="qpu.harmony", simulator=False)
     unavailable_device = IonQDevice(unavailable_profile, MockSession())
     assert unavailable_device.status() == DeviceStatus.UNAVAILABLE
 
-    offline_profile = TargetProfile(device_id="qpu.aria-1", device_type=DeviceType.QPU)
+    offline_profile = TargetProfile(device_id="qpu.aria-1", simulator=False)
     offline_device = IonQDevice(offline_profile, MockSession())
     assert offline_device.status() == DeviceStatus.OFFLINE
 
-    available_profile = TargetProfile(device_id="qpu.aria-2", device_type=DeviceType.QPU)
+    available_profile = TargetProfile(device_id="qpu.aria-2", simulator=False)
     available_device = IonQDevice(available_profile, MockSession())
     assert available_device.status() == DeviceStatus.ONLINE
 
-    fake_profile = TargetProfile(device_id="fake_device", device_type=DeviceType.QPU)
+    fake_profile = TargetProfile(device_id="fake_device", simulator=False)
     fake_device = IonQDevice(fake_profile, MockSession())
     with pytest.raises(ValueError):
         fake_device.status()
@@ -384,7 +384,7 @@ qubit[2] q;
 ry(pi/4) q[0];
 """
     device = IonQDevice(
-        TargetProfile(device_id="simulator", device_type=DeviceType.QPU),
+        TargetProfile(device_id="simulator", simulator=False),
         IonQSession("fake_api_key"),
     )
     with patch("qbraid_core.sessions.Session.post") as mock_post:

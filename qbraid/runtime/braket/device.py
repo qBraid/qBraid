@@ -20,7 +20,7 @@ from braket.circuits import Circuit
 
 from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY, load_program
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.enums import DeviceActionType, DeviceStatus
 from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
 from qbraid.transpiler import transpile
 
@@ -97,13 +97,13 @@ class BraketDevice(QuantumDevice):
         """Transpile a circuit for the device."""
         program = run_input
 
-        provider = (self.profile.get("provider_name") or "").upper()
-        action_type = (self.profile.get("action_type") or "").upper()
+        provider = (self.profile.provider_name or "").upper()
+        action_type = self.profile.action_type
 
-        if action_type == "OPENQASM" and not isinstance(program, Circuit):
+        if action_type == DeviceActionType.OPENQASM and not isinstance(program, Circuit):
             raise DeviceProgramTypeMismatchError(program, str(Circuit), action_type)
 
-        if action_type == "ANALOG HAMILTONIAN SIMULATION" and not isinstance(
+        if action_type == DeviceActionType.AHS and not isinstance(
             program, AnalogHamiltonianSimulation
         ):
             raise DeviceProgramTypeMismatchError(

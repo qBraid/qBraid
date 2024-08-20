@@ -13,7 +13,9 @@ Module containing top-level qbraid program loader functionality
 utilizing entrypoints via ``pkg_resources``.
 
 """
-from typing import TYPE_CHECKING
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 import openqasm3
 
@@ -26,7 +28,7 @@ if TYPE_CHECKING:
     import qbraid.programs
 
 
-def load_program(program: "qbraid.programs.QPROGRAM") -> "qbraid.programs.QuantumProgram":
+def load_program(program: Any) -> qbraid.programs.QuantumProgram:
     """Apply qbraid quantum program wrapper to a supported quantum program.
 
     This function is used to create a qBraid :class:`~qbraid.programs.QuantumProgram`
