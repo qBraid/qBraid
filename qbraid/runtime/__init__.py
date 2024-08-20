@@ -23,7 +23,6 @@ Data Types
    :toctree: ../stubs/
 
     DeviceActionType
-	DeviceType
 	DeviceStatus
 	JobStatus
 
@@ -67,7 +66,7 @@ from qbraid_core import Session
 from . import native
 from ._display import display_jobs_from_data
 from .device import QuantumDevice
-from .enums import DeviceActionType, DeviceStatus, DeviceType, JobStatus
+from .enums import DeviceActionType, DeviceStatus, JobStatus
 from .exceptions import (
     DeviceProgramTypeMismatchError,
     JobStateError,
@@ -86,7 +85,6 @@ __all__ = [
     "QuantumDevice",
     "DeviceActionType",
     "DeviceStatus",
-    "DeviceType",
     "JobStatus",
     "display_jobs_from_data",
     "JobStateError",

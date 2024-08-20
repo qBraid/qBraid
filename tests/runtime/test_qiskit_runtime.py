@@ -30,7 +30,7 @@ from qiskit_ibm_runtime.exceptions import IBMNotAuthorizedError, RuntimeInvalidS
 from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
-from qbraid.runtime import DeviceActionType, DeviceStatus, DeviceType, JobStateError, TargetProfile
+from qbraid.runtime import DeviceActionType, DeviceStatus, JobStateError, TargetProfile
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.qiskit import QiskitBackend, QiskitJob, QiskitResult, QiskitRuntimeProvider
 
@@ -118,15 +118,10 @@ def _create_backend_fixture(service: FakeService, local: bool, simulator: bool) 
     """Create a Qiskit backend fixture."""
     backend = service.backends(local=local, simulator=simulator)[0]
     program_spec = ProgramSpec(QuantumCircuit)
-    if local:
-        device_type = DeviceType.LOCAL_SIMULATOR
-    elif simulator:
-        device_type = DeviceType.SIMULATOR
-    else:
-        device_type = DeviceType.QPU
     profile = TargetProfile(
         device_id=backend.name,
-        device_type=device_type,
+        local=local,
+        simulator=simulator,
         action_type=DeviceActionType.OPENQASM,
         num_qubits=backend.num_qubits,
         program_spec=program_spec,
@@ -176,14 +171,14 @@ def test_provider_save_config(fake_service):
 
 
 @pytest.mark.parametrize(
-    "local,simulator,num_qubits,device_type",
+    "local,simulator,num_qubits",
     [
-        (True, True, 20, DeviceType.LOCAL_SIMULATOR),
-        (False, True, 5, DeviceType.SIMULATOR),
-        (False, False, 5, DeviceType.QPU),
+        (True, True, 20),
+        (False, True, 5),
+        (False, False, 5),
     ],
 )
-def test_provider_build_runtime_profile(local, simulator, num_qubits, device_type):
+def test_provider_build_runtime_profile(local, simulator, num_qubits):
     """Test building runtime profile for Qiskit backend."""
     with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
         mock_runtime_service.return_value = FakeService()
@@ -191,7 +186,8 @@ def test_provider_build_runtime_profile(local, simulator, num_qubits, device_typ
         provider = QiskitRuntimeProvider(token="test_token", channel="test_channel")
         profile = provider._build_runtime_profile(backend)
         assert profile["device_id"] == f"generic_backend_{num_qubits}q"
-        assert profile["device_type"] == device_type.name
+        assert profile["simulator"] == simulator
+        assert profile["local"] == local
         assert profile["num_qubits"] == num_qubits
         assert profile["max_shots"] == 8192
 
@@ -398,16 +394,16 @@ def test_result_from_job(mock_runtime_job, mock_runtime_result):
     mock_runtime_job.result.return_value = mock_runtime_result
     result = mock_job.result()
     assert isinstance(result, QiskitResult)
-    assert isinstance(result.raw_counts(), dict)
+    assert isinstance(result.get_counts(), dict)
     assert isinstance(result.measurements(), np.ndarray)
 
 
-def test_result_raw_counts(mock_runtime_result):
+def test_result_get_counts(mock_runtime_result):
     """Test getting raw counts from a Qiskit result."""
     qr = QiskitResult()
     qr._result = mock_runtime_result
     expected = {"01": 9, "10": 1, "11": 4, "00": 6}
-    assert qr.raw_counts() == expected
+    assert qr.get_counts() == expected
 
 
 def test_result_format_measurements():

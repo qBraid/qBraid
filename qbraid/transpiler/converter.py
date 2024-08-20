@@ -12,6 +12,8 @@
 Module for transpiling quantum programs between different quantum programming languages
 
 """
+from __future__ import annotations
+
 import logging
 import warnings
 from copy import deepcopy
@@ -19,7 +21,8 @@ from typing import TYPE_CHECKING, Optional
 
 from qbraid_core._import import LazyLoader
 
-from qbraid.programs import QPROGRAM_ALIASES, ProgramTypeError, get_program_type_alias
+from qbraid.programs import QPROGRAM_ALIASES
+from qbraid.programs.alias_manager import _get_program_type_alias, get_program_type_alias
 
 from .exceptions import CircuitConversionError, ConversionPathNotFoundError, NodeNotFoundError
 from .graph import ConversionGraph
@@ -44,13 +47,13 @@ def _format_exception(err: Exception) -> str:
 
 
 def transpile(
-    program: "qbraid.programs.QPROGRAM",
+    program: qbraid.programs.QPROGRAM,
     target: str,
     conversion_graph: Optional[ConversionGraph] = None,
     max_path_attempts: int = 3,
     max_path_depth: Optional[int] = None,
     **kwargs,
-) -> "qbraid.programs.QPROGRAM":
+) -> qbraid.programs.QPROGRAM:
     """
     Transpile a quantum program to a target language using a conversion graph.
     This function attempts to find a conversion path from the program's current
@@ -85,7 +88,7 @@ def transpile(
     if not graph.has_node(target):
         raise NodeNotFoundError(graph_type, target, graph.nodes())
 
-    source = get_program_type_alias(program)
+    source = _get_program_type_alias(program)
 
     if not graph.has_node(source):
         raise NodeNotFoundError(graph_type, source, graph.nodes())
@@ -116,16 +119,14 @@ def transpile(
                 try:
                     temp_program = convert_func(temp_program)
                 except Exception as err:  # pylint: disable=broad-exception-caught
-                    try:
-                        alias = get_program_type_alias(temp_program)
-                    except ProgramTypeError:
-                        alias = None
+                    alias = get_program_type_alias(temp_program, safe=True)
 
                     if alias == "cirq":
                         cirq_qasm_import = LazyLoader(
                             "cirq_qasm_import", globals(), "cirq.contrib.qasm_import"
                         )
-                        temp_program = cirq_qasm_import.circuit_from_qasm(temp_program.to_qasm())
+                        qasm: str = temp_program.to_qasm()  # type: ignore[attr-defined]
+                        temp_program = cirq_qasm_import.circuit_from_qasm(qasm)
                         temp_program = convert_func(temp_program)  # Retry conversion
                     else:
                         error_detail = (

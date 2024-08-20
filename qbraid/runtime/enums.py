@@ -15,32 +15,19 @@ Module defining all :mod:`~qbraid.runtime` enumerated types.
 from enum import Enum
 
 
-class DeviceType(Enum):
-    """
-    Enumeration for different types of quantum computing devices.
-
-    Attributes:
-        QPU (str): A Quantum Processing Unit (QPU) hardware device located remotely.
-        SIMULATOR (str): A simulator that runs on remote servers.
-        LOCAL_SIMULATOR (str): A simulator that runs locally on the user's machine.
-    """
-
-    QPU = "QPU"
-    SIMULATOR = "SIMULATOR"
-    LOCAL_SIMULATOR = "LOCAL_SIMULATOR"
-
-
 class DeviceActionType(Enum):
     """
-    Enumeration for different quantum device action types
+    Enumeration for the quantum device action types
+    supported natively by qBraid.
 
     Attributes:
-        OPENQASM (str): Actions compatible with OpenQASM.
+        OPENQASM (str): Actions compatible with OpenQASM (gate-model).
         AHS (str): Actions using analog Hamiltonian simulation.
+        ANNEALING (str): Actions using quantum annealing.
     """
 
-    OPENQASM = "OpenQASM"
-    AHS = "Analog Hamiltonian Simulation"
+    OPENQASM = "qbraid.programs.circuits"
+    AHS = "qbraid.programs.ahs"
 
 
 class DeviceStatus(Enum):

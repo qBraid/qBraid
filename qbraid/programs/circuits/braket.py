@@ -125,6 +125,5 @@ class BraketCircuit(GateModelProgram):
 
     def transform(self, device) -> None:
         """Transform program to according to device target profile."""
-        device_type = device.profile.get("device_type")
-        if device_type == "SIMULATOR":
+        if device.simulator:
             self.remove_idle_qubits()
