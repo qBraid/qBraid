@@ -15,6 +15,7 @@ Device class for OQC devices.
 from __future__ import annotations
 
 import datetime
+import json
 from typing import TYPE_CHECKING, Union
 
 from qcaas_client.client import QPUTask
@@ -80,16 +81,18 @@ class OQCDevice(QuantumDevice):
         self._client = client
 
     @property
-    def client(self) -> "qcaas_client.client.OQCClient":
+    def client(self) -> qcaas_client.client.OQCClient:
         """Returns the client for the device."""
         return self._client
 
     def status(self) -> DeviceStatus:
         """Returns the status of the device."""
-        devices = self._client.get_qpus()
+        devices: list[dict] = self._client.get_qpus()
         for device in devices:
             if device["id"] == self.id:
-                if device["feature_set"]["always_on"]:
+                feature_set = device.get("feature_set", "{}")
+                feature_set_data = json.loads(feature_set)
+                if feature_set_data["always_on"]:
                     return DeviceStatus.ONLINE
                 now = datetime.datetime.now()
                 start_time = self._client.get_next_window()
