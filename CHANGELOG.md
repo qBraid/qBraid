@@ -14,6 +14,18 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+
+### Improved / modified
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+## [0.7.2] - 2024-08-21
+
+### Added
 - Custom pytest decorator to mark remote tests ([#735](https://github.com/qBraid/qBraid/pull/735))
 - Attribute `simulator` of type `bool` to `qbraid.runtime.TargetProfile` to replace `qbraid.runtime.DeviceType` ([#735](https://github.com/qBraid/qBraid/pull/735))
 - Attribute `local` of type `bool` to `qbraid.runtime.qiskit.QiskitBackend.profile` to replace `qbraid.runtime.DeviceType` ([#735](https://github.com/qBraid/qBraid/pull/735))
@@ -26,8 +38,6 @@ Types of changes:
 - Updated `qbraid.runtime.TargetProfile` for more idiomatic usage of `pydantic.BaseModel` for field validation and property access ([#735](https://github.com/qBraid/qBraid/pull/735))
 - `qbraid.runtime.GateModelJobResult.measurements` now returns `None` by default instead of being abstract method. ([#735](https://github.com/qBraid/qBraid/pull/735))
 - Bumped qiskit dependency to qiskit>=0.44,<1.3 ([#737](https://github.com/qBraid/qBraid/pull/737))
-
-### Deprecated
 
 ### Removed
 - `qbraid.runtime.DeviceType` Enum ([#735](https://github.com/qBraid/qBraid/pull/735))
