@@ -34,3 +34,4 @@ Types of changes:
 
 ### Fixed
 - qiskit runtime job is terminal state check bug ([#735](https://github.com/qBraid/qBraid/pull/735))
+- OQC provider get_devices and device status method bugs. Fixed by adding json decoding step ([#738](https://github.com/qBraid/qBraid/pull/738))
