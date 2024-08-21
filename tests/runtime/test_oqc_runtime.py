@@ -220,16 +220,30 @@ def test_oqc_provider_device(lucy_simulator_data):
         assert always_on_false_available_device.status() == DeviceStatus.ONLINE
 
 
-def test_oqc_provider_get_device_raises(lucy_simulator_data):
-    """Test OQC provider get device method raises exception for invalid json data."""
+@pytest.mark.parametrize(
+    "data_modifications, expected_error_message",
+    [
+        ({"feature_set": ""}, "Failed to decode feature set data for device"),
+        (
+            {"feature_set": json.dumps({"qubit_count": 8})},
+            "Failed to gather profile data for device",
+        ),
+    ],
+)
+def test_oqc_provider_get_device_errors(
+    lucy_simulator_data, data_modifications, expected_error_message
+):
+    """Test OQC provider get device method raises exceptions for various error conditions."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
         invalid_lucy_simulator_data = lucy_simulator_data.copy()
-        invalid_lucy_simulator_data["feature_set"] = ""
+        invalid_lucy_simulator_data.update(data_modifications)
         mock_client.return_value.get_qpus.return_value = [invalid_lucy_simulator_data]
         provider = OQCProvider(token="fake_token")
-        with pytest.raises(ValueError):
+
+        with pytest.raises(ValueError) as excinfo:
             provider.get_device(DEVICE_ID)
+        assert expected_error_message in str(excinfo.value)
 
 
 def test_build_runtime_profile(lucy_simulator_data):
