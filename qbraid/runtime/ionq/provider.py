@@ -89,7 +89,6 @@ class IonQProvider(QuantumProvider):
         """Build a profile for an IonQ device."""
         device_id = data.get("backend")
         simulator = device_id == "simulator"
-        print(device_id, simulator)
 
         return TargetProfile(
             device_id=device_id,
