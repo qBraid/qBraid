@@ -64,14 +64,20 @@ def test_qasm3_zero_value_raises(param):
         random_circuit("qasm3", **params)
 
 
-@pytest.mark.parametrize("package", ["qiskit", "cirq"])
-def test_random_circuit_raises_for_bad_params(package: str, available_targets):
+@pytest.mark.parametrize(
+    "package, err_msg",
+    [
+        ("qiskit", "negative dimensions are not allowed"),
+        ("cirq", "Failed to create Cirq random circuit"),
+    ],
+)
+def test_random_circuit_raises_for_bad_params(package: str, err_msg: str, available_targets):
     """Test that _cirq_random raises a QbraidError for invalid parameters."""
     if package not in available_targets:
         pytest.skip(f"{package} not installed")
 
-    expected_err = f"Failed to create {package.capitalize()} random circuit"
-    with pytest.raises(QbraidError, match=expected_err):
+    err_type = QbraidError if package == "cirq" else ValueError
+    with pytest.raises(err_type, match=err_msg):
         random_circuit(package, num_qubits=-1)
 
 

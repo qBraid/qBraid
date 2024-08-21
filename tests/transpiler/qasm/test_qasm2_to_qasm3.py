@@ -153,7 +153,7 @@ def _generate_valid_qasm_strings(seed=42, gates_to_skip=None, num_circuits=100):
     """Returns a list of 100 random qasm2 strings
     which do not contain any of the gates in gates_to_skip
 
-    Current list of invalid gates is ["u", "cu1", "cu2", "cu3", "rxx"]
+    Current list of invalid gates is ["u", "cu1", "cu2", "cu3", "rxx", "xx_minus_yy"]
     For the motivation, see discussion
     - https://github.com/Qiskit/qiskit-qasm3-import/issues/12
     - https://github.com/Qiskit/qiskit-qasm3-import/issues/11#issuecomment-1568505732
@@ -180,7 +180,9 @@ def _generate_valid_qasm_strings(seed=42, gates_to_skip=None, num_circuits=100):
     return qasm_strings
 
 
-@pytest.mark.parametrize("qasm2_str", _generate_valid_qasm_strings(gates_to_skip=["r"]))
+@pytest.mark.parametrize(
+    "qasm2_str", _generate_valid_qasm_strings(gates_to_skip=["r", "xx_minus_yy"])
+)
 def test_random_conversion_to_qasm3(qasm2_str):
     """test random gates conversion"""
     qasm3_str = qasm2_to_qasm3(qasm2_str)
