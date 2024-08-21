@@ -12,6 +12,7 @@
 Module defining Oxford Quantum Circuits (OQC) provider class
 
 """
+import json
 from typing import Any
 
 from qcaas_client.client import OQCClient
@@ -36,13 +37,19 @@ class OQCProvider(QuantumProvider):
         """Build a profile for OQC device."""
         device_id: str = data["id"]
         device_name: str = data["name"]
-        feature_set: dict = data.get("feature_set", {})
+        feature_set: str = data.get("feature_set", "{}")
+        try:
+            feature_set_data = json.loads(feature_set)
+            simulator = feature_set_data["simulator"]
+            num_qubits = feature_set_data["qubit_count"]
+        except (json.JSONDecodeError, KeyError) as err:
+            raise ValueError(f"Failed to gather feature set data for device '{device_id}'") from err
 
         return TargetProfile(
             device_id=device_id,
-            simulator=feature_set["simulator"],
+            simulator=simulator,
             action_type=DeviceActionType.OPENQASM,
-            num_qubits=feature_set["qubit_count"],
+            num_qubits=num_qubits,
             program_spec=ProgramSpec(str, alias="qasm2"),
             device_name=device_name,
             endpoint_url=data["url"],
