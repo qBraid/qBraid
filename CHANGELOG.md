@@ -23,6 +23,11 @@ Types of changes:
 
 ### Fixed
 
+## [0.7.3] - 2024-08-26
+
+### Improved / modified
+- Bumped Amazon Braket dependency to support new Rigetti Ankaa-2 device ([#741](https://github.com/qBraid/qBraid/pull/741))
+
 ## [0.7.2] - 2024-08-21
 
 ### Added

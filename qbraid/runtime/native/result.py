@@ -32,9 +32,9 @@ class ExperimentResult:
     def from_result(result: dict[str, Any]):
         """Factory method to create JobResult from a result dictionary."""
         measurement_counts = result.get("measurementCounts", {})
-        time_stamps = result.get("timeStamps", {})
-        execution_duration = time_stamps.get("executionDuration", -1)
-        process_id = result.get("vendorJobId", "")
+        time_stamps: dict[str, Any] = result.get("timeStamps", {})
+        execution_duration: int = time_stamps.get("executionDuration", -1)
+        process_id: str = result.get("vendorJobId", "")
 
         return ExperimentResult(
             measurement_counts=measurement_counts,
