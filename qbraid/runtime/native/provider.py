@@ -75,19 +75,20 @@ class QbraidProvider(QuantumProvider):
         num_qubits = device_data.get("numberQubits")
         simulator = device_data.get("type") == "SIMULATOR"
         program_type_alias = device_data.get("runPackage")
+        provider = device_data.get("provider")
         program_spec = self._get_program_spec(program_type_alias)
         return TargetProfile(
             simulator=simulator,
             device_id=device_data["qbraid_id"],
             num_qubits=num_qubits,
             program_spec=program_spec,
-            provider_name="qBraid",
+            provider_name=provider,
         )
 
     def get_devices(self, **kwargs) -> list[QbraidDevice]:
         """Return a list of devices matching the specified filtering."""
         query = kwargs or {}
-        query["provider"] = "qBraid"
+        query["vendor"] = "qBraid"
 
         try:
             device_data_lst = self.client.search_devices(query)
