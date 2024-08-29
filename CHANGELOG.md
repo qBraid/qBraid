@@ -16,6 +16,7 @@ Types of changes:
 ### Added
 
 ### Improved / modified
+- Updated construction of `TargetProfile` in `QbraidProvider` to populate provider from API instead of defaulting to fixed value 'qBraid'. ([#744](https://github.com/qBraid/qBraid/pull/744))
 
 ### Deprecated
 

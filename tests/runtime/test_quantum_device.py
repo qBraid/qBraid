@@ -65,8 +65,8 @@ JOB_DATA = {
     "vendorJobId": "afff09f1-d9e0-4dcb-8274-b984678d35c3",
     "status": "COMPLETED",
     "qbraidStatus": "COMPLETED",
-    "vendor": "qbraid",
-    "provider": "qbraid",
+    "vendor": "qBraid",
+    "provider": "qBraid",
     "createdAt": "2024-05-23T01:39:11.288Z",
 }
 
@@ -99,7 +99,7 @@ class MockClient:
         """Returns a list of devices matching the given query."""
         if query.get("status") == "Bad status":
             raise QuantumServiceRequestError("No devices found matching given criteria")
-        if query.get("provider") == "qBraid":
+        if query.get("vendor") == "qBraid":
             return [DEVICE_DATA]
         return []
 
