@@ -19,6 +19,7 @@ from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestErr
 
 from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
 from qbraid.runtime._display import display_jobs_from_data
+from qbraid.runtime.enums import DeviceActionType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
@@ -76,13 +77,17 @@ class QbraidProvider(QuantumProvider):
         simulator = device_data.get("type") == "SIMULATOR"
         program_type_alias = device_data.get("runPackage")
         provider = device_data.get("provider")
+        device_id = device_data.get("qbraid_id", device_data.get("objArg"))
+        noise_models = device_data.get("noiseModels", [])
         program_spec = self._get_program_spec(program_type_alias)
         return TargetProfile(
+            device_id=device_id,
             simulator=simulator,
-            device_id=device_data["qbraid_id"],
+            action_type=DeviceActionType.OPENQASM,
             num_qubits=num_qubits,
             program_spec=program_spec,
             provider_name=provider,
+            noise_models=noise_models,
         )
 
     def get_devices(self, **kwargs) -> list[QbraidDevice]:

@@ -33,25 +33,33 @@ class ConversionGraph(rx.PyDiGraph):
         return super().__new__(cls)  # pylint: disable=no-value-for-parameter
 
     def __init__(
-        self, conversions: Optional[list[Conversion]] = None, require_native: bool = False
+        self,
+        conversions: Optional[list[Conversion]] = None,
+        require_native: bool = False,
+        edge_bias: Optional[float] = None,
     ):
         """
         Initialize a ConversionGraph instance.
 
         Args:
             conversions (optional, list[Conversion]): List of conversion edges. If None,
-                                                      default conversion edges are used.
+                default conversion edges are used.
             require_native (bool): If True, only include "native" conversion functions.
-                                   Defaults to False.
+                Defaults to False.
+            edge_bias (Optional[float]): Factor used to fine-tune the edge weight calculations
+                and modify the decision thresholds for pathfinding. Defaults to 0.25 to prioritize
+                shorter paths. For example, a bias of 0.25 slightly favors a single conversion at
+                weight 0.78 over two conversions at weight 1.0. Only used if conversions is None.
         """
         super().__init__()
         self.require_native = require_native
-        self._conversions = conversions or self.load_default_conversions()
+        self.edge_bias = edge_bias or 0.25
+        self._conversions = conversions or self.load_default_conversions(bias=self.edge_bias)
         self._node_alias_id_map: dict[str, int] = {}
         self.create_conversion_graph()
 
     @staticmethod
-    def load_default_conversions() -> list[Conversion]:
+    def load_default_conversions(bias: Optional[float] = None) -> list[Conversion]:
         """
         Create a list of default conversion nodes using predefined conversion functions.
 
@@ -64,7 +72,7 @@ class ConversionGraph(rx.PyDiGraph):
         def construct_conversion(name: str) -> Conversion:
             source, target = name.split("_to_")
             conversion_func = getattr(transpiler, name)
-            return Conversion(source, target, conversion_func)
+            return Conversion(source, target, conversion_func, bias=bias)
 
         return [construct_conversion(conversion) for conversion in conversion_functions]
 
@@ -200,8 +208,10 @@ class ConversionGraph(rx.PyDiGraph):
             target=self._node_alias_id_map[target],
             weight_fn=lambda edge: edge["weight"],
         )
+
         if len(path) == 0:
             raise ConversionPathNotFoundError(source, target)
+
         return [
             self.get_edge_data(
                 path[self._node_alias_id_map[target]][i],
@@ -230,9 +240,11 @@ class ConversionGraph(rx.PyDiGraph):
         all_paths = rx.all_simple_paths(
             self, self._node_alias_id_map[source], self._node_alias_id_map[target]
         )
+
         # rx.all_simple_paths returns an empty list if no path is found
         if len(all_paths) == 0:
             raise ConversionPathNotFoundError(source, target)
+
         sorted_paths = sorted(all_paths, key=len)[:top_n]
         return [
             [self.get_edge_data(path[i], path[i + 1])["func"] for i in range(len(path) - 1)]
@@ -295,6 +307,48 @@ class ConversionGraph(rx.PyDiGraph):
         num_conversions = len(self.conversions())
         paths = self.find_top_shortest_conversion_paths(source, target, top_n=num_conversions)
         return [self._get_path_from_bound_methods(path) for path in paths]
+
+    def closest_target(self, source: str, targets: list[str]) -> Optional[str]:
+        """
+        Determine the closest target from a list of possible targets based on the
+        shortest conversion path and weights. In case of equal path depths, the
+        target with the higher total weight of its path edges is chosen.
+
+        Args:
+            source (str): The alias from which conversion paths are evaluated.
+            targets (list[str]): A list of target aliases to which the conversion paths
+                are evaluated.
+
+        Returns:
+            Optional[str]: The name of the target that requires the fewest conversions
+                from the source or has higher weights in tie cases. Returns `None` if no
+                conversion paths are available.
+        """
+        if source in targets:
+            return source
+
+        closest = None
+        min_depth = float("inf")
+        min_weight = float("inf")
+
+        conv_weights = {(conv.source, conv.target): conv.weight for conv in self.conversions()}
+
+        for target in targets:
+            if self.has_path(source, target):
+                conv_path: str = self.shortest_path(source, target)
+                conv_nodes = conv_path.split(" -> ")
+                conv_pairs = list(zip(conv_nodes, conv_nodes[1:]))
+                current_depth = len(conv_pairs)
+                current_weight = sum(conv_weights.get(pair, 0) for pair in conv_pairs)
+
+                if (current_depth < min_depth) or (
+                    current_depth == min_depth and current_weight < min_weight
+                ):
+                    min_depth = current_depth
+                    min_weight = current_weight
+                    closest = target
+
+        return closest
 
     def reset(self, conversions: Optional[list[Conversion]] = None) -> None:
         """
