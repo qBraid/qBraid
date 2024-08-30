@@ -12,14 +12,16 @@
 Module for registering custom program types and aliases
 
 """
-from typing import Any, Optional, Type, Union
+from typing import Any, Optional, Type, TypeVar, Union
 
 from ._import import _QPROGRAM_ALIASES, _QPROGRAM_REGISTRY, _QPROGRAM_TYPES, NATIVE_REGISTRY
 
-QPROGRAM = Union[tuple(_QPROGRAM_TYPES)]
+QPROGRAM_NATIVE = Union[tuple(_QPROGRAM_TYPES)]
 QPROGRAM_REGISTRY = _QPROGRAM_REGISTRY
 QPROGRAM_ALIASES = _QPROGRAM_ALIASES
 QPROGRAM_TYPES = _QPROGRAM_TYPES
+
+QPROGRAM = TypeVar("QPROGRAM", bound=Any)
 
 
 def derive_program_type_alias(program_type: Type[Any], use_submodule: bool = False) -> str:
