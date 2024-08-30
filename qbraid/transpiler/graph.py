@@ -53,7 +53,7 @@ class ConversionGraph(rx.PyDiGraph):
         """
         super().__init__()
         self.require_native = require_native
-        self.edge_bias = edge_bias or 0.25
+        self.edge_bias = edge_bias if edge_bias is not None else 0.25
         self._conversions = conversions or self.load_default_conversions(bias=self.edge_bias)
         self._node_alias_id_map: dict[str, int] = {}
         self.create_conversion_graph()
