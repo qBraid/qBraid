@@ -18,7 +18,14 @@ from unittest.mock import patch
 import pytest
 
 from qbraid.programs.exceptions import QasmError
-from qbraid.programs.qasm_typer import Qasm2Instance, Qasm2String, Qasm3Instance, Qasm3String
+from qbraid.programs.qasm_typer import (
+    BaseQasmInstanceMeta,
+    Qasm2Instance,
+    Qasm2String,
+    Qasm3Instance,
+    Qasm3String,
+    QasmString,
+)
 
 valid_qasm2_string = """
 OPENQASM 2.0;
@@ -86,3 +93,18 @@ def test_isinstance_checks_invalid(meta, version, string):
     """Test that the isinstance function correctly identifies invalid OpenQASM strings."""
     with patch("qbraid.programs.qasm_typer.extract_qasm_version", return_value=version + 1):
         assert not isinstance(string, meta)
+
+
+def test_qasm_string_type_error():
+    """Test that the QasmString class raises a TypeError when instantiated with an invalid type."""
+    with pytest.raises(TypeError, match="OpenQASM strings must be initialized with a string."):
+        QasmString(123)
+
+
+def test_base_qasm_instance_meta():
+    """Test that the BaseQasmInstanceMeta metaclass raises a TypeError when instantiated."""
+
+    class MockQasmInstance(metaclass=BaseQasmInstanceMeta):
+        """Mock class for testing the BaseQasmInstanceMeta metaclass."""
+
+    assert not isinstance({}, MockQasmInstance)

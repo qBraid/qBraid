@@ -24,7 +24,7 @@ import numpy as np
 import pytest
 from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
-from qbraid.programs import ProgramSpec, unregister_program_type
+from qbraid.programs import ProgramSpec, register_program_type, unregister_program_type
 from qbraid.runtime import DeviceStatus, TargetProfile
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceActionType
@@ -308,6 +308,41 @@ def test_device_update_scheme(mock_qbraid_device):
     mock_qbraid_device.update_scheme(conversion_graph=graph)
 
     assert graph == mock_qbraid_device.scheme.conversion_graph
+
+
+@pytest.fixture
+def valid_qasm2():
+    """Valid OpenQASM 2 string for testing."""
+    return """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    swap q[0],q[1];
+    """
+
+
+def test_device_transform(valid_qasm2, mock_qbraid_device):
+    """Test transform method on OpenQASM 2 string."""
+    assert mock_qbraid_device.transform(valid_qasm2) == {"openQasm": valid_qasm2, "bitcode": None}
+
+
+def test_device_extract_qasm(valid_qasm2, mock_qbraid_device):
+    """Test that the extracting OpenQASM representation function
+    returns qasm2 string for qasm2 program spec."""
+    assert (
+        mock_qbraid_device._extract_qasm_rep(valid_qasm2, ProgramSpec(str, "qasm2")) == valid_qasm2
+    )
+
+
+def test_device_extract_qasm_rep_none(mock_qbraid_device):
+    """Test that the extracting OpenQASM representation function returns
+    None if no OpenQASM conversion is supported from given program type."""
+    try:
+        alias = "unittest"
+        register_program_type(Mock, alias, overwrite=True)
+        assert mock_qbraid_device._extract_qasm_rep(None, ProgramSpec(Mock, alias)) is None
+    finally:
+        unregister_program_type(alias)
 
 
 def test_provider_initialize_client_raises_for_multiple_auth_params():
