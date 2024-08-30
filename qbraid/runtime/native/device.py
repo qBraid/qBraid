@@ -25,7 +25,7 @@ from qbraid_core.services.quantum import QuantumClient
 from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
 from qbraid.programs.qasm_typer import Qasm2Instance, Qasm2String
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.enums import DeviceStatus, NoiseModel
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.transpiler import ConversionGraph, transpile
 
@@ -79,8 +79,8 @@ class QbraidDevice(QuantumDevice):
     ) -> dict[str, Union[Qasm2String, bytes]]:
         """Transform the input to the format expected by the qBraid API."""
         if isinstance(run_input, Qasm2Instance):
-            return {"bitcode": None, "openQasm": run_input}
-        return {"bitcode": run_input.bitcode, "openQasm": None}
+            return {"openQasm": run_input}
+        return {"bitcode": run_input.bitcode}
 
     def submit(  # pylint: disable=too-many-arguments
         self,
@@ -203,13 +203,20 @@ class QbraidDevice(QuantumDevice):
             run_input_list = run_input
             is_single_input = False
 
+        noise_model: Optional[NoiseModel] = kwargs.pop("noise_model", None)
+        if noise_model:
+            if noise_model not in self.profile.get("noise_models", []):
+                raise ValueError(f"Noise model '{noise_model}' not supported by device.")
+            noise_model = noise_model.value
+            kwargs["noise_model"] = noise_model
+
         jobs: list[qbraid.runtime.QbraidJob] = []
 
         for program in run_input_list:
             program_alias = get_program_type_alias(program, safe=True)
             program_spec = ProgramSpec(type(program), alias=program_alias)
             qbraid_program = load_program(program) if program_spec.native else None
-            aux_payload = dynamic_params.copy()
+            aux_payload = {}
 
             if qbraid_program:
                 aux_payload["circuitNumQubits"] = self.try_extracting_info(
@@ -220,12 +227,12 @@ class QbraidDevice(QuantumDevice):
                     lambda program=qbraid_program: program.depth, "Error calculating circuit depth."
                 )
 
-                aux_payload["openQasm"] = self.try_extracting_info(
-                    lambda program=program, program_spec=program_spec: self._extract_qasm_rep(
-                        program, program_spec
-                    ),
-                    "Error extracting OpenQASM string representation.",
-                )
+            aux_payload["openQasm"] = self.try_extracting_info(
+                lambda program=program, program_spec=program_spec: self._extract_qasm_rep(
+                    program, program_spec
+                ),
+                "Error extracting OpenQASM string representation.",
+            )
 
             self.validate(qbraid_program)
             transpiled_program = self.transpile(program, program_spec)

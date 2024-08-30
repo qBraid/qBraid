@@ -19,7 +19,7 @@ from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestErr
 
 from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
 from qbraid.runtime._display import display_jobs_from_data
-from qbraid.runtime.enums import DeviceActionType
+from qbraid.runtime.enums import DeviceActionType, NoiseModel
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
@@ -78,7 +78,12 @@ class QbraidProvider(QuantumProvider):
         program_type_alias = device_data.get("runPackage")
         provider = device_data.get("provider")
         device_id = device_data.get("qbraid_id", device_data.get("objArg"))
-        noise_models = device_data.get("noiseModels", [])
+        device_name: Optional[str] = device_data.get("name")
+        noise_models = (
+            list(NoiseModel)
+            if device_name and "noise" in device_name.lower()
+            else [NoiseModel.NoNoise] if simulator else None
+        )
         program_spec = self._get_program_spec(program_type_alias)
         return TargetProfile(
             device_id=device_id,

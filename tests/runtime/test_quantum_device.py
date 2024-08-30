@@ -27,7 +27,7 @@ from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 from qbraid.programs import ProgramSpec, register_program_type, unregister_program_type
 from qbraid.runtime import DeviceStatus, TargetProfile
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import DeviceActionType
+from qbraid.runtime.enums import DeviceActionType, NoiseModel
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import (
     ExperimentResult,
@@ -147,6 +147,7 @@ def mock_profile():
         action_type=DeviceActionType.OPENQASM,
         num_qubits=42,
         program_spec=None,
+        noise_models=[NoiseModel.NoNoise],
     )
 
 
@@ -263,7 +264,7 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert job.is_terminal_state()
 
     JOB_DATA["qbraidJobId"] = "qbraid_qir_simulator-jovyan-qjob-1234567890"
-    batch_job = device.run([circuit], shots=shots)
+    batch_job = device.run([circuit], shots=shots, noise_model=NoiseModel.NoNoise)
     assert isinstance(batch_job, list)
     assert all(isinstance(job, QbraidJob) for job in batch_job)
 
@@ -310,6 +311,12 @@ def test_device_update_scheme(mock_qbraid_device):
     assert graph == mock_qbraid_device.scheme.conversion_graph
 
 
+def test_device_noisey_run_raises_for_unsupported(mock_qbraid_device):
+    """Test raising exception when noise model is not supported."""
+    with pytest.raises(ValueError):
+        mock_qbraid_device.run(Mock(), noise_model=NoiseModel.AmplitudeDamping)
+
+
 @pytest.fixture
 def valid_qasm2():
     """Valid OpenQASM 2 string for testing."""
@@ -323,7 +330,7 @@ def valid_qasm2():
 
 def test_device_transform(valid_qasm2, mock_qbraid_device):
     """Test transform method on OpenQASM 2 string."""
-    assert mock_qbraid_device.transform(valid_qasm2) == {"openQasm": valid_qasm2, "bitcode": None}
+    assert mock_qbraid_device.transform(valid_qasm2) == {"openQasm": valid_qasm2}
 
 
 def test_device_extract_qasm(valid_qasm2, mock_qbraid_device):
