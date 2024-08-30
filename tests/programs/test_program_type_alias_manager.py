@@ -21,7 +21,7 @@ from qbraid.programs.alias_manager import (
     _get_program_type_alias,
     find_str_type_alias,
     get_program_type_alias,
-    parse_qasm_type_alias,
+    get_qasm_type_alias,
 )
 from qbraid.programs.exceptions import ProgramTypeError, QasmError
 from qbraid.programs.registry import derive_program_type_alias
@@ -88,16 +88,16 @@ measure q -> c;
 
 
 @pytest.mark.parametrize("qasm_str, expected_version", QASM_BELL_DATA)
-def test_parse_qasm_type_alias(qasm_str, expected_version):
+def test_get_qasm_type_alias(qasm_str, expected_version):
     """Test getting QASM version"""
-    assert parse_qasm_type_alias(qasm_str) == expected_version
+    assert get_qasm_type_alias(qasm_str) == expected_version
 
 
 @pytest.mark.parametrize("qasm_str", QASM_ERROR_DATA)
-def test_parse_qasm_type_alias_error(qasm_str):
+def test_get_qasm_type_alias_error(qasm_str):
     """Test getting QASM version"""
     with pytest.raises(QasmError):
-        parse_qasm_type_alias(qasm_str)
+        get_qasm_type_alias(qasm_str)
 
 
 @pytest.mark.parametrize("bell_circuit", packages_bell, indirect=True)
@@ -152,7 +152,7 @@ def test_get_program_type_alias_with_string_returning_package(monkeypatch):
         "qbraid.programs.alias_manager.find_str_type_alias", lambda: "valid_package"
     )
     monkeypatch.setattr(
-        "qbraid.programs.alias_manager.parse_qasm_type_alias",
+        "qbraid.programs.alias_manager.get_qasm_type_alias",
         lambda x: (_ for _ in ()).throw(QasmError("error")),
     )
 

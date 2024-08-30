@@ -16,9 +16,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from openqasm3.parser import QASM3ParsingError, parse
-
 from .exceptions import ProgramTypeError, QasmError
+from .qasm_typer import get_qasm_type_alias
 from .registry import QPROGRAM_REGISTRY, QPROGRAM_TYPES
 
 if TYPE_CHECKING:
@@ -34,30 +33,6 @@ def find_str_type_alias(registry: dict[str, Type] = QPROGRAM_REGISTRY) -> Option
     if len(str_keys) == 1:
         return str_keys[0]
     raise ValueError(f"Multiple additional keys with type 'str' found: {str_keys}")
-
-
-def parse_qasm_type_alias(qasm: str) -> str:
-    """Gets OpenQASM program version, either qasm2 or qasm3.
-
-    Args:
-        qasm_str: An OpenQASM program string
-
-    Returns:
-        QASM version from list :obj:`~qbraid.programs.QPROGRAM_ALIASES`
-
-    Raises:
-        :class:`~qbraid.programs.QasmError`: If string does not represent a valid OpenQASAM program.
-
-    """
-    qasm = qasm.replace("opaque", "// opaque")
-
-    try:
-        program = parse(qasm)
-    except QASM3ParsingError as err:
-        raise QasmError("Failed to parse OpenQASM program.") from err
-
-    verion = int(float(program.version))
-    return f"qasm{verion}"
 
 
 def _get_program_type_alias(program: qbraid.programs.QPROGRAM) -> str:
@@ -78,7 +53,7 @@ def _get_program_type_alias(program: qbraid.programs.QPROGRAM) -> str:
 
     if isinstance(program, str):
         try:
-            return parse_qasm_type_alias(program)
+            return get_qasm_type_alias(program)
         except QasmError as err:
             package = find_str_type_alias()
             if package is not None:

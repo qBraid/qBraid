@@ -56,7 +56,7 @@ Exceptions
 
 """
 from ._import import NATIVE_REGISTRY
-from .alias_manager import get_program_type_alias, parse_qasm_type_alias
+from .alias_manager import get_program_type_alias, get_qasm_type_alias
 from .exceptions import PackageValueError, ProgramTypeError, QasmError, TransformError
 from .loader import load_program
 from .program import QuantumProgram
@@ -86,7 +86,7 @@ __all__ = [
     "derive_program_type_alias",
     "get_program_type_alias",
     "load_program",
-    "parse_qasm_type_alias",
+    "get_qasm_type_alias",
     "register_program_type",
     "unregister_program_type",
 ]

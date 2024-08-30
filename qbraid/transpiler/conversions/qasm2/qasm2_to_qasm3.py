@@ -18,7 +18,7 @@ import textwrap
 from qbraid._version import __version__ as qbraid_version
 from qbraid.passes.qasm2.decompose import _decompose_rxx_instr
 from qbraid.passes.qasm3.format import remove_unused_gates
-from qbraid.programs import parse_qasm_type_alias
+from qbraid.programs import get_qasm_type_alias
 from qbraid.transpiler.annotations import weight
 
 
@@ -109,7 +109,7 @@ def qasm2_to_qasm3(qasm_str: str) -> str:
     Returns:
         str: OpenQASM 3.0 string
     """
-    qasm_version = parse_qasm_type_alias(qasm_str)
+    qasm_version = get_qasm_type_alias(qasm_str)
     if not qasm_version == "qasm2":
         raise ValueError("Invalid OpenQASM 2.0 string")
 
