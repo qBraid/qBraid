@@ -102,9 +102,15 @@ def test_qasm_string_type_error():
 
 
 def test_base_qasm_instance_meta():
-    """Test that the BaseQasmInstanceMeta metaclass raises a TypeError when instantiated."""
+    """Test that the BaseQasmInstanceMeta metaclass does not
+    recognize dictionaries as instances of its subclasses."""
 
     class MockQasmInstance(metaclass=BaseQasmInstanceMeta):
         """Mock class for testing the BaseQasmInstanceMeta metaclass."""
 
     assert not isinstance({}, MockQasmInstance)
+
+
+def test_not_qasm_string():
+    """Test that the isinstance function returns False when given a non-QasmString object."""
+    assert not isinstance("Not a QasmString", Qasm2Instance)
