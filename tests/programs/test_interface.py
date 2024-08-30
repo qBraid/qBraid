@@ -67,7 +67,7 @@ def test_qasm3_zero_value_raises(param):
 @pytest.mark.parametrize(
     "package, err_msg",
     [
-        ("qiskit", "negative dimensions are not allowed"),
+        ("qiskit", "Failed to create Qiskit random circuit"),
         ("cirq", "Failed to create Cirq random circuit"),
     ],
 )
@@ -76,8 +76,7 @@ def test_random_circuit_raises_for_bad_params(package: str, err_msg: str, availa
     if package not in available_targets:
         pytest.skip(f"{package} not installed")
 
-    err_type = QbraidError if package == "cirq" else ValueError
-    with pytest.raises(err_type, match=err_msg):
+    with pytest.raises(QbraidError, match=err_msg):
         random_circuit(package, num_qubits=-1)
 
 

@@ -93,6 +93,27 @@ To run linters and doc generators and unit tests:
 tox
 ```
 
+### Running Tests Requiring Remote Access
+
+Some of our tests interact with remote APIs and require specific credentials, such as those from qBraid or other third-party services. By default, these tests do not run to avoid unintended network operations and the need for all developers to have access to necessary credentials.
+
+**Enabling Remote Tests:**
+
+1. **Environment Variable**: Set the `QBRAID_RUN_REMOTE_TESTS` environment variable to `true` to enable these tests. They will run if this variable is explicitly set, allowing for integration into various CI/CD pipelines without altering command line test invocations directly.
+2. **Command Line Argument**: You can also directly control the execution of remote tests using the `--remote` flag with pytest. This method overrides the environment variable setting:
+
+- To skip remote tests (useful for local development where remote resources are not needed or available):
+
+```bash
+pytest tests --remote false
+```
+
+- To enable remote tests (ensures that tests requiring external resources are executed):
+
+```bash
+pytest tests --remote true
+```
+
 ## Code Style
 
 Our project enforces code style using a combination of tools including [isort](https://github.com/PyCQA/isort), [pylint](https://github.com/pylint-dev/pylint), [black](https://github.com/psf/black), and [mypy](https://github.com/python/mypy). These tools are configured according to project-specific settings in `pyproject.toml`.

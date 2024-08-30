@@ -65,22 +65,22 @@ def get_qasm_type_alias(qasm: str) -> str:
 
 
 class BaseQasmInstanceMeta(type):
-    """Metaclass for QASM type checking based on string content.
+    """Metaclass for OpenQASM type checking based on string content.
 
     Attributes:
-        version (Optional[int]): The specific QASM type to check for.
+        version (Optional[int]): The specific OpenQASM type to check for.
     """
 
     version: Optional[int] = None
 
     def __instancecheck__(cls, instance):
-        """Custom instance checks based on QASM type.
+        """Custom instance checks based on OpenQASM type.
 
         Args:
             instance: The object to check.
 
         Returns:
-            bool: True if instance is a string matching the QASM type, False otherwise.
+            bool: True if instance is a string matching the OpenQASM type, False otherwise.
         """
         if not isinstance(instance, str):
             return False
@@ -91,27 +91,27 @@ class BaseQasmInstanceMeta(type):
 
 
 class Qasm2InstanceMeta(BaseQasmInstanceMeta):
-    """Metaclass for instances representing QASM2 strings."""
+    """Metaclass for instances representing OpenQASM 2 strings."""
 
     version = 2
 
 
 class Qasm3InstanceMeta(BaseQasmInstanceMeta):
-    """Metaclass for instances representing QASM3 strings."""
+    """Metaclass for instances representing OpenQASM 3 strings."""
 
     version = 3
 
 
 class Qasm2Instance(metaclass=Qasm2InstanceMeta):
-    """Marker class for strings that are valid QASM2 programs."""
+    """Marker class for strings that are valid OpenQASM 2 programs."""
 
 
 class Qasm3Instance(metaclass=Qasm3InstanceMeta):
-    """Marker class for strings that are valid QASM3 programs."""
+    """Marker class for strings that are valid OpenQASM 3 programs."""
 
 
 class QasmString(str):
-    """Base class for QASM string types, providing validation upon instantiation."""
+    """Base class for OpenQASM string types, providing validation upon instantiation."""
 
     version: Optional[int] = None
 
