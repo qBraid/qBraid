@@ -15,6 +15,7 @@ Unit tests for the Azure Quantum runtime module.
 
 """
 import json
+import time
 from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
@@ -602,9 +603,12 @@ def test_draw_random_sample_consistency(
     """Test drawing random samples with and without a specific seed."""
     shots = 10
     probabilities = {"00": 0.5, "11": 0.5}
-    sample1 = mock_result_builder._draw_random_sample(probabilities, shots, seed)
-    sample2 = mock_result_builder._draw_random_sample(probabilities, shots, seed)
-    sample3 = mock_result_builder._draw_random_sample(probabilities, shots, seed)
+    sleep = 0.5 if seed is None else 0
+    sample1 = mock_result_builder._draw_random_sample(probabilities, shots, sampler_seed=seed)
+    time.sleep(sleep)
+    sample2 = mock_result_builder._draw_random_sample(probabilities, shots, sampler_seed=seed)
+    time.sleep(sleep)
+    sample3 = mock_result_builder._draw_random_sample(probabilities, shots, sampler_seed=seed)
 
     if should_match:
         assert sample1 == sample2 == sample3
