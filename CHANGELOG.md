@@ -10,12 +10,47 @@ Types of changes:
 - `Deprecated`: for soon-to-be removed features.
 - `Removed`: for now removed features.
 - `Fixed`: for any bug fixes.
+- `Dependencies`: for updates to external libraries or packages.
 
 ## [Unreleased]
 
 ### Added
 - Added `qbraid.programs.qasm_typer` module containing custom types (`Qasm2String` and `Qasm3String`) that can be used instead of `str` for more accurate static typing, as well as instance variables (`Qasm2Instance` and `Qasm3Instance`) that can be used for `isinstance` checks against both OpenQASM 2 and 3 strings ([#745](https://github.com/qBraid/qBraid/pull/745))
 - Added `qbraid.runtime.enums.NoiseModel` enum for various noise model options that we may support on managed simulators in the future. This is not a supported feature just yet, so this enum is really just a placeholder. ([#745](https://github.com/qBraid/qBraid/pull/745))
+- `qbraid.runtime.azure` module with `AzureQuantumProvider` class to enable access to QPUs and simulators from IonQ, Quantinuum, and Rigetti, as well as the Microsoft resource estimator, using Azure credentials ([#723](https://github.com/qBraid/qBraid/pull/723))
+
+```python
+from azure.quantum import Workspace
+
+from qbraid.runtime.azure import AzureQuantumProvider
+
+workspace = Workspace(...)
+
+provider = AzureQuantumProvider(workspace)
+
+device = provider.get_device("quantinuum.sim.h1-1sc")
+
+circuit = """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[3];
+creg c0[3];
+h q[0];
+cx q[0], q[1];
+cx q[1], q[2];
+measure q[0] -> c0[0];
+measure q[1] -> c0[1];
+measure q[2] -> c0[2];
+"""
+
+job = device.run(circuit, shots=100)
+job.wait_for_final_state()
+
+result = job.result()
+counts = result.measurement_counts()
+
+print(counts) # {"000": 100}
+```
 
 ### Improved / Modified
 - Updated construction of `TargetProfile` in `QbraidProvider` to populate provider from API instead of defaulting to fixed value 'qBraid'. ([#744](https://github.com/qBraid/qBraid/pull/744))
@@ -29,6 +64,7 @@ Types of changes:
 - Fixed `qbraid.transpiler.transpile` bug where the shortest path wasn't always being favored by the rustworkx pathfinding algorithm. Fixed by adding a bias parameter to both the `ConversionGraph` and `Conversion` classes that attributes as small weight to each conversion by default. ([#745](https://github.com/qBraid/qBraid/pull/745))
 
 ### Dependencies
+- Added `qbraid[azure]` extra to project ([#723](https://github.com/qBraid/qBraid/pull/723))
 
 ## [0.7.3] - 2024-08-26
 
