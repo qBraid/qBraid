@@ -15,6 +15,7 @@ Unit tests for OQCProvider class
 
 """
 import datetime
+import json
 import logging
 from unittest.mock import Mock, patch
 
@@ -54,7 +55,7 @@ def lucy_simulator_data():
     """Return data for Lucy Simulator."""
     return {
         "active": True,
-        "feature_set": {"always_on": True, "qubit_count": 8, "simulator": True},
+        "feature_set": json.dumps({"always_on": True, "qubit_count": 8, "simulator": True}),
         "generation": 2,
         "id": "qpu:uk:2:d865b5a184",
         "name": "Lucy Simulator",
@@ -191,7 +192,9 @@ def test_oqc_provider_device(lucy_simulator_data):
         with pytest.raises(ResourceNotFoundError):
             provider.get_device("fake_id")
         assert isinstance(test_device.client, OQCClient)
-        lucy_simulator_data["feature_set"]["always_on"] = False
+        lucy_simulator_data["feature_set"] = json.dumps(
+            {"always_on": False, "qubit_count": 8, "simulator": True}
+        )
         now = datetime.datetime.now()
         year, month, day = now.year, now.month, now.day
         window = f"{year + 1}-{month}-{day} 00:50:00"
@@ -215,6 +218,32 @@ def test_oqc_provider_device(lucy_simulator_data):
         mock_client.return_value.get_next_window.return_value = window
         always_on_false_available_device = provider.get_device(DEVICE_ID)
         assert always_on_false_available_device.status() == DeviceStatus.ONLINE
+
+
+@pytest.mark.parametrize(
+    "data_modifications, expected_error_message",
+    [
+        ({"feature_set": ""}, "Failed to decode feature set data for device"),
+        (
+            {"feature_set": json.dumps({"qubit_count": 8})},
+            "Failed to gather profile data for device",
+        ),
+    ],
+)
+def test_oqc_provider_get_device_errors(
+    lucy_simulator_data, data_modifications, expected_error_message
+):
+    """Test OQC provider get device method raises exceptions for various error conditions."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = Mock(spec=OQCClient)
+        invalid_lucy_simulator_data = lucy_simulator_data.copy()
+        invalid_lucy_simulator_data.update(data_modifications)
+        mock_client.return_value.get_qpus.return_value = [invalid_lucy_simulator_data]
+        provider = OQCProvider(token="fake_token")
+
+        with pytest.raises(ValueError) as excinfo:
+            provider.get_device(DEVICE_ID)
+        assert expected_error_message in str(excinfo.value)
 
 
 def test_build_runtime_profile(lucy_simulator_data):

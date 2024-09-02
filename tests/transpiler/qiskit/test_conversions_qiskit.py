@@ -234,7 +234,9 @@ def test_100_random_qiskit():
     for _ in range(100):
         qiskit_circuit = random_circuit(4, 1)
         cirq_circuit = transpile(qiskit_circuit, "cirq", require_native=True)
-        assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=False)
+        assert circuits_allclose(
+            qiskit_circuit, cirq_circuit, strict_gphase=False, index_contig=True
+        )
 
 
 def test_qiskit_to_from_qasm3():

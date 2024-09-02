@@ -15,7 +15,8 @@ Device class for OQC devices.
 from __future__ import annotations
 
 import datetime
-from typing import TYPE_CHECKING, Union
+import json
+from typing import TYPE_CHECKING, Any, Union
 
 from qcaas_client.client import QPUTask
 from qcaas_client.compiler_config import (
@@ -80,14 +81,34 @@ class OQCDevice(QuantumDevice):
         self._client = client
 
     @property
-    def client(self) -> "qcaas_client.client.OQCClient":
+    def client(self) -> qcaas_client.client.OQCClient:
         """Returns the client for the device."""
         return self._client
 
+    @staticmethod
+    def _decode_feature_set(data: dict[str, Any]) -> dict[str, Any]:
+        """Decode the device feature set data."""
+        feature_set: Union[str, dict] = data.get("feature_set", {})
+
+        if isinstance(feature_set, dict):
+            return data
+
+        try:
+            feature_set_decoded = json.loads(feature_set)
+        except json.JSONDecodeError as err:
+            raise ValueError(
+                f"Failed to decode feature set data for device '{data.get('id')}'."
+            ) from err
+
+        data["feature_set"] = feature_set_decoded
+
+        return data
+
     def status(self) -> DeviceStatus:
         """Returns the status of the device."""
-        devices = self._client.get_qpus()
+        devices: list[dict] = self._client.get_qpus()
         for device in devices:
+            device = self._decode_feature_set(device)
             if device["id"] == self.id:
                 if device["feature_set"]["always_on"]:
                     return DeviceStatus.ONLINE

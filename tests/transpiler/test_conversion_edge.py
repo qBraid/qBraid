@@ -25,6 +25,7 @@ from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.transpiler.annotations import requires_extras, weight
 from qbraid.transpiler.conversions.braket import braket_to_cirq
 from qbraid.transpiler.edge import Conversion
+from qbraid.transpiler.graph import ConversionGraph
 
 
 @requires_extras("alice")
@@ -197,3 +198,32 @@ class TestConversionEquality:
         assert (
             conv != "a string"
         ), "Comparison with an object of a different type should return False"
+
+
+@pytest.mark.parametrize(
+    "conversions, start, end, expected_path",
+    [
+        ([("a", "b", 1.00), ("b", "c", 1.00), ("a", "c", 0.77)], "a", "c", "a -> b -> c"),
+        ([("a", "b", 1.00), ("b", "c", 1.00), ("a", "c", 0.78)], "a", "c", "a -> c"),
+        (
+            [("a", "b", 1.00), ("b", "c", 1.00), ("c", "d", 1.00), ("a", "d", 0.60)],
+            "a",
+            "d",
+            "a -> b -> c -> d",
+        ),
+        (
+            [("a", "b", 1.00), ("b", "c", 1.00), ("c", "d", 1.00), ("a", "d", 0.61)],
+            "a",
+            "d",
+            "a -> d",
+        ),
+    ],
+)
+def test_conversion_weight_bias(conversions, start, end, expected_path):
+    """Tests the effect of weight biases on determining the shortest path in a conversion graph."""
+    conversions = [
+        Conversion(src, dst, lambda x: x, weight, bias=0.25) for src, dst, weight in conversions
+    ]
+    graph = ConversionGraph(conversions=conversions)
+    shortest_path = graph.shortest_path(start, end)
+    assert shortest_path == expected_path

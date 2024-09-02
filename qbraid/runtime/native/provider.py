@@ -19,6 +19,7 @@ from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestErr
 
 from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
 from qbraid.runtime._display import display_jobs_from_data
+from qbraid.runtime.enums import DeviceActionType, NoiseModel
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
@@ -75,19 +76,29 @@ class QbraidProvider(QuantumProvider):
         num_qubits = device_data.get("numberQubits")
         simulator = device_data.get("type") == "SIMULATOR"
         program_type_alias = device_data.get("runPackage")
+        provider = device_data.get("provider")
+        device_id = device_data.get("qbraid_id", device_data.get("objArg"))
+        device_name: Optional[str] = device_data.get("name")
+        noise_models = (
+            list(NoiseModel)
+            if device_name and "noise" in device_name.lower()
+            else [NoiseModel.NoNoise] if simulator else None
+        )
         program_spec = self._get_program_spec(program_type_alias)
         return TargetProfile(
+            device_id=device_id,
             simulator=simulator,
-            device_id=device_data["qbraid_id"],
+            action_type=DeviceActionType.OPENQASM,
             num_qubits=num_qubits,
             program_spec=program_spec,
-            provider_name="qBraid",
+            provider_name=provider,
+            noise_models=noise_models,
         )
 
     def get_devices(self, **kwargs) -> list[QbraidDevice]:
         """Return a list of devices matching the specified filtering."""
         query = kwargs or {}
-        query["provider"] = "qBraid"
+        query["vendor"] = "qBraid"
 
         try:
             device_data_lst = self.client.search_devices(query)

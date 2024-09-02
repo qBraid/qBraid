@@ -12,6 +12,8 @@
 Module for managing conversion configurations for quantum runtime.
 
 """
+from __future__ import annotations
+
 from dataclasses import asdict, dataclass, field
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -40,7 +42,7 @@ class ConversionScheme:
         update_values: Dynamically updates the values of the instance's attributes.
     """
 
-    conversion_graph: "Optional[qbraid.transpiler.ConversionGraph]" = None
+    conversion_graph: Optional[qbraid.transpiler.ConversionGraph] = None
     max_path_attempts: int = 3
     max_path_depth: Optional[int] = None
     extra_kwargs: dict[str, Any] = field(default_factory=dict)

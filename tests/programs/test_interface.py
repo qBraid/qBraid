@@ -70,8 +70,9 @@ def test_random_circuit_raises_for_bad_params(package: str, available_targets):
     if package not in available_targets:
         pytest.skip(f"{package} not installed")
 
-    expected_err = f"Failed to create {package.capitalize()} random circuit"
-    with pytest.raises(QbraidError, match=expected_err):
+    capitalized_package = package.capitalize()
+    err_msg = f"Failed to create {capitalized_package} random circuit"
+    with pytest.raises(QbraidError, match=err_msg):
         random_circuit(package, num_qubits=-1)
 
 

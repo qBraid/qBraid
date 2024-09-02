@@ -46,6 +46,33 @@ class DeviceStatus(Enum):
     RETIRED = "retired"
 
 
+class NoiseModel(Enum):
+    """Enumeration representing various noise models for quantum simulators.
+
+    Attributes:
+        NoNoise (str): The simulation is performed without any noise, representing an
+            ideal quantum computer.
+        Depolarizing (str): Applies random errors to qubits, effectively turning a pure
+            quantum state into a mixed state.
+        AmplitudeDamping (str): Simulates energy loss in a quantum system, causing qubits
+            to decay from the excited state to the ground state.
+        PhaseDamping (str): Represents dephasing, where the relative phase between quantum
+            states is randomized without energy loss.
+        BitFlip (str): Randomly flips the state of qubits (i.e., from 0 to 1 or from 1 to 0)
+            with a certain probability.
+        PhaseFlip (str): Randomly flips the phase of a qubit state (i.e., it applies a Z gate)
+            with a certain probability.
+
+    """
+
+    NoNoise = "no_noise"
+    Depolarizing = "depolarizing"
+    AmplitudeDamping = "amplitude_damping"
+    PhaseDamping = "phase_damping"
+    BitFlip = "bit_flip"
+    PhaseFlip = "phase_flip"
+
+
 class JobStatus(Enum):
     """Class for the status of processes (i.e. jobs / quantum tasks) resulting from any
     :meth:`~qbraid.runtime.QuantumDevice.run` method.

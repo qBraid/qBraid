@@ -57,7 +57,7 @@ class QuantumProgram(ABC):
         self._program = value
 
     @staticmethod
-    def get_spec(program: qbraid.programs.QPROGRAM) -> ProgramSpec:
+    def get_spec(program: Any) -> ProgramSpec:
         """Return the program spec."""
         try:
             alias = get_program_type_alias(program)
@@ -74,5 +74,5 @@ class QuantumProgram(ABC):
         to execute this program."""
 
     @abstractmethod
-    def transform(self, device: "qbraid.runtime.QuantumDevice") -> None:
+    def transform(self, device: qbraid.runtime.QuantumDevice) -> None:
         """Transform program to according to device target profile."""

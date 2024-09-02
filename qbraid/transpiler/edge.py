@@ -29,10 +29,17 @@ if TYPE_CHECKING:
 class Conversion:
     """
     Class for defining and handling custom conversions between different quantum program packages.
+
     """
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
-        self, source: str, target: str, conversion_func: Callable, weight: Optional[float] = None
+        self,
+        source: str,
+        target: str,
+        conversion_func: Callable,
+        weight: Optional[float] = None,
+        bias: Optional[float] = None,
     ):
         """
         Initialize a Conversion instance with source and target packages and a conversion function.
@@ -43,19 +50,20 @@ class Conversion:
             conversion_func (Callable): The function that performs the actual conversion.
             weight (Optional[float]): Optional weighting factor for the conversion, ranging [0,1].
                 If not specified, defaults to 1 or a custom value derived from the conversion_func.
+            bias (Optional[float]): Optional factor used to fine-tune the weight calculation and
+                modify the decision thresholds for pathfinding. Defaults to 0. Higher values
+                prioritize shorter paths. For example, a bias of 0.25 slightly favors a single
+                conversion at weight 0.8 over two conversions at weight 1.0, whereas a bias of 0.1
+                requires a single conversion of weight > 0.9 to be preferred over two at weight 1.0.
         """
         self._source = source
         self._target = target
         self._conversion_func = conversion_func
+        self._bias = bias if bias is not None else 0
+        self._weight = self._get_adjusted_weight(weight)
         self._extras = getattr(conversion_func, "requires_extras", [])
         self._native = self._is_module_native(conversion_func)
         self._supported = self._is_conversion_supported()
-
-        default_weight = getattr(conversion_func, "weight", 1)
-        self._weight = weight if weight is not None else default_weight
-        if not 0 <= self._weight <= 1:
-            raise ValueError("Weight must be a float between 0 and 1, inclusive.")
-        self._weight = float("inf") if self._weight == 0 else np.log(1 / self._weight)
 
     @property
     def source(self) -> str:
@@ -106,6 +114,35 @@ class Conversion:
             int: The weight of the conversion function.
         """
         return self._weight
+
+    def _get_adjusted_weight(self, weight: Optional[float] = None) -> float:
+        """
+        Calculates and returns the effective weight of the conversion, applying a bias to
+        prioritize shorter conversion paths when used with pathfinding algorithms like rustworkx.
+
+        Args:
+            weight (float, optional): The initial weight provided by the user. Defaults to
+                the weight attribute of conversion_func if not provided.
+
+        Returns:
+            float: The calculated weight adjusted for pathfinding optimization.
+
+        Raises:
+            ValueError: If the calculated or provided weight is not between 0 and 1, inclusive.
+        """
+        effective_weight = (
+            weight if weight is not None else getattr(self._conversion_func, "weight", 1)
+        )
+
+        if not 0 <= effective_weight <= 1:
+            raise ValueError("Weight must be a float between 0 and 1, inclusive.")
+
+        # Invert and log transform for positive weight differentiation with rustworkx
+        rx_adjusted_weight = float("inf") if effective_weight == 0 else np.log(1 / effective_weight)
+
+        adjusted_weight = rx_adjusted_weight + self._bias
+
+        return adjusted_weight
 
     def _is_module_native(self, func: Callable) -> bool:
         """

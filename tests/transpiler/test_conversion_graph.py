@@ -288,3 +288,23 @@ def test_get_path_from_bound_methods_attribute_error():
             graph._get_path_from_bound_methods([data["func"]])
 
         assert "Bound method instance lacks 'source' or 'target' attributes." in str(excinfo.value)
+
+
+def test_closest_target_direct_match(basic_conversion_graph: ConversionGraph):
+    """Test that a direct conversion is returned when available."""
+    assert basic_conversion_graph.closest_target("a", ["a", "b"]) == "a"
+
+
+def test_closest_target_shortest_path_selection(basic_conversion_graph: ConversionGraph):
+    """Test that the shortest path is selected when multiple paths are available."""
+    assert basic_conversion_graph.closest_target("a", ["b", "c"]) == "b"
+
+
+def test_closest_target_no_paths(basic_conversion_graph: ConversionGraph):
+    """Test that None is returned when no paths are available."""
+    assert basic_conversion_graph.closest_target("c", ["a", "b"]) is None
+
+
+def test_closest_target_no_targets(basic_conversion_graph: ConversionGraph):
+    """Test that None is returned when no targets are available."""
+    assert basic_conversion_graph.closest_target("a", []) is None

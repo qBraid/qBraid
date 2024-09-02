@@ -8,6 +8,8 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# pylint: disable=arguments-differ
+
 """
 Module defining QbraidDevice class
 
@@ -16,15 +18,16 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from qbraid_core.services.quantum import QuantumClient
 
 from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
+from qbraid.programs.qasm_typer import Qasm2Instance, Qasm2String
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.enums import DeviceStatus, NoiseModel
 from qbraid.runtime.exceptions import QbraidRuntimeError
-from qbraid.transpiler import transpile
+from qbraid.transpiler import ConversionGraph, transpile
 
 from .job import QbraidJob
 
@@ -35,7 +38,6 @@ if TYPE_CHECKING:
     import qbraid.programs
     import qbraid.runtime
     import qbraid.transpiler
-
 
 logger = logging.getLogger(__name__)
 
@@ -72,74 +74,63 @@ class QbraidDevice(QuantumDevice):
         pending_jobs = device_data.get("pendingJobs", 0)
         return int(pending_jobs)
 
-    # pylint: disable-next=too-many-arguments
-    def _create_job(
+    def transform(
+        self, run_input: Union[pyqir.Module, Qasm2String]
+    ) -> dict[str, Union[Qasm2String, bytes]]:
+        """Transform the input to the format expected by the qBraid API."""
+        if isinstance(run_input, Qasm2Instance):
+            return {"openQasm": run_input}
+        return {"bitcode": run_input.bitcode}
+
+    def submit(  # pylint: disable=too-many-arguments
         self,
+        run_input: dict[str, Union[bytes, str]],
+        shots: Optional[int] = None,
         tags: Optional[dict[str, str]] = None,
-        shots: Optional[int] = None,
-        openqasm: Optional[str] = None,
-        bitcode: Optional[bytes] = None,
-        num_qubits: Optional[int] = None,
-        depth: Optional[int] = None,
-        **kwargs,
-    ) -> dict[str, Any]:
-        """Create new qBraid job.
-
-        Args:
-            tags (optional, dict): A dictionary of tags to associate with the job.
-            shots (optional, int): The number of shots to run the job for.
-            bitcode (optional, bytes): The QIR byte code to run.
-            openqasm (optional, str): The OpenQASM to run.
-            num_qubits (optional, int): The number of qubits in the circuit.
-            depth (optional, int): The depth of the circuit.
-
-        Returns:
-            dict: The job data returned by the qBraid API.
-
-        """
-        tags = tags or {}
-
-        init_data = {
-            "bitcode": bitcode,
-            "qbraidDeviceId": self.id,
-            "shots": shots,
-            "openQasm": openqasm,
-            "circuitNumQubits": num_qubits,
-            "circuitDepth": depth,
-            "tags": json.dumps(tags),
-            **kwargs,
-        }
-
-        job_data = self.client.create_job(data=init_data)
-        job_id: str = job_data.pop("qbraidJobId")
-        job_data["job_id"] = job_id
-
-        return job_data
-
-    def submit(
-        self,
-        run_input: pyqir.Module,
-        *args,
         entrypoint: Optional[str] = None,
-        shots: Optional[int] = None,
-        **kwargs,
+        noise_model: Optional[str] = None,
+        seed: Optional[int] = None,
+        timeout: Optional[int] = None,
     ) -> qbraid.runtime.QbraidJob:
-        """Runs the qir-runner executable with the given QIR file and shots, each module
-        paired with a specific entrypoint.
+        """
+        Creates a qBraid Quantum Job.
 
         Args:
-            run_input (pyqir.Module): QIR modules to run in the simulator.
-            entrypoint (optional, str): Name of the entrypoint function to execute in
-                the QIR program. Defaults to None if not specified.
-            shots (optional, int): The number of times to repeat the execution of the chosen
-                entry point in the program. Defaults to 1 if not specified.
+            run_input (dict[str, Union[bytes, str]]): Dictionary containing
+                QIR bytecode or OpenQASM string to be run on the device.
+            shots (optional, int): The number of times to repeat the execution of the
+                program. Default value varies by device.
+            tags (optional, dict): A dictionary of tags to associate with the job.
+            entrypoint (optional, str): Name of the entrypoint function to execute.
+                Only applicable if run_input is a QIR module. Defaults to None.
+            noise_model (optional, str): The noise model to apply to the job.
+                Only applicable if device supports noisey simulation. Defaults to None.
+            seed (optional, int): The seed to use for the random number generator.
+                Only applicable for certain devices. Defaults to None.
+            timeout (optional, int): The maximum time in seconds to wait for the job
+                to complete after execution has started. Defaults to None.
 
         Returns:
             QbraidJob: The job objects representing the submitted job.
+
+        See Also: https://docs.qbraid.com/api-reference/api-reference/post-quantum-jobs
+
         """
-        job_data = self._create_job(
-            bitcode=run_input.bitcode, entrypoint=entrypoint, shots=shots, **kwargs
-        )
+        payload = {
+            "qbraidDeviceId": self.id,
+            "tags": json.dumps(tags or {}),
+            "shots": shots,
+            "seed": seed,
+            "entrypoint": entrypoint,
+            "timeout": timeout,
+            "noiseModel": noise_model,
+            **run_input,
+        }
+
+        job_data = self.client.create_job(data=payload)
+        job_id: str = job_data.pop("qbraidJobId")
+        job_data["job_id"] = job_id
+
         return QbraidJob(**job_data, device=self, client=self.client)
 
     def try_extracting_info(self, func, error_message):
@@ -151,25 +142,54 @@ class QbraidDevice(QuantumDevice):
             logger.info("%s: %s. Field will be omitted in job metadata.", error_message, str(err))
             return None
 
+    def _extract_qasm_rep(
+        self, program: qbraid.programs.QPROGRAM, program_spec: ProgramSpec
+    ) -> Optional[str]:
+        """Populate the qasm info in the payload."""
+        if program_spec.alias in ["qasm2", "qasm3"]:
+            return program
+
+        aux_graph = ConversionGraph()
+
+        closest_qasm = aux_graph.closest_target(program_spec.alias, ["qasm2", "qasm3"])
+
+        if closest_qasm is None:
+            return None
+
+        return transpile(program, closest_qasm, conversion_graph=aux_graph)
+
     def run(
         self,
         run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
-        *args,
+        shots: Optional[int] = None,
+        tags: Optional[dict[str, str]] = None,
         **kwargs,
-    ) -> "Union[qbraid.runtime.QbraidJob, list[qbraid.runtime.QbraidJob]]":
+    ) -> Union[qbraid.runtime.QbraidJob, list[qbraid.runtime.QbraidJob]]:
         """
         Run a quantum job or a list of quantum jobs on this quantum device.
 
         Args:
-            run_input: A single quantum program or a list of quantum programs to run on the device.
+            run_input (Union[QPROGRAM, list[QPROGRAM]]): A single quantum program
+                or a list of quantum programs to run on the device.
+            shots (optional, int): The number of times to repeat the execution of the
+                program. Default value varies by device.
+            tags (optional, dict): A dictionary of tags to associate with the job.
+            **kwargs: Additional json data to include in the job submission payload.
 
         Returns:
             A QuantumJob object or a list of QuantumJob objects corresponding to the input.
 
         Raises:
-            ValueError: If "num_qubits", "depth", or "openqasm" are included in kwargs.
+            ValueError: If any protected dynamic parameters are specified in the kwargs.
         """
-        forbidden_keys = {"num_qubits", "depth", "openqasm"}
+        dynamic_params = {
+            "openQasm": None,
+            "bitcode": None,
+            "circuitNumQubits": None,
+            "circuitDepth": None,
+        }
+        forbidden_keys = set(dynamic_params.keys())
+
         if any(key in kwargs for key in forbidden_keys):
             raise ValueError(
                 f"You cannot specify {', '.join(forbidden_keys)} "
@@ -183,35 +203,42 @@ class QbraidDevice(QuantumDevice):
             run_input_list = run_input
             is_single_input = False
 
+        noise_model: Optional[NoiseModel] = kwargs.pop("noise_model", None)
+        if noise_model:
+            if noise_model not in self.profile.get("noise_models", []):
+                raise ValueError(f"Noise model '{noise_model}' not supported by device.")
+            noise_model = noise_model.value
+            kwargs["noise_model"] = noise_model
+
         jobs: list[qbraid.runtime.QbraidJob] = []
 
         for program in run_input_list:
             program_alias = get_program_type_alias(program, safe=True)
             program_spec = ProgramSpec(type(program), alias=program_alias)
             qbraid_program = load_program(program) if program_spec.native else None
-            program_data = {
-                "num_qubits": None,
-                "depth": None,
-                "openqasm": None,
-            }
+            aux_payload = {}
 
             if qbraid_program:
-                program_data["num_qubits"] = self.try_extracting_info(
+                aux_payload["circuitNumQubits"] = self.try_extracting_info(
                     lambda program=qbraid_program: program.num_qubits,
-                    "Error calculating circuit num_qubits.",
+                    "Error calculating circuit number of qubits.",
                 )
-                program_data["depth"] = self.try_extracting_info(
+                aux_payload["circuitDepth"] = self.try_extracting_info(
                     lambda program=qbraid_program: program.depth, "Error calculating circuit depth."
                 )
-                program_data["openqasm"] = self.try_extracting_info(
-                    lambda program=program: transpile(program, "qasm3"),
-                    "Error converting circuit to OpenQASM 3.",
-                )
+
+            aux_payload["openQasm"] = self.try_extracting_info(
+                lambda program=program, program_spec=program_spec: self._extract_qasm_rep(
+                    program, program_spec
+                ),
+                "Error extracting OpenQASM string representation.",
+            )
 
             self.validate(qbraid_program)
             transpiled_program = self.transpile(program, program_spec)
-            transformed_program = self.transform(transpiled_program)
-            job = self.submit(transformed_program, *args, **program_data, **kwargs)
+            run_input_json = self.transform(transpiled_program)
+            runtime_payload = {**aux_payload, **run_input_json}
+            job = self.submit(run_input=runtime_payload, shots=shots, tags=tags, **kwargs)
             jobs.append(job)
 
         return jobs[0] if is_single_input else jobs
