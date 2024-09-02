@@ -27,4 +27,6 @@ def openqasm3_to_qasm3(program: openqasm3.ast.Program) -> str:
     Returns:
         str: OpenQASM 3.0 string
     """
+    statements = program.statements
+    program = openqasm3.ast.Program(statements=statements, version="3.0")
     return openqasm3.dumps(program)

@@ -12,10 +12,13 @@
 Module defining OpenQasm2Program and OpenQasm3Program classes.
 
 """
+from __future__ import annotations
+
 import re
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import numpy as np
+import openqasm3.ast
 from openqasm3.ast import (
     BinaryExpression,
     BitType,
@@ -36,11 +39,15 @@ from openqasm3.ast import (
     Statement,
 )
 from openqasm3.parser import parse
+from qbraid_core._import import LazyLoader
 
-from qbraid.passes.qasm3 import normalize_qasm_gate_params, rebase
+from qbraid.passes.qasm3 import convert_qasm_pi_to_decimal, normalize_qasm_gate_params, rebase
 from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.qasm_typer import Qasm2Instance, Qasm2String, Qasm3Instance, Qasm3String
 
 from ._model import GateModelProgram
+
+transpiler = LazyLoader("transpiler", globals(), "qbraid.transpiler")
 
 
 def expression_value(expression: Optional[Union[Expression, RangeDefinition]]) -> int:
@@ -186,9 +193,9 @@ def depth(qasm_statements: list[Statement], counts: dict[str, int]) -> dict[str,
 class OpenQasm2Program(GateModelProgram):
     """Wrapper class for OpenQASM 2 strings."""
 
-    def __init__(self, program: str):
+    def __init__(self, program: Qasm2String):
         super().__init__(program)
-        if not isinstance(program, str):
+        if not isinstance(program, Qasm2Instance):
             raise ProgramTypeError(message=f"Expected 'str' object, got '{type(program)}'.")
 
     def parsed(self) -> Program:
@@ -230,12 +237,9 @@ class OpenQasm2Program(GateModelProgram):
         counts = depth(program.statements, counts)
         return max(counts.values())
 
-    def _unitary(self) -> "np.ndarray":
+    def _unitary(self) -> np.ndarray:
         """Return the unitary of the QASM"""
-        # pylint: disable=import-outside-toplevel
-        from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
-
-        return qasm2_to_cirq(self.program).unitary()
+        return transpiler.transpile(self.program, "cirq").unitary()
 
     def remove_idle_qubits(self) -> None:
         """Checks whether the circuit uses contiguous qubits/indices,
@@ -245,6 +249,84 @@ class OpenQasm2Program(GateModelProgram):
     def reverse_qubit_order(self) -> None:
         """Reverses the qubit ordering of a openqasm program."""
         raise NotImplementedError
+
+    def to_ionq_json(self) -> dict[str, Union[int, list[dict[str, Any]]]]:
+        """Extract gate data from the input program."""
+        program = self.parsed()
+
+        gates: list[dict[str, Any]] = []
+
+        for statement in program.statements:
+            if isinstance(statement, openqasm3.ast.QuantumGate):
+                name = statement.name.name
+                qubits = statement.qubits
+                qubit_values = []
+
+                for qubit in qubits:
+                    _ = qubit.name.name
+                    indices = qubit.indices
+                    for index in indices:
+                        qubit_values.extend(literal.value for literal in index)
+
+                # support gates defined in `stdgates.inc` from OpenQASM 3
+                if len(qubit_values) == 1:
+                    # IonQ supported gates:
+                    if name in ["x", "not", "y", "z", "h", "s", "si", "t", "ti", "v", "vi"]:
+                        gate_data = {"gate": name, "target": qubit_values[0]}
+                    elif name in ["rx", "ry", "rz"]:
+                        # convert "rz(3 * pi / 4) q[0];" to "3 * pi / 4"
+                        angle_str = re.findall(r"\((.+)\)", openqasm3.dumps(statement))[0]
+                        gate_data = {
+                            "gate": name,
+                            "target": qubit_values[0],
+                            "rotation": float(convert_qasm_pi_to_decimal(angle_str)),
+                        }
+                    # OpenQASM 3 aliases:
+                    elif name == "sdg":
+                        gate_data = {"gate": "si", "target": qubit_values[0]}
+                    elif name == "tdg":
+                        gate_data = {"gate": "ti", "target": qubit_values[0]}
+                    elif name == "sx":
+                        gate_data = {"gate": "v", "target": qubit_values[0]}
+                    elif name == "sxdg":
+                        gate_data = {"gate": "vi", "target": qubit_values[0]}
+                    else:
+                        raise NotImplementedError(f"'{name}' gate not yet supported")
+                elif len(qubit_values) == 2:
+                    if name in ["cnot", "cx", "CX"]:
+                        gate_data = {
+                            "gate": "cnot",
+                            "control": qubit_values[0],
+                            "target": qubit_values[1],
+                        }
+                    elif name == "swap":
+                        gate_data = {
+                            "gate": "swap",
+                            "targets": qubit_values,
+                        }
+                    else:
+                        raise NotImplementedError(f"'{name}' gate not yet supported")
+                elif len(qubit_values) == 3:
+                    if name in ["ccx", "toffoli"]:
+                        gate_data = {
+                            "gate": "cnot",
+                            "controls": qubit_values[:2],
+                            "target": qubit_values[2],
+                        }
+                else:
+                    raise NotImplementedError(f"'{name}' gate not yet supported")
+
+                gates.append(gate_data)
+
+        return {"qubits": self.num_qubits, "circuit": gates}
+
+    def transform(self, device) -> None:
+        """Transform program to according to device target profile."""
+        basis_gates = device.profile.get("basis_gates")
+
+        if basis_gates is not None and len(basis_gates) > 0:
+            transformed_qasm = rebase(self.program, basis_gates)
+            self._program = normalize_qasm_gate_params(transformed_qasm)
 
 
 def auto_reparse(func):
@@ -262,9 +344,9 @@ def auto_reparse(func):
 class OpenQasm3Program(GateModelProgram):
     """Wrapper class for OpenQASM 3 strings."""
 
-    def __init__(self, program: str):
+    def __init__(self, program: Qasm3String):
         super().__init__(program)
-        if not isinstance(program, str):
+        if not isinstance(program, Qasm3Instance):
             raise ProgramTypeError(message=f"Expected 'str' object, got '{type(program)}'.")
         self._program: str = program
         self._parse_state()
@@ -329,7 +411,7 @@ class OpenQasm3Program(GateModelProgram):
         counts = depth(program.statements, counts)
         return max(counts.values())
 
-    def _unitary(self) -> "np.ndarray":
+    def _unitary(self) -> np.ndarray:
         """Calculate unitary of circuit."""
         raise NotImplementedError
 

@@ -228,3 +228,11 @@ def normalize_qasm_gate_params(qasm: str) -> str:
         convert_qasm_pi_to_decimal, simplify_arithmetic_expressions, simplify_parentheses_in_qasm
     )
     return transform_qasm(qasm)
+
+
+def replace_qubit_with_qreg(qasm: str) -> str:
+    """Replaces qubit declaration with qreg declaration in OpenQASM 2.0 string"""
+    pattern = r"qubit\[(\d+)\]\s+([a-zA-Z]);"
+    replacement = r"qreg \2[\1];"
+    result = re.sub(pattern, replacement, qasm)
+    return result

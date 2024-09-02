@@ -18,15 +18,19 @@ from typing import Optional
 from azure.identity import ClientSecretCredential
 from azure.quantum import Workspace
 from azure.quantum.target import Target
+from qbraid_core._import import LazyLoader
 
+from qbraid.programs import ProgramSpec
 from qbraid.runtime.enums import DeviceActionType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
 from .device import AzureQuantumDevice
+from .io_format import InputDataFormat
 
-warnings.simplefilter("always")
+pyquil = LazyLoader("pyquil", globals(), "pyquil")
+pyqir = LazyLoader("pyqir", globals(), "pyqir")
 
 
 class AzureQuantumProvider(QuantumProvider):
@@ -83,10 +87,17 @@ class AzureQuantumProvider(QuantumProvider):
         output_data_format = target.output_data_format
         content_type = target.content_type
 
-        if content_type == "application/qasm" or provider_name.lower() == "ionq":
-            action_type = DeviceActionType.OPENQASM
+        if input_data_format == InputDataFormat.MICROSOFT.value:
+            program_spec = ProgramSpec(pyqir.Module)
+        elif input_data_format == InputDataFormat.IONQ.value:
+            program_spec = ProgramSpec(str, alias="qasm2")
+        elif input_data_format == InputDataFormat.QUANTINUUM.value:
+            program_spec = ProgramSpec(str, alias="qasm2")
+        elif input_data_format == InputDataFormat.RIGETTI.value:
+            program_spec = ProgramSpec(pyquil.Program)
         else:
-            action_type = None
+            program_spec = None
+            warnings.warn(f"Unrecognized input data format: {input_data_format}")
 
         return TargetProfile(
             device_id=device_id,
@@ -95,7 +106,9 @@ class AzureQuantumProvider(QuantumProvider):
             capability=capability,
             input_data_format=input_data_format,
             output_data_format=output_data_format,
-            action_type=action_type,
+            content_type=content_type,
+            action_type=DeviceActionType.OPENQASM,
+            program_spec=program_spec,
         )
 
     def get_devices(self, **kwargs) -> list[AzureQuantumDevice]:

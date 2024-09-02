@@ -39,15 +39,9 @@ from qbraid.runtime.azure import (
     AzureQuantumJob,
     AzureQuantumProvider,
     AzureQuantumResult,
-)
-from qbraid.runtime.azure.result_builder import (
-    IONQ_OUTPUT_DATA_FORMAT,
-    MICROSOFT_OUTPUT_DATA_FORMAT,
-    MICROSOFT_OUTPUT_DATA_FORMAT_V2,
-    QUANTINUUM_OUTPUT_DATA_FORMAT,
-    RIGETTI_OUTPUT_DATA_FORMAT,
     AzureResultBuilder,
 )
+from qbraid.runtime.azure.io_format import OutputDataFormat
 
 
 @pytest.fixture
@@ -931,7 +925,7 @@ def test_format_microsoft_v2_results_no_success():
     """Test formatting Microsoft Quantum v2 results with failed job."""
     mock_job = Mock(spec=Job)
     mock_job.details.status = "Failed"
-    mock_job.details.output_data_format = MICROSOFT_OUTPUT_DATA_FORMAT_V2
+    mock_job.details.output_data_format = OutputDataFormat.MICROSOFT_V2.value
     builder = AzureResultBuilder(azure_job=mock_job)
     assert builder._format_microsoft_v2_results() == [
         {"data": {}, "success": False, "header": {}, "shots": 0}
@@ -944,7 +938,7 @@ def test_result_builder_failed_job(mock_job_id):
     mock_job.wait_until_completed = MagicMock()
     mock_job.wait_until_completed.return_value = None
     mock_job.details.status = "Failed"
-    mock_job.details.output_data_format = MICROSOFT_OUTPUT_DATA_FORMAT_V2
+    mock_job.details.output_data_format = OutputDataFormat.MICROSOFT_V2.value
     mock_job.details.error_data = None
     mock_job.details.target = "rigetti.sim.qvm"
     mock_job.details.name = "azure-quantum-job"
@@ -957,10 +951,10 @@ def test_result_builder_failed_job(mock_job_id):
 @pytest.mark.parametrize(
     "output_data_format",
     [
-        MICROSOFT_OUTPUT_DATA_FORMAT,
-        IONQ_OUTPUT_DATA_FORMAT,
-        QUANTINUUM_OUTPUT_DATA_FORMAT,
-        RIGETTI_OUTPUT_DATA_FORMAT,
+        OutputDataFormat.MICROSOFT_V1.value,
+        OutputDataFormat.IONQ.value,
+        OutputDataFormat.QUANTINUUM.value,
+        OutputDataFormat.RIGETTI.value,
     ],
 )
 def test_build_result_from_output_format(azure_result_builder, mock_azure_job, output_data_format):
@@ -982,11 +976,11 @@ def test_build_result_from_output_format(azure_result_builder, mock_azure_job, o
     assert job_result["success"] is True
     assert job_result["shots"] == 1000
 
-    if output_data_format == MICROSOFT_OUTPUT_DATA_FORMAT:
+    if output_data_format == OutputDataFormat.MICROSOFT_V1.value:
         azure_result_builder._format_microsoft_results.assert_called_once()
-    elif output_data_format == IONQ_OUTPUT_DATA_FORMAT:
+    elif output_data_format == OutputDataFormat.IONQ.value:
         azure_result_builder._format_ionq_results.assert_called_once()
-    elif output_data_format == QUANTINUUM_OUTPUT_DATA_FORMAT:
+    elif output_data_format == OutputDataFormat.QUANTINUUM.value:
         azure_result_builder._format_quantinuum_results.assert_called_once()
-    elif output_data_format == RIGETTI_OUTPUT_DATA_FORMAT:
+    elif output_data_format == OutputDataFormat.RIGETTI.value:
         azure_result_builder._format_rigetti_results.assert_called_once()
