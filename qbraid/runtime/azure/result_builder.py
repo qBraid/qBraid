@@ -150,8 +150,9 @@ class AzureResultBuilder:
         job_result["shots"] = self._shots_count()
         return job_result
 
+    @staticmethod
     def _draw_random_sample(
-        self, sampler_seed: Optional[int], probabilities: dict[str, int], shots: int
+        probabilities: dict[str, int], shots: int, sampler_seed: Optional[int] = None
     ) -> dict:
         """Draw a random sample from the given probabilities."""
         norm = sum(probabilities.values())
@@ -233,7 +234,7 @@ class AzureResultBuilder:
             probabilities[bitstring] = value
 
         if self.from_simulator:
-            counts = self._draw_random_sample(sampler_seed, probabilities, shots)
+            counts = self._draw_random_sample(probabilities, shots, sampler_seed)
         else:
             counts = {
                 bitstring: np.round(shots * value) for bitstring, value in probabilities.items()

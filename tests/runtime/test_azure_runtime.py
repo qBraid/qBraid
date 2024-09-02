@@ -576,11 +576,14 @@ def test_make_estimator_result_successful(estimator_result_data):
     assert result["status"] == "success"
 
 
-@pytest.mark.parametrize("probabilities", [{"00": 0.5, "11": 0.5}, {"00": 0.4999, "11": 0.5001}])
+@pytest.mark.parametrize(
+    "probabilities",
+    [{"00": 0.5, "11": 0.5}, {"00": 0.4999, "11": 0.5001}, {"00": 0.4000, "11": 0.6001}],
+)
 def test_draw_random_sample_probabilities(mock_result_builder: AzureResultBuilder, probabilities):
     """Test that the random sample handles both normalized and unnormalized probabilities."""
     shots = 1000
-    sample = mock_result_builder._draw_random_sample(None, probabilities, shots)
+    sample = mock_result_builder._draw_random_sample(probabilities, shots)
     assert sum(sample.values()) == shots
     assert set(sample.keys()) == {"00", "11"}
 
@@ -592,9 +595,9 @@ def test_draw_random_sample_consistency(
     """Test drawing random samples with and without a specific seed."""
     shots = 10
     probabilities = {"00": 0.5, "11": 0.5}
-    sample1 = mock_result_builder._draw_random_sample(seed, probabilities, shots)
-    sample2 = mock_result_builder._draw_random_sample(seed, probabilities, shots)
-    sample3 = mock_result_builder._draw_random_sample(seed, probabilities, shots)
+    sample1 = mock_result_builder._draw_random_sample(probabilities, shots, seed)
+    sample2 = mock_result_builder._draw_random_sample(probabilities, shots, seed)
+    sample3 = mock_result_builder._draw_random_sample(probabilities, shots, seed)
 
     if should_match:
         assert sample1 == sample2 == sample3
@@ -607,7 +610,7 @@ def test_draw_random_sample_with_invalid_probabilities(mock_result_builder: Azur
     probabilities = {"00": 0.3, "11": 0.4}
     shots = 1000
     with pytest.raises(ValueError) as exc_info:
-        mock_result_builder._draw_random_sample(None, probabilities, shots)
+        mock_result_builder._draw_random_sample(probabilities, shots, None)
     assert "Probabilities do not add up to 1" in str(exc_info.value)
 
 
@@ -734,6 +737,62 @@ def test_format_quantinuum_results(
     assert result["probabilities"] == {"01": 1 / 3, "10": 1 / 3, "11": 1 / 3}
 
 
+def test_format_ionq_results():
+    """Test formatting IonQ results."""
+    mock_job = Mock(spec=Job)
+    mock_job.details.input_params = {"count": 100}
+    mock_job.get_results.return_value = {"histogram": {"0": 0.5, "7": 0.5}}
+
+    builder = AzureResultBuilder(azure_job=mock_job)
+    expected_result = {
+        "counts": {"000": 50, "111": 50},
+        "probabilities": {"000": 0.5, "111": 0.5},
+    }
+    assert builder._format_ionq_results() == expected_result
+
+
+@pytest.mark.parametrize(
+    "input_params, expected_result",
+    [
+        (
+            {"items": [{"entryPoint": "main"}, {"entryPoint": "auxiliary"}]},
+            ["main", "auxiliary"],
+        ),
+        (
+            {"items": []},
+            ["main"],
+        ),
+    ],
+)
+def test_get_entry_point_names(input_params, expected_result):
+    """Test getting entry point names from input params."""
+    mock_job = Mock(spec=Job)
+    mock_job.details.input_params = input_params
+    builder = AzureResultBuilder(azure_job=mock_job)
+    result = builder._get_entry_point_names()
+    assert result == expected_result
+
+
+def test_get_entry_point_names_with_missing_entry_point():
+    """Test getting entry point names from input params with missing 'entryPoint' field."""
+    mock_job = Mock(spec=Job)
+    mock_job.details.input_params = {"items": [{"noEntryPointField": "data"}]}
+    builder = AzureResultBuilder(azure_job=mock_job)
+    with pytest.raises(
+        ValueError, match="Entry point input_param is missing an 'entryPoint' field"
+    ):
+        builder._get_entry_point_names()
+
+
+def test_get_entry_point_names_with_no_items_key():
+    """Test getting entry point names from input params with missing 'items' key."""
+    mock_job = Mock(spec=Job)
+    mock_job.details.input_params = {}
+    builder = AzureResultBuilder(azure_job=mock_job)
+    with pytest.raises(KeyError):
+        builder._get_entry_point_names()
+
+
 def test_translate_microsoft_v2_results(azure_result_builder, mock_azure_job):
     """Test translating Microsoft Quantum v2 results."""
     mock_azure_job.get_results.return_value = {
@@ -755,6 +814,44 @@ def test_translate_microsoft_v2_results(azure_result_builder, mock_azure_job):
     assert result["probabilities"] == {"00": 0.7, "11": 0.3}
 
 
+@pytest.mark.parametrize(
+    "results, err_msg",
+    [
+        ({}, "DataFormat missing from Job results"),
+        ({"DataFormat": "v2"}, "Results missing from Job results"),
+        ({"DataFormat": "v2", "Results": [{}]}, "TotalCount missing from Job results"),
+        (
+            {"DataFormat": "v2", "Results": [{"TotalCount": -1}]},
+            "TotalCount must be a positive non-zero integer",
+        ),
+        (
+            {"DataFormat": "v2", "Results": [{"TotalCount": 100}]},
+            "Histogram missing from Job results",
+        ),
+        (
+            {"DataFormat": "v2", "Results": [{"TotalCount": 100, "Histogram": [{}]}]},
+            "Dispaly missing from histogram result",
+        ),
+        (
+            {
+                "DataFormat": "v2",
+                "Results": [{"TotalCount": 100, "Histogram": [{"Display": "00"}]}],
+            },
+            "Count missing from histogram result",
+        ),
+    ],
+)
+def test_translate_microsoft_v2_result_raises_value_error(results, err_msg):
+    """Test translating Microsoft Quantum v2 results raises an error
+    when job result does not contain the required field."""
+    mock_job = Mock(spec=Job)
+    mock_job.get_results.return_value = results
+    builder = AzureResultBuilder(azure_job=mock_job)
+    with pytest.raises(ValueError) as exc_info:
+        builder._translate_microsoft_v2_results()
+        assert err_msg in str(exc_info.value)
+
+
 def test_format_microsoft_v2_results(azure_result_builder):
     """Test formatting Microsoft Quantum v2 results."""
     azure_result_builder._get_entry_point_names = Mock(return_value=["main"])
@@ -770,3 +867,36 @@ def test_format_microsoft_v2_results(azure_result_builder):
     assert result_item["shots"] == 1000
     assert result_item["data"]["counts"] == {"00": 700, "11": 300}
     assert result_item["data"]["probabilities"] == {"00": 0.7, "11": 0.3}
+
+
+def test_format_microsoft_v2_results_raises_value_error(azure_result_builder, mock_azure_job):
+    """Test formatting Microsoft Quantum v2 results raises ValueError
+    when number of results does not match number of entrypoints."""
+    mock_azure_job.details.status = "Succeeded"
+    mock_azure_job.details.input_params = {
+        "items": [{"entryPoint": "main"}, {"entryPoint": "auxiliary"}]
+    }
+    mock_azure_job.get_results.return_value = {
+        "DataFormat": "v2",
+        "Results": [
+            {
+                "TotalCount": 1000,
+                "Histogram": [{"Display": "00", "Count": 700}, {"Display": "11", "Count": 300}],
+            }
+        ],
+    }
+    with pytest.raises(ValueError) as exc_info:
+        azure_result_builder._format_microsoft_v2_results()
+    assert "The number of experiment results does not match the number of experiment names" in str(
+        exc_info.value
+    )
+
+
+def test_format_microsoft_v2_results_no_success():
+    """Test formatting Microsoft Quantum v2 results with failed job."""
+    mock_job = Mock(spec=Job)
+    mock_job.details.status = "Failed"
+    builder = AzureResultBuilder(azure_job=mock_job)
+    assert builder._format_microsoft_v2_results() == [
+        {"data": {}, "success": False, "header": {}, "shots": 0}
+    ]
