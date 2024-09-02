@@ -14,7 +14,7 @@
 Unit tests for the Azure Quantum runtime module.
 
 """
-
+import json
 from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
@@ -38,6 +38,13 @@ from qbraid.runtime.azure import (
     AzureQuantumJob,
     AzureQuantumProvider,
     AzureQuantumResult,
+)
+from qbraid.runtime.azure.result_builder import (
+    IONQ_OUTPUT_DATA_FORMAT,
+    MICROSOFT_OUTPUT_DATA_FORMAT,
+    MICROSOFT_OUTPUT_DATA_FORMAT_V2,
+    QUANTINUUM_OUTPUT_DATA_FORMAT,
+    RIGETTI_OUTPUT_DATA_FORMAT,
     AzureResultBuilder,
 )
 
@@ -700,6 +707,19 @@ def test_format_microsoft_results(
     assert abs(result["counts"]["11"] - 500) >= 0
 
 
+def test_format_microsoft_results_non_simulator(
+    mock_qir_to_qbraid_bitstring, azure_result_builder, mock_azure_job
+):
+    """Test formatting Microsoft Quantum results from a QPU device."""
+    probabilities = {"00": 0.5, "11": 0.5}
+    mock_azure_job.get_results.return_value = probabilities
+    mock_azure_job.details.target = "mock.qpu"
+    mock_qir_to_qbraid_bitstring.side_effect = lambda x: x
+
+    result = azure_result_builder._format_microsoft_results()
+    assert result == {"counts": {"00": 500.0, "11": 500.0}, "probabilities": probabilities}
+
+
 def test_format_rigetti_results(azure_result_builder, mock_azure_job):
     """Test formatting Rigetti results."""
     mock_azure_job.get_results.return_value = {"ro": [[0, 1], [1, 0], [0, 1], [1, 0]]}
@@ -749,6 +769,17 @@ def test_format_ionq_results():
         "probabilities": {"000": 0.5, "111": 0.5},
     }
     assert builder._format_ionq_results() == expected_result
+
+
+def test_format_ionq_results_raises_for_no_histogram_data():
+    """Test formatting IonQ results raises an error when histogram data is missing."""
+    mock_job = Mock(spec=Job)
+    mock_job.details.input_params = {"count": 100}
+    mock_job.get_results.return_value = {}
+    builder = AzureResultBuilder(azure_job=mock_job)
+    with pytest.raises(ValueError) as exc_info:
+        builder._format_ionq_results()
+    assert "Histogram missing from IonQ Job results" in str(exc_info.value)
 
 
 @pytest.mark.parametrize(
@@ -896,7 +927,62 @@ def test_format_microsoft_v2_results_no_success():
     """Test formatting Microsoft Quantum v2 results with failed job."""
     mock_job = Mock(spec=Job)
     mock_job.details.status = "Failed"
+    mock_job.details.output_data_format = MICROSOFT_OUTPUT_DATA_FORMAT_V2
     builder = AzureResultBuilder(azure_job=mock_job)
     assert builder._format_microsoft_v2_results() == [
         {"data": {}, "success": False, "header": {}, "shots": 0}
     ]
+
+
+def test_result_builder_failed_job(mock_job_id):
+    """Test formatting Microsoft Quantum v2 results with failed job."""
+    mock_job = Mock(spec=Job)
+    mock_job.wait_until_completed = MagicMock()
+    mock_job.wait_until_completed.return_value = None
+    mock_job.details.status = "Failed"
+    mock_job.details.output_data_format = MICROSOFT_OUTPUT_DATA_FORMAT_V2
+    mock_job.details.error_data = None
+    mock_job.details.target = "rigetti.sim.qvm"
+    mock_job.details.name = "azure-quantum-job"
+    mock_job.details.id = mock_job_id
+    builder = AzureResultBuilder(azure_job=mock_job)
+    result = builder.result()
+    assert isinstance(result, AzureQuantumResult)
+
+
+@pytest.mark.parametrize(
+    "output_data_format",
+    [
+        MICROSOFT_OUTPUT_DATA_FORMAT,
+        IONQ_OUTPUT_DATA_FORMAT,
+        QUANTINUUM_OUTPUT_DATA_FORMAT,
+        RIGETTI_OUTPUT_DATA_FORMAT,
+    ],
+)
+def test_build_result_from_output_format(azure_result_builder, mock_azure_job, output_data_format):
+    """Test building job result from different output data formats."""
+    mock_azure_job.details.output_data_format = output_data_format
+
+    mock_metadata = {"test": "qBraid"}
+    mock_data = [{"counts": {"00": 700, "11": 300}, "probabilities": {"00": 0.7, "11": 0.3}}]
+    mock_azure_job.details.metadata = {"metadata": json.dumps(mock_metadata)}
+
+    azure_result_builder._format_microsoft_results = Mock(return_value=mock_data)
+    azure_result_builder._format_ionq_results = Mock(return_value=mock_data)
+    azure_result_builder._format_quantinuum_results = Mock(return_value=mock_data)
+    azure_result_builder._format_rigetti_results = Mock(return_value=mock_data)
+
+    job_result = azure_result_builder._format_results()
+    assert job_result["data"] == mock_data
+    assert job_result["header"]["metadata"] == mock_metadata
+    assert job_result["success"] is True
+    assert job_result["shots"] == 1000
+
+    if output_data_format == MICROSOFT_OUTPUT_DATA_FORMAT:
+        azure_result_builder._format_microsoft_results.assert_called_once()
+    elif output_data_format == IONQ_OUTPUT_DATA_FORMAT:
+        azure_result_builder._format_ionq_results.assert_called_once()
+    elif output_data_format == QUANTINUUM_OUTPUT_DATA_FORMAT:
+        azure_result_builder._format_quantinuum_results.assert_called_once()
+    elif output_data_format == RIGETTI_OUTPUT_DATA_FORMAT:
+        azure_result_builder._format_rigetti_results.assert_called_once()
