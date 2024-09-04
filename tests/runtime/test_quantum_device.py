@@ -27,15 +27,10 @@ from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 from qbraid.programs import ProgramSpec, register_program_type, unregister_program_type
 from qbraid.runtime import DeviceStatus, TargetProfile
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import DeviceActionType, NoiseModel
+from qbraid.runtime.enums import DeviceActionType, ExperimentType, NoiseModel
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
-from qbraid.runtime.native import (
-    ExperimentResult,
-    QbraidDevice,
-    QbraidJob,
-    QbraidJobResult,
-    QbraidProvider,
-)
+from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
+from qbraid.runtime.result import ExperimentalResult, RuntimeJobResult
 from qbraid.transpiler import CircuitConversionError, Conversion, ConversionGraph, ConversionScheme
 
 DEVICE_DATA = {
@@ -253,7 +248,6 @@ def cirq_uniform():
 def test_qir_simulator_workflow(mock_client, cirq_uniform):
     """Test qir simulator qbraid device job submission and result retrieval."""
     circuit = cirq_uniform(num_qubits=5)
-    num_qubits = len(circuit.all_qubits())
 
     provider = QbraidProvider(client=mock_client)
     device = provider.get_device("qbraid_qir_simulator")
@@ -269,9 +263,9 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert all(isinstance(job, QbraidJob) for job in batch_job)
 
     result = job.result()
-    assert isinstance(result, QbraidJobResult)
-    assert isinstance(result.result, ExperimentResult)
-    assert repr(result).startswith("QbraidJobResult")
+    assert isinstance(result, RuntimeJobResult)
+    assert isinstance(result.result, list)
+    assert repr(result).startswith("RuntimeJobResult")
     assert result.success
 
     counts = result.measurement_counts()
@@ -279,13 +273,13 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert len(counts) == len(probabilities) == 2
     assert sum(probabilities.values()) == 1.0
 
-    metadata = result.metadata()
-    assert metadata["num_shots"] == shots
-    assert metadata["num_qubits"] == num_qubits
-    assert isinstance(metadata["execution_duration"], int)
+    for experiment in result.result:
+        assert isinstance(experiment, ExperimentalResult)
+        assert experiment.result_type == ExperimentType.GATE_MODEL
 
-    measurements = result.measurements()
-    assert _is_uniform_comput_basis(measurements)
+    for experiment in result.result:
+        measurements = experiment.measurements
+        assert _is_uniform_comput_basis(measurements)
 
 
 def test_run_forbidden_kwarg(mock_client):

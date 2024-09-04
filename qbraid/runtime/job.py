@@ -17,7 +17,7 @@ from abc import ABC, abstractmethod
 from time import sleep, time
 from typing import TYPE_CHECKING, Any, Optional
 
-from .enums import JOB_STATUS_FINAL, JobStatus
+from .enums import JOB_STATUS_FINAL, ExperimentType, JobStatus
 from .exceptions import JobStateError, ResourceNotFoundError
 
 if TYPE_CHECKING:
@@ -35,6 +35,10 @@ class QuantumJob(ABC):
         self._job_id = job_id
         self._device = device
         self._cache_metadata = {"job_id": job_id, **kwargs}
+        self._experiment_result_builder = {
+            ExperimentType.GATE_MODEL: self._build_runtime_gate_model_results,
+            ExperimentType.AHS: self._build_runtime_ahs_results,
+        }
 
     @property
     def id(self) -> str:  # pylint: disable=invalid-name
@@ -86,8 +90,24 @@ class QuantumJob(ABC):
             sleep(poll_interval)
 
     @abstractmethod
-    def result(self) -> "qbraid.runtime.GateModelJobResult":
+    def result(self) -> "qbraid.runtime.RuntimeJobResult":
         """Return the results of the job."""
+
+    def _build_runtime_gate_model_results(self, job_data, **kwargs):
+        """Build the experimental result for Gate Model Simulation"""
+        raise NotImplementedError("This method is not implemented by the provider.")
+
+    def _build_runtime_ahs_results(self, job_data, **kwargs):
+        """Build the experimental result for Analog Hamiltonian Simulation"""
+        raise NotImplementedError("This method is not implemented by the provider.")
+
+    def build_runtime_result(self, experiment_type, job_data, **kwargs):
+        """Build and return the results of a quantum experiment."""
+        if experiment_type not in ExperimentType:
+            raise ValueError(
+                f"Invalid experiment type for runtime experimental result: {experiment_type}"
+            )
+        return self._experiment_result_builder[experiment_type](job_data, *kwargs)
 
     @abstractmethod
     def cancel(self) -> None:

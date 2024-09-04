@@ -13,15 +13,19 @@ Module defining QbraidJob class
 
 """
 import logging
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from qbraid_core.services.quantum import QuantumClient
 
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
-
-from .result import ExperimentResult, QbraidJobResult
+from qbraid.runtime.result import (
+    ExperimentalResult,
+    ExperimentType,
+    ResultFormatter,
+    RuntimeJobResult,
+)
 
 if TYPE_CHECKING:
     import qbraid_core.services.quantum
@@ -85,11 +89,29 @@ class QbraidJob(QuantumJob):
 
         self.client.cancel_job(self.id)
 
-    def result(self) -> "qbraid.runtime.GateModelJobResult":
+    def _build_runtime_gate_model_results(self, job_data, **kwargs) -> list[ExperimentalResult]:
+        """Build and return the results of a gate-model simulation.
+
+        Args:
+            job_data (dict): The job data dictionary.
+        """
+        measurement_counts = job_data.get("measurementCounts", {})
+        time_stamps: dict[str, Any] = job_data.get("timeStamps", {})
+        execution_duration: int = time_stamps.get("executionDuration", -1)
+        return [
+            ExperimentalResult(
+                state_counts=measurement_counts,
+                measurements=ResultFormatter.counts_to_measurements(measurement_counts),
+                result_type=ExperimentType.GATE_MODEL,
+                execution_duration=execution_duration,
+            )
+        ]
+
+    def result(self) -> "qbraid.runtime.RuntimeJobResult":
         """Return the results of the job."""
         self.wait_for_final_state()
         job_data = self.client.get_job(self.id)
         device_id: str = job_data.get("qbraidDeviceId")
         success: bool = job_data.get("status") == "COMPLETED"
-        result = ExperimentResult.from_result(job_data)
-        return QbraidJobResult(device_id, self.id, success, result)
+        experiment_results = self.build_runtime_result(ExperimentType.GATE_MODEL, job_data)
+        return RuntimeJobResult(self.id, device_id, experiment_results, success)

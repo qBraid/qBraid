@@ -101,4 +101,16 @@ class JobStatus(Enum):
     UNKNOWN = "job status is unknown/undetermined"
 
 
+class ExperimentType(Enum):
+    """Enumeration for the type of quantum experiment being run.
+
+    Attributes:
+        GATE_MODEL (str): Experiment is a gate-model simulation.
+        AHS (str): Experiment is an analog Hamiltonian simulation
+    """
+
+    GATE_MODEL = "gate_model"
+    AHS = "analog_hamiltonian_simulation"
+
+
 JOB_STATUS_FINAL = (JobStatus.COMPLETED, JobStatus.CANCELLED, JobStatus.FAILED)
