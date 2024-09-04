@@ -74,8 +74,11 @@ class NoiseModel(Enum):
 
 
 class JobStatus(Enum):
-    """Class for the status of processes (i.e. jobs / quantum tasks) resulting from any
-    :meth:`~qbraid.runtime.QuantumDevice.run` method.
+    """Enum for the status of processes (i.e. quantum jobs / tasks) resulting
+    from any :meth:`~qbraid.runtime.QuantumDevice.run` method.
+
+    Displayed status text values may differ from those listed below to provide
+    additional visibility into tracebacks, particularly for failed jobs.
 
     Attributes:
         INITIALIZING (str): job is being initialized
@@ -87,18 +90,37 @@ class JobStatus(Enum):
         COMPLETED (str): job has successfully run
         FAILED (str): job failed / incurred error
         UNKNOWN (str): job status is unknown/undetermined
+        HOLD (str): job terminal but results witheld due to account status
 
     """
 
-    INITIALIZING = "job is being initialized"
-    QUEUED = "job is queued"
-    VALIDATING = "job is being validated"
-    RUNNING = "job is actively running"
-    CANCELLING = "job is being cancelled"
-    CANCELLED = "job has been cancelled"
-    COMPLETED = "job has successfully run"
-    FAILED = "job failed / incurred error"
-    UNKNOWN = "job status is unknown/undetermined"
+    def __new__(cls, value: str, default_message: str):
+        """Customize Enum to accept two values: `value` and `default_message`."""
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj.default_message = default_message
+        obj.status_message = None
+        return obj
+
+    def set_status_message(self, message: str):
+        """Set a custom message for the enum instance."""
+        self.status_message = message
+
+    def __repr__(self):
+        """Custom repr to show custom message or default."""
+        message = self.status_message if self.status_message else self.default_message
+        return f"<{self.name}: '{message}'>"
+
+    INITIALIZING = ("INITIALIZING", "job is being initialized")
+    QUEUED = ("QUEUED", "job is queued")
+    VALIDATING = ("VALIDATING", "job is being validated")
+    RUNNING = ("RUNNING", "job is actively running")
+    CANCELLING = ("CANCELLING", "job is being cancelled")
+    CANCELLED = ("CANCELLED", "job has been cancelled")
+    COMPLETED = ("COMPLETED", "job has successfully run")
+    FAILED = ("FAILED", "job failed / incurred error")
+    UNKNOWN = ("UNKNOWN", "job status is unknown/undetermined")
+    HOLD = ("HOLD", "job terminal but results witheld due to account status")
 
 
 JOB_STATUS_FINAL = (JobStatus.COMPLETED, JobStatus.CANCELLED, JobStatus.FAILED)

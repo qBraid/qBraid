@@ -19,7 +19,7 @@ from openqasm3.parser import QASM3ParsingError, parse
 
 from .exceptions import QasmError
 
-IonQDict = TypeVar("IonQDict", bound=dict)
+IonQDictType = TypeVar("IonQDictType", bound=dict)
 
 
 class IonQDictInstanceMeta(type):
@@ -83,7 +83,7 @@ class IonQDictInstanceMeta(type):
         return True
 
 
-class IonQDictInstance(metaclass=IonQDictInstanceMeta):
+class IonQDict(metaclass=IonQDictInstanceMeta):
     """Marker class for dict that are valid IonQ JSON formatted programs."""
 
 

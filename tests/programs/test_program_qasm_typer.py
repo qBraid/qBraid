@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for the qasm_typer module
+Unit tests for the typer module
 
 """
 
@@ -91,7 +91,7 @@ def test_isinstance_checks_valid(meta, string):
 )
 def test_isinstance_checks_invalid(meta, version, string):
     """Test that the isinstance function correctly identifies invalid OpenQASM strings."""
-    with patch("qbraid.programs.qasm_typer.extract_qasm_version", return_value=version + 1):
+    with patch("qbraid.programs.typer.extract_qasm_version", return_value=version + 1):
         assert not isinstance(string, meta)
 
 

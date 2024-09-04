@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for qasm2 to IonQDict transpilation
+Unit tests for qasm2 to IonQDictType transpilation
 
 """
 from qbraid.transpiler.conversions.qasm2.qasm2_to_ionq import qasm2_to_ionq

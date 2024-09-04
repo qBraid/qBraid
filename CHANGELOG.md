@@ -15,7 +15,7 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
-- Added `qbraid.programs.qasm_typer` module containing custom types (`Qasm2String` and `Qasm3String`) that can be used instead of `str` for more accurate static typing, as well as instance variables (`Qasm2Instance` and `Qasm3Instance`) that can be used for `isinstance` checks against both OpenQASM 2 and 3 strings ([#745](https://github.com/qBraid/qBraid/pull/745))
+- Added `qbraid.programs.typer` module containing custom types (`Qasm2String` and `Qasm3String`) that can be used instead of `str` for more accurate static typing, as well as instance variables (`Qasm2Instance` and `Qasm3Instance`) that can be used for `isinstance` checks against both OpenQASM 2 and 3 strings ([#745](https://github.com/qBraid/qBraid/pull/745))
 - Added `qbraid.runtime.enums.NoiseModel` enum for various noise model options that we may support on managed simulators in the future. This is not a supported feature just yet, so this enum is really just a placeholder. ([#745](https://github.com/qBraid/qBraid/pull/745))
 - `qbraid.runtime.azure` module with `AzureQuantumProvider` class to enable access to QPUs and simulators from IonQ, Quantinuum, and Rigetti, as well as the Microsoft resource estimator, using Azure credentials ([#723](https://github.com/qBraid/qBraid/pull/723))
 

@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING, Optional, Type
 
 from .exceptions import ProgramTypeError, QasmError
 from .registry import QPROGRAM_REGISTRY, QPROGRAM_TYPES
-from .typer import IonQDictInstance, get_qasm_type_alias
+from .typer import get_qasm_type_alias
 
 if TYPE_CHECKING:
     import qbraid.programs
@@ -64,9 +64,6 @@ def _get_program_type_alias(program: qbraid.programs.QPROGRAM) -> str:
                     "and no additional string type aliases are registered."
                 )
             ) from err
-
-    if isinstance(program, IonQDictInstance):
-        return "ionq"
 
     matched = []
     for alias, program_type in QPROGRAM_REGISTRY.items():
