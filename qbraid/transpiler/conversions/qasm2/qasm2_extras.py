@@ -12,6 +12,8 @@
 Module containing OpenQASM 2 conversion extras.
 
 """
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
@@ -25,7 +27,7 @@ if TYPE_CHECKING:
 
 
 @requires_extras("qibo")
-def qasm2_to_qibo(qasm: str) -> "qibo_.Circuit":
+def qasm2_to_qibo(qasm: str) -> qibo_.Circuit:
     """Returns a qibo.Circuit equivalent to the input OpenQASM 2 circuit.
 
     Args:

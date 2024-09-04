@@ -18,7 +18,7 @@ from unittest.mock import patch
 import pytest
 
 from qbraid.programs.exceptions import QasmError
-from qbraid.programs.qasm_typer import (
+from qbraid.programs.typer import (
     BaseQasmInstanceMeta,
     Qasm2Instance,
     Qasm2String,

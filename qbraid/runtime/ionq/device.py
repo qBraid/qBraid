@@ -20,9 +20,10 @@ import json
 from typing import TYPE_CHECKING, Any, Union
 
 from qbraid.programs.circuits.qasm import OpenQasm2Program
-from qbraid.programs.qasm_typer import Qasm2String
+from qbraid.programs.typer import Qasm2String
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.transpiler.conversions.qasm2 import qasm2_to_ionq
 
 from .job import IonQJob
 
@@ -67,7 +68,7 @@ class IonQDevice(QuantumDevice):
         """Transform the input to the IonQ device."""
         program = OpenQasm2Program(run_input)
         program.transform(device=self)
-        ionq_program = program.to_ionq_json()
+        ionq_program = qasm2_to_ionq(program.program)
         return ionq_program
 
     # pylint:disable-next=arguments-differ

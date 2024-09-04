@@ -9,14 +9,82 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module providing type checking for OpenQASM programs.
+Module providing granular type checking for quantum programs
+that use Python's built-in types.
 
 """
-from typing import Optional
+from typing import Any, Optional, TypeVar
 
 from openqasm3.parser import QASM3ParsingError, parse
 
 from .exceptions import QasmError
+
+IonQDict = TypeVar("IonQDict", bound=dict)
+
+
+class IonQDictInstanceMeta(type):
+    """Metaclass for IonQ JSON type checking based on dict content."""
+
+    def __instancecheck__(cls, instance):
+        """Custom instance checks based on dict format."""
+        if not isinstance(instance, dict):
+            return False
+
+        qubits = instance.get("qubits")
+        circuit = instance.get("circuit")
+        if not isinstance(qubits, int) or not isinstance(circuit, list):
+            return False
+
+        for op in circuit:
+            if not isinstance(op, dict):
+                return False
+
+            gate = op.get("gate")
+            rotation = op.get("rotation")
+            target, targets = op.get("target"), op.get("targets")
+            control, controls = op.get("control"), op.get("controls")
+
+            if not isinstance(gate, str):
+                return False
+
+            if rotation is not None and not isinstance(rotation, (int, float)):
+                return False
+
+            if not cls._validate_targets(target, targets):
+                return False
+
+            if not cls._validate_controls(control, controls):
+                return False
+
+        return True
+
+    @staticmethod
+    def _validate_targets(target: Any, targets: Any) -> bool:
+        """Helper method to validate target and targets."""
+        if target is not None and targets is not None:
+            return False
+        if target is not None and not isinstance(target, int):
+            return False
+        if targets is not None:
+            if not isinstance(targets, list) or not all(isinstance(t, int) for t in targets):
+                return False
+        return True
+
+    @staticmethod
+    def _validate_controls(control: Any, controls: Any) -> bool:
+        """Helper method to validate control and controls."""
+        if control is not None and controls is not None:
+            return False
+        if control is not None and not isinstance(control, int):
+            return False
+        if controls is not None:
+            if not isinstance(controls, list) or not all(isinstance(c, int) for c in controls):
+                return False
+        return True
+
+
+class IonQDictInstance(metaclass=IonQDictInstanceMeta):
+    """Marker class for dict that are valid IonQ JSON formatted programs."""
 
 
 def extract_qasm_version(qasm: str) -> int:

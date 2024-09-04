@@ -15,10 +15,9 @@ Module defining OpenQasm2Program and OpenQasm3Program classes.
 from __future__ import annotations
 
 import re
-from typing import Any, Optional, Union
+from typing import Optional, Union
 
 import numpy as np
-import openqasm3.ast
 from openqasm3.ast import (
     BinaryExpression,
     BitType,
@@ -41,9 +40,9 @@ from openqasm3.ast import (
 from openqasm3.parser import parse
 from qbraid_core._import import LazyLoader
 
-from qbraid.passes.qasm3 import convert_qasm_pi_to_decimal, normalize_qasm_gate_params, rebase
+from qbraid.passes.qasm3 import normalize_qasm_gate_params, rebase
 from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.qasm_typer import Qasm2Instance, Qasm2String, Qasm3Instance, Qasm3String
+from qbraid.programs.typer import Qasm2Instance, Qasm2String, Qasm3Instance, Qasm3String
 
 from ._model import GateModelProgram
 
@@ -249,76 +248,6 @@ class OpenQasm2Program(GateModelProgram):
     def reverse_qubit_order(self) -> None:
         """Reverses the qubit ordering of a openqasm program."""
         raise NotImplementedError
-
-    def to_ionq_json(self) -> dict[str, Union[int, list[dict[str, Any]]]]:
-        """Extract gate data from the input program."""
-        program = self.parsed()
-
-        gates: list[dict[str, Any]] = []
-
-        for statement in program.statements:
-            if isinstance(statement, openqasm3.ast.QuantumGate):
-                name = statement.name.name
-                qubits = statement.qubits
-                qubit_values = []
-
-                for qubit in qubits:
-                    _ = qubit.name.name
-                    indices = qubit.indices
-                    for index in indices:
-                        qubit_values.extend(literal.value for literal in index)
-
-                # support gates defined in `stdgates.inc` from OpenQASM 3
-                if len(qubit_values) == 1:
-                    # IonQ supported gates:
-                    if name in ["x", "not", "y", "z", "h", "s", "si", "t", "ti", "v", "vi"]:
-                        gate_data = {"gate": name, "target": qubit_values[0]}
-                    elif name in ["rx", "ry", "rz"]:
-                        # convert "rz(3 * pi / 4) q[0];" to "3 * pi / 4"
-                        angle_str = re.findall(r"\((.+)\)", openqasm3.dumps(statement))[0]
-                        gate_data = {
-                            "gate": name,
-                            "target": qubit_values[0],
-                            "rotation": float(convert_qasm_pi_to_decimal(angle_str)),
-                        }
-                    # OpenQASM 3 aliases:
-                    elif name == "sdg":
-                        gate_data = {"gate": "si", "target": qubit_values[0]}
-                    elif name == "tdg":
-                        gate_data = {"gate": "ti", "target": qubit_values[0]}
-                    elif name == "sx":
-                        gate_data = {"gate": "v", "target": qubit_values[0]}
-                    elif name == "sxdg":
-                        gate_data = {"gate": "vi", "target": qubit_values[0]}
-                    else:
-                        raise NotImplementedError(f"'{name}' gate not yet supported")
-                elif len(qubit_values) == 2:
-                    if name in ["cnot", "cx", "CX"]:
-                        gate_data = {
-                            "gate": "cnot",
-                            "control": qubit_values[0],
-                            "target": qubit_values[1],
-                        }
-                    elif name == "swap":
-                        gate_data = {
-                            "gate": "swap",
-                            "targets": qubit_values,
-                        }
-                    else:
-                        raise NotImplementedError(f"'{name}' gate not yet supported")
-                elif len(qubit_values) == 3:
-                    if name in ["ccx", "toffoli"]:
-                        gate_data = {
-                            "gate": "cnot",
-                            "controls": qubit_values[:2],
-                            "target": qubit_values[2],
-                        }
-                else:
-                    raise NotImplementedError(f"'{name}' gate not yet supported")
-
-                gates.append(gate_data)
-
-        return {"qubits": self.num_qubits, "circuit": gates}
 
     def transform(self, device) -> None:
         """Transform program to according to device target profile."""

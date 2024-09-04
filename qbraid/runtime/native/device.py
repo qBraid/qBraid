@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Optional, Union
 from qbraid_core.services.quantum import QuantumClient
 
 from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
-from qbraid.programs.qasm_typer import Qasm2Instance, Qasm2String
+from qbraid.programs.typer import Qasm2Instance, Qasm2String
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, NoiseModel
 from qbraid.runtime.exceptions import QbraidRuntimeError

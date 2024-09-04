@@ -20,6 +20,7 @@ from qbraid.programs import QPROGRAM
 from qbraid.programs.circuits.qasm import OpenQasm2Program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.transpiler.conversions.qasm2 import qasm2_to_ionq
 
 from .io_format import InputDataFormat
 from .job import AzureQuantumJob
@@ -74,7 +75,7 @@ class AzureQuantumDevice(QuantumDevice):
 
         if output_data_format == InputDataFormat.IONQ.value:
             program = OpenQasm2Program(run_input)
-            ionq_json = program.to_ionq_json()
+            ionq_json = qasm2_to_ionq(program.program)
             return ionq_json
 
         if output_data_format == InputDataFormat.MICROSOFT.value:

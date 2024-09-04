@@ -14,9 +14,11 @@ Module defining exceptions for errors raised by qBraid.
 """
 from typing import Any, Optional
 
+from qbraid_core._import import LazyLoader
+
 from qbraid.exceptions import QbraidError
 
-from .registry import QPROGRAM_ALIASES
+registry = LazyLoader("registry", globals(), "qbraid.programs.registry")
 
 
 class PackageValueError(QbraidError):
@@ -25,7 +27,7 @@ class PackageValueError(QbraidError):
     def __init__(self, package: str):
         msg = (
             f"Quantum frontend module '{package}' is not supported.\n"
-            f"Frontends supported by qBraid are: {QPROGRAM_ALIASES}"
+            f"Frontends supported by qBraid are: {registry.QPROGRAM_ALIASES}"
         )
         super().__init__(msg)
 
