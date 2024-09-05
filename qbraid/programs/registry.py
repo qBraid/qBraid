@@ -15,6 +15,7 @@ Module for registering custom program types and aliases
 from typing import Any, Optional, Type, TypeVar, Union
 
 from ._import import _QPROGRAM_ALIASES, _QPROGRAM_REGISTRY, _QPROGRAM_TYPES, NATIVE_REGISTRY
+from .typer import QbraidMetaType
 
 QPROGRAM_NATIVE = Union[tuple(_QPROGRAM_TYPES)]
 QPROGRAM_REGISTRY = _QPROGRAM_REGISTRY

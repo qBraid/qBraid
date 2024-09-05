@@ -71,20 +71,20 @@ class AzureQuantumDevice(QuantumDevice):
         Returns:
             Any: The transformed program.
         """
-        output_data_format = self.profile.get("output_data_format")
+        input_data_format = self.profile.get("input_data_format")
 
-        if output_data_format == InputDataFormat.IONQ.value:
+        if input_data_format == InputDataFormat.IONQ.value:
             program = OpenQasm2Program(run_input)
             ionq_json = qasm2_to_ionq(program.program)
             return ionq_json
 
-        if output_data_format == InputDataFormat.MICROSOFT.value:
+        if input_data_format == InputDataFormat.MICROSOFT.value:
             return run_input.bitcode
 
-        if output_data_format == InputDataFormat.RIGETTI.value:
+        if input_data_format == InputDataFormat.RIGETTI.value:
             return run_input.out()
 
-        if output_data_format == InputDataFormat.QUANTINUUM.value:
+        if input_data_format == InputDataFormat.QUANTINUUM.value:
             return run_input
 
         return run_input
