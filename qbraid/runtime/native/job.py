@@ -17,15 +17,10 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from qbraid_core.services.quantum import QuantumClient
 
-from qbraid.runtime.enums import JobStatus
+from qbraid.runtime.enums import ExperimentType, JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
-from qbraid.runtime.result import (
-    ExperimentalResult,
-    ExperimentType,
-    ResultFormatter,
-    RuntimeJobResult,
-)
+from qbraid.runtime.result import ExperimentalResult, ResultFormatter, RuntimeJobResult
 
 if TYPE_CHECKING:
     import qbraid_core.services.quantum

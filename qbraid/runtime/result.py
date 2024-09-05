@@ -21,50 +21,6 @@ import numpy as np
 from .enums import ExperimentType
 
 
-def normalize_batch_bit_lengths(measurements: list[dict[str, int]]) -> list[dict[str, int]]:
-    """
-    Normalizes the bit lengths of binary keys in measurement count dictionaries
-    to ensure uniformity across all keys.
-
-    Args:
-        measurements (list[dict[str, int]]): A list of dictionaries where each dictionary
-            contains binary string keys and integer values.
-
-    Returns:
-        list[dict[str, int]]: A new list of dictionaries with uniformly lengthened binary keys.
-    """
-    if len(measurements) == 0:
-        return measurements
-
-    max_bit_length = max(len(key) for counts in measurements for key in counts.keys())
-
-    normalized_counts_list = []
-    for counts in measurements:
-        normalized_counts = {}
-        for key, value in counts.items():
-            normalized_key = key.zfill(max_bit_length)
-            normalized_counts[normalized_key] = value
-        normalized_counts_list.append(normalized_counts)
-
-    return normalized_counts_list
-
-
-def normalize_bit_lengths(measurement: dict[str, int]) -> dict[str, int]:
-    """
-    Normalizes the bit lengths of binary keys in a single measurement count dictionary
-        to ensure uniformity across all keys.
-
-    Args:
-        measurement (dict[str, int]): A dictionary with binary string keys and integer values.
-
-    Returns:
-        dict[str, int]: A dictionary with uniformly lengthened binary keys.
-    """
-    normalized_list = normalize_batch_bit_lengths([measurement])
-
-    return normalized_list[0] if normalized_list else measurement
-
-
 class QuantumJobResult:
     """Result of a quantum job.
 
@@ -142,7 +98,7 @@ class GateModelJobResult(ABC, QuantumJobResult):
             for counts in get_counts
         ]
 
-        return normalize_batch_bit_lengths(batch_counts)
+        return ResultFormatter.normalize_batch_bit_lengths(batch_counts)
 
 
 # Experimental types should define the nature of classes, not providers
@@ -153,7 +109,7 @@ class ExperimentalResult:
     state_counts: dict
     measurements: Union[np.ndarray, Any]  # if gate_model_type it would be measurement counts
     # if AHS it would be the energy levels
-    result_type: ExperimentType
+    result_type: ExperimentType = ExperimentType.GATE_MODEL
     execution_duration: int = -1
     metadata: dict = None
 
@@ -174,7 +130,7 @@ class ResultFormatter:
         """Convert counts dictionary to measurements array."""
         measurements = []
         for state, count in counts.items():
-            measurements.extend([list(map(int, state))] * count)
+            measurements.extend([list(map(int, state.strip()))] * count)
         return np.array(measurements, dtype=int)
 
     @staticmethod
@@ -225,6 +181,56 @@ class ResultFormatter:
         }
         return measurement_probabilities
 
+    @staticmethod
+    def array_to_histogram(arr: np.ndarray) -> dict[str, int]:
+        """Convert a 2D numpy array to a histogram and cache the result."""
+        row_strings = ["".join(map(str, row)) for row in arr]
+        return {row: row_strings.count(row) for row in set(row_strings)}
+
+    @staticmethod
+    def normalize_batch_bit_lengths(measurements: list[dict[str, int]]) -> list[dict[str, int]]:
+        """
+        Normalizes the bit lengths of binary keys in measurement count dictionaries
+        to ensure uniformity across all keys.
+
+        Args:
+            measurements (list[dict[str, int]]): A list of dictionaries where each dictionary
+                contains binary string keys and integer values.
+
+        Returns:
+            list[dict[str, int]]: A new list of dictionaries with uniformly lengthened binary keys.
+        """
+        if len(measurements) == 0:
+            return measurements
+
+        max_bit_length = max(len(key) for counts in measurements for key in counts.keys())
+
+        normalized_counts_list = []
+        for counts in measurements:
+            normalized_counts = {}
+            for key, value in counts.items():
+                normalized_key = key.zfill(max_bit_length)
+                normalized_counts[normalized_key] = value
+            normalized_counts_list.append(normalized_counts)
+
+        return normalized_counts_list
+
+    @staticmethod
+    def normalize_bit_lengths(measurement: dict[str, int]) -> dict[str, int]:
+        """
+        Normalizes the bit lengths of binary keys in a single measurement count dictionary
+            to ensure uniformity across all keys.
+
+        Args:
+            measurement (dict[str, int]): A dictionary with binary string keys and integer values.
+
+        Returns:
+            dict[str, int]: A dictionary with uniformly lengthened binary keys.
+        """
+        normalized_list = ResultFormatter.normalize_batch_bit_lengths([measurement])
+
+        return normalized_list[0] if normalized_list else measurement
+
 
 class RuntimeJobResult:
     """Class to store and retrieve the results of a quantum circuit simulation."""
@@ -273,10 +279,14 @@ class RuntimeJobResult:
         return self.result[exp_num]
 
     def measurement_counts(
-        self, include_zero_values: bool = False
+        self, include_zero_values: bool = False, decimal: bool = False
     ) -> Union[dict[str, int], list[dict[str, int]]]:
         """Returns the sorted histogram data of the run"""
         get_counts = [experiment.state_counts for experiment in self.result]
+
+        if len(get_counts) == 0:
+            raise ValueError("No measurements available")
+
         if len(get_counts) == 1:
             return ResultFormatter.format_counts(
                 get_counts[0], include_zero_values=include_zero_values
@@ -286,8 +296,12 @@ class RuntimeJobResult:
             ResultFormatter.format_counts(counts, include_zero_values=include_zero_values)
             for counts in get_counts
         ]
+        if decimal:
+            return [
+                {int(key, 2): value for key, value in counts.items()} for counts in batch_counts
+            ]
 
-        return normalize_batch_bit_lengths(batch_counts)
+        return ResultFormatter.normalize_batch_bit_lengths(batch_counts)
 
     def measurement_probabilities(self, **kwargs) -> dict[str, float]:
         """Calculate and return the probabilities of each measurement result."""

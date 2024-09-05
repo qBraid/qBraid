@@ -11,7 +11,7 @@
 # pylint: disable=redefined-outer-name,unused-argument
 
 """
-Unit tests for QbraidDevice, QbraidJob, and QbraidJobResult classes using the qbraid_qir_simulator
+Unit tests for QbraidDevice, QbraidJob, and RuntimeJobResult classes using the qbraid_qir_simulator
 
 """
 import logging
@@ -276,8 +276,6 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     for experiment in result.result:
         assert isinstance(experiment, ExperimentalResult)
         assert experiment.result_type == ExperimentType.GATE_MODEL
-
-    for experiment in result.result:
         measurements = experiment.measurements
         assert _is_uniform_comput_basis(measurements)
 

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import json
 import os
+import time
 from typing import TYPE_CHECKING, Optional
 
 import boto3
@@ -62,6 +63,9 @@ class BraketProvider(QuantumProvider):
         """
         self.aws_access_key_id = aws_access_key_id or os.getenv("AWS_ACCESS_KEY_ID")
         self.aws_secret_access_key = aws_secret_access_key or os.getenv("AWS_SECRET_ACCESS_KEY")
+        self._devices_cache = []
+        self._devices_last_accessed: int = -1
+        self._devices_ttl = 120  # in seconds
 
     def save_config(
         self,
@@ -155,13 +159,24 @@ class BraketProvider(QuantumProvider):
         **kwargs,
     ) -> list[qbraid.runtime.braket.BraketDevice]:
         """Return a list of backends matching the specified filtering."""
+
+        if (
+            self._devices_last_accessed != -1
+            and time.time() - self._devices_last_accessed < self._devices_ttl
+        ):
+            return self._devices_cache
+
         aws_session = self._get_aws_session() if aws_session is None else aws_session
         statuses = ["ONLINE", "OFFLINE"] if statuses is None else statuses
         aws_devices = AwsDevice.get_devices(aws_session=aws_session, statuses=statuses, **kwargs)
-        return [
+        devices = [
             BraketDevice(profile=self._build_runtime_profile(device), session=device.aws_session)
             for device in aws_devices
         ]
+        self._devices_cache = devices
+        self._devices_last_accessed = time.time()
+
+        return devices
 
     def get_device(self, device_id: str) -> qbraid.runtime.braket.BraketDevice:
         """Returns the AWS device."""
