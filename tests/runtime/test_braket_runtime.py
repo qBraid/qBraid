@@ -44,6 +44,7 @@ from qbraid.runtime.braket.job import AmazonBraketVersionError, BraketQuantumTas
 from qbraid.runtime.braket.provider import BraketProvider
 from qbraid.runtime.braket.result import BraketGateModelJobResult
 from qbraid.runtime.exceptions import JobStateError, ProgramValidationError
+from qbraid.runtime.result import RuntimeJobResult
 
 from ..fixtures.braket.gates import get_braket_gates
 
@@ -488,7 +489,7 @@ def test_job_load_completed(mock_aws_quantum_task):
     assert job.metadata()["job_id"] == mock_job.id
     assert job.is_terminal_state()
     res = job.result()
-    assert res.measurements() is not None
+    assert isinstance(res, RuntimeJobResult) and res.result is not None
 
 
 @pytest.mark.parametrize("position,expected", [(10, 10), (">2000", 2000)])

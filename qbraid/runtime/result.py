@@ -286,20 +286,18 @@ class RuntimeJobResult:
 
         if len(get_counts) == 0:
             raise ValueError("No measurements available")
-
-        if len(get_counts) == 1:
-            return ResultFormatter.format_counts(
-                get_counts[0], include_zero_values=include_zero_values
-            )
-
         batch_counts = [
             ResultFormatter.format_counts(counts, include_zero_values=include_zero_values)
             for counts in get_counts
         ]
         if decimal:
-            return [
+            decimal_counts = [
                 {int(key, 2): value for key, value in counts.items()} for counts in batch_counts
             ]
+            return decimal_counts[0] if len(decimal_counts) == 1 else decimal_counts
+
+        if len(batch_counts) == 1:
+            return batch_counts[0]
 
         return ResultFormatter.normalize_batch_bit_lengths(batch_counts)
 
