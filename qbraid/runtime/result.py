@@ -110,7 +110,7 @@ class ExperimentalResult:
     measurements: Union[np.ndarray, Any]  # if gate_model_type it would be measurement counts
     # if AHS it would be the energy levels
     result_type: ExperimentType = ExperimentType.GATE_MODEL
-    execution_duration: int = -1
+    execution_duration: float = -1.0
     metadata: dict = None
 
     def __repr__(self) -> str:
@@ -238,11 +238,19 @@ class ResultFormatter:
 class RuntimeJobResult:
     """Class to store and retrieve the results of a quantum circuit simulation."""
 
-    def __init__(self, job_id, device_id, result: list[ExperimentalResult], success):
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        job_id: str,
+        device_id: str,
+        result: list[ExperimentalResult],
+        success: bool,
+        errors=None,
+    ):
         self.job_id = job_id
         self.device_id = device_id
         self.result = result
         self.success = success
+        self.errors = errors
 
     def __repr__(self) -> str:
         return (

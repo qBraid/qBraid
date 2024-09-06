@@ -22,12 +22,10 @@ Classes
    OQCDevice
    OQCJob
    OQCProvider
-   OQCJobResult
 
 """
 from .device import OQCDevice
 from .job import OQCJob
 from .provider import OQCProvider
-from .result import OQCJobResult
 
-__all__ = ["OQCDevice", "OQCJob", "OQCProvider", "OQCJobResult"]
+__all__ = ["OQCDevice", "OQCJob", "OQCProvider"]

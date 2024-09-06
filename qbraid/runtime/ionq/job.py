@@ -16,11 +16,10 @@ Module defining IonQ job class
 """
 from typing import TYPE_CHECKING
 
-from qbraid.runtime.enums import JobStatus
+from qbraid.runtime.enums import ExperimentType, JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
-
-from .result import IonQJobResult
+from qbraid.runtime.result import ExperimentalResult, ResultFormatter, RuntimeJobResult
 
 if TYPE_CHECKING:
     import qbraid.runtime.ionq.provider
@@ -61,6 +60,29 @@ class IonQJob(QuantumJob):
         """Cancel the IonQ job."""
         self.session.cancel_job(self.id)
 
+    def _build_runtime_gate_model_results(self, job_data, **kwargs):
+        """Build the runtime results for a gate model experiment of IONQ."""
+
+        # build state count dict
+        state_counts = {}
+        shots = job_data.get("shots")
+        probs_int = job_data.get("probabilities")
+        if shots and probs_int:
+            probs_binary = {bin(int(key))[2:].zfill(2): value for key, value in probs_int.items()}
+            probs_normal = ResultFormatter.normalize_bit_lengths(probs_binary)
+            state_counts = {state: int(prob * shots) for state, prob in probs_normal.items()}
+
+        # build measurements
+        measurements = ResultFormatter.counts_to_measurements(state_counts)
+
+        return ExperimentalResult(
+            measurements=measurements,
+            state_counts=state_counts,
+            result_type=ExperimentType.GATE_MODEL,
+            execution_duration=job_data.get("execution_time"),
+            metadata=job_data,
+        )
+
     def result(self) -> dict:
         """Return the result of the IonQ job."""
         self.wait_for_final_state()
@@ -76,4 +98,12 @@ class IonQJob(QuantumJob):
         results_endpoint = results_url.split("v0.3")[-1]
         job_data["probabilities"] = self.session.get(results_endpoint).json()
         job_data["shots"] = job_data.get("shots", self._cache_metadata.get("shots"))
-        return IonQJobResult(job_data)
+
+        experiments = [self.build_runtime_result(ExperimentType.GATE_MODEL, job_data)]
+
+        return RuntimeJobResult(
+            job_id=self.id,
+            device_id=job_data.get("target"),
+            result=experiments,
+            success=success,
+        )

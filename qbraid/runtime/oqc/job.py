@@ -15,13 +15,13 @@ Module for OQC job class.
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Optional
 
-from qbraid.runtime.enums import JobStatus
+from qbraid.runtime.enums import ExperimentType, JobStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.job import QuantumJob
-
-from .result import OQCJobResult
+from qbraid.runtime.result import ExperimentalResult, RuntimeJobResult
 
 if TYPE_CHECKING:
     from qcaas_client.client import OQCClient, QPUTaskErrors
@@ -70,7 +70,38 @@ class OQCJob(QuantumJob):
         """Cancel the task."""
         self._client.cancel_task(task_id=self.id, qpu_id=self._qpu_id)
 
-    def result(self, **kwargs) -> OQCJobResult:
+    def _calculate_execution_duration(self, job_data):
+        if "timings" not in job_data:
+            return -1.0
+
+        time_format = "%Y-%m-%d %H:%M:%S.%f%z"
+
+        initial_time = datetime.strptime(job_data["timings"].get("RECEIVER_DEQUEUED"), time_format)
+        final_time = datetime.strptime(job_data["timings"].get("SERVER_RECEIVED"), time_format)
+        duration = abs(final_time - initial_time).total_seconds()
+
+        return duration
+
+    def _build_runtime_gate_model_results(self, job_data, **kwargs):
+        state_counts = job_data.get("counts", {})
+
+        measurements = []
+        for state in state_counts:
+            new_state = []
+            for bit in state:
+                new_state.append(int(bit))
+            for _ in range(state_counts[state]):
+                measurements.append(new_state)
+
+        return ExperimentalResult(
+            state_counts=state_counts,
+            measurements=measurements,
+            result_type=ExperimentType.GATE_MODEL,
+            execution_duration=self._calculate_execution_duration(job_data),
+            metadata=self.metadata(),
+        )
+
+    def result(self, **kwargs) -> RuntimeJobResult:
         """Get the result of the task."""
         self.wait_for_final_state()
         status = self.status(**kwargs)
@@ -83,7 +114,7 @@ class OQCJob(QuantumJob):
             "error_details": None,
             "counts": None,
         }
-
+        experiments = []
         if success:
             qpu_task_result = self._client.get_task_results(
                 task_id=self.id, qpu_id=self._qpu_id, **kwargs
@@ -91,13 +122,18 @@ class OQCJob(QuantumJob):
 
             if not qpu_task_result:
                 raise ResourceNotFoundError("No result found for the task")
-
             result_data["counts"] = qpu_task_result.result.get("c")
-
+            experiments = [self.build_runtime_result(ExperimentType.GATE_MODEL, result_data)]
         else:
             result_data["error_details"] = self.get_errors(**kwargs)
 
-        return OQCJobResult(result_data)
+        return RuntimeJobResult(
+            job_id=self.id,
+            device_id=self._qpu_id,
+            result=experiments,
+            success=success,
+            errors=result_data["error_details"],
+        )
 
     def status(self, **kwargs) -> JobStatus:
         """Get the status of the task."""

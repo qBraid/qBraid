@@ -23,9 +23,10 @@ import pytest
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
 from qbraid.runtime import TargetProfile
 from qbraid.runtime.enums import DeviceStatus, JobStatus
-from qbraid.runtime.ionq import IonQDevice, IonQJob, IonQJobResult, IonQProvider, IonQSession
+from qbraid.runtime.ionq import IonQDevice, IonQJob, IonQProvider, IonQSession
 from qbraid.runtime.ionq.job import IonQJobError
 from qbraid.runtime.ionq.provider import SUPPORTED_GATES
+from qbraid.runtime.result import RuntimeJobResult
 
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
@@ -92,7 +93,7 @@ GET_JOB_RESPONSE = {
     "id": "c86a043a-6aea-47cf-b3a6-70ab1e538cab",
     "submitted_by": "e1254d93988e405e80d7842a",
     "status": "completed",
-    "target": "simulator",
+    "tar    get": "simulator",
     "qubits": 1,
     "circuits": 1,
     "results_url": "/v0.3/jobs/c86a043a-6aea-47cf-b3a6-70ab1e538cab/results",
@@ -311,7 +312,8 @@ def test_ionq_device_run_submit_job(mock_post, mock_get, circuit):
     assert job_metadata["status"] == JobStatus.COMPLETED
 
     res = job.result()
-    assert isinstance(res, IonQJobResult)
+    assert isinstance(res, RuntimeJobResult)
+    assert res.measurement_counts() == {"00": 1, "01": 1}
     np.testing.assert_array_equal(res.measurements(), np.array([[0, 0], [0, 1]]))
 
 
