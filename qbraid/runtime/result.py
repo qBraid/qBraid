@@ -151,6 +151,9 @@ class ResultFormatter:
             {'00': 46, '01': 0, '10': 79, '11': 13}
 
         """
+        if len(counts) == 0:
+            return counts
+
         counts = {key.replace(" ", ""): value for key, value in counts.items()}
 
         num_bits = max(len(key) for key in counts)
@@ -278,6 +281,13 @@ class RuntimeJobResult:
             raise ValueError("Experiment number is greater than the number of experiments")
         return self.result[exp_num]
 
+    def measurements(self) -> Union[np.ndarray, list[np.ndarray]]:
+        """Get the list of measurements from the job result."""
+        measurements = [experiment.measurements for experiment in self.result]
+        if len(measurements) == 1:
+            return measurements[0]
+        return measurements
+
     def measurement_counts(
         self, include_zero_values: bool = False, decimal: bool = False
     ) -> Union[dict[str, int], list[dict[str, int]]]:
@@ -287,8 +297,12 @@ class RuntimeJobResult:
         if len(get_counts) == 0:
             raise ValueError("No measurements available")
         batch_counts = [
-            ResultFormatter.format_counts(counts, include_zero_values=include_zero_values)
-            for counts in get_counts
+            (
+                ResultFormatter.format_counts(counts, include_zero_values=include_zero_values)
+                if experiment.result_type == ExperimentType.GATE_MODEL
+                else counts
+            )
+            for counts, experiment in zip(get_counts, self.result)
         ]
         if decimal:
             decimal_counts = [

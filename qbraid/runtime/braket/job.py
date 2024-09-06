@@ -113,8 +113,8 @@ class BraketQuantumTask(QuantumJob):
         state_counts = Counter()
         states = ["e", "r", "g"]
         try:
-            for shot in self.measurements():
-                if shot.status.name == "SUCCESS":
+            for shot in measurements:
+                if shot.status == AnalogHamiltonianSimulationShotStatus.SUCCESS:
                     pre = shot.pre_sequence
                     post = shot.post_sequence
                     # converting presequence and postsequence measurements to state_idx
@@ -124,7 +124,7 @@ class BraketQuantumTask(QuantumJob):
                     ]
                     state = "".join(states[s_idx] for s_idx in state_idx)
                     state_counts.update([state])
-        except AttributeError as err:
+        except Exception as err:
             raise ResultDecodingError from err
 
         state_counts = None if not state_counts else dict(state_counts)
@@ -150,7 +150,7 @@ class BraketQuantumTask(QuantumJob):
             GateModelQuantumTaskResult: ExperimentType.GATE_MODEL,
             AnalogHamiltonianSimulationQuantumTaskResult: ExperimentType.AHS,
         }
-        result_class = type(result)
+        result_class = result.__class__
         if result_class in result_class_mapping:
             exp_result = self.build_runtime_result(result_class_mapping[result_class], result)
             return RuntimeJobResult(

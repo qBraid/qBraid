@@ -27,6 +27,7 @@ from braket.aws.queue_information import QueueDepthInfo, QueueType
 from braket.circuits import Circuit
 from braket.device_schema import ExecutionDay
 from braket.devices import Devices, LocalSimulator
+from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
 from qiskit import QuantumCircuit as QiskitCircuit
 
 from qbraid.exceptions import QbraidError
@@ -42,7 +43,6 @@ from qbraid.runtime.braket.availability import _calculate_future_time
 from qbraid.runtime.braket.device import BraketDevice
 from qbraid.runtime.braket.job import AmazonBraketVersionError, BraketQuantumTask
 from qbraid.runtime.braket.provider import BraketProvider
-from qbraid.runtime.braket.result import BraketGateModelJobResult
 from qbraid.runtime.exceptions import JobStateError, ProgramValidationError
 from qbraid.runtime.result import RuntimeJobResult
 
@@ -521,24 +521,34 @@ def test_job_raise_for_cancel_terminal():
             job.cancel()
 
 
-def test_result_measurements():
-    """Test measurements method of BraketGateModelJobResult class."""
+@patch("qbraid.runtime.braket.job.AwsQuantumTask")
+def test_result_measurements(mock_aws_quantum_task):
+    """Test measurement_counts method of RuntimeJobResult WITH the braket provider class."""
+
     mock_measurements = np.array([[0, 1, 1], [1, 0, 1]])
-    mock_result = MagicMock()
-    mock_result.measurements = mock_measurements
-    result = BraketGateModelJobResult(mock_result)
-    expected_output = np.array([[1, 1, 0], [1, 0, 1]])
-    np.testing.assert_array_equal(result.measurements(), expected_output)
+    mock_meas_counts = {(0, 1, 1): 10, (1, 0, 1): 5}
 
+    # Create a MagicMock instance for GateModelQuantumTaskResult
+    mock_aws_task_result = MagicMock()
+    mock_aws_task_result.__class__ = GateModelQuantumTaskResult
+    mock_aws_task_result.measurements = mock_measurements
+    mock_aws_task_result.measurement_counts = mock_meas_counts
+    mock_aws_task_result.task_metadata = MagicMock()
+    mock_aws_task_result.task_metadata.id = "task_id"
+    mock_aws_task_result.task_metadata.device_id = "device_id"
+    mock_aws_task_result.task_metadata.status = "COMPLETED"
 
-def test_result_get_counts():
-    """Test get_counts method of BraketGateModelJobResult class."""
-    mock_measurement_counts = {(0, 1, 1): 10, (1, 0, 1): 5}
-    mock_result = MagicMock()
-    mock_result.measurement_counts = mock_measurement_counts
-    result = BraketGateModelJobResult(mock_result)
-    expected_output = {"110": 10, "101": 5}
-    assert result.get_counts() == expected_output
+    # Configure the mock to return the mock_aws_task_result when result() is called
+    mock_aws_quantum_task.result.return_value = mock_aws_task_result
+
+    # Create an instance of BraketQuantumTask
+    job = BraketQuantumTask("task_id", mock_aws_quantum_task)
+    expected_counts_output = {"110": 10, "101": 5}
+    expected_meas_output = np.array([[1, 1, 0], [1, 0, 1]])
+
+    # Assert that the measurement counts are as expected
+    assert job.result().measurement_counts() == expected_counts_output
+    np.testing.assert_array_equal(job.result().measurements(), expected_meas_output)
 
 
 def test_get_default_region_error():

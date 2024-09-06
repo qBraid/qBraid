@@ -34,8 +34,11 @@ from braket.task_result import (
     AnalogHamiltonianSimulationShotMeasurement,
     AnalogHamiltonianSimulationShotMetadata,
     AnalogHamiltonianSimulationShotResult,
-    AnalogHamiltonianSimulationTaskResult,
     TaskMetadata,
+)
+from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
+    AnalogHamiltonianSimulationQuantumTaskResult,
+    AnalogHamiltonianSimulationShotStatus,
 )
 from braket.timings.time_series import TimeSeries
 
@@ -43,10 +46,10 @@ from qbraid.programs import ProgramSpec
 from qbraid.runtime.braket.device import BraketDevice
 from qbraid.runtime.braket.job import BraketQuantumTask
 from qbraid.runtime.braket.provider import BraketProvider
-from qbraid.runtime.braket.result import BraketAhsJobResult, ResultDecodingError
 from qbraid.runtime.enums import DeviceActionType, DeviceStatus
-from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
+from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError, ResultDecodingError
 from qbraid.runtime.profile import TargetProfile
+from qbraid.runtime.result import RuntimeJobResult
 
 AQUILA_ARN = Devices.QuEra.Aquila
 TASK_ARN = "arn:aws:braket:us-east-1:0123456789012:quantum-task/" + str(uuid.uuid4())
@@ -380,7 +383,9 @@ def ahs_result():
     )
 
     success_measurement = AnalogHamiltonianSimulationShotMeasurement(
-        shotMetadata=AnalogHamiltonianSimulationShotMetadata(shotStatus="Success"),
+        shotMetadata=AnalogHamiltonianSimulationShotMetadata(
+            shotStatus=AnalogHamiltonianSimulationShotStatus.SUCCESS
+        ),
         shotResult=AnalogHamiltonianSimulationShotResult(
             preSequence=[1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
             postSequence=[0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0],
@@ -388,7 +393,9 @@ def ahs_result():
     )
 
     success_measurement_extended = AnalogHamiltonianSimulationShotMeasurement(
-        shotMetadata=AnalogHamiltonianSimulationShotMetadata(shotStatus="Success"),
+        shotMetadata=AnalogHamiltonianSimulationShotMetadata(
+            shotStatus=AnalogHamiltonianSimulationShotStatus.SUCCESS
+        ),
         shotResult=AnalogHamiltonianSimulationShotResult(
             preSequence=[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
             postSequence=[1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1],
@@ -397,9 +404,9 @@ def ahs_result():
 
     measurements_extended = [success_measurement, success_measurement_extended]
 
-    result = AnalogHamiltonianSimulationTaskResult(
-        taskMetadata=task_metadata,
-        additionalMetadata=additional_metadata,
+    result = AnalogHamiltonianSimulationQuantumTaskResult(
+        task_metadata=task_metadata,
+        additional_metadata=additional_metadata,
         measurements=measurements_extended,
     )
 
@@ -500,32 +507,33 @@ def test_transform_raises_for_mismatch(mock_aws_device, ahs_program):
 
 def test_get_counts_no_measurements():
     """Test getting counts with no measurements."""
-    mock_result = MagicMock()
-    mock_result.measurements = []
-    job_result = BraketAhsJobResult(mock_result)
-    counts = job_result.get_counts()
-    assert counts is None
+    mock_experiment = MagicMock()
+    mock_experiment.measurements = np.ndarray([])
+    mock_experiment.state_counts = {}
+    job_result = RuntimeJobResult("mock_id", "mock_device_id", [mock_experiment], True)
+    counts = job_result.measurement_counts()
+    assert counts == {}
 
 
-def test_get_counts(ahs_result):
+@patch("qbraid.runtime.braket.job.AwsQuantumTask")
+def test_measurement_counts(mock_aws_quantum_task, ahs_result):
     """Test getting counts from an AHS job result."""
-    result = BraketAhsJobResult(ahs_result)
-    counts = result.get_counts()
+    mock_aws_quantum_task.result.return_value = ahs_result
+
+    job = BraketQuantumTask("task_id", mock_aws_quantum_task)
+    counts = job.result().measurement_counts()
     expected_counts = {"rrrgeggrrgr": 1, "grggrgrrrrg": 1}
     assert counts == expected_counts
 
 
-def test_get_counts_error():
+@patch("qbraid.runtime.braket.job.AwsQuantumTask")
+def test_get_counts_error(mock_aws_quantum_task, ahs_result):
     """Test getting counts from an AHS job result."""
-    with patch("qbraid.runtime.braket.result.BraketAhsJobResult.measurements") as mock_measurements:
-        mock_measurement = Mock()
-        mock_measurement.status.name = "SUCCESS"
-        del mock_measurement.pre_sequence
-        mock_measurement.post_sequence = [0]
+    ahs_result.measurements[0].shotResult.preSequence = []
+    ahs_result.measurements[0].shotResult.postSequence = [0]
 
-        mock_measurements.return_value = [mock_measurement]
-        result = BraketAhsJobResult()
-        result._result = Mock()
+    mock_aws_quantum_task.result.return_value = ahs_result
+    job = BraketQuantumTask("task_id", mock_aws_quantum_task)
 
-        with pytest.raises(ResultDecodingError):
-            result.get_counts()
+    with pytest.raises(ResultDecodingError):
+        _ = job.result()

@@ -12,7 +12,6 @@
 Unit tests for retrieving and post-processing experimental results.
 
 """
-import numpy as np
 import pytest
 
 from qbraid.runtime.result import ExperimentalResult, ResultFormatter, RuntimeJobResult
@@ -103,9 +102,8 @@ def test_batch_measurement_counts():
 
 
 def test_measurement_counts_raises_for_no_measurements():
-    """Test that measurement_counts raises an error when no measurements are available."""
-    experiment = ExperimentalResult({}, np.ndarray([]))
-    result = RuntimeJobResult("job_id", "device_id", [experiment], True)
+    """Test that measurement_counts raises an error when no experiments are available."""
+    result = RuntimeJobResult("job_id", "device_id", [], True)
     with pytest.raises(ValueError):
         result.measurement_counts()
 
