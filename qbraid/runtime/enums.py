@@ -13,6 +13,7 @@ Module defining all :mod:`~qbraid.runtime` enumerated types.
 
 """
 from enum import Enum
+from typing import Optional
 
 
 class DeviceActionType(Enum):
@@ -79,30 +80,42 @@ class JobStatus(Enum):
 
     Displayed status text values may differ from those listed below to provide
     additional visibility into tracebacks, particularly for failed jobs.
-
-    Attributes:
-        INITIALIZING (str): job is being initialized
-        QUEUED (str): job is queued
-        VALIDATING (str): job is being validated
-        RUNNING (str): job is actively running
-        CANCELLING (str): job is being cancelled
-        CANCELLED (str): job has been cancelled
-        COMPLETED (str): job has successfully run
-        FAILED (str): job failed / incurred error
-        UNKNOWN (str): job status is unknown/undetermined
-        HOLD (str): job terminal but results witheld due to account status
-
     """
 
-    def __new__(cls, value: str, default_message: str):
+    default_message = None
+
+    def __new__(cls, value: str, default_message: Optional[str] = None):
         """Customize Enum to accept two values: `value` and `default_message`."""
         obj = object.__new__(cls)
         obj._value_ = value
-        obj.default_message = default_message
+        obj.default_message = default_message or cls._get_default_message(value)
         obj.status_message = None
         return obj
 
-    def set_status_message(self, message: str):
+    @staticmethod
+    def _get_default_message(status: str) -> str:
+        """Get the default message for a given status value."""
+        messages: dict[str, str] = {
+            "INITIALIZING": "job is being initialized",
+            "QUEUED": "job is queued",
+            "VALIDATING": "job is being validated",
+            "RUNNING": "job is actively running",
+            "CANCELLING": "job is being cancelled",
+            "CANCELLED": "job has been cancelled",
+            "COMPLETED": "job has successfully run",
+            "FAILED": "job failed / incurred error",
+            "UNKNOWN": "job status is unknown/undetermined",
+            "HOLD": "job terminal but results withheld due to account status",
+        }
+
+        message = messages.get(status)
+
+        if message is None:
+            raise ValueError(f"Invalid status value: {status}")
+
+        return message
+
+    def set_status_message(self, message: str) -> None:
         """Set a custom message for the enum instance."""
         self.status_message = message
 
@@ -111,16 +124,16 @@ class JobStatus(Enum):
         message = self.status_message if self.status_message else self.default_message
         return f"<{self.name}: '{message}'>"
 
-    INITIALIZING = ("INITIALIZING", "job is being initialized")
-    QUEUED = ("QUEUED", "job is queued")
-    VALIDATING = ("VALIDATING", "job is being validated")
-    RUNNING = ("RUNNING", "job is actively running")
-    CANCELLING = ("CANCELLING", "job is being cancelled")
-    CANCELLED = ("CANCELLED", "job has been cancelled")
-    COMPLETED = ("COMPLETED", "job has successfully run")
-    FAILED = ("FAILED", "job failed / incurred error")
-    UNKNOWN = ("UNKNOWN", "job status is unknown/undetermined")
-    HOLD = ("HOLD", "job terminal but results witheld due to account status")
+    INITIALIZING = "INITIALIZING"
+    QUEUED = "QUEUED"
+    VALIDATING = "VALIDATING"
+    RUNNING = "RUNNING"
+    CANCELLING = "CANCELLING"
+    CANCELLED = "CANCELLED"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    UNKNOWN = "UNKNOWN"
+    HOLD = "HOLD"
 
 
 JOB_STATUS_FINAL = (JobStatus.COMPLETED, JobStatus.CANCELLED, JobStatus.FAILED)

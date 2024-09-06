@@ -18,23 +18,30 @@ from typing import Any, Optional, Type, TypeVar
 
 from openqasm3.parser import QASM3ParsingError, parse
 
-from .exceptions import QasmError
+from .exceptions import ProgramTypeError, QasmError
 
 IonQDictType = TypeVar("IonQDictType", bound=dict)
 
 
+class ValidationError(ProgramTypeError):
+    """Custom exception for validation errors in program types."""
+
+
 class QbraidMetaType(ABCMeta):
-    """Abstract metaclass that enforces the implementation of a method returning the wrapped built-in type."""
+    """Abstract metaclass for custom program type checking based on built-in types."""
 
     @property
     @abstractmethod
     def alias(cls) -> Optional[str]:
         """The program type alias to associate with the class."""
 
-    @classmethod
+    @property
     @abstractmethod
-    def wrapped_type(cls) -> Type[Any]:
-        """Abstract method that must return the built-in type the class is wrapping."""
+    def __bound__(cls) -> Type[Any]:
+        """The built-in type the class is wrapping."""
+
+    def __repr__(cls) -> str:
+        return "~" + cls.__name__
 
 
 class IonQDictInstanceMeta(QbraidMetaType):
@@ -44,35 +51,25 @@ class IonQDictInstanceMeta(QbraidMetaType):
     def alias(cls) -> str:
         return "ionq"
 
-    @classmethod
-    def wrapped_type(cls) -> Type[dict]:
+    @property
+    def __bound__(cls) -> Type[dict]:
         return dict
 
     @staticmethod
-    def _validate_targets(target: Any, targets: Any) -> bool:
-        """Helper method to validate target and targets."""
-        if target is not None and targets is not None:
-            return False
-        if target is not None and not isinstance(target, int):
-            return False
-        if targets is not None:
-            if not isinstance(targets, list) or not all(isinstance(t, int) for t in targets):
-                return False
-        return True
+    def _validate_field(single: Any, multiple: Any, field_name: str) -> None:
+        """Helper method to validate single or multiple target/control fields."""
+        if single is not None and multiple is not None:
+            raise ValidationError(
+                f"Both {field_name} and {field_name}s are set; only one should be provided."
+            )
+        if single is not None and not isinstance(single, int):
+            raise ValidationError(f"Invalid {field_name}: {single}. Must be an integer.")
+        if multiple is not None and not (
+            isinstance(multiple, list) and all(isinstance(item, int) for item in multiple)
+        ):
+            raise ValidationError(f"Invalid {field_name}s: {multiple}. Must be a list of integers.")
 
-    @staticmethod
-    def _validate_controls(control: Any, controls: Any) -> bool:
-        """Helper method to validate control and controls."""
-        if control is not None and controls is not None:
-            return False
-        if control is not None and not isinstance(control, int):
-            return False
-        if controls is not None:
-            if not isinstance(controls, list) or not all(isinstance(c, int) for c in controls):
-                return False
-        return True
-
-    def __instancecheck__(cls, instance) -> bool:
+    def __instancecheck__(cls, instance: Any) -> bool:
         """Custom instance checks based on dict format."""
         if not isinstance(instance, dict):
             return False
@@ -97,10 +94,10 @@ class IonQDictInstanceMeta(QbraidMetaType):
             if rotation is not None and not isinstance(rotation, (int, float)):
                 return False
 
-            if not cls._validate_targets(target, targets):
-                return False
-
-            if not cls._validate_controls(control, controls):
+            try:
+                cls._validate_field(target, targets, "target")
+                cls._validate_field(control, controls, "control")
+            except ValidationError:
                 return False
 
         return True
@@ -170,11 +167,11 @@ class BaseQasmInstanceMeta(QbraidMetaType):
             return f"qasm{cls.version}"
         return None
 
-    @classmethod
-    def wrapped_type(cls) -> Type[str]:
+    @property
+    def __bound__(cls) -> Type[str]:
         return str
 
-    def __instancecheck__(cls, instance):
+    def __instancecheck__(cls, instance: Any) -> bool:
         """Custom instance checks based on OpenQASM type.
 
         Args:
