@@ -12,8 +12,9 @@
 Module defining all :mod:`~qbraid.runtime` enumerated types.
 
 """
+from __future__ import annotations
+
 from enum import Enum
-from typing import Optional
 
 
 class DeviceActionType(Enum):
@@ -80,22 +81,21 @@ class JobStatus(Enum):
 
     Displayed status text values may differ from those listed below to provide
     additional visibility into tracebacks, particularly for failed jobs.
+
     """
 
-    default_message = None
-
-    def __new__(cls, value: str, default_message: Optional[str] = None):
-        """Customize Enum to accept two values: `value` and `default_message`."""
+    def __new__(cls, value: str):
+        """Customize Enum to accept a single value."""
         obj = object.__new__(cls)
         obj._value_ = value
-        obj.default_message = default_message or cls._get_default_message(value)
+        obj.default_message = cls._get_default_message(value)
         obj.status_message = None
         return obj
 
-    @staticmethod
-    def _get_default_message(status: str) -> str:
+    @classmethod
+    def _get_default_message(cls, status: str) -> str:
         """Get the default message for a given status value."""
-        messages: dict[str, str] = {
+        default_messages = {
             "INITIALIZING": "job is being initialized",
             "QUEUED": "job is queued",
             "VALIDATING": "job is being validated",
@@ -107,8 +107,7 @@ class JobStatus(Enum):
             "UNKNOWN": "job status is unknown/undetermined",
             "HOLD": "job terminal but results withheld due to account status",
         }
-
-        message = messages.get(status)
+        message = default_messages.get(status)
 
         if message is None:
             raise ValueError(f"Invalid status value: {status}")
@@ -124,6 +123,17 @@ class JobStatus(Enum):
         message = self.status_message if self.status_message else self.default_message
         return f"<{self.name}: '{message}'>"
 
+    def __call__(self) -> JobStatus:
+        """Create a new instance of the enum member, allowing unique attributes."""
+        obj = self.__class__(self._value_)
+        obj.default_message = self.default_message
+        return obj
+
+    @classmethod
+    def terminal_states(cls) -> set[JobStatus]:
+        """Returns the final job statuses."""
+        return {cls.COMPLETED, cls.CANCELLED, cls.FAILED}
+
     INITIALIZING = "INITIALIZING"
     QUEUED = "QUEUED"
     VALIDATING = "VALIDATING"
@@ -134,6 +144,3 @@ class JobStatus(Enum):
     FAILED = "FAILED"
     UNKNOWN = "UNKNOWN"
     HOLD = "HOLD"
-
-
-JOB_STATUS_FINAL = (JobStatus.COMPLETED, JobStatus.CANCELLED, JobStatus.FAILED)

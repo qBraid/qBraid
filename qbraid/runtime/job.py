@@ -12,12 +12,14 @@
 Module defining abstract QuantumJob Class
 
 """
+from __future__ import annotations
+
 import logging
 from abc import ABC, abstractmethod
 from time import sleep, time
 from typing import TYPE_CHECKING, Any, Optional
 
-from .enums import JOB_STATUS_FINAL, JobStatus
+from .enums import JobStatus
 from .exceptions import JobStateError, ResourceNotFoundError
 
 if TYPE_CHECKING:
@@ -30,7 +32,7 @@ class QuantumJob(ABC):
     """Abstract interface for job-like classes."""
 
     def __init__(
-        self, job_id: str, device: "Optional[qbraid.runtime.QuantumDevice]" = None, **kwargs
+        self, job_id: str, device: Optional[qbraid.runtime.QuantumDevice] = None, **kwargs
     ):
         self._job_id = job_id
         self._device = device
@@ -42,7 +44,7 @@ class QuantumJob(ABC):
         return self._job_id
 
     @property
-    def device(self) -> "qbraid.runtime.QuantumDevice":
+    def device(self) -> qbraid.runtime.QuantumDevice:
         """Returns the qbraid QuantumDevice object associated with this job."""
         if self._device is None:
             raise ResourceNotFoundError("Job does not have an associated device.")
@@ -50,11 +52,12 @@ class QuantumJob(ABC):
 
     def is_terminal_state(self) -> bool:
         """Returns True if job is in final state. False otherwise."""
-        if self._cache_metadata.get("status", None) in JOB_STATUS_FINAL:
+        terminal_states = JobStatus.terminal_states()
+        if self._cache_metadata.get("status", None) in terminal_states:
             return True
 
         status = self.status()
-        return status in JOB_STATUS_FINAL
+        return status in terminal_states
 
     @abstractmethod
     def status(self) -> JobStatus:
@@ -86,7 +89,7 @@ class QuantumJob(ABC):
             sleep(poll_interval)
 
     @abstractmethod
-    def result(self) -> "qbraid.runtime.GateModelJobResult":
+    def result(self) -> qbraid.runtime.QuantumJobResult:
         """Return the results of the job."""
 
     @abstractmethod
