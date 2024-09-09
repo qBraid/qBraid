@@ -44,7 +44,7 @@ Discord = "https://discord.gg/TPBU2sa8Et"
 [project.optional-dependencies]
 azure = ["azure-quantum>=2.0,<2.2", "azure-storage-blob>=12.20,<13.0", "azure-identity>=1.17,<2.0"]
 bloqade = ["bloqade>=0.15.13"]
-braket = ["amazon-braket-sdk>=1.83.0,<1.87.0", "pytket-braket>=0.30,<0.38"]
+braket = ["amazon-braket-sdk>=1.83.0,<1.88.0", "pytket-braket>=0.30,<0.38"]
 cirq = ["cirq-core>=1.3,<1.5", "cirq-ionq>=1.3,<1.5", "ply>=3.6", "attrs>=21.3.0"]
 oqc = ["oqc-qcaas-client>=3.9.1"]
 pennylane = ["pennylane<0.39"]
