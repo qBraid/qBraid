@@ -65,11 +65,16 @@ print(counts) # {"000": 100}
 
 ### Dependencies
 - Added `qbraid[azure]` extra to project ([#723](https://github.com/qBraid/qBraid/pull/723))
+- Update sphinx-autodoc-typehints requirement from <2.3,>=1.24 to >=1.24,<2.4 ([#746](https://github.com/qBraid/qBraid/pull/746))
+- Update qiskit-ibm-runtime requirement from <0.29,>=0.25.0 to >=0.25.0,<0.30 ([#751](https://github.com/qBraid/qBraid/pull/751))
+- Update sphinx-autodoc-typehints requirement from <2.4,>=1.24 to >=1.24,<2.5 ([#750](https://github.com/qBraid/qBraid/pull/750))
+- Update amazon-braket-sdk requirement from <1.87.0,>=1.83.0 to >=1.83.0,<1.88.0 ([#748](https://github.com/qBraid/qBraid/pull/748))
+- Update pennylane requirement from <0.38 to <0.39 ([#749](https://github.com/qBraid/qBraid/pull/749))
 
 ## [0.7.3] - 2024-08-26
 
 ### Dependencies
-- Bumped Amazon Braket dependency to support new Rigetti Ankaa-2 device ([#741](https://github.com/qBraid/qBraid/pull/741))
+- Update amazon-braket-sdk requirement from <1.85.0,>=1.83.0 to >=1.83.0,<1.87.0 (to support new Rigetti Ankaa-2 device) ([#741](https://github.com/qBraid/qBraid/pull/741))
 
 ## [0.7.2] - 2024-08-21
 
