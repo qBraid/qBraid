@@ -32,7 +32,7 @@ class QbraidMetaType(ABCMeta):
 
     @property
     @abstractmethod
-    def alias(cls) -> Optional[str]:
+    def __alias__(cls) -> Optional[str]:
         """The program type alias to associate with the class."""
 
     @property
@@ -48,7 +48,7 @@ class IonQDictInstanceMeta(QbraidMetaType):
     """Metaclass for IonQ JSON type checking based on dict content."""
 
     @property
-    def alias(cls) -> str:
+    def __alias__(cls) -> str:
         return "ionq"
 
     @property
@@ -162,7 +162,7 @@ class BaseQasmInstanceMeta(QbraidMetaType):
     version: Optional[int] = None
 
     @property
-    def alias(cls) -> Optional[str]:
+    def __alias__(cls) -> Optional[str]:
         if isinstance(cls.version, int):
             return f"qasm{cls.version}"
         return None

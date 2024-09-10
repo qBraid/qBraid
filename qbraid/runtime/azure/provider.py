@@ -21,6 +21,7 @@ from azure.quantum.target import Target
 from qbraid_core._import import LazyLoader
 
 from qbraid.programs import ProgramSpec
+from qbraid.programs.typer import IonQDict
 from qbraid.runtime.enums import DeviceActionType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
@@ -88,9 +89,9 @@ class AzureQuantumProvider(QuantumProvider):
         content_type = target.content_type
 
         if input_data_format == InputDataFormat.MICROSOFT.value:
-            program_spec = ProgramSpec(pyqir.Module)
+            program_spec = ProgramSpec(pyqir.Module, alias="pyqir")
         elif input_data_format == InputDataFormat.IONQ.value:
-            program_spec = ProgramSpec(str, alias="qasm2")
+            program_spec = ProgramSpec(IonQDict)
         elif input_data_format == InputDataFormat.QUANTINUUM.value:
             program_spec = ProgramSpec(str, alias="qasm2")
         elif input_data_format == InputDataFormat.RIGETTI.value:

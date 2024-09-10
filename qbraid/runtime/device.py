@@ -26,6 +26,7 @@ from qbraid.transpiler import CircuitConversionError, ConversionGraph, Conversio
 
 from .enums import DeviceStatus
 from .exceptions import ProgramValidationError, QbraidRuntimeError, ResourceNotFoundError
+from .options import Options
 
 if TYPE_CHECKING:
     import qbraid.programs
@@ -56,6 +57,7 @@ class QuantumDevice(ABC):
         self._profile = profile
         self._target_spec: Optional[ProgramSpec] = profile.program_spec
         self._scheme = scheme or ConversionScheme()
+        self._options = self._default_options()
 
     @property
     def profile(self) -> qbraid.runtime.TargetProfile:
@@ -91,6 +93,16 @@ class QuantumDevice(ABC):
     @abstractmethod
     def status(self) -> qbraid.runtime.DeviceStatus:
         """Return device status."""
+
+    @classmethod
+    def _default_options(cls):
+        """Define default options for the QuantumDevice."""
+        options = Options(transpile=True, transform=True, verify=True)
+        options.set_validator("transpile", lambda x: isinstance(x, bool))
+        options.set_validator("transform", lambda x: isinstance(x, bool))
+        options.set_validator("verify", lambda x: isinstance(x, bool))
+
+        return options
 
     def queue_depth(self) -> int:
         """Return the number of jobs in the queue for the backend"""
