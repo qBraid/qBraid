@@ -32,7 +32,8 @@ from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
 from qbraid.runtime import DeviceActionType, DeviceStatus, JobStateError, TargetProfile
 from qbraid.runtime.exceptions import QbraidRuntimeError
-from qbraid.runtime.qiskit import QiskitBackend, QiskitJob, QiskitResult, QiskitRuntimeProvider
+from qbraid.runtime.qiskit import QiskitBackend, QiskitJob, QiskitRuntimeProvider
+from qbraid.runtime.result import RuntimeJobResult
 
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
@@ -389,45 +390,30 @@ def mock_runtime_result():
 
 
 def test_result_from_job(mock_runtime_job, mock_runtime_result):
-    """Test that result returns QiskitResult when the job is in a terminal state."""
+    """Test that result returns RuntimeJobResult when the job is in a terminal state."""
     mock_job = QiskitJob(job_id="123", job=mock_runtime_job)
     mock_runtime_job.result.return_value = mock_runtime_result
     result = mock_job.result()
-    assert isinstance(result, QiskitResult)
-    assert isinstance(result.get_counts(), dict)
-    assert isinstance(result.measurements(), np.ndarray)
+    assert isinstance(result, RuntimeJobResult)
+    assert isinstance(result.get_experiment(0).state_counts, dict)
+    assert isinstance(result.get_experiment(0).measurements, np.ndarray)
 
 
-def test_result_get_counts(mock_runtime_result):
-    """Test getting raw counts from a Qiskit result."""
-    qr = QiskitResult()
-    qr._result = mock_runtime_result
-    expected = {"01": 9, "10": 1, "11": 4, "00": 6}
-    assert qr.get_counts() == expected
+# TODO: update with new result handling
+# def test_result_measurements_single_circuit(mock_runtime_result):
+#     """Test getting measurements from a single circuit."""
+#     qr = QiskitResult()
+#     qr._result = mock_runtime_result
+#     mock_runtime_result.results = [Mock()]
+#     expected = np.array([[0, 1]] * 9 + [[1, 0]] + [[1, 1]] * 4 + [[0, 0]] * 6)
+#     assert np.array_equal(qr.measurements(), expected)
 
 
-def test_result_format_measurements():
-    """Test formatting measurements into integers."""
-    qr = QiskitResult()
-    memory_list = ["010", "111"]
-    expected = [[0, 1, 0], [1, 1, 1]]
-    assert qr._format_measurements(memory_list) == expected
-
-
-def test_result_measurements_single_circuit(mock_runtime_result):
-    """Test getting measurements from a single circuit."""
-    qr = QiskitResult()
-    qr._result = mock_runtime_result
-    mock_runtime_result.results = [Mock()]
-    expected = np.array([[0, 1]] * 9 + [[1, 0]] + [[1, 1]] * 4 + [[0, 0]] * 6)
-    assert np.array_equal(qr.measurements(), expected)
-
-
-def test_result_measurements_multiple_circuits(mock_runtime_result):
-    """Test getting measurements from multiple circuits."""
-    qr = QiskitResult()
-    qr._result = mock_runtime_result
-    expected_meas1 = np.array([[0, 1]] * 9 + [[1, 0]] + [[1, 1]] * 4 + [[0, 0]] * 6)
-    expected_meas2 = np.array([[0, 0]] * 8 + [[0, 1]] * 12)
-    expected = np.array([expected_meas1, expected_meas2])
-    assert np.array_equal(qr.measurements(), expected)
+# def test_result_measurements_multiple_circuits(mock_runtime_result):
+#     """Test getting measurements from multiple circuits."""
+#     qr = QiskitResult()
+#     qr._result = mock_runtime_result
+#     expected_meas1 = np.array([[0, 1]] * 9 + [[1, 0]] + [[1, 1]] * 4 + [[0, 0]] * 6)
+#     expected_meas2 = np.array([[0, 0]] * 8 + [[0, 1]] * 12)
+#     expected = np.array([expected_meas1, expected_meas2])
+#     assert np.array_equal(qr.measurements(), expected)

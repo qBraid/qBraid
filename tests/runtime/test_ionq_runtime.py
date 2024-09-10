@@ -93,7 +93,7 @@ GET_JOB_RESPONSE = {
     "id": "c86a043a-6aea-47cf-b3a6-70ab1e538cab",
     "submitted_by": "e1254d93988e405e80d7842a",
     "status": "completed",
-    "tar    get": "simulator",
+    "target": "simulator",
     "qubits": 1,
     "circuits": 1,
     "results_url": "/v0.3/jobs/c86a043a-6aea-47cf-b3a6-70ab1e538cab/results",

@@ -99,6 +99,7 @@ class QbraidJob(QuantumJob):
                 measurements=ResultFormatter.counts_to_measurements(measurement_counts),
                 result_type=ExperimentType.GATE_MODEL,
                 execution_duration=execution_duration,
+                metadata=None,
             )
         ]
 

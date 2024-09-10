@@ -12,8 +12,10 @@
 Unit tests for retrieving and post-processing experimental results.
 
 """
+import numpy as np
 import pytest
 
+from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.result import ExperimentalResult, ResultFormatter, RuntimeJobResult
 
 
@@ -89,10 +91,14 @@ def test_batch_measurement_counts():
         ExperimentalResult(
             counts1,
             ResultFormatter.counts_to_measurements(counts1),
+            result_type=ExperimentType.GATE_MODEL,
+            metadata=None,
         ),
         ExperimentalResult(
             counts2,
             ResultFormatter.counts_to_measurements(counts2),
+            result_type=ExperimentType.GATE_MODEL,
+            metadata=None,
         ),
     ]
     result = RuntimeJobResult("job_id", "device_id", experiments, True)
@@ -114,11 +120,15 @@ def test_decimal_get_counts():
     experiments = [
         ExperimentalResult(
             counts1,
-            ResultFormatter.counts_to_measurements(counts1),
+            np.array([]),
+            result_type=ExperimentType.GATE_MODEL,
+            metadata=None,
         ),
         ExperimentalResult(
             counts2,
-            ResultFormatter.counts_to_measurements(counts2),
+            np.array([]),
+            result_type=ExperimentType.GATE_MODEL,
+            metadata=None,
         ),
     ]
     result = RuntimeJobResult("job_id", "device_id", experiments, True)

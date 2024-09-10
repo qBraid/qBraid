@@ -22,12 +22,10 @@ Classes
    QiskitBackend
    QiskitJob
    QiskitRuntimeProvider
-   QiskitResult
 
 """
 from .device import QiskitBackend
 from .job import QiskitJob
 from .provider import QiskitRuntimeProvider
-from .result import QiskitResult
 
-__all__ = ["QiskitBackend", "QiskitJob", "QiskitRuntimeProvider", "QiskitResult"]
+__all__ = ["QiskitBackend", "QiskitJob", "QiskitRuntimeProvider"]

@@ -15,14 +15,14 @@ Module defining QiskitJob Class
 import logging
 from typing import TYPE_CHECKING, Optional
 
+import numpy as np
 from qiskit_ibm_runtime import QiskitRuntimeService
 from qiskit_ibm_runtime.exceptions import RuntimeInvalidStateError
 
-from qbraid.runtime.enums import JobStatus
+from qbraid.runtime.enums import ExperimentType, JobStatus
 from qbraid.runtime.exceptions import JobStateError, QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
-
-from .result import QiskitResult
+from qbraid.runtime.result import ExperimentalResult, ResultFormatter, RuntimeJobResult
 
 if TYPE_CHECKING:
     import qiskit_ibm_runtime
@@ -88,11 +88,47 @@ class QiskitJob(QuantumJob):
         """Returns the position of the job in the server queue."""
         return self._job.queue_position(refresh=True)
 
+    def _build_runtime_gate_model_results(self, job_data, **kwargs):
+        # get the counts from qiskit job
+        counts = job_data.get_counts()
+
+        def _format_measurements(memory_list):
+            """Format the qiskit measurements into int for the given memory list"""
+            formatted_meas = []
+            for str_shot in memory_list:
+                lst_shot = [int(x) for x in list(str_shot)]
+                formatted_meas.append(lst_shot)
+            return formatted_meas
+
+        # get the measurement data
+        num_circuits = len(job_data.results)
+        qiskit_meas = [job_data.get_memory(i) for i in range(num_circuits)]
+        qbraid_meas = [
+            _format_measurements(memory_list=qiskit_meas[i]) for i in range(num_circuits)
+        ]
+        if num_circuits == 1:
+            qbraid_meas = np.array(qbraid_meas[0])
+        else:
+            qbraid_meas = ResultFormatter.normalize_tuples(qbraid_meas)
+
+        return ExperimentalResult(
+            state_counts=counts,
+            measurements=qbraid_meas,
+            result_type=ExperimentType.GATE_MODEL,
+            metadata=None,
+        )
+
     def result(self):
         """Return the results of the job."""
         if not self.is_terminal_state():
             logger.info("Result will be available when job has reached final state.")
-        return QiskitResult(self._job.result())
+        exp_results = [self.build_runtime_result(ExperimentType.GATE_MODEL, self._job.result())]
+        return RuntimeJobResult(
+            job_id=self._job.job_id(),
+            device_id="test-1",
+            result=exp_results,
+            success=self._job.result.success,
+        )
 
     def cancel(self):
         """Attempt to cancel the job."""

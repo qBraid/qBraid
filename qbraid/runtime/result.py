@@ -109,16 +109,15 @@ class ExperimentalResult:
     state_counts: dict
     measurements: Union[np.ndarray, Any]  # if gate_model_type it would be measurement counts
     # if AHS it would be the energy levels
-    result_type: ExperimentType = ExperimentType.GATE_MODEL
+    result_type: ExperimentType
+    metadata: Optional[dict]
     execution_duration: float = -1.0
-    metadata: dict = None
 
     def __repr__(self) -> str:
         return (
             f"ExperimentalResult(state_counts='{self.state_counts}', "
             f"measurements='{self.measurements}', result_type='{self.result_type}', "
-            f"execution_duration={self.execution_duration}), "
-            f"metadata={self.metadata})"
+            f"execution_duration={self.execution_duration})"
         )
 
 
@@ -234,6 +233,33 @@ class ResultFormatter:
 
         return normalized_list[0] if normalized_list else measurement
 
+    @staticmethod
+    def normalize_tuples(measurements: list[list[tuple[int, ...]]]) -> list[list[tuple[int, ...]]]:
+        """
+        Normalizes lists of tuples in a list to have the same tuple length across all entries
+        by padding shorter tuples with zeros on the left.
+
+        Args:
+            measurements (list[list[tuple[int, ...]]]): A list of lists containing tuples
+                with integer elements.
+
+        Returns:
+            list[list[tuple[int, ...]]]: A new list where each sublist's tuples have normalized
+                lengths, preserving the binary significance of the numbers.
+        """
+        max_tuple_length = max(len(tup) for sublist in measurements for tup in sublist)
+
+        normalized_measurements = []
+        for sublist in measurements:
+            normalized_sublist = []
+            for tup in sublist:
+                current_tuple = tuple(tup) if isinstance(tup, list) else tup
+                padded_tuple = (0,) * (max_tuple_length - len(current_tuple)) + current_tuple
+                normalized_sublist.append(padded_tuple)
+            normalized_measurements.append(np.array(normalized_sublist))
+
+        return np.array(normalized_measurements)
+
 
 class RuntimeJobResult:
     """Class to store and retrieve the results of a quantum circuit simulation."""
@@ -259,29 +285,14 @@ class RuntimeJobResult:
             f"success={self.success})"
         )
 
-    def display_measurements(self):
-        """Display the measurements of each experiment in the result with its type"""
-
-        for exp_num, experiment in enumerate(self.result):
-            print(f"Experiment {exp_num} ")
-            print(f"Type: {experiment.result_type}")
-            print(f"Measurements: {experiment.measurements}\n")
-
-    def display_counts(self):
-        """Display the counts of each state in the result along with the type of experiment"""
-
-        for exp_num, experiment in enumerate(self.result):
-            print(f"Experiment {exp_num} ")
-            print(f"Type: {experiment.result_type}")
-            print(f"Counts: {experiment.state_counts}\n")
-
-    def display_metadata(self):
+    def metadata(self, experiment_metadata=False):
         """Display the metadata of each experiment in the result"""
 
         for exp_num, experiment in enumerate(self.result):
-            print(f"Experiment {exp_num} ")
-            print(f"Type: {experiment.result_type}")
-            print(f"Metadata: {experiment.metadata}\n")
+            print(f"Experiment {exp_num} -")
+            print(experiment)
+            if experiment_metadata:
+                print(experiment.metadata)
 
     def get_experiment(self, exp_num):
         """Return the experiment result for a specific experiment number"""
@@ -323,8 +334,9 @@ class RuntimeJobResult:
 
         return ResultFormatter.normalize_batch_bit_lengths(batch_counts)
 
+    # TODO: refactor out
     def measurement_probabilities(self, **kwargs) -> dict[str, float]:
         """Calculate and return the probabilities of each measurement result."""
         counts = self.measurement_counts(**kwargs)
-        probabilities = ResultFormatter.counts_to_probabilities(counts)
+        probabilities = [ResultFormatter.counts_to_probabilities(count) for count in counts]
         return probabilities
