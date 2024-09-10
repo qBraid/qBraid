@@ -352,6 +352,13 @@ def test_device_extract_qasm_rep_none(mock_qbraid_device):
         unregister_program_type(alias)
 
 
+def test_device_run_raises_for_protected_kwargs(valid_qasm2, mock_qbraid_device):
+    """Test raising exception when run method is invoked with protected kwargs."""
+    kwargs = {"openQasm": valid_qasm2}
+    with pytest.raises(ValueError):
+        mock_qbraid_device.run(valid_qasm2, **kwargs)
+
+
 def test_provider_initialize_client_raises_for_multiple_auth_params():
     """Test raising exception when initializing client if provided
     both an api key and a client object."""
