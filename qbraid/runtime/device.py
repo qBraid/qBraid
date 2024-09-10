@@ -240,15 +240,18 @@ class QuantumDevice(ABC):
         Returns:
             Transpiled and transformed quantum program
         """
-        if self._target_spec is not None:
+        verify_option = self._options.get("verify") is True
+        transpile_option = self._options.get("transpile") is True
+
+        if self._target_spec is not None and (verify_option or transpile_option):
             run_input_alias = get_program_type_alias(run_input, safe=True)
             run_input_spec = ProgramSpec(type(run_input), alias=run_input_alias)
             program = load_program(run_input) if run_input_spec.native else None
 
-            if self._options.get("verify") is True:
+            if verify_option:
                 self.validate(program)
 
-            if self._options.get("transpile") is True:
+            if transpile_option:
                 run_input = self.transpile(run_input, run_input_spec)
 
         is_single_output = not isinstance(run_input, list)

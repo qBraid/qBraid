@@ -44,5 +44,5 @@ __all__ = [
     "QbraidJob",
     "QbraidJobResult",
     "ExperimentResult",
-    "QirRunner"
+    "QirRunner",
 ]
