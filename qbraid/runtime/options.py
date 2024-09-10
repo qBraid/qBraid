@@ -13,6 +13,7 @@ Module for managing qBraid-specific runtime options.
 
 """
 
+import copy
 from dataclasses import dataclass
 from dataclasses import field as dataclass_field
 from typing import Any, Callable
@@ -22,24 +23,65 @@ from typing import Any, Callable
 class Options:
     """
     Manages qBraid-specific options with controlled defaults and dynamic fields.
-    Allows default fields to be modified and arbitrary additional fields to be added.
+
+    The `Options` class allows you to initialize options with default fields,
+    add dynamic fields, and validate the values of specific fields using custom
+    validators. It also provides dictionary-like access to option fields.
+
+    Example:
+
+    .. code-block:: python
+
+        >>> from qbraid.runtime.options import Options
+
+        # Initialize options with default and custom fields
+        >>> options = Options(check=True, custom_field=42)
+        >>> print(options)  # Output: Options(check=True, custom_field=42)
+
+        # Access option fields like dictionary
+        >>> options["check"]  # Output: True
+
+        # Add dynamic fields
+        >>> options["new_field"] = "hello"
+        >>> print(options)  # Output: Options(check=True, custom_field=42, new_field='hello')
+
+        # Set a validator for a field
+        >>> options.set_validator("check", lambda x: isinstance(x, bool))
+
+        # Attempting to set an invalid value will raise a ValueError
+        >>> options.check = False  # Valid
+        >>> options.check = "invalid_value"  # Raises ValueError
+
+        # Make a shallow copy of the options
+        >>> options_copy = copy.copy(options)
+        >>> print(options_copy)  # Output: Options(check=False, custom_field=42, new_field='hello')
+
+    Args:
+        kwargs: Keyword arguments representing the initial options to set.
+                These will form the default fields of the `Options` instance.
+
+    Attributes:
+        _fields (dict): The internal dictionary storing option fields.
+        _validators (dict): A dictionary storing field validators.
 
     """
-
-    transpile: bool = True
-    transform: bool = True
-    verify: bool = True
 
     _validators: dict[str, Callable[[Any], bool]] = dataclass_field(
         default_factory=dict, repr=False
     )
 
     def __init__(self, **kwargs: Any):
-        self.transpile = kwargs.pop("transpile", True)
-        self.transform = kwargs.pop("transform", True)
-        self.verify = kwargs.pop("verify", True)
+        reserved_keywords = {"set_validator", "validate", "update_options", "get"}
 
-        self._fields = kwargs
+        for key in kwargs:
+            if key in reserved_keywords:
+                raise ValueError(f"The option name '{key}' is reserved and cannot be used.")
+            if key.startswith("__"):
+                raise ValueError(f"The option name '{key}' with dunder prefix is not allowed.")
+
+        object.__setattr__(self, "_default_fields", kwargs.copy())
+        object.__setattr__(self, "_fields", kwargs.copy())
+        object.__setattr__(self, "_validators", {})
 
     def set_validator(self, option_name: str, validator: Callable[[Any], bool]):
         """Sets a validator for a specific field."""
@@ -51,7 +93,7 @@ class Options:
         """Validates a field's value using the registered validator, if any."""
         validator = self._validators.get(option_name)
         if validator and not validator(value):
-            raise ValueError(f"Value {value} is not valid for field '{option_name}'.")
+            raise ValueError(f"Value '{value}' is not valid for field '{option_name}'.")
 
     def update_options(self, **new_options):
         """Updates multiple options with validation."""
@@ -61,6 +103,12 @@ class Options:
                 setattr(self, option_name, value)
             else:
                 self._fields[option_name] = value
+
+    def get(self, key: str, default: Any = None) -> Any:
+        """Return the value for the given key, or the default value if not found."""
+        if hasattr(self, key):
+            return getattr(self, key)
+        return self._fields.get(key, default)
 
     def __getitem__(self, key: str) -> Any:
         """Allow dictionary-like access."""
@@ -74,8 +122,8 @@ class Options:
 
     def __delitem__(self, key: str):
         """Prevent deletion of default fields but allow deletion of additional fields."""
-        if hasattr(self, key):
-            raise KeyError(f"Cannot delete default option '{key}'.")
+        if key in self._default_fields:
+            raise KeyError(f"Cannot delete default field '{key}'.")
         if key in self._fields:
             del self._fields[key]
         else:
@@ -83,18 +131,55 @@ class Options:
 
     def __getattr__(self, name: str) -> Any:
         """Access options like attributes."""
+        if name in {"_fields", "_default_fields", "_validators"}:
+            return self.__dict__.get(name)
         if name in self._fields:
             return self._fields[name]
         raise AttributeError(f"Option '{name}' is not defined.")
 
     def __setattr__(self, name: str, value: Any):
         """Set options like attributes, ensuring validation if necessary."""
-        if name in {"transpile", "transform", "verify", "_fields", "_validators"}:
+        if name in {"_fields", "_default_fields", "_validators"}:
             super().__setattr__(name, value)
+        elif name in self._fields or name in self._default_fields:
+            if self._fields.get(name) != value:
+                if name in self._validators:
+                    self.validate(name, value)
+                self._fields[name] = value
         else:
             self.update_options(**{name: value})
 
+    @property
+    def __dict__(self):
+        """Returns the internal fields as a dictionary."""
+        return self._fields
+
+    def __iter__(self):
+        """Allow iteration over the key-value pairs of the internal fields."""
+        return iter(self._fields.items())
+
+    def __len__(self):
+        """Return the number of fields."""
+        return len(self._fields)
+
     def __repr__(self):
         """Returns a string representation of the options."""
-        base_options = {k: getattr(self, k) for k in ["transpile", "transform", "verify"]}
-        return f"Options({base_options}, additional={self._fields})"
+        options_str = ", ".join(f"{k}={v!r}" for k, v in self._fields.items())
+        return f"Options({options_str})"
+
+    def __copy__(self):
+        """Create a shallow copy of the Options object."""
+        cls = self.__class__
+        new_instance = cls(**self._fields)
+        new_instance._validators = copy.copy(self._validators)
+        return new_instance
+
+    def __eq__(self, other: Any) -> bool:
+        """Custom equality check for Options objects."""
+        if not isinstance(other, Options):
+            return False
+        if self._fields != other._fields:
+            return False
+        if set(self._validators.keys()) != set(other._validators.keys()):
+            return False
+        return True

@@ -130,6 +130,7 @@ def test_submit_qir_to_microsoft(provider: AzureQuantumProvider):
     """Test submitting QIR bitcode to run on the Microsoft resource estimator."""
     device = provider.get_device("microsoft.estimator")
     assert device.status() == DeviceStatus.ONLINE
+    device.set_options(transpile=False, transform=False, verify=False)
 
     circuit = QuantumCircuit(3, 3)
     circuit.name = "main"
@@ -159,6 +160,7 @@ def test_submit_quil_to_rigetti(provider: AzureQuantumProvider):
     """Test submitting a Quil string to run on the Rigetti simulator."""
     device = provider.get_device("rigetti.sim.qvm")
     assert device.status() == DeviceStatus.ONLINE
+    device.set_options(transpile=False, transform=False, verify=False)
 
     readout = "ro"
     bell_state_quil = f"""

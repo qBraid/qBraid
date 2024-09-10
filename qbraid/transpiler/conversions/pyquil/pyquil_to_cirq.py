@@ -13,6 +13,8 @@ Module containing functions to convert from pyQuil's circuit
 representation (Quil programs) to Cirq's circuit representation.
 
 """
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from qbraid.transpiler.annotations import weight
@@ -26,7 +28,7 @@ if TYPE_CHECKING:
 
 
 @weight(1)
-def pyquil_to_cirq(program: "pyquil.quil.Program") -> "cirq.circuits.Circuit":
+def pyquil_to_cirq(program: "pyquil.quil.Program") -> cirq.circuits.Circuit:
     """Returns a Cirq circuit equivalent to the input pyQuil Program.
 
     Args:

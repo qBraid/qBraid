@@ -25,6 +25,7 @@ Data Types
     DeviceActionType
 	DeviceStatus
 	JobStatus
+    NoiseModel
 
 Functions
 ------------
@@ -41,6 +42,7 @@ Classes
    :toctree: ../stubs/
 
 	Session
+    Options
    	TargetProfile
 	QuantumDevice
 	QuantumJob
@@ -66,7 +68,7 @@ from qbraid_core import Session
 from . import native
 from ._display import display_jobs_from_data
 from .device import QuantumDevice
-from .enums import DeviceActionType, DeviceStatus, JobStatus
+from .enums import DeviceActionType, DeviceStatus, JobStatus, NoiseModel
 from .exceptions import (
     DeviceProgramTypeMismatchError,
     JobStateError,
@@ -76,6 +78,7 @@ from .exceptions import (
 )
 from .job import QuantumJob
 from .native import *
+from .options import Options
 from .profile import TargetProfile
 from .provider import QuantumProvider
 from .result import GateModelJobResult, QuantumJobResult
@@ -97,6 +100,8 @@ __all__ = [
     "QuantumProvider",
     "GateModelJobResult",
     "QuantumJobResult",
+    "Options",
+    "NoiseModel",
 ]
 
 __all__.extend(native.__all__)
