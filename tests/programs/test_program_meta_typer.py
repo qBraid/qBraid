@@ -20,6 +20,7 @@ import pytest
 from qbraid.programs.exceptions import QasmError
 from qbraid.programs.typer import (
     BaseQasmInstanceMeta,
+    IonQDictInstanceMeta,
     Qasm2Instance,
     Qasm2String,
     Qasm3Instance,
@@ -114,3 +115,37 @@ def test_base_qasm_instance_meta():
 def test_not_qasm_string():
     """Test that the isinstance function returns False when given a non-QasmString object."""
     assert not isinstance("Not a QasmString", Qasm2Instance)
+
+
+def test_validate_field_valid_single():
+    """Test valid single integer for target/control."""
+    IonQDictInstanceMeta._validate_field(single=1, multiple=None, field_name="target")
+
+
+def test_validate_field_valid_multiple():
+    """Test valid list of integers for target/control."""
+    IonQDictInstanceMeta._validate_field(single=None, multiple=[1, 2], field_name="control")
+
+
+def test_ionq_instancecheck_invalid_gate():
+    """Test an invalid instance with a non-string gate."""
+    invalid_instance = {"qubits": 2, "circuit": [{"gate": 123, "target": 0}]}
+
+    assert not isinstance(invalid_instance, IonQDictInstanceMeta)
+
+
+def test_ionq_instancecheck_invalid_rotation():
+    """Test an invalid instance with a non-numeric rotation."""
+    invalid_instance = {
+        "qubits": 2,
+        "circuit": [{"gate": "rx", "rotation": "invalid", "target": 0}],
+    }
+
+    assert not isinstance(invalid_instance, IonQDictInstanceMeta)
+
+
+def test_ionq_instancecheck_invalid_target():
+    """Test an invalid instance with an invalid target type."""
+    invalid_instance = {"qubits": 2, "circuit": [{"gate": "cx", "target": "invalid"}]}
+
+    assert not isinstance(invalid_instance, IonQDictInstanceMeta)

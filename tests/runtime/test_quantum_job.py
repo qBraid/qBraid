@@ -198,3 +198,20 @@ def test_wait_for_final_state_timeout(quantum_job):
     with patch.object(quantum_job, "is_terminal_state", return_value=False):
         with pytest.raises(JobStateError):
             quantum_job.wait_for_final_state(timeout=0.2, poll_interval=0.1)
+
+
+def test_invalid_job_status_value():
+    """Test that an invalid status value raises a ValueError."""
+    with pytest.raises(ValueError, match="Invalid status value: INVALID_STATUS"):
+        JobStatus._get_default_message("INVALID_STATUS")
+
+
+def test_set_job_status_message():
+    """Test that a custom status message can be set."""
+    status = JobStatus.QUEUED
+    assert status.default_message == "job is queued"
+    assert status.status_message is None
+
+    status.set_status_message("Job is in custom state")
+    assert status.status_message == "Job is in custom state"
+    assert repr(status) == "<QUEUED: 'Job is in custom state'>"
