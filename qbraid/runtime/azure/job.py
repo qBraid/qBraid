@@ -17,18 +17,17 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Any, Union
 
-from qbraid.runtime.enums import JobStatus
+from azure.quantum.target.microsoft import MicrosoftEstimatorResult
+
+from qbraid.runtime.enums import ExperimentType, JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
+from qbraid.runtime.result import ExperimentalResult, RuntimeJobResult
 
 from .result_builder import AzureResultBuilder
 
 if TYPE_CHECKING:
     import azure.quantum
-    from azure.quantum.target.microsoft import MicrosoftEstimatorResult
-
-    from qbraid.runtime.azure.result import AzureQuantumResult
-
 
 logger = logging.getLogger(__name__)
 
@@ -73,18 +72,41 @@ class AzureQuantumJob(QuantumJob):
         }
         return status_map.get(status, JobStatus.UNKNOWN)
 
-    def result(self) -> Union[AzureQuantumResult, MicrosoftEstimatorResult]:
+    def _build_runtime_gate_model_results(self, job_data, **kwargs):
+
+        return ExperimentalResult(
+            state_counts=job_data[0]["data"]["counts"],
+            measurements=None,
+            result_type=ExperimentType.GATE_MODEL,
+            metadata=job_data[0]["header"]["metadata"],
+        )
+
+    def result(self) -> Union[RuntimeJobResult, MicrosoftEstimatorResult]:
         """Return the result of the Azure job.
 
         Returns:
-            Union[AzureQuantumResult, MicrosoftEstimatorResult]: The result of the job.
+            Union[RuntimeJobResult, MicrosoftEstimatorResult]: The result of the job.
         """
         if not self.is_terminal_state():
             logger.info("Result will be available when job has reached final state.")
 
         builder = AzureResultBuilder(self._job)
+        result_raw = builder.result()
 
-        return builder.result()
+        if isinstance(result_raw, MicrosoftEstimatorResult):
+            return result_raw
+
+        final_result = self.build_runtime_result(
+            job_data=result_raw["results"], experiment_type=ExperimentType.GATE_MODEL
+        )
+
+        return RuntimeJobResult(
+            job_id=result_raw["job_id"],
+            result=final_result,
+            device_id=result_raw["target"],
+            success=result_raw["success"],
+            errors=result_raw["error_data"],
+        )
 
     def cancel(self) -> None:
         """Cancel the Azure job."""

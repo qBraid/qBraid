@@ -32,9 +32,7 @@ import numpy as np
 from azure.quantum import Job
 from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 
-from qbraid.runtime.ionq.result import IonQJobResult
-
-from .result import AzureQuantumResult
+from qbraid.runtime.result import ResultFormatter
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +86,7 @@ class AzureResultBuilder:
 
     def result(
         self, timeout: Optional[int] = None, sampler_seed: Optional[int] = None
-    ) -> Union[AzureQuantumResult, MicrosoftEstimatorResult]:
+    ) -> Union[dict, MicrosoftEstimatorResult]:
         """Return the results of the job."""
         self.job.wait_until_completed(timeout_secs=timeout)
 
@@ -110,7 +108,7 @@ class AzureResultBuilder:
 
         if self.job.details.output_data_format == RESOURCE_ESTIMATOR_OUTPUT_DATA_FORMAT:
             return self.make_estimator_result(result_dict)
-        return AzureQuantumResult(result_dict)
+        return result_dict
 
     def _format_results(
         self, sampler_seed: Optional[int] = None
@@ -189,8 +187,12 @@ class AzureResultBuilder:
             "shots": shots,
             "probabilities": az_result["histogram"],
         }
-        result = IonQJobResult(data)
-        counts = result.measurement_counts()
+        probs_binary = {
+            bin(int(key))[2:].zfill(2): value for key, value in data["probabilities"].items()
+        }
+        probs_normal = ResultFormatter.normalize_bit_lengths(probs_binary)
+        counts = {state: int(prob * shots) for state, prob in probs_normal.items()}
+
         total_count = sum(counts.values())
         probabilities = {key: value / total_count for key, value in counts.items()}
 

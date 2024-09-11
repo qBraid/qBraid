@@ -30,7 +30,7 @@ from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceActionType, ExperimentType, NoiseModel
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
-from qbraid.runtime.result import ExperimentalResult, RuntimeJobResult
+from qbraid.runtime.result import ExperimentalResult, ResultFormatter, RuntimeJobResult
 from qbraid.transpiler import CircuitConversionError, Conversion, ConversionGraph, ConversionScheme
 
 DEVICE_DATA = {
@@ -269,7 +269,7 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert result.success
 
     counts = result.measurement_counts()
-    probabilities = result.measurement_probabilities()
+    probabilities = ResultFormatter.measurement_probabilities(counts)
     assert len(counts) == len(probabilities) == 2
     assert sum(probabilities.values()) == 1.0
 

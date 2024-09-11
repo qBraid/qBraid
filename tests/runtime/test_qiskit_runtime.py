@@ -378,7 +378,18 @@ def test_cancel_job_fails_due_to_runtime_error(mock_runtime_job):
 
 
 @pytest.fixture
-def mock_runtime_result():
+def mock_runtime_result_1():
+    """Return a mock Qiskit result."""
+    mock_result = Mock()
+    mock_result.results = [Mock()]
+    meas1 = ["01"] * 9 + ["10"] + ["11"] * 4 + ["00"] * 6
+    mock_result.get_memory.side_effect = [meas1]
+    mock_result.get_counts.side_effect = [{"01": 9, "10": 1, "11": 4, "00": 6}]
+    return mock_result
+
+
+@pytest.fixture
+def mock_runtime_result_2():
     """Return a mock Qiskit result."""
     mock_result = Mock()
     mock_result.results = [Mock(), Mock()]
@@ -389,31 +400,31 @@ def mock_runtime_result():
     return mock_result
 
 
-def test_result_from_job(mock_runtime_job, mock_runtime_result):
+def test_result_from_job(mock_runtime_job, mock_runtime_result_2):
     """Test that result returns RuntimeJobResult when the job is in a terminal state."""
     mock_job = QiskitJob(job_id="123", job=mock_runtime_job)
-    mock_runtime_job.result.return_value = mock_runtime_result
+    mock_runtime_job.result.return_value = mock_runtime_result_2
     result = mock_job.result()
     assert isinstance(result, RuntimeJobResult)
     assert isinstance(result.get_experiment(0).state_counts, dict)
     assert isinstance(result.get_experiment(0).measurements, np.ndarray)
 
 
-# TODO: update with new result handling
-# def test_result_measurements_single_circuit(mock_runtime_result):
-#     """Test getting measurements from a single circuit."""
-#     qr = QiskitResult()
-#     qr._result = mock_runtime_result
-#     mock_runtime_result.results = [Mock()]
-#     expected = np.array([[0, 1]] * 9 + [[1, 0]] + [[1, 1]] * 4 + [[0, 0]] * 6)
-#     assert np.array_equal(qr.measurements(), expected)
+def test_result_measurements_single_circuit(mock_runtime_job, mock_runtime_result_1):
+    """Test getting measurements from a single circuit."""
+    mock_job = QiskitJob(job_id="123", job=mock_runtime_job)
+    mock_runtime_job.result.return_value = mock_runtime_result_1
+    result = mock_job.result()
+    expected = np.array([[0, 1]] * 9 + [[1, 0]] + [[1, 1]] * 4 + [[0, 0]] * 6)
+    assert np.array_equal(result.get_experiment(0).measurements, expected)
 
 
-# def test_result_measurements_multiple_circuits(mock_runtime_result):
-#     """Test getting measurements from multiple circuits."""
-#     qr = QiskitResult()
-#     qr._result = mock_runtime_result
-#     expected_meas1 = np.array([[0, 1]] * 9 + [[1, 0]] + [[1, 1]] * 4 + [[0, 0]] * 6)
-#     expected_meas2 = np.array([[0, 0]] * 8 + [[0, 1]] * 12)
-#     expected = np.array([expected_meas1, expected_meas2])
-#     assert np.array_equal(qr.measurements(), expected)
+def test_result_measurements_multiple_circuits(mock_runtime_job, mock_runtime_result_2):
+    """Test getting measurements from multiple circuits."""
+    mock_job = QiskitJob(job_id="123", job=mock_runtime_job)
+    mock_runtime_job.result.return_value = mock_runtime_result_2
+    result = mock_job.result()
+    expected_meas1 = np.array([[0, 1]] * 9 + [[1, 0]] + [[1, 1]] * 4 + [[0, 0]] * 6)
+    expected_meas2 = np.array([[0, 0]] * 8 + [[0, 1]] * 12)
+    expected = np.array([expected_meas1, expected_meas2])
+    assert np.array_equal(result.get_experiment(0).measurements, expected)

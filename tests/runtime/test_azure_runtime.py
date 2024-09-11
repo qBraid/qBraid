@@ -34,12 +34,7 @@ from qbraid.runtime import (
     ResourceNotFoundError,
     TargetProfile,
 )
-from qbraid.runtime.azure import (
-    AzureQuantumDevice,
-    AzureQuantumJob,
-    AzureQuantumProvider,
-    AzureQuantumResult,
-)
+from qbraid.runtime.azure import AzureQuantumDevice, AzureQuantumJob, AzureQuantumProvider
 from qbraid.runtime.azure.result_builder import (
     IONQ_OUTPUT_DATA_FORMAT,
     MICROSOFT_OUTPUT_DATA_FORMAT,
@@ -248,13 +243,6 @@ def mock_azure_job(
 def azure_result_builder(mock_azure_job):
     """Return an AzureResultBuilder instance with a mock AzureQuantumJob."""
     return AzureResultBuilder(mock_azure_job)
-
-
-@pytest.fixture
-def azure_result():
-    """Return an AzureQuantumResult instance."""
-    result_data = {"meas": ["00", "01", "00", "10", "00", "01"], "other_data": [1, 2, 3]}
-    return AzureQuantumResult(result_data)
 
 
 def test_azure_provider_init_with_credential():
@@ -476,30 +464,6 @@ def mock_result_builder(mock_job_id) -> AzureResultBuilder:
     return AzureResultBuilder(job)
 
 
-@pytest.fixture
-def mock_result(mock_job_id) -> AzureQuantumResult:
-    """Create a mock result data."""
-    data = {
-        "results": [
-            {
-                "data": {
-                    "counts": {"000": 50, "111": 50},
-                    "probabilities": {"000": 0.5, "111": 0.5},
-                },
-                "success": True,
-                "header": {},
-                "shots": 100,
-            }
-        ],
-        "job_id": mock_job_id,
-        "target": "ionq.simulator",
-        "job_name": "ionq-job",
-        "success": True,
-        "error_data": None,
-    }
-    return AzureQuantumResult(data)
-
-
 class DowloadDataMock:
     """Mock download data method."""
 
@@ -639,15 +603,6 @@ def test_draw_random_sample_with_invalid_probabilities(mock_result_builder: Azur
 def test_qir_to_qbraid_bitstring(input_data, expected_output):
     """Test various inputs for _qir_to_qbraid_bitstring method."""
     assert AzureResultBuilder._qir_to_qbraid_bitstring(input_data) == expected_output
-
-
-def test_azure_quantum_result(mock_result: AzureQuantumResult):
-    """Test Azure Quantum Job result methods."""
-    measurements = mock_result.measurements()
-    raw_counts = mock_result.get_counts()
-    formatted_counts = mock_result.measurement_counts()
-    assert measurements.shape == (100, 3)
-    assert raw_counts == formatted_counts == {"000": 50, "111": 50}
 
 
 def test_job_property(azure_result_builder, mock_azure_job):
@@ -951,7 +906,7 @@ def test_result_builder_failed_job(mock_job_id):
     mock_job.details.id = mock_job_id
     builder = AzureResultBuilder(azure_job=mock_job)
     result = builder.result()
-    assert isinstance(result, AzureQuantumResult)
+    assert isinstance(result, dict)
 
 
 @pytest.mark.parametrize(

@@ -111,18 +111,20 @@ class QiskitJob(QuantumJob):
         else:
             qbraid_meas = ResultFormatter.normalize_tuples(qbraid_meas)
 
-        return ExperimentalResult(
-            state_counts=counts,
-            measurements=qbraid_meas,
-            result_type=ExperimentType.GATE_MODEL,
-            metadata=None,
-        )
+        return [
+            ExperimentalResult(
+                state_counts=counts,
+                measurements=qbraid_meas,
+                result_type=ExperimentType.GATE_MODEL,
+                metadata=None,
+            )
+        ]
 
     def result(self):
         """Return the results of the job."""
         if not self.is_terminal_state():
             logger.info("Result will be available when job has reached final state.")
-        exp_results = [self.build_runtime_result(ExperimentType.GATE_MODEL, self._job.result())]
+        exp_results = self.build_runtime_result(ExperimentType.GATE_MODEL, self._job.result())
         return RuntimeJobResult(
             job_id=self._job.job_id(),
             device_id="test-1",

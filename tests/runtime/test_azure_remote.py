@@ -27,7 +27,8 @@ from qiskit import QuantumCircuit
 from qiskit_qir import to_qir_module
 
 from qbraid.runtime import DeviceStatus, JobStatus
-from qbraid.runtime.azure import AzureQuantumProvider, AzureQuantumResult
+from qbraid.runtime.azure import AzureQuantumProvider
+from qbraid.runtime.result import RuntimeJobResult
 
 
 @pytest.fixture
@@ -97,8 +98,8 @@ def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
-    assert isinstance(result, AzureQuantumResult)
-    assert result.measurement_counts() == {"000": 100}
+    assert isinstance(result, RuntimeJobResult)
+    assert result.get_experiment(0).state_counts == {"000": 100}
 
 
 @pytest.mark.remote
@@ -121,8 +122,8 @@ def test_submit_json_to_ionq(provider: AzureQuantumProvider):
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
-    assert isinstance(result, AzureQuantumResult)
-    assert result.measurement_counts() == {"000": 50, "111": 50}
+    assert isinstance(result, RuntimeJobResult)
+    assert result.get_experiment(0).state_counts == {"000": 50, "111": 50}
 
 
 @pytest.mark.remote
@@ -176,5 +177,5 @@ def test_submit_quil_to_rigetti(provider: AzureQuantumProvider):
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
-    assert isinstance(result, AzureQuantumResult)
-    assert result.measurement_counts() == {"00": 60, "11": 40}
+    assert isinstance(result, RuntimeJobResult)
+    assert result.get_experiment(0).state_counts == {"00": 60, "11": 40}

@@ -9,10 +9,9 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining abstract GateModelJobResult Class
+Module defining ExperimentalResult, ResultFormatter and RuntimeJobResult classes
 
 """
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Optional, Union
 
@@ -21,93 +20,13 @@ import numpy as np
 from .enums import ExperimentType
 
 
-class QuantumJobResult:
-    """Result of a quantum job.
-
-    Args:
-        result (optional, Any): Result data
-
-    """
-
-    def __init__(self, result: Optional[Any] = None):
-        self._result = result
-
-
-class GateModelJobResult(ABC, QuantumJobResult):
-    """Abstract interface for gate model quantum job results."""
-
-    def measurements(self) -> Optional[np.ndarray]:
-        """
-        Return measurements as a 2d array where each row is a
-        shot and each column is qubit. Defaults to None.
-
-        """
-        return None
-
-    @abstractmethod
-    def get_counts(self) -> Union[dict[str, int], list[dict[str, int]]]:
-        """Returns histogram data of the run"""
-
-    @staticmethod
-    def counts_to_measurements(counts: dict[str, Any]) -> np.ndarray:
-        """Convert counts dictionary to measurements array."""
-        measurements = []
-        for state, count in counts.items():
-            measurements.extend([list(map(int, state))] * count)
-        return np.array(measurements, dtype=int)
-
-    @staticmethod
-    def format_counts(counts: dict[str, int], include_zero_values: bool = False) -> dict[str, int]:
-        """Formats, sorts, and adds missing bit indices to counts dictionary
-        Can pass in a 'include_zero_values' parameter to decide whether to include the states
-        with zero counts.
-
-        For example:
-
-        .. code-block:: python
-
-            >>> counts
-            {'1 1': 13, '0 0': 46, '1 0': 79}
-            >>> GateModelJobResult.format_counts(counts)
-            {'00': 46, '10': 79, '11': 13}
-            >>> GateModelJobResult.format_counts(counts, include_zero_values=True)
-            {'00': 46, '01': 0, '10': 79, '11': 13}
-
-        """
-        counts = {key.replace(" ", ""): value for key, value in counts.items()}
-
-        num_bits = max(len(key) for key in counts)
-        all_keys = [format(i, f"0{num_bits}b") for i in range(2**num_bits)]
-        final_counts = {key: counts.get(key, 0) for key in sorted(all_keys)}
-
-        if not include_zero_values:
-            final_counts = {key: value for key, value in final_counts.items() if value != 0}
-
-        return final_counts
-
-    def measurement_counts(
-        self, include_zero_values: bool = False
-    ) -> Union[dict[str, int], list[dict[str, int]]]:
-        """Returns the sorted histogram data of the run"""
-        get_counts = self.get_counts()
-        if isinstance(get_counts, dict):
-            return self.format_counts(get_counts, include_zero_values=include_zero_values)
-
-        batch_counts = [
-            self.format_counts(counts, include_zero_values=include_zero_values)
-            for counts in get_counts
-        ]
-
-        return ResultFormatter.normalize_batch_bit_lengths(batch_counts)
-
-
 # Experimental types should define the nature of classes, not providers
 @dataclass
 class ExperimentalResult:
     """Class to represent the results of a quantum circuit experiment."""
 
     state_counts: dict
-    measurements: Union[np.ndarray, Any]  # if gate_model_type it would be measurement counts
+    measurements: Optional[np.ndarray]  # if gate_model_type it would be measurement counts
     # if AHS it would be the energy levels
     result_type: ExperimentType
     metadata: Optional[dict]
@@ -144,9 +63,9 @@ class ResultFormatter:
 
             >>> counts
             {'1 1': 13, '0 0': 46, '1 0': 79}
-            >>> GateModelJobResult.format_counts(counts)
+            >>> ResultFormatter.format_counts(counts)
             {'00': 46, '10': 79, '11': 13}
-            >>> GateModelJobResult.format_counts(counts, include_zero_values=True)
+            >>> ResultFormatter.format_counts(counts, include_zero_values=True)
             {'00': 46, '01': 0, '10': 79, '11': 13}
 
         """
@@ -260,6 +179,15 @@ class ResultFormatter:
 
         return np.array(normalized_measurements)
 
+    @staticmethod
+    def measurement_probabilities(counts) -> dict[str, float]:
+        """Calculate and return the probabilities of each measurement result."""
+        if isinstance(counts, dict):
+            return ResultFormatter.counts_to_probabilities(counts)
+
+        probabilities = [ResultFormatter.counts_to_probabilities(count) for count in counts]
+        return probabilities
+
 
 class RuntimeJobResult:
     """Class to store and retrieve the results of a quantum circuit simulation."""
@@ -277,6 +205,10 @@ class RuntimeJobResult:
         self.result = result
         self.success = success
         self.errors = errors
+        self._cached_counts = {
+            "decimal": None,
+            "binary": None,
+        }
 
     def __repr__(self) -> str:
         return (
@@ -311,6 +243,11 @@ class RuntimeJobResult:
         self, include_zero_values: bool = False, decimal: bool = False
     ) -> Union[dict[str, int], list[dict[str, int]]]:
         """Returns the sorted histogram data of the run"""
+        count_type = "decimal" if decimal else "binary"
+
+        if self._cached_counts[count_type] is not None:
+            return self._cached_counts[count_type]
+
         get_counts = [experiment.state_counts for experiment in self.result]
 
         if len(get_counts) == 0:
@@ -327,16 +264,15 @@ class RuntimeJobResult:
             decimal_counts = [
                 {int(key, 2): value for key, value in counts.items()} for counts in batch_counts
             ]
-            return decimal_counts[0] if len(decimal_counts) == 1 else decimal_counts
+            self._cached_counts["decimal"] = (
+                decimal_counts[0] if len(decimal_counts) == 1 else decimal_counts
+            )
+
+            return self._cached_counts["decimal"]
 
         if len(batch_counts) == 1:
+            self._cached_counts["binary"] = batch_counts[0]
             return batch_counts[0]
 
-        return ResultFormatter.normalize_batch_bit_lengths(batch_counts)
-
-    # TODO: refactor out
-    def measurement_probabilities(self, **kwargs) -> dict[str, float]:
-        """Calculate and return the probabilities of each measurement result."""
-        counts = self.measurement_counts(**kwargs)
-        probabilities = [ResultFormatter.counts_to_probabilities(count) for count in counts]
-        return probabilities
+        self._cached_counts["binary"] = ResultFormatter.normalize_batch_bit_lengths(batch_counts)
+        return self._cached_counts["binary"]
