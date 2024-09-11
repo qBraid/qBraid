@@ -55,6 +55,7 @@ print(counts) # {"000": 100}
 ### Improved / Modified
 - Updated construction of `TargetProfile` in `QbraidProvider` to populate provider from API instead of defaulting to fixed value 'qBraid'. ([#744](https://github.com/qBraid/qBraid/pull/744))
 - Generalized native runtime submission flow to pave the way for support of new devices apart from the QIR simulator. Updated various routines including creating target profile and constructing payload so they are no longer specific to just the `qbraid_qir_simulator`, but can be adapted to new devices that come online fairly quickly. ([#745](https://github.com/qBraid/qBraid/pull/745))
+- Updated the result classes of each runtime provider to use a `RuntimeJobResult` object as the unified return type for the result methods and `ExperimentalResult` as the common experiment class. The structure is driven by the commonalities between the result classes of each provider. Jobs now simply implement methods for populating result data in these common runtime objects. ([#747](https://github.com/qBraid/qBraid/pull/747))
 
 ### Deprecated
 
