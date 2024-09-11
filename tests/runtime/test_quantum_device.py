@@ -579,3 +579,10 @@ def test_transform_to_ir_from_spec(mock_basic_device: MockDevice, pyqir_module: 
     mock_basic_device._target_spec = None
     run_input_transformed = mock_basic_device.transform(pyqir_module)
     assert isinstance(run_input_transformed, Module)
+
+
+def test_set_options_raises_for_bad_key(mock_basic_device: MockDevice):
+    """Test that the set options method raises AttributeError for key
+    not already included in options."""
+    with pytest.raises(AttributeError):
+        mock_basic_device.set_options(bad_key=True)
