@@ -90,7 +90,7 @@ class QbraidJob(QuantumJob):
 
         self.client.cancel_job(self.id)
 
-    def _build_runtime_gate_model_results(self, job_data, **kwargs) -> list[ExperimentalResult]:
+    def _build_results(self, job_data) -> list[ExperimentalResult]:
         """Build and return the results of a gate-model simulation.
 
         Args:
@@ -101,7 +101,7 @@ class QbraidJob(QuantumJob):
         execution_duration: int = time_stamps.get("executionDuration", -1)
         return [
             ExperimentalResult(
-                state_counts=measurement_counts,
+                counts=measurement_counts,
                 measurements=ResultFormatter.counts_to_measurements(measurement_counts),
                 result_type=ExperimentType.GATE_MODEL,
                 execution_duration=execution_duration,
@@ -115,5 +115,5 @@ class QbraidJob(QuantumJob):
         job_data = self.client.get_job(self.id)
         device_id: str = job_data.get("qbraidDeviceId")
         success: bool = job_data.get("status") == "COMPLETED"
-        experiment_results = self.build_runtime_result(ExperimentType.GATE_MODEL, job_data)
+        experiment_results = self._build_results(job_data)
         return RuntimeJobResult(self.id, device_id, experiment_results, success)

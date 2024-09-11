@@ -406,7 +406,7 @@ def test_result_from_job(mock_runtime_job, mock_runtime_result_2):
     mock_runtime_job.result.return_value = mock_runtime_result_2
     result = mock_job.result()
     assert isinstance(result, RuntimeJobResult)
-    assert isinstance(result.get_experiment(0).state_counts, dict)
+    assert isinstance(result.get_experiment(0).counts, dict)
     assert isinstance(result.get_experiment(0).measurements, np.ndarray)
 
 

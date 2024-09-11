@@ -72,27 +72,21 @@ class AzureQuantumJob(QuantumJob):
         }
         return status_map.get(status, JobStatus.UNKNOWN)
 
-    def _build_runtime_gate_model_results(self, job_data, **kwargs):
-
+    def _build_results(self, job_data) -> list[ExperimentalResult]:
         results = []
-
         for result in job_data:
             result = job_data[0]
             data: dict = result["data"]
             header: dict = result["header"]
-
             counts = data["counts"]
             metadata = header.get("metadata", {})
-
             exp_result = ExperimentalResult(
-                state_counts=counts,
+                counts=counts,
                 measurements=None,
                 result_type=ExperimentType.GATE_MODEL,
                 metadata=metadata,
             )
-
             results.append(exp_result)
-
         return results
 
     def result(self) -> Union[RuntimeJobResult, MicrosoftEstimatorResult]:
@@ -110,13 +104,11 @@ class AzureQuantumJob(QuantumJob):
         if isinstance(result_raw, MicrosoftEstimatorResult):
             return result_raw
 
-        final_result = self.build_runtime_result(
-            job_data=result_raw["results"], experiment_type=ExperimentType.GATE_MODEL
-        )
+        results = self._build_results(result_raw["results"])
 
         return RuntimeJobResult(
             job_id=result_raw["job_id"],
-            results=final_result,
+            results=results,
             device_id=result_raw["target"],
             success=result_raw["success"],
             errors=result_raw["error_data"],

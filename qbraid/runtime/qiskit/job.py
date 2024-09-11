@@ -90,7 +90,7 @@ class QiskitJob(QuantumJob):
         """Returns the position of the job in the server queue."""
         return self._job.queue_position(refresh=True)
 
-    def _build_runtime_gate_model_results(self, job_data, **kwargs):
+    def _build_results(self, job_data) -> list[ExperimentalResult]:
         # get the counts from qiskit job
         counts = job_data.get_counts()
 
@@ -115,7 +115,7 @@ class QiskitJob(QuantumJob):
 
         return [
             ExperimentalResult(
-                state_counts=counts,
+                counts=counts,
                 measurements=qbraid_meas,
                 result_type=ExperimentType.GATE_MODEL,
                 metadata=None,
@@ -130,7 +130,7 @@ class QiskitJob(QuantumJob):
         device_id = self._device.id if self._device else None
 
         qiskit_job_result = self._job.result()
-        exp_results = self.build_runtime_result(ExperimentType.GATE_MODEL, qiskit_job_result)
+        exp_results = self._build_results(qiskit_job_result)
 
         return RuntimeJobResult(
             job_id=self.id,

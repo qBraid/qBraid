@@ -80,7 +80,7 @@ class BraketQuantumTask(QuantumJob):
                 "Queue visibility is only available for amazon-braket-sdk>=1.56.0"
             ) from err
 
-    def _build_runtime_gate_model_results(self, job_data, **kwargs):
+    def _build_gate_model_results(self, job_data):
         braket_counts = dict(job_data.measurement_counts)
         qbraid_counts = {}
         for key in braket_counts:
@@ -89,14 +89,14 @@ class BraketQuantumTask(QuantumJob):
 
         return [
             ExperimentalResult(
-                state_counts=qbraid_counts,
+                counts=qbraid_counts,
                 measurements=np.flip(job_data.measurements, 1),
                 result_type=ExperimentType.GATE_MODEL,
                 metadata=job_data.task_metadata,
             )
         ]
 
-    def _build_runtime_ahs_results(self, job_data, **kwargs):
+    def _build_ahs_results(self, job_data):
         measurements = []
         for measurement in job_data.measurements:
             status = AnalogHamiltonianSimulationShotStatus(measurement.shotMetadata.shotStatus)
@@ -110,7 +110,7 @@ class BraketQuantumTask(QuantumJob):
 
             measurements.append(ShotResult(status, pre_sequence, post_sequence))
 
-        state_counts = Counter()
+        counts = Counter()
         states = ["e", "r", "g"]
         try:
             for shot in measurements:
@@ -123,15 +123,15 @@ class BraketQuantumTask(QuantumJob):
                         for pre_i, post_i in zip(pre, post)
                     ]
                     state = "".join(states[s_idx] for s_idx in state_idx)
-                    state_counts.update([state])
+                    counts.update([state])
         except Exception as err:
             raise ResultDecodingError from err
 
-        state_counts = None if not state_counts else dict(state_counts)
+        counts = None if not counts else dict(counts)
 
         return [
             ExperimentalResult(
-                state_counts=state_counts,
+                counts=counts,
                 measurements=measurements,
                 result_type=ExperimentType.AHS,
                 metadata=job_data.task_metadata,
@@ -146,21 +146,20 @@ class BraketQuantumTask(QuantumJob):
             logger.info("Result will be available when the job has reached a final state.")
 
         result = self._task.result()
-        result_class_mapping = {
-            GateModelQuantumTaskResult: ExperimentType.GATE_MODEL,
-            AnalogHamiltonianSimulationQuantumTaskResult: ExperimentType.AHS,
-        }
-        result_class = result.__class__
-        if result_class in result_class_mapping:
-            exp_results = self.build_runtime_result(result_class_mapping[result_class], result)
-            return RuntimeJobResult(
-                job_id=result.task_metadata.id,
-                device_id=result.task_metadata.deviceId,
-                results=exp_results,
-                success=result.task_metadata.status == "COMPLETED",
-            )
 
-        raise ValueError(f"Unsupported result type: {result_class.__name__}")
+        if isinstance(result, GateModelQuantumTaskResult):
+            exp_results = self._build_gate_model_results(result)
+        elif isinstance(result, AnalogHamiltonianSimulationQuantumTaskResult):
+            exp_results = self._build_ahs_results(result)
+        else:
+            raise ValueError(f"Unsupported result type: {type(result).__name__}")
+
+        return RuntimeJobResult(
+            job_id=result.task_metadata.id,
+            device_id=result.task_metadata.deviceId,
+            results=exp_results,
+            success=result.task_metadata.status == "COMPLETED",
+        )
 
     def cancel(self) -> None:
         """Cancel the quantum task."""

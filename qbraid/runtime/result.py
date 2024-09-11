@@ -24,16 +24,15 @@ from .enums import ExperimentType
 class ExperimentalResult:
     """Class to represent the results of a quantum circuit experiment."""
 
-    state_counts: dict
-    measurements: Optional[np.ndarray]  # if gate_model_type it would be measurement counts
-    # if AHS it would be the energy levels
+    counts: dict[str, int]
+    measurements: Optional[np.ndarray]
     result_type: ExperimentType
-    metadata: Optional[dict]
+    metadata: Optional[dict[str, Any]] = None
     execution_duration: float = -1.0
 
     def __repr__(self) -> str:
         return (
-            f"ExperimentalResult(state_counts='{self.state_counts}', "
+            f"ExperimentalResult(counts='{self.counts}', "
             f"measurements='{self.measurements}', result_type='{self.result_type}', "
             f"execution_duration={self.execution_duration})"
         )
@@ -247,10 +246,11 @@ class RuntimeJobResult:
         if self._cached_counts[count_type] is not None:
             return self._cached_counts[count_type]
 
-        get_counts = [experiment.state_counts for experiment in self.results]
+        get_counts = [experiment.counts for experiment in self.results]
 
         if len(get_counts) == 0:
             raise ValueError("No measurements available")
+
         batch_counts = [
             (
                 ResultFormatter.format_counts(counts, include_zero_values=include_zero_values)
@@ -259,6 +259,7 @@ class RuntimeJobResult:
             )
             for counts, experiment in zip(get_counts, self.results)
         ]
+
         if decimal:
             decimal_counts = [
                 {int(key, 2): value for key, value in counts.items()} for counts in batch_counts

@@ -274,7 +274,7 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert len(counts) == len(probabilities) == 2
     assert sum(probabilities.values()) == 1.0
 
-    for experiment in result.result:
+    for experiment in result.results:
         assert isinstance(experiment, ExperimentalResult)
         assert experiment.result_type == ExperimentType.GATE_MODEL
         measurements = experiment.measurements

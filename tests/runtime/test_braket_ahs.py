@@ -509,7 +509,7 @@ def test_get_counts_no_measurements():
     """Test getting counts with no measurements."""
     mock_experiment = MagicMock()
     mock_experiment.measurements = np.ndarray([])
-    mock_experiment.state_counts = {}
+    mock_experiment.counts = {}
     job_result = RuntimeJobResult("mock_id", "mock_device_id", [mock_experiment], True)
     counts = job_result.measurement_counts()
     assert counts == {}

@@ -82,24 +82,26 @@ class OQCJob(QuantumJob):
 
         return duration
 
-    def _build_runtime_gate_model_results(self, job_data, **kwargs):
-        state_counts = job_data.get("counts", {})
+    def _build_results(self, job_data) -> list[ExperimentalResult]:
+        counts = job_data.get("counts", {})
 
         measurements = []
-        for state in state_counts:
+        for state in counts:
             new_state = []
             for bit in state:
                 new_state.append(int(bit))
-            for _ in range(state_counts[state]):
+            for _ in range(counts[state]):
                 measurements.append(new_state)
 
-        return ExperimentalResult(
-            state_counts=state_counts,
-            measurements=measurements,
-            result_type=ExperimentType.GATE_MODEL,
-            execution_duration=self._calculate_execution_duration(job_data),
-            metadata=self.metadata(),
-        )
+        return [
+            ExperimentalResult(
+                counts=counts,
+                measurements=measurements,
+                result_type=ExperimentType.GATE_MODEL,
+                execution_duration=self._calculate_execution_duration(job_data),
+                metadata=self.metadata(),
+            )
+        ]
 
     def result(self, **kwargs) -> RuntimeJobResult:
         """Get the result of the task."""
@@ -123,7 +125,7 @@ class OQCJob(QuantumJob):
             if not qpu_task_result:
                 raise ResourceNotFoundError("No result found for the task")
             result_data["counts"] = qpu_task_result.result.get("c")
-            experiments = [self.build_runtime_result(ExperimentType.GATE_MODEL, result_data)]
+            experiments = self._build_results(result_data)
         else:
             result_data["error_details"] = self.get_errors(**kwargs)
 
