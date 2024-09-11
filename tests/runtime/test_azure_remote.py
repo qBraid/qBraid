@@ -14,22 +14,28 @@
 Unit tests for Azure Quantum runtime (remote)
 
 """
+from __future__ import annotations
+
 import os
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 import pyqir
-import pyquil
-import pyquil.gates
 import pytest
 from azure.identity import ClientSecretCredential
 from azure.quantum import Workspace
 from azure.quantum._constants import ConnectionConstants, EnvironmentVariables
 from azure.quantum.target.microsoft import MicrosoftEstimatorResult
+from qbraid_core._import import LazyLoader
 from qiskit import QuantumCircuit
 
 from qbraid.runtime import DeviceStatus, JobStatus
 from qbraid.runtime.azure import AzureQuantumProvider, AzureQuantumResult
 from qbraid.transpiler.conversions.qiskit import qiskit_to_pyqir
+
+pyquil = LazyLoader("pyquil", globals(), "pyquil")
+
+if TYPE_CHECKING:
+    import pyquil as pyquil_
 
 
 @pytest.fixture
@@ -175,7 +181,7 @@ def test_submit_qir_to_microsoft(
 
 
 @pytest.fixture
-def pyquil_program() -> pyquil.Program:
+def pyquil_program() -> pyquil_.Program:
     """Fixture for a PyQuil program."""
     p = pyquil.Program()
     ro = p.declare("ro", "BIT", 2)
@@ -188,7 +194,7 @@ def pyquil_program() -> pyquil.Program:
 
 
 @pytest.fixture
-def quil_string(pyquil_program: pyquil.Program) -> str:
+def quil_string(pyquil_program: pyquil_.Program) -> str:
     """Fixture for a Quil string."""
     return pyquil_program.out()
 
@@ -196,7 +202,7 @@ def quil_string(pyquil_program: pyquil.Program) -> str:
 @pytest.mark.remote
 @pytest.mark.parametrize("direct", [(True), (False)])
 def test_submit_quil_to_rigetti(
-    provider: AzureQuantumProvider, pyquil_program: pyquil.Program, quil_string: str, direct: bool
+    provider: AzureQuantumProvider, pyquil_program: pyquil_.Program, quil_string: str, direct: bool
 ):
     """Test submitting a pyQuil program or Quil string to run on the Rigetti simulator."""
     device = provider.get_device("rigetti.sim.qvm")
