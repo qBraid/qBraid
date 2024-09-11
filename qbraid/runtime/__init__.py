@@ -66,7 +66,7 @@ from qbraid_core import Session
 from . import native
 from ._display import display_jobs_from_data
 from .device import QuantumDevice
-from .enums import DeviceActionType, DeviceStatus, JobStatus, NoiseModel, ExperimentType
+from .enums import DeviceActionType, DeviceStatus, ExperimentType, JobStatus, NoiseModel
 from .exceptions import (
     DeviceProgramTypeMismatchError,
     JobStateError,
