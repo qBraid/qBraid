@@ -20,12 +20,14 @@ import pytest
 from qbraid.programs.exceptions import QasmError
 from qbraid.programs.typer import (
     BaseQasmInstanceMeta,
+    IonQDict,
     IonQDictInstanceMeta,
     Qasm2Instance,
     Qasm2String,
     Qasm3Instance,
     Qasm3String,
     QasmString,
+    ValidationError,
 )
 
 valid_qasm2_string = """
@@ -117,35 +119,84 @@ def test_not_qasm_string():
     assert not isinstance("Not a QasmString", Qasm2Instance)
 
 
-def test_validate_field_valid_single():
-    """Test valid single integer for target/control."""
-    IonQDictInstanceMeta._validate_field(single=1, multiple=None, field_name="target")
+@pytest.mark.parametrize(
+    "qasm_instance_class, version",
+    [
+        (Qasm2Instance, 2),
+        (Qasm3Instance, 3),
+    ],
+)
+def test_qasm_instance_properties(qasm_instance_class, version):
+    """Test that the QasmInstance class has the correct properties for different versions."""
+    assert qasm_instance_class.version == version
+    assert qasm_instance_class.__alias__ == f"qasm{version}"
+    assert qasm_instance_class.__bound__ == str
 
 
-def test_validate_field_valid_multiple():
-    """Test valid list of integers for target/control."""
-    IonQDictInstanceMeta._validate_field(single=None, multiple=[1, 2], field_name="control")
+def test_ionq_dict_instance_meta_alias():
+    """Test that __alias__ property returns the correct alias."""
+    assert IonQDict.__alias__ == "ionq"
 
 
-def test_ionq_instancecheck_invalid_gate():
-    """Test an invalid instance with a non-string gate."""
-    invalid_instance = {"qubits": 2, "circuit": [{"gate": 123, "target": 0}]}
-
-    assert not isinstance(invalid_instance, IonQDictInstanceMeta)
+def test_ionq_dict_instance_meta_bound():
+    """Test that __bound__ property returns dict."""
+    assert IonQDict.__bound__ == dict
 
 
-def test_ionq_instancecheck_invalid_rotation():
-    """Test an invalid instance with a non-numeric rotation."""
-    invalid_instance = {
-        "qubits": 2,
-        "circuit": [{"gate": "rx", "rotation": "invalid", "target": 0}],
+def test_ionq_isinstance_valid_instance():
+    """Test that the isinstance function correctly identifies valid IonQDict instances."""
+    circuit = {
+        "qubits": 3,
+        "circuit": [
+            {"gate": "h", "target": 0},
+            {"gate": "cnot", "control": 0, "target": 1},
+            {"gate": "cnot", "control": 0, "target": 2},
+        ],
     }
+    assert isinstance(circuit, IonQDict)
 
-    assert not isinstance(invalid_instance, IonQDictInstanceMeta)
+
+@pytest.mark.parametrize(
+    "invalid_instance",
+    [
+        {"qubits": 2, "circuit": [{"gate": 123, "target": 0}]},
+        {"qubits": 2, "circuit": [{"gate": "rx", "rotation": "invalid", "target": 0}]},
+        {"qubits": 2, "circuit": [{"gate": "cx", "target": "invalid"}]},
+        {"qubits": 2, "circuit": [{"gate": "cx", "target": 0, "control": "invalid"}]},
+        {"qubits": "invalid", "circuit": [{"gate": "cx", "target": 0}]},
+        {"qubits": 2, "circuit": "invalid"},
+        {"qubits": 2, "circuit": [{"gate": "cx", "target": 0, "control": 1}, 42]},
+    ],
+)
+def test_ionq_instancecheck_invalid_instances(invalid_instance):
+    """Test various invalid instances of IonQDictInstanceMeta."""
+    assert not isinstance(invalid_instance, IonQDict)
 
 
-def test_ionq_instancecheck_invalid_target():
-    """Test an invalid instance with an invalid target type."""
-    invalid_instance = {"qubits": 2, "circuit": [{"gate": "cx", "target": "invalid"}]}
+@pytest.mark.parametrize(
+    "single, multiple, field_name",
+    [
+        (1, None, "target"),
+        (None, [1, 2], "control"),
+        (1, None, "target"),
+        (None, [1, 2, 3], "target"),
+    ],
+)
+def test_ionq_dict_instance_meta_validate_field_valid_cases(single, multiple, field_name):
+    """Test _validate_field with valid single and multiple fields."""
+    IonQDictInstanceMeta._validate_field(single=single, multiple=multiple, field_name=field_name)
 
-    assert not isinstance(invalid_instance, IonQDictInstanceMeta)
+
+@pytest.mark.parametrize(
+    "single, multiple, field_name",
+    [
+        (1, [2, 3], "target"),
+        ("invalid", None, "target"),
+        (None, "invalid", "target"),
+        (None, [1, "invalid", 3], "target"),
+    ],
+)
+def test_ionq_dict_instance_meta_validate_field_invalid_cases(single, multiple, field_name):
+    """Test _validate_field raises ValidationError for invalid input cases."""
+    with pytest.raises(ValidationError):
+        IonQDictInstanceMeta._validate_field(single, multiple, field_name)
