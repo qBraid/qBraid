@@ -20,7 +20,6 @@ import numpy as np
 from .enums import ExperimentType
 
 
-# Experimental types should define the nature of classes, not providers
 @dataclass
 class ExperimentalResult:
     """Class to represent the results of a quantum circuit experiment."""
@@ -196,13 +195,13 @@ class RuntimeJobResult:
         self,
         job_id: str,
         device_id: str,
-        result: list[ExperimentalResult],
+        results: list[ExperimentalResult],
         success: bool,
         errors=None,
     ):
         self.job_id = job_id
         self.device_id = device_id
-        self.result = result
+        self.results = results
         self.success = success
         self.errors = errors
         self._cached_counts = {
@@ -213,14 +212,14 @@ class RuntimeJobResult:
     def __repr__(self) -> str:
         return (
             f"RuntimeJobResult(job_id='{self.job_id}', "
-            f"device_id='{self.device_id}', num_experiments='{len(self.result)}', "
+            f"device_id='{self.device_id}', num_experiments='{len(self.results)}', "
             f"success={self.success})"
         )
 
     def metadata(self, experiment_metadata=False):
         """Display the metadata of each experiment in the result"""
 
-        for exp_num, experiment in enumerate(self.result):
+        for exp_num, experiment in enumerate(self.results):
             print(f"Experiment {exp_num} -")
             print(experiment)
             if experiment_metadata:
@@ -228,13 +227,13 @@ class RuntimeJobResult:
 
     def get_experiment(self, exp_num):
         """Return the experiment result for a specific experiment number"""
-        if exp_num >= len(self.result):
+        if exp_num >= len(self.results):
             raise ValueError("Experiment number is greater than the number of experiments")
-        return self.result[exp_num]
+        return self.results[exp_num]
 
     def measurements(self) -> Union[np.ndarray, list[np.ndarray]]:
         """Get the list of measurements from the job result."""
-        measurements = [experiment.measurements for experiment in self.result]
+        measurements = [experiment.measurements for experiment in self.results]
         if len(measurements) == 1:
             return measurements[0]
         return measurements
@@ -248,7 +247,7 @@ class RuntimeJobResult:
         if self._cached_counts[count_type] is not None:
             return self._cached_counts[count_type]
 
-        get_counts = [experiment.state_counts for experiment in self.result]
+        get_counts = [experiment.state_counts for experiment in self.results]
 
         if len(get_counts) == 0:
             raise ValueError("No measurements available")
@@ -258,7 +257,7 @@ class RuntimeJobResult:
                 if experiment.result_type == ExperimentType.GATE_MODEL
                 else counts
             )
-            for counts, experiment in zip(get_counts, self.result)
+            for counts, experiment in zip(get_counts, self.results)
         ]
         if decimal:
             decimal_counts = [

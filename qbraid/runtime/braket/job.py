@@ -152,11 +152,11 @@ class BraketQuantumTask(QuantumJob):
         }
         result_class = result.__class__
         if result_class in result_class_mapping:
-            exp_result = self.build_runtime_result(result_class_mapping[result_class], result)
+            exp_results = self.build_runtime_result(result_class_mapping[result_class], result)
             return RuntimeJobResult(
                 job_id=result.task_metadata.id,
                 device_id=result.task_metadata.deviceId,
-                result=exp_result,
+                results=exp_results,
                 success=result.task_metadata.status == "COMPLETED",
             )
 

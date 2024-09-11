@@ -130,7 +130,7 @@ class OQCJob(QuantumJob):
         return RuntimeJobResult(
             job_id=self.id,
             device_id=self._qpu_id,
-            result=experiments,
+            results=experiments,
             success=success,
             errors=result_data["error_details"],
         )

@@ -489,7 +489,7 @@ def test_job_load_completed(mock_aws_quantum_task):
     assert job.metadata()["job_id"] == mock_job.id
     assert job.is_terminal_state()
     res = job.result()
-    assert isinstance(res, RuntimeJobResult) and res.result is not None
+    assert isinstance(res, RuntimeJobResult) and res.results is not None
 
 
 @pytest.mark.parametrize("position,expected", [(10, 10), (">2000", 2000)])

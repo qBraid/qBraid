@@ -106,6 +106,6 @@ class IonQJob(QuantumJob):
         return RuntimeJobResult(
             job_id=self.id,
             device_id=job_data.get("target"),
-            result=experiments,
+            results=experiments,
             success=success,
         )

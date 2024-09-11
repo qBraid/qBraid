@@ -12,6 +12,8 @@
 Module defining QiskitJob Class
 
 """
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING, Optional
 
@@ -46,15 +48,15 @@ class QiskitJob(QuantumJob):
     def __init__(
         self,
         job_id: str,
-        job: "Optional[qiskit_ibm_runtime.RuntimeJob]" = None,
-        service: "Optional[qiskit_ibm_runtime.QiskitRuntimeService]" = None,
+        job: Optional[qiskit_ibm_runtime.RuntimeJob] = None,
+        service: Optional[qiskit_ibm_runtime.QiskitRuntimeService] = None,
         **kwargs,
     ):
         """Create a ``QiskitJob`` instance."""
         super().__init__(job_id, **kwargs)
         self._job = job or self._get_job(service=service)
 
-    def _get_job(self, service: "Optional[qiskit_ibm_runtime.QiskitRuntimeService]" = None):
+    def _get_job(self, service: Optional[qiskit_ibm_runtime.QiskitRuntimeService] = None):
         """Return the qiskit_ibm_runtime.RuntimeJob associated with instance id attribute.
 
         Attempts to retrieve a job using a specified or default service. Handles
@@ -124,12 +126,17 @@ class QiskitJob(QuantumJob):
         """Return the results of the job."""
         if not self.is_terminal_state():
             logger.info("Result will be available when job has reached final state.")
-        exp_results = self.build_runtime_result(ExperimentType.GATE_MODEL, self._job.result())
+
+        device_id = self._device.id if self._device else None
+
+        qiskit_job_result = self._job.result()
+        exp_results = self.build_runtime_result(ExperimentType.GATE_MODEL, qiskit_job_result)
+
         return RuntimeJobResult(
-            job_id=self._job.job_id(),
-            device_id="test-1",
-            result=exp_results,
-            success=self._job.result.success,
+            job_id=self.id,
+            device_id=device_id,
+            results=exp_results,
+            success=qiskit_job_result.success,
         )
 
     def cancel(self):

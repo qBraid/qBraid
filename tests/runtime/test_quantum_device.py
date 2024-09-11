@@ -265,7 +265,7 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
 
     result = job.result()
     assert isinstance(result, RuntimeJobResult)
-    assert isinstance(result.result, list)
+    assert isinstance(result.results, list)
     assert repr(result).startswith("RuntimeJobResult")
     assert result.success
 
