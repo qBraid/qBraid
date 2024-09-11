@@ -566,7 +566,7 @@ def pyqir_module() -> Module:
     qis = BasicQisBuilder(bell.builder)
 
     qis.h(bell.qubits[0])
-    qis.mz(bell.qubits[0])
+    qis.mz(bell.qubits[0], bell.results[0])
 
     return bell._module
 
