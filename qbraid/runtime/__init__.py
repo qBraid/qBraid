@@ -22,10 +22,10 @@ Data Types
 .. autosummary::
    :toctree: ../stubs/
 
-    DeviceActionType
+	DeviceActionType
 	DeviceStatus
 	JobStatus
-    NoiseModel
+	NoiseModel
 
 Functions
 ------------
@@ -42,12 +42,12 @@ Classes
    :toctree: ../stubs/
 
 	Session
-    Options
-   	TargetProfile
+	Options
+	TargetProfile
 	QuantumDevice
 	QuantumJob
 	QuantumProvider
-    QuantumJobResult
+	QuantumJobResult
 	GateModelJobResult
 
 Exceptions
@@ -60,7 +60,7 @@ Exceptions
 	ProgramValidationError
 	QbraidRuntimeError
 	ResourceNotFoundError
-    DeviceProgramTypeMismatchError
+	DeviceProgramTypeMismatchError
 
 """
 from qbraid_core import Session

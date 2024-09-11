@@ -19,14 +19,17 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-   AzureQuantumProvider
-   AzureQuantumDevice
-   AzureQuantumJob
-   AzureResultBuilder
-   AzureQuantumResult
+	AzureQuantumProvider
+	AzureQuantumDevice
+	AzureQuantumJob
+	AzureResultBuilder
+	AzureQuantumResult
+	InputDataFormat
+	OutputDataFormat
 
 """
 from .device import AzureQuantumDevice
+from .io_format import InputDataFormat, OutputDataFormat
 from .job import AzureQuantumJob
 from .provider import AzureQuantumProvider
 from .result import AzureQuantumResult
@@ -38,4 +41,6 @@ __all__ = [
     "AzureQuantumJob",
     "AzureResultBuilder",
     "AzureQuantumResult",
+    "InputDataFormat",
+    "OutputDataFormat",
 ]

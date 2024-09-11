@@ -39,6 +39,7 @@ from qbraid.programs import (
 from qbraid.programs.circuits import key_set
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.registry import is_registered_alias_native
+from qbraid.programs.typer import IonQDict
 
 
 def generate_unique_key(registry: dict, length: int = 10) -> str:
@@ -236,6 +237,11 @@ def test_error_on_automatic_alias():
     """Test error when trying to register a program type with an automatic alias"""
     with pytest.raises(ValueError):
         derive_program_type_alias(FakeType)
+
+
+def test_derive_program_type_alias_qbraid_meta():
+    """Test deriving an alias from a QbraidMetaType instance"""
+    assert derive_program_type_alias(IonQDict) == "ionq"
 
 
 @pytest.mark.skipif(sys.version_info < (3, 10), reason="Requires Python 3.10 or higher")

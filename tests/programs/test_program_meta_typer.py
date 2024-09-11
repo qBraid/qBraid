@@ -114,6 +114,15 @@ def test_base_qasm_instance_meta():
     assert not isinstance({}, MockQasmInstance)
 
 
+def test_base_qasm_instance_meta_alias():
+    """Test that the BaseQasmInstanceMeta metaclass has the correct alias."""
+
+    class FakeQasmInstance(metaclass=BaseQasmInstanceMeta):
+        """Fake instance class for testing"""
+
+    assert FakeQasmInstance.__alias__ is None
+
+
 def test_not_qasm_string():
     """Test that the isinstance function returns False when given a non-QasmString object."""
     assert not isinstance("Not a QasmString", Qasm2Instance)
@@ -135,7 +144,7 @@ def test_qasm_instance_properties(qasm_instance_class, version):
 
 def test_ionq_dict_instance_meta_alias():
     """Test that __alias__ property returns the correct alias."""
-    assert IonQDict.__alias__ == "ionq"
+    assert IonQDict.__alias__ == "ionq"  # pylint: disable=comparison-with-callable
 
 
 def test_ionq_dict_instance_meta_bound():

@@ -8,11 +8,12 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# pylint: disable=redefined-outer-name
+
 """
 Unit tests for quantum jobs functions and data types
 
 """
-# pylint: disable=redefined-outer-name
 from unittest.mock import patch
 
 import pytest
@@ -148,9 +149,31 @@ class FakeQbraidClient:
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-    def cancel_job(self, qbraid_id=None, object_id=None):  # pylint: disable=unused-argument
+    def get_job(self, job_id):  # pylint: disable=unused-argument
+        """Get the job data."""
+        return {"status": "FAILED", "statusText": "Some error message"}
+
+    def cancel_job(self, qbraid_id):  # pylint: disable=unused-argument
         """Cancel a job."""
         return None
+
+
+@pytest.fixture
+def mock_client():
+    """Return a mock QbraidClient object."""
+    return FakeQbraidClient()
+
+
+@pytest.fixture
+def mock_device(mock_client):
+    """Return a mock QbraidDevice object."""
+    return FakeDevice("test_device", client=mock_client)
+
+
+@pytest.fixture
+def mock_job(mock_device, mock_client):
+    """Return a mock QbraidJob object."""
+    return QbraidJob("test_job", device=mock_device, client=mock_client)
 
 
 def test_cancel_job():
@@ -212,6 +235,21 @@ def test_set_job_status_message():
     assert status.default_message == "job is queued"
     assert status.status_message is None
 
-    status.set_status_message("Job is in custom state")
-    assert status.status_message == "Job is in custom state"
-    assert repr(status) == "<QUEUED: 'Job is in custom state'>"
+    custom_status_message = "Custom status message"
+    status.set_status_message(custom_status_message)
+    assert status.status_message == custom_status_message
+    assert repr(status) == f"<QUEUED: '{custom_status_message}'>"
+
+
+def test_set_job_status_from_status_text(mock_job):
+    """Test that a status message is set correctly from statusText job data recieved from client."""
+    status = mock_job.status()
+    assert status == JobStatus.FAILED
+    assert status.status_message == "Some error message"
+
+
+def test_job_status_enum_call_method():
+    """Test that the JobStatus enum can be called as a function."""
+    status = JobStatus.QUEUED
+    new_status = status()
+    assert new_status == status
