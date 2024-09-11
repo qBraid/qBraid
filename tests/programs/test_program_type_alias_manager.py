@@ -285,3 +285,16 @@ def test_duplicate_alias_raises_value_error():
     imported_aliases = {"quantum": object, "quantum_singlepartmodule": object}
     with pytest.raises(ValueError, match="Duplicate alias quantum_singlepartmodule"):
         _assign_default_type_alias(imported_aliases, SinglePartModule)
+
+
+def test_get_ionq_program_type_alias():
+    """Test getting the IonQ program type alias."""
+    circuit = {
+        "qubits": 3,
+        "circuit": [
+            {"gate": "h", "target": 0},
+            {"gate": "cnot", "control": 0, "target": 1},
+            {"gate": "cnot", "control": 0, "target": 2},
+        ],
+    }
+    assert _get_program_type_alias(circuit) == "ionq"

@@ -15,6 +15,7 @@ Module for registering custom program types and aliases
 from typing import Any, Optional, Type, TypeVar, Union
 
 from ._import import _QPROGRAM_ALIASES, _QPROGRAM_REGISTRY, _QPROGRAM_TYPES, NATIVE_REGISTRY
+from .typer import QbraidMetaType
 
 QPROGRAM_NATIVE = Union[tuple(_QPROGRAM_TYPES)]
 QPROGRAM_REGISTRY = _QPROGRAM_REGISTRY
@@ -39,11 +40,15 @@ def derive_program_type_alias(program_type: Type[Any], use_submodule: bool = Fal
         ValueError: If the alias cannot be determined, or if use_submodule is True and the
                     module name is invalid or belongs to __main__ or builtins.
     """
+    if isinstance(program_type, QbraidMetaType):
+        return program_type.__alias__
+
     try:
         module_name = program_type.__module__
         module_parts = module_name.split(".")
+        module_root = module_parts[0]
 
-        if module_parts[0] in ["__main__", "builtins"]:
+        if module_root in {"__main__", "builtins"}:
             if use_submodule:
                 raise ValueError("Cannot use submodule aliasing with __main__ or builtins module.")
             alias = program_type.__name__
@@ -53,9 +58,9 @@ def derive_program_type_alias(program_type: Type[Any], use_submodule: bool = Fal
                     raise ValueError(
                         "Module name does not have at least two parts for submodule aliasing."
                     )
-                alias = f"{module_parts[0]}_{module_parts[1]}"
+                alias = f"{module_root}_{module_parts[1]}"
             else:
-                alias = module_parts[0]
+                alias = module_root
 
         return alias.lower()
     except (AttributeError, IndexError, TypeError) as err:
@@ -89,8 +94,15 @@ def register_program_type(
 
     # Check if the alias is already used and if it maps to a different type
     if normalized_alias in QPROGRAM_REGISTRY:
-        if QPROGRAM_REGISTRY[normalized_alias] != program_type and overwrite is False:
-            raise ValueError(f"Alias '{alias}' is already registered with a different type.")
+        registered_type = QPROGRAM_REGISTRY[normalized_alias]
+        if registered_type != program_type and overwrite is False:
+            if (
+                isinstance(registered_type, QbraidMetaType)
+                and program_type == registered_type.__bound__
+            ):
+                program_type = registered_type
+            else:
+                raise ValueError(f"Alias '{alias}' is already registered with a different type.")
 
     # Check if the type is already registered under any other alias
     existing_alias = next((k for k, v in QPROGRAM_REGISTRY.items() if v == program_type), None)

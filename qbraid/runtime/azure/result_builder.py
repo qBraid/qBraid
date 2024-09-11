@@ -34,15 +34,9 @@ from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 
 from qbraid.runtime.result import ResultFormatter
 
-logger = logging.getLogger(__name__)
+from .io_format import OutputDataFormat
 
-# Constants for output data format:
-MICROSOFT_OUTPUT_DATA_FORMAT = "microsoft.quantum-results.v1"
-MICROSOFT_OUTPUT_DATA_FORMAT_V2 = "microsoft.quantum-results.v2"
-IONQ_OUTPUT_DATA_FORMAT = "ionq.quantum-results.v1"
-QUANTINUUM_OUTPUT_DATA_FORMAT = "honeywell.quantum-results.v1"
-RESOURCE_ESTIMATOR_OUTPUT_DATA_FORMAT = "microsoft.resource-estimates.v1"
-RIGETTI_OUTPUT_DATA_FORMAT = "rigetti.quil-results.v1"
+logger = logging.getLogger(__name__)
 
 
 class AzureResultBuilder:
@@ -106,7 +100,7 @@ class AzureResultBuilder:
             "error_data": error_data,
         }
 
-        if self.job.details.output_data_format == RESOURCE_ESTIMATOR_OUTPUT_DATA_FORMAT:
+        if self.job.details.output_data_format == OutputDataFormat.RESOURCE_ESTIMATOR.value:
             return self.make_estimator_result(result_dict)
         return result_dict
 
@@ -118,7 +112,7 @@ class AzureResultBuilder:
         is compatible with qBraid runtime.
 
         """
-        if self.job.details.output_data_format == MICROSOFT_OUTPUT_DATA_FORMAT_V2:
+        if self.job.details.output_data_format == OutputDataFormat.MICROSOFT_V2.value:
             return self._format_microsoft_v2_results()
 
         success = self.job.details.status == "Succeeded"
@@ -130,13 +124,13 @@ class AzureResultBuilder:
         }
 
         if success:
-            if self.job.details.output_data_format == MICROSOFT_OUTPUT_DATA_FORMAT:
+            if self.job.details.output_data_format == OutputDataFormat.MICROSOFT_V1.value:
                 job_result["data"] = self._format_microsoft_results(sampler_seed=sampler_seed)
-            elif self.job.details.output_data_format == IONQ_OUTPUT_DATA_FORMAT:
+            elif self.job.details.output_data_format == OutputDataFormat.IONQ.value:
                 job_result["data"] = self._format_ionq_results()
-            elif self.job.details.output_data_format == QUANTINUUM_OUTPUT_DATA_FORMAT:
+            elif self.job.details.output_data_format == OutputDataFormat.QUANTINUUM.value:
                 job_result["data"] = self._format_quantinuum_results()
-            elif self.job.details.output_data_format == RIGETTI_OUTPUT_DATA_FORMAT:
+            elif self.job.details.output_data_format == OutputDataFormat.RIGETTI.value:
                 job_result["data"] = self._format_rigetti_results()
             else:
                 job_result["data"] = self._format_unknown_results()

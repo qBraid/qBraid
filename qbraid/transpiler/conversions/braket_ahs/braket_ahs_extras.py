@@ -12,6 +12,7 @@
 Module defining Amazon Braket AHS conversion extras.
 
 """
+from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
@@ -25,7 +26,7 @@ if TYPE_CHECKING:
 
 @requires_extras("bloqade")
 def bloqade_to_braket_ahs(
-    program: "bloqade.builder.assign.BatchAssign",
+    program: bloqade.builder.assign.BatchAssign,
 ) -> list[AnalogHamiltonianSimulation]:
     """Converts a Bloqade program batch to a list of Amazon Braket AHS.
 

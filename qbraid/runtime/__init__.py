@@ -22,9 +22,10 @@ Data Types
 .. autosummary::
    :toctree: ../stubs/
 
-    DeviceActionType
+	DeviceActionType
 	DeviceStatus
 	JobStatus
+	NoiseModel
 
 Functions
 ------------
@@ -41,7 +42,8 @@ Classes
    :toctree: ../stubs/
 
 	Session
-   	TargetProfile
+	Options
+	TargetProfile
 	QuantumDevice
 	QuantumJob
 	QuantumProvider
@@ -56,7 +58,7 @@ Exceptions
 	ProgramValidationError
 	QbraidRuntimeError
 	ResourceNotFoundError
-    DeviceProgramTypeMismatchError
+	DeviceProgramTypeMismatchError
 
 """
 from qbraid_core import Session
@@ -64,7 +66,7 @@ from qbraid_core import Session
 from . import native
 from ._display import display_jobs_from_data
 from .device import QuantumDevice
-from .enums import DeviceActionType, DeviceStatus, JobStatus
+from .enums import DeviceActionType, DeviceStatus, JobStatus, NoiseModel, ExperimentType
 from .exceptions import (
     DeviceProgramTypeMismatchError,
     JobStateError,
@@ -74,8 +76,10 @@ from .exceptions import (
 )
 from .job import QuantumJob
 from .native import *
+from .options import Options
 from .profile import TargetProfile
 from .provider import QuantumProvider
+from .result import ExperimentalResult, ResultFormatter, RuntimeJobResult
 
 __all__ = [
     "Session",
@@ -92,6 +96,12 @@ __all__ = [
     "TargetProfile",
     "QuantumJob",
     "QuantumProvider",
+    "Options",
+    "NoiseModel",
+    "ExperimentType",
+    "ExperimentalResult",
+    "ResultFormatter",
+    "RuntimeJobResult",
 ]
 
 __all__.extend(native.__all__)

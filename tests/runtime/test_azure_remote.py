@@ -14,21 +14,28 @@
 Unit tests for Azure Quantum runtime (remote)
 
 """
-import os
-import textwrap
-from typing import Optional
+from __future__ import annotations
 
+import os
+from typing import TYPE_CHECKING, Optional
+
+import pyqir
 import pytest
 from azure.identity import ClientSecretCredential
 from azure.quantum import Workspace
 from azure.quantum._constants import ConnectionConstants, EnvironmentVariables
 from azure.quantum.target.microsoft import MicrosoftEstimatorResult
+from qbraid_core._import import LazyLoader
 from qiskit import QuantumCircuit
-from qiskit_qir import to_qir_module
 
-from qbraid.runtime import DeviceStatus, JobStatus
+from qbraid.runtime import DeviceStatus, JobStatus, RuntimeJobResult
 from qbraid.runtime.azure import AzureQuantumProvider
-from qbraid.runtime.result import RuntimeJobResult
+from qbraid.transpiler.conversions.qiskit import qiskit_to_pyqir
+
+pyquil = LazyLoader("pyquil", globals(), "pyquil")
+
+if TYPE_CHECKING:
+    import pyquil as pyquil_
 
 
 @pytest.fixture
@@ -126,12 +133,9 @@ def test_submit_json_to_ionq(provider: AzureQuantumProvider):
     assert result.get_experiment(0).state_counts == {"000": 50, "111": 50}
 
 
-@pytest.mark.remote
-def test_submit_qir_to_microsoft(provider: AzureQuantumProvider):
-    """Test submitting QIR bitcode to run on the Microsoft resource estimator."""
-    device = provider.get_device("microsoft.estimator")
-    assert device.status() == DeviceStatus.ONLINE
-
+@pytest.fixture
+def qiskit_circuit() -> QuantumCircuit:
+    """Fixture for a Qiskit quantum circuit."""
     circuit = QuantumCircuit(3, 3)
     circuit.name = "main"
     circuit.h(0)
@@ -139,13 +143,34 @@ def test_submit_qir_to_microsoft(provider: AzureQuantumProvider):
     circuit.cx(1, 2)
     circuit.measure([0, 1, 2], [0, 1, 2])
 
-    program = to_qir_module(circuit, record_output=False)
-    module, entrypoints = program
+    return circuit
 
-    entrypoint = entrypoints[0]
 
-    input_params = {"entryPoint": entrypoint, "arguments": [], "count": 100}
-    job = device.run(module.bitcode, input_params=input_params)
+@pytest.fixture
+def qir_bitcode(qiskit_circuit: QuantumCircuit) -> bytes:
+    """Fixture for QIR bitcode from a Qiskit quantum circuit."""
+    module: pyqir.Module = qiskit_to_pyqir(qiskit_circuit)
+    return module.bitcode
+
+
+@pytest.mark.remote
+@pytest.mark.parametrize("direct", [(True), (False)])
+def test_submit_qir_to_microsoft(
+    provider: AzureQuantumProvider, qiskit_circuit: QuantumCircuit, qir_bitcode: bytes, direct: bool
+):
+    """Test submitting Qiskit circuit or QIR bitcode to run on the Microsoft resource estimator."""
+    device = provider.get_device("microsoft.estimator")
+    assert device.status() == DeviceStatus.ONLINE
+
+    input_params = {"entryPoint": qiskit_circuit.name, "arguments": [], "count": 100}
+
+    if direct:
+        run_input = qir_bitcode
+        device.set_options(transpile=False, transform=False, verify=False)
+    else:
+        run_input = qiskit_circuit
+
+    job = device.run(run_input, input_params=input_params)
 
     job.wait_for_final_state()
 
@@ -155,24 +180,41 @@ def test_submit_qir_to_microsoft(provider: AzureQuantumProvider):
     assert isinstance(result, MicrosoftEstimatorResult)
 
 
+@pytest.fixture
+def pyquil_program() -> pyquil_.Program:
+    """Fixture for a PyQuil program."""
+    p = pyquil.Program()
+    ro = p.declare("ro", "BIT", 2)
+    p += pyquil.gates.H(0)
+    p += pyquil.gates.CNOT(0, 1)
+    p += pyquil.gates.MEASURE(0, ro[0])
+    p += pyquil.gates.MEASURE(1, ro[1])
+
+    return p
+
+
+@pytest.fixture
+def quil_string(pyquil_program: pyquil_.Program) -> str:
+    """Fixture for a Quil string."""
+    return pyquil_program.out()
+
+
 @pytest.mark.remote
-def test_submit_quil_to_rigetti(provider: AzureQuantumProvider):
-    """Test submitting a Quil string to run on the Rigetti simulator."""
+@pytest.mark.parametrize("direct", [(True), (False)])
+def test_submit_quil_to_rigetti(
+    provider: AzureQuantumProvider, pyquil_program: pyquil_.Program, quil_string: str, direct: bool
+):
+    """Test submitting a pyQuil program or Quil string to run on the Rigetti simulator."""
     device = provider.get_device("rigetti.sim.qvm")
     assert device.status() == DeviceStatus.ONLINE
 
-    readout = "ro"
-    bell_state_quil = f"""
-    DECLARE {readout} BIT[2]
+    if direct:
+        run_input = quil_string
+        device.set_options(transpile=False, transform=False, verify=False)
+    else:
+        run_input = pyquil_program
 
-    H 0
-    CNOT 0 1
-
-    MEASURE 0 {readout}[0]
-    MEASURE 1 {readout}[1]
-    """
-    bell_state_quil = textwrap.dedent(bell_state_quil).strip()
-    job = device.run(bell_state_quil, shots=100, input_params={})
+    job = device.run(run_input, shots=100, input_params={})
     job.wait_for_final_state()
     assert job.status() == JobStatus.COMPLETED
 

@@ -12,13 +12,18 @@
 Module for conversions between Cirq Circuits and QASM strings
 
 """
-from typing import Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
 
 import cirq
 from cirq import ops, value
 
 from qbraid._version import __version__ as qbraid_version
 from qbraid.transpiler.annotations import weight
+
+if TYPE_CHECKING:
+    from qbraid.programs.typer import Qasm2StringType
 
 
 @value.value_equality
@@ -27,7 +32,7 @@ class ZPowGate(cirq.ZPowGate):
     Z axis of the Bloch sphere.
     """
 
-    def _qasm_(self, args: "cirq.QasmArgs", qubits: tuple["cirq.Qid", ...]) -> Optional[str]:
+    def _qasm_(self, args: cirq.QasmArgs, qubits: tuple[cirq.Qid, ...]) -> Optional[str]:
         args.validate_version("2.0")
         if self._global_shift == 0:
             if self._exponent == 0.25:
@@ -62,8 +67,8 @@ def _to_qasm_output(
     circuit: cirq.Circuit,
     header: Optional[str] = None,
     precision: int = 10,
-    qubit_order: "cirq.QubitOrderOrList" = ops.QubitOrder.DEFAULT,
-) -> "cirq.QasmOutput":
+    qubit_order: cirq.QubitOrderOrList = ops.QubitOrder.DEFAULT,
+) -> cirq.QasmOutput:
     """Returns a QASM object equivalent to the circuit.
 
     Args:
@@ -90,15 +95,15 @@ def cirq_to_qasm2(
     circuit: cirq.Circuit,
     header: Optional[str] = None,
     precision: int = 10,
-    qubit_order: "cirq.QubitOrderOrList" = ops.QubitOrder.DEFAULT,
-) -> str:
+    qubit_order: cirq.QubitOrderOrList = ops.QubitOrder.DEFAULT,
+) -> Qasm2StringType:
     """Returns a QASM string representing the input Cirq circuit.
 
     Args:
         circuit: Cirq circuit to convert to a QASM string.
 
     Returns:
-        QASMType: QASM string equivalent to the input Cirq circuit.
+        Qasm2StringType: QASM string equivalent to the input Cirq circuit.
     """
     circuit = map_zpow_and_unroll(circuit)
     return str(_to_qasm_output(circuit, header, precision, qubit_order))

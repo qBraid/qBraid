@@ -22,9 +22,9 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-   BraketDevice
-   BraketProvider
-   BraketQuantumTask
+	BraketDevice
+	BraketProvider
+	BraketQuantumTask
 
 Functions
 -----------
@@ -32,7 +32,7 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   get_quantum_task_cost
+	get_quantum_task_cost
 
 """
 from .device import BraketDevice

@@ -12,6 +12,7 @@
 Module containing Cirq conversion extras.
 
 """
+from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
 
 
 @requires_extras("stimcirq")
-def cirq_to_stim(circuit: "cirq.Circuit") -> "stim.Circuit":
+def cirq_to_stim(circuit: cirq.Circuit) -> stim.Circuit:
     """Returns an stim circuit equivalent to the input cirq circuit.
 
     Args:
@@ -42,7 +43,7 @@ def cirq_to_stim(circuit: "cirq.Circuit") -> "stim.Circuit":
 
 
 @requires_extras("qbraid_qir")
-def cirq_to_pyqir(circuit: "cirq.Circuit") -> "pyqir.Module":
+def cirq_to_pyqir(circuit: cirq.Circuit) -> pyqir.Module:
     """Returns a PyQIR module equivalent to the input cirq circuit.
 
     Args:

@@ -12,14 +12,22 @@
 Module defining Qiskit OpenQASM conversions
 
 """
-import qiskit
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from qiskit.qasm2 import dumps as qasm2_dumps
 
 from qbraid.transpiler.annotations import weight
 
+if TYPE_CHECKING:
+    import qiskit as qiskit_
+
+    from qbraid.programs.typer import Qasm2StringType
+
 
 @weight(1)
-def qiskit_to_qasm2(circuit: qiskit.QuantumCircuit) -> str:
+def qiskit_to_qasm2(circuit: qiskit_.QuantumCircuit) -> Qasm2StringType:
     """Returns OpenQASM 2 string equivalent to the input Qiskit circuit.
 
     Args:

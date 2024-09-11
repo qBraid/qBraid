@@ -12,6 +12,8 @@
 Module defining all :mod:`~qbraid.runtime` enumerated types.
 
 """
+from __future__ import annotations
+
 from enum import Enum
 
 
@@ -73,34 +75,6 @@ class NoiseModel(Enum):
     PhaseFlip = "phase_flip"
 
 
-class JobStatus(Enum):
-    """Class for the status of processes (i.e. jobs / quantum tasks) resulting from any
-    :meth:`~qbraid.runtime.QuantumDevice.run` method.
-
-    Attributes:
-        INITIALIZING (str): job is being initialized
-        QUEUED (str): job is queued
-        VALIDATING (str): job is being validated
-        RUNNING (str): job is actively running
-        CANCELLING (str): job is being cancelled
-        CANCELLED (str): job has been cancelled
-        COMPLETED (str): job has successfully run
-        FAILED (str): job failed / incurred error
-        UNKNOWN (str): job status is unknown/undetermined
-
-    """
-
-    INITIALIZING = "job is being initialized"
-    QUEUED = "job is queued"
-    VALIDATING = "job is being validated"
-    RUNNING = "job is actively running"
-    CANCELLING = "job is being cancelled"
-    CANCELLED = "job has been cancelled"
-    COMPLETED = "job has successfully run"
-    FAILED = "job failed / incurred error"
-    UNKNOWN = "job status is unknown/undetermined"
-
-
 class ExperimentType(Enum):
     """Enumeration for the type of quantum experiment being run.
 
@@ -113,4 +87,72 @@ class ExperimentType(Enum):
     AHS = "analog_hamiltonian_simulation"
 
 
-JOB_STATUS_FINAL = (JobStatus.COMPLETED, JobStatus.CANCELLED, JobStatus.FAILED)
+class JobStatus(Enum):
+    """Enum for the status of processes (i.e. quantum jobs / tasks) resulting
+    from any :meth:`~qbraid.runtime.QuantumDevice.run` method.
+
+    Displayed status text values may differ from those listed below to provide
+    additional visibility into tracebacks, particularly for failed jobs.
+
+    """
+
+    def __new__(cls, value: str):
+        """Customize Enum to accept a single value."""
+        obj = object.__new__(cls)
+        obj._value_ = value
+        obj.default_message = cls._get_default_message(value)
+        obj.status_message = None
+        return obj
+
+    @classmethod
+    def _get_default_message(cls, status: str) -> str:
+        """Get the default message for a given status value."""
+        default_messages = {
+            "INITIALIZING": "job is being initialized",
+            "QUEUED": "job is queued",
+            "VALIDATING": "job is being validated",
+            "RUNNING": "job is actively running",
+            "CANCELLING": "job is being cancelled",
+            "CANCELLED": "job has been cancelled",
+            "COMPLETED": "job has successfully run",
+            "FAILED": "job failed / incurred error",
+            "UNKNOWN": "job status is unknown/undetermined",
+            "HOLD": "job terminal but results withheld due to account status",
+        }
+        message = default_messages.get(status)
+
+        if message is None:
+            raise ValueError(f"Invalid status value: {status}")
+
+        return message
+
+    def set_status_message(self, message: str) -> None:
+        """Set a custom message for the enum instance."""
+        self.status_message = message
+
+    def __repr__(self):
+        """Custom repr to show custom message or default."""
+        message = self.status_message if self.status_message else self.default_message
+        return f"<{self.name}: '{message}'>"
+
+    def __call__(self) -> JobStatus:
+        """Create a new instance of the enum member, allowing unique attributes."""
+        obj = self.__class__(self._value_)
+        obj.default_message = self.default_message
+        return obj
+
+    @classmethod
+    def terminal_states(cls) -> set[JobStatus]:
+        """Returns the final job statuses."""
+        return {cls.COMPLETED, cls.CANCELLED, cls.FAILED}
+
+    INITIALIZING = "INITIALIZING"
+    QUEUED = "QUEUED"
+    VALIDATING = "VALIDATING"
+    RUNNING = "RUNNING"
+    CANCELLING = "CANCELLING"
+    CANCELLED = "CANCELLED"
+    COMPLETED = "COMPLETED"
+    FAILED = "FAILED"
+    UNKNOWN = "UNKNOWN"
+    HOLD = "HOLD"

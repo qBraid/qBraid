@@ -29,10 +29,10 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   load_program
-   get_program_type_alias
-   register_program_type
-   unregister_program_type
+	load_program
+	get_program_type_alias
+	register_program_type
+	unregister_program_type
 
 Classes
 --------
@@ -40,8 +40,12 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-   ProgramSpec
-   QuantumProgram
+	ProgramSpec
+	QuantumProgram
+    QbraidMetaType
+	IonQDict
+	Qasm2String
+	Qasm3String
 
 Exceptions
 -----------
@@ -49,20 +53,28 @@ Exceptions
 .. autosummary::
    :toctree: ../stubs/
 
-   PackageValueError
-   ProgramTypeError
-   QasmError
-   TransformError
+	PackageValueError
+	ProgramTypeError
+	ValidationError
+	QasmError
+	TransformError
 
 """
 from ._import import NATIVE_REGISTRY
 from .alias_manager import get_program_type_alias, get_qasm_type_alias
-from .exceptions import PackageValueError, ProgramTypeError, QasmError, TransformError
+from .exceptions import (
+    PackageValueError,
+    ProgramTypeError,
+    QasmError,
+    TransformError,
+    ValidationError,
+)
 from .loader import load_program
 from .program import QuantumProgram
 from .registry import (
     QPROGRAM,
     QPROGRAM_ALIASES,
+    QPROGRAM_NATIVE,
     QPROGRAM_REGISTRY,
     QPROGRAM_TYPES,
     derive_program_type_alias,
@@ -70,6 +82,7 @@ from .registry import (
     unregister_program_type,
 )
 from .spec import ProgramSpec
+from .typer import IonQDict, Qasm2String, Qasm3String, QbraidMetaType
 
 __all__ = [
     "NATIVE_REGISTRY",
@@ -79,6 +92,7 @@ __all__ = [
     "TransformError",
     "QPROGRAM",
     "QPROGRAM_ALIASES",
+    "QPROGRAM_NATIVE",
     "QPROGRAM_REGISTRY",
     "QPROGRAM_TYPES",
     "QasmError",
@@ -89,6 +103,11 @@ __all__ = [
     "get_qasm_type_alias",
     "register_program_type",
     "unregister_program_type",
+    "ValidationError",
+    "QbraidMetaType",
+    "IonQDict",
+    "Qasm2String",
+    "Qasm3String",
 ]
 
 _lazy_mods = ["circuits", "ahs"]

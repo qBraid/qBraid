@@ -12,7 +12,7 @@
 Module defining base program type specification
 
 """
-from typing import Any, Optional, Type
+from typing import Any, Callable, Optional, Type
 
 from .registry import derive_program_type_alias, is_registered_alias_native, register_program_type
 
@@ -25,8 +25,10 @@ class ProgramSpec:
         program_type: Type[Any],
         alias: Optional[str] = None,
         overwrite: bool = False,
+        to_ir: Optional[Callable[[Any], Any]] = None,
     ):
         self._program_type = program_type
+        self._to_ir = to_ir or (lambda program: program)
 
         register_program_type(program_type, alias=alias, overwrite=overwrite)
         self._alias = alias or derive_program_type_alias(program_type)
@@ -46,6 +48,18 @@ class ProgramSpec:
     def native(self) -> bool:
         """True if program is natively supported by qBraid, False otherwise."""
         return self._native
+
+    def to_ir(self, program: Any) -> Any:
+        """
+        Convert the given program to an intermediate representation (IR) using the to_ir lambda.
+
+        Args:
+            program (Any): The program to convert.
+
+        Returns:
+            Any: The program converted to an IR, or the program itself if to_ir is None.
+        """
+        return self._to_ir(program)
 
     def __str__(self) -> str:
         return f"ProgramSpec({self._program_type.__name__}, {self.alias})"

@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Optional, Union
 from qbraid_core.services.quantum import QuantumClient
 
 from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
-from qbraid.programs.qasm_typer import Qasm2Instance, Qasm2String
+from qbraid.programs.typer import Qasm2String, Qasm2StringType
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, NoiseModel
 from qbraid.runtime.exceptions import QbraidRuntimeError
@@ -75,10 +75,10 @@ class QbraidDevice(QuantumDevice):
         return int(pending_jobs)
 
     def transform(
-        self, run_input: Union[pyqir.Module, Qasm2String]
-    ) -> dict[str, Union[Qasm2String, bytes]]:
+        self, run_input: Union[pyqir.Module, Qasm2StringType]
+    ) -> dict[str, Union[Qasm2StringType, bytes]]:
         """Transform the input to the format expected by the qBraid API."""
-        if isinstance(run_input, Qasm2Instance):
+        if isinstance(run_input, Qasm2String):
             return {"openQasm": run_input}
         return {"bitcode": run_input.bitcode}
 

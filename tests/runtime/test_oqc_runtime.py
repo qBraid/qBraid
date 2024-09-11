@@ -28,7 +28,7 @@ try:
     from qcaas_client.client import OQCClient, QPUTask  # type: ignore
 
     from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
-    from qbraid.runtime import TargetProfile
+    from qbraid.runtime import Options, TargetProfile
     from qbraid.runtime.enums import DeviceActionType, DeviceStatus, JobStatus
     from qbraid.runtime.exceptions import ResourceNotFoundError
     from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCProvider
@@ -170,6 +170,7 @@ def oqc_device(lucy_simulator_data):
             )
             self._target_spec = ProgramSpec(str, alias="qasm2")
             self._scheme = ConversionScheme()
+            self._options = Options(transpile=True, transform=True, verify=True)
 
     return TestOQCDevice(DEVICE_ID)
 

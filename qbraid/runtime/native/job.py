@@ -12,6 +12,8 @@
 Module defining QbraidJob class
 
 """
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -36,15 +38,15 @@ class QbraidJob(QuantumJob):
     def __init__(
         self,
         job_id: str,
-        device: "Optional[qbraid.runtime.QbraidDevice]" = None,
-        client: "Optional[qbraid_core.services.quantum.QuantumClient]" = None,
+        device: Optional[qbraid.runtime.QbraidDevice] = None,
+        client: Optional[qbraid_core.services.quantum.QuantumClient] = None,
         **kwargs,
     ):
         super().__init__(job_id, device, **kwargs)
         self._client = client
 
     @property
-    def client(self) -> "qbraid_core.services.quantum.QuantumClient":
+    def client(self) -> qbraid_core.services.quantum.QuantumClient:
         """
         Lazily initializes and returns the client object associated with the job.
         If the job has an associated device with a client, that client is used.
@@ -74,8 +76,12 @@ class QbraidJob(QuantumJob):
     def status(self) -> JobStatus:
         """Return the status of the job / task , among the values of ``JobStatus``."""
         job_data = self.client.get_job(self.id)
-        status = job_data.get("status")
-        return self._map_status(status)
+        status: Optional[str] = job_data.get("status")
+        status_msg: Optional[str] = job_data.get("statusText")
+        status_enum = self._map_status(status)
+        if status_msg is not None:
+            status_enum.set_status_message(status_msg)
+        return status_enum
 
     def cancel(self) -> None:
         """Attempt to cancel the job."""
@@ -103,7 +109,7 @@ class QbraidJob(QuantumJob):
             )
         ]
 
-    def result(self) -> "qbraid.runtime.RuntimeJobResult":
+    def result(self) -> qbraid.runtime.RuntimeJobResult:
         """Return the results of the job."""
         self.wait_for_final_state()
         job_data = self.client.get_job(self.id)

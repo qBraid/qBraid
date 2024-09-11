@@ -14,16 +14,16 @@
 Module defining IonQ device class
 
 """
+from __future__ import annotations
+
 import json
-import re
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Union
 
-import openqasm3
-
-from qbraid.passes.qasm3.compat import convert_qasm_pi_to_decimal
-from qbraid.programs import load_program
+from qbraid.programs.circuits.qasm import OpenQasm2Program
+from qbraid.programs.typer import Qasm2StringType
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.transpiler.conversions.qasm2 import qasm2_to_ionq
 
 from .job import IonQJob
 
@@ -37,18 +37,18 @@ class IonQDevice(QuantumDevice):
 
     def __init__(
         self,
-        profile: "qbraid.runtime.TargetProfile",
-        session: "qbraid.runtime.ionq.provider.IonQSession",
+        profile: qbraid.runtime.TargetProfile,
+        session: qbraid.runtime.ionq.provider.IonQSession,
     ):
         super().__init__(profile=profile)
         self._session = session
 
     @property
-    def session(self) -> "qbraid.runtime.ionq.provider.IonQSession":
+    def session(self) -> qbraid.runtime.ionq.provider.IonQSession:
         """Return the IonQ session."""
         return self._session
 
-    def status(self) -> "qbraid.runtime.DeviceStatus":
+    def status(self) -> qbraid.runtime.DeviceStatus:
         """Return the current status of the IonQ device."""
         device_data = self.session.get_device(self.id)
         status = device_data.get("status")
@@ -64,84 +64,15 @@ class IonQDevice(QuantumDevice):
 
         raise ValueError(f"Unrecognized device status: {status}")
 
-    @staticmethod
-    def extract_gate_data(program: "openqasm3.ast.Program") -> list[dict]:
-        """Extract gate data from the input program."""
-        gates = []
-
-        for statement in program.statements:
-            if isinstance(statement, openqasm3.ast.QuantumGate):
-                name = statement.name.name
-                qubits = statement.qubits
-                qubit_values = []
-
-                for qubit in qubits:
-                    _ = qubit.name.name
-                    indices = qubit.indices
-                    for index in indices:
-                        qubit_values.extend(literal.value for literal in index)
-
-                # support gates defined in `stdgates.inc` from OpenQASM 3
-                if len(qubit_values) == 1:
-                    # IonQ supported gates:
-                    if name in ["x", "not", "y", "z", "h", "s", "si", "t", "ti", "v", "vi"]:
-                        gate_data = {"gate": name, "target": qubit_values[0]}
-                    elif name in ["rx", "ry", "rz"]:
-                        # convert "rz(3 * pi / 4) q[0];" to "3 * pi / 4"
-                        angle_str = re.findall(r"\((.+)\)", openqasm3.dumps(statement))[0]
-                        gate_data = {
-                            "gate": name,
-                            "target": qubit_values[0],
-                            "rotation": float(convert_qasm_pi_to_decimal(angle_str)),
-                        }
-                    # OpenQASM 3 aliases:
-                    elif name == "sdg":
-                        gate_data = {"gate": "si", "target": qubit_values[0]}
-                    elif name == "tdg":
-                        gate_data = {"gate": "ti", "target": qubit_values[0]}
-                    elif name == "sx":
-                        gate_data = {"gate": "v", "target": qubit_values[0]}
-                    elif name == "sxdg":
-                        gate_data = {"gate": "vi", "target": qubit_values[0]}
-                    else:
-                        raise NotImplementedError(f"'{name}' gate not yet supported")
-                elif len(qubit_values) == 2:
-                    if name in ["cnot", "cx", "CX"]:
-                        gate_data = {
-                            "gate": "cnot",
-                            "control": qubit_values[0],
-                            "target": qubit_values[1],
-                        }
-                    elif name == "swap":
-                        gate_data = {
-                            "gate": "swap",
-                            "targets": qubit_values,
-                        }
-                    else:
-                        raise NotImplementedError(f"'{name}' gate not yet supported")
-                elif len(qubit_values) == 3:
-                    if name in ["ccx", "toffoli"]:
-                        gate_data = {
-                            "gate": "cnot",
-                            "controls": qubit_values[:2],
-                            "target": qubit_values[2],
-                        }
-                else:
-                    raise NotImplementedError(f"'{name}' gate not yet supported")
-
-                gates.append(gate_data)
-
-        return gates
-
-    def transform(self, run_input: "openqasm3.ast.Program") -> dict:
+    def transform(self, run_input: Qasm2StringType) -> dict[str, Union[int, list[dict[str, Any]]]]:
         """Transform the input to the IonQ device."""
-        program = load_program(run_input)
+        program = OpenQasm2Program(run_input)
         program.transform(device=self)
-        num_qubits = program.num_qubits
-        gate_data = self.extract_gate_data(program.parsed())
-        return {"qubits": num_qubits, "circuit": gate_data}
+        ionq_program = qasm2_to_ionq(program.program)
+        return ionq_program
 
-    def submit(self, run_input: list[dict], *args, shots: int = 100, **kwargs) -> IonQJob:
+    # pylint:disable-next=arguments-differ
+    def submit(self, run_input: list[dict], shots: int = 100, **kwargs) -> IonQJob:
         """Submit a job to the IonQ device."""
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input

@@ -134,7 +134,7 @@ include "stdgates.inc";
 qubit[2] q;
 crx :-) q[0], q[1];
 """
-    with pytest.raises(ValueError, match="Invalid OpenQASM 3 program."):
+    with pytest.raises(ValueError, match="Invalid OpenQASM program."):
         rebase(bad_program, {"crx"})
 
 

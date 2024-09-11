@@ -12,6 +12,7 @@
 Module defining Amazon Braket conversion extras.
 
 """
+from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
@@ -29,7 +30,7 @@ if TYPE_CHECKING:
 
 
 @requires_extras("qiskit_braket_provider")
-def braket_to_qiskit(circuit: "braket.circuits.Circuit") -> "qiskit.circuit.QuantumCircuit":
+def braket_to_qiskit(circuit: braket.circuits.Circuit) -> qiskit.circuit.QuantumCircuit:
     """Return a Qiskit quantum circuit from a Braket quantum circuit.
 
     Args:
@@ -42,7 +43,7 @@ def braket_to_qiskit(circuit: "braket.circuits.Circuit") -> "qiskit.circuit.Quan
 
 
 @requires_extras("pytket.extensions.braket")
-def braket_to_pytket(circuit: "braket.circuits.Circuit") -> "pytket.circuit.Circuit":
+def braket_to_pytket(circuit: braket.circuits.Circuit) -> pytket.circuit.Circuit:
     """Returns a pytket circuit equivalent to the input Amazon Braket circuit.
 
     Args:

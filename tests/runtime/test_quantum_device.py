@@ -22,6 +22,7 @@ from unittest.mock import Mock, patch
 import cirq
 import numpy as np
 import pytest
+from pyqir import BasicQisBuilder, Module, SimpleModule
 from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
 from qbraid.programs import ProgramSpec, register_program_type, unregister_program_type
@@ -141,7 +142,7 @@ def mock_profile():
         simulator=True,
         action_type=DeviceActionType.OPENQASM,
         num_qubits=42,
-        program_spec=None,
+        program_spec=ProgramSpec(Module, alias="pyqir", to_ir=lambda module: module.bitcode),
         noise_models=[NoiseModel.NoNoise],
     )
 
@@ -344,6 +345,13 @@ def test_device_extract_qasm_rep_none(mock_qbraid_device):
         unregister_program_type(alias)
 
 
+def test_device_run_raises_for_protected_kwargs(valid_qasm2, mock_qbraid_device):
+    """Test raising exception when run method is invoked with protected kwargs."""
+    kwargs = {"openQasm": valid_qasm2}
+    with pytest.raises(ValueError):
+        mock_qbraid_device.run(valid_qasm2, **kwargs)
+
+
 def test_provider_initialize_client_raises_for_multiple_auth_params():
     """Test raising exception when initializing client if provided
     both an api key and a client object."""
@@ -530,3 +538,43 @@ def test_get_device_fail():
     provider = QbraidProvider(client=FakeClient())
     with pytest.raises(ResourceNotFoundError):
         provider.get_device("qbraid_qir_simulator")
+
+
+def test_set_options(mock_qbraid_device: QbraidDevice):
+    """Test updating the default runtime options."""
+    default_options = {"transpile": True, "transform": True, "verify": True}
+    assert dict(mock_qbraid_device._options) == default_options
+
+    mock_qbraid_device.set_options(transform=False)
+    updated_options = default_options.copy()
+    updated_options["transform"] = False
+    assert dict(mock_qbraid_device._options) == updated_options
+
+
+@pytest.fixture
+def pyqir_module() -> Module:
+    """Returns a one-qubit PyQIR module with Hadamard gate and measurement."""
+    bell = SimpleModule("test_qir_program", num_qubits=1, num_results=1)
+    qis = BasicQisBuilder(bell.builder)
+
+    qis.h(bell.qubits[0])
+    qis.mz(bell.qubits[0], bell.results[0])
+
+    return bell._module
+
+
+def test_transform_to_ir_from_spec(mock_basic_device: MockDevice, pyqir_module: Module):
+    """Test transforming to run input to given IR from target profile program spec."""
+    run_input_transformed = mock_basic_device.transform(pyqir_module)
+    assert isinstance(run_input_transformed, bytes)
+
+    mock_basic_device._target_spec = None
+    run_input_transformed = mock_basic_device.transform(pyqir_module)
+    assert isinstance(run_input_transformed, Module)
+
+
+def test_set_options_raises_for_bad_key(mock_basic_device: MockDevice):
+    """Test that the set options method raises AttributeError for key
+    not already included in options."""
+    with pytest.raises(AttributeError):
+        mock_basic_device.set_options(bad_key=True)

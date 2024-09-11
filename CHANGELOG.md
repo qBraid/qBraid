@@ -15,9 +15,11 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
-- Added `qbraid.programs.qasm_typer` module containing custom types (`Qasm2String` and `Qasm3String`) that can be used instead of `str` for more accurate static typing, as well as instance variables (`Qasm2Instance` and `Qasm3Instance`) that can be used for `isinstance` checks against both OpenQASM 2 and 3 strings ([#745](https://github.com/qBraid/qBraid/pull/745))
+- Added `qbraid.programs.typer` module containing custom types (`Qasm2StringType` and `Qasm3StringType`) that can be used instead of `str` for more accurate static typing, as well as instance variables (`Qasm2String` and `Qasm3String`) that can be used for `isinstance` checks against both OpenQASM 2 and 3 strings ([#745](https://github.com/qBraid/qBraid/pull/745))
 - Added `qbraid.runtime.enums.NoiseModel` enum for various noise model options that we may support on managed simulators in the future. This is not a supported feature just yet, so this enum is really just a placeholder. ([#745](https://github.com/qBraid/qBraid/pull/745))
-- `qbraid.runtime.azure` module with `AzureQuantumProvider` class to enable access to QPUs and simulators from IonQ, Quantinuum, and Rigetti, as well as the Microsoft resource estimator, using Azure credentials ([#723](https://github.com/qBraid/qBraid/pull/723))
+- Added `qbraid.runtime.azure` module with `AzureQuantumProvider` class to enable access to QPUs and simulators from IonQ, Quantinuum, and Rigetti, as well as the Microsoft resource estimator, using Azure credentials ([#723](https://github.com/qBraid/qBraid/pull/723))
+- Added `qbraid.programs.typer.QbraidMetaType` custom type instances e.g. `IonQDict`, `BaseQasmInstanceMeta` [#752](https://github.com/qBraid/qBraid/pull/752)
+- Added `qbraid.runtime.Options` for more control over transpile, transform, and validation steps [#752](https://github.com/qBraid/qBraid/pull/752)
 
 ```python
 from azure.quantum import Workspace
@@ -55,6 +57,9 @@ print(counts) # {"000": 100}
 ### Improved / Modified
 - Updated construction of `TargetProfile` in `QbraidProvider` to populate provider from API instead of defaulting to fixed value 'qBraid'. ([#744](https://github.com/qBraid/qBraid/pull/744))
 - Generalized native runtime submission flow to pave the way for support of new devices apart from the QIR simulator. Updated various routines including creating target profile and constructing payload so they are no longer specific to just the `qbraid_qir_simulator`, but can be adapted to new devices that come online fairly quickly. ([#745](https://github.com/qBraid/qBraid/pull/745))
+- Defined azure runtime program specs for devices based on provider / input data format [#752](https://github.com/qBraid/qBraid/pull/752)
+- Moved IonQ dict "transform" from IonQ provider into transpiler conversions to be accessible from azure provider as well [#752](https://github.com/qBraid/qBraid/pull/752)
+- Updated `qbraid.runtime.JobStatus` enum to support displaying custom status message if/when available [#752](https://github.com/qBraid/qBraid/pull/752)
 - Updated the result classes of each runtime provider to use a `RuntimeJobResult` object as the unified return type for the result methods and `ExperimentalResult` as the common experiment class. The structure is driven by the commonalities between the result classes of each provider. Jobs now simply implement methods for populating result data in these common runtime objects. ([#747](https://github.com/qBraid/qBraid/pull/747))
 
 ### Deprecated
@@ -66,11 +71,16 @@ print(counts) # {"000": 100}
 
 ### Dependencies
 - Added `qbraid[azure]` extra to project ([#723](https://github.com/qBraid/qBraid/pull/723))
+- Update sphinx-autodoc-typehints requirement from <2.3,>=1.24 to >=1.24,<2.4 ([#746](https://github.com/qBraid/qBraid/pull/746))
+- Update qiskit-ibm-runtime requirement from <0.29,>=0.25.0 to >=0.25.0,<0.30 ([#751](https://github.com/qBraid/qBraid/pull/751))
+- Update sphinx-autodoc-typehints requirement from <2.4,>=1.24 to >=1.24,<2.5 ([#750](https://github.com/qBraid/qBraid/pull/750))
+- Update amazon-braket-sdk requirement from <1.87.0,>=1.83.0 to >=1.83.0,<1.88.0 ([#748](https://github.com/qBraid/qBraid/pull/748))
+- Update pennylane requirement from <0.38 to <0.39 ([#749](https://github.com/qBraid/qBraid/pull/749))
 
 ## [0.7.3] - 2024-08-26
 
 ### Dependencies
-- Bumped Amazon Braket dependency to support new Rigetti Ankaa-2 device ([#741](https://github.com/qBraid/qBraid/pull/741))
+- Update amazon-braket-sdk requirement from <1.85.0,>=1.83.0 to >=1.83.0,<1.87.0 (to support new Rigetti Ankaa-2 device) ([#741](https://github.com/qBraid/qBraid/pull/741))
 
 ## [0.7.2] - 2024-08-21
 

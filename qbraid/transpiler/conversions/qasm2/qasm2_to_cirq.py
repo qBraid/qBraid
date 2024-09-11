@@ -12,6 +12,8 @@
 Module for conversions from QASM 2 to Cirq Circuits
 
 """
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
@@ -28,9 +30,11 @@ cirq_qasm_parser = LazyLoader(
 if TYPE_CHECKING:
     import cirq
 
+    from qbraid.programs.typer import Qasm2StringType
+
 
 @weight(1)
-def qasm2_to_cirq(qasm: str) -> "cirq.Circuit":
+def qasm2_to_cirq(qasm: Qasm2StringType) -> cirq.Circuit:
     """Returns a Cirq circuit equivalent to the input QASM string.
 
     Args:

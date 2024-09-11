@@ -12,6 +12,8 @@
 Module defining GateModelProgram Class
 
 """
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -47,10 +49,10 @@ class GateModelProgram(QuantumProgram, ABC):
         """Return the circuit depth (i.e., length of critical path)."""
 
     @abstractmethod
-    def _unitary(self) -> "np.ndarray":
+    def _unitary(self) -> np.ndarray:
         """Calculate unitary of circuit."""
 
-    def unitary(self) -> "np.ndarray":
+    def unitary(self) -> np.ndarray:
         """Calculate unitary of circuit."""
         if self.spec.alias in ["pyquil", "qiskit", "qasm3"]:
             return self.unitary_rev_qubits()
@@ -130,6 +132,6 @@ class GateModelProgram(QuantumProgram, ABC):
     def reverse_qubit_order(self) -> None:
         """Rerverse qubit ordering of circuit."""
 
-    def transform(self, device: "qbraid.runtime.QuantumDevice") -> None:
+    def transform(self, device: qbraid.runtime.QuantumDevice) -> None:
         """Transform program to according to device target profile."""
-        raise NotImplementedError
+        return None
