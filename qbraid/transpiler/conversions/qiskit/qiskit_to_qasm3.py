@@ -12,13 +12,21 @@
 Module defining Qiskit OpenQASM conversions
 
 """
-import qiskit
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from qiskit.qasm3 import dumps
 
 from qbraid.transpiler.annotations import weight
 
+if TYPE_CHECKING:
+    import qiskit as qiskit_
+
+    from qbraid.programs.typer import Qasm3StringType
+
 
 @weight(1)
-def qiskit_to_qasm3(circuit: qiskit.QuantumCircuit) -> str:
+def qiskit_to_qasm3(circuit: qiskit_.QuantumCircuit) -> Qasm3StringType:
     """Convert qiskit QuantumCircuit to QASM 3.0 string"""
     return dumps(circuit)

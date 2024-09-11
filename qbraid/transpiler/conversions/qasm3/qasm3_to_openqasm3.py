@@ -12,19 +12,26 @@
 Module containing OpenQASM conversion function
 
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import openqasm3
 
 from qbraid.transpiler.annotations import weight
 
+if TYPE_CHECKING:
+    from qbraid.programs.typer import Qasm3StringType
+
 
 @weight(1)
-def qasm3_to_openqasm3(qasm_str: str) -> openqasm3.ast.Program:
+def qasm3_to_openqasm3(qasm: Qasm3StringType) -> openqasm3.ast.Program:
     """Loads an openqasm3.ast.Program from an OpenQASM 3.0 string
 
     Args:
-        qasm_str (str): OpenQASM 3.0 string
+        qasm (str): OpenQASM 3.0 string
 
     Returns:
         openqasm3.ast.Program: OpenQASM 3.0 AST program
     """
-    return openqasm3.parse(qasm_str)
+    return openqasm3.parse(qasm)

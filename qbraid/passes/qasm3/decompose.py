@@ -20,6 +20,8 @@ from openqasm3.parser import QASM3ParsingError, parse
 
 from qbraid.passes.exceptions import CompilationError, QasmDecompositionError
 
+from .compat import replace_qubit_with_qreg
+
 
 def _decompose_crx(gate: ast.QuantumGate) -> list[ast.Statement]:
     """Decompose a crx gate into its basic gate equivalents."""
@@ -252,7 +254,7 @@ def rebase(qasm: str, basis_gates: Union[set[str], str], require_predicates: boo
     try:
         program = parse(qasm)
     except QASM3ParsingError as err:
-        raise ValueError("Invalid OpenQASM 3 program.") from err
+        raise ValueError("Invalid OpenQASM program.") from err
 
     try:
         converted_program = decompose(program, basis_gates)
@@ -272,7 +274,13 @@ def rebase(qasm: str, basis_gates: Union[set[str], str], require_predicates: boo
 
         return qasm
 
-    return dumps(converted_program)
+    version_major = converted_program.version.split(".")[0]
+    qasm = dumps(converted_program)
+
+    if int(version_major) == 2:
+        qasm = replace_qubit_with_qreg(qasm)
+
+    return qasm
 
 
 def decompose_qasm3(qasm: str) -> str:

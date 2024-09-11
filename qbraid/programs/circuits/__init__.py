@@ -35,6 +35,7 @@ Submodules
    pytket
    qasm
    qiskit
+   ionq
 
 """
 import importlib

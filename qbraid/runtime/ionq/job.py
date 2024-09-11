@@ -14,6 +14,8 @@
 Module defining IonQ job class
 
 """
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from qbraid.runtime.enums import JobStatus
@@ -33,12 +35,12 @@ class IonQJobError(QbraidRuntimeError):
 class IonQJob(QuantumJob):
     """IonQ job class."""
 
-    def __init__(self, job_id: str, session: "qbraid.runtime.ionq.provider.IonQSession", **kwargs):
+    def __init__(self, job_id: str, session: qbraid.runtime.ionq.provider.IonQSession, **kwargs):
         super().__init__(job_id=job_id, **kwargs)
         self._session = session
 
     @property
-    def session(self) -> "qbraid.runtime.ionq.provider.IonQSession":
+    def session(self) -> qbraid.runtime.ionq.provider.IonQSession:
         """Return the IonQ session."""
         return self._session
 

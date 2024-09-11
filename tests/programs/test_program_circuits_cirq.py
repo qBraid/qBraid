@@ -13,6 +13,7 @@ Unit tests for qbraid.programs.cirq.CirqCircuit
 
 """
 from typing import Any
+from unittest.mock import Mock
 
 import cirq
 import pytest
@@ -320,3 +321,14 @@ def test_bad_qubit():
     targets = [0]
     with pytest.raises(ValueError) as exc_info:
         CirqCircuit._make_qubits(qubits, targets)
+
+
+def test_transform_no_effect():
+    """Test that transform method has no effect
+    since it is not implemented"""
+    qubit = cirq.LineQubit(0)
+    circuit = cirq.Circuit(cirq.I(qubit))
+    program = CirqCircuit(circuit)
+    device = Mock()
+    program.transform(device)
+    assert program.program == circuit

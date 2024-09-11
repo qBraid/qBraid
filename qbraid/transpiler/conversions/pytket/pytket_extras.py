@@ -12,6 +12,7 @@
 Module containing PyTKET conversion extras.
 
 """
+from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
@@ -27,7 +28,7 @@ if TYPE_CHECKING:
 
 
 @requires_extras("pytket.extensions.braket")
-def pytket_to_braket(circuit: "pytket.circuit.Circuit") -> "braket.circuits.Circuit":
+def pytket_to_braket(circuit: pytket.circuit.Circuit) -> braket.circuits.Circuit:
     """Returns an Amazon Braket circuit equivalent to the input pytket circuit.
 
     Args:

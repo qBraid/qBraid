@@ -24,6 +24,7 @@ from .job import AzureQuantumJob
 if TYPE_CHECKING:
     import azure.quantum
 
+    import qbraid.programs
     import qbraid.runtime
 
 
@@ -58,7 +59,7 @@ class AzureQuantumDevice(QuantumDevice):
         }
         return status_map.get(status, DeviceStatus.UNAVAILABLE)
 
-    def submit(self, run_input, *args, **kwargs) -> AzureQuantumJob:
+    def submit(self, run_input: qbraid.programs.QPROGRAM, *args, **kwargs) -> AzureQuantumJob:
         """Submit a job to the Azure device.
 
         Args:

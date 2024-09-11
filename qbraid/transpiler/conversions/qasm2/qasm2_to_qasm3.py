@@ -18,7 +18,7 @@ import textwrap
 from qbraid._version import __version__ as qbraid_version
 from qbraid.passes.qasm2.decompose import _decompose_rxx_instr
 from qbraid.passes.qasm3.format import remove_unused_gates
-from qbraid.programs import get_qasm_type_alias
+from qbraid.programs.typer import Qasm2StringType, Qasm3StringType, get_qasm_type_alias
 from qbraid.transpiler.annotations import weight
 
 
@@ -100,7 +100,7 @@ def _convert_line_to_qasm3(line: str) -> str:
 
 
 @weight(0.7)
-def qasm2_to_qasm3(qasm_str: str) -> str:
+def qasm2_to_qasm3(qasm_str: Qasm2StringType) -> Qasm3StringType:
     """Convert a OpenQASM 2.0 string to OpenQASM 3.0 string
 
     Args:

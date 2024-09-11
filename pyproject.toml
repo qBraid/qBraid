@@ -61,6 +61,7 @@ docs = ["sphinx>=7.2,<8.1", "sphinx-autodoc-typehints>=1.24,<2.5", "sphinx-rtd-t
 braket_ahs = "qbraid.programs.ahs.braket_ahs:BraketAHS"
 braket = "qbraid.programs.circuits.braket:BraketCircuit"
 cirq = "qbraid.programs.circuits.cirq:CirqCircuit"
+ionq = "qbraid.programs.circuits.ionq:IonQProgram"
 pennylane = "qbraid.programs.circuits.pennylane:PennylaneTape"
 pyquil = "qbraid.programs.circuits.pyquil:PyQuilProgram"
 qiskit = "qbraid.programs.circuits.qiskit:QiskitCircuit"

@@ -26,9 +26,11 @@ Classes
 	QbraidJob
 	QbraidJobResult
 	ExperimentResult
+	QirRunner
 
 """
 from qbraid_core import QbraidSession
+from qbraid_core.services.quantum.runner import Simulator as QirRunner
 
 from .device import QbraidDevice
 from .job import QbraidJob
@@ -42,4 +44,5 @@ __all__ = [
     "QbraidJob",
     "QbraidJobResult",
     "ExperimentResult",
+    "QirRunner",
 ]

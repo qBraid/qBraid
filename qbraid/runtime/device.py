@@ -26,6 +26,7 @@ from qbraid.transpiler import CircuitConversionError, ConversionGraph, Conversio
 
 from .enums import DeviceStatus
 from .exceptions import ProgramValidationError, QbraidRuntimeError, ResourceNotFoundError
+from .options import Options
 
 if TYPE_CHECKING:
     import qbraid.programs
@@ -56,6 +57,7 @@ class QuantumDevice(ABC):
         self._profile = profile
         self._target_spec: Optional[ProgramSpec] = profile.program_spec
         self._scheme = scheme or ConversionScheme()
+        self._options = self._default_options()
 
     @property
     def profile(self) -> qbraid.runtime.TargetProfile:
@@ -91,6 +93,36 @@ class QuantumDevice(ABC):
     @abstractmethod
     def status(self) -> qbraid.runtime.DeviceStatus:
         """Return device status."""
+
+    @classmethod
+    def _default_options(cls):
+        """Define default options for the QuantumDevice."""
+        options = Options(transpile=True, transform=True, verify=True)
+        options.set_validator("transpile", lambda x: isinstance(x, bool))
+        options.set_validator("transform", lambda x: isinstance(x, bool))
+        options.set_validator("verify", lambda x: isinstance(x, bool))
+
+        return options
+
+    def set_options(self, **fields):
+        """
+        Update the runtime options for the QuantumDevice.
+
+        The runtime options control the default behavior of the `QuantumDevice.run` method,
+        including settings such as transpilation, verification, and transformation. If an
+        unsupported option is provided, an `AttributeError` will be raised.
+
+        Args:
+            **fields: Keyword arguments representing the runtime options to update.
+                    The options must already exist in the device's configuration.
+
+        Raises:
+            AttributeError: If an invalid runtime option is passed.
+        """
+        for field in fields:
+            if not hasattr(self._options, field):
+                raise AttributeError(f"Options field '{field}' is not valid for this device")
+        self._options.update_options(**fields)
 
     def queue_depth(self) -> int:
         """Return the number of jobs in the queue for the backend"""
@@ -198,7 +230,11 @@ class QuantumDevice(ABC):
         Program input type should match output type.
 
         """
-        return run_input
+        if self._target_spec is None:
+            return run_input
+
+        run_input_ir = self._target_spec.to_ir(run_input)
+        return run_input_ir
 
     def apply_runtime_profile(
         self, run_input: qbraid.programs.QPROGRAM
@@ -208,17 +244,26 @@ class QuantumDevice(ABC):
         Returns:
             Transpiled and transformed quantum program
         """
-        if self._target_spec is not None:
+        verify_option = self._options.get("verify") is True
+        transpile_option = self._options.get("transpile") is True
+
+        if self._target_spec is not None and (verify_option or transpile_option):
             run_input_alias = get_program_type_alias(run_input, safe=True)
             run_input_spec = ProgramSpec(type(run_input), alias=run_input_alias)
             program = load_program(run_input) if run_input_spec.native else None
 
-            self.validate(program)
-            run_input = self.transpile(run_input, run_input_spec)
+            if verify_option:
+                self.validate(program)
+
+            if transpile_option:
+                run_input = self.transpile(run_input, run_input_spec)
 
         is_single_output = not isinstance(run_input, list)
         run_input = [run_input] if is_single_output else run_input
-        run_input = [self.transform(p) for p in cast(list, run_input)]
+
+        if self._options.get("transform") is True:
+            run_input = [self.transform(p) for p in cast(list, run_input)]
+
         run_input = run_input[0] if is_single_output else run_input
         return run_input
 

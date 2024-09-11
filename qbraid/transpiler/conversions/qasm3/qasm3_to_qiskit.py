@@ -12,6 +12,8 @@
 Module defining Qiskit OpenQASM conversions
 
 """
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
@@ -24,6 +26,8 @@ qiskit_qasm3 = LazyLoader("qiskit_qasm3", globals(), "qiskit.qasm3")
 
 if TYPE_CHECKING:
     import qiskit as qiskit_
+
+    from qbraid.programs.typer import Qasm3StringType
 
 
 def transform_notation(qasm3: str) -> str:
@@ -52,20 +56,20 @@ def transform_notation(qasm3: str) -> str:
 
 
 @weight(1)
-def qasm3_to_qiskit(qasm3: str) -> "qiskit_.QuantumCircuit":
+def qasm3_to_qiskit(qasm: Qasm3StringType) -> qiskit_.QuantumCircuit:
     """Convert QASM 3.0 string to a Qiskit QuantumCircuit representation.
 
     Args:
-        qasm3 (str): A string in QASM 3.0 format.
+        qasm (str): A string in QASM 3.0 format.
 
     Returns:
         qiskit.QuantumCircuit: A QuantumCircuit object representing the input QASM 3.0 string.
     """
     try:
-        return qiskit_qasm3.loads(qasm3)
+        return qiskit_qasm3.loads(qasm)
     except qiskit_qasm3.QASM3ImporterError:
         pass
 
-    qasm3 = transform_notation(qasm3)
+    qasm = transform_notation(qasm)
 
-    return qiskit_qasm3.loads(qasm3)
+    return qiskit_qasm3.loads(qasm)

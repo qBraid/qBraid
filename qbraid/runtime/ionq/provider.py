@@ -14,7 +14,6 @@ Module defining IonQ session and provider classes
 """
 from typing import Any
 
-import openqasm3
 from qbraid_core.sessions import Session
 
 from qbraid.programs.spec import ProgramSpec
@@ -95,7 +94,7 @@ class IonQProvider(QuantumProvider):
             simulator=simulator,
             action_type=DeviceActionType.OPENQASM,
             num_qubits=data.get("qubits"),
-            program_spec=ProgramSpec(openqasm3.ast.Program),
+            program_spec=ProgramSpec(str, alias="qasm2"),
             provider_name="IonQ",
             basis_gates=SUPPORTED_GATES,
         )

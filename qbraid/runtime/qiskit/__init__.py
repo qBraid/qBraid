@@ -19,10 +19,10 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-   QiskitBackend
-   QiskitJob
-   QiskitRuntimeProvider
-   QiskitResult
+	QiskitBackend
+	QiskitJob
+	QiskitRuntimeProvider
+	QiskitResult
 
 """
 from .device import QiskitBackend

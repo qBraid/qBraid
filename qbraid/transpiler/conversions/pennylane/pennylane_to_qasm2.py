@@ -12,13 +12,20 @@
 Module defining Pennylane OpenQASM conversions
 
 """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from pennylane.tape import QuantumTape
 
 from qbraid.transpiler.annotations import weight
 
+if TYPE_CHECKING:
+    from qbraid.programs.typer import Qasm2StringType
+
 
 @weight(1)
-def pennylane_to_qasm2(tape: QuantumTape) -> str:
+def pennylane_to_qasm2(tape: QuantumTape) -> Qasm2StringType:
     """Converts a PennyLane tape to OpenQASM 2.0
 
     Args:

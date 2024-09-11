@@ -11,13 +11,12 @@
 # pylint: disable=redefined-outer-name
 
 """
-Unit tests for OQCProvider class
+Unit tests for IonQProvider class
 
 """
 from unittest.mock import Mock, patch
 
 import numpy as np
-import openqasm3
 import pytest
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
@@ -132,14 +131,14 @@ def test_ionq_provider_get_device():
             assert test_device.profile["device_id"] in [device["backend"] for device in DEVICE_DATA]
             assert test_device.profile["simulator"] is False or test_device.id == "simulator"
             assert test_device.profile["num_qubits"] in [device["qubits"] for device in DEVICE_DATA]
-            assert test_device.profile["program_spec"] == ProgramSpec(openqasm3.ast.Program)
+            assert test_device.profile["program_spec"] == ProgramSpec(str, alias="qasm2")
 
         test_device = provider.get_device("qpu.harmony")
         assert isinstance(test_device, IonQDevice)
         assert test_device.profile["device_id"] == "qpu.harmony"
         assert test_device.profile["simulator"] is False
         assert test_device.profile["num_qubits"] == 11
-        assert test_device.profile["program_spec"] == ProgramSpec(openqasm3.ast.Program)
+        assert test_device.profile["program_spec"] == ProgramSpec(str, alias="qasm2")
         assert test_device.profile["basis_gates"] == set(SUPPORTED_GATES)
 
 
@@ -180,75 +179,11 @@ def test_ionq_provider_device_unavailable():
         fake_device.status()
 
 
-def test_ionq_device_extract_gate_data():
-    """Test extracting gate data from a OpenQASM 3 program."""
-    qasm3_str = """
-OPENQASM 3.0;
-include "stdgates.inc";
-qubit[3] q;
-x q[0];
-not q[1];
-y q[0];
-z q[0];
-rx(pi / 4) q[0];
-ry(pi / 2) q[0];
-rz(3 * pi / 4) q[0];
-h q[0];
-cx q[0], q[1];
-CX q[1], q[2];
-cnot q[2], q[0];
-ccx q[0], q[1], q[2];
-toffoli q[2], q[1], q[0];
-s q[0];
-sdg q[0];
-si q[0];
-t q[0];
-tdg q[0];
-ti q[1];
-sx q[0];
-v q[1];
-sxdg q[0];
-vi q[1];
-swap q[0], q[1];
-"""
-    expected = [
-        {"gate": "x", "target": 0},
-        {"gate": "not", "target": 1},
-        {"gate": "y", "target": 0},
-        {"gate": "z", "target": 0},
-        {"gate": "rx", "target": 0, "rotation": 0.7853981633974483},
-        {"gate": "ry", "target": 0, "rotation": 1.5707963267948966},
-        {"gate": "rz", "target": 0, "rotation": 2.356194490192345},
-        {"gate": "h", "target": 0},
-        {"gate": "cnot", "control": 0, "target": 1},
-        {"gate": "cnot", "control": 1, "target": 2},
-        {"gate": "cnot", "control": 2, "target": 0},
-        {"gate": "cnot", "controls": [0, 1], "target": 2},
-        {"gate": "cnot", "controls": [2, 1], "target": 0},
-        {"gate": "s", "target": 0},
-        {"gate": "si", "target": 0},
-        {"gate": "si", "target": 0},
-        {"gate": "t", "target": 0},
-        {"gate": "ti", "target": 0},
-        {"gate": "ti", "target": 1},
-        {"gate": "v", "target": 0},
-        {"gate": "v", "target": 1},
-        {"gate": "vi", "target": 0},
-        {"gate": "vi", "target": 1},
-        {"gate": "swap", "targets": [0, 1]},
-    ]
-    qasm3_program = openqasm3.parser.parse(qasm3_str)
-    actual = IonQDevice.extract_gate_data(qasm3_program)
-
-    assert actual == expected
-
-
 def test_ionq_device_transform_run_input():
-    """Test transforming OpenQASM 3 string to supported gates + json format."""
+    """Test transforming OpenQASM 2 string to supported gates + json format."""
     qasm_input = """
-    OPENQASM 3.0;
-    include "stdgates.inc";
-    qubit[2] q;
+    OPENQASM 2.0;
+    qreg q[2];
     cry(pi/4) q[0], q[1];
     """
     expected_output = {
@@ -376,13 +311,10 @@ def test_ionq_session_cancel():
 def test_ionq_submit_fail():
     """Test submitting a job that fails."""
     circuit = """
-OPENQASM 3.0;
-include "stdgates.inc";
-
-qubit[2] q;
-
-ry(pi/4) q[0];
-"""
+    OPENQASM 2.0;
+    qreg q[2];
+    ry(pi/4) q[0];
+    """
     device = IonQDevice(
         TargetProfile(device_id="simulator", simulator=False),
         IonQSession("fake_api_key"),
