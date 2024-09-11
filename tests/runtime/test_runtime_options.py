@@ -377,3 +377,9 @@ def test_options_valid_keywords():
         assert options.debug is False
     except ValueError:
         pytest.fail("ValueError raised for valid keywords")
+
+
+def test_options_equality_type_mismatch():
+    """Test that equality check returns False for different types."""
+    options = Options(transpile=True)
+    assert options != "not_options"

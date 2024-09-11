@@ -140,7 +140,7 @@ def test_ionq_dict_instance_meta_alias():
 
 def test_ionq_dict_instance_meta_bound():
     """Test that __bound__ property returns dict."""
-    assert IonQDict.__bound__ == dict
+    assert IonQDict.__bound__ == dict  # pylint: disable=comparison-with-callable
 
 
 def test_ionq_isinstance_valid_instance():
