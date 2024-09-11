@@ -8,6 +8,8 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# pylint: disable=redefined-outer-name
+
 """
 Unit test for quantum program registry
 
@@ -18,6 +20,7 @@ import sys
 import unittest.mock
 
 import pytest
+from pyqir import BasicQisBuilder, Module, SimpleModule
 
 from qbraid.exceptions import QbraidError
 from qbraid.interface import random_circuit
@@ -261,3 +264,30 @@ def test_circuits_init():
     assert "qasm" in key_set and "qasm" not in NATIVE_REGISTRY
     assert all(key in NATIVE_REGISTRY for key in ["qasm2", "qasm3"])
     assert all(key not in key_set for key in ["qasm2", "qasm3"])
+
+
+@pytest.fixture
+def pyqir_bell() -> SimpleModule:
+    """Returns a QIR bell circuit with measurement over two qubits."""
+    bell = SimpleModule("test_qir_bell", num_qubits=2, num_results=2)
+    qis = BasicQisBuilder(bell.builder)
+
+    qis.h(bell.qubits[0])
+    qis.cx(bell.qubits[0], bell.qubits[1])
+    qis.mz(bell.qubits[0], bell.results[0])
+    qis.mz(bell.qubits[1], bell.results[1])
+
+    return bell
+
+
+@pytest.fixture
+def pyqir_spec() -> ProgramSpec:
+    """Returns a ProgramSpec for the QIR bell circuit."""
+    return ProgramSpec(Module, alias="pyqir", to_ir=lambda module: module.bitcode())
+
+
+def test_load_program_pyqir(pyqir_bell: SimpleModule, pyqir_spec: ProgramSpec):
+    """Test program spec to IR conversion for a QIR program."""
+    program_ir = pyqir_spec.to_ir(pyqir_bell)
+    assert isinstance(program_ir, bytes)
+    assert program_ir == pyqir_bell.bitcode()
