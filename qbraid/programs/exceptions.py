@@ -21,6 +21,14 @@ from qbraid.exceptions import QbraidError
 registry = LazyLoader("registry", globals(), "qbraid.programs.registry")
 
 
+class QasmError(QbraidError):
+    """For errors raised while processing OpenQASM programs."""
+
+
+class TransformError(QbraidError):
+    """Base class for errors raised during qBraid transform processes."""
+
+
 class PackageValueError(QbraidError):
     """Class for errors raised due to unsupported quantum frontend package"""
 
@@ -55,9 +63,5 @@ class ProgramTypeError(QbraidError):
         return "Unsupported quantum program type."
 
 
-class QasmError(QbraidError):
-    """For errors raised while processing OpenQASM programs."""
-
-
-class TransformError(QbraidError):
-    """Base class for errors raised during qBraid transform processes."""
+class ValidationError(ProgramTypeError):
+    """Custom exception for validation errors in program types."""

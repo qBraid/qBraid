@@ -25,9 +25,11 @@ pytket_qasm = LazyLoader("pytket_qasm", globals(), "pytket.qasm")
 if TYPE_CHECKING:
     import pytket.circuit
 
+    from qbraid.programs.typer import Qasm2StringType
+
 
 @weight(1)
-def qasm2_to_pytket(qasm: str) -> pytket.circuit.Circuit:
+def qasm2_to_pytket(qasm: Qasm2StringType) -> pytket.circuit.Circuit:
     """Returns a pytket circuit equivalent to the input OpenQASM 2 string.
 
     Args:

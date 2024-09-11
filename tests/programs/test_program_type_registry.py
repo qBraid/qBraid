@@ -273,7 +273,7 @@ def test_circuits_init():
 
 
 @pytest.fixture
-def pyqir_bell() -> SimpleModule:
+def pyqir_bell() -> Module:
     """Returns a QIR bell circuit with measurement over two qubits."""
     bell = SimpleModule("test_qir_bell", num_qubits=2, num_results=2)
     qis = BasicQisBuilder(bell.builder)
@@ -283,17 +283,17 @@ def pyqir_bell() -> SimpleModule:
     qis.mz(bell.qubits[0], bell.results[0])
     qis.mz(bell.qubits[1], bell.results[1])
 
-    return bell
+    return bell._module
 
 
 @pytest.fixture
 def pyqir_spec() -> ProgramSpec:
     """Returns a ProgramSpec for the QIR bell circuit."""
-    return ProgramSpec(Module, alias="pyqir", to_ir=lambda module: module.bitcode())
+    return ProgramSpec(Module, alias="pyqir", to_ir=lambda module: module.bitcode)
 
 
-def test_load_program_pyqir(pyqir_bell: SimpleModule, pyqir_spec: ProgramSpec):
+def test_load_program_pyqir(pyqir_bell: Module, pyqir_spec: ProgramSpec):
     """Test program spec to IR conversion for a QIR program."""
     program_ir = pyqir_spec.to_ir(pyqir_bell)
     assert isinstance(program_ir, bytes)
-    assert program_ir == pyqir_bell.bitcode()
+    assert program_ir == pyqir_bell.bitcode

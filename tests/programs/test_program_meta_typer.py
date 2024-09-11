@@ -22,11 +22,11 @@ from qbraid.programs.typer import (
     BaseQasmInstanceMeta,
     IonQDict,
     IonQDictInstanceMeta,
-    Qasm2Instance,
     Qasm2String,
-    Qasm3Instance,
+    Qasm2StringType,
     Qasm3String,
-    QasmString,
+    Qasm3StringType,
+    QasmStringType,
     ValidationError,
 )
 
@@ -50,24 +50,25 @@ invalid_qasm_string = "Some random string"
 @pytest.mark.parametrize(
     "cls, string",
     [
-        (Qasm2String, valid_qasm2_string),
-        (Qasm3String, valid_qasm3_string),
+        (Qasm2StringType, valid_qasm2_string),
+        (Qasm3StringType, valid_qasm3_string),
     ],
 )
 def test_qasm_string_valid(cls, string):
-    """Test that the Qasm2String and Qasm3String classes can be instantiated with valid strings."""
+    """Test that the Qasm2StringType and Qasm3StringType
+    classes can be instantiated with valid strings."""
     assert isinstance(cls(string), cls)
 
 
 @pytest.mark.parametrize(
     "cls, string, error",
     [
-        (Qasm2String, valid_qasm3_string, ValueError),
-        (Qasm3String, invalid_qasm_string, QasmError),
+        (Qasm2StringType, valid_qasm3_string, ValueError),
+        (Qasm3StringType, invalid_qasm_string, QasmError),
     ],
 )
 def test_qasm_string_invalid(cls, string, error):
-    """Test that the Qasm2String and Qasm3String classes raise an error
+    """Test that the Qasm2StringType and Qasm3StringType classes raise an error
     when instantiated with invalid strings."""
     with pytest.raises(error):
         cls(string)
@@ -76,8 +77,8 @@ def test_qasm_string_invalid(cls, string, error):
 @pytest.mark.parametrize(
     "meta, string",
     [
-        (Qasm2Instance, valid_qasm2_string),
-        (Qasm3Instance, valid_qasm3_string),
+        (Qasm2String, valid_qasm2_string),
+        (Qasm3String, valid_qasm3_string),
     ],
 )
 def test_isinstance_checks_valid(meta, string):
@@ -88,8 +89,8 @@ def test_isinstance_checks_valid(meta, string):
 @pytest.mark.parametrize(
     "meta, version, string",
     [
-        (Qasm2Instance, 2, valid_qasm3_string),
-        (Qasm3Instance, 3, invalid_qasm_string),
+        (Qasm2String, 2, valid_qasm3_string),
+        (Qasm3String, 3, invalid_qasm_string),
     ],
 )
 def test_isinstance_checks_invalid(meta, version, string):
@@ -101,7 +102,7 @@ def test_isinstance_checks_invalid(meta, version, string):
 def test_qasm_string_type_error():
     """Test that the QasmString class raises a TypeError when instantiated with an invalid type."""
     with pytest.raises(TypeError, match="OpenQASM strings must be initialized with a string."):
-        QasmString(123)
+        QasmStringType(123)
 
 
 def test_base_qasm_instance_meta():
@@ -125,14 +126,14 @@ def test_base_qasm_instance_meta_alias():
 
 def test_not_qasm_string():
     """Test that the isinstance function returns False when given a non-QasmString object."""
-    assert not isinstance("Not a QasmString", Qasm2Instance)
+    assert not isinstance("Not a QasmString", Qasm2String)
 
 
 @pytest.mark.parametrize(
     "qasm_instance_class, version",
     [
-        (Qasm2Instance, 2),
-        (Qasm3Instance, 3),
+        (Qasm2String, 2),
+        (Qasm3String, 3),
     ],
 )
 def test_qasm_instance_properties(qasm_instance_class, version):

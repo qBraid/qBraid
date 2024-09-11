@@ -89,13 +89,17 @@ class AzureQuantumProvider(QuantumProvider):
         content_type = target.content_type
 
         if input_data_format == InputDataFormat.MICROSOFT.value:
-            program_spec = ProgramSpec(pyqir.Module, alias="pyqir")
+            program_spec = ProgramSpec(
+                pyqir.Module, alias="pyqir", to_ir=lambda module: module.bitcode
+            )
         elif input_data_format == InputDataFormat.IONQ.value:
-            program_spec = ProgramSpec(IonQDict)
+            program_spec = ProgramSpec(IonQDict, alias="ionq", to_ir=lambda ionq_dict: ionq_dict)
         elif input_data_format == InputDataFormat.QUANTINUUM.value:
-            program_spec = ProgramSpec(str, alias="qasm2")
+            program_spec = ProgramSpec(str, alias="qasm2", to_ir=lambda qasm: qasm)
         elif input_data_format == InputDataFormat.RIGETTI.value:
-            program_spec = ProgramSpec(pyquil.Program)
+            program_spec = ProgramSpec(
+                pyquil.Program, alias="pyquil", to_ir=lambda program: program.out()
+            )
         else:
             program_spec = None
             warnings.warn(f"Unrecognized input data format: {input_data_format}")

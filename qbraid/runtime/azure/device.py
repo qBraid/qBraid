@@ -16,16 +16,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from qbraid.programs import QPROGRAM
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 
-from .io_format import InputDataFormat
 from .job import AzureQuantumJob
 
 if TYPE_CHECKING:
     import azure.quantum
 
+    import qbraid.programs
     import qbraid.runtime
 
 
@@ -60,32 +59,7 @@ class AzureQuantumDevice(QuantumDevice):
         }
         return status_map.get(status, DeviceStatus.UNAVAILABLE)
 
-    def transform(self, run_input: QPROGRAM) -> QPROGRAM:
-        """Transform the input program to the format required by the Azure device.
-
-        Args:
-            run_input (Any): The program to transform.
-
-        Returns:
-            Any: The transformed program.
-        """
-        input_data_format = self.profile.get("input_data_format")
-
-        if input_data_format == InputDataFormat.IONQ.value:
-            return run_input
-
-        if input_data_format == InputDataFormat.MICROSOFT.value:
-            return run_input.bitcode
-
-        if input_data_format == InputDataFormat.RIGETTI.value:
-            return run_input.out()
-
-        if input_data_format == InputDataFormat.QUANTINUUM.value:
-            return run_input
-
-        return run_input
-
-    def submit(self, run_input: QPROGRAM, *args, **kwargs) -> AzureQuantumJob:
+    def submit(self, run_input: qbraid.programs.QPROGRAM, *args, **kwargs) -> AzureQuantumJob:
         """Submit a job to the Azure device.
 
         Args:

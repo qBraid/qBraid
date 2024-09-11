@@ -15,18 +15,20 @@ Module containing functions to convert between OpenQASM 2 and IonQ JSON format.
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import openqasm3.ast
 
 from qbraid.passes.qasm3.compat import convert_qasm_pi_to_decimal
 from qbraid.programs.circuits.qasm import OpenQasm2Program
-from qbraid.programs.typer import IonQDictType, Qasm2String
 from qbraid.transpiler.annotations import weight
+
+if TYPE_CHECKING:
+    from qbraid.programs.typer import IonQDictType, Qasm2StringType
 
 
 @weight(1)
-def qasm2_to_ionq(qasm: Qasm2String) -> IonQDictType:
+def qasm2_to_ionq(qasm: Qasm2StringType) -> IonQDictType:
     """Returns an IonQ JSON format representation the input OpenQASM 2 string.
 
     Args:

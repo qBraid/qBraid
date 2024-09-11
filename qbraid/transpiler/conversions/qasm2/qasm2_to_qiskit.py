@@ -25,9 +25,11 @@ qiskit = LazyLoader("qiskit", globals(), "qiskit")
 if TYPE_CHECKING:
     import qiskit as qiskit_
 
+    from qbraid.programs.typer import Qasm2StringType
+
 
 @weight(1)
-def qasm2_to_qiskit(qasm: str) -> qiskit_.QuantumCircuit:
+def qasm2_to_qiskit(qasm: Qasm2StringType) -> qiskit_.QuantumCircuit:
     """Returns a Qiskit circuit equivalent to the input OpenQASM 2 string.
 
     Args:

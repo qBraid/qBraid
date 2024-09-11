@@ -18,13 +18,9 @@ from typing import Any, Optional, Type, TypeVar
 
 from openqasm3.parser import QASM3ParsingError, parse
 
-from .exceptions import ProgramTypeError, QasmError
+from .exceptions import QasmError, ValidationError
 
 IonQDictType = TypeVar("IonQDictType", bound=dict)
-
-
-class ValidationError(ProgramTypeError):
-    """Custom exception for validation errors in program types."""
 
 
 class QbraidMetaType(ABCMeta):
@@ -188,27 +184,27 @@ class BaseQasmInstanceMeta(QbraidMetaType):
             return False
 
 
-class Qasm2InstanceMeta(BaseQasmInstanceMeta):
+class Qasm2StringMeta(BaseQasmInstanceMeta):
     """Metaclass for instances representing OpenQASM 2 strings."""
 
     version = 2
 
 
-class Qasm3InstanceMeta(BaseQasmInstanceMeta):
+class Qasm3StringMeta(BaseQasmInstanceMeta):
     """Metaclass for instances representing OpenQASM 3 strings."""
 
     version = 3
 
 
-class Qasm2Instance(metaclass=Qasm2InstanceMeta):
+class Qasm2String(metaclass=Qasm2StringMeta):
     """Marker class for strings that are valid OpenQASM 2 programs."""
 
 
-class Qasm3Instance(metaclass=Qasm3InstanceMeta):
+class Qasm3String(metaclass=Qasm3StringMeta):
     """Marker class for strings that are valid OpenQASM 3 programs."""
 
 
-class QasmString(str):
+class QasmStringType(str):
     """Base class for OpenQASM string types, providing validation upon instantiation."""
 
     version: Optional[int] = None
@@ -221,13 +217,13 @@ class QasmString(str):
         return str.__new__(cls, value)
 
 
-class Qasm2String(QasmString):
+class Qasm2StringType(QasmStringType):
     """Specifically typed string for OpenQASM 2 formatted text."""
 
     version = 2
 
 
-class Qasm3String(QasmString):
+class Qasm3StringType(QasmStringType):
     """Specifically typed string for OpenQASM 3 formatted text."""
 
     version = 3

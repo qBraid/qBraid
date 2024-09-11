@@ -17,6 +17,8 @@
 Module for converting Braket circuits to Cirq circuits
 
 """
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -45,14 +47,14 @@ if TYPE_CHECKING:
     import cirq.ops as cirq_ops
 
 
-def _give_cirq_gate_name(gate: "cirq_ops.Gate", name: str, n_qubits: int) -> "cirq_ops.Gate":
+def _give_cirq_gate_name(gate: cirq_ops.Gate, name: str, n_qubits: int) -> cirq_ops.Gate:
     def _circuit_diagram_info_(args):  # pylint: disable=unused-argument
         return name, *(name,) * (n_qubits - 1)
 
     gate._circuit_diagram_info_ = _circuit_diagram_info_
 
 
-def matrix_to_cirq_gate(matrix: np.ndarray) -> "cirq_ops.MatrixGate":
+def matrix_to_cirq_gate(matrix: np.ndarray) -> cirq_ops.MatrixGate:
     """Return cirq matrix gate given unitary"""
     n_qubits = int(np.log2(len(matrix)))
     unitary_gate = cirq.MatrixGate(matrix)
@@ -71,7 +73,7 @@ def braket_gate_to_matrix(gate: braket_gates.Unitary) -> np.ndarray:
 
 
 @weight(1)
-def braket_to_cirq(circuit: BKCircuit) -> "cirq_circuits.Circuit":
+def braket_to_cirq(circuit: BKCircuit) -> cirq_circuits.Circuit:
     """Returns a Cirq circuit equivalent to the input Braket circuit.
 
     Note: The returned Cirq circuit acts on cirq.LineQubit's with indices equal
@@ -93,8 +95,8 @@ def braket_to_cirq(circuit: BKCircuit) -> "cirq_circuits.Circuit":
 
 
 def _from_braket_instruction(
-    instr: BKInstruction, qubit_mapping: "dict[int, cirq_devices.LineQubit]"
-) -> "list[cirq_ops.Operation]":
+    instr: BKInstruction, qubit_mapping: dict[int, cirq_devices.LineQubit]
+) -> list[cirq_ops.Operation]:
     """Converts the braket instruction to an equivalent Cirq operation or list
     of Cirq operations.
 
@@ -146,8 +148,8 @@ def _from_braket_instruction(
 
 
 def _from_one_qubit_braket_instruction(
-    instr: BKInstruction, qubits: "list[cirq_devices.LineQubit]"
-) -> "list[cirq_ops.Operation]":
+    instr: BKInstruction, qubits: list[cirq_devices.LineQubit]
+) -> list[cirq_ops.Operation]:
     """Converts the one-qubit Braket instruction to Cirq operation(s).
 
     Args:
@@ -225,8 +227,8 @@ def _from_one_qubit_braket_instruction(
 
 
 def _from_two_qubit_braket_instruction(
-    instr: BKInstruction, qubits: "list[cirq_devices.LineQubit]"
-) -> "list[cirq_ops.Operation]":
+    instr: BKInstruction, qubits: list[cirq_devices.LineQubit]
+) -> list[cirq_ops.Operation]:
     """Converts the two-qubit braket instruction to Cirq.
 
     Args:

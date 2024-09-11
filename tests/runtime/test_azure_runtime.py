@@ -8,7 +8,7 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint:disable=redefined-outer-name,too-many-arguments
+# pylint:disable=redefined-outer-name,too-many-arguments,too-many-lines
 
 """
 Unit tests for the Azure Quantum runtime module.
@@ -25,6 +25,7 @@ from azure.quantum import Job, JobDetails, Workspace
 from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 from azure.quantum.target.target import Target
 
+from qbraid.programs import ProgramSpec
 from qbraid.runtime import (
     DeviceActionType,
     DeviceStatus,
@@ -40,7 +41,7 @@ from qbraid.runtime.azure import (
     AzureQuantumResult,
     AzureResultBuilder,
 )
-from qbraid.runtime.azure.io_format import OutputDataFormat
+from qbraid.runtime.azure.io_format import InputDataFormat, OutputDataFormat
 
 
 @pytest.fixture
@@ -293,6 +294,55 @@ def test_build_profile_invalid(azure_provider, mock_invalid_target):
 
     assert isinstance(profile, TargetProfile)
     assert profile.program_spec is None
+
+
+@pytest.mark.parametrize(
+    "input_data_format, expected_alias, provider_id",
+    [
+        (InputDataFormat.MICROSOFT.value, "pyqir", "microsoft"),
+        (InputDataFormat.IONQ.value, "ionq", "ionq"),
+        (InputDataFormat.QUANTINUUM.value, "qasm2", "quantinuum"),
+        (InputDataFormat.RIGETTI.value, "pyquil", "rigetti"),
+    ],
+)
+def test_build_profile_input_data_formats(
+    mock_workspace, input_data_format, expected_alias, provider_id
+):
+    """Test building profiles for different input data formats."""
+    mock_target = Mock()
+    provider = AzureQuantumProvider(mock_workspace)
+
+    mock_target.input_data_format = input_data_format
+    mock_target.name = f"{provider_id}.qpu"
+    mock_target.provider_id = provider_id
+    mock_target.capability = "capability"
+    mock_target.output_data_format = "output"
+    mock_target.content_type = "content"
+
+    profile = provider._build_profile(mock_target)
+
+    assert isinstance(profile.program_spec, ProgramSpec)
+    assert profile.program_spec.alias == expected_alias
+    assert profile.input_data_format == input_data_format
+
+
+def test_build_profile_unrecognized_format(mock_workspace):
+    """Test building profile with an unrecognized input data format."""
+    mock_target = Mock()
+    input_data_format = "unrecognized.format"
+    provider = AzureQuantumProvider(mock_workspace)
+    mock_target.input_data_format = input_data_format
+    mock_target.name = "unknown.qpu"
+    mock_target.provider_id = "unknown"
+    mock_target.capability = "capability"
+    mock_target.output_data_format = "output"
+    mock_target.content_type = "content"
+
+    with pytest.warns(UserWarning, match=f"Unrecognized input data format: {input_data_format}"):
+        profile = provider._build_profile(mock_target)
+
+    assert profile.program_spec is None
+    assert profile.input_data_format == input_data_format
 
 
 def test_azure_provider_get_devices(azure_provider, mock_workspace, mock_target):
@@ -981,3 +1031,5 @@ def test_build_result_from_output_format(azure_result_builder, mock_azure_job, o
         azure_result_builder._format_quantinuum_results.assert_called_once()
     elif output_data_format == OutputDataFormat.RIGETTI.value:
         azure_result_builder._format_rigetti_results.assert_called_once()
+    else:
+        pytest.fail(f"Unexpected output data format: {output_data_format}")

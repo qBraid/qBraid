@@ -12,6 +12,8 @@
 Module defining Qiskit conversion extras.
 
 """
+from __future__ import annotations
+
 import warnings
 from typing import TYPE_CHECKING
 
@@ -29,9 +31,7 @@ if TYPE_CHECKING:
 
 
 @requires_extras("qiskit_braket_provider")
-def qiskit_to_braket(
-    circuit: "qiskit.circuit.QuantumCircuit", **kwargs
-) -> "braket.circuits.Circuit":
+def qiskit_to_braket(circuit: qiskit.circuit.QuantumCircuit, **kwargs) -> braket.circuits.Circuit:
     """Return a Braket quantum circuit from a Qiskit quantum circuit.
 
     Args:
@@ -51,7 +51,7 @@ def qiskit_to_braket(
 
 
 @requires_extras("qiskit_qir")
-def qiskit_to_pyqir(circuit: "qiskit.circuit.QuantumCircuit") -> "pyqir.Module":
+def qiskit_to_pyqir(circuit: qiskit.circuit.QuantumCircuit) -> pyqir.Module:
     """Return a PyQIR module from a Qiskit quantum circuit.
 
     Args:
@@ -61,5 +61,5 @@ def qiskit_to_pyqir(circuit: "qiskit.circuit.QuantumCircuit") -> "pyqir.Module":
         Module: PyQIR module
     """
     # tuple of module and list of entry points
-    module, _ = qiskit_qir.to_qir_module(circuit)
+    module, _ = qiskit_qir.to_qir_module(circuit, record_output=False)
     return module

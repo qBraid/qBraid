@@ -25,9 +25,11 @@ qibo = LazyLoader("qibo", globals(), "qibo")
 if TYPE_CHECKING:
     import qibo as qibo_  # type: ignore
 
+    from qbraid.programs.typer import Qasm2StringType
+
 
 @requires_extras("qibo")
-def qasm2_to_qibo(qasm: str) -> qibo_.Circuit:
+def qasm2_to_qibo(qasm: Qasm2StringType) -> qibo_.Circuit:
     """Returns a qibo.Circuit equivalent to the input OpenQASM 2 circuit.
 
     Args:

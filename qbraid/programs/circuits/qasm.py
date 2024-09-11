@@ -42,7 +42,7 @@ from qbraid_core._import import LazyLoader
 
 from qbraid.passes.qasm3 import normalize_qasm_gate_params, rebase
 from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.typer import Qasm2Instance, Qasm2String, Qasm3Instance, Qasm3String
+from qbraid.programs.typer import Qasm2String, Qasm2StringType, Qasm3String, Qasm3StringType
 
 from ._model import GateModelProgram
 
@@ -192,9 +192,9 @@ def depth(qasm_statements: list[Statement], counts: dict[str, int]) -> dict[str,
 class OpenQasm2Program(GateModelProgram):
     """Wrapper class for OpenQASM 2 strings."""
 
-    def __init__(self, program: Qasm2String):
+    def __init__(self, program: Qasm2StringType):
         super().__init__(program)
-        if not isinstance(program, Qasm2Instance):
+        if not isinstance(program, Qasm2String):
             raise ProgramTypeError(message=f"Expected 'str' object, got '{type(program)}'.")
 
     def parsed(self) -> Program:
@@ -273,9 +273,9 @@ def auto_reparse(func):
 class OpenQasm3Program(GateModelProgram):
     """Wrapper class for OpenQASM 3 strings."""
 
-    def __init__(self, program: Qasm3String):
+    def __init__(self, program: Qasm3StringType):
         super().__init__(program)
-        if not isinstance(program, Qasm3Instance):
+        if not isinstance(program, Qasm3String):
             raise ProgramTypeError(message=f"Expected 'str' object, got '{type(program)}'.")
         self._program: str = program
         self._parse_state()

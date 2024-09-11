@@ -230,7 +230,13 @@ class QuantumDevice(ABC):
         Program input type should match output type.
 
         """
-        return run_input
+        if self._target_spec is None:
+            print("self._target_spec is None")
+            return run_input
+
+        print("calling to_ir")
+        run_input_ir = self._target_spec.to_ir(run_input)
+        return run_input_ir
 
     def apply_runtime_profile(
         self, run_input: qbraid.programs.QPROGRAM

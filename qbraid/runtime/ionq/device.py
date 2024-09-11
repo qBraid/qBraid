@@ -20,7 +20,7 @@ import json
 from typing import TYPE_CHECKING, Any, Union
 
 from qbraid.programs.circuits.qasm import OpenQasm2Program
-from qbraid.programs.typer import Qasm2String
+from qbraid.programs.typer import Qasm2StringType
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.transpiler.conversions.qasm2 import qasm2_to_ionq
@@ -64,7 +64,7 @@ class IonQDevice(QuantumDevice):
 
         raise ValueError(f"Unrecognized device status: {status}")
 
-    def transform(self, run_input: Qasm2String) -> dict[str, Union[int, list[dict[str, Any]]]]:
+    def transform(self, run_input: Qasm2StringType) -> dict[str, Union[int, list[dict[str, Any]]]]:
         """Transform the input to the IonQ device."""
         program = OpenQasm2Program(run_input)
         program.transform(device=self)

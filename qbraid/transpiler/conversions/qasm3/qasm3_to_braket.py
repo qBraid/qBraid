@@ -12,6 +12,8 @@
 Module for converting Braket circuits to/from OpenQASM 3
 
 """
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
@@ -21,7 +23,7 @@ from qbraid.passes.qasm3.compat import (
     remove_stdgates_include,
     replace_gate_name,
 )
-from qbraid.programs import QasmError
+from qbraid.programs.exceptions import QasmError
 from qbraid.transpiler.annotations import weight
 
 braket_circuits = LazyLoader("braket_circuits", globals(), "braket.circuits")
@@ -29,6 +31,8 @@ braket_openqasm = LazyLoader("braket_openqasm", globals(), "braket.ir.openqasm")
 
 if TYPE_CHECKING:
     import braket.circuits
+
+    from qbraid.programs.typer import Qasm3StringType
 
 
 def transform_notation(qasm3: str) -> str:
@@ -55,11 +59,11 @@ def transform_notation(qasm3: str) -> str:
 
 
 @weight(1)
-def qasm3_to_braket(qasm3_str: str) -> "braket.circuits.Circuit":
+def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
     """Converts an OpenQASM 3.0 string to a ``braket.circuits.Circuit``.
 
     Args:
-        qasm3_str: OpenQASM 3 string
+        qasm: OpenQASM 3 string
 
     Returns:
         The Amazon Braket circuit equivalent to the input OpenQASM 3.0 string
@@ -68,10 +72,10 @@ def qasm3_to_braket(qasm3_str: str) -> "braket.circuits.Circuit":
         CircuitConversionError: If qasm to braket conversion fails
 
     """
-    qasm3_str = transform_notation(qasm3_str)
+    qasm = transform_notation(qasm)
 
     try:
-        program = braket_openqasm.Program(source=qasm3_str)
+        program = braket_openqasm.Program(source=qasm)
         return braket_circuits.Circuit.from_ir(source=program.source, inputs=program.inputs)
     except Exception as err:
         raise QasmError("Error converting qasm3 string to braket circuit") from err

@@ -13,6 +13,8 @@ Module containing function to convert from Cirq's circuit
 representation to pyQuil's circuit representation (Quil programs).
 
 """
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from cirq import LineQubit, QubitOrder
@@ -34,7 +36,7 @@ if TYPE_CHECKING:
 
 
 @weight(0.74)
-def cirq_to_pyquil(circuit: "cirq.circuits.Circuit") -> "pyquil_.Program":
+def cirq_to_pyquil(circuit: cirq.circuits.Circuit) -> pyquil_.Program:
     """Returns a pyQuil Program equivalent to the input Cirq circuit.
 
     Args:

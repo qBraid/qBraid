@@ -12,6 +12,7 @@
 Module containing OpenQASM 3 conversion extras.
 
 """
+from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
@@ -24,9 +25,11 @@ qbraid_qir = LazyLoader("qbraid_qir", globals(), "qbraid_qir")
 if TYPE_CHECKING:
     import pyqir
 
+    from qbraid.programs.typer import Qasm3StringType
+
 
 @requires_extras("qbraid_qir")
-def qasm3_to_pyqir(program: str) -> "pyqir.Module":
+def qasm3_to_pyqir(program: Qasm3StringType) -> pyqir.Module:
     """Returns a PyQIR module equivalent to the input OpenQASM 3 program.
 
     Args:

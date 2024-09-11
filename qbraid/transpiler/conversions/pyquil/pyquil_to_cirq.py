@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 
 @weight(1)
-def pyquil_to_cirq(program: "pyquil.quil.Program") -> cirq.circuits.Circuit:
+def pyquil_to_cirq(program: pyquil.quil.Program) -> cirq.circuits.Circuit:
     """Returns a Cirq circuit equivalent to the input pyQuil Program.
 
     Args:
