@@ -25,7 +25,7 @@ from azure.quantum import Job, JobDetails, Workspace
 from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 from azure.quantum.target.target import Target
 
-from qbraid.programs import ProgramSpec
+from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
 from qbraid.runtime import (
     DeviceActionType,
     DeviceStatus,
@@ -318,6 +318,9 @@ def test_build_profile_input_data_formats(
     mock_target.capability = "capability"
     mock_target.output_data_format = "output"
     mock_target.content_type = "content"
+
+    if expected_alias not in QPROGRAM_REGISTRY:
+        pytest.skip(f"Required dependency not installed for '{expected_alias}' program type.")
 
     profile = provider._build_profile(mock_target)
 
