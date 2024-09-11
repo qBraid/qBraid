@@ -573,5 +573,9 @@ def pyqir_module() -> Module:
 
 def test_transform_to_ir_from_spec(mock_basic_device: MockDevice, pyqir_module: Module):
     """Test transforming to run input to given IR from target profile program spec."""
-    run_input_ir = mock_basic_device.transform(pyqir_module)
-    assert isinstance(run_input_ir, bytes)
+    run_input_transformed = mock_basic_device.transform(pyqir_module)
+    assert isinstance(run_input_transformed, bytes)
+
+    mock_basic_device._target_spec = None
+    run_input_transformed = mock_basic_device.transform(pyqir_module)
+    assert isinstance(run_input_transformed, Module)
