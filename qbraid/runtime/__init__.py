@@ -47,8 +47,7 @@ Classes
 	QuantumDevice
 	QuantumJob
 	QuantumProvider
-	QuantumJobResult
-	GateModelJobResult
+	GateModelResultBuilder
 
 Exceptions
 ------------
@@ -81,7 +80,7 @@ from .native import *
 from .options import Options
 from .profile import TargetProfile
 from .provider import QuantumProvider
-from .result import GateModelJobResult, QuantumJobResult
+from .result import GateModelResultBuilder
 
 __all__ = [
     "Session",
@@ -98,8 +97,7 @@ __all__ = [
     "TargetProfile",
     "QuantumJob",
     "QuantumProvider",
-    "GateModelJobResult",
-    "QuantumJobResult",
+    "GateModelResultBuilder",
     "Options",
     "NoiseModel",
 ]

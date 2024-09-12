@@ -14,9 +14,9 @@ Unit tests for retrieving and post-processing experimental results.
 """
 import pytest
 
-from qbraid.runtime.native.result import ExperimentResult, QbraidJobResult
+from qbraid.runtime.native.result_builder import ExperimentResult, QbraidGateModelResultBuilder
 from qbraid.runtime.result import (
-    GateModelJobResult,
+    GateModelResultBuilder,
     normalize_batch_bit_lengths,
     normalize_bit_lengths,
 )
@@ -47,7 +47,7 @@ from qbraid.runtime.result import (
 )
 def test_format_counts(counts_raw, expected_out, include_zero_values):
     """Test formatting of raw measurement counts."""
-    counts_out = GateModelJobResult.format_counts(
+    counts_out = GateModelResultBuilder.format_counts(
         counts_raw, include_zero_values=include_zero_values
     )
     assert counts_out == expected_out  # check equivalance
@@ -89,12 +89,8 @@ def test_normalize_single_dict():
     assert normalize_bit_lengths(measurements) == expected
 
 
-class MockBatchResult(GateModelJobResult):
+class MockBatchResult(GateModelResultBuilder):
     """Mock batch result for testing."""
-
-    def measurements(self):
-        """Return measurements as list."""
-        raise NotImplementedError
 
     def get_counts(self):
         """Returns raw histogram data of the run."""
@@ -103,21 +99,13 @@ class MockBatchResult(GateModelJobResult):
 
 def test_batch_measurement_counts():
     """Test batch measurement counts."""
-    result = MockBatchResult(None)
+    result = MockBatchResult()
     counts = result.measurement_counts(include_zero_values=False)
     expected = [{"0": 550}, {"0": 550, "1": 474}]
     assert counts == expected
 
 
-def test_get_counts_raises_for_no_measurements():
-    """Test that get_counts raises an error when no measurements are available."""
-    experiment = ExperimentResult({})
-    result = QbraidJobResult("device_id", "job_id", True, experiment)
-    with pytest.raises(ValueError):
-        result.get_counts()
-
-
-class MockQbraidResult(QbraidJobResult):
+class MockQbraidResult(QbraidGateModelResultBuilder):
     """ "Mock Qbraid result for testing."""
 
     def __init__(self, device_id, job_id, success, result):
@@ -128,14 +116,14 @@ class MockQbraidResult(QbraidJobResult):
 
 def test_decimal_get_counts():
     """Test decimal raw counts."""
-    experiment = ExperimentResult({})
+    experiment = ExperimentResult({"10": 2})
     result = MockQbraidResult("device_id", "job_id", True, experiment)
     counts = result.get_counts(decimal=True)
     expected = {2: 2}
     assert counts == expected
 
 
-class CustomResult(GateModelJobResult):
+class CustomResult(GateModelResultBuilder):
     """Custom result for testing."""
 
     def get_counts(self):
@@ -145,6 +133,5 @@ class CustomResult(GateModelJobResult):
 
 def test_default_measurements_none():
     """Test default measurements."""
-    result = CustomResult("any")
-    assert result._result == "any"
+    result = CustomResult()
     assert result.measurements() is None

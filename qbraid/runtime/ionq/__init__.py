@@ -23,7 +23,7 @@ Classes
 	IonQProvider
 	IonQDevice
 	IonQJob
-	IonQJobResult
+	IonQGateModelResultBuilder
 
 Exceptions
 -----------
@@ -37,6 +37,13 @@ Exceptions
 from .device import IonQDevice
 from .job import IonQJob, IonQJobError
 from .provider import IonQProvider, IonQSession
-from .result import IonQJobResult
+from .result_builder import IonQGateModelResultBuilder
 
-__all__ = ["IonQDevice", "IonQProvider", "IonQSession", "IonQJob", "IonQJobResult", "IonQJobError"]
+__all__ = [
+    "IonQDevice",
+    "IonQProvider",
+    "IonQSession",
+    "IonQJob",
+    "IonQGateModelResultBuilder",
+    "IonQJobError",
+]

@@ -29,7 +29,7 @@ from qbraid_core._import import LazyLoader
 from qiskit import QuantumCircuit
 
 from qbraid.runtime import DeviceStatus, JobStatus
-from qbraid.runtime.azure import AzureQuantumProvider, AzureQuantumResult
+from qbraid.runtime.azure import AzureGateModelResultBuilder, AzureQuantumProvider
 from qbraid.transpiler.conversions.qiskit import qiskit_to_pyqir
 
 pyquil = LazyLoader("pyquil", globals(), "pyquil")
@@ -105,7 +105,7 @@ def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
-    assert isinstance(result, AzureQuantumResult)
+    assert isinstance(result, AzureGateModelResultBuilder)
     assert result.measurement_counts() == {"000": 100}
 
 
@@ -129,7 +129,7 @@ def test_submit_json_to_ionq(provider: AzureQuantumProvider):
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
-    assert isinstance(result, AzureQuantumResult)
+    assert isinstance(result, AzureGateModelResultBuilder)
     assert result.measurement_counts() == {"000": 50, "111": 50}
 
 
@@ -219,5 +219,5 @@ def test_submit_quil_to_rigetti(
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
-    assert isinstance(result, AzureQuantumResult)
+    assert isinstance(result, AzureGateModelResultBuilder)
     assert result.measurement_counts() == {"00": 60, "11": 40}

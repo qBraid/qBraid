@@ -23,7 +23,7 @@ Classes
 	AzureQuantumDevice
 	AzureQuantumJob
 	AzureResultBuilder
-	AzureQuantumResult
+	AzureGateModelResultBuilder
 	InputDataFormat
 	OutputDataFormat
 
@@ -32,15 +32,14 @@ from .device import AzureQuantumDevice
 from .io_format import InputDataFormat, OutputDataFormat
 from .job import AzureQuantumJob
 from .provider import AzureQuantumProvider
-from .result import AzureQuantumResult
-from .result_builder import AzureResultBuilder
+from .result_builder import AzureGateModelResultBuilder, AzureResultBuilder
 
 __all__ = [
     "AzureQuantumProvider",
     "AzureQuantumDevice",
     "AzureQuantumJob",
     "AzureResultBuilder",
-    "AzureQuantumResult",
+    "AzureGateModelResultBuilder",
     "InputDataFormat",
     "OutputDataFormat",
 ]

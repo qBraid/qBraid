@@ -16,13 +16,18 @@ Unit tests for IonQProvider class
 """
 from unittest.mock import Mock, patch
 
-import numpy as np
 import pytest
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
 from qbraid.runtime import TargetProfile
 from qbraid.runtime.enums import DeviceStatus, JobStatus
-from qbraid.runtime.ionq import IonQDevice, IonQJob, IonQJobResult, IonQProvider, IonQSession
+from qbraid.runtime.ionq import (
+    IonQDevice,
+    IonQGateModelResultBuilder,
+    IonQJob,
+    IonQProvider,
+    IonQSession,
+)
 from qbraid.runtime.ionq.job import IonQJobError
 from qbraid.runtime.ionq.provider import SUPPORTED_GATES
 
@@ -246,8 +251,8 @@ def test_ionq_device_run_submit_job(mock_post, mock_get, circuit):
     assert job_metadata["status"] == JobStatus.COMPLETED
 
     res = job.result()
-    assert isinstance(res, IonQJobResult)
-    np.testing.assert_array_equal(res.measurements(), np.array([[0, 0], [0, 1]]))
+    assert isinstance(res, IonQGateModelResultBuilder)
+    assert res.measurement_counts() == {"00": 1, "01": 1}
 
 
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)

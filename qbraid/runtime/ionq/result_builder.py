@@ -14,26 +14,15 @@ Module defining IonQ result class
 """
 from typing import Any, Optional
 
-import numpy as np
-
-from qbraid.runtime.result import GateModelJobResult, normalize_bit_lengths
+from qbraid.runtime.result import GateModelResultBuilder, normalize_bit_lengths
 
 
-class IonQJobResult(GateModelJobResult):
+class IonQGateModelResultBuilder(GateModelResultBuilder):
     """IonQ result class."""
 
     def __init__(self, result: dict[str, Any]):
-        super().__init__(result)
+        self._result = result
         self._counts = None
-        self._measurements = None
-
-    def measurements(self) -> np.ndarray:
-        """Return the measurements as a 2D numpy array."""
-        if self._measurements is None:
-            counts = self.get_counts()
-            if counts:
-                self._measurements = self.counts_to_measurements(counts)
-        return self._measurements
 
     def get_counts(self) -> dict[str, int]:
         """Return the raw counts of the run."""

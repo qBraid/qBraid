@@ -35,10 +35,10 @@ from qbraid.runtime import (
     TargetProfile,
 )
 from qbraid.runtime.azure import (
+    AzureGateModelResultBuilder,
     AzureQuantumDevice,
     AzureQuantumJob,
     AzureQuantumProvider,
-    AzureQuantumResult,
     AzureResultBuilder,
 )
 from qbraid.runtime.azure.io_format import InputDataFormat, OutputDataFormat
@@ -246,9 +246,9 @@ def azure_result_builder(mock_azure_job):
 
 @pytest.fixture
 def azure_result():
-    """Return an AzureQuantumResult instance."""
+    """Return an AzureGateModelResultBuilder instance."""
     result_data = {"meas": ["00", "01", "00", "10", "00", "01"], "other_data": [1, 2, 3]}
-    return AzureQuantumResult(result_data)
+    return AzureGateModelResultBuilder(result_data)
 
 
 def test_azure_provider_init_with_credential():
@@ -523,7 +523,7 @@ def mock_result_builder(mock_job_id) -> AzureResultBuilder:
 
 
 @pytest.fixture
-def mock_result(mock_job_id) -> AzureQuantumResult:
+def mock_result(mock_job_id) -> AzureGateModelResultBuilder:
     """Create a mock result data."""
     data = {
         "results": [
@@ -543,7 +543,7 @@ def mock_result(mock_job_id) -> AzureQuantumResult:
         "success": True,
         "error_data": None,
     }
-    return AzureQuantumResult(data)
+    return AzureGateModelResultBuilder(data)
 
 
 class DowloadDataMock:
@@ -685,12 +685,10 @@ def test_qir_to_qbraid_bitstring(input_data, expected_output):
     assert AzureResultBuilder._qir_to_qbraid_bitstring(input_data) == expected_output
 
 
-def test_azure_quantum_result(mock_result: AzureQuantumResult):
+def test_azure_quantum_result(mock_result: AzureGateModelResultBuilder):
     """Test Azure Quantum Job result methods."""
-    measurements = mock_result.measurements()
     raw_counts = mock_result.get_counts()
     formatted_counts = mock_result.measurement_counts()
-    assert measurements.shape == (100, 3)
     assert raw_counts == formatted_counts == {"000": 50, "111": 50}
 
 
@@ -995,7 +993,7 @@ def test_result_builder_failed_job(mock_job_id):
     mock_job.details.id = mock_job_id
     builder = AzureResultBuilder(azure_job=mock_job)
     result = builder.result()
-    assert isinstance(result, AzureQuantumResult)
+    assert isinstance(result, AzureGateModelResultBuilder)
 
 
 @pytest.mark.parametrize(

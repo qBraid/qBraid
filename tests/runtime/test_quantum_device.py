@@ -11,7 +11,8 @@
 # pylint: disable=redefined-outer-name,unused-argument
 
 """
-Unit tests for QbraidDevice, QbraidJob, and QbraidJobResult classes using the qbraid_qir_simulator
+Unit tests for QbraidDevice, QbraidJob, and QbraidGateModelResultBuilder
+classes using the qbraid_qir_simulator
 
 """
 import logging
@@ -33,8 +34,8 @@ from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import (
     ExperimentResult,
     QbraidDevice,
+    QbraidGateModelResultBuilder,
     QbraidJob,
-    QbraidJobResult,
     QbraidProvider,
 )
 from qbraid.transpiler import CircuitConversionError, Conversion, ConversionGraph, ConversionScheme
@@ -270,9 +271,9 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert all(isinstance(job, QbraidJob) for job in batch_job)
 
     result = job.result()
-    assert isinstance(result, QbraidJobResult)
+    assert isinstance(result, QbraidGateModelResultBuilder)
     assert isinstance(result.result, ExperimentResult)
-    assert repr(result).startswith("QbraidJobResult")
+    assert repr(result).startswith("QbraidGateModelResultBuilder")
     assert result.success
 
     counts = result.measurement_counts()
@@ -285,7 +286,8 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert metadata["num_qubits"] == num_qubits
     assert isinstance(metadata["execution_duration"], int)
 
-    measurements = result.measurements()
+    raw_counts = result.result.measurement_counts
+    measurements = result.counts_to_measurements(raw_counts)
     assert _is_uniform_comput_basis(measurements)
 
 

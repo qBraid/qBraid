@@ -22,7 +22,7 @@ from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
 
-from .result import IonQJobResult
+from .result_builder import IonQGateModelResultBuilder
 
 if TYPE_CHECKING:
     import qbraid.runtime.ionq.provider
@@ -78,4 +78,4 @@ class IonQJob(QuantumJob):
         results_endpoint = results_url.split("v0.3")[-1]
         job_data["probabilities"] = self.session.get(results_endpoint).json()
         job_data["shots"] = job_data.get("shots", self._cache_metadata.get("shots"))
-        return IonQJobResult(job_data)
+        return IonQGateModelResultBuilder(job_data)

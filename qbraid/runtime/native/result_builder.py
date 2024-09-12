@@ -17,7 +17,7 @@ from typing import Any
 
 import numpy as np
 
-from qbraid.runtime.result import GateModelJobResult
+from qbraid.runtime.result import GateModelResultBuilder
 
 
 @dataclass
@@ -43,41 +43,29 @@ class ExperimentResult:
         )
 
 
-class QbraidJobResult(GateModelJobResult):
+class QbraidGateModelResultBuilder(GateModelResultBuilder):
     """Class to represent the results of a quantum circuit simulation."""
 
     def __init__(self, device_id: str, job_id: str, success: bool, result: ExperimentResult):
-        """Create a new Result object."""
-        super().__init__()
+        """Create a new result builder object."""
         self.device_id = device_id
         self.job_id = job_id
         self.success = success
         self.result = result
         self._cached_histogram = None
         self._cached_metadata = None
-        self._measurements = None
 
     def __repr__(self):
         """Return a string representation of the Result object."""
         return (
-            f"QbraidJobResult(device_id='{self.device_id}', job_id='{self.job_id}', "
+            f"QbraidGateModelResultBuilder(device_id='{self.device_id}', job_id='{self.job_id}', "
             f"success={self.success})"
         )
 
-    def measurements(self):
-        """Return the measurement results 2D numpy array."""
-        if self._measurements is None:
-            counts = self.result.measurement_counts
-            if counts:
-                self._measurements = self.counts_to_measurements(counts)
-        return self._measurements
-
     def get_counts(self, decimal: bool = False):
         """Returns raw histogram data of the run"""
-        measurements = self.measurements()
-        if measurements is None:
-            raise ValueError("No measurement data available.")
-
+        counts_raw = self.result.measurement_counts
+        measurements = self.counts_to_measurements(counts_raw)
         counts = self._array_to_histogram(measurements)
 
         if decimal is True:
@@ -120,12 +108,13 @@ class QbraidJobResult(GateModelJobResult):
     def metadata(self) -> dict[str, int]:
         """Return metadata about the measurement results."""
         if self._cached_metadata is None:
-            num_shots, num_qubits = self.measurements().shape
+            raw_counts = self.result.measurement_counts
+            measurements = self.counts_to_measurements(raw_counts)
+            num_shots, num_qubits = measurements.shape
             self._cached_metadata = {
                 "num_shots": num_shots,
                 "num_qubits": num_qubits,
                 "execution_duration": self.result.execution_duration,
-                "measurements": self.measurements(),
                 "measurement_counts": self.measurement_counts(),
                 "measurement_probabilities": self.measurement_probabilities(),
             }

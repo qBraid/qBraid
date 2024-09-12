@@ -22,12 +22,12 @@ Classes
 	OQCDevice
 	OQCJob
 	OQCProvider
-	OQCJobResult
+	OQCGateModelResultBuilder
 
 """
 from .device import OQCDevice
 from .job import OQCJob
 from .provider import OQCProvider
-from .result import OQCJobResult
+from .result_builder import OQCGateModelResultBuilder
 
-__all__ = ["OQCDevice", "OQCJob", "OQCProvider", "OQCJobResult"]
+__all__ = ["OQCDevice", "OQCJob", "OQCProvider", "OQCGateModelResultBuilder"]

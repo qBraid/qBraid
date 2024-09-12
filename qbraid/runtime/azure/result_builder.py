@@ -32,12 +32,23 @@ import numpy as np
 from azure.quantum import Job
 from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 
-from qbraid.runtime.ionq.result import IonQJobResult
+from qbraid.runtime.ionq.result_builder import IonQGateModelResultBuilder
+from qbraid.runtime.result import GateModelResultBuilder
 
 from .io_format import OutputDataFormat
-from .result import AzureQuantumResult
 
 logger = logging.getLogger(__name__)
+
+
+class AzureGateModelResultBuilder(GateModelResultBuilder):
+    """Azure result class."""
+
+    def __init__(self, result: dict[str, Any]):
+        self._result = result
+
+    def get_counts(self) -> dict[str, int]:
+        """Return the raw counts from the result data."""
+        return self._result["results"][0]["data"]["counts"]
 
 
 class AzureResultBuilder:
@@ -81,7 +92,7 @@ class AzureResultBuilder:
 
     def result(
         self, timeout: Optional[int] = None, sampler_seed: Optional[int] = None
-    ) -> Union[AzureQuantumResult, MicrosoftEstimatorResult]:
+    ) -> Union[AzureGateModelResultBuilder, MicrosoftEstimatorResult]:
         """Return the results of the job."""
         self.job.wait_until_completed(timeout_secs=timeout)
 
@@ -103,7 +114,7 @@ class AzureResultBuilder:
 
         if self.job.details.output_data_format == OutputDataFormat.RESOURCE_ESTIMATOR.value:
             return self.make_estimator_result(result_dict)
-        return AzureQuantumResult(result_dict)
+        return AzureGateModelResultBuilder(result_dict)
 
     def _format_results(
         self, sampler_seed: Optional[int] = None
@@ -182,7 +193,7 @@ class AzureResultBuilder:
             "shots": shots,
             "probabilities": az_result["histogram"],
         }
-        result = IonQJobResult(data)
+        result = IonQGateModelResultBuilder(data)
         counts = result.measurement_counts()
         total_count = sum(counts.values())
         probabilities = {key: value / total_count for key, value in counts.items()}

@@ -43,7 +43,7 @@ from qbraid.programs import ProgramSpec
 from qbraid.runtime.braket.device import BraketDevice
 from qbraid.runtime.braket.job import BraketQuantumTask
 from qbraid.runtime.braket.provider import BraketProvider
-from qbraid.runtime.braket.result import BraketAhsJobResult, ResultDecodingError
+from qbraid.runtime.braket.result_builder import BraketAhsResultBuilder, ResultDecodingError
 from qbraid.runtime.enums import DeviceActionType, DeviceStatus
 from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
 from qbraid.runtime.profile import TargetProfile
@@ -502,14 +502,14 @@ def test_get_counts_no_measurements():
     """Test getting counts with no measurements."""
     mock_result = MagicMock()
     mock_result.measurements = []
-    job_result = BraketAhsJobResult(mock_result)
+    job_result = BraketAhsResultBuilder(mock_result)
     counts = job_result.get_counts()
     assert counts is None
 
 
 def test_get_counts(ahs_result):
     """Test getting counts from an AHS job result."""
-    result = BraketAhsJobResult(ahs_result)
+    result = BraketAhsResultBuilder(ahs_result)
     counts = result.get_counts()
     expected_counts = {"rrrgeggrrgr": 1, "grggrgrrrrg": 1}
     assert counts == expected_counts
@@ -517,15 +517,16 @@ def test_get_counts(ahs_result):
 
 def test_get_counts_error():
     """Test getting counts from an AHS job result."""
-    with patch("qbraid.runtime.braket.result.BraketAhsJobResult.measurements") as mock_measurements:
+    with patch(
+        "qbraid.runtime.braket.result_builder.BraketAhsResultBuilder.measurements"
+    ) as mock_measurements:
         mock_measurement = Mock()
         mock_measurement.status.name = "SUCCESS"
         del mock_measurement.pre_sequence
         mock_measurement.post_sequence = [0]
 
         mock_measurements.return_value = [mock_measurement]
-        result = BraketAhsJobResult()
-        result._result = Mock()
+        result = BraketAhsResultBuilder(Mock())
 
         with pytest.raises(ResultDecodingError):
             result.get_counts()

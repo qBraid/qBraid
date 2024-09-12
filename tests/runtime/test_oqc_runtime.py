@@ -19,7 +19,6 @@ import json
 import logging
 from unittest.mock import Mock, patch
 
-import numpy as np
 import pytest
 
 logger = logging.getLogger(__name__)
@@ -31,7 +30,7 @@ try:
     from qbraid.runtime import Options, TargetProfile
     from qbraid.runtime.enums import DeviceActionType, DeviceStatus, JobStatus
     from qbraid.runtime.exceptions import ResourceNotFoundError
-    from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCJobResult, OQCProvider
+    from qbraid.runtime.oqc import OQCDevice, OQCGateModelResultBuilder, OQCJob, OQCProvider
     from qbraid.transpiler import ConversionScheme
 
     FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
@@ -272,8 +271,8 @@ def test_run_fake_job(circuit, oqc_device):
     assert isinstance(job.metadata(), dict)
     assert isinstance(job.get_errors(), (str, type(None)))
     res = job.result()
-    assert isinstance(res, OQCJobResult)
-    assert np.array_equal(res.measurements(), np.array([[0], [1]]))
+    assert isinstance(res, OQCGateModelResultBuilder)
+    assert res.measurement_counts() == {"0": 1, "1": 1}
 
     with pytest.raises(ResourceNotFoundError):
         job.result(none=True)

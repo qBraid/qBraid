@@ -23,7 +23,7 @@ from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 
-from .result import ExperimentResult, QbraidJobResult
+from .result_builder import ExperimentResult, QbraidGateModelResultBuilder
 
 if TYPE_CHECKING:
     import qbraid_core.services.quantum
@@ -91,11 +91,11 @@ class QbraidJob(QuantumJob):
 
         self.client.cancel_job(self.id)
 
-    def result(self) -> qbraid.runtime.GateModelJobResult:
+    def result(self) -> qbraid.runtime.GateModelResultBuilder:
         """Return the results of the job."""
         self.wait_for_final_state()
         job_data = self.client.get_job(self.id)
         device_id: str = job_data.get("qbraidDeviceId")
         success: bool = job_data.get("status") == "COMPLETED"
         result = ExperimentResult.from_result(job_data)
-        return QbraidJobResult(device_id, self.id, success, result)
+        return QbraidGateModelResultBuilder(device_id, self.id, success, result)

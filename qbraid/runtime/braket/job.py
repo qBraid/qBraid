@@ -25,7 +25,7 @@ from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 
-from .result import BraketAhsJobResult, BraketGateModelJobResult
+from .result_builder import BraketAhsResultBuilder, BraketGateModelResultBuilder
 from .tracker import get_quantum_task_cost
 
 logger = logging.getLogger(__name__)
@@ -76,7 +76,7 @@ class BraketQuantumTask(QuantumJob):
                 "Queue visibility is only available for amazon-braket-sdk>=1.56.0"
             ) from err
 
-    def result(self) -> Union[BraketGateModelJobResult, BraketAhsJobResult]:
+    def result(self) -> Union[BraketGateModelResultBuilder, BraketAhsResultBuilder]:
         """
         Return the results of the job. Raises a RuntimeError if the job is not in a terminal state.
         """
@@ -86,8 +86,8 @@ class BraketQuantumTask(QuantumJob):
         result = self._task.result()
 
         result_class_mapping = {
-            GateModelQuantumTaskResult: BraketGateModelJobResult,
-            AnalogHamiltonianSimulationQuantumTaskResult: BraketAhsJobResult,
+            GateModelQuantumTaskResult: BraketGateModelResultBuilder,
+            AnalogHamiltonianSimulationQuantumTaskResult: BraketAhsResultBuilder,
         }
         result_class = type(result)
         if result_class in result_class_mapping:

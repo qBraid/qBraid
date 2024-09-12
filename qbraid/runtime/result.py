@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining abstract GateModelJobResult Class
+Module defining abstract GateModelResultBuilder Class
 
 """
 from abc import ABC, abstractmethod
@@ -62,19 +62,7 @@ def normalize_bit_lengths(measurement: dict[str, int]) -> dict[str, int]:
     return normalized_list[0] if normalized_list else measurement
 
 
-class QuantumJobResult:
-    """Result of a quantum job.
-
-    Args:
-        result (optional, Any): Result data
-
-    """
-
-    def __init__(self, result: Optional[Any] = None):
-        self._result = result
-
-
-class GateModelJobResult(ABC, QuantumJobResult):
+class GateModelResultBuilder(ABC):
     """Abstract interface for gate model quantum job results."""
 
     def measurements(self) -> Optional[np.ndarray]:
@@ -109,9 +97,9 @@ class GateModelJobResult(ABC, QuantumJobResult):
 
             >>> counts
             {'1 1': 13, '0 0': 46, '1 0': 79}
-            >>> GateModelJobResult.format_counts(counts)
+            >>> GateModelResultBuilder.format_counts(counts)
             {'00': 46, '10': 79, '11': 13}
-            >>> GateModelJobResult.format_counts(counts, include_zero_values=True)
+            >>> GateModelResultBuilder.format_counts(counts, include_zero_values=True)
             {'00': 46, '01': 0, '10': 79, '11': 13}
 
         """

@@ -12,27 +12,18 @@
 Module for OQC result class.
 
 """
-import numpy as np
+from typing import Any
 
-from qbraid.runtime.result import GateModelJobResult
+from qbraid.runtime.result import GateModelResultBuilder
 
 
-class OQCJobResult(GateModelJobResult):
+class OQCGateModelResultBuilder(GateModelResultBuilder):
     """OQC result class."""
+
+    def __init__(self, result: dict[str, Any]):
+        self._result = result
 
     def get_counts(self) -> dict[str, int]:
         """Get the raw measurement counts of the task."""
-        result: dict[str, int] = self._result
+        result: dict[str, Any] = self._result
         return result.get("counts", {})
-
-    def measurements(self) -> np.ndarray:
-        """Get the measurements of the task."""
-        counts = self.get_counts()
-        res = []
-        for state in counts:
-            new_state = []
-            for bit in state:
-                new_state.append(int(bit))
-            for _ in range(counts[state]):
-                res.append(new_state)
-        return np.array(res, dtype=int)

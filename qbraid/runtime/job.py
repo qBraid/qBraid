@@ -89,7 +89,7 @@ class QuantumJob(ABC):
             sleep(poll_interval)
 
     @abstractmethod
-    def result(self) -> qbraid.runtime.QuantumJobResult:
+    def result(self) -> Any:
         """Return the results of the job."""
 
     @abstractmethod

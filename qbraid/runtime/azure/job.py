@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     import azure.quantum
     from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 
-    from qbraid.runtime.azure.result import AzureQuantumResult
+    from qbraid.runtime.azure.result import AzureGateModelResultBuilder
 
 
 logger = logging.getLogger(__name__)
@@ -73,11 +73,11 @@ class AzureQuantumJob(QuantumJob):
         }
         return status_map.get(status, JobStatus.UNKNOWN)
 
-    def result(self) -> Union[AzureQuantumResult, MicrosoftEstimatorResult]:
+    def result(self) -> Union[AzureGateModelResultBuilder, MicrosoftEstimatorResult]:
         """Return the result of the Azure job.
 
         Returns:
-            Union[AzureQuantumResult, MicrosoftEstimatorResult]: The result of the job.
+            Union[AzureGateModelResultBuilder, MicrosoftEstimatorResult]: The result of the job.
         """
         if not self.is_terminal_state():
             logger.info("Result will be available when job has reached final state.")

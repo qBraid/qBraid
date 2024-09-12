@@ -12,6 +12,8 @@
 Module defining QiskitJob Class
 
 """
+from __future__ import annotations
+
 import logging
 from typing import TYPE_CHECKING, Optional
 
@@ -22,7 +24,7 @@ from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError, QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
 
-from .result import QiskitResult
+from .result_builder import QiskitGateModelResultBuilder
 
 if TYPE_CHECKING:
     import qiskit_ibm_runtime
@@ -46,15 +48,15 @@ class QiskitJob(QuantumJob):
     def __init__(
         self,
         job_id: str,
-        job: "Optional[qiskit_ibm_runtime.RuntimeJob]" = None,
-        service: "Optional[qiskit_ibm_runtime.QiskitRuntimeService]" = None,
+        job: Optional[qiskit_ibm_runtime.RuntimeJob] = None,
+        service: Optional[qiskit_ibm_runtime.QiskitRuntimeService] = None,
         **kwargs,
     ):
         """Create a ``QiskitJob`` instance."""
         super().__init__(job_id, **kwargs)
         self._job = job or self._get_job(service=service)
 
-    def _get_job(self, service: "Optional[qiskit_ibm_runtime.QiskitRuntimeService]" = None):
+    def _get_job(self, service: Optional[qiskit_ibm_runtime.QiskitRuntimeService] = None):
         """Return the qiskit_ibm_runtime.RuntimeJob associated with instance id attribute.
 
         Attempts to retrieve a job using a specified or default service. Handles
@@ -92,7 +94,7 @@ class QiskitJob(QuantumJob):
         """Return the results of the job."""
         if not self.is_terminal_state():
             logger.info("Result will be available when job has reached final state.")
-        return QiskitResult(self._job.result())
+        return QiskitGateModelResultBuilder(self._job.result())
 
     def cancel(self):
         """Attempt to cancel the job."""

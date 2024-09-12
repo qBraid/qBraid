@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining BraketGateModelJobResult Class
+Module defining BraketGateModelResultBuilder Class
 
 """
 from __future__ import annotations
@@ -24,7 +24,7 @@ from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
 )
 
 from qbraid.runtime.exceptions import QbraidRuntimeError
-from qbraid.runtime.result import GateModelJobResult, QuantumJobResult
+from qbraid.runtime.result import GateModelResultBuilder
 
 if TYPE_CHECKING:
     from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
@@ -37,8 +37,11 @@ class ResultDecodingError(QbraidRuntimeError):
     """Exception raised for errors that occur during the decoding of result data."""
 
 
-class BraketGateModelJobResult(GateModelJobResult):
+class BraketGateModelResultBuilder(GateModelResultBuilder):
     """Wrapper class for Amazon Braket result objects."""
+
+    def __init__(self, result: GateModelQuantumTaskResult):
+        self._result = result
 
     def measurements(self) -> np.ndarray:
         """
@@ -61,8 +64,11 @@ class BraketGateModelJobResult(GateModelJobResult):
         return qbraid_counts
 
 
-class BraketAhsJobResult(QuantumJobResult):
+class BraketAhsResultBuilder:
     """Result from an Analog Hamiltonian Simulation (AHS)."""
+
+    def __init__(self, result: AnalogHamiltonianSimulationQuantumTaskResult):
+        self._result = result
 
     def measurements(self) -> list[ShotResult]:
         """Get the list of shot results from the AHS job."""

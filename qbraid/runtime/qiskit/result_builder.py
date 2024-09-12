@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining QiskitResult Class
+Module defining QiskitGateModelResultBuilder Class
 
 """
 from __future__ import annotations
@@ -18,14 +18,17 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-from qbraid.runtime.result import GateModelJobResult
+from qbraid.runtime.result import GateModelResultBuilder
 
 if TYPE_CHECKING:
     from qiskit.result import Result
 
 
-class QiskitResult(GateModelJobResult):
+class QiskitGateModelResultBuilder(GateModelResultBuilder):
     """Qiskit ``Result`` wrapper class."""
+
+    def __init__(self, result: Result):
+        self._result = result
 
     @staticmethod
     def normalize_tuples(measurements: list[list[tuple[int, ...]]]) -> list[list[tuple[int, ...]]]:

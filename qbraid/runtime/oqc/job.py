@@ -21,7 +21,7 @@ from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.job import QuantumJob
 
-from .result import OQCJobResult
+from .result_builder import OQCGateModelResultBuilder
 
 if TYPE_CHECKING:
     from qcaas_client.client import OQCClient, QPUTaskErrors
@@ -70,7 +70,7 @@ class OQCJob(QuantumJob):
         """Cancel the task."""
         self._client.cancel_task(task_id=self.id, qpu_id=self._qpu_id)
 
-    def result(self, **kwargs) -> OQCJobResult:
+    def result(self, **kwargs) -> OQCGateModelResultBuilder:
         """Get the result of the task."""
         self.wait_for_final_state()
         status = self.status(**kwargs)
@@ -97,7 +97,7 @@ class OQCJob(QuantumJob):
         else:
             result_data["error_details"] = self.get_errors(**kwargs)
 
-        return OQCJobResult(result_data)
+        return OQCGateModelResultBuilder(result_data)
 
     def status(self, **kwargs) -> JobStatus:
         """Get the status of the task."""

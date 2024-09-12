@@ -42,7 +42,7 @@ from qbraid.runtime.braket.availability import _calculate_future_time
 from qbraid.runtime.braket.device import BraketDevice
 from qbraid.runtime.braket.job import AmazonBraketVersionError, BraketQuantumTask
 from qbraid.runtime.braket.provider import BraketProvider
-from qbraid.runtime.braket.result import BraketGateModelJobResult
+from qbraid.runtime.braket.result_builder import BraketGateModelResultBuilder
 from qbraid.runtime.exceptions import JobStateError, ProgramValidationError
 
 from ..fixtures.braket.gates import get_braket_gates
@@ -521,21 +521,21 @@ def test_job_raise_for_cancel_terminal():
 
 
 def test_result_measurements():
-    """Test measurements method of BraketGateModelJobResult class."""
+    """Test measurements method of BraketGateModelResultBuilder class."""
     mock_measurements = np.array([[0, 1, 1], [1, 0, 1]])
     mock_result = MagicMock()
     mock_result.measurements = mock_measurements
-    result = BraketGateModelJobResult(mock_result)
+    result = BraketGateModelResultBuilder(mock_result)
     expected_output = np.array([[1, 1, 0], [1, 0, 1]])
     np.testing.assert_array_equal(result.measurements(), expected_output)
 
 
 def test_result_get_counts():
-    """Test get_counts method of BraketGateModelJobResult class."""
+    """Test get_counts method of BraketGateModelResultBuilder class."""
     mock_measurement_counts = {(0, 1, 1): 10, (1, 0, 1): 5}
     mock_result = MagicMock()
     mock_result.measurement_counts = mock_measurement_counts
-    result = BraketGateModelJobResult(mock_result)
+    result = BraketGateModelResultBuilder(mock_result)
     expected_output = {"110": 10, "101": 5}
     assert result.get_counts() == expected_output
 
