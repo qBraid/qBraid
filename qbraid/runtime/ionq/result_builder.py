@@ -14,7 +14,7 @@ Module defining IonQ result class
 """
 from typing import Any, Optional
 
-from qbraid.runtime.result import GateModelResultBuilder, normalize_bit_lengths
+from qbraid.runtime.result import GateModelResultBuilder
 
 
 class IonQGateModelResultBuilder(GateModelResultBuilder):
@@ -34,6 +34,6 @@ class IonQGateModelResultBuilder(GateModelResultBuilder):
                 probs_binary = {
                     bin(int(key))[2:].zfill(2): value for key, value in probs_int.items()
                 }
-                probs_normal = normalize_bit_lengths(probs_binary)
+                probs_normal = self.normalize_bit_lengths(probs_binary)
                 self._counts = {state: int(prob * shots) for state, prob in probs_normal.items()}
         return self._counts

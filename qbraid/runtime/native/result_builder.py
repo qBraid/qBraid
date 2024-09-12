@@ -86,25 +86,6 @@ class QbraidGateModelResultBuilder(GateModelResultBuilder):
             self._cached_histogram = {row: row_strings.count(row) for row in set(row_strings)}
         return self._cached_histogram
 
-    @staticmethod
-    def counts_to_probabilities(counts: dict[str, int]) -> dict[str, float]:
-        """
-        Convert histogram counts to probabilities.
-
-        Args:
-            counts (dict[str, int]): A dictionary with measurement outcomes as keys
-                and their counts as values.
-
-        Returns:
-            dict[str, float]: A dictionary with measurement outcomes as keys and their
-                probabilities as values.
-        """
-        total_counts = sum(counts.values())
-        measurement_probabilities = {
-            outcome: count / total_counts for outcome, count in counts.items()
-        }
-        return measurement_probabilities
-
     def metadata(self) -> dict[str, int]:
         """Return metadata about the measurement results."""
         if self._cached_metadata is None:

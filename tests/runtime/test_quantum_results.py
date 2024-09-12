@@ -15,11 +15,7 @@ Unit tests for retrieving and post-processing experimental results.
 import pytest
 
 from qbraid.runtime.native.result_builder import ExperimentResult, QbraidGateModelResultBuilder
-from qbraid.runtime.result import (
-    GateModelResultBuilder,
-    normalize_batch_bit_lengths,
-    normalize_bit_lengths,
-)
+from qbraid.runtime.result import GateModelResultBuilder
 
 
 @pytest.mark.parametrize(
@@ -58,35 +54,35 @@ def test_normalize_different_key_lengths():
     """Test normalization of measurement counts with different key lengths."""
     measurements = [{"0": 10, "1": 15}, {"00": 5, "01": 8, "10": 12}]
     expected = [{"00": 10, "01": 15}, {"00": 5, "01": 8, "10": 12}]
-    assert normalize_batch_bit_lengths(measurements) == expected
+    assert GateModelResultBuilder.normalize_batch_bit_lengths(measurements) == expected
 
 
 def test_normalize_same_key_lengths():
     """Test normalization of measurement counts with the same key lengths."""
     measurements = [{"00": 7, "01": 9}, {"10": 4, "11": 3}]
     expected = [{"00": 7, "01": 9}, {"10": 4, "11": 3}]
-    assert normalize_batch_bit_lengths(measurements) == expected
+    assert GateModelResultBuilder.normalize_batch_bit_lengths(measurements) == expected
 
 
 def test_empty_input():
     """Test normalization of empty input."""
     measurements = []
     expected = []
-    assert normalize_batch_bit_lengths(measurements) == expected
+    assert GateModelResultBuilder.normalize_batch_bit_lengths(measurements) == expected
 
 
 def test_empty_dicts():
     """Test normalization of empty dicts."""
     measurements = [{}, {}, {"00": 1, "11": 2}]
     expected = [{}, {}, {"00": 1, "11": 2}]
-    assert normalize_batch_bit_lengths(measurements) == expected
+    assert GateModelResultBuilder.normalize_batch_bit_lengths(measurements) == expected
 
 
 def test_normalize_single_dict():
     """Test normalization of a single dict."""
     measurements = {"0": 2, "1": 3, "10": 4, "11": 1}
     expected = {"00": 2, "01": 3, "10": 4, "11": 1}
-    assert normalize_bit_lengths(measurements) == expected
+    assert GateModelResultBuilder.normalize_bit_lengths(measurements) == expected
 
 
 class MockBatchResult(GateModelResultBuilder):

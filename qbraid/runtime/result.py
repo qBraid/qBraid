@@ -18,50 +18,6 @@ from typing import Any, Optional, Union
 import numpy as np
 
 
-def normalize_batch_bit_lengths(measurements: list[dict[str, int]]) -> list[dict[str, int]]:
-    """
-    Normalizes the bit lengths of binary keys in measurement count dictionaries
-    to ensure uniformity across all keys.
-
-    Args:
-        measurements (list[dict[str, int]]): A list of dictionaries where each dictionary
-            contains binary string keys and integer values.
-
-    Returns:
-        list[dict[str, int]]: A new list of dictionaries with uniformly lengthened binary keys.
-    """
-    if len(measurements) == 0:
-        return measurements
-
-    max_bit_length = max(len(key) for counts in measurements for key in counts.keys())
-
-    normalized_counts_list = []
-    for counts in measurements:
-        normalized_counts = {}
-        for key, value in counts.items():
-            normalized_key = key.zfill(max_bit_length)
-            normalized_counts[normalized_key] = value
-        normalized_counts_list.append(normalized_counts)
-
-    return normalized_counts_list
-
-
-def normalize_bit_lengths(measurement: dict[str, int]) -> dict[str, int]:
-    """
-    Normalizes the bit lengths of binary keys in a single measurement count dictionary
-        to ensure uniformity across all keys.
-
-    Args:
-        measurement (dict[str, int]): A dictionary with binary string keys and integer values.
-
-    Returns:
-        dict[str, int]: A dictionary with uniformly lengthened binary keys.
-    """
-    normalized_list = normalize_batch_bit_lengths([measurement])
-
-    return normalized_list[0] if normalized_list else measurement
-
-
 class GateModelResultBuilder(ABC):
     """Abstract interface for gate model quantum job results."""
 
@@ -84,6 +40,25 @@ class GateModelResultBuilder(ABC):
         for state, count in counts.items():
             measurements.extend([list(map(int, state))] * count)
         return np.array(measurements, dtype=int)
+
+    @staticmethod
+    def counts_to_probabilities(counts: dict[str, int]) -> dict[str, float]:
+        """
+        Convert histogram counts to probabilities.
+
+        Args:
+            counts (dict[str, int]): A dictionary with measurement outcomes as keys
+                and their counts as values.
+
+        Returns:
+            dict[str, float]: A dictionary with measurement outcomes as keys and their
+                probabilities as values.
+        """
+        total_counts = sum(counts.values())
+        measurement_probabilities = {
+            outcome: count / total_counts for outcome, count in counts.items()
+        }
+        return measurement_probabilities
 
     @staticmethod
     def format_counts(counts: dict[str, int], include_zero_values: bool = False) -> dict[str, int]:
@@ -114,17 +89,61 @@ class GateModelResultBuilder(ABC):
 
         return final_counts
 
+    @staticmethod
+    def normalize_batch_bit_lengths(measurements: list[dict[str, int]]) -> list[dict[str, int]]:
+        """
+        Normalizes the bit lengths of binary keys in measurement count dictionaries
+        to ensure uniformity across all keys.
+
+        Args:
+            measurements (list[dict[str, int]]): A list of dictionaries where each dictionary
+                contains binary string keys and integer values.
+
+        Returns:
+            list[dict[str, int]]: A new list of dictionaries with uniformly lengthened binary keys.
+        """
+        if len(measurements) == 0:
+            return measurements
+
+        max_bit_length = max(len(key) for counts in measurements for key in counts.keys())
+
+        normalized_counts_list = []
+        for counts in measurements:
+            normalized_counts = {}
+            for key, value in counts.items():
+                normalized_key = key.zfill(max_bit_length)
+                normalized_counts[normalized_key] = value
+            normalized_counts_list.append(normalized_counts)
+
+        return normalized_counts_list
+
+    @staticmethod
+    def normalize_bit_lengths(measurement: dict[str, int]) -> dict[str, int]:
+        """
+        Normalizes the bit lengths of binary keys in a single measurement count dictionary
+            to ensure uniformity across all keys.
+
+        Args:
+            measurement (dict[str, int]): A dictionary with binary string keys and integer values.
+
+        Returns:
+            dict[str, int]: A dictionary with uniformly lengthened binary keys.
+        """
+        normalized_list = GateModelResultBuilder.normalize_batch_bit_lengths([measurement])
+
+        return normalized_list[0] if normalized_list else measurement
+
     def measurement_counts(
         self, include_zero_values: bool = False
     ) -> Union[dict[str, int], list[dict[str, int]]]:
         """Returns the sorted histogram data of the run"""
-        get_counts = self.get_counts()
-        if isinstance(get_counts, dict):
-            return self.format_counts(get_counts, include_zero_values=include_zero_values)
+        res_counts = self.get_counts()
+        if isinstance(res_counts, dict):
+            return self.format_counts(res_counts, include_zero_values=include_zero_values)
 
         batch_counts = [
             self.format_counts(counts, include_zero_values=include_zero_values)
-            for counts in get_counts
+            for counts in res_counts
         ]
 
-        return normalize_batch_bit_lengths(batch_counts)
+        return self.normalize_batch_bit_lengths(batch_counts)
