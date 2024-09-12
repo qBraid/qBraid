@@ -14,7 +14,7 @@ Module defining QiskitGateModelResultBuilder Class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Union
 
 import numpy as np
 
@@ -57,7 +57,7 @@ class QiskitGateModelResultBuilder(GateModelResultBuilder):
 
         return normalized_measurements
 
-    def _format_measurements(self, memory_list):
+    def _format_measurements(self, memory_list: list[str]) -> list[list[int]]:
         """Format the measurements into int for the given memory list"""
         formatted_meas = []
         for str_shot in memory_list:
@@ -65,11 +65,10 @@ class QiskitGateModelResultBuilder(GateModelResultBuilder):
             formatted_meas.append(lst_shot)
         return formatted_meas
 
-    def measurements(self) -> np.ndarray:
+    def measurements(self) -> Union[np.ndarray, list[np.ndarray]]:
         """Return measurements a 2D numpy array"""
-        result: Result = self._result
-        num_circuits = len(result.results)
-        qiskit_meas = [result.get_memory(i) for i in range(num_circuits)]
+        num_circuits = len(self._result.results)
+        qiskit_meas = [self._result.get_memory(i) for i in range(num_circuits)]
         qbraid_meas = [self._format_measurements(qiskit_meas[i]) for i in range(num_circuits)]
 
         if num_circuits == 1:
@@ -79,7 +78,6 @@ class QiskitGateModelResultBuilder(GateModelResultBuilder):
 
         return np.array(qbraid_meas)
 
-    def get_counts(self) -> dict[str, int]:
+    def get_counts(self) -> Union[dict[str, int], list[dict[str, int]]]:
         """Returns the histogram data of the run"""
-        result: Result = self._result
-        return result.get_counts()
+        return self._result.get_counts()

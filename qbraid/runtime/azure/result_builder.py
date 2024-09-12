@@ -30,7 +30,6 @@ from typing import Any, Optional, Union
 
 import numpy as np
 from azure.quantum import Job
-from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 
 from qbraid.runtime.ionq.result_builder import IonQGateModelResultBuilder
 from qbraid.runtime.result import GateModelResultBuilder
@@ -41,17 +40,6 @@ logger = logging.getLogger(__name__)
 
 
 class AzureGateModelResultBuilder(GateModelResultBuilder):
-    """Azure result class."""
-
-    def __init__(self, result: dict[str, Any]):
-        self._result = result
-
-    def get_counts(self) -> dict[str, int]:
-        """Return the raw counts from the result data."""
-        return self._result["results"][0]["data"]["counts"]
-
-
-class AzureResultBuilder:
     """Class to format Azure Quantum job results."""
 
     def __init__(self, azure_job: Job):
@@ -72,49 +60,6 @@ class AzureResultBuilder:
         # Some providers use 'count', some other 'shots', give preference to 'count':
         input_params = self.job.details.input_params
         return input_params.get("count", input_params.get("shots"))
-
-    @staticmethod
-    def make_estimator_result(data: dict[str, Any]) -> MicrosoftEstimatorResult:
-        """Create a MicrosoftEstimatorResult object from the given data."""
-        if not data["success"]:
-            error_data = data["error_data"]
-            message = (
-                "Cannot retrieve results as job execution failed "
-                f"({error_data['code']}: {error_data['message']})"
-            )
-            raise RuntimeError(message)
-
-        results = data["results"]
-        if len(results) == 1:
-            data = results[0]["data"]
-            return MicrosoftEstimatorResult(data)
-        raise ValueError("Expected resource estimator results to be of length 1")
-
-    def result(
-        self, timeout: Optional[int] = None, sampler_seed: Optional[int] = None
-    ) -> Union[AzureGateModelResultBuilder, MicrosoftEstimatorResult]:
-        """Return the results of the job."""
-        self.job.wait_until_completed(timeout_secs=timeout)
-
-        success = self.job.details.status == "Succeeded"
-        results = self._format_results(sampler_seed=sampler_seed)
-        results = results if isinstance(results, list) else [results]
-        error_data = (
-            None if self.job.details.error_data is None else self.job.details.error_data.as_dict()
-        )
-
-        result_dict = {
-            "results": results,
-            "job_id": self.job.id,
-            "target": self.job.details.target,
-            "job_name": self.job.details.name,
-            "success": success,
-            "error_data": error_data,
-        }
-
-        if self.job.details.output_data_format == OutputDataFormat.RESOURCE_ESTIMATOR.value:
-            return self.make_estimator_result(result_dict)
-        return AzureGateModelResultBuilder(result_dict)
 
     def _format_results(
         self, sampler_seed: Optional[int] = None
@@ -180,23 +125,20 @@ class AzureResultBuilder:
         can be consumed by qBraid runtime.
 
         """
-        az_result = self.job.get_results()
         shots = self._shots_count()
+        az_result = self.job.get_results()
 
-        counts = None
-        probabilities = None
-
-        if not "histogram" in az_result:
+        if "histogram" not in az_result:
             raise ValueError("Histogram missing from IonQ Job results")
 
         data = {
             "shots": shots,
             "probabilities": az_result["histogram"],
         }
+
         result = IonQGateModelResultBuilder(data)
         counts = result.measurement_counts()
-        total_count = sum(counts.values())
-        probabilities = {key: value / total_count for key, value in counts.items()}
+        probabilities = self.counts_to_probabilities(counts)
 
         return {"counts": counts, "probabilities": probabilities}
 
@@ -211,7 +153,10 @@ class AzureResultBuilder:
             # associated with a classical register. Azure and qBraid order the
             # registers in opposite directions, so reverse here to match.
             return " ".join(
-                [AzureResultBuilder._qir_to_qbraid_bitstring(term) for term in reversed(obj)]
+                [
+                    AzureGateModelResultBuilder._qir_to_qbraid_bitstring(term)
+                    for term in reversed(obj)
+                ]
             )
         if isinstance(obj, list):
             # a list is for an individual classical register
@@ -232,7 +177,7 @@ class AzureResultBuilder:
         probabilities = {}
 
         for key in histogram.keys():
-            bitstring = AzureResultBuilder._qir_to_qbraid_bitstring(key)
+            bitstring = self._qir_to_qbraid_bitstring(key)
 
             value = histogram[key]
             probabilities[bitstring] = value
@@ -326,7 +271,7 @@ class AzureResultBuilder:
                 if not "Count" in result:
                     raise ValueError("Count missing from histogram result")
 
-                bitstring = AzureResultBuilder._qir_to_qbraid_bitstring(result["Display"])
+                bitstring = self._qir_to_qbraid_bitstring(result["Display"])
                 count = result["Count"]
                 probability = count / total_count
                 counts[bitstring] = count
@@ -385,3 +330,22 @@ class AzureResultBuilder:
             }
             for name, (total_count, result) in zip(entry_point_names, results)
         ]
+
+    def get_results(
+        self, timeout: Optional[int] = None, sampler_seed: Optional[int] = None
+    ) -> list[dict[str, Any]]:
+        """Return the results of the job."""
+        self.job.wait_until_completed(timeout_secs=timeout)
+
+        results = self._format_results(sampler_seed=sampler_seed)
+        results = results if isinstance(results, list) else [results]
+        return results
+
+    def get_counts(self) -> Union[dict[str, int], list[dict[str, int]]]:
+        """Return the raw counts from the result data."""
+        results = self.get_results()
+
+        if len(results) == 1:
+            return results[0]["data"]["counts"] if results[0]["success"] else {}
+
+        return [result["data"]["counts"] if result["success"] else {} for result in results]
