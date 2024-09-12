@@ -22,7 +22,7 @@ Data Types
 .. autosummary::
    :toctree: ../stubs/
 
-	DeviceActionType
+	ExperimentType
 	DeviceStatus
 	JobStatus
 	NoiseModel
@@ -67,7 +67,7 @@ from qbraid_core import Session
 from . import native
 from ._display import display_jobs_from_data
 from .device import QuantumDevice
-from .enums import DeviceActionType, DeviceStatus, JobStatus, NoiseModel
+from .enums import DeviceStatus, ExperimentType, JobStatus, NoiseModel
 from .exceptions import (
     DeviceProgramTypeMismatchError,
     JobStateError,
@@ -85,7 +85,7 @@ from .result import GateModelResultBuilder
 __all__ = [
     "Session",
     "QuantumDevice",
-    "DeviceActionType",
+    "ExperimentType",
     "DeviceStatus",
     "JobStatus",
     "display_jobs_from_data",

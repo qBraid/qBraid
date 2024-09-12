@@ -17,7 +17,7 @@ from typing import Any
 from qbraid_core.sessions import Session
 
 from qbraid.programs.spec import ProgramSpec
-from qbraid.runtime.enums import DeviceActionType
+from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
@@ -92,7 +92,7 @@ class IonQProvider(QuantumProvider):
         return TargetProfile(
             device_id=device_id,
             simulator=simulator,
-            action_type=DeviceActionType.OPENQASM,
+            experiment_type=ExperimentType.GATE_MODEL,
             num_qubits=data.get("qubits"),
             program_spec=ProgramSpec(str, alias="qasm2"),
             provider_name="IonQ",

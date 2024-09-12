@@ -44,7 +44,7 @@ from qbraid.runtime.braket.device import BraketDevice
 from qbraid.runtime.braket.job import BraketQuantumTask
 from qbraid.runtime.braket.provider import BraketProvider
 from qbraid.runtime.braket.result_builder import BraketAhsResultBuilder, ResultDecodingError
-from qbraid.runtime.enums import DeviceActionType, DeviceStatus
+from qbraid.runtime.enums import DeviceStatus, ExperimentType
 from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
 from qbraid.runtime.profile import TargetProfile
 
@@ -491,7 +491,7 @@ def test_transform_raises_for_mismatch(mock_aws_device, ahs_program):
         program_spec=ProgramSpec(AnalogHamiltonianSimulation, alias="braket_ahs"),
         provider_name="QuEra",
         device_id=AQUILA_ARN,
-        action_type=DeviceActionType.OPENQASM,
+        experiment_type=ExperimentType.GATE_MODEL,
     )
     device = BraketDevice(profile)
     with pytest.raises(DeviceProgramTypeMismatchError):

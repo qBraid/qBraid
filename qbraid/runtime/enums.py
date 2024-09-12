@@ -17,21 +17,6 @@ from __future__ import annotations
 from enum import Enum
 
 
-class DeviceActionType(Enum):
-    """
-    Enumeration for the quantum device action types
-    supported natively by qBraid.
-
-    Attributes:
-        OPENQASM (str): Actions compatible with OpenQASM (gate-model).
-        AHS (str): Actions using analog Hamiltonian simulation.
-        ANNEALING (str): Actions using quantum annealing.
-    """
-
-    OPENQASM = "qbraid.programs.circuits"
-    AHS = "qbraid.programs.ahs"
-
-
 class DeviceStatus(Enum):
     """Enumeration for representing various operational statuses of devices.
 
@@ -46,6 +31,23 @@ class DeviceStatus(Enum):
     UNAVAILABLE = "unavailable"
     OFFLINE = "offline"
     RETIRED = "retired"
+
+
+class ExperimentType(Enum):
+    """
+    Enumeration for quantum experiment types.
+
+    Attributes:
+        GATE_MODEL (str): Gate-based quantum computing (e.g., OpenQASM).
+        AHS (str): Analog Hamiltonian simulation.
+        ANNEALING (str): Quantum annealing for optimization problems.
+        PHOTONIC_MODEL (str): Photonic quantum computing using photons as qubits.
+    """
+
+    GATE_MODEL = "gate_model"
+    AHS = "analog_hamiltonian_simulation"
+    ANNEALING = "quantum_annealing"
+    PHOTONIC_MODEL = "photonic_quantum_computing"
 
 
 class NoiseModel(Enum):

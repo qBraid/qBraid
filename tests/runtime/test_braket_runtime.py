@@ -33,9 +33,9 @@ from qbraid.exceptions import QbraidError
 from qbraid.interface import circuits_allclose
 from qbraid.programs import ProgramSpec
 from qbraid.runtime import (
-    DeviceActionType,
     DeviceProgramTypeMismatchError,
     DeviceStatus,
+    ExperimentType,
     TargetProfile,
 )
 from qbraid.runtime.braket.availability import _calculate_future_time
@@ -69,7 +69,7 @@ def sv1_profile():
         program_spec=ProgramSpec(Circuit),
         provider_name="Amazon Braket",
         device_id=SV1_ARN,
-        action_type=DeviceActionType.OPENQASM,
+        experiment_type=ExperimentType.GATE_MODEL,
     )
 
 
@@ -290,7 +290,7 @@ def test_device_profile_attributes(mock_aws_device, sv1_profile):
     assert device.num_qubits == sv1_profile.get("num_qubits")
     assert device._target_spec == sv1_profile.get("program_spec")
     assert device.simulator == sv1_profile.get("simulator")
-    assert device.profile.get("action_type").value == "qbraid.programs.circuits"
+    assert device.profile.get("experiment_type").value == "gate_model"
 
 
 @patch("qbraid.runtime.braket.device.AwsDevice")
@@ -410,7 +410,7 @@ def test_device_transform_raises_for_mismatch(mock_aws_device, braket_circuit):
         program_spec=ProgramSpec(Circuit),
         provider_name="Amazon Braket",
         device_id=SV1_ARN,
-        action_type=DeviceActionType.AHS,
+        experiment_type=ExperimentType.AHS,
     )
     device = BraketDevice(profile)
     with pytest.raises(DeviceProgramTypeMismatchError):
@@ -428,7 +428,7 @@ def test_device_ionq_transform(mock_aws_device):
         program_spec=ProgramSpec(Circuit),
         provider_name="IonQ",
         device_id="arn:aws:braket:us-east-1::device/qpu/ionq/Harmony",
-        action_type=DeviceActionType.OPENQASM,
+        experiment_type=ExperimentType.GATE_MODEL,
     )
     device = BraketDevice(profile)
 

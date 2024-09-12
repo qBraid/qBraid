@@ -28,7 +28,7 @@ from qbraid_core.services.quantum.proxy_braket import aws_configure
 
 from qbraid.exceptions import QbraidError
 from qbraid.programs import ProgramSpec
-from qbraid.runtime import DeviceActionType, QuantumProvider, TargetProfile
+from qbraid.runtime import ExperimentType, QuantumProvider, TargetProfile
 
 from .device import BraketDevice
 
@@ -125,10 +125,10 @@ class BraketProvider(QuantumProvider):
         action: dict = capabilities.get("action", {})
         num_qubits = paradigm.get("qubitCount")
         if action.get("braket.ir.openqasm.program") is not None:
-            action_type = DeviceActionType.OPENQASM
+            experiment_type = ExperimentType.GATE_MODEL
             program_spec = program_spec or ProgramSpec(Circuit)
         elif action.get("braket.ir.ahs.program") is not None:
-            action_type = DeviceActionType.AHS
+            experiment_type = ExperimentType.AHS
             program_spec = program_spec or ProgramSpec(
                 AnalogHamiltonianSimulation, alias="braket_ahs"
             )
@@ -141,7 +141,7 @@ class BraketProvider(QuantumProvider):
         return TargetProfile(
             simulator=simulator,
             num_qubits=num_qubits,
-            action_type=action_type,
+            experiment_type=experiment_type,
             program_spec=program_spec,
             provider_name=provider_name,
             device_id=device.arn,

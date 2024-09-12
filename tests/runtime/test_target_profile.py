@@ -18,7 +18,7 @@ import pytest
 from pydantic import ValidationError
 
 from qbraid.programs.spec import ProgramSpec
-from qbraid.runtime.enums import DeviceActionType, NoiseModel
+from qbraid.runtime.enums import ExperimentType, NoiseModel
 from qbraid.runtime.profile import TargetProfile
 
 
@@ -28,12 +28,12 @@ def valid_program_spec() -> ProgramSpec:
     return ProgramSpec(program_type=str, alias="qasm2")
 
 
-def create_target_profile(action_type, basis_gates, program_spec):
+def create_target_profile(experiment_type, basis_gates, program_spec):
     """Helper function to create a TargetProfile with given parameters."""
     return TargetProfile(
         device_id="device123",
         simulator=True,
-        action_type=action_type,
+        experiment_type=experiment_type,
         num_qubits=5,
         program_spec=program_spec,
         provider_name="Heisenberg",
@@ -45,7 +45,7 @@ def create_target_profile(action_type, basis_gates, program_spec):
 def target_profile_openqasm(valid_program_spec) -> TargetProfile:
     """Fixture to provide a valid TargetProfile instance with OPENQASM action type."""
     return create_target_profile(
-        action_type=DeviceActionType.OPENQASM,
+        experiment_type=ExperimentType.GATE_MODEL,
         basis_gates=["ms", "gpi", "gpi2"],
         program_spec=valid_program_spec,
     )
@@ -55,7 +55,7 @@ def target_profile_openqasm(valid_program_spec) -> TargetProfile:
 def target_profile_ahs(valid_program_spec) -> list[TargetProfile]:
     """Fixture to provide a valid TargetProfile instance with AHS action type."""
     return create_target_profile(
-        action_type=DeviceActionType.AHS, basis_gates=None, program_spec=valid_program_spec
+        experiment_type=ExperimentType.AHS, basis_gates=None, program_spec=valid_program_spec
     )
 
 
@@ -90,7 +90,7 @@ def test_target_profile_raise_for_bad_input():
     with pytest.raises(ValidationError):
         TargetProfile(device_id="device123", simulator="invalid_type")
     with pytest.raises(ValidationError):
-        TargetProfile(device_id="device123", simulator=True, action_type="invalid_action")
+        TargetProfile(device_id="device123", simulator=True, experiment_type="invalid_action")
     with pytest.raises(ValidationError):
         TargetProfile(device_id="device123", simulator=True, num_qubits="five")
     with pytest.raises(ValidationError):
@@ -107,14 +107,14 @@ def test_target_profile_raise_for_bad_input():
         TargetProfile(
             device_id="device123",
             simulator=True,
-            action_type=DeviceActionType.OPENQASM,
+            experiment_type=ExperimentType.GATE_MODEL,
             basis_gates=99,
         )
     with pytest.raises(ValidationError):
         TargetProfile(
             device_id="device123",
             simulator=True,
-            action_type=DeviceActionType.OPENQASM,
+            experiment_type=ExperimentType.GATE_MODEL,
             basis_gates=[None],
         )
     with pytest.raises(ValidationError):
@@ -137,10 +137,10 @@ def test_target_profile_ahs_len(target_profile_ahs):
 
 def test_target_profile_bad_basis_gates_raises(valid_program_spec):
     """Test raising ValueError when giving basis_gates with non-OPENQASM action type."""
-    for action_type in [DeviceActionType.AHS, None]:
+    for experiment_type in [ExperimentType.AHS, None]:
         with pytest.raises(ValidationError):
             create_target_profile(
-                action_type=action_type,
+                experiment_type=experiment_type,
                 basis_gates=["x", "y", "z"],
                 program_spec=valid_program_spec,
             )
@@ -150,14 +150,14 @@ def test_target_profile_getitem(target_profile_openqasm):
     """Test the __getitem__ method of TargetProfile."""
     assert target_profile_openqasm["device_id"] == "device123"
     assert target_profile_openqasm["simulator"] is True
-    assert target_profile_openqasm["action_type"] == DeviceActionType.OPENQASM
+    assert target_profile_openqasm["experiment_type"] == ExperimentType.GATE_MODEL
     assert target_profile_openqasm["basis_gates"] == {"gpi", "gpi2", "ms"}
 
 
 def test_duplicate_basis_gates_removed(valid_program_spec):
     """Test that duplicate basis gates are removed."""
     profile = create_target_profile(
-        action_type=DeviceActionType.OPENQASM,
+        experiment_type=ExperimentType.GATE_MODEL,
         basis_gates=["X", "x", "x", "Y", "z"],
         program_spec=valid_program_spec,
     )

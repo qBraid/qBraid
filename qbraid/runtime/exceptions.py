@@ -33,14 +33,14 @@ class JobStateError(QbraidError):
 
 class DeviceProgramTypeMismatchError(ProgramValidationError):
     """
-    Exception raised when the program type does not match the device action type.
+    Exception raised when the program type does not match the Experiment type.
 
     """
 
-    def __init__(self, program, expected_type, action_type):
+    def __init__(self, program, expected_type, experiment_type):
         message = (
             f"Incompatible program type: '{type(program).__name__}'. "
-            f"Device action type '{action_type}' "
+            f"Experiment type '{experiment_type}' "
             f"requires a program of type '{expected_type}'."
         )
         super().__init__(message)

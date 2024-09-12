@@ -30,7 +30,7 @@ from qiskit_ibm_runtime.exceptions import IBMNotAuthorizedError, RuntimeInvalidS
 from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
-from qbraid.runtime import DeviceActionType, DeviceStatus, JobStateError, TargetProfile
+from qbraid.runtime import DeviceStatus, ExperimentType, JobStateError, TargetProfile
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.qiskit import (
     QiskitBackend,
@@ -127,7 +127,7 @@ def _create_backend_fixture(service: FakeService, local: bool, simulator: bool) 
         device_id=backend.name,
         local=local,
         simulator=simulator,
-        action_type=DeviceActionType.OPENQASM,
+        experiment_type=ExperimentType.GATE_MODEL,
         num_qubits=backend.num_qubits,
         program_spec=program_spec,
         provider_name="IBM",

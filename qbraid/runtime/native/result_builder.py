@@ -15,8 +15,6 @@ Module defining QbraidResult class
 from dataclasses import dataclass, field
 from typing import Any
 
-import numpy as np
-
 from qbraid.runtime.result import GateModelResultBuilder
 
 
@@ -52,7 +50,6 @@ class QbraidGateModelResultBuilder(GateModelResultBuilder):
         self.job_id = job_id
         self.success = success
         self.result = result
-        self._cached_histogram = None
         self._cached_metadata = None
 
     def __repr__(self):
@@ -64,39 +61,22 @@ class QbraidGateModelResultBuilder(GateModelResultBuilder):
 
     def get_counts(self, decimal: bool = False):
         """Returns raw histogram data of the run"""
-        counts_raw = self.result.measurement_counts
-        measurements = self.counts_to_measurements(counts_raw)
-        counts = self._array_to_histogram(measurements)
+        counts = self.result.measurement_counts
 
         if decimal is True:
             counts = {int(key, 2): value for key, value in counts.items()}
 
         return counts
 
-    def measurement_probabilities(self, **kwargs) -> dict[str, float]:
-        """Calculate and return the probabilities of each measurement result."""
-        counts = self.measurement_counts(**kwargs)
-        probabilities = self.counts_to_probabilities(counts)
-        return probabilities
-
-    def _array_to_histogram(self, arr: np.ndarray) -> dict[str, int]:
-        """Convert a 2D numpy array to a histogram and cache the result."""
-        if self._cached_histogram is None:
-            row_strings = ["".join(map(str, row)) for row in arr]
-            self._cached_histogram = {row: row_strings.count(row) for row in set(row_strings)}
-        return self._cached_histogram
-
     def metadata(self) -> dict[str, int]:
         """Return metadata about the measurement results."""
         if self._cached_metadata is None:
-            raw_counts = self.result.measurement_counts
-            measurements = self.counts_to_measurements(raw_counts)
-            num_shots, num_qubits = measurements.shape
+            counts = self.normalized_counts()
             self._cached_metadata = {
-                "num_shots": num_shots,
-                "num_qubits": num_qubits,
+                "num_shots": sum(counts.values()),
+                "num_qubits": len(next(iter(counts))),
                 "execution_duration": self.result.execution_duration,
-                "measurement_counts": self.measurement_counts(),
+                "measurement_counts": counts,
                 "measurement_probabilities": self.measurement_probabilities(),
             }
 

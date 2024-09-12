@@ -19,7 +19,7 @@ from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestErr
 
 from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
 from qbraid.runtime._display import display_jobs_from_data
-from qbraid.runtime.enums import DeviceActionType, NoiseModel
+from qbraid.runtime.enums import ExperimentType, NoiseModel
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
@@ -88,7 +88,7 @@ class QbraidProvider(QuantumProvider):
         return TargetProfile(
             device_id=device_id,
             simulator=simulator,
-            action_type=DeviceActionType.OPENQASM,
+            experiment_type=ExperimentType.GATE_MODEL,
             num_qubits=num_qubits,
             program_spec=program_spec,
             provider_name=provider,

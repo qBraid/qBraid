@@ -23,8 +23,9 @@ from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
     ShotResult,
 )
 
+from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.exceptions import QbraidRuntimeError
-from qbraid.runtime.result import GateModelResultBuilder
+from qbraid.runtime.result import GateModelResultBuilder, RuntimeResultBuilder
 
 if TYPE_CHECKING:
     from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
@@ -64,11 +65,16 @@ class BraketGateModelResultBuilder(GateModelResultBuilder):
         return qbraid_counts
 
 
-class BraketAhsResultBuilder:
+class BraketAhsResultBuilder(RuntimeResultBuilder):
     """Result from an Analog Hamiltonian Simulation (AHS)."""
 
     def __init__(self, result: AnalogHamiltonianSimulationQuantumTaskResult):
         self._result = result
+
+    @property
+    def experiment_type(self) -> ExperimentType:
+        """Get the experiment type."""
+        return ExperimentType.AHS
 
     def measurements(self) -> list[ShotResult]:
         """Get the list of shot results from the AHS job."""
@@ -123,3 +129,16 @@ class BraketAhsResultBuilder:
             raise ResultDecodingError from err
 
         return None if not state_counts else dict(state_counts)
+
+    def to_dict(self) -> dict[str, list[ShotResult]]:
+        """Return a dictionary representation of the result."""
+        shot_results = self.measurements()
+        measurements = [
+            {
+                "status": m.status.value,
+                "pre_sequence": m.pre_sequence,
+                "post_sequence": m.post_sequence,
+            }
+            for m in shot_results
+        ]
+        return {"counts": self.get_counts(), "measurements": measurements}

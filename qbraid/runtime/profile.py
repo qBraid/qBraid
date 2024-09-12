@@ -22,7 +22,7 @@ from typing_extensions import Self
 
 from qbraid.programs import ProgramSpec
 
-from .enums import DeviceActionType
+from .enums import ExperimentType
 
 
 class TargetProfile(BaseModel):
@@ -37,7 +37,7 @@ class TargetProfile(BaseModel):
 
     device_id: str
     simulator: bool
-    action_type: Optional[DeviceActionType] = None
+    experiment_type: Optional[ExperimentType] = None
     num_qubits: Optional[int] = None
     program_spec: Optional[ProgramSpec] = None
     provider_name: Optional[str] = None
@@ -53,9 +53,9 @@ class TargetProfile(BaseModel):
         return {gate.lower() for gate in value}
 
     @model_validator(mode="after")
-    def validate_basis_gates_for_action_type(self) -> Self:
+    def validate_basis_gates_for_experiment_type(self) -> Self:
         """Validate the basis gates for the action type."""
-        if self.basis_gates is not None and self.action_type != DeviceActionType.OPENQASM:
+        if self.basis_gates is not None and self.experiment_type != ExperimentType.GATE_MODEL:
             raise ValueError("basis_gates can only be specified for OPENQASM action type")
         return self
 

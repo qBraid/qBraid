@@ -17,7 +17,7 @@ from typing import Any
 from qcaas_client.client import OQCClient
 
 from qbraid.programs.spec import ProgramSpec
-from qbraid.runtime.enums import DeviceActionType
+from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
@@ -50,7 +50,7 @@ class OQCProvider(QuantumProvider):
         return TargetProfile(
             device_id=device_id,
             simulator=simulator,
-            action_type=DeviceActionType.OPENQASM,
+            experiment_type=ExperimentType.GATE_MODEL,
             num_qubits=num_qubits,
             program_spec=ProgramSpec(str, alias="qasm2"),
             device_name=device_name,

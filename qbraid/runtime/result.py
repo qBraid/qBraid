@@ -12,16 +12,40 @@
 Module defining abstract GateModelResultBuilder Class
 
 """
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from pprint import pformat
 from typing import Any, Optional, Union
 
 import numpy as np
 
+from .enums import ExperimentType
 
-class GateModelResultBuilder(ABC):
+
+class RuntimeResultBuilder(ABC):
+    """Abstract interface for runtime quantum job results."""
+
+    @property
+    @abstractmethod
+    def experiment_type(self) -> ExperimentType:
+        """Returns the type of experiment"""
+
+    @abstractmethod
+    def to_dict(self) -> dict[str, Any]:
+        """Returns a dictionary representation of the result"""
+
+
+class GateModelResultBuilder(RuntimeResultBuilder, ABC):
     """Abstract interface for gate model quantum job results."""
 
-    def measurements(self) -> Optional[np.ndarray]:
+    @property
+    def experiment_type(self) -> ExperimentType:
+        """Returns the type of experiment"""
+        return ExperimentType.GATE_MODEL
+
+    def measurements(self) -> Optional[Union[np.ndarray, list[np.ndarray]]]:
         """
         Return measurements as a 2d array where each row is a
         shot and each column is qubit. Defaults to None.
@@ -34,12 +58,10 @@ class GateModelResultBuilder(ABC):
         """Returns histogram data of the run"""
 
     @staticmethod
-    def counts_to_measurements(counts: dict[str, Any]) -> np.ndarray:
-        """Convert counts dictionary to measurements array."""
-        measurements = []
-        for state, count in counts.items():
-            measurements.extend([list(map(int, state))] * count)
-        return np.array(measurements, dtype=int)
+    def measurements_to_counts(measurements: np.ndarray) -> dict[str, int]:
+        """Convert a 2D numpy array to histogram counts data."""
+        row_strings = ["".join(map(str, row)) for row in measurements]
+        return {row: row_strings.count(row) for row in set(row_strings)}
 
     @staticmethod
     def counts_to_probabilities(counts: dict[str, int]) -> dict[str, float]:
@@ -133,7 +155,7 @@ class GateModelResultBuilder(ABC):
 
         return normalized_list[0] if normalized_list else measurement
 
-    def measurement_counts(
+    def normalized_counts(
         self, include_zero_values: bool = False
     ) -> Union[dict[str, int], list[dict[str, int]]]:
         """Returns the sorted histogram data of the run"""
@@ -147,3 +169,101 @@ class GateModelResultBuilder(ABC):
         ]
 
         return self.normalize_batch_bit_lengths(batch_counts)
+
+    def measurement_probabilities(
+        self, **kwargs
+    ) -> Union[dict[str, float], list[dict[str, float]]]:
+        """Calculate and return the probabilities of each measurement result."""
+        counts = self.normalized_counts(**kwargs)
+        if isinstance(counts, dict):
+            return self.counts_to_probabilities(counts)
+
+        return [self.counts_to_probabilities(count) for count in counts]
+
+    def to_dict(self) -> dict[str, Any]:
+        """Returns a dictionary representation of the result"""
+        counts = self.normalized_counts()
+        return {
+            "shots": sum(counts.values()),
+            "measured_qubits": len(next(iter(counts))),
+            "measurement_counts": counts,
+            "measurement_probabilities": self.measurement_probabilities(),
+            "measurements": self.measurements(),
+        }
+
+
+@dataclass(frozen=True)
+class ExperimentResult:
+    """A dataclass for storing the result data of a quantum experiment.
+
+    Attributes:
+        experiment_type (ExperimentType): The quantum experiment type (e.g., gate-based, AHS).
+        result_data (dict): Dictionary containing the results of the experiment (e.g. measurements).
+    """
+
+    experiment_type: ExperimentType
+    result_data: dict
+
+    @classmethod
+    def from_object(cls, result_builder: RuntimeResultBuilder) -> ExperimentResult:
+        """
+        Creates a new ExperimentResult instance from a RuntimeResultBuilder instance.
+
+        Args:
+            result_builder (RuntimeResultBuilder): The runtime result object to extract data from.
+
+        Returns:
+            ExperimentResult: A new ExperimentResult instance.
+        """
+        return cls(
+            experiment_type=result_builder.experiment_type, result_data=result_builder.to_dict()
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"ExperimentResult(\n"
+            f"  experiment_type={self.experiment_type},\n"
+            f"  result_data={pformat(self.result_data, indent=4)}\n"
+            f")"
+        )
+
+
+class Result:
+    """Represents the results of a quantum job. This class is intended
+    to be initialized by a QuantumJob class.
+
+    Args:
+        device_id (str): The ID of the device that executed the job.
+        job_id (str): The ID of the job.
+        success (bool): Whether the job was successful.
+        result (ExperimentResult): The result of the job.
+        metadata (dict[str, Any], optional): Additional metadata about the job results
+
+    """
+
+    def __init__(  # pylint: disable=too-many-arguments
+        self,
+        device_id: str,
+        job_id: str,
+        success: bool,
+        result: ExperimentResult,
+        metadata: Optional[dict[str, Any]] = None,
+    ):
+        """Create a new Result object."""
+        self.device_id = device_id
+        self.job_id = job_id
+        self.success = success
+        self.result = result
+        self._metadata = metadata or {}
+
+    def __repr__(self):
+        """Return a string representation of the Result object."""
+        return (
+            f"Result(\n"
+            f"  device_id={self.device_id},\n"
+            f"  job_id={self.job_id},\n"
+            f"  success={self.success},\n"
+            f"  result={self.result},\n"
+            f"  metadata={pformat(self._metadata, indent=4)}\n"
+            f")"
+        )

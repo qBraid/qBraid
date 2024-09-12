@@ -93,10 +93,10 @@ class MockBatchResult(GateModelResultBuilder):
         return [{" 1": 0, "0": 550}, {" 1": 474, "0": 550}]
 
 
-def test_batch_measurement_counts():
+def test_batch_normalized_counts():
     """Test batch measurement counts."""
     result = MockBatchResult()
-    counts = result.measurement_counts(include_zero_values=False)
+    counts = result.normalized_counts(include_zero_values=False)
     expected = [{"0": 550}, {"0": 550, "1": 474}]
     assert counts == expected
 

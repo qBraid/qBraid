@@ -27,8 +27,8 @@ from azure.quantum.target.target import Target
 
 from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
 from qbraid.runtime import (
-    DeviceActionType,
     DeviceStatus,
+    ExperimentType,
     JobStateError,
     JobStatus,
     ResourceNotFoundError,
@@ -93,7 +93,7 @@ def azure_device(mock_workspace, mock_target):
         capability="test_capability",
         input_data_format="test_input",
         output_data_format="test_output",
-        action_type=DeviceActionType.OPENQASM,
+        experiment_type=ExperimentType.GATE_MODEL,
     )
     mock_workspace.get_targets.return_value = mock_target
     return AzureQuantumDevice(profile, mock_workspace)
@@ -273,7 +273,7 @@ def test_build_profile(azure_provider, mock_target):
     profile = azure_provider._build_profile(mock_target)
 
     assert isinstance(profile, TargetProfile)
-    assert profile.action_type.value == "qbraid.programs.circuits"
+    assert profile.experiment_type.value == "gate_model"
 
 
 def test_build_profile_invalid(azure_provider, mock_invalid_target):
@@ -686,7 +686,7 @@ def test_azure_quantum_result_counts(
         AzureGateModelResultBuilder, "get_results", return_value=mock_results["results"]
     ):
         raw_counts = azure_result_builder.get_counts()
-        formatted_counts = azure_result_builder.measurement_counts()
+        formatted_counts = azure_result_builder.normalized_counts()
     assert raw_counts == formatted_counts == {"000": 50, "111": 50}
 
 

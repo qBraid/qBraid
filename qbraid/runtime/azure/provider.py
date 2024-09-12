@@ -22,7 +22,7 @@ from qbraid_core._import import LazyLoader
 
 from qbraid.programs import ProgramSpec
 from qbraid.programs.typer import IonQDict
-from qbraid.runtime.enums import DeviceActionType
+from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
@@ -112,7 +112,7 @@ class AzureQuantumProvider(QuantumProvider):
             input_data_format=input_data_format,
             output_data_format=output_data_format,
             content_type=content_type,
-            action_type=DeviceActionType.OPENQASM,
+            experiment_type=ExperimentType.GATE_MODEL,
             program_spec=program_spec,
         )
 

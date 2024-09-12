@@ -28,7 +28,7 @@ try:
 
     from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
     from qbraid.runtime import Options, TargetProfile
-    from qbraid.runtime.enums import DeviceActionType, DeviceStatus, JobStatus
+    from qbraid.runtime.enums import DeviceStatus, ExperimentType, JobStatus
     from qbraid.runtime.exceptions import ResourceNotFoundError
     from qbraid.runtime.oqc import OQCDevice, OQCGateModelResultBuilder, OQCJob, OQCProvider
     from qbraid.transpiler import ConversionScheme
@@ -161,7 +161,7 @@ def oqc_device(lucy_simulator_data):
                 device_id=device_id,
                 device_name="Lucy Simulator",
                 simulator=True,
-                action_type=DeviceActionType.OPENQASM,
+                experiment_type=ExperimentType.GATE_MODEL,
                 endpoint_url="https://uk.cloud.oqc.app/d865b5a184",
                 num_qubits=8,
                 program_spec=ProgramSpec(str, alias="qasm2"),
@@ -205,7 +205,7 @@ def test_oqc_provider_device(lucy_simulator_data):
             device_id="fake_id",
             device_name="Fake Device",
             simulator=True,
-            action_type=DeviceActionType.OPENQASM,
+            experiment_type=ExperimentType.GATE_MODEL,
             endpoint_url="https://uk.cloud.oqc.app/fake_id",
             num_qubits=8,
             program_spec=ProgramSpec(str, alias="qasm2"),
@@ -272,7 +272,7 @@ def test_run_fake_job(circuit, oqc_device):
     assert isinstance(job.get_errors(), (str, type(None)))
     res = job.result()
     assert isinstance(res, OQCGateModelResultBuilder)
-    assert res.measurement_counts() == {"0": 1, "1": 1}
+    assert res.normalized_counts() == {"0": 1, "1": 1}
 
     with pytest.raises(ResourceNotFoundError):
         job.result(none=True)

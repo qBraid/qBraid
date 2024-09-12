@@ -29,7 +29,7 @@ from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 from qbraid.programs import ProgramSpec, register_program_type, unregister_program_type
 from qbraid.runtime import DeviceStatus, TargetProfile
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import DeviceActionType, NoiseModel
+from qbraid.runtime.enums import ExperimentType, NoiseModel
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import (
     ExperimentResult,
@@ -146,7 +146,7 @@ def mock_profile():
     return TargetProfile(
         device_id="qbraid_qir_simulator",
         simulator=True,
-        action_type=DeviceActionType.OPENQASM,
+        experiment_type=ExperimentType.GATE_MODEL,
         num_qubits=42,
         program_spec=ProgramSpec(Module, alias="pyqir", to_ir=lambda module: module.bitcode),
         noise_models=[NoiseModel.NoNoise],
@@ -175,7 +175,15 @@ def mock_basic_device(mock_profile):
     return MockDevice(profile=mock_profile)
 
 
-def _is_uniform_comput_basis(array: np.ndarray) -> bool:
+def counts_to_measurements(counts: dict[str, Any]) -> np.ndarray:
+    """Convert counts dictionary to measurements array."""
+    measurements = []
+    for state, count in counts.items():
+        measurements.extend([list(map(int, state))] * count)
+    return np.array(measurements, dtype=int)
+
+
+def is_uniform_comput_basis(array: np.ndarray) -> bool:
     """
     Check if each measurement (row) in the array represents a uniform computational basis
     state, i.e., for each shot, that qubit measurements are either all |0⟩s or all |1⟩s.
@@ -201,7 +209,7 @@ def _is_uniform_comput_basis(array: np.ndarray) -> bool:
     return True
 
 
-def _uniform_state_circuit(num_qubits: Optional[int] = None) -> cirq.Circuit:
+def uniform_state_circuit(num_qubits: Optional[int] = None) -> cirq.Circuit:
     """
     Creates a Cirq circuit where all qubits are entangled to uniformly be in
     either |0⟩ or |1⟩ states upon measurement.
@@ -249,7 +257,7 @@ def _uniform_state_circuit(num_qubits: Optional[int] = None) -> cirq.Circuit:
 @pytest.fixture
 def cirq_uniform():
     """Cirq circuit used for testing."""
-    return _uniform_state_circuit
+    return uniform_state_circuit
 
 
 def test_qir_simulator_workflow(mock_client, cirq_uniform):
@@ -276,7 +284,7 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert repr(result).startswith("QbraidGateModelResultBuilder")
     assert result.success
 
-    counts = result.measurement_counts()
+    counts = result.normalized_counts()
     probabilities = result.measurement_probabilities()
     assert len(counts) == len(probabilities) == 2
     assert sum(probabilities.values()) == 1.0
@@ -287,8 +295,8 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert isinstance(metadata["execution_duration"], int)
 
     raw_counts = result.result.measurement_counts
-    measurements = result.counts_to_measurements(raw_counts)
-    assert _is_uniform_comput_basis(measurements)
+    measurements = counts_to_measurements(raw_counts)
+    assert is_uniform_comput_basis(measurements)
 
 
 def test_run_forbidden_kwarg(mock_client):
