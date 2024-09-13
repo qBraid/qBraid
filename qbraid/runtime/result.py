@@ -64,25 +64,6 @@ class GateModelResultBuilder(RuntimeResultBuilder, ABC):
         return {row: row_strings.count(row) for row in set(row_strings)}
 
     @staticmethod
-    def counts_to_probabilities(counts: dict[str, int]) -> dict[str, float]:
-        """
-        Convert histogram counts to probabilities.
-
-        Args:
-            counts (dict[str, int]): A dictionary with measurement outcomes as keys
-                and their counts as values.
-
-        Returns:
-            dict[str, float]: A dictionary with measurement outcomes as keys and their
-                probabilities as values.
-        """
-        total_counts = sum(counts.values())
-        measurement_probabilities = {
-            outcome: count / total_counts for outcome, count in counts.items()
-        }
-        return measurement_probabilities
-
-    @staticmethod
     def format_counts(counts: dict[str, int], include_zero_values: bool = False) -> dict[str, int]:
         """Formats, sorts, and adds missing bit indices to counts dictionary
         Can pass in a 'include_zero_values' parameter to decide whether to include the states
@@ -155,77 +136,171 @@ class GateModelResultBuilder(RuntimeResultBuilder, ABC):
 
         return normalized_list[0] if normalized_list else measurement
 
-    def normalized_counts(
-        self, include_zero_values: bool = False
+    @staticmethod
+    def normalize_counts(
+        counts: Union[dict[str, int], list[dict[str, int]]], include_zero_values: bool = False
     ) -> Union[dict[str, int], list[dict[str, int]]]:
         """Returns the sorted histogram data of the run"""
-        res_counts = self.get_counts()
-        if isinstance(res_counts, dict):
-            return self.format_counts(res_counts, include_zero_values=include_zero_values)
+        if isinstance(counts, dict):
+            return GateModelResultBuilder.format_counts(
+                counts, include_zero_values=include_zero_values
+            )
 
         batch_counts = [
-            self.format_counts(counts, include_zero_values=include_zero_values)
-            for counts in res_counts
+            GateModelResultBuilder.format_counts(counts, include_zero_values=include_zero_values)
+            for counts in counts
         ]
 
-        return self.normalize_batch_bit_lengths(batch_counts)
+        return GateModelResultBuilder.normalize_batch_bit_lengths(batch_counts)
 
-    def measurement_probabilities(
-        self, **kwargs
+    @staticmethod
+    def _counts_to_probabilities(counts: dict[str, int]) -> dict[str, float]:
+        """
+        Convert histogram counts to probabilities.
+
+        Args:
+            counts (dict[str, int]): A dictionary with measurement outcomes as keys
+                and their counts as values.
+
+        Returns:
+            dict[str, float]: A dictionary with measurement outcomes as keys and their
+                probabilities as values.
+        """
+        total_counts = sum(counts.values())
+        measurement_probabilities = {
+            outcome: count / total_counts for outcome, count in counts.items()
+        }
+        return measurement_probabilities
+
+    @staticmethod
+    def counts_to_probabilities(
+        counts: Union[dict[str, float], list[dict[str, float]]]
     ) -> Union[dict[str, float], list[dict[str, float]]]:
         """Calculate and return the probabilities of each measurement result."""
-        counts = self.normalized_counts(**kwargs)
+        counts = GateModelResultBuilder.normalize_counts(counts)
         if isinstance(counts, dict):
-            return self.counts_to_probabilities(counts)
+            return GateModelResultBuilder._counts_to_probabilities(counts)
 
-        return [self.counts_to_probabilities(count) for count in counts]
+        return [GateModelResultBuilder._counts_to_probabilities(count) for count in counts]
 
     def to_dict(self) -> dict[str, Any]:
         """Returns a dictionary representation of the result"""
-        counts = self.normalized_counts()
+        raw_counts = self.get_counts()
+        counts = self.normalize_counts(raw_counts)
         return {
             "shots": sum(counts.values()),
             "measured_qubits": len(next(iter(counts))),
             "measurement_counts": counts,
-            "measurement_probabilities": self.measurement_probabilities(),
+            "measurement_probabilities": self.counts_to_probabilities(counts),
             "measurements": self.measurements(),
         }
 
 
-@dataclass(frozen=True)
-class ExperimentResult:
-    """A dataclass for storing the result data of a quantum experiment.
+class GateModelResult:
+    """Class for storing the result data of a quantum experiment."""
 
-    Attributes:
-        experiment_type (ExperimentType): The quantum experiment type (e.g., gate-based, AHS).
-        result_data (dict): Dictionary containing the results of the experiment (e.g. measurements).
-    """
-
-    experiment_type: ExperimentType
-    result_data: dict
+    def __init__(
+        self,
+        counts: Optional[Union[dict[str, int], list[dict[str, int]]]] = None,
+        measurements: Optional[Union[np.ndarray, list[np.ndarray]]] = None,
+    ):
+        """Create a new GateModelResult instance."""
+        self._counts = counts
+        self._measurements = measurements
+        self._cache = {
+            "bin_nz": None,
+            "bin_wz": None,
+            "dec_nz": None,
+            "dec_wz": None,
+            "prob_bin_nz": None,
+            "prob_bin_wz": None,
+            "prob_dec_nz": None,
+            "prob_dec_wz": None,
+        }
 
     @classmethod
-    def from_object(cls, result_builder: RuntimeResultBuilder) -> ExperimentResult:
+    def from_object(cls, result_builder: GateModelResultBuilder) -> GateModelResult:
+        """Creates a new GateModelResult instance from a RuntimeResultBuilder instance."""
+        result_data = result_builder.to_dict()
+        return cls.from_dict(result_data)
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> GateModelResult:
+        """Creates a new GateModelResult instance from a dictionary."""
+        counts = data.get("measurement_counts")
+        measurements = data.get("measurements")
+        return cls(counts=counts, measurements=measurements)
+
+    @property
+    def measurements(self) -> Optional[Union[np.ndarray, list[np.ndarray]]]:
+        """Returns the measurements data of the run."""
+        return self._measurements
+
+    def get_counts(
+        self, include_zero_values: bool = False, decimal: bool = False
+    ) -> Union[dict[str, int], list[dict[str, int]]]:
         """
-        Creates a new ExperimentResult instance from a RuntimeResultBuilder instance.
+        Returns the histogram data of the run with optional zero values and binary/decimal keys.
 
         Args:
-            result_builder (RuntimeResultBuilder): The runtime result object to extract data from.
+            include_zero_values (bool): Whether to include states with zero counts.
+            decimal (bool): Whether to return counts with decimal keys (instead of binary).
 
         Returns:
-            ExperimentResult: A new ExperimentResult instance.
+            Union[dict[str, int], list[dict[str, int]]]: The histogram data.
+
+        Raises:
+            ValueError: If counts data is not available.
         """
-        return cls(
-            experiment_type=result_builder.experiment_type, result_data=result_builder.to_dict()
+        if self._counts is None:
+            raise ValueError("Counts data is not available.")
+
+        cache_key = f"{'dec' if decimal else 'bin'}_{'wz' if include_zero_values else 'nz'}"
+
+        if self._cache[cache_key] is not None:
+            return self._cache[cache_key]
+
+        counts = GateModelResultBuilder.normalize_counts(
+            self._counts, include_zero_values=include_zero_values
         )
 
+        if decimal:
+            counts = {int(k, 2): v for k, v in counts.items()}
+
+        self._cache[cache_key] = counts
+
+        return counts
+
+    def get_probabilities(
+        self, include_zero_values: bool = False, decimal: bool = False
+    ) -> Union[dict[str, float], list[dict[str, float]]]:
+        """
+        Returns the probabilities of the measurement outcomes based on counts.
+
+        Args:
+            include_zero_values (bool): Whether to include states with zero probabilities.
+            decimal (bool): Whether to return probabilities with decimal keys (instead of binary).
+
+        Returns:
+            Union[dict[str, float], list[dict[str, float]]]: The probabilities of the measurement outcomes.
+
+        Raises:
+            ValueError: If probabilities data is not available.
+        """
+        cache_key = f"prob_{'dec' if decimal else 'bin'}_{'wz' if include_zero_values else 'nz'}"
+
+        if self._cache[cache_key] is not None:
+            return self._cache[cache_key]
+
+        counts = self.get_counts(include_zero_values=include_zero_values, decimal=decimal)
+        probabilities = GateModelResultBuilder.counts_to_probabilities(counts)
+
+        self._cache[cache_key] = probabilities
+
+        return probabilities
+
     def __repr__(self) -> str:
-        return (
-            f"ExperimentResult(\n"
-            f"  experiment_type={self.experiment_type},\n"
-            f"  result_data={pformat(self.result_data, indent=4)}\n"
-            f")"
-        )
+        return f"GateModelResult(counts={self._counts})"
 
 
 class Result:
@@ -246,7 +321,7 @@ class Result:
         device_id: str,
         job_id: str,
         success: bool,
-        result: ExperimentResult,
+        result: GateModelResult,
         metadata: Optional[dict[str, Any]] = None,
     ):
         """Create a new Result object."""

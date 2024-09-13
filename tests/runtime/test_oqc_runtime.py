@@ -272,7 +272,9 @@ def test_run_fake_job(circuit, oqc_device):
     assert isinstance(job.get_errors(), (str, type(None)))
     res = job.result()
     assert isinstance(res, OQCGateModelResultBuilder)
-    assert res.normalized_counts() == {"0": 1, "1": 1}
+
+    counts = res.get_counts()
+    assert res.normalize_counts(counts) == {"0": 1, "1": 1}
 
     with pytest.raises(ResourceNotFoundError):
         job.result(none=True)

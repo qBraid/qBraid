@@ -686,7 +686,7 @@ def test_azure_quantum_result_counts(
         AzureGateModelResultBuilder, "get_results", return_value=mock_results["results"]
     ):
         raw_counts = azure_result_builder.get_counts()
-        formatted_counts = azure_result_builder.normalized_counts()
+        formatted_counts = azure_result_builder.normalize_counts(raw_counts)
     assert raw_counts == formatted_counts == {"000": 50, "111": 50}
 
 

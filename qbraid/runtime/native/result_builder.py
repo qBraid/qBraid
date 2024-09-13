@@ -71,13 +71,14 @@ class QbraidGateModelResultBuilder(GateModelResultBuilder):
     def metadata(self) -> dict[str, int]:
         """Return metadata about the measurement results."""
         if self._cached_metadata is None:
-            counts = self.normalized_counts()
+            raw_counts = self.get_counts()
+            counts = self.normalize_counts(raw_counts)
             self._cached_metadata = {
                 "num_shots": sum(counts.values()),
                 "num_qubits": len(next(iter(counts))),
                 "execution_duration": self.result.execution_duration,
                 "measurement_counts": counts,
-                "measurement_probabilities": self.measurement_probabilities(),
+                "measurement_probabilities": self.counts_to_probabilities(counts),
             }
 
         return self._cached_metadata

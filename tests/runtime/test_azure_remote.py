@@ -106,7 +106,9 @@ def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
 
     result = job.result()
     assert isinstance(result, AzureGateModelResultBuilder)
-    assert result.normalized_counts() == {"000": 100}
+
+    counts = result.get_counts()
+    assert result.normalize_counts(counts) == {"000": 100}
 
 
 @pytest.mark.remote
@@ -130,7 +132,9 @@ def test_submit_json_to_ionq(provider: AzureQuantumProvider):
 
     result = job.result()
     assert isinstance(result, AzureGateModelResultBuilder)
-    assert result.normalized_counts() == {"000": 50, "111": 50}
+
+    counts = result.get_counts()
+    assert result.normalize_counts(counts) == {"000": 50, "111": 50}
 
 
 @pytest.fixture
@@ -220,4 +224,6 @@ def test_submit_quil_to_rigetti(
 
     result = job.result()
     assert isinstance(result, AzureGateModelResultBuilder)
-    assert result.normalized_counts() == {"00": 60, "11": 40}
+
+    counts = result.get_counts()
+    assert result.normalize_counts(counts) == {"00": 60, "11": 40}

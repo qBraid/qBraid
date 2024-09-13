@@ -137,7 +137,8 @@ class AzureGateModelResultBuilder(GateModelResultBuilder):
         }
 
         result = IonQGateModelResultBuilder(data)
-        counts = result.normalized_counts()
+        raw_counts = result.get_counts()
+        counts = result.normalize_counts(raw_counts)
         probabilities = self.counts_to_probabilities(counts)
 
         return {"counts": counts, "probabilities": probabilities}

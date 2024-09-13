@@ -284,8 +284,9 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert repr(result).startswith("QbraidGateModelResultBuilder")
     assert result.success
 
-    counts = result.normalized_counts()
-    probabilities = result.measurement_probabilities()
+    raw_counts = result.get_counts()
+    counts = result.normalize_counts(raw_counts)
+    probabilities = result.counts_to_probabilities(counts)
     assert len(counts) == len(probabilities) == 2
     assert sum(probabilities.values()) == 1.0
 

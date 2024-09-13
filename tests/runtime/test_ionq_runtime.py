@@ -252,7 +252,9 @@ def test_ionq_device_run_submit_job(mock_post, mock_get, circuit):
 
     res = job.result()
     assert isinstance(res, IonQGateModelResultBuilder)
-    assert res.normalized_counts() == {"00": 1, "01": 1}
+
+    counts = res.get_counts()
+    assert res.normalize_counts(counts) == {"00": 1, "01": 1}
 
 
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
