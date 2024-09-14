@@ -20,24 +20,31 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
+    Session
 	QbraidSession
+    QbraidClient
 	QbraidProvider
 	QbraidDevice
 	QbraidJob
+    RuntimeJobModel
 	QirRunner
 
 """
-from qbraid_core import QbraidSession
+from qbraid_core import QbraidClient, QbraidSession, Session
 from qbraid_core.services.quantum.runner import Simulator as QirRunner
 
 from .device import QbraidDevice
 from .job import QbraidJob
 from .provider import QbraidProvider
+from .schemas import RuntimeJobModel
 
 __all__ = [
+    "Session",
     "QbraidSession",
+    "QbraidClient",
     "QbraidProvider",
     "QbraidDevice",
     "QbraidJob",
+    "RuntimeJobModel",
     "QirRunner",
 ]

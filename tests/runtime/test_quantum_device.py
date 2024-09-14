@@ -27,17 +27,11 @@ from pyqir import BasicQisBuilder, Module, SimpleModule
 from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
 from qbraid.programs import ProgramSpec, register_program_type, unregister_program_type
-from qbraid.runtime import DeviceStatus, TargetProfile
+from qbraid.runtime import DeviceStatus, GateModelResultData, Result, TargetProfile
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import ExperimentType, NoiseModel
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
-from qbraid.runtime.native import (
-    ExperimentResult,
-    QbraidDevice,
-    QbraidGateModelResultBuilder,
-    QbraidJob,
-    QbraidProvider,
-)
+from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
 from qbraid.transpiler import CircuitConversionError, Conversion, ConversionGraph, ConversionScheme
 
 DEVICE_DATA = {
@@ -59,21 +53,14 @@ JOB_DATA = {
     "qbraidJobId": "qbraid_qir_simulator-jovyan-qjob-1234567890",
     "queuePosition": None,
     "queueDepth": None,
-    "timeStamps": {"executionDuration": 16},
+    "timeStamps": {
+        "createdAt": "2024-05-23T01:39:11.288Z",
+        "endedAt": "2024-05-23T01:39:11.304Z",
+        "executionDuration": 16,
+    },
     "shots": 10,
     "circuitNumQubits": 5,
     "measurementCounts": {"11111": 4, "00000": 6},
-    "qbraidDeviceId": "qbraid_qir_simulator",
-    "vendorJobId": "afff09f1-d9e0-4dcb-8274-b984678d35c3",
-    "status": "COMPLETED",
-    "qbraidStatus": "COMPLETED",
-    "vendor": "qBraid",
-    "provider": "qBraid",
-    "createdAt": "2024-05-23T01:39:11.288Z",
-}
-
-JOB_RESULT = {
-    "vendorJobId": "afff09f1-d9e0-4dcb-8274-b984678d35c3",
     "measurements": [
         [0, 0, 0, 0, 0],
         [1, 1, 1, 1, 1],
@@ -86,12 +73,23 @@ JOB_RESULT = {
         [0, 0, 0, 0, 0],
         [1, 1, 1, 1, 1],
     ],
-    "timeStamps": {"executionDuration": 16},
     "qbraidDeviceId": "qbraid_qir_simulator",
-    "shots": 10,
-    "circuitNumQubits": 5,
+    "status": "COMPLETED",
+    "vendor": "qbraid",
+    "provider": "qbraid",
     "tags": "{}",
 }
+
+
+@pytest.fixture
+def valid_qasm2():
+    """Valid OpenQASM 2 string for testing."""
+    return """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    swap q[0],q[1];
+    """
 
 
 class MockClient:
@@ -117,7 +115,6 @@ class MockClient:
 
     def get_job(self, job_id: str) -> dict[str, Any]:
         """Returns the quantum job with the given ID."""
-        JOB_DATA["result"] = JOB_RESULT
         return JOB_DATA
 
 
@@ -279,25 +276,20 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert all(isinstance(job, QbraidJob) for job in batch_job)
 
     result = job.result()
-    assert isinstance(result, QbraidGateModelResultBuilder)
-    assert isinstance(result.result, ExperimentResult)
-    assert repr(result).startswith("QbraidGateModelResultBuilder")
+    assert isinstance(result, Result)
+    assert isinstance(result.data, GateModelResultData)
+    assert repr(result).startswith("GateModelResultData")
     assert result.success
 
-    raw_counts = result.get_counts()
-    counts = result.normalize_counts(raw_counts)
-    probabilities = result.counts_to_probabilities(counts)
+    counts = result.data.get_counts()
+    probabilities = result.data.get_probabilities()
     assert len(counts) == len(probabilities) == 2
     assert sum(probabilities.values()) == 1.0
+    assert is_uniform_comput_basis(result.data.measurements)
 
-    metadata = result.metadata()
-    assert metadata["num_shots"] == shots
-    assert metadata["num_qubits"] == num_qubits
-    assert isinstance(metadata["execution_duration"], int)
-
-    raw_counts = result.result.measurement_counts
-    measurements = counts_to_measurements(raw_counts)
-    assert is_uniform_comput_basis(measurements)
+    assert result.details["shots"] == shots
+    assert result.details["metadata"]["circuitNumQubits"] == num_qubits
+    assert isinstance(result.details["timeStamps"]["executionDuration"], int)
 
 
 def test_run_forbidden_kwarg(mock_client):
@@ -327,17 +319,6 @@ def test_device_noisey_run_raises_for_unsupported(mock_qbraid_device):
     """Test raising exception when noise model is not supported."""
     with pytest.raises(ValueError):
         mock_qbraid_device.run(Mock(), noise_model=NoiseModel.AmplitudeDamping)
-
-
-@pytest.fixture
-def valid_qasm2():
-    """Valid OpenQASM 2 string for testing."""
-    return """
-    OPENQASM 2.0;
-    include "qelib1.inc";
-    qreg q[2];
-    swap q[0],q[1];
-    """
 
 
 def test_device_transform(valid_qasm2, mock_qbraid_device):

@@ -15,7 +15,6 @@ Module containing models for schema-conformant Results.
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from pprint import pformat
 from typing import Any, Optional, Union
 
 import numpy as np
@@ -24,16 +23,7 @@ from .enums import ExperimentType
 from .postprocess import GateModelResultBuilder
 
 
-class RuntimeResult:
-    """Base class for runtime result types.
-
-    .. note:: This class is primarily intended for type checking, but can be inherited
-              from directly if the new result type doesn't align with existing abstract
-              classes tied to specific :class:`~qbraid.runtime.ExperimentType`.
-    """
-
-
-class ExperimentResult(RuntimeResult, ABC):
+class ResultData(ABC):
     """Abstract base class for runtime results linked to a
     specific :class:`~qbraid.runtime.ExperimentType`.
     """
@@ -43,8 +33,12 @@ class ExperimentResult(RuntimeResult, ABC):
     def experiment_type(self) -> ExperimentType:
         """Returns the experiment type."""
 
+    @abstractmethod
+    def to_dict(self) -> dict[str, Any]:
+        """Converts the result data to a dictionary."""
 
-class GateModelResult(ExperimentResult):
+
+class GateModelResultData(ResultData):
     """Class for storing and accessing the results of a gate model quantum job."""
 
     def __init__(
@@ -64,6 +58,7 @@ class GateModelResult(ExperimentResult):
             "prob_bin_wz": None,
             "prob_dec_nz": None,
             "prob_dec_wz": None,
+            "to_dict": None,
         }
 
     @property
@@ -72,9 +67,9 @@ class GateModelResult(ExperimentResult):
         return ExperimentType.GATE_MODEL
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> GateModelResult:
+    def from_dict(cls, data: dict[str, Any]) -> GateModelResultData:
         """Creates a new GateModelResult instance from a dictionary."""
-        counts = data.get("counts")
+        counts = data.get("counts", data.get("measurementCounts"))
         measurements = data.get("measurements")
         return cls(counts=counts, measurements=measurements)
 
@@ -146,28 +141,25 @@ class GateModelResult(ExperimentResult):
 
         return probabilities
 
-    def metadata(self) -> dict[str, int]:
-        """Return metadata about the measurement results."""
-        if self._cache["metadata"] is not None:
-            return self._cache["metadata"]
+    def to_dict(self) -> dict[str, Any]:
+        """Converts the GateModelResulData instance to a dictionary."""
+        if self._cache["to_dict"] is not None:
+            return self._cache["to_dict"]
 
         counts = self.get_counts()
         probabilities = self.get_probabilities()
         shots = sum(counts.values())
-        num_qubits = len(next(iter(counts)))
-        metadata = {
-            "num_shots": shots,
-            "num_qubits": num_qubits,
-            "measurement_counts": counts,
-            "measurement_probabilities": probabilities,
+        num_measured_qubits = len(next(iter(counts)))
+        data = {
+            "shots": shots,
+            "numMeasuredQubits": num_measured_qubits,
+            "measurementCounts": counts,
+            "measurementProbabilities": probabilities,
+            "measurements": self._measurements,
         }
-        self._cache["metadata"] = metadata
+        self._cache["to_dict"] = data
 
-        return metadata
-
-    def to_dict(self) -> dict[str, Any]:
-        """Converts the GateModelResult instance to a dictionary."""
-        return {"counts": self._counts, "measurements": self._measurements}
+        return data
 
     @staticmethod
     def _format_array(arr: np.ndarray) -> str:
@@ -185,7 +177,7 @@ class GateModelResult(ExperimentResult):
         else:
             measurements_info = self._measurements
 
-        return f"GateModelResult(counts={self._counts}, measurements={measurements_info})"
+        return f"GateModelResultData(counts={self._counts}, measurements={measurements_info})"
 
 
 class Result:
@@ -196,8 +188,8 @@ class Result:
         device_id (str): The ID of the device that executed the job.
         job_id (str): The ID of the job.
         success (bool): Whether the job was successful.
-        result (ExperimentResult): The result of the job.
-        metadata (dict[str, Any], optional): Additional metadata about the job results
+        data (ResultData): The result of the job.
+        **details: Additional metadata about the job results
 
     """
 
@@ -206,24 +198,41 @@ class Result:
         device_id: str,
         job_id: str,
         success: bool,
-        result: GateModelResult,
-        metadata: Optional[dict[str, Any]] = None,
+        data: ResultData,
+        **details,
     ):
         """Create a new Result object."""
         self.device_id = device_id
         self.job_id = job_id
         self.success = success
-        self.result = result
-        self._metadata = metadata or {}
+        self._data = data
+        self._details = details or {}
+
+    @property
+    def data(self) -> ResultData:
+        """Returns the result of the job."""
+        return self._data
+
+    @property
+    def details(self) -> dict[str, Any]:
+        """Returns the result of the job."""
+        return self._data
 
     def __repr__(self):
         """Return a string representation of the Result object."""
-        return (
+        out = (
             f"Result(\n"
             f"  device_id={self.device_id},\n"
             f"  job_id={self.job_id},\n"
             f"  success={self.success},\n"
-            f"  result={self.result},\n"
-            f"  metadata={pformat(self._metadata, indent=4)}\n"
-            f")"
+            f"  data={self.data}"
         )
+        if self.details:
+            for key, value in self.details.items():
+                if isinstance(value, str):
+                    value_str = f"'{value}'"
+                else:
+                    value_str = repr(value)
+                out += f",\n  {key}={value_str}"
+        out += "\n)"
+        return out
