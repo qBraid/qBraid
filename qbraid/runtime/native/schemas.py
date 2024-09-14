@@ -75,8 +75,8 @@ class GateModelExperimentMetadata(BaseModel):
     num_qubits: Optional[int] = Field(None, alias="circuitNumQubits")
     gate_depth: Optional[int] = Field(None, alias="circuitDepth")
     noise_model: Optional[NoiseModel] = Field(None, alias="noiseModel")
-    measurement_counts: Counter = Field(default_factory=Counter, alias="measurementCounts")
-    measurements: Optional[list]
+    measurement_counts: Optional[Counter] = Field(None, alias="measurementCounts")
+    measurements: Optional[list] = None
 
     @field_validator("qasm")
     @classmethod
