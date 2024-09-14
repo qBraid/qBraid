@@ -42,12 +42,14 @@ class ExperimentType(Enum):
         AHS (str): Analog Hamiltonian simulation.
         ANNEALING (str): Quantum annealing for optimization problems.
         PHOTONIC_MODEL (str): Photonic quantum computing using photons as qubits.
+        OTHER (str): Placeholder for other or unspecified quantum computing models.
     """
 
     GATE_MODEL = "gate_model"
     AHS = "analog_hamiltonian_simulation"
     ANNEALING = "quantum_annealing"
     PHOTONIC_MODEL = "photonic_quantum_computing"
+    OTHER = "other"
 
 
 class NoiseModel(Enum):

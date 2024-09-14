@@ -23,9 +23,8 @@ from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
     ShotResult,
 )
 
-from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.exceptions import QbraidRuntimeError
-from qbraid.runtime.result import GateModelResultBuilder, RuntimeResultBuilder
+from qbraid.runtime.result import GateModelResultBuilder
 
 if TYPE_CHECKING:
     from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
@@ -65,16 +64,11 @@ class BraketGateModelResultBuilder(GateModelResultBuilder):
         return qbraid_counts
 
 
-class BraketAhsResultBuilder(RuntimeResultBuilder):
+class BraketAhsResultBuilder:
     """Result from an Analog Hamiltonian Simulation (AHS)."""
 
     def __init__(self, result: AnalogHamiltonianSimulationQuantumTaskResult):
         self._result = result
-
-    @property
-    def experiment_type(self) -> ExperimentType:
-        """Get the experiment type."""
-        return ExperimentType.AHS
 
     def measurements(self) -> list[ShotResult]:
         """Get the list of shot results from the AHS job."""

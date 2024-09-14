@@ -9,195 +9,43 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining abstract GateModelResultBuilder Class
+Module containing models for schema-conformant Results.
 
 """
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from pprint import pformat
 from typing import Any, Optional, Union
 
 import numpy as np
 
 from .enums import ExperimentType
+from .postprocess import GateModelResultBuilder
 
 
-class RuntimeResultBuilder(ABC):
-    """Abstract interface for runtime quantum job results."""
+class RuntimeResult:
+    """Base class for runtime result types.
+
+    .. note:: This class is primarily intended for type checking, but can be inherited
+              from directly if the new result type doesn't align with existing abstract
+              classes tied to specific :class:`~qbraid.runtime.ExperimentType`.
+    """
+
+
+class ExperimentResult(RuntimeResult, ABC):
+    """Abstract base class for runtime results linked to a
+    specific :class:`~qbraid.runtime.ExperimentType`.
+    """
 
     @property
     @abstractmethod
     def experiment_type(self) -> ExperimentType:
-        """Returns the type of experiment"""
-
-    @abstractmethod
-    def to_dict(self) -> dict[str, Any]:
-        """Returns a dictionary representation of the result"""
+        """Returns the experiment type."""
 
 
-class GateModelResultBuilder(RuntimeResultBuilder, ABC):
-    """Abstract interface for gate model quantum job results."""
-
-    @property
-    def experiment_type(self) -> ExperimentType:
-        """Returns the type of experiment"""
-        return ExperimentType.GATE_MODEL
-
-    def measurements(self) -> Optional[Union[np.ndarray, list[np.ndarray]]]:
-        """
-        Return measurements as a 2d array where each row is a
-        shot and each column is qubit. Defaults to None.
-
-        """
-        return None
-
-    @abstractmethod
-    def get_counts(self) -> Union[dict[str, int], list[dict[str, int]]]:
-        """Returns histogram data of the run"""
-
-    @staticmethod
-    def measurements_to_counts(measurements: np.ndarray) -> dict[str, int]:
-        """Convert a 2D numpy array to histogram counts data."""
-        row_strings = ["".join(map(str, row)) for row in measurements]
-        return {row: row_strings.count(row) for row in set(row_strings)}
-
-    @staticmethod
-    def format_counts(counts: dict[str, int], include_zero_values: bool = False) -> dict[str, int]:
-        """Formats, sorts, and adds missing bit indices to counts dictionary
-        Can pass in a 'include_zero_values' parameter to decide whether to include the states
-        with zero counts.
-
-        For example:
-
-        .. code-block:: python
-
-            >>> counts
-            {'1 1': 13, '0 0': 46, '1 0': 79}
-            >>> GateModelResultBuilder.format_counts(counts)
-            {'00': 46, '10': 79, '11': 13}
-            >>> GateModelResultBuilder.format_counts(counts, include_zero_values=True)
-            {'00': 46, '01': 0, '10': 79, '11': 13}
-
-        """
-        counts = {key.replace(" ", ""): value for key, value in counts.items()}
-
-        num_bits = max(len(key) for key in counts)
-        all_keys = [format(i, f"0{num_bits}b") for i in range(2**num_bits)]
-        final_counts = {key: counts.get(key, 0) for key in sorted(all_keys)}
-
-        if not include_zero_values:
-            final_counts = {key: value for key, value in final_counts.items() if value != 0}
-
-        return final_counts
-
-    @staticmethod
-    def normalize_batch_bit_lengths(measurements: list[dict[str, int]]) -> list[dict[str, int]]:
-        """
-        Normalizes the bit lengths of binary keys in measurement count dictionaries
-        to ensure uniformity across all keys.
-
-        Args:
-            measurements (list[dict[str, int]]): A list of dictionaries where each dictionary
-                contains binary string keys and integer values.
-
-        Returns:
-            list[dict[str, int]]: A new list of dictionaries with uniformly lengthened binary keys.
-        """
-        if len(measurements) == 0:
-            return measurements
-
-        max_bit_length = max(len(key) for counts in measurements for key in counts.keys())
-
-        normalized_counts_list = []
-        for counts in measurements:
-            normalized_counts = {}
-            for key, value in counts.items():
-                normalized_key = key.zfill(max_bit_length)
-                normalized_counts[normalized_key] = value
-            normalized_counts_list.append(normalized_counts)
-
-        return normalized_counts_list
-
-    @staticmethod
-    def normalize_bit_lengths(measurement: dict[str, int]) -> dict[str, int]:
-        """
-        Normalizes the bit lengths of binary keys in a single measurement count dictionary
-            to ensure uniformity across all keys.
-
-        Args:
-            measurement (dict[str, int]): A dictionary with binary string keys and integer values.
-
-        Returns:
-            dict[str, int]: A dictionary with uniformly lengthened binary keys.
-        """
-        normalized_list = GateModelResultBuilder.normalize_batch_bit_lengths([measurement])
-
-        return normalized_list[0] if normalized_list else measurement
-
-    @staticmethod
-    def normalize_counts(
-        counts: Union[dict[str, int], list[dict[str, int]]], include_zero_values: bool = False
-    ) -> Union[dict[str, int], list[dict[str, int]]]:
-        """Returns the sorted histogram data of the run"""
-        if isinstance(counts, dict):
-            return GateModelResultBuilder.format_counts(
-                counts, include_zero_values=include_zero_values
-            )
-
-        batch_counts = [
-            GateModelResultBuilder.format_counts(counts, include_zero_values=include_zero_values)
-            for counts in counts
-        ]
-
-        return GateModelResultBuilder.normalize_batch_bit_lengths(batch_counts)
-
-    @staticmethod
-    def _counts_to_probabilities(counts: dict[str, int]) -> dict[str, float]:
-        """
-        Convert histogram counts to probabilities.
-
-        Args:
-            counts (dict[str, int]): A dictionary with measurement outcomes as keys
-                and their counts as values.
-
-        Returns:
-            dict[str, float]: A dictionary with measurement outcomes as keys and their
-                probabilities as values.
-        """
-        total_counts = sum(counts.values())
-        measurement_probabilities = {
-            outcome: count / total_counts for outcome, count in counts.items()
-        }
-        return measurement_probabilities
-
-    @staticmethod
-    def counts_to_probabilities(
-        counts: Union[dict[str, float], list[dict[str, float]]]
-    ) -> Union[dict[str, float], list[dict[str, float]]]:
-        """Calculate and return the probabilities of each measurement result."""
-        counts = GateModelResultBuilder.normalize_counts(counts)
-        if isinstance(counts, dict):
-            return GateModelResultBuilder._counts_to_probabilities(counts)
-
-        return [GateModelResultBuilder._counts_to_probabilities(count) for count in counts]
-
-    def to_dict(self) -> dict[str, Any]:
-        """Returns a dictionary representation of the result"""
-        raw_counts = self.get_counts()
-        counts = self.normalize_counts(raw_counts)
-        return {
-            "shots": sum(counts.values()),
-            "measured_qubits": len(next(iter(counts))),
-            "measurement_counts": counts,
-            "measurement_probabilities": self.counts_to_probabilities(counts),
-            "measurements": self.measurements(),
-        }
-
-
-class GateModelResult:
-    """Class for storing the result data of a quantum experiment."""
+class GateModelResult(ExperimentResult):
+    """Class for storing and accessing the results of a gate model quantum job."""
 
     def __init__(
         self,
@@ -218,16 +66,15 @@ class GateModelResult:
             "prob_dec_wz": None,
         }
 
-    @classmethod
-    def from_object(cls, result_builder: GateModelResultBuilder) -> GateModelResult:
-        """Creates a new GateModelResult instance from a RuntimeResultBuilder instance."""
-        result_data = result_builder.to_dict()
-        return cls.from_dict(result_data)
+    @property
+    def experiment_type(self) -> ExperimentType:
+        """Returns the experiment type."""
+        return ExperimentType.GATE_MODEL
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> GateModelResult:
         """Creates a new GateModelResult instance from a dictionary."""
-        counts = data.get("measurement_counts")
+        counts = data.get("counts")
         measurements = data.get("measurements")
         return cls(counts=counts, measurements=measurements)
 
@@ -282,7 +129,7 @@ class GateModelResult:
             decimal (bool): Whether to return probabilities with decimal keys (instead of binary).
 
         Returns:
-            Union[dict[str, float], list[dict[str, float]]]: The probabilities of the measurement outcomes.
+            Union[dict[str, float], list[dict[str, float]]]: Probabilities of measurement outcomes.
 
         Raises:
             ValueError: If probabilities data is not available.
@@ -299,8 +146,46 @@ class GateModelResult:
 
         return probabilities
 
+    def metadata(self) -> dict[str, int]:
+        """Return metadata about the measurement results."""
+        if self._cache["metadata"] is not None:
+            return self._cache["metadata"]
+
+        counts = self.get_counts()
+        probabilities = self.get_probabilities()
+        shots = sum(counts.values())
+        num_qubits = len(next(iter(counts)))
+        metadata = {
+            "num_shots": shots,
+            "num_qubits": num_qubits,
+            "measurement_counts": counts,
+            "measurement_probabilities": probabilities,
+        }
+        self._cache["metadata"] = metadata
+
+        return metadata
+
+    def to_dict(self) -> dict[str, Any]:
+        """Converts the GateModelResult instance to a dictionary."""
+        return {"counts": self._counts, "measurements": self._measurements}
+
+    @staticmethod
+    def _format_array(arr: np.ndarray) -> str:
+        return f"array(shape={arr.shape}, dtype={arr.dtype})"
+
     def __repr__(self) -> str:
-        return f"GateModelResult(counts={self._counts})"
+        if isinstance(self._measurements, np.ndarray):
+            measurements_info = self._format_array(self._measurements)
+        elif isinstance(self._measurements, list) and all(
+            isinstance(arr, np.ndarray) for arr in self._measurements
+        ):
+            measurements_info = (
+                "[" + ", ".join(self._format_array(arr) for arr in self._measurements) + "]"
+            )
+        else:
+            measurements_info = self._measurements
+
+        return f"GateModelResult(counts={self._counts}, measurements={measurements_info})"
 
 
 class Result:
