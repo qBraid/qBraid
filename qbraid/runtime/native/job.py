@@ -15,7 +15,7 @@ Module defining QbraidJob class
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Optional
 
 from qbraid_core.services.quantum import QuantumClient
 
@@ -23,6 +23,8 @@ from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import GateModelResult, Result
+
+from .schemas import RuntimeJobModel
 
 if TYPE_CHECKING:
     import qbraid_core.services.quantum
@@ -94,45 +96,13 @@ class QbraidJob(QuantumJob):
         """Return the results of the job."""
         self.wait_for_final_state()
         job_data = self.client.get_job(self.id)
-        job_id: str = job_data.get("qbraidJobId", self.id)
-        device_id: Optional[str] = job_data.get(
-            "qbraidDeviceId", self._device.id if self._device else job_id.split("-")[0]
+        model = RuntimeJobModel.from_dict(job_data)
+        return Result(
+            device_id=model.device_id,
+            job_id=model.job_id,
+            success=model.status == JobStatus.COMPLETED,
+            result=GateModelResult(
+                counts=model.metadata.measurement_counts, measurements=model.metadata.measurements
+            ),
+            metadata=model.model_dump(by_alias=True),
         )
-        status = job_data.get("status", JobStatus.UNKNOWN.name)
-        success: bool = job_data.get("status") == JobStatus.COMPLETED.name
-        status_msg: Optional[str] = job_data.get("statusText" "")
-        time_stamps: dict[str, Any] = job_data.get("timeStamps", {})
-        execution_duration: Optional[float] = job_data.get("executionDuration", -1.0)
-        created_at: Optional[str] = time_stamps.get("createdAt")
-        ended_at: Optional[str] = time_stamps.get("endedAt")
-        openqasm = job_data.get("openQasm")
-        circuit_num_qubits = job_data.get("circuitNumQubits")
-        circuit_depth = job_data.get("circuitDepth")
-        provider = job_data.get("provider", job_id.split("_")[0])
-        cost = job_data.get("cost")
-        noise_model = job_data.get("noiseModel")
-        counts = job_data.get("measurementCounts", {})
-        measurements = job_data.get("measurements")
-        shots = job_data.get("shots")
-
-        metadata = {
-            "job_id": job_id,
-            "device_id": device_id,
-            "status": status,
-            "success": success,
-            "status_message": status_msg,
-            "openqasm": openqasm,
-            "circuit_num_qubits": circuit_num_qubits,
-            "circuit_depth": circuit_depth,
-            "provider": provider,
-            "cost": cost,  # in qBraid credits
-            "noise_model": noise_model,
-            "shots": shots,
-            "time_stamps": {
-                "created_at": created_at,
-                "ended_at": ended_at,
-                "execution_duration": execution_duration,  # milliseconds
-            },
-        }
-        result = GateModelResult(counts=counts, measurements=measurements)
-        return Result(device_id, job_id, success, result, metadata)
