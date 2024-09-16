@@ -21,6 +21,8 @@ import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
+import qbraid_core
+
 from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
 from qbraid.transpiler import CircuitConversionError, ConversionGraph, ConversionScheme, transpile
 
@@ -58,6 +60,7 @@ class QuantumDevice(ABC):
         self._target_spec: Optional[ProgramSpec] = profile.program_spec
         self._scheme = scheme or ConversionScheme()
         self._options = self._default_options()
+        self._core_client = None
 
     @property
     def profile(self) -> qbraid.runtime.TargetProfile:
@@ -296,3 +299,39 @@ class QuantumDevice(ABC):
         run_input_compat = [self.apply_runtime_profile(program) for program in run_input]
         run_input_compat = run_input_compat[0] if is_single_input else run_input_compat
         return self.submit(run_input_compat, *args, **kwargs)
+
+    def estimate_cost(self, shots: Optional[int], execution_time: Optional[float]) -> float:
+        """Calculate the cost for executing a quantum job on the device.
+
+        Args:
+            shots: Number of shots for the quantum job.
+            execution_time: Execution time for the quantum job (in minutes).
+
+        Raises:
+            QbraidRuntimeError: If shots and execution time are both None.
+            ResourceNotFoundError: If the cost cannot be estimated.
+
+        Returns:
+            float: The estimated cost for the quantum job in qbraid credits.
+        """
+
+        if shots is None and execution_time is None:
+            raise QbraidRuntimeError(
+                f"Cannot estimate cost for device '{self.id}' without shots or execution time."
+            )
+
+        if shots <= 0 or execution_time <= 0:
+            raise ValueError(
+                f"Invalid cost parameters (shots={shots}, execution_time={execution_time}) "
+                f"for device '{self.id}'."
+            )
+
+        if not self._core_client:
+            self._core_client = qbraid_core.client("quantum")
+
+        try:
+            return self._core_client.estimate_cost(self.id, shots, execution_time)
+        except Exception as err:
+            raise ResourceNotFoundError(
+                f"Failed to estimate cost for device '{self.id}': {err}"
+            ) from err
