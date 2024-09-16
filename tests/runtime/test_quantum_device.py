@@ -278,7 +278,7 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     result = job.result()
     assert isinstance(result, Result)
     assert isinstance(result.data, GateModelResultData)
-    assert repr(result).startswith("GateModelResultData")
+    assert repr(result.data).startswith("GateModelResultData")
     assert result.success
 
     counts = result.data.get_counts()

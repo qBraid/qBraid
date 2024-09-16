@@ -199,14 +199,14 @@ class Result:
         job_id: str,
         success: bool,
         data: ResultData,
-        **details,
+        **kwargs,
     ):
         """Create a new Result object."""
         self.device_id = device_id
         self.job_id = job_id
         self.success = success
         self._data = data
-        self._details = details or {}
+        self._details = kwargs or {}
 
     @property
     def data(self) -> ResultData:
@@ -216,7 +216,7 @@ class Result:
     @property
     def details(self) -> dict[str, Any]:
         """Returns the result of the job."""
-        return self._data
+        return self._details
 
     def __repr__(self):
         """Return a string representation of the Result object."""

@@ -17,12 +17,13 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Optional
 
+import numpy as np
 from qbraid_core.services.quantum import QuantumClient
 
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
-from qbraid.runtime.result import GateModelResult, Result
+from qbraid.runtime.result import GateModelResultData, Result
 
 from .schemas import RuntimeJobModel
 
@@ -97,12 +98,15 @@ class QbraidJob(QuantumJob):
         self.wait_for_final_state()
         job_data = self.client.get_job(self.id)
         model = RuntimeJobModel.from_dict(job_data)
+        if (measurements := model.metadata.measurements) is not None:
+            measurements = np.array(measurements)
+        data = GateModelResultData(
+            counts=model.metadata.measurement_counts, measurements=measurements
+        )
         return Result(
             device_id=model.device_id,
             job_id=model.job_id,
             success=model.status == JobStatus.COMPLETED,
-            result=GateModelResult(
-                counts=model.metadata.measurement_counts, measurements=model.metadata.measurements
-            ),
-            metadata=model.model_dump(by_alias=True),
+            data=data,
+            **model.model_dump(by_alias=True),
         )

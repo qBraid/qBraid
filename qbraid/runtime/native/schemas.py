@@ -137,7 +137,7 @@ class TimeStamps(BaseModel):
 
     createdAt: datetime
     endedAt: datetime
-    executionDuration: float = Field(gt=0, description="Execution time in milliseconds")
+    executionDuration: int = Field(gt=0, description="Execution time in milliseconds")
 
     @field_validator("createdAt", "endedAt", mode="before")
     @classmethod
@@ -227,6 +227,8 @@ class RuntimeJobModel(QbraidSchemaBase):
         """
         experiment_type = ExperimentType(job_data.pop("experimentType", "gate_model"))
         job_data["experimentType"] = experiment_type
+        if "qbraidJobId" not in job_data and "job_id" in job_data:
+            job_data["qbraidJobId"] = job_data.pop("job_id")
 
         if "metadata" not in job_data:
             job_data = cls._populate_metadata(job_data, experiment_type)
