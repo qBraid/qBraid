@@ -108,7 +108,7 @@ class IonQProvider(QuantumProvider):
 
     def get_devices(self, **kwargs) -> list[IonQDevice]:
         """Get a list of IonQ devices."""
-        if self._valid_devices_cache(self._devices_ttl):
+        if self._valid_devices_cache():
             return self._devices_cache
 
         devices = self.session.get_devices(**kwargs)

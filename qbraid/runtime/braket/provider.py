@@ -157,7 +157,7 @@ class BraketProvider(QuantumProvider):
         **kwargs,
     ) -> list[qbraid.runtime.braket.BraketDevice]:
         """Return a list of backends matching the specified filtering."""
-        if self._valid_devices_cache(self._devices_ttl):
+        if self._valid_devices_cache():
             return self._devices_cache
         aws_session = self._get_aws_session() if aws_session is None else aws_session
         statuses = ["ONLINE", "OFFLINE"] if statuses is None else statuses

@@ -99,7 +99,7 @@ class QbraidProvider(QuantumProvider):
 
     def get_devices(self, **kwargs) -> list[QbraidDevice]:
         """Return a list of devices matching the specified filtering."""
-        if self._valid_devices_cache(self._devices_ttl):
+        if self._valid_devices_cache():
             return self._devices_cache
 
         query = kwargs or {}

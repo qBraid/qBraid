@@ -32,10 +32,11 @@ class QuantumProvider(ABC):
         """Saves account data and/or credentials to the disk."""
         raise NotImplementedError
 
-    def _valid_devices_cache(self, ttl: int) -> bool:
+    def _valid_devices_cache(self) -> bool:
         """Check if the device cache is still valid."""
         return (
-            self._devices_last_accessed != -1 and (time.time() - self._devices_last_accessed) < ttl
+            self._devices_last_accessed != -1
+            and (time.time() - self._devices_last_accessed) < self._devices_ttl
         )
 
     def _update_devices_cache(self, devices):

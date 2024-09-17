@@ -127,7 +127,7 @@ class AzureQuantumProvider(QuantumProvider):
             list[AzureQuantumDevice]: The Azure Quantum devices.
 
         """
-        if self._valid_devices_cache(self._devices_ttl):
+        if self._valid_devices_cache():
             return self._devices_cache
 
         targets = self.workspace.get_targets(**kwargs)
