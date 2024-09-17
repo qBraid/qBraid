@@ -17,7 +17,6 @@ from __future__ import annotations
 import logging
 from typing import TYPE_CHECKING, Optional
 
-import numpy as np
 from qbraid_core.services.quantum import QuantumClient
 
 from qbraid.runtime.enums import JobStatus
@@ -25,7 +24,8 @@ from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import GateModelResultData, Result
 
-from .schemas import RuntimeJobModel
+from .result_data import QbraidQirSimulatorResultData, QuEraQasmSimulatorResultData
+from .schemas import QbraidQirSimulationMetadata, QuEraQasmSimulationMetadata, RuntimeJobModel
 
 if TYPE_CHECKING:
     import qbraid_core.services.quantum
@@ -97,12 +97,16 @@ class QbraidJob(QuantumJob):
         """Return the results of the job."""
         self.wait_for_final_state()
         job_data = self.client.get_job(self.id)
-        model = RuntimeJobModel.from_dict(job_data)
-        if (measurements := model.metadata.measurements) is not None:
-            measurements = np.array(measurements)
-        data = GateModelResultData(
-            counts=model.metadata.measurement_counts, measurements=measurements
-        )
+        job_result = self.client.get_job_results(self.id)
+        job_result.update(job_data)
+        model = RuntimeJobModel.from_dict(job_result)
+        if isinstance(model.metadata, QbraidQirSimulationMetadata):
+            result_data_cls = QbraidQirSimulatorResultData
+        elif isinstance(model.metadata, QuEraQasmSimulationMetadata):
+            result_data_cls = QuEraQasmSimulatorResultData
+        else:
+            result_data_cls = GateModelResultData
+        data = result_data_cls.from_object(model.metadata)
         return Result(
             device_id=model.device_id,
             job_id=model.job_id,

@@ -23,8 +23,10 @@ azure-storage-blob>=12.20,<13.0
 azure-identity>=1.17,<2.0
 
 # visualization
-matplotlib>=3.3
 ipython
+matplotlib>=3.3
+pandas>=2.2
+flair-visual>=0.1.4; python_version >= "3.10"
 
 # testing
 sympy

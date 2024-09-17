@@ -14,16 +14,18 @@ Module defining qBraid native runtime schemas.
 """
 from __future__ import annotations
 
-from collections import Counter
 from datetime import datetime
 from typing import Any, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from typing_extensions import Annotated, Self
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+from typing_extensions import Annotated
 
-from qbraid.programs import load_program
-from qbraid.programs.typer import Qasm2String, Qasm3String
-from qbraid.runtime.enums import ExperimentType, JobStatus, NoiseModel
+from qbraid.runtime.enums import ExperimentType, JobStatus
+from qbraid.runtime.schemas import (
+    ExperimentMetadata,
+    GateModelExperimentMetadata,
+    QasmBasedExperimentMetadata,
+)
 
 
 class QbraidSchemaHeader(BaseModel):
@@ -50,80 +52,36 @@ class QbraidSchemaBase(BaseModel):
     )
 
 
-class ExperimentMetadata(BaseModel):
-    """Base class for experiment metadata.
-
-    This class serves as a base for more specific experiment metadata classes.
-    """
-
-    model_config = ConfigDict(extra="allow")
-
-
-class GateModelExperimentMetadata(BaseModel):
-    """Metadata specific to qBraid gate-model experiments.
+class QbraidQirSimulationMetadata(QasmBasedExperimentMetadata):
+    """Result data specific to jobs submitted to the qBraid QIR simulator.
 
     Attributes:
-        qasm (Optional[str]): OpenQASM string representation of the quantum circuit.
-        num_qubits (Optional[int]): Number of qubits used in the circuit.
-        gate_depth (Optional[int]): Depth of the quantum gate circuit.
-        noise_model (Optional[NoiseModel]): Noise model used in the experiment.
-        measurement_counts (Counter): Counter for measurement outcomes.
-        measurements (Optional[list]): Optional list of measurement results.
+        backend_version (str, optional): The version of the simulator backend.
+        seed (int, optional): The seed used for the simulation.
+
     """
 
-    qasm: Optional[str] = Field(None, alias="openQasm")
-    num_qubits: Optional[int] = Field(None, alias="circuitNumQubits")
-    gate_depth: Optional[int] = Field(None, alias="circuitDepth")
-    noise_model: Optional[NoiseModel] = Field(None, alias="noiseModel")
-    measurement_counts: Optional[Counter] = Field(None, alias="measurementCounts")
-    measurements: Optional[list] = None
+    backend_version: Optional[str] = Field(None, alias="runnerVersion")
+    seed: Optional[int] = Field(None, alias="runnerSeed")
 
-    @field_validator("qasm")
-    @classmethod
-    def validate_qasm(cls, value):
-        """Validates that the provided QASM is valid.
 
-        Args:
-            value: The QASM string.
+class QuEraQasmSimulationMetadata(QasmBasedExperimentMetadata):
+    """Result data specific to jobs submitted to the QuEra QASM simulator.
 
-        Returns:
-            The validated QASM string.
+    Attributes:
+        backend (str, optional): The name of the backend used for the simulation.
+        flair_visual_version (str, optional): The version of the Flair Visual
+            tool used to generate the atom animation state data.
+        atom_animation_state (dict, optional): JSON data representing the state
+            of the QPU atoms used in the simulation.
+        logs (list, optional): List of log messages generated during the simulation.
 
-        Raises:
-            ValueError: If the QASM string is not valid.
-        """
-        if value is None:
-            return value
-        if not isinstance(value, (Qasm2String, Qasm3String)):
-            raise ValueError("openQasm must be a valid OpenQASM string.")
-        return value
+    """
 
-    @model_validator(mode="after")
-    def set_qubits_and_depth(self) -> Self:
-        """Sets the number of qubits and gate depth if not already provided.
-
-        Returns:
-            Self: The updated instance with qubits and depth set.
-        """
-        if self.qasm and (self.num_qubits is None or self.gate_depth is None):
-            program = load_program(self.qasm)
-            self.num_qubits = self.num_qubits or program.num_qubits
-            self.gate_depth = self.gate_depth or program.depth  # type: ignore
-
-        return self
-
-    @field_validator("measurement_counts")
-    @classmethod
-    def validate_counts(cls, value):
-        """Validates and ensures that the measurement counts are a Counter object.
-
-        Args:
-            value: The measurement counts.
-
-        Returns:
-            Counter: A validated counter object.
-        """
-        return Counter(value)
+    backend: Optional[str] = None
+    flair_visual_version: Optional[str] = Field(None, alias="flairVisualVersion")
+    atom_animation_state: Optional[dict[str, Any]] = Field(None, alias="atomAnimationState")
+    logs: Optional[list[dict[str, Any]]] = None
 
 
 class TimeStamps(BaseModel):
@@ -176,7 +134,13 @@ class RuntimeJobModel(QbraidSchemaBase):
     status: JobStatus
     shots: Optional[int] = Field(None, gt=0)
     experiment_type: ExperimentType = Field(..., alias="experimentType")
-    metadata: Union[GateModelExperimentMetadata, ExperimentMetadata]
+    metadata: Union[
+        QbraidQirSimulationMetadata,
+        QuEraQasmSimulationMetadata,
+        QasmBasedExperimentMetadata,
+        GateModelExperimentMetadata,
+        ExperimentMetadata,
+    ]
     time_stamps: TimeStamps = Field(..., alias="timeStamps")
 
     @staticmethod
@@ -193,12 +157,17 @@ class RuntimeJobModel(QbraidSchemaBase):
             dict[str, Any]: The updated job data with the appropriate metadata fields populated.
         """
         if experiment_type == ExperimentType.GATE_MODEL:
-            keys = [
-                field.alias or name
-                for name, field in GateModelExperimentMetadata.model_fields.items()
-            ]
+            native_models = {
+                "qbraid_qir_simulator": QbraidQirSimulationMetadata,
+                "quera_qasm_simulator": QuEraQasmSimulationMetadata,
+            }
+            device_id = job_data.get("qbraidDeviceId")
+            model: QasmBasedExperimentMetadata = native_models.get(
+                device_id, QasmBasedExperimentMetadata
+            )
+            keys = [field.alias or name for name, field in model.model_fields.items()]
             metadata = {key: job_data.pop(key, None) for key in keys}
-            job_data["metadata"] = GateModelExperimentMetadata(**metadata)
+            job_data["metadata"] = model(**metadata)
             return job_data
 
         model_keys = {field.alias or name for name, field in RuntimeJobModel.model_fields.items()}

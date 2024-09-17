@@ -21,6 +21,7 @@ import numpy as np
 
 from .enums import ExperimentType
 from .postprocess import GateModelResultBuilder
+from .schemas import GateModelExperimentMetadata
 
 
 class ResultData(ABC):
@@ -43,12 +44,14 @@ class GateModelResultData(ResultData):
 
     def __init__(
         self,
-        counts: Optional[Union[dict[str, int], list[dict[str, int]]]] = None,
+        measurement_counts: Optional[Union[dict[str, int], list[dict[str, int]]]] = None,
         measurements: Optional[Union[np.ndarray, list[np.ndarray]]] = None,
+        **kwargs,
     ):
         """Create a new GateModelResult instance."""
-        self._counts = counts
+        self._measurement_counts = measurement_counts
         self._measurements = measurements
+        self._unscoped_data = kwargs
         self._cache = {
             "bin_nz": None,
             "bin_wz": None,
@@ -69,9 +72,18 @@ class GateModelResultData(ResultData):
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> GateModelResultData:
         """Creates a new GateModelResult instance from a dictionary."""
-        counts = data.get("counts", data.get("measurementCounts"))
-        measurements = data.get("measurements")
-        return cls(counts=counts, measurements=measurements)
+        measurement_counts = data.pop("measurement_counts", data.pop("measurementCounts", None))
+        measurements = data.pop("measurements", None)
+
+        if isinstance(measurements, list):
+            measurements = np.array(measurements, dtype=object)
+
+        return cls(measurement_counts=measurement_counts, measurements=measurements, **data)
+
+    @classmethod
+    def from_object(cls, model: GateModelExperimentMetadata, **kwargs) -> GateModelResultData:
+        """Creates a new GateModelResultData instance from a GateModelExperimentMetadata object."""
+        return cls.from_dict(model.model_dump(**kwargs))
 
     @property
     def measurements(self) -> Optional[Union[np.ndarray, list[np.ndarray]]]:
@@ -94,7 +106,7 @@ class GateModelResultData(ResultData):
         Raises:
             ValueError: If counts data is not available.
         """
-        if self._counts is None:
+        if self._measurement_counts is None:
             raise ValueError("Counts data is not available.")
 
         cache_key = f"{'dec' if decimal else 'bin'}_{'wz' if include_zero_values else 'nz'}"
@@ -103,7 +115,7 @@ class GateModelResultData(ResultData):
             return self._cache[cache_key]
 
         counts = GateModelResultBuilder.normalize_counts(
-            self._counts, include_zero_values=include_zero_values
+            self._measurement_counts, include_zero_values=include_zero_values
         )
 
         if decimal:
@@ -177,7 +189,12 @@ class GateModelResultData(ResultData):
         else:
             measurements_info = self._measurements
 
-        return f"GateModelResultData(counts={self._counts}, measurements={measurements_info})"
+        return (
+            f"GateModelResultData(\n"
+            f"  measurement_counts={self._measurement_counts},\n"
+            f"  measurements={measurements_info}\n"
+            f")"
+        )
 
 
 class Result:
