@@ -52,11 +52,13 @@ class QiskitRuntimeProvider(QuantumProvider):
         Args:
             token (str, optional): IBM Quantum token. Defaults to None.
         """
+        super().__init__()
         self.token = token or os.getenv("QISKIT_IBM_TOKEN")
         self.channel = channel or os.getenv("QISKIT_IBM_CHANNEL", "ibm_quantum")
         self._runtime_service = QiskitRuntimeService(
             token=self.token, channel=self.channel, **kwargs
         )
+        self._devices_ttl = 120  # in seconds
 
     @property
     def runtime_service(self) -> qiskit_ibm_runtime.QiskitRuntimeService:
@@ -100,15 +102,19 @@ class QiskitRuntimeProvider(QuantumProvider):
 
     def get_devices(self, operational=True, **kwargs) -> list[qbraid.runtime.qiskit.QiskitBackend]:
         """Returns the IBM Quantum provider backends."""
+        if self._valid_devices_cache(self._devices_ttl):
+            return self._devices_cache
         backends = self.runtime_service.backends(operational=operational, **kwargs)
         program_spec = ProgramSpec(qiskit.QuantumCircuit)
-        return [
+        backend_list = [
             QiskitBackend(
                 profile=self._build_runtime_profile(backend, program_spec=program_spec),
                 service=self.runtime_service,
             )
             for backend in backends
         ]
+        self._update_devices_cache(backend_list)
+        return self._devices_cache
 
     def get_device(
         self, device_id: str, instance: Optional[str] = None

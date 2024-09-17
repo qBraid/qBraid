@@ -65,6 +65,7 @@ class AzureQuantumProvider(QuantumProvider):
                 )
         workspace.append_user_agent("qbraid")
         self._workspace = workspace
+        self._devices_ttl = 120  # in seconds
 
     @property
     def workspace(self) -> Workspace:
@@ -126,6 +127,9 @@ class AzureQuantumProvider(QuantumProvider):
             list[AzureQuantumDevice]: The Azure Quantum devices.
 
         """
+        if self._valid_devices_cache(self._devices_ttl):
+            return self._devices_cache
+
         targets = self.workspace.get_targets(**kwargs)
         if isinstance(targets, Target):
             targets = [targets]
@@ -135,9 +139,11 @@ class AzureQuantumProvider(QuantumProvider):
                 raise ValueError("No devices found with the specified filters.")
             raise ResourceNotFoundError("No devices found.")
 
-        return [
+        device_list = [
             AzureQuantumDevice(self._build_profile(target), self.workspace) for target in targets
         ]
+        self._update_devices_cache(device_list)
+        return self._devices_cache
 
     def get_device(self, device_id: str) -> AzureQuantumDevice:
         """Get a specific Azure Quantum device.

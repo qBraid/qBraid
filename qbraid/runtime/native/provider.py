@@ -41,11 +41,13 @@ class QbraidProvider(QuantumProvider):
         Initializes the QbraidProvider object
 
         """
+        super().__init__()
         if api_key and client:
             raise ValueError("Provide either api_key or client, not both.")
 
         self._api_key = api_key
         self._client = client
+        self._devices_ttl = 120  # in seconds
 
     def save_config(self, **kwargs):
         """Save the current configuration."""
@@ -97,6 +99,9 @@ class QbraidProvider(QuantumProvider):
 
     def get_devices(self, **kwargs) -> list[QbraidDevice]:
         """Return a list of devices matching the specified filtering."""
+        if self._valid_devices_cache(self._devices_ttl):
+            return self._devices_cache
+
         query = kwargs or {}
         query["vendor"] = "qBraid"
 
@@ -106,7 +111,9 @@ class QbraidProvider(QuantumProvider):
             raise ResourceNotFoundError("No devices found matching given criteria.") from err
 
         profiles = [self._build_runtime_profile(device_data) for device_data in device_data_lst]
-        return [QbraidDevice(profile, client=self.client) for profile in profiles]
+        device_list = [QbraidDevice(profile, client=self.client) for profile in profiles]
+        self._update_devices_cache(device_list)
+        return self._devices_cache
 
     def get_device(self, device_id: str) -> QbraidDevice:
         """Return quantum device corresponding to the specified qBraid device ID.

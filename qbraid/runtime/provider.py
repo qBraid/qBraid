@@ -12,6 +12,7 @@
 Module for configuring provider credentials and authentication.
 
 """
+import time
 from abc import ABC, abstractmethod
 
 
@@ -22,9 +23,25 @@ class QuantumProvider(ABC):
 
     """
 
+    def __init__(self):
+        self._devices_cache = None
+        self._devices_last_accessed: int = -1
+        self._devices_ttl: int = 120
+
     def save_config(self, **kwargs):
         """Saves account data and/or credentials to the disk."""
         raise NotImplementedError
+
+    def _valid_devices_cache(self, ttl: int) -> bool:
+        """Check if the device cache is still valid."""
+        return (
+            self._devices_last_accessed != -1 and (time.time() - self._devices_last_accessed) < ttl
+        )
+
+    def _update_devices_cache(self, devices):
+        """Update the device cache."""
+        self._devices_cache = devices
+        self._devices_last_accessed = time.time()
 
     @abstractmethod
     def get_devices(self, **kwargs):

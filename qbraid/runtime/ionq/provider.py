@@ -83,6 +83,7 @@ class IonQProvider(QuantumProvider):
     def __init__(self, api_key: str):
         super().__init__()
         self.session = IonQSession(api_key)
+        self._devices_ttl = 120  # in seconds
 
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
         """Build a profile for an IonQ device."""
@@ -107,7 +108,12 @@ class IonQProvider(QuantumProvider):
 
     def get_devices(self, **kwargs) -> list[IonQDevice]:
         """Get a list of IonQ devices."""
+        if self._valid_devices_cache(self._devices_ttl):
+            return self._devices_cache
+
         devices = self.session.get_devices(**kwargs)
-        return [
+        device_list = [
             IonQDevice(self._build_profile(device), self.session) for device in devices.values()
         ]
+        self._update_devices_cache(device_list)
+        return self._devices_cache

@@ -392,6 +392,50 @@ def test_provider_get_devices(mock_client):
     assert devices[0].id == "qbraid_qir_simulator"
 
 
+def test_provider_update_devices_cache_called_once(mock_client):
+    """Test that update_devices_cache is called once when getting devices."""
+    provider = QbraidProvider(client=mock_client)
+    with patch.object(
+        provider, "_update_devices_cache", wraps=provider._update_devices_cache
+    ) as mock_update_cache:
+        devices = provider.get_devices(qbraid_id="qbraid_qir_simulator")
+        assert len(devices) == 1
+        assert devices[0].id == "qbraid_qir_simulator"
+        mock_update_cache.assert_called_once()
+
+
+def test_provider_gets_devices_from_cache(mock_client):
+    """Test that devices are retrieved from cache if cache is valid."""
+    provider = QbraidProvider(client=mock_client)
+    with patch.object(
+        provider, "_update_devices_cache", wraps=provider._update_devices_cache
+    ) as mock_update_cache:
+        devices = provider.get_devices(qbraid_id="qbraid_qir_simulator")
+        assert len(devices) == 1
+        assert devices[0].id == "qbraid_qir_simulator"
+        devices = provider.get_devices(qbraid_id="qbraid_qir_simulator")
+        assert len(devices) == 1
+        assert devices[0].id == "qbraid_qir_simulator"
+        mock_update_cache.assert_called_once()
+
+
+def test_provider_invalidates_cache_after_ttl(mock_client):
+    """Test that cache is invalidated after TTL."""
+    provider = QbraidProvider(client=mock_client)
+    with patch.object(
+        provider, "_update_devices_cache", wraps=provider._update_devices_cache
+    ) as mock_update_cache:
+        devices = provider.get_devices(qbraid_id="qbraid_qir_simulator")
+        assert len(devices) == 1
+        assert devices[0].id == "qbraid_qir_simulator"
+
+        provider._devices_ttl = 0
+        devices = provider.get_devices(qbraid_id="qbraid_qir_simulator")
+        assert len(devices) == 1
+        assert devices[0].id == "qbraid_qir_simulator"
+        assert mock_update_cache.call_count == 2
+
+
 def test_provider_search_devices_raises_for_bad_client():
     """Test raising ResourceNotFoundError when the client fails to authenticate."""
     provider = QbraidProvider(client=MockClient())
