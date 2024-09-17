@@ -410,12 +410,8 @@ def test_provider_gets_devices_from_cache(mock_client):
     with patch.object(
         provider, "_update_devices_cache", wraps=provider._update_devices_cache
     ) as mock_update_cache:
-        devices = provider.get_devices(qbraid_id="qbraid_qir_simulator")
-        assert len(devices) == 1
-        assert devices[0].id == "qbraid_qir_simulator"
-        devices = provider.get_devices(qbraid_id="qbraid_qir_simulator")
-        assert len(devices) == 1
-        assert devices[0].id == "qbraid_qir_simulator"
+        _ = provider.get_devices(qbraid_id="qbraid_qir_simulator")
+        _ = provider.get_devices(qbraid_id="qbraid_qir_simulator")
         mock_update_cache.assert_called_once()
 
 

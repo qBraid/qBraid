@@ -247,6 +247,24 @@ def test_oqc_provider_get_device_errors(
         assert expected_error_message in str(excinfo.value)
 
 
+def test_oqc_provider_gets_devices_from_cache(lucy_simulator_data):
+    """Test OQC provider gets devices from cache."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = Mock(spec=OQCClient)
+        mock_client.return_value.get_qpus.return_value = [lucy_simulator_data]
+        provider = OQCProvider(token="fake_token")
+        assert isinstance(provider, OQCProvider)
+        assert isinstance(provider.client, OQCClient)
+        assert provider.client == mock_client.return_value
+
+        with patch.object(
+            provider, "_update_devices_cache", wraps=provider._update_devices_cache
+        ) as mock_update_devices_cache:
+            _ = provider.get_devices()
+            _ = provider.get_devices()
+            mock_update_devices_cache.assert_called_once()
+
+
 def test_build_runtime_profile(lucy_simulator_data):
     """Test building a runtime profile for OQC device."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:

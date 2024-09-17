@@ -211,6 +211,19 @@ def test_provider_get_devices(fake_service):
         assert str(device) == f"QiskitBackend('{device.id}')"
 
 
+def test_provider_get_devices_from_cache(fake_service):
+    """Test getting backends from cache"""
+    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
+        mock_runtime_service.return_value = fake_service
+        provider = QiskitRuntimeProvider(token="test_token", channel="test_channel")
+        with patch.object(
+            provider, "_update_devices_cache", wraps=provider._update_devices_cache
+        ) as mock_update:
+            _ = provider.get_devices()
+            _ = provider.get_devices()
+            mock_update.assert_called_once()
+
+
 @pytest.mark.parametrize("local", [True, False])
 def test_provider_least_busy(fake_service, local):
     """Test getting a backend from the runtime service, both local and non-local."""

@@ -281,6 +281,23 @@ def test_provider_get_devices(mock_sv1):
         assert devices[0].id == SV1_ARN
 
 
+def test_provider_get_devices_from_cache(mock_sv1):
+    """Test getting list of Braket devices from cache."""
+    with (
+        patch("qbraid.runtime.braket.provider.AwsDevice.get_devices", return_value=[mock_sv1]),
+        patch("qbraid.runtime.braket.device.AwsDevice") as mock_aws_device_2,
+    ):
+        provider = BraketProvider()
+        mock_aws_device_2.return_value = mock_sv1
+        with patch.object(
+            provider, "_update_devices_cache", wraps=provider._update_devices_cache
+        ) as mock_update_devices_cache:
+            _ = provider.get_devices()
+            # Check that the cache is updated
+            _ = provider.get_devices()
+            mock_update_devices_cache.assert_called_once()
+
+
 @patch("qbraid.runtime.braket.device.AwsDevice")
 def test_device_profile_attributes(mock_aws_device, sv1_profile):
     """Test that device profile attributes are correctly set."""

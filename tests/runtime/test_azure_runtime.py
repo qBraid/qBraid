@@ -358,6 +358,18 @@ def test_azure_provider_get_devices(azure_provider, mock_workspace, mock_target)
     assert isinstance(devices[0], AzureQuantumDevice)
 
 
+def test_azure_provider_get_devices_from_cache(azure_provider, mock_workspace, mock_target):
+    """Test getting devices from provider device cache"""
+    mock_workspace.get_targets.return_value = [mock_target]
+
+    with patch.object(
+        azure_provider, "_update_devices_cache", wraps=azure_provider._update_devices_cache
+    ) as mock_update_devices_cache:
+        _ = azure_provider.get_devices()
+        _ = azure_provider.get_devices()
+        mock_update_devices_cache.assert_called_once()
+
+
 def test_azure_provider_get_devices_no_results(azure_provider, mock_workspace):
     """Test getting devices from an AzureQuantumProvider with no results."""
     mock_workspace.get_targets.return_value = []
