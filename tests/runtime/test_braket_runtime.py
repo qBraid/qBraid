@@ -27,11 +27,10 @@ from braket.aws.queue_information import QueueDepthInfo, QueueType
 from braket.circuits import Circuit
 from braket.device_schema import ExecutionDay
 from braket.devices import Devices, LocalSimulator
-from qiskit import QuantumCircuit as QiskitCircuit
 
 from qbraid.exceptions import QbraidError
 from qbraid.interface import circuits_allclose
-from qbraid.programs import ProgramSpec
+from qbraid.programs import ProgramSpec, load_program
 from qbraid.runtime import (
     DeviceProgramTypeMismatchError,
     DeviceStatus,
@@ -311,14 +310,14 @@ def test_device_run_circuit_too_many_qubits(mock_aws_device, sv1_profile):
     num qubits exceeds that of wrapped AWS device."""
     mock_aws_device.return_value = Mock()
     device = BraketDevice(sv1_profile)
-    num_qubits = device.num_qubits + 10
-    circuit = QiskitCircuit(num_qubits)
-    circuit.h([0, 1])
-    circuit.cx(0, num_qubits - 1)
+    circuit = Circuit().h(0).cnot(0, device.num_qubits + 1)
+    program = load_program(circuit)
+    program.populate_idle_qubits()
+    run_input = program.program
     with pytest.raises(ProgramValidationError):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", UserWarning)
-            device.run(circuit)
+            device.run(run_input)
 
 
 @patch("qbraid.runtime.braket.device.AwsDevice")

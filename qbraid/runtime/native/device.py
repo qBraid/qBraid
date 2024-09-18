@@ -224,7 +224,7 @@ class QbraidDevice(QuantumDevice):
                 "Error extracting OpenQASM string representation.",
             )
 
-            self.validate(qbraid_program)
+            self.validate(program)
             transpiled_program = self.transpile(program, program_spec)
             run_input_json = self.transform(transpiled_program)
             runtime_payload = {**aux_payload, **run_input_json}

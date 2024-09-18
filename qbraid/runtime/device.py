@@ -21,7 +21,7 @@ import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
-from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
+from qbraid.programs import ProgramLoaderError, ProgramSpec, get_program_type_alias, load_program
 from qbraid.transpiler import CircuitConversionError, ConversionGraph, ConversionScheme, transpile
 
 from .enums import DeviceStatus
@@ -172,10 +172,7 @@ class QuantumDevice(ABC):
                 UserWarning,
             )
 
-        if self._target_spec is None:
-            return None
-
-        if self._target_spec.native:
+        try:
             program = load_program(run_input)
 
             if self.num_qubits and program.num_qubits > self.num_qubits:
@@ -183,11 +180,14 @@ class QuantumDevice(ABC):
                     f"Number of qubits in circuit ({program.num_qubits}) exceeds "
                     f"the device's capacity ({self.num_qubits})."
                 )
-        else:
+        except ProgramLoaderError:
             logger.info(
-                "Skipping qubit count validation: %s program type not supported natively.",
-                self._target_spec.alias,
+                "Skipping qubit count validation: program type %s not supported natively.",
+                type(run_input),
             )
+
+        if self._target_spec is None:
+            return None
 
         try:
             self._target_spec.validate(run_input)

@@ -58,6 +58,7 @@ Exceptions
 	ValidationError
 	QasmError
 	TransformError
+    ProgramLoaderError
 
 """
 from ._import import NATIVE_REGISTRY
@@ -69,7 +70,7 @@ from .exceptions import (
     TransformError,
     ValidationError,
 )
-from .loader import load_program
+from .loader import ProgramLoaderError, load_program
 from .program import QuantumProgram
 from .registry import (
     QPROGRAM,
@@ -90,6 +91,7 @@ __all__ = [
     "ProgramSpec",
     "ProgramTypeError",
     "TransformError",
+    "ProgramLoaderError",
     "QPROGRAM",
     "QPROGRAM_ALIASES",
     "QPROGRAM_NATIVE",

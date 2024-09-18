@@ -12,6 +12,8 @@
 Module defining BraketDeviceWrapper Class
 
 """
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Optional, Union
 
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
@@ -40,8 +42,8 @@ class BraketDevice(QuantumDevice):
 
     def __init__(
         self,
-        profile: "qbraid.runtime.TargetProfile",
-        session: "Optional[braket.aws.AwsSession]" = None,
+        profile: qbraid.runtime.TargetProfile,
+        session: Optional[braket.aws.AwsSession] = None,
     ):
         """Create a BraketDevice."""
         super().__init__(profile=profile)
@@ -57,7 +59,7 @@ class BraketDevice(QuantumDevice):
         """Official string representation of QuantumDevice object."""
         return f"{self.__class__.__name__}('{self._provider_name} {self.name}')"
 
-    def status(self) -> "qbraid.runtime.DeviceStatus":
+    def status(self) -> qbraid.runtime.DeviceStatus:
         """Return the status of this Device."""
         if self._device.status == "ONLINE":
             if self._device.is_available:
