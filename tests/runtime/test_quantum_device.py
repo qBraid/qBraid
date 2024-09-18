@@ -588,39 +588,39 @@ def test_set_options_raises_for_bad_key(mock_basic_device: MockDevice):
         mock_basic_device.set_options(bad_key=True)
 
 
-@patch("qbraid_core.client")
-def test_estimate_cost_success(mock_client, mock_qbraid_device):
+def test_estimate_cost_success(mock_qbraid_device):
     """Test estimate_cost returns the correct cost."""
     mock_core_client = Mock()
     mock_core_client.estimate_cost.return_value = 8.75
-    mock_client.return_value = mock_core_client
+    mock_qbraid_device._client = mock_core_client
 
     cost = mock_qbraid_device.estimate_cost(shots=100, execution_time=1.1)
     assert cost == 8.75
     mock_core_client.estimate_cost.assert_called_once_with(mock_qbraid_device.id, 100, 1.1)
 
 
-def test_estimate_cost_raises_for_invalid_args(mock_qbraid_device):
-    """Test that estimate_cost raises Errors for invalid arguments."""
-    with pytest.raises(QbraidRuntimeError):
-        mock_qbraid_device.estimate_cost(shots=None, execution_time=None)
-
+@pytest.mark.parametrize(
+    "shots, execution_time",
+    [
+        (None, None),
+        (-1, 1.0),
+        (100, -1.0),
+        (0, 0),
+        (None, 0),
+        (0, None),
+    ],
+)
+def test_estimate_cost_raises_for_invalid_args(mock_qbraid_device, shots, execution_time):
+    """Test that estimate_cost raises ValueError for invalid arguments."""
     with pytest.raises(ValueError):
-        mock_qbraid_device.estimate_cost(shots=-1, execution_time=1.0)
-
-    with pytest.raises(ValueError):
-        mock_qbraid_device.estimate_cost(shots=100, execution_time=-1.0)
-
-    with pytest.raises(ValueError):
-        mock_qbraid_device.estimate_cost(shots=100, execution_time=0.0)
+        mock_qbraid_device.estimate_cost(shots=shots, execution_time=execution_time)
 
 
-@patch("qbraid_core.client")
-def test_estimate_cost_resource_not_found_error(mock_client, mock_qbraid_device):
+def test_estimate_cost_resource_not_found_error(mock_qbraid_device):
     """Test estimate_cost raises ResourceNotFoundError if the core client fails."""
     mock_core_client = Mock()
-    mock_core_client.estimate_cost.side_effect = Exception("Resource not found")
-    mock_client.return_value = mock_core_client
+    mock_core_client.estimate_cost.side_effect = QuantumServiceRequestError("Request failed")
+    mock_qbraid_device._client = mock_core_client
 
-    with pytest.raises(ResourceNotFoundError):
+    with pytest.raises(QbraidRuntimeError):
         mock_qbraid_device.estimate_cost(shots=100, execution_time=10.0)
