@@ -75,5 +75,4 @@ class AzureQuantumDevice(QuantumDevice):
             )
 
         job = self._device.submit(run_input, *args, **kwargs)
-        # details = job.details.as_dict()
         return AzureQuantumJob(job_id=job.id, workspace=self.workspace, device=self)

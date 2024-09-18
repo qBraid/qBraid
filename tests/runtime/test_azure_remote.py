@@ -28,8 +28,8 @@ from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 from qbraid_core._import import LazyLoader
 from qiskit import QuantumCircuit
 
-from qbraid.runtime import DeviceStatus, JobStatus
-from qbraid.runtime.azure import AzureGateModelResultBuilder, AzureQuantumProvider
+from qbraid.runtime import DeviceStatus, GateModelResultData, JobStatus, Result
+from qbraid.runtime.azure import AzureQuantumProvider
 from qbraid.transpiler.conversions.qiskit import qiskit_to_pyqir
 
 pyquil = LazyLoader("pyquil", globals(), "pyquil")
@@ -105,10 +105,9 @@ def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
-    assert isinstance(result, AzureGateModelResultBuilder)
-
-    counts = result.get_counts()
-    assert result.normalize_counts(counts) == {"000": 100}
+    assert isinstance(result, Result)
+    assert isinstance(result.data, GateModelResultData)
+    assert result.data.get_counts() == {"000": 100}
 
 
 @pytest.mark.remote
@@ -131,10 +130,9 @@ def test_submit_json_to_ionq(provider: AzureQuantumProvider):
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
-    assert isinstance(result, AzureGateModelResultBuilder)
-
-    counts = result.get_counts()
-    assert result.normalize_counts(counts) == {"000": 50, "111": 50}
+    assert isinstance(result, Result)
+    assert isinstance(result.data, GateModelResultData)
+    assert result.data.get_counts() == {"000": 50, "111": 50}
 
 
 @pytest.fixture
@@ -223,7 +221,6 @@ def test_submit_quil_to_rigetti(
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
-    assert isinstance(result, AzureGateModelResultBuilder)
-
-    counts = result.get_counts()
-    assert result.normalize_counts(counts) == {"00": 60, "11": 40}
+    assert isinstance(result, Result)
+    assert isinstance(result.data, GateModelResultData)
+    assert result.data.get_counts() == {"00": 60, "11": 40}

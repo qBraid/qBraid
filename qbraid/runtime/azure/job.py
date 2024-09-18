@@ -23,6 +23,7 @@ from qbraid.runtime.azure.result_builder import AzureGateModelResultBuilder
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
+from qbraid.runtime.result import GateModelResultData, Result
 
 from .io_format import OutputDataFormat
 
@@ -96,35 +97,40 @@ class AzureQuantumJob(QuantumJob):
         result_data = data["data"]
         return MicrosoftEstimatorResult(result_data)
 
-    def result(self) -> Union[AzureGateModelResultBuilder, MicrosoftEstimatorResult]:
+    def result(self) -> Union[Result, MicrosoftEstimatorResult]:
         """Return the result of the Azure job.
 
         Returns:
-            Union[AzureGateModelResultBuilder, MicrosoftEstimatorResult]: The result of the job.
+            Union[Result, MicrosoftEstimatorResult]: The result of the job.
         """
         if not self.is_terminal_state():
             logger.info("Result will be available when job has reached final state.")
 
         job: azure.quantum.Job = self._job
-
         job.wait_until_completed()
 
         success = job.details.status == "Succeeded"
-        error_data = None if job.details.error_data is None else job.details.error_data.as_dict()
-
-        result_dict = {
-            "job_id": job.id,
-            "target": job.details.target,
-            "job_name": job.details.name,
-            "success": success,
-            "error_data": error_data,
-        }
+        details = job.details.as_dict()
 
         if job.details.output_data_format == OutputDataFormat.RESOURCE_ESTIMATOR.value:
-            result_dict["data"] = job.get_results()
-            return self._make_estimator_result(result_dict)
+            return self._make_estimator_result(
+                {
+                    "job_id": job.id,
+                    "target": job.details.target,
+                    "job_name": job.details.name,
+                    "success": success,
+                    "data": job.get_results(),
+                    "error_data": (
+                        None if job.details.error_data is None else job.details.error_data.as_dict()
+                    ),
+                }
+            )
 
-        return AzureGateModelResultBuilder(job)
+        builder = AzureGateModelResultBuilder(job)
+        data = GateModelResultData(measurement_counts=builder.get_counts())
+        return Result(
+            device_id=job.details.target, job_id=job.id, success=success, data=data, **details
+        )
 
     def cancel(self) -> None:
         """Cancel the Azure job."""
