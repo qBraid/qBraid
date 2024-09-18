@@ -101,18 +101,9 @@ def test_batch_normalized_counts():
     assert counts == expected
 
 
-# class MockQbraidResult(QbraidGateModelResultBuilder):
-#     """ "Mock Qbraid result for testing."""
-
-#     def __init__(self, device_id, job_id, success, result):
-#         """Create a new Result object."""
-#         super().__init__(device_id, job_id, success, result)
-#         self._measurements = [{" 1": 0, "0": 550}, {" 1": 474, "0": 550}]
-
-
 def test_decimal_get_counts():
     """Test decimal raw counts."""
-    experiment = GateModelResultData(counts={"10": 2})
+    experiment = GateModelResultData(measurement_counts={"10": 2})
     result = Result("device_id", "job_id", True, experiment)
     counts = result.data.get_counts(decimal=True)
     expected = {2: 2}

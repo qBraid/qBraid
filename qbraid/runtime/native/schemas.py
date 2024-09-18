@@ -21,11 +21,7 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 from typing_extensions import Annotated
 
 from qbraid.runtime.enums import ExperimentType, JobStatus
-from qbraid.runtime.schemas import (
-    ExperimentMetadata,
-    GateModelExperimentMetadata,
-    QasmBasedExperimentMetadata,
-)
+from qbraid.runtime.schemas import ExperimentMetadata, GateModelExperimentMetadata
 
 
 class QbraidSchemaHeader(BaseModel):
@@ -52,7 +48,7 @@ class QbraidSchemaBase(BaseModel):
     )
 
 
-class QbraidQirSimulationMetadata(QasmBasedExperimentMetadata):
+class QbraidQirSimulationMetadata(GateModelExperimentMetadata):
     """Result data specific to jobs submitted to the qBraid QIR simulator.
 
     Attributes:
@@ -65,7 +61,7 @@ class QbraidQirSimulationMetadata(QasmBasedExperimentMetadata):
     seed: Optional[int] = Field(None, alias="runnerSeed")
 
 
-class QuEraQasmSimulationMetadata(QasmBasedExperimentMetadata):
+class QuEraQasmSimulationMetadata(GateModelExperimentMetadata):
     """Result data specific to jobs submitted to the QuEra QASM simulator.
 
     Attributes:
@@ -137,7 +133,6 @@ class RuntimeJobModel(QbraidSchemaBase):
     metadata: Union[
         QbraidQirSimulationMetadata,
         QuEraQasmSimulationMetadata,
-        QasmBasedExperimentMetadata,
         GateModelExperimentMetadata,
         ExperimentMetadata,
     ]
@@ -162,8 +157,8 @@ class RuntimeJobModel(QbraidSchemaBase):
                 "quera_qasm_simulator": QuEraQasmSimulationMetadata,
             }
             device_id = job_data.get("qbraidDeviceId")
-            model: QasmBasedExperimentMetadata = native_models.get(
-                device_id, QasmBasedExperimentMetadata
+            model: GateModelExperimentMetadata = native_models.get(
+                device_id, GateModelExperimentMetadata
             )
             keys = [field.alias or name for name, field in model.model_fields.items()]
             metadata = {key: job_data.pop(key, None) for key in keys}

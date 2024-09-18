@@ -49,18 +49,30 @@ DEVICE_DATA = {
     "processorType": "State vector",
 }
 
-JOB_DATA = {
-    "qbraidJobId": "qbraid_qir_simulator-jovyan-qjob-1234567890",
-    "queuePosition": None,
-    "queueDepth": None,
+REDUNDANT_JOB_DATA = {
     "timeStamps": {
         "createdAt": "2024-05-23T01:39:11.288Z",
         "endedAt": "2024-05-23T01:39:11.304Z",
         "executionDuration": 16,
     },
+    "measurementCounts": {"11111": 4, "00000": 6},
+    "status": "COMPLETED",
+}
+
+JOB_DATA = {
+    "qbraidJobId": "qbraid_qir_simulator-jovyan-qjob-1234567890",
+    "queuePosition": None,
+    "queueDepth": None,
     "shots": 10,
     "circuitNumQubits": 5,
-    "measurementCounts": {"11111": 4, "00000": 6},
+    "qbraidDeviceId": "qbraid_qir_simulator",
+    "vendor": "qbraid",
+    "provider": "qbraid",
+    "tags": "{}",
+    **REDUNDANT_JOB_DATA,
+}
+
+RESULTS_DATA = {
     "measurements": [
         [0, 0, 0, 0, 0],
         [1, 1, 1, 1, 1],
@@ -73,11 +85,9 @@ JOB_DATA = {
         [0, 0, 0, 0, 0],
         [1, 1, 1, 1, 1],
     ],
-    "qbraidDeviceId": "qbraid_qir_simulator",
-    "status": "COMPLETED",
-    "vendor": "qbraid",
-    "provider": "qbraid",
-    "tags": "{}",
+    "runnerVersion": "0.7.4",
+    "runnerSeed": None,
+    **REDUNDANT_JOB_DATA,
 }
 
 
@@ -116,6 +126,10 @@ class MockClient:
     def get_job(self, job_id: str) -> dict[str, Any]:
         """Returns the quantum job with the given ID."""
         return JOB_DATA
+
+    def get_job_results(self, job_id: str) -> dict[str, Any]:
+        """Returns the results of the quantum job with the given ID."""
+        return RESULTS_DATA
 
 
 class MockDevice(QuantumDevice):

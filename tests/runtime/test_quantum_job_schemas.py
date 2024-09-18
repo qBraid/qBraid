@@ -21,15 +21,14 @@ from datetime import datetime
 import pytest
 from pydantic import ValidationError
 
-from qbraid.runtime.enums import ExperimentType, JobStatus, NoiseModel
+from qbraid.runtime.enums import ExperimentType, JobStatus
 from qbraid.runtime.native.schemas import (
-    ExperimentMetadata,
-    GateModelExperimentMetadata,
     QbraidSchemaBase,
     QbraidSchemaHeader,
     RuntimeJobModel,
     TimeStamps,
 )
+from qbraid.runtime.schemas import ExperimentMetadata, GateModelExperimentMetadata
 
 
 @pytest.fixture
@@ -70,13 +69,11 @@ def test_gate_model_experiment_metadata(valid_qasm):
     """Test GateModelExperimentMetadata class."""
     metadata = GateModelExperimentMetadata(
         openQasm=valid_qasm,
-        noiseModel=NoiseModel.NoNoise,
         measurementCounts=Counter({"00": 10, "01": 15}),
     )
     assert metadata.qasm == valid_qasm
     assert metadata.num_qubits == 2
     assert metadata.gate_depth == 3
-    assert metadata.noise_model == NoiseModel.NoNoise
     assert metadata.measurement_counts == Counter({"00": 10, "01": 15})
 
     with pytest.raises(ValidationError):

@@ -34,15 +34,22 @@ class ExperimentMetadata(BaseModel):
 
 
 class GateModelExperimentMetadata(ExperimentMetadata):
-    """Metadata specific to gate-model experiments.
+    """Metadata specific to gate-model experiments, i.e. experiments defined
+    using an intermediate representation (IR) that is compatible with OpenQASM.
 
     Attributes:
         measurement_counts (Counter): Counter for measurement outcomes.
         measurements (list, optional): Optional list of measurement results.
+        qasm (str, optional): OpenQASM string representation of the quantum circuit.
+        num_qubits (int, optional): Number of qubits used in the circuit.
+        gate_depth (int, optional): Depth of the quantum circuit (i.e. length of critical path)
     """
 
     measurement_counts: Optional[Counter] = Field(None, alias="measurementCounts")
     measurements: Optional[list] = None
+    qasm: Optional[str] = Field(None, alias="openQasm")
+    num_qubits: Optional[int] = Field(None, alias="circuitNumQubits")
+    gate_depth: Optional[int] = Field(None, alias="circuitDepth")
 
     @field_validator("measurement_counts")
     @classmethod
@@ -56,21 +63,6 @@ class GateModelExperimentMetadata(ExperimentMetadata):
             Counter: A validated counter object.
         """
         return Counter(value)
-
-
-class QasmBasedExperimentMetadata(GateModelExperimentMetadata):
-    """Metadata for gate-model experiments defined using an intermediate
-    representation (IR) that is compatible with OpenQASM.
-
-    Attributes:
-        qasm (str, optional): OpenQASM string representation of the quantum circuit.
-        num_qubits (int, optional): Number of qubits used in the circuit.
-        gate_depth (int, optional): Depth of the quantum gate circuit.
-    """
-
-    qasm: Optional[str] = Field(None, alias="openQasm")
-    num_qubits: Optional[int] = Field(None, alias="circuitNumQubits")
-    gate_depth: Optional[int] = Field(None, alias="circuitDepth")
 
     @field_validator("qasm")
     @classmethod
