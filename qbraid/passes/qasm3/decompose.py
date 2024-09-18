@@ -20,7 +20,7 @@ from openqasm3.parser import QASM3ParsingError, parse
 
 from qbraid.passes.exceptions import CompilationError, QasmDecompositionError
 
-from .compat import replace_qubit_with_qreg
+from .compat import declarations_to_qasm2
 
 
 def _decompose_crx(gate: ast.QuantumGate) -> list[ast.Statement]:
@@ -278,7 +278,7 @@ def rebase(qasm: str, basis_gates: Union[set[str], str], require_predicates: boo
     qasm = dumps(converted_program)
 
     if int(version_major) == 2:
-        qasm = replace_qubit_with_qreg(qasm)
+        qasm = declarations_to_qasm2(qasm)
 
     return qasm
 

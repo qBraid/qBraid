@@ -22,8 +22,6 @@ from typing import Any, Optional, Union
 import numpy as np
 from qbraid_core.system.generic import _datetime_to_str
 
-from qbraid.programs.typer import Qasm2String, Qasm3String
-
 from .enums import ExperimentType
 from .postprocess import GateModelResultBuilder
 from .schemas import GateModelExperimentMetadata

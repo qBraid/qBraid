@@ -18,6 +18,7 @@ import re
 from typing import Optional, Union
 
 import numpy as np
+from openqasm3 import dumps
 from openqasm3.ast import (
     BinaryExpression,
     BitType,
@@ -41,6 +42,7 @@ from openqasm3.parser import parse
 from qbraid_core._import import LazyLoader
 
 from qbraid.passes.qasm3 import normalize_qasm_gate_params, rebase
+from qbraid.passes.qasm3.compat import declarations_to_qasm2
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.typer import Qasm2String, Qasm2StringType, Qasm3String, Qasm3StringType
 
@@ -187,6 +189,29 @@ def depth(qasm_statements: list[Statement], counts: dict[str, int]) -> dict[str,
 
                 max_depth = max(counts.values())
     return counts
+
+
+def has_measurements(program: Program) -> bool:
+    """Check if the program has any measurement operations."""
+    for statement in program.statements:
+        if isinstance(statement, QuantumMeasurementStatement):
+            return True
+    return False
+
+
+def remove_measurements(program: Union[Program, str]) -> str:
+    """Remove all measurement operations from the program."""
+    program = parse(program) if isinstance(program, str) else program
+    statements = [
+        statement
+        for statement in program.statements
+        if not isinstance(statement, QuantumMeasurementStatement)
+    ]
+    program_out = Program(statements=statements, version=program.version)
+    program_str = dumps(program_out)
+    if float(program.version) == "2.0":
+        program_str = declarations_to_qasm2(program_str)
+    return program_str
 
 
 class OpenQasm2Program(GateModelProgram):
