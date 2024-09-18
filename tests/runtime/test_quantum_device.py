@@ -593,3 +593,41 @@ def test_set_options_raises_for_bad_key(mock_basic_device: MockDevice):
     not already included in options."""
     with pytest.raises(AttributeError):
         mock_basic_device.set_options(bad_key=True)
+
+
+def test_estimate_cost_success(mock_qbraid_device):
+    """Test estimate_cost returns the correct cost."""
+    mock_core_client = Mock()
+    mock_core_client.estimate_cost.return_value = 8.75
+    mock_qbraid_device._client = mock_core_client
+
+    cost = mock_qbraid_device.estimate_cost(shots=100, execution_time=1.1)
+    assert cost == 8.75
+    mock_core_client.estimate_cost.assert_called_once_with(mock_qbraid_device.id, 100, 1.1)
+
+
+@pytest.mark.parametrize(
+    "shots, execution_time",
+    [
+        (None, None),
+        (-1, 1.0),
+        (100, -1.0),
+        (0, 0),
+        (None, 0),
+        (0, None),
+    ],
+)
+def test_estimate_cost_raises_for_invalid_args(mock_qbraid_device, shots, execution_time):
+    """Test that estimate_cost raises ValueError for invalid arguments."""
+    with pytest.raises(ValueError):
+        mock_qbraid_device.estimate_cost(shots=shots, execution_time=execution_time)
+
+
+def test_estimate_cost_resource_not_found_error(mock_qbraid_device):
+    """Test estimate_cost raises ResourceNotFoundError if the core client fails."""
+    mock_core_client = Mock()
+    mock_core_client.estimate_cost.side_effect = QuantumServiceRequestError("Request failed")
+    mock_qbraid_device._client = mock_core_client
+
+    with pytest.raises(QbraidRuntimeError):
+        mock_qbraid_device.estimate_cost(shots=100, execution_time=10.0)
