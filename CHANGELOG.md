@@ -18,8 +18,9 @@ Types of changes:
 - Added `qbraid.programs.typer` module containing custom types (`Qasm2StringType` and `Qasm3StringType`) that can be used instead of `str` for more accurate static typing, as well as instance variables (`Qasm2String` and `Qasm3String`) that can be used for `isinstance` checks against both OpenQASM 2 and 3 strings ([#745](https://github.com/qBraid/qBraid/pull/745))
 - Added `qbraid.runtime.enums.NoiseModel` enum for various noise model options that we may support on managed simulators in the future. This is not a supported feature just yet, so this enum is really just a placeholder. ([#745](https://github.com/qBraid/qBraid/pull/745))
 - Added `qbraid.runtime.azure` module with `AzureQuantumProvider` class to enable access to QPUs and simulators from IonQ, Quantinuum, and Rigetti, as well as the Microsoft resource estimator, using Azure credentials ([#723](https://github.com/qBraid/qBraid/pull/723))
-- Added `qbraid.programs.typer.QbraidMetaType` custom type instances e.g. `IonQDict`, `BaseQasmInstanceMeta` [#752](https://github.com/qBraid/qBraid/pull/752)
-- Added `qbraid.runtime.Options` for more control over transpile, transform, and validation steps [#752](https://github.com/qBraid/qBraid/pull/752)
+- Added `qbraid.programs.typer.QbraidMetaType` custom type instances e.g. `IonQDict`, `BaseQasmInstanceMeta` ([#752](https://github.com/qBraid/qBraid/pull/752))
+- Added `qbraid.runtime.Options` for more control over transpile, transform, and validation steps ([#752](https://github.com/qBraid/qBraid/pull/752))
+- Added `QbraidProvider.estimate_cost` method to enable getting the estimated number of qBraid credits it will cost to run a quantum job on a given device ([#754](https://github.com/qBraid/qBraid/pull/754))
 
 ```python
 from azure.quantum import Workspace
@@ -57,9 +58,9 @@ print(counts) # {"000": 100}
 ### Improved / Modified
 - Updated construction of `TargetProfile` in `QbraidProvider` to populate provider from API instead of defaulting to fixed value 'qBraid'. ([#744](https://github.com/qBraid/qBraid/pull/744))
 - Generalized native runtime submission flow to pave the way for support of new devices apart from the QIR simulator. Updated various routines including creating target profile and constructing payload so they are no longer specific to just the `qbraid_qir_simulator`, but can be adapted to new devices that come online fairly quickly. ([#745](https://github.com/qBraid/qBraid/pull/745))
-- Defined azure runtime program specs for devices based on provider / input data format [#752](https://github.com/qBraid/qBraid/pull/752)
-- Moved IonQ dict "transform" from IonQ provider into transpiler conversions to be accessible from azure provider as well [#752](https://github.com/qBraid/qBraid/pull/752)
-- Updated `qbraid.runtime.JobStatus` enum to support displaying custom status message if/when available [#752](https://github.com/qBraid/qBraid/pull/752)
+- Defined azure runtime program specs for devices based on provider / input data format ([#752](https://github.com/qBraid/qBraid/pull/752))
+- Moved IonQ dict "transform" from IonQ provider into transpiler conversions to be accessible from azure provider as well ([#752](https://github.com/qBraid/qBraid/pull/752))
+- Updated `qbraid.runtime.JobStatus` enum to support displaying custom status message if/when available ([#752](https://github.com/qBraid/qBraid/pull/752))
 
 ### Deprecated
 
