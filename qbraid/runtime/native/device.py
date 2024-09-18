@@ -20,7 +20,7 @@ import json
 import logging
 from typing import TYPE_CHECKING, Optional, Union
 
-from qbraid_core.services.quantum import QuantumClient
+from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
 
 from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
 from qbraid.programs.typer import Qasm2String, Qasm2StringType
@@ -242,3 +242,51 @@ class QbraidDevice(QuantumDevice):
             jobs.append(job)
 
         return jobs[0] if is_single_input else jobs
+
+    def estimate_cost(
+        self, shots: Optional[int], execution_time: Optional[Union[float, int]]
+    ) -> float:
+        """Estimate the cost of running a quantum job on this device in qBraid credits,
+        where 1 credit equals $0.01 USD.
+
+        The estimated cost is based on the device's pricing model, which may include charges per
+        task, per shot, and/or per minute. *Note*: The actual price charged may differ from this
+        calculation. Visit https://docs.qbraid.com/home/pricing for the latest pricing information
+        and details about qBraid credits.
+
+        Args:
+            shots (int, optional): The number of quantum circuit executions in the quantum job.
+            execution_time (Union[float, int], optional): The estimated time (in minutes) to
+                complete the quantum job.
+
+        Returns:
+            float: The estimated cost for the quantum job in qBraid credits.
+
+        Raises:
+            ValueError: If `shots` and `execution_time` are None or 0, or if either is negative.
+            QbraidRuntimeError: If unable to retrieve the cost estimate from the qBraid API.
+        """
+        if not shots:
+            shots = None
+        if not execution_time:
+            execution_time = None
+
+        if shots is None and execution_time is None:
+            raise ValueError(
+                "At least one of 'shots' or 'execution_time' must be provided to estimate cost."
+            )
+
+        if shots is not None:
+            if not isinstance(shots, int) or shots < 0:
+                raise ValueError("'shots' must be a non-negative integer.")
+
+        if execution_time is not None:
+            if not isinstance(execution_time, (int, float)) or execution_time < 0:
+                raise ValueError("'execution_time' must be a non-negative number.")
+
+        try:
+            return self.client.estimate_cost(self.id, shots, execution_time)
+        except QuantumServiceRequestError as err:
+            raise QbraidRuntimeError(
+                "Failed to estimate cost due to a service request error."
+            ) from err
