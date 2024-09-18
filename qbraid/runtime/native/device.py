@@ -23,7 +23,6 @@ from typing import TYPE_CHECKING, Optional, Union
 from qbraid_core.services.quantum import QuantumClient
 
 from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
-from qbraid.programs.typer import Qasm2String, Qasm2StringType
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, NoiseModel
 from qbraid.runtime.exceptions import QbraidRuntimeError
@@ -32,7 +31,6 @@ from qbraid.transpiler import ConversionGraph, transpile
 from .job import QbraidJob
 
 if TYPE_CHECKING:
-    import pyqir
     import qbraid_core.services.quantum
 
     import qbraid.programs
@@ -63,7 +61,7 @@ class QbraidDevice(QuantumDevice):
     def status(self) -> qbraid.runtime.DeviceStatus:
         """Return device status."""
         device_data = self.client.get_device(self.id)
-        status = device_data.get("status")
+        status: Optional[str] = device_data.get("status")
         if not status:
             raise QbraidRuntimeError("Failed to retrieve device status")
         return DeviceStatus(status.lower())
@@ -73,14 +71,6 @@ class QbraidDevice(QuantumDevice):
         device_data = self.client.get_device(self.id)
         pending_jobs = device_data.get("pendingJobs", 0)
         return int(pending_jobs)
-
-    def transform(
-        self, run_input: Union[pyqir.Module, Qasm2StringType]
-    ) -> dict[str, Union[Qasm2StringType, bytes]]:
-        """Transform the input to the format expected by the qBraid API."""
-        if isinstance(run_input, Qasm2String):
-            return {"openQasm": run_input}
-        return {"bitcode": run_input.bitcode}
 
     def submit(  # pylint: disable=too-many-arguments
         self,

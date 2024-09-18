@@ -159,7 +159,7 @@ def mock_profile():
         simulator=True,
         experiment_type=ExperimentType.GATE_MODEL,
         num_qubits=42,
-        program_spec=ProgramSpec(Module, alias="pyqir", to_ir=lambda module: module.bitcode),
+        program_spec=QbraidProvider._get_program_spec("pyqir", "qbraid_qir_simulator"),
         noise_models=[NoiseModel.NoNoise],
     )
 
@@ -184,6 +184,18 @@ def mock_qbraid_device(mock_profile, mock_scheme, mock_client):
 def mock_basic_device(mock_profile):
     """Generic mock device for testing."""
     return MockDevice(profile=mock_profile)
+
+
+@pytest.fixture
+def pyqir_module() -> Module:
+    """Returns a one-qubit PyQIR module with Hadamard gate and measurement."""
+    bell = SimpleModule("test_qir_program", num_qubits=1, num_results=1)
+    qis = BasicQisBuilder(bell.builder)
+
+    qis.h(bell.qubits[0])
+    qis.mz(bell.qubits[0], bell.results[0])
+
+    return bell._module
 
 
 def counts_to_measurements(counts: dict[str, Any]) -> np.ndarray:
@@ -285,14 +297,14 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert job.is_terminal_state()
 
     JOB_DATA["qbraidJobId"] = "qbraid_qir_simulator-jovyan-qjob-1234567890"
-    batch_job = device.run([circuit], shots=shots, noise_model=NoiseModel.NoNoise)
+    batch_job = device.run([circuit], shots=shots)
     assert isinstance(batch_job, list)
     assert all(isinstance(job, QbraidJob) for job in batch_job)
 
     result = job.result()
     assert isinstance(result, Result)
     assert isinstance(result.data, GateModelResultData)
-    assert repr(result.data).startswith("GateModelResultData")
+    assert repr(result.data).startswith("QbraidQirSimulatorResultData")
     assert result.success
 
     counts = result.data.get_counts()
@@ -335,9 +347,9 @@ def test_device_noisey_run_raises_for_unsupported(mock_qbraid_device):
         mock_qbraid_device.run(Mock(), noise_model=NoiseModel.AmplitudeDamping)
 
 
-def test_device_transform(valid_qasm2, mock_qbraid_device):
+def test_device_transform(pyqir_module, mock_qbraid_device):
     """Test transform method on OpenQASM 2 string."""
-    assert mock_qbraid_device.transform(valid_qasm2) == {"openQasm": valid_qasm2}
+    assert mock_qbraid_device.transform(pyqir_module) == {"bitcode": pyqir_module.bitcode}
 
 
 def test_device_extract_qasm(valid_qasm2, mock_qbraid_device):
@@ -407,7 +419,7 @@ def test_provider_search_devices_raises_for_bad_client():
 
 def test_provider_program_spec_none():
     """Test getting program spec when it is None."""
-    assert QbraidProvider._get_program_spec(None) is None
+    assert QbraidProvider._get_program_spec(None, "device_id") is None
 
 
 def test_device_queue_depth_raises(mock_basic_device):
@@ -565,22 +577,11 @@ def test_set_options(mock_qbraid_device: QbraidDevice):
     assert dict(mock_qbraid_device._options) == updated_options
 
 
-@pytest.fixture
-def pyqir_module() -> Module:
-    """Returns a one-qubit PyQIR module with Hadamard gate and measurement."""
-    bell = SimpleModule("test_qir_program", num_qubits=1, num_results=1)
-    qis = BasicQisBuilder(bell.builder)
-
-    qis.h(bell.qubits[0])
-    qis.mz(bell.qubits[0], bell.results[0])
-
-    return bell._module
-
-
 def test_transform_to_ir_from_spec(mock_basic_device: MockDevice, pyqir_module: Module):
     """Test transforming to run input to given IR from target profile program spec."""
     run_input_transformed = mock_basic_device.transform(pyqir_module)
-    assert isinstance(run_input_transformed, bytes)
+    assert isinstance(run_input_transformed, dict)
+    assert isinstance(run_input_transformed.get("bitcode"), bytes)
 
     mock_basic_device._target_spec = None
     run_input_transformed = mock_basic_device.transform(pyqir_module)

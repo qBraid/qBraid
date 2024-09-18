@@ -276,6 +276,9 @@ class OpenQasm2Program(GateModelProgram):
 
     def transform(self, device) -> None:
         """Transform program to according to device target profile."""
+        if device.id == "quera_qasm_simulator":
+            self._program = remove_measurements(self.program)
+
         basis_gates = device.profile.get("basis_gates")
 
         if basis_gates is not None and len(basis_gates) > 0:

@@ -12,19 +12,65 @@
 Module defining QbraidProvider class.
 
 """
-from typing import Any, Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 from qbraid_core.exceptions import AuthError
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError, process_job_data
 
 from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
+from qbraid.programs.circuits.qasm import has_measurements
+from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
 from qbraid.runtime._display import display_jobs_from_data
-from qbraid.runtime.enums import ExperimentType, NoiseModel
+from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
 from .device import QbraidDevice
+
+if TYPE_CHECKING:
+    import pyqir
+
+
+def _pyqir_to_json(program: pyqir.Module) -> dict[str, bytes]:
+    return {"bitcode": program.bitcode}
+
+
+def _qasm_to_json(
+    program: Union[Qasm2StringType, Qasm3StringType]
+) -> dict[str, Union[Qasm2StringType, Qasm3StringType]]:
+    return {"openQasm": program}
+
+
+def validate_qasm_no_measurements(
+    program: Union[Qasm2StringType, Qasm3StringType], device_id: str
+) -> None:
+    """Raises a ValueError if the given OpenQASM program contains measurement gates."""
+    if has_measurements(program):
+        raise ValueError(
+            f"OpenQASM programs submitted to the {device_id} cannot contain measurement gates."
+        )
+
+
+def get_program_spec_lambdas(
+    program_type_alias: str, device_id: str
+) -> dict[str, Optional[Callable[[Any], None]]]:
+    """Returns conversion and validation functions for the given program type and device."""
+    lambdas = {
+        "pyqir": (_pyqir_to_json, None),
+        "qasm2": (_qasm_to_json, None),
+        "qasm3": (_qasm_to_json, None),
+    }
+
+    to_ir, validate = lambdas.get(program_type_alias, (None, None))
+
+    if program_type_alias in ["qasm2", "qasm3"] and device_id == "quera_qasm_simulator":
+        # pylint: disable-next=unnecessary-lambda-assignment
+        validate = lambda program: validate_qasm_no_measurements(program, device_id)
+
+    return {"to_ir": to_ir, "validate": validate}
 
 
 class QbraidProvider(QuantumProvider):
@@ -64,12 +110,13 @@ class QbraidProvider(QuantumProvider):
         return self._client
 
     @staticmethod
-    def _get_program_spec(run_package: Optional[str]) -> Optional[ProgramSpec]:
+    def _get_program_spec(run_package: Optional[str], device_id: str) -> Optional[ProgramSpec]:
         if not run_package:
             return None
 
         program_type = QPROGRAM_REGISTRY.get(run_package)
-        return ProgramSpec(program_type, alias=run_package) if program_type else None
+        lambdas = get_program_spec_lambdas(run_package, device_id)
+        return ProgramSpec(program_type, alias=run_package, **lambdas) if program_type else None
 
     def _build_runtime_profile(self, device_data: dict[str, Any]) -> TargetProfile:
         """Builds a runtime profile from qBraid device data."""
@@ -78,13 +125,7 @@ class QbraidProvider(QuantumProvider):
         program_type_alias = device_data.get("runPackage")
         provider = device_data.get("provider")
         device_id = device_data.get("qbraid_id", device_data.get("objArg"))
-        device_name: Optional[str] = device_data.get("name")
-        noise_models = (
-            list(NoiseModel)
-            if device_name and "noise" in device_name.lower()
-            else [NoiseModel.NoNoise] if simulator else None
-        )
-        program_spec = self._get_program_spec(program_type_alias)
+        program_spec = self._get_program_spec(program_type_alias, device_id)
         return TargetProfile(
             device_id=device_id,
             simulator=simulator,
@@ -92,7 +133,6 @@ class QbraidProvider(QuantumProvider):
             num_qubits=num_qubits,
             program_spec=program_spec,
             provider_name=provider,
-            noise_models=noise_models,
         )
 
     def get_devices(self, **kwargs) -> list[QbraidDevice]:

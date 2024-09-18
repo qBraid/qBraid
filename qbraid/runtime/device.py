@@ -159,7 +159,7 @@ class QuantumDevice(ABC):
 
         return metadata
 
-    def validate(self, program: Optional[qbraid.programs.QuantumProgram]):
+    def validate(self, run_input: qbraid.programs.QPROGRAM) -> None:
         """Verifies device status and circuit compatibility.
 
         Raises:
@@ -172,7 +172,12 @@ class QuantumDevice(ABC):
                 UserWarning,
             )
 
-        if program:
+        if self._target_spec is None:
+            return None
+
+        if self._target_spec.native:
+            program = load_program(run_input)
+
             if self.num_qubits and program.num_qubits > self.num_qubits:
                 raise ProgramValidationError(
                     f"Number of qubits in circuit ({program.num_qubits}) exceeds "
@@ -180,8 +185,16 @@ class QuantumDevice(ABC):
                 )
         else:
             logger.info(
-                "Skipping qubit count validation: run input program type not supported natively."
+                "Skipping qubit count validation: %s program type not supported natively.",
+                self._target_spec.alias,
             )
+
+        try:
+            self._target_spec.validate(run_input)
+        except ValueError as err:
+            raise ProgramValidationError from err
+
+        return None
 
     def transpile(
         self, run_input: qbraid.programs.QPROGRAM, run_input_spec: qbraid.programs.ProgramSpec
@@ -244,19 +257,13 @@ class QuantumDevice(ABC):
         Returns:
             Transpiled and transformed quantum program
         """
-        verify_option = self._options.get("verify") is True
-        transpile_option = self._options.get("transpile") is True
-
-        if self._target_spec is not None and (verify_option or transpile_option):
+        if self._target_spec is not None and self._options.get("transpile") is True:
             run_input_alias = get_program_type_alias(run_input, safe=True)
             run_input_spec = ProgramSpec(type(run_input), alias=run_input_alias)
-            program = load_program(run_input) if run_input_spec.native else None
+            run_input = self.transpile(run_input, run_input_spec)
 
-            if verify_option:
-                self.validate(program)
-
-            if transpile_option:
-                run_input = self.transpile(run_input, run_input_spec)
+        if self._options.get("verify") is True:
+            self.validate(run_input)
 
         is_single_output = not isinstance(run_input, list)
         run_input = [run_input] if is_single_output else run_input
