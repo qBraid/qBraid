@@ -97,20 +97,23 @@ class QbraidJob(QuantumJob):
         """Return the results of the job."""
         self.wait_for_final_state()
         job_data = self.client.get_job(self.id)
-        job_result = self.client.get_job_results(self.id)
+        success = job_data.get("status") == JobStatus.COMPLETED.name
+        job_result = self.client.get_job_results(self.id) if success else {}
         job_result.update(job_data)
+        metadata_to_result_data = {
+            QbraidQirSimulationMetadata: QbraidQirSimulatorResultData,
+            QuEraQasmSimulationMetadata: QuEraQasmSimulatorResultData,
+        }
         model = RuntimeJobModel.from_dict(job_result)
-        if isinstance(model.metadata, QbraidQirSimulationMetadata):
-            result_data_cls = QbraidQirSimulatorResultData
-        elif isinstance(model.metadata, QuEraQasmSimulationMetadata):
-            result_data_cls = QuEraQasmSimulatorResultData
-        else:
-            result_data_cls = GateModelResultData
+        result_data_cls: GateModelResultData = metadata_to_result_data.get(
+            type(model.metadata), GateModelResultData
+        )
         data = result_data_cls.from_object(model.metadata)
+        metadata_dump = model.metadata.model_dump(
+            by_alias=True, exclude={"measurement_counts", "measurements"}
+        )
+        model_dump = model.model_dump(by_alias=True, exclude={"job_id", "device_id", "metadata"})
+        model_dump["metadata"] = metadata_dump
         return Result(
-            device_id=model.device_id,
-            job_id=model.job_id,
-            success=model.status == JobStatus.COMPLETED,
-            data=data,
-            **model.model_dump(by_alias=True),
+            device_id=model.device_id, job_id=model.job_id, success=success, data=data, **model_dump
         )

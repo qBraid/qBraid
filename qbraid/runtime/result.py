@@ -14,10 +14,15 @@ Module containing models for schema-conformant Results.
 """
 from __future__ import annotations
 
+import datetime
 from abc import ABC, abstractmethod
+from enum import Enum
 from typing import Any, Optional, Union
 
 import numpy as np
+from qbraid_core.system.generic import _datetime_to_str
+
+from qbraid.programs.typer import Qasm2String, Qasm3String
 
 from .enums import ExperimentType
 from .postprocess import GateModelResultBuilder
@@ -190,9 +195,9 @@ class GateModelResultData(ResultData):
             measurements_info = self._measurements
 
         return (
-            f"GateModelResultData(\n"
-            f"  measurement_counts={self._measurement_counts},\n"
-            f"  measurements={measurements_info}\n"
+            f"{self.__class__.__name__}("
+            f"measurement_counts={self._measurement_counts}, "
+            f"measurements={measurements_info}"
             f")"
         )
 
@@ -235,6 +240,36 @@ class Result:
         """Returns the result of the job."""
         return self._details
 
+    def _format_value(self, value: Any, depth: int = 0, max_depth: int = 2) -> str:
+        """Helper function to format nested values with a depth limit."""
+        if isinstance(value, str):
+            return f"'{value}'"
+        if isinstance(value, Enum):
+            return f"{value.name}"
+        if isinstance(value, datetime.datetime):
+            return _datetime_to_str(value)
+        if isinstance(value, dict):
+            if depth >= max_depth:
+                return "{...}"
+            if "openQasm" in value and value["openQasm"] is not None:
+                value["openQasm"] = "..."
+            return (
+                "{"
+                + ", ".join(
+                    f"{k}: {self._format_value(v, depth + 1, max_depth)}" for k, v in value.items()
+                )
+                + "}"
+            )
+        if isinstance(value, list):
+            if depth >= max_depth:
+                return "[...]"
+            return (
+                "["
+                + ", ".join(self._format_value(item, depth + 1, max_depth) for item in value)
+                + "]"
+            )
+        return repr(value)
+
     def __repr__(self):
         """Return a string representation of the Result object."""
         out = (
@@ -246,10 +281,7 @@ class Result:
         )
         if self.details:
             for key, value in self.details.items():
-                if isinstance(value, str):
-                    value_str = f"'{value}'"
-                else:
-                    value_str = repr(value)
-                out += f",\n  {key}={value_str}"
+                formatted_value = self._format_value(value)
+                out += f",\n  {key}={formatted_value}"
         out += "\n)"
         return out

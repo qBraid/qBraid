@@ -33,7 +33,7 @@ class ExperimentMetadata(BaseModel):
     model_config = ConfigDict(extra="allow")
 
 
-class GateModelExperimentMetadata(ExperimentMetadata):
+class GateModelExperimentMetadata(BaseModel):
     """Metadata specific to gate-model experiments, i.e. experiments defined
     using an intermediate representation (IR) that is compatible with OpenQASM.
 

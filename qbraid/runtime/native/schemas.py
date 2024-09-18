@@ -160,7 +160,7 @@ class RuntimeJobModel(QbraidSchemaBase):
             model: GateModelExperimentMetadata = native_models.get(
                 device_id, GateModelExperimentMetadata
             )
-            keys = [field.alias or name for name, field in model.model_fields.items()]
+            keys = {field.alias or name for name, field in model.model_fields.items()}
             metadata = {key: job_data.pop(key, None) for key in keys}
             job_data["metadata"] = model(**metadata)
             return job_data

@@ -74,7 +74,7 @@ def about() -> None:
     operating platform on which it is running.
     """
     check_warn_version_update()
-    exclude_extras = {"test", "lint", "docs", "visualization"}
+    exclude_extras = {"test", "lint", "docs"}
     core_packages, extras = get_dependencies("qbraid", exclude_extras=exclude_extras)
     optional_packages = {item for subset in extras.values() for item in subset}
     all_packages = core_packages | optional_packages
