@@ -168,9 +168,9 @@ class GateModelResultData(ResultData):
         num_measured_qubits = len(next(iter(counts)))
         data = {
             "shots": shots,
-            "numMeasuredQubits": num_measured_qubits,
-            "measurementCounts": counts,
-            "measurementProbabilities": probabilities,
+            "num_measured_qubits": num_measured_qubits,
+            "measurement_counts": counts,
+            "measurement_probabilities": probabilities,
             "measurements": self._measurements,
         }
         self._cache["to_dict"] = data
@@ -254,7 +254,7 @@ class AhsResultData(ResultData):
     def to_dict(self) -> dict[str, Any]:
         """Converts the AhsResultData instance to a dictionary."""
         return {
-            "measurementCounts": self._measurement_counts,
+            "measurement_counts": self._measurement_counts,
             "measurements": self._measurements,
         }
 

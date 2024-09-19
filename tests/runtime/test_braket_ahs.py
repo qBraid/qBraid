@@ -37,6 +37,7 @@ from braket.task_result import (
     AnalogHamiltonianSimulationTaskResult,
     TaskMetadata,
 )
+from braket.tasks import AnalogHamiltonianSimulationQuantumTaskResult
 from braket.timings.time_series import TimeSeries
 
 from qbraid.programs import ProgramSpec
@@ -323,7 +324,7 @@ def ahs_program():
 
 
 @pytest.fixture
-def ahs_result():
+def ahs_result() -> AnalogHamiltonianSimulationQuantumTaskResult:
     """Mock Analog Hamiltonian Simulation task result."""
     task_metadata = TaskMetadata(**{"id": TASK_ARN, "deviceId": AQUILA_ARN, "shots": 100})
     additional_metadata = AdditionalMetadata(
@@ -403,7 +404,9 @@ def ahs_result():
         measurements=measurements_extended,
     )
 
-    return result
+    task_result = AnalogHamiltonianSimulationQuantumTaskResult.from_object(result)
+
+    return task_result
 
 
 @pytest.fixture

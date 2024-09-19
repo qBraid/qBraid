@@ -161,6 +161,10 @@ class MockTask:
         """Mock cancel method."""
         raise RuntimeError
 
+    def metadata(self):
+        """Mock metadata method."""
+        return {"status": self.state(), "quantumTaskArn": self.id, "deviceArn": SV1_ARN}
+
 
 @pytest.fixture
 def mock_sv1():
@@ -483,6 +487,11 @@ def test_job_load_completed(mock_aws_quantum_task):
     circuit = Circuit().h(0).cnot(0, 1)
     mock_device = LocalSimulator()
     mock_job = mock_device.run(circuit, shots=10)
+    mock_job.metadata = lambda: {
+        "status": mock_job.state(),
+        "quantumTaskArn": mock_job.id,
+        "deviceArn": mock_device.name,
+    }
     mock_aws_quantum_task.return_value = mock_job
     job = BraketQuantumTask(mock_job.id)
     assert job.metadata()["job_id"] == mock_job.id
