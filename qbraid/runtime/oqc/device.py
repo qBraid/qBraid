@@ -153,10 +153,6 @@ class OQCDevice(QuantumDevice):
         qpu_tasks = self._client.schedule_tasks(tasks, qpu_id=self.id)
         job_ids = [task.task_id for task in qpu_tasks]
 
-        jobs = [OQCJob(job_id=id_str, qpu_id=self.id, client=self._client) for id_str in job_ids]
+        jobs = [OQCJob(job_id=id_str, device=self, client=self._client) for id_str in job_ids]
 
-        return (
-            jobs
-            if not is_single_input
-            else OQCJob(job_id=job_ids[0], qpu_id=self.id, client=self._client)
-        )
+        return jobs if len(jobs) > 1 else jobs[0]
