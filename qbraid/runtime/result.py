@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import datetime
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Optional, Union
 
@@ -198,6 +199,64 @@ class GateModelResultData(ResultData):
             f"measurements={measurements_info}"
             f")"
         )
+
+
+@dataclass
+class AhsShotResult:
+    """Class for storing the results of a single shot in an analog Hamiltonian simulation job."""
+
+    success: bool
+    pre_sequence: Optional[np.ndarray] = None
+    post_sequence: Optional[np.ndarray] = None
+
+    @staticmethod
+    def _sequences_equal(seq1: Optional[np.ndarray], seq2: Optional[np.ndarray]) -> bool:
+        """Helper function to compare two sequences, handling None values."""
+        return (seq1 is None and seq2 is None) or (
+            seq1 is not None and seq2 is not None and np.array_equal(seq1, seq2)
+        )
+
+    def __eq__(self, other):
+        if not isinstance(other, AhsShotResult):
+            return False
+        return (
+            self.success == other.success
+            and self._sequences_equal(self.pre_sequence, other.pre_sequence)
+            and self._sequences_equal(self.post_sequence, other.post_sequence)
+        )
+
+
+class AhsResultData(ResultData):
+    """Class for storing and accessing the results of an analog Hamiltonian simulation job."""
+
+    def __init__(
+        self,
+        measurement_counts: Optional[dict[str, int]] = None,
+        measurements: Optional[list[AhsShotResult]] = None,
+    ):
+        self._measurement_counts = measurement_counts
+        self._measurements = measurements
+
+    @property
+    def experiment_type(self) -> ExperimentType:
+        """Returns the experiment type."""
+        return ExperimentType.AHS
+
+    @property
+    def measurements(self) -> Optional[list[AhsShotResult]]:
+        """Returns the measurements data of the run."""
+        return self._measurements
+
+    def get_counts(self) -> Optional[dict[str, int]]:
+        """Returns the histogram data of the run."""
+        return self._measurement_counts
+
+    def to_dict(self) -> dict[str, Any]:
+        """Converts the AhsResultData instance to a dictionary."""
+        return {
+            "measurementCounts": self._measurement_counts,
+            "measurements": self._measurements,
+        }
 
 
 class Result:

@@ -35,6 +35,7 @@ from qbraid.runtime import (
     DeviceProgramTypeMismatchError,
     DeviceStatus,
     ExperimentType,
+    GateModelResultData,
     TargetProfile,
 )
 from qbraid.runtime.braket.availability import _calculate_future_time
@@ -487,7 +488,8 @@ def test_job_load_completed(mock_aws_quantum_task):
     assert job.metadata()["job_id"] == mock_job.id
     assert job.is_terminal_state()
     res = job.result()
-    assert res.measurements() is not None
+    data: GateModelResultData = res.data
+    assert data.measurements is not None
 
 
 @pytest.mark.parametrize("position,expected", [(10, 10), (">2000", 2000)])

@@ -147,15 +147,3 @@ class GateModelResultBuilder:
             return GateModelResultBuilder._counts_to_probabilities(counts)
 
         return [GateModelResultBuilder._counts_to_probabilities(count) for count in counts]
-
-    # def to_dict(self) -> dict[str, Any]:
-    #     """Returns a dictionary representation of the result"""
-    #     raw_counts = self.get_counts()
-    #     counts = self.normalize_counts(raw_counts)
-    #     return {
-    #         "shots": sum(counts.values()),
-    #         "measured_qubits": len(next(iter(counts))),
-    #         "measurement_counts": counts,
-    #         "measurement_probabilities": self.counts_to_probabilities(counts),
-    #         "measurements": self.measurements(),
-    #     }
