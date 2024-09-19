@@ -19,7 +19,7 @@ from qbraid_core.sessions import Session
 from qbraid.programs.spec import ProgramSpec
 from qbraid.runtime.enums import DeviceActionType
 from qbraid.runtime.profile import TargetProfile
-from qbraid.runtime.provider import QuantumProvider
+from qbraid.runtime.provider import QuantumProvider, cache_results
 
 from .device import IonQDevice
 
@@ -81,9 +81,7 @@ class IonQProvider(QuantumProvider):
     """IonQ provider class."""
 
     def __init__(self, api_key: str):
-        super().__init__()
         self.session = IonQSession(api_key)
-        self._devices_ttl = 120  # in seconds
 
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
         """Build a profile for an IonQ device."""
@@ -100,20 +98,17 @@ class IonQProvider(QuantumProvider):
             basis_gates=SUPPORTED_GATES,
         )
 
+    @cache_results(ttl=120)
     def get_device(self, device_id: str) -> dict[str, Any]:
         """Get a specific IonQ device."""
         data = self.session.get_device(device_id)
         profile = self._build_profile(data)
         return IonQDevice(profile, self.session)
 
+    @cache_results(ttl=120)
     def get_devices(self, **kwargs) -> list[IonQDevice]:
         """Get a list of IonQ devices."""
-        if self._valid_devices_cache():
-            return self._devices_cache
-
         devices = self.session.get_devices(**kwargs)
-        device_list = [
+        return [
             IonQDevice(self._build_profile(device), self.session) for device in devices.values()
         ]
-        self._update_devices_cache(device_list)
-        return self._devices_cache

@@ -20,7 +20,7 @@ from qbraid.programs.spec import ProgramSpec
 from qbraid.runtime.enums import DeviceActionType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
-from qbraid.runtime.provider import QuantumProvider
+from qbraid.runtime.provider import QuantumProvider, cache_results
 
 from .device import OQCDevice
 
@@ -29,9 +29,7 @@ class OQCProvider(QuantumProvider):
     """OQC provider class."""
 
     def __init__(self, token: str):
-        super().__init__()
         self.client = OQCClient(url="https://cloud.oqc.app/", authentication_token=token)
-        self._devices_ttl = 120
 
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
         """Build a profile for OQC device."""
@@ -59,19 +57,15 @@ class OQCProvider(QuantumProvider):
             provider_name="OQC",
         )
 
+    @cache_results(ttl=120)
     def get_devices(self, **kwargs) -> list[OQCDevice]:  # pylint: disable=unused-argument
         """Get all OQC devices."""
-        if self._valid_devices_cache():
-            return self._devices_cache
-
         devices: list[dict] = self.client.get_qpus()
-        devices_list = [
+        return [
             OQCDevice(profile=self._build_profile(device), client=self.client) for device in devices
         ]
-        self._update_devices_cache(devices_list)
 
-        return self._devices_cache
-
+    @cache_results(ttl=120)
     def get_device(self, device_id: str) -> OQCDevice:
         """Get a specific OQC device."""
         devices: list[dict] = self.client.get_qpus()

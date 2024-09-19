@@ -12,8 +12,56 @@
 Module for configuring provider credentials and authentication.
 
 """
+import functools
+import hashlib
+import json
 import time
 from abc import ABC, abstractmethod
+
+
+def _generate_cache_key(func_name: str, args: tuple, kwargs: dict) -> str:
+    """Generate a cache key based on function name, args, and kwargs."""
+    key_data = {"func_name": func_name, "args": args, "kwargs": kwargs}
+    key_str = json.dumps(key_data, sort_keys=True)  # Ensure consistent key order
+    return hashlib.sha256(key_str.encode()).hexdigest()
+
+
+def cache_results(ttl: int = 120):
+    """
+    A decorator to cache the results of get_device or get_devices methods.
+
+    Args:
+        ttl (int): Time-to-live for the cache in seconds.
+    """
+
+    def decorator(func):
+
+        @functools.wraps(func)
+        def wrapper(self, *args, **kwargs):
+            # this is required to ensure new instances are not sharing the cache
+            # some problems were encountered such as -
+            # a test was changing the return value of the get_devices method but since cache had
+            # that entry, the old one was being returned and the test was failing
+            if not hasattr(self, "_device_cache"):
+                self._device_cache = {}
+
+            # Generate a unique cache key based on method name, args, and kwargs
+            key = _generate_cache_key(func.__name__, args, kwargs)
+
+            # Check if the result is in cache and still valid
+            if key in self._device_cache:
+                cached_result, timestamp = self._device_cache[key]
+                if (time.time() - timestamp) < ttl:
+                    return cached_result
+
+            # Call the actual method and cache the result
+            result = func(self, *args, **kwargs)
+            self._device_cache[key] = (result, time.time())
+            return result
+
+        return wrapper
+
+    return decorator
 
 
 class QuantumProvider(ABC):
@@ -23,32 +71,17 @@ class QuantumProvider(ABC):
 
     """
 
-    def __init__(self):
-        self._devices_cache = None
-        self._devices_last_accessed: int = -1
-        self._devices_ttl: int = 120
-
     def save_config(self, **kwargs):
         """Saves account data and/or credentials to the disk."""
         raise NotImplementedError
 
-    def _valid_devices_cache(self) -> bool:
-        """Check if the device cache is still valid."""
-        return (
-            self._devices_last_accessed != -1
-            and (time.time() - self._devices_last_accessed) < self._devices_ttl
-        )
-
-    def _update_devices_cache(self, devices):
-        """Update the device cache."""
-        self._devices_cache = devices
-        self._devices_last_accessed = time.time()
-
     @abstractmethod
+    @cache_results()
     def get_devices(self, **kwargs):
         """Return a list of backends matching the specified filtering."""
 
     @abstractmethod
+    @cache_results()
     def get_device(self, device_id: str):
         """Return quantum device corresponding to the specified device ID."""
 

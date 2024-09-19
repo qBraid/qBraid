@@ -142,21 +142,6 @@ def test_ionq_provider_get_device():
         assert test_device.profile["basis_gates"] == set(SUPPORTED_GATES)
 
 
-def test_ionq_get_devices_from_cache():
-    """Test getting devices from cache."""
-    with patch("qbraid.runtime.ionq.provider.Session") as mock_session:
-        mock_session.return_value.get.return_value.json.return_value = DEVICE_DATA
-
-        provider = IonQProvider(api_key="fake_api_key")
-        with patch.object(
-            provider, "_update_devices_cache", wraps=provider._update_devices_cache
-        ) as mock_update_devices_cache:
-
-            _ = provider.get_devices()
-            _ = provider.get_devices()
-            mock_update_devices_cache.assert_called_once()
-
-
 def test_ionq_provider_device_unavailable():
     """Test getting IonQ provider and different status devices."""
 

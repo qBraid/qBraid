@@ -25,7 +25,7 @@ from qbraid.programs.typer import IonQDict
 from qbraid.runtime.enums import DeviceActionType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
-from qbraid.runtime.provider import QuantumProvider
+from qbraid.runtime.provider import QuantumProvider, cache_results
 
 from .device import AzureQuantumDevice
 from .io_format import InputDataFormat
@@ -53,7 +53,6 @@ class AzureQuantumProvider(QuantumProvider):
             credential (Optional[ClientSecretCredential]): Optional credential to be used
                 if the workspace lacks one.
         """
-        super().__init__()
         if not workspace.credential:
             if credential:
                 workspace.credential = credential
@@ -65,7 +64,6 @@ class AzureQuantumProvider(QuantumProvider):
                 )
         workspace.append_user_agent("qbraid")
         self._workspace = workspace
-        self._devices_ttl = 120  # in seconds
 
     @property
     def workspace(self) -> Workspace:
@@ -117,6 +115,7 @@ class AzureQuantumProvider(QuantumProvider):
             program_spec=program_spec,
         )
 
+    @cache_results(ttl=120)
     def get_devices(self, **kwargs) -> list[AzureQuantumDevice]:
         """Get all Azure Quantum devices.
 
@@ -127,9 +126,6 @@ class AzureQuantumProvider(QuantumProvider):
             list[AzureQuantumDevice]: The Azure Quantum devices.
 
         """
-        if self._valid_devices_cache():
-            return self._devices_cache
-
         targets = self.workspace.get_targets(**kwargs)
         if isinstance(targets, Target):
             targets = [targets]
@@ -139,12 +135,11 @@ class AzureQuantumProvider(QuantumProvider):
                 raise ValueError("No devices found with the specified filters.")
             raise ResourceNotFoundError("No devices found.")
 
-        device_list = [
+        return [
             AzureQuantumDevice(self._build_profile(target), self.workspace) for target in targets
         ]
-        self._update_devices_cache(device_list)
-        return self._devices_cache
 
+    @cache_results(ttl=120)
     def get_device(self, device_id: str) -> AzureQuantumDevice:
         """Get a specific Azure Quantum device.
 
