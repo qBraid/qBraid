@@ -41,7 +41,6 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-	Session
 	Options
 	TargetProfile
 	QuantumDevice
@@ -64,8 +63,6 @@ Exceptions
 	DeviceProgramTypeMismatchError
 
 """
-from qbraid_core import Session
-
 from . import native
 from ._display import display_jobs_from_data
 from .device import QuantumDevice
@@ -85,7 +82,6 @@ from .provider import QuantumProvider
 from .result import GateModelResultData, Result, ResultData
 
 __all__ = [
-    "Session",
     "QuantumDevice",
     "ExperimentType",
     "DeviceStatus",

@@ -75,6 +75,17 @@ def test_format_value_list_with_depth(result_instance):
     assert result_instance._format_value(test_list, depth=2) == "[...]"
 
 
+def test_format_value_dict_with_openqasm(result_instance):
+    """Test _format_value with a dict with openQasm key."""
+    test_dict = {"openQasm": "OPENQASM 2.0;"}
+    assert result_instance._format_value(test_dict) == "{openQasm: '...'}"
+
+
+def test_format_value_catch_all(result_instance):
+    """Test _format_value with for catch-all repr."""
+    assert result_instance._format_value(42) == "42"
+
+
 def test_repr(result_instance):
     """Test __repr__ method of Result class."""
     expected_repr = (
