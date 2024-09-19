@@ -8,6 +8,8 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+# pylint: disable=redefined-outer-name
+
 """
 Unit tests for qbraid.programs.qasm.OpenQasm2Program
 
@@ -16,7 +18,7 @@ import textwrap
 
 import pytest
 
-from qbraid.programs.circuits.qasm import OpenQasm2Program
+from qbraid.programs.circuits.qasm import OpenQasm2Program, has_measurements, remove_measurements
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.registry import unregister_program_type
 
@@ -214,8 +216,9 @@ def test_raise_program_type_error():
         unregister_program_type("dict")
 
 
-def test_num_classical_bits():
-    """Test calculating number of classical bits in qasm2 circuit"""
+@pytest.fixture
+def simple_qasm():
+    """Fixture for a simple qasm2 circuit with measurements"""
     qasm = """
     OPENQASM 2.0;
     include "qelib1.inc";
@@ -230,4 +233,17 @@ def test_num_classical_bits():
     measure q[1] -> c[1];
     """
     qasm = textwrap.dedent(qasm).strip()
-    assert OpenQasm2Program(qasm).num_clbits == 2
+    return qasm
+
+
+def test_num_classical_bits(simple_qasm):
+    """Test calculating number of classical bits in qasm2 circuit"""
+
+    assert OpenQasm2Program(simple_qasm).num_clbits == 2
+
+
+def test_has_measurements(simple_qasm):
+    """Test checking if qasm2 circuit has measurements"""
+    assert has_measurements(simple_qasm) is True
+    updated_qasm = remove_measurements(simple_qasm)
+    assert has_measurements(updated_qasm) is False

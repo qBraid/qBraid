@@ -275,14 +275,6 @@ def test_run_fake_job(circuit, oqc_device):
     assert isinstance(result.data, GateModelResultData)
     assert result.data.get_counts() == {"0": 1, "1": 1}
 
-    # with pytest.raises(ResourceNotFoundError):
-    #     job.result(none=True)
-
-    # assert job.get_errors(success=False) == "Error"
-    # assert job.result(success=False)._result.get("error_details", None) == "Error"
-
-    # assert job.get_errors(success=False, attribute_error=True) is None
-
 
 def test_run_batch_fake_job(run_inputs, oqc_device):
     """Test running a batch of fake jobs."""
