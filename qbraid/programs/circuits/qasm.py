@@ -191,8 +191,9 @@ def depth(qasm_statements: list[Statement], counts: dict[str, int]) -> dict[str,
     return counts
 
 
-def has_measurements(program: Program) -> bool:
+def has_measurements(program: Union[Program, str]) -> bool:
     """Check if the program has any measurement operations."""
+    program = parse(program) if isinstance(program, str) else program
     for statement in program.statements:
         if isinstance(statement, QuantumMeasurementStatement):
             return True

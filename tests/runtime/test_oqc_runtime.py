@@ -21,8 +21,6 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-logger = logging.getLogger(__name__)
-
 try:
     from qcaas_client.client import OQCClient, QPUTask  # type: ignore
 
@@ -41,7 +39,7 @@ except ImportError as err:
 
     oqc_not_installed = True
 
-    logger.warning("OQC runtime tests will be skipped: %s", err)
+    logging.warning("OQC runtime tests will be skipped: %s", err)
 
 
 pytestmark = pytest.mark.skipif(oqc_not_installed, reason="qcaas_client not installed")
@@ -168,7 +166,7 @@ def oqc_device(lucy_simulator_data):
             )
             self._target_spec = ProgramSpec(str, alias="qasm2")
             self._scheme = ConversionScheme()
-            self._options = Options(transpile=True, transform=True, verify=True)
+            self._options = Options(transpile=True, transform=True, validate=True)
 
     return TestOQCDevice(DEVICE_ID)
 

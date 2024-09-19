@@ -16,13 +16,12 @@ Module defining IonQ job class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Optional
 
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
-
-from .result_builder import IonQGateModelResultBuilder
+from qbraid.runtime.result import GateModelResultBuilder, GateModelResultData, Result
 
 if TYPE_CHECKING:
     import qbraid.runtime.ionq.provider
@@ -63,7 +62,18 @@ class IonQJob(QuantumJob):
         """Cancel the IonQ job."""
         self.session.cancel_job(self.id)
 
-    def result(self) -> dict:
+    @staticmethod
+    def _get_counts(result: dict[str, Any]) -> dict[str, int]:
+        """Return the raw counts of the run."""
+        shots: Optional[int] = result.get("shots")
+        probs_int: Optional[dict[str, float]] = result.get("probabilities")
+        if shots is None or probs_int is None:
+            raise ValueError("Missing shots or probabilities in result data.")
+        probs_binary = {bin(int(key))[2:].zfill(2): value for key, value in probs_int.items()}
+        probs_normal = GateModelResultBuilder.normalize_bit_lengths(probs_binary)
+        return {state: int(prob * shots) for state, prob in probs_normal.items()}
+
+    def result(self) -> Result:
         """Return the result of the IonQ job."""
         self.wait_for_final_state()
         job_data = self.session.get_job(self.id)
@@ -74,8 +84,13 @@ class IonQJob(QuantumJob):
             message = failure.get("error")
             raise IonQJobError(f"Job failed with code {code}: {message}")
 
-        results_url = job_data.get("results_url")
+        results_url: str = job_data["results_url"]
         results_endpoint = results_url.split("v0.3")[-1]
         job_data["probabilities"] = self.session.get(results_endpoint).json()
         job_data["shots"] = job_data.get("shots", self._cache_metadata.get("shots"))
-        return IonQGateModelResultBuilder(job_data)
+
+        measurement_counts = self._get_counts(job_data)
+        data = GateModelResultData(measurement_counts=measurement_counts)
+        return Result(
+            device_id=job_data["target"], job_id=self.id, success=success, data=data, **job_data
+        )

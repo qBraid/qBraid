@@ -19,7 +19,7 @@ from unittest.mock import patch
 
 import pytest
 
-from qbraid._import import load_entrypoint
+from qbraid._import import get_entrypoints, load_entrypoint
 from qbraid.exceptions import QbraidError
 from qbraid.programs._import import _dynamic_importer
 
@@ -79,19 +79,40 @@ def test_dynamic_importer_exception():
 @patch("qbraid._import.importlib.metadata.entry_points")
 @patch("qbraid._import.pkg_resources.iter_entry_points")
 @patch("qbraid._import.sys.version_info")
-def test_load_entrypoint_with_old_python_version(
+def test_get_entrypoints_with_old_python_version(
     mock_version_info, mock_pkg_resources_eps, mock_importlib_eps
 ):
-    """Test that the entrypoint is loaded correctly with an old Python version."""
+    """Test that entry points are retrieved correctly with an old Python version."""
     mock_version_info.__ge__.return_value = False
 
     mock_entry_point = MagicMock()
     mock_entry_point.name = "qasm2"
-    mock_entry_point.load.return_value = "MockedEntryPoint"
     mock_pkg_resources_eps.return_value = [mock_entry_point]
 
-    result = load_entrypoint("programs", "qasm2")
+    result = get_entrypoints("programs")
 
-    assert result == "MockedEntryPoint"
-    mock_pkg_resources_eps.assert_called_once_with("qbraid.programs")
+    assert result == {"qasm2": mock_entry_point}
+
+    mock_pkg_resources_eps.assert_called_once_with(group="qbraid.programs")
     mock_importlib_eps.assert_not_called()
+
+
+@patch("qbraid._import.importlib.metadata.entry_points")
+@patch("qbraid._import.pkg_resources.iter_entry_points")
+@patch("qbraid._import.sys.version_info")
+def test_get_entrypoints_with_new_python_version(
+    mock_version_info, mock_pkg_resources_eps, mock_importlib_eps
+):
+    """Test that entry points are retrieved correctly with Python 3.10+."""
+    mock_version_info.__ge__.return_value = True
+
+    mock_entry_point = MagicMock()
+    mock_entry_point.name = "qasm2"
+    mock_importlib_eps.return_value.select.return_value = [mock_entry_point]
+
+    result = get_entrypoints("programs")
+
+    assert result == {"qasm2": mock_entry_point}
+
+    mock_importlib_eps.return_value.select.assert_called_once_with(group="qbraid.programs")
+    mock_pkg_resources_eps.assert_not_called()

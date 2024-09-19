@@ -12,20 +12,16 @@
 Unit tests for qasm2 to qasm3 transpilation
 
 """
-
-import logging
-
 import pytest
 from qiskit.circuit import QuantumCircuit
 from qiskit.qasm2 import dumps as qasm2_dumps
 from qiskit.qasm3 import loads as qasm3_loads
 
+from qbraid._logging import logger
 from qbraid.interface import circuits_allclose
 from qbraid.interface.random import random_circuit
 from qbraid.programs import load_program
 from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import _get_qasm3_gate_defs, qasm2_to_qasm3
-
-logger = logging.getLogger(__name__)
 
 gate_def_qasm3 = _get_qasm3_gate_defs()
 

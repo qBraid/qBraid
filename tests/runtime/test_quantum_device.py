@@ -568,7 +568,7 @@ def test_get_device_fail():
 
 def test_set_options(mock_qbraid_device: QbraidDevice):
     """Test updating the default runtime options."""
-    default_options = {"transpile": True, "transform": True, "verify": True}
+    default_options = {"transpile": True, "transform": True, "validate": True}
     assert dict(mock_qbraid_device._options) == default_options
 
     mock_qbraid_device.set_options(transform=False)

@@ -20,9 +20,6 @@ Functions
    :toctree: ../stubs/
 
     about
-    configure_logging
-    filterwarnings
-    check_warn_version_update
 
 Exceptions
 -----------
@@ -34,15 +31,11 @@ Exceptions
 
 """
 from ._about import about
-from ._compat import check_warn_version_update, configure_logging, filterwarnings
 from ._version import __version__
 from .exceptions import QbraidError
 
 __all__ = [
     "about",
-    "configure_logging",
-    "check_warn_version_update",
-    "filterwarnings",
     "QbraidError",
     "__version__",
 ]

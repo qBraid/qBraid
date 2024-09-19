@@ -14,7 +14,6 @@ Module defining QbraidJob class
 """
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING, Optional
 
 from qbraid_core.services.quantum import QuantumClient
@@ -31,8 +30,6 @@ if TYPE_CHECKING:
     import qbraid_core.services.quantum
 
     import qbraid.runtime
-
-logger = logging.getLogger(__name__)
 
 
 class QbraidJob(QuantumJob):

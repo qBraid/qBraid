@@ -339,12 +339,12 @@ def test_options_reserved_keyword_set_validator():
         Options(set_validator=True)
 
 
-def test_options_reserved_keyword_validate():
-    """Test that 'validate' keyword raises a ValueError."""
+def test_options_reserved_keyword_validate_option():
+    """Test that 'validate_option' keyword raises a ValueError."""
     with pytest.raises(
-        ValueError, match="The option name 'validate' is reserved and cannot be used."
+        ValueError, match="The option name 'validate_option' is reserved and cannot be used."
     ):
-        Options(validate=True)
+        Options(validate_option=True)
 
 
 def test_options_reserved_keyword_update_options():

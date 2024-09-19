@@ -30,7 +30,14 @@ from qiskit_ibm_runtime.exceptions import IBMNotAuthorizedError, RuntimeInvalidS
 from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
-from qbraid.runtime import DeviceStatus, ExperimentType, JobStateError, TargetProfile
+from qbraid.runtime import (
+    DeviceStatus,
+    ExperimentType,
+    GateModelResultData,
+    JobStateError,
+    Result,
+    TargetProfile,
+)
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.qiskit import (
     QiskitBackend,
@@ -382,7 +389,18 @@ def test_cancel_job_fails_due_to_runtime_error(mock_runtime_job):
 
 
 @pytest.fixture
-def mock_runtime_result():
+def mock_result_metadata():
+    """Return a dictionary of mock result metadata."""
+    return {
+        "job_id": "123",
+        "success": True,
+        "backend_name": "fake_backend",
+        "backend_version": "0.0.0",
+    }
+
+
+@pytest.fixture
+def mock_runtime_result(mock_result_metadata):
     """Return a mock Qiskit result."""
     mock_result = Mock()
     mock_result.results = [Mock(), Mock()]
@@ -390,17 +408,23 @@ def mock_runtime_result():
     meas2 = ["0"] * 8 + ["1"] * 12
     mock_result.get_memory.side_effect = [meas1, meas2]
     mock_result.get_counts.side_effect = [{"01": 9, "10": 1, "11": 4, "00": 6}, {"0": 8, "1": 12}]
+    mock_result.to_dict.return_value = mock_result_metadata
     return mock_result
 
 
-def test_result_from_job(mock_runtime_job, mock_runtime_result):
+def test_result_from_job(mock_runtime_job, mock_runtime_result, mock_result_metadata):
     """Test that result returns QiskitGateModelResultBuilder when the job is in a terminal state."""
     mock_job = QiskitJob(job_id="123", job=mock_runtime_job)
     mock_runtime_job.result.return_value = mock_runtime_result
     result = mock_job.result()
-    assert isinstance(result, QiskitGateModelResultBuilder)
-    assert isinstance(result.get_counts(), dict)
-    assert isinstance(result.measurements(), np.ndarray)
+    assert isinstance(result, Result)
+    assert isinstance(result.data, GateModelResultData)
+    assert isinstance(result.data.get_counts(), dict)
+    assert isinstance(result.data.measurements, np.ndarray)
+    assert result.details.get("job_id") is None
+    assert result.details.get("success") is None
+    assert result.details.get("backend_name") == mock_result_metadata["backend_name"]
+    assert result.details.get("backend_version") == mock_result_metadata["backend_version"]
 
 
 def test_result_get_counts(mock_runtime_result):

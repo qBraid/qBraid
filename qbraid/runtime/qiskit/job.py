@@ -14,22 +14,23 @@ Module defining QiskitJob Class
 """
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING, Optional
 
 from qiskit_ibm_runtime import QiskitRuntimeService
 from qiskit_ibm_runtime.exceptions import RuntimeInvalidStateError
 
+from qbraid._logging import logger
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError, QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
+from qbraid.runtime.result import GateModelResultData, Result
 
 from .result_builder import QiskitGateModelResultBuilder
 
 if TYPE_CHECKING:
+    import qiskit.result
     import qiskit_ibm_runtime
 
-logger = logging.getLogger(__name__)
 
 IBM_JOB_STATUS_MAP = {
     "INITIALIZING": JobStatus.INITIALIZING,
@@ -94,7 +95,24 @@ class QiskitJob(QuantumJob):
         """Return the results of the job."""
         if not self.is_terminal_state():
             logger.info("Result will be available when job has reached final state.")
-        return QiskitGateModelResultBuilder(self._job.result())
+
+        runner_result: qiskit.result.Result = self._job.result()
+        runner_data = runner_result.to_dict()
+        job_id = runner_data.pop("job_id", self._job.job_id())
+        success = runner_data.pop("success", runner_result.success)
+
+        builder = QiskitGateModelResultBuilder(runner_result)
+        measurement_counts = builder.get_counts()
+        measurements = builder.measurements()
+        data = GateModelResultData(measurement_counts=measurement_counts, measurements=measurements)
+
+        return Result(
+            device_id=runner_result.backend_name,
+            job_id=job_id,
+            success=success,
+            data=data,
+            **runner_data,
+        )
 
     def cancel(self):
         """Attempt to cancel the job."""

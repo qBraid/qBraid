@@ -14,11 +14,11 @@ Module defining AzureQuantumJob class
 """
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING, Any, Union
 
 from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 
+from qbraid._logging import logger
 from qbraid.runtime.azure.result_builder import AzureGateModelResultBuilder
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
@@ -29,9 +29,6 @@ from .io_format import OutputDataFormat
 
 if TYPE_CHECKING:
     import azure.quantum
-
-
-logger = logging.getLogger(__name__)
 
 
 class AzureQuantumJob(QuantumJob):

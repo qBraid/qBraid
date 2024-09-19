@@ -12,7 +12,6 @@
 Module defining BraketQuantumTask Class
 
 """
-import logging
 from typing import Optional
 
 from braket.aws import AwsQuantumTask
@@ -21,6 +20,7 @@ from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
 )
 from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
 
+from qbraid._logging import logger
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
@@ -28,8 +28,6 @@ from qbraid.runtime.result import AhsResultData, GateModelResultData, Result
 
 from .result_builder import BraketAhsResultBuilder, BraketGateModelResultBuilder
 from .tracker import get_quantum_task_cost
-
-logger = logging.getLogger(__name__)
 
 AWS_TASK_STATUS_MAP = {
     "CREATED": JobStatus.INITIALIZING,

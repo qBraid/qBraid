@@ -18,7 +18,8 @@ import platform
 import re
 from typing import Optional
 
-from ._compat import check_warn_version_update
+from qbraid_core._compat import check_version
+
 from ._version import __version__
 
 
@@ -73,7 +74,7 @@ def about() -> None:
     of its core and optional dependencies, as well as the Python version and
     operating platform on which it is running.
     """
-    check_warn_version_update()
+    check_version("qbraid")
     exclude_extras = {"test", "lint", "docs"}
     core_packages, extras = get_dependencies("qbraid", exclude_extras=exclude_extras)
     optional_packages = {item for subset in extras.values() for item in subset}

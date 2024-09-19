@@ -71,7 +71,7 @@ class Options:
     )
 
     def __init__(self, **kwargs: Any):
-        reserved_keywords = {"set_validator", "validate", "update_options", "get"}
+        reserved_keywords = {"set_validator", "validate_option", "update_options", "get"}
 
         for key in kwargs:
             if key in reserved_keywords:
@@ -89,7 +89,7 @@ class Options:
             raise KeyError(f"Field '{option_name}' is not present in options.")
         self._validators[option_name] = validator
 
-    def validate(self, option_name: str, value: Any):
+    def validate_option(self, option_name: str, value: Any):
         """Validates a field's value using the registered validator, if any."""
         validator = self._validators.get(option_name)
         if validator and not validator(value):
@@ -99,7 +99,7 @@ class Options:
         """Updates multiple options with validation."""
         for option_name, value in new_options.items():
             if hasattr(self, option_name):
-                self.validate(option_name, value)
+                self.validate_option(option_name, value)
                 setattr(self, option_name, value)
             else:
                 self._fields[option_name] = value
@@ -144,7 +144,7 @@ class Options:
         elif name in self._fields or name in self._default_fields:
             if self._fields.get(name) != value:
                 if name in self._validators:
-                    self.validate(name, value)
+                    self.validate_option(name, value)
                 self._fields[name] = value
         else:
             self.update_options(**{name: value})

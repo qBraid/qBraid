@@ -14,7 +14,6 @@ Module defining abstract QuantumJob Class
 """
 from __future__ import annotations
 
-import logging
 from abc import ABC, abstractmethod
 from time import sleep, time
 from typing import TYPE_CHECKING, Any, Optional
@@ -24,8 +23,6 @@ from .exceptions import JobStateError, ResourceNotFoundError
 
 if TYPE_CHECKING:
     import qbraid.runtime
-
-logger = logging.getLogger(__name__)
 
 
 class QuantumJob(ABC):

@@ -16,11 +16,11 @@ Module defining abstract QuantumDevice Class
 """
 from __future__ import annotations
 
-import logging
 import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
+from qbraid._logging import logger
 from qbraid.programs import ProgramLoaderError, ProgramSpec, get_program_type_alias, load_program
 from qbraid.transpiler import CircuitConversionError, ConversionGraph, ConversionScheme, transpile
 
@@ -32,9 +32,6 @@ if TYPE_CHECKING:
     import qbraid.programs
     import qbraid.runtime
     import qbraid.transpiler
-
-
-logger = logging.getLogger(__name__)
 
 
 class QuantumDevice(ABC):
@@ -97,10 +94,10 @@ class QuantumDevice(ABC):
     @classmethod
     def _default_options(cls):
         """Define default options for the QuantumDevice."""
-        options = Options(transpile=True, transform=True, verify=True)
+        options = Options(transpile=True, transform=True, validate=True)
         options.set_validator("transpile", lambda x: isinstance(x, bool))
         options.set_validator("transform", lambda x: isinstance(x, bool))
-        options.set_validator("verify", lambda x: isinstance(x, bool))
+        options.set_validator("validate", lambda x: isinstance(x, bool))
 
         return options
 
@@ -262,7 +259,7 @@ class QuantumDevice(ABC):
             run_input_spec = ProgramSpec(type(run_input), alias=run_input_alias)
             run_input = self.transpile(run_input, run_input_spec)
 
-        if self._options.get("verify") is True:
+        if self._options.get("validate") is True:
             self.validate(run_input)
 
         is_single_output = not isinstance(run_input, list)
