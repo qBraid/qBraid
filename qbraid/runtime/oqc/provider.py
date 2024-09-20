@@ -52,13 +52,13 @@ class OQCProvider(QuantumProvider):
             simulator=simulator,
             experiment_type=ExperimentType.GATE_MODEL,
             num_qubits=num_qubits,
-            program_spec=ProgramSpec(str, alias="qasm2"),
+            program_spec=ProgramSpec(str, alias="qasm3"),
             device_name=device_name,
             endpoint_url=endpoint_url,
             provider_name="OQC",
         )
 
-    def get_devices(self, **kwargs) -> list[OQCDevice]:  # pylint: disable=unused-argument
+    def get_devices(self) -> list[OQCDevice]:  # pylint: disable=arguments-differ
         """Get all OQC devices."""
         devices: list[dict] = self.client.get_qpus()
         return [

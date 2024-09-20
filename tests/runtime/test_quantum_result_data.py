@@ -15,10 +15,18 @@ Unit tests for retrieving and post-processing experimental results.
 
 """
 from collections import Counter
+from typing import Any
+from unittest.mock import MagicMock, patch
 
 import numpy as np
+import pandas as pd
 import pytest
+from flair_visual.animation.runtime.qpustate import AnimateQPUState
 
+from qbraid.runtime.native.result_data import (
+    QbraidQirSimulatorResultData,
+    QuEraQasmSimulatorResultData,
+)
 from qbraid.runtime.result import (
     AhsResultData,
     AhsShotResult,
@@ -308,3 +316,153 @@ def test_ahs_result_data_no_measurement_counts():
         "measurements": None,
     }
     assert result_data.to_dict() == expected_dict
+
+
+@pytest.fixture
+def mock_atom_animation_state() -> dict[str, Any]:
+    """Fixture for a mock AnimateQPUState JSON data."""
+    return {
+        "block_durations": [],
+        "gate_events": [],
+        "qpu_fov": {"xmin": None, "xmax": None, "ymin": None, "ymax": None},
+        "atoms": [],
+        "slm_zone": [],
+        "aod_moves": [],
+    }
+
+
+@pytest.fixture
+def mock_logs() -> list[dict[str, Any]]:
+    """Fixture for mock logs."""
+    return [
+        {"atom_id": 0, "block_id": 0, "action_type": "TrapSLM", "time": 0, "duration": 0},
+        {
+            "atom_id": 0,
+            "block_id": 0,
+            "action_type": "TrapAOD",
+            "time": 0,
+            "duration": 31.024984394500784,
+        },
+        {
+            "atom_id": 0,
+            "block_id": 0,
+            "action_type": "DropAOD",
+            "time": 31.024984394500784,
+            "duration": 0,
+        },
+    ]
+
+
+@pytest.fixture
+def quera_sim_data(mock_atom_animation_state, mock_logs) -> QuEraQasmSimulatorResultData:
+    """Fixture to create a QuEraQasmSimulatorResultData object."""
+    return QuEraQasmSimulatorResultData(
+        backend="cirq",
+        flair_visual_version="0.1.4",
+        atom_animation_state=mock_atom_animation_state,
+        logs=mock_logs,
+    )
+
+
+def test_quera_sim_data_properties(quera_sim_data: QuEraQasmSimulatorResultData):
+    """Test the backend and flair_visual_version properties."""
+    assert quera_sim_data.backend == "cirq"
+    assert quera_sim_data.flair_visual_version == "0.1.4"
+
+
+def test_quera_sim_data_get_qpu_state(quera_sim_data: QuEraQasmSimulatorResultData):
+    """Test that get_qpu_state returns an instance of AnimateQPUState."""
+    state = quera_sim_data.get_qpu_state()
+    assert isinstance(state, AnimateQPUState)
+
+
+@patch("flair_visual.animation.runtime.qpustate.AnimateQPUState.from_json")
+def test_quera_sim_data_get_qpu_state_calls(
+    mock_from_json, quera_sim_data, mock_atom_animation_state
+):
+    """Test that get_qpu_state uses from_json call to create AnimateQPUState."""
+    mock_qpu_state = MagicMock()
+    mock_from_json.return_value = mock_qpu_state
+
+    state = quera_sim_data.get_qpu_state()
+
+    mock_from_json.assert_called_once_with(mock_atom_animation_state)
+    assert state == mock_qpu_state
+
+
+def test_quera_sim_data_get_qpu_state_raises_value_error():
+    """Test that get_qpu_state raises ValueError if atom_animation_state is None."""
+    result_data = QuEraQasmSimulatorResultData(
+        backend="cirq",
+        flair_visual_version="0.1.4",
+        atom_animation_state=None,
+        logs=[],
+    )
+
+    with pytest.raises(ValueError, match="No atom_animation_state found in the result data."):
+        result_data.get_qpu_state()
+
+
+def test_quera_sim_data_get_logs_as_dataframe(quera_sim_data: QuEraQasmSimulatorResultData):
+    """Test that get_logs returns the logs as a pandas DataFrame."""
+    result = quera_sim_data.get_logs()
+
+    assert isinstance(result, pd.DataFrame)
+    assert result.shape == (3, 5)  # 3 rows (3 log entries) and 5 columns
+    assert list(result.columns) == ["atom_id", "block_id", "action_type", "time", "duration"]
+    assert result["atom_id"].iloc[0] == 0
+    assert result["block_id"].iloc[1] == 0
+    assert result["action_type"].iloc[2] == "DropAOD"
+    assert result["time"].iloc[2] == 31.024984394500784
+    assert result["duration"].iloc[1] == 31.024984394500784
+
+
+def test_quera_sim_data_get_logs_with_empty_logs():
+    """Test that get_logs returns an empty DataFrame when there are no logs."""
+    result_data = QuEraQasmSimulatorResultData(
+        backend="cirq",
+        flair_visual_version="0.1.4",
+        atom_animation_state={},
+        logs=[],
+    )
+
+    result = result_data.get_logs()
+
+    assert isinstance(result, pd.DataFrame)
+    assert result.empty
+
+
+@pytest.fixture
+def qir_sim_data():
+    """Fixture to create a QbraidQirSimulatorResultData object."""
+    return QbraidQirSimulatorResultData(
+        backend_version="0.7.4",
+        seed=42,
+        measurement_counts={"00": 10, "01": 15},
+    )
+
+
+def test_qir_sim_data_backend_version_property(qir_sim_data):
+    """Test the backend_version property."""
+    assert qir_sim_data.backend_version == "0.7.4"
+
+
+def test_qir_sim_data_seed_property_with_value(qir_sim_data):
+    """Test the seed property when a seed is provided."""
+    assert qir_sim_data.seed == 42
+
+
+def test_qir_sim_data_seed_property_with_none():
+    """Test the seed property when no seed is provided."""
+    result_data = QbraidQirSimulatorResultData(
+        backend_version="v1.2.3",
+        seed=None,
+        measurement_counts={"00": 10, "01": 15},
+    )
+
+    assert result_data.seed is None
+
+
+def test_qir_sim_data_inherited_measurement_counts_property(qir_sim_data):
+    """Test that the inherited measurement_counts property is working correctly."""
+    assert qir_sim_data.get_counts() == {"00": 10, "01": 15}

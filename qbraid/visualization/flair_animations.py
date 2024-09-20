@@ -35,6 +35,7 @@ def animate_qpu_state(  # pylint: disable=too-many-arguments
     filename: str = "vqpu_animation",
     start_block: int = 0,
     n_blocks: Optional[int] = None,
+    **kwargs,
 ) -> matplotlib.animation.FuncAnimation:
     """Animates the QPU state.
 
@@ -78,6 +79,7 @@ def animate_qpu_state(  # pylint: disable=too-many-arguments
             filename=filename,
             start_block=start_block,
             n_blocks=n_blocks,
+            **kwargs,
         )
     except Exception as err:  # pylint: disable=broad-exception-caught
         raise VisualizationError from err

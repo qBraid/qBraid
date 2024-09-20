@@ -64,6 +64,7 @@ class OQCJob(QuantumJob):
         super().__init__(job_id=job_id, **kwargs)
         self._client = client
         self._qpu_id: Optional[str] = None
+        self._terminal_status: Optional[JobStatus] = None
 
     @property
     def qpu_id(self) -> str:
@@ -81,6 +82,9 @@ class OQCJob(QuantumJob):
 
     def status(self) -> JobStatus:
         """Get the status of the task."""
+        if self._terminal_status is not None:
+            return self._terminal_status
+
         task_status = self._client.get_task_status(task_id=self.id, qpu_id=self.qpu_id)
 
         status_map = {
@@ -94,7 +98,19 @@ class OQCJob(QuantumJob):
             "EXPIRED": JobStatus.FAILED,
         }
 
-        return status_map.get(task_status, JobStatus.UNKNOWN)
+        status = status_map.get(task_status, JobStatus.UNKNOWN)
+
+        if status in JobStatus.terminal_states():
+            if status == JobStatus.FAILED:
+                errors = self.get_errors() or {}
+                error_message = errors.get("message")
+
+                if error_message is not None:
+                    status.set_status_message(error_message)
+
+            self._terminal_status = status
+
+        return status
 
     def cancel(self) -> None:
         """Cancel the task."""
@@ -197,12 +213,13 @@ class OQCJob(QuantumJob):
         """Get the timings for the task."""
         return self._client.get_task_timings(task_id=self.id, qpu_id=self.qpu_id)
 
-    def get_errors(self) -> Optional[QPUTaskErrors]:
+    def get_errors(self) -> Optional[dict[str, Any]]:
         """Get the error message for the task."""
-        if self.status() != JobStatus.FAILED:
+        task_errors = self._client.get_task_errors(task_id=self.id, qpu_id=self.qpu_id)
+        if task_errors is None:
             return None
 
-        try:
-            return self._client.get_task_errors(task_id=self.id, qpu_id=self.qpu_id).error_message
-        except AttributeError:
-            return None
+        return {
+            "message": getattr(task_errors, "error_message", None),
+            "code": getattr(task_errors, "error_code", None),
+        }

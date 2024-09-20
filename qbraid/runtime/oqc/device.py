@@ -127,7 +127,8 @@ class OQCDevice(QuantumDevice):
         """Transforms the input program before submitting it to the device."""
         return rename_qasm_registers(run_input)
 
-    def submit(self, run_input, *args, **kwargs) -> Union[OQCJob, list[OQCJob]]:
+    # pylint: disable-next=arguments-differ
+    def submit(self, run_input, **kwargs) -> Union[OQCJob, list[OQCJob]]:
         """Submit one or more jobs to the device."""
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
@@ -147,12 +148,9 @@ class OQCDevice(QuantumDevice):
             custom_config = None
 
         for program in run_input:
-            task = QPUTask(program=program, config=custom_config)
+            task = QPUTask(program=program, config=custom_config, qpu_id=self.id)
             tasks.append(task)
 
         qpu_tasks = self._client.schedule_tasks(tasks, qpu_id=self.id)
-        job_ids = [task.task_id for task in qpu_tasks]
-
-        jobs = [OQCJob(job_id=id_str, device=self, client=self._client) for id_str in job_ids]
-
-        return jobs if len(jobs) > 1 else jobs[0]
+        jobs = [OQCJob(job_id=task.task_id, device=self, client=self._client) for task in qpu_tasks]
+        return jobs[0] if is_single_input else jobs
