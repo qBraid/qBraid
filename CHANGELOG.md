@@ -61,6 +61,25 @@ print(counts) # {"000": 100}
 - Defined azure runtime program specs for devices based on provider / input data format ([#752](https://github.com/qBraid/qBraid/pull/752))
 - Moved IonQ dict "transform" from IonQ provider into transpiler conversions to be accessible from azure provider as well ([#752](https://github.com/qBraid/qBraid/pull/752))
 - Updated `qbraid.runtime.JobStatus` enum to support displaying custom status message if/when available ([#752](https://github.com/qBraid/qBraid/pull/752))
+- Updated the `qbraid.runtime.provider.QuantumProvider` methods `get_device` and `get_devices` to now cache the results, speeding up subsequent calls. Users still have ability to bypass this cache by using a `bypass_cache` argument. ([#755](https://github.com/qBraid/qBraid/pull/755))
+
+```python
+from qbraid.runtime.native import QbraidProvider
+import time
+
+qbraid_provider = QbraidProvider()
+start = time.time()
+qbraid_devices = qbraid_provider.get_devices() # equivalent to bypass_cache=True
+stop = time.time()
+
+print(f"Original time: {stop - start:.6f} seconds")  # 0.837230 seconds
+
+start_cache = time.time()
+devices_cached = qbraid_provider.get_devices(bypass_cache=False)
+stop_cache = time.time()
+
+print(f"Cached time: {stop_cache - start_cache:.6f} seconds")  # 0.000117 seconds
+```
 
 ### Deprecated
 
