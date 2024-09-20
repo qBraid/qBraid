@@ -426,6 +426,18 @@ def test_provider_get_devices_post_cache_expiry(mock_client):
         assert client.search_devices.call_count == 2
 
 
+def test_provider_get_devices_bypass_cache(mock_client):
+    """Test that the cache is bypassed when the bypass_cache flag is set."""
+    client = mock_client
+    provider = QbraidProvider(client=client)
+    client.search_devices = Mock()
+    client.search_devices.return_value = [DEVICE_DATA]
+
+    _ = provider.get_devices(qbraid_id="qbraid_qir_simulator")
+    _ = provider.get_devices(qbraid_id="qbraid_qir_simulator", bypass_cache=True)
+    assert client.search_devices.call_count == 2
+
+
 def test_provider_search_devices_raises_for_bad_client():
     """Test raising ResourceNotFoundError when the client fails to authenticate."""
     provider = QbraidProvider(client=MockClient())

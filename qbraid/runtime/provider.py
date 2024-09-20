@@ -39,17 +39,17 @@ def cache_results(ttl: int = 120):
         @functools.wraps(func)
         def wrapper(self, *args, **kwargs):
             # this is required to ensure new instances are not sharing the cache
-            # some problems were encountered such as -
-            # a test was changing the return value of the get_devices method but since cache had
-            # that entry, the old one was being returned and the test was failing
             if not hasattr(self, "_device_cache"):
                 self._device_cache = {}
+
+            # Check if the cache should be bypassed
+            bypass_cache = kwargs.pop("bypass_cache", False)
 
             # Generate a unique cache key based on method name, args, and kwargs
             key = _generate_cache_key(func.__name__, args, kwargs)
 
             # Check if the result is in cache and still valid
-            if key in self._device_cache:
+            if not bypass_cache and key in self._device_cache:
                 cached_result, timestamp = self._device_cache[key]
                 if (time.time() - timestamp) < ttl:
                     return cached_result
@@ -78,12 +78,14 @@ class QuantumProvider(ABC):
     @abstractmethod
     @cache_results()
     def get_devices(self, **kwargs):
-        """Return a list of backends matching the specified filtering."""
+        """Return a list of backends matching the specified filtering.
+        Use 'bypass_cache=True' kwarg to bypass the cache and fetch fresh data."""
 
     @abstractmethod
     @cache_results()
     def get_device(self, device_id: str):
-        """Return quantum device corresponding to the specified device ID."""
+        """Return quantum device corresponding to the specified device ID.
+        Use 'bypass_cache=True' kwarg to bypass the cache and fetch fresh data."""
 
     def __eq__(self, other):
         """Equality comparison.
