@@ -110,7 +110,7 @@ def qasm2_to_qasm3(qasm_str: Qasm2StringType) -> Qasm3StringType:
         str: OpenQASM 3.0 string
     """
     qasm_version = get_qasm_type_alias(qasm_str)
-    if not qasm_version == "qasm2":
+    if qasm_version != "qasm2":
         raise ValueError("Invalid OpenQASM 2.0 string")
 
     qasm3_str = textwrap.dedent(
