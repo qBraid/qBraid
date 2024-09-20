@@ -21,13 +21,13 @@ Classes
    :toctree: ../stubs/
 
     Session
-	QbraidSession
+    QbraidSession
     QbraidClient
-	QbraidProvider
-	QbraidDevice
-	QbraidJob
+    QbraidProvider
+    QbraidDevice
+    QbraidJob
     RuntimeJobModel
-	QirRunner
+    QirRunner
 
 """
 from qbraid_core import QbraidClient, QbraidSession, Session

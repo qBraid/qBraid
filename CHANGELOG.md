@@ -64,10 +64,12 @@ print(counts) # {"000": 100}
 - Updated the `qbraid.runtime.provider.QuantumProvider` methods `get_device` and `get_devices` to now cache the results, speeding up subsequent calls. Users still have ability to bypass this cache by using a `bypass_cache` argument. ([#755](https://github.com/qBraid/qBraid/pull/755))
 
 ```python
-from qbraid.runtime.native import QbraidProvider
 import time
 
+from qbraid.runtime.native import QbraidProvider
+
 qbraid_provider = QbraidProvider()
+
 start = time.time()
 qbraid_devices = qbraid_provider.get_devices() # equivalent to bypass_cache=True
 stop = time.time()
@@ -81,9 +83,47 @@ stop_cache = time.time()
 print(f"Cached time: {stop_cache - start_cache:.6f} seconds")  # 0.000117 seconds
 ```
 
+**Unified Result class**
+
+- Refactored runtime provider result handling: the `qbraid.runtime.QuantumJob.result` method now returns a unified `qbraid.runtime.Result` type, providing a consistent interface across all quantum device modalities. Specific result types (e.g., `GateModel`, `AHS`) are represented by the abstract `qbraid.runtime.ResultData` class, with each instance corresponding to a `qbraid.runtime.ExperimentType` (e.g., `GATE_MODEL`, `AHS`, etc.). Experiment-specific methods, such as retrieving measurement counts, are now accessed through the `Result.data` attribute, while general metadata (`job_id`, `device_id`, `success`) remains easily accessible through the `Result` class. This strikes a balance between the structured yet overly nested `qiskit.result.Result` and the disconnected result schemas in `braket.task_result`. See examples below for usage. ([#756](https://github.com/qBraid/qBraid/pull/756))
+
+
+```python
+# Example 1: Gate Model Experiment via QbraidProvider
+
+from qbraid.runtime import QbraidProvider, GateModelResultData
+
+provider = QbraidProvider()
+job = provider.get_device("qbraid_qir_simulator").run(circuit, shots=1000)
+result = job.result()
+
+# Unified access to metadata and experiment-specific data
+print(f"device_id: {result.device_id}, job_id: {result.job_id}, success: {result.success}")
+print(result.data.get_counts())  # e.g., {"00": 486, "11": 514}
+```
+
+```python
+# Example 2: AHS Experiment via BraketProvider
+
+from qbraid.runtime.braket import BraketProvider
+from qbraid.runtime import AhsResultData, AhsShotResult
+
+provider = BraketProvider()
+job = provider.get("arn:aws:braket:us-east-1::device/qpu/quera/Aquila").run(ahs_program, shots=1000)
+result = job.result()
+
+# Unified access to metadata and experiment-specific data
+print(f"device_id: {result.device_id}, job_id: {result.job_id}, success: {result.success}")
+print(result.data.measurements)  # List of AhsShotResult instances
+```
+
 ### Deprecated
+- `result.measurement_counts()` method(s) from result objects retured by `qbraid.runtime.QuantumJob.result()`. Intead, for gate model jobs, measurement counts dictionary now accessible via `result.data.get_counts()`. ([#756](https://github.com/qBraid/qBraid/pull/756))
 
 ### Removed
+- Removed `qbraid.runtime.DeviceActionType` enum. Functionally replaced by `qbraid.runtime.ExperimentType`. ([#756](https://github.com/qBraid/qBraid/pull/756))
+- Removed `qbraid.runtime.QuantumJobResult`. Replaced by `qbraid.runtime.Result`. ([#756](https://github.com/qBraid/qBraid/pull/756))
+- Removed `qbraid.runtime.GateModelJobResult`. Replaced by `qbraid.runtime.GateModelResultData`. ([#756](https://github.com/qBraid/qBraid/pull/756))
 
 ### Fixed
 - Fixed `qbraid.transpiler.transpile` bug where the shortest path wasn't always being favored by the rustworkx pathfinding algorithm. Fixed by adding a bias parameter to both the `ConversionGraph` and `Conversion` classes that attributes as small weight to each conversion by default. ([#745](https://github.com/qBraid/qBraid/pull/745))
@@ -95,6 +135,7 @@ print(f"Cached time: {stop_cache - start_cache:.6f} seconds")  # 0.000117 second
 - Update sphinx-autodoc-typehints requirement from <2.4,>=1.24 to >=1.24,<2.5 ([#750](https://github.com/qBraid/qBraid/pull/750))
 - Update amazon-braket-sdk requirement from <1.87.0,>=1.83.0 to >=1.83.0,<1.88.0 ([#748](https://github.com/qBraid/qBraid/pull/748))
 - Update pennylane requirement from <0.38 to <0.39 ([#749](https://github.com/qBraid/qBraid/pull/749))
+- Added `flair-visual` to `qbraid[visulization]` extra to allow viewing animations of QuEra Simulator jobs run through qBraid. ([#756](https://github.com/qBraid/qBraid/pull/756))
 
 ## [0.7.3] - 2024-08-26
 

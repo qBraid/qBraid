@@ -22,11 +22,9 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-	BraketDevice
-	BraketProvider
-	BraketQuantumTask
-	BraketGateModelResultBuilder
-	BraketAhsResultBuilder
+    BraketDevice
+    BraketProvider
+    BraketQuantumTask
 
 Functions
 -----------
@@ -34,20 +32,17 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-	get_quantum_task_cost
+    get_quantum_task_cost
 
 """
 from .device import BraketDevice
 from .job import BraketQuantumTask
 from .provider import BraketProvider
-from .result_builder import BraketAhsResultBuilder, BraketGateModelResultBuilder
 from .tracker import get_quantum_task_cost
 
 __all__ = [
     "BraketDevice",
     "BraketProvider",
     "BraketQuantumTask",
-    "BraketGateModelResultBuilder",
-    "BraketAhsResultBuilder",
     "get_quantum_task_cost",
 ]

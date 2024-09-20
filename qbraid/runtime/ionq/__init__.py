@@ -19,10 +19,10 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-	IonQSession
-	IonQProvider
-	IonQDevice
-	IonQJob
+    IonQSession
+    IonQProvider
+    IonQDevice
+    IonQJob
 
 Exceptions
 -----------
@@ -30,7 +30,7 @@ Exceptions
 .. autosummary::
    :toctree: ../stubs/
 
-	IonQJobError
+    IonQJobError
 
 """
 from .device import IonQDevice

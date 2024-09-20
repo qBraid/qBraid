@@ -172,7 +172,7 @@ def test_basis_gates_none():
 
 def test_noise_model_members_exist():
     """Test that all NoiseModel enum members exist."""
-    assert NoiseModel.NoNoise is not None
+    assert NoiseModel.Ideal is not None
     assert NoiseModel.Depolarizing is not None
     assert NoiseModel.AmplitudeDamping is not None
     assert NoiseModel.PhaseDamping is not None
@@ -182,7 +182,7 @@ def test_noise_model_members_exist():
 
 def test_noise_model_member_values():
     """Test that the NoiseModel enum members have correct string values."""
-    assert NoiseModel.NoNoise.value == "no_noise"
+    assert NoiseModel.Ideal.value == "no_noise"
     assert NoiseModel.Depolarizing.value == "depolarizing"
     assert NoiseModel.AmplitudeDamping.value == "amplitude_damping"
     assert NoiseModel.PhaseDamping.value == "phase_damping"
@@ -194,7 +194,7 @@ def test_noise_model_iteration():
     """Test that iterating over the NoiseModel enum yields all noise models."""
     noise_models = list(NoiseModel)
     assert noise_models == [
-        NoiseModel.NoNoise,
+        NoiseModel.Ideal,
         NoiseModel.Depolarizing,
         NoiseModel.AmplitudeDamping,
         NoiseModel.PhaseDamping,
@@ -210,7 +210,7 @@ def test_noise_model_length():
 
 def test_noise_model_contains():
     """Test that specific string values map to the correct NoiseModel enum members."""
-    assert NoiseModel("no_noise") == NoiseModel.NoNoise
+    assert NoiseModel("no_noise") == NoiseModel.Ideal
     assert NoiseModel("depolarizing") == NoiseModel.Depolarizing
     assert NoiseModel("amplitude_damping") == NoiseModel.AmplitudeDamping
     assert NoiseModel("phase_damping") == NoiseModel.PhaseDamping

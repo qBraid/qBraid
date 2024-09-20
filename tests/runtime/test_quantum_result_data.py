@@ -35,6 +35,13 @@ from qbraid.runtime.result import (
     Result,
 )
 
+try:
+    from flair_visual.animation.runtime.qpustate import AnimateQPUState
+
+    flair_visual_installed = True
+except ImportError:
+    flair_visual_installed = False
+
 
 @pytest.mark.parametrize(
     "counts_raw, expected_out, include_zero_values",
@@ -369,18 +376,14 @@ def test_quera_sim_data_properties(quera_sim_data: QuEraQasmSimulatorResultData)
     assert quera_sim_data.flair_visual_version == "0.1.4"
 
 
+@pytest.mark.skipif(not flair_visual_installed, reason="flair-visual is not installed.")
 def test_quera_sim_data_get_qpu_state(quera_sim_data: QuEraQasmSimulatorResultData):
     """Test that get_qpu_state returns an instance of AnimateQPUState."""
-    try:
-        # pylint: disable-next=import-outside-toplevel
-        from flair_visual.animation.runtime.qpustate import AnimateQPUState
-
-        state = quera_sim_data.get_qpu_state()
-        assert isinstance(state, AnimateQPUState)
-    except ImportError:
-        pytest.skip("flair-visual is not installed.")
+    state = quera_sim_data.get_qpu_state()
+    assert isinstance(state, AnimateQPUState)
 
 
+@pytest.mark.skipif(not flair_visual_installed, reason="flair-visual is not installed.")
 @patch("flair_visual.animation.runtime.qpustate.AnimateQPUState.from_json")
 def test_quera_sim_data_get_qpu_state_calls(
     mock_from_json, quera_sim_data, mock_atom_animation_state
@@ -395,6 +398,7 @@ def test_quera_sim_data_get_qpu_state_calls(
     assert state == mock_qpu_state
 
 
+@pytest.mark.skipif(not flair_visual_installed, reason="flair-visual is not installed.")
 def test_quera_sim_data_get_qpu_state_raises_value_error():
     """Test that get_qpu_state raises ValueError if atom_animation_state is None."""
     result_data = QuEraQasmSimulatorResultData(

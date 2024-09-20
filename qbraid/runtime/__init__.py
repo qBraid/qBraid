@@ -22,10 +22,10 @@ Data Types
 .. autosummary::
    :toctree: ../stubs/
 
-	ExperimentType
-	DeviceStatus
-	JobStatus
-	NoiseModel
+    ExperimentType
+    DeviceStatus
+    JobStatus
+    NoiseModel
 
 Functions
 ------------
@@ -33,7 +33,7 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-	display_jobs_from_data
+    display_jobs_from_data
 
 Classes
 --------
@@ -41,11 +41,11 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-	Options
-	TargetProfile
-	QuantumDevice
-	QuantumJob
-	QuantumProvider
+    Options
+    TargetProfile
+    QuantumDevice
+    QuantumJob
+    QuantumProvider
     Result
     ResultData
     GateModelResultData
@@ -56,11 +56,11 @@ Exceptions
 .. autosummary::
    :toctree: ../stubs/
 
-	JobStateError
-	ProgramValidationError
-	QbraidRuntimeError
-	ResourceNotFoundError
-	DeviceProgramTypeMismatchError
+    JobStateError
+    ProgramValidationError
+    QbraidRuntimeError
+    ResourceNotFoundError
+    DeviceProgramTypeMismatchError
 
 """
 from . import native

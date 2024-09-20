@@ -34,13 +34,9 @@ from qbraid.runtime import (
     ResourceNotFoundError,
     TargetProfile,
 )
-from qbraid.runtime.azure import (
-    AzureGateModelResultBuilder,
-    AzureQuantumDevice,
-    AzureQuantumJob,
-    AzureQuantumProvider,
-)
+from qbraid.runtime.azure import AzureQuantumDevice, AzureQuantumJob, AzureQuantumProvider
 from qbraid.runtime.azure.io_format import InputDataFormat, OutputDataFormat
+from qbraid.runtime.azure.result_builder import AzureGateModelResultBuilder
 
 
 @pytest.fixture
@@ -1033,3 +1029,52 @@ def test_build_result_from_output_format(azure_result_builder, mock_azure_job, o
         azure_result_builder._format_rigetti_results.assert_called_once()
     else:
         pytest.fail(f"Unexpected output data format: {output_data_format}")
+
+
+def test_builder_get_counts_single_result_success(mock_result_builder):
+    """Test getting counts from a single successful result."""
+    mock_result_builder.get_results = Mock(
+        return_value=[{"success": True, "data": {"counts": {"00": 486, "11": 514}}}]
+    )
+
+    counts = mock_result_builder.get_counts()
+
+    assert counts == {"00": 486, "11": 514}
+
+
+def test_builder_get_counts_single_result_failure(mock_result_builder):
+    """Test getting counts from a single failed result."""
+    mock_result_builder.get_results = Mock(return_value=[{"success": False, "data": {}}])
+
+    counts = mock_result_builder.get_counts()
+
+    assert counts == {}
+
+
+def test_builder_get_counts_multiple_results_mixed(mock_result_builder):
+    """Test getting counts from multiple results with mixed success."""
+    mock_result_builder.get_results = Mock(
+        return_value=[
+            {"success": True, "data": {"counts": {"00": 486, "11": 514}}},
+            {"success": False, "data": {}},
+            {"success": True, "data": {"counts": {"00": 200, "11": 800}}},
+        ]
+    )
+
+    counts = mock_result_builder.get_counts()
+
+    assert counts == [{"00": 486, "11": 514}, {}, {"00": 200, "11": 800}]
+
+
+def test_builder_get_counts_multiple_results_all_failure(mock_result_builder):
+    """Test getting counts from multiple results with all failures."""
+    mock_result_builder.get_results = Mock(
+        return_value=[
+            {"success": False, "data": {"hello"}},
+            {"success": False, "data": {"counts": [1, 2, 3]}},
+        ]
+    )
+
+    counts = mock_result_builder.get_counts()
+
+    assert counts == [{}, {}]

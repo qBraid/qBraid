@@ -39,12 +39,8 @@ from qbraid.runtime import (
     TargetProfile,
 )
 from qbraid.runtime.exceptions import QbraidRuntimeError
-from qbraid.runtime.qiskit import (
-    QiskitBackend,
-    QiskitGateModelResultBuilder,
-    QiskitJob,
-    QiskitRuntimeProvider,
-)
+from qbraid.runtime.qiskit import QiskitBackend, QiskitJob, QiskitRuntimeProvider
+from qbraid.runtime.qiskit.result_builder import QiskitGateModelResultBuilder
 
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 

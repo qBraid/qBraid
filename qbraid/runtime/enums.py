@@ -56,7 +56,7 @@ class NoiseModel(Enum):
     """Enumeration representing various noise models for quantum simulators.
 
     Attributes:
-        NoNoise (str): The simulation is performed without any noise, representing an
+        Ideal (str): The simulation is performed without any noise, representing an
             ideal quantum computer.
         Depolarizing (str): Applies random errors to qubits, effectively turning a pure
             quantum state into a mixed state.
@@ -71,7 +71,7 @@ class NoiseModel(Enum):
 
     """
 
-    NoNoise = "no_noise"
+    Ideal = "no_noise"
     Depolarizing = "depolarizing"
     AmplitudeDamping = "amplitude_damping"
     PhaseDamping = "phase_damping"

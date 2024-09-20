@@ -19,15 +19,13 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-	QiskitBackend
-	QiskitJob
-	QiskitRuntimeProvider
-	QiskitGateModelResultBuilder
+    QiskitBackend
+    QiskitJob
+    QiskitRuntimeProvider
 
 """
 from .device import QiskitBackend
 from .job import QiskitJob
 from .provider import QiskitRuntimeProvider
-from .result_builder import QiskitGateModelResultBuilder
 
-__all__ = ["QiskitBackend", "QiskitJob", "QiskitRuntimeProvider", "QiskitGateModelResultBuilder"]
+__all__ = ["QiskitBackend", "QiskitJob", "QiskitRuntimeProvider"]

@@ -15,12 +15,16 @@ Unit tests for QASM transform to basic gates
 
 """
 
+from unittest.mock import MagicMock
+
 import pytest
 from openqasm3 import ast
 from openqasm3.parser import parse
 
 from qbraid.passes.exceptions import CompilationError, QasmDecompositionError
+from qbraid.passes.qasm3.compat import normalize_qasm_gate_params
 from qbraid.passes.qasm3.decompose import assert_gates_in_basis, decompose_qasm3, rebase
+from qbraid.programs.circuits.qasm import OpenQasm3Program
 
 
 @pytest.mark.parametrize(
@@ -234,3 +238,13 @@ def test_rebase_over_supported_decomposition_basis_set(
     """Test rebasing over basis set that matches the gates used in supported decomposition"""
     rebased_program = rebase(qasm_crx_program, {"rz", "ry", "cx"})
     assert rebased_program.strip() == qasm_crx_decomposed.strip()
+
+
+def test_transform_from_device_basis_gates(qasm_crx_program: str, qasm_crx_decomposed: str):
+    """Test transforming a program to the basis gates of a device"""
+    device = MagicMock()
+    device.profile.get.return_value = {"rz", "ry", "cx"}
+    program = OpenQasm3Program(qasm_crx_program)
+    program.transform(device=device)
+    expected = normalize_qasm_gate_params(qasm_crx_decomposed).strip()
+    assert program.program == expected

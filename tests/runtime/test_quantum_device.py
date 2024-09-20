@@ -28,7 +28,13 @@ from pyqir import BasicQisBuilder, Module, SimpleModule
 from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
 from qbraid.programs import ProgramSpec, register_program_type, unregister_program_type
-from qbraid.runtime import DeviceStatus, GateModelResultData, Result, TargetProfile
+from qbraid.runtime import (
+    DeviceStatus,
+    GateModelResultData,
+    ProgramValidationError,
+    Result,
+    TargetProfile,
+)
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import ExperimentType, NoiseModel
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
@@ -99,7 +105,11 @@ def valid_qasm2():
     OPENQASM 2.0;
     include "qelib1.inc";
     qreg q[2];
+    creg c0[1];
+    creg c1[1];
     swap q[0],q[1];
+    measure q[0] -> c0[0];
+    measure q[1] -> c1[0];
     """
 
 
@@ -140,7 +150,7 @@ class MockDevice(QuantumDevice):
         super().__init__(*args, **kwargs)
 
     def status(self):
-        raise NotImplementedError
+        return DeviceStatus.ONLINE
 
     def submit(self, *args, **kwargs):
         raise NotImplementedError
@@ -161,7 +171,19 @@ def mock_profile():
         experiment_type=ExperimentType.GATE_MODEL,
         num_qubits=42,
         program_spec=QbraidProvider._get_program_spec("pyqir", "qbraid_qir_simulator"),
-        noise_models=[NoiseModel.NoNoise],
+        noise_models=[NoiseModel.Ideal],
+    )
+
+
+@pytest.fixture
+def mock_quera_profile():
+    """Mock profile for testing."""
+    return TargetProfile(
+        device_id="quera_qasm_simulator",
+        simulator=True,
+        experiment_type=ExperimentType.GATE_MODEL,
+        num_qubits=42,
+        program_spec=QbraidProvider._get_program_spec("qasm2", "quera_qasm_simulator"),
     )
 
 
@@ -185,6 +207,12 @@ def mock_qbraid_device(mock_profile, mock_scheme, mock_client):
 def mock_basic_device(mock_profile):
     """Generic mock device for testing."""
     return MockDevice(profile=mock_profile)
+
+
+@pytest.fixture
+def mock_quera_basic_device(mock_quera_profile):
+    """Mock QuEra simulator device for testing."""
+    return MockDevice(profile=mock_quera_profile)
 
 
 @pytest.fixture
@@ -677,3 +705,9 @@ def test_estimate_cost_resource_not_found_error(mock_qbraid_device):
 
     with pytest.raises(QbraidRuntimeError):
         mock_qbraid_device.estimate_cost(shots=100, execution_time=10.0)
+
+
+def test_validate_quera_device_qasm_validator(mock_quera_basic_device, valid_qasm2):
+    """Test that validate method raises ValueError for QASM programs with measurements."""
+    with pytest.raises(ProgramValidationError):
+        mock_quera_basic_device.validate(valid_qasm2)
