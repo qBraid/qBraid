@@ -99,14 +99,18 @@ class IonQProvider(QuantumProvider):
         )
 
     @cache_results(ttl=120)
-    def get_device(self, device_id: str) -> dict[str, Any]:
+    def get_device(
+        self,
+        device_id: str,
+        bypass_cache: bool = False,
+    ) -> dict[str, Any]:
         """Get a specific IonQ device."""
         data = self.session.get_device(device_id)
         profile = self._build_profile(data)
         return IonQDevice(profile, self.session)
 
     @cache_results(ttl=120)
-    def get_devices(self, **kwargs) -> list[IonQDevice]:
+    def get_devices(self, bypass_cache: bool = False, **kwargs) -> list[IonQDevice]:
         """Get a list of IonQ devices."""
         devices = self.session.get_devices(**kwargs)
         return [

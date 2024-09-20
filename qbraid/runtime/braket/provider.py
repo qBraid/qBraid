@@ -152,6 +152,7 @@ class BraketProvider(QuantumProvider):
     @cache_results(ttl=120)
     def get_devices(
         self,
+        bypass_cache: bool = False,
         aws_session: Optional[braket.aws.AwsSession] = None,
         statuses: Optional[list[str]] = None,
         **kwargs,
@@ -166,7 +167,11 @@ class BraketProvider(QuantumProvider):
         ]
 
     @cache_results(ttl=120)
-    def get_device(self, device_id: str) -> qbraid.runtime.braket.BraketDevice:
+    def get_device(
+        self,
+        device_id: str,
+        bypass_cache: bool = False,
+    ) -> qbraid.runtime.braket.BraketDevice:
         """Returns the AWS device."""
         try:
             region_name = device_id.split(":")[3]

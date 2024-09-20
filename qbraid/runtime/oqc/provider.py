@@ -58,7 +58,9 @@ class OQCProvider(QuantumProvider):
         )
 
     @cache_results(ttl=120)
-    def get_devices(self, **kwargs) -> list[OQCDevice]:  # pylint: disable=unused-argument
+    def get_devices(
+        self, bypass_cache: bool = False, **kwargs
+    ) -> list[OQCDevice]:  # pylint: disable=unused-argument
         """Get all OQC devices."""
         devices: list[dict] = self.client.get_qpus()
         return [
@@ -66,7 +68,11 @@ class OQCProvider(QuantumProvider):
         ]
 
     @cache_results(ttl=120)
-    def get_device(self, device_id: str) -> OQCDevice:
+    def get_device(
+        self,
+        device_id: str,
+        bypass_cache: bool = False,
+    ) -> OQCDevice:
         """Get a specific OQC device."""
         devices: list[dict] = self.client.get_qpus()
         for device in devices:

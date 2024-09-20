@@ -116,7 +116,7 @@ class AzureQuantumProvider(QuantumProvider):
         )
 
     @cache_results(ttl=120)
-    def get_devices(self, **kwargs) -> list[AzureQuantumDevice]:
+    def get_devices(self, bypass_cache: bool = False, **kwargs) -> list[AzureQuantumDevice]:
         """Get all Azure Quantum devices.
 
         Args:
@@ -140,7 +140,11 @@ class AzureQuantumProvider(QuantumProvider):
         ]
 
     @cache_results(ttl=120)
-    def get_device(self, device_id: str) -> AzureQuantumDevice:
+    def get_device(
+        self,
+        device_id: str,
+        bypass_cache: bool = False,
+    ) -> AzureQuantumDevice:
         """Get a specific Azure Quantum device.
 
         Args:

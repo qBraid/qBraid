@@ -96,7 +96,7 @@ class QbraidProvider(QuantumProvider):
         )
 
     @cache_results(ttl=120)
-    def get_devices(self, **kwargs) -> list[QbraidDevice]:
+    def get_devices(self, bypass_cache: bool = False, **kwargs) -> list[QbraidDevice]:
         """Return a list of devices matching the specified filtering."""
         query = kwargs or {}
         query["vendor"] = "qBraid"
@@ -110,7 +110,11 @@ class QbraidProvider(QuantumProvider):
         return [QbraidDevice(profile, client=self.client) for profile in profiles]
 
     @cache_results(ttl=120)
-    def get_device(self, device_id: str) -> QbraidDevice:
+    def get_device(
+        self,
+        device_id: str,
+        bypass_cache: bool = False,
+    ) -> QbraidDevice:
         """Return quantum device corresponding to the specified qBraid device ID.
 
         Returns:

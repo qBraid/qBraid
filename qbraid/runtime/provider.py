@@ -42,7 +42,6 @@ def cache_results(ttl: int = 120):
             if not hasattr(self, "_device_cache"):
                 self._device_cache = {}
 
-            # Check if the cache should be bypassed
             bypass_cache = kwargs.pop("bypass_cache", False)
 
             # Generate a unique cache key based on method name, args, and kwargs
@@ -77,13 +76,13 @@ class QuantumProvider(ABC):
 
     @abstractmethod
     @cache_results()
-    def get_devices(self, **kwargs):
+    def get_devices(self, bypass_cache: bool = False, **kwargs):
         """Return a list of backends matching the specified filtering.
         Use 'bypass_cache=True' kwarg to bypass the cache and fetch fresh data."""
 
     @abstractmethod
     @cache_results()
-    def get_device(self, device_id: str):
+    def get_device(self, device_id: str, bypass_cache: bool = False):
         """Return quantum device corresponding to the specified device ID.
         Use 'bypass_cache=True' kwarg to bypass the cache and fetch fresh data."""
 
