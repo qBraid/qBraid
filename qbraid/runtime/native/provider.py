@@ -26,7 +26,7 @@ from qbraid.runtime._display import display_jobs_from_data
 from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
-from qbraid.runtime.provider import QuantumProvider
+from qbraid.runtime.provider import QuantumProvider, cache_results
 
 from .device import QbraidDevice
 
@@ -135,7 +135,8 @@ class QbraidProvider(QuantumProvider):
             provider_name=provider,
         )
 
-    def get_devices(self, **kwargs) -> list[QbraidDevice]:
+    @cache_results(ttl=120)
+    def get_devices(self, bypass_cache: bool = False, **kwargs) -> list[QbraidDevice]:
         """Return a list of devices matching the specified filtering."""
         query = kwargs or {}
         query["vendor"] = "qBraid"
@@ -148,7 +149,12 @@ class QbraidProvider(QuantumProvider):
         profiles = [self._build_runtime_profile(device_data) for device_data in device_data_lst]
         return [QbraidDevice(profile, client=self.client) for profile in profiles]
 
-    def get_device(self, device_id: str) -> QbraidDevice:
+    @cache_results(ttl=120)
+    def get_device(
+        self,
+        device_id: str,
+        bypass_cache: bool = False,
+    ) -> QbraidDevice:
         """Return quantum device corresponding to the specified qBraid device ID.
 
         Returns:

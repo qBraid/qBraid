@@ -25,7 +25,7 @@ from qbraid.programs.typer import IonQDict
 from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
-from qbraid.runtime.provider import QuantumProvider
+from qbraid.runtime.provider import QuantumProvider, cache_results
 
 from .device import AzureQuantumDevice
 from .io_format import InputDataFormat
@@ -53,7 +53,6 @@ class AzureQuantumProvider(QuantumProvider):
             credential (Optional[ClientSecretCredential]): Optional credential to be used
                 if the workspace lacks one.
         """
-        super().__init__()
         if not workspace.credential:
             if credential:
                 workspace.credential = credential
@@ -116,7 +115,8 @@ class AzureQuantumProvider(QuantumProvider):
             program_spec=program_spec,
         )
 
-    def get_devices(self, **kwargs) -> list[AzureQuantumDevice]:
+    @cache_results(ttl=120)
+    def get_devices(self, bypass_cache: bool = False, **kwargs) -> list[AzureQuantumDevice]:
         """Get all Azure Quantum devices.
 
         Args:
@@ -139,7 +139,12 @@ class AzureQuantumProvider(QuantumProvider):
             AzureQuantumDevice(self._build_profile(target), self.workspace) for target in targets
         ]
 
-    def get_device(self, device_id: str) -> AzureQuantumDevice:
+    @cache_results(ttl=120)
+    def get_device(
+        self,
+        device_id: str,
+        bypass_cache: bool = False,
+    ) -> AzureQuantumDevice:
         """Get a specific Azure Quantum device.
 
         Args:

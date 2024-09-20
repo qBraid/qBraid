@@ -19,7 +19,7 @@ from qbraid_core.sessions import Session
 from qbraid.programs.spec import ProgramSpec
 from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.profile import TargetProfile
-from qbraid.runtime.provider import QuantumProvider
+from qbraid.runtime.provider import QuantumProvider, cache_results
 
 from .device import IonQDevice
 
@@ -81,7 +81,6 @@ class IonQProvider(QuantumProvider):
     """IonQ provider class."""
 
     def __init__(self, api_key: str):
-        super().__init__()
         self.session = IonQSession(api_key)
 
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
@@ -99,13 +98,19 @@ class IonQProvider(QuantumProvider):
             basis_gates=SUPPORTED_GATES,
         )
 
-    def get_device(self, device_id: str) -> dict[str, Any]:
+    @cache_results(ttl=120)
+    def get_device(
+        self,
+        device_id: str,
+        bypass_cache: bool = False,
+    ) -> dict[str, Any]:
         """Get a specific IonQ device."""
         data = self.session.get_device(device_id)
         profile = self._build_profile(data)
         return IonQDevice(profile, self.session)
 
-    def get_devices(self, **kwargs) -> list[IonQDevice]:
+    @cache_results(ttl=120)
+    def get_devices(self, bypass_cache: bool = False, **kwargs) -> list[IonQDevice]:
         """Get a list of IonQ devices."""
         devices = self.session.get_devices(**kwargs)
         return [

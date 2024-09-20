@@ -23,7 +23,7 @@ from qiskit_ibm_runtime.accounts import ChannelType
 
 from qbraid.programs import ProgramSpec
 from qbraid.runtime.profile import TargetProfile
-from qbraid.runtime.provider import QuantumProvider
+from qbraid.runtime.provider import QuantumProvider, cache_results
 
 from .device import QiskitBackend
 
@@ -98,8 +98,12 @@ class QiskitRuntimeProvider(QuantumProvider):
             provider_name="IBM",
         )
 
-    def get_devices(self, operational=True, **kwargs) -> list[qbraid.runtime.qiskit.QiskitBackend]:
+    @cache_results(ttl=120)
+    def get_devices(
+        self, bypass_cache: bool = False, operational=True, **kwargs
+    ) -> list[qbraid.runtime.qiskit.QiskitBackend]:
         """Returns the IBM Quantum provider backends."""
+
         backends = self.runtime_service.backends(operational=operational, **kwargs)
         program_spec = ProgramSpec(qiskit.QuantumCircuit)
         return [
@@ -110,8 +114,12 @@ class QiskitRuntimeProvider(QuantumProvider):
             for backend in backends
         ]
 
+    @cache_results(ttl=120)
     def get_device(
-        self, device_id: str, instance: Optional[str] = None
+        self,
+        device_id: str,
+        bypass_cache: bool = False,
+        instance: Optional[str] = None,
     ) -> qbraid.runtime.qiskit.QiskitBackend:
         """Returns the IBM Quantum provider backends."""
         backend = self.runtime_service.backend(device_id, instance=instance)
