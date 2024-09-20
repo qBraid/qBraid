@@ -325,3 +325,11 @@ def test_ionq_submit_fail():
 
         with pytest.raises(ValueError):
             device.run(circuit, shots=2)
+
+
+@pytest.mark.parametrize("result", [{"probabilities": {"0": 0.5, "1": 0.5}}, {"shots": 100}])
+def test_get_counts_raises_value_error_for_missing_data(result):
+    """Test that _get_counts raises a ValueError if shots or probabilities are missing."""
+    with pytest.raises(ValueError) as exc_info:
+        IonQJob._get_counts(result)
+    assert "Missing shots or probabilities in result data." in str(exc_info.value)

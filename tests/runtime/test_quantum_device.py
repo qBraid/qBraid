@@ -24,24 +24,24 @@ from unittest.mock import Mock, patch
 import cirq
 import numpy as np
 import pytest
+from pandas import DataFrame
 from pyqir import BasicQisBuilder, Module, SimpleModule
 from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
 from qbraid.programs import ProgramSpec, register_program_type, unregister_program_type
-from qbraid.runtime import (
-    DeviceStatus,
-    GateModelResultData,
-    ProgramValidationError,
-    Result,
-    TargetProfile,
-)
+from qbraid.runtime import DeviceStatus, ProgramValidationError, Result, TargetProfile
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import ExperimentType, NoiseModel
+from qbraid.runtime.enums import ExperimentType, JobStatus, NoiseModel
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
+from qbraid.runtime.native.result_data import (
+    QbraidQirSimulatorResultData,
+    QuEraQasmSimulatorResultData,
+)
+from qbraid.runtime.native.schemas import RuntimeJobModel
 from qbraid.transpiler import CircuitConversionError, Conversion, ConversionGraph, ConversionScheme
 
-DEVICE_DATA = {
+DEVICE_DATA_QIR = {
     "numberQubits": 64,
     "pendingJobs": 0,
     "qbraid_id": "qbraid_qir_simulator",
@@ -56,6 +56,21 @@ DEVICE_DATA = {
     "processorType": "State vector",
 }
 
+DEVICE_DATA_QUERA = {
+    "numberQubits": 42,
+    "pendingJobs": 0,
+    "qbraid_id": "quera_qasm_simulator",
+    "name": "Noisey QASM simulator",
+    "provider": "QuEra",
+    "paradigm": "gate-based",
+    "type": "SIMULATOR",
+    "vendor": "qBraid",
+    "runPackage": "qasm2",
+    "status": "ONLINE",
+    "isAvailable": True,
+    "processorType": "N.D.",
+}
+
 REDUNDANT_JOB_DATA = {
     "timeStamps": {
         "createdAt": "2024-05-23T01:39:11.288Z",
@@ -66,7 +81,7 @@ REDUNDANT_JOB_DATA = {
     "status": "COMPLETED",
 }
 
-JOB_DATA = {
+JOB_DATA_QIR = {
     "qbraidJobId": "qbraid_qir_simulator-jovyan-qjob-1234567890",
     "queuePosition": None,
     "queueDepth": None,
@@ -79,7 +94,20 @@ JOB_DATA = {
     **REDUNDANT_JOB_DATA,
 }
 
-RESULTS_DATA = {
+JOB_DATA_QUERA = {
+    "qbraidJobId": "quera_qasm_simulator-jovyan-qjob-1234567890",
+    "queuePosition": None,
+    "queueDepth": None,
+    "shots": 10,
+    "circuitNumQubits": 5,
+    "qbraidDeviceId": "quera_qasm_simulator",
+    "vendor": "qbraid",
+    "provider": "quera",
+    "tags": "{}",
+    **REDUNDANT_JOB_DATA,
+}
+
+RESULTS_DATA_QIR = {
     "measurements": [
         [0, 0, 0, 0, 0],
         [1, 1, 1, 1, 1],
@@ -97,10 +125,45 @@ RESULTS_DATA = {
     **REDUNDANT_JOB_DATA,
 }
 
+MOCK_QPU_STATE_DATA = {
+    "block_durations": [],
+    "gate_events": [],
+    "qpu_fov": {"xmin": None, "xmax": None, "ymin": None, "ymax": None},
+    "atoms": [],
+    "slm_zone": [],
+    "aod_moves": [],
+}
+
+MOCK_SIM_LOGS = [
+    {"atom_id": 0, "block_id": 0, "action_type": "TrapSLM", "time": 0, "duration": 0},
+    {
+        "atom_id": 0,
+        "block_id": 0,
+        "action_type": "TrapAOD",
+        "time": 0,
+        "duration": 31.024984394500784,
+    },
+    {
+        "atom_id": 0,
+        "block_id": 0,
+        "action_type": "DropAOD",
+        "time": 31.024984394500784,
+        "duration": 0,
+    },
+]
+
+RESULTS_DATA_QUERA = {
+    "backend": "cirq",
+    "flairVisualVersion": "0.1.4",
+    "logs": MOCK_SIM_LOGS,
+    "atomAnimationState": MOCK_QPU_STATE_DATA,
+    **REDUNDANT_JOB_DATA,
+}
+
 
 @pytest.fixture
 def valid_qasm2():
-    """Valid OpenQASM 2 string for testing."""
+    """Valid OpenQASM 2 string with measurement."""
     return """
     OPENQASM 2.0;
     include "qelib1.inc";
@@ -113,6 +176,17 @@ def valid_qasm2():
     """
 
 
+@pytest.fixture
+def qasm2_no_meas():
+    """Valid OpenQASM 2 string without mesurement."""
+    return """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    swap q[0],q[1];
+    """
+
+
 class MockClient:
     """Mock client for testing."""
 
@@ -120,27 +194,60 @@ class MockClient:
         """Returns a list of devices matching the given query."""
         if query.get("status") == "Bad status":
             raise QuantumServiceRequestError("No devices found matching given criteria")
+        if query.get("provider") == "qBraid" or query.get("qbraid_id") == "qbraid_qir_simulator":
+            return [DEVICE_DATA_QIR]
+        if query.get("provider") == "QuEra" or query.get("qbraid_id") == "quera_qasm_simulator":
+            return [DEVICE_DATA_QUERA]
         if query.get("vendor") == "qBraid":
-            return [DEVICE_DATA]
+            return [DEVICE_DATA_QIR, DEVICE_DATA_QUERA]
         return []
 
     def get_device(self, qbraid_id: Optional[str] = None, **kwargs):
         """Returns the device with the given ID."""
         if qbraid_id == "qbraid_qir_simulator":
-            return DEVICE_DATA
+            return DEVICE_DATA_QIR
+        if qbraid_id == "quera_qasm_simulator":
+            return DEVICE_DATA_QUERA
         raise QuantumServiceRequestError("No devices found matching given criteria")
 
     def create_job(self, data: dict[str, Any]) -> dict[str, Any]:
         """Creates a new quantum job with the given data."""
-        return JOB_DATA
+        device_id = data.get("qbraidDeviceId")
+        if device_id == "qbraid_qir_simulator":
+            job_data = JOB_DATA_QIR.copy()
+            return job_data
+        if device_id == "quera_qasm_simulator":
+            job_data = JOB_DATA_QUERA.copy()
+            return job_data
+        raise QuantumServiceRequestError("Failed to create job")
+
+    @staticmethod
+    def _extract_device_id(job_id: str) -> str:
+        """Extracts the device ID from the given job ID."""
+        try:
+            return job_id.split("-")[0]
+        except IndexError as err:
+            raise ValueError("Invalid job ID format") from err
 
     def get_job(self, job_id: str) -> dict[str, Any]:
         """Returns the quantum job with the given ID."""
-        return JOB_DATA
+        device_id = self._extract_device_id(job_id)
+        if device_id == "qbraid_qir_simulator":
+            return JOB_DATA_QIR
+        if device_id == "quera_qasm_simulator":
+            return JOB_DATA_QUERA
+        raise QuantumServiceRequestError("No jobs found matching given criteria")
 
     def get_job_results(self, job_id: str) -> dict[str, Any]:
         """Returns the results of the quantum job with the given ID."""
-        return RESULTS_DATA
+        device_id = self._extract_device_id(job_id)
+        if device_id == "qbraid_qir_simulator":
+            results_data = RESULTS_DATA_QIR.copy()
+            return results_data
+        if device_id == "quera_qasm_simulator":
+            results_data = RESULTS_DATA_QUERA.copy()
+            return results_data
+        raise QuantumServiceRequestError("Failed to retrieve job results")
 
 
 class MockDevice(QuantumDevice):
@@ -182,7 +289,7 @@ def mock_quera_profile():
         device_id="quera_qasm_simulator",
         simulator=True,
         experiment_type=ExperimentType.GATE_MODEL,
-        num_qubits=42,
+        num_qubits=64,
         program_spec=QbraidProvider._get_program_spec("qasm2", "quera_qasm_simulator"),
     )
 
@@ -204,15 +311,15 @@ def mock_qbraid_device(mock_profile, mock_scheme, mock_client):
 
 
 @pytest.fixture
-def mock_basic_device(mock_profile):
-    """Generic mock device for testing."""
-    return MockDevice(profile=mock_profile)
+def mock_quera_device(mock_quera_profile, mock_client):
+    """Mock QuEra simulator device for testing."""
+    return QbraidDevice(profile=mock_quera_profile, client=mock_client)
 
 
 @pytest.fixture
-def mock_quera_basic_device(mock_quera_profile):
-    """Mock QuEra simulator device for testing."""
-    return MockDevice(profile=mock_quera_profile)
+def mock_basic_device(mock_profile):
+    """Generic mock device for testing."""
+    return MockDevice(profile=mock_profile)
 
 
 @pytest.fixture
@@ -261,7 +368,9 @@ def is_uniform_comput_basis(array: np.ndarray) -> bool:
     return True
 
 
-def uniform_state_circuit(num_qubits: Optional[int] = None) -> cirq.Circuit:
+def uniform_state_circuit(
+    num_qubits: Optional[int] = None, measure: Optional[bool] = True
+) -> cirq.Circuit:
     """
     Creates a Cirq circuit where all qubits are entangled to uniformly be in
     either |0⟩ or |1⟩ states upon measurement.
@@ -274,6 +383,7 @@ def uniform_state_circuit(num_qubits: Optional[int] = None) -> cirq.Circuit:
     Args:
         num_qubits (optional, int): The number of qubits in the circuit. If not provided,
                                     a default random number between 10 and 20 is used.
+        measure (optional, bool): Whether to measure the qubits at the end of the circuit.
 
     Returns:
         cirq.Circuit: The resulting circuit where the measurement outcome of all qubits is
@@ -287,21 +397,17 @@ def uniform_state_circuit(num_qubits: Optional[int] = None) -> cirq.Circuit:
 
     num_qubits = num_qubits or random.randint(10, 20)
 
-    # Create n qubits
     qubits = [cirq.LineQubit(i) for i in range(num_qubits)]
 
-    # Create a circuit
     circuit = cirq.Circuit()
 
-    # Add a Hadamard gate to the first qubit
     circuit.append(cirq.H(qubits[0]))
 
-    # Entangle all other qubits with the first qubit
     for qubit in qubits[1:]:
         circuit.append(cirq.CNOT(qubits[0], qubit))
 
-    # Measure all qubits
-    circuit.append(cirq.measure(*qubits, key="result"))
+    if measure:
+        circuit.append(cirq.measure(*qubits, key="result"))
 
     return circuit
 
@@ -325,22 +431,65 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert isinstance(job, QbraidJob)
     assert job.is_terminal_state()
 
-    JOB_DATA["qbraidJobId"] = "qbraid_qir_simulator-jovyan-qjob-1234567890"
     batch_job = device.run([circuit], shots=shots)
     assert isinstance(batch_job, list)
     assert all(isinstance(job, QbraidJob) for job in batch_job)
 
     result = job.result()
     assert isinstance(result, Result)
-    assert isinstance(result.data, GateModelResultData)
+    assert isinstance(result.data, QbraidQirSimulatorResultData)
     assert repr(result.data).startswith("QbraidQirSimulatorResultData")
     assert result.success
+    assert result.job_id == JOB_DATA_QIR["qbraidJobId"]
+    assert result.device_id == JOB_DATA_QIR["qbraidDeviceId"]
 
     counts = result.data.get_counts()
     probabilities = result.data.get_probabilities()
     assert len(counts) == len(probabilities) == 2
     assert sum(probabilities.values()) == 1.0
     assert is_uniform_comput_basis(result.data.measurements)
+
+    assert result.details["shots"] == shots
+    assert result.details["metadata"]["circuitNumQubits"] == num_qubits
+    assert isinstance(result.details["timeStamps"]["executionDuration"], int)
+
+
+def test_queara_simulator_workflow(mock_client, cirq_uniform):
+    """Test queara simulator job submission and result retrieval."""
+    circuit = cirq_uniform(num_qubits=5, measure=False)
+    num_qubits = len(circuit.all_qubits())
+
+    provider = QbraidProvider(client=mock_client)
+    device = provider.get_device("quera_qasm_simulator")
+
+    shots = 10
+    job = device.run(circuit, shots=shots)
+    assert isinstance(job, QbraidJob)
+    assert job.is_terminal_state()
+
+    batch_job = device.run([circuit], shots=shots)
+    assert isinstance(batch_job, list)
+    assert all(isinstance(job, QbraidJob) for job in batch_job)
+
+    result = job.result()
+    assert isinstance(result, Result)
+    assert isinstance(result.data, QuEraQasmSimulatorResultData)
+    assert repr(result.data).startswith("QuEraQasmSimulatorResultData")
+    assert result.success
+    assert result.job_id == JOB_DATA_QUERA["qbraidJobId"]
+    assert result.device_id == JOB_DATA_QUERA["qbraidDeviceId"]
+
+    counts = result.data.get_counts()
+    probabilities = result.data.get_probabilities()
+    assert len(counts) == len(probabilities) == 2
+    assert sum(probabilities.values()) == 1.0
+    assert result.data.measurements is None
+    assert result.data.flair_visual_version == RESULTS_DATA_QUERA["flairVisualVersion"]
+    assert result.data.backend == RESULTS_DATA_QUERA["backend"]
+    assert result.data._atom_animation_state == MOCK_QPU_STATE_DATA
+
+    logs = result.data.get_logs()
+    assert isinstance(logs, DataFrame)
 
     assert result.details["shots"] == shots
     assert result.details["metadata"]["circuitNumQubits"] == num_qubits
@@ -444,7 +593,7 @@ def test_provider_get_cached_devices(mock_client):
     client = mock_client
     provider = QbraidProvider(client=client)
     client.search_devices = Mock()
-    client.search_devices.return_value = [DEVICE_DATA]
+    client.search_devices.return_value = [DEVICE_DATA_QIR]
 
     _ = provider.get_devices(qbraid_id="qbraid_qir_simulator")
 
@@ -459,7 +608,7 @@ def test_provider_get_devices_post_cache_expiry(mock_client):
     client = mock_client
     provider = QbraidProvider(client=client)
     client.search_devices = Mock()
-    client.search_devices.return_value = [DEVICE_DATA]
+    client.search_devices.return_value = [DEVICE_DATA_QIR]
 
     init_time = time.time()
     device_ttl = 120
@@ -477,7 +626,7 @@ def test_provider_get_devices_bypass_cache(mock_client):
     client = mock_client
     provider = QbraidProvider(client=client)
     client.search_devices = Mock()
-    client.search_devices.return_value = [DEVICE_DATA]
+    client.search_devices.return_value = [DEVICE_DATA_QIR]
 
     _ = provider.get_devices(qbraid_id="qbraid_qir_simulator")
     _ = provider.get_devices(qbraid_id="qbraid_qir_simulator", bypass_cache=True)
@@ -510,7 +659,7 @@ def test_device_queue_depth(mock_qbraid_device):
 def test_device_status(mock_qbraid_device, mock_profile, mock_client):
     """Test getting device status."""
     assert mock_qbraid_device.status() == DeviceStatus.ONLINE
-    DEVICE_DATA["status"] = None
+    DEVICE_DATA_QIR["status"] = None
     with pytest.raises(QbraidRuntimeError):
         device = QbraidDevice(profile=mock_profile, client=mock_client)
         device.status()
@@ -707,7 +856,23 @@ def test_estimate_cost_resource_not_found_error(mock_qbraid_device):
         mock_qbraid_device.estimate_cost(shots=100, execution_time=10.0)
 
 
-def test_validate_quera_device_qasm_validator(mock_quera_basic_device, valid_qasm2):
+def test_validate_quera_device_qasm_validator(mock_quera_device, valid_qasm2):
     """Test that validate method raises ValueError for QASM programs with measurements."""
     with pytest.raises(ProgramValidationError):
-        mock_quera_basic_device.validate(valid_qasm2)
+        mock_quera_device.validate(valid_qasm2)
+
+
+@pytest.mark.parametrize(
+    "status, status_text",
+    [("FAILED", "Custom status text"), (JobStatus.FAILED, "Different custom status text")],
+)
+def test_runtime_job_model_from_dict_custom_status(status, status_text):
+    """Test creating a RuntimeJobModel with custom status."""
+    job_data = JOB_DATA_QIR.copy()
+    job_data["status"] = status
+    job_data["statusText"] = status_text
+
+    model = RuntimeJobModel.from_dict(job_data)
+
+    assert model.status == JobStatus.FAILED
+    assert model.status.status_message == status_text
