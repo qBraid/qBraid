@@ -14,13 +14,26 @@
 Unit tests for matplotlib animations using Flair Visual
 
 """
+import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
-from flair_visual.animation.runtime.qpustate import AnimateQPUState
 
 from qbraid.visualization.exceptions import VisualizationError
 from qbraid.visualization.flair_animations import animate_qpu_state
+
+try:
+    from flair_visual.animation.runtime.qpustate import AnimateQPUState
+
+    flair_visual_installed = True
+except ImportError as err:
+    flair_visual_installed = False
+
+    logging.warning("flair_animations tests will be skipped: %s", err)
+
+pytestmark = pytest.mark.skipif(
+    flair_visual_installed is False, reason="flair-visual not installed"
+)
 
 
 @pytest.fixture

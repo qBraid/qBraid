@@ -21,7 +21,6 @@ from unittest.mock import MagicMock, patch
 import numpy as np
 import pandas as pd
 import pytest
-from flair_visual.animation.runtime.qpustate import AnimateQPUState
 
 from qbraid.runtime.native.result_data import (
     QbraidQirSimulatorResultData,
@@ -372,8 +371,14 @@ def test_quera_sim_data_properties(quera_sim_data: QuEraQasmSimulatorResultData)
 
 def test_quera_sim_data_get_qpu_state(quera_sim_data: QuEraQasmSimulatorResultData):
     """Test that get_qpu_state returns an instance of AnimateQPUState."""
-    state = quera_sim_data.get_qpu_state()
-    assert isinstance(state, AnimateQPUState)
+    try:
+        # pylint: disable-next=import-outside-toplevel
+        from flair_visual.animation.runtime.qpustate import AnimateQPUState
+
+        state = quera_sim_data.get_qpu_state()
+        assert isinstance(state, AnimateQPUState)
+    except ImportError:
+        pytest.skip("flair-visual is not installed.")
 
 
 @patch("flair_visual.animation.runtime.qpustate.AnimateQPUState.from_json")
