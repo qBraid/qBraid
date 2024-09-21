@@ -210,7 +210,7 @@ def remove_measurements(program: Union[Program, str]) -> str:
     ]
     program_out = Program(statements=statements, version=program.version)
     program_str = dumps(program_out)
-    if float(program.version) == "2.0":
+    if float(program.version) == 2.0:
         program_str = declarations_to_qasm2(program_str)
     return program_str
 

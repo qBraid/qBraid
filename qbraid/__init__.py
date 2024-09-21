@@ -42,6 +42,12 @@ __all__ = [
 
 _lazy_mods = ["interface", "passes", "programs", "runtime", "transpiler", "visualization"]
 
+_lazy_objects = {
+    "random_circuit": "interface",
+    "transpile": "transpiler",
+    "QPROGRAM_REGISTRY": "programs",
+}
+
 
 def __getattr__(name):
     if name in _lazy_mods:
@@ -50,8 +56,18 @@ def __getattr__(name):
         module = importlib.import_module(f".{name}", __name__)
         globals()[name] = module
         return module
+
+    if name in _lazy_objects:
+        import importlib  # pylint: disable=import-outside-toplevel
+
+        mod_name = _lazy_objects[name]
+        module = importlib.import_module(f".{mod_name}", __name__)
+        obj = getattr(module, name)
+        globals()[name] = obj
+        return obj
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def __dir__():
-    return sorted(__all__ + _lazy_mods)
+    return sorted(__all__ + _lazy_mods + list(_lazy_objects.keys()))

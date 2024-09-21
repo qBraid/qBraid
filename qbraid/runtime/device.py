@@ -139,7 +139,6 @@ class QuantumDevice(ABC):
         Returns:
             dict[str, Any]: A dictionary with device status and queue depth among other details.
         """
-        # Exclude certain keys from the profile and directly construct the desired dictionary
         metadata = {key: value for key, value in self.profile if key != "program_spec"}
 
         try:

@@ -1078,3 +1078,32 @@ def test_builder_get_counts_multiple_results_all_failure(mock_result_builder):
     counts = mock_result_builder.get_counts()
 
     assert counts == [{}, {}]
+
+
+def test_builder_format_unknown_results(azure_result_builder: AzureGateModelResultBuilder):
+    """Test using the result builder to format results of an unrecognized gate model format."""
+    results = azure_result_builder._format_results()
+    assert results == {
+        "data": {
+            "success": True,
+            "error_data": None,
+            "data": {
+                "status": "success",
+                "jobParams": {},
+                "physicalCounts": {},
+                "physicalCountsFormatted": {},
+                "logicalQubit": {},
+                "tfactory": {},
+                "errorBudget": {},
+                "logicalCounts": {},
+                "reportData": {"groups": [], "assumptions": []},
+            },
+            "job_id": "123-456-798",
+            "job_name": "azure-quantum-job",
+            "target": "microsoft.estimator",
+            "output_data_format": "microsoft.resource-estimates.v1",
+        },
+        "success": True,
+        "header": {},
+        "shots": 1000,
+    }

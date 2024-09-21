@@ -257,7 +257,7 @@ class MockDevice(QuantumDevice):
         super().__init__(*args, **kwargs)
 
     def status(self):
-        return DeviceStatus.ONLINE
+        raise NotImplementedError
 
     def submit(self, *args, **kwargs):
         raise NotImplementedError
@@ -431,7 +431,7 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert isinstance(job, QbraidJob)
     assert job.is_terminal_state()
 
-    batch_job = device.run([circuit], shots=shots)
+    batch_job = device.run([circuit], shots=shots, noise_model=NoiseModel.Ideal)
     assert isinstance(batch_job, list)
     assert all(isinstance(job, QbraidJob) for job in batch_job)
 
@@ -454,7 +454,7 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert isinstance(result.details["timeStamps"]["executionDuration"], int)
 
 
-def test_queara_simulator_workflow(mock_client, cirq_uniform):
+def test_queara_simulator_workflow(mock_client, cirq_uniform, qasm2_no_meas):
     """Test queara simulator job submission and result retrieval."""
     circuit = cirq_uniform(num_qubits=5, measure=False)
     num_qubits = len(circuit.all_qubits())
@@ -467,7 +467,9 @@ def test_queara_simulator_workflow(mock_client, cirq_uniform):
     assert isinstance(job, QbraidJob)
     assert job.is_terminal_state()
 
-    batch_job = device.run([circuit], shots=shots)
+    device._target_spec = None
+    device.transform = lambda x: {"openQasm": x}
+    batch_job = device.run([qasm2_no_meas], shots=shots)
     assert isinstance(batch_job, list)
     assert all(isinstance(job, QbraidJob) for job in batch_job)
 
