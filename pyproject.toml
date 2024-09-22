@@ -100,8 +100,10 @@ parallel = true
 source = ["qbraid"]
 omit = [
   "**/qbraid/runtime/aws/tracker.py",
+  "**/qbraid/runtime/braket.py",
+  "**/qbraid/runtime/qiskit.py",
   "**/qbraid/visualization/draw_circuit.py",
-  "**/qbraid/transpiler/conversions/*/*_extras.py"
+  "**/qbraid/transpiler/conversions/*/*_extras.py",
 ]
 
 [tool.coverage.paths]
