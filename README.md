@@ -177,7 +177,7 @@ device = provider.get_device("qbraid_qir_simulator")
 jobs = device.run([qiskit_circuit, braket_circuit, cirq_circuit, qasm3_str], shots=1000)
 
 results = [job.result() for job in jobs]
-batch_counts = [result.measurement_counts() for result in results]
+batch_counts = [result.data.get_counts() for result in results]
 
 print(batch_counts[0])
 # {'00': 483, '01': 14, '10': 486, '11': 17}

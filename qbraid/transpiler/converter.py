@@ -14,13 +14,13 @@ Module for transpiling quantum programs between different quantum programming la
 """
 from __future__ import annotations
 
-import logging
 import warnings
 from copy import deepcopy
 from typing import TYPE_CHECKING, Optional
 
 from qbraid_core._import import LazyLoader
 
+from qbraid._logging import logger
 from qbraid.programs import QPROGRAM_ALIASES
 from qbraid.programs.alias_manager import _get_program_type_alias, get_program_type_alias
 
@@ -29,9 +29,6 @@ from .graph import ConversionGraph
 
 if TYPE_CHECKING:
     import qbraid.programs
-
-
-logger = logging.getLogger(__name__)
 
 
 def _warn_if_unsupported(program_type, program_direction):
@@ -137,10 +134,10 @@ def transpile(
                         error_messages.append(_format_exception(err))
                         raise
 
-            logger.info("\nSuccessfully transpiled using conversions: %s", path_details)
+            logger.info("Successfully transpiled using conversions: %s", path_details)
             return temp_program
         except Exception as err:  # pylint: disable=broad-exception-caught
-            logger.info("\nFailed to transpile using conversions: %s", path_details)
+            logger.info("Failed to transpile using conversions: %s", path_details)
             formatted_error = _format_exception(err)
             if len(error_messages) == 0 or error_messages[-1] != formatted_error:
                 error_messages.append(formatted_error)

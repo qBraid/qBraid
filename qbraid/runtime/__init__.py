@@ -22,10 +22,10 @@ Data Types
 .. autosummary::
    :toctree: ../stubs/
 
-	DeviceActionType
-	DeviceStatus
-	JobStatus
-	NoiseModel
+    ExperimentType
+    DeviceStatus
+    JobStatus
+    NoiseModel
 
 Functions
 ------------
@@ -33,7 +33,7 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-	display_jobs_from_data
+    display_jobs_from_data
 
 Classes
 --------
@@ -41,14 +41,16 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-	Session
-	Options
-	TargetProfile
-	QuantumDevice
-	QuantumJob
-	QuantumProvider
-	QuantumJobResult
-	GateModelJobResult
+    RuntimeOptions
+    TargetProfile
+    QuantumDevice
+    QuantumJob
+    QuantumProvider
+    Result
+    ResultData
+    GateModelResultData
+    AhsResultData
+    AhsShotResult
 
 Exceptions
 ------------
@@ -56,19 +58,17 @@ Exceptions
 .. autosummary::
    :toctree: ../stubs/
 
-	JobStateError
-	ProgramValidationError
-	QbraidRuntimeError
-	ResourceNotFoundError
-	DeviceProgramTypeMismatchError
+    JobStateError
+    ProgramValidationError
+    QbraidRuntimeError
+    ResourceNotFoundError
+    DeviceProgramTypeMismatchError
 
 """
-from qbraid_core import Session
-
 from . import native
 from ._display import display_jobs_from_data
 from .device import QuantumDevice
-from .enums import DeviceActionType, DeviceStatus, JobStatus, NoiseModel
+from .enums import DeviceStatus, ExperimentType, JobStatus, NoiseModel
 from .exceptions import (
     DeviceProgramTypeMismatchError,
     JobStateError,
@@ -77,16 +77,14 @@ from .exceptions import (
     ResourceNotFoundError,
 )
 from .job import QuantumJob
-from .native import *
-from .options import Options
+from .options import RuntimeOptions
 from .profile import TargetProfile
 from .provider import QuantumProvider
-from .result import GateModelJobResult, QuantumJobResult
+from .result import AhsResultData, AhsShotResult, GateModelResultData, Result, ResultData
 
 __all__ = [
-    "Session",
     "QuantumDevice",
-    "DeviceActionType",
+    "ExperimentType",
     "DeviceStatus",
     "JobStatus",
     "display_jobs_from_data",
@@ -98,15 +96,53 @@ __all__ = [
     "TargetProfile",
     "QuantumJob",
     "QuantumProvider",
-    "GateModelJobResult",
-    "QuantumJobResult",
-    "Options",
+    "RuntimeOptions",
     "NoiseModel",
+    "Result",
+    "ResultData",
+    "GateModelResultData",
+    "AhsResultData",
+    "AhsShotResult",
 ]
 
 __all__.extend(native.__all__)
 
-_lazy_mods = ["azure", "braket", "ionq", "oqc", "qiskit"]
+_lazy_mods = ["azure", "aws", "ionq", "oqc", "ibm", "native"]
+
+_lazy_objs = {
+    "azure": ["AzureQuantumProvider", "AzureQuantumDevice", "AzureQuantumJob"],
+    "aws": [
+        "BraketProvider",
+        "BraketDevice",
+        "BraketQuantumTask",
+    ],
+    "ionq": [
+        "IonQSession",
+        "IonQProvider",
+        "IonQDevice",
+        "IonQJob",
+    ],
+    "oqc": [
+        "OQCProvider",
+        "OQCDevice",
+        "OQCJob",
+    ],
+    "ibm": [
+        "QiskitRuntimeProvider",
+        "QiskitBackend",
+        "QiskitJob",
+    ],
+    "native": [
+        "Session",
+        "QbraidSession",
+        "QbraidClient",
+        "QbraidProvider",
+        "QbraidDevice",
+        "QbraidJob",
+        "RuntimeJobModel",
+        "QirRunner",
+    ],
+}
 
 
 def __getattr__(name):
@@ -116,8 +152,20 @@ def __getattr__(name):
         module = importlib.import_module(f".{name}", __name__)
         globals()[name] = module
         return module
+
+    for mod_name, objects in _lazy_objs.items():
+        if name in objects:
+            import importlib  # pylint: disable=import-outside-toplevel
+
+            module = importlib.import_module(f".{mod_name}", __name__)
+            obj = getattr(module, name)
+            globals()[name] = obj
+            return obj
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def __dir__():
-    return sorted(__all__ + _lazy_mods)
+    return sorted(
+        __all__ + _lazy_mods + [item for sublist in _lazy_objs.values() for item in sublist]
+    )

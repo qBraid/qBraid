@@ -37,14 +37,15 @@ from braket.task_result import (
     AnalogHamiltonianSimulationTaskResult,
     TaskMetadata,
 )
+from braket.tasks import AnalogHamiltonianSimulationQuantumTaskResult
 from braket.timings.time_series import TimeSeries
 
 from qbraid.programs import ProgramSpec
-from qbraid.runtime.braket.device import BraketDevice
-from qbraid.runtime.braket.job import BraketQuantumTask
-from qbraid.runtime.braket.provider import BraketProvider
-from qbraid.runtime.braket.result import BraketAhsJobResult, ResultDecodingError
-from qbraid.runtime.enums import DeviceActionType, DeviceStatus
+from qbraid.runtime.aws.device import BraketDevice
+from qbraid.runtime.aws.job import BraketQuantumTask
+from qbraid.runtime.aws.provider import BraketProvider
+from qbraid.runtime.aws.result_builder import BraketAhsResultBuilder, ResultDecodingError
+from qbraid.runtime.enums import DeviceStatus, ExperimentType
 from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
 from qbraid.runtime.profile import TargetProfile
 
@@ -323,7 +324,7 @@ def ahs_program():
 
 
 @pytest.fixture
-def ahs_result():
+def ahs_result() -> AnalogHamiltonianSimulationQuantumTaskResult:
     """Mock Analog Hamiltonian Simulation task result."""
     task_metadata = TaskMetadata(**{"id": TASK_ARN, "deviceId": AQUILA_ARN, "shots": 100})
     additional_metadata = AdditionalMetadata(
@@ -403,7 +404,9 @@ def ahs_result():
         measurements=measurements_extended,
     )
 
-    return result
+    task_result = AnalogHamiltonianSimulationQuantumTaskResult.from_object(result)
+
+    return task_result
 
 
 @pytest.fixture
@@ -432,7 +435,7 @@ def test_aquila_runtime_profile(aquila_profile: TargetProfile):
 )
 def test_aquila_device_status(device_status, is_available, expected_status, aquila_profile):
     """Test getting Braket device status."""
-    with patch("qbraid.runtime.braket.device.AwsDevice") as mock_aws_device:
+    with patch("qbraid.runtime.aws.device.AwsDevice") as mock_aws_device:
         mock_aws_device_instance = mock_aws_device.return_value
         mock_aws_device_instance.status = device_status
         mock_aws_device_instance.is_available = is_available
@@ -451,7 +454,7 @@ def test_aquila_device_status(device_status, is_available, expected_status, aqui
 )
 def test_queue_depth(quantum_tasks, expected_output, aquila_profile):
     """Test getting the number of jobs in the queue for the Braket device."""
-    with patch("qbraid.runtime.braket.device.AwsDevice") as mock_aws_device:
+    with patch("qbraid.runtime.aws.device.AwsDevice") as mock_aws_device:
         mock_aws_device_instance = mock_aws_device.return_value
         mock_queue_depth_info = MagicMock()
         mock_queue_depth_info.quantum_tasks = quantum_tasks
@@ -471,7 +474,7 @@ def test_aquila_device_submit(aquila_profile, ahs_program):
         assert task.id == TASK_ARN
 
 
-@patch("qbraid.runtime.braket.device.AwsDevice")
+@patch("qbraid.runtime.aws.device.AwsDevice")
 @patch("braket.ahs.analog_hamiltonian_simulation.AnalogHamiltonianSimulation.discretize")
 def test_transform_ahs_programs(mock_aws_device, mock_discretize, aquila_profile, ahs_program):
     """Test transform method for device with AHS action type."""
@@ -481,7 +484,7 @@ def test_transform_ahs_programs(mock_aws_device, mock_discretize, aquila_profile
     mock_discretize.assert_called_once()
 
 
-@patch("qbraid.runtime.braket.device.AwsDevice")
+@patch("qbraid.runtime.aws.device.AwsDevice")
 def test_transform_raises_for_mismatch(mock_aws_device, ahs_program):
     """Test raising exception for mismatched action type OPENQASM and program type AHS."""
     mock_aws_device.return_value = Mock()
@@ -491,7 +494,7 @@ def test_transform_raises_for_mismatch(mock_aws_device, ahs_program):
         program_spec=ProgramSpec(AnalogHamiltonianSimulation, alias="braket_ahs"),
         provider_name="QuEra",
         device_id=AQUILA_ARN,
-        action_type=DeviceActionType.OPENQASM,
+        experiment_type=ExperimentType.GATE_MODEL,
     )
     device = BraketDevice(profile)
     with pytest.raises(DeviceProgramTypeMismatchError):
@@ -502,14 +505,14 @@ def test_get_counts_no_measurements():
     """Test getting counts with no measurements."""
     mock_result = MagicMock()
     mock_result.measurements = []
-    job_result = BraketAhsJobResult(mock_result)
+    job_result = BraketAhsResultBuilder(mock_result)
     counts = job_result.get_counts()
     assert counts is None
 
 
 def test_get_counts(ahs_result):
     """Test getting counts from an AHS job result."""
-    result = BraketAhsJobResult(ahs_result)
+    result = BraketAhsResultBuilder(ahs_result)
     counts = result.get_counts()
     expected_counts = {"rrrgeggrrgr": 1, "grggrgrrrrg": 1}
     assert counts == expected_counts
@@ -517,15 +520,16 @@ def test_get_counts(ahs_result):
 
 def test_get_counts_error():
     """Test getting counts from an AHS job result."""
-    with patch("qbraid.runtime.braket.result.BraketAhsJobResult.measurements") as mock_measurements:
+    with patch(
+        "qbraid.runtime.aws.result_builder.BraketAhsResultBuilder.measurements"
+    ) as mock_measurements:
         mock_measurement = Mock()
         mock_measurement.status.name = "SUCCESS"
         del mock_measurement.pre_sequence
         mock_measurement.post_sequence = [0]
 
         mock_measurements.return_value = [mock_measurement]
-        result = BraketAhsJobResult()
-        result._result = Mock()
+        result = BraketAhsResultBuilder(Mock())
 
         with pytest.raises(ResultDecodingError):
             result.get_counts()

@@ -16,25 +16,22 @@ Module defining abstract QuantumDevice Class
 """
 from __future__ import annotations
 
-import logging
 import warnings
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
-from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
+from qbraid._logging import logger
+from qbraid.programs import ProgramLoaderError, ProgramSpec, get_program_type_alias, load_program
 from qbraid.transpiler import CircuitConversionError, ConversionGraph, ConversionScheme, transpile
 
 from .enums import DeviceStatus
 from .exceptions import ProgramValidationError, QbraidRuntimeError, ResourceNotFoundError
-from .options import Options
+from .options import RuntimeOptions
 
 if TYPE_CHECKING:
     import qbraid.programs
     import qbraid.runtime
     import qbraid.transpiler
-
-
-logger = logging.getLogger(__name__)
 
 
 class QuantumDevice(ABC):
@@ -97,10 +94,10 @@ class QuantumDevice(ABC):
     @classmethod
     def _default_options(cls):
         """Define default options for the QuantumDevice."""
-        options = Options(transpile=True, transform=True, verify=True)
+        options = RuntimeOptions(transpile=True, transform=True, validate=True)
         options.set_validator("transpile", lambda x: isinstance(x, bool))
         options.set_validator("transform", lambda x: isinstance(x, bool))
-        options.set_validator("verify", lambda x: isinstance(x, bool))
+        options.set_validator("validate", lambda x: isinstance(x, bool))
 
         return options
 
@@ -142,7 +139,6 @@ class QuantumDevice(ABC):
         Returns:
             dict[str, Any]: A dictionary with device status and queue depth among other details.
         """
-        # Exclude certain keys from the profile and directly construct the desired dictionary
         metadata = {key: value for key, value in self.profile if key != "program_spec"}
 
         try:
@@ -159,7 +155,7 @@ class QuantumDevice(ABC):
 
         return metadata
 
-    def validate(self, program: Optional[qbraid.programs.QuantumProgram]):
+    def validate(self, run_input: qbraid.programs.QPROGRAM) -> None:
         """Verifies device status and circuit compatibility.
 
         Raises:
@@ -172,16 +168,29 @@ class QuantumDevice(ABC):
                 UserWarning,
             )
 
-        if program:
+        try:
+            program = load_program(run_input)
+
             if self.num_qubits and program.num_qubits > self.num_qubits:
                 raise ProgramValidationError(
                     f"Number of qubits in circuit ({program.num_qubits}) exceeds "
                     f"the device's capacity ({self.num_qubits})."
                 )
-        else:
+        except ProgramLoaderError:
             logger.info(
-                "Skipping qubit count validation: run input program type not supported natively."
+                "Skipping qubit count validation: program type %s not supported natively.",
+                type(run_input),
             )
+
+        if self._target_spec is None:
+            return None
+
+        try:
+            self._target_spec.validate(run_input)
+        except ValueError as err:
+            raise ProgramValidationError from err
+
+        return None
 
     def transpile(
         self, run_input: qbraid.programs.QPROGRAM, run_input_spec: qbraid.programs.ProgramSpec
@@ -244,19 +253,13 @@ class QuantumDevice(ABC):
         Returns:
             Transpiled and transformed quantum program
         """
-        verify_option = self._options.get("verify") is True
-        transpile_option = self._options.get("transpile") is True
-
-        if self._target_spec is not None and (verify_option or transpile_option):
+        if self._target_spec is not None and self._options.get("transpile") is True:
             run_input_alias = get_program_type_alias(run_input, safe=True)
             run_input_spec = ProgramSpec(type(run_input), alias=run_input_alias)
-            program = load_program(run_input) if run_input_spec.native else None
+            run_input = self.transpile(run_input, run_input_spec)
 
-            if verify_option:
-                self.validate(program)
-
-            if transpile_option:
-                run_input = self.transpile(run_input, run_input_spec)
+        if self._options.get("validate") is True:
+            self.validate(run_input)
 
         is_single_output = not isinstance(run_input, list)
         run_input = [run_input] if is_single_output else run_input

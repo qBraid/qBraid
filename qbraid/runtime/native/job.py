@@ -14,7 +14,6 @@ Module defining QbraidJob class
 """
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING, Optional
 
 from qbraid_core.services.quantum import QuantumClient
@@ -22,15 +21,15 @@ from qbraid_core.services.quantum import QuantumClient
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
+from qbraid.runtime.result import GateModelResultData, Result
 
-from .result import ExperimentResult, QbraidJobResult
+from .result_data import QbraidQirSimulatorResultData, QuEraQasmSimulatorResultData
+from .schemas import QbraidQirSimulationMetadata, QuEraQasmSimulationMetadata, RuntimeJobModel
 
 if TYPE_CHECKING:
     import qbraid_core.services.quantum
 
     import qbraid.runtime
-
-logger = logging.getLogger(__name__)
 
 
 class QbraidJob(QuantumJob):
@@ -91,11 +90,27 @@ class QbraidJob(QuantumJob):
 
         self.client.cancel_job(self.id)
 
-    def result(self) -> qbraid.runtime.GateModelJobResult:
+    def result(self) -> Result:
         """Return the results of the job."""
         self.wait_for_final_state()
         job_data = self.client.get_job(self.id)
-        device_id: str = job_data.get("qbraidDeviceId")
-        success: bool = job_data.get("status") == "COMPLETED"
-        result = ExperimentResult.from_result(job_data)
-        return QbraidJobResult(device_id, self.id, success, result)
+        success = job_data.get("status") == JobStatus.COMPLETED.name
+        job_result = self.client.get_job_results(self.id) if success else {}
+        job_result.update(job_data)
+        metadata_to_result_data = {
+            QbraidQirSimulationMetadata: QbraidQirSimulatorResultData,
+            QuEraQasmSimulationMetadata: QuEraQasmSimulatorResultData,
+        }
+        model = RuntimeJobModel.from_dict(job_result)
+        result_data_cls: GateModelResultData = metadata_to_result_data.get(
+            type(model.metadata), GateModelResultData
+        )
+        data = result_data_cls.from_object(model.metadata)
+        metadata_dump = model.metadata.model_dump(
+            by_alias=True, exclude={"measurement_counts", "measurements"}
+        )
+        model_dump = model.model_dump(by_alias=True, exclude={"job_id", "device_id", "metadata"})
+        model_dump["metadata"] = metadata_dump
+        return Result(
+            device_id=model.device_id, job_id=model.job_id, success=success, data=data, **model_dump
+        )

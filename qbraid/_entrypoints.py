@@ -21,6 +21,26 @@ import pkg_resources
 from .exceptions import QbraidError
 
 
+def get_entrypoints(module: str) -> dict[str, object]:
+    """
+    Retrieves entry points for a given module.
+
+    Args:
+        module (str): The name of the module to retrieve entry points for.
+
+    Returns:
+        dict[str, object]: Dictionary of entry point names and their associated entry point objects.
+    """
+    group = f"qbraid.{module}"
+
+    if sys.version_info >= (3, 10):
+        entry_points = importlib.metadata.entry_points().select(group=group)
+    else:
+        entry_points = pkg_resources.iter_entry_points(group=group)
+
+    return {ep.name: ep for ep in entry_points}
+
+
 def load_entrypoint(module: str, name: str) -> Optional[Type]:
     """
     Load an entrypoint given its module and name.
@@ -36,16 +56,8 @@ def load_entrypoint(module: str, name: str) -> Optional[Type]:
         ValueError: If the specified entry point cannot be found.
         QbraidError: If the specified entry point fails to load.
     """
-    group = f"qbraid.{module}"
-
     try:
-        if sys.version_info >= (3, 10):
-            entry_points = {
-                ep.name: ep for ep in importlib.metadata.entry_points().select(group=group)
-            }
-        else:
-            entry_points = {ep.name: ep for ep in pkg_resources.iter_entry_points(group)}
-
+        entry_points = get_entrypoints(module)
         entry_point = entry_points[name]
         return entry_point.load()
     except KeyError as err:

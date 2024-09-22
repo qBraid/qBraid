@@ -17,21 +17,6 @@ from __future__ import annotations
 from enum import Enum
 
 
-class DeviceActionType(Enum):
-    """
-    Enumeration for the quantum device action types
-    supported natively by qBraid.
-
-    Attributes:
-        OPENQASM (str): Actions compatible with OpenQASM (gate-model).
-        AHS (str): Actions using analog Hamiltonian simulation.
-        ANNEALING (str): Actions using quantum annealing.
-    """
-
-    OPENQASM = "qbraid.programs.circuits"
-    AHS = "qbraid.programs.ahs"
-
-
 class DeviceStatus(Enum):
     """Enumeration for representing various operational statuses of devices.
 
@@ -48,11 +33,30 @@ class DeviceStatus(Enum):
     RETIRED = "retired"
 
 
+class ExperimentType(Enum):
+    """
+    Enumeration for quantum experiment types.
+
+    Attributes:
+        GATE_MODEL (str): Gate-based quantum computing (e.g., OpenQASM).
+        AHS (str): Analog Hamiltonian simulation.
+        ANNEALING (str): Quantum annealing for optimization problems.
+        PHOTONIC_MODEL (str): Photonic quantum computing using photons as qubits.
+        OTHER (str): Placeholder for other or unspecified quantum computing models.
+    """
+
+    GATE_MODEL = "gate_model"
+    AHS = "analog_hamiltonian_simulation"
+    ANNEALING = "quantum_annealing"
+    PHOTONIC_MODEL = "photonic_quantum_computing"
+    OTHER = "other"
+
+
 class NoiseModel(Enum):
     """Enumeration representing various noise models for quantum simulators.
 
     Attributes:
-        NoNoise (str): The simulation is performed without any noise, representing an
+        Ideal (str): The simulation is performed without any noise, representing an
             ideal quantum computer.
         Depolarizing (str): Applies random errors to qubits, effectively turning a pure
             quantum state into a mixed state.
@@ -67,7 +71,7 @@ class NoiseModel(Enum):
 
     """
 
-    NoNoise = "no_noise"
+    Ideal = "no_noise"
     Depolarizing = "depolarizing"
     AmplitudeDamping = "amplitude_damping"
     PhaseDamping = "phase_damping"
@@ -85,7 +89,7 @@ class JobStatus(Enum):
     """
 
     def __new__(cls, value: str):
-        """Customize Enum to accept a single value."""
+        """Enumeration representing the status of a :py:class:`QuantumJob`."""
         obj = object.__new__(cls)
         obj._value_ = value
         obj.default_message = cls._get_default_message(value)

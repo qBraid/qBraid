@@ -22,6 +22,7 @@ from unittest.mock import MagicMock, Mock, patch
 import numpy as np
 import pytest
 from qiskit import QuantumCircuit
+from qiskit.exceptions import QiskitError
 from qiskit.providers import Job
 from qiskit.providers.fake_provider import GenericBackendV2
 from qiskit.providers.models import QasmBackendConfiguration
@@ -30,9 +31,17 @@ from qiskit_ibm_runtime.exceptions import IBMNotAuthorizedError, RuntimeInvalidS
 from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
-from qbraid.runtime import DeviceActionType, DeviceStatus, JobStateError, TargetProfile
+from qbraid.runtime import (
+    DeviceStatus,
+    ExperimentType,
+    GateModelResultData,
+    JobStateError,
+    Result,
+    TargetProfile,
+)
 from qbraid.runtime.exceptions import QbraidRuntimeError
-from qbraid.runtime.qiskit import QiskitBackend, QiskitJob, QiskitResult, QiskitRuntimeProvider
+from qbraid.runtime.ibm import QiskitBackend, QiskitJob, QiskitRuntimeProvider
+from qbraid.runtime.ibm.result_builder import QiskitGateModelResultBuilder
 
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
@@ -122,7 +131,7 @@ def _create_backend_fixture(service: FakeService, local: bool, simulator: bool) 
         device_id=backend.name,
         local=local,
         simulator=simulator,
-        action_type=DeviceActionType.OPENQASM,
+        experiment_type=ExperimentType.GATE_MODEL,
         num_qubits=backend.num_qubits,
         program_spec=program_spec,
         provider_name="IBM",
@@ -144,7 +153,7 @@ def fake_device(fake_service):
 
 def test_provider_initialize_service():
     """Test getting IBMQ provider using qiskit_ibm_provider package."""
-    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
+    with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_runtime_service:
         mock_runtime_service.return_value = Mock(spec=QiskitRuntimeService)
         provider = QiskitRuntimeProvider(token="test_token", channel="test_channel")
         assert isinstance(provider.runtime_service, QiskitRuntimeService)
@@ -155,7 +164,7 @@ def test_provider_initialize_service():
 
 def test_provider_save_config(fake_service):
     """Test saving the IBM account configuration to disk."""
-    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
+    with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_runtime_service:
         mock_runtime_service.return_value = fake_service
         provider = QiskitRuntimeProvider(token="fake_token", channel="fake_channel")
 
@@ -180,7 +189,7 @@ def test_provider_save_config(fake_service):
 )
 def test_provider_build_runtime_profile(local, simulator, num_qubits):
     """Test building runtime profile for Qiskit backend."""
-    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
+    with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_runtime_service:
         mock_runtime_service.return_value = FakeService()
         backend = FakeDevice(num_qubits, local=local, simulator=simulator)
         provider = QiskitRuntimeProvider(token="test_token", channel="test_channel")
@@ -198,7 +207,7 @@ def test_provider_build_runtime_profile(local, simulator, num_qubits):
 
 def test_provider_get_devices(fake_service):
     """Test getting a backend from the runtime service."""
-    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
+    with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_runtime_service:
         mock_runtime_service.return_value = fake_service
         provider = QiskitRuntimeProvider(token="test_token", channel="test_channel")
         devices = provider.get_devices()
@@ -214,7 +223,7 @@ def test_provider_get_devices(fake_service):
 @pytest.mark.parametrize("local", [True, False])
 def test_provider_least_busy(fake_service, local):
     """Test getting a backend from the runtime service, both local and non-local."""
-    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_provider_service:
+    with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_provider_service:
         mock_provider_service.return_value = fake_service
         provider = QiskitRuntimeProvider(token="test_token", channel="test_channel")
 
@@ -235,7 +244,7 @@ def test_provider_least_busy(fake_service, local):
 )
 def test_device_status(fake_service, operational, local, status_msg, expected_status):
     """Test getting a backend from the runtime service, both local and non-local."""
-    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_provider_service:
+    with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_provider_service:
         mock_provider_service.return_value = fake_service
         provider = QiskitRuntimeProvider(token="test_token", channel="test_channel")
         params = {"operational": operational, "local": local, "status_msg": status_msg}
@@ -304,7 +313,7 @@ def test_job_initialize_service_from_device(mock_service):
 
 def test_job_service_initialization():
     """Test job retrieval when initializing a new service."""
-    with patch("qbraid.runtime.qiskit.job.QiskitRuntimeService") as mock_service_class:
+    with patch("qbraid.runtime.ibm.job.QiskitRuntimeService") as mock_service_class:
         mock_service = MagicMock(spec=QiskitRuntimeService)
         mock_service.job.return_value = MagicMock(spec=RuntimeJob)
         mock_service_class.return_value = mock_service
@@ -316,7 +325,7 @@ def test_job_service_initialization():
 
 def test_job_service_initialization_failure():
     """Test handling of service initialization failure."""
-    with patch("qbraid.runtime.qiskit.job.QiskitRuntimeService", side_effect=IBMNotAuthorizedError):
+    with patch("qbraid.runtime.ibm.job.QiskitRuntimeService", side_effect=IBMNotAuthorizedError):
         job_id = "test_job_id"
         with pytest.raises(QbraidRuntimeError) as exc_info:
             QiskitJob(job_id)
@@ -377,7 +386,18 @@ def test_cancel_job_fails_due_to_runtime_error(mock_runtime_job):
 
 
 @pytest.fixture
-def mock_runtime_result():
+def mock_result_metadata():
+    """Return a dictionary of mock result metadata."""
+    return {
+        "job_id": "123",
+        "success": True,
+        "backend_name": "fake_backend",
+        "backend_version": "0.0.0",
+    }
+
+
+@pytest.fixture
+def mock_runtime_result(mock_result_metadata):
     """Return a mock Qiskit result."""
     mock_result = Mock()
     mock_result.results = [Mock(), Mock()]
@@ -385,30 +405,35 @@ def mock_runtime_result():
     meas2 = ["0"] * 8 + ["1"] * 12
     mock_result.get_memory.side_effect = [meas1, meas2]
     mock_result.get_counts.side_effect = [{"01": 9, "10": 1, "11": 4, "00": 6}, {"0": 8, "1": 12}]
+    mock_result.to_dict.return_value = mock_result_metadata
     return mock_result
 
 
-def test_result_from_job(mock_runtime_job, mock_runtime_result):
-    """Test that result returns QiskitResult when the job is in a terminal state."""
+def test_result_from_job(mock_runtime_job, mock_runtime_result, mock_result_metadata):
+    """Test that result returns QiskitGateModelResultBuilder when the job is in a terminal state."""
     mock_job = QiskitJob(job_id="123", job=mock_runtime_job)
     mock_runtime_job.result.return_value = mock_runtime_result
     result = mock_job.result()
-    assert isinstance(result, QiskitResult)
-    assert isinstance(result.get_counts(), dict)
-    assert isinstance(result.measurements(), np.ndarray)
+    assert isinstance(result, Result)
+    assert isinstance(result.data, GateModelResultData)
+    assert isinstance(result.data.get_counts(), dict)
+    assert isinstance(result.data.measurements, np.ndarray)
+    assert result.details.get("job_id") is None
+    assert result.details.get("success") is None
+    assert result.details.get("backend_name") == mock_result_metadata["backend_name"]
+    assert result.details.get("backend_version") == mock_result_metadata["backend_version"]
 
 
 def test_result_get_counts(mock_runtime_result):
     """Test getting raw counts from a Qiskit result."""
-    qr = QiskitResult()
-    qr._result = mock_runtime_result
+    qr = QiskitGateModelResultBuilder(mock_runtime_result)
     expected = {"01": 9, "10": 1, "11": 4, "00": 6}
     assert qr.get_counts() == expected
 
 
-def test_result_format_measurements():
+def test_result_format_measurements(mock_runtime_result):
     """Test formatting measurements into integers."""
-    qr = QiskitResult()
+    qr = QiskitGateModelResultBuilder(mock_runtime_result)
     memory_list = ["010", "111"]
     expected = [[0, 1, 0], [1, 1, 1]]
     assert qr._format_measurements(memory_list) == expected
@@ -416,8 +441,7 @@ def test_result_format_measurements():
 
 def test_result_measurements_single_circuit(mock_runtime_result):
     """Test getting measurements from a single circuit."""
-    qr = QiskitResult()
-    qr._result = mock_runtime_result
+    qr = QiskitGateModelResultBuilder(mock_runtime_result)
     mock_runtime_result.results = [Mock()]
     expected = np.array([[0, 1]] * 9 + [[1, 0]] + [[1, 1]] * 4 + [[0, 0]] * 6)
     assert np.array_equal(qr.measurements(), expected)
@@ -425,9 +449,52 @@ def test_result_measurements_single_circuit(mock_runtime_result):
 
 def test_result_measurements_multiple_circuits(mock_runtime_result):
     """Test getting measurements from multiple circuits."""
-    qr = QiskitResult()
-    qr._result = mock_runtime_result
+    qr = QiskitGateModelResultBuilder(mock_runtime_result)
     expected_meas1 = np.array([[0, 1]] * 9 + [[1, 0]] + [[1, 1]] * 4 + [[0, 0]] * 6)
     expected_meas2 = np.array([[0, 0]] * 8 + [[0, 1]] * 12)
     expected = np.array([expected_meas1, expected_meas2])
     assert np.array_equal(qr.measurements(), expected)
+
+
+@patch("builtins.hash", autospec=True)
+def test_hash_method_creates_and_returns_hash(mock_hash):
+    """Test that the __hash__ method creates and returns a hash value."""
+    with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_runtime_service:
+        mock_runtime_service.return_value = Mock(spec=QiskitRuntimeService)
+        provider_instance = QiskitRuntimeProvider(token="mock_token", channel="ibm_cloud")
+        mock_hash.return_value = 12345
+        result = provider_instance.__hash__()  # pylint: disable=unnecessary-dunder-call
+        mock_hash.assert_called_once_with(("mock_token", "ibm_cloud"))
+        assert result == 12345
+        assert provider_instance._hash == 12345
+
+
+def test_hash_method_returns_existing_hash():
+    """Test that the hash method returns the existing hash value."""
+    with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_runtime_service:
+        mock_runtime_service.return_value = Mock(spec=QiskitRuntimeService)
+        provider_instance = QiskitRuntimeProvider(token="mock_token", channel="ibm_cloud")
+        provider_instance._hash = 67890
+        result = provider_instance.__hash__()  # pylint: disable=unnecessary-dunder-call
+        assert result == 67890
+
+
+def test_result_measurements_not_available(mock_runtime_result, caplog):
+    """Test returning None and logging a warning when measurements are not available."""
+    qr = QiskitGateModelResultBuilder(mock_runtime_result)
+    mock_result = Mock()
+    mock_result.results = qr._result.results
+    mock_result.get_memory.side_effect = QiskitError("Test QiskitError message")
+    qr._result = mock_result
+
+    with caplog.at_level("WARNING"):
+        result = qr.measurements()
+
+    assert result is None
+    assert "Memory states (measurements) data not available for this job" in caplog.text
+    assert "Test QiskitError message" in caplog.text
+    assert len(caplog.records) == 1
+    assert caplog.records[0].levelname == "WARNING"
+    assert (
+        "Memory states (measurements) data not available for this job" in caplog.records[0].message
+    )

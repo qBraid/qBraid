@@ -26,17 +26,17 @@ from braket.circuits import Circuit
 from qbraid_core.services.quantum import quantum_lib_proxy_state
 from qbraid_core.services.quantum.proxy_braket import aws_configure
 
+from qbraid._caching import cached_method
 from qbraid.exceptions import QbraidError
 from qbraid.programs import ProgramSpec
-from qbraid.runtime import DeviceActionType, QuantumProvider, TargetProfile
-from qbraid.runtime.provider import cache_results
+from qbraid.runtime import ExperimentType, QuantumProvider, TargetProfile
 
 from .device import BraketDevice
 
 if TYPE_CHECKING:
     import braket.aws
 
-    import qbraid.runtime.braket
+    import qbraid.runtime.aws
 
 
 class BraketProvider(QuantumProvider):
@@ -126,10 +126,10 @@ class BraketProvider(QuantumProvider):
         action: dict = capabilities.get("action", {})
         num_qubits = paradigm.get("qubitCount")
         if action.get("braket.ir.openqasm.program") is not None:
-            action_type = DeviceActionType.OPENQASM
+            experiment_type = ExperimentType.GATE_MODEL
             program_spec = program_spec or ProgramSpec(Circuit)
         elif action.get("braket.ir.ahs.program") is not None:
-            action_type = DeviceActionType.AHS
+            experiment_type = ExperimentType.AHS
             program_spec = program_spec or ProgramSpec(
                 AnalogHamiltonianSimulation, alias="braket_ahs"
             )
@@ -142,21 +142,20 @@ class BraketProvider(QuantumProvider):
         return TargetProfile(
             simulator=simulator,
             num_qubits=num_qubits,
-            action_type=action_type,
+            experiment_type=experiment_type,
             program_spec=program_spec,
             provider_name=provider_name,
             device_id=device.arn,
             **kwargs,
         )
 
-    @cache_results(ttl=120)
+    @cached_method
     def get_devices(
         self,
-        bypass_cache: bool = False,
         aws_session: Optional[braket.aws.AwsSession] = None,
         statuses: Optional[list[str]] = None,
         **kwargs,
-    ) -> list[qbraid.runtime.braket.BraketDevice]:
+    ) -> list[qbraid.runtime.aws.BraketDevice]:
         """Return a list of backends matching the specified filtering."""
         aws_session = self._get_aws_session() if aws_session is None else aws_session
         statuses = ["ONLINE", "OFFLINE"] if statuses is None else statuses
@@ -166,12 +165,11 @@ class BraketProvider(QuantumProvider):
             for device in aws_devices
         ]
 
-    @cache_results(ttl=120)
+    @cached_method
     def get_device(
         self,
         device_id: str,
-        bypass_cache: bool = False,
-    ) -> qbraid.runtime.braket.BraketDevice:
+    ) -> qbraid.runtime.aws.BraketDevice:
         """Returns the AWS device."""
         try:
             region_name = device_id.split(":")[3]
@@ -242,3 +240,10 @@ class BraketProvider(QuantumProvider):
         values = values if values is not None else []
 
         return self._fetch_resources(region_names, key, values)
+
+    def __hash__(self):
+        if not hasattr(self, "_hash"):
+            object.__setattr__(
+                self, "_hash", hash((self.aws_access_key_id, self.aws_secret_access_key))
+            )
+        return self._hash  # pylint: disable=no-member

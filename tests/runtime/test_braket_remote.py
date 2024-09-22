@@ -20,8 +20,8 @@ import pytest
 from braket.aws.aws_device import AwsDevice
 from braket.tracking.tracker import Tracker
 
-from qbraid.runtime.braket.provider import BraketProvider
-from qbraid.runtime.braket.tracker import get_quantum_task_cost
+from qbraid.runtime.aws.provider import BraketProvider
+from qbraid.runtime.aws.tracker import get_quantum_task_cost
 from qbraid.runtime.exceptions import JobStateError
 
 

@@ -12,10 +12,9 @@
 Configures display options based on environment context.
 
 """
-import logging
 import sys
 
-logger = logging.getLogger(__name__)
+from ._logging import logger
 
 
 def running_in_jupyter() -> bool:

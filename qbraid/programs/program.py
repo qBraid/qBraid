@@ -14,9 +14,10 @@ Module defining QuantumProgram Class
 """
 from __future__ import annotations
 
-import logging
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
+
+from qbraid._logging import logger
 
 from .alias_manager import get_program_type_alias
 from .exceptions import ProgramTypeError
@@ -26,8 +27,6 @@ from .spec import ProgramSpec
 if TYPE_CHECKING:
     import qbraid.programs
     import qbraid.runtime
-
-logger = logging.getLogger(__name__)
 
 
 class QuantumProgram(ABC):

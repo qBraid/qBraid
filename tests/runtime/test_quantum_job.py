@@ -75,7 +75,7 @@ def test_map_status_raises():
         QbraidJob._map_status(0)
 
 
-def get_expected_message(program, expected_type, action_type):
+def get_expected_message(program, expected_type, experiment_type):
     """Generate the expected error message dynamically."""
     if program is None:
         program_type = "NoneType"
@@ -83,7 +83,7 @@ def get_expected_message(program, expected_type, action_type):
         program_type = type(program).__name__
     return (
         f"Incompatible program type: '{program_type}'. "
-        f"Device action type '{action_type}' requires a program of type '{expected_type}'."
+        f"Experiment type '{experiment_type}' requires a program of type '{expected_type}'."
     )
 
 
@@ -92,7 +92,7 @@ class MockProgram:
 
 
 @pytest.mark.parametrize(
-    "program, expected_type, action_type",
+    "program, expected_type, experiment_type",
     [
         (MockProgram(), "QuantumProgram", "Compute"),
         (object(), "QuantumProgram", "Compute"),
@@ -100,11 +100,11 @@ class MockProgram:
         (None, "QuantumProgram", "Compute"),
     ],
 )
-def test_device_program_type_mismatch_error(program, expected_type, action_type):
+def test_device_program_type_mismatch_error(program, expected_type, experiment_type):
     """Test DeviceProgramTypeMismatchError with various scenarios."""
-    expected_message = get_expected_message(program, expected_type, action_type)
+    expected_message = get_expected_message(program, expected_type, experiment_type)
     with pytest.raises(DeviceProgramTypeMismatchError) as exc_info:
-        raise DeviceProgramTypeMismatchError(program, expected_type, action_type)
+        raise DeviceProgramTypeMismatchError(program, expected_type, experiment_type)
 
     assert str(exc_info.value) == expected_message
 

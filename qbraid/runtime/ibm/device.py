@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     import qiskit
     import qiskit_ibm_runtime
 
-    import qbraid.runtime.qiskit
+    import qbraid.runtime.ibm
 
 
 class QiskitBackend(QuantumDevice):
@@ -83,11 +83,11 @@ class QiskitBackend(QuantumDevice):
         run_input: Union[qiskit.QuantumCircuit, list[qiskit.QuantumCircuit]],
         *args,
         **kwargs,
-    ) -> qbraid.runtime.qiskit.QiskitJob:
+    ) -> qbraid.runtime.ibm.QiskitJob:
         """Runs circuit(s) on qiskit backend via :meth:`~qiskit.execute`
 
         Uses the :meth:`~qiskit.execute` method to create a :class:`~qiskit.providers.QuantumJob`
-        object, applies a :class:`~qbraid.runtime.qiskit.QiskitJob`, and return the result.
+        object, applies a :class:`~qbraid.runtime.ibm.QiskitJob`, and return the result.
 
         Args:
             run_input: A circuit object to run on the IBM device.
@@ -96,7 +96,7 @@ class QiskitBackend(QuantumDevice):
             shots (int): The number of times to run the task on the device. Default is 1024.
 
         Returns:
-            qbraid.runtime.qiskit.QiskitJob: The job like object for the run.
+            qbraid.runtime.ibm.QiskitJob: The job like object for the run.
 
         """
         backend = self._backend

@@ -12,7 +12,7 @@
 Display information about quantum jobs in table view.
 
 """
-import logging
+
 from typing import Optional
 
 try:
@@ -21,8 +21,6 @@ except ImportError:  # pragma: no cover
     pass
 
 from qbraid._display import running_in_jupyter
-
-logger = logging.getLogger(__name__)
 
 
 def _job_table_basic(data: list[str], message: str) -> None:

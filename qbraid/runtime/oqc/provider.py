@@ -16,11 +16,12 @@ from typing import Any
 
 from qcaas_client.client import OQCClient
 
+from qbraid._caching import cached_method
 from qbraid.programs.spec import ProgramSpec
-from qbraid.runtime.enums import DeviceActionType
+from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
-from qbraid.runtime.provider import QuantumProvider, cache_results
+from qbraid.runtime.provider import QuantumProvider
 
 from .device import OQCDevice
 
@@ -49,33 +50,34 @@ class OQCProvider(QuantumProvider):
         return TargetProfile(
             device_id=device_id,
             simulator=simulator,
-            action_type=DeviceActionType.OPENQASM,
+            experiment_type=ExperimentType.GATE_MODEL,
             num_qubits=num_qubits,
-            program_spec=ProgramSpec(str, alias="qasm2"),
+            program_spec=ProgramSpec(str, alias="qasm3"),
             device_name=device_name,
             endpoint_url=endpoint_url,
             provider_name="OQC",
         )
 
-    @cache_results(ttl=120)
-    def get_devices(
-        self, bypass_cache: bool = False, **kwargs
-    ) -> list[OQCDevice]:  # pylint: disable=unused-argument
+    @cached_method
+    def get_devices(self) -> list[OQCDevice]:
         """Get all OQC devices."""
         devices: list[dict] = self.client.get_qpus()
         return [
             OQCDevice(profile=self._build_profile(device), client=self.client) for device in devices
         ]
 
-    @cache_results(ttl=120)
-    def get_device(
-        self,
-        device_id: str,
-        bypass_cache: bool = False,
-    ) -> OQCDevice:
+    @cached_method
+    def get_device(self, device_id: str) -> OQCDevice:
         """Get a specific OQC device."""
         devices: list[dict] = self.client.get_qpus()
         for device in devices:
             if device["id"] == device_id:
                 return OQCDevice(profile=self._build_profile(device), client=self.client)
         raise ResourceNotFoundError(f"Device '{device_id}' not found.")
+
+    def __hash__(self):
+        if not hasattr(self, "_hash"):
+            object.__setattr__(
+                self, "_hash", hash((self.client.url, self.client._authentication_token))
+            )
+        return self._hash  # pylint: disable=no-member

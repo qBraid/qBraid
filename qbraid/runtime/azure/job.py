@@ -14,23 +14,21 @@ Module defining AzureQuantumJob class
 """
 from __future__ import annotations
 
-import logging
 from typing import TYPE_CHECKING, Any, Union
 
+from azure.quantum.target.microsoft import MicrosoftEstimatorResult
+
+from qbraid._logging import logger
+from qbraid.runtime.azure.result_builder import AzureGateModelResultBuilder
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
+from qbraid.runtime.result import GateModelResultData, Result
 
-from .result_builder import AzureResultBuilder
+from .io_format import OutputDataFormat
 
 if TYPE_CHECKING:
     import azure.quantum
-    from azure.quantum.target.microsoft import MicrosoftEstimatorResult
-
-    from qbraid.runtime.azure.result import AzureQuantumResult
-
-
-logger = logging.getLogger(__name__)
 
 
 class AzureQuantumJob(QuantumJob):
@@ -73,18 +71,63 @@ class AzureQuantumJob(QuantumJob):
         }
         return status_map.get(status, JobStatus.UNKNOWN)
 
-    def result(self) -> Union[AzureQuantumResult, MicrosoftEstimatorResult]:
+    @staticmethod
+    def _make_estimator_result(data: dict[str, Any]) -> MicrosoftEstimatorResult:
+        """Create a MicrosoftEstimatorResult from the given data.
+
+        Args:
+            data (dict): The data to create the result from.
+
+        Returns:
+            MicrosoftEstimatorResult: The result created from the data.
+
+        Raises:
+            RuntimeError: If the job execution failed.
+        """
+        if not data["success"]:
+            error_data = data["error_data"]
+            raise RuntimeError(
+                f"Cannot retrieve results as job execution failed "
+                f"({error_data['code']}: {error_data['message']})"
+            )
+
+        result_data = data["data"]
+        return MicrosoftEstimatorResult(result_data)
+
+    def result(self) -> Union[Result, MicrosoftEstimatorResult]:
         """Return the result of the Azure job.
 
         Returns:
-            Union[AzureQuantumResult, MicrosoftEstimatorResult]: The result of the job.
+            Union[Result, MicrosoftEstimatorResult]: The result of the job.
         """
         if not self.is_terminal_state():
             logger.info("Result will be available when job has reached final state.")
 
-        builder = AzureResultBuilder(self._job)
+        job: azure.quantum.Job = self._job
+        job.wait_until_completed()
 
-        return builder.result()
+        success = job.details.status == "Succeeded"
+        details = job.details.as_dict()
+
+        if job.details.output_data_format == OutputDataFormat.RESOURCE_ESTIMATOR.value:
+            return self._make_estimator_result(
+                {
+                    "job_id": job.id,
+                    "target": job.details.target,
+                    "job_name": job.details.name,
+                    "success": success,
+                    "data": job.get_results(),
+                    "error_data": (
+                        None if job.details.error_data is None else job.details.error_data.as_dict()
+                    ),
+                }
+            )
+
+        builder = AzureGateModelResultBuilder(job)
+        data = GateModelResultData(measurement_counts=builder.get_counts())
+        return Result(
+            device_id=job.details.target, job_id=job.id, success=success, data=data, **details
+        )
 
     def cancel(self) -> None:
         """Cancel the Azure job."""

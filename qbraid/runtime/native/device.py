@@ -17,13 +17,13 @@ Module defining QbraidDevice class
 from __future__ import annotations
 
 import json
-import logging
 from typing import TYPE_CHECKING, Optional, Union
 
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
 
+from qbraid._entrypoints import get_entrypoints
+from qbraid._logging import logger
 from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
-from qbraid.programs.typer import Qasm2String, Qasm2StringType
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, NoiseModel
 from qbraid.runtime.exceptions import QbraidRuntimeError
@@ -32,14 +32,11 @@ from qbraid.transpiler import ConversionGraph, transpile
 from .job import QbraidJob
 
 if TYPE_CHECKING:
-    import pyqir
     import qbraid_core.services.quantum
 
     import qbraid.programs
     import qbraid.runtime
     import qbraid.transpiler
-
-logger = logging.getLogger(__name__)
 
 
 class QbraidDevice(QuantumDevice):
@@ -63,7 +60,7 @@ class QbraidDevice(QuantumDevice):
     def status(self) -> qbraid.runtime.DeviceStatus:
         """Return device status."""
         device_data = self.client.get_device(self.id)
-        status = device_data.get("status")
+        status: Optional[str] = device_data.get("status")
         if not status:
             raise QbraidRuntimeError("Failed to retrieve device status")
         return DeviceStatus(status.lower())
@@ -73,14 +70,6 @@ class QbraidDevice(QuantumDevice):
         device_data = self.client.get_device(self.id)
         pending_jobs = device_data.get("pendingJobs", 0)
         return int(pending_jobs)
-
-    def transform(
-        self, run_input: Union[pyqir.Module, Qasm2StringType]
-    ) -> dict[str, Union[Qasm2StringType, bytes]]:
-        """Transform the input to the format expected by the qBraid API."""
-        if isinstance(run_input, Qasm2String):
-            return {"openQasm": run_input}
-        return {"bitcode": run_input.bitcode}
 
     def submit(  # pylint: disable=too-many-arguments
         self,
@@ -158,6 +147,37 @@ class QbraidDevice(QuantumDevice):
 
         return transpile(program, closest_qasm, conversion_graph=aux_graph)
 
+    def _construct_aux_payload(
+        self, program: qbraid.programs.QPROGRAM, program_spec: Optional[ProgramSpec] = None
+    ) -> dict[str, Union[int, str]]:
+        """Construct auxiliary payload for the job submission."""
+        aux_payload = {}
+
+        if program_spec is None:
+            program_alias = get_program_type_alias(program, safe=True)
+            program_spec = ProgramSpec(type(program), alias=program_alias)
+
+        if not program_spec.native:
+            return aux_payload
+
+        qbraid_program = load_program(program)
+
+        aux_payload["circuitNumQubits"] = self.try_extracting_info(
+            lambda program=qbraid_program: program.num_qubits,
+            "Error calculating circuit number of qubits.",
+        )
+        aux_payload["circuitDepth"] = self.try_extracting_info(
+            lambda program=qbraid_program: program.depth, "Error calculating circuit depth."
+        )
+        aux_payload["openQasm"] = self.try_extracting_info(
+            lambda program=program, program_spec=program_spec: self._extract_qasm_rep(
+                program, program_spec
+            ),
+            "Error extracting OpenQASM string representation.",
+        )
+
+        return aux_payload
+
     def run(
         self,
         run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
@@ -212,31 +232,29 @@ class QbraidDevice(QuantumDevice):
 
         jobs: list[qbraid.runtime.QbraidJob] = []
 
+        native_target = (
+            self._target_spec is not None
+            and self._target_spec.native
+            and self._target_spec.alias in get_entrypoints("programs")
+        )
+        transpile_option = self._target_spec is not None and self._options.get("transpile") is True
+        validate_option = self._options.get("validate") is True
+
         for program in run_input_list:
-            program_alias = get_program_type_alias(program, safe=True)
-            program_spec = ProgramSpec(type(program), alias=program_alias)
-            qbraid_program = load_program(program) if program_spec.native else None
             aux_payload = {}
-
-            if qbraid_program:
-                aux_payload["circuitNumQubits"] = self.try_extracting_info(
-                    lambda program=qbraid_program: program.num_qubits,
-                    "Error calculating circuit number of qubits.",
-                )
-                aux_payload["circuitDepth"] = self.try_extracting_info(
-                    lambda program=qbraid_program: program.depth, "Error calculating circuit depth."
-                )
-
-            aux_payload["openQasm"] = self.try_extracting_info(
-                lambda program=program, program_spec=program_spec: self._extract_qasm_rep(
-                    program, program_spec
-                ),
-                "Error extracting OpenQASM string representation.",
-            )
-
-            self.validate(qbraid_program)
-            transpiled_program = self.transpile(program, program_spec)
-            run_input_json = self.transform(transpiled_program)
+            program_spec = None
+            if transpile_option or not native_target:
+                program_alias = get_program_type_alias(program, safe=True)
+                program_spec = ProgramSpec(type(program), alias=program_alias)
+            if not native_target:
+                aux_payload = self._construct_aux_payload(program, program_spec)
+            if transpile_option:
+                program = self.transpile(program, program_spec)
+            if validate_option:
+                self.validate(program)
+            if native_target:
+                aux_payload = self._construct_aux_payload(program, program_spec)
+            run_input_json = self.transform(program)
             runtime_payload = {**aux_payload, **run_input_json}
             job = self.submit(run_input=runtime_payload, shots=shots, tags=tags, **kwargs)
             jobs.append(job)

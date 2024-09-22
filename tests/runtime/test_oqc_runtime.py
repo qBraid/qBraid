@@ -8,208 +8,293 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,unused-argument
 
 """
 Unit tests for OQCProvider class
 
 """
+from __future__ import annotations
+
 import datetime
 import json
 import logging
-from unittest.mock import Mock, patch
+import os
+import textwrap
+import uuid
+from typing import Optional, Union
+from unittest.mock import MagicMock, Mock, patch
 
-import numpy as np
 import pytest
 
-logger = logging.getLogger(__name__)
-
 try:
-    from qcaas_client.client import OQCClient, QPUTask  # type: ignore
+    from qcaas_client.client import OQCClient, QPUTask, QPUTaskErrors, QPUTaskResult  # type: ignore
 
     from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
-    from qbraid.runtime import Options, TargetProfile
-    from qbraid.runtime.enums import DeviceActionType, DeviceStatus, JobStatus
+    from qbraid.runtime import GateModelResultData, Result, TargetProfile
+    from qbraid.runtime.enums import DeviceStatus, ExperimentType, JobStatus
     from qbraid.runtime.exceptions import ResourceNotFoundError
-    from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCJobResult, OQCProvider
-    from qbraid.transpiler import ConversionScheme
+    from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCProvider
+    from qbraid.runtime.postprocess import GateModelResultBuilder
 
     FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
-    oqc_not_installed = False
+    oqc_extras_installed = True
 except ImportError as err:
     FIXTURE_COUNT = 0
 
-    oqc_not_installed = True
+    oqc_extras_installed = False
 
-    logger.warning("OQC runtime tests will be skipped: %s", err)
+    logging.warning("OQC runtime tests will be skipped: %s", err)
 
+pytestmark = pytest.mark.skipif(oqc_extras_installed is False, reason="qcaas_client not installed")
 
-pytestmark = pytest.mark.skipif(oqc_not_installed, reason="qcaas_client not installed")
+LUCY_SIM_ID = "qpu:uk:2:d865b5a184"
 
-DEVICE_ID = "qpu:uk:2:d865b5a184"
+LUCY_FEATURE_SET = {"always_on": True, "qubit_count": 8, "simulator": True}
+
+LUCY_SIM_MOCK_DATA = {
+    "active": True,
+    "feature_set": json.dumps(LUCY_FEATURE_SET),
+    "generation": 2,
+    "id": LUCY_SIM_ID,
+    "name": "Lucy Simulator",
+    "region": "uk",
+    "url": "https://uk.cloud.oqc.app/d865b5a184",
+}
+
+MOCK_TIMINGS = {
+    "RECEIVER_DEQUEUED": "2023-10-17 11:24:32.937188+00:00",
+    "RECEIVER_ENQUEUED": "2023-10-17 11:24:32.996594+00:00",
+    "RECEIVER_FROM_SCC": "2023-10-17 11:24:32.996594+00:00",
+    "RECEIVER_TO_SCC": "2023-10-17 11:24:32.938188+00:00",
+    "SERVER_DEQUEUED": "2023-10-17 11:24:36.057355+00:00",
+    "SERVER_ENQUEUED": "2023-10-17 11:24:35.946476+00:00",
+    "SERVER_RECEIVED": "2023-10-17 11:24:35.904885+00:00",
+}
+
+MOCK_METRICS = {"optimized_circuit": "dummy", "optimized_instruction_count": 42}
+
+MOCK_TASK_ID = "e35fb436-ff08-44c8-8acc-7d5a1f1a0ada"
+MOCK_TASK_ID_NO_RESULT = "e35fb436-ff08-44c8-8acc-7d5a1f1a0adb"
+
+MOCK_TASK_METADATA = {
+    "allow_support_access": False,
+    "config": '{"$type": "<class \'scc.compiler.config.CompilerConfig\'>", "$data": {"repeats": null, "repetition_period": null, "results_format": {"$type": "<class \'scc.compiler.config.QuantumResultsFormat\'>", "$data": {"format": null, "transforms": {"$type": "<enum \'scc.compiler.config.ResultsFormatting\'>", "$value": 2}}}, "metrics": {"$type": "<enum \'scc.compiler.config.MetricsType\'>", "$value": 6}, "active_calibrations": [], "optimizations": null, "error_mitigation": null}}',  # pylint: disable=line-too-long
+    "created_at": "Wed, 12 Jun 2024 20:11:15 GMT",
+    "id": MOCK_TASK_ID,
+    "qpu_id": LUCY_SIM_ID,
+    "tag": None,
+}
+
+MOCK_RESULT = {"c": {"00": 52, "11": 48}}
 
 
 @pytest.fixture
-def lucy_simulator_data():
-    """Return data for Lucy Simulator."""
-    return {
-        "active": True,
-        "feature_set": json.dumps({"always_on": True, "qubit_count": 8, "simulator": True}),
-        "generation": 2,
-        "id": "qpu:uk:2:d865b5a184",
-        "name": "Lucy Simulator",
-        "region": "uk",
-        "url": "https://uk.cloud.oqc.app/d865b5a184",
-    }
+def program():
+    """Return a QASM3 program."""
+    qasm3 = """
+    OPENQASM 3;
+    include "stdgates.inc";
+    qubit[2] q;
+    bit[2] c;
+
+    h q[0];
+    cx q[0], q[1];
+
+    c = measure q;
+    """
+
+    qasm3_compat = textwrap.dedent(qasm3).strip()
+    return qasm3_compat
 
 
-@pytest.fixture
-def oqc_device(lucy_simulator_data):
-    """Return a fake OQC device."""
+class MockOQCClient:
+    """Test class for OQC client."""
 
-    class TestOQCClient:
-        """Test class for OQC client."""
+    def __init__(self, authentication_token=None):
+        self._authentication_token = authentication_token
+        self.default_qpu_id = "qpu:uk:3:9829a5504f"
+        self.url = "https://cloud.oqc.app/"
 
-        def __init__(self, token):
-            self.token = token
+    def get_qpus(self):
+        """Get QPUs."""
+        return [LUCY_SIM_MOCK_DATA]
 
-        def get_qpus(self):
-            """Get QPUs."""
-            return [lucy_simulator_data]
+    def schedule_tasks(
+        self,
+        tasks: Union[QPUTask, list[QPUTask]],
+        qpu_id: Optional[str] = None,
+        tag: Optional[str] = None,
+    ):
+        """Schedule tasks for the QPU."""
+        if not isinstance(tasks, list):
+            tasks = [tasks]
 
-        def schedule_tasks(self, task: QPUTask, qpu_id: str):  # pylint: disable=unused-argument
-            """Schedule tasks for the QPU."""
-            return task
+        first_qpu_id = None
+        assigned_mock_task_id = False
 
-        def get_next_window(self, qpu_id: str):  # pylint: disable=unused-argument
-            """Get next window."""
-            return "2024-07-30 00:50:00"
+        for task in tasks:
+            if not isinstance(task, QPUTask):
+                raise ValueError("All tasks must be of type QPUTask")
 
-        def get_task_status(
-            self, task_id: str, qpu_id: str, **kwargs
-        ):  # pylint: disable=unused-argument
-            """Get task status."""
-            success = kwargs.get("success", True)
-            return "COMPLETED" if success else "FAILED"
+            if qpu_id:
+                task.qpu_id = qpu_id
+            else:
+                if not task.qpu_id:
+                    task.qpu_id = self.default_qpu_id
 
-        def get_task_timings(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
-            """Get task timings."""
-            return {
-                "RECEIVER_DEQUEUED": "2023-10-17 11:24:32.937188+00:00",
-                "RECEIVER_ENQUEUED": "2023-10-17 11:24:32.996594+00:00",
-                "RECEIVER_FROM_SCC": "2023-10-17 11:24:32.996594+00:00",
-                "RECEIVER_TO_SCC": "2023-10-17 11:24:32.938188+00:00",
-                "SERVER_DEQUEUED": "2023-10-17 11:24:36.057355+00:00",
-                "SERVER_ENQUEUED": "2023-10-17 11:24:35.946476+00:00",
-                "SERVER_RECEIVED": "2023-10-17 11:24:35.904885+00:00",
-            }
+                if first_qpu_id is None:
+                    first_qpu_id = task.qpu_id
+                elif task.qpu_id != first_qpu_id:
+                    raise ValueError("All tasks must have the same qpu_id")
 
-        def get_task_metrics(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
-            """Get task metrics."""
-            return {"optimized_circuit": "dummy", "optimized_instruction_count": 42}
+            if not task.task_id:
+                if not assigned_mock_task_id:
+                    task.task_id = MOCK_TASK_ID
+                    assigned_mock_task_id = True
+                else:
+                    task.task_id = str(uuid.uuid4())
 
-        def get_task_metadata(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
-            """Get task metadata."""
-            return {
-                "config": '{"$type": "<class \'scc.compiler.config.CompilerConfig\'>", "$data": {"repeats": null, "repetition_period": null, "results_format": {"$type": "<class \'scc.compiler.config.QuantumResultsFormat\'>", "$data": {"format": null, "transforms": {"$type": "<enum \'scc.compiler.config.ResultsFormatting\'>", "$value": 2}}}, "metrics": {"$type": "<enum \'scc.compiler.config.MetricsType\'>", "$value": 6}, "active_calibrations": [], "optimizations": null, "error_mitigation": null}}',  # pylint: disable=line-too-long
-                "created_at": "Wed, 12 Jun 2024 20:11:15 GMT",
-                "id": "e35fb436-ff08-44c8-8acc-7d5a1f1a0ada",
-                "qpu_id": "qpu:uk:2:d865b5a184",
-                "tag": None,
-            }
+        return tasks
 
-        def get_task_errors(
-            self, task_id: str, qpu_id: str, **kwargs
-        ):  # pylint: disable=unused-argument
-            """Get task errors."""
-            success = kwargs.get("success", True)
-            attribute_error = kwargs.get("attribute_error", False)
+    def get_next_window(self, qpu_id: Optional[str] = None):
+        """Get next window."""
+        return "2024-07-30 00:50:00"
 
-            class MockError:
-                """Mock error class."""
+    def get_task_status(self, task_id: str, qpu_id: Optional[str] = None):
+        """Get task status."""
+        if task_id == MOCK_TASK_ID:
+            return "COMPLETED"
+        return "FAILED"
 
-                def __init__(self, error_message):
-                    self.error_message = error_message
+    def get_task_timings(self, task_id: str, qpu_id: Optional[str] = None):
+        """Get task timings."""
+        return MOCK_TIMINGS
 
-            return None if success else (MockError("Error") if not attribute_error else "Error")
+    def get_task_metrics(self, task_id: str, qpu_id: Optional[str] = None):
+        """Get task metrics."""
+        return MOCK_METRICS
 
-        def get_task_results(
-            self, task_id: str, qpu_id: str, **kwargs
-        ):  # pylint: disable=unused-argument
-            """Get task results."""
-            none = kwargs.get("none", False)
+    def get_task_metadata(self, task_id: str, qpu_id: Optional[str] = None):
+        """Get task metadata."""
+        metadata = MOCK_TASK_METADATA.copy()
+        metadata["id"] = task_id
+        if qpu_id:
+            metadata["qpu_id"] = qpu_id
+        return metadata
 
-            class Result:
-                """Result class."""
-
-                def __init__(self, counts):
-                    self.result = counts
-
-            return Result(counts={"c": {"0": 1, "1": 1}}) if not none else None
-
-        def cancel_task(self, task_id: str, qpu_id: str):  # pylint: disable=unused-argument
-            """Cancel task."""
+    def get_task_errors(self, task_id: str, qpu_id: Optional[str] = None):
+        """Get task errors."""
+        if task_id == MOCK_TASK_ID:
             return None
+        return QPUTaskErrors("Error", 400)
 
-    class TestOQCDevice(OQCDevice):
-        """Test class for OQC device."""
+    def get_task_results(self, task_id: str, qpu_id: Optional[str] = None):
+        """Get task results."""
+        qpu_id_matches = qpu_id is None or qpu_id == LUCY_SIM_ID
+        result = MOCK_RESULT if task_id == MOCK_TASK_ID and qpu_id_matches else None
+        metrics = self.get_task_metrics(task_id, qpu_id)
+        error_details = self.get_task_errors(task_id, qpu_id)
+        return QPUTaskResult(task_id, result=result, metrics=metrics, error_details=error_details)
 
-        # pylint: disable-next=super-init-not-called
-        def __init__(self, device_id, oqc_client=None):
-            self._client = oqc_client or TestOQCClient("fake_token")
-            self._profile = TargetProfile(
-                device_id=device_id,
-                device_name="Lucy Simulator",
-                simulator=True,
-                action_type=DeviceActionType.OPENQASM,
-                endpoint_url="https://uk.cloud.oqc.app/d865b5a184",
-                num_qubits=8,
-                program_spec=ProgramSpec(str, alias="qasm2"),
-            )
-            self._target_spec = ProgramSpec(str, alias="qasm2")
-            self._scheme = ConversionScheme()
-            self._options = Options(transpile=True, transform=True, verify=True)
-
-    return TestOQCDevice(DEVICE_ID)
+    def cancel_task(self, task_id: str, qpu_id: Optional[str] = None):
+        """Cancel task."""
+        return None
 
 
-def test_oqc_provider_device(lucy_simulator_data):
+@pytest.fixture
+def lucy_sim_id():
+    """Return Lucy Simulator ID."""
+    return LUCY_SIM_ID
+
+
+@pytest.fixture
+def lucy_sim_data():
+    """Return data for Lucy Simulator."""
+    return LUCY_SIM_MOCK_DATA
+
+
+@pytest.fixture
+def mock_job_id():
+    """Return a mock task ID."""
+    return MOCK_TASK_ID
+
+
+@pytest.fixture
+def oqc_client():
+    """Return a fake OQC client."""
+    return MockOQCClient("fake_token")
+
+
+@pytest.fixture
+def target_profile(lucy_sim_data):
+    """Return a target profile for Lucy Simulator."""
+    return TargetProfile(
+        device_id=lucy_sim_data["id"],
+        device_name=lucy_sim_data["name"],
+        simulator=LUCY_FEATURE_SET["simulator"],
+        experiment_type=ExperimentType.GATE_MODEL,
+        endpoint_url=lucy_sim_data["url"],
+        num_qubits=LUCY_FEATURE_SET["qubit_count"],
+        program_spec=ProgramSpec(str, alias="qasm2"),
+    )
+
+
+@pytest.fixture
+def oqc_device(oqc_client, target_profile):
+    """Return a fake OQC device."""
+    return OQCDevice(profile=target_profile, client=oqc_client)
+
+
+@pytest.fixture
+def oqc_job(mock_job_id, oqc_client, oqc_device):
+    """Return a fake OQC job."""
+    return OQCJob(mock_job_id, client=oqc_client, device=oqc_device)
+
+
+@pytest.fixture
+def oqc_job_failed(oqc_client, oqc_device):
+    """Return a fake OQC job that failed."""
+    return OQCJob("failed_job_id", client=oqc_client, device=oqc_device)
+
+
+def test_oqc_provider_device(lucy_sim_id, lucy_sim_data):
     """Test OQC provider and device."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
-        mock_client.return_value.get_qpus.return_value = [lucy_simulator_data]
+        mock_client.return_value.get_qpus.return_value = [lucy_sim_data]
         provider = OQCProvider(token="fake_token")
         assert isinstance(provider, OQCProvider)
         assert isinstance(provider.client, OQCClient)
         assert provider.client == mock_client.return_value
-        test_device = provider.get_device(DEVICE_ID)
+        test_device = provider.get_device(lucy_sim_id)
         devices = provider.get_devices()
         assert isinstance(devices, list)
         assert any(device.id == test_device.id for device in devices)
         assert isinstance(test_device.status(), DeviceStatus)
         assert isinstance(test_device, OQCDevice)
-        assert test_device.profile["device_id"] == DEVICE_ID
+        assert test_device.profile["device_id"] == lucy_sim_id
         with pytest.raises(ResourceNotFoundError):
             provider.get_device("fake_id")
         assert isinstance(test_device.client, OQCClient)
-        lucy_simulator_data["feature_set"] = json.dumps(
+        lucy_sim_data["feature_set"] = json.dumps(
             {"always_on": False, "qubit_count": 8, "simulator": True}
         )
         now = datetime.datetime.now()
         year, month, day = now.year, now.month, now.day
         window = f"{year + 1}-{month}-{day} 00:50:00"
         mock_client.return_value.get_next_window.return_value = window
-        unavailable_device = provider.get_device(DEVICE_ID)
+        unavailable_device = provider.get_device(lucy_sim_id)
         assert unavailable_device.status() == DeviceStatus.OFFLINE
         fake_profile = TargetProfile(
             device_id="fake_id",
             device_name="Fake Device",
             simulator=True,
-            action_type=DeviceActionType.OPENQASM,
+            experiment_type=ExperimentType.GATE_MODEL,
             endpoint_url="https://uk.cloud.oqc.app/fake_id",
             num_qubits=8,
-            program_spec=ProgramSpec(str, alias="qasm2"),
+            program_spec=ProgramSpec(str, alias="qasm3"),
         )
         fake_device = OQCDevice(profile=fake_profile, client=provider.client)
         with pytest.raises(ResourceNotFoundError):
@@ -217,7 +302,7 @@ def test_oqc_provider_device(lucy_simulator_data):
 
         window = f"{year - 1}-{month}-{day} 00:50:00"
         mock_client.return_value.get_next_window.return_value = window
-        always_on_false_available_device = provider.get_device(DEVICE_ID)
+        always_on_false_available_device = provider.get_device(lucy_sim_id)
         assert always_on_false_available_device.status() == DeviceStatus.ONLINE
 
 
@@ -231,39 +316,37 @@ def test_oqc_provider_device(lucy_simulator_data):
         ),
     ],
 )
-def test_oqc_provider_get_device_errors(
-    lucy_simulator_data, data_modifications, expected_error_message
-):
+def test_oqc_provider_get_device_errors(lucy_sim_data, data_modifications, expected_error_message):
     """Test OQC provider get device method raises exceptions for various error conditions."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
-        invalid_lucy_simulator_data = lucy_simulator_data.copy()
-        invalid_lucy_simulator_data.update(data_modifications)
-        mock_client.return_value.get_qpus.return_value = [invalid_lucy_simulator_data]
+        invalid_lucy_sim_data = lucy_sim_data.copy()
+        invalid_lucy_sim_data.update(data_modifications)
+        mock_client.return_value.get_qpus.return_value = [invalid_lucy_sim_data]
         provider = OQCProvider(token="fake_token")
 
         with pytest.raises(ValueError) as excinfo:
-            provider.get_device(DEVICE_ID)
+            provider.get_device(lucy_sim_data["id"])
         assert expected_error_message in str(excinfo.value)
 
 
-def test_build_runtime_profile(lucy_simulator_data):
+def test_build_runtime_profile(lucy_sim_data):
     """Test building a runtime profile for OQC device."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
         provider = OQCProvider(token="fake_token")
-        profile = provider._build_profile(lucy_simulator_data)
+        profile = provider._build_profile(lucy_sim_data)
         assert isinstance(profile, TargetProfile)
-        assert profile["device_id"] == DEVICE_ID
+        assert profile["device_id"] == lucy_sim_data["id"]
         assert profile["simulator"] is True
         assert profile["num_qubits"] == 8
-        assert profile["program_spec"] == ProgramSpec(str, alias="qasm2")
+        assert profile["program_spec"] == ProgramSpec(str, alias="qasm3")
 
 
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
 def test_run_fake_job(circuit, oqc_device):
     """Test running a fake job."""
-    job = oqc_device.run(circuit, shots=1)
+    job: OQCJob = oqc_device.run(circuit, shots=100)
     assert isinstance(job, OQCJob)
     assert isinstance(job.status(), JobStatus)
     assert isinstance(job.get_timings(), dict)
@@ -271,17 +354,11 @@ def test_run_fake_job(circuit, oqc_device):
     assert isinstance(job.metrics()["optimized_instruction_count"], int)
     assert isinstance(job.metadata(), dict)
     assert isinstance(job.get_errors(), (str, type(None)))
-    res = job.result()
-    assert isinstance(res, OQCJobResult)
-    assert np.array_equal(res.measurements(), np.array([[0], [1]]))
 
-    with pytest.raises(ResourceNotFoundError):
-        job.result(none=True)
-
-    assert job.get_errors(success=False) == "Error"
-    assert job.result(success=False)._result.get("error_details", None) == "Error"
-
-    assert job.get_errors(success=False, attribute_error=True) is None
+    result = job.result()
+    assert isinstance(result, Result)
+    assert isinstance(result.data, GateModelResultData)
+    assert result.data.get_counts() == MOCK_RESULT["c"]
 
 
 def test_run_batch_fake_job(run_inputs, oqc_device):
@@ -292,8 +369,154 @@ def test_run_batch_fake_job(run_inputs, oqc_device):
     assert all(isinstance(j, OQCJob) for j in job)
 
 
-def test_cancel_job(oqc_device):
+def test_cancel_job(oqc_device, program):
     """Test cancelling a fake job."""
-    job = oqc_device.run("OPENQASM 2.0;\nqreg q[2];\ncreg c[2];\nh q[0];\nmeasure q[0] -> c[0];\n")
+    job = oqc_device.run(program, shots=100)
     assert isinstance(job, OQCJob)
     assert job.cancel() is None
+
+
+@pytest.mark.remote
+def test_oqc_runtime_remote_execution(program):
+    """Test OQC runtime with remote execution."""
+    token = os.getenv("OQC_AUTH_TOKEN")
+    if token is None:
+        pytest.skip("Missing OQC_AUTH_TOKEN")
+
+    provider = OQCProvider(token=token)
+
+    device = provider.get_device(LUCY_SIM_ID)
+    assert isinstance(device, OQCDevice)
+    assert device.status() == DeviceStatus.ONLINE
+
+    shots = 100
+    job = device.run(program, shots=shots)
+    assert isinstance(job, OQCJob)
+
+    job.wait_for_final_state()
+    assert job.qpu_id == LUCY_SIM_ID
+    assert job.is_terminal_state()
+    assert job.status() == JobStatus.COMPLETED
+
+    result = job.result()
+    assert isinstance(result, Result)
+    assert result.details["errors"] is None
+    assert result.details["shots"] == shots
+    assert result.details["metrics"]["optimized_circuit"] == program
+
+    data = result.data
+    assert isinstance(data, GateModelResultData)
+
+    counts = data.get_counts()
+    assert len(counts) == 2
+    assert set(counts.keys()) == {"00", "11"}
+    assert sum(counts.values()) == shots
+    assert data.measurements is None
+
+
+def test_oqc_job_get_errors(oqc_job_failed):
+    """Test getting errors from a failed job."""
+    errors = oqc_job_failed.get_errors()
+    assert errors == {"message": "Error", "code": 400}
+
+    result = oqc_job_failed.result()
+    assert result.success is False
+    assert result.data.measurement_counts is None
+    assert result.data.measurements is None
+
+
+@patch("builtins.hash", autospec=True)
+def test_hash_method_creates_and_returns_hash(mock_hash, oqc_client):
+    """Test that the hash method creates and returns a hash."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = Mock(spec=OQCClient)
+        provider_instance = OQCProvider(token="fake_token")
+        mock_hash.return_value = 9999
+        provider_instance.client = oqc_client
+        result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
+        mock_hash.assert_called_once_with(("https://cloud.oqc.app/", "fake_token"))
+        assert result == 9999
+        assert provider_instance._hash == 9999
+
+
+def test_hash_method_returns_existing_hash(oqc_client):
+    """Test that the hash method returns an existing hash."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = Mock(spec=OQCClient)
+        provider_instance = OQCProvider(token="fake_token")
+        provider_instance.client = oqc_client
+        provider_instance._hash = 1234
+        result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
+        assert result == 1234
+
+
+def test_job_result_method_raises_resource_not_found(oqc_job):
+    """Test that the result method raises a ResourceNotFoundError when no result is found."""
+    oqc_job._qpu_id = "mismatched_id"
+    with pytest.raises(ResourceNotFoundError) as excinfo:
+        oqc_job.result()
+    assert "No result found for the task" in str(excinfo.value)
+
+
+def test_job_get_counts_single_key():
+    """Test that the _get_counts method returns the expected counts for a single key."""
+    result = {"c": {"00": 1000, "01": 500}}
+    expected = {"00": 1000, "01": 500}
+
+    assert OQCJob._get_counts(result) == expected
+
+
+@pytest.fixture
+def multi_cbit_result_counts():
+    """Return a result counts dictionary with multiple keys."""
+    return {
+        "c0": {"000000": 45, "111111": 55},
+        "c1": {"000000": 45, "111111": 55},
+        "c2": {"000000": 45, "111111": 55},
+    }
+
+
+def test_job_get_counts_multiple_keys(multi_cbit_result_counts):
+    """Test that the _get_counts method returns the expected counts for multiple keys."""
+    expected = [
+        {"000000": 45, "111111": 55},
+        {"000000": 45, "111111": 55},
+        {"000000": 45, "111111": 55},
+    ]
+
+    assert OQCJob._get_counts(multi_cbit_result_counts) == expected
+
+
+def test_job_get_counts_empty_dict():
+    """Test that the _get_counts method raises a ValueError when the result dictionary is empty."""
+    result = {}
+
+    with pytest.raises(ValueError, match="The result dictionary must not be empty."):
+        OQCJob._get_counts(result)
+
+
+def test_job_get_counts_list_to_probabilities(multi_cbit_result_counts):
+    """Test that the _get_counts method returns the expected probabilities for a list of counts."""
+    expected = [
+        {"000000": 0.45, "111111": 0.55},
+        {"000000": 0.45, "111111": 0.55},
+        {"000000": 0.45, "111111": 0.55},
+    ]
+
+    counts_list = OQCJob._get_counts(multi_cbit_result_counts)
+    assert GateModelResultBuilder.counts_to_probabilities(counts_list) == expected
+
+
+def test_job_get_qpu_id_from_task_metadata(lucy_sim_id, oqc_job, oqc_client):
+    """Test getting the qpu_id from the task metadata."""
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_job._client = oqc_client
+    assert oqc_job.qpu_id == lucy_sim_id
+
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_client.get_task_metadata = MagicMock(return_value={"qpu_id": lucy_sim_id})
+    oqc_job._client = oqc_client
+    assert oqc_job.qpu_id == lucy_sim_id
+    oqc_client.get_task_metadata.assert_called_once()

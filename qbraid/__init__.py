@@ -20,9 +20,8 @@ Functions
    :toctree: ../stubs/
 
     about
-    configure_logging
-    filterwarnings
-    check_warn_version_update
+    clear_cache
+    cache_disabled
 
 Exceptions
 -----------
@@ -34,20 +33,60 @@ Exceptions
 
 """
 from ._about import about
-from ._compat import check_warn_version_update, configure_logging, filterwarnings
+from ._caching import cache_disabled, clear_cache
 from ._version import __version__
 from .exceptions import QbraidError
 
 __all__ = [
     "about",
-    "configure_logging",
-    "check_warn_version_update",
-    "filterwarnings",
     "QbraidError",
     "__version__",
+    "clear_cache",
+    "cache_disabled",
 ]
 
 _lazy_mods = ["interface", "passes", "programs", "runtime", "transpiler", "visualization"]
+
+_lazy_objs = {
+    "interface": [
+        "circuits_allclose",
+        "random_circuit",
+    ],
+    "programs": [
+        "AnalogHamiltonianProgram",
+        "GateModelProgram",
+        "ProgramSpec",
+        "Qasm2String",
+        "Qasm3String",
+        "QuantumProgram",
+        "QPROGRAM",
+        "QPROGRAM_NATIVE",
+        "QPROGRAM_REGISTRY",
+        "NATIVE_REGISTRY",
+        "get_program_type_alias",
+        "load_program",
+        "register_program_type",
+        "unregister_program_type",
+    ],
+    "transpiler": [
+        "Conversion",
+        "ConversionGraph",
+        "ConversionScheme",
+        "transpile",
+    ],
+    "runtime": [
+        "AhsResultData",
+        "AhsShotResult",
+        "GateModelResultData",
+        "QuantumDevice",
+        "QuantumJob",
+        "QuantumProvider",
+        "Result",
+        "ResultData",
+        "RuntimeOptions",
+        "TargetProfile",
+    ],
+}
 
 
 def __getattr__(name):
@@ -57,8 +96,20 @@ def __getattr__(name):
         module = importlib.import_module(f".{name}", __name__)
         globals()[name] = module
         return module
+
+    for mod_name, objects in _lazy_objs.items():
+        if name in objects:
+            import importlib  # pylint: disable=import-outside-toplevel
+
+            module = importlib.import_module(f".{mod_name}", __name__)
+            obj = getattr(module, name)
+            globals()[name] = obj
+            return obj
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def __dir__():
-    return sorted(__all__ + _lazy_mods)
+    return sorted(
+        __all__ + _lazy_mods + [item for sublist in _lazy_objs.values() for item in sublist]
+    )

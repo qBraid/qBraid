@@ -20,15 +20,17 @@ from .registry import derive_program_type_alias, is_registered_alias_native, reg
 class ProgramSpec:
     """Base class used to register program type and type alias."""
 
-    def __init__(
+    def __init__(  # pylint: disable=too-many-arguments
         self,
         program_type: Type[Any],
         alias: Optional[str] = None,
         overwrite: bool = False,
         to_ir: Optional[Callable[[Any], Any]] = None,
+        validate: Optional[Callable[[Any], None]] = None,
     ):
         self._program_type = program_type
         self._to_ir = to_ir or (lambda program: program)
+        self._validate = validate or (lambda program: None)
 
         register_program_type(program_type, alias=alias, overwrite=overwrite)
         self._alias = alias or derive_program_type_alias(program_type)
@@ -60,6 +62,18 @@ class ProgramSpec:
             Any: The program converted to an IR, or the program itself if to_ir is None.
         """
         return self._to_ir(program)
+
+    def validate(self, program: Any) -> None:
+        """
+        Validate the given program using the validate lambda.
+
+        Args:
+            program (Any): The program to validate.
+
+        Raises:
+            ValueError: If the program is invalid.
+        """
+        self._validate(program)
 
     def __str__(self) -> str:
         return f"ProgramSpec({self._program_type.__name__}, {self.alias})"

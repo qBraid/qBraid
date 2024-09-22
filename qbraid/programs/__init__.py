@@ -58,6 +58,7 @@ Exceptions
 	ValidationError
 	QasmError
 	TransformError
+    ProgramLoaderError
 
 """
 from ._import import NATIVE_REGISTRY
@@ -69,7 +70,7 @@ from .exceptions import (
     TransformError,
     ValidationError,
 )
-from .loader import load_program
+from .loader import ProgramLoaderError, load_program
 from .program import QuantumProgram
 from .registry import (
     QPROGRAM,
@@ -82,7 +83,14 @@ from .registry import (
     unregister_program_type,
 )
 from .spec import ProgramSpec
-from .typer import IonQDict, Qasm2String, Qasm3String, QbraidMetaType
+from .typer import (
+    IonQDict,
+    Qasm2String,
+    Qasm2StringType,
+    Qasm3String,
+    Qasm3StringType,
+    QbraidMetaType,
+)
 
 __all__ = [
     "NATIVE_REGISTRY",
@@ -90,6 +98,7 @@ __all__ = [
     "ProgramSpec",
     "ProgramTypeError",
     "TransformError",
+    "ProgramLoaderError",
     "QPROGRAM",
     "QPROGRAM_ALIASES",
     "QPROGRAM_NATIVE",
@@ -108,9 +117,17 @@ __all__ = [
     "IonQDict",
     "Qasm2String",
     "Qasm3String",
+    "Qasm2StringType",
+    "Qasm3StringType",
 ]
 
 _lazy_mods = ["circuits", "ahs"]
+
+_lazy_objs = {
+    "GateModelProgram": "circuits",
+    "AnalogHamiltonianProgram": "ahs",
+    "AHSEncoder": "ahs",
+}
 
 
 def __getattr__(name):
@@ -120,8 +137,18 @@ def __getattr__(name):
         module = importlib.import_module(f".{name}", __name__)
         globals()[name] = module
         return module
+
+    if name in _lazy_objs:
+        import importlib  # pylint: disable=import-outside-toplevel
+
+        mod_name = _lazy_objs[name]
+        module = importlib.import_module(f".{mod_name}", __name__)
+        obj = getattr(module, name)
+        globals()[name] = obj
+        return obj
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def __dir__():
-    return sorted(__all__ + _lazy_mods)
+    return sorted(__all__ + _lazy_mods + list(_lazy_objs.keys()))

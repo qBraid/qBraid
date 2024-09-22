@@ -14,7 +14,6 @@ Module defining abstract QuantumJob Class
 """
 from __future__ import annotations
 
-import logging
 from abc import ABC, abstractmethod
 from time import sleep, time
 from typing import TYPE_CHECKING, Any, Optional
@@ -24,8 +23,6 @@ from .exceptions import JobStateError, ResourceNotFoundError
 
 if TYPE_CHECKING:
     import qbraid.runtime
-
-logger = logging.getLogger(__name__)
 
 
 class QuantumJob(ABC):
@@ -63,11 +60,10 @@ class QuantumJob(ABC):
     def status(self) -> JobStatus:
         """Return the status of the job / task , among the values of ``JobStatus``."""
 
-    def metadata(self, use_cache: bool = False) -> dict[str, Any]:
+    def metadata(self) -> dict[str, Any]:
         """Return the metadata regarding the job."""
-        if not use_cache:
-            status = self.status()
-            self._cache_metadata["status"] = status
+        status = self.status()
+        self._cache_metadata["status"] = status
         return self._cache_metadata
 
     def wait_for_final_state(self, timeout: Optional[int] = None, poll_interval: int = 5) -> None:
@@ -89,7 +85,7 @@ class QuantumJob(ABC):
             sleep(poll_interval)
 
     @abstractmethod
-    def result(self) -> qbraid.runtime.QuantumJobResult:
+    def result(self) -> Any:
         """Return the results of the job."""
 
     @abstractmethod

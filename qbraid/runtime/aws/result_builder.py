@@ -9,22 +9,18 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining BraketGateModelJobResult Class
+Module defining BraketGateModelResultBuilder Class
 
 """
 from __future__ import annotations
 
 from collections import Counter
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
-from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
-    AnalogHamiltonianSimulationShotStatus,
-    ShotResult,
-)
 
 from qbraid.runtime.exceptions import QbraidRuntimeError
-from qbraid.runtime.result import GateModelJobResult, QuantumJobResult
+from qbraid.runtime.result import AhsShotResult, GateModelResultBuilder
 
 if TYPE_CHECKING:
     from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
@@ -37,8 +33,11 @@ class ResultDecodingError(QbraidRuntimeError):
     """Exception raised for errors that occur during the decoding of result data."""
 
 
-class BraketGateModelJobResult(GateModelJobResult):
+class BraketGateModelResultBuilder(GateModelResultBuilder):
     """Wrapper class for Amazon Braket result objects."""
+
+    def __init__(self, result: GateModelQuantumTaskResult):
+        self._result = result
 
     def measurements(self) -> np.ndarray:
         """
@@ -50,7 +49,7 @@ class BraketGateModelJobResult(GateModelJobResult):
         result: GateModelQuantumTaskResult = self._result
         return np.flip(result.measurements, 1)
 
-    def get_counts(self):
+    def get_counts(self) -> dict[str, int]:
         """Returns the histogram data of the run"""
         result: GateModelQuantumTaskResult = self._result
         braket_counts = dict(result.measurement_counts)
@@ -61,28 +60,25 @@ class BraketGateModelJobResult(GateModelJobResult):
         return qbraid_counts
 
 
-class BraketAhsJobResult(QuantumJobResult):
+class BraketAhsResultBuilder:
     """Result from an Analog Hamiltonian Simulation (AHS)."""
 
-    def measurements(self) -> list[ShotResult]:
+    def __init__(self, result: AnalogHamiltonianSimulationQuantumTaskResult):
+        self._result = result
+
+    def measurements(self) -> list[AhsShotResult]:
         """Get the list of shot results from the AHS job."""
         result: AnalogHamiltonianSimulationQuantumTaskResult = self._result
+        return [
+            AhsShotResult(
+                success=m.status.name == "SUCCESS",
+                pre_sequence=m.pre_sequence,
+                post_sequence=m.post_sequence,
+            )
+            for m in result.measurements
+        ]
 
-        measurements = []
-        for measurement in result.measurements:
-            status = AnalogHamiltonianSimulationShotStatus(measurement.shotMetadata.shotStatus)
-            pre_sequence = None
-            if measurement.shotResult.preSequence:
-                pre_sequence = np.asarray(measurement.shotResult.preSequence, dtype=int)
-
-            post_sequence = None
-            if measurement.shotResult.postSequence:
-                post_sequence = np.asarray(measurement.shotResult.postSequence, dtype=int)
-
-            measurements.append(ShotResult(status, pre_sequence, post_sequence))
-        return measurements
-
-    def get_counts(self) -> dict[str, int]:
+    def get_counts(self) -> Optional[dict[str, int]]:
         """
         Aggregate state counts from AHS shot results.
 
@@ -96,14 +92,15 @@ class BraketAhsJobResult(QuantumJobResult):
                                       or None if there are no successful measurements.
 
         Raises:
-            ValueError: If there is an error accessing required attributes within the result object.
+            ResultDecodingError: If there is an error accessing required attributes from
+                the result object.
 
         """
         state_counts = Counter()
         states = ["e", "r", "g"]
         try:
             for shot in self.measurements():
-                if shot.status.name == "SUCCESS":
+                if shot.success:
                     pre = shot.pre_sequence
                     post = shot.post_sequence
                     # converting presequence and postsequence measurements to state_idx

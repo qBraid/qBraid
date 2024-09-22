@@ -12,6 +12,7 @@
 Module defining QiskitCircuit Class
 
 """
+from __future__ import annotations
 
 from collections import OrderedDict
 from typing import TYPE_CHECKING
@@ -28,13 +29,11 @@ from ._model import GateModelProgram
 if TYPE_CHECKING:
     import numpy as np
 
-    from qbraid.runtime.qiskit import QiskitBackend
-
 
 class QiskitCircuit(GateModelProgram):
     """Wrapper class for ``qiskit.QuantumCircuit`` objects"""
 
-    def __init__(self, program: "qiskit.QuantumCircuit"):
+    def __init__(self, program: qiskit.QuantumCircuit):
         super().__init__(program)
         if not isinstance(program, qiskit.QuantumCircuit):
             raise ProgramTypeError(
@@ -61,7 +60,7 @@ class QiskitCircuit(GateModelProgram):
         """Return the circuit depth (i.e., length of critical path)."""
         return self.program.depth()
 
-    def _unitary(self) -> "np.ndarray":
+    def _unitary(self) -> np.ndarray:
         """Calculate unitary of circuit. Removes measurement gates to
         perform calculation if necessary."""
         circuit = self.program.copy()

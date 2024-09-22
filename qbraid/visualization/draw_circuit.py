@@ -66,7 +66,7 @@ def circuit_drawer(
         if output == "svg":
             from cirq.contrib.svg import SVGCircuit
 
-            # coverage: ignore
+            # pragma: no cover
             return SVGCircuit(program)
         if output == "svg_source":
             from cirq.contrib.svg import circuit_to_svg
@@ -80,26 +80,22 @@ def circuit_drawer(
         if output == "latex":
             from pyquil.latex import display
 
-            # coverage: ignore
-            return display(program, **kwargs)
+            return display(program, **kwargs)  # pragma: no cover
         raise VisualizationError('The only valid option for pyquil are "text", "latex"')
 
     if package == "pytket":
         if output in (None, "jupyter"):
             from pytket.circuit.display import render_circuit_jupyter
 
-            # coverage: ignore
-            return render_circuit_jupyter(program)  # Render interactive display
+            return render_circuit_jupyter(program)  # pragma: no cover
         if output == "view_browser":
             from pytket.circuit.display import view_browser
 
-            # coverage: ignore
-            return view_browser(program, **kwargs)
+            return view_browser(program, **kwargs)  # pragma: no cover
         if output == "html":
             from pytket.circuit.display import render_circuit_as_html
 
-            # coverage: ignore
-            return render_circuit_as_html(program, **kwargs)
+            return render_circuit_as_html(program, **kwargs)  # pragma: no cover
         raise VisualizationError(
             'The only valid option for pytket are "jupyter", "view_browser", "html"'
         )
@@ -108,7 +104,6 @@ def circuit_drawer(
         return qasm3_drawer(program)
 
     if package == "qasm2":
-        # coverage: ignore
         if "cirq" in QPROGRAM_ALIASES:
             program = transpile(program, "cirq")
         elif "qiskit" in QPROGRAM_ALIASES:

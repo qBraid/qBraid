@@ -12,6 +12,8 @@
 Module defining BraketDeviceWrapper Class
 
 """
+from __future__ import annotations
+
 from typing import TYPE_CHECKING, Optional, Union
 
 from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
@@ -20,7 +22,7 @@ from braket.circuits import Circuit
 
 from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY, load_program
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import DeviceActionType, DeviceStatus
+from qbraid.runtime.enums import DeviceStatus, ExperimentType
 from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
 from qbraid.transpiler import transpile
 
@@ -31,7 +33,7 @@ if TYPE_CHECKING:
     import braket.aws
 
     import qbraid.runtime
-    import qbraid.runtime.braket
+    import qbraid.runtime.aws
     import qbraid.transpiler
 
 
@@ -40,8 +42,8 @@ class BraketDevice(QuantumDevice):
 
     def __init__(
         self,
-        profile: "qbraid.runtime.TargetProfile",
-        session: "Optional[braket.aws.AwsSession]" = None,
+        profile: qbraid.runtime.TargetProfile,
+        session: Optional[braket.aws.AwsSession] = None,
     ):
         """Create a BraketDevice."""
         super().__init__(profile=profile)
@@ -57,7 +59,7 @@ class BraketDevice(QuantumDevice):
         """Official string representation of QuantumDevice object."""
         return f"{self.__class__.__name__}('{self._provider_name} {self.name}')"
 
-    def status(self) -> "qbraid.runtime.DeviceStatus":
+    def status(self) -> qbraid.runtime.DeviceStatus:
         """Return the status of this Device."""
         if self._device.status == "ONLINE":
             if self._device.is_available:
@@ -98,16 +100,16 @@ class BraketDevice(QuantumDevice):
         program = run_input
 
         provider = (self.profile.provider_name or "").upper()
-        action_type = self.profile.action_type
+        experiment_type = self.profile.experiment_type
 
-        if action_type == DeviceActionType.OPENQASM and not isinstance(program, Circuit):
-            raise DeviceProgramTypeMismatchError(program, str(Circuit), action_type)
+        if experiment_type == ExperimentType.GATE_MODEL and not isinstance(program, Circuit):
+            raise DeviceProgramTypeMismatchError(program, str(Circuit), experiment_type)
 
-        if action_type == DeviceActionType.AHS and not isinstance(
+        if experiment_type == ExperimentType.AHS and not isinstance(
             program, AnalogHamiltonianSimulation
         ):
             raise DeviceProgramTypeMismatchError(
-                program, str(AnalogHamiltonianSimulation), action_type
+                program, str(AnalogHamiltonianSimulation), experiment_type
             )
 
         if provider == "IONQ":

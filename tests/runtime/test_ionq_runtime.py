@@ -16,13 +16,12 @@ Unit tests for IonQProvider class
 """
 from unittest.mock import Mock, patch
 
-import numpy as np
 import pytest
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
-from qbraid.runtime import TargetProfile
+from qbraid.runtime import GateModelResultData, Result, TargetProfile
 from qbraid.runtime.enums import DeviceStatus, JobStatus
-from qbraid.runtime.ionq import IonQDevice, IonQJob, IonQJobResult, IonQProvider, IonQSession
+from qbraid.runtime.ionq import IonQDevice, IonQJob, IonQProvider, IonQSession
 from qbraid.runtime.ionq.job import IonQJobError
 from qbraid.runtime.ionq.provider import SUPPORTED_GATES
 
@@ -246,8 +245,10 @@ def test_ionq_device_run_submit_job(mock_post, mock_get, circuit):
     assert job_metadata["status"] == JobStatus.COMPLETED
 
     res = job.result()
-    assert isinstance(res, IonQJobResult)
-    np.testing.assert_array_equal(res.measurements(), np.array([[0, 0], [0, 1]]))
+    assert isinstance(res, Result)
+    assert isinstance(res.data, GateModelResultData)
+    assert res.data.get_counts() == {"00": 1, "01": 1}
+    assert res.data.measurements is None
 
 
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
@@ -324,3 +325,36 @@ def test_ionq_submit_fail():
 
         with pytest.raises(ValueError):
             device.run(circuit, shots=2)
+
+
+@pytest.mark.parametrize("result", [{"probabilities": {"0": 0.5, "1": 0.5}}, {"shots": 100}])
+def test_get_counts_raises_value_error_for_missing_data(result):
+    """Test that _get_counts raises a ValueError if shots or probabilities are missing."""
+    with pytest.raises(ValueError) as exc_info:
+        IonQJob._get_counts(result)
+    assert "Missing shots or probabilities in result data." in str(exc_info.value)
+
+
+@pytest.fixture
+def mock_ionq_provider():
+    """Return a mock IonQProvider instance."""
+    return IonQProvider(api_key="mock_api_key")
+
+
+@patch("builtins.hash", autospec=True)
+def test_hash_method_creates_and_returns_hash(mock_hash, mock_ionq_provider):
+    """Test that the __hash__ method creates and returns a hash."""
+    mock_hash.return_value = 7777
+    provider_instance = mock_ionq_provider
+    result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
+    mock_hash.assert_called_once_with(("mock_api_key", "https://api.ionq.co/v0.3"))
+    assert result == 7777
+    assert provider_instance._hash == 7777
+
+
+def test_hash_method_returns_existing_hash(mock_ionq_provider):
+    """Test that the __hash__ method returns an existing hash."""
+    provider_instance = mock_ionq_provider
+    provider_instance._hash = 1234
+    result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
+    assert result == 1234

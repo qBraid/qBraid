@@ -12,8 +12,9 @@
 Module defining BraketQuantumTask Class
 
 """
-import logging
-from typing import Optional, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
 
 from braket.aws import AwsQuantumTask
 from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
@@ -21,14 +22,19 @@ from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
 )
 from braket.tasks.gate_model_quantum_task_result import GateModelQuantumTaskResult
 
+from qbraid._logging import logger
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
+from qbraid.runtime.result import AhsResultData, GateModelResultData, Result
 
-from .result import BraketAhsJobResult, BraketGateModelJobResult
+from .result_builder import BraketAhsResultBuilder, BraketGateModelResultBuilder
 from .tracker import get_quantum_task_cost
 
-logger = logging.getLogger(__name__)
+if TYPE_CHECKING:
+    from decimal import Decimal
+
+    from braket.aws import AwsSession
 
 AWS_TASK_STATUS_MAP = {
     "CREATED": JobStatus.INITIALIZING,
@@ -76,24 +82,35 @@ class BraketQuantumTask(QuantumJob):
                 "Queue visibility is only available for amazon-braket-sdk>=1.56.0"
             ) from err
 
-    def result(self) -> Union[BraketGateModelJobResult, BraketAhsJobResult]:
-        """
-        Return the results of the job. Raises a RuntimeError if the job is not in a terminal state.
-        """
+    def result(self) -> Result:
+        """Return the results of the job."""
+
         if not self.is_terminal_state():
             logger.info("Result will be available when the job has reached a final state.")
 
-        result = self._task.result()
+        bk_result = self._task.result()
+        metadata = self._task.metadata()
+        success = metadata["status"] == "COMPLETED"
+        device_id = metadata["deviceArn"]
+        job_id = metadata["quantumTaskArn"]
 
-        result_class_mapping = {
-            GateModelQuantumTaskResult: BraketGateModelJobResult,
-            AnalogHamiltonianSimulationQuantumTaskResult: BraketAhsJobResult,
+        result_mapping = {
+            GateModelQuantumTaskResult: (BraketGateModelResultBuilder, GateModelResultData),
+            AnalogHamiltonianSimulationQuantumTaskResult: (BraketAhsResultBuilder, AhsResultData),
         }
-        result_class = type(result)
-        if result_class in result_class_mapping:
-            return result_class_mapping[result_class](result)
 
-        raise ValueError(f"Unsupported result type: {result_class.__name__}")
+        builder_class, data_class = result_mapping.get(type(bk_result), (None, None))
+
+        if not builder_class or not data_class:
+            raise ValueError(f"Unsupported result type: {type(bk_result).__name__}")
+
+        result_data = {
+            "measurement_counts": builder_class(bk_result).get_counts() if success else None,
+            "measurements": builder_class(bk_result).measurements() if success else None,
+        }
+
+        data = data_class(**result_data)
+        return Result(device_id=device_id, job_id=job_id, success=success, data=data, **metadata)
 
     def cancel(self) -> None:
         """Cancel the quantum task."""
@@ -107,7 +124,12 @@ class BraketQuantumTask(QuantumJob):
         except RuntimeError:
             task._aws_session.cancel_quantum_task(task.arn)
 
+    @staticmethod
+    def _get_cost(task_arn: str, aws_session: Optional[AwsSession] = None) -> Decimal:
+        """Return the cost of the quantum task."""
+        return get_quantum_task_cost(task_arn, aws_session=aws_session)
+
     def get_cost(self) -> float:
         """Return the cost of the job."""
-        decimal_cost = get_quantum_task_cost(self._task.arn)
+        decimal_cost = self._get_cost(self._task.arn)
         return float(decimal_cost)

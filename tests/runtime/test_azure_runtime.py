@@ -27,21 +27,20 @@ from azure.quantum.target.target import Target
 
 from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
 from qbraid.runtime import (
-    DeviceActionType,
     DeviceStatus,
+    ExperimentType,
+    GateModelResultData,
     JobStateError,
     JobStatus,
     ResourceNotFoundError,
+    Result,
     TargetProfile,
 )
-from qbraid.runtime.azure import (
-    AzureQuantumDevice,
-    AzureQuantumJob,
-    AzureQuantumProvider,
-    AzureQuantumResult,
-    AzureResultBuilder,
-)
+from qbraid.runtime.azure import AzureQuantumDevice, AzureQuantumJob, AzureQuantumProvider
 from qbraid.runtime.azure.io_format import InputDataFormat, OutputDataFormat
+from qbraid.runtime.azure.result_builder import AzureGateModelResultBuilder
+
+pytestmark = pytest.mark.filterwarnings("ignore:Unrecognized input data format:UserWarning")
 
 
 @pytest.fixture
@@ -94,7 +93,7 @@ def azure_device(mock_workspace, mock_target):
         capability="test_capability",
         input_data_format="test_input",
         output_data_format="test_output",
-        action_type=DeviceActionType.OPENQASM,
+        experiment_type=ExperimentType.GATE_MODEL,
     )
     mock_workspace.get_targets.return_value = mock_target
     return AzureQuantumDevice(profile, mock_workspace)
@@ -129,26 +128,33 @@ def mock_msft_v1_job_data(mock_job_id) -> dict[str, str]:
 
 
 @pytest.fixture
+def mock_ionq_job_data(mock_job_id) -> dict[str, str]:
+    """Return dictionary data for a Rigetti job with Microsoft result format V1."""
+    return {
+        "job_id": mock_job_id,
+        "job_name": "ionq-job",
+        "target": "ionq.simulator",
+        "output_data_format": "ionq.quantum-results.v1",
+    }
+
+
+@pytest.fixture
 def estimator_result_data(mock_estimator_job_data: dict[str, str]) -> dict[str, Any]:
     """Return a dictionary with the data for a MicrosoftEstimatorResult."""
     return {
         "success": True,
         "error_data": None,
-        "results": [
-            {
-                "data": {
-                    "status": "success",
-                    "jobParams": {},
-                    "physicalCounts": {},
-                    "physicalCountsFormatted": {},
-                    "logicalQubit": {},
-                    "tfactory": {},
-                    "errorBudget": {},
-                    "logicalCounts": {},
-                    "reportData": {"groups": [], "assumptions": []},
-                }
-            }
-        ],
+        "data": {
+            "status": "success",
+            "jobParams": {},
+            "physicalCounts": {},
+            "physicalCountsFormatted": {},
+            "logicalQubit": {},
+            "tfactory": {},
+            "errorBudget": {},
+            "logicalCounts": {},
+            "reportData": {"groups": [], "assumptions": []},
+        },
         **mock_estimator_job_data,
     }
 
@@ -239,16 +245,17 @@ def mock_azure_job(
 
 
 @pytest.fixture
-def azure_result_builder(mock_azure_job):
-    """Return an AzureResultBuilder instance with a mock AzureQuantumJob."""
-    return AzureResultBuilder(mock_azure_job)
+def mock_azure_ionq_job(mock_ionq_job_data: dict[str, str]) -> Mock:
+    """Return a mock azure.quantum.Job instance."""
+    return create_mock_azure_job(
+        **mock_ionq_job_data, status="Succeeded", result_data={"histogram": {"0": 0.5, "7": 0.5}}
+    )
 
 
 @pytest.fixture
-def azure_result():
-    """Return an AzureQuantumResult instance."""
-    result_data = {"meas": ["00", "01", "00", "10", "00", "01"], "other_data": [1, 2, 3]}
-    return AzureQuantumResult(result_data)
+def azure_result_builder(mock_azure_job):
+    """Return an AzureGateModelResultBuilder instance with a mock AzureQuantumJob."""
+    return AzureGateModelResultBuilder(mock_azure_job)
 
 
 def test_azure_provider_init_with_credential():
@@ -285,7 +292,7 @@ def test_build_profile(azure_provider, mock_target):
     profile = azure_provider._build_profile(mock_target)
 
     assert isinstance(profile, TargetProfile)
-    assert profile.action_type.value == "qbraid.programs.circuits"
+    assert profile.experiment_type.value == "gate_model"
 
 
 def test_build_profile_invalid(azure_provider, mock_invalid_target):
@@ -516,34 +523,10 @@ def test_azure_job_cancel_terminal_state_raises():
 
 
 @pytest.fixture
-def mock_result_builder(mock_job_id) -> AzureResultBuilder:
+def mock_result_builder(mock_job_id) -> AzureGateModelResultBuilder:
     """Create a mock Azure result builder."""
     job = Mock(id=mock_job_id)
-    return AzureResultBuilder(job)
-
-
-@pytest.fixture
-def mock_result(mock_job_id) -> AzureQuantumResult:
-    """Create a mock result data."""
-    data = {
-        "results": [
-            {
-                "data": {
-                    "counts": {"000": 50, "111": 50},
-                    "probabilities": {"000": 0.5, "111": 0.5},
-                },
-                "success": True,
-                "header": {},
-                "shots": 100,
-            }
-        ],
-        "job_id": mock_job_id,
-        "target": "ionq.simulator",
-        "job_name": "ionq-job",
-        "success": True,
-        "error_data": None,
-    }
-    return AzureQuantumResult(data)
+    return AzureGateModelResultBuilder(job)
 
 
 class DowloadDataMock:
@@ -585,7 +568,7 @@ def test_job_for_microsoft_quantum_results_v1_success(mock_msft_v1_job_data):
     results_as_json_str = '{"Histogram": ["[0]", 0.50, "[1]", 0.50]}'
     job = mock_job(**mock_msft_v1_job_data, results_as_json_str=results_as_json_str)
 
-    builder = AzureResultBuilder(job)
+    builder = AzureGateModelResultBuilder(job)
     assert isinstance(builder.job, Job)
     assert builder.job == job
     assert builder.from_simulator is True
@@ -602,18 +585,19 @@ def test_make_estimator_result_with_failure():
         },
     }
     with pytest.raises(RuntimeError) as exc_info:
-        AzureResultBuilder.make_estimator_result(data)
+        AzureQuantumJob._make_estimator_result(data)
     assert (
         "Cannot retrieve results as job execution failed (ResourceUnavailable: "
         "The resource is currently unavailable.)" in str(exc_info.value)
     )
 
 
+@pytest.mark.skip(reason="Not relevant for the current implementation")
 def test_make_estimator_result_with_incorrect_results_length():
     """Test making an estimator result with incorrect results length."""
     data = {"success": True, "results": [{"data": 42}, {"data": 43}]}
     with pytest.raises(ValueError) as exc_info:
-        AzureResultBuilder.make_estimator_result(data)
+        AzureQuantumJob._make_estimator_result(data)
     assert "Expected resource estimator results to be of length 1" in str(exc_info.value)
 
 
@@ -625,7 +609,7 @@ def test_get_job_result(mock_estimator_job):
 
 def test_make_estimator_result_successful(estimator_result_data):
     """Test making an estimator result with successful job."""
-    result = AzureResultBuilder.make_estimator_result(estimator_result_data)
+    result = AzureQuantumJob._make_estimator_result(estimator_result_data)
     assert isinstance(result, MicrosoftEstimatorResult)
     assert result["status"] == "success"
 
@@ -634,7 +618,9 @@ def test_make_estimator_result_successful(estimator_result_data):
     "probabilities",
     [{"00": 0.5, "11": 0.5}, {"00": 0.4999, "11": 0.5001}, {"00": 0.4000, "11": 0.6001}],
 )
-def test_draw_random_sample_probabilities(mock_result_builder: AzureResultBuilder, probabilities):
+def test_draw_random_sample_probabilities(
+    mock_result_builder: AzureGateModelResultBuilder, probabilities
+):
     """Test that the random sample handles both normalized and unnormalized probabilities."""
     shots = 1000
     sample = mock_result_builder._draw_random_sample(probabilities, shots)
@@ -644,7 +630,7 @@ def test_draw_random_sample_probabilities(mock_result_builder: AzureResultBuilde
 
 @pytest.mark.parametrize("seed, should_match", [(42, True), (None, False)])
 def test_draw_random_sample_consistency(
-    mock_result_builder: AzureResultBuilder, seed, should_match
+    mock_result_builder: AzureGateModelResultBuilder, seed, should_match
 ):
     """Test drawing random samples with and without a specific seed."""
     shots = 10
@@ -660,7 +646,9 @@ def test_draw_random_sample_consistency(
         pytest.skip("Test is probabilistic")
 
 
-def test_draw_random_sample_with_invalid_probabilities(mock_result_builder: AzureResultBuilder):
+def test_draw_random_sample_with_invalid_probabilities(
+    mock_result_builder: AzureGateModelResultBuilder,
+):
     """Test the method raises an error when probabilities don't sum close to one."""
     probabilities = {"00": 0.3, "11": 0.4}
     shots = 1000
@@ -682,60 +670,89 @@ def test_draw_random_sample_with_invalid_probabilities(mock_result_builder: Azur
 )
 def test_qir_to_qbraid_bitstring(input_data, expected_output):
     """Test various inputs for _qir_to_qbraid_bitstring method."""
-    assert AzureResultBuilder._qir_to_qbraid_bitstring(input_data) == expected_output
+    assert AzureGateModelResultBuilder._qir_to_qbraid_bitstring(input_data) == expected_output
 
 
-def test_azure_quantum_result(mock_result: AzureQuantumResult):
-    """Test Azure Quantum Job result methods."""
-    measurements = mock_result.measurements()
-    raw_counts = mock_result.get_counts()
-    formatted_counts = mock_result.measurement_counts()
-    assert measurements.shape == (100, 3)
+@pytest.fixture
+def mock_builder_ionq_results(mock_job_id) -> dict[str, Any]:
+    """Create a mock result data."""
+    data = {
+        "results": [
+            {
+                "data": {
+                    "counts": {"000": 50, "111": 50},
+                    "probabilities": {"000": 0.5, "111": 0.5},
+                },
+                "success": True,
+                "header": {},
+                "shots": 100,
+            }
+        ],
+        "job_id": mock_job_id,
+        "target": "ionq.simulator",
+        "job_name": "ionq-job",
+        "success": True,
+        "error_data": None,
+    }
+    return data
+
+
+def test_azure_quantum_result_counts(
+    azure_result_builder: AzureGateModelResultBuilder, mock_builder_ionq_results: dict[str, Any]
+):
+    """Test Azure Quantum Job builder get counts methods."""
+    with patch.object(
+        AzureGateModelResultBuilder,
+        "get_results",
+        return_value=mock_builder_ionq_results["results"],
+    ):
+        raw_counts = azure_result_builder.get_counts()
+        formatted_counts = azure_result_builder.normalize_counts(raw_counts)
     assert raw_counts == formatted_counts == {"000": 50, "111": 50}
 
 
 def test_job_property(azure_result_builder, mock_azure_job):
-    """Test the job property of an AzureResultBuilder."""
+    """Test the job property of an AzureGateModelResultBuilder."""
     assert azure_result_builder.job == mock_azure_job
 
 
 def test_from_simulator_true(azure_result_builder, mock_azure_job):
-    """Test the from_simulator property of an AzureResultBuilder."""
+    """Test the from_simulator property of an AzureGateModelResultBuilder."""
     mock_azure_job.details.target = "mock.simulator"
     assert azure_result_builder.from_simulator is True
 
 
 def test_from_simulator_false(azure_result_builder, mock_azure_job):
-    """Test the from_simulator property of an AzureResultBuilder."""
+    """Test the from_simulator property of an AzureGateModelResultBuilder."""
     mock_azure_job.details.target = "mock.qpu"
     assert azure_result_builder.from_simulator is False
 
 
 def test_shots_count(azure_result_builder):
-    """Test the shots count method of an AzureResultBuilder."""
+    """Test the shots count method of an AzureGateModelResultBuilder."""
     assert azure_result_builder._shots_count() == 1000
 
 
-def test_make_estimator_result(azure_result_builder):
+def test_make_estimator_result():
     """Test making an estimator result from an AzureQuantumJob."""
-    mock_data = {"success": True, "results": [{"data": {"mock_data_key": "mock_data_value"}}]}
-    result = azure_result_builder.make_estimator_result(mock_data)
+    mock_data = {"success": True, "data": {"mock_data_key": "mock_data_value"}}
+    result = AzureQuantumJob._make_estimator_result(mock_data)
     assert isinstance(result, MicrosoftEstimatorResult)
     assert result.data()["mock_data_key"] == "mock_data_value"
 
 
-def test_make_estimator_result_failure(azure_result_builder):
+def test_make_estimator_result_failure():
     """Test making an estimator result from a failed AzureQuantumJob."""
     mock_data = {"success": False, "error_data": {"code": "MockError", "message": "Job failed"}}
     with pytest.raises(RuntimeError, match="Cannot retrieve results as job execution failed"):
-        azure_result_builder.make_estimator_result(mock_data)
+        AzureQuantumJob._make_estimator_result(mock_data)
 
 
 @pytest.fixture
 def mock_qir_to_qbraid_bitstring():
     """Return a mock for the qir_to_qbraid_bitstring method."""
     with patch(
-        "qbraid.runtime.azure.result_builder.AzureResultBuilder._qir_to_qbraid_bitstring"
+        "qbraid.runtime.azure.result_builder.AzureGateModelResultBuilder._qir_to_qbraid_bitstring"
     ) as mock:
         yield mock
 
@@ -789,7 +806,7 @@ def test_format_unknown_results(azure_result_builder, mock_azure_job):
     assert result == {"mock_key": "mock_value"}
 
 
-@patch("qbraid.runtime.azure.result_builder.AzureResultBuilder._qir_to_qbraid_bitstring")
+@patch("qbraid.runtime.azure.result_builder.AzureGateModelResultBuilder._qir_to_qbraid_bitstring")
 def test_format_quantinuum_results(
     mock_qir_to_qbraid_bitstring, azure_result_builder, mock_azure_job
 ):
@@ -811,7 +828,7 @@ def test_format_ionq_results():
     mock_job.details.input_params = {"count": 100}
     mock_job.get_results.return_value = {"histogram": {"0": 0.5, "7": 0.5}}
 
-    builder = AzureResultBuilder(azure_job=mock_job)
+    builder = AzureGateModelResultBuilder(azure_job=mock_job)
     expected_result = {
         "counts": {"000": 50, "111": 50},
         "probabilities": {"000": 0.5, "111": 0.5},
@@ -824,7 +841,7 @@ def test_format_ionq_results_raises_for_no_histogram_data():
     mock_job = Mock(spec=Job)
     mock_job.details.input_params = {"count": 100}
     mock_job.get_results.return_value = {}
-    builder = AzureResultBuilder(azure_job=mock_job)
+    builder = AzureGateModelResultBuilder(azure_job=mock_job)
     with pytest.raises(ValueError) as exc_info:
         builder._format_ionq_results()
     assert "Histogram missing from IonQ Job results" in str(exc_info.value)
@@ -847,7 +864,7 @@ def test_get_entry_point_names(input_params, expected_result):
     """Test getting entry point names from input params."""
     mock_job = Mock(spec=Job)
     mock_job.details.input_params = input_params
-    builder = AzureResultBuilder(azure_job=mock_job)
+    builder = AzureGateModelResultBuilder(azure_job=mock_job)
     result = builder._get_entry_point_names()
     assert result == expected_result
 
@@ -856,7 +873,7 @@ def test_get_entry_point_names_with_missing_entry_point():
     """Test getting entry point names from input params with missing 'entryPoint' field."""
     mock_job = Mock(spec=Job)
     mock_job.details.input_params = {"items": [{"noEntryPointField": "data"}]}
-    builder = AzureResultBuilder(azure_job=mock_job)
+    builder = AzureGateModelResultBuilder(azure_job=mock_job)
     with pytest.raises(
         ValueError, match="Entry point input_param is missing an 'entryPoint' field"
     ):
@@ -867,7 +884,7 @@ def test_get_entry_point_names_with_no_items_key():
     """Test getting entry point names from input params with missing 'items' key."""
     mock_job = Mock(spec=Job)
     mock_job.details.input_params = {}
-    builder = AzureResultBuilder(azure_job=mock_job)
+    builder = AzureGateModelResultBuilder(azure_job=mock_job)
     with pytest.raises(KeyError):
         builder._get_entry_point_names()
 
@@ -925,7 +942,7 @@ def test_translate_microsoft_v2_result_raises_value_error(results, err_msg):
     when job result does not contain the required field."""
     mock_job = Mock(spec=Job)
     mock_job.get_results.return_value = results
-    builder = AzureResultBuilder(azure_job=mock_job)
+    builder = AzureGateModelResultBuilder(azure_job=mock_job)
     with pytest.raises(ValueError) as exc_info:
         builder._translate_microsoft_v2_results()
         assert err_msg in str(exc_info.value)
@@ -976,7 +993,7 @@ def test_format_microsoft_v2_results_no_success():
     mock_job = Mock(spec=Job)
     mock_job.details.status = "Failed"
     mock_job.details.output_data_format = OutputDataFormat.MICROSOFT_V2.value
-    builder = AzureResultBuilder(azure_job=mock_job)
+    builder = AzureGateModelResultBuilder(azure_job=mock_job)
     assert builder._format_microsoft_v2_results() == [
         {"data": {}, "success": False, "header": {}, "shots": 0}
     ]
@@ -993,9 +1010,10 @@ def test_result_builder_failed_job(mock_job_id):
     mock_job.details.target = "rigetti.sim.qvm"
     mock_job.details.name = "azure-quantum-job"
     mock_job.details.id = mock_job_id
-    builder = AzureResultBuilder(azure_job=mock_job)
-    result = builder.result()
-    assert isinstance(result, AzureQuantumResult)
+    builder = AzureGateModelResultBuilder(azure_job=mock_job)
+    results = builder.get_results()
+    assert isinstance(results, list)
+    assert all(isinstance(result, dict) for result in results)
 
 
 @pytest.mark.parametrize(
@@ -1036,3 +1054,121 @@ def test_build_result_from_output_format(azure_result_builder, mock_azure_job, o
         azure_result_builder._format_rigetti_results.assert_called_once()
     else:
         pytest.fail(f"Unexpected output data format: {output_data_format}")
+
+
+def test_builder_get_counts_single_result_success(mock_result_builder):
+    """Test getting counts from a single successful result."""
+    mock_result_builder.get_results = Mock(
+        return_value=[{"success": True, "data": {"counts": {"00": 486, "11": 514}}}]
+    )
+
+    counts = mock_result_builder.get_counts()
+
+    assert counts == {"00": 486, "11": 514}
+
+
+def test_builder_get_counts_single_result_failure(mock_result_builder):
+    """Test getting counts from a single failed result."""
+    mock_result_builder.get_results = Mock(return_value=[{"success": False, "data": {}}])
+
+    counts = mock_result_builder.get_counts()
+
+    assert counts == {}
+
+
+def test_builder_get_counts_multiple_results_mixed(mock_result_builder):
+    """Test getting counts from multiple results with mixed success."""
+    mock_result_builder.get_results = Mock(
+        return_value=[
+            {"success": True, "data": {"counts": {"00": 486, "11": 514}}},
+            {"success": False, "data": {}},
+            {"success": True, "data": {"counts": {"00": 200, "11": 800}}},
+        ]
+    )
+
+    counts = mock_result_builder.get_counts()
+
+    assert counts == [{"00": 486, "11": 514}, {}, {"00": 200, "11": 800}]
+
+
+def test_builder_get_counts_multiple_results_all_failure(mock_result_builder):
+    """Test getting counts from multiple results with all failures."""
+    mock_result_builder.get_results = Mock(
+        return_value=[
+            {"success": False, "data": {"hello"}},
+            {"success": False, "data": {"counts": [1, 2, 3]}},
+        ]
+    )
+
+    counts = mock_result_builder.get_counts()
+
+    assert counts == [{}, {}]
+
+
+def test_builder_format_unknown_results(azure_result_builder: AzureGateModelResultBuilder):
+    """Test using the result builder to format results of an unrecognized gate model format."""
+    results = azure_result_builder._format_results()
+    assert results == {
+        "data": {
+            "success": True,
+            "error_data": None,
+            "data": {
+                "status": "success",
+                "jobParams": {},
+                "physicalCounts": {},
+                "physicalCountsFormatted": {},
+                "logicalQubit": {},
+                "tfactory": {},
+                "errorBudget": {},
+                "logicalCounts": {},
+                "reportData": {"groups": [], "assumptions": []},
+            },
+            "job_id": "123-456-798",
+            "job_name": "azure-quantum-job",
+            "target": "microsoft.estimator",
+            "output_data_format": "microsoft.resource-estimates.v1",
+        },
+        "success": True,
+        "header": {},
+        "shots": 1000,
+    }
+
+
+@pytest.fixture
+def mock_workspace_hashing():
+    """Create a mock workspace for testing hashing."""
+    workspace = Mock()
+    workspace.credential = "mock_credential"
+    workspace.user_agent = "mock_user_agent"
+    return workspace
+
+
+@patch("builtins.hash", autospec=True)
+def test_hash_method_creates_and_returns_hash(mock_hash, mock_workspace_hashing, azure_provider):
+    """Test that the hash method creates and returns a hash."""
+    mock_hash.return_value = 9999
+    provider_instance = azure_provider
+    provider_instance._workspace = mock_workspace_hashing
+    result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
+    mock_hash.assert_called_once_with(("mock_credential", "mock_user_agent"))
+    assert result == 9999
+    assert provider_instance._hash == 9999
+
+
+def test_hash_method_returns_existing_hash(mock_workspace_hashing, azure_provider):
+    """Test that the hash method returns an existing hash."""
+    provider_instance = azure_provider
+    provider_instance._workspace = mock_workspace_hashing
+    provider_instance._hash = 12345
+    result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
+    assert result == 12345
+
+
+def test_get_gate_model_job_result(mock_job_id, mock_workspace, mock_azure_ionq_job):
+    """Test getting a gate model job result."""
+    job = AzureQuantumJob(mock_job_id, workspace=mock_workspace)
+    job._job = mock_azure_ionq_job
+    result = job.result()
+    assert isinstance(result, Result)
+    assert isinstance(result.data, GateModelResultData)
+    assert result.success is True

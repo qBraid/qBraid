@@ -20,11 +20,11 @@ from typing import Any, Callable
 
 
 @dataclass
-class Options:
+class RuntimeOptions:
     """
     Manages qBraid-specific options with controlled defaults and dynamic fields.
 
-    The `Options` class allows you to initialize options with default fields,
+    The `RuntimeOptions` class allows you to initialize options with default fields,
     add dynamic fields, and validate the values of specific fields using custom
     validators. It also provides dictionary-like access to option fields.
 
@@ -32,18 +32,19 @@ class Options:
 
     .. code-block:: python
 
-        >>> from qbraid.runtime.options import Options
+        >>> from qbraid.runtime.options import RuntimeOptions
 
         # Initialize options with default and custom fields
-        >>> options = Options(check=True, custom_field=42)
-        >>> print(options)  # Output: Options(check=True, custom_field=42)
+        >>> options = RuntimeOptions(check=True, custom_field=42)
 
         # Access option fields like dictionary
-        >>> options["check"]  # Output: True
+        >>> options["check"]
+        True
 
         # Add dynamic fields
         >>> options["new_field"] = "hello"
-        >>> print(options)  # Output: Options(check=True, custom_field=42, new_field='hello')
+        >>> print(options)
+        RuntimeOptions(check=True, custom_field=42, new_field='hello')
 
         # Set a validator for a field
         >>> options.set_validator("check", lambda x: isinstance(x, bool))
@@ -54,7 +55,8 @@ class Options:
 
         # Make a shallow copy of the options
         >>> options_copy = copy.copy(options)
-        >>> print(options_copy)  # Output: Options(check=False, custom_field=42, new_field='hello')
+        >>> print(options_copy)
+        RuntimeOptions(check=False, custom_field=42, new_field='hello')
 
     Args:
         kwargs: Keyword arguments representing the initial options to set.
@@ -71,7 +73,7 @@ class Options:
     )
 
     def __init__(self, **kwargs: Any):
-        reserved_keywords = {"set_validator", "validate", "update_options", "get"}
+        reserved_keywords = {"set_validator", "validate_option", "update_options", "get"}
 
         for key in kwargs:
             if key in reserved_keywords:
@@ -89,7 +91,7 @@ class Options:
             raise KeyError(f"Field '{option_name}' is not present in options.")
         self._validators[option_name] = validator
 
-    def validate(self, option_name: str, value: Any):
+    def validate_option(self, option_name: str, value: Any):
         """Validates a field's value using the registered validator, if any."""
         validator = self._validators.get(option_name)
         if validator and not validator(value):
@@ -99,7 +101,7 @@ class Options:
         """Updates multiple options with validation."""
         for option_name, value in new_options.items():
             if hasattr(self, option_name):
-                self.validate(option_name, value)
+                self.validate_option(option_name, value)
                 setattr(self, option_name, value)
             else:
                 self._fields[option_name] = value
@@ -144,7 +146,7 @@ class Options:
         elif name in self._fields or name in self._default_fields:
             if self._fields.get(name) != value:
                 if name in self._validators:
-                    self.validate(name, value)
+                    self.validate_option(name, value)
                 self._fields[name] = value
         else:
             self.update_options(**{name: value})
@@ -165,18 +167,18 @@ class Options:
     def __repr__(self):
         """Returns a string representation of the options."""
         options_str = ", ".join(f"{k}={v!r}" for k, v in self._fields.items())
-        return f"Options({options_str})"
+        return f"RuntimeOptions({options_str})"
 
     def __copy__(self):
-        """Create a shallow copy of the Options object."""
+        """Create a shallow copy of the RuntimeOptions object."""
         cls = self.__class__
         new_instance = cls(**self._fields)
         new_instance._validators = copy.copy(self._validators)
         return new_instance
 
     def __eq__(self, other: Any) -> bool:
-        """Custom equality check for Options objects."""
-        if not isinstance(other, Options):
+        """Custom equality check for RuntimeOptions objects."""
+        if not isinstance(other, RuntimeOptions):
             return False
         if self._fields != other._fields:
             return False

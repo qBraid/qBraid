@@ -20,29 +20,41 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-	QbraidSession
-	QbraidProvider
-	QbraidDevice
-	QbraidJob
-	QbraidJobResult
-	ExperimentResult
-	QirRunner
+    Session
+    QbraidSession
+    QbraidClient
+    QbraidProvider
+    QbraidDevice
+    QbraidJob
+    RuntimeJobModel
+    QirRunner
 
 """
-from qbraid_core import QbraidSession
+from qbraid_core import QbraidClient, QbraidSession, Session
 from qbraid_core.services.quantum.runner import Simulator as QirRunner
 
 from .device import QbraidDevice
 from .job import QbraidJob
 from .provider import QbraidProvider
-from .result import ExperimentResult, QbraidJobResult
+from .schemas import (
+    QbraidQirSimulationMetadata,
+    QbraidSchemaBase,
+    QbraidSchemaHeader,
+    RuntimeJobModel,
+    TimeStamps,
+)
 
 __all__ = [
+    "Session",
     "QbraidSession",
+    "QbraidClient",
     "QbraidProvider",
     "QbraidDevice",
     "QbraidJob",
-    "QbraidJobResult",
-    "ExperimentResult",
+    "RuntimeJobModel",
     "QirRunner",
+    "QbraidSchemaBase",
+    "QbraidSchemaHeader",
+    "QbraidQirSimulationMetadata",
+    "TimeStamps",
 ]

@@ -20,12 +20,13 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   plot_histogram
-   plot_distribution
-   plot_conversion_graph
-   circuit_drawer
-   qasm3_drawer
-   plot_atomic_register
+    plot_histogram
+    plot_distribution
+    plot_conversion_graph
+    circuit_drawer
+    qasm3_drawer
+    plot_atomic_register
+    animate_qpu_state
 
 Exceptions
 -----------
@@ -33,13 +34,14 @@ Exceptions
 .. autosummary::
    :toctree: ../stubs/
 
-   VisualizationError
+    VisualizationError
 
 """
 from .ahs import plot_atomic_register
 from .draw_circuit import circuit_drawer
 from .draw_qasm3 import qasm3_drawer
 from .exceptions import VisualizationError
+from .flair_animations import animate_qpu_state
 from .plot_conversions import plot_conversion_graph
 from .plot_counts import plot_distribution, plot_histogram
 
@@ -50,5 +52,6 @@ __all__ = [
     "circuit_drawer",
     "qasm3_drawer",
     "plot_atomic_register",
+    "animate_qpu_state",
     "VisualizationError",
 ]

@@ -9,25 +9,28 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module submitting and managing jobs through IBM and IBM backends.
+Mdule submiting and managing quantm tasks through AWS
+and Amazon Braket supported devices.
 
-.. currentmodule:: qbraid.runtime.qiskit
+.. currentmodule:: qbraid.runtime.aws
 
 Classes
---------
+---------
 
 .. autosummary::
    :toctree: ../stubs/
 
-	QiskitBackend
-	QiskitJob
-	QiskitRuntimeProvider
-	QiskitResult
+    BraketProvider
+    BraketDevice
+    BraketQuantumTask
 
 """
-from .device import QiskitBackend
-from .job import QiskitJob
-from .provider import QiskitRuntimeProvider
-from .result import QiskitResult
+from .device import BraketDevice
+from .job import BraketQuantumTask
+from .provider import BraketProvider
 
-__all__ = ["QiskitBackend", "QiskitJob", "QiskitRuntimeProvider", "QiskitResult"]
+__all__ = [
+    "BraketDevice",
+    "BraketProvider",
+    "BraketQuantumTask",
+]

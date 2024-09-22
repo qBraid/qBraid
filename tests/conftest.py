@@ -67,3 +67,9 @@ def pytest_collection_modifyitems(config, items):
         for item in items:
             if "remote" in item.keywords:
                 item.add_marker(skip_remote)
+
+
+@pytest.fixture(autouse=True)
+def disable_cache_for_tests(monkeypatch):
+    """Disable caching for all tests."""
+    monkeypatch.setenv("DISABLE_CACHE", "1")
