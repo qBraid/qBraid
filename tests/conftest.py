@@ -69,16 +69,7 @@ def pytest_collection_modifyitems(config, items):
                 item.add_marker(skip_remote)
 
 
-# @pytest.fixture(autouse=True)
-# def disable_cache_for_tests(monkeypatch):
-#     """Disable caching for all tests."""
-#     monkeypatch.setenv("DISABLE_CACHE", "1")
-
-# import pytest
-# from qbraid.runtime.native import QbraidProvider
-
-# @pytest.fixture(autouse=True)
-# def clear_provider_cache():
-#     """Automatically clear the cache for provider.get_devices after each test."""
-#     yield
-#     QbraidProvider.get_devices.cache_clear()
+@pytest.fixture(autouse=True)
+def disable_cache_for_tests(monkeypatch):
+    """Disable caching for all tests."""
+    monkeypatch.setenv("DISABLE_CACHE", "1")
