@@ -12,7 +12,9 @@
 Module defining BraketQuantumTask Class
 
 """
-from typing import Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Optional
 
 from braket.aws import AwsQuantumTask
 from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
@@ -28,6 +30,11 @@ from qbraid.runtime.result import AhsResultData, GateModelResultData, Result
 
 from .result_builder import BraketAhsResultBuilder, BraketGateModelResultBuilder
 from .tracker import get_quantum_task_cost
+
+if TYPE_CHECKING:
+    from decimal import Decimal
+
+    from braket.aws import AwsSession
 
 AWS_TASK_STATUS_MAP = {
     "CREATED": JobStatus.INITIALIZING,
@@ -117,7 +124,12 @@ class BraketQuantumTask(QuantumJob):
         except RuntimeError:
             task._aws_session.cancel_quantum_task(task.arn)
 
+    @staticmethod
+    def _get_cost(task_arn: str, aws_session: Optional[AwsSession] = None) -> Decimal:
+        """Return the cost of the quantum task."""
+        return get_quantum_task_cost(task_arn, aws_session=aws_session)
+
     def get_cost(self) -> float:
         """Return the cost of the job."""
-        decimal_cost = get_quantum_task_cost(self._task.arn)
+        decimal_cost = self._get_cost(self._task.arn)
         return float(decimal_cost)

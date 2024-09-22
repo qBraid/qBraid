@@ -138,7 +138,7 @@ class QbraidProvider(QuantumProvider):
             noise_models=noise_models,
         )
 
-    @cached_method
+    @cached_method(ttl=120)
     def get_devices(self, **kwargs) -> list[QbraidDevice]:
         """Return a list of devices matching the specified filtering."""
         query = kwargs or {}
@@ -152,7 +152,7 @@ class QbraidProvider(QuantumProvider):
         profiles = [self._build_runtime_profile(device_data) for device_data in device_data_lst]
         return [QbraidDevice(profile, client=self.client) for profile in profiles]
 
-    @cached_method
+    @cached_method(ttl=120)
     def get_device(self, device_id: str) -> QbraidDevice:
         """Return quantum device corresponding to the specified qBraid device ID.
 

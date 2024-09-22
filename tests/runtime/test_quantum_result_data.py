@@ -219,7 +219,7 @@ def test_get_probabilities_from_cache(gate_model_result_data):
     """Test that probabilities are retrieved from cache if present."""
     assert gate_model_result_data._cache["prob_dec_nz"] is None
     calculated_probs = gate_model_result_data.get_probabilities(decimal=True)
-    assert gate_model_result_data._cache["prob_bin_nz"] == calculated_probs
+    assert gate_model_result_data._cache["prob_dec_nz"] == calculated_probs
     mock_cached_probs = {}
     assert mock_cached_probs != calculated_probs
     gate_model_result_data._cache["prob_dec_nz"] = mock_cached_probs

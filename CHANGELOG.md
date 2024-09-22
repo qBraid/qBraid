@@ -147,7 +147,7 @@ print(result.data.measurements)  # List of AhsShotResult instances
 ### Added
 - Custom pytest decorator to mark remote tests ([#735](https://github.com/qBraid/qBraid/pull/735))
 - Attribute `simulator` of type `bool` to `qbraid.runtime.TargetProfile` to replace `qbraid.runtime.DeviceType` ([#735](https://github.com/qBraid/qBraid/pull/735))
-- Attribute `local` of type `bool` to `qbraid.runtime.qiskit.QiskitBackend.profile` to replace `qbraid.runtime.DeviceType` ([#735](https://github.com/qBraid/qBraid/pull/735))
+- Attribute `local` of type `bool` to `qbraid.runtime.ibm.QiskitBackend.profile` to replace `qbraid.runtime.DeviceType` ([#735](https://github.com/qBraid/qBraid/pull/735))
 - Method `qbraid.runtime.GateModelResultBuilder.counts_to_measurements` to abstract redundant code from subclasses ([#735](https://github.com/qBraid/qBraid/pull/735))
 
 ### Improved / Modified

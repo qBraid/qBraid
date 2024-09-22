@@ -8,8 +8,6 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint: skip-file
-
 """
 Mdule submiting and managing quantm tasks through AWS
 and Amazon Braket supported devices.
@@ -26,23 +24,13 @@ Classes
     BraketDevice
     BraketQuantumTask
 
-Functions
------------
-
-.. autosummary::
-   :toctree: ../stubs/
-
-    get_quantum_task_cost
-
 """
 from .device import BraketDevice
 from .job import BraketQuantumTask
 from .provider import BraketProvider
-from .tracker import get_quantum_task_cost
 
 __all__ = [
     "BraketDevice",
     "BraketProvider",
     "BraketQuantumTask",
-    "get_quantum_task_cost",
 ]

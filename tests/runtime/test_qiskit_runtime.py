@@ -40,8 +40,8 @@ from qbraid.runtime import (
     TargetProfile,
 )
 from qbraid.runtime.exceptions import QbraidRuntimeError
-from qbraid.runtime.qiskit import QiskitBackend, QiskitJob, QiskitRuntimeProvider
-from qbraid.runtime.qiskit.result_builder import QiskitGateModelResultBuilder
+from qbraid.runtime.ibm import QiskitBackend, QiskitJob, QiskitRuntimeProvider
+from qbraid.runtime.ibm.result_builder import QiskitGateModelResultBuilder
 
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
@@ -153,7 +153,7 @@ def fake_device(fake_service):
 
 def test_provider_initialize_service():
     """Test getting IBMQ provider using qiskit_ibm_provider package."""
-    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
+    with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_runtime_service:
         mock_runtime_service.return_value = Mock(spec=QiskitRuntimeService)
         provider = QiskitRuntimeProvider(token="test_token", channel="test_channel")
         assert isinstance(provider.runtime_service, QiskitRuntimeService)
@@ -164,7 +164,7 @@ def test_provider_initialize_service():
 
 def test_provider_save_config(fake_service):
     """Test saving the IBM account configuration to disk."""
-    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
+    with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_runtime_service:
         mock_runtime_service.return_value = fake_service
         provider = QiskitRuntimeProvider(token="fake_token", channel="fake_channel")
 
@@ -189,7 +189,7 @@ def test_provider_save_config(fake_service):
 )
 def test_provider_build_runtime_profile(local, simulator, num_qubits):
     """Test building runtime profile for Qiskit backend."""
-    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
+    with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_runtime_service:
         mock_runtime_service.return_value = FakeService()
         backend = FakeDevice(num_qubits, local=local, simulator=simulator)
         provider = QiskitRuntimeProvider(token="test_token", channel="test_channel")
@@ -207,7 +207,7 @@ def test_provider_build_runtime_profile(local, simulator, num_qubits):
 
 def test_provider_get_devices(fake_service):
     """Test getting a backend from the runtime service."""
-    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
+    with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_runtime_service:
         mock_runtime_service.return_value = fake_service
         provider = QiskitRuntimeProvider(token="test_token", channel="test_channel")
         devices = provider.get_devices()
@@ -223,7 +223,7 @@ def test_provider_get_devices(fake_service):
 @pytest.mark.parametrize("local", [True, False])
 def test_provider_least_busy(fake_service, local):
     """Test getting a backend from the runtime service, both local and non-local."""
-    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_provider_service:
+    with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_provider_service:
         mock_provider_service.return_value = fake_service
         provider = QiskitRuntimeProvider(token="test_token", channel="test_channel")
 
@@ -244,7 +244,7 @@ def test_provider_least_busy(fake_service, local):
 )
 def test_device_status(fake_service, operational, local, status_msg, expected_status):
     """Test getting a backend from the runtime service, both local and non-local."""
-    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_provider_service:
+    with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_provider_service:
         mock_provider_service.return_value = fake_service
         provider = QiskitRuntimeProvider(token="test_token", channel="test_channel")
         params = {"operational": operational, "local": local, "status_msg": status_msg}
@@ -313,7 +313,7 @@ def test_job_initialize_service_from_device(mock_service):
 
 def test_job_service_initialization():
     """Test job retrieval when initializing a new service."""
-    with patch("qbraid.runtime.qiskit.job.QiskitRuntimeService") as mock_service_class:
+    with patch("qbraid.runtime.ibm.job.QiskitRuntimeService") as mock_service_class:
         mock_service = MagicMock(spec=QiskitRuntimeService)
         mock_service.job.return_value = MagicMock(spec=RuntimeJob)
         mock_service_class.return_value = mock_service
@@ -325,7 +325,7 @@ def test_job_service_initialization():
 
 def test_job_service_initialization_failure():
     """Test handling of service initialization failure."""
-    with patch("qbraid.runtime.qiskit.job.QiskitRuntimeService", side_effect=IBMNotAuthorizedError):
+    with patch("qbraid.runtime.ibm.job.QiskitRuntimeService", side_effect=IBMNotAuthorizedError):
         job_id = "test_job_id"
         with pytest.raises(QbraidRuntimeError) as exc_info:
             QiskitJob(job_id)
@@ -459,7 +459,7 @@ def test_result_measurements_multiple_circuits(mock_runtime_result):
 @patch("builtins.hash", autospec=True)
 def test_hash_method_creates_and_returns_hash(mock_hash):
     """Test that the __hash__ method creates and returns a hash value."""
-    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
+    with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_runtime_service:
         mock_runtime_service.return_value = Mock(spec=QiskitRuntimeService)
         provider_instance = QiskitRuntimeProvider(token="mock_token", channel="ibm_cloud")
         mock_hash.return_value = 12345
@@ -471,7 +471,7 @@ def test_hash_method_creates_and_returns_hash(mock_hash):
 
 def test_hash_method_returns_existing_hash():
     """Test that the hash method returns the existing hash value."""
-    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
+    with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_runtime_service:
         mock_runtime_service.return_value = Mock(spec=QiskitRuntimeService)
         provider_instance = QiskitRuntimeProvider(token="mock_token", channel="ibm_cloud")
         provider_instance._hash = 67890

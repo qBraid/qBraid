@@ -107,7 +107,7 @@ __all__ = [
 
 __all__.extend(native.__all__)
 
-_lazy_mods = ["azure", "braket", "ionq", "oqc", "qiskit", "native"]
+_lazy_mods = ["azure", "braket", "ionq", "oqc", "ibm", "native"]
 
 _lazy_objs = {
     "azure": ["AzureQuantumProvider", "AzureQuantumDevice", "AzureQuantumJob"],
@@ -127,7 +127,7 @@ _lazy_objs = {
         "OQCDevice",
         "OQCJob",
     ],
-    "qiskit": [
+    "ibm": [
         "QiskitRuntimeProvider",
         "QiskitBackend",
         "QiskitJob",

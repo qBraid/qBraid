@@ -14,14 +14,16 @@ Module for post-processing of raw results data.
 """
 from __future__ import annotations
 
-from typing import Union
+from typing import Any, Union
 
 
 class GateModelResultBuilder:
     """Abstract interface for gate model quantum job results."""
 
     @staticmethod
-    def format_counts(counts: dict[str, int], include_zero_values: bool = False) -> dict[str, int]:
+    def format_counts(
+        counts: dict[Any, Union[int, float]], include_zero_values: bool = False
+    ) -> dict[Any, Union[int, float]]:
         """Formats, sorts, and adds missing bit indices to counts dictionary
         Can pass in a 'include_zero_values' parameter to decide whether to include the states
         with zero counts.
@@ -38,16 +40,17 @@ class GateModelResultBuilder:
             {'00': 46, '01': 0, '10': 79, '11': 13}
 
         """
-        counts = {key.replace(" ", ""): value for key, value in counts.items()}
+        if all(isinstance(key, str) for key in counts.keys()):
+            key_str_counts = {key.replace(" ", ""): value for key, value in counts.items()}
 
-        num_bits = max(len(key) for key in counts)
-        all_keys = [format(i, f"0{num_bits}b") for i in range(2**num_bits)]
-        final_counts = {key: counts.get(key, 0) for key in sorted(all_keys)}
+            num_bits = max(len(key) for key in key_str_counts)
+            all_keys = [format(i, f"0{num_bits}b") for i in range(2**num_bits)]
+            counts = {key: key_str_counts.get(key, 0) for key in sorted(all_keys)}
 
         if not include_zero_values:
-            final_counts = {key: value for key, value in final_counts.items() if value != 0}
+            counts = {key: value for key, value in counts.items() if value != 0}
 
-        return final_counts
+        return counts
 
     @staticmethod
     def normalize_batch_bit_lengths(measurements: list[dict[str, int]]) -> list[dict[str, int]]:

@@ -11,7 +11,7 @@
 """
 Module submitting and managing jobs through IBM and IBM backends.
 
-.. currentmodule:: qbraid.runtime.qiskit
+.. currentmodule:: qbraid.runtime.ibm
 
 Classes
 --------

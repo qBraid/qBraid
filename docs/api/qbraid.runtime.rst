@@ -13,7 +13,7 @@ Submodules
    :toctree: ../stubs/
 
    braket
-   qiskit
+   ibm
    native
    ionq
    oqc
