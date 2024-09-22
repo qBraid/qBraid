@@ -28,7 +28,7 @@ dependencies = [
     "rustworkx>=0.14.2",
     "numpy>=1.17",
     "openqasm3[parser]>=0.4.0",
-    "qbraid-core>=0.1.21",
+    "qbraid-core>=0.1.22",
     "pydantic>2.0.0"
 ]
 requires-python = ">=3.9,<3.13"
@@ -99,9 +99,8 @@ filterwarnings = [
 parallel = true
 source = ["qbraid"]
 omit = [
-  "**/qbraid/runtime/braket/tracker.py",
+  "**/qbraid/runtime/aws/tracker.py",
   "**/qbraid/visualization/draw_circuit.py",
-  "**/qbraid/_compat.py",
   "**/qbraid/transpiler/conversions/*/*_extras.py"
 ]
 
@@ -164,4 +163,4 @@ disable_error_code = [
     "valid-type",
     "import-untyped"
 ]
-exclude = "^(qbraid/(programs/(circuits/|ahs/)|transpiler/conversions/|interface/|runtime/(oqc/|ionq/|qiskit|braket)))"
+exclude = "^(qbraid/(programs/(circuits/|ahs/)|transpiler/conversions/|interface/|runtime/(oqc/|ionq/|ibm/|aws/)))"

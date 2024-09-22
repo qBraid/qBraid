@@ -18,6 +18,7 @@ classes using the qbraid_qir_simulator
 import logging
 import random
 import time
+import warnings
 from typing import Any, Optional
 from unittest.mock import MagicMock, Mock, patch
 
@@ -477,6 +478,11 @@ def test_qir_simulator_workflow(mock_provider, cirq_uniform):
     assert result.details["shots"] == shots
     assert result.details["metadata"]["circuitNumQubits"] == num_qubits
     assert isinstance(result.details["timeStamps"]["executionDuration"], int)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", DeprecationWarning)
+        assert result.measurement_counts() == counts
+        assert result.measurements() == result.data.measurements
 
 
 def test_queara_simulator_workflow(mock_provider, cirq_uniform, qasm2_no_meas):

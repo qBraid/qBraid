@@ -21,6 +21,7 @@ from enum import Enum
 from typing import Any, Optional, Union
 
 import numpy as np
+from qbraid_core import deprecated
 from qbraid_core.system.generic import _datetime_to_str
 
 from .enums import ExperimentType
@@ -301,6 +302,16 @@ class Result:
     def details(self) -> dict[str, Any]:
         """Returns the result of the job."""
         return self._details
+
+    @deprecated("Use 'Result.data.get_counts()' instead.")
+    def measurement_counts(self, *args, **kwargs) -> Any:
+        """Returns the measurement counts of the job."""
+        return self.data.get_counts(*args, **kwargs)
+
+    @deprecated("Use 'Result.data.measurements' instead.")
+    def measurements(self) -> Any:
+        """Returns the measurements of the job."""
+        return self.data.measurements
 
     def _format_value(self, value: Any, depth: int = 0, max_depth: int = 2) -> str:
         """Helper function to format nested values with a depth limit."""
