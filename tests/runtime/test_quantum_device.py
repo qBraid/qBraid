@@ -482,7 +482,7 @@ def test_qir_simulator_workflow(mock_provider, cirq_uniform):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", DeprecationWarning)
         assert result.measurement_counts() == counts
-        assert result.measurements() == result.data.measurements
+        assert is_uniform_comput_basis(result.measurements())
 
 
 def test_queara_simulator_workflow(mock_provider, cirq_uniform, qasm2_no_meas):
