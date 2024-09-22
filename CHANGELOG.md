@@ -105,7 +105,7 @@ print(result.data.get_counts())  # e.g., {"00": 486, "11": 514}
 ```python
 # Example 2: AHS Experiment via BraketProvider
 
-from qbraid.runtime.braket import BraketProvider
+from qbraid.runtime.aws import BraketProvider
 from qbraid.runtime import AhsResultData, AhsShotResult
 
 provider = BraketProvider()

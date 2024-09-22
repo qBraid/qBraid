@@ -42,7 +42,7 @@ def _generate_completion_event(
     execution_duration = None
     try:
         execution_duration = result.additional_metadata.simulatorMetadata.executionDuration
-    except AttributeError:
+    except AttributeError:  # pragma: no cover
         pass
 
     completion_data = {

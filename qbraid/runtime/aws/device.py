@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     import braket.aws
 
     import qbraid.runtime
-    import qbraid.runtime.braket
+    import qbraid.runtime.aws
     import qbraid.transpiler
 
 

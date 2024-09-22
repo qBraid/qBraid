@@ -36,7 +36,7 @@ from .device import BraketDevice
 if TYPE_CHECKING:
     import braket.aws
 
-    import qbraid.runtime.braket
+    import qbraid.runtime.aws
 
 
 class BraketProvider(QuantumProvider):
@@ -155,7 +155,7 @@ class BraketProvider(QuantumProvider):
         aws_session: Optional[braket.aws.AwsSession] = None,
         statuses: Optional[list[str]] = None,
         **kwargs,
-    ) -> list[qbraid.runtime.braket.BraketDevice]:
+    ) -> list[qbraid.runtime.aws.BraketDevice]:
         """Return a list of backends matching the specified filtering."""
         aws_session = self._get_aws_session() if aws_session is None else aws_session
         statuses = ["ONLINE", "OFFLINE"] if statuses is None else statuses
@@ -169,7 +169,7 @@ class BraketProvider(QuantumProvider):
     def get_device(
         self,
         device_id: str,
-    ) -> qbraid.runtime.braket.BraketDevice:
+    ) -> qbraid.runtime.aws.BraketDevice:
         """Returns the AWS device."""
         try:
             region_name = device_id.split(":")[3]

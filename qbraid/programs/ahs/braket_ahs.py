@@ -12,6 +12,8 @@
 Module defining AnalogHamiltonianProgram Class
 
 """
+from __future__ import annotations
+
 from decimal import Decimal
 from typing import TYPE_CHECKING, Union
 
@@ -25,13 +27,13 @@ from ._model import AnalogHamiltonianProgram
 if TYPE_CHECKING:
     import braket.ahs
 
-    import qbraid.runtime.braket
+    import qbraid.runtime.aws
 
 
 class BraketAHS(AnalogHamiltonianProgram):
     """Wrapper class for ``braket.ahs.AnalogHamiltonianSimulation`` objects."""
 
-    def __init__(self, program: "braket.ahs.AnalogHamiltonianSimulation"):
+    def __init__(self, program: braket.ahs.AnalogHamiltonianSimulation):
         super().__init__(program)
         if not isinstance(program, AnalogHamiltonianSimulation):
             raise ProgramTypeError(
@@ -41,7 +43,7 @@ class BraketAHS(AnalogHamiltonianProgram):
     def to_dict(self) -> dict:
         return BraketAHSEncoder().encode_ahs(self.program)
 
-    def transform(self, device: "qbraid.runtime.braket.BraketDevice") -> None:
+    def transform(self, device: "qbraid.runtime.aws.BraketDevice") -> None:
         """Transform program to according to device target profile."""
         if not device.simulator:
             program: AnalogHamiltonianSimulation = self.program

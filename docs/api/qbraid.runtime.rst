@@ -12,9 +12,9 @@ Submodules
 .. autosummary::
    :toctree: ../stubs/
 
-   braket
+   aws
    ibm
-   native
+   azure
    ionq
    oqc
-   azure
+   native

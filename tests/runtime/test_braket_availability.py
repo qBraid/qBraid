@@ -21,7 +21,7 @@ from unittest.mock import Mock, patch
 from braket.aws.aws_device import AwsDevice
 from braket.device_schema import ExecutionDay
 
-from qbraid.runtime.braket.availability import (
+from qbraid.runtime.aws.availability import (
     _calculate_day_factor,
     _current_utc_datetime,
     _is_day_matched,
@@ -125,7 +125,7 @@ def mock_execution_window(execution_day, start_hour, start_minute, end_hour, end
 
 
 @patch(
-    "qbraid.runtime.braket.availability._current_utc_datetime",
+    "qbraid.runtime.aws.availability._current_utc_datetime",
     return_value=datetime.datetime(2024, 7, 1, 15, 30, 0, tzinfo=datetime.timezone.utc),
 )
 def test_next_available_random(mock_utc_datetime):  # pylint: disable=unused-argument
@@ -203,7 +203,7 @@ def test_is_time_matched():
 
 
 @patch(
-    "qbraid.runtime.braket.availability._current_utc_datetime",
+    "qbraid.runtime.aws.availability._current_utc_datetime",
     return_value=datetime.datetime(2024, 7, 10, 5, 0, 0, tzinfo=datetime.timezone.utc),
 )
 def test_next_available_time_midnight(mock_utc_datetime):  # pylint: disable=unused-argument
