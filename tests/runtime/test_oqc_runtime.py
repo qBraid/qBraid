@@ -113,6 +113,7 @@ class MockOQCClient:
     def __init__(self, authentication_token=None):
         self._authentication_token = authentication_token
         self.default_qpu_id = "qpu:uk:3:9829a5504f"
+        self.url = "https://cloud.oqc.app/"
 
     def get_qpus(self):
         """Get QPUs."""
@@ -419,3 +420,28 @@ def test_oqc_job_get_errors(oqc_job_failed):
     assert result.success is False
     assert result.data.measurement_counts is None
     assert result.data.measurements is None
+
+
+@patch("builtins.hash", autospec=True)
+def test_hash_method_creates_and_returns_hash(mock_hash, oqc_client):
+    """Test that the hash method creates and returns a hash."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = Mock(spec=OQCClient)
+        provider_instance = OQCProvider(token="fake_token")
+        mock_hash.return_value = 9999
+        provider_instance.client = oqc_client
+        result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
+        mock_hash.assert_called_once_with(("https://cloud.oqc.app/", "fake_token"))
+        assert result == 9999
+        assert provider_instance._hash == 9999
+
+
+def test_hash_method_returns_existing_hash(oqc_client):
+    """Test that the hash method returns an existing hash."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = Mock(spec=OQCClient)
+        provider_instance = OQCProvider(token="fake_token")
+        provider_instance.client = oqc_client
+        provider_instance._hash = 1234
+        result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
+        assert result == 1234

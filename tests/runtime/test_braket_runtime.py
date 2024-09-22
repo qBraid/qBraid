@@ -657,3 +657,31 @@ def test_get_tasks_by_tag_qbraid_error():
 
         with pytest.raises(QbraidError):
             provider.get_tasks_by_tag("key", ["value1", "value2"])
+
+
+@pytest.fixture
+def mock_braket_provider_with_credentials():
+    """Return a BraketProvider instance with mock credentials."""
+    aws_provider = BraketProvider(
+        aws_access_key_id="mock_access_key_id", aws_secret_access_key="mock_secret_access_key"
+    )
+    return aws_provider
+
+
+@patch("builtins.hash", autospec=True)
+def test_hash_method_creates_and_returns_hash(mock_hash, mock_braket_provider_with_credentials):
+    """Test that the __hash__ method creates and returns a hash value."""
+    mock_hash.return_value = 5555
+    provider_instance = mock_braket_provider_with_credentials
+    result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
+    mock_hash.assert_called_once_with(("mock_access_key_id", "mock_secret_access_key"))
+    assert result == 5555
+    assert provider_instance._hash == 5555
+
+
+def test_hash_method_returns_existing_hash(mock_braket_provider_with_credentials):
+    """Test that the __hash__ method returns the existing hash value."""
+    provider_instance = mock_braket_provider_with_credentials
+    provider_instance._hash = 9876
+    result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
+    assert result == 9876

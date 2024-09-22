@@ -453,3 +453,26 @@ def test_result_measurements_multiple_circuits(mock_runtime_result):
     expected_meas2 = np.array([[0, 0]] * 8 + [[0, 1]] * 12)
     expected = np.array([expected_meas1, expected_meas2])
     assert np.array_equal(qr.measurements(), expected)
+
+
+@patch("builtins.hash", autospec=True)
+def test_hash_method_creates_and_returns_hash(mock_hash):
+    """Test that the __hash__ method creates and returns a hash value."""
+    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
+        mock_runtime_service.return_value = Mock(spec=QiskitRuntimeService)
+        provider_instance = QiskitRuntimeProvider(token="mock_token", channel="ibm_cloud")
+        mock_hash.return_value = 12345
+        result = provider_instance.__hash__()  # pylint: disable=unnecessary-dunder-call
+        mock_hash.assert_called_once_with(("mock_token", "ibm_cloud"))
+        assert result == 12345
+        assert provider_instance._hash == 12345
+
+
+def test_hash_method_returns_existing_hash():
+    """Test that the hash method returns the existing hash value."""
+    with patch("qbraid.runtime.qiskit.provider.QiskitRuntimeService") as mock_runtime_service:
+        mock_runtime_service.return_value = Mock(spec=QiskitRuntimeService)
+        provider_instance = QiskitRuntimeProvider(token="mock_token", channel="ibm_cloud")
+        provider_instance._hash = 67890
+        result = provider_instance.__hash__()  # pylint: disable=unnecessary-dunder-call
+        assert result == 67890

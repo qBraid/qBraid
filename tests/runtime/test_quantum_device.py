@@ -912,3 +912,34 @@ def test_construct_aux_payload_no_spec(mock_quera_device, qasm2_no_meas):
     assert aux_payload["openQasm"] == qasm2_no_meas
     assert aux_payload["circuitNumQubits"] == 2
     assert aux_payload["circuitDepth"] == 1
+
+
+@pytest.fixture
+def mock_qbraid_client():
+    """Mock client for testing."""
+    client = Mock()
+    client._user_metadata = {"organization": "qbraid", "role": "guest"}
+    client.session.api_key = "mock_api_key"
+    return client
+
+
+@patch("builtins.hash", autospec=True)
+def test_hash_method_creates_and_returns_hash(mock_hash, mock_qbraid_client):
+    """Test that the hash method creates and returns a hash."""
+    mock_hash.return_value = 8888
+    provider_instance = QbraidProvider(client=mock_qbraid_client)
+    result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
+    expected_organization_role = "qbraid-guest"
+    mock_hash.assert_called_once_with(
+        ("QbraidProvider", "mock_api_key", expected_organization_role)
+    )
+    assert result == 8888
+    assert provider_instance._hash == 8888
+
+
+def test_hash_method_returns_existing_hash(mock_qbraid_client):
+    """Test that the hash method returns an existing hash."""
+    provider_instance = QbraidProvider(client=mock_qbraid_client)
+    provider_instance._hash = 5678
+    result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
+    assert result == 5678

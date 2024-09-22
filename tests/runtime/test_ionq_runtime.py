@@ -333,3 +333,28 @@ def test_get_counts_raises_value_error_for_missing_data(result):
     with pytest.raises(ValueError) as exc_info:
         IonQJob._get_counts(result)
     assert "Missing shots or probabilities in result data." in str(exc_info.value)
+
+
+@pytest.fixture
+def mock_ionq_provider():
+    """Return a mock IonQProvider instance."""
+    return IonQProvider(api_key="mock_api_key")
+
+
+@patch("builtins.hash", autospec=True)
+def test_hash_method_creates_and_returns_hash(mock_hash, mock_ionq_provider):
+    """Test that the __hash__ method creates and returns a hash."""
+    mock_hash.return_value = 7777
+    provider_instance = mock_ionq_provider
+    result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
+    mock_hash.assert_called_once_with(("mock_api_key", "https://api.ionq.co/v0.3"))
+    assert result == 7777
+    assert provider_instance._hash == 7777
+
+
+def test_hash_method_returns_existing_hash(mock_ionq_provider):
+    """Test that the __hash__ method returns an existing hash."""
+    provider_instance = mock_ionq_provider
+    provider_instance._hash = 1234
+    result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
+    assert result == 1234

@@ -1109,3 +1109,34 @@ def test_builder_format_unknown_results(azure_result_builder: AzureGateModelResu
         "header": {},
         "shots": 1000,
     }
+
+
+@pytest.fixture
+def mock_workspace_hashing():
+    """Create a mock workspace for testing hashing."""
+    workspace = Mock()
+    workspace.credential = "mock_credential"
+    workspace.user_agent = "mock_user_agent"
+    return workspace
+
+
+# @patch("builtins.hash", autospec=True)
+# def test_hash_method_creates_and_returns_hash(mock_hash, mock_workspace_hashing, azure_provider):
+#     """Test that the hash method creates and returns a hash."""
+#     mock_hash.return_value = 9999
+#     provider_instance = azure_provider
+#     provider_instance._hash = None
+#     provider_instance._workspace = mock_workspace_hashing
+#     result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
+#     mock_hash.assert_called_once_with(("mock_credential", "mock_user_agent"))
+#     assert result == 9999
+#     assert provider_instance._hash == 9999
+
+
+def test_hash_method_returns_existing_hash(mock_workspace_hashing, azure_provider):
+    """Test that the hash method returns an existing hash."""
+    provider_instance = azure_provider
+    provider_instance._workspace = mock_workspace_hashing
+    provider_instance._hash = 12345
+    result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
+    assert result == 12345
