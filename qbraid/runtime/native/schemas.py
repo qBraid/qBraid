@@ -128,7 +128,7 @@ class RuntimeJobModel(QbraidSchemaBase):
         cost (Decimal, optional): The cost of the job in qBraid credits.
     """
 
-    model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True)
+    model_config = ConfigDict(frozen=True)
 
     job_id: str = Field(..., alias="qbraidJobId")
     device_id: str = Field(..., alias="qbraidDeviceId")
@@ -152,7 +152,7 @@ class RuntimeJobModel(QbraidSchemaBase):
         """Ensure the status is a valid JobStatus enum value."""
         members = {status.value for status in list(JobStatus)}
         if value not in members:
-            raise ValueError(f"Invalid status: {value}. Must be one of {members}.")
+            raise ValueError(f"Invalid status: '{value}'. Must be one of {members}.")
         return value
 
     @field_validator("experiment_type", mode="before")
@@ -161,7 +161,7 @@ class RuntimeJobModel(QbraidSchemaBase):
         """Ensure the experiment_type is a valid ExperimentType enum value."""
         members = {exp_type.value for exp_type in list(ExperimentType)}
         if value not in members:
-            raise ValueError(f"Invalid experiment_type: {value}. Must be one of {members}.")
+            raise ValueError(f"Invalid experiment_type: '{value}'. Must be one of {members}.")
         return value
 
     @staticmethod

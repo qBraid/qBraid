@@ -29,9 +29,11 @@ from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
 from qbraid.runtime import (
     DeviceStatus,
     ExperimentType,
+    GateModelResultData,
     JobStateError,
     JobStatus,
     ResourceNotFoundError,
+    Result,
     TargetProfile,
 )
 from qbraid.runtime.azure import AzureQuantumDevice, AzureQuantumJob, AzureQuantumProvider
@@ -122,6 +124,17 @@ def mock_msft_v1_job_data(mock_job_id) -> dict[str, str]:
         "job_name": "azure-quantum-job",
         "target": "rigetti.sim.qvm",
         "output_data_format": "microsoft.quantum-results.v1",
+    }
+
+
+@pytest.fixture
+def mock_ionq_job_data(mock_job_id) -> dict[str, str]:
+    """Return dictionary data for a Rigetti job with Microsoft result format V1."""
+    return {
+        "job_id": mock_job_id,
+        "job_name": "ionq-job",
+        "target": "ionq.simulator",
+        "output_data_format": "ionq.quantum-results.v1",
     }
 
 
@@ -228,6 +241,14 @@ def mock_azure_job(
     """Return a mock azure.quantum.Job instance."""
     return create_mock_azure_job(
         **mock_estimator_job_data, status="Succeeded", result_data=estimator_result_data
+    )
+
+
+@pytest.fixture
+def mock_azure_ionq_job(mock_ionq_job_data: dict[str, str]) -> Mock:
+    """Return a mock azure.quantum.Job instance."""
+    return create_mock_azure_job(
+        **mock_ionq_job_data, status="Succeeded", result_data={"histogram": {"0": 0.5, "7": 0.5}}
     )
 
 
@@ -508,30 +529,6 @@ def mock_result_builder(mock_job_id) -> AzureGateModelResultBuilder:
     return AzureGateModelResultBuilder(job)
 
 
-@pytest.fixture
-def mock_results(mock_job_id) -> dict[str, Any]:
-    """Create a mock result data."""
-    data = {
-        "results": [
-            {
-                "data": {
-                    "counts": {"000": 50, "111": 50},
-                    "probabilities": {"000": 0.5, "111": 0.5},
-                },
-                "success": True,
-                "header": {},
-                "shots": 100,
-            }
-        ],
-        "job_id": mock_job_id,
-        "target": "ionq.simulator",
-        "job_name": "ionq-job",
-        "success": True,
-        "error_data": None,
-    }
-    return data
-
-
 class DowloadDataMock:
     """Mock download data method."""
 
@@ -676,12 +673,38 @@ def test_qir_to_qbraid_bitstring(input_data, expected_output):
     assert AzureGateModelResultBuilder._qir_to_qbraid_bitstring(input_data) == expected_output
 
 
+@pytest.fixture
+def mock_builder_ionq_results(mock_job_id) -> dict[str, Any]:
+    """Create a mock result data."""
+    data = {
+        "results": [
+            {
+                "data": {
+                    "counts": {"000": 50, "111": 50},
+                    "probabilities": {"000": 0.5, "111": 0.5},
+                },
+                "success": True,
+                "header": {},
+                "shots": 100,
+            }
+        ],
+        "job_id": mock_job_id,
+        "target": "ionq.simulator",
+        "job_name": "ionq-job",
+        "success": True,
+        "error_data": None,
+    }
+    return data
+
+
 def test_azure_quantum_result_counts(
-    azure_result_builder: AzureGateModelResultBuilder, mock_results: dict[str, Any]
+    azure_result_builder: AzureGateModelResultBuilder, mock_builder_ionq_results: dict[str, Any]
 ):
     """Test Azure Quantum Job builder get counts methods."""
     with patch.object(
-        AzureGateModelResultBuilder, "get_results", return_value=mock_results["results"]
+        AzureGateModelResultBuilder,
+        "get_results",
+        return_value=mock_builder_ionq_results["results"],
     ):
         raw_counts = azure_result_builder.get_counts()
         formatted_counts = azure_result_builder.normalize_counts(raw_counts)
@@ -1120,17 +1143,16 @@ def mock_workspace_hashing():
     return workspace
 
 
-# @patch("builtins.hash", autospec=True)
-# def test_hash_method_creates_and_returns_hash(mock_hash, mock_workspace_hashing, azure_provider):
-#     """Test that the hash method creates and returns a hash."""
-#     mock_hash.return_value = 9999
-#     provider_instance = azure_provider
-#     provider_instance._hash = None
-#     provider_instance._workspace = mock_workspace_hashing
-#     result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
-#     mock_hash.assert_called_once_with(("mock_credential", "mock_user_agent"))
-#     assert result == 9999
-#     assert provider_instance._hash == 9999
+@patch("builtins.hash", autospec=True)
+def test_hash_method_creates_and_returns_hash(mock_hash, mock_workspace_hashing, azure_provider):
+    """Test that the hash method creates and returns a hash."""
+    mock_hash.return_value = 9999
+    provider_instance = azure_provider
+    provider_instance._workspace = mock_workspace_hashing
+    result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
+    mock_hash.assert_called_once_with(("mock_credential", "mock_user_agent"))
+    assert result == 9999
+    assert provider_instance._hash == 9999
 
 
 def test_hash_method_returns_existing_hash(mock_workspace_hashing, azure_provider):
@@ -1140,3 +1162,13 @@ def test_hash_method_returns_existing_hash(mock_workspace_hashing, azure_provide
     provider_instance._hash = 12345
     result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
     assert result == 12345
+
+
+def test_get_gate_model_job_result(mock_job_id, mock_workspace, mock_azure_ionq_job):
+    """Test getting a gate model job result."""
+    job = AzureQuantumJob(mock_job_id, workspace=mock_workspace)
+    job._job = mock_azure_ionq_job
+    result = job.result()
+    assert isinstance(result, Result)
+    assert isinstance(result.data, GateModelResultData)
+    assert result.success is True

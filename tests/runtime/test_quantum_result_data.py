@@ -215,6 +215,18 @@ def test_to_dict_probabilities(gate_model_result_data):
     assert abs(sum(probabilities.values()) - 1) < 1e-6
 
 
+def test_get_probabilities_from_cache(gate_model_result_data):
+    """Test that probabilities are retrieved from cache if present."""
+    assert gate_model_result_data._cache["prob_dec_nz"] is None
+    calculated_probs = gate_model_result_data.get_probabilities(decimal=True)
+    assert gate_model_result_data._cache["prob_bin_nz"] == calculated_probs
+    mock_cached_probs = {}
+    assert mock_cached_probs != calculated_probs
+    gate_model_result_data._cache["prob_dec_nz"] = mock_cached_probs
+    retrieved_probs = gate_model_result_data.get_probabilities(decimal=True)
+    assert retrieved_probs == mock_cached_probs
+
+
 def test_to_dict_no_counts():
     """Test the to_dict method when measurement counts are not available."""
     result_data = GateModelResultData(measurement_counts=None, measurements=None)
@@ -270,6 +282,7 @@ def test_ahs_shot_result_equality(shot_result):
     )
 
     assert shot_result != shot_result_3
+    assert shot_result != "not a shot result"
 
 
 def test_ahs_shot_result_sequences_equal():

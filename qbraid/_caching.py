@@ -61,6 +61,11 @@ def _cached_method_wrapper(
                 if (time.time() - timestamp) < ttl:
                     return cached_result
 
+            # The _QBRAID_TEST_CACHE_CALLS environment variable is used internally to enable
+            # testing of function call counts with unittest. Since cached_func is an lru_cache
+            # object, calls to it don't affect the Mock object's call count. To test call counts
+            # accurately, we need to make a duplicate call the original function.
+
             if os.getenv("_QBRAID_TEST_CACHE_CALLS") == "1":
                 _ = func(self, *args, **kwargs)
             result = cached_func(self, *args, **kwargs)
@@ -95,8 +100,8 @@ def cached_method(
     func: Optional[TFunc] = None, *, maxsize: int = 128, ttl: int = 120
 ) -> Callable[[TFunc], TFunc]:
     """
-    A flexible decorator that applies default caching behavior when used without arguments,
-    or allows customization (e.g., maxsize, ttl, typed) when used with arguments.
+    AD decorator that applies default caching behavior when used without arguments,
+    or allows customization (e.g., maxsize, ttl) when used with arguments.
 
     Example usage:
 
@@ -106,7 +111,7 @@ def cached_method(
         def some_method(self, param):
             pass
 
-        @cached_method(maxsize=200, ttl=300, typed=True)
+        @cached_method(maxsize=200, ttl=300)
         def some_other_method(self, param):
             pass
     """
@@ -140,7 +145,14 @@ def cache_disabled(instance) -> Generator[None, None, None]:
         instance.__cache_disabled = original_value
 
 
-def clear_all_caches():
-    """Clear all registered caches."""
+def clear_cache():
+    """
+    Clear all least-recently-used (LRU) caches that have been registered with the
+    :py:func:`qbraid._caching.cached_method` decorator.
+
+    Use this function to completely reset the cache state for all decorated methods, which
+    can be useful in testing environments or when you need to free up memory by discarding
+    cached results.
+    """
     for cache_clear in _CACHE_REGISTRY:
         cache_clear()

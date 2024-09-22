@@ -12,13 +12,9 @@
 Unit tests for caching module.
 
 """
-
-import time
-from unittest.mock import Mock, patch
-
 import pytest
 
-from qbraid._caching import _generate_cache_key, cache_disabled, cached_method, clear_all_caches
+from qbraid._caching import _generate_cache_key, cached_method
 
 
 class TestClass:

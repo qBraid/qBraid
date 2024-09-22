@@ -70,10 +70,16 @@ pip install 'tox>=4.2'
 tox -e unit-tests
 ```
 
-You can also pass in various pytest arguments to run selected tests:
+You can pass in additional `pytest` arguments directly to `tox` as follows:
 
 ```bash
 tox -e unit-tests -- {your-arguments}
+```
+
+For example, to run just qBraid runtime tests, excluding all remote tests:
+
+```bash
+tox -e unit-tests -- tests/runtime --remote false
 ```
 
 Alternatively:

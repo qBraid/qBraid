@@ -22,6 +22,7 @@ from unittest.mock import MagicMock, Mock, patch
 import numpy as np
 import pytest
 from qiskit import QuantumCircuit
+from qiskit.exceptions import QiskitError
 from qiskit.providers import Job
 from qiskit.providers.fake_provider import GenericBackendV2
 from qiskit.providers.models import QasmBackendConfiguration
@@ -476,3 +477,24 @@ def test_hash_method_returns_existing_hash():
         provider_instance._hash = 67890
         result = provider_instance.__hash__()  # pylint: disable=unnecessary-dunder-call
         assert result == 67890
+
+
+def test_result_measurements_not_available(mock_runtime_result, caplog):
+    """Test returning None and logging a warning when measurements are not available."""
+    qr = QiskitGateModelResultBuilder(mock_runtime_result)
+    mock_result = Mock()
+    mock_result.results = qr._result.results
+    mock_result.get_memory.side_effect = QiskitError("Test QiskitError message")
+    qr._result = mock_result
+
+    with caplog.at_level("WARNING"):
+        result = qr.measurements()
+
+    assert result is None
+    assert "Memory states (measurements) data not available for this job" in caplog.text
+    assert "Test QiskitError message" in caplog.text
+    assert len(caplog.records) == 1
+    assert caplog.records[0].levelname == "WARNING"
+    assert (
+        "Memory states (measurements) data not available for this job" in caplog.records[0].message
+    )

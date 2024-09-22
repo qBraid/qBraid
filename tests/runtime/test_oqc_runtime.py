@@ -23,7 +23,7 @@ import os
 import textwrap
 import uuid
 from typing import Optional, Union
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
@@ -35,6 +35,7 @@ try:
     from qbraid.runtime.enums import DeviceStatus, ExperimentType, JobStatus
     from qbraid.runtime.exceptions import ResourceNotFoundError
     from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCProvider
+    from qbraid.runtime.postprocess import GateModelResultBuilder
 
     FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
@@ -75,6 +76,7 @@ MOCK_TIMINGS = {
 MOCK_METRICS = {"optimized_circuit": "dummy", "optimized_instruction_count": 42}
 
 MOCK_TASK_ID = "e35fb436-ff08-44c8-8acc-7d5a1f1a0ada"
+MOCK_TASK_ID_NO_RESULT = "e35fb436-ff08-44c8-8acc-7d5a1f1a0adb"
 
 MOCK_TASK_METADATA = {
     "allow_support_access": False,
@@ -190,7 +192,8 @@ class MockOQCClient:
 
     def get_task_results(self, task_id: str, qpu_id: Optional[str] = None):
         """Get task results."""
-        result = MOCK_RESULT if task_id == MOCK_TASK_ID else None
+        qpu_id_matches = qpu_id is None or qpu_id == LUCY_SIM_ID
+        result = MOCK_RESULT if task_id == MOCK_TASK_ID and qpu_id_matches else None
         metrics = self.get_task_metrics(task_id, qpu_id)
         error_details = self.get_task_errors(task_id, qpu_id)
         return QPUTaskResult(task_id, result=result, metrics=metrics, error_details=error_details)
@@ -445,3 +448,75 @@ def test_hash_method_returns_existing_hash(oqc_client):
         provider_instance._hash = 1234
         result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
         assert result == 1234
+
+
+def test_job_result_method_raises_resource_not_found(oqc_job):
+    """Test that the result method raises a ResourceNotFoundError when no result is found."""
+    oqc_job._qpu_id = "mismatched_id"
+    with pytest.raises(ResourceNotFoundError) as excinfo:
+        oqc_job.result()
+    assert "No result found for the task" in str(excinfo.value)
+
+
+def test_job_get_counts_single_key():
+    """Test that the _get_counts method returns the expected counts for a single key."""
+    result = {"c": {"00": 1000, "01": 500}}
+    expected = {"00": 1000, "01": 500}
+
+    assert OQCJob._get_counts(result) == expected
+
+
+@pytest.fixture
+def multi_cbit_result_counts():
+    """Return a result counts dictionary with multiple keys."""
+    return {
+        "c0": {"000000": 45, "111111": 55},
+        "c1": {"000000": 45, "111111": 55},
+        "c2": {"000000": 45, "111111": 55},
+    }
+
+
+def test_job_get_counts_multiple_keys(multi_cbit_result_counts):
+    """Test that the _get_counts method returns the expected counts for multiple keys."""
+    expected = [
+        {"000000": 45, "111111": 55},
+        {"000000": 45, "111111": 55},
+        {"000000": 45, "111111": 55},
+    ]
+
+    assert OQCJob._get_counts(multi_cbit_result_counts) == expected
+
+
+def test_job_get_counts_empty_dict():
+    """Test that the _get_counts method raises a ValueError when the result dictionary is empty."""
+    result = {}
+
+    with pytest.raises(ValueError, match="The result dictionary must not be empty."):
+        OQCJob._get_counts(result)
+
+
+def test_job_get_counts_list_to_probabilities(multi_cbit_result_counts):
+    """Test that the _get_counts method returns the expected probabilities for a list of counts."""
+    expected = [
+        {"000000": 0.45, "111111": 0.55},
+        {"000000": 0.45, "111111": 0.55},
+        {"000000": 0.45, "111111": 0.55},
+    ]
+
+    counts_list = OQCJob._get_counts(multi_cbit_result_counts)
+    assert GateModelResultBuilder.counts_to_probabilities(counts_list) == expected
+
+
+def test_job_get_qpu_id_from_task_metadata(lucy_sim_id, oqc_job, oqc_client):
+    """Test getting the qpu_id from the task metadata."""
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_job._client = oqc_client
+    assert oqc_job.qpu_id == lucy_sim_id
+
+    oqc_job._qpu_id = None
+    oqc_job._device = None
+    oqc_client.get_task_metadata = MagicMock(return_value={"qpu_id": lucy_sim_id})
+    oqc_job._client = oqc_client
+    assert oqc_job.qpu_id == lucy_sim_id
+    oqc_client.get_task_metadata.assert_called_once()

@@ -283,6 +283,12 @@ def mock_client():
 
 
 @pytest.fixture
+def mock_provider(mock_client):
+    """Mock provider for testing."""
+    return QbraidProvider(client=mock_client)
+
+
+@pytest.fixture
 def mock_profile():
     """Mock profile for testing."""
     return TargetProfile(
@@ -431,12 +437,18 @@ def cirq_uniform():
     return uniform_state_circuit
 
 
-def test_qir_simulator_workflow(mock_client, cirq_uniform):
+def test_provider_equality(mock_provider, mock_client):
+    """Test equality of provider instances."""
+    assert mock_provider == QbraidProvider(client=mock_client)
+    assert mock_provider != mock_client
+
+
+def test_qir_simulator_workflow(mock_provider, cirq_uniform):
     """Test qir simulator qbraid device job submission and result retrieval."""
     circuit = cirq_uniform(num_qubits=5)
     num_qubits = len(circuit.all_qubits())
 
-    provider = QbraidProvider(client=mock_client)
+    provider = mock_provider
     device = provider.get_device("qbraid_qir_simulator")
 
     shots = 10
@@ -467,12 +479,12 @@ def test_qir_simulator_workflow(mock_client, cirq_uniform):
     assert isinstance(result.details["timeStamps"]["executionDuration"], int)
 
 
-def test_queara_simulator_workflow(mock_client, cirq_uniform, qasm2_no_meas):
+def test_queara_simulator_workflow(mock_provider, cirq_uniform, qasm2_no_meas):
     """Test queara simulator job submission and result retrieval."""
     circuit = cirq_uniform(num_qubits=5, measure=False)
     num_qubits = len(circuit.all_qubits())
 
-    provider = QbraidProvider(client=mock_client)
+    provider = mock_provider
     device = provider.get_device("quera_qasm_simulator")
 
     shots = 10
@@ -511,10 +523,10 @@ def test_queara_simulator_workflow(mock_client, cirq_uniform, qasm2_no_meas):
     assert isinstance(result.details["timeStamps"]["executionDuration"], int)
 
 
-def test_run_forbidden_kwarg(mock_client):
+def test_run_forbidden_kwarg(mock_provider):
     """Test that invoking run method with forbidden kwarg raises value error."""
     circuit = Mock()
-    provider = QbraidProvider(client=mock_client)
+    provider = mock_provider
     device = provider.get_device("qbraid_qir_simulator")
 
     with pytest.raises(ValueError):

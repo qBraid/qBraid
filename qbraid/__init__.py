@@ -20,6 +20,8 @@ Functions
    :toctree: ../stubs/
 
     about
+    clear_cache
+    cache_disabled
 
 Exceptions
 -----------
@@ -31,6 +33,7 @@ Exceptions
 
 """
 from ._about import about
+from ._caching import cache_disabled, clear_cache
 from ._version import __version__
 from .exceptions import QbraidError
 
@@ -38,6 +41,8 @@ __all__ = [
     "about",
     "QbraidError",
     "__version__",
+    "clear_cache",
+    "cache_disabled",
 ]
 
 _lazy_mods = ["interface", "passes", "programs", "runtime", "transpiler", "visualization"]

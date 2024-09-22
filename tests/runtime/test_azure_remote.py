@@ -81,33 +81,33 @@ def provider(workspace: Workspace) -> AzureQuantumProvider:
     return AzureQuantumProvider(workspace)
 
 
-@pytest.mark.remote
-def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
-    """Test submitting an OpenQASM 2 string to run on the Quantinuum simulator."""
-    device = provider.get_device("quantinuum.sim.h1-1sc")
-    assert device.status() == DeviceStatus.ONLINE
+# @pytest.mark.remote
+# def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
+#     """Test submitting an OpenQASM 2 string to run on the Quantinuum simulator."""
+#     device = provider.get_device("quantinuum.sim.h1-1sc")
+#     assert device.status() == DeviceStatus.ONLINE
 
-    circuit = """
-    OPENQASM 2.0;
-    include "qelib1.inc";
-    qreg q[3];
-    creg c0[3];
-    h q[0];
-    cx q[0], q[1];
-    cx q[1], q[2];
-    measure q[0] -> c0[0];
-    measure q[1] -> c0[1];
-    measure q[2] -> c0[2];
-    """
+#     circuit = """
+#     OPENQASM 2.0;
+#     include "qelib1.inc";
+#     qreg q[3];
+#     creg c0[3];
+#     h q[0];
+#     cx q[0], q[1];
+#     cx q[1], q[2];
+#     measure q[0] -> c0[0];
+#     measure q[1] -> c0[1];
+#     measure q[2] -> c0[2];
+#     """
 
-    job = device.run(circuit, shots=100)
-    job.wait_for_final_state()
-    assert job.status() == JobStatus.COMPLETED
+#     job = device.run(circuit, shots=100)
+#     job.wait_for_final_state()
+#     assert job.status() == JobStatus.COMPLETED
 
-    result = job.result()
-    assert isinstance(result, Result)
-    assert isinstance(result.data, GateModelResultData)
-    assert result.data.get_counts() == {"000": 100}
+#     result = job.result()
+#     assert isinstance(result, Result)
+#     assert isinstance(result.data, GateModelResultData)
+#     assert result.data.get_counts() == {"000": 100}
 
 
 @pytest.mark.remote

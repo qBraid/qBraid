@@ -16,17 +16,9 @@ from __future__ import annotations
 
 from typing import Union
 
-import numpy as np
-
 
 class GateModelResultBuilder:
     """Abstract interface for gate model quantum job results."""
-
-    @staticmethod
-    def measurements_to_counts(measurements: np.ndarray) -> dict[str, int]:
-        """Convert a 2D numpy array to histogram counts data."""
-        row_strings = ["".join(map(str, row)) for row in measurements]
-        return {row: row_strings.count(row) for row in set(row_strings)}
 
     @staticmethod
     def format_counts(counts: dict[str, int], include_zero_values: bool = False) -> dict[str, int]:
@@ -139,7 +131,7 @@ class GateModelResultBuilder:
 
     @staticmethod
     def counts_to_probabilities(
-        counts: Union[dict[str, float], list[dict[str, float]]]
+        counts: Union[dict[str, int], list[dict[str, int]]]
     ) -> Union[dict[str, float], list[dict[str, float]]]:
         """Calculate and return the probabilities of each measurement result."""
         counts = GateModelResultBuilder.normalize_counts(counts)

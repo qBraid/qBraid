@@ -15,7 +15,7 @@ Module for OQC job class.
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
@@ -117,19 +117,23 @@ class OQCJob(QuantumJob):
         self._client.cancel_task(task_id=self.id, qpu_id=self.qpu_id)
 
     @staticmethod
-    def _get_counts(result: dict[str, dict[str, int]]) -> dict[str, int]:
+    def _get_counts(
+        result: dict[str, dict[str, int]]
+    ) -> Union[dict[str, int], list[dict[str, int]]]:
         """Extracts the measurement counts from the result of a quantum task.
 
         Args:
             result (dict[str, dict[str, int]]): A dictionary QPU task result,
-                expected to contain exactly one key (the measurement register),
-                with a value being a dictionary of bitstring counts.
+                expected to contain one or more keys (the measurement registers),
+                with values being dictionaries of bitstring counts.
 
         Returns:
-            dict[str, int]: The nested dictionary of measurement counts.
+            dict[str, int] or list[dict[str, int]]: If the result contains exactly one key,
+                it returns the corresponding dictionary of measurement counts.
+                If the result contains more than one key, it returns a list of dictionaries.
 
         Raises:
-            ValueError: If the result dictionary contains more than one key.
+            ValueError: If the result dictionary is empty.
 
         Example:
 
@@ -139,13 +143,19 @@ class OQCJob(QuantumJob):
             >>> OQCJob._get_counts(result)
             {'00': 1000, '01': 500}
 
+            >>> result = {
+            ...     'c0': {'000000': 45, '111111': 55},
+            ...     'c1': {'000000': 45, '111111': 55}
+            ... }
+            >>> OQCJob._get_counts(result)
+            [{'000000': 45, '111111': 55}, {'000000': 45, '111111': 55}]
         """
-        if len(result) != 1:
-            raise ValueError(
-                "The result dictionary must have exactly one key (the measurement register)."
-            )
+        if not result:
+            raise ValueError("The result dictionary must not be empty.")
 
-        return next(iter(result.values()))
+        if len(result) == 1:
+            return next(iter(result.values()))
+        return list(result.values())
 
     def result(self) -> Result:
         """Get the result of the task."""

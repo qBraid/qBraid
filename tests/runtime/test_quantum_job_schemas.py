@@ -119,9 +119,10 @@ def test_timestamps():
         )  # Invalid executionDuration
 
 
-def test_runtime_job_model(valid_qasm):
-    """Test RuntimeJobModel class."""
-    job_data = {
+@pytest.fixture
+def mock_job_data(valid_qasm):
+    """Return mock job data."""
+    return {
         "qbraidJobId": "job_123",
         "qbraidDeviceId": "device_456",
         "status": "COMPLETED",
@@ -136,7 +137,12 @@ def test_runtime_job_model(valid_qasm):
             "executionDuration": 60000,
         },
     }
-    job = RuntimeJobModel.from_dict(job_data)
+
+
+def test_runtime_job_model(mock_job_data):
+    """Test RuntimeJobModel class."""
+
+    job = RuntimeJobModel.from_dict(mock_job_data)
     assert job.job_id == "job_123"
     assert job.device_id == "device_456"
     assert job.status == JobStatus.COMPLETED.value
@@ -145,8 +151,8 @@ def test_runtime_job_model(valid_qasm):
     assert job.time_stamps.executionDuration == 60000  # pylint: disable=no-member
 
     # Test job with missing metadata
-    job_data.pop("metadata", None)
-    job = RuntimeJobModel.from_dict(job_data)
+    mock_job_data.pop("metadata", None)
+    job = RuntimeJobModel.from_dict(mock_job_data)
     assert isinstance(job.metadata, GateModelExperimentMetadata)
 
     with pytest.raises(ValueError):
@@ -205,3 +211,33 @@ def test_time_stamps_created_at_fallback():
     assert job.time_stamps.endedAt is None
     assert job.time_stamps.executionDuration is None
     # pylint: enable=no-member
+
+
+def test_invalid_experiment_type_raises_error(mock_job_data):
+    """Test invalid experiment type raises error."""
+    bad_type = "unsupported type"
+    mock_job_data["experimentType"] = bad_type
+    with pytest.raises(ValueError) as exc_info:
+        RuntimeJobModel.from_dict(mock_job_data)
+    assert str(exc_info.value).startswith(f"'{bad_type}' is not a valid ExperimentType")
+
+
+def test_invalid_status_raises_error(mock_job_data):
+    """Test invalid job status raises error."""
+    bad_type = "unsupported type"
+    mock_job_data["status"] = bad_type
+    with pytest.raises(ValueError) as exc_info:
+        RuntimeJobModel.from_dict(mock_job_data)
+    assert str(exc_info.value).startswith(f"'{bad_type}' is not a valid JobStatus")
+
+    with pytest.raises(ValidationError) as exc_info:
+        RuntimeJobModel(**mock_job_data)
+    assert f"Invalid status: '{bad_type}'" in str(exc_info.value)
+
+
+def test_parse_datetimes_for_none_type(mock_job_data):
+    """Test that TimeStamps model can handle None values."""
+    time_stamps = mock_job_data["timeStamps"]
+    time_stamps["endedAt"] = None
+    time_stamps_model = TimeStamps(**time_stamps)
+    assert time_stamps_model.endedAt is None
