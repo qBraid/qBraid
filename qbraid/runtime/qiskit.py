@@ -17,7 +17,7 @@ import warnings
 from .ibm import QiskitBackend, QiskitJob, QiskitRuntimeProvider
 
 warnings.warn(
-    "The 'qbraid.runtime.qiskit' module is deprecated. " "Please use 'qbraid.runtime.ibm' instead.",
+    "The 'qbraid.runtime.qiskit' module is deprecated. Please use 'qbraid.runtime.ibm' instead.",
     DeprecationWarning,
     stacklevel=2,
 )

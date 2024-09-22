@@ -18,7 +18,7 @@ import warnings
 from .aws import BraketDevice, BraketProvider, BraketQuantumTask
 
 warnings.warn(
-    "The 'qbraid.runtime.braket' module is deprecated. " "Please use 'qbraid.runtime.aws' instead.",
+    "The 'qbraid.runtime.braket' module is deprecated. Please use 'qbraid.runtime.aws' instead.",
     DeprecationWarning,
     stacklevel=2,
 )
