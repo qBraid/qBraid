@@ -16,10 +16,11 @@ from typing import Any
 
 from qbraid_core.sessions import Session
 
+from qbraid._caching import cached_method
 from qbraid.programs.spec import ProgramSpec
 from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.profile import TargetProfile
-from qbraid.runtime.provider import QuantumProvider, cache_results
+from qbraid.runtime.provider import QuantumProvider
 
 from .device import IonQDevice
 
@@ -98,21 +99,25 @@ class IonQProvider(QuantumProvider):
             basis_gates=SUPPORTED_GATES,
         )
 
-    @cache_results(ttl=120)
+    @cached_method
     def get_device(
         self,
         device_id: str,
-        bypass_cache: bool = False,
     ) -> dict[str, Any]:
         """Get a specific IonQ device."""
         data = self.session.get_device(device_id)
         profile = self._build_profile(data)
         return IonQDevice(profile, self.session)
 
-    @cache_results(ttl=120)
-    def get_devices(self, bypass_cache: bool = False, **kwargs) -> list[IonQDevice]:
+    @cached_method
+    def get_devices(self, **kwargs) -> list[IonQDevice]:
         """Get a list of IonQ devices."""
         devices = self.session.get_devices(**kwargs)
         return [
             IonQDevice(self._build_profile(device), self.session) for device in devices.values()
         ]
+
+    def __hash__(self):
+        if not hasattr(self, "_hash"):
+            object.__setattr__(self, "_hash", hash((self.session.api_key, self.session.base_url)))
+        return self._hash  # pylint: disable=no-member

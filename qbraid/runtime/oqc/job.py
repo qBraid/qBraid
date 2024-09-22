@@ -172,11 +172,8 @@ class OQCJob(QuantumJob):
         data = GateModelResultData(measurement_counts=counts)
         return Result(device_id=self.qpu_id, job_id=job_id, success=True, data=data, **task_data)
 
-    def metadata(self, use_cache: bool = False) -> dict[str, Any]:
+    def metadata(self) -> dict[str, Any]:
         """Get the metadata for the task."""
-        if use_cache is True:
-            return self._cache_metadata
-
         status = self.status()
         self._cache_metadata["status"] = status
         provider_metadata = self._client.get_task_metadata(task_id=self.id, qpu_id=self.qpu_id)

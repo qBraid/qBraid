@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 from qbraid_core.exceptions import AuthError
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError, process_job_data
 
+from qbraid._caching import cached_method
 from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
 from qbraid.programs.circuits.qasm import has_measurements
 from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
@@ -26,7 +27,7 @@ from qbraid.runtime._display import display_jobs_from_data
 from qbraid.runtime.enums import ExperimentType, NoiseModel
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
-from qbraid.runtime.provider import QuantumProvider, cache_results
+from qbraid.runtime.provider import QuantumProvider
 
 from .device import QbraidDevice
 
@@ -137,8 +138,8 @@ class QbraidProvider(QuantumProvider):
             noise_models=noise_models,
         )
 
-    @cache_results(ttl=120)
-    def get_devices(self, bypass_cache: bool = False, **kwargs) -> list[QbraidDevice]:
+    @cached_method
+    def get_devices(self, **kwargs) -> list[QbraidDevice]:
         """Return a list of devices matching the specified filtering."""
         query = kwargs or {}
         query["vendor"] = "qBraid"
@@ -151,12 +152,8 @@ class QbraidProvider(QuantumProvider):
         profiles = [self._build_runtime_profile(device_data) for device_data in device_data_lst]
         return [QbraidDevice(profile, client=self.client) for profile in profiles]
 
-    @cache_results(ttl=120)
-    def get_device(
-        self,
-        device_id: str,
-        bypass_cache: bool = False,
-    ) -> QbraidDevice:
+    @cached_method
+    def get_device(self, device_id: str) -> QbraidDevice:
         """Return quantum device corresponding to the specified qBraid device ID.
 
         Returns:
@@ -214,3 +211,13 @@ class QbraidProvider(QuantumProvider):
 
         job_data, msg = process_job_data(jobs, query)
         return display_jobs_from_data(job_data, msg)
+
+    def __hash__(self):
+        if not hasattr(self, "_hash"):
+            user_metadata = self.client._user_metadata
+            organization_role = f'{user_metadata["organization"]}-{user_metadata["role"]}'
+            hash_value = hash(
+                (self.__class__.__name__, self.client.session.api_key, organization_role)
+            )
+            object.__setattr__(self, "_hash", hash_value)
+        return self._hash  # pylint: disable=no-member

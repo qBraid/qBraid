@@ -20,11 +20,11 @@ from typing import Any, Callable
 
 
 @dataclass
-class Options:
+class RuntimeOptions:
     """
     Manages qBraid-specific options with controlled defaults and dynamic fields.
 
-    The `Options` class allows you to initialize options with default fields,
+    The `RuntimeOptions` class allows you to initialize options with default fields,
     add dynamic fields, and validate the values of specific fields using custom
     validators. It also provides dictionary-like access to option fields.
 
@@ -32,18 +32,19 @@ class Options:
 
     .. code-block:: python
 
-        >>> from qbraid.runtime.options import Options
+        >>> from qbraid.runtime.options import RuntimeOptions
 
         # Initialize options with default and custom fields
-        >>> options = Options(check=True, custom_field=42)
-        >>> print(options)  # Output: Options(check=True, custom_field=42)
+        >>> options = RuntimeOptions(check=True, custom_field=42)
 
         # Access option fields like dictionary
-        >>> options["check"]  # Output: True
+        >>> options["check"]
+        True
 
         # Add dynamic fields
         >>> options["new_field"] = "hello"
-        >>> print(options)  # Output: Options(check=True, custom_field=42, new_field='hello')
+        >>> print(options)
+        RuntimeOptions(check=True, custom_field=42, new_field='hello')
 
         # Set a validator for a field
         >>> options.set_validator("check", lambda x: isinstance(x, bool))
@@ -54,7 +55,8 @@ class Options:
 
         # Make a shallow copy of the options
         >>> options_copy = copy.copy(options)
-        >>> print(options_copy)  # Output: Options(check=False, custom_field=42, new_field='hello')
+        >>> print(options_copy)
+        RuntimeOptions(check=False, custom_field=42, new_field='hello')
 
     Args:
         kwargs: Keyword arguments representing the initial options to set.
@@ -165,18 +167,18 @@ class Options:
     def __repr__(self):
         """Returns a string representation of the options."""
         options_str = ", ".join(f"{k}={v!r}" for k, v in self._fields.items())
-        return f"Options({options_str})"
+        return f"RuntimeOptions({options_str})"
 
     def __copy__(self):
-        """Create a shallow copy of the Options object."""
+        """Create a shallow copy of the RuntimeOptions object."""
         cls = self.__class__
         new_instance = cls(**self._fields)
         new_instance._validators = copy.copy(self._validators)
         return new_instance
 
     def __eq__(self, other: Any) -> bool:
-        """Custom equality check for Options objects."""
-        if not isinstance(other, Options):
+        """Custom equality check for RuntimeOptions objects."""
+        if not isinstance(other, RuntimeOptions):
             return False
         if self._fields != other._fields:
             return False

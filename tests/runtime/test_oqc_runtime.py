@@ -212,6 +212,12 @@ def lucy_sim_data():
 
 
 @pytest.fixture
+def mock_job_id():
+    """Return a mock task ID."""
+    return MOCK_TASK_ID
+
+
+@pytest.fixture
 def oqc_client():
     """Return a fake OQC client."""
     return MockOQCClient("fake_token")
@@ -235,6 +241,18 @@ def target_profile(lucy_sim_data):
 def oqc_device(oqc_client, target_profile):
     """Return a fake OQC device."""
     return OQCDevice(profile=target_profile, client=oqc_client)
+
+
+@pytest.fixture
+def oqc_job(mock_job_id, oqc_client, oqc_device):
+    """Return a fake OQC job."""
+    return OQCJob(mock_job_id, client=oqc_client, device=oqc_device)
+
+
+@pytest.fixture
+def oqc_job_failed(oqc_client, oqc_device):
+    """Return a fake OQC job that failed."""
+    return OQCJob("failed_job_id", client=oqc_client, device=oqc_device)
 
 
 def test_oqc_provider_device(lucy_sim_id, lucy_sim_data):
@@ -390,3 +408,14 @@ def test_oqc_runtime_remote_execution(program):
     assert set(counts.keys()) == {"00", "11"}
     assert sum(counts.values()) == shots
     assert data.measurements is None
+
+
+def test_oqc_job_get_errors(oqc_job_failed):
+    """Test getting errors from a failed job."""
+    errors = oqc_job_failed.get_errors()
+    assert errors == {"message": "Error", "code": 400}
+
+    result = oqc_job_failed.result()
+    assert result.success is False
+    assert result.data.measurement_counts is None
+    assert result.data.measurements is None

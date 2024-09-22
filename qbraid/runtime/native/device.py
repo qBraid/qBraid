@@ -21,7 +21,7 @@ from typing import TYPE_CHECKING, Optional, Union
 
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
 
-from qbraid._import import get_entrypoints
+from qbraid._entrypoints import get_entrypoints
 from qbraid._logging import logger
 from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
 from qbraid.runtime.device import QuantumDevice

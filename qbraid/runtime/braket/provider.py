@@ -26,10 +26,10 @@ from braket.circuits import Circuit
 from qbraid_core.services.quantum import quantum_lib_proxy_state
 from qbraid_core.services.quantum.proxy_braket import aws_configure
 
+from qbraid._caching import cached_method
 from qbraid.exceptions import QbraidError
 from qbraid.programs import ProgramSpec
 from qbraid.runtime import ExperimentType, QuantumProvider, TargetProfile
-from qbraid.runtime.provider import cache_results
 
 from .device import BraketDevice
 
@@ -149,10 +149,9 @@ class BraketProvider(QuantumProvider):
             **kwargs,
         )
 
-    @cache_results(ttl=120)
+    @cached_method
     def get_devices(
         self,
-        bypass_cache: bool = False,
         aws_session: Optional[braket.aws.AwsSession] = None,
         statuses: Optional[list[str]] = None,
         **kwargs,
@@ -166,11 +165,10 @@ class BraketProvider(QuantumProvider):
             for device in aws_devices
         ]
 
-    @cache_results(ttl=120)
+    @cached_method
     def get_device(
         self,
         device_id: str,
-        bypass_cache: bool = False,
     ) -> qbraid.runtime.braket.BraketDevice:
         """Returns the AWS device."""
         try:
@@ -242,3 +240,10 @@ class BraketProvider(QuantumProvider):
         values = values if values is not None else []
 
         return self._fetch_resources(region_names, key, values)
+
+    def __hash__(self):
+        if not hasattr(self, "_hash"):
+            object.__setattr__(
+                self, "_hash", hash((self.aws_access_key_id, self.aws_secret_access_key))
+            )
+        return self._hash  # pylint: disable=no-member

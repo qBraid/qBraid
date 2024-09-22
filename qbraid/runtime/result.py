@@ -94,6 +94,11 @@ class GateModelResultData(ResultData):
         """Returns the measurements data of the run."""
         return self._measurements
 
+    @property
+    def measurement_counts(self) -> Optional[Union[dict[str, int], list[dict[str, int]]]]:
+        """Returns the histogram data of the run as passed in the constructor."""
+        return self._measurement_counts
+
     def get_counts(
         self, include_zero_values: bool = False, decimal: bool = False
     ) -> Union[dict[str, int], list[dict[str, int]]]:

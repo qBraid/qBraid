@@ -28,7 +28,7 @@ import logging
 import os
 
 VALID_LOG_LEVELS = {logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR, logging.CRITICAL}
-DEFAULT_LOG_LEVEL = logging.INFO
+DEFAULT_LOG_LEVEL = logging.WARNING
 
 
 def get_log_level_from_env():

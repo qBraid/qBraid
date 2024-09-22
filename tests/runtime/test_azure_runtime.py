@@ -38,6 +38,8 @@ from qbraid.runtime.azure import AzureQuantumDevice, AzureQuantumJob, AzureQuant
 from qbraid.runtime.azure.io_format import InputDataFormat, OutputDataFormat
 from qbraid.runtime.azure.result_builder import AzureGateModelResultBuilder
 
+pytestmark = pytest.mark.filterwarnings("ignore:Unrecognized input data format:UserWarning")
+
 
 @pytest.fixture
 def mock_workspace():

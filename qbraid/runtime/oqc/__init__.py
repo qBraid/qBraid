@@ -19,9 +19,9 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
+    OQCProvider
     OQCDevice
     OQCJob
-    OQCProvider
 
 """
 from .device import OQCDevice

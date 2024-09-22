@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any
 
 import openqasm3
 
-from qbraid._import import load_entrypoint
+from qbraid._entrypoints import load_entrypoint
 from qbraid.exceptions import QbraidError
 
 from .alias_manager import get_program_type_alias

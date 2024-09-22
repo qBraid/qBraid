@@ -124,7 +124,7 @@ def test_runtime_job_model(valid_qasm):
     job_data = {
         "qbraidJobId": "job_123",
         "qbraidDeviceId": "device_456",
-        "status": "RUNNING",
+        "status": "COMPLETED",
         "shots": 100,
         "experimentType": "gate_model",
         "openQasm": valid_qasm,
@@ -139,7 +139,7 @@ def test_runtime_job_model(valid_qasm):
     job = RuntimeJobModel.from_dict(job_data)
     assert job.job_id == "job_123"
     assert job.device_id == "device_456"
-    assert job.status == JobStatus.RUNNING
+    assert job.status == JobStatus.COMPLETED.value
     assert job.shots == 100
     assert isinstance(job.metadata, GateModelExperimentMetadata)
     assert job.time_stamps.executionDuration == 60000  # pylint: disable=no-member
@@ -149,10 +149,10 @@ def test_runtime_job_model(valid_qasm):
     job = RuntimeJobModel.from_dict(job_data)
     assert isinstance(job.metadata, GateModelExperimentMetadata)
 
-    with pytest.raises(ValidationError):
+    with pytest.raises(ValueError):
         RuntimeJobModel.from_dict(
             {"qbraidJobId": "job_123", "qbraidDeviceId": "device_456", "status": "invalid_status"}
-        )  # Invalid status
+        )
 
 
 def test_populate_metadata(valid_qasm):
@@ -163,7 +163,7 @@ def test_populate_metadata(valid_qasm):
     assert isinstance(populated_data["metadata"], GateModelExperimentMetadata)
     assert populated_data["metadata"].qasm == valid_qasm
 
-    experiment_type = ExperimentType.AHS  # Non-gate model experiment
+    experiment_type = ExperimentType.AHS
     populated_data = RuntimeJobModel._populate_metadata(job_data, experiment_type)
     assert isinstance(populated_data["metadata"], ExperimentMetadata)
 
@@ -173,9 +173,9 @@ def test_runtime_job_model_metadata_population():
     job_data = {
         "qbraidJobId": "job_123",
         "qbraidDeviceId": "device_456",
-        "status": "RUNNING",
+        "status": "CANCELLED",
         "shots": 100,
-        "experimentType": "analog_hamiltonian_simulation",  # non-gate model
+        "experimentType": "analog_hamiltonian_simulation",
         "someAdditionalField": "extra data",
         "timeStamps": {
             "createdAt": "2024-09-14T01:06:34.000Z",
@@ -186,3 +186,22 @@ def test_runtime_job_model_metadata_population():
     job = RuntimeJobModel.from_dict(job_data)
     assert isinstance(job.metadata, ExperimentMetadata)
     assert job.metadata.someAdditionalField == "extra data"
+
+
+def test_time_stamps_created_at_fallback():
+    """Test fallback to createdAt for TimeStamps."""
+    job_data = {
+        "qbraidJobId": "job_123",
+        "qbraidDeviceId": "device_456",
+        "status": "RUNNING",
+        "shots": 100,
+        "experimentType": "analog_hamiltonian_simulation",
+        "createdAt": "2024-09-14T01:06:34.000Z",
+    }
+    job = RuntimeJobModel.from_dict(job_data)
+
+    # pylint: disable=no-member
+    assert job.time_stamps.createdAt == datetime(2024, 9, 14, 1, 6, 34, 0)
+    assert job.time_stamps.endedAt is None
+    assert job.time_stamps.executionDuration is None
+    # pylint: enable=no-member

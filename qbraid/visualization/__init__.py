@@ -20,13 +20,13 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   plot_histogram
-   plot_distribution
-   plot_conversion_graph
-   circuit_drawer
-   qasm3_drawer
-   plot_atomic_register
-   animate_qpu_state
+    plot_histogram
+    plot_distribution
+    plot_conversion_graph
+    circuit_drawer
+    qasm3_drawer
+    plot_atomic_register
+    animate_qpu_state
 
 Exceptions
 -----------
@@ -34,7 +34,7 @@ Exceptions
 .. autosummary::
    :toctree: ../stubs/
 
-   VisualizationError
+    VisualizationError
 
 """
 from .ahs import plot_atomic_register

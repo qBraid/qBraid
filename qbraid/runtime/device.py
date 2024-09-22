@@ -26,7 +26,7 @@ from qbraid.transpiler import CircuitConversionError, ConversionGraph, Conversio
 
 from .enums import DeviceStatus
 from .exceptions import ProgramValidationError, QbraidRuntimeError, ResourceNotFoundError
-from .options import Options
+from .options import RuntimeOptions
 
 if TYPE_CHECKING:
     import qbraid.programs
@@ -94,7 +94,7 @@ class QuantumDevice(ABC):
     @classmethod
     def _default_options(cls):
         """Define default options for the QuantumDevice."""
-        options = Options(transpile=True, transform=True, validate=True)
+        options = RuntimeOptions(transpile=True, transform=True, validate=True)
         options.set_validator("transpile", lambda x: isinstance(x, bool))
         options.set_validator("transform", lambda x: isinstance(x, bool))
         options.set_validator("validate", lambda x: isinstance(x, bool))

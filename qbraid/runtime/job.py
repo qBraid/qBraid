@@ -60,11 +60,10 @@ class QuantumJob(ABC):
     def status(self) -> JobStatus:
         """Return the status of the job / task , among the values of ``JobStatus``."""
 
-    def metadata(self, use_cache: bool = False) -> dict[str, Any]:
+    def metadata(self) -> dict[str, Any]:
         """Return the metadata regarding the job."""
-        if not use_cache:
-            status = self.status()
-            self._cache_metadata["status"] = status
+        status = self.status()
+        self._cache_metadata["status"] = status
         return self._cache_metadata
 
     def wait_for_final_state(self, timeout: Optional[int] = None, poll_interval: int = 5) -> None:

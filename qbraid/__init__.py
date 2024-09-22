@@ -42,10 +42,45 @@ __all__ = [
 
 _lazy_mods = ["interface", "passes", "programs", "runtime", "transpiler", "visualization"]
 
-_lazy_objects = {
-    "random_circuit": "interface",
-    "transpile": "transpiler",
-    "QPROGRAM_REGISTRY": "programs",
+_lazy_objs = {
+    "interface": [
+        "circuits_allclose",
+        "random_circuit",
+    ],
+    "programs": [
+        "AnalogHamiltonianProgram",
+        "GateModelProgram",
+        "ProgramSpec",
+        "Qasm2String",
+        "Qasm3String",
+        "QuantumProgram",
+        "QPROGRAM",
+        "QPROGRAM_NATIVE",
+        "QPROGRAM_REGISTRY",
+        "NATIVE_REGISTRY",
+        "get_program_type_alias",
+        "load_program",
+        "register_program_type",
+        "unregister_program_type",
+    ],
+    "transpiler": [
+        "Conversion",
+        "ConversionGraph",
+        "ConversionScheme",
+        "transpile",
+    ],
+    "runtime": [
+        "AhsResultData",
+        "AhsShotResult",
+        "GateModelResultData",
+        "QuantumDevice",
+        "QuantumJob",
+        "QuantumProvider",
+        "Result",
+        "ResultData",
+        "RuntimeOptions",
+        "TargetProfile",
+    ],
 }
 
 
@@ -57,17 +92,19 @@ def __getattr__(name):
         globals()[name] = module
         return module
 
-    if name in _lazy_objects:
-        import importlib  # pylint: disable=import-outside-toplevel
+    for mod_name, objects in _lazy_objs.items():
+        if name in objects:
+            import importlib  # pylint: disable=import-outside-toplevel
 
-        mod_name = _lazy_objects[name]
-        module = importlib.import_module(f".{mod_name}", __name__)
-        obj = getattr(module, name)
-        globals()[name] = obj
-        return obj
+            module = importlib.import_module(f".{mod_name}", __name__)
+            obj = getattr(module, name)
+            globals()[name] = obj
+            return obj
 
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def __dir__():
-    return sorted(__all__ + _lazy_mods + list(_lazy_objects.keys()))
+    return sorted(
+        __all__ + _lazy_mods + [item for sublist in _lazy_objs.values() for item in sublist]
+    )

@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for lazy imports and loading entry points.
+Unit tests for lazy loading of modules, objects and entry points
 
 """
 import sys
@@ -19,7 +19,8 @@ from unittest.mock import patch
 
 import pytest
 
-from qbraid._import import get_entrypoints, load_entrypoint
+import qbraid
+from qbraid._entrypoints import get_entrypoints, load_entrypoint
 from qbraid.exceptions import QbraidError
 from qbraid.programs._import import _dynamic_importer
 
@@ -76,9 +77,9 @@ def test_dynamic_importer_exception():
                 assert imported == {}
 
 
-@patch("qbraid._import.importlib.metadata.entry_points")
-@patch("qbraid._import.pkg_resources.iter_entry_points")
-@patch("qbraid._import.sys.version_info")
+@patch("qbraid._entrypoints.importlib.metadata.entry_points")
+@patch("qbraid._entrypoints.pkg_resources.iter_entry_points")
+@patch("qbraid._entrypoints.sys.version_info")
 def test_get_entrypoints_with_old_python_version(
     mock_version_info, mock_pkg_resources_eps, mock_importlib_eps
 ):
@@ -97,9 +98,9 @@ def test_get_entrypoints_with_old_python_version(
     mock_importlib_eps.assert_not_called()
 
 
-@patch("qbraid._import.importlib.metadata.entry_points")
-@patch("qbraid._import.pkg_resources.iter_entry_points")
-@patch("qbraid._import.sys.version_info")
+@patch("qbraid._entrypoints.importlib.metadata.entry_points")
+@patch("qbraid._entrypoints.pkg_resources.iter_entry_points")
+@patch("qbraid._entrypoints.sys.version_info")
 def test_get_entrypoints_with_new_python_version(
     mock_version_info, mock_pkg_resources_eps, mock_importlib_eps
 ):
@@ -116,3 +117,21 @@ def test_get_entrypoints_with_new_python_version(
 
     mock_importlib_eps.return_value.select.assert_called_once_with(group="qbraid.programs")
     mock_pkg_resources_eps.assert_not_called()
+
+
+@pytest.mark.parametrize("module_name", qbraid._lazy_mods)
+def test_lazy_loading_modules(module_name):
+    """Test lazy loading of modules."""
+    mod = getattr(qbraid, module_name)
+    assert mod is not None
+    assert mod.__name__.endswith(f".{module_name}")
+
+
+@pytest.mark.parametrize(
+    "obj_name", [item for sublist in qbraid._lazy_objs.values() for item in sublist]
+)
+def test_lazy_loading_objects(obj_name):
+    """Test lazy loading of objects."""
+    obj = getattr(qbraid, obj_name)
+    assert obj is not None
+    assert hasattr(qbraid, obj_name)

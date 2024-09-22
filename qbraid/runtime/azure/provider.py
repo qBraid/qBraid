@@ -20,12 +20,13 @@ from azure.quantum import Workspace
 from azure.quantum.target import Target
 from qbraid_core._import import LazyLoader
 
+from qbraid._caching import cached_method
 from qbraid.programs import ProgramSpec
 from qbraid.programs.typer import IonQDict
 from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
-from qbraid.runtime.provider import QuantumProvider, cache_results
+from qbraid.runtime.provider import QuantumProvider
 
 from .device import AzureQuantumDevice
 from .io_format import InputDataFormat
@@ -115,8 +116,8 @@ class AzureQuantumProvider(QuantumProvider):
             program_spec=program_spec,
         )
 
-    @cache_results(ttl=120)
-    def get_devices(self, bypass_cache: bool = False, **kwargs) -> list[AzureQuantumDevice]:
+    @cached_method
+    def get_devices(self, **kwargs) -> list[AzureQuantumDevice]:
         """Get all Azure Quantum devices.
 
         Args:
@@ -139,12 +140,8 @@ class AzureQuantumProvider(QuantumProvider):
             AzureQuantumDevice(self._build_profile(target), self.workspace) for target in targets
         ]
 
-    @cache_results(ttl=120)
-    def get_device(
-        self,
-        device_id: str,
-        bypass_cache: bool = False,
-    ) -> AzureQuantumDevice:
+    @cached_method
+    def get_device(self, device_id: str) -> AzureQuantumDevice:
         """Get a specific Azure Quantum device.
 
         Args:
@@ -158,3 +155,10 @@ class AzureQuantumProvider(QuantumProvider):
         if not target:
             raise ValueError(f"Device {device_id} not found.")
         return AzureQuantumDevice(self._build_profile(target), self.workspace)
+
+    def __hash__(self):
+        if not hasattr(self, "_hash"):
+            object.__setattr__(
+                self, "_hash", hash((self._workspace.credential, self._workspace.user_agent))
+            )
+        return self._hash  # pylint: disable=no-member

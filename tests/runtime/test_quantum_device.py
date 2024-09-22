@@ -19,7 +19,7 @@ import logging
 import random
 import time
 from typing import Any, Optional
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import cirq
 import numpy as np
@@ -28,6 +28,7 @@ from pandas import DataFrame
 from pyqir import BasicQisBuilder, Module, SimpleModule
 from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
+from qbraid._caching import cache_disabled
 from qbraid.programs import ProgramSpec, register_program_type, unregister_program_type
 from qbraid.runtime import DeviceStatus, ProgramValidationError, Result, TargetProfile
 from qbraid.runtime.device import QuantumDevice
@@ -90,7 +91,7 @@ JOB_DATA_QIR = {
     "qbraidDeviceId": "qbraid_qir_simulator",
     "vendor": "qbraid",
     "provider": "qbraid",
-    "tags": "{}",
+    "tags": {},
     **REDUNDANT_JOB_DATA,
 }
 
@@ -103,7 +104,7 @@ JOB_DATA_QUERA = {
     "qbraidDeviceId": "quera_qasm_simulator",
     "vendor": "qbraid",
     "provider": "quera",
-    "tags": "{}",
+    "tags": {},
     **REDUNDANT_JOB_DATA,
 }
 
@@ -189,6 +190,18 @@ def qasm2_no_meas():
 
 class MockClient:
     """Mock client for testing."""
+
+    @property
+    def session(self):
+        """Mock session property."""
+        session = MagicMock()
+        session.api_key = "abc123"
+        return session
+
+    @property
+    def _user_metadata(self):
+        """Mock user metadata property."""
+        return {"organization": "qbraid", "role": "guest"}
 
     def search_devices(self, query: dict[str, Any]) -> list[dict[str, Any]]:
         """Returns a list of devices matching the given query."""
@@ -590,8 +603,10 @@ def test_provider_get_devices(mock_client):
     assert devices[0].id == "qbraid_qir_simulator"
 
 
-def test_provider_get_cached_devices(mock_client):
+def test_provider_get_cached_devices(mock_client, monkeypatch):
     """Test getting devices from the cache."""
+    monkeypatch.setenv("DISABLE_CACHE", "0")
+
     client = mock_client
     provider = QbraidProvider(client=client)
     client.search_devices = Mock()
@@ -599,14 +614,18 @@ def test_provider_get_cached_devices(mock_client):
 
     _ = provider.get_devices(qbraid_id="qbraid_qir_simulator")
 
-    # call again, but ensure that the search method is NOT called again
-    # second call is from cache
+    # second call should be from cache
     _ = provider.get_devices(qbraid_id="qbraid_qir_simulator")
     client.search_devices.assert_called_once()
 
+    provider.get_devices.cache_clear()
 
-def test_provider_get_devices_post_cache_expiry(mock_client):
+
+def test_provider_get_devices_post_cache_expiry(mock_client, monkeypatch):
     """Test that the cache entry is invalidated when the cache is too old."""
+    monkeypatch.setenv("DISABLE_CACHE", "0")
+    monkeypatch.setenv("_QBRAID_TEST_CACHE_CALLS", "1")
+
     client = mock_client
     provider = QbraidProvider(client=client)
     client.search_devices = Mock()
@@ -616,23 +635,29 @@ def test_provider_get_devices_post_cache_expiry(mock_client):
     device_ttl = 120
     _ = provider.get_devices(qbraid_id="qbraid_qir_simulator")
 
-    # call again, but ensure that the search method is called again and
-    # second call is NOT from cache
+    # second call should not come from cache
     with patch("time.time", return_value=init_time + device_ttl + 5):
         _ = provider.get_devices(qbraid_id="qbraid_qir_simulator")
-        assert client.search_devices.call_count == 2
+    assert client.search_devices.call_count == 2
 
 
-def test_provider_get_devices_bypass_cache(mock_client):
+def test_provider_get_devices_bypass_cache(mock_client, monkeypatch):
     """Test that the cache is bypassed when the bypass_cache flag is set."""
+    monkeypatch.setenv("DISABLE_CACHE", "0")
+    monkeypatch.setenv("_QBRAID_TEST_CACHE_CALLS", "1")
+
     client = mock_client
     provider = QbraidProvider(client=client)
     client.search_devices = Mock()
     client.search_devices.return_value = [DEVICE_DATA_QIR]
 
-    _ = provider.get_devices(qbraid_id="qbraid_qir_simulator")
-    _ = provider.get_devices(qbraid_id="qbraid_qir_simulator", bypass_cache=True)
-    assert client.search_devices.call_count == 2
+    with cache_disabled(provider):
+        assert provider.__cache_disabled is True  # pylint: disable=no-member
+        _ = provider.get_devices(qbraid_id="qbraid_qir_simulator")
+
+    assert provider.__cache_disabled is False  # pylint: disable=no-member
+    assert client.search_devices.call_count == 1
+    provider.get_devices.cache_clear()
 
 
 def test_provider_search_devices_raises_for_bad_client():
@@ -876,5 +901,14 @@ def test_runtime_job_model_from_dict_custom_status(status, status_text):
 
     model = RuntimeJobModel.from_dict(job_data)
 
-    assert model.status == JobStatus.FAILED
-    assert model.status.status_message == status_text
+    assert model.status == JobStatus.FAILED.value
+    assert model.status_text == status_text
+
+
+def test_construct_aux_payload_no_spec(mock_quera_device, qasm2_no_meas):
+    """Test constructing auxiliary payload without a predefined program spec."""
+    aux_payload = mock_quera_device._construct_aux_payload(qasm2_no_meas)
+    assert len(aux_payload) == 3
+    assert aux_payload["openQasm"] == qasm2_no_meas
+    assert aux_payload["circuitNumQubits"] == 2
+    assert aux_payload["circuitDepth"] == 1

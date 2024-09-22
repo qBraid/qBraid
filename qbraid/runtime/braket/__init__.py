@@ -22,8 +22,8 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-    BraketDevice
     BraketProvider
+    BraketDevice
     BraketQuantumTask
 
 Functions

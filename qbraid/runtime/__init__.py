@@ -41,7 +41,7 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-    Options
+    RuntimeOptions
     TargetProfile
     QuantumDevice
     QuantumJob
@@ -49,6 +49,8 @@ Classes
     Result
     ResultData
     GateModelResultData
+    AhsResultData
+    AhsShotResult
 
 Exceptions
 ------------
@@ -75,11 +77,10 @@ from .exceptions import (
     ResourceNotFoundError,
 )
 from .job import QuantumJob
-from .native import *
-from .options import Options
+from .options import RuntimeOptions
 from .profile import TargetProfile
 from .provider import QuantumProvider
-from .result import GateModelResultData, Result, ResultData
+from .result import AhsResultData, AhsShotResult, GateModelResultData, Result, ResultData
 
 __all__ = [
     "QuantumDevice",
@@ -95,16 +96,53 @@ __all__ = [
     "TargetProfile",
     "QuantumJob",
     "QuantumProvider",
-    "Options",
+    "RuntimeOptions",
     "NoiseModel",
     "Result",
     "ResultData",
     "GateModelResultData",
+    "AhsResultData",
+    "AhsShotResult",
 ]
 
 __all__.extend(native.__all__)
 
-_lazy_mods = ["azure", "braket", "ionq", "oqc", "qiskit"]
+_lazy_mods = ["azure", "braket", "ionq", "oqc", "qiskit", "native"]
+
+_lazy_objs = {
+    "azure": ["AzureQuantumProvider", "AzureQuantumDevice", "AzureQuantumJob"],
+    "braket": [
+        "BraketProvider",
+        "BraketDevice",
+        "BraketQuantumTask",
+    ],
+    "ionq": [
+        "IonQSession",
+        "IonQProvider",
+        "IonQDevice",
+        "IonQJob",
+    ],
+    "oqc": [
+        "OQCProvider",
+        "OQCDevice",
+        "OQCJob",
+    ],
+    "qiskit": [
+        "QiskitRuntimeProvider",
+        "QiskitBackend",
+        "QiskitJob",
+    ],
+    "native": [
+        "Session",
+        "QbraidSession",
+        "QbraidClient",
+        "QbraidProvider",
+        "QbraidDevice",
+        "QbraidJob",
+        "RuntimeJobModel",
+        "QirRunner",
+    ],
+}
 
 
 def __getattr__(name):
@@ -114,8 +152,20 @@ def __getattr__(name):
         module = importlib.import_module(f".{name}", __name__)
         globals()[name] = module
         return module
+
+    for mod_name, objects in _lazy_objs.items():
+        if name in objects:
+            import importlib  # pylint: disable=import-outside-toplevel
+
+            module = importlib.import_module(f".{mod_name}", __name__)
+            obj = getattr(module, name)
+            globals()[name] = obj
+            return obj
+
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def __dir__():
-    return sorted(__all__ + _lazy_mods)
+    return sorted(
+        __all__ + _lazy_mods + [item for sublist in _lazy_objs.values() for item in sublist]
+    )

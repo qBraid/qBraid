@@ -89,7 +89,7 @@ class JobStatus(Enum):
     """
 
     def __new__(cls, value: str):
-        """Customize Enum to accept a single value."""
+        """Enumeration representing the status of a :py:class:`QuantumJob`."""
         obj = object.__new__(cls)
         obj._value_ = value
         obj.default_message = cls._get_default_message(value)

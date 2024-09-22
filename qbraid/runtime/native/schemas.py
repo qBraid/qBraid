@@ -15,6 +15,7 @@ Module defining qBraid native runtime schemas.
 from __future__ import annotations
 
 from datetime import datetime
+from decimal import Decimal
 from typing import Any, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -85,13 +86,15 @@ class TimeStamps(BaseModel):
 
     Attributes:
         createdAt (datetime): Timestamp when the job was created.
-        endedAt (datetime): Timestamp when the job ended.
-        executionDuration (float): Duration of execution in milliseconds.
+        endedAt (datetime, optional): Timestamp when the job ended.
+        executionDuration (int, optional): Duration of execution in milliseconds.
     """
 
     createdAt: datetime
-    endedAt: datetime
-    executionDuration: int = Field(gt=0, description="Execution time in milliseconds")
+    endedAt: Optional[datetime] = None
+    executionDuration: Optional[int] = Field(
+        default=None, gt=0, description="Execution time in milliseconds"
+    )
 
     @field_validator("createdAt", "endedAt", mode="before")
     @classmethod
@@ -102,7 +105,7 @@ class TimeStamps(BaseModel):
             value: The timestamp string.
 
         Returns:
-            datetime: Parsed datetime object.
+            datetime: Parsed datetime object or None if value is not provided.
         """
         if value:
             return datetime.strptime(value, "%Y-%m-%dT%H:%M:%S.%fZ")
@@ -117,19 +120,22 @@ class RuntimeJobModel(QbraidSchemaBase):
         device_id (str): The identifier of the quantum device used.
         status (JobStatus): The current status of the job.
         shots (Optional[int]): The number of shots for the quantum experiment.
-        experiment_type (ExperimentType): The type of experiment conducted.
+        experiment_type (str): The type of experiment conducted.
         metadata (Union[QbraidExperimentMetadata, ExperimentMetadata]): Metadata associated
             with the experiment.
         time_stamps (TimeStamps): Time-related information about the job.
+        tags (dict[str, str]): Custom tags associated with the job.
+        cost (Decimal, optional): The cost of the job in qBraid credits.
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True)
 
     job_id: str = Field(..., alias="qbraidJobId")
     device_id: str = Field(..., alias="qbraidDeviceId")
-    status: JobStatus
+    status: str
+    status_text: Optional[str] = Field(None, alias="statusText")
     shots: Optional[int] = Field(None, gt=0)
-    experiment_type: ExperimentType = Field(..., alias="experimentType")
+    experiment_type: str = Field(..., alias="experimentType")
     metadata: Union[
         QbraidQirSimulationMetadata,
         QuEraQasmSimulationMetadata,
@@ -137,6 +143,26 @@ class RuntimeJobModel(QbraidSchemaBase):
         ExperimentMetadata,
     ]
     time_stamps: TimeStamps = Field(..., alias="timeStamps")
+    tags: dict[str, str] = Field(default_factory=dict)
+    cost_credits: Optional[Decimal] = Field(None, ge=0, alias="cost")
+
+    @field_validator("status", mode="before")
+    @classmethod
+    def validate_status(cls, value):
+        """Ensure the status is a valid JobStatus enum value."""
+        members = {status.value for status in list(JobStatus)}
+        if value not in members:
+            raise ValueError(f"Invalid status: {value}. Must be one of {members}.")
+        return value
+
+    @field_validator("experiment_type", mode="before")
+    @classmethod
+    def validate_experiment_type(cls, value):
+        """Ensure the experiment_type is a valid ExperimentType enum value."""
+        members = {exp_type.value for exp_type in list(ExperimentType)}
+        if value not in members:
+            raise ValueError(f"Invalid experiment_type: {value}. Must be one of {members}.")
+        return value
 
     @staticmethod
     def _populate_metadata(
@@ -191,19 +217,30 @@ class RuntimeJobModel(QbraidSchemaBase):
         """
         experiment_type = ExperimentType(job_data.pop("experimentType", "gate_model"))
         job_data["experimentType"] = experiment_type
-        if "qbraidJobId" not in job_data and "job_id" in job_data:
-            job_data["qbraidJobId"] = job_data.pop("job_id")
+
+        time_stamps = job_data.setdefault("timeStamps", {})
+        created_at = job_data.get("createdAt")
+
+        if created_at is not None and "createdAt" not in time_stamps:
+            time_stamps["createdAt"] = created_at
 
         if "metadata" not in job_data:
             job_data = cls._populate_metadata(job_data, experiment_type)
 
         status = job_data.get("status")
-        status_message = job_data.pop("statusText", None)
 
-        if status_message:
-            if isinstance(status, str):
-                job_data["status"] = JobStatus(status)
-            if isinstance(job_data["status"], JobStatus):
-                job_data["status"].set_status_message(status_message)
+        if isinstance(status, str):
+            status = JobStatus(status)
+
+        job_data.setdefault(
+            "statusText", status.status_message if isinstance(status, JobStatus) else None
+        )
+
+        if isinstance(status, JobStatus):
+            job_data["status"] = status.value
+
+        experiment_type = job_data.get("experimentType")
+        if isinstance(experiment_type, ExperimentType):
+            job_data["experimentType"] = experiment_type.value
 
         return cls(**job_data)
