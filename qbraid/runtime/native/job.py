@@ -95,7 +95,9 @@ class QbraidJob(QuantumJob):
         self.wait_for_final_state()
         job_data = self.client.get_job(self.id)
         success = job_data.get("status") == JobStatus.COMPLETED.name
-        job_result = self.client.get_job_results(self.id) if success else {}
+        job_result = (
+            self.client.get_job_results(self.id, wait_time=1, backoff_factor=1.4) if success else {}
+        )
         job_result.update(job_data)
         metadata_to_result_data = {
             QbraidQirSimulationMetadata: QbraidQirSimulatorResultData,

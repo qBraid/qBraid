@@ -32,6 +32,8 @@ Exceptions
    QbraidError
 
 """
+from typing import TYPE_CHECKING
+
 from ._about import about
 from ._caching import cache_disabled, clear_cache
 from ._version import __version__
@@ -77,16 +79,68 @@ _lazy_objs = {
     "runtime": [
         "AhsResultData",
         "AhsShotResult",
+        "DeviceStatus",
+        "ExperimentType",
         "GateModelResultData",
+        "JobStatus",
+        "NoiseModel",
+        "QbraidProvider",
+        "QbraidDevice",
+        "QbraidJob",
+        "QbraidSession",
+        "QbraidClient",
         "QuantumDevice",
         "QuantumJob",
         "QuantumProvider",
         "Result",
         "ResultData",
         "RuntimeOptions",
+        "Session",
         "TargetProfile",
     ],
 }
+
+if TYPE_CHECKING:
+    from .interface import circuits_allclose as circuits_allclose
+    from .interface import random_circuit as random_circuit
+    from .programs import NATIVE_REGISTRY as NATIVE_REGISTRY
+    from .programs import QPROGRAM as QPROGRAM
+    from .programs import QPROGRAM_NATIVE as QPROGRAM_NATIVE
+    from .programs import QPROGRAM_REGISTRY as QPROGRAM_REGISTRY
+    from .programs import AnalogHamiltonianProgram as AnalogHamiltonianProgram
+    from .programs import GateModelProgram as GateModelProgram
+    from .programs import ProgramSpec as ProgramSpec
+    from .programs import Qasm2String as Qasm2String
+    from .programs import Qasm3String as Qasm3String
+    from .programs import QuantumProgram as QuantumProgram
+    from .programs import get_program_type_alias as get_program_type_alias
+    from .programs import load_program as load_program
+    from .programs import register_program_type as register_program_type
+    from .programs import unregister_program_type as unregister_program_type
+    from .runtime import AhsResultData as AhsResultData
+    from .runtime import AhsShotResult as AhsShotResult
+    from .runtime import DeviceStatus as DeviceStatus
+    from .runtime import ExperimentType as ExperimentType
+    from .runtime import GateModelResultData as GateModelResultData
+    from .runtime import JobStatus as JobStatus
+    from .runtime import NoiseModel as NoiseModel
+    from .runtime import QbraidClient as QbraidClient
+    from .runtime import QbraidDevice as QbraidDevice
+    from .runtime import QbraidJob as QbraidJob
+    from .runtime import QbraidProvider as QbraidProvider
+    from .runtime import QbraidSession as QbraidSession
+    from .runtime import QuantumDevice as QuantumDevice
+    from .runtime import QuantumJob as QuantumJob
+    from .runtime import QuantumProvider as QuantumProvider
+    from .runtime import Result as Result
+    from .runtime import ResultData as ResultData
+    from .runtime import RuntimeOptions as RuntimeOptions
+    from .runtime import Session as Session
+    from .runtime import TargetProfile as TargetProfile
+    from .transpiler import Conversion as Conversion
+    from .transpiler import ConversionGraph as ConversionGraph
+    from .transpiler import ConversionScheme as ConversionScheme
+    from .transpiler import transpile as transpile
 
 
 def __getattr__(name):

@@ -252,7 +252,7 @@ class MockClient:
             return JOB_DATA_QUERA
         raise QuantumServiceRequestError("No jobs found matching given criteria")
 
-    def get_job_results(self, job_id: str) -> dict[str, Any]:
+    def get_job_results(self, job_id: str, **kwargs) -> dict[str, Any]:
         """Returns the results of the quantum job with the given ID."""
         device_id = self._extract_device_id(job_id)
         if device_id == "qbraid_qir_simulator":

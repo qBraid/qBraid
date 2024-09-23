@@ -65,6 +65,8 @@ Exceptions
     DeviceProgramTypeMismatchError
 
 """
+from typing import TYPE_CHECKING
+
 from . import native
 from ._display import display_jobs_from_data
 from .device import QuantumDevice
@@ -77,6 +79,7 @@ from .exceptions import (
     ResourceNotFoundError,
 )
 from .job import QuantumJob
+from .native import *
 from .options import RuntimeOptions
 from .profile import TargetProfile
 from .provider import QuantumProvider
@@ -107,15 +110,15 @@ __all__ = [
 
 __all__.extend(native.__all__)
 
-_lazy_mods = ["azure", "aws", "ionq", "oqc", "ibm", "native"]
+_lazy_mods = ["aws", "azure", "ibm", "ionq", "oqc"]
 
 _lazy_objs = {
-    "azure": ["AzureQuantumProvider", "AzureQuantumDevice", "AzureQuantumJob"],
     "aws": [
         "BraketProvider",
         "BraketDevice",
         "BraketQuantumTask",
     ],
+    "azure": ["AzureQuantumProvider", "AzureQuantumDevice", "AzureQuantumJob"],
     "ionq": [
         "IonQSession",
         "IonQProvider",
@@ -132,17 +135,25 @@ _lazy_objs = {
         "QiskitBackend",
         "QiskitJob",
     ],
-    "native": [
-        "Session",
-        "QbraidSession",
-        "QbraidClient",
-        "QbraidProvider",
-        "QbraidDevice",
-        "QbraidJob",
-        "RuntimeJobModel",
-        "QirRunner",
-    ],
 }
+
+if TYPE_CHECKING:
+    from .aws import BraketDevice as BraketDevice
+    from .aws import BraketProvider as BraketProvider
+    from .aws import BraketQuantumTask as BraketQuantumTask
+    from .azure import AzureQuantumDevice as AzureQuantumDevice
+    from .azure import AzureQuantumJob as AzureQuantumJob
+    from .azure import AzureQuantumProvider as AzureQuantumProvider
+    from .ibm import QiskitBackend as QiskitBackend
+    from .ibm import QiskitJob as QiskitJob
+    from .ibm import QiskitRuntimeProvider as QiskitRuntimeProvider
+    from .ionq import IonQDevice as IonQDevice
+    from .ionq import IonQJob as IonQJob
+    from .ionq import IonQProvider as IonQProvider
+    from .ionq import IonQSession as IonQSession
+    from .oqc import OQCDevice as OQCDevice
+    from .oqc import OQCJob as OQCJob
+    from .oqc import OQCProvider as OQCProvider
 
 
 def __getattr__(name):

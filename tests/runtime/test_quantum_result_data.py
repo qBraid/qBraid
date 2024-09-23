@@ -26,11 +26,16 @@ from qbraid.runtime.native.result_data import (
     QbraidQirSimulatorResultData,
     QuEraQasmSimulatorResultData,
 )
+from qbraid.runtime.postprocess import (
+    format_counts,
+    normalize_batch_bit_lengths,
+    normalize_bit_lengths,
+    normalize_counts,
+)
 from qbraid.runtime.result import (
     AhsResultData,
     AhsShotResult,
     ExperimentType,
-    GateModelResultBuilder,
     GateModelResultData,
     Result,
 )
@@ -68,9 +73,7 @@ except ImportError:
 )
 def test_format_counts(counts_raw, expected_out, include_zero_values):
     """Test formatting of raw measurement counts."""
-    counts_out = GateModelResultBuilder.format_counts(
-        counts_raw, include_zero_values=include_zero_values
-    )
+    counts_out = format_counts(counts_raw, include_zero_values=include_zero_values)
     assert counts_out == expected_out  # check equivalance
     assert list(counts_out.items()) == list(expected_out.items())  # check ordering of keys
 
@@ -79,35 +82,35 @@ def test_normalize_different_key_lengths():
     """Test normalization of measurement counts with different key lengths."""
     measurements = [{"0": 10, "1": 15}, {"00": 5, "01": 8, "10": 12}]
     expected = [{"00": 10, "01": 15}, {"00": 5, "01": 8, "10": 12}]
-    assert GateModelResultBuilder.normalize_batch_bit_lengths(measurements) == expected
+    assert normalize_batch_bit_lengths(measurements) == expected
 
 
 def test_normalize_same_key_lengths():
     """Test normalization of measurement counts with the same key lengths."""
     measurements = [{"00": 7, "01": 9}, {"10": 4, "11": 3}]
     expected = [{"00": 7, "01": 9}, {"10": 4, "11": 3}]
-    assert GateModelResultBuilder.normalize_batch_bit_lengths(measurements) == expected
+    assert normalize_batch_bit_lengths(measurements) == expected
 
 
 def test_empty_input():
     """Test normalization of empty input."""
     measurements = []
     expected = []
-    assert GateModelResultBuilder.normalize_batch_bit_lengths(measurements) == expected
+    assert normalize_batch_bit_lengths(measurements) == expected
 
 
 def test_empty_dicts():
     """Test normalization of empty dicts."""
     measurements = [{}, {}, {"00": 1, "11": 2}]
     expected = [{}, {}, {"00": 1, "11": 2}]
-    assert GateModelResultBuilder.normalize_batch_bit_lengths(measurements) == expected
+    assert normalize_batch_bit_lengths(measurements) == expected
 
 
 def test_normalize_single_dict():
     """Test normalization of a single dict."""
     measurements = {"0": 2, "1": 3, "10": 4, "11": 1}
     expected = {"00": 2, "01": 3, "10": 4, "11": 1}
-    assert GateModelResultBuilder.normalize_bit_lengths(measurements) == expected
+    assert normalize_bit_lengths(measurements) == expected
 
 
 def test_get_counts_raises_for_no_measurements():
@@ -128,7 +131,7 @@ def test_get_counts_from_cache_key():
     assert data.get_counts() == 42
 
 
-class MockBatchResult(GateModelResultBuilder):
+class MockBatchResult:
     """Mock batch result for testing."""
 
     def get_counts(self):
@@ -140,7 +143,7 @@ def test_batch_normalized_counts():
     """Test batch measurement counts."""
     result = MockBatchResult()
     raw_counts = result.get_counts()
-    counts = result.normalize_counts(raw_counts, include_zero_values=False)
+    counts = normalize_counts(raw_counts, include_zero_values=False)
     expected = [{"0": 550}, {"0": 550, "1": 474}]
     assert counts == expected
 
@@ -202,10 +205,10 @@ def test_to_dict_with_empty_measurements():
 
     result_dict = result_data.to_dict()
 
+    assert result_dict["measurements"] is None
+    assert result_dict["measurement_counts"] == {"00": 100, "01": 50}
     assert result_dict["shots"] == 150
     assert result_dict["num_measured_qubits"] == 2
-    assert result_dict["measurement_counts"] == {"00": 100, "01": 50}
-    assert result_dict["measurements"] is None
 
 
 def test_to_dict_probabilities(gate_model_result_data):
@@ -488,3 +491,21 @@ def test_qir_sim_data_seed_property_with_none():
 def test_qir_sim_data_inherited_measurement_counts_property(qir_sim_data):
     """Test that the inherited measurement_counts property is working correctly."""
     assert qir_sim_data.get_counts() == {"00": 10, "01": 15}
+
+
+def test_normalize_batch_decimal_counts():
+    """Test normalization of batch measurement counts with decimal=True."""
+    counts = [{"00": 10, "01": 15}, {"10": 20, "11": 25}]
+    expected = [{0: 10, 1: 15}, {2: 20, 3: 25}]
+    result = normalize_counts(counts, decimal=True)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    "counts", [{0: 10, 1: 15, 3: 25}, {"0": 10, "1": 15, "3": 25}, {"00": 10, "01": 15, "11": 25}]
+)
+def test_format_counts_include_zero_values_decimal(counts):
+    """Test format counts include_zero_values option in decimal form."""
+    expected = {0: 10, 1: 15, 2: 0, 3: 25}
+    result = format_counts(counts, include_zero_values=True, decimal=True)
+    assert result == expected

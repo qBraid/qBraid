@@ -35,7 +35,7 @@ try:
     from qbraid.runtime.enums import DeviceStatus, ExperimentType, JobStatus
     from qbraid.runtime.exceptions import ResourceNotFoundError
     from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCProvider
-    from qbraid.runtime.postprocess import GateModelResultBuilder
+    from qbraid.runtime.postprocess import counts_to_probabilities
 
     FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
@@ -504,7 +504,7 @@ def test_job_get_counts_list_to_probabilities(multi_cbit_result_counts):
     ]
 
     counts_list = OQCJob._get_counts(multi_cbit_result_counts)
-    assert GateModelResultBuilder.counts_to_probabilities(counts_list) == expected
+    assert counts_to_probabilities(counts_list) == expected
 
 
 def test_job_get_qpu_id_from_task_metadata(lucy_sim_id, oqc_job, oqc_client):

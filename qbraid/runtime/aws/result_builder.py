@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Optional
 import numpy as np
 
 from qbraid.runtime.exceptions import QbraidRuntimeError
-from qbraid.runtime.result import AhsShotResult, GateModelResultBuilder
+from qbraid.runtime.result import AhsShotResult
 
 if TYPE_CHECKING:
     from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (
@@ -33,7 +33,7 @@ class ResultDecodingError(QbraidRuntimeError):
     """Exception raised for errors that occur during the decoding of result data."""
 
 
-class BraketGateModelResultBuilder(GateModelResultBuilder):
+class BraketGateModelResultBuilder:
     """Wrapper class for Amazon Braket result objects."""
 
     def __init__(self, result: GateModelQuantumTaskResult):

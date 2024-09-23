@@ -247,7 +247,7 @@ def test_ionq_device_run_submit_job(mock_post, mock_get, circuit):
     res = job.result()
     assert isinstance(res, Result)
     assert isinstance(res.data, GateModelResultData)
-    assert res.data.get_counts() == {"00": 1, "01": 1}
+    assert res.data.get_counts() == {"0": 1, "1": 1}
     assert res.data.measurements is None
 
 

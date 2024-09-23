@@ -39,6 +39,7 @@ from qbraid.runtime import (
 from qbraid.runtime.azure import AzureQuantumDevice, AzureQuantumJob, AzureQuantumProvider
 from qbraid.runtime.azure.io_format import InputDataFormat, OutputDataFormat
 from qbraid.runtime.azure.result_builder import AzureGateModelResultBuilder
+from qbraid.runtime.postprocess import normalize_counts
 
 pytestmark = pytest.mark.filterwarnings("ignore:Unrecognized input data format:UserWarning")
 
@@ -707,7 +708,7 @@ def test_azure_quantum_result_counts(
         return_value=mock_builder_ionq_results["results"],
     ):
         raw_counts = azure_result_builder.get_counts()
-        formatted_counts = azure_result_builder.normalize_counts(raw_counts)
+        formatted_counts = normalize_counts(raw_counts)
     assert raw_counts == formatted_counts == {"000": 50, "111": 50}
 
 
