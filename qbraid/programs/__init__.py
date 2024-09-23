@@ -61,6 +61,8 @@ Exceptions
     ProgramLoaderError
 
 """
+from typing import TYPE_CHECKING
+
 from ._import import NATIVE_REGISTRY
 from .alias_manager import get_program_type_alias, get_qasm_type_alias
 from .exceptions import (
@@ -128,6 +130,11 @@ _lazy_objs = {
     "AnalogHamiltonianProgram": "ahs",
     "AHSEncoder": "ahs",
 }
+
+if TYPE_CHECKING:
+    from .ahs import AHSEncoder as AHSEncoder
+    from .ahs import AnalogHamiltonianProgram as AnalogHamiltonianProgram
+    from .circuits import GateModelProgram as GateModelProgram
 
 
 def __getattr__(name):

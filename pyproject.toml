@@ -149,7 +149,7 @@ exclude = '''
 
 [tool.pylint.'MESSAGES CONTROL']
 max-line-length = 100
-disable = "C0103,E0401,R0801,R0902,R0903,R0911,R0912,R0914,R0917,W0212,W0511,W0621"
+disable = "C0103,C0414,E0401,R0801,R0902,R0903,R0911,R0912,R0914,R0917,W0212,W0511,W0621"
 extension-pkg-whitelist = ["rustworkx"]
 
 [tool.isort]
