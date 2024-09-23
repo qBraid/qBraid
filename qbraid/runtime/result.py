@@ -18,7 +18,7 @@ import datetime
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import Enum
-from typing import Any, Optional, Union
+from typing import Any, Optional, TypeVar, Union
 
 import numpy as np
 from qbraid_core import deprecated
@@ -27,6 +27,12 @@ from qbraid_core.system.generic import _datetime_to_str
 from .enums import ExperimentType
 from .postprocess import GateModelResultBuilder
 from .schemas import GateModelExperimentMetadata
+
+KeyType = TypeVar("KeyType", str, int)
+
+MeasCount = dict[KeyType, int]
+
+MeasProb = dict[KeyType, float]
 
 
 class ResultData(ABC):
@@ -49,7 +55,7 @@ class GateModelResultData(ResultData):
 
     def __init__(
         self,
-        measurement_counts: Optional[Union[dict[str, int], list[dict[str, int]]]] = None,
+        measurement_counts: Optional[Union[MeasCount, list[MeasCount]]] = None,
         measurements: Optional[Union[np.ndarray, list[np.ndarray]]] = None,
         **kwargs,
     ):
@@ -96,13 +102,13 @@ class GateModelResultData(ResultData):
         return self._measurements
 
     @property
-    def measurement_counts(self) -> Optional[Union[dict[str, int], list[dict[str, int]]]]:
+    def measurement_counts(self) -> Optional[Union[MeasCount, list[MeasCount]]]:
         """Returns the histogram data of the run as passed in the constructor."""
         return self._measurement_counts
 
     def get_counts(
         self, include_zero_values: bool = False, decimal: bool = False
-    ) -> Union[dict[str, int], list[dict[str, int]]]:
+    ) -> Union[MeasCount, list[MeasCount]]:
         """
         Returns the histogram data of the run with optional zero values and binary/decimal keys.
 
@@ -125,11 +131,8 @@ class GateModelResultData(ResultData):
             return self._cache[cache_key]
 
         counts = GateModelResultBuilder.normalize_counts(
-            self._measurement_counts, include_zero_values=include_zero_values
+            self._measurement_counts, include_zero_values=include_zero_values, decimal=decimal
         )
-
-        if decimal:
-            counts = {int(k, 2): v for k, v in counts.items()}
 
         self._cache[cache_key] = counts
 
@@ -137,7 +140,7 @@ class GateModelResultData(ResultData):
 
     def get_probabilities(
         self, include_zero_values: bool = False, decimal: bool = False
-    ) -> Union[dict[str, float], list[dict[str, float]]]:
+    ) -> Union[MeasProb, list[MeasProb]]:
         """
         Returns the probabilities of the measurement outcomes based on counts.
 
@@ -146,7 +149,7 @@ class GateModelResultData(ResultData):
             decimal (bool): Whether to return probabilities with decimal keys (instead of binary).
 
         Returns:
-            Union[dict[str, float], list[dict[str, float]]]: Probabilities of measurement outcomes.
+            Union[MeasProb, list[MeasProb]: Probabilities of measurement outcomes.
 
         Raises:
             ValueError: If probabilities data is not available.

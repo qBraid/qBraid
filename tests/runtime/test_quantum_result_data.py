@@ -202,10 +202,10 @@ def test_to_dict_with_empty_measurements():
 
     result_dict = result_data.to_dict()
 
+    assert result_dict["measurements"] is None
+    assert result_dict["measurement_counts"] == {"00": 100, "01": 50}
     assert result_dict["shots"] == 150
     assert result_dict["num_measured_qubits"] == 2
-    assert result_dict["measurement_counts"] == {"00": 100, "01": 50}
-    assert result_dict["measurements"] is None
 
 
 def test_to_dict_probabilities(gate_model_result_data):

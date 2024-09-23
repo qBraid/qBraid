@@ -77,6 +77,7 @@ from .exceptions import (
     ResourceNotFoundError,
 )
 from .job import QuantumJob
+from .native import *
 from .options import RuntimeOptions
 from .profile import TargetProfile
 from .provider import QuantumProvider
@@ -107,15 +108,15 @@ __all__ = [
 
 __all__.extend(native.__all__)
 
-_lazy_mods = ["azure", "aws", "ionq", "oqc", "ibm", "native"]
+_lazy_mods = ["aws", "azure", "ibm", "ionq", "oqc"]
 
 _lazy_objs = {
-    "azure": ["AzureQuantumProvider", "AzureQuantumDevice", "AzureQuantumJob"],
     "aws": [
         "BraketProvider",
         "BraketDevice",
         "BraketQuantumTask",
     ],
+    "azure": ["AzureQuantumProvider", "AzureQuantumDevice", "AzureQuantumJob"],
     "ionq": [
         "IonQSession",
         "IonQProvider",
@@ -131,16 +132,6 @@ _lazy_objs = {
         "QiskitRuntimeProvider",
         "QiskitBackend",
         "QiskitJob",
-    ],
-    "native": [
-        "Session",
-        "QbraidSession",
-        "QbraidClient",
-        "QbraidProvider",
-        "QbraidDevice",
-        "QbraidJob",
-        "RuntimeJobModel",
-        "QirRunner",
     ],
 }
 
