@@ -31,12 +31,12 @@ import numpy as np
 from azure.quantum import Job
 
 from qbraid.runtime.ionq.job import IonQJob
-from qbraid.runtime.result import GateModelResultBuilder
+from qbraid.runtime.postprocess import counts_to_probabilities, normalize_counts
 
 from .io_format import OutputDataFormat
 
 
-class AzureGateModelResultBuilder(GateModelResultBuilder):
+class AzureGateModelResultBuilder:
     """Class to format Azure Quantum job results."""
 
     def __init__(self, azure_job: Job):
@@ -134,8 +134,8 @@ class AzureGateModelResultBuilder(GateModelResultBuilder):
         }
 
         raw_counts = IonQJob._get_counts(data)
-        counts = GateModelResultBuilder.normalize_counts(raw_counts)
-        probabilities = GateModelResultBuilder.counts_to_probabilities(counts)
+        counts = normalize_counts(raw_counts)
+        probabilities = counts_to_probabilities(counts)
 
         return {"counts": counts, "probabilities": probabilities}
 

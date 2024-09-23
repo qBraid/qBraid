@@ -21,7 +21,8 @@ from typing import TYPE_CHECKING, Any, Optional
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
-from qbraid.runtime.result import GateModelResultBuilder, GateModelResultData, Result
+from qbraid.runtime.postprocess import normalize_counts
+from qbraid.runtime.result import GateModelResultData, Result
 
 if TYPE_CHECKING:
     import qbraid.runtime.ionq.provider
@@ -70,7 +71,7 @@ class IonQJob(QuantumJob):
         if shots is None or probs_dec_str is None:
             raise ValueError("Missing shots or probabilities in result data.")
         probs_dec = {int(key): value for key, value in probs_dec_str.items()}
-        probs_normal = GateModelResultBuilder.normalize_counts(probs_dec)
+        probs_normal = normalize_counts(probs_dec)
         return {state: int(prob * shots) for state, prob in probs_normal.items()}
 
     def result(self) -> Result:

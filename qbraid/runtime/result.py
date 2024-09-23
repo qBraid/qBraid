@@ -25,7 +25,7 @@ from qbraid_core import deprecated
 from qbraid_core.system.generic import _datetime_to_str
 
 from .enums import ExperimentType
-from .postprocess import GateModelResultBuilder
+from .postprocess import counts_to_probabilities, normalize_counts
 from .schemas import GateModelExperimentMetadata
 
 KeyType = TypeVar("KeyType", str, int)
@@ -130,7 +130,7 @@ class GateModelResultData(ResultData):
         if self._cache[cache_key] is not None:
             return self._cache[cache_key]
 
-        counts = GateModelResultBuilder.normalize_counts(
+        counts = normalize_counts(
             self._measurement_counts, include_zero_values=include_zero_values, decimal=decimal
         )
 
@@ -160,7 +160,7 @@ class GateModelResultData(ResultData):
             return self._cache[cache_key]
 
         counts = self.get_counts(include_zero_values=include_zero_values, decimal=decimal)
-        probabilities = GateModelResultBuilder.counts_to_probabilities(counts)
+        probabilities = counts_to_probabilities(counts)
 
         self._cache[cache_key] = probabilities
 

@@ -20,45 +20,18 @@ import numpy as np
 from qiskit.exceptions import QiskitError
 
 from qbraid._logging import logger
-from qbraid.runtime.result import GateModelResultBuilder
+from qbraid.runtime.postprocess import normalize_tuples
 
 if TYPE_CHECKING:
     from qiskit.result import Result
     from qiskit_ibm_runtime.utils.runner_result import RunnerResult
 
 
-class QiskitGateModelResultBuilder(GateModelResultBuilder):
+class QiskitGateModelResultBuilder:
     """Qiskit ``Result`` wrapper class."""
 
     def __init__(self, result: Union[RunnerResult, Result]):
         self._result = result
-
-    @staticmethod
-    def normalize_tuples(measurements: list[list[tuple[int, ...]]]) -> list[list[tuple[int, ...]]]:
-        """
-        Normalizes lists of tuples in a list to have the same tuple length across all entries
-        by padding shorter tuples with zeros on the left.
-
-        Args:
-            measurements (list[list[tuple[int, ...]]]): A list of lists containing tuples
-                with integer elements.
-
-        Returns:
-            list[list[tuple[int, ...]]]: A new list where each sublist's tuples have normalized
-                lengths, preserving the binary significance of the numbers.
-        """
-        max_tuple_length = max(len(tup) for sublist in measurements for tup in sublist)
-
-        normalized_measurements = []
-        for sublist in measurements:
-            normalized_sublist = []
-            for tup in sublist:
-                current_tuple = tuple(tup) if isinstance(tup, list) else tup
-                padded_tuple = (0,) * (max_tuple_length - len(current_tuple)) + current_tuple
-                normalized_sublist.append(padded_tuple)
-            normalized_measurements.append(normalized_sublist)
-
-        return normalized_measurements
 
     def _format_measurements(self, memory_list: list[str]) -> list[list[int]]:
         """Format the measurements into int for the given memory list"""
@@ -83,7 +56,7 @@ class QiskitGateModelResultBuilder(GateModelResultBuilder):
         if num_circuits == 1:
             qbraid_meas = qbraid_meas[0]
         else:
-            qbraid_meas = self.normalize_tuples(qbraid_meas)
+            qbraid_meas = normalize_tuples(qbraid_meas)
 
         return np.array(qbraid_meas)
 
