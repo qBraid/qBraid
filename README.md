@@ -89,7 +89,7 @@ Graph-based approach to quantum program type conversions.
 Below, `QPROGRAM_REGISTRY` maps shorthand identifiers for supported quantum programs, each corresponding to a type in the typed `QPROGRAM` Union. For example, 'qiskit' maps to `qiskit.QuantumCircuit` in `QPROGRAM`. Notably, 'qasm2' and 'qasm3' both represent raw OpenQASM strings. This arrangement simplifies targeting and transpiling between different quantum programming frameworks.
 
 ```python
->>> from qbraid.programs import QPROGRAM_REGISTRY
+>>> from qbraid import QPROGRAM_REGISTRY
 >>> QPROGRAM_REGISTRY
 {'cirq': cirq.circuits.circuit.Circuit,
  'qiskit': qiskit.circuit.quantumcircuit.QuantumCircuit,
@@ -107,8 +107,7 @@ Pass any registered quantum program along with a target package from
 `QPROGRAM_REGISTRY` to "transpile" your circuit to a new program type:
 
 ```python
->>> from qbraid.interface import random_circuit
->>> from qbraid.transpiler import transpile
+>>> from qbraid import random_circuit, transpile
 >>> qiskit_circuit = random_circuit("qiskit")
 >>> cirq_circuit = transpile(qiskit_circuit, "cirq")
 >>> print(qiskit_circuit)
@@ -127,7 +126,7 @@ Behind the scenes, the qBraid-SDK uses [rustworkx](https://www.rustworkx.org/) t
 directional graph that maps all possible conversions between supported program types:
 
 ```python
-from qbraid.transpiler import ConversionGraph
+from qbraid import ConversionGraph
 
 # Loads native conversions from QPROGRAM_REGISTRY
 graph = ConversionGraph()
@@ -142,8 +141,7 @@ You can use the native conversions supported by qBraid, or define your own. For 
 ```python
 from unittest.mock import Mock
 
-from qbraid.programs import register_program_type
-from qbraid.transpiler import Conversion
+from qbraid import Conversion, register_program_type
 
 # replace with any program type
 register_program_type(Mock, alias="mock")
@@ -164,7 +162,7 @@ graph.plot(seed=20, k=3, legend=True)
 Run experiements using on-demand simulators provided by qBraid. Retrieve a list of available devices:
 
 ```python
-from qbraid.runtime import QbraidProvider
+from qbraid import QbraidProvider
 
 provider = QbraidProvider()
 devices = provider.get_devices()
