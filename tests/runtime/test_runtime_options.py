@@ -383,3 +383,211 @@ def test_options_equality_type_mismatch():
     """Test that equality check returns False for different types."""
     options = RuntimeOptions(transpile=True)
     assert options != "not_options"
+
+
+def test_merge_non_overlapping_options():
+    """Test merging options with non-overlapping fields."""
+    options1 = RuntimeOptions(option_a=1)
+    options2 = RuntimeOptions(option_b=2)
+
+    options1.merge(options2)
+
+    assert options1.option_a == 1
+    assert options1.option_b == 2
+
+
+def test_merge_new_option_with_validator():
+    """Test merging when 'other' has a new option with a validator."""
+    options1 = RuntimeOptions(option_a=1)
+
+    options2 = RuntimeOptions(option_b=2)
+    options2.set_validator("option_b", lambda x: isinstance(x, int) and x > 0)
+
+    options1.merge(options2)
+
+    assert options1.option_b == 2
+
+    # Validator for option_b should be in place
+    with pytest.raises(ValueError):
+        options1.option_b = -1
+
+
+@pytest.mark.parametrize(
+    "override_validators, initial_value1, validator1, value2, validator2, test_value, should_raise",
+    [
+        (
+            True,
+            1,
+            lambda x: isinstance(x, int) and x > 0,
+            2,
+            lambda x: isinstance(x, int) and x > 1,
+            1,
+            True,
+        ),
+        (
+            False,
+            1,
+            lambda x: isinstance(x, int) and x > 0,
+            2,
+            lambda x: isinstance(x, int) and x > 1,
+            1,
+            False,
+        ),
+    ],
+)
+
+# pylint: disable-next=too-many-arguments
+def test_merge_overlapping_options(
+    override_validators,
+    initial_value1,
+    validator1,
+    value2,
+    validator2,
+    test_value,
+    should_raise,
+):
+    """Test merging options with overlapping fields and validators."""
+    options1 = RuntimeOptions(option_a=initial_value1)
+    options1.set_validator("option_a", validator1)
+
+    options2 = RuntimeOptions(option_a=value2)
+    options2.set_validator("option_a", validator2)
+
+    # Handle potential merge failure
+    if not override_validators and not validator1(value2):
+        with pytest.raises(ValueError):
+            options1.merge(options2, override_validators=override_validators)
+        return
+
+    options1.merge(options2, override_validators=override_validators)
+
+    assert options1.option_a == value2
+
+    if should_raise:
+        with pytest.raises(ValueError):
+            options1.option_a = test_value
+    else:
+        options1.option_a = test_value
+        assert options1.option_a == test_value
+
+
+def test_merge_invalid_option_value():
+    """Test merging when 'other' has an invalid option value according to its validator."""
+    options1 = RuntimeOptions(option_a=1)
+    options1.set_validator("option_a", lambda x: isinstance(x, int) and x > 0)
+
+    options2 = RuntimeOptions(option_b="invalid")
+    options2.set_validator("option_b", lambda x: x == "valid")
+
+    with pytest.raises(
+        ValueError, match="Value 'invalid' is not valid for field 'option_b' after merging."
+    ):
+        options1.merge(options2, override_validators=True)
+
+
+def test_merge_existing_option_invalidated_by_new_validator():
+    """Test merging when existing option in 'self' is invalid under new validator from 'other'."""
+    options1 = RuntimeOptions(option_a=1)
+    # No initial validator for option_a
+
+    options2 = RuntimeOptions(option_a=None)
+    options2.set_validator("option_a", lambda x: isinstance(x, int) and x < 0)
+
+    with pytest.raises(ValueError):
+        options1.merge(options2, override_validators=True)
+
+
+def test_merge_preserve_existing_validators():
+    """Test merging with override_validators=False to preserve existing validators."""
+    options1 = RuntimeOptions(option_a=2)
+    options1.set_validator("option_a", lambda x: isinstance(x, int) and x % 2 == 0)
+
+    options2 = RuntimeOptions(option_a=4)  # Even number
+    options2.set_validator("option_a", lambda x: isinstance(x, int) and x > 0)
+
+    options1.merge(options2, override_validators=False)
+
+    # Validator from options1 should be preserved
+    with pytest.raises(ValueError):
+        options1.option_a = 3
+
+    options1.option_a = 6
+    assert options1.option_a == 6
+
+
+def test_merge_override_validators():
+    """Test merging with override_validators=True to override existing validators."""
+    options1 = RuntimeOptions(option_a=2)
+    options1.set_validator("option_a", lambda x: isinstance(x, int) and x % 2 == 0)
+
+    options2 = RuntimeOptions(option_a=3)
+    options2.set_validator("option_a", lambda x: isinstance(x, int) and x > 0)
+
+    options1.merge(options2, override_validators=True)
+
+    options1.option_a = 5
+    assert options1.option_a == 5
+
+    with pytest.raises(ValueError):
+        options1.option_a = -1
+
+
+def test_merge_with_existing_option_invalid_under_new_validator():
+    """Test merging when existing option value is invalid under new validator."""
+    options1 = RuntimeOptions(option_a=4)
+
+    options2 = RuntimeOptions(option_a=3)
+    options2.set_validator("option_a", lambda x: x % 2 != 0)  # Odd numbers only
+
+    with pytest.raises(
+        ValueError, match="Value '4' is not valid for field 'option_a' after merging."
+    ):
+        options2.merge(options1)
+
+
+def test_merge_with_no_validators():
+    """Test merging when neither 'self' nor 'other' have validators."""
+    options1 = RuntimeOptions(option_a="value1")
+    options2 = RuntimeOptions(option_b="value2")
+
+    options1.merge(options2)
+
+    assert options1.option_a == "value1"
+    assert options1.option_b == "value2"
+
+
+def test_merge_with_invalid_option_in_other():
+    """Test merging when 'other' has an invalid option value according to its own validator."""
+    options1 = RuntimeOptions(option_a=1)
+
+    options2 = RuntimeOptions(option_b="invalid")
+    options2.set_validator("option_b", lambda x: x == "valid")
+
+    with pytest.raises(
+        ValueError, match="Value 'invalid' is not valid for field 'option_b' after merging."
+    ):
+        options1.merge(options2)
+
+
+def test_merge_with_multiple_options_and_validators():
+    """Test merging multiple options and validators."""
+    options1 = RuntimeOptions(option_a=1, option_c=3)
+    options1.set_validator("option_a", lambda x: isinstance(x, int))
+    options1.set_validator("option_c", lambda x: x in [3, 4, 5])
+
+    options2 = RuntimeOptions(option_b="test", option_c=4)
+    options2.set_validator("option_b", lambda x: isinstance(x, str))
+    options2.set_validator("option_c", lambda x: x in [4, 5, 6])
+
+    options1.merge(options2, override_validators=True)
+
+    assert options1.option_a == 1
+    assert options1.option_b == "test"
+    assert options1.option_c == 4
+
+    # Validator from options2 should be in effect for option_c
+    with pytest.raises(ValueError):
+        options1.option_c = 3  # 3 not in [4, 5, 6]
+
+    options1.option_c = 5  # Should pass
+    assert options1.option_c == 5

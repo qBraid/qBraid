@@ -16,7 +16,10 @@ import importlib.metadata
 import sys
 from typing import Optional, Type
 
-import pkg_resources
+try:
+    import pkg_resources
+except ImportError:
+    pkg_resources = None
 
 from .exceptions import QbraidError
 

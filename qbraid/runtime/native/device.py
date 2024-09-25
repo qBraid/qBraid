@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Optional, Union
 
+from qbraid_core.decimal import Credits
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
 
 from qbraid._entrypoints import get_entrypoints
@@ -263,7 +264,7 @@ class QbraidDevice(QuantumDevice):
 
     def estimate_cost(
         self, shots: Optional[int], execution_time: Optional[Union[float, int]]
-    ) -> float:
+    ) -> Credits:
         """Estimate the cost of running a quantum job on this device in qBraid credits,
         where 1 credit equals $0.01 USD.
 
@@ -278,7 +279,7 @@ class QbraidDevice(QuantumDevice):
                 complete the quantum job.
 
         Returns:
-            float: The estimated cost for the quantum job in qBraid credits.
+            Credits: The estimated cost for the quantum job in qBraid credits.
 
         Raises:
             ValueError: If `shots` and `execution_time` are None or 0, or if either is negative.
@@ -303,8 +304,10 @@ class QbraidDevice(QuantumDevice):
                 raise ValueError("'execution_time' must be a non-negative number.")
 
         try:
-            return self.client.estimate_cost(self.id, shots, execution_time)
+            cost = self.client.estimate_cost(self.id, shots, execution_time)
         except QuantumServiceRequestError as err:
             raise QbraidRuntimeError(
                 "Failed to estimate cost due to a service request error."
             ) from err
+
+        return Credits(cost)

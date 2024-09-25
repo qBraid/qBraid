@@ -28,9 +28,9 @@ from qbraid.runtime.enums import ExperimentType, NoiseModel, NoiseModelWrapper
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
+from qbraid.runtime.schemas.device import DeviceData
 
 from .device import QbraidDevice
-from .device_schemas import DeviceData
 
 if TYPE_CHECKING:
     import pyqir
@@ -157,6 +157,7 @@ class QbraidProvider(QuantumProvider):
             provider_name=model.provider,
             noise_models=set(noise_models),
             name=model.name,
+            pricing=model.pricing,
         )
 
     @cached_method

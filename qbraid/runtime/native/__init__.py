@@ -26,7 +26,6 @@ Classes
     QbraidProvider
     QbraidDevice
     QbraidJob
-    RuntimeJobModel
     QirRunner
 
 """
@@ -36,13 +35,6 @@ from qbraid_core.services.quantum.runner import Simulator as QirRunner
 from .device import QbraidDevice
 from .job import QbraidJob
 from .provider import QbraidProvider
-from .schemas import (
-    QbraidQirSimulationMetadata,
-    QbraidSchemaBase,
-    QbraidSchemaHeader,
-    RuntimeJobModel,
-    TimeStamps,
-)
 
 __all__ = [
     "Session",
@@ -51,10 +43,5 @@ __all__ = [
     "QbraidProvider",
     "QbraidDevice",
     "QbraidJob",
-    "RuntimeJobModel",
     "QirRunner",
-    "QbraidSchemaBase",
-    "QbraidSchemaHeader",
-    "QbraidQirSimulationMetadata",
-    "TimeStamps",
 ]

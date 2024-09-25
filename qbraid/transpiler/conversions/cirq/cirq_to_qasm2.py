@@ -20,6 +20,7 @@ import cirq
 from cirq import ops, value
 
 from qbraid._version import __version__ as qbraid_version
+from qbraid.passes.qasm3.format import _remove_double_empty_lines
 from qbraid.transpiler.annotations import weight
 
 if TYPE_CHECKING:
@@ -106,4 +107,5 @@ def cirq_to_qasm2(
         Qasm2StringType: QASM string equivalent to the input Cirq circuit.
     """
     circuit = map_zpow_and_unroll(circuit)
-    return str(_to_qasm_output(circuit, header, precision, qubit_order))
+    qasm = str(_to_qasm_output(circuit, header, precision, qubit_order))
+    return _remove_double_empty_lines(qasm)

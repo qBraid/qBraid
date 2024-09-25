@@ -119,7 +119,7 @@ def test_get_entrypoints_with_new_python_version(
     mock_pkg_resources_eps.assert_not_called()
 
 
-@pytest.mark.parametrize("module_name", qbraid._lazy_mods)
+@pytest.mark.parametrize("module_name", list(qbraid._lazy.keys()))
 def test_lazy_loading_modules(module_name):
     """Test lazy loading of modules."""
     mod = getattr(qbraid, module_name)
@@ -128,7 +128,7 @@ def test_lazy_loading_modules(module_name):
 
 
 @pytest.mark.parametrize(
-    "obj_name", [item for sublist in qbraid._lazy_objs.values() for item in sublist]
+    "obj_name", [item for sublist in qbraid._lazy.values() for item in sublist]
 )
 def test_lazy_loading_objects(obj_name):
     """Test lazy loading of objects."""

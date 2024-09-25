@@ -65,9 +65,9 @@ Exceptions
     DeviceProgramTypeMismatchError
 
 """
+import importlib
 from typing import TYPE_CHECKING
 
-from . import native
 from ._display import display_jobs_from_data
 from .device import QuantumDevice
 from .enums import DeviceStatus, ExperimentType, JobStatus, NoiseModel
@@ -79,7 +79,6 @@ from .exceptions import (
     ResourceNotFoundError,
 )
 from .job import QuantumJob
-from .native import *
 from .options import RuntimeOptions
 from .profile import TargetProfile
 from .provider import QuantumProvider
@@ -108,11 +107,7 @@ __all__ = [
     "AhsShotResult",
 ]
 
-__all__.extend(native.__all__)
-
-_lazy_mods = ["aws", "azure", "ibm", "ionq", "oqc"]
-
-_lazy_objs = {
+_lazy = {
     "aws": [
         "BraketProvider",
         "BraketDevice",
@@ -135,6 +130,16 @@ _lazy_objs = {
         "QiskitBackend",
         "QiskitJob",
     ],
+    "native": [
+        "Session",
+        "QbraidSession",
+        "QbraidClient",
+        "QbraidProvider",
+        "QbraidDevice",
+        "QbraidJob",
+        "QirRunner",
+    ],
+    "schemas": [],
 }
 
 if TYPE_CHECKING:
@@ -151,23 +156,26 @@ if TYPE_CHECKING:
     from .ionq import IonQJob as IonQJob
     from .ionq import IonQProvider as IonQProvider
     from .ionq import IonQSession as IonQSession
+    from .native import QbraidClient as QbraidClient
+    from .native import QbraidDevice as QbraidDevice
+    from .native import QbraidJob as QbraidJob
+    from .native import QbraidProvider as QbraidProvider
+    from .native import QbraidSession as QbraidSession
+    from .native import QirRunner as QirRunner
+    from .native import Session as Session
     from .oqc import OQCDevice as OQCDevice
     from .oqc import OQCJob as OQCJob
     from .oqc import OQCProvider as OQCProvider
 
 
 def __getattr__(name):
-    if name in _lazy_mods:
-        import importlib  # pylint: disable=import-outside-toplevel
+    for mod_name, objects in _lazy.items():
+        if name == mod_name:
+            module = importlib.import_module(f".{mod_name}", __name__)
+            globals()[mod_name] = module
+            return module
 
-        module = importlib.import_module(f".{name}", __name__)
-        globals()[name] = module
-        return module
-
-    for mod_name, objects in _lazy_objs.items():
         if name in objects:
-            import importlib  # pylint: disable=import-outside-toplevel
-
             module = importlib.import_module(f".{mod_name}", __name__)
             obj = getattr(module, name)
             globals()[name] = obj
@@ -178,5 +186,5 @@ def __getattr__(name):
 
 def __dir__():
     return sorted(
-        __all__ + _lazy_mods + [item for sublist in _lazy_objs.values() for item in sublist]
+        __all__ + list(_lazy.keys()) + [item for sublist in _lazy.values() for item in sublist]
     )

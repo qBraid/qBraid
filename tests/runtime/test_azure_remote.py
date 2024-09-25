@@ -168,7 +168,7 @@ def test_submit_qir_to_microsoft(
 
     if direct:
         run_input = qir_bitcode
-        device.set_options(transpile=False, transform=False, validate=False)
+        device.set_options(transpile=False, transform=False, validate=0)
     else:
         run_input = qiskit_circuit
 
@@ -212,7 +212,7 @@ def test_submit_quil_to_rigetti(
 
     if direct:
         run_input = quil_string
-        device.set_options(transpile=False, transform=False, validate=False)
+        device.set_options(transpile=False, transform=False, validate=0)
     else:
         run_input = pyquil_program
 

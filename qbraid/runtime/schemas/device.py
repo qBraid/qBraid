@@ -9,32 +9,35 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining qBraid native quantum device schemas.
+Module defining qBraid runtime job schemas.
 
 """
-from decimal import Decimal
-from typing import List, Optional
+from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, field_serializer
+
+from .base import USD, Credits
 
 
 class DevicePricing(BaseModel):
     """Represents pricing information for a quantum device.
 
     Attributes:
-        perTask (Decimal): The cost per task in qBraid credits.
-        perShot (Decimal): The cost per shot in qBraid credits.
-        perMinute (Decimal): The cost per minute in qBraid credits.
+        perTask (USD): The cost per task in USD.
+        perShot (USD): The cost per shot in USD.
+        perMinute (USD): The cost per minute in USD.
     """
 
-    perTask: Decimal
-    perShot: Decimal
-    perMinute: Decimal
+    model_config = ConfigDict(frozen=True)
 
-    class Config:
-        """Configuration settings for the DevicePricing model."""
+    perTask: USD
+    perShot: USD
+    perMinute: USD
 
-        frozen = True
+    @field_serializer("perTask", "perShot", "perMinute")
+    def serialize_credits(self, value: USD) -> Credits:
+        """Serialize USD fields into Credits objects."""
+        return value.to_credits()
 
 
 class DeviceData(BaseModel):
@@ -57,6 +60,8 @@ class DeviceData(BaseModel):
         pricing (DevicePricing): The pricing structure for using the device, in qBraid credits.
     """
 
+    model_config = ConfigDict(frozen=True)
+
     provider: str
     vendor: str
     name: str
@@ -71,10 +76,5 @@ class DeviceData(BaseModel):
     run_package: str = Field(alias="runPackage")
     device_id: str = Field(alias="qbraid_id")
 
-    noise_models: List[str] = Field(default_factory=list, alias="noiseModels")
+    noise_models: list[str] = Field(default_factory=list, alias="noiseModels")
     pricing: DevicePricing
-
-    class Config:
-        """Configuration settings for the DeviceData model."""
-
-        frozen = True

@@ -10,7 +10,8 @@
 
 """
 Module containing top-level qbraid program loader functionality
-utilizing entrypoints via ``pkg_resources``.
+utilizing entrypoints via ``importlib`` for Python >= 3.10 or
+``pkg_resources`` for Python 3.9.
 
 """
 from __future__ import annotations

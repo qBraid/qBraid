@@ -19,7 +19,7 @@ from decimal import Decimal
 import pytest
 
 from qbraid.runtime.enums import NoiseModel, NoiseModelWrapper
-from qbraid.runtime.native.device_schemas import DeviceData
+from qbraid.runtime.schemas.device import DeviceData
 
 
 @pytest.fixture

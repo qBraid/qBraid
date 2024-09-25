@@ -36,11 +36,8 @@ from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import ExperimentType, JobStatus, NoiseModel
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
-from qbraid.runtime.native.result_data import (
-    QbraidQirSimulatorResultData,
-    QuEraQasmSimulatorResultData,
-)
-from qbraid.runtime.native.schemas import RuntimeJobModel
+from qbraid.runtime.native.result import QbraidQirSimulatorResultData, QuEraQasmSimulatorResultData
+from qbraid.runtime.schemas.job import RuntimeJobModel
 from qbraid.transpiler import CircuitConversionError, Conversion, ConversionGraph, ConversionScheme
 
 DEVICE_DATA_QIR = {
@@ -840,7 +837,7 @@ def test_get_device_fail():
 
 def test_set_options(mock_qbraid_device: QbraidDevice):
     """Test updating the default runtime options."""
-    default_options = {"transpile": True, "transform": True, "validate": True}
+    default_options = {"transpile": True, "transform": True, "validate": 2}
     assert dict(mock_qbraid_device._options) == default_options
 
     mock_qbraid_device.set_options(transform=False)
@@ -874,7 +871,7 @@ def test_estimate_cost_success(mock_qbraid_device):
     mock_qbraid_device._client = mock_core_client
 
     cost = mock_qbraid_device.estimate_cost(shots=100, execution_time=1.1)
-    assert cost == 8.75
+    assert float(cost) == 8.75
     mock_core_client.estimate_cost.assert_called_once_with(mock_qbraid_device.id, 100, 1.1)
 
 

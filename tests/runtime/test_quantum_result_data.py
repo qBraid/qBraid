@@ -22,10 +22,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from qbraid.runtime.native.result_data import (
-    QbraidQirSimulatorResultData,
-    QuEraQasmSimulatorResultData,
-)
+from qbraid.runtime.native.result import QbraidQirSimulatorResultData, QuEraQasmSimulatorResultData
 from qbraid.runtime.postprocess import (
     format_counts,
     normalize_batch_bit_lengths,

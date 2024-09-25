@@ -92,10 +92,21 @@ class RuntimeOptions:
         self._validators[option_name] = validator
 
     def validate_option(self, option_name: str, value: Any):
-        """Validates a field's value using the registered validator, if any."""
+        """Validates a field's value using the registered validator, if any.
+
+        Raises:
+            ValueError: If the validator function raises an exception or returns False.
+        """
         validator = self._validators.get(option_name)
-        if validator and not validator(value):
-            raise ValueError(f"Value '{value}' is not valid for field '{option_name}'.")
+        if validator:
+            try:
+                is_valid = validator(value)
+            except Exception as err:
+                raise ValueError(
+                    f"Validator for field '{option_name}' raised an exception: {err}"
+                ) from err
+            if not is_valid:
+                raise ValueError(f"Value '{value}' is not valid for field '{option_name}'.")
 
     def update_options(self, **new_options):
         """Updates multiple options with validation."""
@@ -185,3 +196,44 @@ class RuntimeOptions:
         if set(self._validators.keys()) != set(other._validators.keys()):
             return False
         return True
+
+    def merge(self, other: "RuntimeOptions", override_validators: bool = True):
+        """Merges another RuntimeOptions instance into this one.
+
+        Args:
+            other (RuntimeOptions): The RuntimeOptions instance to merge from.
+            override_validators (bool): Determines whether validators from `other`
+                should override existing validators in `self`.
+
+        Raises:
+            ValueError: If any option value is invalid after merging.
+        """
+        # Step 1: Combine validators with appropriate precedence
+        combined_validators = self._validators.copy()
+        if override_validators:
+            combined_validators.update(other._validators)
+        else:
+            for key, validator in other._validators.items():
+                combined_validators.setdefault(key, validator)
+
+        # Step 2: Combine options
+        combined_fields = self._fields.copy()
+        combined_fields.update(other.__dict__)
+
+        # Step 3: Temporarily disable validation and update internal state
+        object.__setattr__(self, "_validators", combined_validators)
+        object.__setattr__(self, "_fields", combined_fields)
+
+        # Step 4: Determine which options to validate
+        if override_validators:
+            options_to_validate = combined_fields.items()
+        else:
+            options_to_validate = ((key, combined_fields[key]) for key in other.__dict__.keys())
+
+        # Step 5: Validate options
+        for option_name, value in options_to_validate:
+            validator = combined_validators.get(option_name)
+            if validator and not validator(value):
+                raise ValueError(
+                    f"Value '{value}' is not valid for field '{option_name}' after merging."
+                )

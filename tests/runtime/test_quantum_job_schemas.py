@@ -22,13 +22,8 @@ import pytest
 from pydantic import ValidationError
 
 from qbraid.runtime.enums import ExperimentType, JobStatus
-from qbraid.runtime.native.schemas import (
-    QbraidSchemaBase,
-    QbraidSchemaHeader,
-    RuntimeJobModel,
-    TimeStamps,
-)
-from qbraid.runtime.schemas import ExperimentMetadata, GateModelExperimentMetadata
+from qbraid.runtime.schemas import QbraidSchemaBase, QbraidSchemaHeader, RuntimeJobModel, TimeStamps
+from qbraid.runtime.schemas.experiment import ExperimentMetadata, GateModelExperimentMetadata
 
 
 @pytest.fixture
@@ -58,11 +53,26 @@ def test_qbraid_schema_header():
         QbraidSchemaHeader(name="TestSchema", version=0)  # Invalid version
 
 
+def test_qbraid_schema_base_raises_for_no_version():
+    """Test QbraidSchemaBase raises ValueError when accessing header property."""
+    with pytest.raises(ValueError) as exc_info:
+        _ = QbraidSchemaBase()
+    assert "QbraidSchemaBase must define a valid semantic version for 'VERSION'." in str(
+        exc_info.value
+    )
+
+
 def test_qbraid_schema_base():
     """Test QbraidSchemaBase class."""
-    base = QbraidSchemaBase()
-    assert base.header.name == "qbraid.runtime.native"  # pylint: disable=no-member
-    assert base.header.version == 1.0  # pylint: disable=no-member
+
+    class TestSchema(QbraidSchemaBase):
+        """Test schema class."""
+
+        VERSION = 6.1
+
+    model = TestSchema()
+    assert model.header.name == "tests.runtime.test_quantum_job_schemas"
+    assert model.header.version == 6.1
 
 
 def test_gate_model_experiment_metadata(valid_qasm):

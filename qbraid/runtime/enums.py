@@ -14,7 +14,7 @@ Module defining all :mod:`~qbraid.runtime` enumerated types.
 """
 from __future__ import annotations
 
-from enum import Enum
+from enum import Enum, IntEnum
 
 
 class DeviceStatus(Enum):
@@ -173,3 +173,17 @@ class JobStatus(Enum):
     FAILED = "FAILED"
     UNKNOWN = "UNKNOWN"
     HOLD = "HOLD"
+
+
+class ValidationLevel(IntEnum):
+    """Enumeration for program validation levels in qBraid runtime.
+
+    Attributes:
+        NONE (int): No validation is performed.
+        WARN (int): Validation is performed, and warnings are issued if validation fails.
+        RAISE (int): Validation is performed, and exceptions are raised if validation fails.
+    """
+
+    NONE = 0
+    WARN = 1
+    RAISE = 2
