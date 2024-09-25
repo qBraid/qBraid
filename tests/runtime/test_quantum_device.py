@@ -56,10 +56,12 @@ DEVICE_DATA_QIR = {
     "status": "ONLINE",
     "isAvailable": True,
     "processorType": "State vector",
+    "noiseModels": ["no_noise"],
+    "pricing": {"perTask": 0.005, "perShot": 0, "perMinute": 0.075},
 }
 
 DEVICE_DATA_QUERA = {
-    "numberQubits": 42,
+    "numberQubits": 30,
     "pendingJobs": 0,
     "qbraid_id": "quera_qasm_simulator",
     "name": "Noisey QASM simulator",
@@ -70,7 +72,9 @@ DEVICE_DATA_QUERA = {
     "runPackage": "qasm2",
     "status": "ONLINE",
     "isAvailable": True,
-    "processorType": "N.D.",
+    "processorType": "State vector",
+    "noiseModels": ["quera_lqc_backend"],
+    "pricing": {"perTask": 0, "perShot": 0, "perMinute": 0},
 }
 
 REDUNDANT_JOB_DATA = {

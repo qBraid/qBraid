@@ -142,7 +142,7 @@ class QuantumDevice(ABC):
         metadata = {key: value for key, value in self.profile if key != "program_spec"}
 
         try:
-            metadata["status"] = self.status().name
+            metadata["status"] = self.status().value
         except Exception as err:  # pylint: disable=broad-exception-caught
             logger.error("Failed to fetch status: %s", err)
             metadata["status"] = "UNKNOWN"
@@ -152,6 +152,9 @@ class QuantumDevice(ABC):
         except Exception as err:  # pylint: disable=broad-exception-caught
             logger.error("Failed to fetch queue depth: %s", err)
             metadata["queue_depth"] = None
+
+        if self.profile.experiment_type is not None:
+            metadata["experiment_type"] = self.profile.experiment_type.value
 
         return metadata
 

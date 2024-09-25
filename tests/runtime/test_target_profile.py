@@ -200,12 +200,13 @@ def test_noise_model_iteration():
         NoiseModel.PhaseDamping,
         NoiseModel.BitFlip,
         NoiseModel.PhaseFlip,
+        NoiseModel.Other,
     ]
 
 
 def test_noise_model_length():
     """Test that the NoiseModel enum contains the correct number of members."""
-    assert len(NoiseModel) == 6
+    assert len(NoiseModel) == 7
 
 
 def test_noise_model_contains():
