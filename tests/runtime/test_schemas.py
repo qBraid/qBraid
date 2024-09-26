@@ -19,10 +19,10 @@ from datetime import datetime
 from decimal import Decimal
 
 import pytest
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from qbraid.runtime.enums import ExperimentType, JobStatus
-from qbraid.runtime.schemas.base import QbraidSchemaBase, QbraidSchemaHeader
+from qbraid.runtime.schemas.base import USD, Credits, QbraidSchemaBase, QbraidSchemaHeader
 from qbraid.runtime.schemas.device import DeviceData
 from qbraid.runtime.schemas.experiment import ExperimentMetadata, GateModelExperimentMetadata
 from qbraid.runtime.schemas.job import RuntimeJobModel, TimeStamps
@@ -287,3 +287,67 @@ def test_device_data_aquila(device_data_aquila):
     assert device.pricing.perMinute == Decimal("0")
     assert device.status == "OFFLINE"
     assert device.is_available is False
+
+
+def test_usd_json_schema():
+    """Test JSON schema for USD type."""
+
+    class TestModel(BaseModel):
+        """Mock model with USD field."""
+
+        amount: USD
+
+    json_schema = TestModel.model_json_schema()
+    amount_schema = json_schema["properties"]["amount"]
+
+    assert amount_schema["title"] == "USD"
+    assert amount_schema["description"] == "A monetary amount representing U.S. Dollars."
+    assert amount_schema["examples"] == [10, 0.05, 1.5]
+    assert amount_schema["type"] == "number"
+
+
+def test_credits_json_schema():
+    """Test JSON schema for Credits type."""
+
+    class TestModel(BaseModel):
+        """Mock model with Credits field."""
+
+        amount: Credits
+
+    json_schema = TestModel.model_json_schema()
+    amount_schema = json_schema["properties"]["amount"]
+
+    assert amount_schema["title"] == "Credits"
+    assert amount_schema["description"] == "A monetary amount where 1 Credit = $0.01 USD."
+    assert amount_schema["examples"] == [10, 0.05, 1.5]
+    assert amount_schema["type"] == "number"
+
+
+def test_credits_pydantic_parsing():
+    """Test parsing of Credits type in Pydantic models."""
+
+    class TestModel(BaseModel):
+        """Mock model with Credits field."""
+
+        amount: Credits
+
+    model_int = TestModel(amount=100)
+    assert isinstance(model_int.amount, Credits)
+    assert model_int.amount == Credits(100)
+
+    model_float = TestModel(amount=100.5)
+    assert isinstance(model_float.amount, Credits)
+    assert model_float.amount == Credits(100.5)
+
+    model_decimal = TestModel(amount=Decimal("100.75"))
+    assert isinstance(model_decimal.amount, Credits)
+    assert model_decimal.amount == Credits(Decimal("100.75"))
+
+    model_str = TestModel(amount="200")
+    assert isinstance(model_str.amount, Credits)
+    assert model_str.amount == Credits(200)
+
+    with pytest.raises(ValidationError) as exc_info:
+        TestModel(amount="invalid")
+
+    assert "Input should be a number (int, float, or Decimal)" in str(exc_info.value)

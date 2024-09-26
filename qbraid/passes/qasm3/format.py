@@ -27,6 +27,21 @@ def _remove_double_empty_lines(qasm: str) -> str:
     return re.sub(r"\n\n\n", "\n\n", qasm)
 
 
+def _remove_comments(qasm: str, keep_header: bool = True) -> str:
+    """Remove comments from a QASM string. Optionally keep the header."""
+    lines = qasm.splitlines()
+    parse_lines = lines[1:] if keep_header else lines
+    result_lines = [lines[0]] + [line for line in parse_lines if not line.strip().startswith("//")]
+    return "\n".join(result_lines)
+
+
+def format_qasm(qasm: str) -> str:
+    """Format a QASM string."""
+    qasm = _remove_comments(qasm)
+    qasm = _remove_double_empty_lines(qasm)
+    return qasm.strip()
+
+
 def _remove_gate_definition(qasm: str, gate_name: str) -> str:
     """Remove a gate definition from a QASM string."""
     lines = iter(qasm.split("\n"))

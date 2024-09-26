@@ -20,6 +20,7 @@ from qbraid_core.exceptions import AuthError
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError, process_job_data
 
 from qbraid._caching import cached_method
+from qbraid.passes.qasm3.format import format_qasm
 from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
 from qbraid.programs.circuits.qasm import has_measurements
 from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
@@ -43,7 +44,7 @@ def _pyqir_to_json(program: pyqir.Module) -> dict[str, bytes]:
 def _qasm_to_json(
     program: Union[Qasm2StringType, Qasm3StringType]
 ) -> dict[str, Union[Qasm2StringType, Qasm3StringType]]:
-    return {"openQasm": program}
+    return {"openQasm": format_qasm(program)}
 
 
 def validate_qasm_no_measurements(

@@ -771,3 +771,13 @@ def test_device_validate_emit_warning_for_target_spec_validator(mock_provider, v
     )
     with pytest.warns(UserWarning, match=msg):
         quera_device.validate(valid_qasm2)
+
+
+def test_device_validate_level_none(mock_qbraid_device):
+    """Test that validate returns immediately if validate level set to 0."""
+    mock_qbraid_device.set_options(validate=0)
+
+    with patch.object(mock_qbraid_device, "status") as mock_status:
+        result = mock_qbraid_device.validate("abc123")
+        assert result is None
+        mock_status.assert_not_called()
