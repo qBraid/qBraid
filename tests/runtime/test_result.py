@@ -14,6 +14,7 @@
 Unit tests for retrieving and post-processing experimental results.
 
 """
+import datetime
 from collections import Counter
 from typing import Any
 from unittest.mock import MagicMock, patch
@@ -22,23 +23,15 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from qbraid.runtime.native.result_data import (
-    QbraidQirSimulatorResultData,
-    QuEraQasmSimulatorResultData,
-)
+from qbraid.runtime.enums import ExperimentType
+from qbraid.runtime.native.result import QbraidQirSimulatorResultData, QuEraQasmSimulatorResultData
 from qbraid.runtime.postprocess import (
     format_counts,
     normalize_batch_bit_lengths,
     normalize_bit_lengths,
     normalize_counts,
 )
-from qbraid.runtime.result import (
-    AhsResultData,
-    AhsShotResult,
-    ExperimentType,
-    GateModelResultData,
-    Result,
-)
+from qbraid.runtime.result import AhsResultData, AhsShotResult, GateModelResultData, Result
 
 try:
     from flair_visual.animation.runtime.qpustate import AnimateQPUState
@@ -46,6 +39,112 @@ try:
     flair_visual_installed = True
 except ImportError:
     flair_visual_installed = False
+
+
+@pytest.fixture
+def gate_model_result_data():
+    """Fixture to create a GateModelResultData object with some test data."""
+    measurement_counts = {"00": 100, "01": 50, "10": 25}
+    measurements = np.array([[0, 0], [0, 1], [1, 0]])
+    return GateModelResultData(measurement_counts=measurement_counts, measurements=measurements)
+
+
+@pytest.fixture
+def shot_result() -> AhsShotResult:
+    """Fixture to create an AhsShotResult object."""
+    success = True
+    pre_sequence = np.array([1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1])
+    post_sequence = np.array([0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0])
+    return AhsShotResult(success=success, pre_sequence=pre_sequence, post_sequence=post_sequence)
+
+
+@pytest.fixture
+def ahs_result_data(shot_result: AhsShotResult) -> AhsResultData:
+    """Fixture to create an AhsResultData object."""
+    measurements = [shot_result]
+    state_counts = Counter()
+    states = ["e", "r", "g"]
+
+    for shot in measurements:
+        if shot.success:
+            pre = shot.pre_sequence
+            post = shot.post_sequence
+            state_idx = [
+                0 if pre_i == 0 else 1 if post_i == 0 else 2 for pre_i, post_i in zip(pre, post)
+            ]
+            state = "".join(states[s_idx] for s_idx in state_idx)
+            state_counts.update([state])
+
+    measurement_counts = dict(state_counts)
+    return AhsResultData(measurement_counts=measurement_counts, measurements=measurements)
+
+
+@pytest.fixture
+def mock_atom_animation_state() -> dict[str, Any]:
+    """Fixture for a mock AnimateQPUState JSON data."""
+    return {
+        "block_durations": [],
+        "gate_events": [],
+        "qpu_fov": {"xmin": None, "xmax": None, "ymin": None, "ymax": None},
+        "atoms": [],
+        "slm_zone": [],
+        "aod_moves": [],
+    }
+
+
+@pytest.fixture
+def mock_logs() -> list[dict[str, Any]]:
+    """Fixture for mock logs."""
+    return [
+        {"atom_id": 0, "block_id": 0, "action_type": "TrapSLM", "time": 0, "duration": 0},
+        {
+            "atom_id": 0,
+            "block_id": 0,
+            "action_type": "TrapAOD",
+            "time": 0,
+            "duration": 31.024984394500784,
+        },
+        {
+            "atom_id": 0,
+            "block_id": 0,
+            "action_type": "DropAOD",
+            "time": 31.024984394500784,
+            "duration": 0,
+        },
+    ]
+
+
+@pytest.fixture
+def quera_sim_data(mock_atom_animation_state, mock_logs) -> QuEraQasmSimulatorResultData:
+    """Fixture to create a QuEraQasmSimulatorResultData object."""
+    return QuEraQasmSimulatorResultData(
+        backend="cirq",
+        flair_visual_version="0.1.4",
+        atom_animation_state=mock_atom_animation_state,
+        logs=mock_logs,
+    )
+
+
+@pytest.fixture
+def qir_sim_data():
+    """Fixture to create a QbraidQirSimulatorResultData object."""
+    return QbraidQirSimulatorResultData(
+        backend_version="0.7.4",
+        seed=42,
+        measurement_counts={"00": 10, "01": 15},
+    )
+
+
+@pytest.fixture
+def result_instance():
+    """Fixture to create a Result object for testing."""
+    return Result(
+        device_id="test_device",
+        job_id="test_job",
+        success=True,
+        data=GateModelResultData(),
+        test_detail="test_value",
+    )
 
 
 @pytest.mark.parametrize(
@@ -165,14 +264,6 @@ def test_result_data_experiment_type():
     assert ahs_result_data.experiment_type == ExperimentType.AHS
 
 
-@pytest.fixture
-def gate_model_result_data():
-    """Fixture to create a GateModelResultData object with some test data."""
-    measurement_counts = {"00": 100, "01": 50, "10": 25}
-    measurements = np.array([[0, 0], [0, 1], [1, 0]])
-    return GateModelResultData(measurement_counts=measurement_counts, measurements=measurements)
-
-
 def test_to_dict_basic(gate_model_result_data):
     """Test the basic functionality of the to_dict method."""
     result_dict = gate_model_result_data.to_dict()
@@ -236,36 +327,6 @@ def test_to_dict_no_counts():
 
     with pytest.raises(ValueError, match="Counts data is not available"):
         result_data.to_dict()
-
-
-@pytest.fixture
-def shot_result() -> AhsShotResult:
-    """Fixture to create an AhsShotResult object."""
-    success = True
-    pre_sequence = np.array([1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1])
-    post_sequence = np.array([0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0])
-    return AhsShotResult(success=success, pre_sequence=pre_sequence, post_sequence=post_sequence)
-
-
-@pytest.fixture
-def ahs_result_data(shot_result: AhsShotResult) -> AhsResultData:
-    """Fixture to create an AhsResultData object."""
-    measurements = [shot_result]
-    state_counts = Counter()
-    states = ["e", "r", "g"]
-
-    for shot in measurements:
-        if shot.success:
-            pre = shot.pre_sequence
-            post = shot.post_sequence
-            state_idx = [
-                0 if pre_i == 0 else 1 if post_i == 0 else 2 for pre_i, post_i in zip(pre, post)
-            ]
-            state = "".join(states[s_idx] for s_idx in state_idx)
-            state_counts.update([state])
-
-    measurement_counts = dict(state_counts)
-    return AhsResultData(measurement_counts=measurement_counts, measurements=measurements)
 
 
 def test_ahs_shot_result_equality(shot_result):
@@ -340,52 +401,6 @@ def test_ahs_result_data_no_measurement_counts():
     assert result_data.to_dict() == expected_dict
 
 
-@pytest.fixture
-def mock_atom_animation_state() -> dict[str, Any]:
-    """Fixture for a mock AnimateQPUState JSON data."""
-    return {
-        "block_durations": [],
-        "gate_events": [],
-        "qpu_fov": {"xmin": None, "xmax": None, "ymin": None, "ymax": None},
-        "atoms": [],
-        "slm_zone": [],
-        "aod_moves": [],
-    }
-
-
-@pytest.fixture
-def mock_logs() -> list[dict[str, Any]]:
-    """Fixture for mock logs."""
-    return [
-        {"atom_id": 0, "block_id": 0, "action_type": "TrapSLM", "time": 0, "duration": 0},
-        {
-            "atom_id": 0,
-            "block_id": 0,
-            "action_type": "TrapAOD",
-            "time": 0,
-            "duration": 31.024984394500784,
-        },
-        {
-            "atom_id": 0,
-            "block_id": 0,
-            "action_type": "DropAOD",
-            "time": 31.024984394500784,
-            "duration": 0,
-        },
-    ]
-
-
-@pytest.fixture
-def quera_sim_data(mock_atom_animation_state, mock_logs) -> QuEraQasmSimulatorResultData:
-    """Fixture to create a QuEraQasmSimulatorResultData object."""
-    return QuEraQasmSimulatorResultData(
-        backend="cirq",
-        flair_visual_version="0.1.4",
-        atom_animation_state=mock_atom_animation_state,
-        logs=mock_logs,
-    )
-
-
 def test_quera_sim_data_properties(quera_sim_data: QuEraQasmSimulatorResultData):
     """Test the backend and flair_visual_version properties."""
     assert quera_sim_data.backend == "cirq"
@@ -457,16 +472,6 @@ def test_quera_sim_data_get_logs_with_empty_logs():
     assert result.empty
 
 
-@pytest.fixture
-def qir_sim_data():
-    """Fixture to create a QbraidQirSimulatorResultData object."""
-    return QbraidQirSimulatorResultData(
-        backend_version="0.7.4",
-        seed=42,
-        measurement_counts={"00": 10, "01": 15},
-    )
-
-
 def test_qir_sim_data_backend_version_property(qir_sim_data):
     """Test the backend_version property."""
     assert qir_sim_data.backend_version == "0.7.4"
@@ -509,3 +514,66 @@ def test_format_counts_include_zero_values_decimal(counts):
     expected = {0: 10, 1: 15, 2: 0, 3: 25}
     result = format_counts(counts, include_zero_values=True, decimal=True)
     assert result == expected
+
+
+def test_format_value_string(result_instance):
+    """Test _format_value with a string input."""
+    assert result_instance._format_value("hello") == "'hello'"
+
+
+def test_format_value_enum(result_instance):
+    """Test _format_value with an Enum input."""
+    assert result_instance._format_value(ExperimentType.GATE_MODEL) == "GATE_MODEL"
+
+
+def test_format_value_datetime(result_instance):
+    """Test _format_value with a datetime input."""
+    test_datetime = datetime.datetime(2023, 1, 1, 12, 0)
+    assert result_instance._format_value(test_datetime) == "2023-01-01T12:00:00Z"
+
+
+def test_format_value_dict(result_instance):
+    """Test _format_value with a dict input."""
+    test_dict = {"key1": "value1", "key2": "value2"}
+    assert result_instance._format_value(test_dict) == "{key1: 'value1', key2: 'value2'}"
+
+
+def test_format_value_dict_with_depth(result_instance):
+    """Test _format_value with a nested dict input and depth limit."""
+    test_dict = {"key1": {"nested_key": "nested_value"}}
+    assert result_instance._format_value(test_dict, depth=2) == "{...}"
+
+
+def test_format_value_list(result_instance):
+    """Test _format_value with a list input."""
+    test_list = ["item1", "item2", "item3"]
+    assert result_instance._format_value(test_list) == "['item1', 'item2', 'item3']"
+
+
+def test_format_value_list_with_depth(result_instance):
+    """Test _format_value with a nested list and depth limit."""
+    test_list = [["item1", "item2"], ["item3", "item4"]]
+    assert result_instance._format_value(test_list, depth=2) == "[...]"
+
+
+def test_format_value_dict_with_openqasm(result_instance):
+    """Test _format_value with a dict with openQasm key."""
+    test_dict = {"openQasm": "OPENQASM 2.0;"}
+    assert result_instance._format_value(test_dict) == "{openQasm: '...'}"
+
+
+def test_format_value_catch_all(result_instance):
+    """Test _format_value with for catch-all repr."""
+    assert result_instance._format_value(42) == "42"
+
+
+def test_repr(result_instance):
+    """Test __repr__ method of Result class."""
+    expected_repr = (
+        "Result(\n"
+        "  device_id=test_device,\n"
+        "  job_id=test_job,\n"
+        "  success=True,\n"
+        "  data=GateModelResultData(measurement_counts=None, measurements=None)"
+    )
+    assert repr(result_instance).startswith(expected_repr)

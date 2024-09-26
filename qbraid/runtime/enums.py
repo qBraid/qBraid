@@ -14,7 +14,7 @@ Module defining all :mod:`~qbraid.runtime` enumerated types.
 """
 from __future__ import annotations
 
-from enum import Enum
+from enum import Enum, IntEnum
 
 
 class DeviceStatus(Enum):
@@ -68,7 +68,7 @@ class NoiseModel(Enum):
             with a certain probability.
         PhaseFlip (str): Randomly flips the phase of a qubit state (i.e., it applies a Z gate)
             with a certain probability.
-
+        Other (str): Placeholder for custom or unspecified noise models.
     """
 
     Ideal = "no_noise"
@@ -77,6 +77,31 @@ class NoiseModel(Enum):
     PhaseDamping = "phase_damping"
     BitFlip = "bit_flip"
     PhaseFlip = "phase_flip"
+    Other = "other"
+
+
+class NoiseModelWrapper:
+    """Wrapper for NoiseModel enum to allow dynamic modification of 'Other'."""
+
+    _other_value = NoiseModel.Other.value
+
+    @classmethod
+    def set_other_value(cls, value: str) -> None:
+        """Set a custom value for the 'Other' noise model."""
+        cls._other_value = value
+
+    @classmethod
+    def get_noise_model(cls, noise_model: NoiseModel) -> NoiseModel:
+        """Return the NoiseModel instance with dynamic handling of 'Other'."""
+        if noise_model == NoiseModel.Other:
+            noise_model = NoiseModel.Other
+            noise_model._value_ = cls._other_value
+        return noise_model
+
+    @classmethod
+    def reset_other_value(cls) -> None:
+        """Reset the 'Other' noise model to its default value."""
+        cls._other_value = "other"
 
 
 class JobStatus(Enum):
@@ -148,3 +173,17 @@ class JobStatus(Enum):
     FAILED = "FAILED"
     UNKNOWN = "UNKNOWN"
     HOLD = "HOLD"
+
+
+class ValidationLevel(IntEnum):
+    """Enumeration for program validation levels in qBraid runtime.
+
+    Attributes:
+        NONE (int): No validation is performed.
+        WARN (int): Validation is performed, and warnings are issued if validation fails.
+        RAISE (int): Validation is performed, and exceptions are raised if validation fails.
+    """
+
+    NONE = 0
+    WARN = 1
+    RAISE = 2

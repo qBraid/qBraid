@@ -61,6 +61,7 @@ Exceptions
     ProgramLoaderError
 
 """
+import importlib
 from typing import TYPE_CHECKING
 
 from ._import import NATIVE_REGISTRY
@@ -123,13 +124,7 @@ __all__ = [
     "Qasm3StringType",
 ]
 
-_lazy_mods = ["circuits", "ahs"]
-
-_lazy_objs = {
-    "GateModelProgram": "circuits",
-    "AnalogHamiltonianProgram": "ahs",
-    "AHSEncoder": "ahs",
-}
+_lazy = {"circuits": ["GateModelProgram"], "ahs": ["AnalogHamiltonianProgram", "AHSEncoder"]}
 
 if TYPE_CHECKING:
     from .ahs import AHSEncoder as AHSEncoder
@@ -138,24 +133,22 @@ if TYPE_CHECKING:
 
 
 def __getattr__(name):
-    if name in _lazy_mods:
-        import importlib  # pylint: disable=import-outside-toplevel
+    for mod_name, objects in _lazy.items():
+        if name == mod_name:
+            module = importlib.import_module(f".{mod_name}", __name__)
+            globals()[mod_name] = module
+            return module
 
-        module = importlib.import_module(f".{name}", __name__)
-        globals()[name] = module
-        return module
-
-    if name in _lazy_objs:
-        import importlib  # pylint: disable=import-outside-toplevel
-
-        mod_name = _lazy_objs[name]
-        module = importlib.import_module(f".{mod_name}", __name__)
-        obj = getattr(module, name)
-        globals()[name] = obj
-        return obj
+        if name in objects:
+            module = importlib.import_module(f".{mod_name}", __name__)
+            obj = getattr(module, name)
+            globals()[name] = obj
+            return obj
 
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 def __dir__():
-    return sorted(__all__ + _lazy_mods + list(_lazy_objs.keys()))
+    return sorted(
+        __all__ + list(_lazy.keys()) + [item for sublist in _lazy.values() for item in sublist]
+    )

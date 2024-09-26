@@ -32,6 +32,7 @@ Exceptions
    QbraidError
 
 """
+import importlib
 from typing import TYPE_CHECKING
 
 from ._about import about
@@ -47,13 +48,12 @@ __all__ = [
     "cache_disabled",
 ]
 
-_lazy_mods = ["interface", "passes", "programs", "runtime", "transpiler", "visualization"]
-
-_lazy_objs = {
+_lazy = {
     "interface": [
         "circuits_allclose",
         "random_circuit",
     ],
+    "passes": [],
     "programs": [
         "AnalogHamiltonianProgram",
         "GateModelProgram",
@@ -69,12 +69,6 @@ _lazy_objs = {
         "load_program",
         "register_program_type",
         "unregister_program_type",
-    ],
-    "transpiler": [
-        "Conversion",
-        "ConversionGraph",
-        "ConversionScheme",
-        "transpile",
     ],
     "runtime": [
         "AhsResultData",
@@ -98,6 +92,13 @@ _lazy_objs = {
         "Session",
         "TargetProfile",
     ],
+    "transpiler": [
+        "Conversion",
+        "ConversionGraph",
+        "ConversionScheme",
+        "transpile",
+    ],
+    "visualization": [],
 }
 
 if TYPE_CHECKING:
@@ -144,17 +145,13 @@ if TYPE_CHECKING:
 
 
 def __getattr__(name):
-    if name in _lazy_mods:
-        import importlib  # pylint: disable=import-outside-toplevel
+    for mod_name, objects in _lazy.items():
+        if name == mod_name:
+            module = importlib.import_module(f".{mod_name}", __name__)
+            globals()[mod_name] = module
+            return module
 
-        module = importlib.import_module(f".{name}", __name__)
-        globals()[name] = module
-        return module
-
-    for mod_name, objects in _lazy_objs.items():
         if name in objects:
-            import importlib  # pylint: disable=import-outside-toplevel
-
             module = importlib.import_module(f".{mod_name}", __name__)
             obj = getattr(module, name)
             globals()[name] = obj
@@ -165,5 +162,5 @@ def __getattr__(name):
 
 def __dir__():
     return sorted(
-        __all__ + _lazy_mods + [item for sublist in _lazy_objs.values() for item in sublist]
+        __all__ + list(_lazy.keys()) + [item for sublist in _lazy.values() for item in sublist]
     )

@@ -18,7 +18,7 @@ import pytest
 from pydantic import ValidationError
 
 from qbraid.programs.spec import ProgramSpec
-from qbraid.runtime.enums import ExperimentType, NoiseModel
+from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.profile import TargetProfile
 
 
@@ -168,51 +168,3 @@ def test_basis_gates_none():
     """Test that passing None to basis_gates does not raise an error."""
     profile = TargetProfile(device_id="1234", simulator=True, basis_gates=None)
     assert profile.basis_gates is None
-
-
-def test_noise_model_members_exist():
-    """Test that all NoiseModel enum members exist."""
-    assert NoiseModel.Ideal is not None
-    assert NoiseModel.Depolarizing is not None
-    assert NoiseModel.AmplitudeDamping is not None
-    assert NoiseModel.PhaseDamping is not None
-    assert NoiseModel.BitFlip is not None
-    assert NoiseModel.PhaseFlip is not None
-
-
-def test_noise_model_member_values():
-    """Test that the NoiseModel enum members have correct string values."""
-    assert NoiseModel.Ideal.value == "no_noise"
-    assert NoiseModel.Depolarizing.value == "depolarizing"
-    assert NoiseModel.AmplitudeDamping.value == "amplitude_damping"
-    assert NoiseModel.PhaseDamping.value == "phase_damping"
-    assert NoiseModel.BitFlip.value == "bit_flip"
-    assert NoiseModel.PhaseFlip.value == "phase_flip"
-
-
-def test_noise_model_iteration():
-    """Test that iterating over the NoiseModel enum yields all noise models."""
-    noise_models = list(NoiseModel)
-    assert noise_models == [
-        NoiseModel.Ideal,
-        NoiseModel.Depolarizing,
-        NoiseModel.AmplitudeDamping,
-        NoiseModel.PhaseDamping,
-        NoiseModel.BitFlip,
-        NoiseModel.PhaseFlip,
-    ]
-
-
-def test_noise_model_length():
-    """Test that the NoiseModel enum contains the correct number of members."""
-    assert len(NoiseModel) == 6
-
-
-def test_noise_model_contains():
-    """Test that specific string values map to the correct NoiseModel enum members."""
-    assert NoiseModel("no_noise") == NoiseModel.Ideal
-    assert NoiseModel("depolarizing") == NoiseModel.Depolarizing
-    assert NoiseModel("amplitude_damping") == NoiseModel.AmplitudeDamping
-    assert NoiseModel("phase_damping") == NoiseModel.PhaseDamping
-    assert NoiseModel("bit_flip") == NoiseModel.BitFlip
-    assert NoiseModel("phase_flip") == NoiseModel.PhaseFlip

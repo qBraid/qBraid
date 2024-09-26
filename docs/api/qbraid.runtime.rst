@@ -18,3 +18,4 @@ Submodules
    ionq
    oqc
    native
+   schemas

@@ -45,7 +45,7 @@ from qbraid.runtime.aws.provider import BraketProvider
 from qbraid.runtime.aws.result_builder import BraketGateModelResultBuilder
 from qbraid.runtime.exceptions import JobStateError, ProgramValidationError
 
-from ..fixtures.braket.gates import get_braket_gates
+from ...fixtures.braket.gates import get_braket_gates
 
 braket_gates = get_braket_gates()
 

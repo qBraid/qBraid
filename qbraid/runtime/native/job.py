@@ -22,9 +22,13 @@ from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import GateModelResultData, Result
+from qbraid.runtime.schemas import (
+    QbraidQirSimulationMetadata,
+    QuEraQasmSimulationMetadata,
+    RuntimeJobModel,
+)
 
-from .result_data import QbraidQirSimulatorResultData, QuEraQasmSimulatorResultData
-from .schemas import QbraidQirSimulationMetadata, QuEraQasmSimulationMetadata, RuntimeJobModel
+from .result import QbraidQirSimulatorResultData, QuEraQasmSimulatorResultData
 
 if TYPE_CHECKING:
     import qbraid_core.services.quantum

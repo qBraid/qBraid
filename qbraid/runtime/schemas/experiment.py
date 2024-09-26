@@ -9,13 +9,13 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining qBraid runtime schemas.
+Module defining qBraid runtime experiment schemas.
 
 """
 from __future__ import annotations
 
 from collections import Counter
-from typing import Optional
+from typing import Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 from typing_extensions import Self
@@ -97,3 +97,35 @@ class GateModelExperimentMetadata(BaseModel):
             self.gate_depth = self.gate_depth or program.depth  # type: ignore
 
         return self
+
+
+class QbraidQirSimulationMetadata(GateModelExperimentMetadata):
+    """Result data specific to jobs submitted to the qBraid QIR simulator.
+
+    Attributes:
+        backend_version (str, optional): The version of the simulator backend.
+        seed (int, optional): The seed used for the simulation.
+
+    """
+
+    backend_version: Optional[str] = Field(None, alias="runnerVersion")
+    seed: Optional[int] = Field(None, alias="runnerSeed")
+
+
+class QuEraQasmSimulationMetadata(GateModelExperimentMetadata):
+    """Result data specific to jobs submitted to the QuEra QASM simulator.
+
+    Attributes:
+        backend (str, optional): The name of the backend used for the simulation.
+        flair_visual_version (str, optional): The version of the Flair Visual
+            tool used to generate the atom animation state data.
+        atom_animation_state (dict, optional): JSON data representing the state
+            of the QPU atoms used in the simulation.
+        logs (list, optional): List of log messages generated during the simulation.
+
+    """
+
+    backend: Optional[str] = None
+    flair_visual_version: Optional[str] = Field(None, alias="flairVisualVersion")
+    atom_animation_state: Optional[dict[str, Any]] = Field(None, alias="atomAnimationState")
+    logs: Optional[list[dict[str, Any]]] = None
