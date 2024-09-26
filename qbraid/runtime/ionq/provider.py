@@ -12,7 +12,8 @@
 Module defining IonQ session and provider classes
 
 """
-from typing import Any
+import os
+from typing import Any, Optional
 
 from qbraid_core.sessions import Session
 
@@ -81,8 +82,8 @@ class IonQSession(Session):
 class IonQProvider(QuantumProvider):
     """IonQ provider class."""
 
-    def __init__(self, api_key: str):
-        self.session = IonQSession(api_key)
+    def __init__(self, api_key: Optional[str] = None):
+        self.session = IonQSession(api_key or os.getenv("IONQ_API_KEY"))
 
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
         """Build a profile for an IonQ device."""
