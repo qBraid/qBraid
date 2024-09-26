@@ -79,13 +79,16 @@ class QbraidJob(QuantumJob):
 
     def status(self) -> JobStatus:
         """Return the status of the job / task , among the values of ``JobStatus``."""
-        job_data = self.client.get_job(self.id)
-        status: Optional[str] = job_data.get("status")
-        status_msg: Optional[str] = job_data.get("statusText")
-        status_enum = self._map_status(status)
-        if status_msg is not None:
-            status_enum.set_status_message(status_msg)
-        return status_enum
+        terminal_states = JobStatus.terminal_states()
+        if self._cache_metadata.get("status") not in terminal_states:
+            job_data = self.client.get_job(self.id)
+            status: Optional[str] = job_data.get("status")
+            status_msg: Optional[str] = job_data.get("statusText")
+            status_enum = self._map_status(status)
+            if status_msg is not None:
+                status_enum.set_status_message(status_msg)
+            self._cache_metadata["status"] = status_enum
+        return self._cache_metadata["status"]
 
     def cancel(self) -> None:
         """Attempt to cancel the job."""
