@@ -75,6 +75,7 @@ class QbraidDevice(QuantumDevice):
     def submit(  # pylint: disable=too-many-arguments
         self,
         run_input: dict[str, Union[bytes, str]],
+        memory: bool = False,
         shots: Optional[int] = None,
         tags: Optional[dict[str, str]] = None,
         entrypoint: Optional[str] = None,
@@ -88,16 +89,18 @@ class QbraidDevice(QuantumDevice):
         Args:
             run_input (dict[str, Union[bytes, str]]): Dictionary containing
                 QIR bytecode or OpenQASM string to be run on the device.
-            shots (optional, int): The number of times to repeat the execution of the
+            memory (bool, optional): Whether to retain the individual shot results.
+                Only applicable for certain devices. Defaults to False.
+            shots (int, optional): The number of times to repeat the execution of the
                 program. Default value varies by device.
-            tags (optional, dict): A dictionary of tags to associate with the job.
-            entrypoint (optional, str): Name of the entrypoint function to execute.
+            tags (dict, optional): A dictionary of tags to associate with the job.
+            entrypoint (str, optional): Name of the entrypoint function to execute.
                 Only applicable if run_input is a QIR module. Defaults to None.
-            noise_model (optional, str): The noise model to apply to the job.
+            noise_model (str, optional): The noise model to apply to the job.
                 Only applicable if device supports noisey simulation. Defaults to None.
-            seed (optional, int): The seed to use for the random number generator.
+            seed (int, optional): The seed to use for the random number generator.
                 Only applicable for certain devices. Defaults to None.
-            timeout (optional, int): The maximum time in seconds to wait for the job
+            timeout (int, optional): The maximum time in seconds to wait for the job
                 to complete after execution has started. Defaults to None.
 
         Returns:
@@ -114,6 +117,7 @@ class QbraidDevice(QuantumDevice):
             "entrypoint": entrypoint,
             "timeout": timeout,
             "noiseModel": noise_model,
+            "memory": memory,
             **run_input,
         }
 
