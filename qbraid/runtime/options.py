@@ -208,7 +208,6 @@ class RuntimeOptions:
         Raises:
             ValueError: If any option value is invalid after merging.
         """
-        # Step 1: Combine validators with appropriate precedence
         combined_validators = self._validators.copy()
         if override_validators:
             combined_validators.update(other._validators)
@@ -216,21 +215,17 @@ class RuntimeOptions:
             for key, validator in other._validators.items():
                 combined_validators.setdefault(key, validator)
 
-        # Step 2: Combine options
         combined_fields = self._fields.copy()
         combined_fields.update(other.__dict__)
 
-        # Step 3: Temporarily disable validation and update internal state
         object.__setattr__(self, "_validators", combined_validators)
         object.__setattr__(self, "_fields", combined_fields)
 
-        # Step 4: Determine which options to validate
         if override_validators:
             options_to_validate = combined_fields.items()
         else:
             options_to_validate = ((key, combined_fields[key]) for key in other.__dict__.keys())
 
-        # Step 5: Validate options
         for option_name, value in options_to_validate:
             validator = combined_validators.get(option_name)
             if validator and not validator(value):

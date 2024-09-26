@@ -591,3 +591,15 @@ def test_merge_with_multiple_options_and_validators():
 
     options1.option_c = 5  # Should pass
     assert options1.option_c == 5
+
+
+def test_validate_option_handles_exception():
+    """Test that validate_option handles exceptions raised by the validator."""
+    options = RuntimeOptions(v=2)
+    options.set_validator("v", lambda x: x > 0)
+    with pytest.raises(ValueError) as exc:
+        options.validate_option("v", "a")
+    assert (
+        "Validator for field 'v' raised an exception: "
+        "'>' not supported between instances of 'str' and 'int'" == str(exc.value)
+    )

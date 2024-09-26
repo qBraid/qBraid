@@ -26,6 +26,25 @@ Types of changes:
 
 ### Dependencies
 
+## [0.8.1] - 2024-09-26
+
+### Added
+- Added `ValidationLevel` int enum that controls whether the behavior of runtime `QuantumDevice.validate` method, allowing either `NONE`, `WARN`, or `RAISE` ([#762](https://github.com/qBraid/qBraid/pull/762))
+- Added `NoiseModelWrapper` class that allows dynamically setting the value of the `NoiseModel.Other` enum ([#762](https://github.com/qBraid/qBraid/pull/762))
+- Added `DeviceData` schema to improve the way we process JSON device data recieved from the qBraid API  ([#762](https://github.com/qBraid/qBraid/pull/762))
+
+### Improved / Modified
+- Added optional `RuntimeOptions` argument to `QuantumDevice` class to enable overriding default options upon instantiation ([#762](https://github.com/qBraid/qBraid/pull/762))
+- Added `RuntimeOptions.merge` method to allow combining to options objects with preference to the values and/or validators of either ([#762](https://github.com/qBraid/qBraid/pull/762))
+- Organized all pydantic schemas used in qBraid runtime under (new) module `qbraid.runtime.schemas` ([#762](https://github.com/qBraid/qBraid/pull/762))
+
+### Fixed
+- Fixed `pkg_resources` import error bug. Not shipped with Python > 3.9, so needed lazy import ([#762](https://github.com/qBraid/qBraid/pull/762))
+
+### Dependencies
+- Update qbraid-core requirement from >=0.1.22 to >=0.1.24 ([#762](https://github.com/qBraid/qBraid/pull/762))
+- Added [ipympl](https://matplotlib.org/ipympl/) to `qbraid[visualization]` extras to allow enhance matplotlib animations with `flair-visual` ([#762](https://github.com/qBraid/qBraid/pull/762))
+
 ## [0.8.0] - 2024-09-23
 
 ### Added

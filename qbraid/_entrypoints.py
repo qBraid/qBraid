@@ -18,7 +18,7 @@ from typing import Optional, Type
 
 try:
     import pkg_resources
-except ImportError:
+except ImportError:  # pragma: no cover
     pkg_resources = None
 
 from .exceptions import QbraidError
