@@ -121,7 +121,7 @@ class QbraidProvider(QuantumProvider):
         return ProgramSpec(program_type, alias=run_package, **lambdas) if program_type else None
 
     @staticmethod
-    def _process_noise_models(noise_models: Optional[list[str]]) -> Optional[list[NoiseModel]]:
+    def _process_noise_models(noise_models: Optional[list[str]]) -> Optional[set[NoiseModel]]:
         """Process and return a list of noise model enum objects."""
         if not noise_models:
             return None
@@ -138,7 +138,7 @@ class QbraidProvider(QuantumProvider):
 
             noise_model_enums.append(nm_enum)
 
-        return noise_model_enums
+        return set(noise_model_enums)
 
     def _build_runtime_profile(self, device_data: dict[str, Any]) -> TargetProfile:
         """Builds a runtime profile from qBraid device data."""
@@ -155,12 +155,12 @@ class QbraidProvider(QuantumProvider):
             num_qubits=model.num_qubits,
             program_spec=program_spec,
             provider_name=model.provider,
-            noise_models=set(noise_models),
+            noise_models=noise_models,
             name=model.name,
-            pricing=model.pricing,
+            pricing=model.pricing.model_dump(),
         )
 
-    @cached_method
+    @cached_method(ttl=120)
     def get_devices(self, **kwargs) -> list[QbraidDevice]:
         """Return a list of devices matching the specified filtering."""
         query = kwargs or {}
@@ -174,7 +174,7 @@ class QbraidProvider(QuantumProvider):
         profiles = [self._build_runtime_profile(device_data) for device_data in device_data_lst]
         return [QbraidDevice(profile, client=self.client) for profile in profiles]
 
-    @cached_method
+    @cached_method(ttl=120)
     def get_device(self, device_id: str) -> QbraidDevice:
         """Return quantum device corresponding to the specified qBraid device ID.
 
