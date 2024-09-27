@@ -63,35 +63,22 @@ class QbraidJob(QuantumJob):
             self._client = self._device.client if self._device else QuantumClient()
         return self._client
 
-    @staticmethod
-    def _map_status(status: Optional[str]) -> JobStatus:
-        """Returns `JobStatus` object mapped from raw status value. If no value
-        provided or conversion from string fails, returns `JobStatus.UNKNOWN`."""
-        if status is None:
-            return JobStatus.UNKNOWN
-        if not isinstance(status, str):
-            raise ValueError(f"Invalid status value type: {type(status)}")
-        for e in JobStatus:
-            status_enum = JobStatus(e.value)
-            if status == status_enum.name or status == str(status_enum):
-                return status_enum
-        raise ValueError(f"Status value '{status}' not recognized.")
-
     def status(self) -> JobStatus:
         """Return the status of the job / task , among the values of ``JobStatus``."""
         terminal_states = JobStatus.terminal_states()
         if self._cache_metadata.get("status") not in terminal_states:
-            job_data = self.client.get_job(self.id)
-            status: Optional[str] = job_data.get("status")
-            status_msg: Optional[str] = job_data.get("statusText")
-            status_enum = self._map_status(status)
-            if status_msg is not None:
-                status_enum.set_status_message(status_msg)
-            self._cache_metadata["status"] = status_enum
+            client_data = self.client.get_job(self.id)
+            job_model = RuntimeJobModel.from_dict(client_data)
+            job_data = job_model.model_dump(exclude={"metadata", "cost"})
+            status = JobStatus(job_data.pop("status"))
+            if job_model.status_text is not None:
+                status.set_status_message(job_model.status_text)
+            self._cache_metadata.update({**job_data, "status": status})
         return self._cache_metadata["status"]
 
     def cancel(self) -> None:
         """Attempt to cancel the job."""
+        _ = self.status()
         if self.is_terminal_state():
             raise JobStateError("Cannot cancel job in a terminal state.")
 

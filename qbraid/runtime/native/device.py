@@ -28,6 +28,7 @@ from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, NoiseModel
 from qbraid.runtime.exceptions import QbraidRuntimeError
+from qbraid.runtime.schemas.job import RuntimeJobModel
 from qbraid.transpiler import ConversionGraph, transpile
 
 from .job import QbraidJob
@@ -109,9 +110,11 @@ class QbraidDevice(QuantumDevice):
         See Also: https://docs.qbraid.com/api-reference/api-reference/post-quantum-jobs
 
         """
+        tags_dict = tags or {}
+
         payload = {
             "qbraidDeviceId": self.id,
-            "tags": json.dumps(tags or {}),
+            "tags": json.dumps(tags_dict),
             "shots": shots,
             "seed": seed,
             "entrypoint": entrypoint,
@@ -122,10 +125,12 @@ class QbraidDevice(QuantumDevice):
         }
 
         job_data = self.client.create_job(data=payload)
-        job_id: str = job_data.pop("qbraidJobId")
-        job_data["job_id"] = job_id
 
-        return QbraidJob(**job_data, device=self, client=self.client)
+        payload.update(job_data)
+        payload["tags"] = tags_dict
+        job_model = RuntimeJobModel.from_dict(payload)
+        model_dump = job_model.model_dump(exclude={"metadata", "cost"})
+        return QbraidJob(**model_dump, device=self, client=self.client)
 
     def try_extracting_info(self, func, error_message):
         """Try to extract information from a function/attribute,

@@ -83,7 +83,7 @@ class RuntimeJobModel(QbraidSchemaBase):
 
     job_id: str = Field(..., alias="qbraidJobId")
     device_id: str = Field(..., alias="qbraidDeviceId")
-    status: str
+    status: JobStatus
     status_text: Optional[str] = Field(None, alias="statusText")
     shots: Optional[int] = Field(None, ge=0)
     experiment_type: ExperimentType = Field(..., alias="experimentType")
