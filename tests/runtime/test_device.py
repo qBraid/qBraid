@@ -668,7 +668,7 @@ def test_runtime_job_model_from_dict_custom_status(status, status_text):
 
     model = RuntimeJobModel.from_dict(job_data)
 
-    assert model.status == JobStatus.FAILED.value
+    assert model.status == JobStatus.FAILED
     assert model.status_text == status_text
 
 

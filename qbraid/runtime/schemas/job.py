@@ -77,13 +77,13 @@ class RuntimeJobModel(QbraidSchemaBase):
         cost (Credits, optional): The cost of the job in qBraid credits.
     """
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, use_enum_values=False)
 
     VERSION: ClassVar[float] = 1.0
 
     job_id: str = Field(..., alias="qbraidJobId")
     device_id: str = Field(..., alias="qbraidDeviceId")
-    status: str
+    status: JobStatus
     status_text: Optional[str] = Field(None, alias="statusText")
     shots: Optional[int] = Field(None, ge=0)
     experiment_type: ExperimentType = Field(..., alias="experimentType")
