@@ -164,12 +164,12 @@ def test_runtime_job_model(mock_job_data):
 def test_populate_metadata(valid_qasm):
     """Test _populate_metadata method."""
     job_data = {"openQasm": valid_qasm, "circuitNumQubits": 5, "circuitDepth": 10}
-    experiment_type = ExperimentType.GATE_MODEL
+    experiment_type = ExperimentType.GATE_MODEL.value
     populated_data = RuntimeJobModel._populate_metadata(job_data, experiment_type)
     assert isinstance(populated_data["metadata"], GateModelExperimentMetadata)
     assert populated_data["metadata"].qasm == valid_qasm
 
-    experiment_type = ExperimentType.AHS
+    experiment_type = ExperimentType.AHS.value
     populated_data = RuntimeJobModel._populate_metadata(job_data, experiment_type)
     assert isinstance(populated_data["metadata"], ExperimentMetadata)
 
