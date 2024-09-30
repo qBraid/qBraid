@@ -14,14 +14,13 @@ Module defining QbraidJob class
 """
 from __future__ import annotations
 
-import time
 from typing import TYPE_CHECKING, Optional
 
-from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
+from qbraid_core.services.quantum import QuantumClient
 
 from qbraid._logging import logger
 from qbraid.runtime.enums import JobStatus
-from qbraid.runtime.exceptions import JobStateError
+from qbraid.runtime.exceptions import JobStateError, QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import GateModelResultData, Result
 from qbraid.runtime.schemas import (
@@ -84,22 +83,19 @@ class QbraidJob(QuantumJob):
             raise JobStateError("Cannot cancel job in a terminal state.")
 
         self.client.cancel_job(self.id)
-        logger.info("Cancel job request validated. Processing...")
+        logger.info("Cancel job request validated.")
 
-        status_polls: int = 3
-        wait_interval: int = 1
+        try:
+            logger.info("Waiting for job to cancel...")
+            self.wait_for_final_state(timeout=3, poll_interval=1)
+        except JobStateError:
+            pass
 
-        for _ in range(status_polls):
-            time.sleep(wait_interval)
-            status = self.status()
+        status = self.status()
+        if status not in {JobStatus.CANCELLED, JobStatus.CANCELLING}:
+            raise QbraidRuntimeError(f"Failed to cancel job. Current status: {status.name}")
 
-            if status == JobStatus.CANCELLED:
-                logger.info("Success. Current status: %s", status.name)
-                return
-
-            logger.info("Waiting for job to cancel... Current status: %s", status.name)
-
-        raise QuantumServiceRequestError(f"Failed to cancel job. Current status: {status.name}")
+        logger.info("Success. Current status: %s", status.name)
 
     def result(self) -> Result:
         """Return the results of the job."""

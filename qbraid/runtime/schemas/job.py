@@ -77,7 +77,7 @@ class RuntimeJobModel(QbraidSchemaBase):
         cost (Credits, optional): The cost of the job in qBraid credits.
     """
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, use_enum_values=False)
 
     VERSION: ClassVar[float] = 1.0
 

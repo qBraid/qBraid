@@ -320,11 +320,13 @@ def test_ionq_submit_fail():
         TargetProfile(device_id="simulator", simulator=False),
         IonQSession("fake_api_key"),
     )
-    with patch("qbraid_core.sessions.Session.post") as mock_post:
-        mock_post.return_value.json.return_value = {"error": "fake_error"}
+    with patch("qbraid_core.sessions.Session.get") as mock_get:
+        mock_get.return_value.json.return_value = DEVICE_DATA
+        with patch("qbraid_core.sessions.Session.post") as mock_post:
+            mock_post.return_value.json.return_value = {"error": "fake_error"}
 
-        with pytest.raises(ValueError):
-            device.run(circuit, shots=2)
+            with pytest.raises(ValueError):
+                device.run(circuit, shots=2)
 
 
 @pytest.mark.parametrize("result", [{"probabilities": {"0": 0.5, "1": 0.5}}, {"shots": 100}])

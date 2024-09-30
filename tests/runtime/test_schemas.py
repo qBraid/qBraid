@@ -143,7 +143,7 @@ def test_runtime_job_model(mock_job_data):
     job = RuntimeJobModel.from_dict(mock_job_data)
     assert job.job_id == "job_123"
     assert job.device_id == "device_456"
-    assert job.status == JobStatus.COMPLETED.value
+    assert job.status == JobStatus.COMPLETED
     assert job.shots == 100
     assert isinstance(job.metadata, GateModelExperimentMetadata)
     assert job.time_stamps.executionDuration == 60000  # pylint: disable=no-member
