@@ -26,6 +26,13 @@ Types of changes:
 
 ### Dependencies
 
+## [0.8.2] - 2024-09-30
+
+### Improved / Modified
+- Improved `IonQJob.status` and added overriding `IonQJob.metadata` method that uses status caching and refreshes all job metadata when in non-terminal state. ([#765](https://github.com/qBraid/qBraid/pull/765))
+- Improved `QbraidJob.cancel` method so more accurately indicate whether job cancel request was successful or not ([#766](https://github.com/qBraid/qBraid/pull/766))
+- Modified output JSON format of `QbraidJob.metadata` to mirror that of the `qbraid.runtime.schemas.RuntimeJobModel` ([#766](https://github.com/qBraid/qBraid/pull/766))
+
 ## [0.8.1] - 2024-09-26
 
 ### Added

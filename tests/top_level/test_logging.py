@@ -56,7 +56,7 @@ def test_get_log_level_invalid_cases(mock_warning, log_level_env, invalid_log_le
     with patch.dict(os.environ, {"LOG_LEVEL": log_level_env}):
         assert get_log_level_from_env() == DEFAULT_LOG_LEVEL
         mock_warning.assert_called_once_with(
-            "Invalid log level (str) in LOG_LEVEL: %s. Falling back to INFO.", invalid_log_level
+            "Invalid log level (str) in LOG_LEVEL: %s. Falling back to WARNING.", invalid_log_level
         )
 
 
@@ -75,7 +75,7 @@ def test_get_log_level_invalid_int_warning(mock_warning):
     with patch.dict(os.environ, {"LOG_LEVEL": "999"}):
         assert get_log_level_from_env() == DEFAULT_LOG_LEVEL
         mock_warning.assert_called_once_with(
-            "Invalid log level (int) in LOG_LEVEL: %s. Falling back to INFO.", 999
+            "Invalid log level (int) in LOG_LEVEL: %s. Falling back to WARNING.", 999
         )
 
 
