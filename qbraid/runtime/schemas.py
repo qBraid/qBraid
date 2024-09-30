@@ -97,5 +97,7 @@ class GateModelExperimentMetadata(BaseModel):
             self.gate_depth = self.gate_depth or program.depth  # type: ignore
 
         return self
+
+
 class AnnealingExperimentMetadata(BaseModel):
     """Metadata specific to annealing experiments."""

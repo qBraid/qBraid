@@ -23,8 +23,17 @@ from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import GateModelResultData, Result
 
-from .result_data import QbraidQirSimulatorResultData, QuEraQasmSimulatorResultData
-from .schemas import QbraidQirSimulationMetadata, QuEraQasmSimulationMetadata, RuntimeJobModel
+from .result_data import (
+    NECVectorAnnealerResultData,
+    QbraidQirSimulatorResultData,
+    QuEraQasmSimulatorResultData,
+)
+from .schemas import (
+    NECVectorAnnealerMetadata,
+    QbraidQirSimulationMetadata,
+    QuEraQasmSimulationMetadata,
+    RuntimeJobModel,
+)
 
 if TYPE_CHECKING:
     import qbraid_core.services.quantum
@@ -100,13 +109,12 @@ class QbraidJob(QuantumJob):
         )
         job_result.update(job_data)
         metadata_to_result_data = {
+            NECVectorAnnealerMetadata: NECVectorAnnealerResultData,
             QbraidQirSimulationMetadata: QbraidQirSimulatorResultData,
             QuEraQasmSimulationMetadata: QuEraQasmSimulatorResultData,
         }
         model = RuntimeJobModel.from_dict(job_result)
-        result_data_cls: GateModelResultData = metadata_to_result_data.get(
-            type(model.metadata), GateModelResultData
-        )
+        result_data_cls = metadata_to_result_data.get(type(model.metadata), GateModelResultData)
         data = result_data_cls.from_object(model.metadata)
         metadata_dump = model.metadata.model_dump(
             by_alias=True, exclude={"measurement_counts", "measurements"}

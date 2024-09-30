@@ -24,7 +24,7 @@ from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
 from qbraid.programs.circuits.qasm import has_measurements
 from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
 from qbraid.runtime._display import display_jobs_from_data
-from qbraid.runtime.enums import ExperimentType, NoiseModel
+from qbraid.runtime.enums import NoiseModel, Paradigm
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
@@ -125,13 +125,16 @@ class QbraidProvider(QuantumProvider):
         num_qubits = device_data.get("numberQubits")
         simulator = device_data.get("type") == "SIMULATOR"
         program_type_alias = device_data.get("runPackage")
+        experiment_type = Paradigm[
+            device_data.get("paradigm", "GATE_BASED").replace("-", "_").upper()
+        ].value
         device_id = device_data.get("qbraid_id", device_data.get("objArg"))
         program_spec = self._get_program_spec(program_type_alias, device_id)
         noise_models = [NoiseModel.Ideal] if provider.lower() == "qbraid" else None
         return TargetProfile(
             device_id=device_id,
             simulator=simulator,
-            experiment_type=ExperimentType.GATE_MODEL,
+            experiment_type=experiment_type,
             num_qubits=num_qubits,
             program_spec=program_spec,
             provider_name=provider,

@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional
 
-from qbraid.runtime.result import GateModelResultData
+from qbraid.runtime.result import AnnealingResultData, GateModelResultData
 
 if TYPE_CHECKING:
     import flair_visual.animation.runtime.qpustate
@@ -88,3 +88,16 @@ class QbraidQirSimulatorResultData(GateModelResultData):
     def seed(self) -> Optional[int]:
         """Returns the seed used for the simulation."""
         return self._seed
+
+
+class NECVectorAnnealerResultData(AnnealingResultData):
+    """Class for storing and accessing the results of an annealing job.
+    Args:
+        ResultData (ResultData): ABC for runtime results linked to a specific ExperimentType.
+
+    """
+
+    def __init__(self, job_data: Optional[list[dict[str, Any]]] = None, **kwargs):
+        """Create a new NECVectorAnnealerResultData instance."""
+        super().__init__(**kwargs)
+        self._job_data = job_data if job_data else []
