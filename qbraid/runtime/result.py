@@ -26,7 +26,7 @@ from qbraid_core.system.generic import _datetime_to_str
 
 from .enums import ExperimentType
 from .postprocess import counts_to_probabilities, normalize_counts
-from .schemas import GateModelExperimentMetadata
+from .schemas import AnnealingExperimentMetadata, GateModelExperimentMetadata
 
 KeyType = TypeVar("KeyType", str, int)
 
@@ -266,6 +266,55 @@ class AhsResultData(ResultData):
             "measurement_counts": self._measurement_counts,
             "measurements": self._measurements,
         }
+
+
+class AnnealingResultData(ResultData):
+    """Class for storing and accessing the results of an annealing job.
+
+    Args:
+        ResultData (ResultData): ABC for runtime results linked to a specific ExperimentType.
+
+    Returns:
+        _type_: _description_
+    """
+
+    def __init__(self, job_data: Optional[dict[str, Any]] = None, **kwargs):
+        """Create a new AnnealingResultData instance.
+
+        Args:
+            job_data (Optional[dict[str, Any]], optional):
+                Ex: [{'spin': {' x1': 0, ' x2': 0, 'x1': 0},\
+                'energy': 0, 'time': 0.006517000030726194,\
+                'constraint': True, 'memory_usage': 1.189453125}]. 
+                Defaults to None.
+        """
+        super().__init__(**kwargs)
+        self._job_data = job_data if job_data else {}
+
+    @property
+    def experiment_type(self) -> ExperimentType:
+        """Returns the experiment type."""
+        return ExperimentType.ANNEALING
+
+    @classmethod
+    def from_object(cls, model: AnnealingExperimentMetadata, **kwargs) -> AnnealingResultData:
+        """Creates a new AnnealingResultData instance from a AnnealingExperimentMetadata object."""
+        return cls.from_dict(model.model_dump(**kwargs))
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> AnnealingResultData:
+        """Creates a new AnnealingResultData instance from a dictionary."""
+        return cls(job_data=data.pop("job_data", {}))
+
+    def to_dict(self) -> dict[str, Any]:
+        """Converts the AnnealingResultData instance to a dictionary."""
+        return {
+            "job_data": self._job_data,
+        }
+
+    def get_annealing_results(self) -> dict[str, Any]:
+        """Returns the job data."""
+        return self._job_data
 
 
 class Result:
