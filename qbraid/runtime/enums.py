@@ -52,6 +52,18 @@ class ExperimentType(Enum):
     OTHER = "other"
 
 
+class Paradigm(Enum):
+    """
+    Enumeration for quantum computing paradigms. Used as mapping for experiment types.
+    """
+
+    GATE_BASED = ExperimentType.GATE_MODEL.value
+    AHS = ExperimentType.AHS.value
+    ANNEALER = ExperimentType.ANNEALING.value
+    PHOTONIC = ExperimentType.PHOTONIC_MODEL.value
+    OTHER = ExperimentType.OTHER.value
+
+
 class NoiseModel(Enum):
     """Enumeration representing various noise models for quantum simulators.
 
