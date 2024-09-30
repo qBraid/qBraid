@@ -69,9 +69,8 @@ class IonQJob(QuantumJob):
             return self._cache_metadata
 
         job_metadata = self.session.get_job(self.id)
-        job_metadata["status"] = self._map_status(job_metadata.setdefault("status", "unknown"))
-
         self._cache_metadata.update(job_metadata)
+        self._cache_metadata["status"] = self._map_status(self._cache_metadata["status"])
         return self._cache_metadata
 
     def cancel(self) -> None:
