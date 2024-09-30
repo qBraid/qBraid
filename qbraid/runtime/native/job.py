@@ -14,10 +14,12 @@ Module defining QbraidJob class
 """
 from __future__ import annotations
 
+import time
 from typing import TYPE_CHECKING, Optional
 
-from qbraid_core.services.quantum import QuantumClient
+from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
 
+from qbraid._logging import logger
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
@@ -78,11 +80,26 @@ class QbraidJob(QuantumJob):
 
     def cancel(self) -> None:
         """Attempt to cancel the job."""
-        _ = self.status()
         if self.is_terminal_state():
             raise JobStateError("Cannot cancel job in a terminal state.")
 
         self.client.cancel_job(self.id)
+        logger.info("Cancel job request validated. Processing...")
+
+        status_polls: int = 3
+        wait_interval: int = 1
+
+        for _ in range(status_polls):
+            time.sleep(wait_interval)
+            status = self.status()
+
+            if status == JobStatus.CANCELLED:
+                logger.info("Success. Current status: %s", status.name)
+                return
+
+            logger.info("Waiting for job to cancel... Current status: %s", status.name)
+
+        raise QuantumServiceRequestError(f"Failed to cancel job. Current status: {status.name}")
 
     def result(self) -> Result:
         """Return the results of the job."""
