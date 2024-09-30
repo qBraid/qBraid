@@ -44,11 +44,8 @@ class IonQJob(QuantumJob):
         """Return the IonQ session."""
         return self._session
 
-    def status(self) -> JobStatus:
-        """Return the current status of the IonQ job."""
-        job_data = self.session.get_job(self.id)
-        status = job_data.get("status")
-
+    def _ionq_status_to_qbraid_status(self, status: str) -> JobStatus:
+        """Convert IonQ job status to qBraid job status."""
         status_map = {
             "submitted": JobStatus.INITIALIZING,
             "ready": JobStatus.QUEUED,
@@ -58,6 +55,24 @@ class IonQJob(QuantumJob):
             "completed": JobStatus.COMPLETED,
         }
         return status_map.get(status, JobStatus.UNKNOWN)
+
+    def status(self) -> JobStatus:
+        """Return the current status of the IonQ job."""
+        job_data = self.session.get_job(self.id)
+        status = job_data.get("status")
+        return self._ionq_status_to_qbraid_status(status)
+
+    def metadata(self) -> dict[str, Any]:
+        """Store and return the metadata of the IonQ job."""
+        if self.is_terminal_state() and "status" in self._cache_metadata:
+            return self._cache_metadata
+
+        job_metadata = self.session.get_job(self.id)
+        self._cache_metadata.update(job_metadata)
+        self._cache_metadata["status"] = self._ionq_status_to_qbraid_status(
+            self._cache_metadata["status"]
+        )
+        return self._cache_metadata
 
     def cancel(self) -> None:
         """Cancel the IonQ job."""
