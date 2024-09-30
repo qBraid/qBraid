@@ -219,6 +219,7 @@ def test_ionq_device_run_submit_job(mock_post, mock_get, circuit):
         DEVICE_DATA,  # ionq_device.run(circuit, shots=2)
         GET_JOB_RESPONSE,  # job.status()
         GET_JOB_RESPONSE,  # job.metadata()
+        GET_JOB_RESPONSE,  # job.metadata()
         GET_JOB_RESPONSE,  # job.result()
         GET_JOB_RESULT_RESPONSE,  # job.result()
     ]
@@ -238,11 +239,18 @@ def test_ionq_device_run_submit_job(mock_post, mock_get, circuit):
     assert isinstance(job_status, JobStatus)
     assert job_status == JobStatus.COMPLETED
 
+    def _validate_metadata(metadata):
+        assert isinstance(metadata, dict)
+        assert metadata["job_id"] == "c86a043a-6aea-47cf-b3a6-70ab1e538cab"
+        assert metadata["shots"] == 2
+        assert metadata["status"] == JobStatus.COMPLETED
+
     job_metadata = job.metadata()
-    assert isinstance(job_metadata, dict)
-    assert job_metadata["job_id"] == "c86a043a-6aea-47cf-b3a6-70ab1e538cab"
-    assert job_metadata["shots"] == 2
-    assert job_metadata["status"] == JobStatus.COMPLETED
+    _validate_metadata(job_metadata)
+
+    # test caching
+    job_metadata = job.metadata()
+    _validate_metadata(job_metadata)
 
     res = job.result()
     assert isinstance(res, Result)
