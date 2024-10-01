@@ -597,6 +597,46 @@ def test_annealing_result_data(annealing_result_data):
     ]
 
 
+def test_annealing_result_from_dict():
+    """Test AnnealingResultData from_dict."""
+    sa_results = [
+        {
+            "spin": {" x1": 0, " x2": 0, "x1": 0},
+            "energy": 0,
+            "time": 0.006517000030726194,
+            "constraint": True,
+            "memory_usage": 1.189453125,
+        }
+    ]
+    result_data = AnnealingResultData.from_dict({"sa_results": sa_results})
+    assert result_data._sa_results == sa_results
+
+
+def test_annealing_result_data_get_result(annealing_result_data):
+    """Test AnnealingResultData get_result."""
+    result = annealing_result_data.get_results()
+    assert result == [
+        {
+            "spin": {" x1": 0, " x2": 0, "x1": 0},
+            "energy": 0,
+            "time": 0.006517000030726194,
+            "constraint": True,
+            "memory_usage": 1.189453125,
+        }
+    ]
+
+
+def test_annealing_result_data_get_result_with_empty_sa_results():
+    """Test AnnealingResultData get_result with empty sa_results."""
+    result_data = AnnealingResultData(sa_results=None)
+    assert result_data.get_results() == []
+
+
+def test_annealing_result_data_get_result_experiment_type(annealing_result_data):
+    """Test AnnealingResultData get_result experiment type."""
+    assert annealing_result_data.experiment_type == ExperimentType.ANNEALING
+
+
 def test_annealing_result_data_to_dict(annealing_result_data):
     """Test AnnealingResultData to_dict."""
     result_dict = annealing_result_data.to_dict()
