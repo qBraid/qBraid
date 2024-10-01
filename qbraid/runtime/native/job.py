@@ -24,12 +24,17 @@ from qbraid.runtime.exceptions import JobStateError, QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import GateModelResultData, Result
 from qbraid.runtime.schemas import (
+    NECVectorAnnealerMetadata,
     QbraidQirSimulationMetadata,
     QuEraQasmSimulationMetadata,
     RuntimeJobModel,
 )
 
-from .result import  NECVectorAnnealerResultData, QbraidQirSimulatorResultData, QuEraQasmSimulatorResultData
+from .result import (
+    NECVectorAnnealerResultData,
+    QbraidQirSimulatorResultData,
+    QuEraQasmSimulatorResultData,
+)
 
 if TYPE_CHECKING:
     import qbraid_core.services.quantum
