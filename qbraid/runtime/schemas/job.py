@@ -25,6 +25,7 @@ from .base import Credits, QbraidSchemaBase
 from .experiment import (
     ExperimentMetadata,
     GateModelExperimentMetadata,
+    NECVectorAnnealerMetadata,
     QbraidQirSimulationMetadata,
     QuEraQasmSimulationMetadata,
 )
@@ -89,6 +90,7 @@ class RuntimeJobModel(QbraidSchemaBase):
     experiment_type: ExperimentType = Field(..., alias="experimentType")
     metadata: Union[
         QbraidQirSimulationMetadata,
+        NECVectorAnnealerMetadata,
         QuEraQasmSimulationMetadata,
         GateModelExperimentMetadata,
         ExperimentMetadata,
@@ -128,15 +130,16 @@ class RuntimeJobModel(QbraidSchemaBase):
         Returns:
             dict[str, Any]: The updated job data with the appropriate metadata fields populated.
         """
-        if experiment_type == ExperimentType.GATE_MODEL:
-            native_models = {
-                "qbraid_qir_simulator": QbraidQirSimulationMetadata,
-                "quera_qasm_simulator": QuEraQasmSimulationMetadata,
-            }
-            device_id = job_data.get("qbraidDeviceId")
-            model: GateModelExperimentMetadata = native_models.get(
-                device_id, GateModelExperimentMetadata
-            )
+        native_gate_models = {
+            "qbraid_qir_simulator": QbraidQirSimulationMetadata,
+            "quera_qasm_simulator": QuEraQasmSimulationMetadata,
+        }
+        if experiment_type in ["gate_model", "annealing"]:
+            if experiment_type == "gate_model":
+                device_id = job_data.get("qbraidDeviceId")
+                model = native_gate_models.get(device_id, GateModelExperimentMetadata)
+            else:
+                model = NECVectorAnnealerMetadata
             keys = {field.alias or name for name, field in model.model_fields.items()}
             metadata = {key: job_data.pop(key, None) for key in keys}
             job_data["metadata"] = model(**metadata)
@@ -166,32 +169,31 @@ class RuntimeJobModel(QbraidSchemaBase):
         Returns:
             RuntimeJobModel: An instance of RuntimeJobModel.
         """
-        experiment_type = ExperimentType(job_data.pop("experimentType", "gate_model"))
-        job_data["experimentType"] = experiment_type
+        # Set experiment type
+        job_data["experimentType"] = ExperimentType(
+            "annealing"
+            if "anneal" in job_data.get("qbraidDeviceId")
+            else job_data.pop("experimentType", "gate_model")
+        ).value
 
+        # Populate time stamps
         time_stamps = job_data.setdefault("timeStamps", {})
         created_at = job_data.get("createdAt")
-
         if created_at is not None and "createdAt" not in time_stamps:
             time_stamps["createdAt"] = created_at
 
+        # Populate metadata
         if "metadata" not in job_data:
-            job_data = cls._populate_metadata(job_data, experiment_type)
+            job_data = cls._populate_metadata(job_data, job_data["experimentType"])
 
+        # Set status
         status = job_data.get("status")
-
         if isinstance(status, str):
             status = JobStatus(status)
+        if isinstance(status, JobStatus):
+            job_data["status"] = status.value
 
         job_data.setdefault(
             "statusText", status.status_message if isinstance(status, JobStatus) else None
         )
-
-        if isinstance(status, JobStatus):
-            job_data["status"] = status.value
-
-        experiment_type = job_data.get("experimentType")
-        if isinstance(experiment_type, ExperimentType):
-            job_data["experimentType"] = experiment_type.value
-
         return cls(**job_data)
