@@ -36,6 +36,7 @@ from .device import DeviceData, DevicePricing
 from .experiment import (
     ExperimentMetadata,
     GateModelExperimentMetadata,
+    NECVectorAnnealerMetadata,
     QbraidQirSimulationMetadata,
     QuEraQasmSimulationMetadata,
 )
@@ -48,6 +49,7 @@ __all__ = [
     "DeviceData",
     "ExperimentMetadata",
     "GateModelExperimentMetadata",
+    "NECVectorAnnealerMetadata",
     "QuEraQasmSimulationMetadata",
     "QbraidQirSimulationMetadata",
     "TimeStamps",
