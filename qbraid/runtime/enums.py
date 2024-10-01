@@ -48,22 +48,9 @@ class ExperimentType(Enum):
     GATE_MODEL = "gate_model"
     AHS = "analog_hamiltonian_simulation"
     ANNEALING = "quantum_annealing"
+    ANNEALING = "simulated_annealing"
     PHOTONIC_MODEL = "photonic_quantum_computing"
     OTHER = "other"
-
-
-class Paradigm(Enum):
-    """
-    Enumeration for quantum computing paradigms. Used as mapping for experiment types.
-    """
-
-    GATE_BASED = ExperimentType.GATE_MODEL.value
-    AHS = ExperimentType.AHS.value
-    ANNEALER = ExperimentType.ANNEALING.value
-    PHOTONIC = ExperimentType.PHOTONIC_MODEL.value
-    OTHER = ExperimentType.OTHER.value
-
-
 class NoiseModel(Enum):
     """Enumeration representing various noise models for quantum simulators.
 
