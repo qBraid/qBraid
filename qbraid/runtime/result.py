@@ -275,21 +275,21 @@ class AnnealingResultData(ResultData):
         ResultData (ResultData): ABC for runtime results linked to a specific ExperimentType.
 
     Returns:
-        _type_: _description_
+        AnnealingResultData: An instance of AnnealingResultData.
     """
 
-    def __init__(self, job_data: Optional[dict[str, Any]] = None, **kwargs):
+    def __init__(self, spin_results: Optional[dict[str, Any]] = None, **kwargs):
         """Create a new AnnealingResultData instance.
 
         Args:
-            job_data (Optional[dict[str, Any]], optional):
+            spin_results (Optional[dict[str, Any]], optional):
                 Ex: [{'spin': {' x1': 0, ' x2': 0, 'x1': 0},\
                 'energy': 0, 'time': 0.006517000030726194,\
                 'constraint': True, 'memory_usage': 1.189453125}]. 
                 Defaults to None.
         """
         super().__init__(**kwargs)
-        self._job_data = job_data if job_data else {}
+        self._spin_results = spin_results or {}
 
     @property
     def experiment_type(self) -> ExperimentType:
@@ -299,22 +299,23 @@ class AnnealingResultData(ResultData):
     @classmethod
     def from_object(cls, model: AnnealingExperimentMetadata, **kwargs) -> AnnealingResultData:
         """Creates a new AnnealingResultData instance from a AnnealingExperimentMetadata object."""
-        return cls.from_dict(model.model_dump(**kwargs))
+        allowed_kwargs = {key: value for key, value in kwargs.items() if key in model.model_fields}
+        return cls.from_dict(model.model_dump(**allowed_kwargs))
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> AnnealingResultData:
         """Creates a new AnnealingResultData instance from a dictionary."""
-        return cls(job_data=data.pop("job_data", {}))
+        return cls(spin_results=data.get("spin_results", {}))
 
     def to_dict(self) -> dict[str, Any]:
         """Converts the AnnealingResultData instance to a dictionary."""
         return {
-            "job_data": self._job_data,
+            "spin_results": self._spin_results,
         }
 
-    def get_annealing_results(self) -> dict[str, Any]:
+    def get_results(self) -> dict[str, Any]:
         """Returns the job data."""
-        return self._job_data
+        return self.spin_results
 
 
 class Result:

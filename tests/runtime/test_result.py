@@ -24,14 +24,14 @@ import pandas as pd
 import pytest
 
 from qbraid.runtime.enums import ExperimentType
-from qbraid.runtime.native.result import QbraidQirSimulatorResultData, QuEraQasmSimulatorResultData
+from qbraid.runtime.native.result import NECVectorAnnealerResultData, QbraidQirSimulatorResultData, QuEraQasmSimulatorResultData
 from qbraid.runtime.postprocess import (
     format_counts,
     normalize_batch_bit_lengths,
     normalize_bit_lengths,
     normalize_counts,
 )
-from qbraid.runtime.result import AhsResultData, AhsShotResult, GateModelResultData, Result
+from qbraid.runtime.result import AhsResultData, AhsShotResult, AnnealingResultData, GateModelResultData, Result
 
 try:
     from flair_visual.animation.runtime.qpustate import AnimateQPUState
@@ -40,6 +40,9 @@ try:
 except ImportError:
     flair_visual_installed = False
 
+@pytest.fixture 
+def nec_vector_annealer_result_data():
+    return NECVectorAnnealerResultData([{'spin': {' x1': 0, ' x2': 0, 'x1': 0},'energy': 0, 'time': 0.006517000030726194,'constraint': True, 'memory_usage': 1.189453125}])
 
 @pytest.fixture
 def gate_model_result_data():
@@ -497,6 +500,22 @@ def test_qir_sim_data_inherited_measurement_counts_property(qir_sim_data):
     """Test that the inherited measurement_counts property is working correctly."""
     assert qir_sim_data.get_counts() == {"00": 10, "01": 15}
 
+def test_nec_vector_annealer_result_data(nec_vector_annealer_result_data):
+    """Test NECVectorAnnealerResultData."""
+    assert nec_vector_annealer_result_data._spin_results == [{'spin': {' x1': 0, ' x2': 0, 'x1': 0},'energy': 0, 'time': 0.006517000030726194,'constraint': True, 'memory_usage': 1.189453125}]
+
+def test_nec_vector_annealer_result_data_to_dict(nec_vector_annealer_result_data):
+    """Test NECVectorAnnealerResultData to_dict."""
+    result_dict = nec_vector_annealer_result_data.to_dict()
+    assert result_dict == {'spin_results': [{'spin': {' x1': 0, ' x2': 0, 'x1': 0},'energy': 0, 'time': 0.006517000030726194,'constraint': True, 'memory_usage': 1.189453125}]}
+
+def test_nec_vector_annealer_result_data_eq(nec_vector_annealer_result_data):
+    """Test NECVectorAnnealerResultData equality."""
+    assert nec_vector_annealer_result_data._spin_results[0]['spin'] == {' x1': 0, ' x2': 0, 'x1': 0}
+    assert nec_vector_annealer_result_data._spin_results[0]['energy'] == 0
+    assert nec_vector_annealer_result_data._spin_results[0]['time'] == 0.006517000030726194
+    assert nec_vector_annealer_result_data._spin_results[0]['constraint'] == True
+    assert nec_vector_annealer_result_data._spin_results[0]['memory_usage'] == 1.189453125
 
 def test_normalize_batch_decimal_counts():
     """Test normalization of batch measurement counts with decimal=True."""
@@ -504,7 +523,6 @@ def test_normalize_batch_decimal_counts():
     expected = [{0: 10, 1: 15}, {2: 20, 3: 25}]
     result = normalize_counts(counts, decimal=True)
     assert result == expected
-
 
 @pytest.mark.parametrize(
     "counts", [{0: 10, 1: 15, 3: 25}, {"0": 10, "1": 15, "3": 25}, {"00": 10, "01": 15, "11": 25}]

@@ -72,7 +72,7 @@ class DeviceData(BaseModel):
     queue_depth: Optional[int] = Field(None, alias="queueDepth")
 
     device_type: str = Field(alias="type")
-    num_qubits: int = Field(alias="numberQubits")
+    num_qubits: Optional[int] = Field(alias="numberQubits")
     run_package: str = Field(alias="runPackage")
     device_id: str = Field(alias="qbraid_id")
 
