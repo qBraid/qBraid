@@ -111,7 +111,7 @@ def mock_nec_va_profile():
     """Mock profile for testing."""
     return TargetProfile(
         device_id="nec_vector_annealer",
-        simulator=False,
+        simulator=True,
         experiment_type=ExperimentType.ANNEALING,
     )
 
@@ -287,7 +287,7 @@ def test_nec_vector_annealer_workflow(mock_provider):
     provider = mock_provider
     device = provider.get_device("nec_vector_annealer")
     payload = {"qubo": "{('x1', 'x1'): 3.0, ('x1', 'x2'): 2.0}", "offset": 0.0}
-    job = device.run(run_input=payload)
+    job = device.submit(run_input=payload)
     assert isinstance(job, QbraidJob)
     assert job.is_terminal_state()
 
