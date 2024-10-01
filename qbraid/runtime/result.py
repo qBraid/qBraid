@@ -26,7 +26,7 @@ from qbraid_core.system.generic import _datetime_to_str
 
 from .enums import ExperimentType
 from .postprocess import counts_to_probabilities, normalize_counts
-from .schemas import AnnealingExperimentMetadata, GateModelExperimentMetadata
+from .schemas.experiment import AnnealingExperimentMetadata, GateModelExperimentMetadata
 
 KeyType = TypeVar("KeyType", str, int)
 

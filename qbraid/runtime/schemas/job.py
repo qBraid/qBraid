@@ -9,86 +9,25 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining qBraid native runtime schemas.
+Module defining qBraid runtime job schemas.
 
 """
 from __future__ import annotations
 
 from datetime import datetime
-from decimal import Decimal
-from typing import Any, Optional, Union
+from typing import Any, ClassVar, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from typing_extensions import Annotated
 
 from qbraid.runtime.enums import ExperimentType, JobStatus
-from qbraid.runtime.schemas import (
-    AnnealingExperimentMetadata,
+
+from .base import Credits, QbraidSchemaBase
+from .experiment import (
     ExperimentMetadata,
     GateModelExperimentMetadata,
+    QbraidQirSimulationMetadata,
+    QuEraQasmSimulationMetadata,
 )
-
-
-class QbraidSchemaHeader(BaseModel):
-    """Represents the header for a qBraid schema.
-
-    Attributes:
-        name (str): Name of the schema.
-        version (float): Version number of the schema.
-    """
-
-    name: Annotated[str, Field(strict=True, min_length=1)]
-    version: Annotated[float, Field(strict=True, gt=0)]
-
-
-class QbraidSchemaBase(BaseModel):
-    """Base class for qBraid schemas with a predefined header.
-
-    Attributes:
-        header (QbraidSchemaHeader): The schema header.
-    """
-
-    header: QbraidSchemaHeader = Field(
-        alias="schemaHeader", default=QbraidSchemaHeader(name="qbraid.runtime.native", version=1.0)
-    )
-
-
-class QbraidQirSimulationMetadata(GateModelExperimentMetadata):
-    """Result data specific to jobs submitted to the qBraid QIR simulator.
-
-    Attributes:
-        backend_version (str, optional): The version of the simulator backend.
-        seed (int, optional): The seed used for the simulation.
-
-    """
-
-    backend_version: Optional[str] = Field(None, alias="runnerVersion")
-    seed: Optional[int] = Field(None, alias="runnerSeed")
-
-
-class QuEraQasmSimulationMetadata(GateModelExperimentMetadata):
-    """Result data specific to jobs submitted to the QuEra QASM simulator.
-
-    Attributes:
-        backend (str, optional): The name of the backend used for the simulation.
-        flair_visual_version (str, optional): The version of the Flair Visual
-            tool used to generate the atom animation state data.
-        atom_animation_state (dict, optional): JSON data representing the state
-            of the QPU atoms used in the simulation.
-        logs (list, optional): List of log messages generated during the simulation.
-
-    """
-
-    backend: Optional[str] = None
-    flair_visual_version: Optional[str] = Field(None, alias="flairVisualVersion")
-    atom_animation_state: Optional[dict[str, Any]] = Field(None, alias="atomAnimationState")
-    logs: Optional[list[dict[str, Any]]] = None
-
-
-class NECVectorAnnealerMetadata(AnnealingExperimentMetadata):
-    """Result data specific to jobs submitted to the NEC Vector Annealer."""
-
-    job_data: list[dict[str, Any]] = Field(alias="jobData")
 
 
 class TimeStamps(BaseModel):
@@ -135,28 +74,28 @@ class RuntimeJobModel(QbraidSchemaBase):
             with the experiment.
         time_stamps (TimeStamps): Time-related information about the job.
         tags (dict[str, str]): Custom tags associated with the job.
-        cost (Decimal, optional): The cost of the job in qBraid credits.
+        cost (Credits, optional): The cost of the job in qBraid credits.
     """
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, use_enum_values=False)
+
+    VERSION: ClassVar[float] = 1.0
 
     job_id: str = Field(..., alias="qbraidJobId")
     device_id: str = Field(..., alias="qbraidDeviceId")
-    status: str
+    status: JobStatus
     status_text: Optional[str] = Field(None, alias="statusText")
     shots: Optional[int] = Field(None, ge=0)
-    experiment_type: str = Field(..., alias="experimentType")
+    experiment_type: ExperimentType = Field(..., alias="experimentType")
     metadata: Union[
         QbraidQirSimulationMetadata,
         QuEraQasmSimulationMetadata,
-        NECVectorAnnealerMetadata,
-        AnnealingExperimentMetadata,
         GateModelExperimentMetadata,
         ExperimentMetadata,
     ]
     time_stamps: TimeStamps = Field(..., alias="timeStamps")
     tags: dict[str, str] = Field(default_factory=dict)
-    cost_credits: Optional[Decimal] = Field(None, ge=0, alias="cost")
+    cost: Optional[Credits] = Field(None, ge=0, alias="cost")
 
     @field_validator("status", mode="before")
     @classmethod
@@ -189,16 +128,15 @@ class RuntimeJobModel(QbraidSchemaBase):
         Returns:
             dict[str, Any]: The updated job data with the appropriate metadata fields populated.
         """
-        native_gate_models = {
-            "qbraid_qir_simulator": QbraidQirSimulationMetadata,
-            "quera_qasm_simulator": QuEraQasmSimulationMetadata,
-        }
-        if experiment_type in ["gate_model", "quantum_annealing"]:
-            if experiment_type == "gate_model":
-                device_id = job_data.get("qbraidDeviceId")
-                model = native_gate_models.get(device_id, GateModelExperimentMetadata)
-            else:
-                model = NECVectorAnnealerMetadata
+        if experiment_type == ExperimentType.GATE_MODEL:
+            native_models = {
+                "qbraid_qir_simulator": QbraidQirSimulationMetadata,
+                "quera_qasm_simulator": QuEraQasmSimulationMetadata,
+            }
+            device_id = job_data.get("qbraidDeviceId")
+            model: GateModelExperimentMetadata = native_models.get(
+                device_id, GateModelExperimentMetadata
+            )
             keys = {field.alias or name for name, field in model.model_fields.items()}
             metadata = {key: job_data.pop(key, None) for key in keys}
             job_data["metadata"] = model(**metadata)
@@ -228,29 +166,32 @@ class RuntimeJobModel(QbraidSchemaBase):
         Returns:
             RuntimeJobModel: An instance of RuntimeJobModel.
         """
-        # Set experiment type
-        job_data["experimentType"] = ExperimentType(
-            "quantum_annealing"
-            if "anneal" in job_data.get("qbraidDeviceId")
-            else job_data.pop("experimentType", "gate_model")
-        ).value
+        experiment_type = ExperimentType(job_data.pop("experimentType", "gate_model"))
+        job_data["experimentType"] = experiment_type
 
-        # Populate time stamps
         time_stamps = job_data.setdefault("timeStamps", {})
         created_at = job_data.get("createdAt")
+
         if created_at is not None and "createdAt" not in time_stamps:
             time_stamps["createdAt"] = created_at
-        if "metadata" not in job_data:
-            job_data = cls._populate_metadata(job_data, job_data["experimentType"])
 
-        # Set status
+        if "metadata" not in job_data:
+            job_data = cls._populate_metadata(job_data, experiment_type)
+
         status = job_data.get("status")
+
         if isinstance(status, str):
             status = JobStatus(status)
-        if isinstance(status, JobStatus):
-            job_data["status"] = status.value
 
         job_data.setdefault(
             "statusText", status.status_message if isinstance(status, JobStatus) else None
         )
+
+        if isinstance(status, JobStatus):
+            job_data["status"] = status.value
+
+        experiment_type = job_data.get("experimentType")
+        if isinstance(experiment_type, ExperimentType):
+            job_data["experimentType"] = experiment_type.value
+
         return cls(**job_data)

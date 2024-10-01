@@ -14,35 +14,38 @@
 Unit tests native runtime job schemas.
 
 """
-import textwrap
 from collections import Counter
 from datetime import datetime
+from decimal import Decimal
 
 import pytest
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from qbraid.runtime.enums import ExperimentType, JobStatus
-from qbraid.runtime.native.schemas import (
-    QbraidSchemaBase,
-    QbraidSchemaHeader,
-    RuntimeJobModel,
-    TimeStamps,
-)
-from qbraid.runtime.schemas import ExperimentMetadata, GateModelExperimentMetadata
+from qbraid.runtime.schemas.base import USD, Credits, QbraidSchemaBase, QbraidSchemaHeader
+from qbraid.runtime.schemas.device import DeviceData
+from qbraid.runtime.schemas.experiment import ExperimentMetadata, GateModelExperimentMetadata
+from qbraid.runtime.schemas.job import RuntimeJobModel, TimeStamps
 
 
 @pytest.fixture
-def valid_qasm() -> str:
-    """Returns a valid qasm string."""
-    qasm = """
-    OPENQASM 2.0;
-    include "qelib1.inc";
-    qreg q[2];
-    h q[0];
-    cx q[0],q[1];
-    cx q[1],q[0];
-    """
-    return textwrap.dedent(qasm).strip()
+def mock_job_data(valid_qasm2_no_meas):
+    """Return mock job data."""
+    return {
+        "qbraidJobId": "job_123",
+        "qbraidDeviceId": "device_456",
+        "status": "COMPLETED",
+        "shots": 100,
+        "experimentType": "gate_model",
+        "openQasm": valid_qasm2_no_meas,
+        "circuitNumQubits": 2,
+        "circuitDepth": 2,
+        "timeStamps": {
+            "createdAt": "2024-09-14T01:06:34.000Z",
+            "endedAt": "2024-09-14T01:06:35.000Z",
+            "executionDuration": 60000,
+        },
+    }
 
 
 def test_qbraid_schema_header():
@@ -58,20 +61,35 @@ def test_qbraid_schema_header():
         QbraidSchemaHeader(name="TestSchema", version=0)  # Invalid version
 
 
+def test_qbraid_schema_base_raises_for_no_version():
+    """Test QbraidSchemaBase raises ValueError when accessing header property."""
+    with pytest.raises(ValueError) as exc_info:
+        _ = QbraidSchemaBase()
+    assert "QbraidSchemaBase must define a valid semantic version for 'VERSION'." in str(
+        exc_info.value
+    )
+
+
 def test_qbraid_schema_base():
     """Test QbraidSchemaBase class."""
-    base = QbraidSchemaBase()
-    assert base.header.name == "qbraid.runtime.native"  # pylint: disable=no-member
-    assert base.header.version == 1.0  # pylint: disable=no-member
+
+    class TestSchema(QbraidSchemaBase):
+        """Test schema class."""
+
+        VERSION = 6.1
+
+    model = TestSchema()
+    assert model.header.name == "tests.runtime.test_schemas"
+    assert model.header.version == 6.1
 
 
-def test_gate_model_experiment_metadata(valid_qasm):
+def test_gate_model_experiment_metadata(valid_qasm2_no_meas):
     """Test GateModelExperimentMetadata class."""
     metadata = GateModelExperimentMetadata(
-        openQasm=valid_qasm,
+        openQasm=valid_qasm2_no_meas,
         measurementCounts=Counter({"00": 10, "01": 15}),
     )
-    assert metadata.qasm == valid_qasm
+    assert metadata.qasm == valid_qasm2_no_meas
     assert metadata.num_qubits == 2
     assert metadata.gate_depth == 3
     assert metadata.measurement_counts == Counter({"00": 10, "01": 15})
@@ -119,33 +137,13 @@ def test_timestamps():
         )  # Invalid executionDuration
 
 
-@pytest.fixture
-def mock_job_data(valid_qasm):
-    """Return mock job data."""
-    return {
-        "qbraidJobId": "job_123",
-        "qbraidDeviceId": "device_456",
-        "status": "COMPLETED",
-        "shots": 100,
-        "experimentType": "gate_model",
-        "openQasm": valid_qasm,
-        "circuitNumQubits": 2,
-        "circuitDepth": 2,
-        "timeStamps": {
-            "createdAt": "2024-09-14T01:06:34.000Z",
-            "endedAt": "2024-09-14T01:06:35.000Z",
-            "executionDuration": 60000,
-        },
-    }
-
-
 def test_runtime_job_model(mock_job_data):
     """Test RuntimeJobModel class."""
 
     job = RuntimeJobModel.from_dict(mock_job_data)
     assert job.job_id == "job_123"
     assert job.device_id == "device_456"
-    assert job.status == JobStatus.COMPLETED.value
+    assert job.status == JobStatus.COMPLETED
     assert job.shots == 100
     assert isinstance(job.metadata, GateModelExperimentMetadata)
     assert job.time_stamps.executionDuration == 60000  # pylint: disable=no-member
@@ -161,15 +159,15 @@ def test_runtime_job_model(mock_job_data):
         )
 
 
-def test_populate_metadata(valid_qasm):
+def test_populate_metadata(valid_qasm2_no_meas):
     """Test _populate_metadata method."""
-    job_data = {"openQasm": valid_qasm, "circuitNumQubits": 5, "circuitDepth": 10}
-    experiment_type = ExperimentType.GATE_MODEL.value
+    job_data = {"openQasm": valid_qasm2_no_meas, "circuitNumQubits": 5, "circuitDepth": 10}
+    experiment_type = ExperimentType.GATE_MODEL
     populated_data = RuntimeJobModel._populate_metadata(job_data, experiment_type)
     assert isinstance(populated_data["metadata"], GateModelExperimentMetadata)
-    assert populated_data["metadata"].qasm == valid_qasm
+    assert populated_data["metadata"].qasm == valid_qasm2_no_meas
 
-    experiment_type = ExperimentType.AHS.value
+    experiment_type = ExperimentType.AHS
     populated_data = RuntimeJobModel._populate_metadata(job_data, experiment_type)
     assert isinstance(populated_data["metadata"], ExperimentMetadata)
 
@@ -241,3 +239,115 @@ def test_parse_datetimes_for_none_type(mock_job_data):
     time_stamps["endedAt"] = None
     time_stamps_model = TimeStamps(**time_stamps)
     assert time_stamps_model.endedAt is None
+
+
+def test_device_data_qir(device_data_qir):
+    """Test DeviceData class for qBraid QIR simulator."""
+    device = DeviceData(**device_data_qir)
+
+    assert device.provider == "qBraid"
+    assert device.name == "QIR sparse simulator"
+    assert device.paradigm == "gate-based"
+    assert device.device_type == "SIMULATOR"
+    assert device.num_qubits == 64
+    assert device.pricing.perTask == Decimal("0.005")
+    assert device.pricing.perShot == Decimal("0")
+    assert device.pricing.perMinute == Decimal("0.075")
+    assert device.status == "ONLINE"
+    assert device.is_available is True
+
+
+def test_device_data_quera(device_data_quera):
+    """Test DeviceData class for QuEra QASM simulator."""
+    device = DeviceData(**device_data_quera)
+
+    assert device.provider == "QuEra"
+    assert device.name == "Noisey QASM simulator"
+    assert device.paradigm == "gate-based"
+    assert device.device_type == "SIMULATOR"
+    assert device.num_qubits == 30
+    assert device.pricing.perTask == Decimal("0")
+    assert device.pricing.perShot == Decimal("0")
+    assert device.pricing.perMinute == Decimal("0")
+    assert device.status == "ONLINE"
+    assert device.is_available is True
+
+
+def test_device_data_aquila(device_data_aquila):
+    """Test DeviceData class for QuEra Aquila QPU."""
+    device = DeviceData(**device_data_aquila)
+
+    assert device.provider == "QuEra"
+    assert device.name == "Aquila"
+    assert device.paradigm == "AHS"
+    assert device.device_type == "QPU"
+    assert device.num_qubits == 256
+    assert device.pricing.perTask == Decimal("0.3")
+    assert device.pricing.perShot == Decimal("0.01")
+    assert device.pricing.perMinute == Decimal("0")
+    assert device.status == "OFFLINE"
+    assert device.is_available is False
+
+
+def test_usd_json_schema():
+    """Test JSON schema for USD type."""
+
+    class TestModel(BaseModel):
+        """Mock model with USD field."""
+
+        amount: USD
+
+    json_schema = TestModel.model_json_schema()
+    amount_schema = json_schema["properties"]["amount"]
+
+    assert amount_schema["title"] == "USD"
+    assert amount_schema["description"] == "A monetary amount representing U.S. Dollars."
+    assert amount_schema["examples"] == [10, 0.05, 1.5]
+    assert amount_schema["type"] == "number"
+
+
+def test_credits_json_schema():
+    """Test JSON schema for Credits type."""
+
+    class TestModel(BaseModel):
+        """Mock model with Credits field."""
+
+        amount: Credits
+
+    json_schema = TestModel.model_json_schema()
+    amount_schema = json_schema["properties"]["amount"]
+
+    assert amount_schema["title"] == "Credits"
+    assert amount_schema["description"] == "A monetary amount where 1 Credit = $0.01 USD."
+    assert amount_schema["examples"] == [10, 0.05, 1.5]
+    assert amount_schema["type"] == "number"
+
+
+def test_credits_pydantic_parsing():
+    """Test parsing of Credits type in Pydantic models."""
+
+    class TestModel(BaseModel):
+        """Mock model with Credits field."""
+
+        amount: Credits
+
+    model_int = TestModel(amount=100)
+    assert isinstance(model_int.amount, Credits)
+    assert model_int.amount == Credits(100)
+
+    model_float = TestModel(amount=100.5)
+    assert isinstance(model_float.amount, Credits)
+    assert model_float.amount == Credits(100.5)
+
+    model_decimal = TestModel(amount=Decimal("100.75"))
+    assert isinstance(model_decimal.amount, Credits)
+    assert model_decimal.amount == Credits(Decimal("100.75"))
+
+    model_str = TestModel(amount="200")
+    assert isinstance(model_str.amount, Credits)
+    assert model_str.amount == Credits(200)
+
+    with pytest.raises(ValidationError) as exc_info:
+        TestModel(amount="invalid")
+
+    assert "Input should be a number (int, float, or Decimal)" in str(exc_info.value)

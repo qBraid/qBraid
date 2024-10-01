@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Optional, Union
 
+from qbraid_core.decimal import Credits
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
 
 from qbraid._entrypoints import get_entrypoints
@@ -27,6 +28,7 @@ from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus, NoiseModel
 from qbraid.runtime.exceptions import QbraidRuntimeError
+from qbraid.runtime.schemas.job import RuntimeJobModel
 from qbraid.transpiler import ConversionGraph, transpile
 
 from .job import QbraidJob
@@ -74,6 +76,7 @@ class QbraidDevice(QuantumDevice):
     def submit(  # pylint: disable=too-many-arguments
         self,
         run_input: dict[str, Union[bytes, str]],
+        memory: bool = False,
         shots: Optional[int] = None,
         tags: Optional[dict[str, str]] = None,
         entrypoint: Optional[str] = None,
@@ -87,16 +90,18 @@ class QbraidDevice(QuantumDevice):
         Args:
             run_input (dict[str, Union[bytes, str]]): Dictionary containing
                 QIR bytecode or OpenQASM string to be run on the device.
-            shots (optional, int): The number of times to repeat the execution of the
+            memory (bool, optional): Whether to retain the individual shot results.
+                Only applicable for certain devices. Defaults to False.
+            shots (int, optional): The number of times to repeat the execution of the
                 program. Default value varies by device.
-            tags (optional, dict): A dictionary of tags to associate with the job.
-            entrypoint (optional, str): Name of the entrypoint function to execute.
+            tags (dict, optional): A dictionary of tags to associate with the job.
+            entrypoint (str, optional): Name of the entrypoint function to execute.
                 Only applicable if run_input is a QIR module. Defaults to None.
-            noise_model (optional, str): The noise model to apply to the job.
+            noise_model (str, optional): The noise model to apply to the job.
                 Only applicable if device supports noisey simulation. Defaults to None.
-            seed (optional, int): The seed to use for the random number generator.
+            seed (int, optional): The seed to use for the random number generator.
                 Only applicable for certain devices. Defaults to None.
-            timeout (optional, int): The maximum time in seconds to wait for the job
+            timeout (int, optional): The maximum time in seconds to wait for the job
                 to complete after execution has started. Defaults to None.
 
         Returns:
@@ -105,22 +110,27 @@ class QbraidDevice(QuantumDevice):
         See Also: https://docs.qbraid.com/api-reference/api-reference/post-quantum-jobs
 
         """
+        tags_dict = tags or {}
+
         payload = {
             "qbraidDeviceId": self.id,
-            "tags": json.dumps(tags or {}),
+            "tags": json.dumps(tags_dict),
             "shots": shots,
             "seed": seed,
             "entrypoint": entrypoint,
             "timeout": timeout,
             "noiseModel": noise_model,
+            "memory": memory,
             **run_input,
         }
 
         job_data = self.client.create_job(data=payload)
-        job_id: str = job_data.pop("qbraidJobId")
-        job_data["job_id"] = job_id
 
-        return QbraidJob(**job_data, device=self, client=self.client)
+        payload.update(job_data)
+        payload["tags"] = tags_dict
+        job_model = RuntimeJobModel.from_dict(payload)
+        model_dump = job_model.model_dump(exclude={"metadata", "cost"})
+        return QbraidJob(**model_dump, device=self, client=self.client)
 
     def try_extracting_info(self, func, error_message):
         """Try to extract information from a function/attribute,
@@ -263,7 +273,7 @@ class QbraidDevice(QuantumDevice):
 
     def estimate_cost(
         self, shots: Optional[int], execution_time: Optional[Union[float, int]]
-    ) -> float:
+    ) -> Credits:
         """Estimate the cost of running a quantum job on this device in qBraid credits,
         where 1 credit equals $0.01 USD.
 
@@ -278,7 +288,7 @@ class QbraidDevice(QuantumDevice):
                 complete the quantum job.
 
         Returns:
-            float: The estimated cost for the quantum job in qBraid credits.
+            Credits: The estimated cost for the quantum job in qBraid credits.
 
         Raises:
             ValueError: If `shots` and `execution_time` are None or 0, or if either is negative.
@@ -303,8 +313,10 @@ class QbraidDevice(QuantumDevice):
                 raise ValueError("'execution_time' must be a non-negative number.")
 
         try:
-            return self.client.estimate_cost(self.id, shots, execution_time)
+            cost = self.client.estimate_cost(self.id, shots, execution_time)
         except QuantumServiceRequestError as err:
             raise QbraidRuntimeError(
                 "Failed to estimate cost due to a service request error."
             ) from err
+
+        return Credits(cost)

@@ -23,56 +23,12 @@ from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import (
     DeviceProgramTypeMismatchError,
     JobStateError,
+    QbraidRuntimeError,
     ResourceNotFoundError,
 )
 from qbraid.runtime.native.job import QbraidJob
 
-status_data = [
-    (JobStatus.INITIALIZING, False),
-    (JobStatus.QUEUED, False),
-    (JobStatus.RUNNING, False),
-    (JobStatus.CANCELLING, False),
-    (JobStatus.CANCELLED, True),
-    (JobStatus.COMPLETED, True),
-    (JobStatus.FAILED, True),
-    (JobStatus.UNKNOWN, False),
-]
-
-
-@pytest.mark.parametrize("status_tuple", status_data)
-def test_status_from_raw(status_tuple):
-    """Test converting str status representation to JobStatus object."""
-    status_obj, _ = status_tuple
-    status_str = status_obj.name
-    status_obj_test = QbraidJob._map_status(status_str)
-    assert status_obj == status_obj_test
-
-
-@pytest.mark.parametrize("status", ["INITIIZING", "QUDEUED", "CANCELLLED"])
-def test_status_from_raw_error(status):
-    """Test raising exception while converting invalid str status representation."""
-    with pytest.raises(ValueError):
-        QbraidJob._map_status(status)
-
-
-@pytest.mark.parametrize(
-    "status_tuple",
-    [
-        ("QUEUED", JobStatus.QUEUED),
-        ("VALIDATING", JobStatus.VALIDATING),
-        (None, JobStatus.UNKNOWN),
-    ],
-)
-def test_map_status(status_tuple):
-    """Test setting initial job status."""
-    status_input, status_expected = status_tuple
-    assert QbraidJob._map_status(status_input) == status_expected
-
-
-def test_map_status_raises():
-    """Test raising exception for bad status type."""
-    with pytest.raises(ValueError):
-        QbraidJob._map_status(0)
+from ._resources import JOB_DATA_QIR
 
 
 def get_expected_message(program, expected_type, experiment_type):
@@ -146,16 +102,36 @@ class FakeQbraidJob(QbraidJob):
 class FakeQbraidClient:
     """Fake QbraidClient class for testing"""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(
+        self,
+        *args,
+        init_status="FAILED",
+        init_status_text="Some error message",
+        fail_cancel=False,
+        **kwargs,
+    ):
         super().__init__(*args, **kwargs)
+        self._job_data = JOB_DATA_QIR.copy()
+        self._job_data["status"] = init_status
+        self._job_data["statusText"] = init_status_text
+        self._fail_cancel = fail_cancel
 
     def get_job(self, job_id):  # pylint: disable=unused-argument
         """Get the job data."""
-        return {"status": "FAILED", "statusText": "Some error message"}
+        status_data_copy = self._job_data.copy()
+        if self._job_data["status"] == "CANCELLING":
+            self._job_data["statusText"] = ""
+            self._job_data["status"] = "CANCELLED"
+        return status_data_copy
 
     def cancel_job(self, qbraid_id):  # pylint: disable=unused-argument
         """Cancel a job."""
-        return None
+        if self._fail_cancel:
+            self._job_data["status"] = "COMPLETED"
+            self._job_data["statusText"] = ""
+        else:
+            self._job_data["status"] = "CANCELLING"
+            self._job_data["statusText"] = ""
 
 
 @pytest.fixture
@@ -182,8 +158,18 @@ def test_cancel_job():
     with pytest.raises(JobStateError):
         terminal_job.cancel()
 
-    nonterminal_job = FakeQbraidJob("test_job", False, client=FakeQbraidClient())
+    nonterminal_job = FakeQbraidJob(
+        "test_job", False, client=FakeQbraidClient(init_status="RUNNING", init_status_text="")
+    )
     assert nonterminal_job.cancel() is None
+
+    nonterminal_job = FakeQbraidJob(
+        "test_job",
+        False,
+        client=FakeQbraidClient(init_status="RUNNING", init_status_text="", fail_cancel=True),
+    )
+    with pytest.raises(QbraidRuntimeError):
+        nonterminal_job.cancel()
 
 
 class MockQuantumJob(QuantumJob):

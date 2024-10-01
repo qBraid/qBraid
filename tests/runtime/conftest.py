@@ -15,10 +15,16 @@ Fixtures imported/defined in this file can be used by any test in this directory
 without needing to import them (pytest will automatically discover them).
 
 """
+import random
+import textwrap
+from typing import Optional
+
 import numpy as np
 import pytest
 
 from qbraid.programs import NATIVE_REGISTRY
+
+from ._resources import DEVICE_DATA_AQUILA, DEVICE_DATA_QIR, DEVICE_DATA_QUERA
 
 
 def _braket_circuit():
@@ -92,3 +98,85 @@ def circuit(request, run_inputs):
     """Return a circuit for testing."""
     index = request.param
     return run_inputs[index]
+
+
+@pytest.fixture
+def device_data_qir():
+    """Return a dictionary of device data for the qBraid QIR simulator."""
+    return DEVICE_DATA_QIR
+
+
+@pytest.fixture
+def device_data_quera():
+    """Return a dictionary of device data for the QuEra QASM simulator."""
+    return DEVICE_DATA_QUERA
+
+
+@pytest.fixture
+def device_data_aquila():
+    """Return a dictionary of device data for the QuEra Aquila QPU."""
+    return DEVICE_DATA_AQUILA
+
+
+@pytest.fixture
+def valid_qasm2_no_meas() -> str:
+    """Returns a valid qasm string."""
+    qasm = """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    h q[0];
+    cx q[0],q[1];
+    cx q[1],q[0];
+    """
+    return textwrap.dedent(qasm).strip()
+
+
+def uniform_state_circuit(num_qubits: Optional[int] = None, measure: Optional[bool] = True):
+    """
+    Creates a Cirq circuit where all qubits are entangled to uniformly be in
+    either |0⟩ or |1⟩ states upon measurement.
+
+    This circuit initializes the first qubit in a superposition state using a
+    Hadamard gate and then entangles all other qubits to this first qubit using
+    CNOT gates. This ensures all qubits collapse to the same state upon measurement,
+    resulting in either all |0⟩s or all |1⟩s uniformly across different executions.
+
+    Args:
+        num_qubits (optional, int): The number of qubits in the circuit. If not provided,
+                                    a default random number between 10 and 20 is used.
+        measure (optional, bool): Whether to measure the qubits at the end of the circuit.
+
+    Returns:
+        cirq.Circuit: The resulting circuit where the measurement outcome of all qubits is
+                      either all |0⟩s or all |1⟩s.
+
+    Raises:
+        ValueError: If the number of qubits provided is less than 1.
+    """
+    import cirq  # pylint: disable=import-outside-toplevel
+
+    if num_qubits is not None and num_qubits < 1:
+        raise ValueError("Number of qubits must be at least 1.")
+
+    num_qubits = num_qubits or random.randint(10, 20)
+
+    qubits = [cirq.LineQubit(i) for i in range(num_qubits)]
+
+    circuit = cirq.Circuit()
+
+    circuit.append(cirq.H(qubits[0]))
+
+    for qubit in qubits[1:]:
+        circuit.append(cirq.CNOT(qubits[0], qubit))
+
+    if measure:
+        circuit.append(cirq.measure(*qubits, key="result"))
+
+    return circuit
+
+
+@pytest.fixture
+def cirq_uniform():
+    """Cirq circuit used for testing."""
+    return uniform_state_circuit
