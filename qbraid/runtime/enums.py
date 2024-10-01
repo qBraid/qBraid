@@ -50,6 +50,8 @@ class ExperimentType(Enum):
     ANNEALING = "annealing"
     PHOTONIC_MODEL = "photonic_quantum_computing"
     OTHER = "other"
+
+
 class NoiseModel(Enum):
     """Enumeration representing various noise models for quantum simulators.
 

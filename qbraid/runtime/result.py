@@ -278,18 +278,18 @@ class AnnealingResultData(ResultData):
         AnnealingResultData: An instance of AnnealingResultData.
     """
 
-    def __init__(self, spin_results: Optional[dict[str, Any]] = None, **kwargs):
+    def __init__(self, sa_results: Optional[dict[str, Any]] = None, **kwargs):
         """Create a new AnnealingResultData instance.
 
         Args:
-            spin_results (Optional[dict[str, Any]], optional):
+            sa_results (Optional[dict[str, Any]], optional):
                 Ex: [{'spin': {' x1': 0, ' x2': 0, 'x1': 0},\
                 'energy': 0, 'time': 0.006517000030726194,\
                 'constraint': True, 'memory_usage': 1.189453125}]. 
                 Defaults to None.
         """
         super().__init__(**kwargs)
-        self._spin_results = spin_results or {}
+        self._sa_results = sa_results or {}
 
     @property
     def experiment_type(self) -> ExperimentType:
@@ -299,23 +299,22 @@ class AnnealingResultData(ResultData):
     @classmethod
     def from_object(cls, model: AnnealingExperimentMetadata, **kwargs) -> AnnealingResultData:
         """Creates a new AnnealingResultData instance from a AnnealingExperimentMetadata object."""
-        allowed_kwargs = {key: value for key, value in kwargs.items() if key in model.model_fields}
-        return cls.from_dict(model.model_dump(**allowed_kwargs))
+        return cls.from_dict(model.model_dump(**kwargs))
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> AnnealingResultData:
         """Creates a new AnnealingResultData instance from a dictionary."""
-        return cls(spin_results=data.get("spin_results", {}))
+        return cls(sa_results=data.get("sa_results", {}))
 
     def to_dict(self) -> dict[str, Any]:
         """Converts the AnnealingResultData instance to a dictionary."""
         return {
-            "spin_results": self._spin_results,
+            "sa_results": self._sa_results,
         }
 
     def get_results(self) -> dict[str, Any]:
         """Returns the job data."""
-        return self.spin_results
+        return self._sa_results
 
 
 class Result:
