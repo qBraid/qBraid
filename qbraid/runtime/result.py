@@ -289,7 +289,7 @@ class AnnealingResultData(ResultData):
                 Defaults to None.
         """
         super().__init__(**kwargs)
-        self._sa_results = sa_results or {}
+        self._sa_results = sa_results or []
 
     @property
     def experiment_type(self) -> ExperimentType:

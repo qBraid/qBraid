@@ -53,6 +53,20 @@ DEVICE_DATA_QUERA = {
     "pricing": {"perTask": 0, "perShot": 0, "perMinute": 0},
 }
 
+DEVICE_DATA_NEC = {
+    "qbraid_id": "nec_vector_annealer",
+    "name": "NEC Vector Annealer",
+    "provider": "NEC",
+    "paradigm": "annealing",
+    "type": "Annealer",
+    "vendor": "qbraid",
+    "status": "ONLINE",
+    "isAvailable": True,
+    "numberQubits": 0,
+    "runPackage": "pyqubo",
+    "pricing": {"perMinute": 0, "perShot": 0.00145, "perTask": 0.3},
+}
+
 DEVICE_DATA_AQUILA = {
     "numberQubits": 256,
     "pendingJobs": 9,
@@ -102,6 +116,18 @@ JOB_DATA_QUERA = {
     "vendor": "qbraid",
     "provider": "quera",
     "tags": {},
+    **REDUNDANT_JOB_DATA,
+}
+
+JOB_DATA_NEC = {
+    "qbraidJobId": "nec_vector_annealer-jovyan-qjob-1234567890",
+    "queuePosition": None,
+    "queueDepth": None,
+    "qubo": {("x1", "x1"): 3.0, ("x1", "x2"): 2.0},
+    "offset": 0.0,
+    "qbraidDeviceId": "nec_vector_annealer",
+    "vendor": "qbraid",
+    "provider": "nec",
     **REDUNDANT_JOB_DATA,
 }
 
@@ -158,6 +184,19 @@ RESULTS_DATA_QUERA = {
     **REDUNDANT_JOB_DATA,
 }
 
+RESULTS_DATA_NEC = {
+    "saSolutions": [
+        {
+            "spin": {" x1": 0, " x2": 0, "x1": 0},
+            "energy": 0,
+            "time": 0.006517000030726194,
+            "constraint": True,
+            "memory_usage": 1.189453125,
+        }
+    ],
+    **REDUNDANT_JOB_DATA,
+}
+
 
 class MockClient:
     """Mock client for testing."""
@@ -181,11 +220,14 @@ class MockClient:
 
         data_qir = DEVICE_DATA_QIR.copy()
         data_quera = DEVICE_DATA_QUERA.copy()
+        data_nec = DEVICE_DATA_NEC.copy()
 
         if query.get("provider") == "qBraid" or query.get("qbraid_id") == "qbraid_qir_simulator":
             return [data_qir]
         if query.get("provider") == "QuEra" or query.get("qbraid_id") == "quera_qasm_simulator":
             return [data_quera]
+        if query.get("provider") == "qBraid" or query.get("qbraid_id") == "nec_vector_annealer":
+            return [data_nec]
         if query.get("vendor") == "qBraid":
             return [data_qir, data_quera]
         return []
@@ -199,6 +241,9 @@ class MockClient:
         if qbraid_id == "quera_qasm_simulator":
             data = DEVICE_DATA_QUERA.copy()
             return data
+        if qbraid_id == "nec_vector_annealer":
+            data = DEVICE_DATA_NEC.copy()
+            return data
         raise QuantumServiceRequestError("No devices found matching given criteria")
 
     def create_job(self, data: dict[str, Any]) -> dict[str, Any]:
@@ -209,6 +254,9 @@ class MockClient:
             return job_data
         if device_id == "quera_qasm_simulator":
             job_data = JOB_DATA_QUERA.copy()
+            return job_data
+        if device_id == "nec_vector_annealer":
+            job_data = JOB_DATA_NEC.copy()
             return job_data
         raise QuantumServiceRequestError("Failed to create job")
 
@@ -227,6 +275,8 @@ class MockClient:
             return JOB_DATA_QIR
         if device_id == "quera_qasm_simulator":
             return JOB_DATA_QUERA
+        if device_id == "nec_vector_annealer":
+            return JOB_DATA_NEC
         raise QuantumServiceRequestError("No jobs found matching given criteria")
 
     # pylint: disable-next=unused-argument
@@ -238,6 +288,9 @@ class MockClient:
             return results_data
         if device_id == "quera_qasm_simulator":
             results_data = RESULTS_DATA_QUERA.copy()
+            return results_data
+        if device_id == "nec_vector_annealer":
+            results_data = RESULTS_DATA_NEC.copy()
             return results_data
         raise QuantumServiceRequestError("Failed to retrieve job results")
 
