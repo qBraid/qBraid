@@ -7,7 +7,7 @@ on:
 
 jobs:
   remind:
-    name: Changelog Reminder
+    name: Changelog
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'github-actions[bot]' }}
     steps:
