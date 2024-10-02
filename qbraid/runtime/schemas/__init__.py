@@ -24,6 +24,7 @@ Classes
     DevicePricing
     DeviceData
     ExperimentMetadata
+    NECVectorAnnealerMetadata
     GateModelExperimentMetadata
     QuEraQasmSimulationMetadata
     QbraidQirSimulationMetadata

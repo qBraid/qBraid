@@ -15,15 +15,24 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added `AnnealingResultData` class to `qbraid.runtime` module to represent annealing results. ([#768](https://github.com/qBraid/qBraid/pull/768))
+- Added `NECVectorAnnealerResultData` class to `qbraid.runtime.native` module to represent NEC vector annealer results. ([#768](https://github.com/qBraid/qBraid/pull/768))
+- Added `AnnealingExperimentMetadata` class to `qbraid.runtime.schemas` module to represent annealing experiment metadata. ([#768](https://github.com/qBraid/qBraid/pull/768))
+- Added `NECVectorAnnealerExperimentMetadata` class to `qbraid.runtime.schemas` module to represent NEC vector annealer experiment metadata. ([#768](https://github.com/qBraid/qBraid/pull/768))
+- Added mock data and methods to `test.resources` module to support testing of annealing and NEC vector annealing results. ([#768](https://github.com/qBraid/qBraid/pull/768))
 
 ### Improved / Modified
+- Updated the ExperimentType enum to change the value of ANNEALING from "quantum_annealing" to "annealing" to better reflect the general nature of experiments. ([#768](https://github.com/qBraid/qBraid/pull/768))
+- Updated `QbraidJob.result`  method to return `AnnealingResultData` or `NECVectorAnnealerResultData` instances for annealing and NEC vector annealer experiments, respectively. ([#768](https://github.com/qBraid/qBraid/pull/768))
+- Added a test case for the NEC Vector Annealer workflow in , including job submission and result retrieval. ([#768](https://github.com/qBraid/qBraid/pull/768))
+- Added unit tests for `AnnealingResultData`, `NECVectorAnnealerResultData`, `AnnealingExperimentMetadata`, and `NECVectorAnnealerExperimentMetadata` classes. ([#768](https://github.com/qBraid/qBraid/pull/768))
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
-
+- Fixed spelling error of `test_quera_simulator_workflow` in `test.test_device` module. ([#768](https://github.com/qBraid/qBraid/pull/768))
 ### Dependencies
 
 ## [0.8.2] - 2024-09-30
