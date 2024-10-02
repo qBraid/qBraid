@@ -30,10 +30,10 @@ from qbraid._caching import cache_disabled
 from qbraid.programs import ProgramSpec, register_program_type, unregister_program_type
 from qbraid.runtime import DeviceStatus, ProgramValidationError, Result, TargetProfile
 from qbraid.runtime.enums import ExperimentType, JobStatus
-from qbraid.runtime.noise import NoiseModel
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
 from qbraid.runtime.native.result import QbraidQirSimulatorResultData, QuEraQasmSimulatorResultData
+from qbraid.runtime.noise import NoiseModel
 from qbraid.runtime.options import RuntimeOptions
 from qbraid.runtime.schemas.job import RuntimeJobModel
 from qbraid.transpiler import CircuitConversionError, Conversion, ConversionGraph, ConversionScheme
@@ -85,7 +85,7 @@ def mock_profile():
         experiment_type=ExperimentType.GATE_MODEL,
         num_qubits=64,
         program_spec=QbraidProvider._get_program_spec("pyqir", "qbraid_qir_simulator"),
-        noise_models=[NoiseModel('ideal')],
+        noise_models=[NoiseModel("ideal")],
     )
 
 
@@ -194,7 +194,7 @@ def test_qir_simulator_workflow(mock_provider, cirq_uniform):
     assert isinstance(job, QbraidJob)
     assert job.is_terminal_state()
 
-    batch_job = device.run([circuit], shots=shots, noise_model=NoiseModel('ideal'))
+    batch_job = device.run([circuit], shots=shots, noise_model=NoiseModel("ideal"))
     assert isinstance(batch_job, list)
     assert all(isinstance(job, QbraidJob) for job in batch_job)
 
@@ -293,7 +293,7 @@ def test_device_update_scheme(mock_qbraid_device):
 def test_device_noisey_run_raises_for_unsupported(mock_qbraid_device):
     """Test raising exception when noise model is not supported."""
     with pytest.raises(ValueError):
-        mock_qbraid_device.run(Mock(), noise_model=NoiseModel('amplitude_damping'))
+        mock_qbraid_device.run(Mock(), noise_model=NoiseModel("amplitude_damping"))
 
 
 def test_device_transform(pyqir_module, mock_qbraid_device):

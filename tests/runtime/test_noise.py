@@ -107,6 +107,7 @@ def test_noise_model_list_synonyms():
 
 def test_thread_safety_register():
     """Test the thread safety of registering a noise model."""
+
     def register_noise():
         NoiseModel.register("thread_noise", "A noise model registered in a thread.", overwrite=True)
 
