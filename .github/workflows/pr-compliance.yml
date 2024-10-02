@@ -1,0 +1,27 @@
+name: PR Compliance
+
+on:
+  pull_request:
+    branches: ['main']
+    types: [opened, ready_for_review]
+
+jobs:
+  remind:
+    name: Changelog Reminder
+    runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'github-actions[bot]' }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Changelog Reminder
+      uses: peterjgrainger/action-changelog-reminder@v1.3.0
+      with:
+        changelog_regex: 'CHANGELOG.md'
+        customPrMessage: |
+          👋 Hey there! It looks like the changelog might need an update.
+
+          Please take a moment to edit the [`CHANGELOG.md`](/qBraid/qBraid/blob/main/CHANGELOG.md) with:
+          - A brief, one-to-two sentence summary of your changes.
+          - A link back to this PR for reference.
+          - (Optional) A small working example if you've added new features.
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
