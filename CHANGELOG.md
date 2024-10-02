@@ -15,6 +15,7 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- PR compliance workflow that checks that `CHANGELOG.md` is updated with each PR, and if not, issues a reminder ([#772](https://github.com/qBraid/qBraid/pull/772))
 
 ### Improved / Modified
 
