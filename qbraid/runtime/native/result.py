@@ -97,7 +97,7 @@ class NECVectorAnnealerResultData(AnnealingResultData):
 
     """
 
-    def __init__(self, sa_results: Optional[list[dict[str, Any]]] = None, **kwargs):
+    def __init__(self, sa_results: Optional[list[dict[str, Any]]] = None):
         """Create a new NECVectorAnnealerResultData instance."""
-        super().__init__(**kwargs)
+        super().__init__(sa_results=sa_results)
         self._sa_results = sa_results or []

@@ -278,7 +278,7 @@ class AnnealingResultData(ResultData):
         AnnealingResultData: An instance of AnnealingResultData.
     """
 
-    def __init__(self, sa_results: Optional[dict[str, Any]] = None, **kwargs):
+    def __init__(self, sa_results: Optional[dict[str, Any]] = None):
         """Create a new AnnealingResultData instance.
 
         Args:
@@ -288,7 +288,6 @@ class AnnealingResultData(ResultData):
                 'constraint': True, 'memory_usage': 1.189453125}]. 
                 Defaults to None.
         """
-        super().__init__(**kwargs)
         self._sa_results = sa_results or []
 
     @property
@@ -302,9 +301,9 @@ class AnnealingResultData(ResultData):
         return cls.from_dict(model.model_dump(**kwargs))
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> AnnealingResultData:
+    def from_dict(cls, data: dict[str, Any] = None) -> AnnealingResultData:
         """Creates a new AnnealingResultData instance from a dictionary."""
-        return cls(sa_results=data.get("sa_results", {}))
+        return cls(sa_results=data.get("sa_results"))
 
     def to_dict(self) -> dict[str, Any]:
         """Converts the AnnealingResultData instance to a dictionary."""
