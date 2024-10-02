@@ -238,7 +238,7 @@ class QbraidDevice(QuantumDevice):
         if noise_model:
             if noise_model not in self.profile.get("noise_models", []):
                 raise ValueError(f"Noise model '{noise_model}' not supported by device.")
-            noise_model = noise_model.value
+            noise_model = noise_model._original_input
             kwargs["noise_model"] = noise_model
 
         jobs: list[qbraid.runtime.QbraidJob] = []
