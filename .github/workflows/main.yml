@@ -3,7 +3,7 @@ name: CI
 on:
   pull_request:
     branches: ['main']
-    types: [opened, ready_for_review]
+    types: [opened, ready_for_review, synchronize]
   push:
     branches: ['main']
   workflow_dispatch:
