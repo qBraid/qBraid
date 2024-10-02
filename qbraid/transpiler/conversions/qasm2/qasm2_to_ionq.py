@@ -65,7 +65,7 @@ def qasm2_to_ionq(qasm: Qasm2StringType) -> IonQDictType:
     """Returns an IonQ JSON format representation the input OpenQASM 2 string.
 
     Args:
-        qasm (str): OpenQASM 2 string to convert to IonQDict type
+        qasm (str): OpenQASM 2 string to convert to IonQDict type.
 
     Returns:
         dict: IonQ JSON format equivalent to input OpenQASM 2 string.
