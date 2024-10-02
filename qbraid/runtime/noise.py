@@ -14,130 +14,179 @@ Module for representing various noise models for quantum simulators.
 """
 import re
 import threading
-from typing import Optional
+from collections.abc import MutableMapping
+from dataclasses import dataclass, field
+from typing import Iterator, Optional
 
 
+@dataclass(frozen=True)
 class NoiseModel:
-    """Class representing various noise models for quantum simulators."""
+    """Class representing a single noise model."""
 
-    _noise_models = {
-        "no_noise": "The simulation is performed without any noise, representing an ideal quantum computer.",
+    # pylint: disable=line-too-long
+    _defaults = {
+        "ideal": "The simulation is performed without any noise, representing an ideal quantum computer.",
         "depolarizing": "Applies random errors to qubits, effectively turning a pure quantum state into a mixed state.",
         "amplitude_damping": "Simulates energy loss in a quantum system, causing qubits to decay from the excited state to the ground state.",
         "phase_damping": "Represents dephasing, where the relative phase between quantum states is randomized without energy loss.",
         "bit_flip": "Randomly flips the state of qubits (i.e., from 0 to 1 or from 1 to 0) with a certain probability.",
         "phase_flip": "Randomly flips the phase of a qubit state (i.e., it applies a Z gate) with a certain probability.",
-        "other": "Placeholder for custom or unspecified noise models.",
     }
+    # pylint: enable=line-too-long
 
-    _synonyms = {
-        "ideal": "no_noise",
-    }
+    name: str = field(repr=False)
+    description: Optional[str] = None
+    _value: str = field(init=False)
 
-    # Thread lock for thread-safe modifications
-    _lock = threading.Lock()
-
-    def __init__(self, value, description: Optional[str] = None):
-        canonical_value = self.get_canonical_value(value)
-        object.__setattr__(self, "_original_input", value)
-        self._validate(canonical_value, description)
-        object.__setattr__(self, "value", canonical_value)
-        object.__setattr__(self, "_input", self._normalize(value))
-
-        if description is None:
-            description = self._noise_models.get(canonical_value)
+    def __post_init__(self):
+        normalized_value = self._normalize(self.name)
+        object.__setattr__(self, "_value", normalized_value)
+        description = self.description or self._defaults.get(normalized_value)
+        self._validate(normalized_value, description)
         object.__setattr__(self, "description", description)
 
     @classmethod
-    def _normalize(cls, value: str) -> str:
-        return re.sub(r"[\s\-_]+", "_", value.strip().lower())
-
-    @classmethod
-    def get_canonical_value(cls, value):
-        normalized = cls._normalize(value)
-        return cls._synonyms.get(normalized, normalized)
-
-    @classmethod
-    def _validate(cls, canonical_value: str, description: str = None):
+    def _validate(cls, canonical_value: str, description: Optional[str] = None):
         if not re.match(r"^[\w\s\-_]+$", canonical_value):
             raise ValueError(
-                f"Invalid noise model name: '{canonical_value}'. Allowed characters are letters, digits, spaces, hyphens, and underscores."
+                f"Invalid noise model name: '{canonical_value}'. "
+                "Allowed characters are letters, digits, spaces, hyphens, and underscores."
             )
         if description and len(description) > 120:
             raise ValueError("Description must be 120 characters or fewer.")
 
-    def __repr__(self):
-        return f"NoiseModel('{self._original_input}')"
+    @staticmethod
+    def _normalize(value: str) -> str:
+        return re.sub(r"[\s\-_]+", "_", value.strip().lower())
 
     def __str__(self):
         return self.value
 
+    @property
+    def value(self) -> str:
+        """Normalized noise model name."""
+        return self._value
+
     def __eq__(self, other):
         if isinstance(other, NoiseModel):
-            return self.value == other.value
-        elif isinstance(other, str):
-            return self.value == self.get_canonical_value(other)
-        else:
-            return False
+            return self.value == other.value and self.description == other.description
+        if isinstance(other, str):
+            return self.value == self._normalize(other)
+        return NotImplemented
 
     def __hash__(self):
-        return hash(self.value)
+        return hash((self.value, self.description))
 
-    def __setattr__(self, name, value):
-        if hasattr(self, name):
-            raise AttributeError(f"Cannot modify attribute '{name}' after initialization.")
-        super().__setattr__(name, value)
+    def __repr__(self):
+        return f"NoiseModel('{self.name}')"
 
-    def copy(self):
-        return NoiseModel(self._original_input, self.description)
 
-    @classmethod
-    def register(cls, name: str, description: Optional[str] = None, overwrite: bool = False):
-        canonical_name = cls._normalize(name)
-        canonical_name = cls._synonyms.get(canonical_name, canonical_name)
+class NoiseModels(MutableMapping):
+    """Class managing a registry of noise models."""
 
-        cls._validate(canonical_name, description)
+    def __init__(self):
+        self._models: dict[str, NoiseModel] = {}
+        self._lock = threading.Lock()
 
-        with cls._lock:
-            if canonical_name in cls._noise_models:
-                if not overwrite:
+    def add(self, name: str, description: Optional[str] = None, overwrite: bool = False):
+        """Add a new noise model to the registry."""
+        canonical_name = NoiseModel._normalize(name)
+        new_model = NoiseModel(name, description)
+        with self._lock:
+            existing_model = self._models.get(canonical_name)
+            if existing_model and not overwrite:
+                if new_model != existing_model:
                     raise ValueError(
-                        f"Noise model '{canonical_name}' already exists. Use overwrite=True to overwrite."
+                        f"Noise model '{canonical_name}' already exists with a "
+                        "different definition. Use overwrite=True to overwrite."
                     )
+            self._models[canonical_name] = new_model
 
-            cls._noise_models[canonical_name] = description or cls._noise_models.get(
-                canonical_name, ""
-            )
+    def get(self, key: str, default: Optional[NoiseModel] = None) -> NoiseModel:
+        """Retrieve a noise model by name."""
+        canonical_name = NoiseModel._normalize(key)
+        return self._models.get(canonical_name, default)
 
-        return cls(name, description)
+    def remove(self, name: str):
+        """Remove a noise model from the registry."""
+        canonical_name = NoiseModel._normalize(name)
+        with self._lock:
+            if canonical_name not in self._models:
+                raise KeyError(f"Noise model '{name}' not found.")
+            del self._models[canonical_name]
+
+    def discard(self, name: str):
+        """Remove a noise model if it exists; do nothing otherwise."""
+        canonical_name = NoiseModel._normalize(name)
+        with self._lock:
+            self._models.pop(canonical_name, None)
+
+    def clear(self):
+        """Clear all noise models from the registry."""
+        with self._lock:
+            self._models.clear()
+
+    def update(self, other: "NoiseModels"):  # pylint: disable=arguments-differ
+        """Update the registry with another NoiseModels instance."""
+        if not isinstance(other, NoiseModels):
+            raise TypeError("Can only update from another NoiseModels instance.")
+        with self._lock:
+            with other._lock:
+                self._models.update(other._models)
+
+    def __getitem__(self, key: str) -> NoiseModel:
+        noise_model = self.get(key)
+        if noise_model is None:
+            raise KeyError(f"Noise model {key} not found.")
+        return noise_model
+
+    def __setitem__(self, key: str, value: NoiseModel):
+        if not isinstance(value, NoiseModel):
+            raise ValueError("Value must be a NoiseModel instance.")
+        canonical_name = NoiseModel._normalize(key)
+        if canonical_name != value.value:
+            raise ValueError("Key does not match the NoiseModel's normalized value.")
+        with self._lock:
+            self._models[canonical_name] = value
+
+    def __delitem__(self, key: str):
+        self.remove(key)
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._models)
+
+    def __len__(self) -> int:
+        return len(self._models)
+
+    def __contains__(self, key: str) -> bool:
+        if not isinstance(key, str):
+            return False
+        canonical_name = NoiseModel._normalize(key)
+        return canonical_name in self._models
+
+    def __repr__(self):
+        return f"NoiseModels({list(self._models.keys())})"
+
+    def values(self) -> Iterator[NoiseModel]:
+        """Return an iterator over the noise models."""
+        return iter(self._models.values())
+
+    def items(self):
+        """Return an iterator over the (name, noise model) pairs."""
+        return self._models.items()
 
     @classmethod
-    def register_synonym(cls, synonym: str, canonical_name: str):
-        """
-        Register a synonym for an existing noise model.
-
-        Args:
-            synonym (str): The synonym to register.
-            canonical_name (str): The canonical name of the existing noise model.
-
-        Raises:
-            ValueError: If the canonical name does not exist.
-        """
-        canonical_name_normalized = cls._normalize(canonical_name)
-        synonym_normalized = cls._normalize(synonym)
-
-        if canonical_name_normalized not in cls._noise_models:
-            raise ValueError(f"Canonical noise model '{canonical_name}' does not exist.")
-
-        with cls._lock:
-            cls._synonyms[synonym_normalized] = canonical_name_normalized
+    def from_dict(cls, data: dict[str, str]) -> "NoiseModels":
+        """Create a NoiseModels instance from a dictionary."""
+        models = cls()
+        for name, description in data.items():
+            models.add(name, description)
+        return models
 
     @classmethod
-    def list_registered(cls):
-        """List all registered canonical noise model names."""
-        return list(cls._noise_models.keys())
-
-    @classmethod
-    def list_synonyms(cls):
-        """List all registered synonyms and their canonical names."""
-        return dict(cls._synonyms)
+    def from_list(cls, data: list[str]) -> "NoiseModels":
+        """Create a NoiseModels instance from a list."""
+        models = cls()
+        for name in data:
+            models.add(name)
+        return models

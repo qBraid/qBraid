@@ -33,7 +33,7 @@ from qbraid.runtime.enums import ExperimentType, JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
 from qbraid.runtime.native.result import QbraidQirSimulatorResultData, QuEraQasmSimulatorResultData
-from qbraid.runtime.noise import NoiseModel
+from qbraid.runtime.noise import NoiseModel, NoiseModels
 from qbraid.runtime.options import RuntimeOptions
 from qbraid.runtime.schemas.job import RuntimeJobModel
 from qbraid.transpiler import CircuitConversionError, Conversion, ConversionGraph, ConversionScheme
@@ -85,7 +85,7 @@ def mock_profile():
         experiment_type=ExperimentType.GATE_MODEL,
         num_qubits=64,
         program_spec=QbraidProvider._get_program_spec("pyqir", "qbraid_qir_simulator"),
-        noise_models=[NoiseModel("ideal")],
+        noise_models=NoiseModels.from_list(["ideal"]),
     )
 
 

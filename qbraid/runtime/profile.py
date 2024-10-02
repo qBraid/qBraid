@@ -23,6 +23,7 @@ from typing_extensions import Self
 from qbraid.programs import ProgramSpec
 
 from .enums import ExperimentType
+from .noise import NoiseModels
 
 
 class TargetProfile(BaseModel):
@@ -42,6 +43,7 @@ class TargetProfile(BaseModel):
     program_spec: Optional[ProgramSpec] = None
     provider_name: Optional[str] = None
     basis_gates: Optional[Union[list[str], set[str], tuple[str, ...]]] = None
+    noise_models: Optional[NoiseModels] = None
 
     @field_validator("basis_gates")
     @classmethod

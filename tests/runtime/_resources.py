@@ -17,6 +17,7 @@ from unittest.mock import MagicMock
 
 from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
+from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.device import QuantumDevice
 
 DEVICE_DATA_QIR = {
@@ -32,7 +33,7 @@ DEVICE_DATA_QIR = {
     "status": "ONLINE",
     "isAvailable": True,
     "processorType": "State vector",
-    "noiseModels": ["no_noise"],
+    "noiseModels": ["ideal"],
     "pricing": {"perTask": 0.005, "perShot": 0, "perMinute": 0.075},
 }
 
@@ -249,7 +250,7 @@ class MockDevice(QuantumDevice):
         super().__init__(*args, **kwargs)
 
     def status(self):
-        raise NotImplementedError
+        return DeviceStatus.ONLINE
 
     def submit(self, *args, **kwargs):
         raise NotImplementedError
