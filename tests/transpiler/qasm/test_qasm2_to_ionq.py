@@ -24,11 +24,12 @@ def test_ionq_device_extract_gate_data():
     x q[0];
     not q[1];
     y q[0];
-    z q[0];
+    z q[0], q[1];
     rx(pi / 4) q[0];
     ry(pi / 2) q[0];
     rz(3 * pi / 4) q[0];
     h q[0];
+    h q;
     cx q[0], q[1];
     CX q[1], q[2];
     cnot q[2], q[0];
@@ -52,10 +53,13 @@ def test_ionq_device_extract_gate_data():
         {"gate": "not", "target": 1},
         {"gate": "y", "target": 0},
         {"gate": "z", "target": 0},
+        {"gate": "z", "target": 1},
         {"gate": "rx", "target": 0, "rotation": 0.7853981633974483},
         {"gate": "ry", "target": 0, "rotation": 1.5707963267948966},
         {"gate": "rz", "target": 0, "rotation": 2.356194490192345},
         {"gate": "h", "target": 0},
+        {"gate": "h", "target": 0},
+        {"gate": "h", "target": 1},
         {"gate": "cnot", "control": 0, "target": 1},
         {"gate": "cnot", "control": 1, "target": 2},
         {"gate": "cnot", "control": 2, "target": 0},
