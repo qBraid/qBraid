@@ -49,7 +49,7 @@ DEVICE_DATA_QUERA = {
     "status": "ONLINE",
     "isAvailable": True,
     "processorType": "State vector",
-    "noiseModels": ["quera_lqc_backend"],
+    "noiseModels": ["quera_lqs_backend"],
     "pricing": {"perTask": 0, "perShot": 0, "perMinute": 0},
 }
 

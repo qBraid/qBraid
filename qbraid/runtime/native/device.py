@@ -26,8 +26,9 @@ from qbraid._entrypoints import get_entrypoints
 from qbraid._logging import logger
 from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import DeviceStatus, NoiseModel
+from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
+from qbraid.runtime.noise import NoiseModel
 from qbraid.runtime.schemas.job import RuntimeJobModel
 from qbraid.transpiler import ConversionGraph, transpile
 

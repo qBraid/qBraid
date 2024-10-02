@@ -25,8 +25,9 @@ from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
 from qbraid.programs.circuits.qasm import has_measurements
 from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
 from qbraid.runtime._display import display_jobs_from_data
-from qbraid.runtime.enums import ExperimentType, NoiseModel, NoiseModelWrapper
+from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.exceptions import ResourceNotFoundError
+from qbraid.runtime.noise import NoiseModel
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 from qbraid.runtime.schemas.device import DeviceData
@@ -127,19 +128,13 @@ class QbraidProvider(QuantumProvider):
         if not noise_models:
             return None
 
-        noise_model_enums = []
+        models = []
 
         for nm in noise_models:
-            nm = nm.lower()
-            try:
-                nm_enum = NoiseModel(nm)
-            except ValueError:
-                NoiseModelWrapper.set_other_value(nm)
-                nm_enum = NoiseModelWrapper.get_noise_model(NoiseModel.Other)
+            model = NoiseModel(nm)
+            models.append(model)
 
-            noise_model_enums.append(nm_enum)
-
-        return set(noise_model_enums)
+        return set(models)
 
     def _build_runtime_profile(self, device_data: dict[str, Any]) -> TargetProfile:
         """Builds a runtime profile from qBraid device data."""
