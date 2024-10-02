@@ -33,7 +33,7 @@ from qbraid.runtime.enums import ExperimentType, JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
 from qbraid.runtime.native.result import QbraidQirSimulatorResultData, QuEraQasmSimulatorResultData
-from qbraid.runtime.noise import NoiseModel, NoiseModels
+from qbraid.runtime.noise import NoiseModel, NoiseModelSet
 from qbraid.runtime.options import RuntimeOptions
 from qbraid.runtime.schemas.job import RuntimeJobModel
 from qbraid.transpiler import CircuitConversionError, Conversion, ConversionGraph, ConversionScheme
@@ -85,7 +85,7 @@ def mock_profile():
         experiment_type=ExperimentType.GATE_MODEL,
         num_qubits=64,
         program_spec=QbraidProvider._get_program_spec("pyqir", "qbraid_qir_simulator"),
-        noise_models=NoiseModels.from_list(["ideal"]),
+        noise_models=NoiseModelSet.from_list(["ideal"]),
     )
 
 
@@ -711,11 +711,6 @@ def test_hash_method_returns_existing_hash(mock_qbraid_client):
     provider_instance._hash = 5678
     result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
     assert result == 5678
-
-
-def test_provider_process_noise_models_for_none():
-    """Test processing noise models when none are provided."""
-    assert QbraidProvider._process_noise_models(None) is None
 
 
 def test_device_merge_options(mock_profile, mock_client):

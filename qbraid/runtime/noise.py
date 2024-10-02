@@ -81,7 +81,7 @@ class NoiseModel:
         return f"NoiseModel('{self.name}')"
 
 
-class NoiseModels(MutableMapping):
+class NoiseModelSet(MutableMapping):
     """Class managing a registry of noise models."""
 
     def __init__(self):
@@ -126,10 +126,12 @@ class NoiseModels(MutableMapping):
         with self._lock:
             self._models.clear()
 
-    def update(self, other: "NoiseModels"):  # pylint: disable=arguments-differ
-        """Update the registry with another NoiseModels instance."""
-        if not isinstance(other, NoiseModels):
-            raise TypeError("Can only update from another NoiseModels instance.")
+    def update(self, other: "NoiseModelSet"):  # pylint: disable=arguments-differ
+        """Update the registry with another NoiseModelSet instance."""
+        if isinstance(other, dict):
+            other = NoiseModelSet.from_dict(other)
+        elif not isinstance(other, NoiseModelSet):
+            raise TypeError("Can only update from a dict or another NoiseModelSet instance.")
         with self._lock:
             with other._lock:
                 self._models.update(other._models)
@@ -165,7 +167,7 @@ class NoiseModels(MutableMapping):
         return canonical_name in self._models
 
     def __repr__(self):
-        return f"NoiseModels({list(self._models.keys())})"
+        return f"NoiseModelSet({list(self._models.keys())})"
 
     def values(self) -> Iterator[NoiseModel]:
         """Return an iterator over the noise models."""
@@ -176,16 +178,16 @@ class NoiseModels(MutableMapping):
         return self._models.items()
 
     @classmethod
-    def from_dict(cls, data: dict[str, str]) -> "NoiseModels":
-        """Create a NoiseModels instance from a dictionary."""
+    def from_dict(cls, data: dict[str, str]) -> "NoiseModelSet":
+        """Create a NoiseModelSet instance from a dictionary."""
         models = cls()
         for name, description in data.items():
             models.add(name, description)
         return models
 
     @classmethod
-    def from_list(cls, data: list[str]) -> "NoiseModels":
-        """Create a NoiseModels instance from a list."""
+    def from_list(cls, data: list[str]) -> "NoiseModelSet":
+        """Create a NoiseModelSet instance from a list."""
         models = cls()
         for name in data:
             models.add(name)

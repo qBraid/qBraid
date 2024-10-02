@@ -17,7 +17,7 @@ import threading
 
 import pytest
 
-from qbraid.runtime.noise import NoiseModel, NoiseModels
+from qbraid.runtime.noise import NoiseModel, NoiseModelSet
 
 
 def test_noise_model_initialization():
@@ -97,7 +97,7 @@ def test_noise_model_immutability():
 
 def test_noise_models_add_and_get():
     """Test adding and retrieving noise models in NoiseModels."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     models.add("ideal")
     models.add("custom", "Custom description")
 
@@ -110,7 +110,7 @@ def test_noise_models_add_and_get():
 
 def test_noise_models_add_existing_no_overwrite():
     """Test adding an existing noise model without overwrite."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     models.add("ideal")
     with pytest.raises(ValueError) as excinfo:
         models.add("Ideal", "Different description")
@@ -119,7 +119,7 @@ def test_noise_models_add_existing_no_overwrite():
 
 def test_noise_models_add_existing_with_overwrite():
     """Test adding an existing noise model with overwrite."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     models.add("ideal", "Original description")
     models.add("Ideal", "New description", overwrite=True)
     ideal_model = models.get("ideal")
@@ -128,7 +128,7 @@ def test_noise_models_add_existing_with_overwrite():
 
 def test_noise_models_remove():
     """Test removing a noise model."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     models.add("ideal")
     models.remove("ideal")
     assert "ideal" not in models
@@ -136,7 +136,7 @@ def test_noise_models_remove():
 
 def test_noise_models_remove_nonexistent():
     """Test removing a nonexistent noise model."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     with pytest.raises(KeyError) as excinfo:
         models.remove("nonexistent")
     assert "Noise model 'nonexistent' not found" in str(excinfo.value)
@@ -144,7 +144,7 @@ def test_noise_models_remove_nonexistent():
 
 def test_noise_models_discard():
     """Test discarding a noise model."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     models.add("ideal")
     models.discard("ideal")
     assert "ideal" not in models
@@ -153,7 +153,7 @@ def test_noise_models_discard():
 
 def test_noise_models_clear():
     """Test clearing all noise models."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     models.add("ideal")
     models.add("custom")
     models.clear()
@@ -162,9 +162,9 @@ def test_noise_models_clear():
 
 def test_noise_models_update():
     """Test updating one NoiseModels instance with another."""
-    models1 = NoiseModels()
+    models1 = NoiseModelSet()
     models1.add("ideal")
-    models2 = NoiseModels()
+    models2 = NoiseModelSet()
     models2.add("custom")
     models1.update(models2)
     assert "ideal" in models1
@@ -173,15 +173,22 @@ def test_noise_models_update():
 
 def test_noise_models_update_invalid_type():
     """Test updating with an invalid type."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     with pytest.raises(TypeError) as excinfo:
-        models.update({"key": "value"})
-    assert "Can only update from another NoiseModels instance" in str(excinfo.value)
+        models.update(["ideal"])
+    assert "Can only update from a dict or another NoiseModelSet instance" in str(excinfo.value)
+
+
+def test_noise_models_update_from_dict():
+    """Test updating with a dict type."""
+    models = NoiseModelSet()
+    models.update({"key": "value"})
+    assert models.get("key").description == "value"
 
 
 def test_noise_models_iteration():
     """Test iteration over NoiseModels."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     models.add("ideal")
     models.add("custom")
     keys = list(models)
@@ -190,7 +197,7 @@ def test_noise_models_iteration():
 
 def test_noise_models_len():
     """Test len() function on NoiseModels."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     assert len(models) == 0
     models.add("ideal")
     assert len(models) == 1
@@ -198,7 +205,7 @@ def test_noise_models_len():
 
 def test_noise_models_contains():
     """Test __contains__ method of NoiseModels."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     models.add("ideal")
     assert "ideal" in models
     assert "Ideal" in models
@@ -207,7 +214,7 @@ def test_noise_models_contains():
 
 def test_noise_models_getitem():
     """Test __getitem__ method of NoiseModels."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     models.add("ideal")
     ideal_model = models["ideal"]
     assert ideal_model.value == "ideal"
@@ -217,7 +224,7 @@ def test_noise_models_getitem():
 
 def test_noise_models_setitem():
     """Test __setitem__ method of NoiseModels."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     model = NoiseModel("ideal")
     models["ideal"] = model
     assert "ideal" in models
@@ -231,7 +238,7 @@ def test_noise_models_setitem():
 
 def test_noise_models_delitem():
     """Test __delitem__ method of NoiseModels."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     models.add("ideal")
     del models["ideal"]
     assert "ideal" not in models
@@ -241,7 +248,7 @@ def test_noise_models_delitem():
 
 def test_noise_models_values():
     """Test values() method of NoiseModels."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     models.add("ideal")
     models.add("custom")
     values = list(models.values())
@@ -251,7 +258,7 @@ def test_noise_models_values():
 
 def test_noise_models_items():
     """Test items() method of NoiseModels."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     models.add("ideal")
     models.add("custom")
     items = list(models.items())
@@ -262,11 +269,16 @@ def test_noise_models_items():
 
 def test_noise_models_repr():
     """Test __repr__ method of NoiseModels."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     models.add("ideal")
     models.add("custom")
+
     repr_str = repr(models)
-    assert repr_str in {"NoiseModels(['ideal', 'custom'])", "NoiseModels(['custom', 'ideal'])"}
+
+    assert repr_str.startswith("NoiseModelSet([")
+    assert "'ideal'" in repr_str
+    assert "'custom'" in repr_str
+    assert repr_str.endswith("])")
 
 
 def test_noise_model_invalid_equality():
@@ -277,7 +289,7 @@ def test_noise_model_invalid_equality():
 
 def test_noise_models_thread_safety():
     """Test that NoiseModels is thread-safe."""
-    models = NoiseModels()
+    models = NoiseModelSet()
 
     def add_model(name):
         models.add(name)
@@ -296,7 +308,7 @@ def test_noise_models_thread_safety():
 
 def test_noise_models_invalid_key_in_setitem():
     """Test setting an item with a key that doesn't match the model's value."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     model = NoiseModel("ideal")
     with pytest.raises(ValueError) as excinfo:
         models["different_key"] = model
@@ -305,7 +317,7 @@ def test_noise_models_invalid_key_in_setitem():
 
 def test_noise_models_pop():
     """Test popping a noise model."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     models.add("ideal")
     model = models._models.pop("ideal")
     assert model.value == "ideal"
@@ -332,28 +344,28 @@ def test_noise_model_validate_classmethod():
 
 def test_noise_models_add_invalid_model():
     """Test adding a model with invalid name."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     with pytest.raises(ValueError):
         models.add("Invalid@Name")
 
 
 def test_noise_models_get_nonexistent():
     """Test getting a nonexistent noise model."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     assert models.get("nonexistent") is None
 
 
 def test_noise_models_discard_nonexistent():
     """Test discarding a nonexistent noise model."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     models.discard("nonexistent")  # Should not raise an error
 
 
 def test_noise_models_update_with_overlapping_keys():
     """Test updating with overlapping keys."""
-    models1 = NoiseModels()
+    models1 = NoiseModelSet()
     models1.add("ideal")
-    models2 = NoiseModels()
+    models2 = NoiseModelSet()
     models2.add("ideal", "New description")
     models1.update(models2)
     ideal_model = models1.get("ideal")
@@ -362,13 +374,13 @@ def test_noise_models_update_with_overlapping_keys():
 
 def test_noise_models_invalid_type_in_contains():
     """Test __contains__ with invalid key type."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     assert 123 not in models
 
 
 def test_noise_models_lock():
     """Test that the lock is working (indirectly)."""
-    models = NoiseModels()
+    models = NoiseModelSet()
     models.add("ideal")
 
     def remove_model():
@@ -379,3 +391,12 @@ def test_noise_models_lock():
         t.start()
         t.join(timeout=1)
         assert t.is_alive()  # Thread should be blocked
+
+
+def test_noise_models_from_dict():
+    """Test creating NoiseModelSet from a dictionary."""
+    data = {"ideal": "Ideal noise model", "custom": "Custom noise model"}
+    models = NoiseModelSet.from_dict(data)
+    assert len(models) == 2
+    assert models.get("ideal").description == "Ideal noise model"
+    assert models.get("custom").description == "Custom noise model"

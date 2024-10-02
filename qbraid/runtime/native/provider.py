@@ -27,7 +27,7 @@ from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
 from qbraid.runtime._display import display_jobs_from_data
 from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.exceptions import ResourceNotFoundError
-from qbraid.runtime.noise import NoiseModels
+from qbraid.runtime.noise import NoiseModelSet
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 from qbraid.runtime.schemas.device import DeviceData
@@ -122,25 +122,12 @@ class QbraidProvider(QuantumProvider):
         lambdas = get_program_spec_lambdas(run_package, device_id)
         return ProgramSpec(program_type, alias=run_package, **lambdas) if program_type else None
 
-    @staticmethod
-    def _process_noise_models(noise_models: Optional[list[str]]) -> Optional[NoiseModels]:
-        """Process and return a list of noise model enum objects."""
-        if not noise_models:
-            return None
-
-        models = NoiseModels()
-
-        for model in noise_models:
-            models.add(model)
-
-        return models
-
     def _build_runtime_profile(self, device_data: dict[str, Any]) -> TargetProfile:
         """Builds a runtime profile from qBraid device data."""
         model = DeviceData(**device_data)
         simulator = str(model.device_type).upper() == "SIMULATOR"
         program_spec = self._get_program_spec(model.run_package, model.device_id)
-        noise_models = self._process_noise_models(model.noise_models)
+        noise_models = NoiseModelSet.from_list(model.noise_models) if model.noise_models else None
         device_exp_type = "gate_model" if model.paradigm == "gate-based" else model.paradigm.lower()
         experiment_type = ExperimentType(device_exp_type)
         return TargetProfile(

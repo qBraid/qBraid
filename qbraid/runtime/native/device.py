@@ -189,6 +189,22 @@ class QbraidDevice(QuantumDevice):
 
         return aux_payload
 
+    def _resolve_noise_model(self, noise_model: Union[NoiseModel, str]) -> str:
+        if self.profile.noise_models is None:
+            raise ValueError("Noise models are not supported by this device.")
+
+        if isinstance(noise_model, NoiseModel):
+            noise_model = noise_model.value
+        elif not isinstance(noise_model, str):
+            raise ValueError(
+                f"Invalid type for noise model: {type(noise_model)}. " "Expected str or NoiseModel."
+            )
+
+        if noise_model not in self.profile.noise_models:
+            raise ValueError(f"Noise model '{noise_model}' not supported by device.")
+
+        return self.profile.noise_models.get(noise_model).name
+
     def run(
         self,
         run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
@@ -237,21 +253,7 @@ class QbraidDevice(QuantumDevice):
         noise_model: Optional[Union[NoiseModel, str]] = kwargs.get("noise_model")
 
         if noise_model:
-            if self.profile.noise_models is None:
-                raise ValueError("Noise models are not supported by this device.")
-
-            if isinstance(noise_model, NoiseModel):
-                noise_model = noise_model.value
-            elif not isinstance(noise_model, str):
-                raise ValueError(
-                    f"Invalid type for noise model: {type(noise_model)}. "
-                    "Expected str or NoiseModel."
-                )
-
-            if noise_model not in self.profile.noise_models:
-                raise ValueError(f"Noise model '{noise_model}' not supported by device.")
-
-            kwargs["noise_model"] = self.profile.noise_models.get(noise_model).name
+            kwargs["noise_model"] = self._resolve_noise_model(noise_model)
 
         jobs: list[qbraid.runtime.QbraidJob] = []
 

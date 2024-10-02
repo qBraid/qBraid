@@ -17,8 +17,8 @@ from unittest.mock import MagicMock
 
 from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
-from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.device import QuantumDevice
+from qbraid.runtime.enums import DeviceStatus
 
 DEVICE_DATA_QIR = {
     "numberQubits": 64,
