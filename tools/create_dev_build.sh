@@ -24,7 +24,7 @@
 #   OUT_DIR: The directory where the built packages will be stored.
 #
 # Example:
-#   ./create_dev_build.sh "1.0.0dev" "/path/to/output_directory"
+#   ./create_dev_build.sh "1.0.0.dev" "/path/to/output_directory"
 ################################################################################
 
 set -e

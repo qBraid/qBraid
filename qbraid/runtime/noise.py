@@ -16,7 +16,7 @@ import re
 import threading
 from collections.abc import MutableMapping
 from dataclasses import dataclass, field
-from typing import Iterator, Optional
+from typing import Iterator, Optional, Union
 
 
 @dataclass(frozen=True)
@@ -57,7 +57,7 @@ class NoiseModel:
 
     @staticmethod
     def _normalize(value: str) -> str:
-        return re.sub(r"[\s\-_]+", "_", value.strip().lower())
+        return re.sub(r"[\s_]+", "_", value.strip().lower())
 
     def __str__(self):
         return self.value
@@ -186,8 +186,8 @@ class NoiseModelSet(MutableMapping):
         return models
 
     @classmethod
-    def from_list(cls, data: list[str]) -> "NoiseModelSet":
-        """Create a NoiseModelSet instance from a list."""
+    def from_iterable(cls, data: Union[list[str], set[str], tuple[str, ...]]) -> "NoiseModelSet":
+        """Create a NoiseModelSet instance from a list, set, or tuple."""
         models = cls()
         for name in data:
             models.add(name)

@@ -85,7 +85,7 @@ def mock_profile():
         experiment_type=ExperimentType.GATE_MODEL,
         num_qubits=64,
         program_spec=QbraidProvider._get_program_spec("pyqir", "qbraid_qir_simulator"),
-        noise_models=NoiseModelSet.from_list(["ideal"]),
+        noise_models=NoiseModelSet.from_iterable(["ideal"]),
     )
 
 
@@ -777,3 +777,19 @@ def test_device_validate_level_none(mock_qbraid_device):
         result = mock_qbraid_device.validate("abc123")
         assert result is None
         mock_status.assert_not_called()
+
+
+def test_resolve_noise_model_raises_for_unsupported(mock_quera_device):
+    """Test raising exception when no noise models are supported by device."""
+    assert mock_quera_device.profile.noise_models is None
+
+    with pytest.raises(ValueError) as exc_info:
+        mock_quera_device._resolve_noise_model("ideal")
+    assert "Noise models are not supported by this device." in str(exc_info)
+
+
+def test_resolve_noise_model_raises_for_bad_input_type(mock_qbraid_device):
+    """Test raising exception when given noise model is not a valid type."""
+    with pytest.raises(ValueError) as exc_info:
+        mock_qbraid_device._resolve_noise_model(10)
+    assert "Invalid type for noise model" in str(exc_info)

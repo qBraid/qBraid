@@ -16,8 +16,31 @@ Types of changes:
 
 ### Added
 - PR compliance workflow that checks that `CHANGELOG.md` is updated with each PR, and if not, issues a reminder ([#772](https://github.com/qBraid/qBraid/pull/772))
+- Workflow to bump semantic version in `_version.py` ([#773](https://github.com/qBraid/qBraid/pull/773))
 
 ### Improved / Modified
+- Changed `qbraid.runtime.NoiseModel` from an `Enum` to a `dataclass` and introduced `qbraid.runtime.NoiseModelSet` to manage multiple `NoiseModel` instances. An `Enum` was too restrictive since its values are fixed, so a more flexible structure was needed for loading noise model data from an API. Using a dataclass allows storing brief descriptions of noise models. `NoiseModelSet` ensures naming consistency and provides easy add, remove, and get operations for provider classes. ([#773](https://github.com/qBraid/qBraid/pull/773))
+
+```python
+from qbraid.runtime.noise import NoiseModel, NoiseModelSet
+
+ideal_model = NoiseModel("ideal", "Ideal noise model for simulations")
+custom_model = NoiseModel("custom", "Custom noise model with specific parameters")
+
+models = NoiseModelSet()
+models.add(ideal_model)
+models.add(custom_model)
+
+retrieved_model = models.get("ideal")
+print(f"Retrieved model: {retrieved_model.name} - {retrieved_model.description}")
+
+models.add("ideal", "Updated ideal model", overwrite=True)
+
+for name, model in models.items():
+    print(f"{name}: {model.description}")
+
+models.remove("custom")
+```
 
 ### Deprecated
 

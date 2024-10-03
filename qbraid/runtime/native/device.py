@@ -190,6 +190,7 @@ class QbraidDevice(QuantumDevice):
         return aux_payload
 
     def _resolve_noise_model(self, noise_model: Union[NoiseModel, str]) -> str:
+        """Verify given noise model is supported by device and map to string representation."""
         if self.profile.noise_models is None:
             raise ValueError("Noise models are not supported by this device.")
 

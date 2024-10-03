@@ -35,7 +35,7 @@ def test_noise_model_initialization():
 
 def test_noise_model_normalization():
     """Test that noise model names are normalized correctly."""
-    model = NoiseModel("  Ideal-Noise ")
+    model = NoiseModel("  Ideal Noise ")
     assert model.value == "ideal_noise"
 
 
@@ -326,7 +326,7 @@ def test_noise_models_pop():
 
 def test_noise_model_normalize_staticmethod():
     """Test the _normalize static method."""
-    assert NoiseModel._normalize("  Ideal-Noise ") == "ideal_noise"
+    assert NoiseModel._normalize("  Ideal Noise ") == "ideal_noise"
 
 
 def test_noise_model_validate_classmethod():

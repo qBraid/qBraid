@@ -127,7 +127,9 @@ class QbraidProvider(QuantumProvider):
         model = DeviceData(**device_data)
         simulator = str(model.device_type).upper() == "SIMULATOR"
         program_spec = self._get_program_spec(model.run_package, model.device_id)
-        noise_models = NoiseModelSet.from_list(model.noise_models) if model.noise_models else None
+        noise_models = (
+            NoiseModelSet.from_iterable(model.noise_models) if model.noise_models else None
+        )
         device_exp_type = "gate_model" if model.paradigm == "gate-based" else model.paradigm.lower()
         experiment_type = ExperimentType(device_exp_type)
         return TargetProfile(

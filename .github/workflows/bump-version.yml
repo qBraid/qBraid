@@ -1,0 +1,81 @@
+# Copyright (C) 2024 qBraid
+#
+# This file is part of the qBraid-SDK
+#
+# The qBraid-SDK is free software released under the GNU General Public License v3
+# or later. You can redistribute and/or modify it under the terms of the GPL v3.
+# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#
+# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
+
+name: Bump Version
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Select the version bump type'
+        required: true
+        type: choice
+        options:
+          - major
+          - minor
+          - patch
+        default: 'patch'
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: 'main'
+
+      - name: Create feature branch
+        run: git checkout -b qbraid-bot/${{ github.run_id }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install "qbraid-core>=0.1.17"
+
+      - name: Setup Git config
+        run: |
+          git config --global user.name 'qbraidTeam'
+          git config --global user.email 'qbraid.team@qbraid.com'
+
+      - name: Bump version, commit and push
+        id: bump_version
+        run: |
+          BUMP_TYPE=${{ github.event.inputs.bump_type }}
+          VERSION=$(python3 tools/bump_version.py $BUMP_TYPE)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          git commit -am "Bump $BUMP_TYPE version to $VERSION"
+          git push origin qbraid-bot/${{ github.run_id }}
+
+      - name: Create Pull Request
+        id: create_pr
+        run: |
+          VERSION=${{ steps.bump_version.outputs.version }}
+          PR_URL=$(gh pr create -B main -H qbraid-bot/${{ github.run_id }} --title "Bump project version to $VERSION" --body "This PR bumps the project version to $VERSION")
+          PR_NUMBER=$(echo "$PR_URL" | grep -o '[0-9]*$')
+          echo "url=$PR_URL" >> $GITHUB_OUTPUT
+          echo "number=$PR_NUMBER" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Summary
+        run: |
+          VERSION=${{ steps.bump_version.outputs.version }}
+          PR_URL=${{ steps.create_pr.outputs.url }}
+          PR_NUMBER=${{ steps.create_pr.outputs.number }}
+          echo "Opened PR [#$PR_NUMBER]($PR_URL) to update project to version **$VERSION**." >> $GITHUB_STEP_SUMMARY
