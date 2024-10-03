@@ -183,6 +183,30 @@ result = job.result()
 print(f"device_id: {result.device_id}, job_id: {result.job_id}, success: {result.success}")
 print(result.data.measurements)  # List of AhsShotResult instances
 ```
+- Improved the `qbraid.transpiler.conversions.qasm2.qasm2_to_ionq` method by adding support for registers in quantum gate arguments. See example below - ([#771](https://github.com/qBraid/qBraid/pull/771))
+
+```python
+from qbraid.transpiler.conversions.qasm2 import qasm2_to_ionq
+
+qasm_str = """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[3];
+x q[0];
+y q;
+"""
+
+print(qasm2_to_ionq(qasm_str))
+```
+
+outputs - 
+
+```python
+{'qubits': 3, 'circuit': [{'gate': 'x', 'target': 0}, 
+                          {'gate': 'y', 'target': 0}, 
+                          {'gate': 'y', 'target': 1}, 
+                          {'gate': 'y', 'target': 2}]}
+```
 
 ### Deprecated
 - `result.measurement_counts()` method(s) from result objects retured by `qbraid.runtime.QuantumJob.result()`. Intead, for gate model jobs, measurement counts dictionary now accessible via `result.data.get_counts()`. ([#756](https://github.com/qBraid/qBraid/pull/756))
