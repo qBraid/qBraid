@@ -152,22 +152,37 @@ class QuantumDevice(ABC):
         Returns:
             dict[str, Any]: A dictionary with device status and queue depth among other details.
         """
-        metadata = {key: value for key, value in self.profile if key != "program_spec"}
-
-        try:
-            metadata["status"] = self.status().value
-        except Exception as err:  # pylint: disable=broad-exception-caught
-            logger.error("Failed to fetch status: %s", err)
-            metadata["status"] = "UNKNOWN"
+        metadata = self.profile.model_dump(
+            exclude=["program_spec", "experiment_type", "noise_models"]
+        )
 
         try:
             metadata["queue_depth"] = self.queue_depth()
-        except Exception as err:  # pylint: disable=broad-exception-caught
+        except ResourceNotFoundError as err:
             logger.error("Failed to fetch queue depth: %s", err)
             metadata["queue_depth"] = None
 
-        if self.profile.experiment_type is not None:
-            metadata["experiment_type"] = self.profile.experiment_type.value
+        metadata["status"] = self.status().name
+        metadata["paradigm"] = (
+            self.profile.experiment_type.value if self.profile.experiment_type else None
+        )
+        metadata["noise_models"] = (
+            list(self.profile.noise_models) if self.profile.noise_models else None
+        )
+
+        options = {
+            key: (value.value if isinstance(value, ValidationLevel) else value)
+            for key, value in dict(self._options).items()
+        }
+
+        program_spec = self.profile.program_spec
+        runtime_config = {
+            "target_ir": program_spec.alias if program_spec else None,
+            "conversion_scheme": self._scheme.to_dict(),
+            "options": options,
+        }
+
+        metadata["runtime_config"] = runtime_config
 
         return metadata
 

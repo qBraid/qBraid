@@ -15,13 +15,15 @@ Module defining qBraid runtime experiment schemas.
 from __future__ import annotations
 
 from collections import Counter
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
-from typing_extensions import Self
 
 from qbraid.programs import load_program
 from qbraid.programs.typer import Qasm2String, Qasm3String
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 
 class ExperimentMetadata(BaseModel):
