@@ -38,8 +38,8 @@ from ..fixtures.qasm2.circuits import (
 def test_qasm_qubits():
     """Test getting QASM qubits"""
 
-    assert OpenQasm2Program(qasm2_bell()).qubits == ["q[0]", "q[1]"]
-    assert OpenQasm2Program(qasm2_shared15()).qubits == ["q[0]", "q[1]", "q[2]", "q[3]"]
+    assert OpenQasm2Program(qasm2_bell()).qubits == [("q", 0), ("q", 1)]
+    assert OpenQasm2Program(qasm2_shared15()).qubits == [("q", 0), ("q", 1), ("q", 2), ("q", 3)]
 
 
 def test_qasm_num_qubits():

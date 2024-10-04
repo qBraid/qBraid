@@ -15,14 +15,17 @@ parameters for integration with the qBraid runtime.
 """
 from __future__ import annotations
 
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
-from typing_extensions import Self
 
 from qbraid.programs import ProgramSpec
 
 from .enums import ExperimentType
+from .noise import NoiseModelSet
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 
 class TargetProfile(BaseModel):
@@ -42,6 +45,7 @@ class TargetProfile(BaseModel):
     program_spec: Optional[ProgramSpec] = None
     provider_name: Optional[str] = None
     basis_gates: Optional[Union[list[str], set[str], tuple[str, ...]]] = None
+    noise_models: Optional[NoiseModelSet] = None
 
     @field_validator("basis_gates")
     @classmethod

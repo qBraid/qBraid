@@ -29,7 +29,7 @@ from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 from qbraid._caching import cache_disabled
 from qbraid.programs import ProgramSpec, register_program_type, unregister_program_type
 from qbraid.runtime import DeviceStatus, ProgramValidationError, Result, TargetProfile
-from qbraid.runtime.enums import ExperimentType, JobStatus, NoiseModel
+from qbraid.runtime.enums import ExperimentType, JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
 from qbraid.runtime.native.result import (
@@ -37,6 +37,7 @@ from qbraid.runtime.native.result import (
     QbraidQirSimulatorResultData,
     QuEraQasmSimulatorResultData,
 )
+from qbraid.runtime.noise import NoiseModel, NoiseModelSet
 from qbraid.runtime.options import RuntimeOptions
 from qbraid.runtime.schemas.job import RuntimeJobModel
 from qbraid.transpiler import CircuitConversionError, Conversion, ConversionGraph, ConversionScheme
@@ -90,7 +91,7 @@ def mock_profile():
         experiment_type=ExperimentType.GATE_MODEL,
         num_qubits=64,
         program_spec=QbraidProvider._get_program_spec("pyqir", "qbraid_qir_simulator"),
-        noise_models=[NoiseModel.Ideal],
+        noise_models=NoiseModelSet.from_iterable(["ideal"]),
     )
 
 
@@ -209,7 +210,7 @@ def test_qir_simulator_workflow(mock_provider, cirq_uniform):
     assert isinstance(job, QbraidJob)
     assert job.is_terminal_state()
 
-    batch_job = device.run([circuit], shots=shots, noise_model=NoiseModel.Ideal)
+    batch_job = device.run([circuit], shots=shots, noise_model=NoiseModel("ideal"))
     assert isinstance(batch_job, list)
     assert all(isinstance(job, QbraidJob) for job in batch_job)
 
@@ -326,7 +327,7 @@ def test_device_update_scheme(mock_qbraid_device):
 def test_device_noisey_run_raises_for_unsupported(mock_qbraid_device):
     """Test raising exception when noise model is not supported."""
     with pytest.raises(ValueError):
-        mock_qbraid_device.run(Mock(), noise_model=NoiseModel.AmplitudeDamping)
+        mock_qbraid_device.run(Mock(), noise_model=NoiseModel("amplitude_damping"))
 
 
 def test_device_transform(pyqir_module, mock_qbraid_device):
@@ -746,11 +747,6 @@ def test_hash_method_returns_existing_hash(mock_qbraid_client):
     assert result == 5678
 
 
-def test_provider_process_noise_models_for_none():
-    """Test processing noise models when none are provided."""
-    assert QbraidProvider._process_noise_models(None) is None
-
-
 def test_device_merge_options(mock_profile, mock_client):
     """ "Test merging default and custom options for a device."""
     options = RuntimeOptions(validate=0)
@@ -815,3 +811,19 @@ def test_device_validate_level_none(mock_qbraid_device):
         result = mock_qbraid_device.validate("abc123")
         assert result is None
         mock_status.assert_not_called()
+
+
+def test_resolve_noise_model_raises_for_unsupported(mock_quera_device):
+    """Test raising exception when no noise models are supported by device."""
+    assert mock_quera_device.profile.noise_models is None
+
+    with pytest.raises(ValueError) as exc_info:
+        mock_quera_device._resolve_noise_model("ideal")
+    assert "Noise models are not supported by this device." in str(exc_info)
+
+
+def test_resolve_noise_model_raises_for_bad_input_type(mock_qbraid_device):
+    """Test raising exception when given noise model is not a valid type."""
+    with pytest.raises(ValueError) as exc_info:
+        mock_qbraid_device._resolve_noise_model(10)
+    assert "Invalid type for noise model" in str(exc_info)

@@ -26,13 +26,46 @@ from qbraid.transpiler.annotations import weight
 if TYPE_CHECKING:
     from qbraid.programs.typer import IonQDictType, Qasm2StringType
 
+IONQ_ONE_QUBIT_GATE_MAP = {
+    "x": "x",
+    "not": "not",
+    "y": "y",
+    "z": "z",
+    "h": "h",
+    "s": "s",
+    "si": "si",
+    "t": "t",
+    "ti": "ti",
+    "v": "v",
+    "vi": "vi",
+    "sdg": "si",
+    "tdg": "ti",
+    "sx": "v",
+    "sxdg": "vi",
+    "rx": "rx",
+    "ry": "ry",
+    "rz": "rz",
+}
+
+IONQ_TWO_QUBIT_GATE_MAP = {
+    "cnot": "cnot",
+    "cx": "cnot",
+    "CX": "cnot",
+    "swap": "swap",
+}
+
+IONQ_THREE_QUBIT_GATE_MAP = {
+    "ccx": "cnot",
+    "toffoli": "cnot",
+}
+
 
 @weight(1)
 def qasm2_to_ionq(qasm: Qasm2StringType) -> IonQDictType:
     """Returns an IonQ JSON format representation the input OpenQASM 2 string.
 
     Args:
-        qasm (str): OpenQASM 2 string to convert to a pytket circuit.
+        qasm (str): OpenQASM 2 string to convert to IonQDict type.
 
     Returns:
         dict: IonQ JSON format equivalent to input OpenQASM 2 string.
@@ -40,6 +73,7 @@ def qasm2_to_ionq(qasm: Qasm2StringType) -> IonQDictType:
 
     qprogram = OpenQasm2Program(qasm)
     num_qubits = qprogram.num_qubits
+    program_qubits = qprogram.qubits
 
     program = qprogram.parsed()
 
@@ -51,60 +85,57 @@ def qasm2_to_ionq(qasm: Qasm2StringType) -> IonQDictType:
             qubits = statement.qubits
             qubit_values = []
 
-            for qubit in qubits:
-                _ = qubit.name.name
-                indices = qubit.indices
-                for index in indices:
-                    qubit_values.extend(literal.value for literal in index)
+            if len(qubits) == 1 and isinstance(qubits[0], openqasm3.ast.Identifier):
+                # full register reference here
+                reg_name = qubits[0].name
+                for qreg_name, qubit_id in program_qubits:
+                    if qreg_name == reg_name:
+                        qubit_values.append(qubit_id)
+            else:
+                for qubit in qubits:
+                    indices = qubit.indices
+                    for index in indices:
+                        qubit_values.extend(literal.value for literal in index)
 
-            # support gates defined in `stdgates.inc` from OpenQASM 3
-            if len(qubit_values) == 1:
-                # IonQ supported gates:
-                if name in ["x", "not", "y", "z", "h", "s", "si", "t", "ti", "v", "vi"]:
-                    gate_data = {"gate": name, "target": qubit_values[0]}
-                elif name in ["rx", "ry", "rz"]:
+            # support gates defined for IonQ JSON format
+            if name in IONQ_ONE_QUBIT_GATE_MAP:
+                ionq_name = IONQ_ONE_QUBIT_GATE_MAP[name]
+                if ionq_name in ["rx", "ry", "rz"]:
                     # convert "rz(3 * pi / 4) q[0];" to "3 * pi / 4"
                     angle_str = re.findall(r"\((.+)\)", openqasm3.dumps(statement))[0]
-                    gate_data = {
-                        "gate": name,
-                        "target": qubit_values[0],
-                        "rotation": float(convert_qasm_pi_to_decimal(angle_str)),
-                    }
-                # OpenQASM 3 aliases:
-                elif name == "sdg":
-                    gate_data = {"gate": "si", "target": qubit_values[0]}
-                elif name == "tdg":
-                    gate_data = {"gate": "ti", "target": qubit_values[0]}
-                elif name == "sx":
-                    gate_data = {"gate": "v", "target": qubit_values[0]}
-                elif name == "sxdg":
-                    gate_data = {"gate": "vi", "target": qubit_values[0]}
+                    for qubit in qubit_values:
+                        gates.append(
+                            {
+                                "gate": ionq_name,
+                                "target": qubit,
+                                "rotation": float(convert_qasm_pi_to_decimal(angle_str)),
+                            }
+                        )
                 else:
-                    raise NotImplementedError(f"'{name}' gate not yet supported")
-            elif len(qubit_values) == 2:
-                if name in ["cnot", "cx", "CX"]:
-                    gate_data = {
-                        "gate": "cnot",
-                        "control": qubit_values[0],
-                        "target": qubit_values[1],
-                    }
-                elif name == "swap":
-                    gate_data = {
-                        "gate": "swap",
-                        "targets": qubit_values,
-                    }
+                    for qubit in qubit_values:
+                        gates.append({"gate": ionq_name, "target": qubit})
+
+            elif name in IONQ_TWO_QUBIT_GATE_MAP:
+                ionq_name = IONQ_TWO_QUBIT_GATE_MAP[name]
+                if ionq_name == "swap":
+                    gates.append({"gate": ionq_name, "targets": qubit_values})
                 else:
-                    raise NotImplementedError(f"'{name}' gate not yet supported")
-            elif len(qubit_values) == 3:
-                if name in ["ccx", "toffoli"]:
-                    gate_data = {
-                        "gate": "cnot",
+                    gates.append(
+                        {
+                            "gate": ionq_name,
+                            "control": qubit_values[0],
+                            "target": qubit_values[1],
+                        }
+                    )
+            elif name in IONQ_THREE_QUBIT_GATE_MAP:
+                gates.append(
+                    {
+                        "gate": IONQ_THREE_QUBIT_GATE_MAP[name],
                         "controls": qubit_values[:2],
                         "target": qubit_values[2],
                     }
+                )
             else:
                 raise NotImplementedError(f"'{name}' gate not yet supported")
-
-            gates.append(gate_data)
 
     return {"qubits": num_qubits, "circuit": gates}

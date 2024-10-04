@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Optional
 from qbraid_core.services.quantum import QuantumClient
 
 from qbraid._logging import logger
-from qbraid.runtime.enums import JobStatus
+from qbraid.runtime.enums import ExperimentType, JobStatus
 from qbraid.runtime.exceptions import JobStateError, QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import GateModelResultData, Result
@@ -123,6 +123,17 @@ class QbraidJob(QuantumJob):
             by_alias=True, exclude={"measurement_counts", "measurements"}
         )
         model_dump = model.model_dump(by_alias=True, exclude={"job_id", "device_id", "metadata"})
+        status_text = (
+            model.status_text or model.status.status_message or model.status.default_message
+        )
+        experiment_type: ExperimentType = model_dump["experimentType"]
+        model_dump.update(
+            {
+                "status": model.status.name,
+                "statusText": status_text,
+                "experimentType": experiment_type.name,
+            }
+        )
         model_dump["metadata"] = metadata_dump
         return Result(
             device_id=model.device_id, job_id=model.job_id, success=success, data=data, **model_dump

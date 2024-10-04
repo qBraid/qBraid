@@ -26,8 +26,9 @@ from qbraid._entrypoints import get_entrypoints
 from qbraid._logging import logger
 from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import DeviceStatus, NoiseModel
+from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
+from qbraid.runtime.noise import NoiseModel
 from qbraid.runtime.schemas.job import RuntimeJobModel
 from qbraid.transpiler import ConversionGraph, transpile
 
@@ -188,6 +189,23 @@ class QbraidDevice(QuantumDevice):
 
         return aux_payload
 
+    def _resolve_noise_model(self, noise_model: Union[NoiseModel, str]) -> str:
+        """Verify given noise model is supported by device and map to string representation."""
+        if self.profile.noise_models is None:
+            raise ValueError("Noise models are not supported by this device.")
+
+        if isinstance(noise_model, NoiseModel):
+            noise_model = noise_model.value
+        elif not isinstance(noise_model, str):
+            raise ValueError(
+                f"Invalid type for noise model: {type(noise_model)}. " "Expected str or NoiseModel."
+            )
+
+        if noise_model not in self.profile.noise_models:
+            raise ValueError(f"Noise model '{noise_model}' not supported by device.")
+
+        return self.profile.noise_models.get(noise_model).name
+
     def run(
         self,
         run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
@@ -233,12 +251,10 @@ class QbraidDevice(QuantumDevice):
             run_input_list = run_input
             is_single_input = False
 
-        noise_model: Optional[NoiseModel] = kwargs.pop("noise_model", None)
+        noise_model: Optional[Union[NoiseModel, str]] = kwargs.get("noise_model")
+
         if noise_model:
-            if noise_model not in self.profile.get("noise_models", []):
-                raise ValueError(f"Noise model '{noise_model}' not supported by device.")
-            noise_model = noise_model.value
-            kwargs["noise_model"] = noise_model
+            kwargs["noise_model"] = self._resolve_noise_model(noise_model)
 
         jobs: list[qbraid.runtime.QbraidJob] = []
 

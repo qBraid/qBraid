@@ -52,58 +52,6 @@ class ExperimentType(Enum):
     OTHER = "other"
 
 
-class NoiseModel(Enum):
-    """Enumeration representing various noise models for quantum simulators.
-
-    Attributes:
-        Ideal (str): The simulation is performed without any noise, representing an
-            ideal quantum computer.
-        Depolarizing (str): Applies random errors to qubits, effectively turning a pure
-            quantum state into a mixed state.
-        AmplitudeDamping (str): Simulates energy loss in a quantum system, causing qubits
-            to decay from the excited state to the ground state.
-        PhaseDamping (str): Represents dephasing, where the relative phase between quantum
-            states is randomized without energy loss.
-        BitFlip (str): Randomly flips the state of qubits (i.e., from 0 to 1 or from 1 to 0)
-            with a certain probability.
-        PhaseFlip (str): Randomly flips the phase of a qubit state (i.e., it applies a Z gate)
-            with a certain probability.
-        Other (str): Placeholder for custom or unspecified noise models.
-    """
-
-    Ideal = "no_noise"
-    Depolarizing = "depolarizing"
-    AmplitudeDamping = "amplitude_damping"
-    PhaseDamping = "phase_damping"
-    BitFlip = "bit_flip"
-    PhaseFlip = "phase_flip"
-    Other = "other"
-
-
-class NoiseModelWrapper:
-    """Wrapper for NoiseModel enum to allow dynamic modification of 'Other'."""
-
-    _other_value = NoiseModel.Other.value
-
-    @classmethod
-    def set_other_value(cls, value: str) -> None:
-        """Set a custom value for the 'Other' noise model."""
-        cls._other_value = value
-
-    @classmethod
-    def get_noise_model(cls, noise_model: NoiseModel) -> NoiseModel:
-        """Return the NoiseModel instance with dynamic handling of 'Other'."""
-        if noise_model == NoiseModel.Other:
-            noise_model = NoiseModel.Other
-            noise_model._value_ = cls._other_value
-        return noise_model
-
-    @classmethod
-    def reset_other_value(cls) -> None:
-        """Reset the 'Other' noise model to its default value."""
-        cls._other_value = "other"
-
-
 class JobStatus(Enum):
     """Enum for the status of processes (i.e. quantum jobs / tasks) resulting
     from any :meth:`~qbraid.runtime.QuantumDevice.run` method.

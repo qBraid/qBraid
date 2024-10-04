@@ -26,6 +26,30 @@ Types of changes:
 - Updated `QbraidJob.result`  method to return `AnnealingResultData` or `NECVectorAnnealerResultData` instances for annealing and NEC vector annealer experiments, respectively. ([#768](https://github.com/qBraid/qBraid/pull/768))
 - Added a test case for the NEC Vector Annealer workflow in , including job submission and result retrieval. ([#768](https://github.com/qBraid/qBraid/pull/768))
 - Added unit tests for `AnnealingResultData`, `NECVectorAnnealerResultData`, `AnnealingExperimentMetadata`, and `NECVectorAnnealerExperimentMetadata` classes. ([#768](https://github.com/qBraid/qBraid/pull/768))
+- PR compliance workflow that checks that `CHANGELOG.md` is updated with each PR, and if not, issues a reminder ([#772](https://github.com/qBraid/qBraid/pull/772))
+- Workflow to bump semantic version in `_version.py` ([#773](https://github.com/qBraid/qBraid/pull/773))
+- Changed `qbraid.runtime.NoiseModel` from an `Enum` to a `dataclass` and introduced `qbraid.runtime.NoiseModelSet` to manage multiple `NoiseModel` instances. An `Enum` was too restrictive since its values are fixed, so a more flexible structure was needed for loading noise model data from an API. Using a dataclass allows storing brief descriptions of noise models. `NoiseModelSet` ensures naming consistency and provides easy add, remove, and get operations for provider classes. ([#773](https://github.com/qBraid/qBraid/pull/773))
+
+```python
+from qbraid.runtime.noise import NoiseModel, NoiseModelSet
+
+ideal_model = NoiseModel("ideal", "Ideal noise model for simulations")
+custom_model = NoiseModel("custom", "Custom noise model with specific parameters")
+
+models = NoiseModelSet()
+models.add(ideal_model)
+models.add(custom_model)
+
+retrieved_model = models.get("ideal")
+print(f"Retrieved model: {retrieved_model.name} - {retrieved_model.description}")
+
+models.add("ideal", "Updated ideal model", overwrite=True)
+
+for name, model in models.items():
+    print(f"{name}: {model.description}")
+
+models.remove("custom")
+```
 
 ### Deprecated
 
@@ -167,6 +191,30 @@ result = job.result()
 # Unified access to metadata and experiment-specific data
 print(f"device_id: {result.device_id}, job_id: {result.job_id}, success: {result.success}")
 print(result.data.measurements)  # List of AhsShotResult instances
+```
+- Improved the `qbraid.transpiler.conversions.qasm2.qasm2_to_ionq` method by adding support for registers in quantum gate arguments. See example below - ([#771](https://github.com/qBraid/qBraid/pull/771))
+
+```python
+from qbraid.transpiler.conversions.qasm2 import qasm2_to_ionq
+
+qasm_str = """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[3];
+x q[0];
+y q;
+"""
+
+print(qasm2_to_ionq(qasm_str))
+```
+
+outputs - 
+
+```python
+{'qubits': 3, 'circuit': [{'gate': 'x', 'target': 0}, 
+                          {'gate': 'y', 'target': 0}, 
+                          {'gate': 'y', 'target': 1}, 
+                          {'gate': 'y', 'target': 2}]}
 ```
 
 ### Deprecated

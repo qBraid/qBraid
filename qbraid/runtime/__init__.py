@@ -70,7 +70,7 @@ from typing import TYPE_CHECKING
 
 from ._display import display_jobs_from_data
 from .device import QuantumDevice
-from .enums import DeviceStatus, ExperimentType, JobStatus, NoiseModel
+from .enums import DeviceStatus, ExperimentType, JobStatus
 from .exceptions import (
     DeviceProgramTypeMismatchError,
     JobStateError,
@@ -79,6 +79,7 @@ from .exceptions import (
     ResourceNotFoundError,
 )
 from .job import QuantumJob
+from .noise import NoiseModel
 from .options import RuntimeOptions
 from .profile import TargetProfile
 from .provider import QuantumProvider

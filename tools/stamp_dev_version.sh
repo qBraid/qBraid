@@ -22,7 +22,7 @@
 #   ./stamp_dev_version.sh
 #
 #   Given `_version.py` content: 
-#   version = "1.0.0dev"
+#   version = "1.0.0.dev"
 #
 #   Output:
 #   1.0.0dev20240809120000
