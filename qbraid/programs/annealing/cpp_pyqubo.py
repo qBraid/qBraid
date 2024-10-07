@@ -14,25 +14,24 @@ Module defining PyQuboModel Class
 """
 from __future__ import annotations
 
-from cpp_pyqubo import Model
+from pyqubo import Model
 
 from qbraid.programs.exceptions import ProgramTypeError
 
-from ._model import AnnealingProblem, Problem, ProblemType, QuboProblem
+from ._model import AnnealingProgram, QuboProblem
 
 
-class PyQuboModel(AnnealingProblem):
+class PyQuboModel(AnnealingProgram):
     """AnnealingProblem subclass that accepts a cpp_pyqubo.Model."""
 
     def __init__(self, program: Model):
         super().__init__(program)
         if not isinstance(program, Model):
             raise ProgramTypeError(
-                message=f"Expected 'cpp_pyqubo.Model' object, got '{type(program)}'."
+                message=f"Expected 'pyqubo.Model' object, got '{type(program)}'."
             )
-        self.problem_type = ProblemType.QUBO
 
-    def to_problem(self) -> Problem:
+    def to_problem(self) -> QuboProblem:
         """Converts the cpp_pyqubo.Model to a Problem instance."""
         qubo, offset = self.program.to_qubo()
         coefficients = {}

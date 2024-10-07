@@ -43,16 +43,17 @@ class Problem:
     """Represents an annealing problem, including linear and quadratic terms.
 
     Attributes:
+        problem_type: An instance of ProblemType indicating whether the model is QUBO or ISING.
         linear: A dictionary representing the linear coefficients.
         quadratic: A dictionary representing the quadratic coefficients.
         offset: A float representing the constant offset.
-        problem_type: An instance of ProblemType indicating whether the model is QUBO or ISING.
+
     """
 
+    problem_type: ProblemType
     linear: dict[str, float] = field(default_factory=dict)
     quadratic: dict[tuple[str, str], float] = field(default_factory=dict)
     offset: float = 0.0
-    problem_type: ProblemType
 
     def num_variables(self) -> int:
         """Return the number of variables in the problem."""
@@ -86,11 +87,14 @@ class QuboProblem(Problem):
 
     def __init__(self, coefficients: dict[tuple[str, str], float], offset: float = 0.0):
         super().__init__(
-            linear={}, quadratic=coefficients, offset=offset, problem_type=ProblemType.QUBO
+            problem_type=ProblemType.QUBO,
+            linear={},
+            quadratic=coefficients,
+            offset=offset,
         )
 
 
-class AnnealingProblem(QuantumProgram, ABC):
+class AnnealingProgram(QuantumProgram, ABC):
     """Abstract class for annealing problems."""
 
     @property
@@ -120,7 +124,7 @@ class ProblemEncoder(json.JSONEncoder):
     """Custom JSON encoder for Problem data class."""
 
     def default(self, o: Any) -> Any:
-        if isinstance(o, AnnealingProblem):
+        if isinstance(o, AnnealingProgram):
             return self.default(o.to_problem())
         if isinstance(o, Problem):
             data = {
@@ -131,10 +135,7 @@ class ProblemEncoder(json.JSONEncoder):
                 data["linear"] = o.linear
             if o.quadratic:
                 quadratic_json = {json.dumps(key): value for key, value in o.quadratic.items()}
-                if isinstance(o, QuboProblem):
-                    data["qubo"] = quadratic_json
-                else:
-                    data["quadratic"] = quadratic_json
+                data["quadratic"] = quadratic_json
             return data
         if isinstance(o, ProblemType):
             return o.value
