@@ -51,9 +51,9 @@ def _qasm_to_json(
     return {"openQasm": format_qasm(program)}
 
 
-def _pyqubo_to_json(program: pyqubo.Model) -> dict[str, Any]:
+def _pyqubo_to_json(program: pyqubo.Model) -> dict[str, dict[str, Any]]:
     program: PyQuboModel = load_program(program)
-    return program.to_json()
+    return {"problem": program.to_json()}
 
 
 def validate_qasm_no_measurements(
@@ -74,7 +74,7 @@ def get_program_spec_lambdas(
         "pyqir": (_pyqir_to_json, None),
         "qasm2": (_qasm_to_json, None),
         "qasm3": (_qasm_to_json, None),
-        "pyqubo": (_pyqubo_to_json, None),
+        "cpp_pyqubo": (_pyqubo_to_json, None),
     }
 
     to_ir, validate = lambdas.get(program_type_alias, (None, None))

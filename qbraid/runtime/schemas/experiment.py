@@ -140,4 +140,4 @@ class AnnealingExperimentMetadata(BaseModel):
 class NECVectorAnnealerMetadata(AnnealingExperimentMetadata):
     """Result data specific to jobs submitted to the NEC Vector Annealer."""
 
-    sa_results: Optional[list] = Field(None, alias="saSolutions")
+    sa_results: Optional[list] = Field(None, alias="results")
