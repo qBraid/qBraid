@@ -11,10 +11,8 @@
 """
 Module defining input / output types for a quantum backend:
 
-  * QPROGRAM: Type alias defining all supported quantum circuit / program types
-
   * NATIVE_REGISTRY: Dict mapping all supported quantum software libraries / package
-                         names to their respective program types
+                     names to their respective program types.
 
 """
 
@@ -102,6 +100,8 @@ def _get_class(module: str):
         return openqasm3.ast.Program  # type: ignore
     if module == "pyqir":
         return pyqir.Module  # type: ignore
+    if module == "cpp_pyqubo":
+        return cpp_pyqubo.Model  # type: ignore
 
 
 # Supported quantum programs.
@@ -116,6 +116,7 @@ dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
         "braket.ahs",
         "openqasm3",
         "pyqir",
+        "cpp_pyqubo",
     ]
 )
 dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(["bloqade.builder.assign"])

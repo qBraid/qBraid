@@ -124,11 +124,20 @@ __all__ = [
     "Qasm3StringType",
 ]
 
-_lazy = {"circuits": ["GateModelProgram"], "ahs": ["AnalogHamiltonianProgram", "AHSEncoder"]}
+_lazy = {
+    "circuits": ["GateModelProgram"],
+    "ahs": ["AnalogHamiltonianProgram", "AHSEncoder"],
+    "annealing": ["AnnealingProgram", "ProblemEncoder", "ProblemType", "Problem", "QuboProblem"],
+}
 
 if TYPE_CHECKING:
     from .ahs import AHSEncoder as AHSEncoder
     from .ahs import AnalogHamiltonianProgram as AnalogHamiltonianProgram
+    from .annealing import AnnealingProgram as AnnealingProgram
+    from .annealing import Problem as Problem
+    from .annealing import ProblemEncoder as ProblemEncoder
+    from .annealing import ProblemType as ProblemType
+    from .annealing import QuboProblem as QuboProblem
     from .circuits import GateModelProgram as GateModelProgram
 
 

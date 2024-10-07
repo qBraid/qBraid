@@ -22,7 +22,9 @@ Classes
     
     ProblemType
     Problem
-    AnnealingProblem
+    AnnealingProgram
+    QuboProblem
+    ProblemEncoder
 
 Submodules
 ------------
@@ -30,12 +32,12 @@ Submodules
 .. autosummary::
    :toctree: ../stubs/
 
-    pyqubo
+    cpp_pyqubo
 
 """
 import importlib
 
-from ._model import AnnealingProblem, Problem, ProblemType
+from ._model import AnnealingProgram, Problem, ProblemEncoder, ProblemType, QuboProblem
 
 _qbraid = importlib.import_module("qbraid.programs._import")
 NATIVE_REGISTRY = getattr(_qbraid, "NATIVE_REGISTRY", {})
@@ -53,6 +55,6 @@ for lib in NATIVE_REGISTRY:
         pass
 
 
-__all__ = ["ProblemType", "Problem", "AnnealingProblem"]
+__all__ = ["ProblemType", "Problem", "AnnealingProgram", "QuboProblem", "ProblemEncoder"]
 
 __all__.extend(submodules)
