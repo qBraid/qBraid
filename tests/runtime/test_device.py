@@ -15,6 +15,7 @@ Unit tests for QbraidDevice, QbraidJob, and QbraidGateModelResultBuilder
 classes using the qbraid_qir_simulator
 
 """
+import json
 import logging
 import time
 from typing import Any
@@ -287,7 +288,9 @@ def test_nec_vector_annealer_workflow(mock_provider):
     """Test NEC Vector Annealer job submission and result retrieval."""
     provider = mock_provider
     device = provider.get_device("nec_vector_annealer")
-    payload = {"qubo": "{('x1', 'x1'): 3.0, ('x1', 'x2'): 2.0}", "offset": 0.0}
+    coefficients = {("x1", "x1"): 3.0, ("x1", "x2"): 2.0}
+    quadratic = {json.dumps(key): value for key, value in coefficients.items()}
+    payload = {"problem": json.dumps({"quadratic": quadratic, "offset": 0.0})}
     job = device.submit(run_input=payload)
     assert isinstance(job, QbraidJob)
     assert job.is_terminal_state()
