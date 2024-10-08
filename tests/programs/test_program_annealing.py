@@ -135,6 +135,7 @@ def test_pyqubo_model_to_problem(pyqubo_model):
     problem = pyqubo_model_instance.to_problem()
     assert isinstance(problem, QuboProblem)
     assert problem.num_variables() == 4
+    assert pyqubo_model_instance.num_qubits == 4
 
 
 def test_problem_encoder(mock_annealing_program):
@@ -285,3 +286,11 @@ def test_runtime_pyqubo_to_json(pyqubo_model):
     }
 
     assert pyqubo_dict == expected_dict
+
+
+def test_problem_encoder_super_default():
+    """Test that the ProblemEncoder falls back to the default encoder."""
+    data = {"data": "test_data"}
+    encoded_obj = json.dumps(data, cls=ProblemEncoder)
+    expected_output = '{"data": "test_data"}'
+    assert encoded_obj == expected_output
