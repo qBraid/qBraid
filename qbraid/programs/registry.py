@@ -12,6 +12,7 @@
 Module for registering custom program types and aliases
 
 """
+import sys
 from typing import Any, Optional, Type, TypeVar, Union
 
 from qbraid._entrypoints import get_entrypoints
@@ -196,7 +197,9 @@ def get_native_experiment_type(native_alias: str) -> ExperimentType:
     if entry_point is None:
         raise ValueError(f"Entry point '{native_alias}' not found in '{group}'.")
 
-    module_path = entry_point.value.split(":")[0]
+    module_path = (
+        entry_point.value.split(":")[0] if sys.version_info >= (3, 10) else entry_point.module_name
+    )
 
     prefix = group + "."
     if not module_path.startswith(prefix):

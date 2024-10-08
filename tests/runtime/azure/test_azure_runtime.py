@@ -25,7 +25,7 @@ from azure.quantum import Job, JobDetails, Workspace
 from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 from azure.quantum.target.target import Target
 
-from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec, ExperimentType
+from qbraid.programs import QPROGRAM_REGISTRY, ExperimentType, ProgramSpec
 from qbraid.runtime import (
     DeviceStatus,
     GateModelResultData,
