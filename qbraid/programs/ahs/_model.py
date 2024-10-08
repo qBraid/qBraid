@@ -45,7 +45,6 @@ class AnalogHamiltonianProgram(QuantumProgram, ABC):
         """Number of qubits needed by a quantum device to execute this program."""
         return self.num_atoms
 
-    @abstractmethod
     def transform(self, device: "qbraid.runtime.QuantumDevice") -> None:
         """Transform program to according to device target profile."""
         raise NotImplementedError

@@ -21,7 +21,7 @@ from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestErr
 
 from qbraid._caching import cached_method
 from qbraid.passes.qasm3.format import format_qasm
-from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec
+from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec, load_program
 from qbraid.programs.circuits.qasm import has_measurements
 from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
 from qbraid.runtime._display import display_jobs_from_data
@@ -36,6 +36,9 @@ from .device import QbraidDevice
 
 if TYPE_CHECKING:
     import pyqir
+    import pyqubo
+
+    from qbraid.programs.annealing.cpp_pyqubo import PyQuboModel
 
 
 def _pyqir_to_json(program: pyqir.Module) -> dict[str, bytes]:
@@ -46,6 +49,11 @@ def _qasm_to_json(
     program: Union[Qasm2StringType, Qasm3StringType]
 ) -> dict[str, Union[Qasm2StringType, Qasm3StringType]]:
     return {"openQasm": format_qasm(program)}
+
+
+def _pyqubo_to_json(program: pyqubo.Model) -> dict[str, dict[str, Any]]:
+    program: PyQuboModel = load_program(program)
+    return {"problem": program.to_json()}
 
 
 def validate_qasm_no_measurements(
@@ -66,6 +74,7 @@ def get_program_spec_lambdas(
         "pyqir": (_pyqir_to_json, None),
         "qasm2": (_qasm_to_json, None),
         "qasm3": (_qasm_to_json, None),
+        "cpp_pyqubo": (_pyqubo_to_json, None),
     }
 
     to_ir, validate = lambdas.get(program_type_alias, (None, None))

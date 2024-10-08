@@ -15,10 +15,19 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
-- PR compliance workflow that checks that `CHANGELOG.md` is updated with each PR, and if not, issues a reminder ([#772](https://github.com/qBraid/qBraid/pull/772))
-- Workflow to bump semantic version in `_version.py` ([#773](https://github.com/qBraid/qBraid/pull/773))
+- Added `AnnealingResultData` class to `qbraid.runtime` module to represent annealing results. ([#768](https://github.com/qBraid/qBraid/pull/768))
+- Added `NECVectorAnnealerResultData` class to `qbraid.runtime.native` module to represent NEC vector annealer results. ([#768](https://github.com/qBraid/qBraid/pull/768))
+- Added `AnnealingExperimentMetadata` class to `qbraid.runtime.schemas` module to represent annealing experiment metadata. ([#768](https://github.com/qBraid/qBraid/pull/768))
+- Added `NECVectorAnnealerExperimentMetadata` class to `qbraid.runtime.schemas` module to represent NEC vector annealer experiment metadata. ([#768](https://github.com/qBraid/qBraid/pull/768))
+- Added mock data and methods to `test.resources` module to support testing of annealing and NEC vector annealing results. ([#768](https://github.com/qBraid/qBraid/pull/768))
 
 ### Improved / Modified
+- Updated the ExperimentType enum to change the value of ANNEALING from "quantum_annealing" to "annealing" to better reflect the general nature of experiments. ([#768](https://github.com/qBraid/qBraid/pull/768))
+- Updated `QbraidJob.result`  method to return `AnnealingResultData` or `NECVectorAnnealerResultData` instances for annealing and NEC vector annealer experiments, respectively. ([#768](https://github.com/qBraid/qBraid/pull/768))
+- Added a test case for the NEC Vector Annealer workflow in , including job submission and result retrieval. ([#768](https://github.com/qBraid/qBraid/pull/768))
+- Added unit tests for `AnnealingResultData`, `NECVectorAnnealerResultData`, `AnnealingExperimentMetadata`, and `NECVectorAnnealerExperimentMetadata` classes. ([#768](https://github.com/qBraid/qBraid/pull/768))
+- PR compliance workflow that checks that `CHANGELOG.md` is updated with each PR, and if not, issues a reminder ([#772](https://github.com/qBraid/qBraid/pull/772))
+- Workflow to bump semantic version in `_version.py` ([#773](https://github.com/qBraid/qBraid/pull/773))
 - Changed `qbraid.runtime.NoiseModel` from an `Enum` to a `dataclass` and introduced `qbraid.runtime.NoiseModelSet` to manage multiple `NoiseModel` instances. An `Enum` was too restrictive since its values are fixed, so a more flexible structure was needed for loading noise model data from an API. Using a dataclass allows storing brief descriptions of noise models. `NoiseModelSet` ensures naming consistency and provides easy add, remove, and get operations for provider classes. ([#773](https://github.com/qBraid/qBraid/pull/773))
 
 ```python
@@ -47,7 +56,7 @@ models.remove("custom")
 ### Removed
 
 ### Fixed
-
+- Fixed spelling error of `test_quera_simulator_workflow` in `test.test_device` module. ([#768](https://github.com/qBraid/qBraid/pull/768))
 ### Dependencies
 
 ## [0.8.2] - 2024-09-30

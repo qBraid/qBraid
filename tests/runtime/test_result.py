@@ -24,14 +24,24 @@ import pandas as pd
 import pytest
 
 from qbraid.runtime.enums import ExperimentType
-from qbraid.runtime.native.result import QbraidQirSimulatorResultData, QuEraQasmSimulatorResultData
+from qbraid.runtime.native.result import (
+    NECVectorAnnealerResultData,
+    QbraidQirSimulatorResultData,
+    QuEraQasmSimulatorResultData,
+)
 from qbraid.runtime.postprocess import (
     format_counts,
     normalize_batch_bit_lengths,
     normalize_bit_lengths,
     normalize_counts,
 )
-from qbraid.runtime.result import AhsResultData, AhsShotResult, GateModelResultData, Result
+from qbraid.runtime.result import (
+    AhsResultData,
+    AhsShotResult,
+    AnnealingResultData,
+    GateModelResultData,
+    Result,
+)
 
 try:
     from flair_visual.animation.runtime.qpustate import AnimateQPUState
@@ -39,6 +49,44 @@ try:
     flair_visual_installed = True
 except ImportError:
     flair_visual_installed = False
+
+
+@pytest.fixture
+def annealing_result_data() -> AnnealingResultData:
+    """Fixture to create an AnnealingResultData object with some test data.
+    Returns:
+        AnnealingResultData: An AnnealingResultData object.
+    """
+    return AnnealingResultData(
+        sa_results=[
+            {
+                "spin": {" x1": 0, " x2": 0, "x1": 0},
+                "energy": 0,
+                "time": 0.006517000030726194,
+                "constraint": True,
+                "memory_usage": 1.189453125,
+            }
+        ]
+    )
+
+
+@pytest.fixture
+def nec_vector_annealer_result_data() -> NECVectorAnnealerResultData:
+    """Fixture to create an NECVectorAnnealerResultData object with some test data.
+    Returns:
+        NECVectorAnnealerResultData: An NECVectorAnnealerResultData object.
+    """
+    return NECVectorAnnealerResultData(
+        [
+            {
+                "spin": {" x1": 0, " x2": 0, "x1": 0},
+                "energy": 0,
+                "time": 0.006517000030726194,
+                "constraint": True,
+                "memory_usage": 1.189453125,
+            }
+        ]
+    )
 
 
 @pytest.fixture
@@ -496,6 +544,113 @@ def test_qir_sim_data_seed_property_with_none():
 def test_qir_sim_data_inherited_measurement_counts_property(qir_sim_data):
     """Test that the inherited measurement_counts property is working correctly."""
     assert qir_sim_data.get_counts() == {"00": 10, "01": 15}
+
+
+def test_nec_vector_annealer_result_data(nec_vector_annealer_result_data):
+    """Test NECVectorAnnealerResultData."""
+    assert nec_vector_annealer_result_data._sa_results == [
+        {
+            "spin": {" x1": 0, " x2": 0, "x1": 0},
+            "energy": 0,
+            "time": 0.006517000030726194,
+            "constraint": True,
+            "memory_usage": 1.189453125,
+        }
+    ]
+
+
+def test_nec_vector_annealer_result_data_to_dict(nec_vector_annealer_result_data):
+    """Test NECVectorAnnealerResultData to_dict."""
+    result_dict = nec_vector_annealer_result_data.to_dict()
+    assert result_dict == {
+        "sa_results": [
+            {
+                "spin": {" x1": 0, " x2": 0, "x1": 0},
+                "energy": 0,
+                "time": 0.006517000030726194,
+                "constraint": True,
+                "memory_usage": 1.189453125,
+            }
+        ]
+    }
+
+
+def test_nec_vector_annealer_result_data_eq(nec_vector_annealer_result_data):
+    """Test NECVectorAnnealerResultData equality."""
+    assert nec_vector_annealer_result_data._sa_results[0]["spin"] == {" x1": 0, " x2": 0, "x1": 0}
+    assert nec_vector_annealer_result_data._sa_results[0]["energy"] == 0
+    assert nec_vector_annealer_result_data._sa_results[0]["time"] == 0.006517000030726194
+    assert nec_vector_annealer_result_data._sa_results[0]["constraint"] is True
+    assert nec_vector_annealer_result_data._sa_results[0]["memory_usage"] == 1.189453125
+
+
+def test_annealing_result_data(annealing_result_data):
+    """Test AnnealingResultData."""
+    assert annealing_result_data._sa_results == [
+        {
+            "spin": {" x1": 0, " x2": 0, "x1": 0},
+            "energy": 0,
+            "time": 0.006517000030726194,
+            "constraint": True,
+            "memory_usage": 1.189453125,
+        }
+    ]
+
+
+def test_annealing_result_from_dict():
+    """Test AnnealingResultData from_dict."""
+    sa_results = [
+        {
+            "spin": {" x1": 0, " x2": 0, "x1": 0},
+            "energy": 0,
+            "time": 0.006517000030726194,
+            "constraint": True,
+            "memory_usage": 1.189453125,
+        }
+    ]
+    result_data = AnnealingResultData.from_dict({"sa_results": sa_results})
+    assert result_data._sa_results == sa_results
+
+
+def test_annealing_result_data_get_result(annealing_result_data):
+    """Test AnnealingResultData get_result."""
+    result = annealing_result_data.get_results()
+    assert result == [
+        {
+            "spin": {" x1": 0, " x2": 0, "x1": 0},
+            "energy": 0,
+            "time": 0.006517000030726194,
+            "constraint": True,
+            "memory_usage": 1.189453125,
+        }
+    ]
+
+
+def test_annealing_result_data_get_result_with_empty_sa_results():
+    """Test AnnealingResultData get_result with empty sa_results."""
+    result_data = AnnealingResultData(sa_results=None)
+    assert result_data.get_results() == []
+
+
+def test_annealing_result_data_get_result_experiment_type(annealing_result_data):
+    """Test AnnealingResultData get_result experiment type."""
+    assert annealing_result_data.experiment_type == ExperimentType.ANNEALING
+
+
+def test_annealing_result_data_to_dict(annealing_result_data):
+    """Test AnnealingResultData to_dict."""
+    result_dict = annealing_result_data.to_dict()
+    assert result_dict == {
+        "sa_results": [
+            {
+                "spin": {" x1": 0, " x2": 0, "x1": 0},
+                "energy": 0,
+                "time": 0.006517000030726194,
+                "constraint": True,
+                "memory_usage": 1.189453125,
+            }
+        ]
+    }
 
 
 def test_normalize_batch_decimal_counts():

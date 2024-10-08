@@ -6,24 +6,31 @@ build-backend = "setuptools.build_meta"
 name = "qbraid"
 dynamic = ["version"]
 description = "Platform-agnostic quantum runtime framework."
-readme = "README.md"
 authors = [{name = "qBraid Development Team"}, {email = "contact@qbraid.com"}]
-license = {text = "GNU General Public License v3.0"}
+readme = "README.md"
 keywords = ["qbraid", "quantum", "openqasm", "runtime"]
+license = {text = "GNU General Public License v3.0"}
 classifiers = [
+    "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",
     "Intended Audience :: Science/Research",
     "Natural Language :: English",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3 :: Only",
+    'Topic :: Software Development',
     "Topic :: Scientific/Engineering",
-    "Topic :: Scientific/Engineering :: Physics"
+    "Topic :: Scientific/Engineering :: Physics",
+    "Typing :: Typed",
+    'Operating System :: Microsoft :: Windows',
+    'Operating System :: POSIX',
+    'Operating System :: Unix',
+    'Operating System :: MacOS',
 ]
 dependencies = [
     "rustworkx>=0.14.2",
@@ -33,7 +40,7 @@ dependencies = [
     "pydantic>2.0.0",
     "typing-extensions>=4.0.0"
 ]
-requires-python = ">=3.9,<3.14"
+requires-python = ">=3.9"
 
 [project.urls]
 Homepage = "https://sdk.qbraid.com/"
@@ -50,6 +57,7 @@ braket = ["amazon-braket-sdk>=1.83.0,<1.89.0", "pytket-braket>=0.30,<0.39"]
 cirq = ["cirq-core>=1.3,<1.5", "cirq-ionq>=1.3,<1.5", "ply>=3.6", "attrs>=21.3.0"]
 oqc = ["oqc-qcaas-client>=3.9.1"]
 pennylane = ["pennylane<0.39"]
+pyqubo = ["pyqubo>=1.4.0"]
 pyquil = ["pyquil>=4.4"]
 pytket = ["pytket>=1.31"]
 qir = ["qbraid-qir>=0.2"]
@@ -60,6 +68,7 @@ lint = ["black", "isort", "pylint", "qbraid-cli>=0.8.5"]
 docs = ["sphinx>=7.2,<8.1", "sphinx-autodoc-typehints>=1.24,<2.5", "sphinx-rtd-theme>=1.3,<3.1", "docutils<0.22", "sphinx-copybutton"]
 
 [project.entry-points."qbraid.programs"]
+cpp_pyqubo = "qbraid.programs.annealing.cpp_pyqubo:PyQuboModel"
 braket_ahs = "qbraid.programs.ahs.braket_ahs:BraketAHS"
 braket = "qbraid.programs.circuits.braket:BraketCircuit"
 cirq = "qbraid.programs.circuits.cirq:CirqCircuit"
@@ -167,4 +176,4 @@ disable_error_code = [
     "valid-type",
     "import-untyped"
 ]
-exclude = "^(qbraid/(programs/(circuits/|ahs/)|transpiler/conversions/|interface/|runtime/(oqc/|ionq/|ibm/|aws/)))"
+exclude = "^(qbraid/(programs/(circuits/|ahs/|annealing/)|transpiler/conversions/|interface/|runtime/(oqc/|ionq/|ibm/|aws/)))"

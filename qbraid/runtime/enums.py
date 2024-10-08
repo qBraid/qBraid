@@ -47,7 +47,7 @@ class ExperimentType(Enum):
 
     GATE_MODEL = "gate_model"
     AHS = "analog_hamiltonian_simulation"
-    ANNEALING = "quantum_annealing"
+    ANNEALING = "annealing"
     PHOTONIC_MODEL = "photonic_quantum_computing"
     OTHER = "other"
 

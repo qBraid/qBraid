@@ -131,3 +131,13 @@ class QuEraQasmSimulationMetadata(GateModelExperimentMetadata):
     flair_visual_version: Optional[str] = Field(None, alias="flairVisualVersion")
     atom_animation_state: Optional[dict[str, Any]] = Field(None, alias="atomAnimationState")
     logs: Optional[list[dict[str, Any]]] = None
+
+
+class AnnealingExperimentMetadata(BaseModel):
+    """Metadata specific to annealing experiments."""
+
+
+class NECVectorAnnealerMetadata(AnnealingExperimentMetadata):
+    """Result data specific to jobs submitted to the NEC Vector Annealer."""
+
+    sa_results: Optional[list] = Field(None, alias="results")

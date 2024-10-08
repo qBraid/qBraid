@@ -17,7 +17,7 @@ Module defining QbraidDevice class
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from qbraid_core.decimal import Credits
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError
@@ -84,6 +84,7 @@ class QbraidDevice(QuantumDevice):
         noise_model: Optional[str] = None,
         seed: Optional[int] = None,
         timeout: Optional[int] = None,
+        params: Optional[dict[str, Any]] = None,
     ) -> qbraid.runtime.QbraidJob:
         """
         Creates a qBraid Quantum Job.
@@ -104,6 +105,7 @@ class QbraidDevice(QuantumDevice):
                 Only applicable for certain devices. Defaults to None.
             timeout (int, optional): The maximum time in seconds to wait for the job
                 to complete after execution has started. Defaults to None.
+            params (dict, optional): Additional parameters to include in the job payload.
 
         Returns:
             QbraidJob: The job objects representing the submitted job.
@@ -112,6 +114,7 @@ class QbraidDevice(QuantumDevice):
 
         """
         tags_dict = tags or {}
+        params_dict = params or {}
 
         payload = {
             "qbraidDeviceId": self.id,
@@ -122,6 +125,7 @@ class QbraidDevice(QuantumDevice):
             "timeout": timeout,
             "noiseModel": noise_model,
             "memory": memory,
+            "params": json.dumps(params_dict),
             **run_input,
         }
 
@@ -129,6 +133,7 @@ class QbraidDevice(QuantumDevice):
 
         payload.update(job_data)
         payload["tags"] = tags_dict
+        payload["params"] = params_dict
         job_model = RuntimeJobModel.from_dict(payload)
         model_dump = job_model.model_dump(exclude={"metadata", "cost"})
         return QbraidJob(**model_dump, device=self, client=self.client)
@@ -233,6 +238,7 @@ class QbraidDevice(QuantumDevice):
         dynamic_params = {
             "openQasm": None,
             "bitcode": None,
+            "problem": None,
             "circuitNumQubits": None,
             "circuitDepth": None,
         }

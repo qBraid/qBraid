@@ -15,6 +15,7 @@ Unit tests for QbraidDevice, QbraidJob, and QbraidGateModelResultBuilder
 classes using the qbraid_qir_simulator
 
 """
+import json
 import logging
 import time
 from typing import Any
@@ -32,7 +33,11 @@ from qbraid.runtime import DeviceStatus, ProgramValidationError, Result, TargetP
 from qbraid.runtime.enums import ExperimentType, JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
-from qbraid.runtime.native.result import QbraidQirSimulatorResultData, QuEraQasmSimulatorResultData
+from qbraid.runtime.native.result import (
+    NECVectorAnnealerResultData,
+    QbraidQirSimulatorResultData,
+    QuEraQasmSimulatorResultData,
+)
 from qbraid.runtime.noise import NoiseModel, NoiseModelSet
 from qbraid.runtime.options import RuntimeOptions
 from qbraid.runtime.schemas.job import RuntimeJobModel
@@ -40,9 +45,11 @@ from qbraid.transpiler import CircuitConversionError, Conversion, ConversionGrap
 
 from ._resources import (
     DEVICE_DATA_QIR,
+    JOB_DATA_NEC,
     JOB_DATA_QIR,
     JOB_DATA_QUERA,
     MOCK_QPU_STATE_DATA,
+    RESULTS_DATA_NEC,
     RESULTS_DATA_QUERA,
     MockClient,
     MockDevice,
@@ -98,6 +105,16 @@ def mock_quera_profile():
         experiment_type=ExperimentType.GATE_MODEL,
         num_qubits=30,
         program_spec=QbraidProvider._get_program_spec("qasm2", "quera_qasm_simulator"),
+    )
+
+
+@pytest.fixture
+def mock_nec_va_profile():
+    """Mock profile for testing."""
+    return TargetProfile(
+        device_id="nec_vector_annealer",
+        simulator=True,
+        experiment_type=ExperimentType.ANNEALING,
     )
 
 
@@ -223,7 +240,7 @@ def test_qir_simulator_workflow(mock_provider, cirq_uniform):
         assert is_uniform_comput_basis(result.measurements())
 
 
-def test_queara_simulator_workflow(mock_provider, cirq_uniform, valid_qasm2_no_meas):
+def test_quera_simulator_workflow(mock_provider, cirq_uniform, valid_qasm2_no_meas):
     """Test queara simulator job submission and result retrieval."""
     circuit = cirq_uniform(num_qubits=5, measure=False)
     num_qubits = len(circuit.all_qubits())
@@ -265,6 +282,26 @@ def test_queara_simulator_workflow(mock_provider, cirq_uniform, valid_qasm2_no_m
     assert result.details["shots"] == shots
     assert result.details["metadata"]["circuitNumQubits"] == num_qubits
     assert isinstance(result.details["timeStamps"]["executionDuration"], int)
+
+
+def test_nec_vector_annealer_workflow(mock_provider):
+    """Test NEC Vector Annealer job submission and result retrieval."""
+    provider = mock_provider
+    device = provider.get_device("nec_vector_annealer")
+    coefficients = {("x1", "x1"): 3.0, ("x1", "x2"): 2.0}
+    quadratic = {json.dumps(key): value for key, value in coefficients.items()}
+    payload = {"problem": json.dumps({"quadratic": quadratic, "offset": 0.0})}
+    job = device.submit(run_input=payload)
+    assert isinstance(job, QbraidJob)
+    assert job.is_terminal_state()
+
+    result = job.result()
+    assert isinstance(result, Result)
+    assert isinstance(result.data, NECVectorAnnealerResultData)
+    assert result.success
+    assert result.job_id == JOB_DATA_NEC["qbraidJobId"]
+    assert result.device_id == JOB_DATA_NEC["qbraidDeviceId"]
+    assert result.data._sa_results == RESULTS_DATA_NEC["results"]
 
 
 def test_run_forbidden_kwarg(mock_provider):
