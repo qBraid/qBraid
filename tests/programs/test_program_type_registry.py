@@ -38,7 +38,7 @@ from qbraid.programs import (
 )
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.gate_model import key_set
-from qbraid.programs.registry import is_registered_alias_native
+from qbraid.programs.registry import get_native_experiment_type, is_registered_alias_native
 from qbraid.programs.typer import IonQDict
 
 
@@ -297,3 +297,10 @@ def test_load_program_pyqir(pyqir_bell: Module, pyqir_spec: ProgramSpec):
     program_ir = pyqir_spec.to_ir(pyqir_bell)
     assert isinstance(program_ir, bytes)
     assert program_ir == pyqir_bell.bitcode
+
+
+def test_get_native_experiment_type_not_found():
+    """Test error when trying to get the native experiment type that is not found."""
+    with pytest.raises(ValueError) as excinfo:
+        get_native_experiment_type("not_found")
+    assert "Entry point 'not_found' not found in 'qbraid.programs'." in str(excinfo.value)

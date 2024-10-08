@@ -201,13 +201,6 @@ def get_native_experiment_type(native_alias: str) -> ExperimentType:
         entry_point.value.split(":")[0] if sys.version_info >= (3, 10) else entry_point.module_name
     )
 
-    prefix = group + "."
-    if not module_path.startswith(prefix):
-        raise ValueError(f"Module path '{module_path}' does not start with '{group}'.")
+    programs_sub_module = module_path[len(group) + 1 :].split(".", maxsplit=1)[0]
 
-    sub_module_part = sub_module_part = module_path[len(prefix) :].split(".", maxsplit=1)[0]
-
-    try:
-        return ExperimentType(sub_module_part)
-    except ValueError as err:
-        raise ValueError(f"Sub-module not found for the instance: {module_path}") from err
+    return ExperimentType(programs_sub_module)

@@ -30,9 +30,9 @@ import pytest
 try:
     from qcaas_client.client import OQCClient, QPUTask, QPUTaskErrors, QPUTaskResult  # type: ignore
 
-    from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
+    from qbraid.programs import NATIVE_REGISTRY, ExperimentType, ProgramSpec
     from qbraid.runtime import GateModelResultData, Result, TargetProfile
-    from qbraid.runtime.enums import DeviceStatus, ExperimentType, JobStatus
+    from qbraid.runtime.enums import DeviceStatus, JobStatus
     from qbraid.runtime.exceptions import ResourceNotFoundError
     from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCProvider
     from qbraid.runtime.postprocess import counts_to_probabilities
