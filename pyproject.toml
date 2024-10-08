@@ -115,6 +115,7 @@ omit = [
   "**/qbraid/runtime/qiskit.py",
   "**/qbraid/visualization/draw_circuit.py",
   "**/qbraid/transpiler/conversions/*/*_extras.py",
+  "**/qbraid/programs/circuits.py",
 ]
 
 [tool.coverage.paths]
