@@ -261,16 +261,27 @@ def test_annealing_program_eq_different_type(mock_annealing_program):
 
 
 def test_runtime_pyqubo_to_json(pyqubo_model):
-    """Test that the _pyqubo_to_json function returns the expected dictionary."""
+    """Test that the _pyqubo_to_json function returns the expected JSON string."""
     pyqubo_json = _pyqubo_to_json(pyqubo_model)
+    pyqubo_dict = {"problem": json.loads(pyqubo_json["problem"])}
+
     expected_dict = {
-        "problem": (
-            '{"offset": 196.0, "problem_type": "qubo", "quadratic": {'
-            '"[\\"s1\\", \\"s1\\"]": -160.0, "[\\"s4\\", \\"s2\\"]": 16.0, '
-            '"[\\"s3\\", \\"s1\\"]": 224.0, "[\\"s2\\", \\"s2\\"]": -96.0, '
-            '"[\\"s4\\", \\"s1\\"]": 32.0, "[\\"s1\\", \\"s2\\"]": 64.0, '
-            '"[\\"s3\\", \\"s2\\"]": 112.0, "[\\"s3\\", \\"s3\\"]": -196.0, '
-            '"[\\"s4\\", \\"s4\\"]": -52.0, "[\\"s4\\", \\"s3\\"]": 56.0}}'
-        )
+        "problem": {
+            "offset": 196.0,
+            "problem_type": "qubo",
+            "quadratic": {
+                '["s1", "s1"]': -160.0,
+                '["s4", "s2"]': 16.0,
+                '["s3", "s1"]': 224.0,
+                '["s2", "s2"]': -96.0,
+                '["s4", "s1"]': 32.0,
+                '["s1", "s2"]': 64.0,
+                '["s3", "s2"]': 112.0,
+                '["s3", "s3"]': -196.0,
+                '["s4", "s4"]': -52.0,
+                '["s4", "s3"]': 56.0,
+            },
+        }
     }
-    assert pyqubo_json == expected_dict
+
+    assert pyqubo_dict == expected_dict
