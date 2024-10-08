@@ -28,6 +28,7 @@ try:
         QuboProblem,
     )
     from qbraid.programs.annealing.cpp_pyqubo import PyQuboModel
+    from qbraid.runtime.native.provider import _pyqubo_to_json
 
     pyqubo_not_installed = False
 except ImportError:
@@ -163,3 +164,113 @@ def test_problem_encoder(mock_annealing_program):
 
     problem_type_json = json.dumps(ProblemType.QUBO, cls=ProblemEncoder)
     assert problem_type_json == '"qubo"'
+
+
+def test_problem_eq_different_type():
+    """Test __eq__ returns False when compared with a non-Problem instance."""
+    problem = Problem(problem_type=ProblemType.QUBO)
+    assert problem != "Not a Problem instance"
+
+
+def test_problem_eq_different_offset():
+    """Test __eq__ returns False when offsets are different."""
+    problem1 = Problem(problem_type=ProblemType.QUBO, offset=1.0)
+    problem2 = Problem(problem_type=ProblemType.QUBO, offset=2.0)
+    assert problem1 != problem2
+
+
+def test_problem_eq_different_problem_type():
+    """Test __eq__ returns False when problem_types are different."""
+    problem1 = Problem(problem_type=ProblemType.QUBO)
+    problem2 = Problem(problem_type=ProblemType.ISING)
+    assert problem1 != problem2
+
+
+def test_problem_eq_different_linear():
+    """Test __eq__ returns False when linear terms are different."""
+    problem1 = Problem(problem_type=ProblemType.QUBO, linear={"x1": 1.0})
+    problem2 = Problem(problem_type=ProblemType.QUBO, linear={"x1": 2.0})
+    assert problem1 != problem2
+
+
+def test_problem_eq_different_quadratic_length():
+    """Test __eq__ returns False when quadratic term lengths are different."""
+    problem1 = Problem(problem_type=ProblemType.QUBO, quadratic={("x1", "x2"): 0.5})
+    problem2 = Problem(problem_type=ProblemType.QUBO, quadratic={})
+    assert problem1 != problem2
+
+
+def test_problem_eq_quadratic_key_not_in_other():
+    """Test __eq__ returns False when a quadratic key is missing in the other problem."""
+    problem1 = Problem(problem_type=ProblemType.QUBO, quadratic={("x1", "x2"): 0.5})
+    problem2 = Problem(problem_type=ProblemType.QUBO, quadratic={("x2", "x3"): 0.5})
+    assert problem1 != problem2
+
+
+def test_problem_eq_quadratic_value_differs():
+    """Test __eq__ returns False when quadratic values differ for the same key."""
+    problem1 = Problem(problem_type=ProblemType.QUBO, quadratic={("x1", "x2"): 0.5})
+    problem2 = Problem(problem_type=ProblemType.QUBO, quadratic={("x1", "x2"): 1.0})
+    assert problem1 != problem2
+
+
+def test_problem_eq_quadratic_keys_swapped_same_value():
+    """Test __eq__ returns True when quadratic keys are swapped but values are the same."""
+    problem1 = Problem(problem_type=ProblemType.QUBO, quadratic={("x1", "x2"): 0.5})
+    problem2 = Problem(problem_type=ProblemType.QUBO, quadratic={("x2", "x1"): 0.5})
+    assert problem1 == problem2
+
+
+def test_problem_eq_quadratic_keys_swapped_value_differs():
+    """Test __eq__ returns False when quadratic keys are swapped and values differ."""
+    problem1 = Problem(problem_type=ProblemType.QUBO, quadratic={("x1", "x2"): 0.5})
+    problem2 = Problem(problem_type=ProblemType.QUBO, quadratic={("x2", "x1"): 1.0})
+    assert problem1 != problem2
+
+
+def test_problem_eq_all_attributes_same():
+    """Test __eq__ returns True when all attributes are identical."""
+    problem1 = Problem(
+        problem_type=ProblemType.QUBO,
+        linear={"x1": 1.0, "x2": -1.5},
+        quadratic={("x1", "x2"): 0.5, ("x3", "x4"): -0.3},
+        offset=2.0,
+    )
+    problem2 = Problem(
+        problem_type=ProblemType.QUBO,
+        linear={"x1": 1.0, "x2": -1.5},
+        quadratic={("x4", "x3"): -0.3, ("x2", "x1"): 0.5},
+        offset=2.0,
+    )
+    assert problem1 == problem2
+
+
+def test_annealing_program_eq(mock_annealing_program):
+    """Test __eq__ returns True when compared with an equivalent instance."""
+    problem = Problem(problem_type=ProblemType.QUBO)
+    annealing_program = mock_annealing_program(problem)
+    annealing_program_2 = mock_annealing_program(problem)
+    assert annealing_program == annealing_program_2
+
+
+def test_annealing_program_eq_different_type(mock_annealing_program):
+    """Test __eq__ returns False when compared with a non-AnnealingProgram instance."""
+    problem = Problem(problem_type=ProblemType.QUBO)
+    annealing_program = mock_annealing_program(problem)
+    assert annealing_program != "Not an AnnealingProgram instance"
+
+
+def test_runtime_pyqubo_to_json(pyqubo_model):
+    """Test that the _pyqubo_to_json function returns the expected dictionary."""
+    pyqubo_json = _pyqubo_to_json(pyqubo_model)
+    expected_dict = {
+        "problem": (
+            '{"offset": 196.0, "problem_type": "qubo", "quadratic": {'
+            '"[\\"s1\\", \\"s1\\"]": -160.0, "[\\"s4\\", \\"s2\\"]": 16.0, '
+            '"[\\"s3\\", \\"s1\\"]": 224.0, "[\\"s2\\", \\"s2\\"]": -96.0, '
+            '"[\\"s4\\", \\"s1\\"]": 32.0, "[\\"s1\\", \\"s2\\"]": 64.0, '
+            '"[\\"s3\\", \\"s2\\"]": 112.0, "[\\"s3\\", \\"s3\\"]": -196.0, '
+            '"[\\"s4\\", \\"s4\\"]": -52.0, "[\\"s4\\", \\"s3\\"]": 56.0}}'
+        )
+    }
+    assert pyqubo_json == expected_dict
