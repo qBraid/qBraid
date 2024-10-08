@@ -186,7 +186,7 @@ RESULTS_DATA_QUERA = {
 }
 
 RESULTS_DATA_NEC = {
-    "results": [
+    "solutions": [
         {
             "spin": {" x1": 0, " x2": 0, "x1": 0},
             "energy": 0,

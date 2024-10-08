@@ -30,10 +30,9 @@ from qiskit_ibm_runtime import QiskitRuntimeService, RuntimeJob
 from qiskit_ibm_runtime.exceptions import IBMNotAuthorizedError, RuntimeInvalidStateError
 from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
-from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
+from qbraid.programs import NATIVE_REGISTRY, ProgramSpec, ExperimentType
 from qbraid.runtime import (
     DeviceStatus,
-    ExperimentType,
     GateModelResultData,
     JobStateError,
     Result,

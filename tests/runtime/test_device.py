@@ -305,7 +305,7 @@ def test_nec_vector_annealer_workflow(mock_provider):
     assert result.success
     assert result.job_id == JOB_DATA_NEC["qbraidJobId"]
     assert result.device_id == JOB_DATA_NEC["qbraidDeviceId"]
-    assert result.data._sa_results == RESULTS_DATA_NEC["results"]
+    assert result.data._solutions == RESULTS_DATA_NEC["solutions"]
 
 
 def test_run_forbidden_kwarg(mock_provider):

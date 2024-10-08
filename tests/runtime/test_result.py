@@ -571,7 +571,8 @@ def test_nec_vector_annealer_result_data_to_dict(nec_vector_annealer_result_data
                 "constraint": True,
                 "memory_usage": 1.189453125,
             }
-        ]
+        ],
+        "num_solutions": 1,
     }
 
 
@@ -614,7 +615,7 @@ def test_annealing_result_from_dict():
 
 def test_annealing_result_data_get_result(annealing_result_data):
     """Test AnnealingResultData get_result."""
-    result = annealing_result_data.get_results()
+    result = annealing_result_data.solutions
     assert result == [
         {
             "spin": {" x1": 0, " x2": 0, "x1": 0},
@@ -629,7 +630,7 @@ def test_annealing_result_data_get_result(annealing_result_data):
 def test_annealing_result_data_get_result_with_empty_solutions():
     """Test AnnealingResultData get_result with empty solutions."""
     result_data = AnnealingResultData(solutions=None)
-    assert result_data.get_results() == []
+    assert result_data.solutions is None
 
 
 def test_annealing_result_data_get_result_experiment_type(annealing_result_data):
@@ -649,7 +650,8 @@ def test_annealing_result_data_to_dict(annealing_result_data):
                 "constraint": True,
                 "memory_usage": 1.189453125,
             }
-        ]
+        ],
+        "num_solutions": 1,
     }
 
 
