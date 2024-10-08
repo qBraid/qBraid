@@ -36,8 +36,8 @@ from qbraid.programs import (
     register_program_type,
     unregister_program_type,
 )
-from qbraid.programs.circuits import key_set
 from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.gate_model import key_set
 from qbraid.programs.registry import is_registered_alias_native
 from qbraid.programs.typer import IonQDict
 

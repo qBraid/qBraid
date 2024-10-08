@@ -24,7 +24,7 @@ from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestErr
 
 from qbraid._entrypoints import get_entrypoints
 from qbraid._logging import logger
-from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
+from qbraid.programs import ExperimentType, ProgramSpec, get_program_type_alias, load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
@@ -173,7 +173,7 @@ class QbraidDevice(QuantumDevice):
             program_alias = get_program_type_alias(program, safe=True)
             program_spec = ProgramSpec(type(program), alias=program_alias)
 
-        if not program_spec.native:
+        if not program_spec.native and program_spec.experiment_type == ExperimentType.GATE_MODEL:
             return aux_payload
 
         qbraid_program = load_program(program)

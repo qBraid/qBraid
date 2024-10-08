@@ -17,8 +17,8 @@ import pytest
 try:
     from pyquil import Program
 
-    from qbraid.programs.circuits.pyquil import PyQuilProgram
     from qbraid.programs.exceptions import ProgramTypeError
+    from qbraid.programs.gate_model.pyquil import PyQuilProgram
 
     pyquil_not_installed = False
 except ImportError:

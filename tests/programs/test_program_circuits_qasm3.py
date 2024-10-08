@@ -18,8 +18,8 @@ from qiskit.qasm3 import dumps, loads
 
 from qbraid.interface.random.qasm3_random import _qasm3_random
 from qbraid.interface.random.qiskit_random import _qiskit_random
-from qbraid.programs.circuits.qasm import OpenQasm3Program, expression_value
 from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.gate_model.qasm import OpenQasm3Program, expression_value
 from qbraid.programs.registry import unregister_program_type
 from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import _get_qasm3_gate_defs
 

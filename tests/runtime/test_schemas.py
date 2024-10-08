@@ -21,7 +21,8 @@ from decimal import Decimal
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from qbraid.runtime.enums import ExperimentType, JobStatus
+from qbraid.programs import ExperimentType
+from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.schemas.base import USD, Credits, QbraidSchemaBase, QbraidSchemaHeader
 from qbraid.runtime.schemas.device import DeviceData
 from qbraid.runtime.schemas.experiment import ExperimentMetadata, GateModelExperimentMetadata
@@ -179,7 +180,7 @@ def test_runtime_job_model_metadata_population():
         "qbraidDeviceId": "device_456",
         "status": "CANCELLED",
         "shots": 100,
-        "experimentType": "analog_hamiltonian_simulation",
+        "experimentType": "ahs",
         "someAdditionalField": "extra data",
         "timeStamps": {
             "createdAt": "2024-09-14T01:06:34.000Z",
@@ -199,7 +200,7 @@ def test_time_stamps_created_at_fallback():
         "qbraidDeviceId": "device_456",
         "status": "RUNNING",
         "shots": 100,
-        "experimentType": "analog_hamiltonian_simulation",
+        "experimentType": "ahs",
         "createdAt": "2024-09-14T01:06:34.000Z",
     }
     job = RuntimeJobModel.from_dict(job_data)

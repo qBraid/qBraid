@@ -19,12 +19,13 @@ from typing import TYPE_CHECKING, Optional
 from qbraid_core.services.quantum import QuantumClient
 
 from qbraid._logging import logger
-from qbraid.runtime.enums import ExperimentType, JobStatus
+from qbraid.programs import ExperimentType
+from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError, QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import GateModelResultData, Result
 from qbraid.runtime.schemas import (
-    NECVectorAnnealerMetadata,
+    AnnealingExperimentMetadata,
     QbraidQirSimulationMetadata,
     QuEraQasmSimulationMetadata,
     RuntimeJobModel,
@@ -112,7 +113,7 @@ class QbraidJob(QuantumJob):
         )
         job_result.update(job_data)
         metadata_to_result_data = {
-            NECVectorAnnealerMetadata: NECVectorAnnealerResultData,
+            AnnealingExperimentMetadata: NECVectorAnnealerResultData,
             QbraidQirSimulationMetadata: QbraidQirSimulatorResultData,
             QuEraQasmSimulationMetadata: QuEraQasmSimulatorResultData,
         }

@@ -24,7 +24,8 @@ import numpy as np
 from qbraid_core import deprecated
 from qbraid_core.system.generic import _datetime_to_str
 
-from .enums import ExperimentType
+from qbraid.programs import ExperimentType
+
 from .postprocess import counts_to_probabilities, normalize_counts
 from .schemas.experiment import AnnealingExperimentMetadata, GateModelExperimentMetadata
 
@@ -37,7 +38,7 @@ MeasProb = dict[KeyType, float]
 
 class ResultData(ABC):
     """Abstract base class for runtime results linked to a
-    specific :class:`~qbraid.runtime.ExperimentType`.
+    specific :class:`~qbraid.programs.ExperimentType`.
     """
 
     @property
@@ -269,26 +270,13 @@ class AhsResultData(ResultData):
 
 
 class AnnealingResultData(ResultData):
-    """Class for storing and accessing the results of an annealing job.
+    """Class for storing and accessing the results of an annealing job."""
 
-    Args:
-        ResultData (ResultData): ABC for runtime results linked to a specific ExperimentType.
-
-    Returns:
-        AnnealingResultData: An instance of AnnealingResultData.
-    """
-
-    def __init__(self, sa_results: Optional[dict[str, Any]] = None):
-        """Create a new AnnealingResultData instance.
-
-        Args:
-            sa_results (Optional[dict[str, Any]], optional):
-                Ex: [{'spin': {' x1': 0, ' x2': 0, 'x1': 0},\
-                'energy': 0, 'time': 0.006517000030726194,\
-                'constraint': True, 'memory_usage': 1.189453125}]. 
-                Defaults to None.
-        """
-        self._sa_results = sa_results or []
+    def __init__(
+        self, solutions: Optional[list[dict[str, Any]]] = None, num_solutions: Optional[int] = None
+    ):
+        self._solutions = solutions
+        self._num_solutions = num_solutions
 
     @property
     def experiment_type(self) -> ExperimentType:
@@ -296,24 +284,36 @@ class AnnealingResultData(ResultData):
         return ExperimentType.ANNEALING
 
     @classmethod
+    def from_dict(cls, data: dict[str, Any] = None) -> AnnealingResultData:
+        """Creates a new AnnealingResultData instance from a dictionary."""
+        return cls(
+            solutions=data.get("solutions"),
+            num_solutions=data.get("num_solutions", data.get("numSolutions")),
+        )
+
+    @classmethod
     def from_object(cls, model: AnnealingExperimentMetadata, **kwargs) -> AnnealingResultData:
         """Creates a new AnnealingResultData instance from a AnnealingExperimentMetadata object."""
         return cls.from_dict(model.model_dump(**kwargs))
 
-    @classmethod
-    def from_dict(cls, data: dict[str, Any] = None) -> AnnealingResultData:
-        """Creates a new AnnealingResultData instance from a dictionary."""
-        return cls(sa_results=data.get("sa_results"))
+    @property
+    def solutions(self) -> Optional[list[dict[str, Any]]]:
+        """Returns the solutions data of the run."""
+        return self._solutions
+
+    @property
+    def num_solutions(self) -> Optional[int]:
+        """Returns the number of solutions."""
+        if self._num_solutions is None and self._solutions is not None:
+            self._num_solutions = len(self._solutions)
+        return self._num_solutions
 
     def to_dict(self) -> dict[str, Any]:
         """Converts the AnnealingResultData instance to a dictionary."""
         return {
-            "sa_results": self._sa_results,
+            "solutions": self.solutions,
+            "num_solutions": self.num_solutions,
         }
-
-    def get_results(self) -> dict[str, Any]:
-        """Returns the job data."""
-        return self._sa_results
 
 
 class Result:

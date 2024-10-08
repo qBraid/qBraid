@@ -20,7 +20,7 @@ import pytest
 from braket.circuits import Circuit, Instruction, gates
 
 from qbraid.programs import ProgramTypeError
-from qbraid.programs.circuits.braket import BraketCircuit
+from qbraid.programs.gate_model.braket import BraketCircuit
 
 
 def get_subsets(nqubits):

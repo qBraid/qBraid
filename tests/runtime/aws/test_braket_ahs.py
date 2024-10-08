@@ -40,14 +40,13 @@ from braket.task_result import (
 from braket.tasks import AnalogHamiltonianSimulationQuantumTaskResult
 from braket.timings.time_series import TimeSeries
 
-from qbraid.programs import ProgramSpec
+from qbraid.programs import ExperimentType, ProgramSpec
+from qbraid.runtime import DeviceStatus, TargetProfile
 from qbraid.runtime.aws.device import BraketDevice
 from qbraid.runtime.aws.job import BraketQuantumTask
 from qbraid.runtime.aws.provider import BraketProvider
 from qbraid.runtime.aws.result_builder import BraketAhsResultBuilder, ResultDecodingError
-from qbraid.runtime.enums import DeviceStatus, ExperimentType
 from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
-from qbraid.runtime.profile import TargetProfile
 
 AQUILA_ARN = Devices.QuEra.Aquila
 TASK_ARN = "arn:aws:braket:us-east-1:0123456789012:quantum-task/" + str(uuid.uuid4())

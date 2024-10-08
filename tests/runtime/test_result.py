@@ -23,7 +23,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from qbraid.runtime.enums import ExperimentType
+from qbraid.programs import ExperimentType
 from qbraid.runtime.native.result import (
     NECVectorAnnealerResultData,
     QbraidQirSimulatorResultData,
@@ -58,7 +58,7 @@ def annealing_result_data() -> AnnealingResultData:
         AnnealingResultData: An AnnealingResultData object.
     """
     return AnnealingResultData(
-        sa_results=[
+        solutions=[
             {
                 "spin": {" x1": 0, " x2": 0, "x1": 0},
                 "energy": 0,
@@ -548,7 +548,7 @@ def test_qir_sim_data_inherited_measurement_counts_property(qir_sim_data):
 
 def test_nec_vector_annealer_result_data(nec_vector_annealer_result_data):
     """Test NECVectorAnnealerResultData."""
-    assert nec_vector_annealer_result_data._sa_results == [
+    assert nec_vector_annealer_result_data._solutions == [
         {
             "spin": {" x1": 0, " x2": 0, "x1": 0},
             "energy": 0,
@@ -563,7 +563,7 @@ def test_nec_vector_annealer_result_data_to_dict(nec_vector_annealer_result_data
     """Test NECVectorAnnealerResultData to_dict."""
     result_dict = nec_vector_annealer_result_data.to_dict()
     assert result_dict == {
-        "sa_results": [
+        "solutions": [
             {
                 "spin": {" x1": 0, " x2": 0, "x1": 0},
                 "energy": 0,
@@ -577,16 +577,16 @@ def test_nec_vector_annealer_result_data_to_dict(nec_vector_annealer_result_data
 
 def test_nec_vector_annealer_result_data_eq(nec_vector_annealer_result_data):
     """Test NECVectorAnnealerResultData equality."""
-    assert nec_vector_annealer_result_data._sa_results[0]["spin"] == {" x1": 0, " x2": 0, "x1": 0}
-    assert nec_vector_annealer_result_data._sa_results[0]["energy"] == 0
-    assert nec_vector_annealer_result_data._sa_results[0]["time"] == 0.006517000030726194
-    assert nec_vector_annealer_result_data._sa_results[0]["constraint"] is True
-    assert nec_vector_annealer_result_data._sa_results[0]["memory_usage"] == 1.189453125
+    assert nec_vector_annealer_result_data._solutions[0]["spin"] == {" x1": 0, " x2": 0, "x1": 0}
+    assert nec_vector_annealer_result_data._solutions[0]["energy"] == 0
+    assert nec_vector_annealer_result_data._solutions[0]["time"] == 0.006517000030726194
+    assert nec_vector_annealer_result_data._solutions[0]["constraint"] is True
+    assert nec_vector_annealer_result_data._solutions[0]["memory_usage"] == 1.189453125
 
 
 def test_annealing_result_data(annealing_result_data):
     """Test AnnealingResultData."""
-    assert annealing_result_data._sa_results == [
+    assert annealing_result_data._solutions == [
         {
             "spin": {" x1": 0, " x2": 0, "x1": 0},
             "energy": 0,
@@ -599,7 +599,7 @@ def test_annealing_result_data(annealing_result_data):
 
 def test_annealing_result_from_dict():
     """Test AnnealingResultData from_dict."""
-    sa_results = [
+    solutions = [
         {
             "spin": {" x1": 0, " x2": 0, "x1": 0},
             "energy": 0,
@@ -608,8 +608,8 @@ def test_annealing_result_from_dict():
             "memory_usage": 1.189453125,
         }
     ]
-    result_data = AnnealingResultData.from_dict({"sa_results": sa_results})
-    assert result_data._sa_results == sa_results
+    result_data = AnnealingResultData.from_dict({"solutions": solutions})
+    assert result_data._solutions == solutions
 
 
 def test_annealing_result_data_get_result(annealing_result_data):
@@ -626,9 +626,9 @@ def test_annealing_result_data_get_result(annealing_result_data):
     ]
 
 
-def test_annealing_result_data_get_result_with_empty_sa_results():
-    """Test AnnealingResultData get_result with empty sa_results."""
-    result_data = AnnealingResultData(sa_results=None)
+def test_annealing_result_data_get_result_with_empty_solutions():
+    """Test AnnealingResultData get_result with empty solutions."""
+    result_data = AnnealingResultData(solutions=None)
     assert result_data.get_results() == []
 
 
@@ -641,7 +641,7 @@ def test_annealing_result_data_to_dict(annealing_result_data):
     """Test AnnealingResultData to_dict."""
     result_dict = annealing_result_data.to_dict()
     assert result_dict == {
-        "sa_results": [
+        "solutions": [
             {
                 "spin": {" x1": 0, " x2": 0, "x1": 0},
                 "energy": 0,

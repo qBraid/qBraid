@@ -70,15 +70,15 @@ docs = ["sphinx>=7.2,<8.1", "sphinx-autodoc-typehints>=1.24,<2.5", "sphinx-rtd-t
 [project.entry-points."qbraid.programs"]
 cpp_pyqubo = "qbraid.programs.annealing.cpp_pyqubo:PyQuboModel"
 braket_ahs = "qbraid.programs.ahs.braket_ahs:BraketAHS"
-braket = "qbraid.programs.circuits.braket:BraketCircuit"
-cirq = "qbraid.programs.circuits.cirq:CirqCircuit"
-ionq = "qbraid.programs.circuits.ionq:IonQProgram"
-pennylane = "qbraid.programs.circuits.pennylane:PennylaneTape"
-pyquil = "qbraid.programs.circuits.pyquil:PyQuilProgram"
-qiskit = "qbraid.programs.circuits.qiskit:QiskitCircuit"
-pytket = "qbraid.programs.circuits.pytket:PytketCircuit"
-qasm2 = "qbraid.programs.circuits.qasm:OpenQasm2Program"
-qasm3 = "qbraid.programs.circuits.qasm:OpenQasm3Program"
+braket = "qbraid.programs.gate_model.braket:BraketCircuit"
+cirq = "qbraid.programs.gate_model.cirq:CirqCircuit"
+ionq = "qbraid.programs.gate_model.ionq:IonQProgram"
+pennylane = "qbraid.programs.gate_model.pennylane:PennylaneTape"
+pyquil = "qbraid.programs.gate_model.pyquil:PyQuilProgram"
+qiskit = "qbraid.programs.gate_model.qiskit:QiskitCircuit"
+pytket = "qbraid.programs.gate_model.pytket:PytketCircuit"
+qasm2 = "qbraid.programs.gate_model.qasm:OpenQasm2Program"
+qasm3 = "qbraid.programs.gate_model.qasm:OpenQasm3Program"
 
 [tool.setuptools.dynamic]
 version = {attr = "qbraid._version.__version__"}

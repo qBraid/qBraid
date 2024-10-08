@@ -12,7 +12,7 @@
 Module containing sub-modules for interfacing with
 various quantum software libraries and program types.
 
-.. currentmodule:: qbraid.programs.circuits
+.. currentmodule:: qbraid.programs.gate_model
 
 Classes
 --------
@@ -47,7 +47,7 @@ NATIVE_REGISTRY = getattr(_qbraid, "NATIVE_REGISTRY", {})
 CIRCUIT_SUBMODULE_CHECKS = NATIVE_REGISTRY.copy()
 
 submodules = []
-base_path = "qbraid.programs.circuits."
+base_path = "qbraid.programs.gate_model."
 
 qasm2 = CIRCUIT_SUBMODULE_CHECKS.pop("qasm2", None)
 qasm3 = CIRCUIT_SUBMODULE_CHECKS.pop("qasm3", None)
