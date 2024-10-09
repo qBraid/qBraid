@@ -1,0 +1,4 @@
+[submodule "examples"]
+	path = examples
+	url = https://github.com/qBraid/qbraid-lab-demo.git
+	branch = main
