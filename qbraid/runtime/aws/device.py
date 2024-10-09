@@ -20,9 +20,9 @@ from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 from braket.aws import AwsDevice
 from braket.circuits import Circuit
 
-from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY, load_program
+from qbraid.programs import NATIVE_REGISTRY, QPROGRAM_REGISTRY, ExperimentType, load_program
 from qbraid.runtime.device import QuantumDevice
-from qbraid.runtime.enums import DeviceStatus, ExperimentType
+from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
 from qbraid.transpiler import transpile
 

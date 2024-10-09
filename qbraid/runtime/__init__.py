@@ -22,10 +22,10 @@ Data Types
 .. autosummary::
    :toctree: ../stubs/
 
-    ExperimentType
     DeviceStatus
     JobStatus
     NoiseModel
+    NoiseModelSet
 
 Functions
 ------------
@@ -70,7 +70,7 @@ from typing import TYPE_CHECKING
 
 from ._display import display_jobs_from_data
 from .device import QuantumDevice
-from .enums import DeviceStatus, ExperimentType, JobStatus
+from .enums import DeviceStatus, JobStatus
 from .exceptions import (
     DeviceProgramTypeMismatchError,
     JobStateError,
@@ -79,7 +79,7 @@ from .exceptions import (
     ResourceNotFoundError,
 )
 from .job import QuantumJob
-from .noise import NoiseModel
+from .noise import NoiseModel, NoiseModelSet
 from .options import RuntimeOptions
 from .profile import TargetProfile
 from .provider import QuantumProvider
@@ -87,7 +87,6 @@ from .result import AhsResultData, AhsShotResult, GateModelResultData, Result, R
 
 __all__ = [
     "QuantumDevice",
-    "ExperimentType",
     "DeviceStatus",
     "JobStatus",
     "display_jobs_from_data",
@@ -101,6 +100,7 @@ __all__ = [
     "QuantumProvider",
     "RuntimeOptions",
     "NoiseModel",
+    "NoiseModelSet",
     "Result",
     "ResultData",
     "GateModelResultData",

@@ -11,6 +11,8 @@
 Module for plotting qBraid transpiler quantum program conversion graphs.
 
 """
+from __future__ import annotations
+
 import math
 from typing import TYPE_CHECKING, Optional
 
@@ -27,7 +29,7 @@ plt = LazyLoader("plt", globals(), "matplotlib.pyplot")
 
 
 def plot_conversion_graph(  # pylint: disable=too-many-arguments
-    graph: "qbraid.transpiler.ConversionGraph",
+    graph: qbraid.transpiler.ConversionGraph,
     title: Optional[str] = "qBraid Quantum Program Conversion Graph",
     legend: bool = False,
     seed: Optional[int] = None,
@@ -44,20 +46,21 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     and edge color conventions, with options for a title, legend, and figure saving.
 
     Args:
-        graph (qbraid.interface.ConversionGraph): The directed conversion graph to be plotted.
-        title (Optional[str]): Title of the plot. Defaults to
+        graph (ConversionGraph): The directed conversion graph to be plotted.
+        title (str, optional): Title of the plot. Defaults to
                                'qBraid Quantum Program Conversion Graph'.
         legend (bool): If True, display a legend on the graph. Defaults to False.
-        seed (Optional[int]): Seed for the node layout algorithm. Useful for consistent
+        seed (int, optional): Seed for the node layout algorithm. Useful for consistent
                               positioning. Defaults to None.
         node_size (int): Size of the nodes. Defaults to 1200.
         min_target_margin (int): Minimum target margin for edges. Defaults to 18.
         show (bool): If True, display the figure. Defaults to True.
-        save_path (Optional[str]): Path to save the figure. If None, the figure is not saved.
+        save_path (str, optional): Path to save the figure. If None, the figure is not saved.
                                    Defaults to None.
-        colors (Optional[dict[str, str]]): Dictionary for node and edge colors. Expected keys are
+        colors (dict[str, str], optional): Dictionary for node and edge colors. Expected keys are
             'qbraid_node', 'external_node', 'qbraid_edge', 'external_edge'. Defaults to None.
-        edge_labels (Optional[bool]): If True, display edge weights as labels. Defaults to False.
+        edge_labels (bool, optional): If True, display edge weights as labels. Defaults to False.
+
     Returns:
         None
     """
