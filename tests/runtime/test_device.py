@@ -15,6 +15,7 @@ Unit tests for QbraidDevice, QbraidJob, and QbraidGateModelResultBuilder
 classes using the qbraid_qir_simulator
 
 """
+import importlib.util
 import json
 import logging
 import time
@@ -148,6 +149,12 @@ def mock_quera_device(mock_quera_profile, mock_client):
 def mock_basic_device(mock_profile):
     """Generic mock device for testing."""
     return MockDevice(profile=mock_profile)
+
+
+@pytest.fixture
+def mock_nec_va_device(mock_nec_va_profile, mock_client):
+    """Mock NEC vector annealer device."""
+    return QbraidDevice(profile=mock_nec_va_profile, client=mock_client)
 
 
 @pytest.fixture
@@ -721,6 +728,20 @@ def test_construct_aux_payload_no_spec(mock_quera_device, valid_qasm2_no_meas):
     assert aux_payload["openQasm"] == valid_qasm2_no_meas
     assert aux_payload["circuitNumQubits"] == 2
     assert aux_payload["circuitDepth"] == 3
+
+
+@pytest.mark.skipif(importlib.util.find_spec("pyqubo") is None, reason="pyqubo is not installed")
+def test_construct_aux_payload_annealing(mock_nec_va_device):
+    """Test constructing auxiliary payload with an annealing program."""
+    from pyqubo import Spin  # pylint: disable=import-outside-toplevel
+
+    s1, s2, s3, s4 = Spin("s1"), Spin("s2"), Spin("s3"), Spin("s4")
+    H = (4 * s1 + 2 * s2 + 7 * s3 + s4) ** 2
+    model = H.compile()
+
+    aux_payload = mock_nec_va_device._construct_aux_payload(model)
+    assert len(aux_payload) == 1
+    assert aux_payload["numVariables"] == 4
 
 
 @pytest.fixture

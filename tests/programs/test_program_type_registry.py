@@ -29,6 +29,7 @@ from qbraid.programs import (
     QPROGRAM_ALIASES,
     QPROGRAM_REGISTRY,
     QPROGRAM_TYPES,
+    ExperimentType,
     ProgramSpec,
     derive_program_type_alias,
     get_program_type_alias,
@@ -304,3 +305,12 @@ def test_get_native_experiment_type_not_found():
     with pytest.raises(ValueError) as excinfo:
         get_native_experiment_type("not_found")
     assert "Entry point 'not_found' not found in 'qbraid.programs'." in str(excinfo.value)
+
+
+def test_program_spec_specify_experiment_type():
+    """Test specifying the experiment type for a program spec."""
+    try:
+        spec = ProgramSpec(bytes, alias="llvm", experiment_type=ExperimentType.OTHER)
+        assert spec.experiment_type == ExperimentType.OTHER
+    finally:
+        unregister_program_type("llvm", raise_error=False)
