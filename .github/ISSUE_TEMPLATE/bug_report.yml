@@ -26,7 +26,7 @@ body:
     validations:
       required: true
   
-  - type: radio
+  - type: dropdown
     attributes:
       label: "Did this bug occur while using the SDK within qBraid Lab?"
       options:
