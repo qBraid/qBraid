@@ -17,8 +17,8 @@ from typing import Any
 from qcaas_client.client import OQCClient
 
 from qbraid._caching import cached_method
+from qbraid.programs import ExperimentType
 from qbraid.programs.spec import ProgramSpec
-from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider

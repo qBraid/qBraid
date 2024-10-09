@@ -12,60 +12,37 @@
 Module containing sub-modules for interfacing with
 various quantum software libraries and program types.
 
-.. currentmodule:: qbraid.programs.circuits
-
-Classes
---------
-
-.. autosummary::
-   :toctree: ../stubs/
-    
-   GateModelProgram
-
-Submodules
-------------
-
-.. autosummary::
-   :toctree: ../stubs/
-
-   braket
-   cirq
-   pennylane
-   pyquil
-   pytket
-   qasm
-   qiskit
-   ionq
-
 """
 import importlib
+import sys
+import warnings
 
-from ._model import GateModelProgram
+from qbraid.programs.gate_model._model import GateModelProgram as GateModelProgram
 
-_qbraid = importlib.import_module("qbraid.programs._import")
-NATIVE_REGISTRY = getattr(_qbraid, "NATIVE_REGISTRY", {})
-CIRCUIT_SUBMODULE_CHECKS = NATIVE_REGISTRY.copy()
+warnings.warn(
+    "The 'qbraid.programs.circuits' module has been renamed to "
+    "'qbraid.programs.gate_model'. Please update your imports. "
+    "This backward compatibility layer will be removed in a future release.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
-submodules = []
-base_path = "qbraid.programs.circuits."
+# Redirect imports from 'circuits' to 'gate_model'
+module_name = sys.modules[__name__]
 
-qasm2 = CIRCUIT_SUBMODULE_CHECKS.pop("qasm2", None)
-qasm3 = CIRCUIT_SUBMODULE_CHECKS.pop("qasm3", None)
+submodules = [
+    "_model",
+    "braket",
+    "cirq",
+    "ionq",
+    "pennylane",
+    "pyquil",
+    "pytket",
+    "qasm",
+    "qiskit",
+]
 
-key_set = set(CIRCUIT_SUBMODULE_CHECKS.keys())
-if qasm2 or qasm3:
-    key_set.add("qasm")
-
-for lib in key_set:
-    try:
-        imported_lib = importlib.import_module(base_path + lib)
-        submodules.append(lib)
-        globals()[lib] = imported_lib
-
-    except ImportError:
-        pass
-
-
-__all__ = ["GateModelProgram"]
-
-__all__.extend(submodules)
+# Dynamically import and register submodules
+for submodule in submodules:
+    new_module_name = f"qbraid.programs.gate_model.{submodule}"
+    sys.modules[f"{__name__}.{submodule}"] = importlib.import_module(new_module_name)

@@ -21,8 +21,8 @@ import openqasm3.ast
 import pytest
 from openqasm3.parser import parse
 
-from qbraid.programs.circuits.qasm import OpenQasm2Program, has_measurements, remove_measurements
 from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.gate_model.qasm import OpenQasm2Program, has_measurements, remove_measurements
 from qbraid.programs.loader import load_program
 from qbraid.programs.registry import unregister_program_type
 from qbraid.programs.typer import Qasm2String

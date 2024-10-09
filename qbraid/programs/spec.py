@@ -14,7 +14,13 @@ Module defining base program type specification
 """
 from typing import Any, Callable, Optional, Type
 
-from .registry import derive_program_type_alias, is_registered_alias_native, register_program_type
+from .experiment import ExperimentType
+from .registry import (
+    derive_program_type_alias,
+    get_native_experiment_type,
+    is_registered_alias_native,
+    register_program_type,
+)
 
 
 class ProgramSpec:
@@ -27,6 +33,7 @@ class ProgramSpec:
         overwrite: bool = False,
         to_ir: Optional[Callable[[Any], Any]] = None,
         validate: Optional[Callable[[Any], None]] = None,
+        experiment_type: Optional[ExperimentType] = None,
     ):
         self._program_type = program_type
         self._to_ir = to_ir or (lambda program: program)
@@ -35,6 +42,8 @@ class ProgramSpec:
         register_program_type(program_type, alias=alias, overwrite=overwrite)
         self._alias = alias or derive_program_type_alias(program_type)
         self._native = is_registered_alias_native(self._alias)
+        self._experiment_type: Optional[ExperimentType] = None
+        self.experiment_type = experiment_type
 
     @property
     def program_type(self) -> Type[Any]:
@@ -50,6 +59,21 @@ class ProgramSpec:
     def native(self) -> bool:
         """True if program is natively supported by qBraid, False otherwise."""
         return self._native
+
+    @property
+    def experiment_type(self) -> Optional[ExperimentType]:
+        """Getter for experiment type."""
+        return self._experiment_type
+
+    @experiment_type.setter
+    def experiment_type(self, value: Optional[ExperimentType]):
+        """Setter for experiment type with logic for native aliases."""
+        if value is not None:
+            self._experiment_type = value
+        elif self._native:
+            self._experiment_type = get_native_experiment_type(self._alias)
+        else:
+            self._experiment_type = None
 
     def to_ir(self, program: Any) -> Any:
         """

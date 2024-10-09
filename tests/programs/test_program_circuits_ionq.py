@@ -16,8 +16,8 @@ Unit tests for qbraid.programs.ionq.IonQProgram
 """
 import pytest
 
-from qbraid.programs.circuits.ionq import IonQProgram
 from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.gate_model.ionq import IonQProgram
 from qbraid.programs.typer import IonQDict
 
 

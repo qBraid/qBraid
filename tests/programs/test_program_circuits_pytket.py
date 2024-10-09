@@ -23,8 +23,8 @@ try:
     from pytket.circuit import Circuit
     from pytket.unit_id import Qubit
 
-    from qbraid.programs.circuits.pytket import IONQ_GATES, PytketCircuit
     from qbraid.programs.exceptions import ProgramTypeError, TransformError
+    from qbraid.programs.gate_model.pytket import IONQ_GATES, PytketCircuit
 
     pytket_not_installed = False
 except ImportError:
@@ -99,7 +99,7 @@ def test_assertion_error_in_rebase():
     max_qubits = 5
 
     with patch(
-        "qbraid.programs.circuits.pytket.CompilationUnit.check_all_predicates", return_value=False
+        "qbraid.programs.gate_model.pytket.CompilationUnit.check_all_predicates", return_value=False
     ):
         with pytest.raises(TransformError) as excinfo:
             PytketCircuit.rebase(circuit, gates, max_qubits)

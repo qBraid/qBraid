@@ -140,4 +140,4 @@ class ProblemEncoder(json.JSONEncoder):
         if isinstance(o, ProblemType):
             return o.value
 
-        return super().default(o)
+        return super().default(o)  # pragma: no cover

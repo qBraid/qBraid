@@ -17,8 +17,8 @@ Unit tests for TargetProfile class
 import pytest
 from pydantic import ValidationError
 
+from qbraid.programs import ExperimentType
 from qbraid.programs.spec import ProgramSpec
-from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.profile import TargetProfile
 
 

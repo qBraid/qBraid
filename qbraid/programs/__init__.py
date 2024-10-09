@@ -23,6 +23,15 @@ Data Types
    :type: dict[str, Type[Any]]
    :annotation: = Maps aliases of quantum program types to their respective Python type objects.
 
+.. autosummary::
+   :toctree: ../stubs/
+
+    QbraidMetaType
+    IonQDict
+    Qasm2String
+    Qasm3String
+    ExperimentType
+
 Functions
 ----------
 
@@ -42,10 +51,6 @@ Classes
 
 	ProgramSpec
 	QuantumProgram
-    QbraidMetaType
-	IonQDict
-	Qasm2String
-	Qasm3String
 
 Exceptions
 -----------
@@ -73,6 +78,7 @@ from .exceptions import (
     TransformError,
     ValidationError,
 )
+from .experiment import ExperimentType
 from .loader import ProgramLoaderError, load_program
 from .program import QuantumProgram
 from .registry import (
@@ -122,10 +128,11 @@ __all__ = [
     "Qasm3String",
     "Qasm2StringType",
     "Qasm3StringType",
+    "ExperimentType",
 ]
 
 _lazy = {
-    "circuits": ["GateModelProgram"],
+    "gate_model": ["GateModelProgram"],
     "ahs": ["AnalogHamiltonianProgram", "AHSEncoder"],
     "annealing": ["AnnealingProgram", "ProblemEncoder", "ProblemType", "Problem", "QuboProblem"],
 }
@@ -138,7 +145,7 @@ if TYPE_CHECKING:
     from .annealing import ProblemEncoder as ProblemEncoder
     from .annealing import ProblemType as ProblemType
     from .annealing import QuboProblem as QuboProblem
-    from .circuits import GateModelProgram as GateModelProgram
+    from .gate_model import GateModelProgram as GateModelProgram
 
 
 def __getattr__(name):
