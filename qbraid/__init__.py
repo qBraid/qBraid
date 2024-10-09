@@ -69,12 +69,12 @@ _lazy = {
         "load_program",
         "register_program_type",
         "unregister_program_type",
+        "ExperimentType",
     ],
     "runtime": [
         "AhsResultData",
         "AhsShotResult",
         "DeviceStatus",
-        "ExperimentType",
         "GateModelResultData",
         "JobStatus",
         "NoiseModel",
@@ -109,6 +109,7 @@ if TYPE_CHECKING:
     from .programs import QPROGRAM_NATIVE as QPROGRAM_NATIVE
     from .programs import QPROGRAM_REGISTRY as QPROGRAM_REGISTRY
     from .programs import AnalogHamiltonianProgram as AnalogHamiltonianProgram
+    from .programs import ExperimentType as ExperimentType
     from .programs import GateModelProgram as GateModelProgram
     from .programs import ProgramSpec as ProgramSpec
     from .programs import Qasm2String as Qasm2String
@@ -121,7 +122,6 @@ if TYPE_CHECKING:
     from .runtime import AhsResultData as AhsResultData
     from .runtime import AhsShotResult as AhsShotResult
     from .runtime import DeviceStatus as DeviceStatus
-    from .runtime import ExperimentType as ExperimentType
     from .runtime import GateModelResultData as GateModelResultData
     from .runtime import JobStatus as JobStatus
     from .runtime import NoiseModel as NoiseModel

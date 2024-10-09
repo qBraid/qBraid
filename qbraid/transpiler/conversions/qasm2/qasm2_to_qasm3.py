@@ -134,7 +134,7 @@ def qasm2_to_qasm3(qasm_str: Qasm2StringType) -> Qasm3StringType:
         # Check if the current line is blank
         if not line.strip():
             if last_line_was_blank:
-                continue
+                continue  # pragma: no cover
 
             last_line_was_blank = True
         else:

@@ -29,6 +29,7 @@ from qbraid.programs import (
     QPROGRAM_ALIASES,
     QPROGRAM_REGISTRY,
     QPROGRAM_TYPES,
+    ExperimentType,
     ProgramSpec,
     derive_program_type_alias,
     get_program_type_alias,
@@ -36,9 +37,9 @@ from qbraid.programs import (
     register_program_type,
     unregister_program_type,
 )
-from qbraid.programs.circuits import key_set
 from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.registry import is_registered_alias_native
+from qbraid.programs.gate_model import key_set
+from qbraid.programs.registry import get_native_experiment_type, is_registered_alias_native
 from qbraid.programs.typer import IonQDict
 
 
@@ -297,3 +298,19 @@ def test_load_program_pyqir(pyqir_bell: Module, pyqir_spec: ProgramSpec):
     program_ir = pyqir_spec.to_ir(pyqir_bell)
     assert isinstance(program_ir, bytes)
     assert program_ir == pyqir_bell.bitcode
+
+
+def test_get_native_experiment_type_not_found():
+    """Test error when trying to get the native experiment type that is not found."""
+    with pytest.raises(ValueError) as excinfo:
+        get_native_experiment_type("not_found")
+    assert "Entry point 'not_found' not found in 'qbraid.programs'." in str(excinfo.value)
+
+
+def test_program_spec_specify_experiment_type():
+    """Test specifying the experiment type for a program spec."""
+    try:
+        spec = ProgramSpec(bytes, alias="llvm", experiment_type=ExperimentType.OTHER)
+        assert spec.experiment_type == ExperimentType.OTHER
+    finally:
+        unregister_program_type("llvm", raise_error=False)

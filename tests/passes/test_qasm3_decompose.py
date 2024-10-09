@@ -24,7 +24,7 @@ from openqasm3.parser import parse
 from qbraid.passes.exceptions import CompilationError, QasmDecompositionError
 from qbraid.passes.qasm3.compat import normalize_qasm_gate_params
 from qbraid.passes.qasm3.decompose import assert_gates_in_basis, decompose_qasm3, rebase
-from qbraid.programs.circuits.qasm import OpenQasm3Program
+from qbraid.programs.gate_model.qasm import OpenQasm3Program
 
 
 @pytest.mark.parametrize(

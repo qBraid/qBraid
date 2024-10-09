@@ -22,8 +22,8 @@ from cirq import Circuit, LineQubit, X, Y, Z
 from qbraid.interface.circuit_equality import circuits_allclose
 from qbraid.interface.random.random import random_circuit, random_unitary_matrix
 from qbraid.programs import get_program_type_alias, load_program
-from qbraid.programs.circuits import GateModelProgram
 from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.gate_model import GateModelProgram
 
 from ..fixtures import packages_bell, packages_shared15
 

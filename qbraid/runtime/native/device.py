@@ -24,7 +24,7 @@ from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestErr
 
 from qbraid._entrypoints import get_entrypoints
 from qbraid._logging import logger
-from qbraid.programs import ProgramSpec, get_program_type_alias, load_program
+from qbraid.programs import ExperimentType, ProgramSpec, get_program_type_alias, load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
@@ -173,15 +173,29 @@ class QbraidDevice(QuantumDevice):
             program_alias = get_program_type_alias(program, safe=True)
             program_spec = ProgramSpec(type(program), alias=program_alias)
 
-        if not program_spec.native:
+        if program_spec.native is False:
             return aux_payload
 
         qbraid_program = load_program(program)
 
-        aux_payload["circuitNumQubits"] = self.try_extracting_info(
+        payload_key = {
+            ExperimentType.GATE_MODEL: "circuitNumQubits",
+            ExperimentType.ANNEALING: "numVariables",
+            ExperimentType.AHS: "numAtoms",
+        }
+
+        num_required_qubits = self.try_extracting_info(
             lambda program=qbraid_program: program.num_qubits,
             "Error calculating circuit number of qubits.",
         )
+
+        key = payload_key.get(program_spec.experiment_type)
+        if num_required_qubits is not None and key:
+            aux_payload[key] = num_required_qubits
+
+        if program_spec.experiment_type != ExperimentType.GATE_MODEL:
+            return aux_payload
+
         aux_payload["circuitDepth"] = self.try_extracting_info(
             lambda program=qbraid_program: program.depth, "Error calculating circuit depth."
         )
@@ -239,6 +253,8 @@ class QbraidDevice(QuantumDevice):
             "openQasm": None,
             "bitcode": None,
             "problem": None,
+            "numVariables": None,
+            "numAtoms": None,
             "circuitNumQubits": None,
             "circuitDepth": None,
         }
