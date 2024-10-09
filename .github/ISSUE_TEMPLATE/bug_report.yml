@@ -32,8 +32,8 @@ body:
       label: Context
       description: "Did this bug occur within qBraid Lab?"
       options:
-        - Yes
-        - No
+        - "Yes"
+        - "No"
     validations:
       required: true
 
