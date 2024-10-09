@@ -11,32 +11,13 @@ body:
   - type: textarea
     attributes:
       label: Environment
-      description: |
-        Please copy and paste the output of the following command:
-        - **For terminal**: `python3 -c "import qbraid; qbraid.about()"`
-        - **For Python shell or Jupyter Notebook**:
-          ```python
-          import qbraid
-          qbraid.about()
-          ```
       value: |
-        ```
-        Paste the output here...
-        ```
+        - **qBraid version**:
+        - **Python version**:
+        - **Operating system**:
     validations:
       required: true
   
-  - type: radio
-    attributes:
-      label: "Did this bug occur while using the SDK within qBraid Lab?"
-      options:
-        - label: "Yes"
-          value: "yes"
-        - label: "No"
-          value: "no"
-    validations:
-      required: true
-
   - type: textarea
     attributes:
       label: What happened?

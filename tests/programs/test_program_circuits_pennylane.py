@@ -17,8 +17,8 @@ import pennylane as qml
 import pytest
 from pennylane.tape import QuantumTape
 
+from qbraid.programs.circuits.pennylane import PennylaneTape
 from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.gate_model.pennylane import PennylaneTape
 
 
 def two_wire_tape(wire1, wire2):

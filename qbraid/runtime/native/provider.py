@@ -21,10 +21,11 @@ from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestErr
 
 from qbraid._caching import cached_method
 from qbraid.passes.qasm3.format import format_qasm
-from qbraid.programs import QPROGRAM_REGISTRY, ExperimentType, ProgramSpec, load_program
-from qbraid.programs.gate_model.qasm import has_measurements
+from qbraid.programs import QPROGRAM_REGISTRY, ProgramSpec, load_program
+from qbraid.programs.circuits.qasm import has_measurements
 from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
 from qbraid.runtime._display import display_jobs_from_data
+from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.noise import NoiseModelSet
 from qbraid.runtime.profile import TargetProfile

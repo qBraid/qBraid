@@ -45,7 +45,7 @@ try:
 except ImportError:  # pragma: no cover
     cirq_ionq_ops = None
 
-import qbraid.programs.gate_model.cirq
+import qbraid.programs.circuits.cirq
 from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import CircuitConversionError
 
@@ -70,7 +70,7 @@ def cirq_to_braket(circuit: Circuit) -> braket.circuits.Circuit:
     """
     cirq_qubits = list(circuit.all_qubits())
     cirq_int_qubits = [
-        qbraid.programs.gate_model.cirq.CirqCircuit._int_from_qubit(q) for q in cirq_qubits
+        qbraid.programs.circuits.cirq.CirqCircuit._int_from_qubit(q) for q in cirq_qubits
     ]
     braket_int_qubits = deepcopy(cirq_int_qubits)
     qubit_mapping = {q: braket_int_qubits[i] for i, q in enumerate(cirq_int_qubits)}
@@ -94,13 +94,13 @@ def _to_braket_instruction(
     """
     if isinstance(
         operation, (cirq_ops.MeasurementGate, cirq_ops.Operation)
-    ) and qbraid.programs.gate_model.cirq.CirqCircuit.is_measurement_gate(operation):
+    ) and qbraid.programs.circuits.cirq.CirqCircuit.is_measurement_gate(operation):
         return []
 
     nqubits = protocols.num_qubits(operation)
     cirq_qubits = operation.qubits
     cirq_qubits = [
-        qbraid.programs.gate_model.cirq.CirqCircuit._int_from_qubit(q) for q in operation.qubits
+        qbraid.programs.circuits.cirq.CirqCircuit._int_from_qubit(q) for q in operation.qubits
     ]
     qubits = [qubit_mapping[x] for x in cirq_qubits]
 

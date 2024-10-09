@@ -30,10 +30,11 @@ from braket.devices import Devices, LocalSimulator
 
 from qbraid.exceptions import QbraidError
 from qbraid.interface import circuits_allclose
-from qbraid.programs import ExperimentType, ProgramSpec, load_program
+from qbraid.programs import ProgramSpec, load_program
 from qbraid.runtime import (
     DeviceProgramTypeMismatchError,
     DeviceStatus,
+    ExperimentType,
     GateModelResultData,
     TargetProfile,
 )

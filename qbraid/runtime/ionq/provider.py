@@ -18,7 +18,8 @@ from typing import Any, Optional
 from qbraid_core.sessions import Session
 
 from qbraid._caching import cached_method
-from qbraid.programs import ExperimentType, ProgramSpec
+from qbraid.programs.spec import ProgramSpec
+from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 

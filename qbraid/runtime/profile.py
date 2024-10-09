@@ -19,8 +19,9 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, field_validator, model_validator
 
-from qbraid.programs import ExperimentType, ProgramSpec
+from qbraid.programs import ProgramSpec
 
+from .enums import ExperimentType
 from .noise import NoiseModelSet
 
 if TYPE_CHECKING:
