@@ -27,13 +27,13 @@ body:
       required: true
   
   - type: dropdown
+    id: bug-category
     attributes:
-      label: "Did this bug occur while using the SDK within qBraid Lab?"
+      label: Context
+      description: "Did this bug occur within qBraid Lab?"
       options:
-        - label: "Yes"
-          value: "yes"
-        - label: "No"
-          value: "no"
+        - Yes
+        - No
     validations:
       required: true
 
