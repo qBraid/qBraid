@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Any
 import openqasm3.ast
 
 from qbraid.passes.qasm3.compat import convert_qasm_pi_to_decimal
-from qbraid.programs.circuits.qasm import OpenQasm2Program
+from qbraid.programs.gate_model.qasm import OpenQasm2Program
 from qbraid.transpiler.annotations import weight
 
 if TYPE_CHECKING:

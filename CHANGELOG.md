@@ -26,7 +26,7 @@ Types of changes:
 - Updated the ExperimentType enum to change the value of ANNEALING from "quantum_annealing" to "annealing" to better reflect the general nature of experiments. ([#768](https://github.com/qBraid/qBraid/pull/768))
 - Updated `QbraidJob.result`  method to return `AnnealingResultData` or `NECVectorAnnealerResultData` instances for annealing and NEC vector annealer experiments, respectively. ([#768](https://github.com/qBraid/qBraid/pull/768))
 - Added a test case for the NEC Vector Annealer workflow in , including job submission and result retrieval. ([#768](https://github.com/qBraid/qBraid/pull/768))
-- Added unit tests for `AnnealingResultData`, `NECVectorAnnealerResultData`, `AnnealingExperimentMetadata`, and `NECVectorAnnealerExperimentMetadata` classes. ([#768](https://github.com/qBraid/qBraid/pull/768))
+- Added unit tests for `AnnealingResultData`, `NECVectorAnnealerResultData`, and `AnnealingExperimentMetadata` classes. ([#768](https://github.com/qBraid/qBraid/pull/768))
 - PR compliance workflow that checks that `CHANGELOG.md` is updated with each PR, and if not, issues a reminder ([#772](https://github.com/qBraid/qBraid/pull/772))
 - Workflow to bump semantic version in `_version.py` ([#773](https://github.com/qBraid/qBraid/pull/773))
 - Changed `qbraid.runtime.NoiseModel` from an `Enum` to a `dataclass` and introduced `qbraid.runtime.NoiseModelSet` to manage multiple `NoiseModel` instances. An `Enum` was too restrictive since its values are fixed, so a more flexible structure was needed for loading noise model data from an API. Using a dataclass allows storing brief descriptions of noise models. `NoiseModelSet` ensures naming consistency and provides easy add, remove, and get operations for provider classes. ([#773](https://github.com/qBraid/qBraid/pull/773))
@@ -51,6 +51,9 @@ for name, model in models.items():
 
 models.remove("custom")
 ```
+
+- Moved `ExperimentType` enum into `qbraid.programs` ([#777](https://github.com/qBraid/qBraid/pull/777))
+- Renamed `qbraid.programs.circuits` to `qbraid.programs.gate_model` to match enum value ([#777](https://github.com/qBraid/qBraid/pull/777))
 
 ### Deprecated
 

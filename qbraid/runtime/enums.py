@@ -33,25 +33,6 @@ class DeviceStatus(Enum):
     RETIRED = "retired"
 
 
-class ExperimentType(Enum):
-    """
-    Enumeration for quantum experiment types.
-
-    Attributes:
-        GATE_MODEL (str): Gate-based quantum computing (e.g., OpenQASM).
-        AHS (str): Analog Hamiltonian simulation.
-        ANNEALING (str): Quantum annealing for optimization problems.
-        PHOTONIC_MODEL (str): Photonic quantum computing using photons as qubits.
-        OTHER (str): Placeholder for other or unspecified quantum computing models.
-    """
-
-    GATE_MODEL = "gate_model"
-    AHS = "analog_hamiltonian_simulation"
-    ANNEALING = "annealing"
-    PHOTONIC_MODEL = "photonic_quantum_computing"
-    OTHER = "other"
-
-
 class JobStatus(Enum):
     """Enum for the status of processes (i.e. quantum jobs / tasks) resulting
     from any :meth:`~qbraid.runtime.QuantumDevice.run` method.

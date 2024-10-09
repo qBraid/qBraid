@@ -136,8 +136,7 @@ class QuEraQasmSimulationMetadata(GateModelExperimentMetadata):
 class AnnealingExperimentMetadata(BaseModel):
     """Metadata specific to annealing experiments."""
 
-
-class NECVectorAnnealerMetadata(AnnealingExperimentMetadata):
-    """Result data specific to jobs submitted to the NEC Vector Annealer."""
-
-    sa_results: Optional[list] = Field(None, alias="results")
+    solutions: Optional[list[dict[str, Any]]] = None
+    num_solutions: Optional[int] = Field(None, alias="solutionCount")
+    energies: Optional[list[float]] = None
+    num_variables: Optional[int] = Field(None, alias="variableCount")

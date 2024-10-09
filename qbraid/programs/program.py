@@ -15,12 +15,13 @@ Module defining QuantumProgram Class
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from qbraid._logging import logger
 
 from .alias_manager import get_program_type_alias
 from .exceptions import ProgramTypeError
+from .experiment import ExperimentType
 from .registry import QPROGRAM_REGISTRY
 from .spec import ProgramSpec
 
@@ -54,6 +55,11 @@ class QuantumProgram(ABC):
                 )
             )
         self._program = value
+
+    @property
+    def experiment_type(self) -> Optional[ExperimentType]:
+        """Returns the ExperimentType corresponding to the sub-module of the program."""
+        return self.spec.experiment_type
 
     @staticmethod
     def get_spec(program: Any) -> ProgramSpec:

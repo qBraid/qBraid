@@ -37,7 +37,7 @@ try:
 except ImportError:  # pragma: no cover
     cirq_ionq_ops = None
 
-from qbraid.programs.circuits.cirq import CirqCircuit as QbraidCircuit
+from qbraid.programs.gate_model.cirq import CirqCircuit as QbraidCircuit
 from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import CircuitConversionError
 
