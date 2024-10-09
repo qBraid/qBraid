@@ -19,14 +19,13 @@ from typing import Any, ClassVar, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from qbraid.programs import ExperimentType
-from qbraid.runtime.enums import JobStatus
+from qbraid.runtime.enums import ExperimentType, JobStatus
 
 from .base import Credits, QbraidSchemaBase
 from .experiment import (
-    AnnealingExperimentMetadata,
     ExperimentMetadata,
     GateModelExperimentMetadata,
+    NECVectorAnnealerMetadata,
     QbraidQirSimulationMetadata,
     QuEraQasmSimulationMetadata,
 )
@@ -91,9 +90,9 @@ class RuntimeJobModel(QbraidSchemaBase):
     experiment_type: ExperimentType = Field(..., alias="experimentType")
     metadata: Union[
         QbraidQirSimulationMetadata,
+        NECVectorAnnealerMetadata,
         QuEraQasmSimulationMetadata,
         GateModelExperimentMetadata,
-        AnnealingExperimentMetadata,
         ExperimentMetadata,
     ]
     time_stamps: TimeStamps = Field(..., alias="timeStamps")
@@ -135,19 +134,19 @@ class RuntimeJobModel(QbraidSchemaBase):
             "qbraid_qir_simulator": QbraidQirSimulationMetadata,
             "quera_qasm_simulator": QuEraQasmSimulationMetadata,
         }
-        if experiment_type == "gate_model":
-            device_id = job_data.get("qbraidDeviceId")
-            model = native_gate_models.get(device_id, GateModelExperimentMetadata)
-        elif experiment_type == "annealing":
-            model = AnnealingExperimentMetadata
-
         if experiment_type in ["gate_model", "annealing"]:
+            if experiment_type == "gate_model":
+                device_id = job_data.get("qbraidDeviceId")
+                model = native_gate_models.get(device_id, GateModelExperimentMetadata)
+            else:
+                model = NECVectorAnnealerMetadata
             keys = {field.alias or name for name, field in model.model_fields.items()}
             metadata = {key: job_data.pop(key, None) for key in keys}
             job_data["metadata"] = model(**metadata)
             return job_data
 
         model_keys = {field.alias or name for name, field in RuntimeJobModel.model_fields.items()}
+
         restructured_job_data: dict[str, Any] = {}
         derived_metadata: dict[str, Any] = {}
 
@@ -170,12 +169,12 @@ class RuntimeJobModel(QbraidSchemaBase):
         Returns:
             RuntimeJobModel: An instance of RuntimeJobModel.
         """
-        experiment_type = (
+        # Set experiment type
+        job_data["experimentType"] = ExperimentType(
             "annealing"
-            if "anneal" in job_data.get("qbraidDeviceId", "")
+            if "anneal" in job_data.get("qbraidDeviceId")
             else job_data.pop("experimentType", "gate_model")
-        )
-        job_data["experimentType"] = ExperimentType(experiment_type).value
+        ).value
 
         # Populate time stamps
         time_stamps = job_data.setdefault("timeStamps", {})

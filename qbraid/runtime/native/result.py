@@ -91,4 +91,13 @@ class QbraidQirSimulatorResultData(GateModelResultData):
 
 
 class NECVectorAnnealerResultData(AnnealingResultData):
-    """Class for storing and accessing the results of an NEC job."""
+    """Class for storing and accessing the results of an annealing job.
+    Args:
+        ResultData (ResultData): ABC for runtime results linked to a specific ExperimentType.
+
+    """
+
+    def __init__(self, sa_results: Optional[list[dict[str, Any]]] = None):
+        """Create a new NECVectorAnnealerResultData instance."""
+        super().__init__(sa_results=sa_results)
+        self._sa_results = sa_results or []

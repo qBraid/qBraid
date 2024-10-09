@@ -24,7 +24,7 @@ Classes
     DevicePricing
     DeviceData
     ExperimentMetadata
-    AnnealingExperimentMetadata
+    NECVectorAnnealerMetadata
     GateModelExperimentMetadata
     QuEraQasmSimulationMetadata
     QbraidQirSimulationMetadata
@@ -35,9 +35,9 @@ Classes
 from .base import QbraidSchemaBase, QbraidSchemaHeader
 from .device import DeviceData, DevicePricing
 from .experiment import (
-    AnnealingExperimentMetadata,
     ExperimentMetadata,
     GateModelExperimentMetadata,
+    NECVectorAnnealerMetadata,
     QbraidQirSimulationMetadata,
     QuEraQasmSimulationMetadata,
 )
@@ -49,8 +49,8 @@ __all__ = [
     "DevicePricing",
     "DeviceData",
     "ExperimentMetadata",
-    "AnnealingExperimentMetadata",
     "GateModelExperimentMetadata",
+    "NECVectorAnnealerMetadata",
     "QuEraQasmSimulationMetadata",
     "QbraidQirSimulationMetadata",
     "TimeStamps",

@@ -21,7 +21,9 @@ from azure.quantum.target import Target
 from qbraid_core._import import LazyLoader
 
 from qbraid._caching import cached_method
-from qbraid.programs import ExperimentType, IonQDict, ProgramSpec
+from qbraid.programs import ProgramSpec
+from qbraid.programs.typer import IonQDict
+from qbraid.runtime.enums import ExperimentType
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider

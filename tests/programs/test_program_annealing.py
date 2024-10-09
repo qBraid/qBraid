@@ -19,7 +19,7 @@ import pytest
 try:
     from pyqubo import Spin
 
-    from qbraid.programs import ExperimentType, ProgramTypeError, unregister_program_type
+    from qbraid.programs import ProgramTypeError, unregister_program_type
     from qbraid.programs.annealing import (
         AnnealingProgram,
         Problem,
@@ -294,9 +294,3 @@ def test_problem_encoder_super_default():
     encoded_obj = json.dumps(data, cls=ProblemEncoder)
     expected_output = '{"data": "test_data"}'
     assert encoded_obj == expected_output
-
-
-def test_get_pyqubo_experiment_type(pyqubo_model):
-    """Test that the PyQuboModel correctly identifies the experiment type as ANNEALING."""
-    program = PyQuboModel(pyqubo_model)
-    assert program.experiment_type == ExperimentType.ANNEALING

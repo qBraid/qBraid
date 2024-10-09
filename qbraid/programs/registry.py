@@ -12,13 +12,9 @@
 Module for registering custom program types and aliases
 
 """
-import sys
 from typing import Any, Optional, Type, TypeVar, Union
 
-from qbraid._entrypoints import get_entrypoints
-
 from ._import import _QPROGRAM_ALIASES, _QPROGRAM_REGISTRY, _QPROGRAM_TYPES, NATIVE_REGISTRY
-from .experiment import ExperimentType
 from .typer import QbraidMetaType
 
 QPROGRAM_NATIVE = Union[tuple(_QPROGRAM_TYPES)]
@@ -175,32 +171,3 @@ def is_registered_alias_native(alias: str) -> bool:
     registered_type = QPROGRAM_REGISTRY.get(alias)
 
     return native_type is not None and native_type == registered_type
-
-
-def get_native_experiment_type(native_alias: str) -> ExperimentType:
-    """Returns the ExperimentType corresponding to the native program type alias."""
-    module = "programs"
-    group = f"qbraid.{module}"
-
-    native_no_ep = {
-        "openqasm3": ExperimentType.GATE_MODEL,
-        "pyqir": ExperimentType.GATE_MODEL,
-        "bloqade": ExperimentType.AHS,
-    }
-
-    if native_alias in native_no_ep:
-        return native_no_ep[native_alias]
-
-    entry_points = get_entrypoints(module)
-    entry_point = entry_points.get(native_alias)
-
-    if entry_point is None:
-        raise ValueError(f"Entry point '{native_alias}' not found in '{group}'.")
-
-    module_path = (
-        entry_point.value.split(":")[0] if sys.version_info >= (3, 10) else entry_point.module_name
-    )
-
-    programs_sub_module = module_path[len(group) + 1 :].split(".", maxsplit=1)[0]
-
-    return ExperimentType(programs_sub_module)

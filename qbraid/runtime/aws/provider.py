@@ -28,8 +28,8 @@ from qbraid_core.services.quantum.proxy_braket import aws_configure
 
 from qbraid._caching import cached_method
 from qbraid.exceptions import QbraidError
-from qbraid.programs import ExperimentType, ProgramSpec
-from qbraid.runtime import QuantumProvider, TargetProfile
+from qbraid.programs import ProgramSpec
+from qbraid.runtime import ExperimentType, QuantumProvider, TargetProfile
 
 from .device import BraketDevice
 

@@ -13,5 +13,4 @@ Submodules
    :toctree: ../stubs/
 
    ahs
-   annealing
-   gate_model
+   circuits

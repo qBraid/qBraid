@@ -20,8 +20,8 @@ import pytest
 from cirq import CNOT, Circuit, GridQubit, H, LineQubit, Moment, NamedQubit, X, Y, Z
 
 from qbraid.interface import circuits_allclose
+from qbraid.programs.circuits.cirq import CirqCircuit
 from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.gate_model.cirq import CirqCircuit
 
 
 def test_contiguous_line_qubits():
