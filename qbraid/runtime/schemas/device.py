@@ -51,12 +51,12 @@ class DeviceData(BaseModel):
         paradigm (str): The quantum computing paradigm (e.g., gate-model, AHS).
         status (str): The current status of the device (e.g., ONLINE, OFFLINE).
         is_available (bool): Indicates whether the device is available for jobs.
-        queue_depth (Optional[int]): The depth of the job queue, or None if not applicable.
+        queue_depth (int, optional): The depth of the job queue, or None if not applicable.
         device_type (str): The type of device (e.g., Simulator, QPU).
         num_qubits (int): The number of qubits supported by the device.
         run_package (str): The software package used to interact with the device (e.g. qasm2).
         device_id (str): The qBraid-specific device identifier.
-        noise_models (list[str]): A list of supported noise models. Defaults to an empty list.
+        noise_models (list[str], optional): A list of supported noise models. Defaults to None.
         pricing (DevicePricing): The pricing structure for using the device, in qBraid credits.
     """
 
@@ -76,5 +76,5 @@ class DeviceData(BaseModel):
     run_package: str = Field(alias="runPackage")
     device_id: str = Field(alias="qbraid_id")
 
-    noise_models: list[str] = Field(default_factory=list, alias="noiseModels")
+    noise_models: Optional[list[str]] = Field(None, alias="noiseModels")
     pricing: DevicePricing
