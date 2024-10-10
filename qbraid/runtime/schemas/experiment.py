@@ -15,7 +15,7 @@ Module defining qBraid runtime experiment schemas.
 from __future__ import annotations
 
 from collections import Counter
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -123,7 +123,7 @@ class QuEraQasmSimulationMetadata(GateModelExperimentMetadata):
             tool used to generate the atom animation state data.
         atom_animation_state (dict, optional): JSON data representing the state
             of the QPU atoms used in the simulation.
-        logs (list, optional): List of log messages generated during the simulation.
+        logs (list, optional): list of log messages generated during the simulation.
 
     """
 
@@ -140,3 +140,148 @@ class AnnealingExperimentMetadata(BaseModel):
     num_solutions: Optional[int] = Field(None, alias="solutionCount")
     energies: Optional[list[float]] = None
     num_variables: Optional[int] = Field(None, alias="variableCount")
+
+
+class QuboSolveParams(BaseModel):
+    """Parameters for solving a QUBO problem using NEC VA algorithm.
+
+    Attributes:
+        offset (float): Offset for the normalized weight information stored in the QUBO.
+        num_reads (Optional[int]): VA sampling rate. Must be between 1 and 20. Default is 1.
+        num_results (Optional[int]): Number of VA annealing results. Returns only the optimal
+            solution when 1 or None is specified. Default is 1.
+        num_sweeps (Optional[int]): Number of VA annealing sweeps. Must be between 1 and 100000.
+            Default is 500.
+        beta_range (Optional[tuple[float, float, int]]): VA beta value in (start, end, steps)
+            format. Default is (10.0, 100.0, 200).
+        beta_list (Optional[list[float]]): Beta value array for each VA sweep.
+        dense (Optional[bool]): VA matrix mode. True for dense matrix mode, False for sparse
+            matrix mode. Default is None.
+        vector_mode (Optional[str]): Mode during VA annealing. Options are 'speed' for speed
+            priority or 'accuracy' for accuracy priority. Default is 'accuracy'.
+        timeout (Optional[int]): Job execution timeout in seconds. Standard range is between 1
+            and 7200. Default is 1800.
+        ve_num (Optional[int]): Number of VEs used in VA annealing. Must be between 1 and the
+            number of VEs installed on each server.
+        onehot (Optional[list[str]]): VA onehot constraint parameter.
+        fixed (Optional[Union[dict[str, int], list[str]]]): VA fixed constraint parameter.
+        andzero (Optional[list[str]]): VA andzero constraint parameter.
+        orone (Optional[list[str]]): VA orone constraint parameter.
+        supplement (Optional[list[str]]): VA supplement constraint parameter.
+        maxone (Optional[list[str]]): VA maxone constraint parameter.
+        minmaxone (Optional[list[str]]): VA minmaxone constraint parameter.
+        init_spin (Optional[Union[dict[str, int], list[str]]]): VA init_spin parameter.
+        spin_list (Optional[list[str]]): VA spin_list parameter.
+    """
+
+    offset: float
+
+    num_reads: Optional[int] = 1
+    num_results: Optional[int] = 1
+    num_sweeps: Optional[int] = 500
+    beta_range: Optional[tuple[float, float, int]] = (10.0, 100.0, 200)
+    beta_list: Optional[list[float]] = None
+    dense: Optional[bool] = None
+
+    vector_mode: Optional[str] = "accuracy"
+    timeout: Optional[int] = 1800
+    ve_num: Optional[int] = None
+    onehot: Optional[list[str]] = None
+    fixed: Optional[Union[dict[str, int], list[str]]] = None
+    andzero: Optional[list[str]] = None
+    orone: Optional[list[str]] = None
+    supplement: Optional[list[str]] = None
+    maxone: Optional[list[str]] = None
+    minmaxone: Optional[list[str]] = None
+    init_spin: Optional[Union[dict[str, int], list[str]]] = None
+    spin_list: Optional[list[str]] = None
+
+    @field_validator("offset")
+    @classmethod
+    def validate_offset(cls, value):
+        """Validate the offset value."""
+        if not -3.402823e38 <= value <= 3.402823e38:
+            raise ValueError("offset must be between -3.402823e+38 and 3.402823e+38")
+        return value
+
+    @field_validator("num_reads")
+    @classmethod
+    def validate_num_reads(cls, value):
+        """Validate the num_reads value."""
+        if value is not None and not 1 <= value <= 20:
+            raise ValueError("num_reads must be between 1 and 20")
+        return value
+
+    @field_validator("num_sweeps")
+    @classmethod
+    def validate_num_sweeps(cls, value):
+        """Validate the num_sweeps value."""
+        if value is not None and not 1 <= value <= 100000:
+            raise ValueError("num_sweeps must be between 1 and 100000")
+        return value
+
+    @field_validator("beta_range")
+    @classmethod
+    def validate_beta_range(cls, value):
+        """Validate the beta_range value."""
+        start, end, steps = value
+
+        min_value = 1.1754945e-38
+        max_value = 3.402823e38
+
+        if not min_value <= start <= max_value:
+            raise ValueError(f"start value must be between {min_value} and {max_value}")
+
+        if not min_value <= end <= max_value:
+            raise ValueError(f"end value must be between {min_value} and {max_value}")
+
+        if start > end:
+            raise ValueError("start value must be less than or equal to end value")
+
+        if not 1 <= steps <= 100000:
+            raise ValueError("steps must be between 1 and 100000")
+
+        return value
+
+    @field_validator("beta_list")
+    @classmethod
+    def validate_beta_list(cls, value):
+        """Validate the beta_list value."""
+        if value is None:
+            return value
+
+        min_value = 1.1754945e-38
+        max_value = 3.402823e38
+
+        for beta in value:
+            if not min_value <= beta <= max_value:
+                raise ValueError(
+                    f"All beta values must be between {min_value} and {max_value}. "
+                    f"Found invalid value: {beta}"
+                )
+
+        return value
+
+    @field_validator("timeout")
+    @classmethod
+    def validate_timeout(cls, value):
+        """Validate the timeout value."""
+        if value is not None and not 1 <= value <= 7200:
+            raise ValueError("timeout must be between 1 and 7200 seconds")
+        return value
+
+    @field_validator("vector_mode")
+    @classmethod
+    def validate_vector_mode(cls, value):
+        """Validate the vector_mode value."""
+        if value is not None and value not in {"speed", "accuracy"}:
+            raise ValueError("vector_mode must be 'speed' or 'accuracy'")
+        return value
+
+    @field_validator("ve_num")
+    @classmethod
+    def validate_ve_num(cls, value):
+        """Validate the ve_num value."""
+        if value is not None and value < 1:
+            raise ValueError("ve_num must be greater than or equal to 1")
+        return value
