@@ -25,7 +25,11 @@ from qbraid.programs import ExperimentType
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.schemas.base import USD, Credits, QbraidSchemaBase, QbraidSchemaHeader
 from qbraid.runtime.schemas.device import DeviceData
-from qbraid.runtime.schemas.experiment import ExperimentMetadata, GateModelExperimentMetadata
+from qbraid.runtime.schemas.experiment import (
+    ExperimentMetadata,
+    GateModelExperimentMetadata,
+    QuboSolveParams,
+)
 from qbraid.runtime.schemas.job import RuntimeJobModel, TimeStamps
 
 
@@ -352,3 +356,87 @@ def test_credits_pydantic_parsing():
         TestModel(amount="invalid")
 
     assert "Input should be a number (int, float, or Decimal)" in str(exc_info.value)
+
+
+def test_qubo_solve_params_model():
+    """Test QuboSolveParams with valid parameters."""
+    params = QuboSolveParams(
+        offset=0.5,
+        num_reads=10,
+        num_results=5,
+        num_sweeps=1000,
+        beta_range=(5.0, 100.0, 200),
+        beta_list=[1.2, 5.5, 10.0],
+        dense=True,
+        vector_mode="speed",
+        timeout=3600,
+        ve_num=2,
+        onehot=["x[0]", "x[1]"],
+        fixed={"x[0]": 1, "x[1]": 0},
+        andzero=["x[0]", "x[1]"],
+        orone=["x[1]", "x[2]"],
+        supplement=["y[0]", "y[1]"],
+        maxone=["x[0]", "x[1]"],
+        minmaxone=["x[1]", "x[2]"],
+        init_spin={"x[0]": 1, "x[1]": 0},
+        spin_list=["x[1]", "x[2]"],
+    )
+    assert params.num_reads == 10
+    assert params.beta_range == (5.0, 100.0, 200)
+    assert params.vector_mode == "speed"
+
+
+def test_qubo_solve_params_invalid_offset():
+    """Test QuboSolveParams with an invalid offset value outside of the allowed range."""
+    with pytest.raises(ValidationError, match="offset must be between"):
+        QuboSolveParams(offset=3.5e40)
+
+
+def test_qubo_solve_params_invalid_num_reads():
+    """Test QuboSolveParams with invalid num_reads outside the range of 1 to 20."""
+    with pytest.raises(ValidationError, match="num_reads must be between 1 and 20"):
+        QuboSolveParams(offset=0.5, num_reads=25)
+
+
+def test_qubo_solve_params_invalid_num_sweeps():
+    """Test QuboSolveParams with invalid num_sweeps outside the range of 1 to 100000."""
+    with pytest.raises(ValidationError, match="num_sweeps must be between 1 and 100000"):
+        QuboSolveParams(offset=0.5, num_sweeps=200000)
+
+
+def test_qubo_solve_params_invalid_beta_range():
+    """Test QuboSolveParams with invalid beta_range values."""
+    with pytest.raises(ValidationError, match="start value must be between"):
+        QuboSolveParams(offset=0.5, beta_range=(1e-40, 100.0, 200))
+
+    with pytest.raises(ValidationError, match="end value must be between"):
+        QuboSolveParams(offset=0.5, beta_range=(10.0, 4e40, 200))
+
+    with pytest.raises(
+        ValidationError, match="start value must be less than or equal to end value"
+    ):
+        QuboSolveParams(offset=0.5, beta_range=(200.0, 10.0, 200))
+
+
+def test_qubo_solve_params_invalid_beta_list():
+    """Test QuboSolveParams with invalid beta_list values outside the allowed range."""
+    with pytest.raises(ValidationError, match="All beta values must be between"):
+        QuboSolveParams(offset=0.5, beta_list=[1e-40, 10.0, 5e40])
+
+
+def test_qubo_solve_params_invalid_timeout():
+    """Test QuboSolveParams with an invalid timeout outside the range of 1 to 7200."""
+    with pytest.raises(ValidationError, match="timeout must be between 1 and 7200 seconds"):
+        QuboSolveParams(offset=0.5, timeout=8000)
+
+
+def test_qubo_solve_params_invalid_vector_mode():
+    """Test QuboSolveParams with an invalid vector_mode value."""
+    with pytest.raises(ValidationError, match="vector_mode must be 'speed' or 'accuracy'"):
+        QuboSolveParams(offset=0.5, vector_mode="fast")
+
+
+def test_qubo_solve_params_invalid_ve_num():
+    """Test QuboSolveParams with invalid ve_num below 1."""
+    with pytest.raises(ValidationError, match="ve_num must be greater than or equal to 1"):
+        QuboSolveParams(offset=0.5, ve_num=0)

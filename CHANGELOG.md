@@ -15,6 +15,20 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+
+### Improved / Modified
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Dependencies
+
+## [0.8.3] - 2024-10-09
+
+### Added
 - Added `AnnealingResultData` class to `qbraid.runtime` module to represent annealing results. ([#768](https://github.com/qBraid/qBraid/pull/768))
 - Added `NECVectorAnnealerResultData` class to `qbraid.runtime.native` module to represent NEC vector annealer results. ([#768](https://github.com/qBraid/qBraid/pull/768))
 - Added `AnnealingExperimentMetadata` class to `qbraid.runtime.schemas` module to represent annealing experiment metadata. ([#768](https://github.com/qBraid/qBraid/pull/768))
@@ -56,13 +70,8 @@ models.remove("custom")
 - Moved `ExperimentType` enum into `qbraid.programs` ([#777](https://github.com/qBraid/qBraid/pull/777))
 - Renamed `qbraid.programs.circuits` to `qbraid.programs.gate_model` to match enum value ([#777](https://github.com/qBraid/qBraid/pull/777))
 
-### Deprecated
-
-### Removed
-
 ### Fixed
 - Fixed spelling error of `test_quera_simulator_workflow` in `test.test_device` module. ([#768](https://github.com/qBraid/qBraid/pull/768))
-### Dependencies
 
 ## [0.8.2] - 2024-09-30
 
