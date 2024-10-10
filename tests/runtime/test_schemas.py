@@ -417,6 +417,9 @@ def test_qubo_solve_params_invalid_beta_range():
     ):
         QuboSolveParams(offset=0.5, beta_range=(200.0, 10.0, 200))
 
+    with pytest.raises(ValidationError, match="steps must be between 1 and 100000"):
+        QuboSolveParams(offset=0.5, beta_range=(10.0, 100.0, -2))
+
 
 def test_qubo_solve_params_invalid_beta_list():
     """Test QuboSolveParams with invalid beta_list values outside the allowed range."""
@@ -440,3 +443,9 @@ def test_qubo_solve_params_invalid_ve_num():
     """Test QuboSolveParams with invalid ve_num below 1."""
     with pytest.raises(ValidationError, match="ve_num must be greater than or equal to 1"):
         QuboSolveParams(offset=0.5, ve_num=0)
+
+
+def test_qubo_solve_params_beta_list_none():
+    """Test QuboSolveParams beta_list set to None."""
+    params = QuboSolveParams(offset=0.5, beta_list=None)
+    assert params.beta_list is None
