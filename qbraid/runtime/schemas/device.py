@@ -56,7 +56,7 @@ class DeviceData(BaseModel):
         num_qubits (int): The number of qubits supported by the device.
         run_package (str): The software package used to interact with the device (e.g. qasm2).
         device_id (str): The qBraid-specific device identifier.
-        noise_models (list[str], optional): A list of supported noise models. Defaults to an empty list.
+        noise_models (list[str], optional): A list of supported noise models. Defaults to None.
         pricing (DevicePricing): The pricing structure for using the device, in qBraid credits.
     """
 
