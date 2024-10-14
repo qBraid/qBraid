@@ -10,7 +10,7 @@ body:
 
   - type: textarea
     attributes:
-      label: Environment: Output of qbraid.about()
+      label: Environment: Output of qbraid.about\(\)
       description: |
         Please copy and paste the output of the following command:
         - **For terminal**: `python3 -c "import qbraid; qbraid.about()"`
