@@ -18,6 +18,7 @@ Types of changes:
 - Added pydantic schema to define the possible Qubo solve params available for submissions to the NEC vector annealer device ([#788](https://github.com/qBraid/qBraid/pull/788))
 
 ### Improved / Modified
+- Improved clarity of GitHub issue template bug report prompts ([#791](https://github.com/qBraid/qBraid/pull/791))
 
 ### Deprecated
 
