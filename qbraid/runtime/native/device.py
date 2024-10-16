@@ -310,7 +310,6 @@ class QbraidDevice(QuantumDevice):
             and self._target_spec.alias in get_entrypoints("programs")
         )
         transpile_option = self._target_spec is not None and self._options.get("transpile") is True
-        validate_option = self._options.get("validate") is True
 
         for program in run_input_list:
             aux_payload = {}
@@ -322,8 +321,7 @@ class QbraidDevice(QuantumDevice):
                 aux_payload = self._construct_aux_payload(program, program_spec)
             if transpile_option:
                 program = self.transpile(program, program_spec)
-            if validate_option:
-                self.validate(program)
+            self.validate(program)
             if native_target:
                 aux_payload = self._construct_aux_payload(program, program_spec)
             run_input_json = self.transform(program)

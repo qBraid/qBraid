@@ -892,3 +892,17 @@ def test_validate_run_input_payload_invalid_payload_with_target_spec():
     assert "Use QbraidProvider.get_device() to re-instantiate the device object" in str(
         excinfo.value
     )
+
+
+def test_get_program_spec_not_registered_warning():
+    """Test that a warning is emitted when the program type is not registered."""
+    run_package = "not_registered"
+    device_id = "fake_device"
+    with pytest.warns(
+        RuntimeWarning,
+        match=(
+            f"The default runtime configuration for device '{device_id}' includes "
+            f"transpilation to program type '{run_package}', which is not registered."
+        ),
+    ):
+        QbraidProvider._get_program_spec(run_package, device_id)
