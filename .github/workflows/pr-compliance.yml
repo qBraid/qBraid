@@ -13,13 +13,13 @@ name: PR Compliance
 on:
   pull_request:
     branches: ['main']
-    types: [opened, ready_for_review, synchronize]
+    types: [opened, reopened, ready_for_review, synchronize]
 
 jobs:
   remind:
     name: Changelog
     runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'github-actions[bot]' }}
+    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'github-actions[bot]' && github.event.pull_request.draft == false }}
     steps:
     - uses: actions/checkout@v4
     - name: Changelog Reminder
