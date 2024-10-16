@@ -59,13 +59,19 @@ Resources
    :caption: QIR API Reference
    :hidden:
 
-   qbraid_qir <https://sdk.qbraid.com/projects/qir/en/latest/api/qbraid_qir.html>
-   qbraid_qir.cirq <https://sdk.qbraid.com/projects/qir/en/latest/api/qbraid_qir.cirq.html>
-   qbraid_qir.qasm3 <https://sdk.qbraid.com/projects/qir/en/latest/api/qbraid_qir.qasm3.html>
+   qbraid_qir <https://sdk.qbraid.com/projects/qir/en/stable/api/qbraid_qir.html>
+   qbraid_qir.cirq <https://sdk.qbraid.com/projects/qir/en/stable/api/qbraid_qir.cirq.html>
+   qbraid_qir.qasm3 <https://sdk.qbraid.com/projects/qir/en/stable/api/qbraid_qir.qasm3.html>
 
 .. toctree::
    :caption: CORE API Reference
    :hidden:
 
-   qbraid_core <https://sdk.qbraid.com/projects/core/en/latest/api/qbraid_core.html>
-   qbraid_core.services <https://sdk.qbraid.com/projects/core/en/latest/api/qbraid_core.services.html>
+   qbraid_core <https://sdk.qbraid.com/projects/core/en/stable/api/qbraid_core.html>
+   qbraid_core.services <https://sdk.qbraid.com/projects/core/en/stable/api/qbraid_core.services.html>
+
+.. toctree::
+   :caption: PYQASM API Reference
+   :hidden:
+
+   pyqasm <https://sdk.qbraid.com/projects/pyqasm/en/stable/api/pyqasm.html>

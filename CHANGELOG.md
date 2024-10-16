@@ -25,6 +25,7 @@ Types of changes:
 ### Removed
 
 ### Fixed
+- Fixed native runtime bug: failure to raise exception if `qbraid-qir` not installed for "qbraid_qir_simulator" device. Now warns at provider level and raises in run method if transform fails ([#801](https://github.com/qBraid/qBraid/pull/801))
 
 ### Dependencies
 
