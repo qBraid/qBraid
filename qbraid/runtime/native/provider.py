@@ -14,6 +14,7 @@ Module defining QbraidProvider class.
 """
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
 from qbraid_core.exceptions import AuthError
@@ -127,6 +128,12 @@ class QbraidProvider(QuantumProvider):
             return None
 
         program_type = QPROGRAM_REGISTRY.get(run_package)
+        if program_type is None:
+            warnings.warn(
+                f"The default runtime configuration for device '{device_id}' includes "
+                f"transpilation to program type '{run_package}', which is not registered.",
+                RuntimeWarning,
+            )
         lambdas = get_program_spec_lambdas(run_package, device_id)
         return ProgramSpec(program_type, alias=run_package, **lambdas) if program_type else None
 

@@ -225,6 +225,30 @@ class QbraidDevice(QuantumDevice):
 
         return self.profile.noise_models.get(noise_model).name
 
+    @staticmethod
+    def _validate_run_input_payload(
+        payload: Union[dict[str, Any], Any], target_spec: Optional[ProgramSpec]
+    ) -> None:
+        """Raises an exception if the transformed run input is not a dictionary."""
+        if not isinstance(payload, dict):
+            error_message = (
+                "Run input transform failed{}. If the issue persists, "
+                "please submit a bug report at https://github.com/qBraid/qBraid/issues."
+            )
+
+            if target_spec is None:
+                error_message = error_message.format(
+                    " due to missing target ProgramSpec. Ensure all required "
+                    "dependency extras for this device are installed, and try again"
+                )
+            else:
+                error_message = error_message.format(
+                    ", likely due to corrupted target ProgramSpec. Use QbraidProvider.get_device() "
+                    "to re-instantiate the device object, and try again"
+                )
+
+            raise QbraidRuntimeError(error_message)
+
     def run(
         self,
         run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
@@ -303,6 +327,7 @@ class QbraidDevice(QuantumDevice):
             if native_target:
                 aux_payload = self._construct_aux_payload(program, program_spec)
             run_input_json = self.transform(program)
+            self._validate_run_input_payload(run_input_json, self._target_spec)
             runtime_payload = {**aux_payload, **run_input_json}
             job = self.submit(run_input=runtime_payload, shots=shots, tags=tags, **kwargs)
             jobs.append(job)
