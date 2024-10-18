@@ -117,9 +117,7 @@ def mock_quera_profile():
 def mock_nec_va_profile():
     """Mock profile for testing."""
     return TargetProfile(
-        device_id="nec_vector_annealer",
-        simulator=True,
-        experiment_type=ExperimentType.ANNEALING,
+        device_id="nec_vector_annealer", simulator=True, experiment_type=ExperimentType.ANNEALING
     )
 
 
@@ -855,3 +853,56 @@ def test_resolve_noise_model_raises_for_bad_input_type(mock_qbraid_device):
     with pytest.raises(ValueError) as exc_info:
         mock_qbraid_device._resolve_noise_model(10)
     assert "Invalid type for noise model" in str(exc_info)
+
+
+def test_validate_run_input_payload_valid_dict():
+    """Test when the payload is a valid dictionary."""
+    payload = {"key": "value"}
+    target_spec = ProgramSpec(str, "qasm2")
+
+    assert QbraidDevice._validate_run_input_payload(payload, None) is None
+    assert QbraidDevice._validate_run_input_payload(payload, target_spec) is None
+
+
+def test_validate_run_input_payload_invalid_payload_none_target_spec():
+    """Test when the payload is not a dictionary and target_spec is None."""
+    payload = "invalid_payload"
+    target_spec = None
+
+    with pytest.raises(QbraidRuntimeError) as excinfo:
+        QbraidDevice._validate_run_input_payload(payload, target_spec)
+
+    assert "Run input transform failed due to missing target ProgramSpec" in str(excinfo.value)
+    assert "Ensure all required dependency extras for this device are installed" in str(
+        excinfo.value
+    )
+
+
+def test_validate_run_input_payload_invalid_payload_with_target_spec():
+    """Test when the payload is not a dictionary and target_spec is provided."""
+    payload = "invalid_payload"
+    target_spec = ProgramSpec(str, "qasm2")
+
+    with pytest.raises(QbraidRuntimeError) as excinfo:
+        QbraidDevice._validate_run_input_payload(payload, target_spec)
+
+    assert "Run input transform failed, likely due to corrupted target ProgramSpec" in str(
+        excinfo.value
+    )
+    assert "Use QbraidProvider.get_device() to re-instantiate the device object" in str(
+        excinfo.value
+    )
+
+
+def test_get_program_spec_not_registered_warning():
+    """Test that a warning is emitted when the program type is not registered."""
+    run_package = "not_registered"
+    device_id = "fake_device"
+    with pytest.warns(
+        RuntimeWarning,
+        match=(
+            f"The default runtime configuration for device '{device_id}' includes "
+            f"transpilation to program type '{run_package}', which is not registered."
+        ),
+    ):
+        QbraidProvider._get_program_spec(run_package, device_id)

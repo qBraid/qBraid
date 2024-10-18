@@ -59,12 +59,12 @@ DEVICE_DATA_NEC = {
     "name": "NEC Vector Annealer",
     "provider": "NEC",
     "paradigm": "annealing",
-    "type": "Annealer",
+    "type": "SIMULATOR",
     "vendor": "qbraid",
     "status": "ONLINE",
     "isAvailable": True,
     "numberQubits": 0,
-    "runPackage": "pyqubo",
+    "runPackage": "cpp_pyqubo",
     "pricing": {"perMinute": 0, "perShot": 0.00145, "perTask": 0.3},
 }
 

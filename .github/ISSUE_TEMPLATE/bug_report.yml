@@ -10,7 +10,7 @@ body:
 
   - type: textarea
     attributes:
-      label: Environment
+      label: Environment - Output of qbraid.about()
       description: |
         Please copy and paste the output of the following command:
         - **For terminal**: `python3 -c "import qbraid; qbraid.about()"`
@@ -29,8 +29,8 @@ body:
   - type: dropdown
     id: bug-category
     attributes:
-      label: Context
-      description: "Did this bug occur within qBraid Lab?"
+      label: Context - Running in qBraid Lab?
+      description: "Did this bug occur while using a pre-built environment in qBraid Lab?"
       options:
         - "Yes"
         - "No"

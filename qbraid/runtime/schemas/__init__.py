@@ -30,6 +30,7 @@ Classes
     QbraidQirSimulationMetadata
     TimeStamps
     RuntimeJobModel
+    QuboSolveParams
 
 """
 from .base import QbraidSchemaBase, QbraidSchemaHeader
@@ -39,6 +40,7 @@ from .experiment import (
     ExperimentMetadata,
     GateModelExperimentMetadata,
     QbraidQirSimulationMetadata,
+    QuboSolveParams,
     QuEraQasmSimulationMetadata,
 )
 from .job import RuntimeJobModel, TimeStamps
@@ -55,4 +57,5 @@ __all__ = [
     "QbraidQirSimulationMetadata",
     "TimeStamps",
     "RuntimeJobModel",
+    "QuboSolveParams",
 ]
