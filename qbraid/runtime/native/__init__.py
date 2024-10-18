@@ -30,7 +30,7 @@ Classes
 
 """
 from qbraid_core import QbraidClient, QbraidSession, Session
-from qbraid_core.services.quantum.runner import Simulator as QirRunner
+from qbraid_core.services.quantum.runner import QirRunner
 
 from .device import QbraidDevice
 from .job import QbraidJob

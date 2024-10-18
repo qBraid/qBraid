@@ -12,7 +12,7 @@
 Unit tests for QASM preprocessing functions
 
 """
-from qbraid.passes.qasm2.compat import flatten_qasm_program, remove_qasm_barriers
+from qbraid.passes.qasm.unfold import remove_qasm_barriers, unfold_qasm2
 
 
 def strings_equal(s1, s2):
@@ -148,7 +148,7 @@ cx q[1],q[0];
 rx(-pi/2) q[1];
 rx(-pi/2) q[0];
 """
-    qasm_out = flatten_qasm_program(qasm_in)
+    qasm_out = unfold_qasm2(qasm_in)
     assert strings_equal(qasm_out, expected_out)
 
 
@@ -169,7 +169,7 @@ qreg q[2];
 rz(-1.0*5.07865952845335) q[1];
 ry(2.00367210595874/2) q[0];
 """
-    qasm_out = flatten_qasm_program(qasm_in)
+    qasm_out = unfold_qasm2(qasm_in)
     assert strings_equal(qasm_out, expected_out)
 
 
@@ -195,7 +195,7 @@ cx q[1],q[0];
 rx(-pi/2) q[2];
 rx(-pi/2) q[0];
 """
-    qasm_out = flatten_qasm_program(qasm_in)
+    qasm_out = unfold_qasm2(qasm_in)
     assert strings_equal(qasm_out, expected_out)
 
 
@@ -217,7 +217,7 @@ rzx(pi/4) q[0],q[1];
 x q[0];
 rzx(-pi/4) q[0],q[1];
 """
-    qasm_out = flatten_qasm_program(qasm_in)
+    qasm_out = unfold_qasm2(qasm_in)
     assert strings_equal(qasm_out, expected_out)
 
 
@@ -248,5 +248,5 @@ rz(-pi/4) q[1];
 cx q[0],q[1];
 h q[1];
 """
-    qasm_out = flatten_qasm_program(qasm_in)
+    qasm_out = unfold_qasm2(qasm_in)
     assert strings_equal(qasm_out, expected_out)

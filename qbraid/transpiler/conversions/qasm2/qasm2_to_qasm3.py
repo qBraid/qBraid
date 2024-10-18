@@ -16,8 +16,8 @@ import os
 import textwrap
 
 from qbraid._version import __version__ as qbraid_version
-from qbraid.passes.qasm2.decompose import _decompose_rxx_instr
-from qbraid.passes.qasm3.format import remove_unused_gates
+from qbraid.passes.qasm.decompose import _decompose_rxx_instr
+from qbraid.passes.qasm.format import remove_unused_gates
 from qbraid.programs.typer import Qasm2String, Qasm2StringType, Qasm3StringType
 from qbraid.transpiler.annotations import weight
 

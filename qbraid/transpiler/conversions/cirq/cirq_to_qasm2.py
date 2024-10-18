@@ -20,7 +20,7 @@ import cirq
 from cirq import ops, value
 
 from qbraid._version import __version__ as qbraid_version
-from qbraid.passes.qasm3.format import format_qasm
+from qbraid.passes.qasm.format import format_qasm
 from qbraid.transpiler.annotations import weight
 
 if TYPE_CHECKING:

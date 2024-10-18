@@ -9,9 +9,9 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module for appyling transformations to OpenQASM 3 programs.
+Module for transforming and extracting data from OpenQASM programs.
 
-.. currentmodule:: qbraid.passes.qasm3
+.. currentmodule:: qbraid.passes.qasm
 
 Functions
 ----------
@@ -19,30 +19,41 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   rebase
-   decompose_qasm3
-   insert_gate_def
-   replace_gate_name
-   add_stdgates_include
-   remove_stdgates_include
-   convert_qasm_pi_to_decimal
-   normalize_qasm_gate_params
-   remove_unused_gates
+    depth
+    rebase
+    unfold_qasm2
+    decompose_qasm3
+    decompose_qasm2
+    insert_gate_def
+    replace_gate_name
+    add_stdgates_include
+    remove_stdgates_include
+    convert_qasm_pi_to_decimal
+    normalize_qasm_gate_params
+    remove_unused_gates
+    has_measurements
+    remove_measurements
 
 """
+from .analyze import depth, has_measurements
 from .compat import (
     add_stdgates_include,
     convert_qasm_pi_to_decimal,
     insert_gate_def,
     normalize_qasm_gate_params,
+    remove_measurements,
     remove_stdgates_include,
     replace_gate_name,
 )
-from .decompose import decompose_qasm3, rebase
+from .decompose import decompose_qasm2, decompose_qasm3, rebase
 from .format import remove_unused_gates
+from .unfold import unfold_qasm2
 
 __all__ = [
+    "depth",
     "rebase",
+    "unfold_qasm2",
+    "decompose_qasm2",
     "decompose_qasm3",
     "insert_gate_def",
     "replace_gate_name",
@@ -51,4 +62,6 @@ __all__ = [
     "convert_qasm_pi_to_decimal",
     "normalize_qasm_gate_params",
     "remove_unused_gates",
+    "has_measurements",
+    "remove_measurements",
 ]

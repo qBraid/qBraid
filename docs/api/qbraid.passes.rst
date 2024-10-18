@@ -12,5 +12,4 @@ Submodules
 .. autosummary::
    :toctree: ../stubs/
 
-   qasm2
-   qasm3
+   qasm

@@ -36,7 +36,7 @@ dependencies = [
     "rustworkx>=0.14.2",
     "numpy>=1.17",
     "openqasm3[parser]>=0.4.0",
-    "qbraid-core>=0.1.25",
+    "qbraid-core>=0.1.26",
     "pydantic>2.0.0",
     "typing-extensions>=4.0.0"
 ]
@@ -60,7 +60,7 @@ pennylane = ["pennylane<0.39"]
 pyqubo = ["pyqubo>=1.4.0"]
 pyquil = ["pyquil>=4.4"]
 pytket = ["pytket>=1.31"]
-qir = ["qbraid-qir>=0.2"]
+qir = ["qbraid-qir>=0.2.0,<=0.2.3"]
 qiskit = ["qiskit>=0.44,<1.3", "qiskit-ibm-runtime>=0.25.0,<0.31", "qiskit-qasm3-import>=0.4.2", "qiskit-qir>=0.5.0"]
 visualization = ["ipython", "matplotlib", "pylatexenc", "pandas>=2.2", "flair-visual>=0.1.4", "ipympl"]
 test = ["pytest", "pytest-cov", "sympy", "packaging"]
@@ -77,8 +77,8 @@ pennylane = "qbraid.programs.gate_model.pennylane:PennylaneTape"
 pyquil = "qbraid.programs.gate_model.pyquil:PyQuilProgram"
 qiskit = "qbraid.programs.gate_model.qiskit:QiskitCircuit"
 pytket = "qbraid.programs.gate_model.pytket:PytketCircuit"
-qasm2 = "qbraid.programs.gate_model.qasm:OpenQasm2Program"
-qasm3 = "qbraid.programs.gate_model.qasm:OpenQasm3Program"
+qasm2 = "qbraid.programs.gate_model.qasm2:OpenQasm2Program"
+qasm3 = "qbraid.programs.gate_model.qasm3:OpenQasm3Program"
 
 [tool.setuptools.dynamic]
 version = {attr = "qbraid._version.__version__"}

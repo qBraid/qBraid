@@ -15,6 +15,7 @@ in the way OpenQASM 3 strings are formatted.
 """
 
 import re
+from typing import Optional
 
 
 def _remove_empty_lines(input_string: str) -> str:
@@ -35,8 +36,29 @@ def _remove_comments(qasm: str, keep_header: bool = True) -> str:
     return "\n".join(result_lines)
 
 
-def format_qasm(qasm: str) -> str:
+def _format_qasm(qasm: str, skip_pattern: str) -> str:
+    lines = qasm.split("\n")
+    formatted_lines = []
+
+    for line in lines:
+        line = line.strip()  # Strip leading and trailing whitespace
+        if skip_pattern.match(line) or line.startswith("//"):
+            # If the line matches the gate definition pattern, add it as is
+            formatted_lines.append(line)
+        else:
+            # Otherwise, split it at semicolons and add each part as a separate line
+            parts = re.split(";[ ]*", line)
+            parts = [part + ";" for part in parts if part]  # Remove empty parts
+            formatted_lines.extend(parts)
+
+    return "\n".join(formatted_lines)
+
+
+def format_qasm(qasm: str, skip_pattern: Optional[str] = None) -> str:
     """Format a QASM string."""
+    if skip_pattern is not None:
+        return _format_qasm(qasm, skip_pattern)
+
     qasm = _remove_comments(qasm)
     qasm = _remove_double_empty_lines(qasm)
     return qasm.strip()

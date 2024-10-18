@@ -27,7 +27,7 @@ from .exceptions import CompilationError, QasmDecompositionError
 
 __all__ = ["CompilationError", "QasmDecompositionError"]
 
-_lazy_mods = ["qasm2", "qasm3"]
+_lazy_mods = ["qasm3"]
 
 
 def __getattr__(name):

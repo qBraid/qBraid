@@ -35,7 +35,7 @@ jobs:
       - name: Build binary wheel + source tarball
         id: build-dev
         run: |
-            export QBRAID_PRE_RELEASE_VERSION=$(tools/stamp_dev_version.sh)
+            export QBRAID_PRE_RELEASE_VERSION=$(bin/stamp_dev_version.sh)
             if [[ "$QBRAID_PRE_RELEASE_VERSION" =~ .*dev.* ]]; then
               echo "Deploying dev version '$QBRAID_PRE_RELEASE_VERSION'"
             else
@@ -43,7 +43,7 @@ jobs:
               exit 0
             fi
             out_dir="${PWD}/dist"
-            tools/create_dev_build.sh $QBRAID_PRE_RELEASE_VERSION "${out_dir}"
+            bin/create_dev_build.sh $QBRAID_PRE_RELEASE_VERSION "${out_dir}"
             echo "dir=$out_dir" >> $GITHUB_OUTPUT
 
       - name: Publish package to PyPI

@@ -16,7 +16,7 @@ import re
 
 import pytest
 
-from qbraid.passes.qasm3.compat import (
+from qbraid.passes.qasm.compat import (
     _evaluate_expression,
     add_stdgates_include,
     has_redundant_parentheses,
@@ -26,7 +26,7 @@ from qbraid.passes.qasm3.compat import (
     replace_gate_name,
     simplify_parentheses_in_qasm,
 )
-from qbraid.passes.qasm3.format import _remove_empty_lines
+from qbraid.passes.qasm.format import _remove_empty_lines
 
 
 @pytest.mark.parametrize(

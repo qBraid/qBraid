@@ -266,13 +266,6 @@ def test_program_type_error():
     assert message == "Unsupported quantum program type."
 
 
-def test_circuits_init():
-    """Test the initialization of the circuits module."""
-    assert "qasm" in key_set and "qasm" not in NATIVE_REGISTRY
-    assert all(key in NATIVE_REGISTRY for key in ["qasm2", "qasm3"])
-    assert all(key not in key_set for key in ["qasm2", "qasm3"])
-
-
 @pytest.fixture
 def pyqir_bell() -> Module:
     """Returns a QIR bell circuit with measurement over two qubits."""

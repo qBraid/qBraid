@@ -38,7 +38,8 @@ submodules = [
     "pennylane",
     "pyquil",
     "pytket",
-    "qasm",
+    "qasm2",
+    "qasm3",
     "qiskit",
 ]
 
