@@ -15,6 +15,21 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+
+### Improved / Modified
+- combined `qasm2` and `qasm3` modules in `qbraid.passes` to allow splitting `qbraid.programs.gate_model.qasm` into `qasm2` and `qasm3` sub-modules to maintain program type alias consistency ([#805](https://github.com/qBraid/qBraid/pull/805))
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Dependencies
+
+## [0.8.3] - 2024-10-09
+
+### Added
 - Added `AnnealingResultData` class to `qbraid.runtime` module to represent annealing results. ([#768](https://github.com/qBraid/qBraid/pull/768))
 - Added `NECVectorAnnealerResultData` class to `qbraid.runtime.native` module to represent NEC vector annealer results. ([#768](https://github.com/qBraid/qBraid/pull/768))
 - Added `AnnealingExperimentMetadata` class to `qbraid.runtime.schemas` module to represent annealing experiment metadata. ([#768](https://github.com/qBraid/qBraid/pull/768))
@@ -61,6 +76,7 @@ models.remove("custom")
 
 ### Fixed
 - Fixed spelling error of `test_quera_simulator_workflow` in `test.test_device` module. ([#768](https://github.com/qBraid/qBraid/pull/768))
+
 ### Dependencies
 
 ## [0.8.2] - 2024-09-30
