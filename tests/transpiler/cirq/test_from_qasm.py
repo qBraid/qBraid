@@ -17,7 +17,7 @@ import pytest
 from qiskit import QuantumCircuit
 
 from qbraid.interface import circuits_allclose
-from qbraid.passes.qasm2 import flatten_qasm_program
+from qbraid.passes.qasm import unfold_qasm2
 from qbraid.programs import load_program
 from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
 
@@ -62,7 +62,7 @@ def strings_equal(s1, s2):
 def test_preprocess_qasm(qasm_str):
     """Test converting qasm string to format supported by Cirq parser"""
     qiskit_circuit = QuantumCircuit().from_qasm_str(qasm_str)
-    supported_qasm = flatten_qasm_program(qasm_str)
+    supported_qasm = unfold_qasm2(qasm_str)
     cirq_circuit = qasm2_to_cirq(supported_qasm)
     qprogram = load_program(cirq_circuit)
     qprogram._convert_to_line_qubits()

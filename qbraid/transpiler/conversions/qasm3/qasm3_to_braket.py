@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
 
-from qbraid.passes.qasm3.compat import (
+from qbraid.passes.qasm.compat import (
     convert_qasm_pi_to_decimal,
     remove_stdgates_include,
     replace_gate_name,

@@ -15,10 +15,11 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
-- Added pydantic schema to define the possible Qubo solve params available for submissions to the NEC vector annealer device ([#788](https://github.com/qBraid/qBraid/pull/788))
 
 ### Improved / Modified
+- Added pydantic schema to define the possible Qubo solve params available for submissions to the NEC vector annealer device ([#788](https://github.com/qBraid/qBraid/pull/788))
 - Improved clarity of GitHub issue template bug report prompts ([#791](https://github.com/qBraid/qBraid/pull/791))
+- Combined `qasm2` and `qasm3` modules in `qbraid.passes` to allow splitting `qbraid.programs.gate_model.qasm` into `qasm2` and `qasm3` sub-modules to maintain program type alias consistency ([#805](https://github.com/qBraid/qBraid/pull/805))
 
 ### Deprecated
 

@@ -51,6 +51,7 @@ Classes
     GateModelResultData
     AhsResultData
     AhsShotResult
+    AnnealingResultData
 
 Exceptions
 ------------
@@ -83,7 +84,14 @@ from .noise import NoiseModel, NoiseModelSet
 from .options import RuntimeOptions
 from .profile import TargetProfile
 from .provider import QuantumProvider
-from .result import AhsResultData, AhsShotResult, GateModelResultData, Result, ResultData
+from .result import (
+    AhsResultData,
+    AhsShotResult,
+    AnnealingResultData,
+    GateModelResultData,
+    Result,
+    ResultData,
+)
 
 __all__ = [
     "QuantumDevice",
@@ -106,6 +114,7 @@ __all__ = [
     "GateModelResultData",
     "AhsResultData",
     "AhsShotResult",
+    "AnnealingResultData",
 ]
 
 _lazy = {

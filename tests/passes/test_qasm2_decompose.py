@@ -16,7 +16,7 @@ Unit tests for QASM transform to basic gates
 import pytest
 
 from qbraid.passes.exceptions import QasmDecompositionError
-from qbraid.passes.qasm2.decompose import decompose_qasm2
+from qbraid.passes.qasm.decompose import decompose_qasm2
 
 cu = """
 OPENQASM 2.0;

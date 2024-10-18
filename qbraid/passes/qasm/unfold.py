@@ -14,48 +14,12 @@ Module for preprocessing qasm string to before it is passed to parser.
 """
 import re
 
+from .compat import remove_qasm_barriers
 from .decompose import decompose_qasm2
+from .format import format_qasm
 
 
-def remove_qasm_barriers(qasm_str: str) -> str:
-    """Returns a copy of the input QASM with all barriers removed.
-
-    Args:
-        qasm_str: QASM to remove barriers from.
-    """
-    quoted_re = r"(?:\"[^\"]*?\")"
-    # Statements separated by semicolons
-    statement_re = r"((?:[^;{}\"]*?" + quoted_re + r"?)*[;{}])?"
-    # Comments begin with a pair of forward slashes and end with a new line
-    comment_re = r"(\n?//[^\n]*(?:\n|$))?"
-    statements_comments = re.findall(statement_re + comment_re, qasm_str)
-    lines = []
-    # Language is case sensitive. Whitespace is ignored
-    for statement, comment in statements_comments:
-        if re.match(r"^\s*barrier(?:(?:\s+)|(?:;))", statement) is None:
-            lines.append(statement + comment)
-    return "".join(lines)
-
-
-def _format_qasm_string(qasm_string, skip_pattern):
-    lines = qasm_string.split("\n")
-    formatted_lines = []
-
-    for line in lines:
-        line = line.strip()  # Strip leading and trailing whitespace
-        if skip_pattern.match(line) or line.startswith("//"):
-            # If the line matches the gate definition pattern, add it as is
-            formatted_lines.append(line)
-        else:
-            # Otherwise, split it at semicolons and add each part as a separate line
-            parts = re.split(";[ ]*", line)
-            parts = [part + ";" for part in parts if part]  # Remove empty parts
-            formatted_lines.extend(parts)
-
-    return "\n".join(formatted_lines)
-
-
-def unfold_qasm_gate_defs(qasm_string):
+def _unfold_gate_defs(qasm: str) -> str:
     """Recursively expands gate definitions in the input OpenQASM string."""
     # Define regular expression patterns
     gate_definition_pattern = re.compile(
@@ -67,7 +31,7 @@ def unfold_qasm_gate_defs(qasm_string):
     gate_usage_match = None
 
     # Find gate definition and extract its components
-    gate_definition_match = gate_definition_pattern.search(qasm_string)
+    gate_definition_match = gate_definition_pattern.search(qasm)
     if gate_definition_match:
         gate_name, _, params, qubits, _, gate_body = gate_definition_match.groups()
         params_list = [param.strip() for param in params.split(",")] if params is not None else []
@@ -80,7 +44,7 @@ def unfold_qasm_gate_defs(qasm_string):
         )
 
         # Replace parameters with their values in gate body
-        gate_usage_match = gate_usage_pattern.search(qasm_string)
+        gate_usage_match = gate_usage_pattern.search(qasm)
 
     while gate_usage_match:
         groups = gate_usage_match.groups()
@@ -98,15 +62,15 @@ def unfold_qasm_gate_defs(qasm_string):
             expanded_gate_body = expanded_gate_body.replace(qubit, qubit_usage)
 
         # Replace gate usage with the expanded gate body in the input string
-        qasm_string = qasm_string.replace(gate_usage_match.group(0), expanded_gate_body + ";")
+        qasm = qasm.replace(gate_usage_match.group(0), expanded_gate_body + ";")
 
         # Search for the next gate usage
-        gate_usage_match = gate_usage_pattern.search(qasm_string)
+        gate_usage_match = gate_usage_pattern.search(qasm)
 
     # Remove double semicolons
-    qasm_string = _format_qasm_string(qasm_string, gate_definition_pattern)
+    qasm = format_qasm(qasm, gate_definition_pattern)
 
-    return qasm_string
+    return qasm
 
 
 def _find_gate_line(lines):
@@ -116,17 +80,12 @@ def _find_gate_line(lines):
     return None
 
 
-def flatten_qasm_program(qasm_str):
-    """Returns a copy of the input QASM compatible with
-    the :class:`~qbraid.transpiler.cirq.QasmParser`.
-    Conversion includes deconstruction of custom defined gates, and
-    decomposition of unsupported gates/operations.
-
-    """
+def unfold_qasm2(qasm: str) -> str:
+    """Returns a QASM copy with custom gates deconstructed and unsupported operations decomposed."""
     # temp hack to fix 'r' replacing last char of 'ecr'
-    qasm_str = qasm_str.replace("ecr", "ecr_")
+    qasm = qasm.replace("ecr", "ecr_")
 
-    input_str = remove_qasm_barriers(qasm_str)
+    input_str = remove_qasm_barriers(qasm)
 
     lines = input_str.strip("\n").split("\n")
     gate_lines = [(i, line) for i, line in enumerate(lines) if line.strip().startswith("gate")]
@@ -142,7 +101,7 @@ def flatten_qasm_program(qasm_str):
         lines.insert(gate_line_idx, gate_line)
 
         new_input = "\n".join(lines)
-        new_input = unfold_qasm_gate_defs(new_input)  # call the conversion function
+        new_input = _unfold_gate_defs(new_input)  # call the conversion function
         lines = new_input.split("\n")  # update lines after conversion
 
         # Remove the current 'gate' line for the next iteration
@@ -152,24 +111,3 @@ def flatten_qasm_program(qasm_str):
     qasm_out = decompose_qasm2(qasm)
 
     return qasm_out
-
-
-def rename_qasm_registers(qasm: str) -> str:
-    """Returns a copy of the input QASM with all registers renamed to 'q' and 'c'."""
-
-    def replace_top_q(m):
-        return f"qreg q[{m.group(2)}];"
-
-    qasm = re.sub(r"qreg\s+(\w+)\s*\[\s*(\d+)\s*\]\s*;", replace_top_q, qasm)
-
-    def replace_top_c(m):
-        return f"creg c[{m.group(2)}];"
-
-    qasm = re.sub(r"creg\s+(\w+)\s*\[\s*(\d+)\s*\]\s*;", replace_top_c, qasm)
-
-    def replace_bottom_line(m):
-        return f"measure q[{m.group(2)}] -> c[{m.group(4)}];"
-
-    qasm = re.sub(r"measure\s+(\w+)\[(\d+)\]\s*->\s*(\w+)\[(\d+)\]\s*;", replace_bottom_line, qasm)
-
-    return qasm

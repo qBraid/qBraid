@@ -33,7 +33,8 @@ Submodules
    pennylane
    pyquil
    pytket
-   qasm
+   qasm2
+   qasm3
    qiskit
    ionq
 
@@ -49,12 +50,7 @@ CIRCUIT_SUBMODULE_CHECKS = NATIVE_REGISTRY.copy()
 submodules = []
 base_path = "qbraid.programs.gate_model."
 
-qasm2 = CIRCUIT_SUBMODULE_CHECKS.pop("qasm2", None)
-qasm3 = CIRCUIT_SUBMODULE_CHECKS.pop("qasm3", None)
-
 key_set = set(CIRCUIT_SUBMODULE_CHECKS.keys())
-if qasm2 or qasm3:
-    key_set.add("qasm")
 
 for lib in key_set:
     try:

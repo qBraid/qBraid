@@ -14,6 +14,8 @@
 Unit tests for equivalence of interfacing quantum programs
 
 """
+from __future__ import annotations
+
 import numpy as np
 import pytest
 from braket.circuits import Circuit as BKCircuit
@@ -134,7 +136,7 @@ class FakeProgram(GateModelProgram):
         """Return the circuit depth (i.e., length of critical path)."""
         raise NotImplementedError
 
-    def _unitary(self) -> "np.ndarray":
+    def _unitary(self) -> np.ndarray:
         """Calculate unitary of circuit."""
         raise NotImplementedError
 

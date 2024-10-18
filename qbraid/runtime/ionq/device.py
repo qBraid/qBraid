@@ -19,7 +19,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any, Union
 
-from qbraid.programs.gate_model.qasm import OpenQasm2Program
+from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
 from qbraid.programs.typer import Qasm2StringType
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
@@ -58,6 +58,9 @@ class IonQDevice(QuantumDevice):
 
         if status in ["unavailable", "reserved", "calibrating"]:
             return DeviceStatus.UNAVAILABLE
+
+        if status == "retired":
+            return DeviceStatus.RETIRED
 
         if status == "offline":
             return DeviceStatus.OFFLINE

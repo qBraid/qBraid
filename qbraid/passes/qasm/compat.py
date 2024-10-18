@@ -16,6 +16,10 @@ across various other quantum software frameworks.
 import math
 import re
 from functools import reduce
+from typing import Union
+
+from openqasm3 import dumps, parse
+from openqasm3.ast import Program, QuantumMeasurementStatement
 
 GATE_DEFINITIONS = {
     "iswap": """
@@ -194,6 +198,17 @@ def has_redundant_parentheses(qasm_str: str) -> bool:
     return False
 
 
+def remove_spaces_in_parentheses(expression: str) -> str:
+    """Removes all spaces inside parentheses in an expression."""
+    parenthesized_parts = re.findall(r"\(.*?\)", expression)
+
+    for part in parenthesized_parts:
+        cleaned_part = part.replace(" ", "")
+        expression = expression.replace(part, cleaned_part)
+
+    return expression
+
+
 def simplify_parentheses_in_qasm(qasm_str: str) -> str:
     """Simplifies unnecessary parentheses around numbers in QASM strings."""
 
@@ -238,3 +253,59 @@ def declarations_to_qasm2(qasm: str) -> str:
         qasm = re.sub(pattern, replacement, qasm)
 
     return qasm
+
+
+def remove_qasm_barriers(qasm_str: str) -> str:
+    """Returns a copy of the input QASM with all barriers removed.
+
+    Args:
+        qasm_str: QASM to remove barriers from.
+    """
+    quoted_re = r"(?:\"[^\"]*?\")"
+    # Statements separated by semicolons
+    statement_re = r"((?:[^;{}\"]*?" + quoted_re + r"?)*[;{}])?"
+    # Comments begin with a pair of forward slashes and end with a new line
+    comment_re = r"(\n?//[^\n]*(?:\n|$))?"
+    statements_comments = re.findall(statement_re + comment_re, qasm_str)
+    lines = []
+    # Language is case sensitive. Whitespace is ignored
+    for statement, comment in statements_comments:
+        if re.match(r"^\s*barrier(?:(?:\s+)|(?:;))", statement) is None:
+            lines.append(statement + comment)
+    return "".join(lines)
+
+
+def rename_qasm_registers(qasm: str) -> str:
+    """Returns a copy of the input QASM with all registers renamed to 'q' and 'c'."""
+
+    def replace_top_q(m):
+        return f"qreg q[{m.group(2)}];"
+
+    qasm = re.sub(r"qreg\s+(\w+)\s*\[\s*(\d+)\s*\]\s*;", replace_top_q, qasm)
+
+    def replace_top_c(m):
+        return f"creg c[{m.group(2)}];"
+
+    qasm = re.sub(r"creg\s+(\w+)\s*\[\s*(\d+)\s*\]\s*;", replace_top_c, qasm)
+
+    def replace_bottom_line(m):
+        return f"measure q[{m.group(2)}] -> c[{m.group(4)}];"
+
+    qasm = re.sub(r"measure\s+(\w+)\[(\d+)\]\s*->\s*(\w+)\[(\d+)\]\s*;", replace_bottom_line, qasm)
+
+    return qasm
+
+
+def remove_measurements(program: Union[Program, str]) -> str:
+    """Remove all measurement operations from the program."""
+    program = parse(program) if isinstance(program, str) else program
+    statements = [
+        statement
+        for statement in program.statements
+        if not isinstance(statement, QuantumMeasurementStatement)
+    ]
+    program_out = Program(statements=statements, version=program.version)
+    program_str = dumps(program_out)
+    if float(program.version) == 2.0:
+        program_str = declarations_to_qasm2(program_str)
+    return program_str

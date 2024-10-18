@@ -1,7 +1,6 @@
 include *.txt *.md *.ini *.json
 recursive-include docs *.rst *.py *.png *.ico
 recursive-include qbraid *.py
-recursive-include tools *.py
 include qbraid/py.typed
 prune docs/build/
 exclude examples/*

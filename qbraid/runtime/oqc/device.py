@@ -27,7 +27,7 @@ from qcaas_client.compiler_config import (
     TketOptimizations,
 )
 
-from qbraid.passes.qasm2.compat import rename_qasm_registers
+from qbraid.passes.qasm.compat import rename_qasm_registers
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError

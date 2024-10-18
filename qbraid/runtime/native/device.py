@@ -125,7 +125,7 @@ class QbraidDevice(QuantumDevice):
             "timeout": timeout,
             "noiseModel": noise_model,
             "memory": memory,
-            "params": json.dumps(params_dict),
+            "params": json.dumps(params_dict) if params else None,
             **run_input,
         }
 

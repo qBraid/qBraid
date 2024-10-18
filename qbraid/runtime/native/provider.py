@@ -21,9 +21,9 @@ from qbraid_core.exceptions import AuthError
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError, process_job_data
 
 from qbraid._caching import cached_method
-from qbraid.passes.qasm3.format import format_qasm
+from qbraid.passes.qasm.analyze import has_measurements
+from qbraid.passes.qasm.format import format_qasm
 from qbraid.programs import QPROGRAM_REGISTRY, ExperimentType, ProgramSpec, load_program
-from qbraid.programs.gate_model.qasm import has_measurements
 from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
 from qbraid.runtime._display import display_jobs_from_data
 from qbraid.runtime.exceptions import ResourceNotFoundError

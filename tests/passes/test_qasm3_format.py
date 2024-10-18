@@ -13,7 +13,7 @@ Unit tests for QASM formatting functions
 
 """
 
-from qbraid.passes.qasm3.format import remove_unused_gates
+from qbraid.passes.qasm.format import remove_unused_gates
 
 
 def test_remove_unused_single_line_non_parameterized_gate():

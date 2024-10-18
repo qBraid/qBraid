@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
 
-from qbraid.passes.qasm3.compat import add_stdgates_include, insert_gate_def, replace_gate_name
+from qbraid.passes.qasm.compat import add_stdgates_include, insert_gate_def, replace_gate_name
 from qbraid.transpiler.annotations import weight
 
 qiskit_qasm3 = LazyLoader("qiskit_qasm3", globals(), "qiskit.qasm3")
