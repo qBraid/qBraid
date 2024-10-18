@@ -151,16 +151,20 @@ def test_ionq_provider_device_unavailable():
             """Mock get_device method."""
             res = DEVICE_DATA[0]
             if device_id == "qpu.harmony":
-                res["status"] = "unavailable"
+                res["status"] = "retired"
             elif device_id == "qpu.aria-1":
                 res["status"] = "offline"
             elif device_id == "qpu.aria-2":
                 res["status"] = "available"
+            elif device_id == "simulator":
+                res["status"] = "available"
+            elif device_id == "qpu.forte-1":
+                res["status"] = "unavailable"
             elif device_id == "fake_device":
                 res["status"] = "fake_status"
             return res
 
-    unavailable_profile = TargetProfile(device_id="qpu.harmony", simulator=False)
+    unavailable_profile = TargetProfile(device_id="qpu.forte-1", simulator=False)
     unavailable_device = IonQDevice(unavailable_profile, MockSession())
     assert unavailable_device.status() == DeviceStatus.UNAVAILABLE
 
@@ -171,6 +175,10 @@ def test_ionq_provider_device_unavailable():
     available_profile = TargetProfile(device_id="qpu.aria-2", simulator=False)
     available_device = IonQDevice(available_profile, MockSession())
     assert available_device.status() == DeviceStatus.ONLINE
+
+    retired_profile = TargetProfile(device_id="qpu.harmony", simulator=False)
+    retired_device = IonQDevice(retired_profile, MockSession())
+    assert retired_device.status() == DeviceStatus.RETIRED
 
     fake_profile = TargetProfile(device_id="fake_device", simulator=False)
     fake_device = IonQDevice(fake_profile, MockSession())
