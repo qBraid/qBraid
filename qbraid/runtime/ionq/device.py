@@ -19,6 +19,7 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any, Union
 
+from qbraid._caching import cached_method
 from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
 from qbraid.programs.typer import Qasm2StringType
 from qbraid.runtime.device import QuantumDevice
@@ -66,6 +67,16 @@ class IonQDevice(QuantumDevice):
             return DeviceStatus.OFFLINE
 
         raise ValueError(f"Unrecognized device status: {status}")
+
+    @cached_method(ttl=120)
+    def avg_queue_time(self) -> int:
+        """Return the average queue time for the IonQ device."""
+        device_data = self.session.get_device(self.id)
+        return device_data.get("average_queue_time")
+
+    def characterization(self) -> dict[str, Any]:
+        """Return the characterization of the IonQ device."""
+        return self.session.get_characterization(self.id)
 
     def transform(self, run_input: Qasm2StringType) -> dict[str, Union[int, list[dict[str, Any]]]]:
         """Transform the input to the IonQ device."""

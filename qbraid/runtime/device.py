@@ -37,12 +37,11 @@ if TYPE_CHECKING:
 class QuantumDevice(ABC):
     """Abstract interface for quantum devices."""
 
-    def __init__(  # pylint: disable-next=unused-argument
+    def __init__(
         self,
         profile: qbraid.runtime.TargetProfile,
         scheme: Optional[ConversionScheme] = None,
         options: Optional[RuntimeOptions] = None,
-        **kwargs,
     ):
         """Create a ``QuantumDevice`` object.
 
@@ -135,8 +134,12 @@ class QuantumDevice(ABC):
         self._options.update_options(**fields)
 
     def queue_depth(self) -> int:
-        """Return the number of jobs in the queue for the backend"""
+        """Return the number of jobs in the queue for the device."""
         raise ResourceNotFoundError("Queue depth is not available for this device.")
+
+    def avg_queue_time(self) -> int:
+        """Return the average time (in seconds) a job spends in the queue for the device."""
+        raise ResourceNotFoundError("Average queue time is not available for this device.")
 
     def update_scheme(self, **kwargs):
         """Update the conversion scheme with new values."""
@@ -159,8 +162,12 @@ class QuantumDevice(ABC):
         try:
             metadata["queue_depth"] = self.queue_depth()
         except ResourceNotFoundError as err:
-            logger.error("Failed to fetch queue depth: %s", err)
-            metadata["queue_depth"] = None
+            logger.info("Queue depth data not available: %s", err)
+
+        try:
+            metadata["average_queue_time"] = self.avg_queue_time()
+        except ResourceNotFoundError as err:
+            logger.info("Average queue time data not available: %s", err)
 
         metadata["status"] = self.status().name
         metadata["paradigm"] = (

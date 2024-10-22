@@ -15,16 +15,18 @@ Module containing functions to convert between OpenQASM 2 and IonQ JSON format.
 from __future__ import annotations
 
 import re
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Union
 
 import openqasm3.ast
 
 from qbraid.passes.qasm.compat import convert_qasm_pi_to_decimal
+from qbraid.programs import load_program
 from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
+from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
 from qbraid.transpiler.annotations import weight
 
 if TYPE_CHECKING:
-    from qbraid.programs.typer import IonQDictType, Qasm2StringType
+    from qbraid.programs.typer import IonQDictType, Qasm2StringType, QasmStringType
 
 IONQ_ONE_QUBIT_GATE_MAP = {
     "x": "x",
@@ -60,18 +62,17 @@ IONQ_THREE_QUBIT_GATE_MAP = {
 }
 
 
-@weight(1)
-def qasm2_to_ionq(qasm: Qasm2StringType) -> IonQDictType:
-    """Returns an IonQ JSON format representation the input OpenQASM 2 string.
+def qasm_to_ionq(qasm: QasmStringType) -> IonQDictType:
+    """Returns an IonQ JSON format representation the input OpenQASM string.
 
     Args:
-        qasm (str): OpenQASM 2 string to convert to IonQDict type.
+        qasm (str): OpenQASM string to convert to IonQDict type.
 
     Returns:
-        dict: IonQ JSON format equivalent to input OpenQASM 2 string.
+        dict: IonQ JSON format equivalent to input OpenQASM string.
     """
 
-    qprogram = OpenQasm2Program(qasm)
+    qprogram: Union[OpenQasm2Program, OpenQasm3Program] = load_program(qasm)
     num_qubits = qprogram.num_qubits
     program_qubits = qprogram.qubits
 
@@ -139,3 +140,16 @@ def qasm2_to_ionq(qasm: Qasm2StringType) -> IonQDictType:
                 raise NotImplementedError(f"'{name}' gate not yet supported")
 
     return {"qubits": num_qubits, "circuit": gates}
+
+
+@weight(1)
+def qasm2_to_ionq(qasm: Qasm2StringType) -> IonQDictType:
+    """Returns an IonQ JSON format representation the input OpenQASM 2 string.
+
+    Args:
+        qasm (str): OpenQASM 2 string to convert to IonQDict type.
+
+    Returns:
+        dict: IonQ JSON format equivalent to input OpenQASM 2 string.
+    """
+    return qasm_to_ionq(qasm)

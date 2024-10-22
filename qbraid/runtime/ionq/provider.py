@@ -65,6 +65,14 @@ class IonQSession(Session):
         devices = self.get_devices()
         return devices.get(device_id)
 
+    @cached_method
+    def get_characterization(self, device_id: str) -> dict[str, Any]:
+        """Get the characterization of a specific IonQ device."""
+        device_data = self.get_device(device_id)
+        characterization_url = device_data.get("characterization_url")
+        characterization_endpoint = f"{self.base_url}{characterization_url}"
+        return self.get(characterization_endpoint).json()
+
     def create_job(self, data: dict[str, Any]) -> dict[str, Any]:
         """Create a new job on the IonQ API."""
         return self.post("/jobs", data=data).json()

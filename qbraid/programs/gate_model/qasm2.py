@@ -42,14 +42,15 @@ class OpenQasm2Program(GateModelProgram):
         """Parse the program string."""
         return parse(self._program)
 
-    def _get_bits(self, bit_type: str) -> list[str]:
+    def _get_bits(self, bit_type: str) -> list[tuple[str, int]]:
         """Return the number of qubits or classical bits in the circuit.
 
         Args:
             bit_type: either "q" or "c" for qubits or classical bits, respectively.
 
         Returns:
-            list: A list of qubits or classical bits. Each bit is a tuple of (register name, index)
+            list[tuple[str, int]]: A list of qubits or classical bits. Each bit is
+                a tuple of (register name, index)
         """
         matches = re.findall(rf"{bit_type}reg (\w+)\[(\d+)\];", self.program)
 
@@ -61,7 +62,7 @@ class OpenQasm2Program(GateModelProgram):
         return result
 
     @property
-    def qubits(self) -> list[str]:
+    def qubits(self) -> list[tuple[str, int]]:
         """Use regex to extract all qreg definitions from the string"""
         return self._get_bits("q")
 
