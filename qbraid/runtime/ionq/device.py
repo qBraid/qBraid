@@ -86,8 +86,11 @@ class IonQDevice(QuantumDevice):
         return ionq_program
 
     # pylint:disable-next=arguments-differ
-    def submit(self, run_input: list[dict], shots: int = 100, **kwargs) -> IonQJob:
+    def submit(
+        self, run_input: list[dict[str, Any]], shots: int, pre_flight: bool = False, **kwargs
+    ) -> IonQJob:
         """Submit a job to the IonQ device."""
+        pre_flight = str(pre_flight).lower()
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
         jobs = []
@@ -96,6 +99,7 @@ class IonQDevice(QuantumDevice):
                 "target": self.id,
                 "shots": shots,
                 "input": input_data,
+                "pre_flight": pre_flight,
                 **kwargs,
             }
             serialized_data = json.dumps(data)
