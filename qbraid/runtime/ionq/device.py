@@ -17,9 +17,8 @@ Module defining IonQ device class
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
-from qbraid._caching import cached_method
 from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
 from qbraid.programs.typer import Qasm2StringType
 from qbraid.runtime.device import QuantumDevice
@@ -68,15 +67,10 @@ class IonQDevice(QuantumDevice):
 
         raise ValueError(f"Unrecognized device status: {status}")
 
-    @cached_method(ttl=120)
     def avg_queue_time(self) -> int:
         """Return the average queue time for the IonQ device."""
         device_data = self.session.get_device(self.id)
-        return device_data.get("average_queue_time")
-
-    def characterization(self) -> dict[str, Any]:
-        """Return the characterization of the IonQ device."""
-        return self.session.get_characterization(self.id)
+        return device_data["average_queue_time"]
 
     def transform(self, run_input: Qasm2StringType) -> dict[str, Union[int, list[dict[str, Any]]]]:
         """Transform the input to the IonQ device."""
@@ -85,24 +79,40 @@ class IonQDevice(QuantumDevice):
         ionq_program = qasm2_to_ionq(program.program)
         return ionq_program
 
-    # pylint:disable-next=arguments-differ
+    # pylint:disable-next=arguments-differ,too-many-arguments
     def submit(
-        self, run_input: list[dict[str, Any]], shots: int, pre_flight: bool = False, **kwargs
+        self,
+        run_input: list[dict[str, Any]],
+        shots: int,
+        preflight: bool = False,
+        name: Optional[str] = None,
+        noise: Optional[dict[str, Any]] = None,
+        error_mitigation: Optional[dict[str, Any]] = None,
+        metadata: Optional[dict[str, Any]] = None,
+        **kwargs,
     ) -> IonQJob:
         """Submit a job to the IonQ device."""
-        pre_flight = str(pre_flight).lower()
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
         jobs = []
         for input_data in run_input:
-            data = {
+            job_data = {
                 "target": self.id,
                 "shots": shots,
                 "input": input_data,
-                "pre_flight": pre_flight,
+                "preflight": str(preflight).lower(),
                 **kwargs,
             }
-            serialized_data = json.dumps(data)
+            optional_fields = {
+                "name": name,
+                "noise": noise,
+                "metadata": metadata,
+                "error_mitigation": error_mitigation,
+            }
+            job_data.update(
+                {key: value for key, value in optional_fields.items() if value is not None}
+            )
+            serialized_data = json.dumps(job_data)
             job_data = self.session.create_job(serialized_data)
             job_id = job_data.get("id")
             if not job_id:

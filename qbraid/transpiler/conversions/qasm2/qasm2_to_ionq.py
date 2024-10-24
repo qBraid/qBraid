@@ -15,6 +15,7 @@ Module containing functions to convert between OpenQASM 2 and IonQ JSON format.
 from __future__ import annotations
 
 import re
+from enum import Enum
 from typing import TYPE_CHECKING, Any, Union
 
 import openqasm3.ast
@@ -60,6 +61,42 @@ IONQ_THREE_QUBIT_GATE_MAP = {
     "ccx": "cnot",
     "toffoli": "cnot",
 }
+
+IONQ_NATIVE_BASE = {"gpi", "gpi2"}
+IONQ_NATIVE_GATES = IONQ_NATIVE_BASE | {"ms", "zz"}
+
+
+class GateSet(Enum):
+    """Enumeration of IonQ gate sets types, native and qis (abstract)."""
+
+    NATIVE = "native"
+    QIS = "qis"
+
+
+def determine_gateset(circuit: list[dict[str, Any]]) -> GateSet:
+    """Determines the gate set of an IonQ circuit gate list.
+
+    Args:
+        circuit (list[dict]): The IonQ circuit to analyze.
+
+    Returns:
+        GateSet: The gate set of the circuit.
+
+    Raises:
+        ValueError: If the circuit mixes native and abstract (qis) gates.
+    """
+    contains_gpi = any(instr["gate"] in IONQ_NATIVE_BASE for instr in circuit)
+
+    for instr in circuit:
+        gate = instr.get("gate")
+        if gate not in IONQ_NATIVE_GATES:
+            if contains_gpi:
+                raise ValueError(
+                    f"Invalid gate '{gate}' encountered with gpi/gpi2 present in the circuit."
+                )
+            return GateSet.QIS
+
+    return GateSet.NATIVE
 
 
 def qasm_to_ionq(qasm: QasmStringType) -> IonQDictType:
@@ -139,7 +176,9 @@ def qasm_to_ionq(qasm: QasmStringType) -> IonQDictType:
             else:
                 raise NotImplementedError(f"'{name}' gate not yet supported")
 
-    return {"qubits": num_qubits, "circuit": gates}
+    gateset = determine_gateset(gates)
+
+    return {"qubits": num_qubits, "circuit": gates, "gateset": gateset.value}
 
 
 @weight(1)

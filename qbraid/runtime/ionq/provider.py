@@ -42,6 +42,13 @@ SUPPORTED_GATES = [
     "swap",
 ]
 
+NATIVE_BASE = ["gpi", "gpi2"]
+
+NATIVE_GATES = {
+    "aria": ["ms"] + NATIVE_BASE,
+    "forte": ["zz"] + NATIVE_BASE,
+}
+
 
 class IonQSession(Session):
     """IonQ session class."""
@@ -65,9 +72,8 @@ class IonQSession(Session):
         devices = self.get_devices()
         return devices.get(device_id)
 
-    @cached_method
     def get_characterization(self, device_id: str) -> dict[str, Any]:
-        """Get the characterization of a specific IonQ device."""
+        """Return the characterization of the IonQ device."""
         device_data = self.get_device(device_id)
         characterization_url = device_data.get("characterization_url")
         characterization_endpoint = f"{self.base_url}{characterization_url}"
@@ -96,6 +102,14 @@ class IonQProvider(QuantumProvider):
         """Build a profile for an IonQ device."""
         device_id = data.get("backend")
         simulator = device_id == "simulator"
+        charact = self.session.get_characterization(device_id)
+
+        if simulator:
+            native_gates = list(set().union(*NATIVE_GATES.values()))
+        else:
+            native_gates = next(
+                (gates for key, gates in NATIVE_GATES.items() if key in device_id), NATIVE_BASE
+            )
 
         return TargetProfile(
             device_id=device_id,
@@ -104,7 +118,9 @@ class IonQProvider(QuantumProvider):
             num_qubits=data.get("qubits"),
             program_spec=ProgramSpec(str, alias="qasm2"),
             provider_name="IonQ",
-            basis_gates=SUPPORTED_GATES,
+            basis_gates=SUPPORTED_GATES.copy(),
+            native_gates=native_gates,
+            characterization=charact,
         )
 
     @cached_method

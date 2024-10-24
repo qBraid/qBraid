@@ -173,9 +173,11 @@ class QuantumDevice(ABC):
         metadata["paradigm"] = (
             self.profile.experiment_type.value if self.profile.experiment_type else None
         )
-        metadata["noise_models"] = (
-            list(self.profile.noise_models) if self.profile.noise_models else None
-        )
+
+        if self.simulator is True:
+            metadata["noise_models"] = (
+                list(self.profile.noise_models) if self.profile.noise_models else None
+            )
 
         options = {
             key: (value.value if isinstance(value, ValidationLevel) else value)
