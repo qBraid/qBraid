@@ -294,29 +294,37 @@ def remove_qasm_barriers(qasm_str: str) -> str:
     return "".join(lines)
 
 
-def remove_measurements(program: Union[Program, str]) -> str:
-    """Remove all measurement operations from the program."""
-    program = parse(program) if isinstance(program, str) else program
-    statements = [
-        statement
-        for statement in program.statements
-        if not isinstance(statement, QuantumMeasurementStatement)
-    ]
-    program_out = Program(statements=statements, version=program.version)
-    program_str = dumps(program_out)
-    if float(program.version) == 2.0:
-        program_str = declarations_to_qasm2(program_str)
-    return program_str
+def rename_qasm_registers(qasm: str) -> str:
+    """Returns a copy of the input QASM with all registers renamed to 'q' and 'c'."""
+
+    def replace_top_q(m):
+        return f"qreg q[{m.group(2)}];"
+
+    qasm = re.sub(r"qreg\s+(\w+)\s*\[\s*(\d+)\s*\]\s*;", replace_top_q, qasm)
+
+    def replace_top_c(m):
+        return f"creg c[{m.group(2)}];"
+
+    qasm = re.sub(r"creg\s+(\w+)\s*\[\s*(\d+)\s*\]\s*;", replace_top_c, qasm)
+
+    def replace_bottom_line(m):
+        return f"measure q[{m.group(2)}] -> c[{m.group(4)}];"
+
+    qasm = re.sub(r"measure\s+(\w+)\[(\d+)\]\s*->\s*(\w+)\[(\d+)\]\s*;", replace_bottom_line, qasm)
+
+    return qasm
 
 
-def remove_include_statements(program: Union[Program, str]) -> str:
-    """Remove all include statements from the program."""
-    program = parse(program) if isinstance(program, str) else program
-    statements = [
-        statement for statement in program.statements if not isinstance(statement, Include)
-    ]
-    program_out = Program(statements=statements, version=program.version)
-    program_str = dumps(program_out)
-    if float(program.version) == 2.0:
-        program_str = declarations_to_qasm2(program_str)
-    return program_str
+# def remove_measurements(program: Union[Program, str]) -> str:
+#     """Remove all measurement operations from the program."""
+#     program = parse(program) if isinstance(program, str) else program
+#     statements = [
+#         statement
+#         for statement in program.statements
+#         if not isinstance(statement, QuantumMeasurementStatement)
+#     ]
+#     program_out = Program(statements=statements, version=program.version)
+#     program_str = dumps(program_out)
+#     if float(program.version) == 2.0:
+#         program_str = declarations_to_qasm2(program_str)
+#     return program_str
