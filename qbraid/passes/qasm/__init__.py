@@ -21,7 +21,6 @@ Functions
 
     depth
     rebase
-    unfold_qasm2
     decompose_qasm3
     decompose_qasm2
     insert_gate_def
@@ -49,12 +48,10 @@ from .compat import (
 )
 from .decompose import decompose_qasm2, decompose_qasm3, rebase
 from .format import remove_unused_gates
-from .unfold import unfold_qasm2
 
 __all__ = [
     "depth",
     "rebase",
-    "unfold_qasm2",
     "decompose_qasm2",
     "decompose_qasm3",
     "insert_gate_def",
