@@ -72,13 +72,6 @@ class IonQSession(Session):
         devices = self.get_devices()
         return devices.get(device_id)
 
-    def get_characterization(self, device_id: str) -> dict[str, Any]:
-        """Return the characterization of the IonQ device."""
-        device_data = self.get_device(device_id)
-        characterization_url = device_data.get("characterization_url")
-        characterization_endpoint = f"{self.base_url}{characterization_url}"
-        return self.get(characterization_endpoint).json()
-
     def create_job(self, data: dict[str, Any]) -> dict[str, Any]:
         """Create a new job on the IonQ API."""
         return self.post("/jobs", data=data).json()
@@ -98,11 +91,19 @@ class IonQProvider(QuantumProvider):
     def __init__(self, api_key: Optional[str] = None):
         self.session = IonQSession(api_key or os.getenv("IONQ_API_KEY"))
 
+    def _get_characterization(self, data: dict[str, Any]) -> Optional[dict[str, Any]]:
+        """Return the characterization of the IonQ device."""
+        characterization_url = data.get("characterization_url")
+        if not characterization_url:
+            return None
+        characterization_endpoint = f"{self.session.base_url}{characterization_url}"
+        return self.session.get(characterization_endpoint).json()
+
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
         """Build a profile for an IonQ device."""
         device_id = data.get("backend")
         simulator = device_id == "simulator"
-        charact = self.session.get_characterization(device_id)
+        charact = self._get_characterization(data)
 
         if simulator:
             native_gates = list(set().union(*NATIVE_GATES.values()))

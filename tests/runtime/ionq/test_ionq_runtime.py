@@ -14,6 +14,8 @@
 Unit tests for IonQProvider class
 
 """
+from itertools import combinations
+from typing import Any, Optional
 from unittest.mock import Mock, patch
 
 import pytest
@@ -109,10 +111,41 @@ GET_JOB_RESPONSE = {
 
 GET_JOB_RESULT_RESPONSE = {"0": 0.5, "1": 0.5}
 
+CHARACTERIZATION_DATA = {
+    "connectivity": list(combinations(range(11), 2)),
+    "qubits": 11,
+    "fidelity": {"1q": {"mean": 0.9973}, "spam": {"mean": 0.993}, "2q": {"mean": 0.9002}},
+    "timing": {
+        "1q": 1e-05,
+        "reset": 2e-05,
+        "t1": 10000,
+        "readout": 0.00013,
+        "t2": 0.2,
+        "2q": 0.0002,
+    },
+    "date": 1725102011,
+    "id": "f518d0c9-34c6-4854-890e-a0e4f339bd64",
+    "backend": "qpu.harmony",
+}
+
+
+def mock_characterization(device_data: dict[str, Any]) -> Optional[dict[str, Any]]:
+    """Mock get characterization method."""
+    if device_data["backend"] == CHARACTERIZATION_DATA["backend"]:
+        return CHARACTERIZATION_DATA.copy()
+    return None
+
 
 def test_ionq_provider_get_device():
     """Test getting IonQ provider and device."""
-    with patch("qbraid.runtime.ionq.provider.Session") as mock_session:
+    with (
+        patch("qbraid.runtime.ionq.provider.Session") as mock_session,
+        patch(
+            "qbraid.runtime.ionq.provider.IonQProvider._get_characterization"
+        ) as mock_get_characterization,
+    ):
+
+        mock_get_characterization.side_effect = mock_characterization
         mock_session.return_value.get.return_value.json.return_value = DEVICE_DATA
 
         provider = IonQProvider(api_key="fake_api_key")
@@ -194,6 +227,7 @@ def test_ionq_device_transform_run_input():
     cry(pi/4) q[0], q[1];
     """
     expected_output = {
+        "gateset": "qis",
         "qubits": 2,
         "circuit": [
             {"gate": "ry", "target": 1, "rotation": 0.39269908169872414},
@@ -203,7 +237,14 @@ def test_ionq_device_transform_run_input():
         ],
     }
 
-    with patch("qbraid_core.sessions.Session") as mock_session:
+    with (
+        patch("qbraid.runtime.ionq.provider.Session") as mock_session,
+        patch(
+            "qbraid.runtime.ionq.provider.IonQProvider._get_characterization"
+        ) as mock_get_characterization,
+    ):
+
+        mock_get_characterization.side_effect = mock_characterization
         mock_session.return_value.get.return_value.json.return_value = DEVICE_DATA
 
         provider = IonQProvider(api_key="fake_api_key")

@@ -77,7 +77,7 @@ def test_ionq_device_extract_gate_data():
         {"gate": "vi", "target": 1},
         {"gate": "swap", "targets": [0, 1]},
     ]
-    expected = {"qubits": 2, "circuit": gate_data}
+    expected = {"qubits": 2, "circuit": gate_data, "gateset": "qis"}
 
     actual = qasm2_to_ionq(qasm)
 
