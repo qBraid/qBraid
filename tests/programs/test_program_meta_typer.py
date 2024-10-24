@@ -16,12 +16,13 @@ Unit tests for the typer module
 from unittest.mock import patch
 
 import pytest
+from pyqasm.exceptions import QasmParsingError
 
-from qbraid.programs.exceptions import QasmError
 from qbraid.programs.typer import (
     BaseQasmInstanceMeta,
     IonQDict,
     IonQDictInstanceMeta,
+    ProgramValidationError,
     Qasm2String,
     Qasm2StringType,
     Qasm3String,
@@ -65,7 +66,7 @@ def test_qasm_string_valid(cls, string):
     "cls, string, error",
     [
         (Qasm2StringType, valid_qasm3_string, ValueError),
-        (Qasm3StringType, invalid_qasm_string, QasmError),
+        (Qasm3StringType, invalid_qasm_string, QasmParsingError),
     ],
 )
 def test_qasm_string_invalid(cls, string, error):
@@ -96,7 +97,7 @@ def test_isinstance_checks_valid(meta, string):
 )
 def test_isinstance_checks_invalid(meta, version, string):
     """Test that the isinstance function correctly identifies invalid OpenQASM strings."""
-    with patch("qbraid.programs.typer.extract_qasm_version", return_value=version + 1):
+    with patch("pyqasm.analyzer.Qasm3Analyzer.extract_qasm_version", return_value=version + 1):
         assert not isinstance(string, meta)
 
 
@@ -208,8 +209,8 @@ def test_ionq_dict_instance_meta_validate_field_valid_cases(single, multiple, fi
     ],
 )
 def test_ionq_dict_instance_meta_validate_field_invalid_cases(single, multiple, field_name):
-    """Test _validate_field raises ValidationError for invalid input cases."""
-    with pytest.raises(ValidationError):
+    """Test _validate_field raises ProgramValidationError for invalid input cases."""
+    with pytest.raises(ProgramValidationError):
         IonQDictInstanceMeta._validate_field(single, multiple, field_name)
 
 

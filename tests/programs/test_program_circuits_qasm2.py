@@ -248,13 +248,6 @@ def test_num_classical_bits(simple_qasm):
     assert OpenQasm2Program(simple_qasm).num_clbits == 2
 
 
-# def test_remove_measurements(simple_qasm):
-#     """Test checking if qasm2 circuit has measurements"""
-#     assert has_measurements(simple_qasm) is True
-#     updated_qasm = remove_measurements(simple_qasm)
-#     assert has_measurements(updated_qasm) is False
-
-
 def test_remove_measurements_via_transform(simple_qasm):
     """Test removing measurements via transform method"""
     device = MagicMock()
