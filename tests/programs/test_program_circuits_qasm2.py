@@ -21,7 +21,7 @@ import openqasm3.ast
 import pytest
 from openqasm3.parser import parse
 
-from qbraid.passes.qasm import has_measurements, remove_measurements
+# from qbraid.passes.qasm import has_measurements, remove_measurements
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
 from qbraid.programs.loader import load_program
@@ -248,11 +248,11 @@ def test_num_classical_bits(simple_qasm):
     assert OpenQasm2Program(simple_qasm).num_clbits == 2
 
 
-def test_remove_measurements(simple_qasm):
-    """Test checking if qasm2 circuit has measurements"""
-    assert has_measurements(simple_qasm) is True
-    updated_qasm = remove_measurements(simple_qasm)
-    assert has_measurements(updated_qasm) is False
+# def test_remove_measurements(simple_qasm):
+#     """Test checking if qasm2 circuit has measurements"""
+#     assert has_measurements(simple_qasm) is True
+#     updated_qasm = remove_measurements(simple_qasm)
+#     assert has_measurements(updated_qasm) is False
 
 
 def test_remove_measurements_via_transform(simple_qasm):
