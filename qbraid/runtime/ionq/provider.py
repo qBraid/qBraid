@@ -19,35 +19,16 @@ from qbraid_core.sessions import Session
 
 from qbraid._caching import cached_method
 from qbraid.programs import ExperimentType, ProgramSpec
+from qbraid.programs.gate_model.ionq import (
+    IONQ_NATIVE_GATES,
+    IONQ_NATIVE_GATES_BASE,
+    IONQ_NATIVE_GATES_FAMILY,
+    IONQ_QIS_GATES,
+)
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
 from .device import IonQDevice
-
-SUPPORTED_GATES = [
-    "x",
-    "y",
-    "z",
-    "rx",
-    "ry",
-    "rz",
-    "h",
-    "cx",
-    "s",
-    "sdg",
-    "t",
-    "tdg",
-    "sx",
-    "sxdg",
-    "swap",
-]
-
-NATIVE_BASE = ["gpi", "gpi2"]
-
-NATIVE_GATES = {
-    "aria": ["ms"] + NATIVE_BASE,
-    "forte": ["zz"] + NATIVE_BASE,
-}
 
 
 class IonQSession(Session):
@@ -106,10 +87,11 @@ class IonQProvider(QuantumProvider):
         charact = self._get_characterization(data)
 
         if simulator:
-            native_gates = list(set().union(*NATIVE_GATES.values()))
+            native_gates = IONQ_NATIVE_GATES
         else:
             native_gates = next(
-                (gates for key, gates in NATIVE_GATES.items() if key in device_id), NATIVE_BASE
+                (gates for key, gates in IONQ_NATIVE_GATES_FAMILY.items() if key in device_id),
+                IONQ_NATIVE_GATES_BASE,
             )
 
         return TargetProfile(
@@ -119,7 +101,7 @@ class IonQProvider(QuantumProvider):
             num_qubits=data.get("qubits"),
             program_spec=ProgramSpec(str, alias="qasm2"),
             provider_name="IonQ",
-            basis_gates=SUPPORTED_GATES.copy(),
+            basis_gates=IONQ_QIS_GATES.copy(),
             native_gates=native_gates,
             characterization=charact,
         )

@@ -83,15 +83,6 @@ class OpenQasm2Program(GateModelProgram):
         """Return the unitary of the QASM"""
         return transpiler.transpile(self.program, "cirq").unitary()
 
-    def remove_idle_qubits(self) -> None:
-        """Checks whether the circuit uses contiguous qubits/indices,
-        and if not, reduces dimension accordingly."""
-        raise NotImplementedError
-
-    def reverse_qubit_order(self) -> None:
-        """Reverses the qubit ordering of a openqasm program."""
-        raise NotImplementedError
-
     def transform(self, device) -> None:
         """Transform program to according to device target profile."""
         if device.id == "quera_qasm_simulator":

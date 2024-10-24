@@ -25,7 +25,7 @@ from qbraid.runtime import GateModelResultData, Result, TargetProfile
 from qbraid.runtime.enums import DeviceStatus, JobStatus
 from qbraid.runtime.ionq import IonQDevice, IonQJob, IonQProvider, IonQSession
 from qbraid.runtime.ionq.job import IonQJobError
-from qbraid.runtime.ionq.provider import SUPPORTED_GATES
+from qbraid.programs.gate_model.ionq import IONQ_QIS_GATES
 
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
@@ -171,7 +171,7 @@ def test_ionq_provider_get_device():
         assert test_device.profile["simulator"] is False
         assert test_device.profile["num_qubits"] == 11
         assert test_device.profile["program_spec"] == ProgramSpec(str, alias="qasm2")
-        assert test_device.profile["basis_gates"] == set(SUPPORTED_GATES)
+        assert test_device.profile["basis_gates"] == set(IONQ_QIS_GATES)
 
 
 def test_ionq_provider_device_unavailable():
