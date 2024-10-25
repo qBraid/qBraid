@@ -67,12 +67,3 @@ class PyQuilProgram(GateModelProgram):
         """Return the unitary of a pyQuil program."""
         program_copy = self.remove_measurements(self.program)
         return program_unitary(program_copy, n_qubits=self.num_qubits)
-
-    def remove_idle_qubits(self) -> None:
-        """Checks whether the circuit uses contiguous qubits/indices,
-        and if not, reduces dimension accordingly."""
-        raise NotImplementedError
-
-    def reverse_qubit_order(self) -> None:
-        """Reverse the order of the qubits in the circuit."""
-        raise NotImplementedError

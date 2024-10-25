@@ -37,7 +37,7 @@ class DevicePricing(BaseModel):
     @field_serializer("perTask", "perShot", "perMinute")
     def serialize_credits(self, value: USD) -> Credits:
         """Serialize USD fields into Credits objects."""
-        return value.to_credits()
+        return Credits(value.to_credits())
 
 
 class DeviceData(BaseModel):

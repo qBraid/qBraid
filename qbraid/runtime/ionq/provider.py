@@ -19,28 +19,16 @@ from qbraid_core.sessions import Session
 
 from qbraid._caching import cached_method
 from qbraid.programs import ExperimentType, ProgramSpec
+from qbraid.programs.gate_model.ionq import (
+    IONQ_NATIVE_GATES,
+    IONQ_NATIVE_GATES_BASE,
+    IONQ_NATIVE_GATES_FAMILY,
+    IONQ_QIS_GATES,
+)
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
 from .device import IonQDevice
-
-SUPPORTED_GATES = [
-    "x",
-    "y",
-    "z",
-    "rx",
-    "ry",
-    "rz",
-    "h",
-    "cx",
-    "s",
-    "sdg",
-    "t",
-    "tdg",
-    "sx",
-    "sxdg",
-    "swap",
-]
 
 
 class IonQSession(Session):
@@ -84,10 +72,27 @@ class IonQProvider(QuantumProvider):
     def __init__(self, api_key: Optional[str] = None):
         self.session = IonQSession(api_key or os.getenv("IONQ_API_KEY"))
 
+    def _get_characterization(self, data: dict[str, Any]) -> Optional[dict[str, Any]]:
+        """Return the characterization of the IonQ device."""
+        characterization_url = data.get("characterization_url")
+        if not characterization_url:
+            return None
+        characterization_endpoint = f"{self.session.base_url}{characterization_url}"
+        return self.session.get(characterization_endpoint).json()
+
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
         """Build a profile for an IonQ device."""
         device_id = data.get("backend")
         simulator = device_id == "simulator"
+        charact = self._get_characterization(data)
+
+        if simulator:
+            native_gates = IONQ_NATIVE_GATES
+        else:
+            native_gates = next(
+                (gates for key, gates in IONQ_NATIVE_GATES_FAMILY.items() if key in device_id),
+                IONQ_NATIVE_GATES_BASE,
+            )
 
         return TargetProfile(
             device_id=device_id,
@@ -96,7 +101,9 @@ class IonQProvider(QuantumProvider):
             num_qubits=data.get("qubits"),
             program_spec=ProgramSpec(str, alias="qasm2"),
             provider_name="IonQ",
-            basis_gates=SUPPORTED_GATES,
+            basis_gates=IONQ_QIS_GATES.copy(),
+            native_gates=set(native_gates),
+            characterization=charact,
         )
 
     @cached_method

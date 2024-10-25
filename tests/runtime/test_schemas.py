@@ -24,7 +24,7 @@ from pydantic import BaseModel, ValidationError
 from qbraid.programs import ExperimentType
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.schemas.base import USD, Credits, QbraidSchemaBase, QbraidSchemaHeader
-from qbraid.runtime.schemas.device import DeviceData
+from qbraid.runtime.schemas.device import DeviceData, DevicePricing
 from qbraid.runtime.schemas.experiment import (
     ExperimentMetadata,
     GateModelExperimentMetadata,
@@ -449,3 +449,19 @@ def test_qubo_solve_params_beta_list_none():
     """Test QuboSolveParams beta_list set to None."""
     params = QuboSolveParams(offset=0.5, beta_list=None)
     assert params.beta_list is None
+
+
+def test_device_pricing():
+    """Test DevicePricing class."""
+    pricing = DevicePricing(
+        perTask=USD(0.5),
+        perShot=USD(0.01),
+        perMinute=USD(0.075),
+    )
+    assert pricing.perTask == USD(0.5)
+    assert pricing.perShot == USD(0.01)
+    assert pricing.perMinute == USD(0.075)
+
+    pricing_credits = pricing.serialize_credits(pricing.perTask)
+    assert isinstance(pricing_credits, Credits)
+    assert pricing_credits == Credits(50)
