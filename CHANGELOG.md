@@ -17,18 +17,33 @@ Types of changes:
 ### Added
 
 ### Improved / Modified
-- Added pydantic schema to define the possible Qubo solve params available for submissions to the NEC vector annealer device ([#788](https://github.com/qBraid/qBraid/pull/788))
-- Improved clarity of GitHub issue template bug report prompts ([#791](https://github.com/qBraid/qBraid/pull/791))
-- Combined `qasm2` and `qasm3` modules in `qbraid.passes` to allow splitting `qbraid.programs.gate_model.qasm` into `qasm2` and `qasm3` sub-modules to maintain program type alias consistency ([#805](https://github.com/qBraid/qBraid/pull/805))
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+
+### Dependencies
+
+## [0.8.4] - 2024-10-25
+
+### Added
+- Added support for [IonQ native gates](https://docs.ionq.com/guides/getting-started-with-native-gates) (gpi/gpi2/ms/zz) for `qasmX_to_ionq()` conversions ([#807](https://github.com/qBraid/qBraid/pull/807))
+- Expanded `QuantumDevice.metadata()` to include average queue time field if provided, instead of (or in addition to) pending jobs ([#807](https://github.com/qBraid/qBraid/pull/807))
+- Added  ([#807](https://github.com/qBraid/qBraid/pull/807))
+
+### Improved / Modified
+- Added pydantic schema to define the possible Qubo solve params available for submissions to the NEC vector annealer device ([#788](https://github.com/qBraid/qBraid/pull/788))
+- Improved clarity of GitHub issue template bug report prompts ([#791](https://github.com/qBraid/qBraid/pull/791))
+- Combined `qasm2` and `qasm3` modules in `qbraid.passes` to allow splitting `qbraid.programs.gate_model.qasm` into `qasm2` and `qasm3` sub-modules to maintain program type alias consistency ([#805](https://github.com/qBraid/qBraid/pull/805))
+- Improved `IonQDevice.submit` method by explicitly list all available runtime parameters as optional args, included `preflight` bool to get cost in USD without actually submitting job ([#807](https://github.com/qBraid/qBraid/pull/807))
+
+### Fixed
 - Fixed native runtime bug: failure to raise exception if `qbraid-qir` not installed for "qbraid_qir_simulator" device. Now warns at provider level and raises in run method if transform fails ([#801](https://github.com/qBraid/qBraid/pull/801))
 
 ### Dependencies
+- Added `pyqasm` as optional dependency extra for IonQ ([#807](https://github.com/qBraid/qBraid/pull/807))
 
 ## [0.8.3] - 2024-10-09
 

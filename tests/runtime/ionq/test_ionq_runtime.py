@@ -176,6 +176,17 @@ def test_ionq_provider_get_device():
         assert test_device.profile["characterization"] == CHARACTERIZATION_DATA
 
 
+def test_get_device_characterization_from_data():
+    """Test getting fetching device characterization from characterization url in device data."""
+    with patch("qbraid.runtime.ionq.provider.IonQSession") as mock_session:
+        mock_session.return_value.get.return_value.json.return_value = CHARACTERIZATION_DATA
+
+        provider = IonQProvider(api_key="fake_api_key")
+        harmony_data = DEVICE_DATA[0]
+        characterization = provider._get_characterization(harmony_data)
+        assert characterization == CHARACTERIZATION_DATA
+
+
 def test_ionq_provider_device_unavailable():
     """Test getting IonQ provider and different status devices."""
 

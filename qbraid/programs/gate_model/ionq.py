@@ -87,17 +87,21 @@ class IonQProgram(GateModelProgram):
             GateSet: The gate set of the circuit.
 
         Raises:
-            ValueError: If the circuit mixes native and abstract (qis) gates.
+            ValueError: If the circuit is empty, or mixes native and abstract (qis) gates.
         """
-        contains_gpi = any(instr["gate"] in IONQ_NATIVE_GATES_BASE for instr in circuit)
+        if not circuit:
+            raise ValueError("Circuit is empty. Must contain at least one gate.")
+
+        native_gate_set = set(IONQ_NATIVE_GATES)
+        first_gate_native = circuit[0].get("gate") in native_gate_set
 
         for instr in circuit:
             gate = instr.get("gate")
-            if gate not in IONQ_NATIVE_GATES:
-                if contains_gpi:
-                    raise ValueError(
-                        f"Invalid gate '{gate}' encountered with gpi/gpi2 present in the circuit."
-                    )
-                return GateSet.QIS
+            is_native = gate in native_gate_set
 
-        return GateSet.NATIVE
+            if is_native != first_gate_native:
+                raise ValueError(
+                    f"Invalid gate '{gate}'. Cannot mix native and QIS gates in the same circuit."
+                )
+
+        return GateSet.NATIVE if first_gate_native else GateSet.QIS

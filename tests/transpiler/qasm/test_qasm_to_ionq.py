@@ -9,14 +9,22 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Unit tests for qasm2 to IonQDictType transpilation
+Unit tests for qasm2/qasm3 to IonQDictType transpilation
 
 """
-from unittest.mock import patch
+import importlib.util
+import unittest.mock
 
+import openqasm3.ast
 import pytest
+from openqasm3.parser import parse
 
-from qbraid.transpiler.conversions.qasm2.qasm2_to_ionq import qasm2_to_ionq
+from qbraid.programs.typer import IonQDictType, Qasm3StringType
+from qbraid.transpiler.conversions.qasm2.qasm2_to_ionq import (
+    _parse_angle,
+    extract_params,
+    qasm2_to_ionq,
+)
 from qbraid.transpiler.conversions.qasm3.qasm3_to_ionq import qasm3_to_ionq
 from qbraid.transpiler.exceptions import CircuitConversionError
 
@@ -106,42 +114,263 @@ def test_qasm2_to_ionq_measurements_raises():
 
 
 @pytest.fixture
-def qasm3_program() -> str:
-    """Return a simple QASM3 program."""
-    return "OPENQASM 3; qubit q[2]; cx q[0], q[1];"
+def deutsch_jozsa_qasm3() -> Qasm3StringType:
+    """Return a QASM 3.0 string for the DJ algorithm."""
+    return """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+
+    gate hgate q { h q; }
+    gate xgate q { x q; }
+
+    const int[32] N = 4;
+    qubit[4] q;
+    qubit ancilla;
+
+    def deutsch_jozsa(qubit[N] q_func, qubit[1] ancilla_q) {
+    xgate ancilla_q;
+    for int i in [0:N-1] { hgate q_func[i]; }
+    hgate ancilla_q;
+    for int i in [0:N-1] { cx q_func[i], ancilla_q; }
+    for int i in [0:N-1] { hgate q_func[i]; }
+    }
+
+    deutsch_jozsa(q, ancilla);
+    """
 
 
-def test_qasm3_to_ionq_import_error(qasm3_program):
-    """Test qasm3_to_ionq when the pyqasm import fails."""
+@pytest.fixture
+def deutch_jozsa_qasm3_unrolled() -> Qasm3StringType:
+    """Return an unrolled QASM 3.0 string for the DJ algorithm."""
+    return """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[4] q;
+    qubit[1] ancilla;
+    x ancilla[0];
+    h q[0];
+    h q[1];
+    h q[2];
+    h q[3];
+    h ancilla[0];
+    cx q[0], ancilla[0];
+    cx q[1], ancilla[0];
+    cx q[2], ancilla[0];
+    cx q[3], ancilla[0];
+    h q[0];
+    h q[1];
+    h q[2];
+    h q[3];
+    """
 
-    pytest.importorskip("pyqasm")
 
-    with patch(
-        "qbraid.transpiler.conversions.qasm2.qasm2_to_ionq.qasm_to_ionq"
-    ) as mock_qasm_to_ionq:
-        mock_qasm_to_ionq.side_effect = Exception("Initial conversion failed")
+@pytest.fixture
+def deutch_jozsa_ionq() -> IonQDictType:
+    """Return the expected IonQDictType for the DJ algorithm."""
+    return {
+        "qubits": 5,
+        "circuit": [
+            {"gate": "x", "target": 0},
+            {"gate": "h", "target": 0},
+            {"gate": "h", "target": 1},
+            {"gate": "h", "target": 2},
+            {"gate": "h", "target": 3},
+            {"gate": "h", "target": 0},
+            {"gate": "cnot", "control": 0, "target": 0},
+            {"gate": "cnot", "control": 1, "target": 0},
+            {"gate": "cnot", "control": 2, "target": 0},
+            {"gate": "cnot", "control": 3, "target": 0},
+            {"gate": "h", "target": 0},
+            {"gate": "h", "target": 1},
+            {"gate": "h", "target": 2},
+            {"gate": "h", "target": 3},
+        ],
+        "gateset": "qis",
+    }
 
-        with patch("pyqasm.unroll", side_effect=ImportError("pyqasm not available")):
-            with pytest.raises(CircuitConversionError) as exc_info:
-                qasm3_to_ionq(qasm3_program)
 
-            assert "Please install the 'ionq' extra" in str(exc_info.value)
+@pytest.fixture
+def ionq_native_gates_qasm() -> Qasm3StringType:
+    """Return a QASM 3.0 using only IonQ native gates."""
+    return """
+    OPENQASM 3.0;
+    qubit[3] q;
+    ms(0,0) q[0], q[1];
+    ms(-0.5,0.6,0.1) q[1], q[2];
+    gpi(0) q[0];
+    gpi2(0.2) q[1];
+    """
 
 
-def test_qasm3_to_ionq_final_conversion_failure(qasm3_program):
-    """Test qasm3_to_ionq when both initial and final conversion attempts fail."""
+@pytest.fixture
+def ionq_native_gates_dict() -> IonQDictType:
+    """Return an IonQDictType for a program using native gates."""
+    return {
+        "gateset": "native",
+        "qubits": 3,
+        "circuit": [
+            {"gate": "ms", "targets": [0, 1], "phases": [0, 0]},
+            {"gate": "ms", "targets": [1, 2], "phases": [-0.5, 0.6], "angle": 0.1},
+            {"gate": "gpi", "phase": 0, "target": 0},
+            {"gate": "gpi2", "phase": 0.2, "target": 1},
+        ],
+    }
 
-    pytest.importorskip("pyqasm")
 
-    with patch(
-        "qbraid.transpiler.conversions.qasm2.qasm2_to_ionq.qasm_to_ionq"
-    ) as mock_qasm_to_ionq:
-        mock_qasm_to_ionq.side_effect = Exception("Initial conversion failed")
+def test_qasm3_to_ionq_no_pyqasm(deutsch_jozsa_qasm3):
+    """Test transpiling the Deutsch-Jozsa algorithm from QASM 3.0 to IonQDictType."""
+    with unittest.mock.patch.dict("sys.modules", {"pyqasm": None}):
+        with pytest.raises(CircuitConversionError) as exc_info:
+            qasm3_to_ionq(deutsch_jozsa_qasm3)
+        assert (
+            "Failed to parse gate data from OpenQASM string. "
+            "Please install the 'ionq' extra to enable program unrolling with pyqasm."
+        ) in str(exc_info.value)
 
-        with patch("pyqasm.unroll", return_value=qasm3_program):
-            mock_qasm_to_ionq.side_effect = Exception("Final conversion failed")
 
-            with pytest.raises(CircuitConversionError) as exc_info:
-                qasm3_to_ionq(qasm3_program)
+def test_qasm3_to_ionq_deutch_jozsa(
+    deutsch_jozsa_qasm3, deutch_jozsa_qasm3_unrolled, deutch_jozsa_ionq
+):
+    """Test transpiling the Deutsch-Jozsa algorithm from QASM 3.0 to IonQDictType."""
+    pyqasm_installed = importlib.util.find_spec("pyqasm") is not None
+    qasm_program = deutsch_jozsa_qasm3 if pyqasm_installed else deutch_jozsa_qasm3_unrolled
+    ionq_program = qasm3_to_ionq(qasm_program)
+    assert ionq_program == deutch_jozsa_ionq
 
-            assert "Failed to convert QASM3 to IonQ" in str(exc_info.value)
+
+def test_qasm3_to_ionq_native_gates(ionq_native_gates_qasm, ionq_native_gates_dict):
+    """Test transpiling a program using IonQ native gates to IonQDictType."""
+    ionq_program = qasm3_to_ionq(ionq_native_gates_qasm)
+    assert ionq_program["qubits"] == ionq_native_gates_dict["qubits"]
+    assert ionq_program["gateset"] == ionq_native_gates_dict["gateset"]
+    assert ionq_program["circuit"] == ionq_native_gates_dict["circuit"]
+    assert len(ionq_program) == 3
+
+
+def test_qasm3_to_ionq_zz_native_gate():
+    """Test transpiling a program containing the 'zz' native gate to IonQDictType."""
+    qasm_program = """
+    OPENQASM 3.0;
+    qubit[2] q;
+    zz(0.12) q[0], q[1];
+    """
+    expectd_ionq = {
+        "gateset": "native",
+        "qubits": 2,
+        "circuit": [
+            {"gate": "zz", "targets": [0, 1], "angle": 0.12},
+        ],
+    }
+
+    assert qasm3_to_ionq(qasm_program) == expectd_ionq
+
+
+@pytest.mark.parametrize(
+    "qasm_code, error_message",
+    [
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    ms(1.1,0) q[0], q[1];
+    """,
+            "Invalid phase value",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    ms(0,-1.5) q[0], q[1];
+    """,
+            "Invalid phase value",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    gpi(-6) q[0], q[1];
+    """,
+            "Invalid phase value",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    gpi2(3.0) q[0], q[1];
+    """,
+            "Invalid phase value",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    ms(0,0,0.26) q[0], q[1];
+    """,
+            "Invalid angle value",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    ms(0,0,-0.1) q[0], q[1];
+    """,
+            "Invalid angle value",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    zz(0.45) q[0], q[1];
+    """,
+            "Invalid angle value",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    zz(-0.9) q[0], q[1];
+    """,
+            "Invalid angle value",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    zz(abc) q[0], q[1];
+    """,
+            "Invalid angle value",
+        ),
+    ],
+)
+def test_qasm3_to_ionq_invalid_params(qasm_code, error_message):
+    """Test that qasm3_to_ionq raises an error when the circuit contains invalid parameters."""
+    with pytest.raises(CircuitConversionError) as exc_info:
+        qasm3_to_ionq(qasm_code)
+    assert error_message in str(exc_info.value)
+
+
+def test_qasm3_to_ionq_mixed_gate_types_raises_value_error():
+    """Test that qasm3_to_ionq raises an error when the circuit contains mixed gate types."""
+    mixed_gate_qasm = """
+    OPENQASM 3.0;
+    qubit[2] q;
+    h q[1];
+    h q[2];
+    gpi(0) q[0], q[1];
+    """
+    with pytest.raises(CircuitConversionError) as exc_info:
+        qasm3_to_ionq(mixed_gate_qasm)
+    assert "Cannot mix native and QIS gates in the same circuit." in str(exc_info.value)
+
+
+def test_extract_params_index_error_caught():
+    """Test that the extract_params returns empty list for non-parametric gates."""
+    h_gate_qasm = """
+    OPENQASM 3.0;
+    qubit[1] q;
+    h q[0];    
+    """
+    program = parse(h_gate_qasm)
+    statement = program.statements[1]
+    assert isinstance(statement, openqasm3.ast.QuantumGate)
+    assert extract_params(statement) == []

@@ -78,6 +78,13 @@ def test_ionq_program_determine_gateset_native():
     assert IonQProgram.determine_gateset(circuit) == GateSet.NATIVE
 
 
+def test_ionq_program_determine_gateset_empty_circuit():
+    """Test that ValueError is raised when determining the gateset of an empty circuit."""
+    with pytest.raises(ValueError) as excinfo:
+        _ = IonQProgram.determine_gateset([])
+    assert "Circuit is empty. Must contain at least one gate." in str(excinfo.value)
+
+
 def test_ionq_dict_checks_invalid_gateset_type(ionq_dict):
     """Test that an dict object with an invalid gateset type
     is not considered a valid IonQDict instance."""

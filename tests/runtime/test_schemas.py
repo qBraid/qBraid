@@ -154,8 +154,9 @@ def test_runtime_job_model(mock_job_data):
     assert job.time_stamps.executionDuration == 60000  # pylint: disable=no-member
 
     # Test job with missing metadata
-    mock_job_data.pop("metadata", None)
-    job = RuntimeJobModel.from_dict(mock_job_data)
+    job_data = mock_job_data.copy()
+    job_data.pop("metadata", None)
+    job = RuntimeJobModel.from_dict(job_data)
     assert isinstance(job.metadata, GateModelExperimentMetadata)
 
     with pytest.raises(ValueError):
@@ -219,22 +220,41 @@ def test_time_stamps_created_at_fallback():
 def test_invalid_experiment_type_raises_error(mock_job_data):
     """Test invalid experiment type raises error."""
     bad_type = "unsupported type"
-    mock_job_data["experimentType"] = bad_type
+    bad_job_data = mock_job_data.copy()
+    bad_job_data["experimentType"] = bad_type
     with pytest.raises(ValueError) as exc_info:
-        RuntimeJobModel.from_dict(mock_job_data)
+        RuntimeJobModel.from_dict(bad_job_data)
     assert str(exc_info.value).startswith(f"'{bad_type}' is not a valid ExperimentType")
+
+    model = RuntimeJobModel.from_dict(mock_job_data)
+
+    with pytest.raises(ValidationError) as exc_info:
+        _ = RuntimeJobModel(
+            qbraidJobId=model.job_id,
+            qbraidDeviceId=model.device_id,
+            status=model.status.value,
+            statusText=model.status_text,
+            shots=model.shots,
+            experimentType=bad_type,
+            metadata=model.metadata,
+            timeStamps=model.time_stamps,
+            tags=model.tags,
+            cost=model.cost,
+        )
+    assert f"Invalid experiment_type: '{bad_type}'" in str(exc_info.value)
 
 
 def test_invalid_status_raises_error(mock_job_data):
     """Test invalid job status raises error."""
     bad_type = "unsupported type"
-    mock_job_data["status"] = bad_type
+    bad_job_data = mock_job_data.copy()
+    bad_job_data["status"] = bad_type
     with pytest.raises(ValueError) as exc_info:
-        RuntimeJobModel.from_dict(mock_job_data)
+        RuntimeJobModel.from_dict(bad_job_data)
     assert str(exc_info.value).startswith(f"'{bad_type}' is not a valid JobStatus")
 
     with pytest.raises(ValidationError) as exc_info:
-        RuntimeJobModel(**mock_job_data)
+        RuntimeJobModel(**bad_job_data)
     assert f"Invalid status: '{bad_type}'" in str(exc_info.value)
 
 

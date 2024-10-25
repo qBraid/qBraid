@@ -17,10 +17,10 @@ Module defining IonQ device class
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional
 
 from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
-from qbraid.programs.typer import Qasm2StringType
+from qbraid.programs.typer import IonQDictType, Qasm2StringType
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.transpiler.conversions.qasm2 import qasm2_to_ionq
@@ -72,7 +72,7 @@ class IonQDevice(QuantumDevice):
         device_data = self.session.get_device(self.id)
         return device_data["average_queue_time"]
 
-    def transform(self, run_input: Qasm2StringType) -> dict[str, Union[int, list[dict[str, Any]]]]:
+    def transform(self, run_input: Qasm2StringType) -> IonQDictType:
         """Transform the input to the IonQ device."""
         program = OpenQasm2Program(run_input)
         program.transform(device=self)
