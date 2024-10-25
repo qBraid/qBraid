@@ -50,7 +50,7 @@ def qasm3_to_ionq(qasm: Qasm3StringType) -> IonQDictType:
         try:
             qasm = pyqasm.unroll(qasm)
             return qasm_to_ionq(qasm)
-        except ImportError as import_err:
+        except (ImportError, ModuleNotFoundError) as import_err:
             raise CircuitConversionError(
                 f"Conversion failed: {cache_error}. "
                 "Please install the 'ionq' extra to enable program unrolling with pyqasm."

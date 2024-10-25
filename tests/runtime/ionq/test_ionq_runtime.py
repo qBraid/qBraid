@@ -21,11 +21,11 @@ from unittest.mock import Mock, patch
 import pytest
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
+from qbraid.programs.gate_model.ionq import IONQ_NATIVE_GATES_BASE, IONQ_QIS_GATES
 from qbraid.runtime import GateModelResultData, Result, TargetProfile
 from qbraid.runtime.enums import DeviceStatus, JobStatus
 from qbraid.runtime.ionq import IonQDevice, IonQJob, IonQProvider, IonQSession
 from qbraid.runtime.ionq.job import IonQJobError
-from qbraid.programs.gate_model.ionq import IONQ_QIS_GATES
 
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
@@ -172,6 +172,8 @@ def test_ionq_provider_get_device():
         assert test_device.profile["num_qubits"] == 11
         assert test_device.profile["program_spec"] == ProgramSpec(str, alias="qasm2")
         assert test_device.profile["basis_gates"] == set(IONQ_QIS_GATES)
+        assert test_device.profile["native_gates"] == set(IONQ_NATIVE_GATES_BASE)
+        assert test_device.profile["characterization"] == CHARACTERIZATION_DATA
 
 
 def test_ionq_provider_device_unavailable():
@@ -364,6 +366,18 @@ def test_ionq_session_cancel():
 
         session = IonQSession(api_key="fake_api_key")
         assert session.cancel_job("fake_job_id") is None
+
+
+def test_ionq_average_queue_time():
+    """Test getting the average queue time of an IonQDevice."""
+    device = IonQDevice(
+        TargetProfile(device_id="simulator", simulator=False),
+        IonQSession("fake_api_key"),
+    )
+    with patch("qbraid_core.sessions.Session.get") as mock_get:
+        mock_get.return_value.json.return_value = DEVICE_DATA
+
+        assert device.avg_queue_time() == 0
 
 
 def test_ionq_submit_fail():

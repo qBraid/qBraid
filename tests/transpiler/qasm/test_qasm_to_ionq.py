@@ -12,7 +12,13 @@
 Unit tests for qasm2 to IonQDictType transpilation
 
 """
+from unittest.mock import patch
+
+import pytest
+
 from qbraid.transpiler.conversions.qasm2.qasm2_to_ionq import qasm2_to_ionq
+from qbraid.transpiler.conversions.qasm3.qasm3_to_ionq import qasm3_to_ionq
+from qbraid.transpiler.exceptions import CircuitConversionError
 
 
 def test_ionq_device_extract_gate_data():
@@ -82,3 +88,60 @@ def test_ionq_device_extract_gate_data():
     actual = qasm2_to_ionq(qasm)
 
     assert actual == expected
+
+
+def test_qasm2_to_ionq_measurements_raises():
+    """Test that qasm2_to_ionq raises an error when the circuit contains measurements."""
+    qasm = """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[1];
+    creg c[1];
+    x q[0];
+    measure q[0] -> c[0];
+    """
+    with pytest.raises(ValueError) as exc_info:
+        qasm2_to_ionq(qasm)
+    assert "Circuits with measurements are not supported by the IonQDictType" in str(exc_info.value)
+
+
+@pytest.fixture
+def qasm3_program() -> str:
+    """Return a simple QASM3 program."""
+    return "OPENQASM 3; qubit q[2]; cx q[0], q[1];"
+
+
+def test_qasm3_to_ionq_import_error(qasm3_program):
+    """Test qasm3_to_ionq when the pyqasm import fails."""
+
+    pytest.importorskip("pyqasm")
+
+    with patch(
+        "qbraid.transpiler.conversions.qasm2.qasm2_to_ionq.qasm_to_ionq"
+    ) as mock_qasm_to_ionq:
+        mock_qasm_to_ionq.side_effect = Exception("Initial conversion failed")
+
+        with patch("pyqasm.unroll", side_effect=ImportError("pyqasm not available")):
+            with pytest.raises(CircuitConversionError) as exc_info:
+                qasm3_to_ionq(qasm3_program)
+
+            assert "Please install the 'ionq' extra" in str(exc_info.value)
+
+
+def test_qasm3_to_ionq_final_conversion_failure(qasm3_program):
+    """Test qasm3_to_ionq when both initial and final conversion attempts fail."""
+
+    pytest.importorskip("pyqasm")
+
+    with patch(
+        "qbraid.transpiler.conversions.qasm2.qasm2_to_ionq.qasm_to_ionq"
+    ) as mock_qasm_to_ionq:
+        mock_qasm_to_ionq.side_effect = Exception("Initial conversion failed")
+
+        with patch("pyqasm.unroll", return_value=qasm3_program):
+            mock_qasm_to_ionq.side_effect = Exception("Final conversion failed")
+
+            with pytest.raises(CircuitConversionError) as exc_info:
+                qasm3_to_ionq(qasm3_program)
+
+            assert "Failed to convert QASM3 to IonQ" in str(exc_info.value)

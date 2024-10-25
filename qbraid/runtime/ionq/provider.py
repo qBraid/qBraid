@@ -102,7 +102,7 @@ class IonQProvider(QuantumProvider):
             program_spec=ProgramSpec(str, alias="qasm2"),
             provider_name="IonQ",
             basis_gates=IONQ_QIS_GATES.copy(),
-            native_gates=native_gates,
+            native_gates=set(native_gates),
             characterization=charact,
         )
 
