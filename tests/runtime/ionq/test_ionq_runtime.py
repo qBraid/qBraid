@@ -14,16 +14,18 @@
 Unit tests for IonQProvider class
 
 """
+from itertools import combinations
+from typing import Any, Optional
 from unittest.mock import Mock, patch
 
 import pytest
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
+from qbraid.programs.gate_model.ionq import IONQ_NATIVE_GATES_BASE, IONQ_QIS_GATES
 from qbraid.runtime import GateModelResultData, Result, TargetProfile
 from qbraid.runtime.enums import DeviceStatus, JobStatus
 from qbraid.runtime.ionq import IonQDevice, IonQJob, IonQProvider, IonQSession
 from qbraid.runtime.ionq.job import IonQJobError
-from qbraid.runtime.ionq.provider import SUPPORTED_GATES
 
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
@@ -109,10 +111,41 @@ GET_JOB_RESPONSE = {
 
 GET_JOB_RESULT_RESPONSE = {"0": 0.5, "1": 0.5}
 
+CHARACTERIZATION_DATA = {
+    "connectivity": list(combinations(range(11), 2)),
+    "qubits": 11,
+    "fidelity": {"1q": {"mean": 0.9973}, "spam": {"mean": 0.993}, "2q": {"mean": 0.9002}},
+    "timing": {
+        "1q": 1e-05,
+        "reset": 2e-05,
+        "t1": 10000,
+        "readout": 0.00013,
+        "t2": 0.2,
+        "2q": 0.0002,
+    },
+    "date": 1725102011,
+    "id": "f518d0c9-34c6-4854-890e-a0e4f339bd64",
+    "backend": "qpu.harmony",
+}
+
+
+def mock_characterization(device_data: dict[str, Any]) -> Optional[dict[str, Any]]:
+    """Mock get characterization method."""
+    if device_data["backend"] == CHARACTERIZATION_DATA["backend"]:
+        return CHARACTERIZATION_DATA.copy()
+    return None
+
 
 def test_ionq_provider_get_device():
     """Test getting IonQ provider and device."""
-    with patch("qbraid.runtime.ionq.provider.Session") as mock_session:
+    with (
+        patch("qbraid.runtime.ionq.provider.Session") as mock_session,
+        patch(
+            "qbraid.runtime.ionq.provider.IonQProvider._get_characterization"
+        ) as mock_get_characterization,
+    ):
+
+        mock_get_characterization.side_effect = mock_characterization
         mock_session.return_value.get.return_value.json.return_value = DEVICE_DATA
 
         provider = IonQProvider(api_key="fake_api_key")
@@ -138,7 +171,20 @@ def test_ionq_provider_get_device():
         assert test_device.profile["simulator"] is False
         assert test_device.profile["num_qubits"] == 11
         assert test_device.profile["program_spec"] == ProgramSpec(str, alias="qasm2")
-        assert test_device.profile["basis_gates"] == set(SUPPORTED_GATES)
+        assert test_device.profile["basis_gates"] == set(IONQ_QIS_GATES)
+        assert test_device.profile["native_gates"] == set(IONQ_NATIVE_GATES_BASE)
+        assert test_device.profile["characterization"] == CHARACTERIZATION_DATA
+
+
+def test_get_device_characterization_from_data():
+    """Test getting fetching device characterization from characterization url in device data."""
+    with patch("qbraid.runtime.ionq.provider.IonQSession") as mock_session:
+        mock_session.return_value.get.return_value.json.return_value = CHARACTERIZATION_DATA
+
+        provider = IonQProvider(api_key="fake_api_key")
+        harmony_data = DEVICE_DATA[0]
+        characterization = provider._get_characterization(harmony_data)
+        assert characterization == CHARACTERIZATION_DATA
 
 
 def test_ionq_provider_device_unavailable():
@@ -194,6 +240,7 @@ def test_ionq_device_transform_run_input():
     cry(pi/4) q[0], q[1];
     """
     expected_output = {
+        "gateset": "qis",
         "qubits": 2,
         "circuit": [
             {"gate": "ry", "target": 1, "rotation": 0.39269908169872414},
@@ -203,7 +250,14 @@ def test_ionq_device_transform_run_input():
         ],
     }
 
-    with patch("qbraid_core.sessions.Session") as mock_session:
+    with (
+        patch("qbraid.runtime.ionq.provider.Session") as mock_session,
+        patch(
+            "qbraid.runtime.ionq.provider.IonQProvider._get_characterization"
+        ) as mock_get_characterization,
+    ):
+
+        mock_get_characterization.side_effect = mock_characterization
         mock_session.return_value.get.return_value.json.return_value = DEVICE_DATA
 
         provider = IonQProvider(api_key="fake_api_key")
@@ -323,6 +377,18 @@ def test_ionq_session_cancel():
 
         session = IonQSession(api_key="fake_api_key")
         assert session.cancel_job("fake_job_id") is None
+
+
+def test_ionq_average_queue_time():
+    """Test getting the average queue time of an IonQDevice."""
+    device = IonQDevice(
+        TargetProfile(device_id="simulator", simulator=False),
+        IonQSession("fake_api_key"),
+    )
+    with patch("qbraid_core.sessions.Session.get") as mock_get:
+        mock_get.return_value.json.return_value = DEVICE_DATA
+
+        assert device.avg_queue_time() == 0
 
 
 def test_ionq_submit_fail():

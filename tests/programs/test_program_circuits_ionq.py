@@ -17,7 +17,7 @@ Unit tests for qbraid.programs.ionq.IonQProgram
 import pytest
 
 from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.gate_model.ionq import IonQProgram
+from qbraid.programs.gate_model.ionq import GateSet, IonQProgram
 from qbraid.programs.typer import IonQDict
 
 
@@ -51,3 +51,44 @@ def test_ionq_program_type_error():
     invalid_program = {"qubits": 3, "circuit": 42}
     with pytest.raises(ProgramTypeError):
         IonQProgram(invalid_program)
+
+
+def test_ionq_program_determine_gateset_raises():
+    """Test that an error is raised when determining
+    the gateset of a circuit that mixes native and
+    abstract (qis) gates."""
+    circuit = [
+        {"gate": "h", "target": 0},
+        {"gate": "cnot", "control": 0, "target": 1},
+        {"gate": "cnot", "control": 0, "target": 2},
+        {"gate": "gpi", "phase": 0, "target": 0},
+    ]
+
+    with pytest.raises(ValueError) as excinfo:
+        IonQProgram.determine_gateset(circuit)
+    assert "Invalid gate" in str(excinfo.value)
+
+
+def test_ionq_program_determine_gateset_native():
+    """Test that the native gateset is determined correctly."""
+    circuit = [
+        {"gate": "gpi", "phase": 0, "target": 0},
+        {"gate": "gpi2", "phase": 0, "target": 1},
+    ]
+    assert IonQProgram.determine_gateset(circuit) == GateSet.NATIVE
+
+
+def test_ionq_program_determine_gateset_empty_circuit():
+    """Test that ValueError is raised when determining the gateset of an empty circuit."""
+    with pytest.raises(ValueError) as excinfo:
+        _ = IonQProgram.determine_gateset([])
+    assert "Circuit is empty. Must contain at least one gate." in str(excinfo.value)
+
+
+def test_ionq_dict_checks_invalid_gateset_type(ionq_dict):
+    """Test that an dict object with an invalid gateset type
+    is not considered a valid IonQDict instance."""
+    ionq_dict_invalid = ionq_dict.copy()
+    ionq_dict_invalid["gateset"] = 42
+    assert isinstance(ionq_dict, IonQDict)
+    assert not isinstance(ionq_dict_invalid, IonQDict)

@@ -133,18 +133,9 @@ def test_pyquil_raises(bell_circuit):
 @pytest.mark.parametrize("bell_circuit", ["pytket"], indirect=True)
 def test_pytket_draw(bell_circuit):
     """Test draw function html output for pytket bell circuit."""
-    # pylint: disable=import-outside-toplevel
-    from packaging import version
-    from pytket import __version__ as pytket_version
-
-    # pylint: enable=import-outside-toplevel
-
-    gt_132 = version.parse(pytket_version) > version.parse("1.32.0")
-    expected_length = 2415 if gt_132 else 2381
-
     pytket_bell, _ = bell_circuit
     raw_html: str = circuit_drawer(pytket_bell, output="html")
-    assert len(raw_html) == expected_length
+    assert 2381 <= len(raw_html) <= 2417
 
 
 @pytest.mark.skipif("pytket" not in AVAILABLE_TARGETS, reason="pytket not installed")

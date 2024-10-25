@@ -14,15 +14,47 @@ Module defining IonQProgram Class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from enum import Enum
+from typing import Any
 
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.typer import IonQDict
 
 from ._model import GateModelProgram
 
-if TYPE_CHECKING:
-    import numpy as np
+IONQ_QIS_GATES = [
+    "x",
+    "y",
+    "z",
+    "rx",
+    "ry",
+    "rz",
+    "h",
+    "cx",
+    "s",
+    "sdg",
+    "t",
+    "tdg",
+    "sx",
+    "sxdg",
+    "swap",
+]
+
+IONQ_NATIVE_GATES_BASE = ["gpi", "gpi2"]
+
+IONQ_NATIVE_GATES_FAMILY = {
+    "aria": ["ms"] + IONQ_NATIVE_GATES_BASE,
+    "forte": ["zz"] + IONQ_NATIVE_GATES_BASE,
+}
+
+IONQ_NATIVE_GATES = list(set().union(*IONQ_NATIVE_GATES_FAMILY.values()))
+
+
+class GateSet(Enum):
+    """Enumeration of IonQ gate sets types, native and qis (abstract)."""
+
+    NATIVE = "native"
+    QIS = "qis"
 
 
 class IonQProgram(GateModelProgram):
@@ -44,20 +76,32 @@ class IonQProgram(GateModelProgram):
         """Return the number of classical bits in the circuit."""
         return 0
 
-    @property
-    def depth(self) -> int:
-        """Return the circuit depth (i.e., length of critical path)."""
-        raise NotImplementedError
+    @staticmethod
+    def determine_gateset(circuit: list[dict[str, Any]]) -> GateSet:
+        """Determines the gate set of an IonQ circuit gate list.
 
-    def _unitary(self) -> np.ndarray:
-        """Return the unitary of a pyQuil program."""
-        raise NotImplementedError
+        Args:
+            circuit (list[dict]): The IonQ circuit to analyze.
 
-    def remove_idle_qubits(self) -> None:
-        """Checks whether the circuit uses contiguous qubits/indices,
-        and if not, reduces dimension accordingly."""
-        raise NotImplementedError
+        Returns:
+            GateSet: The gate set of the circuit.
 
-    def reverse_qubit_order(self) -> None:
-        """Reverse the order of the qubits in the circuit."""
-        raise NotImplementedError
+        Raises:
+            ValueError: If the circuit is empty, or mixes native and abstract (qis) gates.
+        """
+        if not circuit:
+            raise ValueError("Circuit is empty. Must contain at least one gate.")
+
+        native_gate_set = set(IONQ_NATIVE_GATES)
+        first_gate_native = circuit[0].get("gate") in native_gate_set
+
+        for instr in circuit:
+            gate = instr.get("gate")
+            is_native = gate in native_gate_set
+
+            if is_native != first_gate_native:
+                raise ValueError(
+                    f"Invalid gate '{gate}'. Cannot mix native and QIS gates in the same circuit."
+                )
+
+        return GateSet.NATIVE if first_gate_native else GateSet.QIS

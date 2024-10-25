@@ -14,6 +14,7 @@ qiskit-qasm3-import>=0.4.2
 pytket-braket>=0.35.1,<0.39.0; python_version >= "3.10"
 bloqade>=0.15.13
 qiskit-qir
+# pyqasm>=0.0.2; python_version >= "3.10"
 
 # optional runtime dependencies
 oqc-qcaas-client>=3.9.1
@@ -27,7 +28,7 @@ pyqubo>=1.4.0; python_version < "3.12"
 ipython
 matplotlib>=3.3
 pandas>=2.2
-flair-visual>=0.1.4; python_version >= "3.10"
+flair-visual>=0.2.0; python_version >= "3.10"
 
 # testing
 sympy

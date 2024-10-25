@@ -44,13 +44,13 @@ class GateModelProgram(QuantumProgram, ABC):
         """Return the number of classical bits in the circuit."""
 
     @property
-    @abstractmethod
     def depth(self) -> int:
         """Return the circuit depth (i.e., length of critical path)."""
+        raise NotImplementedError
 
-    @abstractmethod
     def _unitary(self) -> np.ndarray:
         """Calculate unitary of circuit."""
+        raise NotImplementedError
 
     def unitary(self) -> np.ndarray:
         """Calculate unitary of circuit."""
@@ -124,13 +124,13 @@ class GateModelProgram(QuantumProgram, ABC):
         tensor_le = np.einsum(tensor_be, indicies_in + indicies_out)
         return tensor_le.reshape([rank, rank])
 
-    @abstractmethod
     def remove_idle_qubits(self) -> None:
         """Remove empty registers of circuit."""
+        raise NotImplementedError
 
-    @abstractmethod
     def reverse_qubit_order(self) -> None:
         """Rerverse qubit ordering of circuit."""
+        raise NotImplementedError
 
     def transform(self, device: qbraid.runtime.QuantumDevice) -> None:
         """Transform program to according to device target profile."""

@@ -165,15 +165,13 @@ def simplify_arithmetic_expressions(qasm_str: str) -> str:
     return re.sub(pattern, _evaluate_expression, qasm_str)
 
 
-def convert_qasm_pi_to_decimal(qasm_str: str) -> str:
+def convert_qasm_pi_to_decimal(qasm: str) -> str:
     """Convert all instances of 'pi' in the QASM string to their decimal value."""
 
     pattern = r"(\d*\.?\d*\s*[*/+-]\s*)?pi(\s*[*/+-]\s*\d*\.?\d*)?"
-    # pattern = r"(\d*\.?\d*\s*[*/+-]\s*)*pi(\s*[*/+-]\s*\d*\.?\d*)*"
-    # pattern = r"([+-]?(\d+(\.\d*)?)?\s*[*/]\s*)*pi(\s*[*/+-]\s*[+-]?(\d+(\.\d*)?)?)*"
 
     def replace_with_decimal(match):
-        expr = match.group()
+        expr: str = match.group()
         expr_with_pi_as_decimal = expr.replace("pi", str(math.pi))
         try:
             value = eval(expr_with_pi_as_decimal)  # pylint: disable=eval-used
@@ -181,7 +179,7 @@ def convert_qasm_pi_to_decimal(qasm_str: str) -> str:
             return expr
         return str(value)
 
-    return re.sub(pattern, replace_with_decimal, qasm_str)
+    return re.sub(pattern, replace_with_decimal, qasm)
 
 
 def has_redundant_parentheses(qasm_str: str) -> bool:
