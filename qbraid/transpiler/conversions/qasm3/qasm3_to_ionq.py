@@ -52,7 +52,7 @@ def qasm3_to_ionq(qasm: Qasm3StringType) -> IonQDictType:
     try:
         return qasm_to_ionq(qasm)
     except Exception as err:  # pylint: disable=broad-exception-caught
-        err_msg = str(err)
+        err_msg = str(err) or "Failed to convert OpenQASM 3 to IonQ JSON."
         if cache_err and "Cannot mix native and QIS gates in the same circuit" not in err_msg:
             err_msg += " Please install the 'ionq' extra to enable program unrolling with pyqasm."
         else:

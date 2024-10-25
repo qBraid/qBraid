@@ -19,9 +19,10 @@ import openqasm3.ast
 import pytest
 from openqasm3.parser import parse
 
+from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
 from qbraid.programs.typer import IonQDictType, Qasm3StringType
 from qbraid.transpiler.conversions.qasm2.qasm2_to_ionq import (
-    _parse_angle,
+    _parse_gates,
     extract_params,
     qasm2_to_ionq,
 )
@@ -374,3 +375,27 @@ def test_extract_params_index_error_caught():
     statement = program.statements[1]
     assert isinstance(statement, openqasm3.ast.QuantumGate)
     assert extract_params(statement) == []
+
+
+@pytest.mark.parametrize(
+    "program_text",
+    [
+        """
+    OPENQASM 3.0;
+    qubit[2] q;
+    ms(0,0,0,0) q[0], q[1];
+    """,
+        """
+    OPENQASM 3.0;
+    qubit[2] q;
+    ms q[0], q[1];
+    """,
+    ],
+)
+def test_ionq_ms_gate_wrong_number_params(program_text):
+    """Test ValueError is raised when 'ms' gate has an invalid number of parameters."""
+    program = OpenQasm3Program(program_text)
+
+    with pytest.raises(ValueError) as exc_info:
+        _ = _parse_gates(program)
+    assert "Invalid number of parameters" in str(exc_info.value)
