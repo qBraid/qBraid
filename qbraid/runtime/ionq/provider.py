@@ -87,12 +87,14 @@ class IonQProvider(QuantumProvider):
         charact = self._get_characterization(data)
 
         if simulator:
-            native_gates = IONQ_NATIVE_GATES
+            native_gates = IONQ_NATIVE_GATES.copy()
         else:
             native_gates = next(
                 (gates for key, gates in IONQ_NATIVE_GATES_FAMILY.items() if key in device_id),
                 IONQ_NATIVE_GATES_BASE,
             )
+
+        basis_gates = IONQ_QIS_GATES.copy() + native_gates
 
         return TargetProfile(
             device_id=device_id,
@@ -101,8 +103,7 @@ class IonQProvider(QuantumProvider):
             num_qubits=data.get("qubits"),
             program_spec=ProgramSpec(str, alias="qasm2"),
             provider_name="IonQ",
-            basis_gates=IONQ_QIS_GATES.copy(),
-            native_gates=set(native_gates),
+            basis_gates=basis_gates,
             characterization=charact,
         )
 

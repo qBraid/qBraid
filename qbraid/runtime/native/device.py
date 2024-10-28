@@ -376,6 +376,10 @@ class QbraidDevice(QuantumDevice):
         try:
             cost = self.client.estimate_cost(self.id, shots, execution_time)
         except QuantumServiceRequestError as err:
+            if self.profile.provider_name == "IonQ" and not self.profile.simulator:
+                raise NotImplementedError(
+                    "Cost estimation is not yet supported for IonQ QPUs."
+                ) from err
             raise QbraidRuntimeError(
                 "Failed to estimate cost due to a service request error."
             ) from err

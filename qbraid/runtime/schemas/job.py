@@ -44,7 +44,7 @@ class TimeStamps(BaseModel):
     createdAt: datetime
     endedAt: Optional[datetime] = None
     executionDuration: Optional[int] = Field(
-        default=None, gt=0, description="Execution time in milliseconds"
+        default=None, ge=0, description="Execution time in milliseconds"
     )
 
     @field_validator("createdAt", "endedAt", mode="before")

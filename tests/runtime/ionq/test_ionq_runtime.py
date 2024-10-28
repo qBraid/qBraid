@@ -171,8 +171,7 @@ def test_ionq_provider_get_device():
         assert test_device.profile["simulator"] is False
         assert test_device.profile["num_qubits"] == 11
         assert test_device.profile["program_spec"] == ProgramSpec(str, alias="qasm2")
-        assert test_device.profile["basis_gates"] == set(IONQ_QIS_GATES)
-        assert test_device.profile["native_gates"] == set(IONQ_NATIVE_GATES_BASE)
+        assert test_device.profile["basis_gates"] == set(IONQ_QIS_GATES + IONQ_NATIVE_GATES_BASE)
         assert test_device.profile["characterization"] == CHARACTERIZATION_DATA
 
 

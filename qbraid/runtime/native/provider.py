@@ -79,7 +79,7 @@ def get_program_spec_lambdas(
 
     to_ir, validate = lambdas.get(program_type_alias, (None, None))
 
-    if program_type_alias in ["qasm2", "qasm3"] and device_id == "quera_qasm_simulator":
+    if program_type_alias in ["qasm2", "qasm3"] and device_id.split("_")[0] in ["quera", "ionq"]:
         # pylint: disable-next=unnecessary-lambda-assignment
         validate = lambda program: validate_qasm_no_measurements(program, device_id)
 
