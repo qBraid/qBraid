@@ -9,34 +9,26 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining PyQuboModel Class
-
+Module defining qBraid runtime schemas.
 """
 from __future__ import annotations
 
-from pyqubo import Model
-
 from qbraid.programs.exceptions import ProgramTypeError
 
-from ._model import AnnealingProgram, QuboProblem
+from ._model import AnnealingProgram, Problem
 
 
-class PyQuboModel(AnnealingProgram):
-    """AnnealingProblem subclass that accepts a cpp_pyqubo.Model."""
+class QuboProgram(AnnealingProgram):
+    """Class representing a QUBO problem."""
 
-    def __init__(self, program: Model):
+    def __init__(self, program: Problem):
         super().__init__(program)
-        if not isinstance(program, Model):
+        self.program = program
+        if not isinstance(program, Problem):
             raise ProgramTypeError(
                 message=f"Expected 'pyqubo.Model' object, got '{type(program)}'."
             )
 
-    def to_problem(self) -> QuboProblem:
-        """Converts the cpp_pyqubo.Model to a Problem instance."""
-        qubo, offset = self.program.to_qubo()
-        coefficients = {}
-
-        for key, value in qubo.items():
-            coefficients[key] = value
-
-        return QuboProblem(coefficients, offset)
+    def to_problem(self) -> Problem:
+        """Return the QUBO problem."""
+        return self.program

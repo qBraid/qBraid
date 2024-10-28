@@ -232,3 +232,20 @@ class Qasm3StringType(QasmStringType):
     """Specifically typed string for OpenQASM 3 formatted text."""
 
     version = 3
+
+
+
+class AnnealingProblemInstanceMeta(QbraidMetaType):
+    """Metaclass for Annealing JSON type checking based on dict content."""
+
+    @property
+    def __alias__(cls) -> str:
+        return "annealing"
+
+    @property
+    def __bound__(cls) -> Type[dict]:
+        return dict
+
+
+class AnnealingProblem(metaclass=AnnealingProblemInstanceMeta):
+    """Marker class for dict that are valid annealing JSON formatted problems."""
