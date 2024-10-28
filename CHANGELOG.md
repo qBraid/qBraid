@@ -43,6 +43,7 @@ Types of changes:
 
 ### Fixed
 - Fixed native runtime bug: failure to raise exception if `qbraid-qir` not installed for "qbraid_qir_simulator" device. Now warns at provider level and raises in run method if transform fails ([#801](https://github.com/qBraid/qBraid/pull/801))
+- Fixed bug in `qbraid.passes.qasm.convert_qasm_pi_to_decimal()` where `gpi` and `gpi2` gate defs were being subbed with pi decimal value. Fix is not perfect but will work for most cases. ([#810](https://github.com/qBraid/qBraid/pull/810))
 
 ### Dependencies
 - Added `pyqasm` as optional dependency extra for IonQ ([#807](https://github.com/qBraid/qBraid/pull/807))

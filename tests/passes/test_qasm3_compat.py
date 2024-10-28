@@ -19,6 +19,7 @@ import pytest
 from qbraid.passes.qasm.compat import (
     _evaluate_expression,
     add_stdgates_include,
+    convert_qasm_pi_to_decimal,
     has_redundant_parentheses,
     insert_gate_def,
     normalize_qasm_gate_params,
@@ -242,3 +243,25 @@ def test_evaluate_expression_error():
     match = re.search(r"\(([0-9+\-*/. ]+)\)", qasm_str)
 
     assert _evaluate_expression(match) == "(1*)"
+
+
+def test_convert_qasm_pi_to_decimal_omits_gpi_gate():
+    """Test converting pi symbol to decimal in qasm string with gpi and gpi2 gates."""
+    qasm = """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    gpi(0) q[0];
+    gpi2(0) q[1];
+    cry(pi) q[0], q[1];
+    """
+
+    expected = """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    gpi(0) q[0];
+    gpi2(0) q[1];
+    cry(3.141592653589793) q[0], q[1];
+    """
+    assert convert_qasm_pi_to_decimal(qasm) == expected
