@@ -77,4 +77,4 @@ class DeviceData(BaseModel):
     device_id: str = Field(alias="qbraid_id")
 
     noise_models: Optional[list[str]] = Field(None, alias="noiseModels")
-    pricing: DevicePricing
+    pricing: Optional[DevicePricing] = None

@@ -355,6 +355,9 @@ class QbraidDevice(QuantumDevice):
             ValueError: If `shots` and `execution_time` are None or 0, or if either is negative.
             QbraidRuntimeError: If unable to retrieve the cost estimate from the qBraid API.
         """
+        if self.profile.provider_name.lower() == "ionq" and not self.profile.simulator:
+            raise NotImplementedError("Cost estimation is not yet supported for IonQ QPUs.")
+
         if not shots:
             shots = None
         if not execution_time:
