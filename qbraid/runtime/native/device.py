@@ -355,9 +355,6 @@ class QbraidDevice(QuantumDevice):
             ValueError: If `shots` and `execution_time` are None or 0, or if either is negative.
             QbraidRuntimeError: If unable to retrieve the cost estimate from the qBraid API.
         """
-        if self.profile.provider_name.lower() == "ionq" and not self.profile.simulator:
-            raise NotImplementedError("Cost estimation is not yet supported for IonQ QPUs.")
-
         if not shots:
             shots = None
         if not execution_time:
@@ -379,6 +376,8 @@ class QbraidDevice(QuantumDevice):
         try:
             cost = self.client.estimate_cost(self.id, shots, execution_time)
         except QuantumServiceRequestError as err:
+            if self.profile.provider_name == "IonQ" and not self.profile.simulator:
+                raise NotImplementedError("Cost estimation is not yet supported for IonQ QPUs.") from err
             raise QbraidRuntimeError(
                 "Failed to estimate cost due to a service request error."
             ) from err
