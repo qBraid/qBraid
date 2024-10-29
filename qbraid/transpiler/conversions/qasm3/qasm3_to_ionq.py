@@ -44,9 +44,10 @@ def qasm3_to_ionq(qasm: Qasm3StringType) -> IonQDictType:
     Raises:
         CircuitConversionError: If the conversion fails.
     """
+    # pylint: disable=broad-exception-caught
     try:
         return openqasm3_to_ionq(qasm)
-    except Exception as err:  # pylint: disable=broad-exception-caught
+    except Exception as err:
         err_msg = str(err) or "Failed to convert OpenQASM 3 to IonQ JSON."
         cache_err = None
         try:
@@ -55,10 +56,11 @@ def qasm3_to_ionq(qasm: Qasm3StringType) -> IonQDictType:
                 return openqasm3_to_ionq(qasm)
         except (ImportError, ModuleNotFoundError) as import_err:
             cache_err = import_err
-        except Exception as pyqasm_err:  # pylint: disable=broad-exception-caught
+        except Exception as pyqasm_err:  # pragma: no cover
             logger.debug("Conversion with pyqasm assistance failed: %s", pyqasm_err)
         if cache_err and "Cannot mix native and QIS gates in the same circuit" not in err_msg:
             err_msg += " Please install the 'ionq' extra to enable program unrolling with pyqasm."
         else:
             cache_err = err
         raise CircuitConversionError(err_msg) from cache_err
+    # pylint: enable=broad-exception-caught
