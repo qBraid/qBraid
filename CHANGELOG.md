@@ -40,6 +40,7 @@ Types of changes:
 - Combined `qasm2` and `qasm3` modules in `qbraid.passes` to allow splitting `qbraid.programs.gate_model.qasm` into `qasm2` and `qasm3` sub-modules to maintain program type alias consistency ([#805](https://github.com/qBraid/qBraid/pull/805))
 - Improved `IonQDevice.submit` method by explicitly list all available runtime parameters as optional args, included `preflight` bool to get cost in USD without actually submitting job ([#807](https://github.com/qBraid/qBraid/pull/807))
 - `qbraid.runtime.native` schema + provider + profile updates for IonQ including basis gates (include native), program validation (no meas), and optional pricing (for when variable) ([#809](https://github.com/qBraid/qBraid/pull/809))
+- Improved openqasm3 to ionq conversion error handling, error messages, and logging ([#814](https://github.com/qBraid/qBraid/pull/814))
 
 ### Fixed
 - Fixed native runtime bug: failure to raise exception if `qbraid-qir` not installed for "qbraid_qir_simulator" device. Now warns at provider level and raises in run method if transform fails ([#801](https://github.com/qBraid/qBraid/pull/801))

@@ -13,7 +13,7 @@ Unit tests for qasm2/qasm3 to IonQDictType transpilation
 
 """
 import importlib.util
-import unittest.mock
+from unittest.mock import Mock, patch
 
 import openqasm3.ast
 import pytest
@@ -21,11 +21,12 @@ from openqasm3.parser import parse
 
 from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
 from qbraid.programs.typer import IonQDictType, Qasm3StringType
-from qbraid.transpiler.conversions.qasm2.qasm2_to_ionq import (
+from qbraid.transpiler.conversions.openqasm3.openqasm3_to_ionq import (
     _parse_gates,
     extract_params,
-    qasm2_to_ionq,
+    openqasm3_to_ionq,
 )
+from qbraid.transpiler.conversions.qasm2.qasm2_to_ionq import qasm2_to_ionq
 from qbraid.transpiler.conversions.qasm3.qasm3_to_ionq import qasm3_to_ionq
 from qbraid.transpiler.exceptions import CircuitConversionError
 
@@ -220,7 +221,7 @@ def ionq_native_gates_dict() -> IonQDictType:
 
 def test_qasm3_to_ionq_no_pyqasm(deutsch_jozsa_qasm3):
     """Test transpiling the Deutsch-Jozsa algorithm from QASM 3.0 to IonQDictType."""
-    with unittest.mock.patch.dict("sys.modules", {"pyqasm": None}):
+    with patch.dict("sys.modules", {"pyqasm": None}):
         with pytest.raises(CircuitConversionError) as exc_info:
             qasm3_to_ionq(deutsch_jozsa_qasm3)
         assert (
@@ -237,6 +238,19 @@ def test_qasm3_to_ionq_deutch_jozsa(
     qasm_program = deutsch_jozsa_qasm3 if pyqasm_installed else deutch_jozsa_qasm3_unrolled
     ionq_program = qasm3_to_ionq(qasm_program)
     assert ionq_program == deutch_jozsa_ionq
+
+
+def test_qasm3_to_ionq_deutch_jozsa_pyqasm_mocked(
+    deutsch_jozsa_qasm3, deutch_jozsa_qasm3_unrolled, deutch_jozsa_ionq
+):
+    """Test Deutch-Jozsa conversion with mock pyqasm import and unroll."""
+    mock_pyqasm = Mock()
+    mock_pyqasm.unroll.return_value = deutch_jozsa_qasm3_unrolled
+
+    with patch.dict("sys.modules", {"pyqasm": mock_pyqasm}):
+        qasm_program = deutsch_jozsa_qasm3
+        ionq_program = qasm3_to_ionq(qasm_program)
+        assert ionq_program == deutch_jozsa_ionq
 
 
 def test_qasm3_to_ionq_native_gates(ionq_native_gates_qasm, ionq_native_gates_dict):
@@ -347,6 +361,51 @@ def test_qasm3_to_ionq_invalid_params(qasm_code, error_message):
     """Test that qasm3_to_ionq raises an error when the circuit contains invalid parameters."""
     with pytest.raises(CircuitConversionError) as exc_info:
         qasm3_to_ionq(qasm_code)
+    assert error_message in str(exc_info.value)
+
+
+@pytest.mark.parametrize(
+    "qasm_code, error_message",
+    [
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    gpi q[0];
+    """,
+            "Phase parameter is required",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[1] q;
+    rz q[0];
+    """,
+            "Angle parameter is required",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    zz q[0], q[1];
+    """,
+            "Angle parameter is required",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[1] q;
+    invalid_gate q[0];
+    """,
+            "Gate 'invalid_gate' not supported",
+        ),
+    ],
+)
+def test_openqasm3_to_ionq_value_errors(qasm_code, error_message):
+    """Test that openqasm3_to_ionq raises an error when the circuit contains
+    a gate that is missing required parameters or is not supported."""
+    with pytest.raises(ValueError) as exc_info:
+        openqasm3_to_ionq(qasm_code)
     assert error_message in str(exc_info.value)
 
 

@@ -18,8 +18,10 @@ from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
 
+from qbraid._logging import logger
+from qbraid.programs.gate_model.ionq import IONQ_NATIVE_GATES
 from qbraid.transpiler.annotations import weight
-from qbraid.transpiler.conversions.qasm2.qasm2_to_ionq import qasm_to_ionq
+from qbraid.transpiler.conversions.openqasm3.openqasm3_to_ionq import openqasm3_to_ionq
 from qbraid.transpiler.exceptions import CircuitConversionError
 
 pyqasm = LazyLoader("pyqasm", globals(), "pyqasm")
@@ -42,19 +44,23 @@ def qasm3_to_ionq(qasm: Qasm3StringType) -> IonQDictType:
     Raises:
         CircuitConversionError: If the conversion fails.
     """
-    cache_err = None
-
+    # pylint: disable=broad-exception-caught
     try:
-        qasm = pyqasm.unroll(qasm)
-    except (ImportError, ModuleNotFoundError) as import_err:
-        cache_err = import_err
-
-    try:
-        return qasm_to_ionq(qasm)
-    except Exception as err:  # pylint: disable=broad-exception-caught
+        return openqasm3_to_ionq(qasm)
+    except Exception as err:
         err_msg = str(err) or "Failed to convert OpenQASM 3 to IonQ JSON."
+        cache_err = None
+        try:
+            if not any(gate in qasm for gate in IONQ_NATIVE_GATES):
+                qasm = pyqasm.unroll(qasm)
+                return openqasm3_to_ionq(qasm)
+        except (ImportError, ModuleNotFoundError) as import_err:
+            cache_err = import_err
+        except Exception as pyqasm_err:  # pragma: no cover
+            logger.debug("Conversion with pyqasm assistance failed: %s", pyqasm_err)
         if cache_err and "Cannot mix native and QIS gates in the same circuit" not in err_msg:
             err_msg += " Please install the 'ionq' extra to enable program unrolling with pyqasm."
         else:
             cache_err = err
         raise CircuitConversionError(err_msg) from cache_err
+    # pylint: enable=broad-exception-caught

@@ -20,8 +20,10 @@ Functions
    :toctree: ../stubs/
 
    openqasm3_to_qasm3
+   openqasm3_to_ionq
 
 """
+from .openqasm3_to_ionq import openqasm3_to_ionq
 from .openqasm3_to_qasm3 import openqasm3_to_qasm3
 
-__all__ = ["openqasm3_to_qasm3"]
+__all__ = ["openqasm3_to_qasm3", "openqasm3_to_ionq"]
