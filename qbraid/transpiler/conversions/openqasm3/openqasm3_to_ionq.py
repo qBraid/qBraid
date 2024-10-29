@@ -245,7 +245,7 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
                 )
 
             else:
-                raise NotImplementedError(f"Gate '{name}' not supported by IonQ")
+                raise ValueError(f"Gate '{name}' not supported by IonQ")
 
     return gates
 

@@ -13,7 +13,7 @@ Unit tests for qasm2/qasm3 to IonQDictType transpilation
 
 """
 import importlib.util
-import unittest.mock
+from unittest.mock import Mock, patch
 
 import openqasm3.ast
 import pytest
@@ -221,7 +221,7 @@ def ionq_native_gates_dict() -> IonQDictType:
 
 def test_qasm3_to_ionq_no_pyqasm(deutsch_jozsa_qasm3):
     """Test transpiling the Deutsch-Jozsa algorithm from QASM 3.0 to IonQDictType."""
-    with unittest.mock.patch.dict("sys.modules", {"pyqasm": None}):
+    with patch.dict("sys.modules", {"pyqasm": None}):
         with pytest.raises(CircuitConversionError) as exc_info:
             qasm3_to_ionq(deutsch_jozsa_qasm3)
         assert (
@@ -238,6 +238,19 @@ def test_qasm3_to_ionq_deutch_jozsa(
     qasm_program = deutsch_jozsa_qasm3 if pyqasm_installed else deutch_jozsa_qasm3_unrolled
     ionq_program = qasm3_to_ionq(qasm_program)
     assert ionq_program == deutch_jozsa_ionq
+
+
+def test_qasm3_to_ionq_deutch_jozsa_pyqasm_mocked(
+    deutsch_jozsa_qasm3, deutch_jozsa_qasm3_unrolled, deutch_jozsa_ionq
+):
+    """Test Deutch-Jozsa conversion with mock pyqasm import and unroll."""
+    mock_pyqasm = Mock()
+    mock_pyqasm.unroll.return_value = deutch_jozsa_qasm3_unrolled
+
+    with patch.dict("sys.modules", {"pyqasm": mock_pyqasm}):
+        qasm_program = deutsch_jozsa_qasm3
+        ionq_program = qasm3_to_ionq(qasm_program)
+        assert ionq_program == deutch_jozsa_ionq
 
 
 def test_qasm3_to_ionq_native_gates(ionq_native_gates_qasm, ionq_native_gates_dict):

@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
 
+from qbraid._logging import logger
 from qbraid.programs.gate_model.ionq import IONQ_NATIVE_GATES
 from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.conversions.openqasm3.openqasm3_to_ionq import openqasm3_to_ionq
@@ -52,10 +53,10 @@ def qasm3_to_ionq(qasm: Qasm3StringType) -> IonQDictType:
             if not any(gate in qasm for gate in IONQ_NATIVE_GATES):
                 qasm = pyqasm.unroll(qasm)
                 return openqasm3_to_ionq(qasm)
-        except NotImplementedError:
-            pass
         except (ImportError, ModuleNotFoundError) as import_err:
             cache_err = import_err
+        except Exception as pyqasm_err:  # pylint: disable=broad-exception-caught
+            logger.debug("Conversion with pyqasm assistance failed: %s", pyqasm_err)
         if cache_err and "Cannot mix native and QIS gates in the same circuit" not in err_msg:
             err_msg += " Please install the 'ionq' extra to enable program unrolling with pyqasm."
         else:
