@@ -391,11 +391,19 @@ def test_qasm3_to_ionq_invalid_params(qasm_code, error_message):
     """,
             "Angle parameter is required",
         ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[1] q;
+    invalid_gate q[0];
+    """,
+            "Gate 'invalid_gate' not supported",
+        ),
     ],
 )
-def test_openqasm3_to_ionq_missing_params(qasm_code, error_message):
-    """Test that openqasm3_to_ionq raises an error when the circuit
-    contains a gate that is missing required parameters."""
+def test_openqasm3_to_ionq_value_errors(qasm_code, error_message):
+    """Test that openqasm3_to_ionq raises an error when the circuit contains
+    a gate that is missing required parameters or is not supported."""
     with pytest.raises(ValueError) as exc_info:
         openqasm3_to_ionq(qasm_code)
     assert error_message in str(exc_info.value)
