@@ -26,7 +26,7 @@ Types of changes:
 
 ### Dependencies
 
-## [0.8.4] - 2024-10-28
+## [0.8.4] - 2024-10-29
 
 ### Added
 - Added support for [IonQ native gates](https://docs.ionq.com/guides/getting-started-with-native-gates) (gpi/gpi2/ms/zz) for `qasmX_to_ionq()` conversions ([#807](https://github.com/qBraid/qBraid/pull/807))

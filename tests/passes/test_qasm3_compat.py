@@ -265,3 +265,59 @@ def test_convert_qasm_pi_to_decimal_omits_gpi_gate():
     cry(3.141592653589793) q[0], q[1];
     """
     assert convert_qasm_pi_to_decimal(qasm) == expected
+
+
+@pytest.mark.skip(reason="Not yet implemented")
+def test_convert_qasm_pi_to_decimal_qasm3_fns_gates_vars():
+    """Test converting pi symbol to decimal in a qasm3 string
+    with custom functions, gates, and variables."""
+    qasm = """
+    OPENQASM 3;
+    include "stdgates.inc";
+
+    gate pipe q {
+        gpi(0) q;
+        gpi2(pi/8) q;
+    }
+
+    const int[32] primeN = 3;
+    const float[32] c = primeN*pi/4;
+    qubit[3] q;
+
+    def spiral(qubit[primeN] q_func) {
+    for int i in [0:primeN-1] { pipe q_func[i]; }
+    }
+
+    spiral(q);
+
+    ry(c) q[0];
+
+    bit[3] result;
+    result = measure q;
+    """
+
+    expected = """
+    OPENQASM 3;
+    include "stdgates.inc";
+
+    gate pipe q {
+        gpi(0) q;
+        gpi2(0.39269908169872414) q;
+    }
+
+    const int[32] primeN = 3;
+    const float[32] c = primeN*0.7853981633974483;
+    qubit[3] q;
+
+    def spiral(qubit[primeN] q_func) {
+    for int i in [0:primeN-1] { pipe q_func[i]; }
+    }
+
+    spiral(q);
+
+    ry(c) q[0];
+
+    bit[3] result;
+    result = measure q;
+    """
+    assert convert_qasm_pi_to_decimal(qasm) == expected
