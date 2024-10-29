@@ -171,7 +171,7 @@ def simplify_arithmetic_expressions(qasm_str: str) -> str:
 def convert_qasm_pi_to_decimal(qasm: str) -> str:
     """Convert all instances of 'pi' in the QASM string to their decimal value."""
 
-    pattern = r"(\d*\.?\d*\s*[*/+-]\s*)?pi(\s*[*/+-]\s*\d*\.?\d*)?"
+    pattern = r"(?<![a-zA-Z])(\d*\.?\d*\s*[*/+-]\s*)?pi(\s*[*/+-]\s*\d*\.?\d*)?(?![a-zA-Z])"
 
     gate_defs = set()
 
