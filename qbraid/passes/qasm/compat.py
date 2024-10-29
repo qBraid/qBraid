@@ -19,7 +19,10 @@ from functools import reduce
 from typing import Union
 
 from openqasm3 import dumps, parse
-from openqasm3.ast import Program, QuantumMeasurementStatement
+from openqasm3.ast import Program, QuantumGate, QuantumMeasurementStatement
+from openqasm3.parser import QASM3ParsingError
+
+from qbraid._logging import logger
 
 GATE_DEFINITIONS = {
     "iswap": """
@@ -170,8 +173,28 @@ def convert_qasm_pi_to_decimal(qasm: str) -> str:
 
     pattern = r"(\d*\.?\d*\s*[*/+-]\s*)?pi(\s*[*/+-]\s*\d*\.?\d*)?"
 
-    def replace_with_decimal(match):
+    gate_defs = set()
+
+    try:
+        program = parse(qasm)
+
+        for statement in program.statements:
+            if isinstance(statement, QuantumGate):
+                name = statement.name.name
+                if "pi" in name:
+                    gate_defs.add(name)
+    except QASM3ParsingError as err:
+        logger.debug("Failed to parse QASM program for pi conversion: %s", err)
+
+    def replace_with_decimal(match: re.Match) -> str:
         expr: str = match.group()
+        start = match.start()
+        end = match.end()
+
+        for gate_def in gate_defs:
+            if gate_def in qasm[max(0, start - len(gate_def)) : end]:
+                return expr
+
         expr_with_pi_as_decimal = expr.replace("pi", str(math.pi))
         try:
             value = eval(expr_with_pi_as_decimal)  # pylint: disable=eval-used

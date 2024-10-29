@@ -19,6 +19,7 @@ import pytest
 from qbraid.passes.qasm.compat import (
     _evaluate_expression,
     add_stdgates_include,
+    convert_qasm_pi_to_decimal,
     has_redundant_parentheses,
     insert_gate_def,
     normalize_qasm_gate_params,
@@ -242,3 +243,81 @@ def test_evaluate_expression_error():
     match = re.search(r"\(([0-9+\-*/. ]+)\)", qasm_str)
 
     assert _evaluate_expression(match) == "(1*)"
+
+
+def test_convert_qasm_pi_to_decimal_omits_gpi_gate():
+    """Test converting pi symbol to decimal in qasm string with gpi and gpi2 gates."""
+    qasm = """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    gpi(0) q[0];
+    gpi2(0) q[1];
+    cry(pi) q[0], q[1];
+    """
+
+    expected = """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    gpi(0) q[0];
+    gpi2(0) q[1];
+    cry(3.141592653589793) q[0], q[1];
+    """
+    assert convert_qasm_pi_to_decimal(qasm) == expected
+
+
+@pytest.mark.skip(reason="Not yet implemented")
+def test_convert_qasm_pi_to_decimal_qasm3_fns_gates_vars():
+    """Test converting pi symbol to decimal in a qasm3 string
+    with custom functions, gates, and variables."""
+    qasm = """
+    OPENQASM 3;
+    include "stdgates.inc";
+
+    gate pipe q {
+        gpi(0) q;
+        gpi2(pi/8) q;
+    }
+
+    const int[32] primeN = 3;
+    const float[32] c = primeN*pi/4;
+    qubit[3] q;
+
+    def spiral(qubit[primeN] q_func) {
+    for int i in [0:primeN-1] { pipe q_func[i]; }
+    }
+
+    spiral(q);
+
+    ry(c) q[0];
+
+    bit[3] result;
+    result = measure q;
+    """
+
+    expected = """
+    OPENQASM 3;
+    include "stdgates.inc";
+
+    gate pipe q {
+        gpi(0) q;
+        gpi2(0.39269908169872414) q;
+    }
+
+    const int[32] primeN = 3;
+    const float[32] c = primeN*0.7853981633974483;
+    qubit[3] q;
+
+    def spiral(qubit[primeN] q_func) {
+    for int i in [0:primeN-1] { pipe q_func[i]; }
+    }
+
+    spiral(q);
+
+    ry(c) q[0];
+
+    bit[3] result;
+    result = measure q;
+    """
+    assert convert_qasm_pi_to_decimal(qasm) == expected
