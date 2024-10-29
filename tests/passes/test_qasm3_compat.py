@@ -267,7 +267,24 @@ def test_convert_qasm_pi_to_decimal_omits_gpi_gate():
     assert convert_qasm_pi_to_decimal(qasm) == expected
 
 
-@pytest.mark.skip(reason="Not yet implemented")
+def test_convert_qasm_pi_to_decimal_gpi2_iso():
+    """Test converting pi symbol to decimal in qasm string with gpi2 gate on its own."""
+    qasm = """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[1];
+    gpi2(pi/4) q[0];
+    """
+
+    expected = """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[1];
+    gpi2(0.7853981633974483) q[0];
+    """
+    assert convert_qasm_pi_to_decimal(qasm) == expected
+
+
 def test_convert_qasm_pi_to_decimal_qasm3_fns_gates_vars():
     """Test converting pi symbol to decimal in a qasm3 string
     with custom functions, gates, and variables."""
