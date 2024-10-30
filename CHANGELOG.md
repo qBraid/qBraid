@@ -15,8 +15,10 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Updates for interfacing with IonQ devices from `QbraidProvider` including error mitigation field (to support `debias` parameter) for run method and basis gates set included in target profile ([#817](https://github.com/qBraid/qBraid/pull/817))
 
 ### Improved / Modified
+- Updated examples submodule and added note to contributing doc about how to do so ([#817](https://github.com/qBraid/qBraid/pull/817))
 
 ### Deprecated
 
