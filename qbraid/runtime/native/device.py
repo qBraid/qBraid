@@ -138,10 +138,8 @@ class QbraidDevice(QuantumDevice):
 
         payload.update(job_data)
         payload["tags"] = tags_dict
-        if params:
-            payload["params"] = params_dict
-        if error_mitigation:
-            payload["errorMitigation"] = error_mitigation_dict
+        payload["params"] = params_dict
+        payload["errorMitigation"] = error_mitigation_dict
         job_model = RuntimeJobModel.from_dict(payload)
         model_dump = job_model.model_dump(exclude={"metadata", "cost"})
         return QbraidJob(**model_dump, device=self, client=self.client)
