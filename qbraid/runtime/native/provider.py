@@ -31,6 +31,7 @@ from qbraid.runtime.noise import NoiseModelSet
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 from qbraid.runtime.schemas.device import DeviceData
+from qbraid.transpiler.conversions.openqasm3.openqasm3_to_ionq import openqasm3_to_ionq
 
 from .device import QbraidDevice
 
@@ -66,6 +67,17 @@ def validate_qasm_no_measurements(
         )
 
 
+def validate_qasm_to_ionq(program: Union[Qasm2StringType, Qasm3StringType], device_id: str) -> None:
+    """Raises a ValueError if the given OpenQASM program is not compatible with IonQ JSON format."""
+    try:
+        openqasm3_to_ionq(program)
+    except Exception as err:  # pylint: disable=broad-exception-caught
+        raise ValueError(
+            f"OpenQASM programs submitted to the {device_id} "
+            "must be compatible with IonQ JSON format."
+        ) from err
+
+
 def get_program_spec_lambdas(
     program_type_alias: str, device_id: str
 ) -> dict[str, Optional[Callable[[Any], None]]]:
@@ -79,9 +91,14 @@ def get_program_spec_lambdas(
 
     to_ir, validate = lambdas.get(program_type_alias, (None, None))
 
-    if program_type_alias in ["qasm2", "qasm3"] and device_id.split("_")[0] in ["quera", "ionq"]:
-        # pylint: disable-next=unnecessary-lambda-assignment
-        validate = lambda program: validate_qasm_no_measurements(program, device_id)
+    if program_type_alias in ["qasm2", "qasm3"]:
+        device_prefix = device_id.split("_")[0]
+        # pylint: disable=unnecessary-lambda-assignment
+        if device_prefix == "quera":
+            validate = lambda program: validate_qasm_no_measurements(program, device_id)
+        elif device_prefix == "ionq":
+            validate = lambda program: validate_qasm_to_ionq(program, device_id)
+        # pylint: enable=unnecessary-lambda-assignment
 
     return {"to_ir": to_ir, "validate": validate}
 
