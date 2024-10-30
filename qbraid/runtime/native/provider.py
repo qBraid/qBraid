@@ -27,6 +27,7 @@ from qbraid.programs import QPROGRAM_REGISTRY, ExperimentType, ProgramSpec, load
 from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
 from qbraid.runtime._display import display_jobs_from_data
 from qbraid.runtime.exceptions import ResourceNotFoundError
+from qbraid.runtime.ionq.provider import IonQProvider
 from qbraid.runtime.noise import NoiseModelSet
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
@@ -154,6 +155,15 @@ class QbraidProvider(QuantumProvider):
         lambdas = get_program_spec_lambdas(run_package, device_id)
         return ProgramSpec(program_type, alias=run_package, **lambdas) if program_type else None
 
+    @staticmethod
+    def _get_basis_gates(device_data: dict[str, Any]) -> Optional[list[str]]:
+        """Return the basis gates for the qBraid device."""
+        provider = device_data["provider"]
+        if provider == "IonQ":
+            ionq_id = device_data["objArg"]
+            return IonQProvider._get_basis_gates(ionq_id)
+        return None
+
     def _build_runtime_profile(self, device_data: dict[str, Any]) -> TargetProfile:
         """Builds a runtime profile from qBraid device data."""
         model = DeviceData(**device_data)
@@ -164,6 +174,8 @@ class QbraidProvider(QuantumProvider):
         )
         device_exp_type = "gate_model" if model.paradigm == "gate-based" else model.paradigm.lower()
         experiment_type = ExperimentType(device_exp_type)
+        basis_gates = self._get_basis_gates(device_data)
+
         return TargetProfile(
             device_id=model.device_id,
             simulator=simulator,
@@ -174,6 +186,7 @@ class QbraidProvider(QuantumProvider):
             noise_models=noise_models,
             name=model.name,
             pricing=model.pricing,
+            basis_gates=basis_gates,
         )
 
     @cached_method(ttl=120)

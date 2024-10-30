@@ -97,7 +97,7 @@ class RuntimeJobModel(QbraidSchemaBase):
         ExperimentMetadata,
     ]
     time_stamps: TimeStamps = Field(..., alias="timeStamps")
-    tags: dict[str, str] = Field(default_factory=dict)
+    tags: dict[str, Union[str, int, bool]] = Field(default_factory=dict)
     cost: Optional[Credits] = Field(None, ge=0, alias="cost")
 
     @field_validator("status", mode="before")
