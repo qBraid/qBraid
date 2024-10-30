@@ -38,6 +38,7 @@ from qbraid.programs import (
 from qbraid.runtime import DeviceStatus, JobStatus, ProgramValidationError, Result, TargetProfile
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
+from qbraid.runtime.native.provider import get_program_spec_lambdas
 from qbraid.runtime.native.result import (
     NECVectorAnnealerResultData,
     QbraidQirSimulatorResultData,
@@ -906,3 +907,28 @@ def test_get_program_spec_not_registered_warning():
         ),
     ):
         QbraidProvider._get_program_spec(run_package, device_id)
+
+
+def test_get_program_spec_lambdas_validate_qasm_to_ionq():
+    """Test that the validate lambda for qasm3 programs raises exception
+    for CircuitConversion error though validate_qasm_to_ionq."""
+    program_type_alias = "qasm3"
+    device_id = "ionq_simulator"
+    invalid_program = "invalid qasm3 code"
+
+    lambdas = get_program_spec_lambdas(program_type_alias, device_id)
+    validate = lambdas["validate"]
+
+    with patch("qbraid.runtime.native.provider.openqasm3_to_ionq") as mock_convert:
+        mock_convert.side_effect = CircuitConversionError("Invalid QASM3 code")
+
+        with pytest.raises(
+            ValueError,
+            match=(
+                f"OpenQASM programs submitted to the {device_id} "
+                "must be compatible with IonQ JSON format."
+            ),
+        ):
+            validate(invalid_program)
+
+        mock_convert.assert_called_once_with(invalid_program)
