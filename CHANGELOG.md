@@ -31,7 +31,6 @@ Types of changes:
 ### Added
 - Added support for [IonQ native gates](https://docs.ionq.com/guides/getting-started-with-native-gates) (gpi/gpi2/ms/zz) for `qasmX_to_ionq()` conversions ([#807](https://github.com/qBraid/qBraid/pull/807))
 - Expanded `QuantumDevice.metadata()` to include average queue time field if provided, instead of (or in addition to) pending jobs ([#807](https://github.com/qBraid/qBraid/pull/807))
-- Added  ([#807](https://github.com/qBraid/qBraid/pull/807))
 - Added device characterization data to `IonQDevice.profie` ([#807](https://github.com/qBraid/qBraid/pull/807))
 
 ### Improved / Modified
