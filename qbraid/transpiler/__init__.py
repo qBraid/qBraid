@@ -39,7 +39,7 @@ Exceptions
 .. autosummary::
    :toctree: ../stubs/
 
-   CircuitConversionError
+   ProgramConversionError
    NodeNotFoundError
    ConversionPathNotFoundError
 
@@ -47,7 +47,7 @@ Exceptions
 from .annotations import requires_extras
 from .converter import transpile
 from .edge import Conversion
-from .exceptions import CircuitConversionError, ConversionPathNotFoundError, NodeNotFoundError
+from .exceptions import ConversionPathNotFoundError, NodeNotFoundError, ProgramConversionError
 from .graph import ConversionGraph
 from .scheme import ConversionScheme
 
@@ -57,7 +57,7 @@ __all__ = [
     "Conversion",
     "ConversionGraph",
     "ConversionScheme",
-    "CircuitConversionError",
+    "ProgramConversionError",
     "NodeNotFoundError",
     "ConversionPathNotFoundError",
 ]

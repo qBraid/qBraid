@@ -27,13 +27,15 @@ from qbraid.programs import NATIVE_REGISTRY
 from ._resources import DEVICE_DATA_AQUILA, DEVICE_DATA_QIR, DEVICE_DATA_QUERA
 
 
-def _braket_circuit():
+def _braket_circuit(meas=True):
     """Returns low-depth, one-qubit Braket circuit to be used for testing."""
     import braket.circuits  # pylint: disable=import-outside-toplevel
 
     circuit = braket.circuits.Circuit()
     circuit.h(0)
     circuit.ry(0, np.pi / 2)
+    if meas:
+        circuit.measure(0)
     return circuit
 
 
@@ -89,7 +91,7 @@ def run_inputs():
     if "qiskit" in NATIVE_REGISTRY:
         circuits.append(_qiskit_circuit(meas=False))
     if "braket" in NATIVE_REGISTRY:
-        circuits.append(_braket_circuit())
+        circuits.append(_braket_circuit(meas=False))
     return circuits
 
 

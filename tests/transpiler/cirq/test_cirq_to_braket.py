@@ -35,7 +35,7 @@ from qbraid.transpiler.conversions.cirq.cirq_to_braket import (
     _to_one_qubit_braket_instruction,
     _to_two_qubit_braket_instruction,
 )
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 
 def alpha_pump(sys, env):
@@ -373,7 +373,7 @@ def test_three_qubit_error():
     matrix = np.eye(8)
     cirq_circuit = cirq.Circuit(ops.MatrixGate(matrix).on(q0, q1, q2))
 
-    with pytest.raises(CircuitConversionError):
+    with pytest.raises(ProgramConversionError):
         with patch("cirq.protocols.unitary", side_effect=TypeError):
             cirq_to_braket(cirq_circuit)
 

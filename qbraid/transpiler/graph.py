@@ -350,6 +350,34 @@ class ConversionGraph(rx.PyDiGraph):
 
         return closest
 
+    def get_sorted_closest_targets(self, source: str, targets: list[str]) -> list[str]:
+        """
+        Sorts a list of targets from closest to least close based on conversion paths
+        from the source. Targets without valid conversion paths are appended at the end.
+
+        Args:
+            source (str): The alias from which conversion paths are evaluated.
+            targets (list[str]): A list of target aliases to be ordered by proximity.
+
+        Returns:
+            list[str]: A list of target aliases ordered by proximity to the source,
+                    with unreachable targets appended at the end.
+        """
+        sorted_targets = []
+        remaining = targets.copy()
+
+        while remaining:
+            closest = self.closest_target(source, remaining)
+
+            if closest is None:
+                sorted_targets.extend(remaining)
+                break
+
+            sorted_targets.append(closest)
+            remaining.remove(closest)
+
+        return sorted_targets
+
     def reset(self, conversions: Optional[list[Conversion]] = None) -> None:
         """
         Reset the graph to its default state.

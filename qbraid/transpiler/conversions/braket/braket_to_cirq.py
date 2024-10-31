@@ -39,7 +39,7 @@ except ImportError:  # pragma: no cover
 
 from qbraid.programs.gate_model.cirq import CirqCircuit as QbraidCircuit
 from qbraid.transpiler.annotations import weight
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 if TYPE_CHECKING:
     import cirq.circuits as cirq_circuits
@@ -106,7 +106,7 @@ def _from_braket_instruction(
 
     Raises:
         ValueError: If the instruction cannot be converted to Cirq.
-        CircuitConversionError: If error raise during conversion.
+        ProgramConversionError: If error raise during conversion.
     """
     nqubits = len(instr.target)
     BK_qubits = [int(q) for q in instr.target]
@@ -131,18 +131,18 @@ def _from_braket_instruction(
                 matrix = braket_gate_to_matrix(instr.operator)
                 return [cirq.ops.MatrixGate(matrix).on(*qubits)]
             except (ValueError, TypeError) as err:
-                raise CircuitConversionError(
+                raise ProgramConversionError(
                     f"Unable to convert the instruction {instr} to Cirq."
                 ) from err
 
         # Unknown instructions.
-        raise CircuitConversionError(
+        raise ProgramConversionError(
             f"Unable to convert to Cirq due to unrecognized \
             instruction: {instr}."
         )
 
     except Exception as err:
-        raise CircuitConversionError(
+        raise ProgramConversionError(
             f"qBraid transpiler doesn't support operator {instr.operator}"
         ) from err
 

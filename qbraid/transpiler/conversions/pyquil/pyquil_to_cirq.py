@@ -18,7 +18,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from qbraid.transpiler.annotations import weight
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 from .cirq_quil_input import circuit_from_quil
 
@@ -40,6 +40,6 @@ def pyquil_to_cirq(program: pyquil.quil.Program) -> cirq.circuits.Circuit:
     try:
         return circuit_from_quil(program.out())
     except Exception as err:
-        raise CircuitConversionError(
+        raise ProgramConversionError(
             "qBraid transpiler doesn't yet support pyQuil noise gates."
         ) from err

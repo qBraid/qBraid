@@ -41,7 +41,7 @@ from qbraid.transpiler.conversions.braket.braket_to_cirq import (
     _give_cirq_gate_name,
 )
 from qbraid.transpiler.conversions.cirq.braket_custom import C as BKControl
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 
 def test_from_braket_bell_circuit():
@@ -235,7 +235,7 @@ def test_convert_ionq_gates():
 
 def test_raise_error():
     """Test raising error when converting unsupported Pulse sequences"""
-    with pytest.raises(CircuitConversionError):
+    with pytest.raises(ProgramConversionError):
         pre_fram = Frame(
             frame_id="predefined_frame_1",
             frequency=2e9,
@@ -269,7 +269,7 @@ def test_from_braket_raises_on_unsupported_gates():
             target=list(range(num_qubits)),
         )
         braket_unitary_circuit.add_instruction(instr)
-    with pytest.raises(CircuitConversionError):
+    with pytest.raises(ProgramConversionError):
         braket_to_cirq(braket_unitary_circuit)
 
 
@@ -339,7 +339,7 @@ def test_from_braket_instruction_three_qubit():
     instr = Instruction(gate, [0, 1, 2])
     qubit_mapping = {0: LineQubit(0), 1: LineQubit(1), 2: LineQubit(2)}
     instr.operator.to_matrix = lambda: np.eye(7)
-    with pytest.raises(CircuitConversionError):
+    with pytest.raises(ProgramConversionError):
         _from_braket_instruction(instr, qubit_mapping)
 
     instr.operator.to_matrix = lambda: np.eye(8)

@@ -141,9 +141,9 @@ def test_bad_source_program_type(item):
 
 def test_get_program_type_alias_with_type_instead_of_instance():
     """Test error raised when a type rather than an instance is provided."""
-    with pytest.raises(ProgramTypeError) as exc_info:
+    with pytest.raises(ProgramTypeError) as excinfo:
         _get_program_type_alias(int)
-    assert "Expected an instance of a quantum program, not a type." in str(exc_info.value)
+    assert "Expected an instance of a quantum program, not a type." in str(excinfo.value)
 
 
 def test_get_program_type_alias_with_string_returning_package(monkeypatch):
@@ -167,9 +167,9 @@ def test_get_program_type_alias_with_multiple_matches(monkeypatch):
     monkeypatch.setattr(
         "qbraid.programs.alias_manager.QPROGRAM_REGISTRY", {"type1": Mock, "type2": Mock}
     )
-    with pytest.raises(ProgramTypeError) as exc_info:
+    with pytest.raises(ProgramTypeError) as excinfo:
         _get_program_type_alias(Mock())
-    assert "matches multiple registered program types" in str(exc_info.value)
+    assert "matches multiple registered program types" in str(excinfo.value)
 
 
 def test_get_program_type_alias_safe_flag_handling():
@@ -196,10 +196,10 @@ def test_find_str_type_alias_raises_value_error():
         "alias1": str,
         "alias2": str,
     }
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         find_str_type_alias(registry)
     assert "Multiple additional keys with type 'str' found: ['alias1', 'alias2']" in str(
-        exc_info.value
+        excinfo.value
     )
 
 

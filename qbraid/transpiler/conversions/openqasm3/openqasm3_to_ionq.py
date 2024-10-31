@@ -25,7 +25,7 @@ from qbraid.programs import load_program
 from qbraid.programs.gate_model.ionq import IonQProgram
 from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
 from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 if TYPE_CHECKING:
     from qbraid.programs.typer import IonQDictType, QasmStringType
@@ -267,7 +267,7 @@ def openqasm3_to_ionq(qasm: Union[QasmStringType, openqasm3.ast.Program]) -> Ion
     gates = _parse_gates(program)
 
     if len(gates) == 0:
-        raise CircuitConversionError("Failed to parse gate data from OpenQASM string.")
+        raise ProgramConversionError("Failed to parse gate data from OpenQASM string.")
 
     gateset = IonQProgram.determine_gateset(gates)
 

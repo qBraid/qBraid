@@ -21,7 +21,7 @@ from cirq import LineQubit, QubitOrder
 from qbraid_core._import import LazyLoader
 
 from qbraid.transpiler.annotations import weight
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 try:
     from .cirq_quil_output import QuilOutput
@@ -60,6 +60,6 @@ def cirq_to_pyquil(circuit: cirq.circuits.Circuit) -> pyquil_.Program:
         quil_str = str(QuilOutput(operations, qubits))
         return pyquil.Program(quil_str)
     except ValueError as err:
-        raise CircuitConversionError(
+        raise ProgramConversionError(
             f"Cirq qasm converter doesn't yet support {err.args[0][32:]}."
         ) from err

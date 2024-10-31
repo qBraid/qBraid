@@ -12,6 +12,8 @@
 Module defining BraketCircuit Class
 
 """
+from __future__ import annotations
+
 from typing import TYPE_CHECKING
 
 from braket.circuits import Circuit, Instruction, Qubit
@@ -28,7 +30,7 @@ if TYPE_CHECKING:
 class BraketCircuit(GateModelProgram):
     """Wrapper class for ``braket.circuits.Circuit`` objects."""
 
-    def __init__(self, program: "braket.circuits.Circuit"):
+    def __init__(self, program: braket.circuits.Circuit):
         super().__init__(program)
         if not isinstance(program, Circuit):
             raise ProgramTypeError(

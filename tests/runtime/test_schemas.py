@@ -68,10 +68,10 @@ def test_qbraid_schema_header():
 
 def test_qbraid_schema_base_raises_for_no_version():
     """Test QbraidSchemaBase raises ValueError when accessing header property."""
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         _ = QbraidSchemaBase()
     assert "QbraidSchemaBase must define a valid semantic version for 'VERSION'." in str(
-        exc_info.value
+        excinfo.value
     )
 
 
@@ -222,13 +222,13 @@ def test_invalid_experiment_type_raises_error(mock_job_data):
     bad_type = "unsupported type"
     bad_job_data = mock_job_data.copy()
     bad_job_data["experimentType"] = bad_type
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         RuntimeJobModel.from_dict(bad_job_data)
-    assert str(exc_info.value).startswith(f"'{bad_type}' is not a valid ExperimentType")
+    assert str(excinfo.value).startswith(f"'{bad_type}' is not a valid ExperimentType")
 
     model = RuntimeJobModel.from_dict(mock_job_data)
 
-    with pytest.raises(ValidationError) as exc_info:
+    with pytest.raises(ValidationError) as excinfo:
         _ = RuntimeJobModel(
             qbraidJobId=model.job_id,
             qbraidDeviceId=model.device_id,
@@ -241,7 +241,7 @@ def test_invalid_experiment_type_raises_error(mock_job_data):
             tags=model.tags,
             cost=model.cost,
         )
-    assert f"Invalid experiment_type: '{bad_type}'" in str(exc_info.value)
+    assert f"Invalid experiment_type: '{bad_type}'" in str(excinfo.value)
 
 
 def test_invalid_status_raises_error(mock_job_data):
@@ -249,13 +249,13 @@ def test_invalid_status_raises_error(mock_job_data):
     bad_type = "unsupported type"
     bad_job_data = mock_job_data.copy()
     bad_job_data["status"] = bad_type
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         RuntimeJobModel.from_dict(bad_job_data)
-    assert str(exc_info.value).startswith(f"'{bad_type}' is not a valid JobStatus")
+    assert str(excinfo.value).startswith(f"'{bad_type}' is not a valid JobStatus")
 
-    with pytest.raises(ValidationError) as exc_info:
+    with pytest.raises(ValidationError) as excinfo:
         RuntimeJobModel(**bad_job_data)
-    assert f"Invalid status: '{bad_type}'" in str(exc_info.value)
+    assert f"Invalid status: '{bad_type}'" in str(excinfo.value)
 
 
 def test_parse_datetimes_for_none_type(mock_job_data):
@@ -372,10 +372,10 @@ def test_credits_pydantic_parsing():
     assert isinstance(model_str.amount, Credits)
     assert model_str.amount == Credits(200)
 
-    with pytest.raises(ValidationError) as exc_info:
+    with pytest.raises(ValidationError) as excinfo:
         TestModel(amount="invalid")
 
-    assert "Input should be a number (int, float, or Decimal)" in str(exc_info.value)
+    assert "Input should be a number (int, float, or Decimal)" in str(excinfo.value)
 
 
 def test_qubo_solve_params_model():

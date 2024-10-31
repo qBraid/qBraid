@@ -15,10 +15,11 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
-- Updates for interfacing with IonQ devices from `QbraidProvider` including error mitigation field (to support `debias` parameter) for run method and basis gates set included in target profile ([#817](https://github.com/qBraid/qBraid/pull/817))
 
 ### Improved / Modified
-- Updated examples submodule and added note to contributing doc about how to do so ([#817](https://github.com/qBraid/qBraid/pull/817))
+- Separated runtime device `transform` and `to_ir` logic into separate steps ([#819](https://github.com/qBraid/qBraid/pull/819))
+- Updated runtime validation step to handle program batches and not re-warn for device-related checks ([#819](https://github.com/qBraid/qBraid/pull/819))
+- Updated runtime device transpile method and target profile to allow for lists of `ProgramSpec` ([#819](https://github.com/qBraid/qBraid/pull/819))
 
 ### Deprecated
 
@@ -27,6 +28,14 @@ Types of changes:
 ### Fixed
 
 ### Dependencies
+
+## [0.8.5] - 2024-10-31
+
+### Added
+- Updates for interfacing with IonQ devices from `QbraidProvider` including error mitigation field (to support `debias` parameter) for run method and basis gates set included in target profile ([#817](https://github.com/qBraid/qBraid/pull/817))
+
+### Improved / Modified
+- Updated examples submodule and added note to contributing doc about how to do so ([#817](https://github.com/qBraid/qBraid/pull/817))
 
 ## [0.8.4] - 2024-10-29
 

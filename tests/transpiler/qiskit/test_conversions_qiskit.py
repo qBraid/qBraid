@@ -28,7 +28,7 @@ from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
 from qbraid.transpiler.conversions.qasm3 import qasm3_to_qiskit
 from qbraid.transpiler.conversions.qiskit import qiskit_to_qasm2, qiskit_to_qasm3
 from qbraid.transpiler.converter import transpile
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 from ..cirq_utils import _equal
 
@@ -252,7 +252,7 @@ def test_qiskit_to_from_qasm3():
 
 def test_raise_circuit_conversion_error():
     """Tests raising error for unsupported gates."""
-    with pytest.raises(CircuitConversionError):
+    with pytest.raises(ProgramConversionError):
         probs = np.random.uniform(low=0, high=0.5)
         cirq_circuit = Circuit(ops.PhaseDampingChannel(probs).on(*LineQubit.range(1)))
         transpile(cirq_circuit, "qiskit")

@@ -25,7 +25,7 @@ from qiskit import QuantumCircuit
 from qiskit.exceptions import QiskitError
 from qiskit.providers import Job
 from qiskit.providers.fake_provider import GenericBackendV2
-from qiskit.providers.models import QasmBackendConfiguration
+from qiskit.providers.models.backendconfiguration import QasmBackendConfiguration
 from qiskit_ibm_runtime import QiskitRuntimeService, RuntimeJob
 from qiskit_ibm_runtime.exceptions import IBMNotAuthorizedError, RuntimeInvalidStateError
 from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
@@ -320,18 +320,18 @@ def test_job_service_initialization_failure():
     """Test handling of service initialization failure."""
     with patch("qbraid.runtime.ibm.job.QiskitRuntimeService", side_effect=IBMNotAuthorizedError):
         job_id = "test_job_id"
-        with pytest.raises(QbraidRuntimeError) as exc_info:
+        with pytest.raises(QbraidRuntimeError) as excinfo:
             QiskitJob(job_id)
-        assert "Failed to initialize the quantum service." in str(exc_info.value)
+        assert "Failed to initialize the quantum service." in str(excinfo.value)
 
 
 def test_job_retrieval_failure(mock_service):
     """Test handling of job retrieval failure."""
     mock_service.job.side_effect = ConnectionError
     job_id = "test_job_id"
-    with pytest.raises(QbraidRuntimeError) as exc_info:
+    with pytest.raises(QbraidRuntimeError) as excinfo:
         QiskitJob(job_id, service=mock_service)
-    assert "Error retrieving job test_job_id" in str(exc_info.value)
+    assert "Error retrieving job test_job_id" in str(excinfo.value)
 
 
 @pytest.fixture

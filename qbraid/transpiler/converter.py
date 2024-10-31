@@ -24,7 +24,7 @@ from qbraid._logging import logger
 from qbraid.programs import QPROGRAM_ALIASES
 from qbraid.programs.alias_manager import _get_program_type_alias, get_program_type_alias
 
-from .exceptions import CircuitConversionError, ConversionPathNotFoundError, NodeNotFoundError
+from .exceptions import ConversionPathNotFoundError, NodeNotFoundError, ProgramConversionError
 from .graph import ConversionGraph
 
 if TYPE_CHECKING:
@@ -77,7 +77,7 @@ def transpile(
         NodeNotFoundError: If the target or source package is not in the ConversionGraph.
         ConversionPathNotFoundError: If no path is available to conversion between the
             source and target packages.
-        CircuitConversionError: If the conversion fails through all attempted paths.
+        ProgramConversionError: If the conversion fails through all attempted paths.
     """
     graph = conversion_graph or ConversionGraph(**kwargs)
     graph_type = "Default" if conversion_graph is None else "Provided"
@@ -143,7 +143,7 @@ def transpile(
                 error_messages.append(formatted_error)
             continue
 
-    raise CircuitConversionError(
+    raise ProgramConversionError(
         f"Failed to convert '{source}' to '{target}'"
         + (
             " due to the following error(s):\n\n" + "\n".join(error_messages)
