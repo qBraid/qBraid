@@ -26,7 +26,7 @@ try:
     from qbraid.interface import circuits_allclose
     from qbraid.transpiler.conversions.cirq import cirq_to_pyquil
     from qbraid.transpiler.conversions.pyquil import pyquil_to_cirq
-    from qbraid.transpiler.exceptions import CircuitConversionError
+    from qbraid.transpiler.exceptions import ProgramConversionError
 
     pyquil_not_installed = False
 except ImportError:
@@ -118,7 +118,7 @@ def test_from_pyquil_no_zero_qubit():
 def test_raise_error_to_pyquil_bit_flip():
     """Test raising an error when converting a Cirq circuit with a bit flip to pyQuil."""
 
-    with pytest.raises(CircuitConversionError):
+    with pytest.raises(ProgramConversionError):
         q0 = LineQubit(0)
         circuit = Circuit(cirq_ops.bit_flip(p=0.2).on(q0), cirq_ops.measure(q0, key="result"))
         cirq_to_pyquil(circuit)
@@ -127,7 +127,7 @@ def test_raise_error_to_pyquil_bit_flip():
 def test_raise_error_from_pyquil_noisey():
     """Test raising an error when converting a noisey pyQuil program to Cirq."""
 
-    with pytest.raises(CircuitConversionError):
+    with pytest.raises(ProgramConversionError):
         p = Program()
         p += RX(-np.pi / 2, 0)
         noise_model = _decoherence_noise_model(_get_program_gates(p))

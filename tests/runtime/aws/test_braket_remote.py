@@ -18,11 +18,24 @@ from decimal import Decimal
 
 import pytest
 from braket.aws.aws_device import AwsDevice
+from braket.circuits import Circuit
 from braket.tracking.tracker import Tracker
 
 from qbraid.runtime.aws.provider import BraketProvider
 from qbraid.runtime.aws.tracker import get_quantum_task_cost
 from qbraid.runtime.exceptions import JobStateError
+
+
+@pytest.fixture
+def braket_no_meas(braket_circuit: Circuit) -> Circuit:
+    """Return a circuit without measurements."""
+    circuit = Circuit()
+
+    for instr in braket_circuit.instructions:
+        if str(instr.operator) != "Measure":
+            circuit.add_instruction(instr)
+
+    return circuit
 
 
 @pytest.fixture
@@ -59,7 +72,7 @@ def test_get_quantum_task_cost_simulator(braket_circuit):
 
 
 @pytest.mark.remote
-def test_get_quantum_task_cost_cancelled(braket_most_busy, braket_circuit):
+def test_get_quantum_task_cost_cancelled(braket_most_busy, braket_no_meas):
     """Test getting cost of quantum task that was cancelled."""
     if braket_most_busy is None:
         pytest.skip("No AWS QPU devices available")
@@ -70,7 +83,7 @@ def test_get_quantum_task_cost_cancelled(braket_most_busy, braket_circuit):
     region_name = AwsDevice.get_device_region(braket_most_busy.id)
     aws_session = provider._get_aws_session(region_name)
 
-    qbraid_job = braket_most_busy.run(braket_circuit, shots=10)
+    qbraid_job = braket_most_busy.run(braket_no_meas, shots=10)
     qbraid_job.cancel()
 
     task_arn = qbraid_job.id
@@ -88,12 +101,12 @@ def test_get_quantum_task_cost_cancelled(braket_most_busy, braket_circuit):
         assert cost == Decimal(0), f"Expected cost to be 0 when job is in a final state, got {cost}"
     else:
         # Verify the appropriate error is raised when job has not reached a final state
-        with pytest.raises(ValueError) as exc_info:
+        with pytest.raises(ValueError) as excinfo:
             get_quantum_task_cost(task_arn, aws_session)
 
         expected_msg_partial = f"Task {task_arn} is not COMPLETED."
         assert expected_msg_partial in str(
-            exc_info.value
+            excinfo.value
         ), "Unexpected error message for non-final job state"
 
 

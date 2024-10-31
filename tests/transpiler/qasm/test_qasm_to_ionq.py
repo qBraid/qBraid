@@ -28,7 +28,7 @@ from qbraid.transpiler.conversions.openqasm3.openqasm3_to_ionq import (
 )
 from qbraid.transpiler.conversions.qasm2.qasm2_to_ionq import qasm2_to_ionq
 from qbraid.transpiler.conversions.qasm3.qasm3_to_ionq import qasm3_to_ionq
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 
 def test_ionq_device_extract_gate_data():
@@ -110,9 +110,9 @@ def test_qasm2_to_ionq_measurements_raises():
     x q[0];
     measure q[0] -> c[0];
     """
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         qasm2_to_ionq(qasm)
-    assert "Circuits with measurements are not supported by the IonQDictType" in str(exc_info.value)
+    assert "Circuits with measurements are not supported by the IonQDictType" in str(excinfo.value)
 
 
 @pytest.fixture
@@ -222,12 +222,12 @@ def ionq_native_gates_dict() -> IonQDictType:
 def test_qasm3_to_ionq_no_pyqasm(deutsch_jozsa_qasm3):
     """Test transpiling the Deutsch-Jozsa algorithm from QASM 3.0 to IonQDictType."""
     with patch.dict("sys.modules", {"pyqasm": None}):
-        with pytest.raises(CircuitConversionError) as exc_info:
+        with pytest.raises(ProgramConversionError) as excinfo:
             qasm3_to_ionq(deutsch_jozsa_qasm3)
         assert (
             "Failed to parse gate data from OpenQASM string. "
             "Please install the 'ionq' extra to enable program unrolling with pyqasm."
-        ) in str(exc_info.value)
+        ) in str(excinfo.value)
 
 
 def test_qasm3_to_ionq_deutch_jozsa(
@@ -359,9 +359,9 @@ def test_qasm3_to_ionq_zz_native_gate():
 )
 def test_qasm3_to_ionq_invalid_params(qasm_code, error_message):
     """Test that qasm3_to_ionq raises an error when the circuit contains invalid parameters."""
-    with pytest.raises(CircuitConversionError) as exc_info:
+    with pytest.raises(ProgramConversionError) as excinfo:
         qasm3_to_ionq(qasm_code)
-    assert error_message in str(exc_info.value)
+    assert error_message in str(excinfo.value)
 
 
 @pytest.mark.parametrize(
@@ -404,9 +404,9 @@ def test_qasm3_to_ionq_invalid_params(qasm_code, error_message):
 def test_openqasm3_to_ionq_value_errors(qasm_code, error_message):
     """Test that openqasm3_to_ionq raises an error when the circuit contains
     a gate that is missing required parameters or is not supported."""
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         openqasm3_to_ionq(qasm_code)
-    assert error_message in str(exc_info.value)
+    assert error_message in str(excinfo.value)
 
 
 def test_qasm3_to_ionq_mixed_gate_types_raises_value_error():
@@ -418,9 +418,9 @@ def test_qasm3_to_ionq_mixed_gate_types_raises_value_error():
     h q[2];
     gpi(0) q[0], q[1];
     """
-    with pytest.raises(CircuitConversionError) as exc_info:
+    with pytest.raises(ProgramConversionError) as excinfo:
         qasm3_to_ionq(mixed_gate_qasm)
-    assert "Cannot mix native and QIS gates in the same circuit." in str(exc_info.value)
+    assert "Cannot mix native and QIS gates in the same circuit." in str(excinfo.value)
 
 
 def test_extract_params_index_error_caught():
@@ -455,6 +455,6 @@ def test_ionq_ms_gate_wrong_number_params(program_text):
     """Test ValueError is raised when 'ms' gate has an invalid number of parameters."""
     program = OpenQasm3Program(program_text)
 
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         _ = _parse_gates(program)
-    assert "Invalid number of parameters" in str(exc_info.value)
+    assert "Invalid number of parameters" in str(excinfo.value)

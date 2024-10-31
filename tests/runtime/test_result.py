@@ -263,9 +263,9 @@ def test_normalize_single_dict():
 def test_get_counts_raises_for_no_measurements():
     """Test that an error is raised when no measurements are available."""
     data = GateModelResultData()
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         data.get_counts()
-    assert str(exc_info.value) == "Counts data is not available."
+    assert str(excinfo.value) == "Counts data is not available."
 
 
 def test_get_counts_from_cache_key():

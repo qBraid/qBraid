@@ -59,10 +59,10 @@ class MockProgram:
 def test_device_program_type_mismatch_error(program, expected_type, experiment_type):
     """Test DeviceProgramTypeMismatchError with various scenarios."""
     expected_message = get_expected_message(program, expected_type, experiment_type)
-    with pytest.raises(DeviceProgramTypeMismatchError) as exc_info:
+    with pytest.raises(DeviceProgramTypeMismatchError) as excinfo:
         raise DeviceProgramTypeMismatchError(program, expected_type, experiment_type)
 
-    assert str(exc_info.value) == expected_message
+    assert str(excinfo.value) == expected_message
 
 
 class FakeDevice:

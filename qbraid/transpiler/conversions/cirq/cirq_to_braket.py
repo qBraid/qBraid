@@ -47,7 +47,7 @@ except ImportError:  # pragma: no cover
 
 import qbraid.programs.gate_model.cirq
 from qbraid.transpiler.annotations import weight
-from qbraid.transpiler.exceptions import CircuitConversionError
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 try:
     from .braket_custom import C as BKControl
@@ -90,7 +90,7 @@ def _to_braket_instruction(
         qubit_mapping: Mappings of input / output qubit indicies
 
     Raises:
-        CircuitConversionError: If the operation cannot be converted to Braket.
+        ProgramConversionError: If the operation cannot be converted to Braket.
     """
     if isinstance(
         operation, (cirq_ops.MeasurementGate, cirq_ops.Operation)
@@ -132,10 +132,10 @@ def _to_braket_instruction(
                 )
             ]
         except (ValueError, TypeError) as err:
-            raise CircuitConversionError(f"Unable to convert {operation} to Braket") from err
+            raise ProgramConversionError(f"Unable to convert {operation} to Braket") from err
 
     # Unsupported gates.
-    raise CircuitConversionError(f"Unable to convert {operation} to Braket")
+    raise ProgramConversionError(f"Unable to convert {operation} to Braket")
 
 
 def _to_one_qubit_braket_instruction(

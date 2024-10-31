@@ -21,11 +21,17 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any, Optional, Union, cast
 
 from qbraid._logging import logger
-from qbraid.programs import ProgramLoaderError, ProgramSpec, get_program_type_alias, load_program
-from qbraid.transpiler import CircuitConversionError, ConversionGraph, ConversionScheme, transpile
+from qbraid.programs import (
+    ProgramLoaderError,
+    ProgramSpec,
+    ProgramTypeError,
+    get_program_type_alias,
+    load_program,
+)
+from qbraid.transpiler import ConversionGraph, ConversionScheme, ProgramConversionError, transpile
 
 from .enums import DeviceStatus, ValidationLevel
-from .exceptions import ProgramValidationError, QbraidRuntimeError, ResourceNotFoundError
+from .exceptions import ProgramValidationError, ResourceNotFoundError
 from .options import RuntimeOptions
 
 if TYPE_CHECKING:
@@ -55,7 +61,7 @@ class QuantumDevice(ABC):
                 values, their associated validators are fixed and cannot be changed.
         """
         self._profile = profile
-        self._target_spec: Optional[ProgramSpec] = profile.program_spec
+        self._target_spec: Optional[Union[ProgramSpec, list[ProgramSpec]]] = profile.program_spec
         self._scheme = scheme or ConversionScheme()
         self._options = self._default_options()
         if options:
@@ -162,12 +168,12 @@ class QuantumDevice(ABC):
         try:
             metadata["queue_depth"] = self.queue_depth()
         except ResourceNotFoundError as err:
-            logger.info("Queue depth data not available: %s", err)
+            logger.info(err)
 
         try:
             metadata["average_queue_time"] = self.avg_queue_time()
         except ResourceNotFoundError as err:
-            logger.info("Average queue time data not available: %s", err)
+            logger.info(err)
 
         metadata["status"] = self.status().name
         metadata["paradigm"] = (
@@ -185,8 +191,16 @@ class QuantumDevice(ABC):
         }
 
         program_spec = self.profile.program_spec
+
+        if not program_spec:
+            target_ir = None
+        elif isinstance(program_spec, list):
+            target_ir = [ps.alias for ps in program_spec]
+        else:
+            target_ir = program_spec.alias
+
         runtime_config = {
-            "target_ir": program_spec.alias if program_spec else None,
+            "target_ir": target_ir,
             "conversion_scheme": self._scheme.to_dict(),
             "options": options,
         }
@@ -195,7 +209,9 @@ class QuantumDevice(ABC):
 
         return metadata
 
-    def validate(self, run_input: qbraid.programs.QPROGRAM) -> None:
+    def validate(
+        self, run_input_batch: list[qbraid.programs.QPROGRAM], suppress_device_warning: bool = False
+    ) -> None:
         """Verifies run input compatibility with target device.
 
         Raises:
@@ -206,41 +222,44 @@ class QuantumDevice(ABC):
         if level == ValidationLevel.NONE:
             return None
 
-        if self.status() != DeviceStatus.ONLINE:
+        if not suppress_device_warning and self.status() != DeviceStatus.ONLINE:
             warnings.warn(
                 "Device is not online. Submitting this job may result in an exception "
                 "or a long wait time.",
                 UserWarning,
             )
 
-        try:
-            program = load_program(run_input)
-        except ProgramLoaderError:
-            logger.info(
-                "Skipping qubit count validation: program type '%s' not supported natively.",
-                type(run_input).__name__,
-            )
-        else:
-            if self.num_qubits and program.num_qubits > self.num_qubits:
-                message = (
-                    f"Number of qubits in the circuit ({program.num_qubits}) exceeds "
-                    f"the device's capacity ({self.num_qubits})."
+        for run_input in run_input_batch:
+            try:
+                program = load_program(run_input)
+            except ProgramLoaderError:
+                logger.info(
+                    "Skipping qubit count validation: program type '%s' not supported natively.",
+                    type(run_input).__name__,
                 )
+            else:
+                if self.num_qubits and program.num_qubits > self.num_qubits:
+                    message = (
+                        f"Number of qubits in the circuit ({program.num_qubits}) exceeds "
+                        f"the device's capacity ({self.num_qubits})."
+                    )
+                    if level == ValidationLevel.RAISE:
+                        raise ProgramValidationError(message)
+                    if level == ValidationLevel.WARN:
+                        warnings.warn(message, UserWarning)
+
+            if self._target_spec is None:
+                continue
+
+            target_spec = self._get_target_spec(run_input)
+
+            try:
+                target_spec.validate(run_input)
+            except ValueError as err:
                 if level == ValidationLevel.RAISE:
-                    raise ProgramValidationError(message)
+                    raise ProgramValidationError from err
                 if level == ValidationLevel.WARN:
-                    warnings.warn(message, UserWarning)
-
-        if self._target_spec is None:
-            return None
-
-        try:
-            self._target_spec.validate(run_input)
-        except ValueError as err:
-            if level == ValidationLevel.RAISE:
-                raise ProgramValidationError from err
-            if level == ValidationLevel.WARN:
-                warnings.warn(str(err), UserWarning)
+                    warnings.warn(str(err), UserWarning)
 
         return None
 
@@ -251,40 +270,87 @@ class QuantumDevice(ABC):
         provider transpile methods to match topology of device and/or optimize as applicable.
 
         Returns:
-            :data:`~qbraid.programs.QPROGRAM`: Transpiled quantum program (circuit) object
+            :data:`~qbraid.programs.QPROGRAM`: Transpiled quantum program
 
         Raises:
-            QbraidRuntimeError: If circuit conversion fails
+            ProgramConversionError: If program conversion fails
 
         """
-        if self._target_spec is None:
+        if not self._target_spec:
             logger.info("Skipping transpile: no target ProgramSpec specified in TargetProfile.")
             return run_input
 
-        target_alias = self._target_spec.alias
-        target_type = self._target_spec.program_type
+        graph = self.scheme.conversion_graph
+        target_specs = (
+            self._target_spec if isinstance(self._target_spec, list) else [self._target_spec]
+        )
+        alias_to_spec = {target_spec.alias: target_spec for target_spec in target_specs}
+        ordered_targets = graph.get_sorted_closest_targets(
+            run_input_spec.alias, list(alias_to_spec.keys())
+        )
+        ordered_target_specs = [alias_to_spec[alias] for alias in ordered_targets]
 
-        if run_input_spec.alias != target_alias:
-            kwargs = self.scheme.to_dict()
+        cached_errors = []
+        conversion_scheme_fields = self.scheme.to_dict()
+
+        for target_spec in ordered_target_specs:
+            target_alias = target_spec.alias
+            target_type = target_spec.program_type
+
             try:
-                run_input = transpile(run_input, target_alias, **kwargs)
-            except CircuitConversionError as err:
-                raise QbraidRuntimeError from err
+                transpiled_run_input = transpile(
+                    run_input, target_alias, **conversion_scheme_fields
+                )
 
-        if not (
-            isinstance(run_input, list)
-            and all(
-                isinstance(item, (target_type, type(target_type))) for item in cast(list, run_input)
-            )
-        ) and not isinstance(run_input, (target_type, type(target_type))):
-            raise CircuitConversionError(
-                f"Expected transpile step to produce program of type of {target_type}, "
-                f"but instead got program of type {type(run_input)}."
-            )
+                if not (
+                    isinstance(transpiled_run_input, list)
+                    and all(
+                        isinstance(item, (target_type, type(target_type)))
+                        for item in cast(list, transpiled_run_input)
+                    )
+                ) and not isinstance(transpiled_run_input, (target_type, type(target_type))):
+                    raise ProgramConversionError(
+                        f"Expected transpile step to produce program of type of {target_type}, "
+                        f"but instead got program of type {type(transpiled_run_input)}."
+                    )
 
-        return run_input
+                return transpiled_run_input
+            except ProgramConversionError as err:
+                cached_errors.append(err)
+
+        if len(cached_errors) == 1:
+            raise cached_errors[0]
+
+        error_messages = "\n".join([str(error) for error in cached_errors])
+        raise ProgramConversionError(
+            "Transpile step failed after multiple attempts. "
+            f"The following errors occurred:\n{error_messages}"
+        )
+
+    def _get_target_spec(self, run_input: qbraid.programs.QPROGRAM) -> ProgramSpec:
+        run_input_alias = get_program_type_alias(run_input)
+        target_specs = (
+            self._target_spec if isinstance(self._target_spec, list) else [self._target_spec]
+        )
+
+        for target_spec in target_specs:
+            if target_spec.alias == run_input_alias:
+                return target_spec
+
+        raise ProgramTypeError(
+            f"Could not find a target ProgramSpec matching the alias '{run_input_alias}'."
+        )
 
     def transform(self, run_input: qbraid.programs.QPROGRAM) -> qbraid.programs.QPROGRAM:
+        """
+        Override this method with any runtime transformations to apply to the run
+        input, e.g. circuit optimizations, device-specific gate set conversions, etc.
+        Program input type should match output type.
+
+        """
+        return run_input
+
+    def to_ir(self, run_input: qbraid.programs.QPROGRAM) -> qbraid.programs.QPROGRAM:
         """
         Override this method with any runtime transformations to apply to the run
         input, e.g. circuit optimizations, device-specific gate set conversions, etc.
@@ -294,8 +360,8 @@ class QuantumDevice(ABC):
         if self._target_spec is None:
             return run_input
 
-        run_input_ir = self._target_spec.to_ir(run_input)
-        return run_input_ir
+        target_spec = self._get_target_spec(run_input)
+        return target_spec.to_ir(run_input)
 
     def apply_runtime_profile(
         self, run_input: qbraid.programs.QPROGRAM
@@ -310,12 +376,15 @@ class QuantumDevice(ABC):
             run_input_spec = ProgramSpec(type(run_input), alias=run_input_alias)
             run_input = self.transpile(run_input, run_input_spec)
 
-        self.validate(run_input)
         is_single_output = not isinstance(run_input, list)
         run_input = [run_input] if is_single_output else run_input
 
         if self._options.get("transform") is True:
             run_input = [self.transform(p) for p in cast(list, run_input)]
+
+        self.validate(run_input)
+
+        run_input = [self.to_ir(p) for p in cast(list, run_input)]
 
         run_input = run_input[0] if is_single_output else run_input
         return run_input

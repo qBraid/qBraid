@@ -19,7 +19,7 @@ import pytest
 from cirq import Circuit, LineQubit, ops, testing
 
 from qbraid.interface import circuits_allclose
-from qbraid.transpiler import CircuitConversionError, transpile
+from qbraid.transpiler import ProgramConversionError, transpile
 
 pytket_not_installed = importlib.util.find_spec("pytket") is None
 pytestmark = pytest.mark.skipif(pytket_not_installed, reason="pytket not installed")
@@ -51,7 +51,7 @@ def test_random_circuit_to_pytket(num_qubits):
 
 def test_raise_error():
     """Test raising error for unsupported gates."""
-    with pytest.raises(CircuitConversionError):
+    with pytest.raises(ProgramConversionError):
         probs = np.random.uniform(low=0, high=0.5)
         cirq_circuit = Circuit(ops.PhaseDampingChannel(probs).on(*LineQubit.range(1)))
         transpile(cirq_circuit, "pytket", require_native=True)

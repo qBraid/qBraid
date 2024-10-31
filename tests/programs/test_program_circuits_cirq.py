@@ -295,11 +295,11 @@ def test_key_from_unsupported_qubit():
             return 0
 
     qubit = UnsupportedQubit()
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         CirqCircuit._key_from_qubit(qubit)
 
     expected_message = "Expected qubit of type 'GridQubit' 'LineQubit' or 'NamedQubit'"
-    assert expected_message in str(exc_info.value)
+    assert expected_message in str(excinfo.value)
 
 
 def test_int_from_qubit_grid_qubit():
@@ -312,14 +312,14 @@ def test_int_from_qubit_grid_qubit():
 def test_bad_qubit():
     """Test qubits that aren't a GridQubit, LineQubit, or NamedQubit."""
     qubit = "bad qubit"
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         CirqCircuit._int_from_qubit(qubit)
     expected_message = "Expected qubit of type 'GridQubit' 'LineQubit' or 'NamedQubit'"
-    assert expected_message in str(exc_info.value)
+    assert expected_message in str(excinfo.value)
 
     qubits = [qubit]
     targets = [0]
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         CirqCircuit._make_qubits(qubits, targets)
 
 

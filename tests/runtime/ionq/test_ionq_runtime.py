@@ -136,7 +136,13 @@ def mock_characterization(device_data: dict[str, Any]) -> Optional[dict[str, Any
     return None
 
 
-def test_ionq_provider_get_device():
+@pytest.fixture
+def program_spec():
+    """Return a ProgramSpec instance for IonQ."""
+    return [ProgramSpec(str, alias="qasm2"), ProgramSpec(str, alias="qasm3")]
+
+
+def test_ionq_provider_get_device(program_spec):
     """Test getting IonQ provider and device."""
     with (
         patch("qbraid.runtime.ionq.provider.Session") as mock_session,
@@ -163,14 +169,14 @@ def test_ionq_provider_get_device():
             assert test_device.profile["device_id"] in [device["backend"] for device in DEVICE_DATA]
             assert test_device.profile["simulator"] is False or test_device.id == "simulator"
             assert test_device.profile["num_qubits"] in [device["qubits"] for device in DEVICE_DATA]
-            assert test_device.profile["program_spec"] == ProgramSpec(str, alias="qasm2")
+            assert test_device.profile["program_spec"] == program_spec
 
         test_device = provider.get_device("qpu.harmony")
         assert isinstance(test_device, IonQDevice)
         assert test_device.profile["device_id"] == "qpu.harmony"
         assert test_device.profile["simulator"] is False
         assert test_device.profile["num_qubits"] == 11
-        assert test_device.profile["program_spec"] == ProgramSpec(str, alias="qasm2")
+        assert test_device.profile["program_spec"] == program_spec
         assert test_device.profile["basis_gates"] == set(IONQ_QIS_GATES + IONQ_NATIVE_GATES_BASE)
         assert test_device.profile["characterization"] == CHARACTERIZATION_DATA
 
@@ -262,7 +268,8 @@ def test_ionq_device_transform_run_input():
         provider = IonQProvider(api_key="fake_api_key")
         test_devices = provider.get_devices()
         device = test_devices[0]
-        program_json = device.transform(qasm_input)
+        qasm_compat = device.transform(qasm_input)
+        program_json = device.to_ir(qasm_compat)
         assert program_json == expected_output
 
         dummy_provider = IonQProvider(api_key="fake_api_key")
@@ -413,9 +420,9 @@ def test_ionq_submit_fail():
 @pytest.mark.parametrize("result", [{"probabilities": {"0": 0.5, "1": 0.5}}, {"shots": 100}])
 def test_get_counts_raises_value_error_for_missing_data(result):
     """Test that _get_counts raises a ValueError if shots or probabilities are missing."""
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         IonQJob._get_counts(result)
-    assert "Missing shots or probabilities in result data." in str(exc_info.value)
+    assert "Missing shots or probabilities in result data." in str(excinfo.value)
 
 
 @pytest.fixture

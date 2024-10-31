@@ -47,7 +47,7 @@ from qbraid.runtime.native.result import (
 from qbraid.runtime.noise import NoiseModel, NoiseModelSet
 from qbraid.runtime.options import RuntimeOptions
 from qbraid.runtime.schemas.job import RuntimeJobModel
-from qbraid.transpiler import CircuitConversionError, Conversion, ConversionGraph, ConversionScheme
+from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme, ProgramConversionError
 
 from ._resources import (
     DEVICE_DATA_QIR,
@@ -264,7 +264,7 @@ def test_quera_simulator_workflow(mock_provider, cirq_uniform, valid_qasm2_no_me
     assert job.is_terminal_state()
 
     device._target_spec = None
-    device.transform = lambda x: {"openQasm": x}
+    device.to_ir = lambda x: {"openQasm": x}
     batch_job = device.run([valid_qasm2_no_meas], shots=shots)
     assert isinstance(batch_job, list)
     assert all(isinstance(job, QbraidJob) for job in batch_job)
@@ -345,7 +345,7 @@ def test_device_noisey_run_raises_for_unsupported(mock_qbraid_device):
 
 def test_device_transform(pyqir_module, mock_qbraid_device):
     """Test transform method on OpenQASM 2 string."""
-    assert mock_qbraid_device.transform(pyqir_module) == {"bitcode": pyqir_module.bitcode}
+    assert mock_qbraid_device.to_ir(pyqir_module) == {"bitcode": pyqir_module.bitcode}
 
 
 def test_device_extract_qasm(valid_qasm2, mock_qbraid_device):
@@ -544,7 +544,7 @@ def test_failed_circuit_conversion(mock_basic_device, mock_scheme):
     mock_basic_device._target_spec = ProgramSpec(FailMockTypeB, alias="charlie")
     mock_basic_device._scheme = mock_scheme
     mock_input = FailMockTypeA()
-    with pytest.raises(QbraidRuntimeError):
+    with pytest.raises(ProgramConversionError):
         mock_basic_device.transpile(mock_input, fake_spec)
 
     mock_basic_device._target_spec = None
@@ -589,7 +589,7 @@ def test_wrong_type_conversion(mock_basic_device):
     mock_basic_device._target_spec = ProgramSpec(MockTypeB, alias="charlie", overwrite=True)
     mock_basic_device._scheme = scheme
     mock_input = MockTypeA(1)
-    with pytest.raises(CircuitConversionError):
+    with pytest.raises(ProgramConversionError):
         mock_basic_device.transpile(mock_input, fake_spec)
 
     unregister_program_type("alice")
@@ -645,12 +645,14 @@ def test_set_options(mock_qbraid_device: QbraidDevice):
 def test_transform_to_ir_from_spec(mock_basic_device: MockDevice, pyqir_module: Module):
     """Test transforming to run input to given IR from target profile program spec."""
     run_input_transformed = mock_basic_device.transform(pyqir_module)
-    assert isinstance(run_input_transformed, dict)
-    assert isinstance(run_input_transformed.get("bitcode"), bytes)
+    run_input_ir = mock_basic_device.to_ir(run_input_transformed)
+    assert isinstance(run_input_ir, dict)
+    assert isinstance(run_input_ir.get("bitcode"), bytes)
 
     mock_basic_device._target_spec = None
     run_input_transformed = mock_basic_device.transform(pyqir_module)
-    assert isinstance(run_input_transformed, Module)
+    run_input_ir = mock_basic_device.to_ir(run_input_transformed)
+    assert isinstance(run_input_ir, Module)
 
 
 def test_set_options_raises_for_bad_key(mock_basic_device: MockDevice):
@@ -701,7 +703,7 @@ def test_estimate_cost_resource_not_found_error(mock_qbraid_device):
 def test_validate_quera_device_qasm_validator(mock_quera_device, valid_qasm2):
     """Test that validate method raises ValueError for QASM programs with measurements."""
     with pytest.raises(ProgramValidationError):
-        mock_quera_device.validate(valid_qasm2)
+        mock_quera_device.validate([valid_qasm2])
 
 
 @pytest.mark.parametrize(
@@ -794,7 +796,7 @@ def test_device_validate_non_native_type_logs(mock_qbraid_device, caplog):
     mock_qbraid_device._target_spec = None
 
     with caplog.at_level(logging.INFO):
-        mock_qbraid_device.validate(123)
+        mock_qbraid_device.validate([123])
 
     assert (
         "Skipping qubit count validation: program type 'int' not supported natively." in caplog.text
@@ -815,7 +817,7 @@ def test_device_validate_emit_warning_for_num_qubits(mock_provider, valid_qasm2_
         with pytest.warns(
             UserWarning, match=r"Number of qubits in the circuit \(2\) exceeds.*capacity \(1\)"
         ):
-            quera_device.validate(valid_qasm2_no_meas)
+            quera_device.validate([valid_qasm2_no_meas])
 
 
 def test_device_validate_emit_warning_for_target_spec_validator(mock_provider, valid_qasm2):
@@ -827,7 +829,7 @@ def test_device_validate_emit_warning_for_target_spec_validator(mock_provider, v
         r"OpenQASM programs submitted to the quera_qasm_simulator cannot contain measurement gates"
     )
     with pytest.warns(UserWarning, match=msg):
-        quera_device.validate(valid_qasm2)
+        quera_device.validate([valid_qasm2])
 
 
 def test_device_validate_level_none(mock_qbraid_device):
@@ -835,7 +837,7 @@ def test_device_validate_level_none(mock_qbraid_device):
     mock_qbraid_device.set_options(validate=0)
 
     with patch.object(mock_qbraid_device, "status") as mock_status:
-        result = mock_qbraid_device.validate("abc123")
+        result = mock_qbraid_device.validate(["abc123"])
         assert result is None
         mock_status.assert_not_called()
 
@@ -844,16 +846,16 @@ def test_resolve_noise_model_raises_for_unsupported(mock_quera_device):
     """Test raising exception when no noise models are supported by device."""
     assert mock_quera_device.profile.noise_models is None
 
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         mock_quera_device._resolve_noise_model("ideal")
-    assert "Noise models are not supported by this device." in str(exc_info)
+    assert "Noise models are not supported by this device." in str(excinfo)
 
 
 def test_resolve_noise_model_raises_for_bad_input_type(mock_qbraid_device):
     """Test raising exception when given noise model is not a valid type."""
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         mock_qbraid_device._resolve_noise_model(10)
-    assert "Invalid type for noise model" in str(exc_info)
+    assert "Invalid type for noise model" in str(excinfo)
 
 
 def test_validate_run_input_payload_valid_dict():
@@ -920,7 +922,7 @@ def test_get_program_spec_lambdas_validate_qasm_to_ionq():
     validate = lambdas["validate"]
 
     with patch("qbraid.runtime.native.provider.openqasm3_to_ionq") as mock_convert:
-        mock_convert.side_effect = CircuitConversionError("Invalid QASM3 code")
+        mock_convert.side_effect = ProgramConversionError("Invalid QASM3 code")
 
         with pytest.raises(
             ValueError,

@@ -12,6 +12,8 @@
 Unit tests for converting Braket circuits to/from OpenQASM
 
 """
+import textwrap
+
 import numpy as np
 import qiskit
 from braket.circuits import Circuit
@@ -25,40 +27,67 @@ from qbraid.transpiler.conversions.qiskit import qiskit_to_qasm3
 def test_braket_to_qasm3_bell_circuit():
     """Test converting braket bell circuit to OpenQASM 3.0 string"""
     qasm_expected = """
-OPENQASM 3.0;
-bit[2] b;
-qubit[2] q;
-h q[0];
-cnot q[0], q[1];
-b[0] = measure q[0];
-b[1] = measure q[1];
-"""
+    OPENQASM 3.0;
+    bit[2] b;
+    qubit[2] q;
+    h q[0];
+    cnot q[0], q[1];
+    b[0] = measure q[0];
+    b[1] = measure q[1];
+    """
 
     qasm_expected_2 = """
-OPENQASM 3.0;
-bit[2] __bits__;
-qubit[2] __qubits__;
-h __qubits__[0];
-cnot __qubits__[0], __qubits__[1];
-__bits__[0] = measure __qubits__[0];
-__bits__[1] = measure __qubits__[1];
-"""
+    OPENQASM 3.0;
+    bit[2] __bits__;
+    qubit[2] __qubits__;
+    h __qubits__[0];
+    cnot __qubits__[0], __qubits__[1];
+    __bits__[0] = measure __qubits__[0];
+    __bits__[1] = measure __qubits__[1];
+    """
+    bell = Circuit().h(0).cnot(0, 1).measure(0).measure(1)
+    qasm_out = braket_to_qasm3(bell).strip()
+    qasm_expected = textwrap.dedent(qasm_expected).strip()
+    qasm_expected_2 = textwrap.dedent(qasm_expected_2).strip()
+    assert qasm_out in [qasm_expected, qasm_expected_2]
+
+
+def test_braket_to_qasm3_bell_no_measurements():
+    """Test converting braket circuit with no measurements to OpenQASM 3.0 string"""
+    qasm_expected = """
+    OPENQASM 3.0;
+    bit[2] b;
+    qubit[2] q;
+    h q[0];
+    cnot q[0], q[1];
+    """
+
+    qasm_expected_2 = """
+    OPENQASM 3.0;
+    bit[2] __bits__;
+    qubit[2] __qubits__;
+    h __qubits__[0];
+    cnot __qubits__[0], __qubits__[1];
+    """
     bell = Circuit().h(0).cnot(0, 1)
-    qbraid_qasm = braket_to_qasm3(bell)
-    assert qasm_expected.strip("\n") == qbraid_qasm or qasm_expected_2.strip("\n") == qbraid_qasm
+    qasm_out: str = braket_to_qasm3(bell).strip()
+    qasm_expected = textwrap.dedent(qasm_expected).strip()
+    qasm_expected_2 = textwrap.dedent(qasm_expected_2).strip()
+    assert qasm_out in [qasm_expected, qasm_expected_2]
 
 
 def test_braket_from_qasm3():
     """Test converting OpenQASM 3 string to braket circuit"""
-    qasm_str = """
-OPENQASM 3.0;
-bit[2] b;
-qubit[2] q;
-rx(0.15) q[0];
-rx(0.3) q[1];
-"""
+    qasm = """
+    OPENQASM 3.0;
+    bit[2] b;
+    qubit[2] q;
+    rx(0.15) q[0];
+    rx(0.3) q[1];
+    """
+    qasm = textwrap.dedent(qasm).strip()
     circuit_expected = Circuit().rx(0, 0.15).rx(1, 0.3)
-    assert circuit_expected == qasm3_to_braket(qasm_str)
+    assert circuit_expected == qasm3_to_braket(qasm)
 
 
 def test_qiskit_to_qasm3_to_braket():

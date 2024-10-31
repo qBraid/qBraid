@@ -69,7 +69,7 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
         The Amazon Braket circuit equivalent to the input OpenQASM 3.0 string
 
     Raises:
-        CircuitConversionError: If qasm to braket conversion fails
+        ProgramConversionError: If qasm to braket conversion fails
 
     """
     qasm = transform_notation(qasm)

@@ -77,7 +77,10 @@ class QiskitCircuit(GateModelProgram):
         idle_wires = list(dag.idle_wires())
         for w in idle_wires:
             dag._remove_idle_wire(w)
-            dag.qubits.remove(w)
+            try:
+                dag.qubits.remove(w)
+            except ValueError:
+                pass
 
         dag.qregs = OrderedDict()
 

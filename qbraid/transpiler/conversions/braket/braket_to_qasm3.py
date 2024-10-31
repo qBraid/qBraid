@@ -15,6 +15,7 @@ Module for converting Braket circuits to OpenQASM 3.0
 from braket.circuits import Circuit
 from braket.circuits.serialization import IRType
 
+from qbraid.passes.qasm import remove_measurements
 from qbraid.transpiler.annotations import weight
 
 
@@ -29,7 +30,11 @@ def braket_to_qasm3(circuit: Circuit) -> str:
         The OpenQASM 3.0 string equivalent to the circuit
 
     Raises:
-        CircuitConversionError: If braket to qasm conversion fails
+        ProgramConversionError: If braket to qasm conversion fails
 
     """
-    return circuit.to_ir(IRType.OPENQASM).source
+    has_measurements = any(str(instr.operator) == "Measure" for instr in circuit.instructions)
+    qasm_program = circuit.to_ir(IRType.OPENQASM).source
+    if not has_measurements:
+        qasm_program = remove_measurements(qasm_program)
+    return qasm_program

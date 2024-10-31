@@ -41,7 +41,7 @@ class TargetProfile(BaseModel):
     simulator: bool
     experiment_type: Optional[ExperimentType] = None
     num_qubits: Optional[int] = None
-    program_spec: Optional[ProgramSpec] = None
+    program_spec: Optional[Union[ProgramSpec, list[ProgramSpec]]] = None
     provider_name: Optional[str] = None
     basis_gates: Optional[Union[list[str], set[str], tuple[str, ...]]] = None
     noise_models: Optional[NoiseModelSet] = None

@@ -317,7 +317,7 @@ class QbraidDevice(QuantumDevice):
         )
         transpile_option = self._target_spec is not None and self._options.get("transpile") is True
 
-        for program in run_input_list:
+        for i, program in enumerate(run_input_list):
             aux_payload = {}
             program_spec = None
             if transpile_option or not native_target:
@@ -327,10 +327,10 @@ class QbraidDevice(QuantumDevice):
                 aux_payload = self._construct_aux_payload(program, program_spec)
             if transpile_option:
                 program = self.transpile(program, program_spec)
-            self.validate(program)
+            self.validate([program], suppress_device_warning=i != 0)
             if native_target:
                 aux_payload = self._construct_aux_payload(program, program_spec)
-            run_input_json = self.transform(program)
+            run_input_json = self.to_ir(program)
             self._validate_run_input_payload(run_input_json, self._target_spec)
             runtime_payload = {**aux_payload, **run_input_json}
             job = self.submit(run_input=runtime_payload, shots=shots, tags=tags, **kwargs)

@@ -167,12 +167,9 @@ def test_submit_qir_to_microsoft(
     input_params = {"entryPoint": qiskit_circuit.name, "arguments": [], "count": 100}
 
     if direct:
-        run_input = qir_bitcode
-        device.set_options(transpile=False, transform=False, validate=0)
+        job = device.submit(qir_bitcode, input_params=input_params)
     else:
-        run_input = qiskit_circuit
-
-    job = device.run(run_input, input_params=input_params)
+        job = device.run(qiskit_circuit, input_params=input_params)
 
     job.wait_for_final_state()
 
@@ -210,13 +207,14 @@ def test_submit_quil_to_rigetti(
     device = provider.get_device("rigetti.sim.qvm")
     assert device.status() == DeviceStatus.ONLINE
 
-    if direct:
-        run_input = quil_string
-        device.set_options(transpile=False, transform=False, validate=0)
-    else:
-        run_input = pyquil_program
+    shots = 100
+    input_params = {}
 
-    job = device.run(run_input, shots=100, input_params={})
+    if direct:
+        job = device.submit(quil_string, shots=shots, input_params=input_params)
+    else:
+        job = device.run(pyquil_program, shots=100, input_params=input_params)
+
     job.wait_for_final_state()
     assert job.status() == JobStatus.COMPLETED
 

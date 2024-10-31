@@ -584,11 +584,11 @@ def test_make_estimator_result_with_failure():
             "message": "The resource is currently unavailable.",
         },
     }
-    with pytest.raises(RuntimeError) as exc_info:
+    with pytest.raises(RuntimeError) as excinfo:
         AzureQuantumJob._make_estimator_result(data)
     assert (
         "Cannot retrieve results as job execution failed (ResourceUnavailable: "
-        "The resource is currently unavailable.)" in str(exc_info.value)
+        "The resource is currently unavailable.)" in str(excinfo.value)
     )
 
 
@@ -596,9 +596,9 @@ def test_make_estimator_result_with_failure():
 def test_make_estimator_result_with_incorrect_results_length():
     """Test making an estimator result with incorrect results length."""
     data = {"success": True, "results": [{"data": 42}, {"data": 43}]}
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         AzureQuantumJob._make_estimator_result(data)
-    assert "Expected resource estimator results to be of length 1" in str(exc_info.value)
+    assert "Expected resource estimator results to be of length 1" in str(excinfo.value)
 
 
 def test_get_job_result(mock_estimator_job):
@@ -652,9 +652,9 @@ def test_draw_random_sample_with_invalid_probabilities(
     """Test the method raises an error when probabilities don't sum close to one."""
     probabilities = {"00": 0.3, "11": 0.4}
     shots = 1000
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         mock_result_builder._draw_random_sample(probabilities, shots, None)
-    assert "Probabilities do not add up to 1" in str(exc_info.value)
+    assert "Probabilities do not add up to 1" in str(excinfo.value)
 
 
 @pytest.mark.parametrize(
@@ -842,9 +842,9 @@ def test_format_ionq_results_raises_for_no_histogram_data():
     mock_job.details.input_params = {"count": 100}
     mock_job.get_results.return_value = {}
     builder = AzureGateModelResultBuilder(azure_job=mock_job)
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         builder._format_ionq_results()
-    assert "Histogram missing from IonQ Job results" in str(exc_info.value)
+    assert "Histogram missing from IonQ Job results" in str(excinfo.value)
 
 
 @pytest.mark.parametrize(
@@ -943,9 +943,9 @@ def test_translate_microsoft_v2_result_raises_value_error(results, err_msg):
     mock_job = Mock(spec=Job)
     mock_job.get_results.return_value = results
     builder = AzureGateModelResultBuilder(azure_job=mock_job)
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         builder._translate_microsoft_v2_results()
-        assert err_msg in str(exc_info.value)
+        assert err_msg in str(excinfo.value)
 
 
 def test_format_microsoft_v2_results(azure_result_builder):
@@ -981,10 +981,10 @@ def test_format_microsoft_v2_results_raises_value_error(azure_result_builder, mo
             }
         ],
     }
-    with pytest.raises(ValueError) as exc_info:
+    with pytest.raises(ValueError) as excinfo:
         azure_result_builder._format_microsoft_v2_results()
     assert "The number of experiment results does not match the number of experiment names" in str(
-        exc_info.value
+        excinfo.value
     )
 
 

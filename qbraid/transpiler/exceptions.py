@@ -17,7 +17,7 @@ from typing import Optional
 from qbraid.exceptions import QbraidError
 
 
-class CircuitConversionError(QbraidError):
+class ProgramConversionError(QbraidError):
     """Base class for errors raised while converting a circuit."""
 
 
