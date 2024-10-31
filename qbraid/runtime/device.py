@@ -359,12 +359,8 @@ class QuantumDevice(ABC):
         return run_input
 
     def to_ir(self, run_input: qbraid.programs.QPROGRAM) -> qbraid.programs.QPROGRAM:
-        """
-        Override this method with any runtime transformations to apply to the run
-        input, e.g. circuit optimizations, device-specific gate set conversions, etc.
-        Program input type should match output type.
-
-        """
+        """Convert the quantum program to an intermediate representation (IR) compatible
+        with the submission format required for the target device and its provider API."""
         if self._target_spec is None:
             return run_input
 
