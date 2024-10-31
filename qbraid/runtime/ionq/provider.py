@@ -80,13 +80,10 @@ class IonQProvider(QuantumProvider):
         characterization_endpoint = f"{self.session.base_url}{characterization_url}"
         return self.session.get(characterization_endpoint).json()
 
-    def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
-        """Build a profile for an IonQ device."""
-        device_id = data.get("backend")
-        simulator = device_id == "simulator"
-        charact = self._get_characterization(data)
-
-        if simulator:
+    @staticmethod
+    def _get_basis_gates(device_id: str) -> list[str]:
+        """Return the basis gates for the IonQ device."""
+        if device_id == "simulator":
             native_gates = IONQ_NATIVE_GATES.copy()
         else:
             native_gates = next(
@@ -95,6 +92,15 @@ class IonQProvider(QuantumProvider):
             )
 
         basis_gates = IONQ_QIS_GATES.copy() + native_gates
+
+        return basis_gates
+
+    def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
+        """Build a profile for an IonQ device."""
+        device_id = data.get("backend")
+        simulator = device_id == "simulator"
+        charact = self._get_characterization(data)
+        basis_gates = self._get_basis_gates(device_id)
 
         return TargetProfile(
             device_id=device_id,

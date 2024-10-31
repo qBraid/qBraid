@@ -163,3 +163,14 @@ When you are ready to submit a PR:
 - **Link Issues**: If your PR resolves an open issue, link it using the keyword "Closes" followed by the issue number (e.g., `Closes #123`).
 
 Remember, it's perfectly fine to submit a draft pull request if your code is still a work-in-progress. We're here to help!
+
+### Updating Examples Submodule
+
+```bash
+git submodule sync
+git submodule init
+git submodule update --remote --recursive
+git submodule update --remote --merge
+git add examples
+git commit -m "update examples submodule"
+```

@@ -85,6 +85,7 @@ class QbraidDevice(QuantumDevice):
         seed: Optional[int] = None,
         timeout: Optional[int] = None,
         params: Optional[dict[str, Any]] = None,
+        error_mitigation: Optional[dict[str, Any]] = None,
     ) -> qbraid.runtime.QbraidJob:
         """
         Creates a qBraid Quantum Job.
@@ -106,6 +107,8 @@ class QbraidDevice(QuantumDevice):
             timeout (int, optional): The maximum time in seconds to wait for the job
                 to complete after execution has started. Defaults to None.
             params (dict, optional): Additional parameters to include in the job payload.
+            error_mitigation (dict, optional): Dictionary containing error mitigation
+                parameters. Only applicable for certain devices. Defaults to None.
 
         Returns:
             QbraidJob: The job objects representing the submitted job.
@@ -115,6 +118,7 @@ class QbraidDevice(QuantumDevice):
         """
         tags_dict = tags or {}
         params_dict = params or {}
+        error_mitigation_dict = error_mitigation or {}
 
         payload = {
             "qbraidDeviceId": self.id,
@@ -126,6 +130,7 @@ class QbraidDevice(QuantumDevice):
             "noiseModel": noise_model,
             "memory": memory,
             "params": json.dumps(params_dict) if params else None,
+            "errorMitigation": json.dumps(error_mitigation_dict) if error_mitigation else None,
             **run_input,
         }
 
@@ -134,6 +139,7 @@ class QbraidDevice(QuantumDevice):
         payload.update(job_data)
         payload["tags"] = tags_dict
         payload["params"] = params_dict
+        payload["errorMitigation"] = error_mitigation_dict
         job_model = RuntimeJobModel.from_dict(payload)
         model_dump = job_model.model_dump(exclude={"metadata", "cost"})
         return QbraidJob(**model_dump, device=self, client=self.client)
