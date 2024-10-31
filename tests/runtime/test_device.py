@@ -8,7 +8,7 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint: disable=redefined-outer-name,unused-argument
+# pylint: disable=redefined-outer-name,unused-argument,too-many-lines
 
 """
 Unit tests for QbraidDevice, QbraidJob, and QbraidGateModelResultBuilder
@@ -22,6 +22,7 @@ import time
 from typing import Any
 from unittest.mock import Mock, PropertyMock, patch
 
+import cirq
 import numpy as np
 import pytest
 from pandas import DataFrame
@@ -35,6 +36,8 @@ from qbraid.programs import (
     register_program_type,
     unregister_program_type,
 )
+from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.typer import IonQDict
 from qbraid.runtime import DeviceStatus, JobStatus, ProgramValidationError, Result, TargetProfile
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
@@ -944,3 +947,64 @@ def test_provider_get_basis_gates_ionq():
     unique = set(basis_gates)
     assert len(unique) == len(basis_gates) == 19
     assert native.issubset(unique)
+
+
+@pytest.mark.parametrize(
+    "program_spec, target_ir_expected",
+    [
+        (None, None),
+        (ProgramSpec(str, "qasm2"), "qasm2"),
+        ([ProgramSpec(str, "qasm2"), ProgramSpec(str, "qasm3")], ["qasm2", "qasm3"]),
+    ],
+)
+def test_device_metadata_for_different_program_specs(program_spec, target_ir_expected):
+    """Test getting device metadata for different program specs types: none, single and multiple."""
+    profile = TargetProfile(
+        device_id="fake_device",
+        simulator=True,
+        experiment_type=ExperimentType.GATE_MODEL,
+        num_qubits=42,
+        program_spec=program_spec,
+    )
+
+    device = MockDevice(profile=profile)
+
+    metadata = device.metadata()
+
+    target_ir = metadata["runtime_config"]["target_ir"]
+    assert (
+        target_ir is None
+        if target_ir_expected is None
+        else set(target_ir) == set(target_ir_expected)
+    )
+
+    with pytest.raises(ProgramTypeError) as excinfo:
+        device._get_target_spec(cirq.Circuit())
+    assert "Could not find a target ProgramSpec matching the alias" in str(excinfo.value)
+
+
+def test_device_transpile_program_conversion_error():
+    """Test that transpile method handles program conversion error
+    correctly for device with multiple program specs."""
+    circuit = {
+        "qubits": 3,
+        "gatset": "qis",
+        "circuit": [
+            {"gate": "h", "target": 0},
+            {"gate": "cnot", "control": 0, "target": 1},
+            {"gate": "cnot", "control": 0, "target": 2},
+        ],
+    }
+
+    profile = TargetProfile(
+        device_id="fake_device",
+        simulator=True,
+        experiment_type=ExperimentType.GATE_MODEL,
+        num_qubits=42,
+        program_spec=[ProgramSpec(str, "qasm2"), ProgramSpec(str, "qasm3")],
+    )
+
+    device = MockDevice(profile=profile)
+    with pytest.raises(ProgramConversionError) as excinfo:
+        device.transpile(circuit, ProgramSpec(IonQDict, "ionq"))
+    assert "Transpile step failed after multiple attempts." in str(excinfo.value)

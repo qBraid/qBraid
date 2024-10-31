@@ -28,7 +28,13 @@ from qbraid.programs import (
     get_program_type_alias,
     load_program,
 )
-from qbraid.transpiler import ConversionGraph, ConversionScheme, ProgramConversionError, transpile
+from qbraid.transpiler import (
+    ConversionGraph,
+    ConversionPathNotFoundError,
+    ConversionScheme,
+    ProgramConversionError,
+    transpile,
+)
 
 from .enums import DeviceStatus, ValidationLevel
 from .exceptions import ProgramValidationError, ResourceNotFoundError
@@ -315,7 +321,7 @@ class QuantumDevice(ABC):
                     )
 
                 return transpiled_run_input
-            except ProgramConversionError as err:
+            except (ProgramConversionError, ConversionPathNotFoundError) as err:
                 cached_errors.append(err)
 
         if len(cached_errors) == 1:
@@ -328,9 +334,11 @@ class QuantumDevice(ABC):
         )
 
     def _get_target_spec(self, run_input: qbraid.programs.QPROGRAM) -> ProgramSpec:
-        run_input_alias = get_program_type_alias(run_input)
+        run_input_alias = get_program_type_alias(run_input, safe=True)
         target_specs = (
-            self._target_spec if isinstance(self._target_spec, list) else [self._target_spec]
+            self._target_spec
+            if isinstance(self._target_spec, list)
+            else [self._target_spec] if self._target_spec else []
         )
 
         for target_spec in target_specs:
@@ -338,7 +346,7 @@ class QuantumDevice(ABC):
                 return target_spec
 
         raise ProgramTypeError(
-            f"Could not find a target ProgramSpec matching the alias '{run_input_alias}'."
+            message=f"Could not find a target ProgramSpec matching the alias '{run_input_alias}'."
         )
 
     def transform(self, run_input: qbraid.programs.QPROGRAM) -> qbraid.programs.QPROGRAM:
