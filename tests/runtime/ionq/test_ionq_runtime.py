@@ -14,6 +14,7 @@
 Unit tests for IonQProvider class
 
 """
+import uuid
 from itertools import combinations
 from typing import Any, Optional
 from unittest.mock import Mock, patch
@@ -448,3 +449,22 @@ def test_hash_method_returns_existing_hash(mock_ionq_provider):
     provider_instance._hash = 1234
     result = provider_instance.__hash__()  # pylint:disable=unnecessary-dunder-call
     assert result == 1234
+
+
+def test_ionq_session_raises_for_no_api_key(monkeypatch):
+    """Test that IonQSession raises an error if no API key is provided."""
+    monkeypatch.setenv("IONQ_API_KEY", "")
+
+    with pytest.raises(ValueError) as excinfo:
+        IonQSession()
+    assert "An IonQ API key is required to initialize the session." in str(excinfo.value)
+
+
+def test_ionq_session_api_key_from_env_var(monkeypatch):
+    """Test that IonQSession gets the API key from the IONQ_API_KEY environment variable."""
+    api_key = uuid.uuid4().hex
+    monkeypatch.setenv("IONQ_API_KEY", api_key)
+
+    session = IonQSession()
+
+    assert session.api_key == api_key
