@@ -15,11 +15,31 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Registered "qubo" coefficients program type under `qbraid.programs.typer.QuboCoefficientsDict` ([#820](https://github.com/qBraid/qBraid/pull/820))
 
 ### Improved / Modified
 - Separated runtime device `transform` and `to_ir` logic into separate steps ([#819](https://github.com/qBraid/qBraid/pull/819))
 - Updated runtime validation step to handle program batches and not re-warn for device-related checks ([#819](https://github.com/qBraid/qBraid/pull/819))
 - Updated runtime device transpile method and target profile to allow for lists of `ProgramSpec` ([#819](https://github.com/qBraid/qBraid/pull/819))
+- Updated native runtime logic for NEC vector annealer to support "qubo" program spec type. Offset argument / attribute removed from `qbraid.programs.annealing.Problem`. `QbraidDevice.run` flow now derives "offset" paramater from `params` argument (of type `QuboSolveParams`, now required). This allows a more straightfoward procedure (with more visiblity) when submitting programs from  `pyqubo.Module`. See code example below. ([#820](https://github.com/qBraid/qBraid/pull/820))
+
+```python
+from qbraid import QbraidProvider
+from qbraid.runtime.schemas import QuboSolveParams
+
+s1, s2, s3, s4 = [pyqubo.Spin(f"s{i}") for i in range(1, 5)]
+H = (4 * s1 + 2 * s2 + 7 * s3 + s4) ** 2
+model = H.compile()
+qubo, offset = model.to_qubo()
+
+params = QuboSolveParams(offset=offset)
+
+provider = QbraidProvider()
+
+device = provider.get_device("nec_vector_annealer")
+
+job = device.run(qubo, params=params)
+```
 
 ### Deprecated
 

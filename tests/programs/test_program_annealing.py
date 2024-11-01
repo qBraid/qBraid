@@ -13,6 +13,7 @@ Unit tests for qbraid.programs.annealing module.
 
 """
 import json
+from unittest.mock import Mock
 
 import pytest
 
@@ -28,6 +29,7 @@ try:
         QuboProblem,
     )
     from qbraid.programs.annealing.cpp_pyqubo import PyQuboModel
+    from qbraid.programs.annealing.qubo import QuboProgram
     from qbraid.runtime.native.provider import _qubo_to_json
 
     pyqubo_not_installed = False
@@ -114,11 +116,12 @@ def test_pyqubo_model_initialization(pyqubo_model):
     assert pyqubo_model_instance.program == pyqubo_model
 
 
-def test_pyqubo_model_invalid_initialization():
-    """Tests that initializing a PyQuboModel with an invalid input raises a ProgramTypeError."""
+@pytest.mark.parametrize("program_class", [PyQuboModel, QuboProgram])
+def test_invalid_program_initialization(program_class):
+    """Tests that initializing a program with an invalid input raises a ProgramTypeError."""
     try:
         with pytest.raises(ProgramTypeError):
-            PyQuboModel(("invalid", "program"))
+            program_class(("invalid", "program"))
     finally:
         unregister_program_type("tuple")
 
@@ -283,3 +286,10 @@ def test_get_pyqubo_experiment_type(pyqubo_model):
     """Test that the PyQuboModel correctly identifies the experiment type as ANNEALING."""
     program = PyQuboModel(pyqubo_model)
     assert program.experiment_type == ExperimentType.ANNEALING
+
+
+def test_pyqubo_model_transform(pyqubo_model):
+    """Test that the PyQuboModel transform method does not modify the program."""
+    program = PyQuboModel(pyqubo_model)
+    program.transform(device=Mock())
+    assert program.program == pyqubo_model

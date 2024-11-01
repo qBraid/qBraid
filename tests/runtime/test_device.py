@@ -37,7 +37,7 @@ from qbraid.programs import (
     unregister_program_type,
 )
 from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.typer import IonQDict
+from qbraid.programs.typer import IonQDict, QuboCoefficientsDict
 from qbraid.runtime import DeviceStatus, JobStatus, ProgramValidationError, Result, TargetProfile
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
@@ -49,6 +49,7 @@ from qbraid.runtime.native.result import (
 )
 from qbraid.runtime.noise import NoiseModel, NoiseModelSet
 from qbraid.runtime.options import RuntimeOptions
+from qbraid.runtime.schemas.experiment import QuboSolveParams
 from qbraid.runtime.schemas.job import RuntimeJobModel
 from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme, ProgramConversionError
 
@@ -121,7 +122,10 @@ def mock_quera_profile():
 def mock_nec_va_profile():
     """Mock profile for testing."""
     return TargetProfile(
-        device_id="nec_vector_annealer", simulator=True, experiment_type=ExperimentType.ANNEALING
+        device_id="nec_vector_annealer",
+        simulator=True,
+        experiment_type=ExperimentType.ANNEALING,
+        program_spec=QbraidProvider._get_program_spec("qubo", "nec_vector_annealer"),
     )
 
 
@@ -1008,3 +1012,105 @@ def test_device_transpile_program_conversion_error():
     with pytest.raises(ProgramConversionError) as excinfo:
         device.transpile(circuit, ProgramSpec(IonQDict, "ionq"))
     assert "Transpile step failed after multiple attempts." in str(excinfo.value)
+
+
+@pytest.fixture
+def mock_qubo_solve_params() -> dict[str, Any]:
+    """Return a minimal set of QUBO solve parameters."""
+    return {"offset": 0.5}
+
+
+@pytest.fixture
+def mock_qubo_params_with_defaults(mock_qubo_solve_params) -> dict[str, Any]:
+    """Return a comprehensive set of all possible QUBO solve parameters."""
+    return {
+        "offset": mock_qubo_solve_params["offset"],
+        "num_reads": 1,
+        "num_results": 1,
+        "num_sweeps": 500,
+        "beta_range": (10.0, 100.0, 200),
+        "vector_mode": "accuracy",
+        "timeout": 1800,
+    }
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"offset": 0.5, "num_reads": 2},
+        {"offset": 0.7, "num_results": 3},
+    ],
+)
+def test_device_resolve_qubo_params(mock_nec_va_device: QbraidDevice, params: dict[str, Any]):
+    """Test that resolve_qubo_params method returns the correct parameters from dict or model."""
+    params_input = params.copy()
+    resolved_params = mock_nec_va_device._resolve_qubo_params(params_input)
+    assert resolved_params == params
+
+
+def test_device_resolve_qubo_params_with_all_params(
+    mock_nec_va_device: QbraidDevice,
+    mock_qubo_solve_params,
+    mock_qubo_params_with_defaults: dict[str, Any],
+):
+    """Test that the resolve_qubo_params method returns all parameters correctly."""
+    params_model = QuboSolveParams(**mock_qubo_solve_params)
+    resolved_params = mock_nec_va_device._resolve_qubo_params(params_model)
+    filtered_params = {k: v for k, v in resolved_params.items() if v is not None}
+    assert filtered_params == mock_qubo_params_with_defaults
+
+
+@pytest.mark.parametrize(
+    "device, params, expected_message",
+    [
+        (
+            "mock_qbraid_device",
+            {"offset": 0.5},
+            "QUBO solve parameters are only supported for annealing devices.",
+        ),
+        ("mock_nec_va_device", "invalid_params", "Invalid type for QUBO solve parameters"),
+    ],
+)
+def test_device_resolve_qubo_params_raises_exceptions(
+    request: pytest.FixtureRequest,
+    device: QbraidDevice,
+    params: dict[str, Any],
+    expected_message: str,
+):
+    """Test that the resolve_qubo_params method raises expected exceptions
+    for invalid devices or parameter types."""
+    device = request.getfixturevalue(device)
+    with pytest.raises(ValueError) as excinfo:
+        device._resolve_qubo_params(params)
+    assert expected_message in str(excinfo.value)
+
+
+@pytest.fixture
+def qubo_coefficients() -> QuboCoefficientsDict:
+    """Return a mock set of QUBO coefficients."""
+    return {
+        ("s1", "s1"): -160.0,
+        ("s4", "s2"): 16.0,
+        ("s3", "s1"): 224.0,
+        ("s2", "s2"): -96.0,
+        ("s4", "s1"): 32.0,
+        ("s1", "s2"): 64.0,
+        ("s3", "s2"): 112.0,
+        ("s3", "s3"): -196.0,
+        ("s4", "s4"): -52.0,
+        ("s4", "s3"): 56.0,
+    }
+
+
+def test_device_call_resolve_params_from_run_method(
+    mock_nec_va_device, qubo_coefficients, mock_qubo_solve_params
+):
+    """Test that the run method calls the resolve_qubo_params method
+    with the provided parameters."""
+    with (
+        patch.object(mock_nec_va_device, "_resolve_qubo_params") as mock_resolve_qubo_params,
+        patch.object(mock_nec_va_device, "submit") as mock_submit,
+    ):
+        mock_nec_va_device.run(qubo_coefficients, params=mock_qubo_solve_params)
+        mock_resolve_qubo_params.assert_called_once_with(mock_qubo_solve_params)
+        mock_submit.assert_called_once()
