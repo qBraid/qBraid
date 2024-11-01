@@ -116,7 +116,12 @@ def test_pyqubo_model_initialization(pyqubo_model):
     assert pyqubo_model_instance.program == pyqubo_model
 
 
-@pytest.mark.parametrize("program_class", [PyQuboModel, QuboProgram])
+def get_program_classes():
+    """Dynamically import and return program classes for testing."""
+    return [PyQuboModel, QuboProgram]
+
+
+@pytest.mark.parametrize("program_class", get_program_classes())
 def test_invalid_program_initialization(program_class):
     """Tests that initializing a program with an invalid input raises a ProgramTypeError."""
     try:
