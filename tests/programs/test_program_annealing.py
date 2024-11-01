@@ -121,7 +121,7 @@ def get_program_classes():
     try:
         return [PyQuboModel, QuboProgram]
     except NameError:
-        pytest.skip("Required program classes are not available for testing.")
+        return []
 
 
 @pytest.mark.parametrize("program_class", get_program_classes())
