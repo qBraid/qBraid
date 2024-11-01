@@ -24,7 +24,7 @@ from qbraid._caching import cached_method
 from qbraid.passes.qasm.analyze import has_measurements
 from qbraid.passes.qasm.format import format_qasm
 from qbraid.programs import QPROGRAM_REGISTRY, ExperimentType, ProgramSpec, load_program
-from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
+from qbraid.programs.typer import Qasm2StringType, Qasm3StringType, QuboCoefficientsDict
 from qbraid.runtime._display import display_jobs_from_data
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.ionq.provider import IonQProvider
@@ -41,6 +41,7 @@ if TYPE_CHECKING:
     import pyqubo
 
     from qbraid.programs.annealing.cpp_pyqubo import PyQuboModel
+    from qbraid.programs.annealing.qubo import QuboProgram
 
 
 def _pyqir_to_json(program: pyqir.Module) -> dict[str, bytes]:
@@ -53,8 +54,8 @@ def _qasm_to_json(
     return {"openQasm": format_qasm(program)}
 
 
-def _pyqubo_to_json(program: pyqubo.Model) -> dict[str, dict[str, Any]]:
-    program: PyQuboModel = load_program(program)
+def _qubo_to_json(program: Union[pyqubo.Model, QuboCoefficientsDict]) -> dict[str, dict[str, Any]]:
+    program: Union[PyQuboModel, QuboProgram] = load_program(program)
     return {"problem": program.to_json()}
 
 
@@ -87,7 +88,8 @@ def get_program_spec_lambdas(
         "pyqir": (_pyqir_to_json, None),
         "qasm2": (_qasm_to_json, None),
         "qasm3": (_qasm_to_json, None),
-        "cpp_pyqubo": (_pyqubo_to_json, None),
+        "cpp_pyqubo": (_qubo_to_json, None),
+        "qubo": (_qubo_to_json, None),
     }
 
     to_ir, validate = lambdas.get(program_type_alias, (None, None))

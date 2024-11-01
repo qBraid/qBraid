@@ -12,6 +12,8 @@
 Module defining AnalogHamiltonianProgram Class
 
 """
+from __future__ import annotations
+
 import json
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
@@ -45,9 +47,9 @@ class AnalogHamiltonianProgram(QuantumProgram, ABC):
         """Number of qubits needed by a quantum device to execute this program."""
         return self.num_atoms
 
-    def transform(self, device: "qbraid.runtime.QuantumDevice") -> None:
+    def transform(self, device: qbraid.runtime.QuantumDevice) -> None:
         """Transform program to according to device target profile."""
-        raise NotImplementedError
+        return None
 
     @abstractmethod
     def to_dict(self) -> dict:

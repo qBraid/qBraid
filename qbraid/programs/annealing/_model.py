@@ -21,6 +21,7 @@ from enum import Enum
 from typing import TYPE_CHECKING, Any
 
 from qbraid.programs.program import QuantumProgram
+from qbraid.programs.typer import QuboCoefficientsDict
 
 if TYPE_CHECKING:
     import qbraid.runtime
@@ -46,14 +47,12 @@ class Problem:
         problem_type: An instance of ProblemType indicating whether the model is QUBO or ISING.
         linear: A dictionary representing the linear coefficients.
         quadratic: A dictionary representing the quadratic coefficients.
-        offset: A float representing the constant offset.
 
     """
 
     problem_type: ProblemType
     linear: dict[str, float] = field(default_factory=dict)
     quadratic: dict[tuple[str, str], float] = field(default_factory=dict)
-    offset: float = 0.0
 
     def num_variables(self) -> int:
         """Return the number of variables in the problem."""
@@ -65,7 +64,7 @@ class Problem:
     def __eq__(self, other) -> bool:
         if not isinstance(other, Problem):
             return False
-        if self.offset != other.offset or self.problem_type != other.problem_type:
+        if self.problem_type != other.problem_type:
             return False
         if self.linear != other.linear or len(self.quadratic) != len(other.quadratic):
             return False
@@ -85,12 +84,11 @@ class Problem:
 class QuboProblem(Problem):
     """Represents a QUBO problem, subclass of Problem that only includes quadratic coefficients."""
 
-    def __init__(self, coefficients: dict[tuple[str, str], float], offset: float = 0.0):
+    def __init__(self, coefficients: QuboCoefficientsDict):
         super().__init__(
             problem_type=ProblemType.QUBO,
             linear={},
             quadratic=coefficients,
-            offset=offset,
         )
 
 
@@ -104,7 +102,7 @@ class AnnealingProgram(QuantumProgram, ABC):
 
     def transform(self, device: qbraid.runtime.QuantumDevice) -> None:
         """Transform program according to device target profile."""
-        raise NotImplementedError
+        return None
 
     @abstractmethod
     def to_problem(self) -> Problem:
@@ -127,10 +125,7 @@ class ProblemEncoder(json.JSONEncoder):
         if isinstance(o, AnnealingProgram):
             return self.default(o.to_problem())
         if isinstance(o, Problem):
-            data = {
-                "offset": o.offset,
-                "problem_type": o.problem_type.value,
-            }
+            data = {"problem_type": o.problem_type.value}
             if o.linear:
                 data["linear"] = o.linear
             if o.quadratic:

@@ -21,7 +21,7 @@ from importlib import import_module
 from types import ModuleType
 from typing import Any, Type
 
-from .typer import IonQDict
+from .typer import BOUND_QBRAID_META_TYPES, QBRAID_META_TYPES
 
 
 def _assign_default_type_alias(imported: dict[str, Any], program_type: Type[Any]) -> str:
@@ -120,9 +120,16 @@ dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
     ]
 )
 dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(["bloqade.builder.assign"])
-static_type_registry: dict[str, Type[Any]] = {"qasm2": str, "qasm3": str, "ionq": IonQDict}
+static_type_registry: dict[str, Type[Any]] = {
+    metatype.__alias__: metatype.__bound__ for metatype in BOUND_QBRAID_META_TYPES
+}
+qbraid_meta_type_registry: dict[str, Type[Any]] = {
+    metatype.__alias__: metatype for metatype in QBRAID_META_TYPES
+}
 
-NATIVE_REGISTRY: dict[str, Type[Any]] = dynamic_type_registry | static_type_registry
+NATIVE_REGISTRY: dict[str, Type[Any]] = (
+    dynamic_type_registry | static_type_registry | qbraid_meta_type_registry
+)
 _QPROGRAM_REGISTRY: dict[str, Type[Any]] = deepcopy(NATIVE_REGISTRY) | dynamic_non_native
 _QPROGRAM_TYPES: set[Type[Any]] = set(_QPROGRAM_REGISTRY.values())
 _QPROGRAM_ALIASES: set[str] = set(_QPROGRAM_REGISTRY.keys())

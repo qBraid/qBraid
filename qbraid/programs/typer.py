@@ -232,3 +232,39 @@ class Qasm3StringType(QasmStringType):
     """Specifically typed string for OpenQASM 3 formatted text."""
 
     version = 3
+
+
+class QuboCoefficientsDictInstanceMeta(QbraidMetaType):
+    """Metaclass for Qubo coefficients JSON type checking based on dict content."""
+
+    @property
+    def __alias__(cls) -> str:
+        return "qubo"
+
+    @property
+    def __bound__(cls) -> Type[dict]:
+        return dict
+
+    def __instancecheck__(cls, instance: Any) -> bool:
+        """Custom instance checks based on dict format."""
+        if not instance or not isinstance(instance, dict):
+            return False
+
+        for key, value in instance.items():
+            if not (
+                isinstance(key, tuple) and len(key) == 2 and all(isinstance(k, str) for k in key)
+            ):
+                return False
+
+            if not isinstance(value, (float, int)):
+                return False
+
+        return True
+
+
+class QuboCoefficientsDict(metaclass=QuboCoefficientsDictInstanceMeta):
+    """Marker class for dict that are valid Qubo coefficients format."""
+
+
+QBRAID_META_TYPES = {IonQDict, QuboCoefficientsDict}
+BOUND_QBRAID_META_TYPES = {Qasm2String, Qasm3String}

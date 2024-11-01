@@ -31,12 +31,12 @@ class PyQuboModel(AnnealingProgram):
                 message=f"Expected 'pyqubo.Model' object, got '{type(program)}'."
             )
 
-    def to_problem(self) -> QuboProblem:
+    def to_problem(self, **kwargs) -> QuboProblem:
         """Converts the cpp_pyqubo.Model to a Problem instance."""
-        qubo, offset = self.program.to_qubo()
+        qubo, _ = self.program.to_qubo(**kwargs)
         coefficients = {}
 
         for key, value in qubo.items():
             coefficients[key] = value
 
-        return QuboProblem(coefficients, offset)
+        return QuboProblem(coefficients)

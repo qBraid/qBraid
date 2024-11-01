@@ -29,6 +29,7 @@ from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.noise import NoiseModel
+from qbraid.runtime.schemas.experiment import QuboSolveParams
 from qbraid.runtime.schemas.job import RuntimeJobModel
 from qbraid.transpiler import ConversionGraph, transpile
 
@@ -116,30 +117,31 @@ class QbraidDevice(QuantumDevice):
         See Also: https://docs.qbraid.com/api-reference/api-reference/post-quantum-jobs
 
         """
-        tags_dict = tags or {}
-        params_dict = params or {}
-        error_mitigation_dict = error_mitigation or {}
+        tags = tags or {}
+        tags_json = json.dumps(tags)
+        error_mitig_json = json.dumps(error_mitigation) if error_mitigation else None
+        params_json = QuboSolveParams(**params).model_dump_json() if params else None
 
         payload = {
             "qbraidDeviceId": self.id,
-            "tags": json.dumps(tags_dict),
+            "tags": tags_json,
             "shots": shots,
             "seed": seed,
             "entrypoint": entrypoint,
             "timeout": timeout,
             "noiseModel": noise_model,
             "memory": memory,
-            "params": json.dumps(params_dict) if params else None,
-            "errorMitigation": json.dumps(error_mitigation_dict) if error_mitigation else None,
+            "params": params_json,
+            "errorMitigation": error_mitig_json,
             **run_input,
         }
 
         job_data = self.client.create_job(data=payload)
 
         payload.update(job_data)
-        payload["tags"] = tags_dict
-        payload["params"] = params_dict
-        payload["errorMitigation"] = error_mitigation_dict
+        payload["tags"] = tags
+        payload["params"] = params
+        payload["errorMitigation"] = error_mitigation
         job_model = RuntimeJobModel.from_dict(payload)
         model_dump = job_model.model_dump(exclude={"metadata", "cost"})
         return QbraidJob(**model_dump, device=self, client=self.client)
@@ -223,13 +225,28 @@ class QbraidDevice(QuantumDevice):
             noise_model = noise_model.value
         elif not isinstance(noise_model, str):
             raise ValueError(
-                f"Invalid type for noise model: {type(noise_model)}. " "Expected str or NoiseModel."
+                f"Invalid type for noise model: {type(noise_model)}. Expected str or NoiseModel."
             )
 
         if noise_model not in self.profile.noise_models:
             raise ValueError(f"Noise model '{noise_model}' not supported by device.")
 
         return self.profile.noise_models.get(noise_model).name
+
+    def _resolve_qubo_params(self, params: Union[QuboSolveParams, dict]) -> dict[str, Any]:
+        """Resolve QUBO solve parameters to a dictionary."""
+        if self.profile.experiment_type != ExperimentType.ANNEALING:
+            raise ValueError("QUBO solve parameters are only supported for annealing devices.")
+
+        if isinstance(params, QuboSolveParams):
+            params = params.model_dump()
+        elif not isinstance(params, dict):
+            raise ValueError(
+                f"Invalid type for QUBO solve parameters: {type(params)}. "
+                "Expected dict or QuboSolveParams."
+            )
+
+        return params
 
     @staticmethod
     def _validate_run_input_payload(
@@ -307,6 +324,11 @@ class QbraidDevice(QuantumDevice):
 
         if noise_model:
             kwargs["noise_model"] = self._resolve_noise_model(noise_model)
+
+        params: Optional[Union[QuboSolveParams, dict]] = kwargs.get("params")
+
+        if params:
+            kwargs["params"] = self._resolve_qubo_params(params)
 
         jobs: list[qbraid.runtime.QbraidJob] = []
 

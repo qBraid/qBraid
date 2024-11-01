@@ -27,6 +27,7 @@ from qbraid.programs.typer import (
     Qasm3String,
     Qasm3StringType,
     QasmStringType,
+    QuboCoefficientsDict,
     ValidationError,
 )
 
@@ -210,3 +211,84 @@ def test_ionq_dict_instance_meta_validate_field_invalid_cases(single, multiple, 
     """Test _validate_field raises ValidationError for invalid input cases."""
     with pytest.raises(ValidationError):
         IonQDictInstanceMeta._validate_field(single, multiple, field_name)
+
+
+def test_qubo_coefficients_dict_valid():
+    """Test with a valid QUBO coefficients dictionary."""
+    valid_dict = {
+        ("s1", "s1"): -160.0,
+        ("s4", "s2"): 16.0,
+        ("s3", "s1"): 224.0,
+        ("s2", "s2"): -96.0,
+        ("s4", "s1"): 32.0,
+        ("s1", "s2"): 64.0,
+        ("s3", "s2"): 112.0,
+        ("s3", "s3"): -196.0,
+        ("s4", "s4"): -52.0,
+        ("s4", "s3"): 56.0,
+    }
+    assert isinstance(valid_dict, QuboCoefficientsDict)
+
+
+def test_qubo_coefficients_dict_invalid_key_type():
+    """Test with an invalid key type (non-tuple key)."""
+    invalid_dict = {"s1": -160.0}  # Invalid because key is not a tuple
+    assert not isinstance(invalid_dict, QuboCoefficientsDict)
+
+
+def test_qubo_coefficients_dict_invalid_key_tuple_elements():
+    """Test with a tuple key containing non-string elements."""
+    invalid_dict = {
+        (1, "s2"): 32.0,  # Invalid because one element in the tuple is not a string
+        ("s3", 3): 64.0,  # Invalid because one element in the tuple is not a string
+    }
+    assert not isinstance(invalid_dict, QuboCoefficientsDict)
+
+
+def test_qubo_coefficients_dict_invalid_key_tuple_length():
+    """Test with a tuple key of incorrect length."""
+    invalid_dict = {
+        ("s1",): -160.0,  # Invalid because tuple length is 1
+        ("s2", "s3", "s4"): 96.0,  # Invalid because tuple length is 3
+    }
+    assert not isinstance(invalid_dict, QuboCoefficientsDict)
+
+
+def test_qubo_coefficients_dict_invalid_value_type():
+    """Test with a value that is not a float."""
+    invalid_dict = {
+        ("s1", "s2"): 64.0,
+        ("s3", "s3"): "string",  # Invalid because the value is not a float
+    }
+    assert not isinstance(invalid_dict, QuboCoefficientsDict)
+
+
+def test_qubo_coefficients_dict_empty():
+    """Test with an empty dictionary, which should be invalid."""
+    empty_dict = {}
+    assert not isinstance(empty_dict, QuboCoefficientsDict)
+
+
+def test_qubo_coefficients_dict_nested_invalid():
+    """Test with a nested dictionary, which should be invalid."""
+    nested_invalid_dict = {
+        ("s1", "s1"): -160.0,
+        ("s2", "s2"): {"nested_key": 32.0},  # Invalid because the value is a dict, not a float
+    }
+    assert not isinstance(nested_invalid_dict, QuboCoefficientsDict)
+
+
+def test_qubo_coefficients_dict_non_dict_type_invalid():
+    """Test with a non-dictionary type, which should be invalid."""
+    non_dict = "string"
+    assert not isinstance(non_dict, QuboCoefficientsDict)
+
+
+def test_qubo_coefficients_dict_instance_meta_alias():
+    """Test that __alias__ property returns the correct alias."""
+    assert QuboCoefficientsDict.__alias__ == "qubo"  # pylint: disable=comparison-with-callable
+
+
+def test_qubo_coefficients_dictt_instance_meta_bound():
+    """Test that __bound__ property returns dict."""
+    assert QuboCoefficientsDict.__bound__ == dict  # pylint: disable=comparison-with-callable

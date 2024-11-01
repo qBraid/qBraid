@@ -33,6 +33,7 @@ Submodules
    :toctree: ../stubs/
 
     cpp_pyqubo
+    qubo
 
 """
 import importlib
