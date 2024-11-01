@@ -274,6 +274,6 @@ def test_braket_ahs_wrapper_equality(ahs_program, ahs_program_local_detuning, de
 
 
 def test_braket_ahs_wrapper_bad_type():
-    """Test that creating a BraketAHS wrapper with a bad type raises a TypeError."""
+    """Test that creating a BraketAHS wrapper with a bad type raises a ProgramTypeError."""
     with pytest.raises(ProgramTypeError):
         BraketAHS(())

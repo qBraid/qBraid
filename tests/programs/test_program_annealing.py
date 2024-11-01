@@ -13,6 +13,7 @@ Unit tests for qbraid.programs.annealing module.
 
 """
 import json
+from unittest.mock import Mock
 
 import pytest
 
@@ -28,7 +29,8 @@ try:
         QuboProblem,
     )
     from qbraid.programs.annealing.cpp_pyqubo import PyQuboModel
-    from qbraid.runtime.native.provider import _pyqubo_to_json
+    from qbraid.programs.annealing.qubo import QuboProgram
+    from qbraid.runtime.native.provider import _qubo_to_json
 
     pyqubo_not_installed = False
 except ImportError:
@@ -71,13 +73,11 @@ def test_problem_initialization():
         problem_type=ProblemType.QUBO,
         linear={"x1": 1.0, "x2": -1.5},
         quadratic={("x1", "x2"): 0.5},
-        offset=2.0,
     )
 
     assert problem.problem_type == ProblemType.QUBO
     assert problem.linear == {"x1": 1.0, "x2": -1.5}
     assert problem.quadratic == {("x1", "x2"): 0.5}
-    assert problem.offset == 2.0
     assert problem.num_variables() == 2
 
 
@@ -88,13 +88,11 @@ def test_problem_equality():
         problem_type=ProblemType.QUBO,
         linear={"x1": 1.0},
         quadratic={("x1", "x2"): 0.5},
-        offset=2.0,
     )
     problem2 = Problem(
         problem_type=ProblemType.QUBO,
         linear={"x1": 1.0},
         quadratic={("x2", "x1"): 0.5},
-        offset=2.0,
     )
 
     assert problem1 == problem2
@@ -104,11 +102,10 @@ def test_qubo_problem_initialization():
     """Tests the initialization of a QuboProblem instance with given
     quadratic coefficients and offset."""
     coefficients = {("x1", "x2"): 0.5, ("x2", "x3"): -1.0}
-    qubo_problem = QuboProblem(coefficients, offset=1.0)
+    qubo_problem = QuboProblem(coefficients)
 
     assert qubo_problem.problem_type == ProblemType.QUBO
     assert qubo_problem.quadratic == coefficients
-    assert qubo_problem.offset == 1.0
     assert qubo_problem.num_variables() == 3
 
 
@@ -119,11 +116,20 @@ def test_pyqubo_model_initialization(pyqubo_model):
     assert pyqubo_model_instance.program == pyqubo_model
 
 
-def test_pyqubo_model_invalid_initialization():
-    """Tests that initializing a PyQuboModel with an invalid input raises a ProgramTypeError."""
+def get_program_classes():
+    """Dynamically import and return program classes for testing."""
+    try:
+        return [PyQuboModel, QuboProgram]
+    except NameError:
+        return []
+
+
+@pytest.mark.parametrize("program_class", get_program_classes())
+def test_invalid_program_initialization(program_class):
+    """Tests that initializing a program with an invalid input raises a ProgramTypeError."""
     try:
         with pytest.raises(ProgramTypeError):
-            PyQuboModel(("invalid", "program"))
+            program_class(("invalid", "program"))
     finally:
         unregister_program_type("tuple")
 
@@ -144,13 +150,11 @@ def test_problem_encoder(mock_annealing_program):
         problem_type=ProblemType.QUBO,
         linear={"x1": 1.0, "x2": -1.5},
         quadratic={("x1", "x2"): 0.5},
-        offset=2.0,
     )
 
     problem_json = json.dumps(problem, cls=ProblemEncoder)
     expected_problem_json = json.dumps(
         {
-            "offset": 2.0,
             "problem_type": "qubo",
             "linear": {"x1": 1.0, "x2": -1.5},
             "quadratic": {'["x1", "x2"]': 0.5},
@@ -171,13 +175,6 @@ def test_problem_eq_different_type():
     """Test __eq__ returns False when compared with a non-Problem instance."""
     problem = Problem(problem_type=ProblemType.QUBO)
     assert problem != "Not a Problem instance"
-
-
-def test_problem_eq_different_offset():
-    """Test __eq__ returns False when offsets are different."""
-    problem1 = Problem(problem_type=ProblemType.QUBO, offset=1.0)
-    problem2 = Problem(problem_type=ProblemType.QUBO, offset=2.0)
-    assert problem1 != problem2
 
 
 def test_problem_eq_different_problem_type():
@@ -235,13 +232,11 @@ def test_problem_eq_all_attributes_same():
         problem_type=ProblemType.QUBO,
         linear={"x1": 1.0, "x2": -1.5},
         quadratic={("x1", "x2"): 0.5, ("x3", "x4"): -0.3},
-        offset=2.0,
     )
     problem2 = Problem(
         problem_type=ProblemType.QUBO,
         linear={"x1": 1.0, "x2": -1.5},
         quadratic={("x4", "x3"): -0.3, ("x2", "x1"): 0.5},
-        offset=2.0,
     )
     assert problem1 == problem2
 
@@ -261,14 +256,13 @@ def test_annealing_program_eq_different_type(mock_annealing_program):
     assert annealing_program != "Not an AnnealingProgram instance"
 
 
-def test_runtime_pyqubo_to_json(pyqubo_model):
+def test_runtime_qubo_to_json(pyqubo_model):
     """Test that the _pyqubo_to_json function returns the expected JSON string."""
-    pyqubo_json = _pyqubo_to_json(pyqubo_model)
+    pyqubo_json = _qubo_to_json(pyqubo_model)
     pyqubo_dict = {"problem": json.loads(pyqubo_json["problem"])}
 
     expected_dict = {
         "problem": {
-            "offset": 196.0,
             "problem_type": "qubo",
             "quadratic": {
                 '["s1", "s1"]': -160.0,
@@ -300,3 +294,10 @@ def test_get_pyqubo_experiment_type(pyqubo_model):
     """Test that the PyQuboModel correctly identifies the experiment type as ANNEALING."""
     program = PyQuboModel(pyqubo_model)
     assert program.experiment_type == ExperimentType.ANNEALING
+
+
+def test_pyqubo_model_transform(pyqubo_model):
+    """Test that the PyQuboModel transform method does not modify the program."""
+    program = PyQuboModel(pyqubo_model)
+    program.transform(device=Mock())
+    assert program.program == pyqubo_model
