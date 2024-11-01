@@ -144,6 +144,7 @@ class QbraidProvider(QuantumProvider):
 
     @staticmethod
     def _get_program_spec(run_package: Optional[str], device_id: str) -> Optional[ProgramSpec]:
+        """Return the program spec for the given run package and device."""
         if not run_package:
             return None
 

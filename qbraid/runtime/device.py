@@ -303,6 +303,9 @@ class QuantumDevice(ABC):
             target_alias = target_spec.alias
             target_type = target_spec.program_type
 
+            if run_input_spec.alias == target_alias:
+                return run_input
+
             try:
                 transpiled_run_input = transpile(
                     run_input, target_alias, **conversion_scheme_fields
