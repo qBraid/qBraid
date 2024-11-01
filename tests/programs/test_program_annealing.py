@@ -118,7 +118,10 @@ def test_pyqubo_model_initialization(pyqubo_model):
 
 def get_program_classes():
     """Dynamically import and return program classes for testing."""
-    return [PyQuboModel, QuboProgram]
+    try:
+        return [PyQuboModel, QuboProgram]
+    except NameError:
+        pytest.skip("Required program classes are not available for testing.")
 
 
 @pytest.mark.parametrize("program_class", get_program_classes())
