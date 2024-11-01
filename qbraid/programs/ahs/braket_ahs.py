@@ -43,7 +43,7 @@ class BraketAHS(AnalogHamiltonianProgram):
     def to_dict(self) -> dict:
         return BraketAHSEncoder().encode_ahs(self.program)
 
-    def transform(self, device: "qbraid.runtime.aws.BraketDevice") -> None:
+    def transform(self, device: qbraid.runtime.aws.BraketDevice) -> None:
         """Transform program to according to device target profile."""
         if not device.simulator:
             program: AnalogHamiltonianSimulation = self.program

@@ -15,7 +15,6 @@ Unit tests for loading, encoding, and decoding AHS programs using Amazon Braket.
 
 """
 import json
-from unittest.mock import Mock
 
 import numpy as np
 import pytest
@@ -278,10 +277,3 @@ def test_braket_ahs_wrapper_bad_type():
     """Test that creating a BraketAHS wrapper with a bad type raises a ProgramTypeError."""
     with pytest.raises(ProgramTypeError):
         BraketAHS(())
-
-
-def test_braket_ahs_program_transform(ahs_program):
-    """Test that the BraketAHS transform method does not modify the program."""
-    program = BraketAHS(ahs_program)
-    program.transform(device=Mock())
-    assert program.program == ahs_program

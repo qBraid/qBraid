@@ -16,6 +16,8 @@ Unit tests for equivalence of interfacing quantum programs
 """
 from __future__ import annotations
 
+from unittest.mock import Mock
+
 import numpy as np
 import pytest
 from braket.circuits import Circuit as BKCircuit
@@ -24,6 +26,7 @@ from cirq import Circuit, LineQubit, X, Y, Z
 from qbraid.interface.circuit_equality import circuits_allclose
 from qbraid.interface.random.random import random_circuit, random_unitary_matrix
 from qbraid.programs import get_program_type_alias, load_program
+from qbraid.programs.ahs import AnalogHamiltonianProgram
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.gate_model import GateModelProgram
 
@@ -197,3 +200,19 @@ def test_program_type_error():
     qbraid_circuit = load_program(braket_circuit)
     with pytest.raises(ProgramTypeError):
         qbraid_circuit.program = "string"
+
+
+def test_ahs_program_transform():
+    """Test that AHS transform method does not modify the program."""
+
+    class MyAHS(AnalogHamiltonianProgram):
+        """Fake AnalogHamiltonianProgram for testing."""
+
+        def to_dict(self):
+            """Mock to_dict method."""
+            return self.program
+
+    ahs_json = {"hamiltonian": {"terms": []}, "register": {"sites": [], "filling": []}}
+    program = MyAHS(ahs_json)
+    program.transform(device=Mock())
+    assert program.program == ahs_json
