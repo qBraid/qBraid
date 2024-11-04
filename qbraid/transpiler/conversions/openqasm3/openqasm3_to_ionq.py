@@ -25,6 +25,7 @@ from qbraid.programs import load_program
 from qbraid.programs.gate_model.ionq import IonQProgram
 from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
 from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
+from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import ProgramConversionError
 
 if TYPE_CHECKING:
@@ -250,6 +251,7 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
     return gates
 
 
+@weight(1)
 def openqasm3_to_ionq(qasm: Union[QasmStringType, openqasm3.ast.Program]) -> IonQDictType:
     """Returns an IonQ JSON format representation the input OpenQASM program.
 

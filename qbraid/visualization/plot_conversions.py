@@ -14,18 +14,24 @@ Module for plotting qBraid transpiler quantum program conversion graphs.
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Optional
+import warnings
+from typing import TYPE_CHECKING, Optional, Union
 
 import rustworkx as rx
 from qbraid_core._import import LazyLoader
 from rustworkx.visualization import mpl_draw
 
+from qbraid.programs.experiment import ExperimentType
 from qbraid.programs.registry import is_registered_alias_native
 
 if TYPE_CHECKING:
+    import matplotlib.pyplot
+
     import qbraid.transpiler
 
-plt = LazyLoader("plt", globals(), "matplotlib.pyplot")
+plt: matplotlib.pyplot = LazyLoader("plt", globals(), "matplotlib.pyplot")
+
+transpiler: qbraid.transpiler = LazyLoader("transpiler", globals(), "qbraid.transpiler")
 
 
 def plot_conversion_graph(  # pylint: disable=too-many-arguments
@@ -38,7 +44,8 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     show: bool = True,
     save_path: Optional[str] = None,
     colors: Optional[dict[str, str]] = None,
-    edge_labels: Optional[bool] = False,
+    edge_labels: bool = False,
+    experiment_type: Optional[Union[ExperimentType, list[ExperimentType]]] = None,
     **kwargs,
 ) -> None:
     """
@@ -59,12 +66,13 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
                                    Defaults to None.
         colors (dict[str, str], optional): Dictionary for node and edge colors. Expected keys are
             'qbraid_node', 'external_node', 'qbraid_edge', 'external_edge'. Defaults to None.
-        edge_labels (bool, optional): If True, display edge weights as labels. Defaults to False.
+        edge_labels (bool): If True, display edge weights as labels. Defaults to False.
+        experiment_type (Union[ExperimentType, list[ExperimentType]], optional): Filter the graph
+            by experiment type. Defaults to None, meaning all experiment types are included.
 
     Returns:
         None
     """
-    # Set default colors if not provided
     if colors is None:
         colors = {
             "qbraid_node": "lightblue",
@@ -74,13 +82,32 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             "extras_edge": "red",
         }
 
-    # Extract colors and apply them in the drawing
+    if experiment_type:
+        node_experiment_types = graph.get_node_experiment_types()
+        exp_types = experiment_type if isinstance(experiment_type, list) else [experiment_type]
+        nodes = [n for n in graph.nodes() if node_experiment_types[n] in exp_types]
+
+        if not nodes:
+            exp_type_names = ", ".join([exp_type.name for exp_type in exp_types])
+            raise ValueError(
+                f"No program type nodes found with experiment type(s) '{exp_type_names}'. "
+                "Use ConversionGraph.get_node_experiment_types() to inspect all experiment "
+                "type mappings in this graph."
+            )
+
+        graph = transpiler.ConversionGraph(
+            conversions=graph.conversions(),
+            require_native=graph.require_native,
+            include_isolated=graph._include_isolated,
+            edge_bias=graph.edge_bias,
+            nodes=nodes,
+        )
+
     ncolors = [
         colors["qbraid_node"] if is_registered_alias_native(node) else colors["external_node"]
         for node in graph.nodes()
     ]
 
-    # Create a dictionary for quick lookup of conversions by their source and target
     conversion_dict = {
         (conversion.source, conversion.target): conversion for conversion in graph.conversions()
     }
@@ -100,11 +127,22 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         for edge in conversions_ordered
     ]
 
+    rustworkx_version = rx.__version__  # pylint: disable=no-member
+    if len(set(ecolors)) > 1 and rustworkx_version in ["0.15.0", "0.15.1"]:
+        warnings.warn(
+            "Detected multiple edge colors, which may not display correctly "
+            "due to a known bug in rustworkx versions 0.15.0 and 0.15.1 "
+            "(see: https://github.com/Qiskit/rustworkx/issues/1308). "
+            "To avoid this issue, please upgrade to rustworkx>0.15.1.",
+            UserWarning,
+        )
+
     k = kwargs.pop("k", max(1 / math.sqrt(len(graph.nodes())), 3))
     pos = rx.spring_layout(graph, seed=seed, k=k, **kwargs)  # good seeds: 123, 134
     kwargs = {}
     if edge_labels:
         kwargs["edge_labels"] = lambda edge: round(edge["weight"], 2)
+
     mpl_draw(
         graph,
         pos,
@@ -122,7 +160,6 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     plt.axis("off")
 
     if legend:
-        # Create legend elements using a loop
         legend_info = [
             ("qBraid - Node", "o", colors["qbraid_node"], None),
             ("External - Node", "o", colors["external_node"], None),

@@ -16,6 +16,21 @@ Types of changes:
 
 ### Added
 - Registered "qubo" coefficients program type under `qbraid.programs.typer.QuboCoefficientsDict` ([#820](https://github.com/qBraid/qBraid/pull/820))
+- Added option to create a `ConversionGraph` using only specific nodes ([#822](https://github.com/qBraid/qBraid/pull/822))
+- Added option to include all registered program types in `ConversionGraph`, even if they don't have any supported conversions ([#822](https://github.com/qBraid/qBraid/pull/822))
+- Added method that maps all nodes in a `ConversionGraph` to their corresponding `ExperimentType` ([#822](https://github.com/qBraid/qBraid/pull/822))
+- Added option to `ConversionGraph` while only showing nodes matching given `ExperimentType` value(s) ([#822](https://github.com/qBraid/qBraid/pull/822))
+
+```python
+from qbraid import ConversionGraph, ExperimentType
+
+graph = ConversionGraph(nodes=["qasm2", "qasm3", "qubo"], include_isolated=True)
+
+for alias, exp_type in graph.get_node_experiment_types().items():
+    print(alias, exp_type.value)
+
+graph.plot(experiment_type=ExperimentType.GATE_MODEL)
+```
 
 ### Improved / Modified
 - Separated runtime device `transform` and `to_ir` logic into separate steps ([#819](https://github.com/qBraid/qBraid/pull/819))
