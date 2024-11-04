@@ -347,13 +347,13 @@ def test_get_node_experiment_type_other(basic_conversion_graph: ConversionGraph)
 def test_register_annealing_conversion_and_check_experiment_type():
     """Test that the experiment type is correctly set for a new annealing conversion."""
     conversion_other = Conversion("a", "b", lambda x: x)
-    conversion_annealing = Conversion("cpp_pyqubo", "mock_type", lambda x: x)
+    conversion_annealing = Conversion("qubo", "mock_type", lambda x: x)
     graph = ConversionGraph(conversions=[conversion_annealing, conversion_other])
     node_to_exp_type = graph.get_node_experiment_types()
     assert node_to_exp_type == {
         "a": ExperimentType.OTHER,
         "b": ExperimentType.OTHER,
-        "cpp_pyqubo": ExperimentType.ANNEALING,
+        "qubo": ExperimentType.ANNEALING,
         "mock_type": ExperimentType.ANNEALING,
     }
 
@@ -361,7 +361,7 @@ def test_register_annealing_conversion_and_check_experiment_type():
 def test_get_node_experiment_type_raises_for_conflicting_experiment_types():
     """Test that an error is raised when the experiment types of two nodes conflict."""
     conversion_gate_model = Conversion("a", "qasm2", lambda x: x)
-    conversion_annealing = Conversion("cpp_pyqubo", "a", lambda x: x)
+    conversion_annealing = Conversion("qubo", "a", lambda x: x)
     graph = ConversionGraph(conversions=[conversion_annealing, conversion_gate_model])
     with pytest.raises(ValueError) as excinfo:
         graph.get_node_experiment_types()
