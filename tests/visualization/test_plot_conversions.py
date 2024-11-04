@@ -18,6 +18,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from qbraid.programs.experiment import ExperimentType
 from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.graph import ConversionGraph
 from qbraid.visualization.plot_conversions import plot_conversion_graph
@@ -79,8 +80,10 @@ def test_plot_conversion_graph_with_custom_title_and_legend(
 def test_invoke_plot_method_from_conversion_graph(mock_draw, mock_plt):
     """Test that the graph is displayed when invoked via ConversionGraph.plot method."""
     graph = ConversionGraph()
-    graph.plot(show=True)
-    mock_plt.show.assert_called_once()
+
+    with pytest.warns(UserWarning, match=r"Detected multiple edge colors*"):
+        graph.plot(show=True)
+        mock_plt.show.assert_called_once()
 
 
 def test_plot_conversion_graph_warning():
@@ -98,3 +101,23 @@ def test_plot_conversion_graph_warning():
                 in str(warning.message)
                 for warning in w
             )
+
+
+def test_plot_conversion_graph_experiment_type_raises_for_none_found():
+    """Test that an exception is raised when no matching experiment type is found."""
+    graph = ConversionGraph(nodes=["qasm2", "qasm3"])
+
+    with pytest.raises(ValueError) as exc:
+        plot_conversion_graph(graph, experiment_type=ExperimentType.ANNEALING)
+    assert "No program type nodes found" in str(exc.value)
+
+
+@patch("qbraid.visualization.plot_conversions.is_registered_alias_native", autospec=True)
+def test_plot_conversion_graph_valid_experiment_type(is_registered_alias_native):
+    """Test plotting a conversion graph based on a valid experiment type."""
+    nodes = ["qasm2", "qasm3", "qubo"]
+    conversions = [Conversion("qasm2", "qasm3", lambda x: x)]
+    graph = ConversionGraph(conversions=conversions, nodes=nodes, include_isolated=True)
+
+    plot_conversion_graph(graph, experiment_type=ExperimentType.ANNEALING, show=False)
+    is_registered_alias_native.assert_called_once_with("qubo")

@@ -133,7 +133,8 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             "Detected multiple edge colors, which may not display correctly "
             "due to a known bug in rustworkx versions 0.15.0 and 0.15.1 "
             "(see: https://github.com/Qiskit/rustworkx/issues/1308). "
-            "To avoid this issue, please upgrade to rustworkx>0.15.1."
+            "To avoid this issue, please upgrade to rustworkx>0.15.1.",
+            UserWarning,
         )
 
     k = kwargs.pop("k", max(1 / math.sqrt(len(graph.nodes())), 3))
