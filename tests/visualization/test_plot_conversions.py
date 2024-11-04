@@ -13,10 +13,12 @@
 Unit tests for plotting conversion graphs
 
 """
+import warnings
 from unittest.mock import MagicMock, patch
 
 import pytest
 
+from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.graph import ConversionGraph
 from qbraid.visualization.plot_conversions import plot_conversion_graph
 
@@ -79,3 +81,20 @@ def test_invoke_plot_method_from_conversion_graph(mock_draw, mock_plt):
     graph = ConversionGraph()
     graph.plot(show=True)
     mock_plt.show.assert_called_once()
+
+
+def test_plot_conversion_graph_warning():
+    """Test that a warning is raised when multiple edge colors are detected."""
+    with patch("rustworkx.__version__", "0.15.0"):
+        graph = ConversionGraph()
+
+        graph.add_conversion(Conversion("node1", "node2", lambda x: x))
+
+        with warnings.catch_warnings(record=True) as w:
+            warnings.simplefilter("always")
+            plot_conversion_graph(graph, show=False)
+            assert any(
+                "Detected multiple edge colors, which may not display correctly"
+                in str(warning.message)
+                for warning in w
+            )

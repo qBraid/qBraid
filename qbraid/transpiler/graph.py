@@ -13,10 +13,14 @@ Module providing tools to map, analyze, and visualize conversion paths between d
 quantum programs available through the qbraid.transpiler using directed graphs.
 
 """
+from collections import deque
 from importlib import import_module
 from typing import Any, Callable, Optional
 
 import rustworkx as rx
+
+from qbraid.programs.experiment import ExperimentType
+from qbraid.programs.registry import get_native_experiment_type, is_registered_alias_native
 
 from .edge import Conversion
 from .exceptions import ConversionPathNotFoundError
@@ -28,7 +32,6 @@ class ConversionGraph(rx.PyDiGraph):
 
     """
 
-    # avoid passing arguments to rx.PyDiGraph.__new__() when inheriting
     def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
         return super().__new__(cls)  # pylint: disable=no-value-for-parameter
 
@@ -377,6 +380,49 @@ class ConversionGraph(rx.PyDiGraph):
             remaining.remove(closest)
 
         return sorted_targets
+
+    def get_node_experiment_types(self) -> dict[str, ExperimentType]:
+        """
+        Get the experiment type of each node in the graph.
+
+        Returns:
+            dict[str, ExperimentType]: A dictionary mapping each node to its experiment type.
+        """
+        node_to_experiment_type = {}
+        unassigned_nodes = deque()
+
+        for node in self.nodes():
+            if is_registered_alias_native(node):
+                node_to_experiment_type[node] = get_native_experiment_type(node)
+            else:
+                node_to_experiment_type[node] = None
+                unassigned_nodes.append(node)
+
+        while unassigned_nodes:
+            node = unassigned_nodes.popleft()
+            assigned = False
+
+            for recorded_node, recorded_exp_type in node_to_experiment_type.items():
+                if recorded_exp_type is None or recorded_node is None:
+                    continue
+
+                if self.has_path(recorded_node, node) or self.has_path(node, recorded_node):
+                    if node_to_experiment_type[node] is None:
+                        node_to_experiment_type[node] = recorded_exp_type
+                        assigned = True
+                    elif node_to_experiment_type[node] != recorded_exp_type:
+                        raise ValueError(
+                            f"ExperimentType conflict detected: Node '{node}' "
+                            f"(type '{node_to_experiment_type[node].name}') "
+                            f"is reachable from node '{recorded_node}' "
+                            f"(type '{recorded_exp_type.name}'), which has a different experiment "
+                            "type. Ensure that connected nodes share compatible experiment types."
+                        )
+
+            if not assigned:
+                node_to_experiment_type[node] = ExperimentType.OTHER
+
+        return node_to_experiment_type
 
     def reset(self, conversions: Optional[list[Conversion]] = None) -> None:
         """

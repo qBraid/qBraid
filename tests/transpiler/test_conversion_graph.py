@@ -21,7 +21,10 @@ import pytest
 import rustworkx as rx
 from pyqir import Module
 
-from qbraid.programs import register_program_type
+from qbraid.programs import ExperimentType, register_program_type
+from qbraid.programs.ahs import submodules as ahs_submodules
+from qbraid.programs.annealing import submodules as annealing_submodules
+from qbraid.programs.gate_model import submodules as gate_model_submodules
 from qbraid.programs.registry import QPROGRAM_ALIASES
 from qbraid.transpiler.conversions import conversion_functions
 from qbraid.transpiler.conversions.qiskit import qiskit_to_pyqir
@@ -56,6 +59,12 @@ def mock_graph(mock_conversions) -> ConversionGraph:
     return ConversionGraph(conversions=mock_conversions)
 
 
+@pytest.fixture
+def native_conversion_graph():
+    """Returns a ConversionGraph with only native conversions."""
+    return ConversionGraph(require_native=True)
+
+
 def bound_method_str(source, target):
     """Inserts package names into string representation of bound method."""
     return f"<bound method Conversion.convert of ('{source}', '{target}')>"
@@ -70,11 +79,12 @@ def test_conversion_functions_syntax(func):
     assert source != target
 
 
-def test_shortest_conversion_path():
+def test_shortest_conversion_path(native_conversion_graph: ConversionGraph):
     """Test that the shortest conversion path is found correctly."""
-    G = ConversionGraph(require_native=True)
-    shortest_path = G.find_shortest_conversion_path("qiskit", "cirq")
-    top_paths = G.find_top_shortest_conversion_paths("qiskit", "cirq", top_n=3)
+    shortest_path = native_conversion_graph.find_shortest_conversion_path("qiskit", "cirq")
+    top_paths = native_conversion_graph.find_top_shortest_conversion_paths(
+        "qiskit", "cirq", top_n=3
+    )
     assert str(shortest_path[0]) == bound_method_str("qiskit", "qasm2")
     assert str(shortest_path[1]) == bound_method_str("qasm2", "cirq")
     assert shortest_path == top_paths[0]
@@ -308,3 +318,51 @@ def test_closest_target_no_paths(basic_conversion_graph: ConversionGraph):
 def test_closest_target_no_targets(basic_conversion_graph: ConversionGraph):
     """Test that None is returned when no targets are available."""
     assert basic_conversion_graph.closest_target("a", []) is None
+
+
+@pytest.mark.parametrize(
+    "submodules, expected_type",
+    [
+        (gate_model_submodules, ExperimentType.GATE_MODEL),
+        (ahs_submodules, ExperimentType.AHS),
+        (annealing_submodules, ExperimentType.ANNEALING),
+    ],
+)
+def test_get_native_node_experiment_types(
+    submodules, expected_type, native_conversion_graph: ConversionGraph
+):
+    """Test that the native conversion graph has the correct experiment types for each node."""
+    node_to_exp_type = native_conversion_graph.get_node_experiment_types()
+    for node in submodules:
+        assert node not in node_to_exp_type or node_to_exp_type[node] == expected_type
+
+
+def test_get_node_experiment_type_other(basic_conversion_graph: ConversionGraph):
+    """Test that the experiment type is 'OTHER' for nodes with no path to a native node."""
+    node_to_exp_type = basic_conversion_graph.get_node_experiment_types()
+    for node in basic_conversion_graph.nodes():
+        assert node_to_exp_type[node] == ExperimentType.OTHER
+
+
+def test_register_annealing_conversion_and_check_experiment_type():
+    """Test that the experiment type is correctly set for a new annealing conversion."""
+    conversion_other = Conversion("a", "b", lambda x: x)
+    conversion_annealing = Conversion("cpp_pyqubo", "mock_type", lambda x: x)
+    graph = ConversionGraph(conversions=[conversion_annealing, conversion_other])
+    node_to_exp_type = graph.get_node_experiment_types()
+    assert node_to_exp_type == {
+        "a": ExperimentType.OTHER,
+        "b": ExperimentType.OTHER,
+        "cpp_pyqubo": ExperimentType.ANNEALING,
+        "mock_type": ExperimentType.ANNEALING,
+    }
+
+
+def test_get_node_experiment_type_raises_for_conflicting_experiment_types():
+    """Test that an error is raised when the experiment types of two nodes conflict."""
+    conversion_gate_model = Conversion("a", "qasm2", lambda x: x)
+    conversion_annealing = Conversion("cpp_pyqubo", "a", lambda x: x)
+    graph = ConversionGraph(conversions=[conversion_annealing, conversion_gate_model])
+    with pytest.raises(ValueError) as excinfo:
+        graph.get_node_experiment_types()
+    assert "ExperimentType conflict" in str(excinfo.value)

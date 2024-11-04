@@ -14,12 +14,14 @@ Module for plotting qBraid transpiler quantum program conversion graphs.
 from __future__ import annotations
 
 import math
-from typing import TYPE_CHECKING, Optional
+import warnings
+from typing import TYPE_CHECKING, Optional, Union
 
 import rustworkx as rx
 from qbraid_core._import import LazyLoader
 from rustworkx.visualization import mpl_draw
 
+from qbraid.programs.experiment import ExperimentType
 from qbraid.programs.registry import is_registered_alias_native
 
 if TYPE_CHECKING:
@@ -39,6 +41,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     save_path: Optional[str] = None,
     colors: Optional[dict[str, str]] = None,
     edge_labels: Optional[bool] = False,
+    experiment_type: Optional[Union[ExperimentType, list[ExperimentType]]] = None,
     **kwargs,
 ) -> None:
     """
@@ -60,6 +63,8 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         colors (dict[str, str], optional): Dictionary for node and edge colors. Expected keys are
             'qbraid_node', 'external_node', 'qbraid_edge', 'external_edge'. Defaults to None.
         edge_labels (bool, optional): If True, display edge weights as labels. Defaults to False.
+        experiment_type (Union[ExperimentType, list[ExperimentType]], optional): Filter the graph
+            by experiment type. Defaults to None, meaning all experiment types are included.
 
     Returns:
         None
@@ -73,6 +78,9 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             "external_edge": "blue",
             "extras_edge": "red",
         }
+
+    if experiment_type:
+        raise NotImplementedError("Filtering by experiment type is not yet implemented.")
 
     # Extract colors and apply them in the drawing
     ncolors = [
@@ -99,6 +107,15 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         )
         for edge in conversions_ordered
     ]
+
+    rustworkx_version = rx.__version__  # pylint: disable=no-member
+    if len(set(ecolors)) > 1 and rustworkx_version in ["0.15.0", "0.15.1"]:
+        warnings.warn(
+            "Detected multiple edge colors, which may not display correctly "
+            "due to a known bug in rustworkx versions 0.15.0 and 0.15.1 "
+            "(see: https://github.com/Qiskit/rustworkx/issues/1308). To avoid this issue, "
+            "please upgrade to rustworkx>0.15.1 or downgrade to rustworkx<0.15.0."
+        )
 
     k = kwargs.pop("k", max(1 / math.sqrt(len(graph.nodes())), 3))
     pos = rx.spring_layout(graph, seed=seed, k=k, **kwargs)  # good seeds: 123, 134
