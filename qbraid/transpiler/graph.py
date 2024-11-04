@@ -15,12 +15,16 @@ quantum programs available through the qbraid.transpiler using directed graphs.
 """
 from collections import deque
 from importlib import import_module
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Optional, Union
 
 import rustworkx as rx
 
 from qbraid.programs.experiment import ExperimentType
-from qbraid.programs.registry import get_native_experiment_type, is_registered_alias_native
+from qbraid.programs.registry import (
+    QPROGRAM_ALIASES,
+    get_native_experiment_type,
+    is_registered_alias_native,
+)
 
 from .edge import Conversion
 from .exceptions import ConversionPathNotFoundError
@@ -35,30 +39,42 @@ class ConversionGraph(rx.PyDiGraph):
     def __new__(cls, *args, **kwargs):  # pylint: disable=unused-argument
         return super().__new__(cls)  # pylint: disable=no-value-for-parameter
 
+    # pylint: disable-next=too-many-arguments
     def __init__(
         self,
         conversions: Optional[list[Conversion]] = None,
         require_native: bool = False,
+        include_isolated: bool = False,
         edge_bias: Optional[float] = None,
+        nodes: Optional[Union[list[str], set[str]]] = None,
     ):
         """
         Initialize a ConversionGraph instance.
 
         Args:
-            conversions (optional, list[Conversion]): List of conversion edges. If None,
+            conversions (list[Conversion], optional): List of conversion edges. If None,
                 default conversion edges are used.
             require_native (bool): If True, only include "native" conversion functions.
                 Defaults to False.
-            edge_bias (Optional[float]): Factor used to fine-tune the edge weight calculations
+            include_isolated (bool): If True, includes all registered program type aliases, even
+                those that are not connected to any other nodes in the graph. Defaults to False.
+            edge_bias (float, optional): Factor used to fine-tune the edge weight calculations
                 and modify the decision thresholds for pathfinding. Defaults to 0.25 to prioritize
                 shorter paths. For example, a bias of 0.25 slightly favors a single conversion at
                 weight 0.78 over two conversions at weight 1.0. Only used if conversions is None.
+            nodes (list[str], optional): List of nodes to include in the graph. If nodes is None
+                and conversions is None, all nodes connected by registered conversions are included.
+                If nodes is None and conversions is specified, only nodes connected by the specified
+                conversions are included. Isolated nodes included iff include_isolated is True.
+
         """
         super().__init__()
         self.require_native = require_native
         self.edge_bias = edge_bias if edge_bias is not None else 0.25
         self._conversions = conversions or self.load_default_conversions(bias=self.edge_bias)
         self._node_alias_id_map: dict[str, int] = {}
+        self._include_isolated = include_isolated
+        self._init_nodes = set(nodes) if nodes is not None else set()
         self.create_conversion_graph()
 
     @staticmethod
@@ -80,15 +96,14 @@ class ConversionGraph(rx.PyDiGraph):
         return [construct_conversion(conversion) for conversion in conversion_functions]
 
     def create_conversion_graph(self) -> None:
-        """
-        Create a directed graph from a list of conversion functions.
+        """Create a directed graph from a list of conversion functions."""
+        nodes = self._init_nodes or set()
 
-        Returns:
-            None
-        """
         for edge in (
             e for e in self._conversions if e.supported and (not self.require_native or e.native)
         ):
+            if nodes and (edge.source not in nodes or edge.target not in nodes):
+                continue
             if edge.source not in self._node_alias_id_map:
                 self._node_alias_id_map[edge.source] = self.add_node(edge.source)
             if edge.target not in self._node_alias_id_map:
@@ -98,6 +113,14 @@ class ConversionGraph(rx.PyDiGraph):
                 self._node_alias_id_map[edge.target],
                 {"native": edge.native, "func": edge.convert, "weight": edge.weight},
             )
+
+        if self._include_isolated:
+            nodes = nodes or QPROGRAM_ALIASES
+            for alias in nodes:
+                if alias not in self._node_alias_id_map and (
+                    not self.require_native or is_registered_alias_native(alias)
+                ):
+                    self._node_alias_id_map[alias] = self.add_node(alias)
 
     def has_node(self, node: str) -> bool:
         """
@@ -442,7 +465,13 @@ class ConversionGraph(rx.PyDiGraph):
 
         """
         copied_conversions = self._conversions.copy() if self._conversions is not None else None
-        return ConversionGraph(copied_conversions, self.require_native)
+        return ConversionGraph(
+            conversions=copied_conversions,
+            require_native=self.require_native,
+            include_isolated=self._include_isolated,
+            edge_bias=self.edge_bias,
+            nodes=self._init_nodes,
+        )
 
     def __eq__(self, value: object) -> bool:
         return (
@@ -451,6 +480,9 @@ class ConversionGraph(rx.PyDiGraph):
             and self.conversions() == value.conversions()
             and self.require_native == value.require_native
             and self._node_alias_id_map == value._node_alias_id_map
+            and self._include_isolated == value._include_isolated
+            and self.edge_bias == value.edge_bias
+            and self._init_nodes == value._init_nodes
         )
 
     @staticmethod
@@ -497,6 +529,13 @@ class ConversionGraph(rx.PyDiGraph):
     def plot(self, **kwargs):
         """
         Plot the conversion graph.
+
+        .. note::
+
+            Matplotlib is an optional dependency and will not be installed with
+            qbraid by default. If you intend to use this method make sure that
+            you install matplotlib with either ``pip install matplotlib`` or
+            ``pip install 'qbraid[visualization]'``.
 
         Args:
             **kwargs: Keyword arguments for the plot function.

@@ -366,3 +366,26 @@ def test_get_node_experiment_type_raises_for_conflicting_experiment_types():
     with pytest.raises(ValueError) as excinfo:
         graph.get_node_experiment_types()
     assert "ExperimentType conflict" in str(excinfo.value)
+
+
+def test_include_isolated_nodes():
+    """Test including isolated nodes in the conversion graph."""
+    graph = ConversionGraph()
+    graph2 = ConversionGraph(include_isolated=True)
+
+    assert "qubo" not in graph.nodes()
+    assert "qubo" in graph2.nodes()
+
+
+@pytest.mark.parametrize(
+    "nodes, include_isolated, expected_nodes",
+    [
+        (["qasm2", "qasm3"], False, ["qasm2", "qasm3"]),
+        (["qasm2", "qasm3", "qubo"], False, ["qasm2", "qasm3"]),
+        (["qasm2", "qasm3", "qubo"], True, ["qasm2", "qasm3", "qubo"]),
+    ],
+)
+def test_create_graph_node_options(nodes, include_isolated, expected_nodes):
+    """Test creating a conversion graph invoking different node options."""
+    graph = ConversionGraph(nodes=nodes, include_isolated=include_isolated)
+    assert set(graph.nodes()) == set(expected_nodes)
