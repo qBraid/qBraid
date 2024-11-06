@@ -244,8 +244,12 @@ def test_qasm3_to_ionq_deutch_jozsa_pyqasm_mocked(
     deutsch_jozsa_qasm3, deutch_jozsa_qasm3_unrolled, deutch_jozsa_ionq
 ):
     """Test Deutch-Jozsa conversion with mock pyqasm import and unroll."""
+    mock_module = Mock()
+    mock_module.unroll = Mock()
+    mock_module.unrolled_qasm = deutch_jozsa_qasm3_unrolled
+
     mock_pyqasm = Mock()
-    mock_pyqasm.unroll.return_value = deutch_jozsa_qasm3_unrolled
+    mock_pyqasm.load.return_value = mock_module
 
     with patch.dict("sys.modules", {"pyqasm": mock_pyqasm}):
         qasm_program = deutsch_jozsa_qasm3
