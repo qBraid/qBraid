@@ -63,6 +63,8 @@ job = device.run(qubo, params=params)
 ### Fixed
 
 ### Dependencies
+- Updated pyqasm optional dependency to `0.0.3` ([#824](https://github.com/qBraid/qBraid/pull/824))
+
 
 ## [0.8.5] - 2024-10-31
 
