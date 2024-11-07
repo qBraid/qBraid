@@ -18,6 +18,7 @@ import re
 from typing import TYPE_CHECKING, Any, Union
 
 import openqasm3.ast
+import pyqasm
 
 from qbraid.passes.qasm.analyze import has_measurements
 from qbraid.passes.qasm.compat import convert_qasm_pi_to_decimal
@@ -118,13 +119,12 @@ def _parse_angle(angle: str, gate_name: str) -> float:
 
 # pylint: disable-next=too-many-statements
 def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dict[str, Any]]:
-    program_qubits = program.qubits
-
-    program: openqasm3.ast.Program = program.parsed()
+    program_qubits = program.module._qubit_registers.items()
+    original_program: openqasm3.ast.Program = program.module.original_program
 
     gates: list[dict[str, Any]] = []
 
-    for statement in program.statements:
+    for statement in original_program.statements:
         if isinstance(statement, openqasm3.ast.QuantumGate):
             name = statement.name.name
             qubits = statement.qubits
@@ -261,10 +261,10 @@ def openqasm3_to_ionq(qasm: Union[QasmStringType, openqasm3.ast.Program]) -> Ion
     Returns:
         dict: IonQ JSON format equivalent to input OpenQASM string.
     """
-    if has_measurements(qasm):
-        raise ValueError("Circuits with measurements are not supported by the IonQDictType")
-
     program: Union[OpenQasm2Program, OpenQasm3Program] = load_program(qasm)
+
+    if program.module.has_measurements():
+        raise ValueError("Circuits with measurements are not supported by the IonQDictType")
 
     gates = _parse_gates(program)
 

@@ -313,18 +313,3 @@ def rename_qasm_registers(qasm: str) -> str:
     qasm = re.sub(r"measure\s+(\w+)\[(\d+)\]\s*->\s*(\w+)\[(\d+)\]\s*;", replace_bottom_line, qasm)
 
     return qasm
-
-
-# def remove_measurements(program: Union[Program, str]) -> str:
-#     """Remove all measurement operations from the program."""
-#     program = parse(program) if isinstance(program, str) else program
-#     statements = [
-#         statement
-#         for statement in program.statements
-#         if not isinstance(statement, QuantumMeasurementStatement)
-#     ]
-#     program_out = Program(statements=statements, version=program.version)
-#     program_str = dumps(program_out)
-#     if float(program.version) == 2.0:
-#         program_str = declarations_to_qasm2(program_str)
-#     return program_str

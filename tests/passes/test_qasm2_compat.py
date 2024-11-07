@@ -12,6 +12,8 @@
 Unit tests for QASM preprocessing functions
 
 """
+import pytest
+
 from qbraid.passes.qasm.compat import remove_qasm_barriers
 
 
@@ -22,6 +24,7 @@ def strings_equal(s1, s2):
     return s1_clean == s2_clean
 
 
+@pytest.mark.skip(reason="move to pyqasm")
 def test_remove_qasm_barriers():
     """Test removing qasm barriers"""
     assert (

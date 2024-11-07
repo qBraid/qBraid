@@ -29,7 +29,6 @@ from qbraid.programs.typer import (
     Qasm3StringType,
     QasmStringType,
     QuboCoefficientsDict,
-    ValidationError,
 )
 
 valid_qasm2_string = """

@@ -82,6 +82,7 @@ def test_convert_with_multiple_barriers(as_qasm):
         pytket_circuit.add_barrier(list(range(n)))
 
     if as_qasm:
+        print(circuit_to_qasm_str(pytket_circuit))
         cirq_circuit = qasm2_to_cirq(circuit_to_qasm_str(pytket_circuit))
     else:
         cirq_circuit = transpile(pytket_circuit, "cirq")

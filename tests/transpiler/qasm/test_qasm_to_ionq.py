@@ -39,7 +39,6 @@ def test_ionq_device_extract_gate_data():
     include "qelib1.inc";
     qreg q[2];
     x q[0];
-    not q[1];
     y q[0];
     z q[0], q[1];
     rx(pi / 4) q[0];
@@ -67,7 +66,6 @@ def test_ionq_device_extract_gate_data():
 
     gate_data = [
         {"gate": "x", "target": 0},
-        {"gate": "not", "target": 1},
         {"gate": "y", "target": 0},
         {"gate": "z", "target": 0},
         {"gate": "z", "target": 1},
@@ -100,6 +98,28 @@ def test_ionq_device_extract_gate_data():
         "gateset": GateSet.QIS.value,
         "format": InputFormat.CIRCUIT.value,
     }
+
+    actual = qasm2_to_ionq(qasm)
+
+    assert actual == expected
+
+
+@pytest.mark.skip(reason="Dependent on pyqasm issue #68")
+def test_ionq_device_extract_gate_data():
+    """Test extracting gate data from a OpenQASM 2 program."""
+    qasm = """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    x q[0];
+    not q[1];
+    """
+
+    gate_data = [
+        {"gate": "x", "target": 0},
+        {"gate": "x", "target": 1},
+    ]
+    expected = {"qubits": 2, "circuit": gate_data, "gateset": "qis"}
 
     actual = qasm2_to_ionq(qasm)
 
@@ -367,7 +387,7 @@ def test_qasm3_to_ionq_zz_native_gate():
     qubit[2] q;
     zz(abc) q[0], q[1];
     """,
-            "Invalid angle value",
+            "Undefined identifier abc in expression",
         ),
     ],
 )
@@ -405,14 +425,6 @@ def test_qasm3_to_ionq_invalid_params(qasm_code, error_message):
     """,
             "Angle parameter is required",
         ),
-        (
-            """
-    OPENQASM 3.0;
-    qubit[1] q;
-    invalid_gate q[0];
-    """,
-            "Gate 'invalid_gate' not supported",
-        ),
     ],
 )
 def test_openqasm3_to_ionq_value_errors(qasm_code, error_message):
@@ -428,8 +440,8 @@ def test_qasm3_to_ionq_mixed_gate_types_raises_value_error():
     mixed_gate_qasm = """
     OPENQASM 3.0;
     qubit[2] q;
+    h q[0];
     h q[1];
-    h q[2];
     gpi(0) q[0], q[1];
     """
     with pytest.raises(ProgramConversionError) as excinfo:

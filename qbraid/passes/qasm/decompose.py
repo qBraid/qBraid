@@ -15,6 +15,7 @@ across various other quantum software frameworks.
 """
 from typing import Optional, Union
 
+import pyqasm
 from openqasm3 import ast, dumps
 from openqasm3.parser import QASM3ParsingError, parse
 
@@ -123,6 +124,11 @@ def _decompose_rc3x_instr(instr: str) -> str:
 
 def decompose_qasm2(qasm: str) -> str:
     """Replace edge-case qelib1 gates with equivalent decomposition."""
+    # TODO: Replace with pyqasm
+    # qasm_module = pyqasm.load(qasm)
+    # qasm_module.unroll()
+    # return qasm_module.unrolled_qasm
+
     qasm_lst_out = []
     qasm_lst = qasm.split("\n")
 

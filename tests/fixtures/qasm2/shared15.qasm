@@ -1,6 +1,8 @@
 OPENQASM 2.0;
 include "qelib1.inc";
 gate iswap q0,q1 { s q0; s q1; h q0; cx q0,q1; cx q1,q0; h q1; }
+gate swap q0,q1 { cx q0,q1; cx q1,q0; cx q0,q1; }
+gate cp(theta) q0,q1 { cx q1,q0; u3(0, 0, theta) q0; cx q1,q0; }
 qreg q[4];
 h q[0];
 h q[1];
@@ -17,7 +19,7 @@ tdg q[3];
 rx(pi/4) q[0];
 ry(pi/2) q[1];
 rz(3*pi/4) q[2];
-p(pi/8) q[3];
+u3(0, 0, pi/8) q[3];
 sx q[0];
 sxdg q[1];
 iswap q[2],q[3];

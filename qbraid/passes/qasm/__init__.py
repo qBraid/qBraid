@@ -35,14 +35,12 @@ Functions
     remove_include_statements
 
 """
-from .analyze import depth, has_measurements
+from .analyze import depth, expression_value_option
 from .compat import (
     add_stdgates_include,
     convert_qasm_pi_to_decimal,
     insert_gate_def,
     normalize_qasm_gate_params,
-    remove_include_statements,
-    remove_measurements,
     remove_stdgates_include,
     replace_gate_name,
 )
@@ -61,7 +59,4 @@ __all__ = [
     "convert_qasm_pi_to_decimal",
     "normalize_qasm_gate_params",
     "remove_unused_gates",
-    "has_measurements",
-    "remove_measurements",
-    "remove_include_statements",
 ]
