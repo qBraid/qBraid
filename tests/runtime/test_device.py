@@ -943,13 +943,13 @@ def test_get_program_spec_lambdas_validate_qasm_to_ionq():
         mock_convert.assert_called_once_with(invalid_program)
 
 
-def test_provider_get_basis_gates_ionq():
+def test_provider_get_gateset_ionq():
     """Test getting basis gates for IonQ device."""
     device_data = {"provider": "IonQ", "objArg": "simulator"}
-    basis_gates = QbraidProvider._get_basis_gates(device_data)
+    gateset = QbraidProvider._get_gateset(device_data)
     native = {"gpi", "gpi2", "ms", "zz"}
-    unique = set(basis_gates)
-    assert len(unique) == len(basis_gates) == 19
+    unique = set(gateset)
+    assert len(unique) == len(gateset) == 19
     assert native.issubset(unique)
 
 

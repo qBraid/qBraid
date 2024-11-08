@@ -36,7 +36,7 @@ def qiskit_to_braket(circuit: qiskit.circuit.QuantumCircuit, **kwargs) -> braket
 
     Args:
         circuit (QuantumCircuit): Qiskit quantum circuit
-        basis_gates (Optional[Iterable[str]]): The gateset to transpile to.
+        gateset (Optional[Iterable[str]]): The gateset to transpile to.
             If `None`, the transpiler will use all gates defined in the Braket SDK.
             Default: `None`.
         verbatim (bool): Whether to translate the circuit without any modification, in other

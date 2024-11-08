@@ -43,12 +43,12 @@ class TargetProfile(BaseModel):
     num_qubits: Optional[int] = None
     program_spec: Optional[Union[ProgramSpec, list[ProgramSpec]]] = None
     provider_name: Optional[str] = None
-    basis_gates: Optional[Union[list[str], set[str], tuple[str, ...]]] = None
+    gateset: Optional[Union[list[str], set[str], tuple[str, ...]]] = None
     noise_models: Optional[NoiseModelSet] = None
 
-    @field_validator("basis_gates")
+    @field_validator("gateset")
     @classmethod
-    def validate_basis_gates(cls, value) -> Optional[set[str]]:
+    def validate_gateset(cls, value) -> Optional[set[str]]:
         """Validate the basis gates."""
         if value is None:
             return None
@@ -56,10 +56,10 @@ class TargetProfile(BaseModel):
         return {gate.lower() for gate in value}
 
     @model_validator(mode="after")
-    def validate_basis_gates_for_experiment_type(self) -> Self:
+    def validate_gateset_for_experiment_type(self) -> Self:
         """Validate the basis gates for the action type."""
-        if self.basis_gates is not None and self.experiment_type != ExperimentType.GATE_MODEL:
-            raise ValueError("basis_gates can only be specified for OPENQASM action type")
+        if self.gateset is not None and self.experiment_type != ExperimentType.GATE_MODEL:
+            raise ValueError("gateset can only be specified for OPENQASM action type")
         return self
 
     def get(self, key: str, default: Any = None) -> Any:

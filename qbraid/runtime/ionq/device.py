@@ -89,30 +89,42 @@ class IonQDevice(QuantumDevice):
     ) -> IonQJob:
         """Submit a job to the IonQ device."""
         is_single_input = not isinstance(run_input, list)
-        run_input = [run_input] if is_single_input else run_input
-        jobs = []
-        for input_data in run_input:
-            job_data = {
-                "target": self.id,
-                "shots": shots,
-                "input": input_data,
-                "preflight": str(preflight).lower(),
-                **kwargs,
+        job_data = {
+            "target": self.id,
+            "shots": shots,
+            "preflight": preflight,
+            **kwargs,
+        }
+        optional_fields = {
+            "name": name,
+            "noise": noise,
+            "metadata": metadata,
+            "error_mitigation": error_mitigation,
+        }
+        job_data.update({key: value for key, value in optional_fields.items() if value is not None})
+        if is_single_input:
+            job_data["input"] = run_input
+        else:
+            all_formats = {run["format"] for run in run_input}
+            if len(all_formats) > 1:
+                raise ValueError("All runs must have the same format")
+
+            all_gatesets = {run["gateset"] for run in run_input}
+            if len(all_gatesets) > 1:
+                raise ValueError("All runs must have the same gateset")
+
+            qubits = max(run["qubits"] for run in run_input)
+            circuits = [{"circuit": run, "name": f"Circuit {i}"} for i, run in enumerate(run_input)]
+
+            job_data["input"] = {
+                "format": all_formats.pop(),
+                "gateset": all_gatesets.pop(),
+                "qubits": qubits,
+                "circuits": circuits,
             }
-            optional_fields = {
-                "name": name,
-                "noise": noise,
-                "metadata": metadata,
-                "error_mitigation": error_mitigation,
-            }
-            job_data.update(
-                {key: value for key, value in optional_fields.items() if value is not None}
-            )
-            serialized_data = json.dumps(job_data)
-            job_data = self.session.create_job(serialized_data)
-            job_id = job_data.get("id")
-            if not job_id:
-                raise ValueError("Job ID not found in the response")
-            qbraid_job = IonQJob(job_id=job_id, session=self.session, device=self, shots=shots)
-            jobs.append(qbraid_job)
-        return jobs[0] if is_single_input else jobs
+        serialized_data = json.dumps(job_data)
+        job_data = self.session.create_job(serialized_data)
+        job_id = job_data.get("id")
+        if not job_id:
+            raise ValueError("Job ID not found in the response")
+        return IonQJob(job_id=job_id, session=self.session, device=self, shots=shots)

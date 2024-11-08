@@ -29,8 +29,8 @@ from .device import OQCDevice
 class OQCProvider(QuantumProvider):
     """OQC provider class."""
 
-    def __init__(self, token: str):
-        self.client = OQCClient(url="https://cloud.oqc.app/", authentication_token=token)
+    def __init__(self, token: str, url: str = "https://cloud.oqc.app/") -> None:
+        self.client = OQCClient(url=url, authentication_token=token)
 
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
         """Build a profile for OQC device."""
