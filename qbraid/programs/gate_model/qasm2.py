@@ -88,8 +88,8 @@ class OpenQasm2Program(GateModelProgram):
         if device.id == "quera_qasm_simulator":
             self._program = remove_measurements(self.program)
 
-        gateset = device.profile.get("gateset")
+        basis_gates = device.profile.get("basis_gates")
 
-        if gateset is not None and len(gateset) > 0:
-            transformed_qasm = rebase(self.program, gateset)
+        if basis_gates is not None and len(basis_gates) > 0:
+            transformed_qasm = rebase(self.program, basis_gates)
             self._program = normalize_qasm_gate_params(transformed_qasm)

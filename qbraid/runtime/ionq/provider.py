@@ -26,6 +26,7 @@ from qbraid.programs.gate_model.ionq import (
     IONQ_NATIVE_GATES_FAMILY,
     IONQ_QIS_GATES,
 )
+from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.noise import NoiseModelSet
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
@@ -64,7 +65,10 @@ class IonQSession(Session):
     def get_device(self, device_id: str) -> dict[str, Any]:
         """Get a specific IonQ device."""
         devices = self.get_devices()
-        return devices.get(device_id)
+        try:
+            return devices[device_id]
+        except KeyError as err:
+            raise ResourceNotFoundError(f"Device '{device_id}' not found.") from err
 
     def create_job(self, data: dict[str, Any]) -> dict[str, Any]:
         """Create a new job on the IonQ API."""
@@ -94,7 +98,7 @@ class IonQProvider(QuantumProvider):
         return self.session.get(characterization_endpoint).json()
 
     @staticmethod
-    def _get_gateset(device_id: str) -> list[str]:
+    def _get_basis_gates(device_id: str) -> list[str]:
         """Return the basis gates for the IonQ device."""
         if device_id == "simulator":
             native_gates = IONQ_NATIVE_GATES.copy()
@@ -104,16 +108,16 @@ class IonQProvider(QuantumProvider):
                 IONQ_NATIVE_GATES_BASE,
             )
 
-        gateset = IONQ_QIS_GATES.copy() + native_gates
+        basis_gates = IONQ_QIS_GATES.copy() + native_gates
 
-        return gateset
+        return basis_gates
 
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
         """Build a profile for an IonQ device."""
         device_id = data.get("backend")
         simulator = device_id == "simulator"
         charact = self._get_characterization(data)
-        gateset = self._get_gateset(device_id)
+        basis_gates = self._get_basis_gates(device_id)
         noise_models = (
             NoiseModelSet.from_iterable(data.get("noise_models", [])) if simulator else None
         )
@@ -128,7 +132,7 @@ class IonQProvider(QuantumProvider):
                 ProgramSpec(str, alias="qasm3", to_ir=qasm3_to_ionq),
             ],
             provider_name="IonQ",
-            gateset=gateset,
+            basis_gates=basis_gates,
             characterization=charact,
             noise_models=noise_models,
         )

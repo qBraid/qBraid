@@ -76,7 +76,7 @@ class FakeDevice(GenericBackendV2):
             backend_name="fake_backend",
             backend_version="1.0",
             n_qubits=self._num_qubits,
-            gateset=["u1", "u2", "u3", "cx"],
+            basis_gates=["u1", "u2", "u3", "cx"],
             gates=[],
             local=self._local,
             simulator=self._simulator,

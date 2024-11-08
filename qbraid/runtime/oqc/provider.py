@@ -12,7 +12,8 @@
 Module defining Oxford Quantum Circuits (OQC) provider class
 
 """
-from typing import Any
+import os
+from typing import Any, Optional
 
 from qcaas_client.client import OQCClient
 
@@ -29,23 +30,38 @@ from .device import OQCDevice
 class OQCProvider(QuantumProvider):
     """OQC provider class."""
 
-    def __init__(self, token: str, url: str = "https://cloud.oqc.app/") -> None:
-        self.client = OQCClient(url=url, authentication_token=token)
+    def __init__(
+        self,
+        token: Optional[str] = None,
+        url: str = "https://cloud.oqc.app/",
+        timeout: tuple[int, int] = (5, 10),
+    ) -> None:
+        token = token or os.getenv("OQC_AUTH_TOKEN")
+        if not token:
+            raise ValueError(
+                "An OQC authenication token is required to initialize the provider. "
+                "Please provide it directly as an argument or set it via "
+                "the OQC_AUTH_TOKEN environment variable."
+            )
+        self.client = OQCClient(url=url, authentication_token=token, timeout=timeout)
 
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
         """Build a profile for OQC device."""
-        data = OQCDevice._decode_feature_set(data)
+        data = OQCDevice._decode_feature_set(data.copy())
+        device_id = None
 
         try:
-            device_id: str = data["id"]
-            device_name: str = data["name"]
-            endpoint_url: str = data["url"]
-            simulator: bool = data["feature_set"]["simulator"]
-            num_qubits: int = data["feature_set"]["qubit_count"]
+            device_id: str = data.pop("id")
+            device_name: str = data.pop("name")
+            endpoint_url: str = data.pop("url")
+            feauture_set: dict = data.pop("feature_set")
+            num_qubits: int = feauture_set.pop("qubit_count")
+            simulator: bool = feauture_set.pop("simulator", False)
         except KeyError as err:
-            raise ValueError(
-                f"Failed to gather profile data for device '{data.get('id')}'."
-            ) from err
+            raise ValueError(f"Failed to gather profile data for device '{device_id}'.") from err
+
+        dynamic_fields = ["active", "status"]
+        static_data = {k: v for k, v in data.items() if k not in dynamic_fields}
 
         return TargetProfile(
             device_id=device_id,
@@ -56,6 +72,8 @@ class OQCProvider(QuantumProvider):
             device_name=device_name,
             endpoint_url=endpoint_url,
             provider_name="OQC",
+            feature_set=feauture_set,
+            **static_data,
         )
 
     @cached_method
@@ -70,10 +88,10 @@ class OQCProvider(QuantumProvider):
     def get_device(self, device_id: str) -> OQCDevice:
         """Get a specific OQC device."""
         devices: list[dict] = self.client.get_qpus()
-        for device in devices:
-            if device["id"] == device_id:
-                return OQCDevice(profile=self._build_profile(device), client=self.client)
-        raise ResourceNotFoundError(f"Device '{device_id}' not found.")
+        device = next((d for d in devices if d["id"] == device_id), None)
+        if not device:
+            raise ResourceNotFoundError(f"Device '{device_id}' not found.")
+        return OQCDevice(profile=self._build_profile(device), client=self.client)
 
     def __hash__(self):
         if not hasattr(self, "_hash"):

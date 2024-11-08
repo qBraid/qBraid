@@ -16,13 +16,13 @@ Module defining IonQ job class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.postprocess import normalize_counts
-from qbraid.runtime.result import GateModelResultData, Result
+from qbraid.runtime.result import GateModelResultData, MeasCount, MeasProb, Result
 
 if TYPE_CHECKING:
     import qbraid.runtime.ionq.provider
@@ -78,15 +78,24 @@ class IonQJob(QuantumJob):
         self.session.cancel_job(self.id)
 
     @staticmethod
-    def _get_counts(result: dict[str, Any]) -> dict[str, int]:
+    def _get_counts(result: dict[str, Any]) -> Union[MeasCount, list[MeasCount]]:
         """Return the raw counts of the run."""
         shots: Optional[int] = result.get("shots")
-        probs_dec_str: Optional[dict[str, float]] = result.get("probabilities")
-        if shots is None or probs_dec_str is None:
+        probabilities: Optional[Union[MeasProb, dict[str, MeasProb]]] = result.get("probabilities")
+
+        if shots is None or probabilities is None:
             raise ValueError("Missing shots or probabilities in result data.")
-        probs_dec = {int(key): value for key, value in probs_dec_str.items()}
-        probs_normal = normalize_counts(probs_dec)
-        return {state: int(prob * shots) for state, prob in probs_normal.items()}
+
+        def convert_to_counts(meas_prob: dict[str, float]) -> dict[str, int]:
+            """Helper function to normalize probabilities and convert to counts."""
+            probs_dec = {int(key): value for key, value in meas_prob.items()}
+            probs_normal = normalize_counts(probs_dec)
+            return {state: int(prob * shots) for state, prob in probs_normal.items()}
+
+        if all(isinstance(value, dict) for value in probabilities.values()):
+            return [convert_to_counts(probs) for probs in probabilities.values()]
+
+        return convert_to_counts(probabilities)
 
     def result(self) -> Result:
         """Return the result of the IonQ job."""
@@ -94,7 +103,7 @@ class IonQJob(QuantumJob):
         job_data = self.session.get_job(self.id)
         success = job_data.get("status") == "completed"
         if not success:
-            failure = job_data.get("failure", {})
+            failure: dict = job_data.get("failure", {})
             code = failure.get("code")
             message = failure.get("error")
             raise IonQJobError(f"Job failed with code {code}: {message}")

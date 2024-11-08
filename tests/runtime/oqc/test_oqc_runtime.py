@@ -26,6 +26,7 @@ from typing import Optional, Union
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
+from requests import ReadTimeout
 
 try:
     from qcaas_client.client import OQCClient, QPUTask, QPUTaskErrors, QPUTaskResult  # type: ignore
@@ -50,8 +51,15 @@ except ImportError as err:
 pytestmark = pytest.mark.skipif(oqc_extras_installed is False, reason="qcaas_client not installed")
 
 LUCY_SIM_ID = "qpu:uk:2:d865b5a184"
+TOSHIKO_ID = "qpu:jp:3:673b1ad43c"
 
 LUCY_FEATURE_SET = {"always_on": True, "qubit_count": 8, "simulator": True}
+TOSHIKO_FEATURE_SET = {
+    "qubit_count": 32,
+    "Maximum Shots": 100000,
+    "Maximum Repetition Period": "1 second",
+    "Maximum Shots x Repetition Period": "600 seconds",
+}
 
 LUCY_SIM_MOCK_DATA = {
     "active": True,
@@ -59,8 +67,24 @@ LUCY_SIM_MOCK_DATA = {
     "generation": 2,
     "id": LUCY_SIM_ID,
     "name": "Lucy Simulator",
+    "price_per_shot": "0",
+    "price_per_task": "0",
     "region": "uk",
+    "status": "ACTIVE",
     "url": "https://uk.cloud.oqc.app/d865b5a184",
+}
+
+TOSHIKO_MOCK_DATA = {
+    "active": True,
+    "feature_set": json.dumps(TOSHIKO_FEATURE_SET),
+    "generation": 3,
+    "id": TOSHIKO_ID,
+    "name": "OQC Toshiko Tokyo-1",
+    "price_per_shot": "0",
+    "price_per_task": "0",
+    "region": "jp",
+    "status": "ACTIVE",
+    "url": "https://jp.cloud.oqc.app/673b1ad43c",
 }
 
 MOCK_TIMINGS = {
@@ -112,14 +136,14 @@ def program():
 class MockOQCClient:
     """Test class for OQC client."""
 
-    def __init__(self, authentication_token=None):
+    def __init__(self, authentication_token=None, **kwargs):
         self._authentication_token = authentication_token
         self.default_qpu_id = "qpu:uk:3:9829a5504f"
         self.url = "https://cloud.oqc.app/"
 
     def get_qpus(self):
         """Get QPUs."""
-        return [LUCY_SIM_MOCK_DATA]
+        return [LUCY_SIM_MOCK_DATA.copy(), TOSHIKO_MOCK_DATA.copy()]
 
     def schedule_tasks(
         self,
@@ -160,7 +184,9 @@ class MockOQCClient:
 
     def get_next_window(self, qpu_id: Optional[str] = None):
         """Get next window."""
-        return "2024-07-30 00:50:00"
+        if qpu_id == LUCY_SIM_ID:
+            return "2024-07-30 00:50:00"
+        raise ReadTimeout
 
     def get_task_status(self, task_id: str, qpu_id: Optional[str] = None):
         """Get task status."""
@@ -170,11 +196,11 @@ class MockOQCClient:
 
     def get_task_timings(self, task_id: str, qpu_id: Optional[str] = None):
         """Get task timings."""
-        return MOCK_TIMINGS
+        return MOCK_TIMINGS.copy()
 
     def get_task_metrics(self, task_id: str, qpu_id: Optional[str] = None):
         """Get task metrics."""
-        return MOCK_METRICS
+        return MOCK_METRICS.copy()
 
     def get_task_metadata(self, task_id: str, qpu_id: Optional[str] = None):
         """Get task metadata."""
@@ -212,7 +238,13 @@ def lucy_sim_id():
 @pytest.fixture
 def lucy_sim_data():
     """Return data for Lucy Simulator."""
-    return LUCY_SIM_MOCK_DATA
+    return LUCY_SIM_MOCK_DATA.copy()
+
+
+@pytest.fixture
+def toshiko_data():
+    """Return data for Toshiko QPU."""
+    return TOSHIKO_MOCK_DATA.copy()
 
 
 @pytest.fixture
@@ -230,21 +262,31 @@ def oqc_client():
 @pytest.fixture
 def target_profile(lucy_sim_data):
     """Return a target profile for Lucy Simulator."""
+    sim_data = lucy_sim_data.copy()
+    feature_set = LUCY_FEATURE_SET.copy()
+    simulator = feature_set.pop("simulator")
+    num_qubits = feature_set.pop("qubit_count")
+
     return TargetProfile(
-        device_id=lucy_sim_data["id"],
-        device_name=lucy_sim_data["name"],
-        simulator=LUCY_FEATURE_SET["simulator"],
+        device_id=sim_data["id"],
+        device_name=sim_data["name"],
+        simulator=simulator,
         experiment_type=ExperimentType.GATE_MODEL,
-        endpoint_url=lucy_sim_data["url"],
-        num_qubits=LUCY_FEATURE_SET["qubit_count"],
-        program_spec=ProgramSpec(str, alias="qasm2"),
+        endpoint_url=sim_data["url"],
+        num_qubits=num_qubits,
+        program_spec=ProgramSpec(str, alias="qasm3"),
+        feature_set=feature_set.copy(),
+        price_per_shot=sim_data["price_per_shot"],
+        price_per_task=sim_data["price_per_task"],
+        generation=sim_data["generation"],
+        region=sim_data["region"],
     )
 
 
 @pytest.fixture
 def oqc_device(oqc_client, target_profile):
     """Return a fake OQC device."""
-    return OQCDevice(profile=target_profile, client=oqc_client)
+    return OQCDevice(profile=target_profile.copy(), client=oqc_client)
 
 
 @pytest.fixture
@@ -259,34 +301,77 @@ def oqc_job_failed(oqc_client, oqc_device):
     return OQCJob("failed_job_id", client=oqc_client, device=oqc_device)
 
 
-def test_oqc_provider_device(lucy_sim_id, lucy_sim_data):
-    """Test OQC provider and device."""
+def test_oqc_provider_get_devices(lucy_sim_data, toshiko_data):
+    """Test getting all OQC devices."""
+    lucy_id = lucy_sim_data["id"]
+    toshiko_id = toshiko_data["id"]
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
-        mock_client.return_value.get_qpus.return_value = [lucy_sim_data]
+        mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
         provider = OQCProvider(token="fake_token")
         assert isinstance(provider, OQCProvider)
         assert isinstance(provider.client, OQCClient)
         assert provider.client == mock_client.return_value
-        test_device = provider.get_device(lucy_sim_id)
         devices = provider.get_devices()
         assert isinstance(devices, list)
-        assert any(device.id == test_device.id for device in devices)
+        assert len(devices) == 2
+        assert any(device.id == lucy_id for device in devices)
+        assert any(device.id == toshiko_id for device in devices)
+
+
+def test_oqc_provider_get_device(lucy_sim_id, lucy_sim_data, toshiko_data):
+    """Test getting a specific OQC device."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = Mock(spec=OQCClient)
+        mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
+        provider = OQCProvider(token="fake_token")
+        test_device = provider.get_device(lucy_sim_id)
         assert isinstance(test_device.status(), DeviceStatus)
         assert isinstance(test_device, OQCDevice)
         assert test_device.profile["device_id"] == lucy_sim_id
-        with pytest.raises(ResourceNotFoundError):
-            provider.get_device("fake_id")
         assert isinstance(test_device.client, OQCClient)
-        lucy_sim_data["feature_set"] = json.dumps(
-            {"always_on": False, "qubit_count": 8, "simulator": True}
-        )
+
+
+def test_oqc_device_status_from_window(lucy_sim_id, lucy_sim_data, toshiko_data):
+    """Test that device status value varies correctly based on next available window."""
+    lucy_sim_data["feature_set"] = json.dumps(
+        {"always_on": False, "qubit_count": 8, "simulator": True}
+    )
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = Mock(spec=OQCClient)
+        mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
+        provider = OQCProvider(token="fake_token")
+
         now = datetime.datetime.now()
         year, month, day = now.year, now.month, now.day
         window = f"{year + 1}-{month}-{day} 00:50:00"
         mock_client.return_value.get_next_window.return_value = window
         unavailable_device = provider.get_device(lucy_sim_id)
-        assert unavailable_device.status() == DeviceStatus.OFFLINE
+        assert unavailable_device.status() == DeviceStatus.UNAVAILABLE
+
+        window = f"{year - 1}-{month}-{day} 00:50:00"
+        mock_client.return_value.get_next_window.return_value = window
+        always_on_false_available_device = provider.get_device(lucy_sim_id)
+        assert always_on_false_available_device.status() == DeviceStatus.ONLINE
+
+
+def test_oqc_provider_get_device_raises_not_found(lucy_sim_data, toshiko_data):
+    """Test raising an error when a device is not found."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = Mock(spec=OQCClient)
+        mock_client.return_value.get_qpus.return_value = [lucy_sim_data.copy(), toshiko_data.copy()]
+        provider = OQCProvider(token="fake_token")
+        with pytest.raises(ResourceNotFoundError):
+            provider.get_device("fake_id")
+
+
+def test_oqc_device_status_raises(lucy_sim_data, toshiko_data):
+    """Test OQC device status method raises an error for bad request data."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = Mock(spec=OQCClient)
+        mock_client.return_value.get_qpus.return_value = [lucy_sim_data.copy(), toshiko_data.copy()]
+
+        provider = OQCProvider(token="fake_token")
         fake_profile = TargetProfile(
             device_id="fake_id",
             device_name="Fake Device",
@@ -300,18 +385,13 @@ def test_oqc_provider_device(lucy_sim_id, lucy_sim_data):
         with pytest.raises(ResourceNotFoundError):
             fake_device.status()
 
-        window = f"{year - 1}-{month}-{day} 00:50:00"
-        mock_client.return_value.get_next_window.return_value = window
-        always_on_false_available_device = provider.get_device(lucy_sim_id)
-        assert always_on_false_available_device.status() == DeviceStatus.ONLINE
-
 
 @pytest.mark.parametrize(
     "data_modifications, expected_error_message",
     [
         ({"feature_set": ""}, "Failed to decode feature set data for device"),
         (
-            {"feature_set": json.dumps({"qubit_count": 8})},
+            {"feature_set": json.dumps({"simulator": True})},
             "Failed to gather profile data for device",
         ),
     ],
@@ -520,3 +600,14 @@ def test_job_get_qpu_id_from_task_metadata(lucy_sim_id, oqc_job, oqc_client):
     oqc_job._client = oqc_client
     assert oqc_job.qpu_id == lucy_sim_id
     oqc_client.get_task_metadata.assert_called_once()
+
+
+def test_oqc_provider_raises_for_no_token(monkeypatch):
+    """Test that the OQCProvider raises an error when no token is provided."""
+    monkeypatch.setenv("OQC_AUTH_TOKEN", "")
+
+    with pytest.raises(ValueError) as excinfo:
+        OQCProvider()
+    assert "An OQC authenication token is required to initialize the provider." in str(
+        excinfo.value
+    )

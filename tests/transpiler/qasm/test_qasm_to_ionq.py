@@ -19,6 +19,7 @@ import openqasm3.ast
 import pytest
 from openqasm3.parser import parse
 
+from qbraid.programs.gate_model.ionq import GateSet, InputFormat
 from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
 from qbraid.programs.typer import IonQDictType, Qasm3StringType
 from qbraid.transpiler.conversions.openqasm3.openqasm3_to_ionq import (
@@ -93,7 +94,12 @@ def test_ionq_device_extract_gate_data():
         {"gate": "vi", "target": 1},
         {"gate": "swap", "targets": [0, 1]},
     ]
-    expected = {"qubits": 2, "circuit": gate_data, "gateset": "qis"}
+    expected = {
+        "qubits": 2,
+        "circuit": gate_data,
+        "gateset": GateSet.QIS.value,
+        "format": InputFormat.CIRCUIT.value,
+    }
 
     actual = qasm2_to_ionq(qasm)
 
@@ -170,6 +176,7 @@ def deutch_jozsa_qasm3_unrolled() -> Qasm3StringType:
 def deutch_jozsa_ionq() -> IonQDictType:
     """Return the expected IonQDictType for the DJ algorithm."""
     return {
+        "format": InputFormat.CIRCUIT.value,
         "qubits": 5,
         "circuit": [
             {"gate": "x", "target": 0},
@@ -187,7 +194,7 @@ def deutch_jozsa_ionq() -> IonQDictType:
             {"gate": "h", "target": 2},
             {"gate": "h", "target": 3},
         ],
-        "gateset": "qis",
+        "gateset": GateSet.QIS.value,
     }
 
 
@@ -208,7 +215,8 @@ def ionq_native_gates_qasm() -> Qasm3StringType:
 def ionq_native_gates_dict() -> IonQDictType:
     """Return an IonQDictType for a program using native gates."""
     return {
-        "gateset": "native",
+        "format": InputFormat.CIRCUIT.value,
+        "gateset": GateSet.NATIVE.value,
         "qubits": 3,
         "circuit": [
             {"gate": "ms", "targets": [0, 1], "phases": [0, 0]},
@@ -260,10 +268,11 @@ def test_qasm3_to_ionq_deutch_jozsa_pyqasm_mocked(
 def test_qasm3_to_ionq_native_gates(ionq_native_gates_qasm, ionq_native_gates_dict):
     """Test transpiling a program using IonQ native gates to IonQDictType."""
     ionq_program = qasm3_to_ionq(ionq_native_gates_qasm)
+    assert ionq_program["format"] == ionq_native_gates_dict["format"]
     assert ionq_program["qubits"] == ionq_native_gates_dict["qubits"]
     assert ionq_program["gateset"] == ionq_native_gates_dict["gateset"]
     assert ionq_program["circuit"] == ionq_native_gates_dict["circuit"]
-    assert len(ionq_program) == 3
+    assert len(ionq_program) == 4
 
 
 def test_qasm3_to_ionq_zz_native_gate():
@@ -274,7 +283,8 @@ def test_qasm3_to_ionq_zz_native_gate():
     zz(0.12) q[0], q[1];
     """
     expectd_ionq = {
-        "gateset": "native",
+        "format": InputFormat.CIRCUIT.value,
+        "gateset": GateSet.NATIVE.value,
         "qubits": 2,
         "circuit": [
             {"gate": "zz", "targets": [0, 1], "angle": 0.12},

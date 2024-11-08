@@ -17,7 +17,7 @@ Unit tests for qbraid.programs.ionq.IonQProgram
 import pytest
 
 from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.gate_model.ionq import GateSet, IonQProgram
+from qbraid.programs.gate_model.ionq import GateSet, InputFormat, IonQProgram
 from qbraid.programs.typer import IonQDict
 
 
@@ -92,3 +92,12 @@ def test_ionq_dict_checks_invalid_gateset_type(ionq_dict):
     ionq_dict_invalid["gateset"] = 42
     assert isinstance(ionq_dict, IonQDict)
     assert not isinstance(ionq_dict_invalid, IonQDict)
+
+
+def test_input_format_enum():
+    """Test the InputFormat enumeration."""
+    assert len(list(InputFormat)) == 4
+    assert InputFormat.CIRCUIT.value == "ionq.circuit.v0"
+    assert InputFormat.QASM.value == "qasm"
+    assert InputFormat.OPENQASM.value == "openqasm"
+    assert InputFormat.QUIPPER.value == "quipper"

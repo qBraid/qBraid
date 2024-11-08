@@ -15,10 +15,10 @@ Module defining IonQ device class
 from __future__ import annotations
 
 import json
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from qbraid.programs import load_program
-from qbraid.programs.typer import QasmStringType
+from qbraid.programs.typer import IonQDict, IonQDictType, QasmStringType
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 
@@ -75,10 +75,41 @@ class IonQDevice(QuantumDevice):
         program.transform(device=self)
         return program.program
 
+    @staticmethod
+    def _squash_multicircuit_input(batch_input: list[IonQDictType]) -> dict[str, Any]:
+        if not batch_input:
+            raise ValueError("run_input list cannot be empty.")
+
+        default_format = "ionq.circuit.v0"
+        default_gateset = "qis"
+
+        input_format = batch_input[0].get("format", default_format)
+        input_gateset = batch_input[0].get("gateset", default_gateset)
+        max_qubits = 0
+        circuits = []
+
+        for i, run_input in enumerate(batch_input):
+            if not isinstance(run_input, IonQDict):
+                raise ValueError("All run_inputs must be an instance of ~IonQDict.")
+            if run_input.get("format", default_format) != input_format:
+                raise ValueError("All run_inputs must have the same value for key 'format'.")
+            if run_input.get("gateset", default_gateset) != input_gateset:
+                raise ValueError("All run_inputs must have the same value for key 'gateset'.")
+
+            max_qubits = max(max_qubits, run_input["qubits"])
+            circuits.append({"circuit": run_input["circuit"], "name": f"Circuit {i}"})
+
+        return {
+            "format": input_format,
+            "gateset": input_gateset,
+            "qubits": max_qubits,
+            "circuits": circuits,
+        }
+
     # pylint:disable-next=arguments-differ,too-many-arguments
     def submit(
         self,
-        run_input: list[dict[str, Any]],
+        run_input: Union[IonQDictType, list[IonQDictType]],
         shots: int,
         preflight: bool = False,
         name: Optional[str] = None,
@@ -88,11 +119,14 @@ class IonQDevice(QuantumDevice):
         **kwargs,
     ) -> IonQJob:
         """Submit a job to the IonQ device."""
-        is_single_input = not isinstance(run_input, list)
+        ionq_input = (
+            self._squash_multicircuit_input(run_input) if isinstance(run_input, list) else run_input
+        )
         job_data = {
             "target": self.id,
             "shots": shots,
             "preflight": preflight,
+            "input": ionq_input,
             **kwargs,
         }
         optional_fields = {
@@ -102,26 +136,6 @@ class IonQDevice(QuantumDevice):
             "error_mitigation": error_mitigation,
         }
         job_data.update({key: value for key, value in optional_fields.items() if value is not None})
-        if is_single_input:
-            job_data["input"] = run_input
-        else:
-            all_formats = {run["format"] for run in run_input}
-            if len(all_formats) > 1:
-                raise ValueError("All runs must have the same format")
-
-            all_gatesets = {run["gateset"] for run in run_input}
-            if len(all_gatesets) > 1:
-                raise ValueError("All runs must have the same gateset")
-
-            qubits = max(run["qubits"] for run in run_input)
-            circuits = [{"circuit": run, "name": f"Circuit {i}"} for i, run in enumerate(run_input)]
-
-            job_data["input"] = {
-                "format": all_formats.pop(),
-                "gateset": all_gatesets.pop(),
-                "qubits": qubits,
-                "circuits": circuits,
-            }
         serialized_data = json.dumps(job_data)
         job_data = self.session.create_job(serialized_data)
         job_id = job_data.get("id")

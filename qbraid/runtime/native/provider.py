@@ -159,12 +159,12 @@ class QbraidProvider(QuantumProvider):
         return ProgramSpec(program_type, alias=run_package, **lambdas) if program_type else None
 
     @staticmethod
-    def _get_gateset(device_data: dict[str, Any]) -> Optional[list[str]]:
+    def _get_basis_gates(device_data: dict[str, Any]) -> Optional[list[str]]:
         """Return the basis gates for the qBraid device."""
         provider = device_data["provider"]
         if provider == "IonQ":
             ionq_id = device_data["objArg"]
-            return IonQProvider._get_gateset(ionq_id)
+            return IonQProvider._get_basis_gates(ionq_id)
         return None
 
     def _build_runtime_profile(self, device_data: dict[str, Any]) -> TargetProfile:
@@ -177,7 +177,7 @@ class QbraidProvider(QuantumProvider):
         )
         device_exp_type = "gate_model" if model.paradigm == "gate-based" else model.paradigm.lower()
         experiment_type = ExperimentType(device_exp_type)
-        gateset = self._get_gateset(device_data)
+        basis_gates = self._get_basis_gates(device_data)
 
         return TargetProfile(
             device_id=model.device_id,
@@ -189,7 +189,7 @@ class QbraidProvider(QuantumProvider):
             noise_models=noise_models,
             name=model.name,
             pricing=model.pricing,
-            gateset=gateset,
+            basis_gates=basis_gates,
         )
 
     @cached_method(ttl=120)

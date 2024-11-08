@@ -28,7 +28,7 @@ def valid_program_spec() -> ProgramSpec:
     return ProgramSpec(program_type=str, alias="qasm2")
 
 
-def create_target_profile(experiment_type, gateset, program_spec):
+def create_target_profile(experiment_type, basis_gates, program_spec):
     """Helper function to create a TargetProfile with given parameters."""
     return TargetProfile(
         device_id="device123",
@@ -37,7 +37,7 @@ def create_target_profile(experiment_type, gateset, program_spec):
         num_qubits=5,
         program_spec=program_spec,
         provider_name="Heisenberg",
-        gateset=gateset,
+        basis_gates=basis_gates,
     )
 
 
@@ -46,7 +46,7 @@ def target_profile_openqasm(valid_program_spec) -> TargetProfile:
     """Fixture to provide a valid TargetProfile instance with OPENQASM action type."""
     return create_target_profile(
         experiment_type=ExperimentType.GATE_MODEL,
-        gateset=["ms", "gpi", "gpi2"],
+        basis_gates=["ms", "gpi", "gpi2"],
         program_spec=valid_program_spec,
     )
 
@@ -55,7 +55,7 @@ def target_profile_openqasm(valid_program_spec) -> TargetProfile:
 def target_profile_ahs(valid_program_spec) -> list[TargetProfile]:
     """Fixture to provide a valid TargetProfile instance with AHS action type."""
     return create_target_profile(
-        experiment_type=ExperimentType.AHS, gateset=None, program_spec=valid_program_spec
+        experiment_type=ExperimentType.AHS, basis_gates=None, program_spec=valid_program_spec
     )
 
 
@@ -98,30 +98,30 @@ def test_target_profile_raise_for_bad_input():
     with pytest.raises(ValidationError):
         TargetProfile(device_id="device123", simulator=True, provider_name=10)
     with pytest.raises(ValidationError):
-        TargetProfile(device_id="1234", simulator=True, gateset=123)
+        TargetProfile(device_id="1234", simulator=True, basis_gates=123)
     with pytest.raises(ValidationError):
-        TargetProfile(device_id="1234", simulator=True, gateset=[1, 2, 3])
+        TargetProfile(device_id="1234", simulator=True, basis_gates=[1, 2, 3])
     with pytest.raises(ValidationError):
-        TargetProfile(device_id="1234", simulator=True, gateset=[1, "cx", "h"])
+        TargetProfile(device_id="1234", simulator=True, basis_gates=[1, "cx", "h"])
     with pytest.raises(ValidationError):
         TargetProfile(
             device_id="device123",
             simulator=True,
             experiment_type=ExperimentType.GATE_MODEL,
-            gateset=99,
+            basis_gates=99,
         )
     with pytest.raises(ValidationError):
         TargetProfile(
             device_id="device123",
             simulator=True,
             experiment_type=ExperimentType.GATE_MODEL,
-            gateset=[None],
+            basis_gates=[None],
         )
     with pytest.raises(ValidationError):
         TargetProfile(
             device_id="device123",
             simulator=True,
-            gateset=["ms", "gpi", "gpi2"],
+            basis_gates=["ms", "gpi", "gpi2"],
         )
 
 
@@ -135,13 +135,13 @@ def test_target_profile_ahs_len(target_profile_ahs):
     assert len(target_profile_ahs) == 6
 
 
-def test_target_profile_bad_gateset_raises(valid_program_spec):
-    """Test raising ValueError when giving gateset with non-OPENQASM action type."""
+def test_target_profile_bad_basis_gates_raises(valid_program_spec):
+    """Test raising ValueError when giving basis_gates with non-OPENQASM action type."""
     for experiment_type in [ExperimentType.AHS, None]:
         with pytest.raises(ValidationError):
             create_target_profile(
                 experiment_type=experiment_type,
-                gateset=["x", "y", "z"],
+                basis_gates=["x", "y", "z"],
                 program_spec=valid_program_spec,
             )
 
@@ -151,20 +151,20 @@ def test_target_profile_getitem(target_profile_openqasm):
     assert target_profile_openqasm["device_id"] == "device123"
     assert target_profile_openqasm["simulator"] is True
     assert target_profile_openqasm["experiment_type"] == ExperimentType.GATE_MODEL
-    assert target_profile_openqasm["gateset"] == {"gpi", "gpi2", "ms"}
+    assert target_profile_openqasm["basis_gates"] == {"gpi", "gpi2", "ms"}
 
 
-def test_duplicate_gateset_removed(valid_program_spec):
+def test_duplicate_basis_gates_removed(valid_program_spec):
     """Test that duplicate basis gates are removed."""
     profile = create_target_profile(
         experiment_type=ExperimentType.GATE_MODEL,
-        gateset=["X", "x", "x", "Y", "z"],
+        basis_gates=["X", "x", "x", "Y", "z"],
         program_spec=valid_program_spec,
     )
-    assert profile["gateset"] == {"x", "y", "z"}
+    assert profile["basis_gates"] == {"x", "y", "z"}
 
 
-def test_gateset_none():
-    """Test that passing None to gateset does not raise an error."""
-    profile = TargetProfile(device_id="1234", simulator=True, gateset=None)
-    assert profile.gateset is None
+def test_basis_gates_none():
+    """Test that passing None to basis_gates does not raise an error."""
+    profile = TargetProfile(device_id="1234", simulator=True, basis_gates=None)
+    assert profile.basis_gates is None
