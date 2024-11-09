@@ -94,6 +94,15 @@ def test_ionq_dict_checks_invalid_gateset_type(ionq_dict):
     assert not isinstance(ionq_dict_invalid, IonQDict)
 
 
+def test_ionq_dict_checks_invalid_format(ionq_dict):
+    """Test that an dict object with an invalid format type
+    is not considered a valid IonQDict instance."""
+    ionq_dict_invalid = ionq_dict.copy()
+    ionq_dict_invalid["format"] = 42
+    assert isinstance(ionq_dict, IonQDict)
+    assert not isinstance(ionq_dict_invalid, IonQDict)
+
+
 def test_input_format_enum():
     """Test the InputFormat enumeration."""
     assert len(list(InputFormat)) == 4
