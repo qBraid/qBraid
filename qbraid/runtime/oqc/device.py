@@ -15,8 +15,7 @@ Device class for OQC devices.
 from __future__ import annotations
 
 import datetime
-import json
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from qcaas_client.client import QPUTask
 from qcaas_client.compiler_config import (

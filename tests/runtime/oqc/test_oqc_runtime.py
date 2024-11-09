@@ -28,6 +28,9 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from requests import ReadTimeout
 
+from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.exceptions import ResourceNotFoundError
+
 try:
     from qcaas_client.client import OQCClient, QPUTask, QPUTaskErrors, QPUTaskResult  # type: ignore
 
@@ -233,6 +236,12 @@ class MockOQCClient:
 def lucy_sim_id():
     """Return Lucy Simulator ID."""
     return LUCY_SIM_ID
+
+
+@pytest.fixture
+def toshiko_id():
+    """Return Toshiko ID."""
+    return TOSHIKO_ID
 
 
 @pytest.fixture
@@ -620,3 +629,22 @@ def test_oqc_provider_raises_for_no_token(monkeypatch):
     assert "An OQC authenication token is required to initialize the provider." in str(
         excinfo.value
     )
+
+
+@patch("qbraid.runtime.oqc.device.logger")
+@patch("qbraid.runtime.oqc.device.OQCDevice.get_next_window")
+def test_device_status_online(mock_get_next_window, mock_logger):
+    mock_get_next_window.return_value = datetime.datetime(2023, 10, 31, 12, 0, 0)
+    device = OQCDevice(profile=Mock(), client=Mock())
+    result = device.status()
+    assert result == DeviceStatus.ONLINE
+    mock_logger.error.assert_not_called()
+
+
+def test_get_next_window_read_timeout(toshiko_id):
+    """Test getting the next window with a timeout results in status unavialable."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = MockOQCClient()
+        provider = OQCProvider(token="fake_token")
+        device = provider.get_device(toshiko_id)
+        assert device.status() == DeviceStatus.UNAVAILABLE

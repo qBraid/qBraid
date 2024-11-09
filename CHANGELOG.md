@@ -56,6 +56,9 @@ device = provider.get_device("nec_vector_annealer")
 job = device.run(qubo, params=params)
 ```
 
+- IonQ multicircuit jobs and input data format field added explicitly ([#825](https://github.com/qBraid/qBraid/pull/825))
+- OQC provider url + timeout params added to `__init__`, and target profile updates to include new device metadata fields returned by `OQCClient`, particularly in relation to Toshiko QPU  ([#825](https://github.com/qBraid/qBraid/pull/825))
+
 ### Deprecated
 
 ### Removed
