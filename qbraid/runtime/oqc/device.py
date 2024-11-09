@@ -87,25 +87,6 @@ class OQCDevice(QuantumDevice):
         """Returns the client for the device."""
         return self._client
 
-    @staticmethod
-    def _decode_feature_set(data: dict[str, Any]) -> dict[str, Any]:
-        """Decode the device feature set data."""
-        feature_set: Union[str, dict] = data.get("feature_set", {})
-
-        if isinstance(feature_set, dict):
-            return data
-
-        try:
-            feature_set_decoded = json.loads(feature_set)
-        except json.JSONDecodeError as err:
-            raise ValueError(
-                f"Failed to decode feature set data for device '{data.get('id')}'."
-            ) from err
-
-        data["feature_set"] = feature_set_decoded
-
-        return data
-
     def status(self) -> DeviceStatus:
         """Returns the status of the device."""
         feature_set: dict = self.profile.get("feature_set", {})

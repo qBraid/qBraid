@@ -12,8 +12,9 @@
 Module defining Oxford Quantum Circuits (OQC) provider class
 
 """
+import json
 import os
-from typing import Any, Optional
+from typing import Any, Optional, Union
 
 from qcaas_client.client import OQCClient
 
@@ -47,8 +48,17 @@ class OQCProvider(QuantumProvider):
 
     def _build_profile(self, data: dict[str, Any]) -> TargetProfile:
         """Build a profile for OQC device."""
-        data = OQCDevice._decode_feature_set(data.copy())
-        device_id = None
+        data = data.copy()
+        device_id = data.get("id")
+        feature_set: Union[str, dict] = data.copy().get("feature_set", {})
+
+        if not isinstance(feature_set, dict):
+            try:
+                data["feature_set"] = json.loads(feature_set)
+            except json.JSONDecodeError as err:
+                raise ValueError(
+                    f"Failed to decode feature set data for device '{device_id}'."
+                ) from err
 
         try:
             device_id: str = data.pop("id")
