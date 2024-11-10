@@ -139,14 +139,15 @@ def program():
 class MockOQCClient:
     """Test class for OQC client."""
 
-    def __init__(self, authentication_token=None, **kwargs):
+    def __init__(self, authentication_token=None, toshiko_available=False, **kwargs):
         self._authentication_token = authentication_token
         self.default_qpu_id = "qpu:uk:3:9829a5504f"
         self.url = "https://cloud.oqc.app/"
+        self._toshiko_available = toshiko_available
 
     def get_qpus(self):
         """Get QPUs."""
-        return [LUCY_SIM_MOCK_DATA, TOSHIKO_MOCK_DATA]
+        return [LUCY_SIM_MOCK_DATA.copy(), TOSHIKO_MOCK_DATA.copy()]
 
     def schedule_tasks(
         self,
@@ -189,6 +190,11 @@ class MockOQCClient:
         """Get next window."""
         if qpu_id == LUCY_SIM_ID:
             return "2024-07-30 00:50:00"
+        if qpu_id == TOSHIKO_ID and self._toshiko_available:
+            now = datetime.datetime.now()
+            year, month, day = now.year, now.month, now.day
+            window = f"{year - 1}-{month}-{day} 00:50:00"
+            return window
         raise ReadTimeout
 
     def get_task_status(self, task_id: str, qpu_id: Optional[str] = None):
@@ -358,18 +364,28 @@ def test_oqc_device_status_from_window_unavailable(lucy_sim_id, lucy_sim_data, t
         assert unavailable_device.status() == DeviceStatus.UNAVAILABLE
 
 
-def test_oqc_device_status_from_window_online(lucy_sim_id, lucy_sim_data, toshiko_data):
-    """Test that device status value varies correctly based on next available window."""
+def test_oqc_device_status_always_on(lucy_sim_id, lucy_sim_data, toshiko_data):
+    """Test that device status is ONLINE for devices that are always on."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
         mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
         provider = OQCProvider(token="fake_token")
+        device = provider.get_device(lucy_sim_id)
+        assert device.status() == DeviceStatus.ONLINE
+        mock_client.get_next_window.assert_not_called()
 
-        now = datetime.datetime.now()
-        year, month, day = now.year, now.month, now.day
-        window = f"{year - 1}-{month}-{day} 00:50:00"
-        mock_client.return_value.get_next_window.return_value = window
-        always_on_false_available_device = provider.get_device(lucy_sim_id)
+
+def test_oqc_device_status_from_window_online(toshiko_id, lucy_sim_data, toshiko_data):
+    """Test that device status value varies correctly based on next available window."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = Mock(spec=OQCClient)
+        mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
+
+        provider = OQCProvider(token="fake_token")
+        always_on_false_available_device = provider.get_device(toshiko_id)
+        always_on_false_available_device._client = MockOQCClient(
+            authentication_token="fake_token", toshiko_available=True
+        )
         assert always_on_false_available_device.status() == DeviceStatus.ONLINE
 
 

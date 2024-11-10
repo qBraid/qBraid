@@ -50,7 +50,7 @@ class OQCProvider(QuantumProvider):
         """Build a profile for OQC device."""
         data = data.copy()
         device_id = data.get("id")
-        feature_set: Union[str, dict] = data.copy().get("feature_set", {})
+        feature_set: Union[str, dict] = data.get("feature_set", {})
 
         if not isinstance(feature_set, dict):
             try:
