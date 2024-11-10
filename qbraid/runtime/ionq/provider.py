@@ -26,6 +26,8 @@ from qbraid.programs.gate_model.ionq import (
     IONQ_NATIVE_GATES_FAMILY,
     IONQ_QIS_GATES,
 )
+from qbraid.runtime.exceptions import ResourceNotFoundError
+from qbraid.runtime.noise import NoiseModelSet
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 from qbraid.transpiler.conversions.qasm2.qasm2_to_ionq import qasm2_to_ionq
@@ -63,7 +65,10 @@ class IonQSession(Session):
     def get_device(self, device_id: str) -> dict[str, Any]:
         """Get a specific IonQ device."""
         devices = self.get_devices()
-        return devices.get(device_id)
+        try:
+            return devices[device_id]
+        except KeyError as err:
+            raise ResourceNotFoundError(f"Device '{device_id}' not found.") from err
 
     def create_job(self, data: dict[str, Any]) -> dict[str, Any]:
         """Create a new job on the IonQ API."""
@@ -113,6 +118,9 @@ class IonQProvider(QuantumProvider):
         simulator = device_id == "simulator"
         charact = self._get_characterization(data)
         basis_gates = self._get_basis_gates(device_id)
+        noise_models = (
+            NoiseModelSet.from_iterable(data.get("noise_models", [])) if simulator else None
+        )
 
         return TargetProfile(
             device_id=device_id,
@@ -126,6 +134,7 @@ class IonQProvider(QuantumProvider):
             provider_name="IonQ",
             basis_gates=basis_gates,
             characterization=charact,
+            noise_models=noise_models,
         )
 
     @cached_method

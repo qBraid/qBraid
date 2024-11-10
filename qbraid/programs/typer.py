@@ -73,6 +73,10 @@ class IonQDictInstanceMeta(QbraidMetaType):
         qubits = instance.get("qubits")
         circuit = instance.get("circuit")
         gateset = instance.get("gateset")
+        ciruit_format = instance.get("format")
+
+        if ciruit_format is not None and not isinstance(ciruit_format, str):
+            return False
 
         if gateset is not None and not isinstance(gateset, str):
             return False

@@ -59,7 +59,7 @@ class TargetProfile(BaseModel):
     def validate_basis_gates_for_experiment_type(self) -> Self:
         """Validate the basis gates for the action type."""
         if self.basis_gates is not None and self.experiment_type != ExperimentType.GATE_MODEL:
-            raise ValueError("basis_gates can only be specified for OPENQASM action type")
+            raise ValueError("basis_gates can only be specified for gate model experiments")
         return self
 
     def get(self, key: str, default: Any = None) -> Any:

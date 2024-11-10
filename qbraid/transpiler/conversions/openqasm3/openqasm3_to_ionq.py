@@ -273,4 +273,9 @@ def openqasm3_to_ionq(qasm: Union[QasmStringType, openqasm3.ast.Program]) -> Ion
 
     gateset = IonQProgram.determine_gateset(gates)
 
-    return {"qubits": program.num_qubits, "circuit": gates, "gateset": gateset.value}
+    return {
+        "qubits": program.num_qubits,
+        "circuit": gates,
+        "gateset": gateset.value,
+        "format": "ionq.circuit.v0",
+    }

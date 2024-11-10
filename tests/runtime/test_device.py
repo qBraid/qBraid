@@ -992,7 +992,7 @@ def test_device_transpile_program_conversion_error():
     correctly for device with multiple program specs."""
     circuit = {
         "qubits": 3,
-        "gatset": "qis",
+        "gateset": "qis",
         "circuit": [
             {"gate": "h", "target": 0},
             {"gate": "cnot", "control": 0, "target": 1},

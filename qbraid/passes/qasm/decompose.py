@@ -304,7 +304,7 @@ def _decompose_cz(gate: ast.QuantumGate) -> list[ast.Statement]:
     return decompose(ast.Program(statements=[crz_pi, s])).statements
 
 
-def decompose(program: ast.Program, basis_gates: Optional[set[str]] = None) -> ast.Program:
+def decompose(program: ast.Program, gateset: Optional[set[str]] = None) -> ast.Program:
     """Decompose a program into its basic gate equivalents."""
     decomposition_map = {
         "crx": _decompose_crx,
@@ -318,9 +318,7 @@ def decompose(program: ast.Program, basis_gates: Optional[set[str]] = None) -> a
     for statement in program.statements:
         if isinstance(statement, ast.QuantumGate):
             gate_name = statement.name.name
-            if gate_name in decomposition_map and (
-                basis_gates is None or gate_name not in basis_gates
-            ):
+            if gate_name in decomposition_map and (gateset is None or gate_name not in gateset):
                 transformed_statements.extend(decomposition_map[gate_name](statement))
             else:
                 transformed_statements.append(statement)
@@ -330,24 +328,24 @@ def decompose(program: ast.Program, basis_gates: Optional[set[str]] = None) -> a
     return ast.Program(statements=transformed_statements, version=program.version)
 
 
-def assert_gates_in_basis(program: ast.Program, basis_gates: set[str]) -> None:
+def assert_gates_in_basis(program: ast.Program, gateset: set[str]) -> None:
     """Verify that the program is represented only by gates in the given basis gate set."""
     for statement in program.statements:
         if isinstance(statement, ast.QuantumGate):
             gate_name = statement.name.name
-            if gate_name not in basis_gates:
+            if gate_name not in gateset:
                 raise ValueError(
                     f"OpenQASM program uses gate '{gate_name}' which is not in the basis gate set."
                 )
 
 
-def rebase(qasm: str, basis_gates: Union[set[str], str], require_predicates: bool = True) -> str:
+def rebase(qasm: str, gateset: Union[set[str], str], require_predicates: bool = True) -> str:
     """
     Rebases an OpenQASM 3 program according to a given basis gate set.
 
     Args:
         qasm (str): The original OpenQASM 3 program as a string.
-        basis_gates (set[str]): The target basis gates to decompose the program to.
+        gateset (set[str]): The target basis gates to decompose the program to.
         require_predicates (bool): If True, raises an error if the program fails to meet compilation
             predicates. If False, returns the original program on failure. Defaults to True.
 
@@ -362,12 +360,12 @@ def rebase(qasm: str, basis_gates: Union[set[str], str], require_predicates: boo
 
     """
     # Validate basis gates
-    if isinstance(basis_gates, set):
-        if len(basis_gates) == 0:
+    if isinstance(gateset, set):
+        if len(gateset) == 0:
             raise ValueError("Basis gate set cannot be empty.")
-    elif isinstance(basis_gates, str):
-        if basis_gates.lower() == "any":
-            basis_gates = set()
+    elif isinstance(gateset, str):
+        if gateset.lower() == "any":
+            gateset = set()
         else:
             raise ValueError("Invalid basis gate set identifier.")
     else:
@@ -380,19 +378,19 @@ def rebase(qasm: str, basis_gates: Union[set[str], str], require_predicates: boo
         raise ValueError("Invalid OpenQASM program.") from err
 
     try:
-        converted_program = decompose(program, basis_gates)
+        converted_program = decompose(program, gateset)
     except Exception as err:  # pylint: disable=broad-exception-caught
         raise QasmDecompositionError from err
 
     # Check if the program meets the compilation predicates
     try:
-        if len(basis_gates) > 0:
-            assert_gates_in_basis(converted_program, basis_gates)
+        if len(gateset) > 0:
+            assert_gates_in_basis(converted_program, gateset)
     except ValueError as err:
         if require_predicates:
             raise CompilationError(
                 "Rebasing the specified quantum program to the provided "
-                f"basis gate set {basis_gates} is not supported."
+                f"basis gate set {gateset} is not supported."
             ) from err
 
         return qasm
@@ -408,7 +406,7 @@ def rebase(qasm: str, basis_gates: Union[set[str], str], require_predicates: boo
 
 def decompose_qasm3(qasm: str) -> str:
     """Decompose an OpenQASM 3 program."""
-    return rebase(qasm, basis_gates="any", require_predicates=False)
+    return rebase(qasm, gateset="any", require_predicates=False)
 
 
 __all__ = ["decompose", "decompose_qasm2", "decompose_qasm3", "rebase", "assert_gates_in_basis"]

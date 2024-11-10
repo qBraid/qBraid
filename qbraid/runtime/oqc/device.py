@@ -15,8 +15,7 @@ Device class for OQC devices.
 from __future__ import annotations
 
 import datetime
-import json
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Optional, Union
 
 from qcaas_client.client import QPUTask
 from qcaas_client.compiler_config import (
@@ -26,7 +25,9 @@ from qcaas_client.compiler_config import (
     Tket,
     TketOptimizations,
 )
+from requests import ReadTimeout
 
+from qbraid._logging import logger
 from qbraid.passes.qasm.compat import rename_qasm_registers
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
@@ -85,43 +86,48 @@ class OQCDevice(QuantumDevice):
         """Returns the client for the device."""
         return self._client
 
-    @staticmethod
-    def _decode_feature_set(data: dict[str, Any]) -> dict[str, Any]:
-        """Decode the device feature set data."""
-        feature_set: Union[str, dict] = data.get("feature_set", {})
-
-        if isinstance(feature_set, dict):
-            return data
-
-        try:
-            feature_set_decoded = json.loads(feature_set)
-        except json.JSONDecodeError as err:
-            raise ValueError(
-                f"Failed to decode feature set data for device '{data.get('id')}'."
-            ) from err
-
-        data["feature_set"] = feature_set_decoded
-
-        return data
-
     def status(self) -> DeviceStatus:
         """Returns the status of the device."""
-        devices: list[dict] = self._client.get_qpus()
-        for device in devices:
-            device = self._decode_feature_set(device)
-            if device["id"] == self.id:
-                if device["feature_set"]["always_on"]:
-                    return DeviceStatus.ONLINE
-                now = datetime.datetime.now()
-                start_time = self._client.get_next_window()
-                temp = start_time.split(" ")
-                year, month, day = map(int, temp[0].split("-"))
-                hour, minute, second = map(int, temp[1].split(":"))
-                start_time = datetime.datetime(year, month, day, hour, minute, second)
-                if now > start_time:
-                    return DeviceStatus.ONLINE
-                return DeviceStatus.OFFLINE
-        raise ResourceNotFoundError(f"Device {self.id} not found")
+        feature_set: dict = self.profile.get("feature_set", {})
+        always_on: bool = feature_set.get("always_on", False)
+        if always_on:
+            return DeviceStatus.ONLINE
+
+        devices = self._client.get_qpus()
+        device: Optional[dict] = next((d for d in devices if d["id"] == self.id), None)
+        if not device:
+            raise ResourceNotFoundError(f"Device '{self.id}' not found.")
+
+        try:
+            start_time = self.get_next_window()
+            now = datetime.datetime.now()
+
+            if now > start_time:
+                return DeviceStatus.ONLINE
+        except ResourceNotFoundError as err:
+            logger.error(err)
+
+        return DeviceStatus.UNAVAILABLE
+
+    def get_next_window(self) -> datetime.datetime:
+        """
+        Returns the start time of the next active window for the device.
+
+        Note: Currently only AWS windows are defined.
+        """
+        try:
+            start_time = self._client.get_next_window(self.id)
+        except ReadTimeout as err:
+            raise ResourceNotFoundError(
+                f"Falied to fetch next active window for device '{self.id}'. "
+                "Note: Currently only AWS windows are defined."
+            ) from err
+
+        temp = start_time.split(" ")
+        year, month, day = map(int, temp[0].split("-"))
+        hour, minute, second = map(int, temp[1].split(":"))
+        start_time = datetime.datetime(year, month, day, hour, minute, second)
+        return start_time
 
     def transform(self, run_input: str) -> str:
         """Transforms the input program before submitting it to the device."""

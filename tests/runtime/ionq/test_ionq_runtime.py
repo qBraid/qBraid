@@ -23,7 +23,7 @@ import pytest
 
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
 from qbraid.programs.gate_model.ionq import IONQ_NATIVE_GATES_BASE, IONQ_QIS_GATES
-from qbraid.runtime import GateModelResultData, Result, TargetProfile
+from qbraid.runtime import GateModelResultData, ResourceNotFoundError, Result, TargetProfile
 from qbraid.runtime.enums import DeviceStatus, JobStatus
 from qbraid.runtime.ionq import IonQDevice, IonQJob, IonQProvider, IonQSession
 from qbraid.runtime.ionq.job import IonQJobError
@@ -193,6 +193,17 @@ def test_get_device_characterization_from_data():
         assert characterization == CHARACTERIZATION_DATA
 
 
+def test_provider_session_device_not_found_error():
+    """Test that a ValueError is raised if the device is not found."""
+    with patch("qbraid.runtime.ionq.provider.Session") as mock_session:
+        mock_session.return_value.get.return_value.json.return_value = DEVICE_DATA
+
+        provider = IonQProvider(api_key="fake_api_key")
+
+        with pytest.raises(ResourceNotFoundError, match="Device 'fake_device' not found."):
+            provider.get_device("fake_device")
+
+
 def test_ionq_provider_device_unavailable():
     """Test getting IonQ provider and different status devices."""
 
@@ -238,23 +249,49 @@ def test_ionq_provider_device_unavailable():
         fake_device.status()
 
 
-def test_ionq_device_transform_run_input():
-    """Test transforming OpenQASM 2 string to supported gates + json format."""
-    qasm_input = """
-    OPENQASM 2.0;
-    qreg q[2];
-    cry(pi/4) q[0], q[1];
-    """
-    expected_output = {
+@pytest.fixture
+def qis_input():
+    """Return a QIS gateset input."""
+    return {
+        "format": "ionq.circuit.v0",
         "gateset": "qis",
         "qubits": 2,
         "circuit": [
+            {"gate": "h", "target": 0},
+            {"gate": "h", "target": 1},
             {"gate": "ry", "target": 1, "rotation": 0.39269908169872414},
             {"gate": "cnot", "control": 0, "target": 1},
             {"gate": "ry", "target": 1, "rotation": -0.39269908169872414},
             {"gate": "cnot", "control": 0, "target": 1},
         ],
     }
+
+
+@pytest.fixture
+def native_input():
+    """Return a native gateset input."""
+    return {
+        "format": "ionq.circuit.v0",
+        "gateset": "native",
+        "qubits": 3,
+        "circuit": [
+            {"gate": "ms", "targets": [0, 1], "phases": [0, 0]},
+            {"gate": "ms", "targets": [1, 2], "phases": [-0.5, 0.6], "angle": 0.1},
+            {"gate": "gpi", "phase": 0, "target": 0},
+            {"gate": "gpi2", "phase": 0.2, "target": 1},
+        ],
+    }
+
+
+def test_ionq_device_transform_run_input(qis_input):
+    """Test transforming OpenQASM 2 string to supported gates + json format."""
+    qasm_input = """
+    OPENQASM 2.0;
+    qreg q[2];
+    h q[0];
+    h q[1];
+    cry(pi/4) q[0], q[1];
+    """
 
     with (
         patch("qbraid.runtime.ionq.provider.Session") as mock_session,
@@ -271,7 +308,7 @@ def test_ionq_device_transform_run_input():
         device = test_devices[0]
         qasm_compat = device.transform(qasm_input)
         program_json = device.to_ir(qasm_compat)
-        assert program_json == expected_output
+        assert program_json == qis_input
 
         dummy_provider = IonQProvider(api_key="fake_api_key")
         assert provider == dummy_provider
@@ -468,3 +505,131 @@ def test_ionq_session_api_key_from_env_var(monkeypatch):
     session = IonQSession()
 
     assert session.api_key == api_key
+
+
+def test_squash_multicircuit_input_empty_batch():
+    """Test with an empty batch_input to ensure ValueError is raised."""
+    with pytest.raises(ValueError, match="run_input list cannot be empty."):
+        IonQDevice._squash_multicircuit_input([])
+
+
+def test_squash_multicircuit_input_inconsistent_format(native_input):
+    """Test with inconsistent formats to ensure ValueError is raised."""
+    batch_input = [
+        native_input,
+        {**native_input, "format": "ionq.circuit.v1"},
+    ]
+    with pytest.raises(
+        ValueError, match="All run_inputs must have the same value for key 'format'."
+    ):
+        IonQDevice._squash_multicircuit_input(batch_input)
+
+
+def test_squash_multicircuit_input_inconsistent_gateset(qis_input, native_input):
+    """Test with inconsistent basis_gatess to ensure ValueError is raised."""
+    batch_input = [
+        qis_input,
+        native_input,
+    ]
+    with pytest.raises(
+        ValueError, match="All run_inputs must have the same value for key 'gateset'."
+    ):
+        IonQDevice._squash_multicircuit_input(batch_input)
+
+
+def test_squash_multicircuit_input_missing_required_field(native_input):
+    """Test with missing required fields to ensure ValueError is raised."""
+    batch_input = [
+        {**native_input, "qubits": None},
+        native_input,
+    ]
+    with pytest.raises(ValueError, match="All run_inputs must be an instance of ~IonQDict."):
+        IonQDevice._squash_multicircuit_input(batch_input)
+
+
+def test_squash_multicircuit_input_valid_single_entry(native_input):
+    """Test with a valid single entry in batch_input."""
+    batch_input = [native_input]
+    result = IonQDevice._squash_multicircuit_input(batch_input)
+    assert result == {
+        "format": native_input["format"],
+        "gateset": native_input["gateset"],
+        "qubits": native_input["qubits"],
+        "circuits": [{"circuit": native_input["circuit"], "name": "Circuit 0"}],
+    }
+
+
+def test_squash_multicircuit_input_valid_multiple_entries(native_input):
+    """Test with multiple valid entries in batch_input."""
+    modified_native_input = {**native_input, "qubits": 5, "circuit": native_input["circuit"]}
+    batch_input = [native_input, modified_native_input]
+
+    result = IonQDevice._squash_multicircuit_input(batch_input)
+    assert result == {
+        "format": native_input["format"],
+        "gateset": native_input["gateset"],
+        "qubits": 5,
+        "circuits": [
+            {"circuit": native_input["circuit"], "name": "Circuit 0"},
+            {"circuit": modified_native_input["circuit"], "name": "Circuit 1"},
+        ],
+    }
+
+
+def random_ionq_id(user=False):
+    """Return a random IonQ ID."""
+    hex = uuid.uuid4().hex
+
+    if user:
+        return hex[:24]
+
+    return f"{hex[:8]}-{hex[8:12]}-{hex[12:16]}-{hex[16:20]}-{hex[20:]}"
+
+
+def generate_job_data_ids(num_children=0):
+    """Generate random IonQ job data IDs."""
+    return {
+        "id": random_ionq_id(),
+        "submitted_by": random_ionq_id(user=True),
+        "project_id": random_ionq_id(),
+        "children": [random_ionq_id() for _ in range(num_children)],
+    }
+
+
+@pytest.fixture
+def multicircuit_job_data():
+    """Return mock data for a multicircuit job."""
+    ids = generate_job_data_ids(num_children=2)
+
+    return {
+        **ids,
+        "status": "completed",
+        "target": "simulator",
+        "type": "circuit",
+        "qubits": 2,
+        "circuits": 2,
+        "results_url": f"/v0.3/jobs/{ids['id']}/results",
+        "gate_counts": {"1q": 2, "2q": 2},
+        "cost_usd": 0,
+        "request": 1731088388,
+        "start": 1731088390,
+        "response": 1731088390,
+        "execution_time": 98,
+        "predicted_execution_time": 8,
+        "noise": {"model": "ideal"},
+        "error_mitigation": {"debias": False},
+        "probabilities": {
+            ids["children"][0]: {"0": 0.65, "3": 0.35},
+            ids["children"][1]: {"0": 0.5, "3": 0.5},
+        },
+        "shots": 1000,
+    }
+
+
+def test_ionq_get_counts_multicircuit_job(multicircuit_job_data):
+    """Test getting counts for a multi-circuit job."""
+    counts = IonQJob._get_counts(multicircuit_job_data)
+    assert counts == [
+        {"00": 650, "11": 350},
+        {"00": 500, "11": 500},
+    ]

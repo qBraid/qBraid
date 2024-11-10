@@ -57,6 +57,15 @@ class GateSet(Enum):
     QIS = "qis"
 
 
+class InputFormat(Enum):
+    """Enumeration of IonQ input format types."""
+
+    CIRCUIT = "ionq.circuit.v0"
+    QASM = "qasm"
+    OPENQASM = "openqasm"
+    QUIPPER = "quipper"
+
+
 class IonQProgram(GateModelProgram):
     """Wrapper class for ``IonQDict`` objects."""
 
