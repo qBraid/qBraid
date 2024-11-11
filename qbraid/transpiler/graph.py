@@ -334,6 +334,42 @@ class ConversionGraph(rx.PyDiGraph):
         paths = self.find_top_shortest_conversion_paths(source, target, top_n=num_conversions)
         return [self._get_path_from_bound_methods(path) for path in paths]
 
+    def _calculate_depth_and_weight(
+        self, path: str, conv_weights: dict[tuple[str, str], int]
+    ) -> tuple[int, int]:
+        """Calculate the depth and weight of a given path."""
+        conv_nodes = path.split(" -> ")
+        conv_pairs = list(zip(conv_nodes, conv_nodes[1:]))
+        depth = len(conv_pairs)
+        weight = sum(conv_weights.get(pair, 0) for pair in conv_pairs)
+        return depth, weight
+
+    def _find_closest(
+        self,
+        pivot: str,
+        candidates: list[str],
+        has_path_func: Callable[[str, str], Optional[str]],
+        shortest_path_func: Callable[[str, str], str],
+    ) -> Optional[str]:
+        """Find the closest item in candidates to/from pivot based on conversion paths."""
+        closest = None
+        min_depth = float("inf")
+        min_weight = float("inf")
+
+        conv_weights = {(conv.source, conv.target): conv.weight for conv in self.conversions()}
+
+        for candidate in candidates:
+            if has_path_func(pivot, candidate):
+                path = shortest_path_func(pivot, candidate)
+                depth, weight = self._calculate_depth_and_weight(path, conv_weights)
+
+                if (depth < min_depth) or (depth == min_depth and weight < min_weight):
+                    min_depth = depth
+                    min_weight = weight
+                    closest = candidate
+
+        return closest
+
     def closest_target(self, source: str, targets: list[str]) -> Optional[str]:
         """
         Determine the closest target from a list of possible targets based on the
@@ -352,29 +388,49 @@ class ConversionGraph(rx.PyDiGraph):
         """
         if source in targets:
             return source
+        return self._find_closest(source, targets, self.has_path, self.shortest_path)
 
-        closest = None
-        min_depth = float("inf")
-        min_weight = float("inf")
+    def closest_source(self, target: str, sources: list[str]) -> Optional[str]:
+        """
+        Determine the closest source from a list of possible sources based on the
+        shortest conversion path and weights. In case of equal path depths, the
+        source with the higher total weight of its path edges is chosen.
 
-        conv_weights = {(conv.source, conv.target): conv.weight for conv in self.conversions()}
+        Args:
+            target (str): The alias to which conversion paths are evaluated.
+            sources (list[str]): A list of source aliases from which the conversion paths
+                are evaluated.
 
-        for target in targets:
-            if self.has_path(source, target):
-                conv_path: str = self.shortest_path(source, target)
-                conv_nodes = conv_path.split(" -> ")
-                conv_pairs = list(zip(conv_nodes, conv_nodes[1:]))
-                current_depth = len(conv_pairs)
-                current_weight = sum(conv_weights.get(pair, 0) for pair in conv_pairs)
+        Returns:
+            Optional[str]: The name of the source that requires the fewest conversions
+                to the target or has higher weights in tie cases. Returns `None` if no
+                conversion paths are available.
+        """
+        if target in sources:
+            return target
+        return self._find_closest(
+            target,
+            sources,
+            lambda tgt, src: self.has_path(src, tgt),
+            lambda tgt, src: self.shortest_path(src, tgt),
+        )
 
-                if (current_depth < min_depth) or (
-                    current_depth == min_depth and current_weight < min_weight
-                ):
-                    min_depth = current_depth
-                    min_weight = current_weight
-                    closest = target
+    def _get_sorted_closest(
+        self, pivot: str, items: list[str], closest_func: Callable[[str, list[str]], Optional[str]]
+    ) -> list[str]:
+        """Sort a list of items from closest to least close based on conversion paths."""
+        sorted_items = []
+        remaining = items.copy()
 
-        return closest
+        while remaining:
+            closest = closest_func(pivot, remaining)
+            if closest is None:
+                sorted_items.extend(remaining)
+                break
+            sorted_items.append(closest)
+            remaining.remove(closest)
+
+        return sorted_items
 
     def get_sorted_closest_targets(self, source: str, targets: list[str]) -> list[str]:
         """
@@ -389,20 +445,22 @@ class ConversionGraph(rx.PyDiGraph):
             list[str]: A list of target aliases ordered by proximity to the source,
                     with unreachable targets appended at the end.
         """
-        sorted_targets = []
-        remaining = targets.copy()
+        return self._get_sorted_closest(source, targets, self.closest_target)
 
-        while remaining:
-            closest = self.closest_target(source, remaining)
+    def get_sorted_closest_sources(self, target: str, sources: list[str]) -> list[str]:
+        """
+        Sorts a list of sources from closest to least close based on conversion paths
+        from the target. Sources without valid conversion paths are appended at the end.
 
-            if closest is None:
-                sorted_targets.extend(remaining)
-                break
+        Args:
+            target (str): The alias to which conversion paths are evaluated.
+            sources (list[str]): A list of source aliases to be ordered by proximity.
 
-            sorted_targets.append(closest)
-            remaining.remove(closest)
-
-        return sorted_targets
+        Returns:
+            list[str]: A list of source aliases ordered by proximity to the target,
+                    with unreachable sources appended at the end.
+        """
+        return self._get_sorted_closest(target, sources, self.closest_source)
 
     def get_node_experiment_types(self) -> dict[str, ExperimentType]:
         """

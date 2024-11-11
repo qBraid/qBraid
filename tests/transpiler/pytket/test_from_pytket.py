@@ -19,7 +19,7 @@ try:
     from pytket.circuit import Circuit as TKCircuit
 
     from qbraid.interface import circuits_allclose, random_circuit
-    from qbraid.transpiler import ProgramConversionError, transpile
+    from qbraid.transpiler import ConversionGraph, ProgramConversionError, transpile
 
     pytket_not_installed = False
 except ImportError:
@@ -59,8 +59,9 @@ def test_rzz_gate_from_pytket(qubits, theta):
 
 def test_100_random_pytket():
     """Test converting 100 random pytket circuits to cirq."""
+    graph = ConversionGraph(nodes=["pytket", "cirq", "qasm2"])
     for _ in range(100):
-        pytket_circuit = random_circuit("pytket", 4, 1)
+        pytket_circuit = random_circuit("pytket", 4, 1, graph=graph)
         cirq_circuit = transpile(pytket_circuit, "cirq")
         assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=False)
 
