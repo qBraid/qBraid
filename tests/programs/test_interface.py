@@ -18,7 +18,7 @@ from qbraid._version import __version__
 from qbraid.interface import circuits_allclose, random_circuit
 from qbraid.interface.random.qasm3_random import _qasm3_random
 from qbraid.programs.exceptions import QbraidError
-from qbraid.transpiler import transpile
+from qbraid.transpiler import ConversionGraph, transpile
 
 
 @pytest.mark.parametrize("num_qubits, depth, max_operands, seed", [(1, 1, 1, 42)])
@@ -108,3 +108,11 @@ def test_bad_random_circuit():
     """Test that random_circuit raises a PackageValueError when given a bad package."""
     with pytest.raises(QbraidError):
         random_circuit("bad_package")
+
+
+def test_raise_value_error_no_valid_generators():
+    """Test raising ValueError when no valid generators are available"""
+    with pytest.raises(
+        ValueError, match="No registered generator that can create a random circuit for 'qasm2'"
+    ):
+        random_circuit("qasm2", graph=ConversionGraph(nodes=["qasm2", "qasm3"]))
