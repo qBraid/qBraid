@@ -16,8 +16,9 @@ import pytest
 
 from qbraid._version import __version__
 from qbraid.interface import circuits_allclose, random_circuit
+from qbraid.interface.random.qasm3_random import _qasm3_random
 from qbraid.programs.exceptions import QbraidError
-from qbraid.transpiler import transpile
+from qbraid.transpiler import ConversionGraph, transpile
 
 
 @pytest.mark.parametrize("num_qubits, depth, max_operands, seed", [(1, 1, 1, 42)])
@@ -55,13 +56,21 @@ def test_bad_qasm3_random():
         random_circuit("qasm3", seed="12")
 
 
-@pytest.mark.parametrize("param", ["num_qubits", "depth", "max_operands"])
+@pytest.mark.parametrize("param", ["num_qubits", "depth"])
 def test_qasm3_zero_value_raises(param):
     """Test that _qasm3_random raises a ValueError when a circuit parameter is <=0."""
     params = {param: 0}
-    expected_err = f"Invalid random circuit options. {param} must be a positive integer."
+    expected_err = f"Invalid random circuit option. '{param}' must be a positive integer."
     with pytest.raises(ValueError, match=expected_err):
         random_circuit("qasm3", **params)
+
+
+@pytest.mark.parametrize("param", ["max_operands"])
+def test_qasm3_zero_value_raises_for_max_operands(param):
+    """Test that _qasm3_random raises a ValueError when a circuit parameter is <=0."""
+    expected_err = f"Invalid random circuit option. '{param}' must be a positive integer."
+    with pytest.raises(ValueError, match=expected_err):
+        _qasm3_random(max_operands=0)
 
 
 @pytest.mark.parametrize("package", ["qiskit", "cirq"])
@@ -70,10 +79,9 @@ def test_random_circuit_raises_for_bad_params(package: str, available_targets):
     if package not in available_targets:
         pytest.skip(f"{package} not installed")
 
-    capitalized_package = package.capitalize()
-    err_msg = f"Failed to create {capitalized_package} random circuit"
+    err_msg = f"Failed to generate random circuit for program type '{package}'."
     with pytest.raises(QbraidError, match=err_msg):
-        random_circuit(package, num_qubits=-1)
+        random_circuit(package, made_up_param=42)
 
 
 def test_circuits_allclose(available_targets):
@@ -100,3 +108,11 @@ def test_bad_random_circuit():
     """Test that random_circuit raises a PackageValueError when given a bad package."""
     with pytest.raises(QbraidError):
         random_circuit("bad_package")
+
+
+def test_raise_value_error_no_valid_generators():
+    """Test raising ValueError when no valid generators are available"""
+    with pytest.raises(
+        ValueError, match="No registered generator that can create a random circuit for 'qasm2'"
+    ):
+        random_circuit("qasm2", graph=ConversionGraph(nodes=["qasm2", "qasm3"]))

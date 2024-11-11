@@ -14,63 +14,89 @@ Module for generate random quantum circuits used for testing
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Callable, Optional
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 
+from qbraid._logging import logger
+from qbraid.exceptions import QbraidError
 from qbraid.programs.exceptions import PackageValueError
-from qbraid.programs.registry import QPROGRAM, QPROGRAM_ALIASES
+from qbraid.programs.registry import QPROGRAM_ALIASES
 from qbraid.transpiler.converter import transpile
-
-QROGRAM_TEST_TYPE = tuple[dict[str, Callable[[Any], QPROGRAM]], np.ndarray]
+from qbraid.transpiler.graph import ConversionGraph
 
 if TYPE_CHECKING:
     import qbraid.programs
 
 
 def random_circuit(
-    package: str, num_qubits: Optional[int] = None, depth: Optional[int] = None, **kwargs
+    package: str,
+    num_qubits: Optional[int] = None,
+    depth: Optional[int] = None,
+    graph: Optional[ConversionGraph] = None,
+    **kwargs,
 ) -> qbraid.programs.QPROGRAM:
     """Generate random circuit of arbitrary size and form.
 
     Args:
-        package: qBraid supported software package
-        num_qubits: Number of quantum wires. If not provided, set randomly in range [2,4].
-        depth: Layers of operations (i.e. critical path length)
-            If not provided, set randomly in range [2,4].
+        package (str): qBraid supported software package
+        num_qubits (int, optional): Number of quantum wires.
+            If not provided, set randomly in range [1,4].
+        depth (int, optional): Layers of operations (i.e. critical path length)
+            If not provided, set randomly in range [1,4].
+        graph (ConversionGraph, optional): Conversion graph to use for transpilation
+        **kwargs: Additional keyword arguments to pass to the random circuit generator
 
     Raises:
         PackageValueError: if ``package`` is not supported
-        QbraidError: when invalid random circuit options given
+        ValueError: when no conversion path exists for the specified package
+        QbraidError: when random circuit generation fails for the specified package
 
     Returns:
-        :data:`~qbraid.programs.QPROGRAM`: randomly generated quantum circuit/program
-
+        qbraid.programs.QPROGRAM: randomly generated quantum circuit/program
     """
+
+    def validate_and_assign(value: Optional[int], name: str):
+        if value is None:
+            return np.random.randint(1, 4)
+        if not isinstance(value, int) or value <= 0:
+            raise ValueError(f"Invalid random circuit option. '{name}' must be a positive integer.")
+        return value
+
     if package not in QPROGRAM_ALIASES:
-        raise PackageValueError(package)
+        raise PackageValueError(f"Package '{package}' is not supported.")
 
-    num_qubits = np.random.randint(1, 4) if num_qubits is None else num_qubits
-    depth = np.random.randint(1, 4) if depth is None else depth
+    generator_funcs = {
+        "qasm3": "qbraid.interface.random.qasm3_random._qasm3_random",
+        "qiskit": "qbraid.interface.random.qiskit_random._qiskit_random",
+        "cirq": "qbraid.interface.random.cirq_random._cirq_random",
+    }
+    graph = graph or ConversionGraph()
+    valid_generators = [gen for gen in list(generator_funcs.keys()) if graph.has_path(gen, package)]
 
-    # pylint: disable=import-outside-toplevel
-    if package == "qasm3":
-        from qbraid.interface.random.qasm3_random import _qasm3_random
+    if not valid_generators:
+        raise ValueError(
+            f"No registered generator that can create a random circuit for '{package}'."
+        )
 
-        rand_circuit = _qasm3_random(num_qubits, depth, **kwargs)
-    elif package == "qiskit":
-        from qbraid.interface.random.qiskit_random import _qiskit_random
+    num_qubits = validate_and_assign(num_qubits, "num_qubits")
+    depth = validate_and_assign(depth, "depth")
 
-        rand_circuit = _qiskit_random(num_qubits, depth, **kwargs)
-    else:
-        from qbraid.interface.random.cirq_random import _cirq_random
+    sorted_generators = graph.get_sorted_closest_sources(package, valid_generators)
 
-        rand_circuit = _cirq_random(num_qubits, depth, **kwargs)
+    for src_pkg in sorted_generators:
+        func_path = generator_funcs[src_pkg]
+        try:
+            module_name, func_name = func_path.rsplit(".", 1)
+            module = __import__(module_name, fromlist=[func_name])
+            rand_circuit_func = getattr(module, func_name)
+            rand_circuit = rand_circuit_func(num_qubits, depth, **kwargs)
+            return transpile(rand_circuit, package)
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            logger.info("Failed to generate circuit with %s: %s", src_pkg, err)
+            continue
 
-        if package != "cirq":
-            rand_circuit = transpile(rand_circuit, package)
-
-    return rand_circuit
+    raise QbraidError(f"Failed to generate random circuit for program type '{package}'.")
 
 
 def random_unitary_matrix(dim: int) -> np.ndarray:

@@ -99,8 +99,8 @@ def _qasm3_random(
     def validate_and_assign(value: Optional[int], name: str):
         if value is None:
             return np.random.randint(1, 4)
-        if value <= 0:
-            raise ValueError(f"Invalid random circuit options. {name} must be a positive integer.")
+        if not isinstance(value, int) or value <= 0:
+            raise ValueError(f"Invalid random circuit option. '{name}' must be a positive integer.")
         return value
 
     num_qubits = validate_and_assign(num_qubits, "num_qubits")
