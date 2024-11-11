@@ -40,6 +40,7 @@ try:
     from qbraid.runtime.exceptions import ResourceNotFoundError
     from qbraid.runtime.oqc import OQCDevice, OQCJob, OQCProvider
     from qbraid.runtime.postprocess import counts_to_probabilities
+    from qbraid.runtime.schemas.base import USD
 
     FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
@@ -83,7 +84,7 @@ TOSHIKO_MOCK_DATA = {
     "generation": 3,
     "id": TOSHIKO_ID,
     "name": "OQC Toshiko Tokyo-1",
-    "price_per_shot": "0",
+    "price_per_shot": "0.0013",
     "price_per_task": "0",
     "region": "jp",
     "status": "ACTIVE",
@@ -290,8 +291,8 @@ def target_profile(lucy_sim_data):
         num_qubits=num_qubits,
         program_spec=ProgramSpec(str, alias="qasm3"),
         feature_set=feature_set,
-        price_per_shot=lucy_sim_data["price_per_shot"],
-        price_per_task=lucy_sim_data["price_per_task"],
+        price_per_shot=USD(lucy_sim_data["price_per_shot"]),
+        price_per_task=USD(lucy_sim_data["price_per_task"]),
         generation=lucy_sim_data["generation"],
         region=lucy_sim_data["region"],
     )
@@ -317,8 +318,6 @@ def oqc_job_failed(oqc_client, oqc_device):
 
 def test_oqc_provider_get_devices(lucy_sim_data, toshiko_data):
     """Test getting all OQC devices."""
-    lucy_id = lucy_sim_data["id"]
-    toshiko_id = toshiko_data["id"]
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
         mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
@@ -328,25 +327,37 @@ def test_oqc_provider_get_devices(lucy_sim_data, toshiko_data):
         assert provider.client == mock_client.return_value
         devices = provider.get_devices()
         assert isinstance(devices, list)
-        assert len(devices) == 2
-        assert any(device.id == lucy_id for device in devices)
-        assert any(device.id == toshiko_id for device in devices)
+        assert {device.id for device in devices} == {lucy_sim_data["id"], toshiko_data["id"]}
 
 
-def test_oqc_provider_get_device(lucy_sim_id, lucy_sim_data, toshiko_data):
+def test_oqc_provider_get_device_profile(lucy_sim_data, toshiko_data):
     """Test getting a specific OQC device."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
         mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
         provider = OQCProvider(token="fake_token")
-        test_device = provider.get_device(lucy_sim_id)
+        test_device = provider.get_device(lucy_sim_data["id"])
         assert isinstance(test_device.status(), DeviceStatus)
         assert isinstance(test_device, OQCDevice)
-        assert test_device.profile["device_id"] == lucy_sim_id
+        assert test_device.profile["device_id"] == lucy_sim_data["id"]
+        assert test_device.profile["price_per_shot"] == USD(lucy_sim_data["price_per_shot"])
+        assert test_device.profile["price_per_task"] == USD(lucy_sim_data["price_per_task"])
         assert isinstance(test_device.client, OQCClient)
 
 
-def test_oqc_device_status_from_window_unavailable(lucy_sim_id, lucy_sim_data, toshiko_data):
+def test_oqc_provider_get_device_status_offline(lucy_sim_data, toshiko_data):
+    """Test getting a specific OQC device."""
+    toshiko_data["active"] = False
+    toshiko_data["status"] = "INACTIVE"
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = Mock(spec=OQCClient)
+        mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
+        provider = OQCProvider(token="fake_token")
+        test_device = provider.get_device(toshiko_data["id"])
+        assert test_device.status() == DeviceStatus.OFFLINE
+
+
+def test_oqc_device_status_from_window_unavailable(lucy_sim_data, toshiko_data):
     """Test that device status value varies correctly based on next available window."""
     lucy_sim_data["feature_set"] = json.dumps(
         {"always_on": False, "qubit_count": 8, "simulator": True}
@@ -360,29 +371,29 @@ def test_oqc_device_status_from_window_unavailable(lucy_sim_id, lucy_sim_data, t
         year, month, day = now.year, now.month, now.day
         window = f"{year + 1}-{month}-{day} 00:50:00"
         mock_client.return_value.get_next_window.return_value = window
-        unavailable_device = provider.get_device(lucy_sim_id)
+        unavailable_device = provider.get_device(lucy_sim_data["id"])
         assert unavailable_device.status() == DeviceStatus.UNAVAILABLE
 
 
-def test_oqc_device_status_always_on(lucy_sim_id, lucy_sim_data, toshiko_data):
+def test_oqc_device_status_always_on(lucy_sim_data, toshiko_data):
     """Test that device status is ONLINE for devices that are always on."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
         mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
         provider = OQCProvider(token="fake_token")
-        device = provider.get_device(lucy_sim_id)
+        device = provider.get_device(lucy_sim_data["id"])
         assert device.status() == DeviceStatus.ONLINE
         mock_client.get_next_window.assert_not_called()
 
 
-def test_oqc_device_status_from_window_online(toshiko_id, lucy_sim_data, toshiko_data):
+def test_oqc_device_status_from_window_online(lucy_sim_data, toshiko_data):
     """Test that device status value varies correctly based on next available window."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
         mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
 
         provider = OQCProvider(token="fake_token")
-        always_on_false_available_device = provider.get_device(toshiko_id)
+        always_on_false_available_device = provider.get_device(toshiko_data["id"])
         always_on_false_available_device._client = MockOQCClient(
             authentication_token="fake_token", toshiko_available=True
         )
