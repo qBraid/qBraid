@@ -24,6 +24,7 @@ from qbraid.programs.spec import ProgramSpec
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
+from qbraid.runtime.schemas.base import USD
 
 from .device import OQCDevice
 
@@ -70,8 +71,13 @@ class OQCProvider(QuantumProvider):
         except KeyError as err:
             raise ValueError(f"Failed to gather profile data for device '{device_id}'.") from err
 
-        dynamic_fields = ["active", "status"]
-        static_data = {k: v for k, v in data.items() if k not in dynamic_fields}
+        dynamic_fields = {"active", "status"}
+        pricing_fields = {"price_per_shot", "price_per_task"}
+        static_data = {
+            k: (USD(v) if k in pricing_fields else v)
+            for k, v in data.items()
+            if k not in dynamic_fields
+        }
 
         return TargetProfile(
             device_id=device_id,

@@ -98,6 +98,11 @@ class OQCDevice(QuantumDevice):
         if not device:
             raise ResourceNotFoundError(f"Device '{self.id}' not found.")
 
+        status: str = device.get("status", "")
+
+        if status and status.upper() == "INACTIVE":
+            return DeviceStatus.OFFLINE
+
         try:
             start_time = self.get_next_window()
             now = datetime.datetime.now()

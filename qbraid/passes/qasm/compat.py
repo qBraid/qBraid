@@ -193,7 +193,7 @@ def convert_qasm_pi_to_decimal(qasm: str) -> str:
 
         for gate_def in gate_defs:
             if gate_def in qasm[max(0, start - len(gate_def)) : end]:
-                return expr
+                return expr  # pragma: no cover
 
         expr_with_pi_as_decimal = expr.replace("pi", str(math.pi))
         try:
