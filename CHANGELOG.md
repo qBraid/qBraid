@@ -75,6 +75,7 @@ job = device.run(qubo, params=params)
 
 - IonQ multicircuit jobs and input data format field added explicitly ([#825](https://github.com/qBraid/qBraid/pull/825))
 - OQC provider url + timeout params added to `__init__`, and target profile updates to include new device metadata fields returned by `OQCClient`, particularly in relation to Toshiko QPU  ([#825](https://github.com/qBraid/qBraid/pull/825))
+- Updated `random_circuit` function to use transpiler to consider all possible random circuit generators package funcs starting from the one with the closest conversion path to the specified target package. Reverses the logic of `ConversionGraph.get_sorted_closest_targets` with new function `ConversionGraph.get_sorted_closest_sources()` ([#829](https://github.com/qBraid/qBraid/pull/829))
 
 ### Fixed
 - Fixed `qasm2_to_qasm3()` conversion error cause by `qbraid/transpiler/conversions/qasm2/qelib_qasm3.qasm` not being included in `MANIFEST.in`  ([#825](https://github.com/qBraid/qBraid/pull/825))
