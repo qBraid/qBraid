@@ -15,6 +15,20 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+
+### Improved / Modified
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Dependencies
+
+## [0.8.6] - 2024-11-11
+
+### Added
 - Registered "qubo" coefficients program type under `qbraid.programs.typer.QuboCoefficientsDict` ([#820](https://github.com/qBraid/qBraid/pull/820))
 - Added option to create a `ConversionGraph` using only specific nodes ([#822](https://github.com/qBraid/qBraid/pull/822))
 - Added option to include all registered program types in `ConversionGraph`, even if they don't have any supported conversions ([#822](https://github.com/qBraid/qBraid/pull/822))
@@ -31,6 +45,9 @@ for alias, exp_type in graph.get_node_experiment_types().items():
 
 graph.plot(experiment_type=ExperimentType.GATE_MODEL)
 ```
+
+- Added conditional for OQC device `OFFLINE` status when unavailable + outside live window ([#826](https://github.com/qBraid/qBraid/pull/826))
+- Added units for OQC device pricing (USD) ([#826](https://github.com/qBraid/qBraid/pull/826))
 
 ### Improved / Modified
 - Separated runtime device `transform` and `to_ir` logic into separate steps ([#819](https://github.com/qBraid/qBraid/pull/819))
@@ -59,15 +76,13 @@ job = device.run(qubo, params=params)
 - IonQ multicircuit jobs and input data format field added explicitly ([#825](https://github.com/qBraid/qBraid/pull/825))
 - OQC provider url + timeout params added to `__init__`, and target profile updates to include new device metadata fields returned by `OQCClient`, particularly in relation to Toshiko QPU  ([#825](https://github.com/qBraid/qBraid/pull/825))
 
-### Deprecated
-
-### Removed
-
 ### Fixed
+- Fixed `qasm2_to_qasm3()` conversion error cause by `qbraid/transpiler/conversions/qasm2/qelib_qasm3.qasm` not being included in `MANIFEST.in`  ([#825](https://github.com/qBraid/qBraid/pull/825))
+- Fixed docs CSS so stable/latest words show up (previously white and blended into the background so weren't visible) ([#826](https://github.com/qBraid/qBraid/pull/826))
 
 ### Dependencies
-- Updated pyqasm optional dependency to `0.0.3` ([#824](https://github.com/qBraid/qBraid/pull/824))
-
+- Updated `pyqasm` optional dependency to `0.0.3` ([#824](https://github.com/qBraid/qBraid/pull/824))
+- Updated `oqc-qcass-client` optional dependnecy to `3.11.0` ([#826](https://github.com/qBraid/qBraid/pull/826))
 
 ## [0.8.5] - 2024-10-31
 
