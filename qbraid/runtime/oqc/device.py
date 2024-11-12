@@ -16,7 +16,6 @@ from __future__ import annotations
 
 import datetime
 from typing import TYPE_CHECKING, Optional, Union
-from zoneinfo import ZoneInfo
 
 from qcaas_client.client import QPUTask
 from qcaas_client.compiler_config import (
@@ -114,9 +113,8 @@ class OQCDevice(QuantumDevice):
         try:
             start_time = self.get_next_window()
             now = datetime.datetime.now()
-            now_utc = now.astimezone(ZoneInfo("UTC"))
 
-            if now_utc > start_time:
+            if now > start_time:  # TODO: does this comparison correctly account for timezones?
                 return DeviceStatus.ONLINE
         except ResourceNotFoundError as err:  # pylint: disable=broad-exception-caught
             logger.info(err)
