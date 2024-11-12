@@ -23,6 +23,7 @@ from qbraid.passes.qasm.compat import (
     has_redundant_parentheses,
     insert_gate_def,
     normalize_qasm_gate_params,
+    remove_include_statements,
     remove_stdgates_include,
     replace_gate_name,
     simplify_parentheses_in_qasm,
@@ -338,3 +339,42 @@ def test_convert_qasm_pi_to_decimal_qasm3_fns_gates_vars():
     result = measure q;
     """
     assert convert_qasm_pi_to_decimal(qasm) == expected
+
+
+@pytest.mark.parametrize(
+    "qasm_input, expected_output",
+    [
+        (
+            """
+OPENQASM 2.0;
+include "qelib1.inc";
+qreg q[2];
+gpi(0) q[0];
+gpi2(0) q[1];
+cry(pi) q[0], q[1];""",
+            """
+OPENQASM 2.0;
+qreg q[2];
+gpi(0) q[0];
+gpi2(0) q[1];
+cry(pi) q[0], q[1];
+            """,
+        ),
+        (
+            """
+OPENQASM 3.0;
+include "stdgates.inc";
+qubit[2] q;
+crz(pi / 4) q[0], q[1];
+            """,
+            """
+OPENQASM 3.0;
+qubit[2] q;
+crz(pi / 4) q[0], q[1];
+            """,
+        ),
+    ],
+)
+def test_remove_include_statements(qasm_input: str, expected_output: str):
+    """Test removing include statements from QASM string."""
+    assert expected_output.strip() == remove_include_statements(qasm_input).strip()

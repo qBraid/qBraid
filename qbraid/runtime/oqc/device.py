@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import datetime
 from typing import TYPE_CHECKING, Optional, Union
+from zoneinfo import ZoneInfo
 
 from qcaas_client.client import QPUTask
 from qcaas_client.compiler_config import (
@@ -25,10 +26,9 @@ from qcaas_client.compiler_config import (
     Tket,
     TketOptimizations,
 )
-from requests import ReadTimeout
 
 from qbraid._logging import logger
-from qbraid.passes.qasm.compat import rename_qasm_registers
+from qbraid.passes.qasm.compat import remove_include_statements, rename_qasm_registers
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
@@ -86,6 +86,14 @@ class OQCDevice(QuantumDevice):
         """Returns the client for the device."""
         return self._client
 
+    def queue_depth(self) -> int:
+        """Returns the number of tasks in the queue for the device."""
+        try:
+            exec_estimates = self._client.get_qpu_execution_estimates(qpu_ids=self.id)
+            return exec_estimates["qpu_wait_times"][0]["tasks_in_queue"]
+        except Exception as err:  # pylint: disable=broad-exception-caught
+            raise ResourceNotFoundError("Queue depth is not available for this device.") from err
+
     def status(self) -> DeviceStatus:
         """Returns the status of the device."""
         feature_set: dict = self.profile.get("feature_set", {})
@@ -106,11 +114,12 @@ class OQCDevice(QuantumDevice):
         try:
             start_time = self.get_next_window()
             now = datetime.datetime.now()
+            now_utc = now.astimezone(ZoneInfo("UTC"))
 
-            if now > start_time:
+            if now_utc > start_time:
                 return DeviceStatus.ONLINE
-        except ResourceNotFoundError as err:
-            logger.error(err)
+        except ResourceNotFoundError as err:  # pylint: disable=broad-exception-caught
+            logger.info(err)
 
         return DeviceStatus.UNAVAILABLE
 
@@ -122,46 +131,80 @@ class OQCDevice(QuantumDevice):
         """
         try:
             start_time = self._client.get_next_window(self.id)
-        except (ReadTimeout, Exception) as err:  # pylint: disable=broad-exception-caught
-            raise ResourceNotFoundError(
-                f"Falied to fetch next active window for device '{self.id}'. "
-                "Note: Currently only AWS windows are defined."
-            ) from err
+        except Exception as next_window_err:  # pylint: disable=broad-exception-caught
+            try:
+                exec_estimates = self._client.get_qpu_execution_estimates(qpu_ids=self.id)
+                start_time = exec_estimates["qpu_wait_times"][0]["windows"][0]["start_time"]
+            except Exception as exec_est_error:  # pylint: disable=broad-exception-caught
+                logger.error(exec_est_error)
+                raise ResourceNotFoundError(
+                    f"Falied to fetch next active window for device '{self.id}'. "
+                    "Note: Currently only AWS windows are defined."
+                ) from next_window_err
 
-        temp = start_time.split(" ")
-        year, month, day = map(int, temp[0].split("-"))
-        hour, minute, second = map(int, temp[1].split(":"))
-        start_time = datetime.datetime(year, month, day, hour, minute, second)
-        return start_time
+        return datetime.datetime.strptime(start_time, "%Y-%m-%d %H:%M:%S")
 
     def transform(self, run_input: str) -> str:
         """Transforms the input program before submitting it to the device."""
-        return rename_qasm_registers(run_input)
+        qasm_c_regs = rename_qasm_registers(run_input)
+        qasm_no_includes = remove_include_statements(qasm_c_regs)
+        return qasm_no_includes
+
+    @staticmethod
+    def _build_compiler_config(**kwargs) -> CompilerConfig:
+        """Builds a compiler configuration object from the provided kwargs."""
+        configs = {
+            "shots",
+            "repeats",
+            "repetition_period",
+            "results_format",
+            "metrics",
+            "active_calibrations",
+            "optimizations",
+            "error_mitigation",
+        }
+
+        unsupported_keys = set(kwargs) - configs
+        if unsupported_keys:
+            raise ValueError(f"Unsupported keyword arguments: {', '.join(unsupported_keys)}")
+
+        default_values = {
+            "shots": None,
+            "repeats": None,
+            "repetition_period": None,
+            "results_format": "binary",
+            "metrics": "default",
+            "active_calibrations": None,
+            "optimizations": None,
+            "error_mitigation": None,
+        }
+
+        config_values = {key: kwargs.get(key, default) for key, default in default_values.items()}
+
+        try:
+            return CompilerConfig(
+                repeats=config_values["shots"] or config_values["repeats"],
+                repetition_period=config_values["repetition_period"],
+                results_format=RESULTS_FORMAT[config_values["results_format"]],
+                metrics=METRICS_TYPE[config_values["metrics"]],
+                active_calibrations=config_values["active_calibrations"],
+                optimizations=(
+                    OPTIMIZATIONS[config_values["optimizations"]]
+                    if config_values["optimizations"]
+                    else None
+                ),
+                error_mitigation=config_values["error_mitigation"],
+            )
+        except KeyError as err:
+            raise ValueError(f"Invalid configuration option: {err.args[0]}") from err
 
     # pylint: disable-next=arguments-differ
     def submit(self, run_input, **kwargs) -> Union[OQCJob, list[OQCJob]]:
         """Submit one or more jobs to the device."""
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
-        tasks = []
-
-        configs = ["shots", "repetition_period", "results_format", "metrics", "optimizations"]
-
-        if any(key in kwargs for key in configs):
-            custom_config = CompilerConfig(
-                repeats=kwargs.get("shots", 1000),
-                repetition_period=kwargs.get("repetition_period", 200e-6),
-                results_format=RESULTS_FORMAT[kwargs.get("results_format", "binary")],
-                metrics=METRICS_TYPE[kwargs.get("metrics", "default")],
-                optimizations=OPTIMIZATIONS[kwargs.get("optimizations", "one")],
-            )
-        else:
-            custom_config = None
-
-        for program in run_input:
-            task = QPUTask(program=program, config=custom_config, qpu_id=self.id)
-            tasks.append(task)
-
+        config = self._build_compiler_config(**kwargs) if any(kwargs) else None
+        tasks = [QPUTask(program=program, config=config, qpu_id=self.id) for program in run_input]
         qpu_tasks = self._client.schedule_tasks(tasks, qpu_id=self.id)
         jobs = [OQCJob(job_id=task.task_id, device=self, client=self._client) for task in qpu_tasks]
         return jobs[0] if is_single_input else jobs
