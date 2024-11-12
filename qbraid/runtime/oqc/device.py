@@ -122,7 +122,7 @@ class OQCDevice(QuantumDevice):
         """
         try:
             start_time = self._client.get_next_window(self.id)
-        except ReadTimeout as err:
+        except (ReadTimeout, Exception) as err:  # pylint: disable=broad-exception-caught
             raise ResourceNotFoundError(
                 f"Falied to fetch next active window for device '{self.id}'. "
                 "Note: Currently only AWS windows are defined."
