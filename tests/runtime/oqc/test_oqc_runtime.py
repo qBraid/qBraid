@@ -117,6 +117,51 @@ MOCK_TASK_METADATA = {
 
 MOCK_RESULT = {"c": {"00": 52, "11": 48}}
 
+NOW = datetime.datetime.now()
+NEXT_YEAR = NOW.year + 1
+
+TOSHIKO_EXEC_ESTIMATE = {
+    "qpu_wait_times": [
+        {
+            "average_processing_seconds": 0.0,
+            "estimated_availability_time": f"{NEXT_YEAR}-11-18 00:50:00",
+            "qpu_id": "qpu:jp:3:673b1ad43c",
+            "tasks_in_queue": 21,
+            "timestamp": f"{NOW.year}-11-13 16:20:43.229464",
+            "windows": [
+                {
+                    "end_time": f"{NEXT_YEAR}-11-18 04:00:00",
+                    "start_time": f"{NEXT_YEAR}-11-18 00:50:00",
+                    "window_description": "NEXT",
+                },
+                {
+                    "end_time": f"{NEXT_YEAR}-11-18 13:00:00",
+                    "start_time": f"{NEXT_YEAR}-11-18 09:50:00",
+                    "window_description": "FUTURE",
+                },
+                {
+                    "end_time": f"{NEXT_YEAR}-11-19 04:00:00",
+                    "start_time": f"{NEXT_YEAR}-11-19 00:50:00",
+                    "window_description": "FUTURE",
+                },
+                {
+                    "end_time": f"{NEXT_YEAR}-11-19 13:00:00",
+                    "start_time": f"{NEXT_YEAR}-11-19 09:50:00",
+                    "window_description": "FUTURE",
+                },
+            ],
+        }
+    ]
+}
+
+
+def online_window() -> str:
+    """Return a window start time for an online QPU."""
+    now = datetime.datetime.now()
+    start_time = f"{now.year}-{now.month}-{now.day} {(now.hour - 1):02}:00:00"
+    end_time = f"{now.year}-{now.month}-{now.day} {(now.hour):02}:59:59"
+    return start_time, end_time
+
 
 @pytest.fixture
 def program():
@@ -140,11 +185,11 @@ def program():
 class MockOQCClient:
     """Test class for OQC client."""
 
-    def __init__(self, authentication_token=None, toshiko_available=False, **kwargs):
+    def __init__(self, authentication_token=None, **kwargs):
         self._authentication_token = authentication_token
         self.default_qpu_id = "qpu:uk:3:9829a5504f"
         self.url = "https://cloud.oqc.app/"
-        self._toshiko_available = toshiko_available
+        self._toshiko_online = False
 
     def get_qpus(self):
         """Get QPUs."""
@@ -190,13 +235,25 @@ class MockOQCClient:
     def get_next_window(self, qpu_id: Optional[str] = None):
         """Get next window."""
         if qpu_id == LUCY_SIM_ID:
-            return "2024-07-30 00:50:00"
-        if qpu_id == TOSHIKO_ID and self._toshiko_available:
-            now = datetime.datetime.now()
-            year, month, day = now.year, now.month, now.day
-            window = f"{year - 1}-{month}-{day} 00:50:00"
-            return window
+            start_time, _ = online_window()
+            return start_time
         raise ReadTimeout
+
+    def get_qpu_execution_estimates(self, qpu_ids: Optional[str] = None):
+        """Get QPU execution estimates."""
+        if qpu_ids == TOSHIKO_ID:
+            exec_est = TOSHIKO_EXEC_ESTIMATE.copy()
+            if self._toshiko_online:
+                start_time, end_time = online_window()
+                current_window = {
+                    "end_time": end_time,
+                    "start_time": start_time,
+                    "window_description": "CURRENT",
+                }
+                new_windows = [current_window] + exec_est["qpu_wait_times"][0]["windows"]
+                exec_est["qpu_wait_times"][0]["windows"] = new_windows
+            return exec_est
+        raise Exception("QPU execution estimates not available")
 
     def get_task_status(self, task_id: str, qpu_id: Optional[str] = None):
         """Get task status."""
@@ -386,18 +443,52 @@ def test_oqc_device_status_always_on(lucy_sim_data, toshiko_data):
         mock_client.get_next_window.assert_not_called()
 
 
-def test_oqc_device_status_from_window_online(lucy_sim_data, toshiko_data):
+def test_get_next_window_read_timeout(toshiko_id):
+    """Test getting the next window with a timeout results in status unavialable."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = MockOQCClient()
+        provider = OQCProvider(token="fake_token")
+        device = provider.get_device(toshiko_id)
+        assert device.status() == DeviceStatus.UNAVAILABLE
+
+
+def test_oqc_device_status_from_qpu_exec_est_unavailable(lucy_sim_data, toshiko_data):
     """Test that device status value varies correctly based on next available window."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
         mock_client.return_value = Mock(spec=OQCClient)
         mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
 
         provider = OQCProvider(token="fake_token")
-        always_on_false_available_device = provider.get_device(toshiko_data["id"])
-        always_on_false_available_device._client = MockOQCClient(
-            authentication_token="fake_token", toshiko_available=True
-        )
-        assert always_on_false_available_device.status() == DeviceStatus.ONLINE
+        qpu_device = provider.get_device(toshiko_data["id"])
+        qpu_device._client = MockOQCClient(authentication_token="fake_token")
+        assert qpu_device.status() == DeviceStatus.UNAVAILABLE
+
+
+def test_oqc_device_status_from_qpu_exec_est_online(lucy_sim_data, toshiko_data):
+    """Test that device status value varies correctly based on next available window."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = Mock(spec=OQCClient)
+        mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
+
+        provider = OQCProvider(token="fake_token")
+        qpu_device = provider.get_device(toshiko_data["id"])
+        qpu_device._client = MockOQCClient(authentication_token="fake_token")
+        qpu_device._client._toshiko_online = True
+        assert qpu_device.status() == DeviceStatus.ONLINE
+        assert qpu_device.queue_depth() == 21
+
+
+def test_oqc_queue_depth_raises_for_simulator(lucy_sim_data, toshiko_data):
+    """Test that the queue depth method raises an error for a simulator device."""
+    with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
+        mock_client.return_value = Mock(spec=OQCClient)
+        mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
+
+        provider = OQCProvider(token="fake_token")
+        simulator_device = provider.get_device(lucy_sim_data["id"])
+        with pytest.raises(ResourceNotFoundError) as excinfo:
+            simulator_device.queue_depth()
+        assert "Queue depth is not available for this device." in str(excinfo.value)
 
 
 def test_oqc_provider_get_device_raises_not_found(lucy_sim_data, toshiko_data):
@@ -668,10 +759,42 @@ def test_device_status_online(mock_get_next_window, mock_logger):
     mock_logger.error.assert_not_called()
 
 
-def test_get_next_window_read_timeout(toshiko_id):
-    """Test getting the next window with a timeout results in status unavialable."""
+def test_build_compiler_config_unsupported_key():
+    """Test that the build_compiler_config method raises an error for unsupported kwargs."""
+    with pytest.raises(ValueError, match="Unsupported keyword argument"):
+        OQCDevice._build_compiler_config(unsupported_kwarg="value")
+
+
+def test_build_compiler_config_invalid_value():
+    """Test that the build_compiler_config method raises an error for invalid values."""
+    with pytest.raises(ValueError, match="Invalid configuration option"):
+        OQCDevice._build_compiler_config(optimizations="invalid_value")
+
+
+@patch("qbraid.runtime.oqc.device.logger")
+def test_device_get_next_window_raises_resource_not_found(mock_logger, target_profile):
+    """Test that the get_next_window method raises a ResourceNotFoundError when the window is not found."""
+    client = Mock()
+    client.get_next_window.side_effect = ReadTimeout
+    client.get_qpu_execution_estimates.side_effect = Exception
+    device = OQCDevice(target_profile, client)
+    with pytest.raises(ResourceNotFoundError) as excinfo:
+        device.get_next_window()
+    assert "Falied to fetch next active window for device" in str(excinfo.value)
+    mock_logger.error.assert_called_once()
+
+
+@patch("qbraid.runtime.oqc.device.logger")
+def test_catch_device_status_resource_not_found(mock_logger, lucy_sim_data, toshiko_data):
+    """Test that device status is unavailable when get_next_window method raises error."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:
-        mock_client.return_value = MockOQCClient()
+        mock_client.return_value = Mock(spec=OQCClient)
+        mock_client.return_value.get_qpus.return_value = [lucy_sim_data, toshiko_data]
+
         provider = OQCProvider(token="fake_token")
-        device = provider.get_device(toshiko_id)
-        assert device.status() == DeviceStatus.UNAVAILABLE
+        device = provider.get_device(toshiko_data["id"])
+
+        with patch.object(device, "get_next_window", side_effect=ResourceNotFoundError):
+            status = device.status()
+            assert status == DeviceStatus.UNAVAILABLE
+            mock_logger.info.assert_called_once()

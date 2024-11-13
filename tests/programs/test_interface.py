@@ -16,7 +16,9 @@ import pytest
 
 from qbraid._version import __version__
 from qbraid.interface import circuits_allclose, random_circuit
+from qbraid.interface.random.cirq_random import _cirq_random
 from qbraid.interface.random.qasm3_random import _qasm3_random
+from qbraid.interface.random.qiskit_random import _qiskit_random
 from qbraid.programs.exceptions import QbraidError
 from qbraid.transpiler import ConversionGraph, transpile
 
@@ -116,3 +118,15 @@ def test_raise_value_error_no_valid_generators():
         ValueError, match="No registered generator that can create a random circuit for 'qasm2'"
     ):
         random_circuit("qasm2", graph=ConversionGraph(nodes=["qasm2", "qasm3"]))
+
+
+def test_cirq_random_raises_for_bad_param():
+    """Test that _cirq_random raises a ValueError when a circuit parameter is <=0."""
+    with pytest.raises(QbraidError, match="Failed to create Cirq random circuit"):
+        _cirq_random(1, 2, op_density=-1)
+
+
+def test_qiskit_random_raises_for_bad_param():
+    """Test that _qiskit_random raises a QbraidError when a circuit parameter is <=0."""
+    with pytest.raises(QbraidError, match="Failed to create Qiskit random circuit"):
+        _qiskit_random(1, 2, max_operands=-1)

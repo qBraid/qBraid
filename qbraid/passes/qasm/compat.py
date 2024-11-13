@@ -283,38 +283,15 @@ def remove_qasm_barriers(qasm_str: str) -> str:
         qasm_str: QASM to remove barriers from.
     """
     quoted_re = r"(?:\"[^\"]*?\")"
-    # Statements separated by semicolons
     statement_re = r"((?:[^;{}\"]*?" + quoted_re + r"?)*[;{}])?"
-    # Comments begin with a pair of forward slashes and end with a new line
     comment_re = r"(\n?//[^\n]*(?:\n|$))?"
     statements_comments = re.findall(statement_re + comment_re, qasm_str)
+
     lines = []
-    # Language is case sensitive. Whitespace is ignored
     for statement, comment in statements_comments:
         if re.match(r"^\s*barrier(?:(?:\s+)|(?:;))", statement) is None:
             lines.append(statement + comment)
     return "".join(lines)
-
-
-def rename_qasm_registers(qasm: str) -> str:
-    """Returns a copy of the input QASM with all registers renamed to 'q' and 'c'."""
-
-    def replace_top_q(m):
-        return f"qreg q[{m.group(2)}];"
-
-    qasm = re.sub(r"qreg\s+(\w+)\s*\[\s*(\d+)\s*\]\s*;", replace_top_q, qasm)
-
-    def replace_top_c(m):
-        return f"creg c[{m.group(2)}];"
-
-    qasm = re.sub(r"creg\s+(\w+)\s*\[\s*(\d+)\s*\]\s*;", replace_top_c, qasm)
-
-    def replace_bottom_line(m):
-        return f"measure q[{m.group(2)}] -> c[{m.group(4)}];"
-
-    qasm = re.sub(r"measure\s+(\w+)\[(\d+)\]\s*->\s*(\w+)\[(\d+)\]\s*;", replace_bottom_line, qasm)
-
-    return qasm
 
 
 def remove_measurements(program: Union[Program, str]) -> str:

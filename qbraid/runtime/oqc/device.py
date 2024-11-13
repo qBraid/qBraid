@@ -27,7 +27,7 @@ from qcaas_client.compiler_config import (
 )
 
 from qbraid._logging import logger
-from qbraid.passes.qasm.compat import remove_include_statements, rename_qasm_registers
+from qbraid.passes.qasm.compat import remove_include_statements
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
@@ -144,8 +144,7 @@ class OQCDevice(QuantumDevice):
 
     def transform(self, run_input: str) -> str:
         """Transforms the input program before submitting it to the device."""
-        qasm_c_regs = rename_qasm_registers(run_input)
-        qasm_no_includes = remove_include_statements(qasm_c_regs)
+        qasm_no_includes = remove_include_statements(run_input)
         return qasm_no_includes
 
     @staticmethod
