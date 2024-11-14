@@ -18,15 +18,11 @@ from qiskit.qasm3 import dumps, loads
 
 from qbraid.interface.random.qasm3_random import _qasm3_random
 from qbraid.interface.random.qiskit_random import _qiskit_random
-from qbraid.passes.qasm.analyze import expression_value
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
 from qbraid.programs.registry import unregister_program_type
-from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import _get_qasm3_gate_defs
 
 from ..fixtures.qasm3.circuits import qasm3_bell, qasm3_shared15
-
-gate_def_qasm3 = _get_qasm3_gate_defs()
 
 
 def test_qasm_qubits():
@@ -36,6 +32,7 @@ def test_qasm_qubits():
     assert OpenQasm3Program(qasm3_shared15()).qubits == {"q": 4}
 
 
+# @pytest.mark.skip(reason="enable after pyqasm issue #69 is resolved")
 def test_qasm3_num_qubits():
     """Test calculating number of qubits in qasm3 circuit"""
     num_qubits = np.random.randint(2, 10)
@@ -115,49 +112,6 @@ c[2] = measure q[2];
 
 """
     _check_output(circuit, out__expected)
-
-
-@pytest.mark.skip(reason="migrate to pyqasm")
-def test_populate_idle_qubits_qasm3_small():
-    """Test that remove_idle_qubits for qasm3 string"""
-    qasm3_str = """
-OPENQASM 3;
-include "stdgates.inc";
-qubit[4] q;
-h q[1];
-cx q[1], q[3];
-"""
-    qprogram = OpenQasm3Program(qasm3_str)
-    qprogram.populate_idle_qubits()
-    contig_qasm3_str = qprogram.program
-    assert contig_qasm3_str == qasm3_str + """i q[0];\ni q[2];\n"""
-
-
-@pytest.mark.skip(reason="migrate to pyqasm")
-def test_populate_idle_qubits_qasm3():
-    """Test conversion of qasm3 to contiguous qasm3"""
-    qasm_test = """
-    OPENQASM 3.0;
-    gate custom q1, q2, q3{
-        x q1;
-        y q2;
-        z q3;
-    }
-    qreg q1[2];
-    qubit[2] q2;
-    qubit[3] q3;
-    qubit q4;
-    
-    x q1[0];
-    y q2[0];
-    z q3;
-    """
-
-    qasm_expected = qasm_test + """i q1[1];\ni q2[1];\ni q4[0];\n"""
-
-    qprogram = OpenQasm3Program(qasm_test)
-    qprogram.populate_idle_qubits()
-    assert qprogram.program == qasm_expected
 
 
 def test_qasm3_num_qubits_alternate_synatx():

@@ -16,10 +16,9 @@ across various other quantum software frameworks.
 import math
 import re
 from functools import reduce
-from typing import Union
 
-from openqasm3 import dumps, parse
-from openqasm3.ast import Include, Program, QuantumGate, QuantumMeasurementStatement
+from openqasm3 import parse
+from openqasm3.ast import QuantumGate
 from openqasm3.parser import QASM3ParsingError
 
 from qbraid._logging import logger
@@ -274,24 +273,6 @@ def declarations_to_qasm2(qasm: str) -> str:
         qasm = re.sub(pattern, replacement, qasm)
 
     return qasm
-
-
-def remove_qasm_barriers(qasm_str: str) -> str:
-    """Returns a copy of the input QASM with all barriers removed.
-
-    Args:
-        qasm_str: QASM to remove barriers from.
-    """
-    quoted_re = r"(?:\"[^\"]*?\")"
-    statement_re = r"((?:[^;{}\"]*?" + quoted_re + r"?)*[;{}])?"
-    comment_re = r"(\n?//[^\n]*(?:\n|$))?"
-    statements_comments = re.findall(statement_re + comment_re, qasm_str)
-
-    lines = []
-    for statement, comment in statements_comments:
-        if re.match(r"^\s*barrier(?:(?:\s+)|(?:;))", statement) is None:
-            lines.append(statement + comment)
-    return "".join(lines)
 
 
 def rename_qasm_registers(qasm: str) -> str:

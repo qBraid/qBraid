@@ -19,23 +19,15 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-    depth
     rebase
-    decompose_qasm3
-    decompose_qasm2
     insert_gate_def
     replace_gate_name
     add_stdgates_include
     remove_stdgates_include
     convert_qasm_pi_to_decimal
     normalize_qasm_gate_params
-    remove_unused_gates
-    has_measurements
-    remove_measurements
-    remove_include_statements
 
 """
-from .analyze import depth, expression_value_option
 from .compat import (
     add_stdgates_include,
     convert_qasm_pi_to_decimal,
@@ -44,19 +36,14 @@ from .compat import (
     remove_stdgates_include,
     replace_gate_name,
 )
-from .decompose import decompose_qasm2, decompose_qasm3, rebase
-from .format import remove_unused_gates
+from .decompose import rebase
 
 __all__ = [
-    "depth",
     "rebase",
-    "decompose_qasm2",
-    "decompose_qasm3",
     "insert_gate_def",
     "replace_gate_name",
     "add_stdgates_include",
     "remove_stdgates_include",
     "convert_qasm_pi_to_decimal",
     "normalize_qasm_gate_params",
-    "remove_unused_gates",
 ]

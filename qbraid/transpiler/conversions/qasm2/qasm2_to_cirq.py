@@ -44,10 +44,10 @@ def qasm2_to_cirq(qasm: Qasm2StringType) -> cirq.Circuit:
         Cirq circuit representation equivalent to the input QASM string.
     """
     try:
-        qasm_module = pyqasm.load(qasm)
+        qasm_module = pyqasm.loads(qasm)
         qasm_module.unroll()
         qasm_module.remove_barriers()  # cirq does not support barriers
-        return cirq_qasm_parser.QasmParser().parse(qasm_module.unrolled_qasm).circuit
+        return cirq_qasm_parser.QasmParser().parse(pyqasm.dumps(qasm_module)).circuit
     except cirq_qasm_import.QasmException as err:
         print(err)
         raise QasmError from err

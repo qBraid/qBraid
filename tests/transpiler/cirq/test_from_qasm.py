@@ -60,9 +60,9 @@ def strings_equal(s1, s2):
 def _test_qasm_preprocess(qasm_str):
     """Test converting qasm string to format supported by Cirq parser"""
     qiskit_circuit = QuantumCircuit().from_qasm_str(qasm_str)
-    qasm_module = pyqasm.load(qasm_str)
+    qasm_module = pyqasm.loads(qasm_str)
     qasm_module.unroll()
-    supported_qasm = qasm_module.unrolled_qasm
+    supported_qasm = pyqasm.dumps(qasm_module)
     cirq_circuit = qasm2_to_cirq(supported_qasm)
     qprogram = load_program(cirq_circuit)
     qprogram._convert_to_line_qubits()

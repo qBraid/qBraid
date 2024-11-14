@@ -35,8 +35,8 @@ def braket_to_qasm3(circuit: Circuit) -> str:
     """
     has_measurements = any(str(instr.operator) == "Measure" for instr in circuit.instructions)
     qasm_program = circuit.to_ir(IRType.OPENQASM).source
-    qasm_module = pyqasm.load(qasm_program)
+    qasm_module = pyqasm.loads(qasm_program)
     qasm_module.unroll()
     if not has_measurements:
         qasm_module.remove_measurements()
-    return qasm_module.unrolled_qasm
+    return pyqasm.dumps(qasm_module)

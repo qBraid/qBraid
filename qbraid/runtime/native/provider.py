@@ -18,12 +18,11 @@ import json
 import warnings
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
+import pyqasm
 from qbraid_core.exceptions import AuthError
 from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestError, process_job_data
 
 from qbraid._caching import cached_method
-from qbraid.passes.qasm.analyze import has_measurements
-from qbraid.passes.qasm.format import format_qasm
 from qbraid.programs import QPROGRAM_REGISTRY, ExperimentType, ProgramSpec, load_program
 from qbraid.programs.ahs import AHSEncoder
 from qbraid.programs.typer import Qasm2StringType, Qasm3StringType, QuboCoefficientsDict
@@ -54,7 +53,7 @@ def _pyqir_to_json(program: pyqir.Module) -> dict[str, bytes]:
 def _qasm_to_json(
     program: Union[Qasm2StringType, Qasm3StringType]
 ) -> dict[str, Union[Qasm2StringType, Qasm3StringType]]:
-    return {"openQasm": format_qasm(program)}
+    return {"openQasm": pyqasm.dumps(pyqasm.loads(program))}
 
 
 def _braket_to_json(program) -> dict[str, Any]:
@@ -76,7 +75,9 @@ def validate_qasm_no_measurements(
     program: Union[Qasm2StringType, Qasm3StringType], device_id: str
 ) -> None:
     """Raises a ValueError if the given OpenQASM program contains measurement gates."""
-    if has_measurements(program):
+    qasm_module = pyqasm.loads(program)
+
+    if qasm_module.has_measurements():
         raise ValueError(
             f"OpenQASM programs submitted to the {device_id} cannot contain measurement gates."
         )

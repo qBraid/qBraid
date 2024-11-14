@@ -159,7 +159,7 @@ def _generate_valid_qasm_strings(seed=42, gates_to_skip=None, num_circuits=100):
 )
 def test_random_conversion_to_qasm3(qasm2_str):
     """test random gates conversion"""
-    qasm3_str = pyqasm.load(qasm2_str).to_qasm3(as_str=True)
+    qasm3_str = pyqasm.loads(qasm2_str).to_qasm3(as_str=True)
     circuit_orig = QuantumCircuit.from_qasm_str(qasm2_str)
     circuit_test = qasm3_loads(qasm3_str)
 

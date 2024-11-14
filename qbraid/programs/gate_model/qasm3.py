@@ -44,7 +44,7 @@ class OpenQasm3Program(GateModelProgram):
         if not isinstance(program, Qasm3String):
             raise ProgramTypeError(message=f"Expected 'str' object, got '{type(program)}'.")
         self._program: str = program
-        self._module = pyqasm.load(program)
+        self._module = pyqasm.loads(program)
         self._module.validate()
 
     @property
@@ -81,23 +81,11 @@ class OpenQasm3Program(GateModelProgram):
         """Calculate unitary of circuit."""
         raise NotImplementedError
 
-    # @auto_reparse
-    # def populate_idle_qubits(self) -> None:
-    #     """Converts OpenQASM 3 string to contiguous qasm3 string with gate expansion.
-
-    #     No loops OR custom functions supported at the moment.
-    #     """
-    #     # Analyse the qasm3 string for registers and find unused qubits
-    #     qubit_indices = self._get_unused_qubit_indices()
-    #     expansion_qasm = ""
-
-    #     # Add an identity gate for the unused qubits
-    #     for reg, indices in qubit_indices.items():
-    #         for index in indices:
-    #             expansion_qasm += f"i {reg}[{index}];\n"
-
-    #     qasm: str = self.program
-    #     self._program = qasm + expansion_qasm
+    @auto_reparse
+    def populate_idle_qubits(self) -> None:
+        """Converts OpenQASM 3 string to contiguous qasm3 string with gate expansion."""
+        # Analyse the qasm3 string for registers and find unused qubits
+        self._module.populate_idle_qubits()
 
     @auto_reparse
     def remove_idle_qubits(self) -> None:

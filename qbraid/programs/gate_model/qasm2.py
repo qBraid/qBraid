@@ -37,15 +37,16 @@ class OpenQasm2Program(GateModelProgram):
         if not isinstance(program, Qasm2String):
             raise ProgramTypeError(message=f"Expected 'str' object, got '{type(program)}'.")
 
-        self._module = pyqasm.load(program)
+        self._module = pyqasm.loads(program)
 
     def parsed(self) -> Program:
         """Parse the program string."""
         return parse(self._program)
 
-    def qubits(self) -> list:
+    @property
+    def qubits(self) -> dict[str, int]:
         """Return the qubits acted upon by the operations in this circuit"""
-        return []
+        return self._module._qubit_registers
 
     @property
     def module(self) -> pyqasm.Module:
@@ -76,7 +77,7 @@ class OpenQasm2Program(GateModelProgram):
         if device.id == "quera_qasm_simulator":
             self._module.remove_measurements()
             self._module.unroll()
-            self.program = self._module.unrolled_qasm
+            self.program = pyqasm.dumps(self._module)
 
         basis_gates = device.profile.get("basis_gates")
 

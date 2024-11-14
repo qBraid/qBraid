@@ -224,7 +224,7 @@ def ionq_native_gates_qasm() -> Qasm3StringType:
     return """
     OPENQASM 3.0;
     qubit[3] q;
-    ms(0,0) q[0], q[1];
+    ms(0,0,0) q[0], q[1];
     ms(-0.5,0.6,0.1) q[1], q[2];
     gpi(0) q[0];
     gpi2(0.2) q[1];
@@ -239,7 +239,7 @@ def ionq_native_gates_dict() -> IonQDictType:
         "gateset": GateSet.NATIVE.value,
         "qubits": 3,
         "circuit": [
-            {"gate": "ms", "targets": [0, 1], "phases": [0, 0]},
+            {"gate": "ms", "targets": [0, 1], "phases": [0, 0], "angle": 0.0},
             {"gate": "ms", "targets": [1, 2], "phases": [-0.5, 0.6], "angle": 0.1},
             {"gate": "gpi", "phase": 0, "target": 0},
             {"gate": "gpi2", "phase": 0.2, "target": 1},
@@ -274,10 +274,10 @@ def test_qasm3_to_ionq_deutch_jozsa_pyqasm_mocked(
     """Test Deutch-Jozsa conversion with mock pyqasm import and unroll."""
     mock_module = Mock()
     mock_module.unroll = Mock()
-    mock_module.unrolled_qasm = deutch_jozsa_qasm3_unrolled
-
     mock_pyqasm = Mock()
-    mock_pyqasm.load.return_value = mock_module
+    mock_pyqasm.dumps.return_value = deutch_jozsa_qasm3_unrolled
+
+    mock_pyqasm.loads.return_value = mock_module
 
     with patch.dict("sys.modules", {"pyqasm": mock_pyqasm}):
         qasm_program = deutsch_jozsa_qasm3
@@ -321,7 +321,7 @@ def test_qasm3_to_ionq_zz_native_gate():
             """
     OPENQASM 3.0;
     qubit[2] q;
-    ms(1.1,0) q[0], q[1];
+    ms(1.1,0,0) q[0], q[1];
     """,
             "Invalid phase value",
         ),
@@ -329,7 +329,7 @@ def test_qasm3_to_ionq_zz_native_gate():
             """
     OPENQASM 3.0;
     qubit[2] q;
-    ms(0,-1.5) q[0], q[1];
+    ms(0,-1.5,0) q[0], q[1];
     """,
             "Invalid phase value",
         ),
@@ -398,6 +398,7 @@ def test_qasm3_to_ionq_invalid_params(qasm_code, error_message):
     assert error_message in str(excinfo.value)
 
 
+@pytest.mark.skip(reason="Validated in pyqasm")
 @pytest.mark.parametrize(
     "qasm_code, error_message",
     [
@@ -462,6 +463,7 @@ def test_extract_params_index_error_caught():
     assert extract_params(statement) == []
 
 
+@pytest.mark.skip(reason="Validated in pyqasm through definition of ms gate")
 @pytest.mark.parametrize(
     "program_text",
     [

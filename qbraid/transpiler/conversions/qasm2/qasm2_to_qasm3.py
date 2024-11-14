@@ -17,7 +17,7 @@ Module containing OpenQASM conversion function
 
 # from qbraid._version import __version__ as qbraid_version
 # from qbraid.passes.qasm.decompose import _decompose_rxx_instr
-# from qbraid.passes.qasm.format import remove_unused_gates
+
 import pyqasm
 
 from qbraid.programs.typer import Qasm2String, Qasm2StringType, Qasm3StringType
@@ -113,5 +113,5 @@ def qasm2_to_qasm3(qasm_str: Qasm2StringType) -> Qasm3StringType:
     if not isinstance(qasm_str, Qasm2String):
         raise ValueError("Invalid OpenQASM 2.0 string")
 
-    qasm_module = pyqasm.load(qasm_str)
+    qasm_module = pyqasm.loads(qasm_str)
     return qasm_module.to_qasm3(as_str=True)

@@ -201,7 +201,11 @@ def test_rzz_gate_from_qiskit(qubits, theta):
     qiskit_circuit = QuantumCircuit(2)
     qiskit_circuit.rzz(theta, *qubits)
     cirq_circuit = transpile(qiskit_circuit, "cirq")
-    assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
+    # Dependent on pyqasm gphase implementation
+    # See -
+    # https://github.com/qBraid/pyqasm/blob/cc88012f5b91d47ec52edfdf94cae340e50b1b0c/pyqasm/maps.py#L602
+    # If gphase is fixed, strict_gphase=True can be used
+    assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=False)
 
 
 def test_iswap_gate_from_qiskit():

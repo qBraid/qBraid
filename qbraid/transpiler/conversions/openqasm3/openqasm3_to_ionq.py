@@ -18,9 +18,7 @@ import re
 from typing import TYPE_CHECKING, Any, Union
 
 import openqasm3.ast
-import pyqasm
 
-from qbraid.passes.qasm.analyze import has_measurements
 from qbraid.passes.qasm.compat import convert_qasm_pi_to_decimal
 from qbraid.programs import load_program
 from qbraid.programs.gate_model.ionq import IonQProgram
@@ -263,7 +261,7 @@ def openqasm3_to_ionq(qasm: Union[QasmStringType, openqasm3.ast.Program]) -> Ion
     """
     program: Union[OpenQasm2Program, OpenQasm3Program] = load_program(qasm)
 
-    if program.module.has_measurements():
+    if program._module.has_measurements():
         raise ValueError("Circuits with measurements are not supported by the IonQDictType")
 
     gates = _parse_gates(program)

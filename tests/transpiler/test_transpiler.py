@@ -16,6 +16,7 @@ Unit tests for the qbraid transpiler.
 """
 import cirq
 import numpy as np
+import pyqasm
 import pytest
 from braket.circuits import Circuit as BraketCircuit
 from braket.circuits import Gate as BraketGate
@@ -73,8 +74,8 @@ def test_to_cirq_bad_types(item):
     ["OPENQASM 2.0; bad operation", "OPENQASM 3.0; bad operation", "DECLARE ro BIT[1]", "circuit"],
 )
 def test_to_cirq_bad_openqasm_program(item):
-    """Test raising ProgramTypeError converting invalid OpenQASM program string"""
-    with pytest.raises(ProgramTypeError):
+    """Test raising QasmParsingError converting invalid OpenQASM program string"""
+    with pytest.raises(pyqasm.exceptions.QasmParsingError):
         transpile(item, "cirq")
 
 
@@ -101,7 +102,7 @@ def test_from_cirq_bad_package(bell_circuit, item):
         transpile(circuit, item)
 
 
-@pytest.mark.parametrize("program", ["Not a circuit", None])
+@pytest.mark.parametrize("program", [None])
 def test_load_program_error(program):
     """Test raising circuit wrapper error"""
     with pytest.raises(QbraidError):
