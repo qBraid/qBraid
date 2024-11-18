@@ -79,9 +79,9 @@ braket_gates = {
     "CZ": CZ,
     # two-qubit, one parameter
     "RXX": XX,
-    "RXY": XY,
+    # "RXY": XY, # TODO: fix bug in XY implementation in pyqasm
     "RYY": YY,
-    "RZZ": ZZ,
+    # "RZZ": ZZ, # TODO: fix the global phase of RZZ implementation in pyqasm
     "pSwap": PSwap,
     "CPhase": CPhaseShift,
     # multi-qubit

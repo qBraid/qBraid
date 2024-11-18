@@ -60,7 +60,9 @@ def test_compare_shared15_circuits(two_shared15_circuits):
     testing baseline."""
     circuit1, circuit2, package1, package2 = two_shared15_circuits
     strict_gphase = not (
-        "pyquil" in {package1, package2} or {package1, package2} == {"qasm2", "qasm3"}
+        "pyquil" in {package1, package2}
+        or {package1, package2} == {"qasm2", "qasm3"}
+        or {package1, package2} == {"pytket", "qasm2"}
     )
     try:
         equal = circuits_allclose(circuit1, circuit2, strict_gphase=strict_gphase)

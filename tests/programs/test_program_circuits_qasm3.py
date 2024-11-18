@@ -32,7 +32,6 @@ def test_qasm_qubits():
     assert OpenQasm3Program(qasm3_shared15()).qubits == {"q": 4}
 
 
-# @pytest.mark.skip(reason="enable after pyqasm issue #69 is resolved")
 def test_qasm3_num_qubits():
     """Test calculating number of qubits in qasm3 circuit"""
     num_qubits = np.random.randint(2, 10)

@@ -84,7 +84,6 @@ class OpenQasm3Program(GateModelProgram):
     @auto_reparse
     def populate_idle_qubits(self) -> None:
         """Converts OpenQASM 3 string to contiguous qasm3 string with gate expansion."""
-        # Analyse the qasm3 string for registers and find unused qubits
         self._module.populate_idle_qubits()
 
     @auto_reparse
@@ -104,5 +103,6 @@ class OpenQasm3Program(GateModelProgram):
         basis_gates = device.profile.get("basis_gates")
 
         if basis_gates is not None and len(basis_gates) > 0:
+            # TODO: migrate to pyqasm
             transformed_qasm = rebase(self.program, basis_gates)
             self._program = normalize_qasm_gate_params(transformed_qasm)

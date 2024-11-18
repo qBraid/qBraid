@@ -16,8 +16,6 @@ from __future__ import annotations
 
 import numpy as np
 import pyqasm
-from openqasm3.ast import Program
-from openqasm3.parser import parse
 from qbraid_core._import import LazyLoader
 
 from qbraid.passes.qasm import normalize_qasm_gate_params, rebase
@@ -38,10 +36,7 @@ class OpenQasm2Program(GateModelProgram):
             raise ProgramTypeError(message=f"Expected 'str' object, got '{type(program)}'.")
 
         self._module = pyqasm.loads(program)
-
-    def parsed(self) -> Program:
-        """Parse the program string."""
-        return parse(self._program)
+        self._module.validate()
 
     @property
     def qubits(self) -> dict[str, int]:
@@ -70,7 +65,9 @@ class OpenQasm2Program(GateModelProgram):
 
     def _unitary(self) -> np.ndarray:
         """Return the unitary of the QASM"""
-        return transpiler.transpile(self.program, "cirq").unitary()
+        module = self._module.copy()
+        module.unroll()
+        return transpiler.transpile(str(module), "cirq").unitary()
 
     def transform(self, device) -> None:
         """Transform program to according to device target profile."""
@@ -82,5 +79,6 @@ class OpenQasm2Program(GateModelProgram):
         basis_gates = device.profile.get("basis_gates")
 
         if basis_gates is not None and len(basis_gates) > 0:
+            # TODO: migrate to pyqasm
             transformed_qasm = rebase(self.program, basis_gates)
             self._program = normalize_qasm_gate_params(transformed_qasm)

@@ -27,7 +27,7 @@ from qbraid.passes.qasm.decompose import assert_gates_in_basis, rebase
 from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
 
 
-@pytest.mark.skip(reason="move to pyqasm")
+# move to pyqasm
 @pytest.mark.parametrize(
     "original_program, expected_program",
     [
@@ -119,7 +119,7 @@ def test_rebase_controlled_rotation_gates(original_program: str, expected_progra
     assert converted_program == expected_program
 
 
-@pytest.mark.skip(reason="move to pyqasm")
+# move to pyqasm
 def test_rebase_bad_program_raises_decomposition_error():
     """Test conversion of QASM3 program to basis gates"""
     bad_program = """
@@ -132,7 +132,7 @@ crx() q[0], q[1];
         rebase(bad_program, {"rz", "ry", "cx"})
 
 
-@pytest.mark.skip(reason="move to pyqasm")
+# move to pyqasm
 def test_rebase_bad_program_parser_error():
     """Test conversion of QASM3 program to basis gates"""
     bad_program = """
@@ -178,7 +178,7 @@ rz(-pi / 2) q[1];
 """
 
 
-@pytest.mark.skip(reason="move to pyqasm")
+# move to pyqasm
 def test_rebase_raises_for_basis_gates_type_error(qasm_crx_program):
     """Test rebase raises a TypeError if basis_gates is not a set"""
     with pytest.raises(
@@ -187,14 +187,14 @@ def test_rebase_raises_for_basis_gates_type_error(qasm_crx_program):
         rebase(qasm_crx_program, 42)
 
 
-@pytest.mark.skip(reason="move to pyqasm")
+# move to pyqasm
 def test_rebase_raises_for_bad_basis_gate_set_identifier(qasm_crx_program):
     """Test rebase raises a TypeError if gateset is not a set"""
     with pytest.raises(ValueError, match="Invalid basis gate set identifier."):
         rebase(qasm_crx_program, gateset="null")
 
 
-@pytest.mark.skip(reason="move to pyqasm")
+# move to pyqasm
 def test_assert_gates_in_basis(qasm_crx_parsed: ast.Program):
     """Test assertion that all gates are in the basis"""
     with pytest.raises(
@@ -203,21 +203,21 @@ def test_assert_gates_in_basis(qasm_crx_parsed: ast.Program):
         assert_gates_in_basis(qasm_crx_parsed, {"h"})
 
 
-@pytest.mark.skip(reason="move to pyqasm")
+# move to pyqasm
 def test_raise_value_error_on_empty_basis_set(qasm_crx_parsed: ast.Program):
     """Test raising a ValueError when the basis set is empty"""
     with pytest.raises(ValueError, match="Basis gate set cannot be empty."):
         rebase(qasm_crx_parsed, set())
 
 
-@pytest.mark.skip(reason="move to pyqasm")
+# move to pyqasm
 def test_rebase_program_already_in_basis_set(qasm_crx_program: str):
     """Test that a program already in the basis set is not modified"""
     converted_program = rebase(qasm_crx_program, {"crx"})
     assert converted_program.strip() == qasm_crx_program.strip()
 
 
-@pytest.mark.skip(reason="move to pyqasm")
+# move to pyqasm
 def test_rebase_raises_for_unsatisfied_predicates(qasm_crx_program: str):
     """Test that rebase raises an error if the predicates are not satisfied"""
     gateset = {"h"}
@@ -230,13 +230,13 @@ def test_rebase_raises_for_unsatisfied_predicates(qasm_crx_program: str):
         rebase(qasm_crx_program, gateset)
 
 
-@pytest.mark.skip(reason="move to pyqasm")
+# move to pyqasm
 def test_rebase_unsatisfied_predicates_no_check(qasm_crx_program: str):
     """Test that rebase raises an error if the predicates are not satisfied"""
     assert rebase(qasm_crx_program, {"h"}, require_predicates=False) == qasm_crx_program
 
 
-@pytest.mark.skip(reason="move to pyqasm")
+# move to pyqasm
 def test_rebase_over_supported_decomposition_basis_set(
     qasm_crx_program: str, qasm_crx_decomposed: str
 ):

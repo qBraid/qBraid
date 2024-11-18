@@ -15,7 +15,6 @@ Unit tests for managing quantum program type aliases.
 from unittest.mock import Mock
 
 import pytest
-from pyqasm.exceptions import QasmParsingError
 
 from qbraid.programs._import import _assign_default_type_alias
 from qbraid.programs.alias_manager import (
@@ -25,6 +24,7 @@ from qbraid.programs.alias_manager import (
     get_qasm_type_alias,
 )
 from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.exceptions import QasmError as QbraidQasmError
 from qbraid.programs.registry import derive_program_type_alias
 
 from ..fixtures import packages_bell
@@ -97,7 +97,7 @@ def test_get_qasm_type_alias(qasm_str, expected_version):
 @pytest.mark.parametrize("qasm_str", QASM_ERROR_DATA)
 def test_get_qasm_type_alias_error(qasm_str):
     """Test getting QASM version"""
-    with pytest.raises(QasmParsingError):
+    with pytest.raises(QbraidQasmError):
         get_qasm_type_alias(qasm_str)
 
 
@@ -129,7 +129,7 @@ def test_raise_error_unuspported_source_program():
 )
 def test_bad_source_openqasm_program(item):
     """Test raising ProgramTypeError converting invalid OpenQASM program string"""
-    with pytest.raises(QasmParsingError):
+    with pytest.raises(ProgramTypeError):
         get_program_type_alias(item)
 
 
@@ -154,7 +154,7 @@ def test_get_program_type_alias_with_string_returning_package(monkeypatch):
     )
     monkeypatch.setattr(
         "qbraid.programs.alias_manager.get_qasm_type_alias",
-        lambda x: (_ for _ in ()).throw(QasmParsingError("error")),
+        lambda x: (_ for _ in ()).throw(QbraidQasmError("error")),
     )
 
     result = _get_program_type_alias("some qasm program string")

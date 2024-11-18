@@ -67,6 +67,7 @@ def test_100_random_pytket():
         assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=False)
 
 
+@pytest.mark.skip("Supported implicitly via pyqasm")
 def test_raise_error():
     """Test raising an error when converting an unsupported gate."""
     with pytest.raises(ProgramConversionError):

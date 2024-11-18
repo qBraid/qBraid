@@ -16,7 +16,6 @@ Unit tests for the qbraid transpiler.
 """
 import cirq
 import numpy as np
-import pyqasm
 import pytest
 from braket.circuits import Circuit as BraketCircuit
 from braket.circuits import Gate as BraketGate
@@ -29,6 +28,7 @@ from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 from qbraid.exceptions import QbraidError
 from qbraid.interface import assert_allclose_up_to_global_phase
 from qbraid.programs import QPROGRAM_ALIASES, ProgramTypeError, load_program
+from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.exceptions import NodeNotFoundError
 from qbraid.transpiler.graph import ConversionGraph
@@ -75,7 +75,7 @@ def test_to_cirq_bad_types(item):
 )
 def test_to_cirq_bad_openqasm_program(item):
     """Test raising QasmParsingError converting invalid OpenQASM program string"""
-    with pytest.raises(pyqasm.exceptions.QasmParsingError):
+    with pytest.raises(ProgramTypeError):
         transpile(item, "cirq")
 
 

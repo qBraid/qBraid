@@ -19,6 +19,7 @@ from typing import Any, Optional, Type, TypeVar
 from pyqasm.analyzer import Qasm3Analyzer
 from pyqasm.exceptions import QasmParsingError
 
+from .exceptions import QasmError as QbraidQasmError
 from .exceptions import ValidationError as ProgramValidationError
 
 IonQDictType = TypeVar("IonQDictType", bound=dict)
@@ -126,14 +127,14 @@ def get_qasm_type_alias(qasm: str) -> str:
         str: The QASM version alias ('qasm2' or 'qasm3').
 
     Raises:
-        QasmParsingError: If the string does not represent a valid OpenQASM program.
+        QbraidQasmError: If the string does not represent a valid OpenQASM program.
     """
     try:
         version = Qasm3Analyzer.extract_qasm_version(qasm)
         type_alias = f"qasm{version}"
         return type_alias
-    except QasmParsingError as err:
-        raise QasmParsingError(
+    except QasmParsingError as err:  # catch the pyqasm exception
+        raise QbraidQasmError(
             "Could not determine the type alias: the OpenQASM program may be invalid."
         ) from err
 
