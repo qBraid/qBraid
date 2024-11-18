@@ -243,21 +243,8 @@ def test_qiskit_roundtrip_noncontig():
 
 def test_100_random_qiskit():
     """Test converting 100 random qiskit circuits to cirq."""
-    # Pyqasm Issue #69
-    gates_to_skip = [
-        "c3sqrtx",
-        "u1",
-        "rxx",
-        "cu3",
-        "csx",
-        "rccx",
-        "ch",
-        "cry",
-        "cp",
-        "cu",
-        "cu1",
-        "rzz",
-    ]
+
+    gates_to_skip = ["c3sqrtx"]
 
     def _circuit_contains_invalid_gate(qiskit_circuit):
         for gate in gates_to_skip:
