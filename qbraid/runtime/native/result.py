@@ -17,7 +17,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional
 
+import flair_visual.simulation_result
+
 from qbraid.runtime.result import AnnealingResultData, GateModelResultData
+from flair_visual.simulation_result import QuEraSimulationResult
 
 if TYPE_CHECKING:
     import flair_visual.animation.runtime.qpustate
@@ -27,20 +30,11 @@ if TYPE_CHECKING:
 class QuEraQasmSimulatorResultData(GateModelResultData):
     """Class for storing and accessing the results of a QuEra QASM simulator job."""
 
-    def __init__(
-        self,
-        backend: str,
-        flair_visual_version: Optional[str] = None,
-        atom_animation_state: Optional[dict[str, Any]] = None,
-        logs: Optional[list[dict[str, Any]]] = None,
-        **kwargs,
-    ):
+    def __init__(self, backend: str, quera_simulation_result: dict[str, Any], **kwargs):
         """Create a new QuEraSimulatorResultData instance."""
         super().__init__(**kwargs)
         self._backend = backend
-        self._flair_visual_version = flair_visual_version
-        self._atom_animation_state = atom_animation_state
-        self._logs = logs if logs else []
+        self._quera_simulation_result = QuEraSimulationResult.from_json(quera_simulation_result)
 
     @property
     def backend(self) -> str:
@@ -50,24 +44,17 @@ class QuEraQasmSimulatorResultData(GateModelResultData):
     @property
     def flair_visual_version(self) -> Optional[str]:
         """Returns the version of the flair visualizer used."""
-        return self._flair_visual_version
+        return self._quera_simulation_result.flair_visual_version
 
     def get_qpu_state(self) -> flair_visual.animation.runtime.qpustate.AnimateQPUState:
         """Returns the the state of the QPU atoms used in the simulation."""
-        # pylint: disable-next=import-outside-toplevel
-        from flair_visual.animation.runtime.qpustate import AnimateQPUState
 
-        if self._atom_animation_state is None:
-            raise ValueError("No atom_animation_state found in the result data.")
-
-        return AnimateQPUState.from_json(self._atom_animation_state)
+        return self._quera_simulation_result.atom_animation_state
 
     def get_logs(self) -> pd.DataFrame:
         """Returns the logs generated during the simulation as a pandas DataFrame."""
-        # pylint: disable-next=import-outside-toplevel
-        from pandas import DataFrame
 
-        return DataFrame(self._logs)
+        return self._quera_simulation_result.logs
 
 
 class QbraidQirSimulatorResultData(GateModelResultData):
