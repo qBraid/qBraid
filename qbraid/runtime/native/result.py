@@ -34,11 +34,10 @@ class QuEraQasmSimulatorResultData(GateModelResultData):
         """Create a new QuEraSimulatorResultData instance."""
         super().__init__(**kwargs)
         self._backend = backend
-        if quera_simulation_result == {}:    
-            self._quera_simulation_result = QuEraSimulationResult.from_json(quera_simulation_result)
-        else:
+        if quera_simulation_result == {}:
             self._quera_simulation_result = None
-
+        else:
+            self._quera_simulation_result = QuEraSimulationResult.from_json(quera_simulation_result)
     @property
     def backend(self) -> str:
         """Returns the backend used."""
