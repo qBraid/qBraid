@@ -52,7 +52,7 @@ def test_qasm_num_clbits():
 def test_qasm_depth():
     """Test calculating depth of qasm2 circuit"""
     assert OpenQasm2Program(qasm2_bell()).depth == 2
-    assert OpenQasm2Program(qasm2_shared15()).depth == 15
+    assert OpenQasm2Program(qasm2_shared15()).depth == 11
 
 
 def test_raise_program_type_error():

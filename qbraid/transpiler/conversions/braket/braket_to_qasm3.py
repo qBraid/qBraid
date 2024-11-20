@@ -16,6 +16,7 @@ import pyqasm
 from braket.circuits import Circuit
 from braket.circuits.serialization import IRType
 
+from qbraid.passes.qasm import replace_gate_name
 from qbraid.transpiler.annotations import weight
 
 
@@ -36,7 +37,12 @@ def braket_to_qasm3(circuit: Circuit) -> str:
     has_measurements = any(str(instr.operator) == "Measure" for instr in circuit.instructions)
     qasm_program = circuit.to_ir(IRType.OPENQASM).source
     qasm_module = pyqasm.loads(qasm_program)
-    qasm_module.unroll()
+    qasm_module.unroll(external_gates=["cnot"])
+
     if not has_measurements:
         qasm_module.remove_measurements()
-    return pyqasm.dumps(qasm_module)
+
+    qasm_str = pyqasm.dumps(qasm_module)
+    qasm_str = replace_gate_name(qasm_str, "cx", "cnot")
+
+    return qasm_str
