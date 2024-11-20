@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING
 import pyqasm
 from qbraid_core._import import LazyLoader
 
+from qbraid._logging import logger
 from qbraid.programs.exceptions import QasmError
 from qbraid.transpiler.annotations import weight
 
@@ -46,7 +47,12 @@ def qasm2_to_cirq(qasm: Qasm2StringType) -> cirq.Circuit:
     try:
         qasm_module = pyqasm.loads(qasm)
         qasm_module.unroll()
-        qasm_module.remove_barriers()  # cirq does not support barriers
+        if qasm_module.has_barriers():
+            logger.warning(
+                "Barriers found while converting program to Cirq. "
+                "Removing barriers as Cirq does not support them."
+            )
+            qasm_module.remove_barriers()
         return cirq_qasm_parser.QasmParser().parse(pyqasm.dumps(qasm_module)).circuit
     except cirq_qasm_import.QasmException as err:
         print(err)

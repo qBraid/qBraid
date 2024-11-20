@@ -39,6 +39,7 @@ def test_ionq_device_extract_gate_data():
     include "qelib1.inc";
     qreg q[2];
     x q[0];
+    not q[1];
     y q[0];
     z q[0], q[1];
     rx(pi / 4) q[0];
@@ -66,6 +67,7 @@ def test_ionq_device_extract_gate_data():
 
     gate_data = [
         {"gate": "x", "target": 0},
+        {"gate": "not", "target": 1},
         {"gate": "y", "target": 0},
         {"gate": "z", "target": 0},
         {"gate": "z", "target": 1},

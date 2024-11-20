@@ -65,3 +65,7 @@ class ProgramTypeError(QbraidError):
 
 class ValidationError(ProgramTypeError):
     """Custom exception for validation errors in program types."""
+
+
+class ProgramLoaderError(QbraidError):
+    """Raised when an error occurs while loading a quantum program."""

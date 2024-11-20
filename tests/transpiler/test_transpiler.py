@@ -27,8 +27,8 @@ from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 
 from qbraid.exceptions import QbraidError
 from qbraid.interface import assert_allclose_up_to_global_phase
-from qbraid.programs import QPROGRAM_ALIASES, ProgramTypeError, load_program
-from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs import QPROGRAM_ALIASES, load_program
+from qbraid.programs.exceptions import ProgramLoaderError, ProgramTypeError
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.exceptions import NodeNotFoundError
 from qbraid.transpiler.graph import ConversionGraph
@@ -102,10 +102,10 @@ def test_from_cirq_bad_package(bell_circuit, item):
         transpile(circuit, item)
 
 
-@pytest.mark.parametrize("program", [None])
+@pytest.mark.parametrize("program", ["Not a circuit", None])
 def test_load_program_error(program):
     """Test raising circuit wrapper error"""
-    with pytest.raises(QbraidError):
+    with pytest.raises(ProgramLoaderError):
         load_program(program)
 
 

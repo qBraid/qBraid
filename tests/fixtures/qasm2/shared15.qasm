@@ -1,8 +1,5 @@
 OPENQASM 2.0;
 include "qelib1.inc";
-gate iswap q0,q1 { s q0; s q1; h q0; cx q0,q1; cx q1,q0; h q1; }
-gate swap q0,q1 { cx q0,q1; cx q1,q0; cx q0,q1; }
-gate cp(theta) q0,q1 { cx q1,q0; u3(0, 0, theta) q0; cx q1,q0; }
 qreg q[4];
 creg c[2];
 h q[0];

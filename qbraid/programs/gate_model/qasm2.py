@@ -65,9 +65,7 @@ class OpenQasm2Program(GateModelProgram):
 
     def _unitary(self) -> np.ndarray:
         """Return the unitary of the QASM"""
-        module = self._module.copy()
-        module.unroll()
-        return transpiler.transpile(str(module), "cirq").unitary()
+        raise NotImplementedError
 
     def transform(self, device) -> None:
         """Transform program to according to device target profile."""
