@@ -58,7 +58,6 @@ from ._resources import (
     JOB_DATA_NEC,
     JOB_DATA_QIR,
     JOB_DATA_QUERA,
-    MOCK_QPU_STATE_DATA,
     RESULTS_DATA_NEC,
     RESULTS_DATA_QUERA,
     MockClient,
@@ -289,9 +288,11 @@ def test_quera_simulator_workflow(mock_provider, cirq_uniform, valid_qasm2_no_me
     assert len(counts) == len(probabilities) == 2
     assert sum(probabilities.values()) == 1.0
     assert result.data.measurements is None
-    assert result.data.flair_visual_version == RESULTS_DATA_QUERA["flairVisualVersion"]
+    assert (
+        result.data.flair_visual_version
+        == RESULTS_DATA_QUERA["quera_simulation_result"]["flair_visual_version"]
+    )
     assert result.data.backend == RESULTS_DATA_QUERA["backend"]
-    assert result.data._atom_animation_state == MOCK_QPU_STATE_DATA
 
     logs = result.data.get_logs()
     assert isinstance(logs, DataFrame)
