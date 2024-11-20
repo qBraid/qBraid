@@ -256,51 +256,53 @@ def test_qir_simulator_workflow(mock_provider, cirq_uniform):
         assert is_uniform_comput_basis(result.measurements())
 
 
-@pytest.importorskip("flair_visual")
 def test_quera_simulator_workflow(mock_provider, cirq_uniform, valid_qasm2_no_meas):
     """Test queara simulator job submission and result retrieval."""
-    circuit = cirq_uniform(num_qubits=5, measure=False)
-    num_qubits = len(circuit.all_qubits())
+    try:
+        circuit = cirq_uniform(num_qubits=5, measure=False)
+        num_qubits = len(circuit.all_qubits())
 
-    provider = mock_provider
-    device = provider.get_device("quera_qasm_simulator")
+        provider = mock_provider
+        device = provider.get_device("quera_qasm_simulator")
 
-    shots = 10
-    job = device.run(circuit, shots=shots)
-    assert isinstance(job, QbraidJob)
-    assert job.is_terminal_state()
+        shots = 10
+        job = device.run(circuit, shots=shots)
+        assert isinstance(job, QbraidJob)
+        assert job.is_terminal_state()
 
-    device._target_spec = None
-    device.to_ir = lambda x: {"openQasm": x}
-    batch_job = device.run([valid_qasm2_no_meas], shots=shots)
-    assert isinstance(batch_job, list)
-    assert all(isinstance(job, QbraidJob) for job in batch_job)
+        device._target_spec = None
+        device.to_ir = lambda x: {"openQasm": x}
+        batch_job = device.run([valid_qasm2_no_meas], shots=shots)
+        assert isinstance(batch_job, list)
+        assert all(isinstance(job, QbraidJob) for job in batch_job)
 
-    result = job.result()
-    assert isinstance(result, Result)
-    assert isinstance(result.data, QuEraQasmSimulatorResultData)
-    assert repr(result.data).startswith("QuEraQasmSimulatorResultData")
-    assert result.success
-    assert result.job_id == JOB_DATA_QUERA["qbraidJobId"]
-    assert result.device_id == JOB_DATA_QUERA["qbraidDeviceId"]
+        result = job.result()
+        assert isinstance(result, Result)
+        assert isinstance(result.data, QuEraQasmSimulatorResultData)
+        assert repr(result.data).startswith("QuEraQasmSimulatorResultData")
+        assert result.success
+        assert result.job_id == JOB_DATA_QUERA["qbraidJobId"]
+        assert result.device_id == JOB_DATA_QUERA["qbraidDeviceId"]
 
-    counts = result.data.get_counts()
-    probabilities = result.data.get_probabilities()
-    assert len(counts) == len(probabilities) == 2
-    assert sum(probabilities.values()) == 1.0
-    assert result.data.measurements is None
-    assert (
-        result.data.flair_visual_version
-        == RESULTS_DATA_QUERA["quera_simulation_result"]["flair_visual_version"]
-    )
-    assert result.data.backend == RESULTS_DATA_QUERA["backend"]
+        counts = result.data.get_counts()
+        probabilities = result.data.get_probabilities()
+        assert len(counts) == len(probabilities) == 2
+        assert sum(probabilities.values()) == 1.0
+        assert result.data.measurements is None
+        assert (
+            result.data.flair_visual_version
+            == RESULTS_DATA_QUERA["quera_simulation_result"]["flair_visual_version"]
+        )
+        assert result.data.backend == RESULTS_DATA_QUERA["backend"]
 
-    logs = result.data.get_logs()
-    assert isinstance(logs, DataFrame)
+        logs = result.data.get_logs()
+        assert isinstance(logs, DataFrame)
 
-    assert result.details["shots"] == shots
-    assert result.details["metadata"]["circuitNumQubits"] == num_qubits
-    assert isinstance(result.details["timeStamps"]["executionDuration"], int)
+        assert result.details["shots"] == shots
+        assert result.details["metadata"]["circuitNumQubits"] == num_qubits
+        assert isinstance(result.details["timeStamps"]["executionDuration"], int)
+    except ImportError:
+        pytest.skip("qbraid[quera] extra(s) not installed")
 
 
 def test_nec_vector_annealer_workflow(mock_provider):
