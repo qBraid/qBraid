@@ -150,38 +150,27 @@ RESULTS_DATA_QIR = {
     **REDUNDANT_JOB_DATA,
 }
 
-MOCK_QPU_STATE_DATA = {
-    "block_durations": [],
-    "gate_events": [],
-    "qpu_fov": {"xmin": None, "xmax": None, "ymin": None, "ymax": None},
-    "atoms": [],
-    "slm_zone": [],
-    "aod_moves": [],
-}
-
-MOCK_SIM_LOGS = [
-    {"atom_id": 0, "block_id": 0, "action_type": "TrapSLM", "time": 0, "duration": 0},
-    {
-        "atom_id": 0,
-        "block_id": 0,
-        "action_type": "TrapAOD",
-        "time": 0,
-        "duration": 31.024984394500784,
-    },
-    {
-        "atom_id": 0,
-        "block_id": 0,
-        "action_type": "DropAOD",
-        "time": 31.024984394500784,
-        "duration": 0,
-    },
-]
-
 RESULTS_DATA_QUERA = {
-    "backend": "cirq",
-    "flairVisualVersion": "0.1.4",
-    "logs": MOCK_SIM_LOGS,
-    "atomAnimationState": MOCK_QPU_STATE_DATA,
+    "backend": "cirq-gpu",
+    "quera_simulation_result": {
+        "flair_visual_version": "0.5.3",
+        "counts": {"0": 6, "31": 4},
+        "logs": (
+            ",atom_id,block_id,action_type,time,duration\n"
+            "0,0,TrapSLM,0,0\n"
+            "0,0,TrapAOD,0,31.024984394500784\n"
+            "0,0,DropAOD,31.024984394500784,0"
+        ),
+        "atom_animation_state": {
+            "block_durations": [],
+            "gate_events": [],
+            "qpu_fov": {"xmin": -6, "xmax": 218, "ymin": -5, "ymax": 66.5},
+            "atoms": [],
+            "slm_zone": [],
+            "aod_moves": [],
+        },
+        "noise_model": {"all_qubits": [0, 1, 2, 3, 4], "gate_events": []},
+    },
     **REDUNDANT_JOB_DATA,
 }
 

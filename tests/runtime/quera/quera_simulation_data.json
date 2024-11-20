@@ -1,0 +1,29 @@
+{
+  "timeStamps": {
+    "createdAt": "2024-11-20T18:15:02.000Z",
+    "endedAt": "2024-11-20T18:15:05.000Z",
+    "executionDuration": 3000
+  },
+  "queuePosition": null,
+  "queueDepth": null,
+  "circuitNumQubits": 3,
+  "circuitDepth": 3,
+  "email": "jovyan@example.com",
+  "qbraidDeviceId": "quera_qasm_simulator",
+  "qbraidJobId": "quera_qasm_simulator-jovyan-qjob-0123456789",
+  "status": "COMPLETED",
+  "vendor": "qbraid",
+  "provider": "quera",
+  "shots": 100,
+  "openQasm": "// Generated from qBraid v0.8.7.dev\n\nOPENQASM 2.0;\ninclude \"qelib1.inc\";\n\nqreg q[3];\n\nh q[0];\ncx q[0],q[1];\ncx q[0],q[2];",
+  "experimentType": "gate_model",
+  "cost": 0,
+  "measurementCounts": {
+    "0": 50,
+    "2": 2,
+    "5": 1,
+    "6": 3,
+    "7": 44
+  },
+  "statusText": ""
+}

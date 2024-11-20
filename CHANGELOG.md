@@ -20,6 +20,7 @@ Types of changes:
 - `OQCDevice.transform()` method now removes "include" statements from qasm strings, as they are not supported by the OQC cloud. ([#831](https://github.com/qBraid/qBraid/pull/831))
 - Extended `OQCDevice.get_next_window()` to fallback and attempt to extract next (or current) start window from `OQCClient.get_qpu_execution_estimates()` if `OQCClient.get_next_window()` raises an exception (e.g. for non-AWS windows). Now can return next widow `datetime` for Toshiko QPU. ([#831](https://github.com/qBraid/qBraid/pull/831))
 - Updated `OQCDevice.submit()` to so that we no longer explicitly set the `CompilerConfig` defaults and rather leave optional arguments as `None` if not provided. ([#831](https://github.com/qBraid/qBraid/pull/831))
+- Updated `QuEraQasmSimulatorResultData` for `flair-visual` version 0.5.3 and for correspondiong qBraid Quantum Jobs API QuEra endpoint updates, which consolidate returned data into single `quera_simulation_result` dictionary field ([#832](https://github.com/qBraid/qBraid/pull/832))
 
 ### Deprecated
 

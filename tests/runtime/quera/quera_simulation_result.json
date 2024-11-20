@@ -1,0 +1,46 @@
+{
+  "measurementCounts": {
+    "0": 50,
+    "2": 2,
+    "5": 1,
+    "6": 3,
+    "7": 44
+  },
+  "quera_simulation_result": {
+    "flair_visual_version": "0.5.3",
+    "counts": {
+      "0": 50,
+      "2": 2,
+      "5": 1,
+      "6": 3,
+      "7": 44
+    },
+    "logs": ",atom_id,block_id,action_type,time,duration\n0,0,TrapSLM,0,0\n0,0,TrapAOD,0,31.024984394500784\n0,0,DropAOD,31.024984394500784,0",
+    "atom_animation_state": {
+      "block_durations": [],
+      "gate_events": [],
+      "qpu_fov": {
+        "xmin": -6,
+        "xmax": 218,
+        "ymin": -5,
+        "ymax": 66.5
+      },
+      "atoms": [],
+      "slm_zone": [],
+      "aod_moves": []
+    },
+    "noise_model": {
+      "all_qubits": [0, 1, 2],
+      "gate_events": []
+    }
+  },
+  "status": "COMPLETED",
+  "statusText": "",
+  "timeStamps": {
+    "createdAt": "2024-11-20T18:15:02Z",
+    "endedAt": "2024-11-20T18:15:05Z",
+    "executionDuration": 3000
+  },
+  "backend": "cirq-gpu",
+  "qbraidJobId": "quera_qasm_simulator-jovyan-qjob-0123456789"
+}
