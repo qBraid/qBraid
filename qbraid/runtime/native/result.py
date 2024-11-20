@@ -18,9 +18,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Optional
 
 import flair_visual.simulation_result
+from flair_visual.simulation_result import QuEraSimulationResult
 
 from qbraid.runtime.result import AnnealingResultData, GateModelResultData
-from flair_visual.simulation_result import QuEraSimulationResult
 
 if TYPE_CHECKING:
     import flair_visual.animation.runtime.qpustate
@@ -38,6 +38,7 @@ class QuEraQasmSimulatorResultData(GateModelResultData):
             self._quera_simulation_result = None
         else:
             self._quera_simulation_result = QuEraSimulationResult.from_json(quera_simulation_result)
+
     @property
     def backend(self) -> str:
         """Returns the backend used."""
@@ -48,13 +49,13 @@ class QuEraQasmSimulatorResultData(GateModelResultData):
         """Returns the QuEra simulation result."""
         if self._quera_simulation_result is None:
             raise ValueError("The simulation result is not available.")
-        
+
         return self._quera_simulation_result
 
     @property
     def flair_visual_version(self) -> Optional[str]:
         """Returns the version of the flair visualizer used."""
-        
+
         return self.quera_simulation_result.flair_visual_version
 
     def get_qpu_state(self) -> flair_visual.animation.runtime.qpustate.AnimateQPUState:
@@ -64,7 +65,7 @@ class QuEraQasmSimulatorResultData(GateModelResultData):
 
     def get_logs(self) -> pd.DataFrame:
         """Returns the logs generated during the simulation as a pandas DataFrame."""
-        
+
         return self.quera_simulation_result.logs
 
 
