@@ -30,11 +30,11 @@ if TYPE_CHECKING:
 class QuEraQasmSimulatorResultData(GateModelResultData):
     """Class for storing and accessing the results of a QuEra QASM simulator job."""
 
-    def __init__(self, backend: str, quera_simulation_result: dict[str, Any], **kwargs):
+    def __init__(self, backend: str, quera_simulation_result: Optional[dict[str, Any]], **kwargs):
         """Create a new QuEraSimulatorResultData instance."""
         super().__init__(**kwargs)
         self._backend = backend
-        if quera_simulation_result == {}:
+        if quera_simulation_result is None:
             self._quera_simulation_result = None
         else:
             self._quera_simulation_result = QuEraSimulationResult.from_json(quera_simulation_result)

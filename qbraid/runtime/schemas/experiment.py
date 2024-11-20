@@ -128,9 +128,7 @@ class QuEraQasmSimulationMetadata(GateModelExperimentMetadata):
     """
 
     backend: Optional[str] = None
-    flair_visual_version: Optional[str] = Field(None, alias="flairVisualVersion")
-    atom_animation_state: Optional[dict[str, Any]] = Field(None, alias="atomAnimationState")
-    logs: Optional[list[dict[str, Any]]] = None
+    quera_simulation_result: Optional[dict[str, Any]] = None
 
 
 class AnnealingExperimentMetadata(BaseModel):
