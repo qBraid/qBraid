@@ -45,19 +45,28 @@ class QuEraQasmSimulatorResultData(GateModelResultData):
         return self._backend
 
     @property
+    def quera_simulation_result(self) -> QuEraSimulationResult:
+        """Returns the QuEra simulation result."""
+        if self._quera_simulation_result is None:
+            raise ValueError("The simulation result is not available.")
+        
+        return self._quera_simulation_result
+
+    @property
     def flair_visual_version(self) -> Optional[str]:
         """Returns the version of the flair visualizer used."""
-        return self._quera_simulation_result.flair_visual_version
+        
+        return self.quera_simulation_result.flair_visual_version
 
     def get_qpu_state(self) -> flair_visual.animation.runtime.qpustate.AnimateQPUState:
         """Returns the the state of the QPU atoms used in the simulation."""
 
-        return self._quera_simulation_result.atom_animation_state
+        return self.quera_simulation_result.atom_animation_state
 
     def get_logs(self) -> pd.DataFrame:
         """Returns the logs generated during the simulation as a pandas DataFrame."""
-
-        return self._quera_simulation_result.logs
+        
+        return self.quera_simulation_result.logs
 
 
 class QbraidQirSimulatorResultData(GateModelResultData):
