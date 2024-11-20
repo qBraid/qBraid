@@ -256,6 +256,7 @@ def test_qir_simulator_workflow(mock_provider, cirq_uniform):
         assert is_uniform_comput_basis(result.measurements())
 
 
+@pytest.importorskip("flair_visual")
 def test_quera_simulator_workflow(mock_provider, cirq_uniform, valid_qasm2_no_meas):
     """Test queara simulator job submission and result retrieval."""
     circuit = cirq_uniform(num_qubits=5, measure=False)
