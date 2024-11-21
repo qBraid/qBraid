@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from .enums import JobStatus
 from .exceptions import JobStateError, ResourceNotFoundError
+from .result import T
 
 if TYPE_CHECKING:
     import qbraid.runtime
@@ -85,7 +86,7 @@ class QuantumJob(ABC):
             sleep(poll_interval)
 
     @abstractmethod
-    def result(self) -> qbraid.runtime.Result:
+    def result(self) -> qbraid.runtime.Result[T]:
         """Return the results of the job."""
 
     @abstractmethod

@@ -268,7 +268,7 @@ def test_quera_simulator_workflow(mock_provider, cirq_uniform, valid_qasm2_no_me
     device = provider.get_device("quera_qasm_simulator")
 
     shots = 10
-    job = device.run(circuit, shots=shots)
+    job = device.run(circuit, shots=shots, backend="cirq-gpu")
     assert isinstance(job, QbraidJob)
     assert job.is_terminal_state()
 
@@ -285,6 +285,7 @@ def test_quera_simulator_workflow(mock_provider, cirq_uniform, valid_qasm2_no_me
     assert result.success
     assert result.job_id == JOB_DATA_QUERA["qbraidJobId"]
     assert result.device_id == JOB_DATA_QUERA["qbraidDeviceId"]
+    assert result.data.backend == "cirq-gpu"
 
     counts = result.data.get_counts()
     probabilities = result.data.get_probabilities()

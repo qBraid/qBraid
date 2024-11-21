@@ -14,7 +14,7 @@ Module defining QbraidJob class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Optional, Type, Union
 
 from qbraid_core.services.quantum import QuantumClient
 
@@ -23,8 +23,8 @@ from qbraid.programs import ExperimentType
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError, QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
-from qbraid.runtime.result import Result
-from qbraid.runtime.result_data import GateModelResultData
+from qbraid.runtime.result import Result, T
+from qbraid.runtime.result_data import AnnealingResultData, GateModelResultData
 from qbraid.runtime.schemas import (
     AnnealingExperimentMetadata,
     QbraidQirSimulationMetadata,
@@ -104,7 +104,7 @@ class QbraidJob(QuantumJob):
 
         logger.info("Success. Current status: %s", status.name)
 
-    def result(self) -> Result:
+    def result(self) -> Result[T]:
         """Return the results of the job."""
         self.wait_for_final_state()
         job_data = self.client.get_job(self.id)
@@ -119,7 +119,9 @@ class QbraidJob(QuantumJob):
             QuEraQasmSimulationMetadata: QuEraQasmSimulatorResultData,
         }
         model = RuntimeJobModel.from_dict(job_result)
-        result_data_cls = metadata_to_result_data.get(type(model.metadata), GateModelResultData)
+        result_data_cls: Union[Type[GateModelResultData], Type[AnnealingResultData]] = (
+            metadata_to_result_data.get(type(model.metadata), GateModelResultData)
+        )
         data = result_data_cls.from_object(model.metadata)
         metadata_dump = model.metadata.model_dump(
             by_alias=True, exclude={"measurement_counts", "measurements"}
@@ -137,6 +139,6 @@ class QbraidJob(QuantumJob):
             }
         )
         model_dump["metadata"] = metadata_dump
-        return Result(
+        return Result[T](
             device_id=model.device_id, job_id=model.job_id, success=success, data=data, **model_dump
         )
