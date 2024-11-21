@@ -84,12 +84,12 @@ from .noise import NoiseModel, NoiseModelSet
 from .options import RuntimeOptions
 from .profile import TargetProfile
 from .provider import QuantumProvider
-from .result import (
+from .result import Result
+from .result_data import (
     AhsResultData,
     AhsShotResult,
     AnnealingResultData,
     GateModelResultData,
-    Result,
     ResultData,
 )
 

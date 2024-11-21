@@ -15,21 +15,28 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added support for specifying different `quera_qasm_simulator` backends in the `QbraidDevice.run` method using the "backend" keyword argument (e.g., "cirq", "cirq-gpu") ([#836](https://github.com/qBraid/qBraid/pull/836))
+
+### Improved / Modified
+- Enhanced type hinting for the `Result.data` property by leveraging a custom `typing.TypeVar`, enabling automatic adaptation to the specific `ResultData` subclass being accessed. ([#836](https://github.com/qBraid/qBraid/pull/836))
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Dependencies
+
+## [0.8.7] - 2024-11-21
 
 ### Improved / Modified
 - `OQCDevice.transform()` method now removes "include" statements from qasm strings, as they are not supported by the OQC cloud. ([#831](https://github.com/qBraid/qBraid/pull/831))
 - Extended `OQCDevice.get_next_window()` to fallback and attempt to extract next (or current) start window from `OQCClient.get_qpu_execution_estimates()` if `OQCClient.get_next_window()` raises an exception (e.g. for non-AWS windows). Now can return next widow `datetime` for Toshiko QPU. ([#831](https://github.com/qBraid/qBraid/pull/831))
 - Updated `OQCDevice.submit()` to so that we no longer explicitly set the `CompilerConfig` defaults and rather leave optional arguments as `None` if not provided. ([#831](https://github.com/qBraid/qBraid/pull/831))
-- Updated `QuEraQasmSimulatorResultData` for `flair-visual` version 0.5.3 and for correspondiong qBraid Quantum Jobs API QuEra endpoint updates, which consolidate returned data into single `quera_simulation_result` dictionary field ([#832](https://github.com/qBraid/qBraid/pull/832))
-
-### Deprecated
 
 ### Removed
 - Removed `qbraid.passes.compat.rename_qasm_registers()`. Function did not work properly, and is no longer even needed for OQC runtime as submission format is now `qasm3`, not `qasm2`. ([#831](https://github.com/qBraid/qBraid/pull/831))
-
-### Fixed
-
-### Dependencies
 
 ## [0.8.6] - 2024-11-11
 

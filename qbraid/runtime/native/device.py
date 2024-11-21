@@ -85,6 +85,7 @@ class QbraidDevice(QuantumDevice):
         noise_model: Optional[str] = None,
         seed: Optional[int] = None,
         timeout: Optional[int] = None,
+        backend: Optional[str] = None,
         params: Optional[dict[str, Any]] = None,
         error_mitigation: Optional[dict[str, Any]] = None,
     ) -> qbraid.runtime.QbraidJob:
@@ -107,6 +108,8 @@ class QbraidDevice(QuantumDevice):
                 Only applicable for certain devices. Defaults to None.
             timeout (int, optional): The maximum time in seconds to wait for the job
                 to complete after execution has started. Defaults to None.
+            backend (str, optional): The backend to use for the job. Only applicable for
+                simulator devices that support multiple backend executables. Defaults to None.
             params (dict, optional): Additional parameters to include in the job payload.
             error_mitigation (dict, optional): Dictionary containing error mitigation
                 parameters. Only applicable for certain devices. Defaults to None.
@@ -131,6 +134,7 @@ class QbraidDevice(QuantumDevice):
             "timeout": timeout,
             "noiseModel": noise_model,
             "memory": memory,
+            "backend": backend,
             "params": params_json,
             "errorMitigation": error_mitig_json,
             **run_input,
