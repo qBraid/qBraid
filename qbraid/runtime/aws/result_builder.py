@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING, Optional
 import numpy as np
 
 from qbraid.runtime.exceptions import QbraidRuntimeError
-from qbraid.runtime.result import AhsShotResult
+from qbraid.runtime.result_data import AhsShotResult
 
 if TYPE_CHECKING:
     from braket.tasks.analog_hamiltonian_simulation_quantum_task_result import (

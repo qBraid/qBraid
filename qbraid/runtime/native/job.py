@@ -23,7 +23,8 @@ from qbraid.programs import ExperimentType
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError, QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
-from qbraid.runtime.result import GateModelResultData, Result
+from qbraid.runtime.result import Result
+from qbraid.runtime.result_data import GateModelResultData
 from qbraid.runtime.schemas import (
     AnnealingExperimentMetadata,
     QbraidQirSimulationMetadata,

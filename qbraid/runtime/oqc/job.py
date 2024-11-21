@@ -20,10 +20,11 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.job import QuantumJob
-from qbraid.runtime.result import GateModelResultData, Result
+from qbraid.runtime.result import Result
+from qbraid.runtime.result_data import GateModelResultData
 
 if TYPE_CHECKING:
-    from qcaas_client.client import OQCClient, QPUTaskErrors
+    from qcaas_client.client import OQCClient
 
 RESULTS_FORMAT = {
     2: "raw",

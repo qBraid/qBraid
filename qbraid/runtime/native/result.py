@@ -18,7 +18,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any, Optional
 
 from qbraid.exceptions import QbraidError
-from qbraid.runtime.result import AnnealingResultData, GateModelResultData
+from qbraid.runtime.result_data import AnnealingResultData, GateModelResultData
 
 if TYPE_CHECKING:
     import flair_visual.animation.runtime.qpustate

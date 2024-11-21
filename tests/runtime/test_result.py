@@ -28,12 +28,12 @@ from qbraid.runtime.postprocess import (
     normalize_bit_lengths,
     normalize_counts,
 )
-from qbraid.runtime.result import (
+from qbraid.runtime.result import Result
+from qbraid.runtime.result_data import (
     AhsResultData,
     AhsShotResult,
     AnnealingResultData,
     GateModelResultData,
-    Result,
 )
 
 

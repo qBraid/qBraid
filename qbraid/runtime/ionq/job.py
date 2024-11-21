@@ -22,7 +22,8 @@ from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.postprocess import normalize_counts
-from qbraid.runtime.result import GateModelResultData, MeasCount, MeasProb, Result
+from qbraid.runtime.result import Result
+from qbraid.runtime.result_data import GateModelResultData, MeasCount, MeasProb
 
 if TYPE_CHECKING:
     import qbraid.runtime.ionq.provider

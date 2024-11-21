@@ -26,7 +26,8 @@ from qbraid._logging import logger
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
-from qbraid.runtime.result import AhsResultData, GateModelResultData, Result
+from qbraid.runtime.result import Result
+from qbraid.runtime.result_data import AhsResultData, GateModelResultData
 
 from .result_builder import BraketAhsResultBuilder, BraketGateModelResultBuilder
 from .tracker import get_quantum_task_cost

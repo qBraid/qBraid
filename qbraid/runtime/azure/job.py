@@ -23,7 +23,8 @@ from qbraid.runtime.azure.result_builder import AzureGateModelResultBuilder
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
-from qbraid.runtime.result import GateModelResultData, Result
+from qbraid.runtime.result import Result
+from qbraid.runtime.result_data import GateModelResultData
 
 from .io_format import OutputDataFormat
 
