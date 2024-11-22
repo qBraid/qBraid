@@ -24,7 +24,7 @@ import pytest
 
 from qbraid.programs import NATIVE_REGISTRY
 
-from ._resources import DEVICE_DATA_AQUILA, DEVICE_DATA_QIR, DEVICE_DATA_QUERA
+from ._resources import DEVICE_DATA_AQUILA, DEVICE_DATA_QIR, DEVICE_DATA_QUERA_QASM
 
 
 def _braket_circuit(meas=True):
@@ -111,7 +111,7 @@ def device_data_qir():
 @pytest.fixture
 def device_data_quera():
     """Return a dictionary of device data for the QuEra QASM simulator."""
-    return DEVICE_DATA_QUERA
+    return DEVICE_DATA_QUERA_QASM
 
 
 @pytest.fixture

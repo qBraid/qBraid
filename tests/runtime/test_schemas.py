@@ -29,6 +29,7 @@ from qbraid.runtime.schemas.experiment import (
     ExperimentMetadata,
     GateModelExperimentMetadata,
     QuboSolveParams,
+    AhsExperimentMetadata
 )
 from qbraid.runtime.schemas.job import RuntimeJobModel, TimeStamps
 
@@ -167,15 +168,14 @@ def test_runtime_job_model(mock_job_data):
 
 def test_populate_metadata(valid_qasm2_no_meas):
     """Test _populate_metadata method."""
-    job_data = {"openQasm": valid_qasm2_no_meas, "circuitNumQubits": 5, "circuitDepth": 10}
-    experiment_type = ExperimentType.GATE_MODEL.value
-    populated_data = RuntimeJobModel._populate_metadata(job_data, experiment_type)
+    job_data_gm = {"openQasm": valid_qasm2_no_meas, "circuitNumQubits": 5, "circuitDepth": 10}
+    populated_data = RuntimeJobModel._populate_metadata(job_data_gm, ExperimentType.GATE_MODEL)
     assert isinstance(populated_data["metadata"], GateModelExperimentMetadata)
     assert populated_data["metadata"].qasm == valid_qasm2_no_meas
 
-    experiment_type = ExperimentType.AHS
-    populated_data = RuntimeJobModel._populate_metadata(job_data, experiment_type)
-    assert isinstance(populated_data["metadata"], ExperimentMetadata)
+    job_data_ahs = {"numAtoms": 10}
+    populated_data = RuntimeJobModel._populate_metadata(job_data_ahs, ExperimentType.AHS)
+    assert isinstance(populated_data["metadata"], AhsExperimentMetadata)
 
 
 def test_runtime_job_model_metadata_population():
@@ -185,7 +185,7 @@ def test_runtime_job_model_metadata_population():
         "qbraidDeviceId": "device_456",
         "status": "CANCELLED",
         "shots": 100,
-        "experimentType": "ahs",
+        "experimentType": "other",
         "someAdditionalField": "extra data",
         "timeStamps": {
             "createdAt": "2024-09-14T01:06:34.000Z",

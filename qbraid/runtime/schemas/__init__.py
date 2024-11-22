@@ -36,6 +36,7 @@ Classes
 from .base import QbraidSchemaBase, QbraidSchemaHeader
 from .device import DeviceData, DevicePricing
 from .experiment import (
+    AhsExperimentMetadata,
     AnnealingExperimentMetadata,
     ExperimentMetadata,
     GateModelExperimentMetadata,
@@ -55,6 +56,7 @@ __all__ = [
     "GateModelExperimentMetadata",
     "QuEraQasmSimulationMetadata",
     "QbraidQirSimulationMetadata",
+    "AhsExperimentMetadata",
     "TimeStamps",
     "RuntimeJobModel",
     "QuboSolveParams",

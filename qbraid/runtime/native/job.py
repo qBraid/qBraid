@@ -23,14 +23,9 @@ from qbraid.programs import ExperimentType
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError, QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
-from qbraid.runtime.result import Result, T
-from qbraid.runtime.result_data import AnnealingResultData, GateModelResultData
-from qbraid.runtime.schemas import (
-    AnnealingExperimentMetadata,
-    QbraidQirSimulationMetadata,
-    QuEraQasmSimulationMetadata,
-    RuntimeJobModel,
-)
+from qbraid.runtime.result import Result, ResultDataType
+from qbraid.runtime.result_data import AhsResultData, AnnealingResultData, GateModelResultData
+from qbraid.runtime.schemas import RuntimeJobModel
 
 from .result import (
     NECVectorAnnealerResultData,
@@ -104,7 +99,35 @@ class QbraidJob(QuantumJob):
 
         logger.info("Success. Current status: %s", status.name)
 
-    def result(self) -> Result[T]:
+    @staticmethod
+    def get_result_data_cls(
+        device_id: str, experiment_type: ExperimentType
+    ) -> Union[Type[GateModelResultData], Type[AnnealingResultData], Type[AhsResultData]]:
+        """Determine the appropriate ResultData class based on device_id and experiment_type."""
+        device_to_result_data = {
+            "qbraid_qir_simulator": QbraidQirSimulatorResultData,
+            "quera_qasm_simulator": QuEraQasmSimulatorResultData,
+            "nec_vector_annealer": NECVectorAnnealerResultData,
+        }
+
+        result_data_cls = device_to_result_data.get(device_id)
+
+        if not result_data_cls:
+            experiment_type_to_result_data = {
+                ExperimentType.GATE_MODEL: GateModelResultData,
+                ExperimentType.ANNEALING: AnnealingResultData,
+                ExperimentType.AHS: AhsResultData,
+            }
+            result_data_cls = experiment_type_to_result_data.get(experiment_type)
+
+        if not result_data_cls:
+            raise ValueError(
+                f"Unsupported device_id '{device_id}' or experiment_type '{experiment_type}'"
+            )
+
+        return result_data_cls
+
+    def result(self) -> Result[ResultDataType]:
         """Return the results of the job."""
         self.wait_for_final_state()
         job_data = self.client.get_job(self.id)
@@ -113,32 +136,28 @@ class QbraidJob(QuantumJob):
             self.client.get_job_results(self.id, wait_time=1, backoff_factor=1.4) if success else {}
         )
         job_result.update(job_data)
-        metadata_to_result_data = {
-            AnnealingExperimentMetadata: NECVectorAnnealerResultData,
-            QbraidQirSimulationMetadata: QbraidQirSimulatorResultData,
-            QuEraQasmSimulationMetadata: QuEraQasmSimulatorResultData,
-        }
         model = RuntimeJobModel.from_dict(job_result)
-        result_data_cls: Union[Type[GateModelResultData], Type[AnnealingResultData]] = (
-            metadata_to_result_data.get(type(model.metadata), GateModelResultData)
-        )
+        result_data_cls = self.get_result_data_cls(model.device_id, model.experiment_type)
         data = result_data_cls.from_object(model.metadata)
-        metadata_dump = model.metadata.model_dump(
-            by_alias=True, exclude={"measurement_counts", "measurements"}
+        exclude = (
+            {"solutions", "num_solutions"}
+            if model.experiment_type == ExperimentType.ANNEALING
+            else {"measurement_counts", "measurements"}
         )
+        metadata_dump = model.metadata.model_dump(by_alias=True, exclude=exclude)
         model_dump = model.model_dump(by_alias=True, exclude={"job_id", "device_id", "metadata"})
+        experiment_type: ExperimentType = model_dump["experimentType"]
         status_text = (
             model.status_text or model.status.status_message or model.status.default_message
         )
-        experiment_type: ExperimentType = model_dump["experimentType"]
         model_dump.update(
             {
                 "status": model.status.name,
                 "statusText": status_text,
-                "experimentType": experiment_type.name,
+                "experimentType": experiment_type,
             }
         )
         model_dump["metadata"] = metadata_dump
-        return Result[T](
+        return Result[ResultDataType](
             device_id=model.device_id, job_id=model.job_id, success=success, data=data, **model_dump
         )

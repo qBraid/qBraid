@@ -24,6 +24,7 @@ from qbraid.runtime.enums import JobStatus
 
 from .base import Credits, QbraidSchemaBase
 from .experiment import (
+    AhsExperimentMetadata,
     AnnealingExperimentMetadata,
     ExperimentMetadata,
     GateModelExperimentMetadata,
@@ -94,6 +95,7 @@ class RuntimeJobModel(QbraidSchemaBase):
         QuEraQasmSimulationMetadata,
         GateModelExperimentMetadata,
         AnnealingExperimentMetadata,
+        AhsExperimentMetadata,
         ExperimentMetadata,
     ]
     time_stamps: TimeStamps = Field(..., alias="timeStamps")
@@ -119,6 +121,25 @@ class RuntimeJobModel(QbraidSchemaBase):
         return value
 
     @staticmethod
+    def _get_metadata_model(
+        experiment_type: ExperimentType, device_id: Optional[str]
+    ) -> type[ExperimentMetadata]:
+        """Determine the appropriate metadata model based on experiment type and device ID."""
+        native_gate_models = {
+            "qbraid_qir_simulator": QbraidQirSimulationMetadata,
+            "quera_qasm_simulator": QuEraQasmSimulationMetadata,
+        }
+
+        if experiment_type == ExperimentType.GATE_MODEL:
+            return native_gate_models.get(device_id, GateModelExperimentMetadata)
+        if experiment_type == ExperimentType.ANNEALING:
+            return AnnealingExperimentMetadata
+        if experiment_type == ExperimentType.AHS:
+            return AhsExperimentMetadata
+
+        return ExperimentMetadata
+
+    @staticmethod
     def _populate_metadata(
         job_data: dict[str, Any], experiment_type: ExperimentType
     ) -> dict[str, Any]:
@@ -131,17 +152,13 @@ class RuntimeJobModel(QbraidSchemaBase):
         Returns:
             dict[str, Any]: The updated job data with the appropriate metadata fields populated.
         """
-        native_gate_models = {
-            "qbraid_qir_simulator": QbraidQirSimulationMetadata,
-            "quera_qasm_simulator": QuEraQasmSimulationMetadata,
-        }
-        if experiment_type == "gate_model":
-            device_id = job_data.get("qbraidDeviceId")
-            model = native_gate_models.get(device_id, GateModelExperimentMetadata)
-        elif experiment_type == "annealing":
-            model = AnnealingExperimentMetadata
+        model = RuntimeJobModel._get_metadata_model(experiment_type, job_data.get("qbraidDeviceId"))
 
-        if experiment_type in ["gate_model", "annealing"]:
+        if experiment_type in {
+            ExperimentType.GATE_MODEL,
+            ExperimentType.ANNEALING,
+            ExperimentType.AHS,
+        }:
             keys = {field.alias or name for name, field in model.model_fields.items()}
             metadata = {key: job_data.pop(key, None) for key in keys}
             job_data["metadata"] = model(**metadata)
@@ -157,7 +174,7 @@ class RuntimeJobModel(QbraidSchemaBase):
             else:
                 derived_metadata[key] = value
 
-        restructured_job_data["metadata"] = ExperimentMetadata(**derived_metadata)
+        restructured_job_data["metadata"] = model(**derived_metadata)
         return restructured_job_data
 
     @classmethod
@@ -170,24 +187,22 @@ class RuntimeJobModel(QbraidSchemaBase):
         Returns:
             RuntimeJobModel: An instance of RuntimeJobModel.
         """
-        experiment_type = (
-            "annealing"
-            if "anneal" in job_data.get("qbraidDeviceId", "")
-            else job_data.pop("experimentType", "gate_model")
-        )
-        job_data["experimentType"] = ExperimentType(experiment_type).value
+        experiment_type = job_data.pop("experimentType", None)
 
-        # Populate time stamps
+        if experiment_type is None:
+            raise ValueError("Experiment type is required in job data.")
+
+        experiment_type_enum = ExperimentType(experiment_type)
+        job_data["experimentType"] = experiment_type_enum.value
+
         time_stamps = job_data.setdefault("timeStamps", {})
         created_at = job_data.get("createdAt")
         if created_at is not None and "createdAt" not in time_stamps:
             time_stamps["createdAt"] = created_at
 
-        # Populate metadata
         if "metadata" not in job_data:
-            job_data = cls._populate_metadata(job_data, job_data["experimentType"])
+            job_data = cls._populate_metadata(job_data, experiment_type_enum)
 
-        # Set status
         status = job_data.get("status")
         if isinstance(status, str):
             status = JobStatus(status)

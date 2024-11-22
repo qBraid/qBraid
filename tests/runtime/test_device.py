@@ -57,9 +57,9 @@ from ._resources import (
     DEVICE_DATA_QIR,
     JOB_DATA_NEC,
     JOB_DATA_QIR,
-    JOB_DATA_QUERA,
+    JOB_DATA_QUERA_QASM,
     RESULTS_DATA_NEC,
-    RESULTS_DATA_QUERA,
+    RESULTS_DATA_QUERA_QASM,
     MockClient,
     MockDevice,
 )
@@ -283,8 +283,8 @@ def test_quera_simulator_workflow(mock_provider, cirq_uniform, valid_qasm2_no_me
     assert isinstance(result.data, QuEraQasmSimulatorResultData)
     assert repr(result.data).startswith("QuEraQasmSimulatorResultData")
     assert result.success
-    assert result.job_id == JOB_DATA_QUERA["qbraidJobId"]
-    assert result.device_id == JOB_DATA_QUERA["qbraidDeviceId"]
+    assert result.job_id == JOB_DATA_QUERA_QASM["qbraidJobId"]
+    assert result.device_id == JOB_DATA_QUERA_QASM["qbraidDeviceId"]
     assert result.data.backend == "cirq-gpu"
 
     counts = result.data.get_counts()
@@ -294,9 +294,9 @@ def test_quera_simulator_workflow(mock_provider, cirq_uniform, valid_qasm2_no_me
     assert result.data.measurements is None
     assert (
         result.data.flair_visual_version
-        == RESULTS_DATA_QUERA["quera_simulation_result"]["flair_visual_version"]
+        == RESULTS_DATA_QUERA_QASM["quera_simulation_result"]["flair_visual_version"]
     )
-    assert result.data.backend == RESULTS_DATA_QUERA["backend"]
+    assert result.data.backend == RESULTS_DATA_QUERA_QASM["backend"]
 
     logs = result.data.get_logs()
     assert isinstance(logs, DataFrame)
@@ -933,7 +933,7 @@ def test_get_program_spec_lambdas_validate_qasm_to_ionq():
     lambdas = get_program_spec_lambdas(program_type_alias, device_id)
     validate = lambdas["validate"]
 
-    with patch("qbraid.runtime.native.provider.openqasm3_to_ionq") as mock_convert:
+    with patch("qbraid.runtime.native.provider.transpile") as mock_convert:
         mock_convert.side_effect = ProgramConversionError("Invalid QASM3 code")
 
         with pytest.raises(
@@ -945,7 +945,7 @@ def test_get_program_spec_lambdas_validate_qasm_to_ionq():
         ):
             validate(invalid_program)
 
-        mock_convert.assert_called_once_with(invalid_program)
+        mock_convert.assert_called_once_with(invalid_program, 'ionq', max_path_depth=1)
 
 
 def test_provider_get_basis_gates_ionq():
