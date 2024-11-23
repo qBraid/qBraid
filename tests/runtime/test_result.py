@@ -93,6 +93,44 @@ def shot_result() -> AhsShotResult:
 
 
 @pytest.fixture
+def shot_result_failed() -> AhsShotResult:
+    """Fixture to create an AhsShotResult object for failed shot."""
+    success = False
+    pre_sequence = None
+    post_sequence = None
+    return AhsShotResult(success=success, pre_sequence=pre_sequence, post_sequence=post_sequence)
+
+
+@pytest.mark.parametrize(
+    "success, pre_sequence, post_sequence, expected_dict",
+    [
+        (
+            True,
+            np.array([1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1]),
+            np.array([0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0]),
+            {
+                "success": True,
+                "pre_sequence": [1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+                "post_sequence": [0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0],
+            },
+        ),
+        (
+            False,
+            None,
+            None,
+            {"success": False, "pre_sequence": None, "post_sequence": None},
+        ),
+    ],
+)
+def test_shot_result_to_dict(success, pre_sequence, post_sequence, expected_dict):
+    """Test converting shot result data to dictionary format."""
+    shot_result = AhsShotResult(
+        success=success, pre_sequence=pre_sequence, post_sequence=post_sequence
+    )
+    assert shot_result.to_dict() == expected_dict
+
+
+@pytest.fixture
 def ahs_result_data(shot_result: AhsShotResult) -> AhsResultData:
     """Fixture to create an AhsResultData object."""
     measurements = [shot_result]

@@ -945,7 +945,7 @@ def test_get_program_spec_lambdas_validate_qasm_to_ionq():
         ):
             validate(invalid_program)
 
-        mock_convert.assert_called_once_with(invalid_program, 'ionq', max_path_depth=1)
+        mock_convert.assert_called_once_with(invalid_program, "ionq", max_path_depth=1)
 
 
 def test_provider_get_basis_gates_ionq():

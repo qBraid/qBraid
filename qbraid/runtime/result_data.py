@@ -257,6 +257,29 @@ class AhsShotResult:
             and self._sequences_equal(self.post_sequence, other.post_sequence)
         )
 
+    def to_dict(self) -> dict[str, Union[bool, Optional[int]]]:
+        """Convert the instance to a dictionary, converting numpy arrays to lists."""
+        return {
+            "success": self.success,
+            "pre_sequence": self.pre_sequence.tolist() if self.pre_sequence is not None else None,
+            "post_sequence": (
+                self.post_sequence.tolist() if self.post_sequence is not None else None
+            ),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Union[bool, Optional[list[int]]]]) -> AhsShotResult:
+        """Create an instance from a dictionary, converting lists to numpy arrays."""
+        return cls(
+            success=data["success"],
+            pre_sequence=(
+                np.array(data["pre_sequence"]) if data.get("pre_sequence") is not None else None
+            ),
+            post_sequence=(
+                np.array(data["post_sequence"]) if data.get("post_sequence") is not None else None
+            ),
+        )
+
 
 class AhsResultData(ResultData):
     """Class for storing and accessing the results of an analog Hamiltonian simulation job."""
@@ -282,8 +305,16 @@ class AhsResultData(ResultData):
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> AhsResultData:
         """Creates a new AhsResultData instance from a dictionary."""
+        measurements = data.get("measurements")
+        if measurements is not None:
+            if not isinstance(measurements, list):
+                raise ValueError("'measurements' must be a list or None.")
+            if not all(isinstance(shot, dict) for shot in measurements):
+                raise ValueError("Each item in 'measurements' must be a dictionary.")
+            measurements = [AhsShotResult.from_dict(shot) for shot in measurements]
+
         return cls(
-            measurements=data.get("measurements"),
+            measurements=measurements,
             measurement_counts=data.get("measurement_counts", data.get("measurementCounts")),
         )
 

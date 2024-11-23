@@ -26,10 +26,10 @@ from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.schemas.base import USD, Credits, QbraidSchemaBase, QbraidSchemaHeader
 from qbraid.runtime.schemas.device import DeviceData, DevicePricing
 from qbraid.runtime.schemas.experiment import (
+    AhsExperimentMetadata,
     ExperimentMetadata,
     GateModelExperimentMetadata,
     QuboSolveParams,
-    AhsExperimentMetadata
 )
 from qbraid.runtime.schemas.job import RuntimeJobModel, TimeStamps
 
