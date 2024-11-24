@@ -101,7 +101,7 @@ class QbraidJob(QuantumJob):
 
     @staticmethod
     def get_result_data_cls(
-        device_id: str, experiment_type: ExperimentType
+        device_id: Optional[str] = None, experiment_type: Optional[ExperimentType] = None
     ) -> Union[Type[GateModelResultData], Type[AnnealingResultData], Type[AhsResultData]]:
         """Determine the appropriate ResultData class based on device_id and experiment_type."""
         device_to_result_data = {
@@ -122,7 +122,7 @@ class QbraidJob(QuantumJob):
 
         if not result_data_cls:
             raise ValueError(
-                f"Unsupported device_id '{device_id}' or experiment_type '{experiment_type}'"
+                f"Unsupported device_id '{device_id}' or experiment_type '{experiment_type.name}'"
             )
 
         return result_data_cls

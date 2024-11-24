@@ -389,6 +389,14 @@ def test_provider_get_devices(mock_client):
     assert devices[0].id == "qbraid_qir_simulator"
 
 
+def test_provider_get_devices_raises_for_no_results(mock_client):
+    """Test raising ResourceNotFoundError when no devices are found."""
+    client = mock_client
+    provider = QbraidProvider(client=client)
+    with pytest.raises(ResourceNotFoundError, match="No devices found matching given criteria."):
+        provider.get_devices(provider="IBM")
+
+
 def test_provider_get_cached_devices(mock_client, device_data_qir, monkeypatch):
     """Test getting devices from the cache."""
     monkeypatch.setenv("DISABLE_CACHE", "0")

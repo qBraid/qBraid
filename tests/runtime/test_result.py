@@ -217,14 +217,14 @@ def test_normalize_same_key_lengths():
     assert normalize_batch_bit_lengths(measurements) == expected
 
 
-def test_empty_input():
+def test_normalize_empty_input():
     """Test normalization of empty input."""
     measurements = []
     expected = []
     assert normalize_batch_bit_lengths(measurements) == expected
 
 
-def test_empty_dicts():
+def test_normalize_empty_dicts():
     """Test normalization of empty dicts."""
     measurements = [{}, {}, {"00": 1, "11": 2}]
     expected = [{}, {}, {"00": 1, "11": 2}]
@@ -701,3 +701,36 @@ def test_ahs_result_data_different_class_equality():
     """Test equality of AhsResultData objects with different classes."""
     result1 = AhsResultData(measurement_counts=None, measurements=None)
     assert result1 != "not an AhsResultData"
+
+
+def test_ahs_result_data_from_dict_measurements_not_list():
+    """Test that ValueError is raised if 'measurements' is not a list or None."""
+    invalid_data = {
+        "measurements": "not_a_list",
+        "measurement_counts": {"00": 5, "01": 3},
+    }
+    with pytest.raises(ValueError, match="'measurements' must be a list or None."):
+        AhsResultData.from_dict(invalid_data)
+
+
+def test_ahs_result_data_from_dict_measurements_items_not_dict():
+    """Test that ValueError is raised if any item in 'measurements' is not a dictionary."""
+    invalid_data = {
+        "measurements": ["not_a_dict"],
+        "measurement_counts": {"00": 5, "01": 3},
+    }
+    with pytest.raises(ValueError, match="Each item in 'measurements' must be a dictionary."):
+        AhsResultData.from_dict(invalid_data)
+
+
+def test_ahs_result_data_from_dict_valid_data():
+    """Test that valid data does not raise an exception."""
+    valid_data = {
+        "measurements": [{"success": True, "pre_sequence": [1, 2], "post_sequence": [3, 4]}],
+        "measurement_counts": {"00": 5, "01": 3},
+    }
+    result = AhsResultData.from_dict(valid_data)
+    assert result.measurements is not None
+    assert len(result.measurements) == 1
+    assert result.measurements[0].success is True
+    assert result.get_counts() == {"00": 5, "01": 3}

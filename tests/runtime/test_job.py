@@ -18,6 +18,7 @@ from unittest.mock import patch
 
 import pytest
 
+from qbraid.programs import ExperimentType
 from qbraid.runtime import QuantumJob
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import (
@@ -239,3 +240,11 @@ def test_job_status_enum_call_method():
     status = JobStatus.QUEUED
     new_status = status()
     assert new_status == status
+
+
+def test_job_get_result_cls_raises_for_mismatch_expt_type():
+    """Test that get_result_data_cls raises a ValueError for unsupported experiment type."""
+    with pytest.raises(
+        ValueError, match="Unsupported device_id 'aws_sv1' or experiment_type 'PHOTONIC'"
+    ):
+        QbraidJob.get_result_data_cls("aws_sv1", ExperimentType.PHOTONIC)
