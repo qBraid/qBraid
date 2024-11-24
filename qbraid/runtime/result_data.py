@@ -302,6 +302,10 @@ class AhsResultData(ResultData):
         """Returns the measurements data of the run."""
         return self._measurements
 
+    def get_counts(self) -> Optional[dict[str, int]]:
+        """Returns the histogram data of the run."""
+        return self._measurement_counts
+
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> AhsResultData:
         """Creates a new AhsResultData instance from a dictionary."""
@@ -318,16 +322,28 @@ class AhsResultData(ResultData):
             measurement_counts=data.get("measurement_counts", data.get("measurementCounts")),
         )
 
-    def get_counts(self) -> Optional[dict[str, int]]:
-        """Returns the histogram data of the run."""
-        return self._measurement_counts
-
     def to_dict(self) -> dict[str, Any]:
         """Converts the AhsResultData instance to a dictionary."""
         return {
             "measurement_counts": self._measurement_counts,
             "measurements": self._measurements,
         }
+
+    def __eq__(self, other):
+        if not isinstance(other, AhsResultData):
+            return False
+
+        if self._measurement_counts != other._measurement_counts:
+            return False
+
+        if self._measurements is None and other._measurements is None:
+            return True
+        if self._measurements is None or other._measurements is None:
+            return False
+        if len(self._measurements) != len(other._measurements):
+            return False
+
+        return all(s1 == s2 for s1, s2 in zip(self._measurements, other._measurements))
 
 
 class AnnealingResultData(ResultData):

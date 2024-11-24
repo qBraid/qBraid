@@ -44,7 +44,7 @@ class MockClient:
     def _load_json(self, file_name: str) -> dict[str, Any]:
         """Helper method to load JSON data from a file."""
         file_path = Path(__file__).parent / file_name
-        with open(file_path, "r") as json_file:
+        with open(file_path, "r", encoding="utf-8") as json_file:
             return json.load(json_file)
 
     def _get_data_by_job_id(self, file_name: str, job_id: str) -> dict[str, Any]:
@@ -58,6 +58,7 @@ class MockClient:
         """Mock method to return the metadata corresponding to the specified quantum job."""
         return self._get_data_by_job_id("quera_simulation_data.json", job_id)
 
+    # pylint: disable-next=unused-argument
     def get_job_results(self, job_id: str, **kwargs) -> dict[str, Any]:
         """Mock method to return the results of the quantum job with the given qBraid ID."""
         return self._get_data_by_job_id("quera_simulation_result.json", job_id)
@@ -106,4 +107,4 @@ def test_quera_sim_data_quera_simulator_result_value_error():
     result_data = QuEraQasmSimulatorResultData(backend="cirq", quera_simulation_result=None)
 
     with pytest.raises(ValueError, match="The simulation result is not available."):
-        result_data.quera_simulation_result
+        _ = result_data.quera_simulation_result

@@ -23,8 +23,9 @@ import numpy as np
 import pytest
 
 from qbraid.programs import NATIVE_REGISTRY
+from qbraid.runtime import QbraidProvider
 
-from ._resources import DEVICE_DATA_AQUILA, DEVICE_DATA_QIR, DEVICE_DATA_QUERA_QASM
+from ._resources import DEVICE_DATA_AQUILA, DEVICE_DATA_QIR, DEVICE_DATA_QUERA_QASM, MockClient
 
 
 def _braket_circuit(meas=True):
@@ -83,6 +84,20 @@ def qiskit_circuit():
 
 
 @pytest.fixture
+def qasm3_circuit():
+    """Returns low-depth, one-qubit QASM3 circuit to be used for testing."""
+    qasm = """
+    OPENQASM 3.0;
+    bit[1] b;
+    qubit[1] q;
+    h q[0];
+    ry(1.5707963267948966) q[0];
+    b[0] = measure q[0];
+    """
+    return textwrap.dedent(qasm).strip()
+
+
+@pytest.fixture
 def run_inputs():
     """Returns list of test circuits for each available native provider."""
     circuits = []
@@ -132,6 +147,33 @@ def valid_qasm2_no_meas() -> str:
     cx q[1],q[0];
     """
     return textwrap.dedent(qasm).strip()
+
+
+@pytest.fixture
+def valid_qasm2():
+    """Valid OpenQASM 2 string with measurement."""
+    return """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    creg c0[1];
+    creg c1[1];
+    swap q[0],q[1];
+    measure q[0] -> c0[0];
+    measure q[1] -> c1[0];
+    """
+
+
+@pytest.fixture
+def mock_client():
+    """Mock client for testing."""
+    return MockClient()
+
+
+@pytest.fixture
+def mock_provider(mock_client):
+    """Mock provider for testing."""
+    return QbraidProvider(client=mock_client)
 
 
 def uniform_state_circuit(num_qubits: Optional[int] = None, measure: Optional[bool] = True):
@@ -184,6 +226,7 @@ def cirq_uniform():
     return uniform_state_circuit
 
 
+@pytest.fixture
 def braket_ahs():
     """Return an example AHS program."""
     import braket.ahs
