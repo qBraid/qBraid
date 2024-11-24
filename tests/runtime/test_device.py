@@ -57,39 +57,11 @@ from ._resources import (
     DEVICE_DATA_QIR,
     JOB_DATA_NEC,
     JOB_DATA_QIR,
-    JOB_DATA_QUERA,
+    JOB_DATA_QUERA_QASM,
     RESULTS_DATA_NEC,
-    RESULTS_DATA_QUERA,
-    MockClient,
+    RESULTS_DATA_QUERA_QASM,
     MockDevice,
 )
-
-
-@pytest.fixture
-def valid_qasm2():
-    """Valid OpenQASM 2 string with measurement."""
-    return """
-    OPENQASM 2.0;
-    include "qelib1.inc";
-    qreg q[2];
-    creg c0[1];
-    creg c1[1];
-    swap q[0],q[1];
-    measure q[0] -> c0[0];
-    measure q[1] -> c1[0];
-    """
-
-
-@pytest.fixture
-def mock_client():
-    """Mock client for testing."""
-    return MockClient()
-
-
-@pytest.fixture
-def mock_provider(mock_client):
-    """Mock provider for testing."""
-    return QbraidProvider(client=mock_client)
 
 
 @pytest.fixture
@@ -283,8 +255,8 @@ def test_quera_simulator_workflow(mock_provider, cirq_uniform, valid_qasm2_no_me
     assert isinstance(result.data, QuEraQasmSimulatorResultData)
     assert repr(result.data).startswith("QuEraQasmSimulatorResultData")
     assert result.success
-    assert result.job_id == JOB_DATA_QUERA["qbraidJobId"]
-    assert result.device_id == JOB_DATA_QUERA["qbraidDeviceId"]
+    assert result.job_id == JOB_DATA_QUERA_QASM["qbraidJobId"]
+    assert result.device_id == JOB_DATA_QUERA_QASM["qbraidDeviceId"]
     assert result.data.backend == "cirq-gpu"
 
     counts = result.data.get_counts()
@@ -294,9 +266,9 @@ def test_quera_simulator_workflow(mock_provider, cirq_uniform, valid_qasm2_no_me
     assert result.data.measurements is None
     assert (
         result.data.flair_visual_version
-        == RESULTS_DATA_QUERA["quera_simulation_result"]["flair_visual_version"]
+        == RESULTS_DATA_QUERA_QASM["quera_simulation_result"]["flair_visual_version"]
     )
-    assert result.data.backend == RESULTS_DATA_QUERA["backend"]
+    assert result.data.backend == RESULTS_DATA_QUERA_QASM["backend"]
 
     logs = result.data.get_logs()
     assert isinstance(logs, DataFrame)
@@ -386,11 +358,11 @@ def test_device_run_raises_for_protected_kwargs(valid_qasm2, mock_qbraid_device)
         mock_qbraid_device.run(valid_qasm2, **kwargs)
 
 
-def test_provider_initialize_client_raises_for_multiple_auth_params():
+def test_provider_initialize_client_raises_for_multiple_auth_params(mock_client):
     """Test raising exception when initializing client if provided
     both an api key and a client object."""
     with pytest.raises(ValueError):
-        QbraidProvider(api_key="abc123", client=MockClient())
+        QbraidProvider(api_key="abc123", client=mock_client)
 
 
 def test_provider_resource_not_found_error_for_bad_api_key():
@@ -401,9 +373,8 @@ def test_provider_resource_not_found_error_for_bad_api_key():
 
 
 @patch("qbraid.runtime.native.provider.QuantumClient")
-def test_provider_client_from_valid_api_key(client):
+def test_provider_client_from_valid_api_key(client, mock_client):
     """Test a valid API key."""
-    mock_client = MockClient()
     client.return_value = mock_client
     provider = QbraidProvider(api_key="abc123")
     assert provider.client == mock_client
@@ -416,6 +387,14 @@ def test_provider_get_devices(mock_client):
     devices = provider.get_devices(qbraid_id="qbraid_qir_simulator")
     assert len(devices) == 1
     assert devices[0].id == "qbraid_qir_simulator"
+
+
+def test_provider_get_devices_raises_for_no_results(mock_client):
+    """Test raising ResourceNotFoundError when no devices are found."""
+    client = mock_client
+    provider = QbraidProvider(client=client)
+    with pytest.raises(ResourceNotFoundError, match="No devices found matching given criteria."):
+        provider.get_devices(provider="IBM")
 
 
 def test_provider_get_cached_devices(mock_client, device_data_qir, monkeypatch):
@@ -481,9 +460,9 @@ def test_provider_get_devices_bypass_cache(mock_client, device_data_qir, monkeyp
     provider.get_devices.cache_clear()
 
 
-def test_provider_search_devices_raises_for_bad_client():
+def test_provider_search_devices_raises_for_bad_client(mock_client):
     """Test raising ResourceNotFoundError when the client fails to authenticate."""
-    provider = QbraidProvider(client=MockClient())
+    provider = QbraidProvider(client=mock_client)
     with pytest.raises(ResourceNotFoundError):
         provider.get_devices(qbraid_id="qbraid_qir_simulator", status="Bad status")
 
@@ -933,7 +912,7 @@ def test_get_program_spec_lambdas_validate_qasm_to_ionq():
     lambdas = get_program_spec_lambdas(program_type_alias, device_id)
     validate = lambdas["validate"]
 
-    with patch("qbraid.runtime.native.provider.openqasm3_to_ionq") as mock_convert:
+    with patch("qbraid.runtime.native.provider.transpile") as mock_convert:
         mock_convert.side_effect = ProgramConversionError("Invalid QASM3 code")
 
         with pytest.raises(
@@ -945,7 +924,7 @@ def test_get_program_spec_lambdas_validate_qasm_to_ionq():
         ):
             validate(invalid_program)
 
-        mock_convert.assert_called_once_with(invalid_program)
+        mock_convert.assert_called_once_with(invalid_program, "ionq", max_path_depth=1)
 
 
 def test_provider_get_basis_gates_ionq():

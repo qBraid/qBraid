@@ -37,7 +37,7 @@ DEVICE_DATA_QIR = {
     "pricing": {"perTask": 0.005, "perShot": 0, "perMinute": 0.075},
 }
 
-DEVICE_DATA_QUERA = {
+DEVICE_DATA_QUERA_QASM = {
     "numberQubits": 30,
     "pendingJobs": 0,
     "qbraid_id": "quera_qasm_simulator",
@@ -64,14 +64,14 @@ DEVICE_DATA_NEC = {
     "status": "ONLINE",
     "isAvailable": True,
     "numberQubits": 0,
-    "runPackage": "cpp_pyqubo",
+    "runPackage": "qubo",
     "pricing": {"perMinute": 0, "perShot": 0.00145, "perTask": 0.3},
 }
 
 DEVICE_DATA_AQUILA = {
     "numberQubits": 256,
     "pendingJobs": 9,
-    "qbraid_id": "aws_quera_aquila",
+    "qbraid_id": "quera_aquila",
     "name": "Aquila",
     "provider": "QuEra",
     "paradigm": "AHS",
@@ -90,7 +90,6 @@ REDUNDANT_JOB_DATA = {
         "endedAt": "2024-05-23T01:39:11.304Z",
         "executionDuration": 16,
     },
-    "measurementCounts": {"11111": 4, "00000": 6},
     "status": "COMPLETED",
 }
 
@@ -104,10 +103,11 @@ JOB_DATA_QIR = {
     "vendor": "qbraid",
     "provider": "qbraid",
     "tags": {},
+    "experimentType": "gate_model",
     **REDUNDANT_JOB_DATA,
 }
 
-JOB_DATA_QUERA = {
+JOB_DATA_QUERA_QASM = {
     "qbraidJobId": "quera_qasm_simulator-jovyan-qjob-1234567890",
     "queuePosition": None,
     "queueDepth": None,
@@ -117,6 +117,7 @@ JOB_DATA_QUERA = {
     "vendor": "qbraid",
     "provider": "quera",
     "tags": {},
+    "experimentType": "gate_model",
     **REDUNDANT_JOB_DATA,
 }
 
@@ -129,6 +130,33 @@ JOB_DATA_NEC = {
     "qbraidDeviceId": "nec_vector_annealer",
     "vendor": "qbraid",
     "provider": "nec",
+    "tags": {},
+    "experimentType": "annealing",
+    **REDUNDANT_JOB_DATA,
+}
+
+JOB_DATA_AQUILA = {
+    "qbraidJobId": "quera_aquila-jovyan-qjob-1234567890",
+    "queuePosition": None,
+    "queueDepth": None,
+    "shots": 10,
+    "qbraidDeviceId": "quera_aquila",
+    "atomRegister": [
+        [0.00000285, 0.00000688],
+        [0.00000688, 0.00000285],
+        [0.00000688, -0.00000285],
+        [0.00000285, -0.00000688],
+        [-0.00000285, -0.00000688],
+        [-0.00000688, -0.00000285],
+        [-0.00000688, 0.00000285],
+        [-0.00000285, 0.00000688],
+    ],
+    "filling": [1, 1, 1, 1, 1, 1, 1, 1],
+    "numAtoms": 8,
+    "vendor": "aws",
+    "provider": "quera",
+    "tags": {},
+    "experimentType": "ahs",
     **REDUNDANT_JOB_DATA,
 }
 
@@ -145,12 +173,14 @@ RESULTS_DATA_QIR = {
         [0, 0, 0, 0, 0],
         [1, 1, 1, 1, 1],
     ],
+    "measurementCounts": {"11111": 4, "00000": 6},
     "runnerVersion": "0.7.4",
     "runnerSeed": None,
     **REDUNDANT_JOB_DATA,
 }
 
-RESULTS_DATA_QUERA = {
+RESULTS_DATA_QUERA_QASM = {
+    "measurementCounts": {"11111": 4, "00000": 6},
     "backend": "cirq-gpu",
     "quera_simulation_result": {
         "flair_visual_version": "0.5.3",
@@ -184,12 +214,100 @@ RESULTS_DATA_NEC = {
             "memory_usage": 1.189453125,
         }
     ],
+    "solutionCount": 1,
+    **REDUNDANT_JOB_DATA,
+}
+
+RESULTS_DATA_AQUILA = {
+    "measurementCounts": {
+        "grggrggr": 1,
+        "grgrgerg": 1,
+        "rgrgrgrg": 1,
+        "grgrgrgr": 3,
+        "ggrggrgr": 1,
+        "ggrgggrr": 1,
+        "rgrggrgg": 1,
+        "rggrgreg": 1,
+    },
+    "measurements": [
+        {
+            "success": True,
+            "pre_sequence": [1, 1, 1, 1, 1, 1, 1, 1],
+            "post_sequence": [1, 0, 1, 1, 0, 1, 1, 0],
+        },
+        {
+            "success": True,
+            "pre_sequence": [1, 1, 1, 1, 1, 0, 1, 1],
+            "post_sequence": [1, 0, 1, 0, 1, 0, 0, 1],
+        },
+        {
+            "success": True,
+            "pre_sequence": [1, 1, 1, 1, 1, 1, 1, 1],
+            "post_sequence": [0, 1, 0, 1, 0, 1, 0, 1],
+        },
+        {
+            "success": True,
+            "pre_sequence": [1, 1, 1, 1, 1, 1, 1, 1],
+            "post_sequence": [1, 0, 1, 0, 1, 0, 1, 0],
+        },
+        {
+            "success": True,
+            "pre_sequence": [1, 1, 1, 1, 1, 1, 1, 1],
+            "post_sequence": [1, 0, 1, 0, 1, 0, 1, 0],
+        },
+        {
+            "success": True,
+            "pre_sequence": [1, 1, 1, 1, 1, 1, 1, 1],
+            "post_sequence": [1, 1, 0, 1, 1, 0, 1, 0],
+        },
+        {
+            "success": True,
+            "pre_sequence": [1, 1, 1, 1, 1, 1, 1, 1],
+            "post_sequence": [1, 1, 0, 1, 1, 1, 0, 0],
+        },
+        {
+            "success": True,
+            "pre_sequence": [1, 1, 1, 1, 1, 1, 1, 1],
+            "post_sequence": [0, 1, 0, 1, 1, 0, 1, 1],
+        },
+        {
+            "success": True,
+            "pre_sequence": [1, 1, 1, 1, 1, 1, 0, 1],
+            "post_sequence": [0, 1, 1, 0, 1, 0, 0, 1],
+        },
+        {
+            "success": True,
+            "pre_sequence": [1, 1, 1, 1, 1, 1, 1, 1],
+            "post_sequence": [1, 0, 1, 0, 1, 0, 1, 0],
+        },
+    ],
     **REDUNDANT_JOB_DATA,
 }
 
 
 class MockClient:
     """Mock client for testing."""
+
+    DEVICE_MAP = {
+        "qbraid_qir_simulator": DEVICE_DATA_QIR,
+        "quera_qasm_simulator": DEVICE_DATA_QUERA_QASM,
+        "nec_vector_annealer": DEVICE_DATA_NEC,
+        "quera_aquila": DEVICE_DATA_AQUILA,
+    }
+
+    JOB_MAP = {
+        "qbraid_qir_simulator": JOB_DATA_QIR,
+        "quera_qasm_simulator": JOB_DATA_QUERA_QASM,
+        "nec_vector_annealer": JOB_DATA_NEC,
+        "quera_aquila": JOB_DATA_AQUILA,
+    }
+
+    RESULTS_MAP = {
+        "qbraid_qir_simulator": RESULTS_DATA_QIR,
+        "quera_qasm_simulator": RESULTS_DATA_QUERA_QASM,
+        "nec_vector_annealer": RESULTS_DATA_NEC,
+        "quera_aquila": RESULTS_DATA_AQUILA,
+    }
 
     @property
     def session(self):
@@ -203,52 +321,50 @@ class MockClient:
         """Mock user metadata property."""
         return {"organization": "qbraid", "role": "guest"}
 
-    def search_devices(self, query: dict[str, Any]) -> list[dict[str, Any]]:
+    def search_devices(self, query: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
         """Returns a list of devices matching the given query."""
-        if query.get("status") == "Bad status":
-            raise QuantumServiceRequestError("No devices found matching given criteria")
+        all_devices = [data.copy() for data in self.DEVICE_MAP.values()]
 
-        data_qir = DEVICE_DATA_QIR.copy()
-        data_quera = DEVICE_DATA_QUERA.copy()
-        data_nec = DEVICE_DATA_NEC.copy()
+        if not query:
+            return all_devices
 
-        if query.get("provider") == "qBraid" or query.get("qbraid_id") == "qbraid_qir_simulator":
-            return [data_qir]
-        if query.get("provider") == "QuEra" or query.get("qbraid_id") == "quera_qasm_simulator":
-            return [data_quera]
-        if query.get("provider") == "qBraid" or query.get("qbraid_id") == "nec_vector_annealer":
-            return [data_nec]
-        if query.get("vendor") == "qBraid":
-            return [data_qir, data_quera]
-        return []
+        if "status" in query:
+            valid_status_values = {status.name for status in DeviceStatus}
+            if query["status"] not in valid_status_values:
+                raise QuantumServiceRequestError("No devices found matching given criteria")
 
-    # pylint: disable-next=unused-argument
-    def get_device(self, qbraid_id: Optional[str] = None, **kwargs):
+        devices = [
+            device
+            for device in all_devices
+            if all(device.get(key) == value for key, value in query.items())
+        ]
+
+        return devices
+
+    def _get_data(
+        self, identifier: str, data_map: dict[str, dict[str, Any]], error_message: str
+    ) -> dict[str, Any]:
+        """Helper to retrieve data from a mapping, raising an error if not found."""
+        try:
+            return data_map[identifier].copy()
+        except KeyError as err:
+            raise QuantumServiceRequestError(error_message) from err
+
+    def get_device(self, qbraid_id: str) -> dict[str, Any]:
         """Returns the device with the given ID."""
-        if qbraid_id == "qbraid_qir_simulator":
-            data = DEVICE_DATA_QIR.copy()
-            return data
-        if qbraid_id == "quera_qasm_simulator":
-            data = DEVICE_DATA_QUERA.copy()
-            return data
-        if qbraid_id == "nec_vector_annealer":
-            data = DEVICE_DATA_NEC.copy()
-            return data
-        raise QuantumServiceRequestError("No devices found matching given criteria")
+        return self._get_data(
+            identifier=qbraid_id,
+            data_map=self.DEVICE_MAP,
+            error_message="No devices found matching given criteria",
+        )
 
     def create_job(self, data: dict[str, Any]) -> dict[str, Any]:
         """Creates a new quantum job with the given data."""
-        device_id = data.get("qbraidDeviceId")
-        if device_id == "qbraid_qir_simulator":
-            job_data = JOB_DATA_QIR.copy()
-            return job_data
-        if device_id == "quera_qasm_simulator":
-            job_data = JOB_DATA_QUERA.copy()
-            return job_data
-        if device_id == "nec_vector_annealer":
-            job_data = JOB_DATA_NEC.copy()
-            return job_data
-        raise QuantumServiceRequestError("Failed to create job")
+        return self._get_data(
+            identifier=data.get("qbraidDeviceId"),
+            data_map=self.JOB_MAP,
+            error_message="Failed to create job",
+        )
 
     @staticmethod
     def _extract_device_id(job_id: str) -> str:
@@ -261,28 +377,21 @@ class MockClient:
     def get_job(self, job_id: str) -> dict[str, Any]:
         """Returns the quantum job with the given ID."""
         device_id = self._extract_device_id(job_id)
-        if device_id == "qbraid_qir_simulator":
-            return JOB_DATA_QIR
-        if device_id == "quera_qasm_simulator":
-            return JOB_DATA_QUERA
-        if device_id == "nec_vector_annealer":
-            return JOB_DATA_NEC
-        raise QuantumServiceRequestError("No jobs found matching given criteria")
+        return self._get_data(
+            identifier=device_id,
+            data_map=self.JOB_MAP,
+            error_message="No jobs found matching given criteria",
+        )
 
     # pylint: disable-next=unused-argument
     def get_job_results(self, job_id: str, **kwargs) -> dict[str, Any]:
         """Returns the results of the quantum job with the given ID."""
         device_id = self._extract_device_id(job_id)
-        if device_id == "qbraid_qir_simulator":
-            results_data = RESULTS_DATA_QIR.copy()
-            return results_data
-        if device_id == "quera_qasm_simulator":
-            results_data = RESULTS_DATA_QUERA.copy()
-            return results_data
-        if device_id == "nec_vector_annealer":
-            results_data = RESULTS_DATA_NEC.copy()
-            return results_data
-        raise QuantumServiceRequestError("Failed to retrieve job results")
+        return self._get_data(
+            identifier=device_id,
+            data_map=self.RESULTS_MAP,
+            error_message="Failed to retrieve job results",
+        )
 
 
 class MockDevice(QuantumDevice):

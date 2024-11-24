@@ -93,6 +93,44 @@ def shot_result() -> AhsShotResult:
 
 
 @pytest.fixture
+def shot_result_failed() -> AhsShotResult:
+    """Fixture to create an AhsShotResult object for failed shot."""
+    success = False
+    pre_sequence = None
+    post_sequence = None
+    return AhsShotResult(success=success, pre_sequence=pre_sequence, post_sequence=post_sequence)
+
+
+@pytest.mark.parametrize(
+    "success, pre_sequence, post_sequence, expected_dict",
+    [
+        (
+            True,
+            np.array([1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1]),
+            np.array([0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0]),
+            {
+                "success": True,
+                "pre_sequence": [1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1],
+                "post_sequence": [0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0],
+            },
+        ),
+        (
+            False,
+            None,
+            None,
+            {"success": False, "pre_sequence": None, "post_sequence": None},
+        ),
+    ],
+)
+def test_shot_result_to_dict(success, pre_sequence, post_sequence, expected_dict):
+    """Test converting shot result data to dictionary format."""
+    shot_result = AhsShotResult(
+        success=success, pre_sequence=pre_sequence, post_sequence=post_sequence
+    )
+    assert shot_result.to_dict() == expected_dict
+
+
+@pytest.fixture
 def ahs_result_data(shot_result: AhsShotResult) -> AhsResultData:
     """Fixture to create an AhsResultData object."""
     measurements = [shot_result]
@@ -179,14 +217,14 @@ def test_normalize_same_key_lengths():
     assert normalize_batch_bit_lengths(measurements) == expected
 
 
-def test_empty_input():
+def test_normalize_empty_input():
     """Test normalization of empty input."""
     measurements = []
     expected = []
     assert normalize_batch_bit_lengths(measurements) == expected
 
 
-def test_empty_dicts():
+def test_normalize_empty_dicts():
     """Test normalization of empty dicts."""
     measurements = [{}, {}, {"00": 1, "11": 2}]
     expected = [{}, {}, {"00": 1, "11": 2}]
@@ -603,3 +641,96 @@ def test_repr(result_instance):
         "  data=GateModelResultData(measurement_counts=None, measurements=None)"
     )
     assert repr(result_instance).startswith(expected_repr)
+
+
+@pytest.mark.parametrize(
+    "counts1, counts2, expected",
+    [
+        ({"00": 5, "01": 3}, {"00": 5, "01": 3}, True),
+        ({"00": 5, "01": 3}, {"00": 4, "01": 3}, False),
+        (None, None, True),
+        ({"00": 5}, None, False),
+    ],
+)
+def test_ahs_result_data_measurement_counts_equality(counts1, counts2, expected):
+    """Test equality of AhsResultData objects with different measurement counts."""
+    shot = AhsShotResult(success=True, pre_sequence=np.array([1, 2]), post_sequence=None)
+    result1 = AhsResultData(measurement_counts=counts1, measurements=[shot])
+    result2 = AhsResultData(measurement_counts=counts2, measurements=[shot])
+    assert (result1 == result2) == expected
+
+
+@pytest.mark.parametrize(
+    "measurements1, measurements2, expected",
+    [
+        (None, None, True),
+        ([None], None, False),
+        ([None], [None], True),
+        ([], [], True),
+        ([None], [AhsShotResult(success=True)], False),
+    ],
+)
+def test_ahs_result_data_measurements_none_equality(measurements1, measurements2, expected):
+    """Test equality of AhsResultData objects with different measurements."""
+    result1 = AhsResultData(measurement_counts=None, measurements=measurements1)
+    result2 = AhsResultData(measurement_counts=None, measurements=measurements2)
+    assert (result1 == result2) == expected
+
+
+@pytest.mark.parametrize(
+    "measurements1, measurements2, expected",
+    [
+        ([AhsShotResult(success=True)], [AhsShotResult(success=True)], True),
+        ([AhsShotResult(success=True)], [AhsShotResult(success=False)], False),
+        ([AhsShotResult(success=True)], [], False),
+        (
+            [AhsShotResult(success=True, pre_sequence=np.array([1, 2]))],
+            [AhsShotResult(success=True, pre_sequence=np.array([1, 3]))],
+            False,
+        ),
+    ],
+)
+def test_ahs_result_data_measurements_list_equality(measurements1, measurements2, expected):
+    """Test equality of AhsResultData objects with different measurements."""
+    result1 = AhsResultData(measurement_counts=None, measurements=measurements1)
+    result2 = AhsResultData(measurement_counts=None, measurements=measurements2)
+    assert (result1 == result2) == expected
+
+
+def test_ahs_result_data_different_class_equality():
+    """Test equality of AhsResultData objects with different classes."""
+    result1 = AhsResultData(measurement_counts=None, measurements=None)
+    assert result1 != "not an AhsResultData"
+
+
+def test_ahs_result_data_from_dict_measurements_not_list():
+    """Test that ValueError is raised if 'measurements' is not a list or None."""
+    invalid_data = {
+        "measurements": "not_a_list",
+        "measurement_counts": {"00": 5, "01": 3},
+    }
+    with pytest.raises(ValueError, match="'measurements' must be a list or None."):
+        AhsResultData.from_dict(invalid_data)
+
+
+def test_ahs_result_data_from_dict_measurements_items_not_dict():
+    """Test that ValueError is raised if any item in 'measurements' is not a dictionary."""
+    invalid_data = {
+        "measurements": ["not_a_dict"],
+        "measurement_counts": {"00": 5, "01": 3},
+    }
+    with pytest.raises(ValueError, match="Each item in 'measurements' must be a dictionary."):
+        AhsResultData.from_dict(invalid_data)
+
+
+def test_ahs_result_data_from_dict_valid_data():
+    """Test that valid data does not raise an exception."""
+    valid_data = {
+        "measurements": [{"success": True, "pre_sequence": [1, 2], "post_sequence": [3, 4]}],
+        "measurement_counts": {"00": 5, "01": 3},
+    }
+    result = AhsResultData.from_dict(valid_data)
+    assert result.measurements is not None
+    assert len(result.measurements) == 1
+    assert result.measurements[0].success is True
+    assert result.get_counts() == {"00": 5, "01": 3}

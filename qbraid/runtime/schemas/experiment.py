@@ -131,13 +131,44 @@ class QuEraQasmSimulationMetadata(GateModelExperimentMetadata):
     quera_simulation_result: Optional[dict[str, Any]] = None
 
 
+class AhsExperimentMetadata(BaseModel):
+    """Metadata specific to Analog Hamiltonian Simulation (AHS) experiments.
+
+    Attributes:
+        measurement_counts (Counter): Counter for measurement outcomes.
+        measurements (list, optional): Optional list of measurement results.
+        num_atoms (int, optional): Number of atoms (sites) used to build lattice structure
+        sites (list[tuple[float, float]], optional): Vector positions of atoms in meters
+        filling (list[bool], optional): List of booleans indicating the filling status at each site.
+    """
+
+    measurement_counts: Optional[Counter] = Field(None, alias="measurementCounts")
+    measurements: Optional[list] = None
+    num_atoms: Optional[int] = Field(None, alias="numAtoms")
+    sites: Optional[list[tuple[float, float]]] = Field(None, alias="atomRegister")
+    filling: Optional[list[bool]] = None
+
+    @field_validator("measurement_counts")
+    @classmethod
+    def validate_counts(cls, value):
+        """Validates and ensures that the measurement counts are a Counter object.
+
+        Args:
+            value: The measurement counts.
+
+        Returns:
+            Counter: A validated counter object.
+        """
+        return Counter(value)
+
+
 class AnnealingExperimentMetadata(BaseModel):
     """Metadata specific to annealing experiments."""
 
     solutions: Optional[list[dict[str, Any]]] = None
     num_solutions: Optional[int] = Field(None, alias="solutionCount")
     energies: Optional[list[float]] = None
-    num_variables: Optional[int] = Field(None, alias="variableCount")
+    num_variables: Optional[int] = Field(None, alias="numVariables")
 
 
 class QuboSolveParams(BaseModel):

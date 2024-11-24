@@ -32,7 +32,7 @@ def plot_atomic_register(
     Plots atomic register given site coordinates and filling.
 
     Args:
-        sites (list[tuple[float, float]]):list of tuples represents (x, y) coordinates.
+        sites (list[tuple[float, float]]): A list of tuples represents (x, y) coordinates.
         filling (list[bool]): A list of booleans indicating the filling status at each site.
         title (Optional[str]): The title of the plot. Defaults to "Atomic Register".
         xlabel (Optional[str]): The label for the x-axis. Defaults to "X (meters)".

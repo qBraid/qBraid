@@ -16,14 +16,21 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, Optional, Type, TypeVar, Union, overload
 
 import numpy as np
 
 from qbraid.programs import ExperimentType
 
 from .postprocess import counts_to_probabilities, normalize_counts
-from .schemas.experiment import AnnealingExperimentMetadata, GateModelExperimentMetadata
+from .schemas.experiment import (
+    AhsExperimentMetadata,
+    AnnealingExperimentMetadata,
+    ExperimentMetadata,
+    GateModelExperimentMetadata,
+)
+
+ResultDataType = TypeVar("ResultDataType", bound="ResultData")
 
 KeyType = TypeVar("KeyType", str, int)
 
@@ -45,6 +52,30 @@ class ResultData(ABC):
     @abstractmethod
     def to_dict(self) -> dict[str, Any]:
         """Converts the result data to a dictionary."""
+
+    @classmethod
+    @abstractmethod
+    def from_dict(cls: Type[ResultDataType], data: dict[str, Any]) -> ResultDataType:
+        """Creates a new ResultData instance from a dictionary."""
+
+    @classmethod
+    @overload
+    def from_object(cls, model: GateModelExperimentMetadata, **kwargs) -> GateModelResultData: ...
+
+    @classmethod
+    @overload
+    def from_object(cls, model: AnnealingExperimentMetadata, **kwargs) -> AnnealingResultData: ...
+
+    @classmethod
+    @overload
+    def from_object(cls, model: AhsExperimentMetadata, **kwargs) -> AhsResultData: ...
+
+    @classmethod
+    def from_object(
+        cls: Type[ResultDataType], model: ExperimentMetadata, **kwargs
+    ) -> ResultDataType:
+        """Creates a new ResultData instance from an ExperimentMetadata object."""
+        return cls.from_dict(model.model_dump(**kwargs))
 
 
 class GateModelResultData(ResultData):
@@ -87,11 +118,6 @@ class GateModelResultData(ResultData):
             measurements = np.array(measurements, dtype=object)
 
         return cls(measurement_counts=measurement_counts, measurements=measurements, **data)
-
-    @classmethod
-    def from_object(cls, model: GateModelExperimentMetadata, **kwargs) -> GateModelResultData:
-        """Creates a new GateModelResultData instance from a GateModelExperimentMetadata object."""
-        return cls.from_dict(model.model_dump(**kwargs))
 
     @property
     def measurements(self) -> Optional[Union[np.ndarray, list[np.ndarray]]]:
@@ -231,6 +257,29 @@ class AhsShotResult:
             and self._sequences_equal(self.post_sequence, other.post_sequence)
         )
 
+    def to_dict(self) -> dict[str, Union[bool, Optional[int]]]:
+        """Convert the instance to a dictionary, converting numpy arrays to lists."""
+        return {
+            "success": self.success,
+            "pre_sequence": self.pre_sequence.tolist() if self.pre_sequence is not None else None,
+            "post_sequence": (
+                self.post_sequence.tolist() if self.post_sequence is not None else None
+            ),
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Union[bool, Optional[list[int]]]]) -> AhsShotResult:
+        """Create an instance from a dictionary, converting lists to numpy arrays."""
+        return cls(
+            success=data["success"],
+            pre_sequence=(
+                np.array(data["pre_sequence"]) if data.get("pre_sequence") is not None else None
+            ),
+            post_sequence=(
+                np.array(data["post_sequence"]) if data.get("post_sequence") is not None else None
+            ),
+        )
+
 
 class AhsResultData(ResultData):
     """Class for storing and accessing the results of an analog Hamiltonian simulation job."""
@@ -257,12 +306,44 @@ class AhsResultData(ResultData):
         """Returns the histogram data of the run."""
         return self._measurement_counts
 
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> AhsResultData:
+        """Creates a new AhsResultData instance from a dictionary."""
+        measurements = data.get("measurements")
+        if measurements is not None:
+            if not isinstance(measurements, list):
+                raise ValueError("'measurements' must be a list or None.")
+            if not all(isinstance(shot, dict) for shot in measurements):
+                raise ValueError("Each item in 'measurements' must be a dictionary.")
+            measurements = [AhsShotResult.from_dict(shot) for shot in measurements]
+
+        return cls(
+            measurements=measurements,
+            measurement_counts=data.get("measurement_counts", data.get("measurementCounts")),
+        )
+
     def to_dict(self) -> dict[str, Any]:
         """Converts the AhsResultData instance to a dictionary."""
         return {
             "measurement_counts": self._measurement_counts,
             "measurements": self._measurements,
         }
+
+    def __eq__(self, other):
+        if not isinstance(other, AhsResultData):
+            return False
+
+        if self._measurement_counts != other._measurement_counts:
+            return False
+
+        if self._measurements is None and other._measurements is None:
+            return True
+        if self._measurements is None or other._measurements is None:
+            return False
+        if len(self._measurements) != len(other._measurements):
+            return False
+
+        return all(s1 == s2 for s1, s2 in zip(self._measurements, other._measurements))
 
 
 class AnnealingResultData(ResultData):
@@ -280,17 +361,12 @@ class AnnealingResultData(ResultData):
         return ExperimentType.ANNEALING
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any] = None) -> AnnealingResultData:
+    def from_dict(cls, data: dict[str, Any]) -> AnnealingResultData:
         """Creates a new AnnealingResultData instance from a dictionary."""
         return cls(
             solutions=data.get("solutions"),
             num_solutions=data.get("num_solutions", data.get("numSolutions")),
         )
-
-    @classmethod
-    def from_object(cls, model: AnnealingExperimentMetadata, **kwargs) -> AnnealingResultData:
-        """Creates a new AnnealingResultData instance from a AnnealingExperimentMetadata object."""
-        return cls.from_dict(model.model_dump(**kwargs))
 
     @property
     def solutions(self) -> Optional[list[dict[str, Any]]]:

@@ -8,7 +8,7 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint: disable=redefined-outer-name
+# pylint: disable=redefined-outer-name,import-outside-toplevel
 
 """
 Fixtures imported/defined in this file can be used by any test in this directory
@@ -23,13 +23,14 @@ import numpy as np
 import pytest
 
 from qbraid.programs import NATIVE_REGISTRY
+from qbraid.runtime import QbraidProvider
 
-from ._resources import DEVICE_DATA_AQUILA, DEVICE_DATA_QIR, DEVICE_DATA_QUERA
+from ._resources import DEVICE_DATA_AQUILA, DEVICE_DATA_QIR, DEVICE_DATA_QUERA_QASM, MockClient
 
 
 def _braket_circuit(meas=True):
     """Returns low-depth, one-qubit Braket circuit to be used for testing."""
-    import braket.circuits  # pylint: disable=import-outside-toplevel
+    import braket.circuits
 
     circuit = braket.circuits.Circuit()
     circuit.h(0)
@@ -42,7 +43,7 @@ def _braket_circuit(meas=True):
 def _cirq_circuit(meas=True):
     """Returns Low-depth, one-qubit Cirq circuit to be used for testing.
     If ``meas=True``, applies measurement operation to end of circuit."""
-    import cirq  # pylint: disable=import-outside-toplevel
+    import cirq
 
     q0 = cirq.GridQubit(0, 0)
 
@@ -60,7 +61,7 @@ def _cirq_circuit(meas=True):
 def _qiskit_circuit(meas=True):
     """Returns Low-depth, one-qubit Qiskit circuit to be used for testing.
     If ``meas=True``, applies measurement operation to end of circuit."""
-    import qiskit  # pylint: disable=import-outside-toplevel
+    import qiskit
 
     circuit = qiskit.QuantumCircuit(1, 1) if meas else qiskit.QuantumCircuit(1)
     circuit.h(0)
@@ -80,6 +81,20 @@ def braket_circuit():
 def qiskit_circuit():
     """Returns low-depth, one-qubit Qiskit circuit to be used for testing."""
     return _qiskit_circuit()
+
+
+@pytest.fixture
+def qasm3_circuit():
+    """Returns low-depth, one-qubit QASM3 circuit to be used for testing."""
+    qasm = """
+    OPENQASM 3.0;
+    bit[1] b;
+    qubit[1] q;
+    h q[0];
+    ry(1.5707963267948966) q[0];
+    b[0] = measure q[0];
+    """
+    return textwrap.dedent(qasm).strip()
 
 
 @pytest.fixture
@@ -111,7 +126,7 @@ def device_data_qir():
 @pytest.fixture
 def device_data_quera():
     """Return a dictionary of device data for the QuEra QASM simulator."""
-    return DEVICE_DATA_QUERA
+    return DEVICE_DATA_QUERA_QASM
 
 
 @pytest.fixture
@@ -132,6 +147,33 @@ def valid_qasm2_no_meas() -> str:
     cx q[1],q[0];
     """
     return textwrap.dedent(qasm).strip()
+
+
+@pytest.fixture
+def valid_qasm2():
+    """Valid OpenQASM 2 string with measurement."""
+    return """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    creg c0[1];
+    creg c1[1];
+    swap q[0],q[1];
+    measure q[0] -> c0[0];
+    measure q[1] -> c1[0];
+    """
+
+
+@pytest.fixture
+def mock_client():
+    """Mock client for testing."""
+    return MockClient()
+
+
+@pytest.fixture
+def mock_provider(mock_client):
+    """Mock provider for testing."""
+    return QbraidProvider(client=mock_client)
 
 
 def uniform_state_circuit(num_qubits: Optional[int] = None, measure: Optional[bool] = True):
@@ -156,7 +198,7 @@ def uniform_state_circuit(num_qubits: Optional[int] = None, measure: Optional[bo
     Raises:
         ValueError: If the number of qubits provided is less than 1.
     """
-    import cirq  # pylint: disable=import-outside-toplevel
+    import cirq
 
     if num_qubits is not None and num_qubits < 1:
         raise ValueError("Number of qubits must be at least 1.")
@@ -182,3 +224,91 @@ def uniform_state_circuit(num_qubits: Optional[int] = None, measure: Optional[bo
 def cirq_uniform():
     """Cirq circuit used for testing."""
     return uniform_state_circuit
+
+
+@pytest.fixture
+def braket_ahs():
+    """Return an example AHS program."""
+    import braket.ahs
+    import braket.timings
+
+    a = 5.7e-6  # meters
+
+    register = braket.ahs.AtomArrangement()
+    register.add(np.array([0.5, 0.5 + 1 / np.sqrt(2)]) * a)
+    register.add(np.array([0.5 + 1 / np.sqrt(2), 0.5]) * a)
+    register.add(np.array([0.5 + 1 / np.sqrt(2), -0.5]) * a)
+    register.add(np.array([0.5, -0.5 - 1 / np.sqrt(2)]) * a)
+    register.add(np.array([-0.5, -0.5 - 1 / np.sqrt(2)]) * a)
+    register.add(np.array([-0.5 - 1 / np.sqrt(2), -0.5]) * a)
+    register.add(np.array([-0.5 - 1 / np.sqrt(2), 0.5]) * a)
+    register.add(np.array([-0.5, 0.5 + 1 / np.sqrt(2)]) * a)
+
+    time_max = 4e-6  # seconds
+    time_ramp = 1e-7  # seconds
+    omega_max = 6300000.0  # rad / sec
+    delta_start = -5 * omega_max
+    delta_end = 5 * omega_max
+
+    omega = braket.timings.TimeSeries()
+    omega.put(0.0, 0.0)
+    omega.put(time_ramp, omega_max)
+    omega.put(time_max - time_ramp, omega_max)
+    omega.put(time_max, 0.0)
+
+    delta = braket.timings.TimeSeries()
+    delta.put(0.0, delta_start)
+    delta.put(time_ramp, delta_start)
+    delta.put(time_max - time_ramp, delta_end)
+    delta.put(time_max, delta_end)
+
+    phi = braket.timings.TimeSeries().put(0.0, 0.0).put(time_max, 0.0)
+
+    drive = braket.ahs.DrivingField(amplitude=omega, phase=phi, detuning=delta)
+
+    return braket.ahs.AnalogHamiltonianSimulation(register=register, hamiltonian=drive)
+
+
+@pytest.fixture
+def ahs_dict():
+    """Returns dictionary representation of AHS program."""
+    return {
+        "register": {
+            "sites": [
+                ["0.00000285", "0.00000688050865276332"],
+                ["0.00000688050865276332", "0.00000285"],
+                ["0.00000688050865276332", "-0.00000285"],
+                ["0.00000285", "-0.00000688050865276332"],
+                ["-0.00000285", "-0.00000688050865276332"],
+                ["-0.00000688050865276332", "-0.00000285"],
+                ["-0.00000688050865276332", "0.00000285"],
+                ["-0.00000285", "0.00000688050865276332"],
+            ],
+            "filling": [1, 1, 1, 1, 1, 1, 1, 1],
+        },
+        "hamiltonian": {
+            "drivingFields": [
+                {
+                    "amplitude": {
+                        "time_series": {
+                            "values": ["0.0", "6300000.0", "6300000.0", "0.0"],
+                            "times": ["0.0", "1E-7", "0.0000039", "0.000004"],
+                        },
+                        "pattern": "uniform",
+                    },
+                    "phase": {
+                        "time_series": {"values": ["0.0", "0.0"], "times": ["0.0", "0.000004"]},
+                        "pattern": "uniform",
+                    },
+                    "detuning": {
+                        "time_series": {
+                            "values": ["-31500000.0", "-31500000.0", "31500000.0", "31500000.0"],
+                            "times": ["0.0", "1E-7", "0.0000039", "0.000004"],
+                        },
+                        "pattern": "uniform",
+                    },
+                }
+            ],
+            "localDetuning": [],
+        },
+    }

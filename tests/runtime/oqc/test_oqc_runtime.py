@@ -182,6 +182,21 @@ def program():
     return qasm3_compat
 
 
+@pytest.fixture
+def optimized_program():
+    """Return a QASM3 program."""
+    qasm3 = """
+    OPENQASM 3;
+    qubit[2] q;
+    bit[2] c;
+    h q[0];
+    cx q[0], q[1];
+    c = measure q;
+    """
+    qasm3_compat = textwrap.dedent(qasm3).strip()
+    return qasm3_compat
+
+
 class MockOQCClient:
     """Test class for OQC client."""
 
@@ -593,7 +608,7 @@ def test_cancel_job(oqc_device, program):
 
 
 @pytest.mark.remote
-def test_oqc_runtime_remote_execution(program):
+def test_oqc_runtime_remote_execution(program, optimized_program):
     """Test OQC runtime with remote execution."""
     token = os.getenv("OQC_AUTH_TOKEN")
     if token is None:
@@ -618,7 +633,9 @@ def test_oqc_runtime_remote_execution(program):
     assert isinstance(result, Result)
     assert result.details["errors"] is None
     assert result.details["shots"] == shots
-    assert result.details["metrics"]["optimized_circuit"] == program
+
+    optimized_out = result.details["metrics"]["optimized_circuit"]
+    assert optimized_out.strip() == optimized_program.strip()
 
     data = result.data
     assert isinstance(data, GateModelResultData)

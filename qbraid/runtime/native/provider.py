@@ -14,6 +14,7 @@ Module defining QbraidProvider class.
 """
 from __future__ import annotations
 
+import json
 import warnings
 from typing import TYPE_CHECKING, Any, Callable, Optional, Union
 
@@ -24,6 +25,7 @@ from qbraid._caching import cached_method
 from qbraid.passes.qasm.analyze import has_measurements
 from qbraid.passes.qasm.format import format_qasm
 from qbraid.programs import QPROGRAM_REGISTRY, ExperimentType, ProgramSpec, load_program
+from qbraid.programs.ahs import AHSEncoder
 from qbraid.programs.typer import Qasm2StringType, Qasm3StringType, QuboCoefficientsDict
 from qbraid.runtime._display import display_jobs_from_data
 from qbraid.runtime.exceptions import ResourceNotFoundError
@@ -32,7 +34,7 @@ from qbraid.runtime.noise import NoiseModelSet
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 from qbraid.runtime.schemas.device import DeviceData
-from qbraid.transpiler.conversions.openqasm3.openqasm3_to_ionq import openqasm3_to_ionq
+from qbraid.transpiler import transpile
 
 from .device import QbraidDevice
 
@@ -40,6 +42,7 @@ if TYPE_CHECKING:
     import pyqir
     import pyqubo
 
+    from qbraid.programs.ahs.braket_ahs import BraketAHS
     from qbraid.programs.annealing.cpp_pyqubo import PyQuboModel
     from qbraid.programs.annealing.qubo import QuboProgram
 
@@ -52,6 +55,16 @@ def _qasm_to_json(
     program: Union[Qasm2StringType, Qasm3StringType]
 ) -> dict[str, Union[Qasm2StringType, Qasm3StringType]]:
     return {"openQasm": format_qasm(program)}
+
+
+def _braket_to_json(program) -> dict[str, Any]:
+    qasm = transpile(program, "qasm3", max_path_depth=1)
+    return _qasm_to_json(qasm)
+
+
+def _braket_ahs_to_json(program) -> dict[str, Any]:
+    ahs_program: BraketAHS = load_program(program)
+    return {"ahs": json.dumps(ahs_program, cls=AHSEncoder)}
 
 
 def _qubo_to_json(program: Union[pyqubo.Model, QuboCoefficientsDict]) -> dict[str, dict[str, Any]]:
@@ -72,7 +85,7 @@ def validate_qasm_no_measurements(
 def validate_qasm_to_ionq(program: Union[Qasm2StringType, Qasm3StringType], device_id: str) -> None:
     """Raises a ValueError if the given OpenQASM program is not compatible with IonQ JSON format."""
     try:
-        openqasm3_to_ionq(program)
+        transpile(program, "ionq", max_path_depth=1)
     except Exception as err:  # pylint: disable=broad-exception-caught
         raise ValueError(
             f"OpenQASM programs submitted to the {device_id} "
@@ -90,6 +103,8 @@ def get_program_spec_lambdas(
         "qasm3": (_qasm_to_json, None),
         "cpp_pyqubo": (_qubo_to_json, None),
         "qubo": (_qubo_to_json, None),
+        "braket": (_braket_to_json, None),
+        "braket_ahs": (_braket_ahs_to_json, None),
     }
 
     to_ir, validate = lambdas.get(program_type_alias, (None, None))
@@ -171,7 +186,12 @@ class QbraidProvider(QuantumProvider):
         """Builds a runtime profile from qBraid device data."""
         model = DeviceData(**device_data)
         simulator = str(model.device_type).upper() == "SIMULATOR"
-        program_spec = self._get_program_spec(model.run_package, model.device_id)
+        run_package = (
+            "braket_ahs"
+            if model.run_package == "braket" and model.paradigm.lower() == "ahs"
+            else model.run_package
+        )
+        program_spec = self._get_program_spec(run_package, model.device_id)
         noise_models = (
             NoiseModelSet.from_iterable(model.noise_models) if model.noise_models else None
         )
@@ -195,15 +215,24 @@ class QbraidProvider(QuantumProvider):
     @cached_method(ttl=120)
     def get_devices(self, **kwargs) -> list[QbraidDevice]:
         """Return a list of devices matching the specified filtering."""
-        query = kwargs or {}
-        query["vendor"] = "qBraid"
+        query = kwargs or None
 
         try:
-            device_data_lst = self.client.search_devices(query)
+            devices = self.client.search_devices(query)
         except (ValueError, QuantumServiceRequestError) as err:
             raise ResourceNotFoundError("No devices found matching given criteria.") from err
 
-        profiles = [self._build_runtime_profile(device_data) for device_data in device_data_lst]
+        filtered_devices = [
+            device
+            for device in devices
+            if device["vendor"] == "qBraid"
+            or (device["vendor"] == "AWS" and device["provider"] in {"AWS", "QuEra"})
+        ]
+
+        if not filtered_devices:
+            raise ResourceNotFoundError("No devices found matching given criteria.")
+
+        profiles = [self._build_runtime_profile(device_data) for device_data in filtered_devices]
         return [QbraidDevice(profile, client=self.client) for profile in profiles]
 
     @cached_method(ttl=120)

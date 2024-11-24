@@ -16,17 +16,15 @@ from __future__ import annotations
 
 import datetime
 from enum import Enum
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic
 
 from qbraid_core import deprecated
 from qbraid_core.system.generic import _datetime_to_str
 
-from .result_data import ResultData
-
-T = TypeVar("T", bound=ResultData)
+from .result_data import ResultDataType
 
 
-class Result(Generic[T]):
+class Result(Generic[ResultDataType]):
     """Represents the results of a quantum job. This class is intended
     to be initialized by a QuantumJob class.
 
@@ -44,7 +42,7 @@ class Result(Generic[T]):
         device_id: str,
         job_id: str,
         success: bool,
-        data: T,
+        data: ResultDataType,
         **kwargs,
     ):
         """Create a new Result object."""
@@ -55,7 +53,7 @@ class Result(Generic[T]):
         self._details = kwargs or {}
 
     @property
-    def data(self) -> T:
+    def data(self) -> ResultDataType:
         """Returns the result of the job."""
         return self._data
 
