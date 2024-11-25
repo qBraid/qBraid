@@ -485,3 +485,118 @@ def test_device_pricing():
     pricing_credits = pricing.serialize_credits(pricing.perTask)
     assert isinstance(pricing_credits, Credits)
     assert pricing_credits == Credits(50)
+
+
+@pytest.mark.parametrize(
+    "sites, expected",
+    [
+        ([(1.0, 2.0), (3.0, 4.0)], [(1.0, 2.0), (3.0, 4.0)]),
+        ([(1, 2), (3, 4)], [(1.0, 2.0), (3.0, 4.0)]),
+        (None, None),
+        ([], []),
+    ],
+)
+def test_ahs_expt_validate_sites_valid(sites, expected):
+    """Test AhsExperimentMetadata sites validation."""
+    model = AhsExperimentMetadata(sites=sites)
+    assert model.sites == expected
+
+
+@pytest.mark.parametrize(
+    "sites",
+    [
+        [(1, 2, 3)],
+        [(1,)],
+        [1, 2],
+        ["a", "b"],
+        [("a", "b")],
+        "not a list",
+        [("1.0", "2.0"), ("3.0", "not_a_number")],
+        [(1, 2, 3), (4, 5)],
+        [(1, 2), "not_a_tuple"],
+    ],
+)
+def test_ahs_expt_validate_sites_invalid(sites):
+    """Test raising ValidationError for invalid sites."""
+    with pytest.raises(ValidationError):
+        AhsExperimentMetadata(sites=sites)
+
+
+def test_ahs_expt_sites_lists_to_tuples():
+    """Test AhsExperimentMetadata sites lists converted to tuples."""
+    model = AhsExperimentMetadata(sites=[[1, 2], [3, 4]])
+    assert model.sites == [(1.0, 2.0), (3.0, 4.0)]
+
+
+def test_ahs_expt_measurement_counts_dict_to_counter():
+    """Test AhsExperimentMetadata measurement_counts dict converted to Counter."""
+    model = AhsExperimentMetadata(measurementCounts={"ggrggrgg": 1, "rgggrggg": 1})
+    assert model.measurement_counts == Counter({"ggrggrgg": 1, "rgggrggg": 1})
+
+
+@pytest.mark.parametrize(
+    "filling, expected",
+    [
+        ([0, 1, 0, 1], [0, 1, 0, 1]),
+        ([True, False, True], [1, 0, 1]),
+        (None, None),
+        ([], []),
+    ],
+)
+def test_ahs_expt_validate_filling_valid(filling, expected):
+    """Test AhsExperimentMetadata filling validation."""
+    model = AhsExperimentMetadata(filling=filling)
+    assert model.filling == expected
+
+
+@pytest.mark.parametrize(
+    "filling",
+    [[0, 1, 2], [0, 1, -1], [0.5, 1.5], "not a list"],
+)
+def test_ahs_expt_validate_filling_invalid(filling):
+    """Test raising ValidationError for invalid filling."""
+    with pytest.raises(ValidationError):
+        AhsExperimentMetadata(filling=filling)
+
+
+def test_ahs_expt_validate_infer_num_atoms():
+    """Test inferring num_atoms from sites and filling."""
+    model = AhsExperimentMetadata(sites=[(0, 0), (1, 1), (2, 2)], filling=[0, 1, 0])
+    assert model.num_atoms == 3
+
+
+def test_ahs_expt_validate_sites_filling_mismatch():
+    """Test raising ValidationError for sites and filling length mismatch."""
+    with pytest.raises(
+        ValidationError,
+        match="The lengths of 'sites', 'filling', and value of 'num_atoms' must be consistent.",
+    ):
+        AhsExperimentMetadata(sites=[(0, 0), (1, 1)], filling=[0, 1, 0])
+
+
+def test_ahs_expt_validate_num_atoms_mismatch():
+    """Test raising ValidationError for num_atoms mismatch."""
+    with pytest.raises(
+        ValidationError,
+        match="The lengths of 'sites', 'filling', and value of 'num_atoms' must be consistent.",
+    ):
+        AhsExperimentMetadata(sites=[(0, 0), (1, 1)], filling=[0, 1], numAtoms=3)
+
+
+@pytest.mark.parametrize(
+    "sites, filling",
+    [
+        ([(0, 0), (1, 1)], None),
+        (None, [0, 1]),
+    ],
+)
+def test_ahs_expt_validate_partial_data(sites, filling):
+    """Test AhsExperimentMetadata with partial data."""
+    model = AhsExperimentMetadata(sites=sites, filling=filling)
+    assert model.num_atoms == 2
+
+
+def test_ahs_expt_validate_empty_lists():
+    """Test AhsExperimentMetadata with empty lists."""
+    model = AhsExperimentMetadata(sites=[], filling=[])
+    assert model.num_atoms is None

@@ -243,6 +243,7 @@ def test_quera_simulator_workflow(mock_provider, cirq_uniform, valid_qasm2_no_me
     job = device.run(circuit, shots=shots, backend="cirq-gpu")
     assert isinstance(job, QbraidJob)
     assert job.is_terminal_state()
+    assert job.queue_position() is None
 
     device._target_spec = None
     device.to_ir = lambda x: {"openQasm": x}
