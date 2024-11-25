@@ -73,6 +73,7 @@ class RuntimeJobModel(QbraidSchemaBase):
         status (JobStatus): The current status of the job.
         shots (Optional[int]): The number of shots for the quantum experiment.
         experiment_type (str): The type of experiment conducted.
+        queue_position (Optional[int]): The position of the job in the queue.
         metadata (Union[QbraidExperimentMetadata, ExperimentMetadata]): Metadata associated
             with the experiment.
         time_stamps (TimeStamps): Time-related information about the job.
@@ -90,6 +91,7 @@ class RuntimeJobModel(QbraidSchemaBase):
     status_text: Optional[str] = Field(None, alias="statusText")
     shots: Optional[int] = Field(None, ge=0)
     experiment_type: ExperimentType = Field(..., alias="experimentType")
+    queue_position: Optional[int] = Field(None, ge=0, alias="queuePosition")
     metadata: Union[
         QbraidQirSimulationMetadata,
         QuEraQasmSimulationMetadata,

@@ -135,31 +135,72 @@ class AhsExperimentMetadata(BaseModel):
     """Metadata specific to Analog Hamiltonian Simulation (AHS) experiments.
 
     Attributes:
-        measurement_counts (Counter): Counter for measurement outcomes.
-        measurements (list, optional): Optional list of measurement results.
+        measurement_counts (Counter): Counter for measurement outcomes
+        measurements (list, optional): Optional list of measurement results
         num_atoms (int, optional): Number of atoms (sites) used to build lattice structure
         sites (list[tuple[float, float]], optional): Vector positions of atoms in meters
-        filling (list[bool], optional): List of booleans indicating the filling status at each site.
+        filling (list[int], optional): List of ints {0,1} indicating the filling status at each site
     """
 
     measurement_counts: Optional[Counter] = Field(None, alias="measurementCounts")
-    measurements: Optional[list] = None
+    measurements: Optional[list[dict[str, Union[bool, Optional[list[int]]]]]] = None
     num_atoms: Optional[int] = Field(None, alias="numAtoms")
-    sites: Optional[list[tuple[float, float]]] = Field(None, alias="atomRegister")
-    filling: Optional[list[bool]] = None
+    sites: Optional[list[tuple[float, float]]] = None
+    filling: Optional[list[int]] = None
 
-    @field_validator("measurement_counts")
+    @field_validator("filling")
     @classmethod
-    def validate_counts(cls, value):
-        """Validates and ensures that the measurement counts are a Counter object.
+    def validate_filling(cls, value):
+        """Validates and ensures that the fillings are integers 0 or 1.
 
         Args:
-            value: The measurement counts.
+            value: The filling status at each site.
 
         Returns:
-            Counter: A validated counter object.
+            list[int]: A validated list of integers.
         """
-        return Counter(value)
+        if value is None:
+            return value
+
+        def validate_item(item):
+            int_item = int(item)
+            if int_item not in {0, 1}:
+                raise ValueError(f"Invalid filling value: {item}. Must be 0 or 1.")
+            return int_item
+
+        try:
+            return [validate_item(filling) for filling in value]
+        except ValueError as err:
+            raise ValueError(
+                "Invalid filling value. Must be a list of integers, each either 0 or 1."
+            ) from err
+
+    @model_validator(mode="after")
+    def validate_ahs(self) -> Self:
+        """Validates that the sites, filling, and num_atoms lengths match.
+
+        Returns:
+            Self: The updated instance with validated lengths.
+        """
+        lengths = {
+            "sites": len(self.sites) if self.sites else None,
+            "filling": len(self.filling) if self.filling else None,
+            "num_atoms": self.num_atoms,
+        }
+
+        filtered_lengths = {k: v for k, v in lengths.items() if v is not None}
+
+        if len(set(filtered_lengths.values())) > 1:
+            mismatched = ", ".join(f"{k}: {v}" for k, v in filtered_lengths.items())
+            raise ValueError(
+                "The lengths of 'sites', 'filling', and value of 'num_atoms' must be consistent. "
+                f"Detected mismatched values: {mismatched}"
+            )
+
+        if self.num_atoms is None and filtered_lengths:
+            self.num_atoms = next(iter(filtered_lengths.values()))
+
+        return self
 
 
 class AnnealingExperimentMetadata(BaseModel):

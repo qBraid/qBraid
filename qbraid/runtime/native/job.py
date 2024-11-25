@@ -66,6 +66,11 @@ class QbraidJob(QuantumJob):
             self._client = self._device.client if self._device else QuantumClient()
         return self._client
 
+    def queue_position(self) -> Optional[int]:
+        """Return the position of the job in the queue."""
+        job_data = self.metadata()
+        return job_data.get("queue_position", job_data.get("queuePosition"))
+
     def status(self) -> JobStatus:
         """Return the status of the job / task , among the values of ``JobStatus``."""
         terminal_states = JobStatus.terminal_states()
