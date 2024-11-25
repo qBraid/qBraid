@@ -15,12 +15,8 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
-- Added support for specifying different `quera_qasm_simulator` backends in the `QbraidDevice.run` method using the "backend" keyword argument (e.g., "cirq", "cirq-gpu") ([#836](https://github.com/qBraid/qBraid/pull/836))
-- Add native runtime support for AHS experiment types, specifically for QuEra Aquila device ([#837](https://github.com/qBraid/qBraid/pull/837))
 
 ### Improved / Modified
-- Enhanced type hinting for the `Result.data` property by leveraging a custom `typing.TypeVar`, enabling automatic adaptation to the specific `ResultData` subclass being accessed. ([#836](https://github.com/qBraid/qBraid/pull/836))
-- Improved type annotations and updated runtime test cases / structure ([#837](https://github.com/qBraid/qBraid/pull/837))
 
 ### Deprecated
 
@@ -29,6 +25,18 @@ Types of changes:
 ### Fixed
 
 ### Dependencies
+
+## [0.8.8] - 2024-11-25
+
+### Added
+- Added support for specifying different `quera_qasm_simulator` backends in the `QbraidDevice.run` method using the "backend" keyword argument (e.g., "cirq", "cirq-gpu") ([#836](https://github.com/qBraid/qBraid/pull/836))
+- Add native runtime support for AHS experiment types, specifically for QuEra Aquila device ([#837](https://github.com/qBraid/qBraid/pull/837))
+- Added `QbraidJob.queue_position()` method ([#838](https://github.com/qBraid/qBraid/pull/838))
+
+### Improved / Modified
+- Enhanced type hinting for the `Result.data` property by leveraging a custom `typing.TypeVar`, enabling automatic adaptation to the specific `ResultData` subclass being accessed. ([#836](https://github.com/qBraid/qBraid/pull/836))
+- Improved type annotations and updated runtime test cases / structure ([#837](https://github.com/qBraid/qBraid/pull/837))
+- Updated validators for `AhsExperimentMetadata` pydantic model/schema ([#838](https://github.com/qBraid/qBraid/pull/838))
 
 ## [0.8.7] - 2024-11-21
 
