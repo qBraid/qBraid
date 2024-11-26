@@ -64,6 +64,17 @@ class TimeStamps(BaseModel):
         return value
 
 
+class JobSummary(BaseModel):
+    """Model for capturing summary information about a job."""
+
+    model_config = ConfigDict(frozen=True, use_enum_values=False)
+
+    job_id: str = Field(..., alias="vendorJobId")
+    status: JobStatus
+    time_stamps: TimeStamps = Field(..., alias="timeStamps")
+    cost: Optional[Credits] = Field(None, ge=0, alias="cost")
+
+
 class RuntimeJobModel(QbraidSchemaBase):
     """Represents a runtime job in the qBraid platform.
 

@@ -25,6 +25,8 @@ from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import GateModelResultData
+from qbraid.runtime.schemas.base import USD
+from qbraid.runtime.schemas.job import JobSummary, TimeStamps
 
 from .io_format import OutputDataFormat
 
@@ -136,3 +138,36 @@ class AzureQuantumJob(QuantumJob):
             raise JobStateError("Cannot cancel; job in terminal state.")
 
         self._job = self.workspace.cancel_job(self._job)
+
+    def summary(self):
+        """Return a summary of the job."""
+        status = self.status()
+        created_at = self._job.details.begin_execution_time
+
+        ended_at = None
+        execution_duration = None
+        cost = None
+
+        if status in JobStatus.terminal_states():
+            if status == JobStatus.COMPLETED:
+                ended_at = self._job.details.end_execution_time
+            elif status == JobStatus.CANCELLED:
+                ended_at = self._job.details.cancellation_time
+
+            if ended_at:
+                time_delta = ended_at - created_at
+                execution_duration = time_delta.total_seconds() * 1000
+
+            events = self._job.details.cost_estimate.events or []
+            cost_usd = sum(event.amount_billed or 0 for event in events)
+            cost = USD(cost_usd)
+
+        time_stamps = TimeStamps(
+            createdAt=created_at, endedAt=ended_at, executionDuration=execution_duration
+        )
+
+        job_summary = JobSummary(
+            vendorJobId=self.id, status=status, timeStamps=time_stamps, cost=cost
+        )
+
+        return job_summary
