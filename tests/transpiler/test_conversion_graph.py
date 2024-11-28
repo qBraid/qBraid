@@ -31,7 +31,7 @@ from qbraid.transpiler.conversions.qiskit import qiskit_to_pyqir
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.exceptions import ConversionPathNotFoundError
-from qbraid.transpiler.graph import ConversionGraph
+from qbraid.transpiler.graph import ConversionGraph, _get_path_from_bound_methods
 
 
 @pytest.fixture
@@ -192,20 +192,20 @@ def test_get_path_from_bound_method():
     )
     bound_method = edge_data["func"]
     bound_method_list = [bound_method]
-    path = ConversionGraph._get_path_from_bound_methods(bound_method_list)
+    path = _get_path_from_bound_methods(bound_method_list)
     assert path == "cirq -> qasm2"
 
 
 def test_raise_index_error_bound_methods_empty():
     """Test raising ValueError when bound_methods is empty."""
     with pytest.raises(IndexError):
-        ConversionGraph._get_path_from_bound_methods([])
+        _get_path_from_bound_methods([])
 
 
 def test_attr_error_bound_method_no_source_target():
     """Test raising AttributeError when bound_methods has no source or target."""
     with pytest.raises(AttributeError):
-        ConversionGraph._get_path_from_bound_methods([Mock()])
+        _get_path_from_bound_methods([Mock()])
 
 
 def test_shortest_path(mock_graph):
@@ -262,7 +262,7 @@ def test_raise_attribute_error_no_source():
 
     """
     with pytest.raises(AttributeError):
-        ConversionGraph._get_path_from_bound_methods([lambda x: x])
+        _get_path_from_bound_methods([lambda x: x])
 
 
 def test_has_path_does_not_exist():
@@ -295,7 +295,7 @@ def test_get_path_from_bound_methods_attribute_error():
         patch.object(type(func), "target", new_callable=PropertyMock, side_effect=AttributeError),
     ):
         with pytest.raises(AttributeError) as excinfo:
-            graph._get_path_from_bound_methods([data["func"]])
+            _get_path_from_bound_methods([data["func"]])
 
         assert "Bound method instance lacks 'source' or 'target' attributes." in str(excinfo.value)
 

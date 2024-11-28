@@ -23,10 +23,12 @@ from rustworkx.visualization import mpl_draw
 
 from qbraid.programs.experiment import ExperimentType
 from qbraid.programs.registry import is_registered_alias_native
+from qbraid.programs.spec import ProgramSpec
 
 if TYPE_CHECKING:
     import matplotlib.pyplot
 
+    import qbraid.runtime
     import qbraid.transpiler
 
 plt: matplotlib.pyplot = LazyLoader("plt", globals(), "matplotlib.pyplot")
@@ -46,6 +48,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     colors: Optional[dict[str, str]] = None,
     edge_labels: bool = False,
     experiment_type: Optional[Union[ExperimentType, list[ExperimentType]]] = None,
+    target_spec: Optional[Union[ProgramSpec, list[ProgramSpec]]] = None,
     **kwargs,
 ) -> None:
     """
@@ -143,6 +146,18 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     if edge_labels:
         kwargs["edge_labels"] = lambda edge: round(edge["weight"], 2)
 
+    if target_spec:
+        target_nodes = {
+            spec.alias for spec in (target_spec if isinstance(target_spec, list) else [target_spec])
+        }
+
+        edgecolors = [
+            "#f47c7c" if node in target_nodes else color
+            for node, color in zip(graph.nodes(), ncolors)
+        ]
+
+        kwargs["edgecolors"] = edgecolors
+
     mpl_draw(
         graph,
         pos,
@@ -188,3 +203,32 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
 
     if save_path:
         plt.savefig(save_path)
+
+
+def plot_runtime_conversion_scheme(device: qbraid.runtime.QuantumDevice, **kwargs) -> None:
+    """
+    Plot the runtime conversion scheme for a given quantum device.
+
+    Args:
+        device (QuantumDevice): The quantum device for which to plot the conversion scheme.
+        **kwargs: Additional keyword arguments to pass to the plotting function.
+
+    Returns:
+        None
+    """
+    if device.profile.program_spec:
+        device.scheme.update_graph_for_target(device.profile.program_spec)
+
+    graph = device.scheme.conversion_graph
+    target_spec = device.profile.program_spec
+    experiment_type = device.profile.experiment_type
+
+    title = kwargs.pop("title", f"Runtime Conversion Scheme for '{device.id}'")
+
+    plot_conversion_graph(
+        graph,
+        title=title,
+        experiment_type=experiment_type,
+        target_spec=target_spec,
+        **kwargs,
+    )

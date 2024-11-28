@@ -30,6 +30,47 @@ from .edge import Conversion
 from .exceptions import ConversionPathNotFoundError
 
 
+def _get_path_from_bound_methods(bound_methods: list[Callable[..., Any]]) -> str:
+    """
+    Constructs a path string from a list of bound methods of Conversion instances.
+
+    This function takes a list of bound methods (specifically 'convert' methods bound to
+    Conversion instances) and constructs a path string representing the sequence of
+    conversions. Each conversion is defined by the 'source' and 'target' properties of the
+    Conversion instance to which each method is bound.
+
+    Args:
+        bound_methods: A list of bound methods from Conversion instances.
+
+    Returns:
+        A string representing the path of conversions, formatted as
+        'source1 -> source2 -> ... -> targetN'.
+
+    Raises:
+        AttributeError: If the bound methods do not have the expected 'source'
+                        and 'target' attributes.
+        IndexError: If the list of bound methods is empty.
+        TypeError: If an item in the bound_methods list is not a bound method.
+    """
+    if not bound_methods:
+        raise IndexError("The list of bound methods is empty.")
+
+    total_methods = len(bound_methods)
+
+    path = []
+    for index, method in enumerate(bound_methods):
+        instance: Conversion = method.__self__  # Get the instance to which the method is bound
+        if not hasattr(instance, "source") or not hasattr(instance, "target"):
+            raise AttributeError("Bound method instance lacks 'source' or 'target' attributes.")
+        path.append(instance.source)  # Add the source node of the instance
+
+        # Add the target of the last method's instance to complete the path
+        if index == total_methods - 1:
+            path.append(instance.target)
+
+    return " -> ".join(path)
+
+
 class ConversionGraph(rx.PyDiGraph):
     """
     Class for coordinating conversions between different quantum software programs
@@ -314,7 +355,7 @@ class ConversionGraph(rx.PyDiGraph):
             ConversionPathNotFoundError: If no path is found between source and target.
         """
         path = self.find_shortest_conversion_path(source, target)
-        return self._get_path_from_bound_methods(path)
+        return _get_path_from_bound_methods(path)
 
     def all_paths(self, source: str, target: str) -> list[str]:
         """
@@ -332,10 +373,11 @@ class ConversionGraph(rx.PyDiGraph):
         """
         num_conversions = len(self.conversions())
         paths = self.find_top_shortest_conversion_paths(source, target, top_n=num_conversions)
-        return [self._get_path_from_bound_methods(path) for path in paths]
+        return [_get_path_from_bound_methods(path) for path in paths]
 
+    @staticmethod
     def _calculate_depth_and_weight(
-        self, path: str, conv_weights: dict[tuple[str, str], int]
+        path: str, conv_weights: dict[tuple[str, str], int]
     ) -> tuple[int, int]:
         """Calculate the depth and weight of a given path."""
         conv_nodes = path.split(" -> ")
@@ -415,8 +457,9 @@ class ConversionGraph(rx.PyDiGraph):
             lambda tgt, src: self.shortest_path(src, tgt),
         )
 
+    @staticmethod
     def _get_sorted_closest(
-        self, pivot: str, items: list[str], closest_func: Callable[[str, list[str]], Optional[str]]
+        pivot: str, items: list[str], closest_func: Callable[[str, list[str]], Optional[str]]
     ) -> list[str]:
         """Sort a list of items from closest to least close based on conversion paths."""
         sorted_items = []
@@ -542,47 +585,6 @@ class ConversionGraph(rx.PyDiGraph):
             and self.edge_bias == value.edge_bias
             and self._init_nodes == value._init_nodes
         )
-
-    @staticmethod
-    def _get_path_from_bound_methods(bound_methods: list[Callable[..., Any]]) -> str:
-        """
-        Constructs a path string from a list of bound methods of Conversion instances.
-
-        This function takes a list of bound methods (specifically 'convert' methods bound to
-        Conversion instances) and constructs a path string representing the sequence of
-        conversions. Each conversion is defined by the 'source' and 'target' properties of the
-        Conversion instance to which each method is bound.
-
-        Args:
-            bound_methods: A list of bound methods from Conversion instances.
-
-        Returns:
-            A string representing the path of conversions, formatted as
-            'source1 -> source2 -> ... -> targetN'.
-
-        Raises:
-            AttributeError: If the bound methods do not have the expected 'source'
-                            and 'target' attributes.
-            IndexError: If the list of bound methods is empty.
-            TypeError: If an item in the bound_methods list is not a bound method.
-        """
-        if not bound_methods:
-            raise IndexError("The list of bound methods is empty.")
-
-        total_methods = len(bound_methods)
-
-        path = []
-        for index, method in enumerate(bound_methods):
-            instance = method.__self__  # Get the instance to which the method is bound
-            if not hasattr(instance, "source") or not hasattr(instance, "target"):
-                raise AttributeError("Bound method instance lacks 'source' or 'target' attributes.")
-            path.append(instance.source)  # Add the source node of the instance
-
-            # Add the target of the last method's instance to complete the path
-            if index == total_methods - 1:
-                path.append(instance.target)
-
-        return " -> ".join(path)
 
     def plot(self, **kwargs):
         """

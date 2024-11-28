@@ -15,10 +15,14 @@ Module for managing conversion configurations for quantum runtime.
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, Union
+
+from qbraid.programs.spec import ProgramSpec
+
+from .graph import ConversionGraph
 
 if TYPE_CHECKING:
-    import qbraid.transpiler
+    import rustworkx as rx
 
 
 @dataclass
@@ -42,7 +46,7 @@ class ConversionScheme:
         update_values: Dynamically updates the values of the instance's attributes.
     """
 
-    conversion_graph: Optional[qbraid.transpiler.ConversionGraph] = None
+    conversion_graph: Optional[ConversionGraph] = None
     max_path_attempts: int = 3
     max_path_depth: Optional[int] = None
     extra_kwargs: dict[str, Any] = field(default_factory=dict)
@@ -85,3 +89,75 @@ class ConversionScheme:
                 setattr(self, key, value)
             else:
                 raise AttributeError(f"{key} is not a valid attribute of ConversionScheme")
+
+    @staticmethod
+    def find_nodes_reachable_within_max_edges(
+        graph: rx.PyDiGraph,
+        target_nodes: Union[list[str], set[str]],
+        max_edges: Optional[int] = None,
+    ) -> set[str]:
+        """Find all nodes reachable from a target node within a specified number of edges.
+
+        Args:
+            graph (rx.PyDiGraph): The graph to search.
+            target_nodes (list[str]): The target nodes from which to search.
+            max_edges (int, optional): The maximum number of edges to traverse.
+
+        Returns:
+            set[str]: The set of nodes reachable from the target nodes within the specified
+                number of edges.
+
+        Raises:
+            ValueError: If the target node is not found in the graph,
+                or if the maximum number of edges is negative.
+        """
+        if max_edges is None:
+            max_edges = graph.num_edges()
+        elif max_edges < 0:
+            raise ValueError("The maximum number of edges must be a non-negative integer.")
+
+        graph_nodes = graph.nodes()
+        node_to_index = {node: i for i, node in enumerate(graph_nodes)}
+        target_indices = set()
+
+        for target_node in set(target_nodes):
+            if target_node not in node_to_index:
+                raise ValueError(f"Target node '{target_node}' not found in the graph.")
+            target_indices.add(node_to_index[target_node])
+
+        reachable_nodes = set(target_indices)
+
+        for _ in range(max_edges):
+            new_nodes = set()
+            for node in reachable_nodes:
+                preds = graph.predecessors(node)
+                preds_indices = [node_to_index[pred] for pred in preds]
+                new_nodes.update(preds_indices)
+            if not new_nodes.difference(reachable_nodes):
+                break
+            reachable_nodes.update(new_nodes)
+
+        return {graph_nodes[i] for i in reachable_nodes}
+
+    def update_graph_for_target(self, target_spec: Union[ProgramSpec, list[ProgramSpec]]) -> None:
+        """Update the conversion graph to include only nodes with paths to the target node(s), and
+        remove all conversions that do not end in the target node(s)."""
+        graph = self.conversion_graph.copy() or ConversionGraph()
+
+        target_nodes = {
+            spec.alias for spec in (target_spec if isinstance(target_spec, list) else [target_spec])
+        }
+
+        nodes = self.find_nodes_reachable_within_max_edges(graph, target_nodes, self.max_path_depth)
+
+        conversions = [conv for conv in graph.conversions() if conv.source not in target_nodes]
+
+        updated_graph = ConversionGraph(
+            conversions=conversions,
+            require_native=graph.require_native,
+            include_isolated=graph._include_isolated,
+            edge_bias=graph.edge_bias,
+            nodes=nodes,
+        )
+
+        self.update_values(conversion_graph=updated_graph)

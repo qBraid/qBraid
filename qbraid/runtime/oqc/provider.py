@@ -28,6 +28,8 @@ from qbraid.runtime.schemas.base import USD
 
 from .device import OQCDevice
 
+NATIVE_GATES = {"qpu:jp:3:673b1ad43c": {"ecr", "id", "rz", "sx", "x"}}
+
 
 class OQCProvider(QuantumProvider):
     """OQC provider class."""
