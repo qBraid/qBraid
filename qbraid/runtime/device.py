@@ -97,7 +97,7 @@ class QuantumDevice(ABC):
     def scheme(self) -> ConversionScheme:
         """Return the conversion scheme."""
         if not self._scheme.conversion_graph:
-            self._scheme.update_values(conversion_graph=ConversionGraph())
+            self._scheme.update_values(conversion_graph=ConversionGraph(include_isolated=True))
         return self._scheme
 
     def __repr__(self):

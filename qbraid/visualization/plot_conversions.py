@@ -82,7 +82,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             "external_node": "lightgray",
             "qbraid_edge": "gray",
             "external_edge": "blue",
-            "extras_edge": "red",
+            "extras_edge": "darkgrey",
         }
 
     if experiment_type:
@@ -152,7 +152,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         }
 
         edgecolors = [
-            "#f47c7c" if node in target_nodes else color
+            "red" if node in target_nodes else color
             for node, color in zip(graph.nodes(), ncolors)
         ]
 
@@ -223,7 +223,7 @@ def plot_runtime_conversion_scheme(device: qbraid.runtime.QuantumDevice, **kwarg
     target_spec = device.profile.program_spec
     experiment_type = device.profile.experiment_type
 
-    title = kwargs.pop("title", f"Runtime Conversion Scheme for '{device.id}'")
+    title = kwargs.pop("title", f"Runtime Conversion Scheme for {str(device)}")
 
     plot_conversion_graph(
         graph,

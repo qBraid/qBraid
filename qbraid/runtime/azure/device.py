@@ -45,6 +45,10 @@ class AzureQuantumDevice(QuantumDevice):
         """Return the Azure Quantum Workspace."""
         return self._workspace
 
+    def __str__(self):
+        """String representation of the AzureQuantumDevice object."""
+        return f"{self.__class__.__name__}('{self._device.name}')"
+
     def status(self) -> qbraid.runtime.enums.DeviceStatus:
         """Return the current status of the Azure device.
 

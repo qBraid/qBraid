@@ -56,7 +56,7 @@ class BraketDevice(QuantumDevice):
         return self._device.name
 
     def __str__(self):
-        """Official string representation of QuantumDevice object."""
+        """String representation of the BraketDevice object."""
         return f"{self.__class__.__name__}('{self._provider_name} {self.name}')"
 
     def status(self) -> qbraid.runtime.DeviceStatus:

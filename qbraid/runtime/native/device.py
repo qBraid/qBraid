@@ -61,6 +61,10 @@ class QbraidDevice(QuantumDevice):
         """Return the QuantumClient object."""
         return self._client
 
+    def __str__(self):
+        """String representation of the QbraidDevice object."""
+        return f"{self.__class__.__name__}('{self.id}')"
+
     def status(self) -> qbraid.runtime.DeviceStatus:
         """Return device status."""
         device_data = self.client.get_device(self.id)
