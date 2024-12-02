@@ -37,10 +37,9 @@ graph = ConversionGraph(require_native=True)
 
 # TODO: Update Pyqasm with the definitions / fix errors of these gates
 GATES_TO_SKIP = {
-    "GPi2",
+    # "GPi2",
     "MS",
     "PRx",
-    "ZZ",
 }
 
 

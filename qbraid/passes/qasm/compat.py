@@ -105,6 +105,7 @@ def replace_gate_name(
         ("si", "sdg"),
         ("ti", "tdg"),
         ("v", "sx"),
+        ("id", "i"),
         ("vi", "sxdg"),
         ("p", "phaseshift"),
         ("cp", "cphaseshift"),

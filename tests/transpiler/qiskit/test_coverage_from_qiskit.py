@@ -33,10 +33,7 @@ AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_pack
 
 # TODO: Update Pyqasm with the definitions of these gates
 GATES_TO_SKIP = {
-    "C3SXGate",
     "C4XGate",
-    "CPhaseGate",
-    "GlobalPhaseGate",
 }
 
 qiskit_gates = get_qiskit_gates(seed=0)
