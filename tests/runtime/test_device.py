@@ -51,7 +51,7 @@ from qbraid.runtime.noise import NoiseModel, NoiseModelSet
 from qbraid.runtime.options import RuntimeOptions
 from qbraid.runtime.schemas.experiment import QuboSolveParams
 from qbraid.runtime.schemas.job import RuntimeJobModel
-from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme, ProgramConversionError
+from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme, ProgramConversionError, ConversionPathNotFoundError
 
 from ._resources import (
     DEVICE_DATA_QIR,
@@ -304,6 +304,8 @@ def test_run_forbidden_kwarg(mock_provider):
     circuit = Mock()
     provider = mock_provider
     device = provider.get_device("qbraid_qir_simulator")
+
+    device.update_scheme(conversion_graph=ConversionGraph())
 
     with pytest.raises(ValueError):
         device.run(circuit, shots=10, num_qubits=5)

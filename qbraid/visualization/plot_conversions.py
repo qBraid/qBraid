@@ -152,8 +152,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         }
 
         edgecolors = [
-            "red" if node in target_nodes else color
-            for node, color in zip(graph.nodes(), ncolors)
+            "red" if node in target_nodes else color for node, color in zip(graph.nodes(), ncolors)
         ]
 
         kwargs["edgecolors"] = edgecolors
