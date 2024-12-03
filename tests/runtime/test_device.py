@@ -51,7 +51,7 @@ from qbraid.runtime.noise import NoiseModel, NoiseModelSet
 from qbraid.runtime.options import RuntimeOptions
 from qbraid.runtime.schemas.experiment import QuboSolveParams
 from qbraid.runtime.schemas.job import RuntimeJobModel
-from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme, ProgramConversionError, ConversionPathNotFoundError
+from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme, ProgramConversionError
 
 from ._resources import (
     DEVICE_DATA_QIR,
