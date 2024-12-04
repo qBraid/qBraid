@@ -357,14 +357,17 @@ class QbraidDevice(QuantumDevice):
                 aux_payload = self._construct_aux_payload(program, program_spec)
             if transpile_option:
                 program = self.transpile(program, program_spec)
-            self.validate([program], suppress_device_warning=i != 0)
-            if native_target:
-                aux_payload = self._construct_aux_payload(program, program_spec)
-            run_input_json = self.to_ir(program)
-            self._validate_run_input_payload(run_input_json, self._target_spec)
-            runtime_payload = {**aux_payload, **run_input_json}
-            job = self.submit(run_input=runtime_payload, shots=shots, tags=tags, **kwargs)
-            jobs.append(job)
+            is_batched_output = is_single_input and isinstance(program, list)
+            program_batch = program if is_batched_output else [program]
+            self.validate(program_batch, suppress_device_warning=i != 0)
+            for program in program_batch:
+                if native_target:
+                    aux_payload = self._construct_aux_payload(program, program_spec)
+                run_input_json = self.to_ir(program)
+                self._validate_run_input_payload(run_input_json, self._target_spec)
+                runtime_payload = {**aux_payload, **run_input_json}
+                job = self.submit(run_input=runtime_payload, shots=shots, tags=tags, **kwargs)
+                jobs.append(job)
 
         return jobs[0] if is_single_input else jobs
 

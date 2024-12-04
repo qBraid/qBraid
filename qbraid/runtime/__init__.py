@@ -26,6 +26,7 @@ Data Types
     JobStatus
     NoiseModel
     NoiseModelSet
+    ValidationLevel
 
 Functions
 ------------
@@ -71,7 +72,7 @@ from typing import TYPE_CHECKING
 
 from ._display import display_jobs_from_data
 from .device import QuantumDevice
-from .enums import DeviceStatus, JobStatus
+from .enums import DeviceStatus, JobStatus, ValidationLevel
 from .exceptions import (
     DeviceProgramTypeMismatchError,
     JobStateError,
@@ -115,6 +116,7 @@ __all__ = [
     "AhsResultData",
     "AhsShotResult",
     "AnnealingResultData",
+    "ValidationLevel",
 ]
 
 _lazy = {

@@ -16,8 +16,11 @@ Unit tests for submissions to QuEra Aquila device through qBraid native runtime.
 """
 import json
 from typing import Any
+from unittest.mock import patch
 
+import numpy as np
 import pytest
+from braket.ahs.analog_hamiltonian_simulation import AnalogHamiltonianSimulation
 
 from qbraid.programs import ExperimentType
 from qbraid.runtime import AhsResultData, Result, TargetProfile
@@ -108,3 +111,72 @@ def test_get_aquila_job_result(mock_job, mock_result):
     result = mock_job.result()
     assert result.data.get_counts() == mock_result.data.get_counts()
     assert result.data.measurements == mock_result.data.measurements
+
+
+@pytest.fixture
+def bloqade_program():
+    """Create a Bloqade program batch."""
+    try:
+        # pylint: disable=import-outside-toplevel
+        from bloqade import var  # type: ignore
+        from bloqade.atom_arrangement import Square  # type: ignore
+
+        # pylint: enable=import-outside-toplevel
+
+        adiabatic_durations = [0.4, 3.2, 0.4]
+
+        max_detuning = var("max_detuning")
+        adiabatic_program = (
+            Square(3, lattice_spacing="lattice_spacing")
+            .rydberg.rabi.amplitude.uniform.piecewise_linear(
+                durations=adiabatic_durations, values=[0.0, "max_rabi", "max_rabi", 0.0]
+            )
+            .detuning.uniform.piecewise_linear(
+                durations=adiabatic_durations,
+                values=[
+                    -max_detuning,
+                    -max_detuning,
+                    max_detuning,
+                    max_detuning,
+                ],
+            )
+            .assign(max_rabi=15.8, max_detuning=16.33)
+            .batch_assign(lattice_spacing=np.arange(4.0, 7.0, 1.0))
+        )
+
+        return adiabatic_program
+    except ImportError as err:
+        pytest.skip(f"Bloqade is not installed: {err}")
+
+        return None
+
+
+def test_device_validate_calls_for_bloqade_run_input(bloqade_program, mock_device: QbraidDevice):
+    """Test that validate is called once with a list of AnalogHamiltonianSimulation."""
+    mock_device.set_options(validate=0)
+
+    with patch.object(mock_device, "validate", wraps=mock_device.validate) as mock_validate:
+        _ = mock_device.run(bloqade_program, shots=10)
+
+        mock_validate.assert_called_once()
+        args, _ = mock_validate.call_args
+        assert len(args) == 1
+
+        run_input = args[0]
+        assert isinstance(run_input, list)
+        assert len(run_input) == 3
+        assert all(isinstance(program, AnalogHamiltonianSimulation) for program in run_input)
+
+
+def test_device_to_ir_calls_for_bloqade_run_input(bloqade_program, mock_device: QbraidDevice):
+    """Test that to_ir is called three times with AnalogHamiltonianSimulation."""
+    mock_device.set_options(validate=0)
+
+    with patch.object(mock_device, "to_ir", wraps=mock_device.to_ir) as mock_to_ir:
+        _ = mock_device.run(bloqade_program, shots=10)
+
+        assert mock_to_ir.call_count == 3
+        for call_args in mock_to_ir.call_args_list:
+            args, _ = call_args
+            assert len(args) == 1
+            assert isinstance(args[0], AnalogHamiltonianSimulation)
