@@ -21,7 +21,7 @@ import pytest
 from qbraid.programs.experiment import ExperimentType
 from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.graph import ConversionGraph
-from qbraid.visualization.plot_conversions import plot_conversion_graph
+from qbraid.visualization.plot_conversions import _validate_colors, plot_conversion_graph
 
 
 @pytest.fixture
@@ -121,3 +121,31 @@ def test_plot_conversion_graph_valid_experiment_type(is_registered_alias_native)
 
     plot_conversion_graph(graph, experiment_type=ExperimentType.ANNEALING, show=False)
     is_registered_alias_native.assert_called_once_with("qubo")
+
+
+def test_validate_colors_with_custom_input():
+    """Test _validate_colors when colors is not None."""
+    custom_colors = {
+        "target_node_outline": "green",
+        "qbraid_node": "yellow",
+    }
+
+    expected_colors = {
+        "target_node_outline": "green",
+        "qbraid_node": "yellow",
+        "external_node": "lightgray",
+        "qbraid_edge": "gray",
+        "external_edge": "blue",
+        "extras_edge": "darkgrey",
+    }
+
+    result = _validate_colors(custom_colors)
+    assert result == expected_colors
+
+
+def test_validate_colors_with_unexpected_keys():
+    """Test _validate_colors raises ValueError for unexpected keys."""
+    invalid_colors = {"unexpected_key": "purple"}
+
+    with pytest.raises(ValueError, match="Unexpected keys in 'colors': {'unexpected_key'}"):
+        _validate_colors(invalid_colors)

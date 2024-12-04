@@ -71,6 +71,7 @@ def _get_path_from_bound_methods(bound_methods: list[Callable[..., Any]]) -> str
     return " -> ".join(path)
 
 
+# pylint: disable-next=too-many-public-methods
 class ConversionGraph(rx.PyDiGraph):
     """
     Class for coordinating conversions between different quantum software programs
@@ -573,6 +574,37 @@ class ConversionGraph(rx.PyDiGraph):
             edge_bias=self.edge_bias,
             nodes=self._init_nodes,
         )
+
+    def subgraph(
+        self, experiment_type: Union[ExperimentType, list[ExperimentType]]
+    ) -> "ConversionGraph":
+        """Filter the graph to include only nodes with the specified experiment type(s).
+
+        Args:
+            experiment_type (Union[ExperimentType, list[ExperimentType]]): The experiment type(s)
+
+        Returns:
+            ConversionGraph: A new ConversionGraph instance with only nodes of the
+                specified experiment type(s).
+
+        Raises:
+            ValueError: If there are no nodes with the specified experiment type(s) in the graph.
+        """
+        node_experiment_types = self.get_node_experiment_types()
+        exp_types = experiment_type if isinstance(experiment_type, list) else [experiment_type]
+        nodes = [n for n in self.nodes() if node_experiment_types[n] in exp_types]
+
+        if not nodes:
+            exp_type_names = ", ".join([exp_type.name for exp_type in exp_types])
+            raise ValueError(
+                f"No program type nodes found with experiment type(s) '{exp_type_names}'. "
+                "Use ConversionGraph.get_node_experiment_types() to inspect all experiment "
+                "type mappings in this graph."
+            )
+
+        self._init_nodes = set(nodes)
+
+        return self.copy()
 
     def __eq__(self, value: object) -> bool:
         return (

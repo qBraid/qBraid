@@ -16,6 +16,8 @@ Unit tests for defining and updating runtime conversion schemes
 import pytest
 import rustworkx as rx
 
+from qbraid.programs.spec import ProgramSpec
+from qbraid.transpiler.graph import ConversionGraph
 from qbraid.transpiler.scheme import ConversionScheme
 
 
@@ -102,3 +104,41 @@ def test_find_nodes_reachable_within_max_edges_raises_for_invalid_target(rx_grap
     with pytest.raises(ValueError) as excinfo:
         ConversionScheme.find_nodes_reachable_within_max_edges(rx_graph, ["F"], 1)
     assert "Target node 'F' not found in the graph." in str(excinfo.value)
+
+
+def test_update_graph_for_target():
+    """Test updating the conversion graph to include only nodes with paths to the target node(s)."""
+    qasm2_spec = ProgramSpec(str, alias="qasm2")
+    qasm3_spec = ProgramSpec(str, alias="qasm3")
+
+    target_spec = [qasm2_spec, qasm3_spec]
+
+    graph = ConversionGraph(include_isolated=True)
+
+    qasm_nodes = set()
+    non_qasm_nodes = set()
+    for node in graph.nodes():
+        if graph.has_path(node, qasm2_spec.alias) or graph.has_path(node, qasm3_spec.alias):
+            qasm_nodes.add(node)
+        else:
+            non_qasm_nodes.add(node)
+
+    scheme = ConversionScheme(conversion_graph=graph)
+
+    scheme.update_graph_for_target(target_spec)
+
+    updated_graph = scheme.conversion_graph
+    assert isinstance(updated_graph, ConversionGraph)
+
+    original_nodes = set(graph.nodes())
+    updated_nodes = set(updated_graph.nodes())
+    assert updated_nodes == qasm_nodes
+    assert len(updated_nodes) == len(original_nodes) - len(non_qasm_nodes)
+
+
+def test_find_nodes_reachable_within_max_edges_raises_for_negative(rx_graph):
+    """Test that an error is raised when the max_edges is negative."""
+    with pytest.raises(
+        ValueError, match="The maximum number of edges must be a non-negative integer."
+    ):
+        ConversionScheme.find_nodes_reachable_within_max_edges(rx_graph, ["A"], -1)

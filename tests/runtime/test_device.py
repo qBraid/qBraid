@@ -186,6 +186,11 @@ def test_provider_equality(mock_provider, mock_client):
     assert mock_provider != mock_client
 
 
+def test_qbraid_device_str_representation(mock_qbraid_device):
+    """Test string representation of QbraidDevice."""
+    assert str(mock_qbraid_device) == "QbraidDevice('qbraid_qir_simulator')"
+
+
 def test_qir_simulator_workflow(mock_provider, cirq_uniform):
     """Test qir simulator qbraid device job submission and result retrieval."""
     circuit = cirq_uniform(num_qubits=5)

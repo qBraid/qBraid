@@ -389,3 +389,24 @@ def test_create_graph_node_options(nodes, include_isolated, expected_nodes):
     """Test creating a conversion graph invoking different node options."""
     graph = ConversionGraph(nodes=nodes, include_isolated=include_isolated)
     assert set(graph.nodes()) == set(expected_nodes)
+
+
+def test_subgraph_by_experiment_type():
+    """Test creating a subgraph by experiment type."""
+    annealing_nodes = ["qubo"]
+    gate_model_nodes = ["qasm2", "qasm3"]
+    nodes = gate_model_nodes + annealing_nodes
+    graph = ConversionGraph(nodes=nodes, include_isolated=True)
+
+    identical_subgraph = graph.subgraph([ExperimentType.GATE_MODEL, ExperimentType.ANNEALING])
+    assert set(identical_subgraph.nodes()) == set(nodes)
+
+    gate_model_subgraph = graph.subgraph(ExperimentType.GATE_MODEL)
+    assert set(gate_model_subgraph.nodes()) == set(gate_model_nodes)
+
+    annealing_subgraph = graph.subgraph(ExperimentType.ANNEALING)
+    assert set(annealing_subgraph.nodes()) == set(annealing_nodes)
+
+    with pytest.raises(ValueError) as excinfo:
+        graph.subgraph(ExperimentType.OTHER)
+    assert "No program type nodes found with experiment type(s)" in str(excinfo.value)

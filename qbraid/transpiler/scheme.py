@@ -142,7 +142,11 @@ class ConversionScheme:
     def update_graph_for_target(self, target_spec: Union[ProgramSpec, list[ProgramSpec]]) -> None:
         """Update the conversion graph to include only nodes with paths to the target node(s), and
         remove all conversions that do not end in the target node(s)."""
-        graph = self.conversion_graph.copy() or ConversionGraph(include_isolated=True)
+        graph = (
+            self.conversion_graph.copy()
+            if self.conversion_graph
+            else ConversionGraph(include_isolated=True)
+        )
 
         target_nodes = {
             spec.alias for spec in (target_spec if isinstance(target_spec, list) else [target_spec])

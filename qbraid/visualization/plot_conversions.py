@@ -104,25 +104,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     colors = _validate_colors(colors)
 
     if experiment_type:
-        node_experiment_types = graph.get_node_experiment_types()
-        exp_types = experiment_type if isinstance(experiment_type, list) else [experiment_type]
-        nodes = [n for n in graph.nodes() if node_experiment_types[n] in exp_types]
-
-        if not nodes:
-            exp_type_names = ", ".join([exp_type.name for exp_type in exp_types])
-            raise ValueError(
-                f"No program type nodes found with experiment type(s) '{exp_type_names}'. "
-                "Use ConversionGraph.get_node_experiment_types() to inspect all experiment "
-                "type mappings in this graph."
-            )
-
-        graph = transpiler.ConversionGraph(
-            conversions=graph.conversions(),
-            require_native=graph.require_native,
-            include_isolated=graph._include_isolated,
-            edge_bias=graph.edge_bias,
-            nodes=nodes,
-        )
+        graph = graph.subgraph(experiment_type)
 
     ncolors = [
         colors["qbraid_node"] if is_registered_alias_native(node) else colors["external_node"]
@@ -197,7 +179,8 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             ("External - Edge", None, None, colors["external_edge"], "-"),
         ]
         if target_nodes:
-            legend_info.append(("Target - Node", "o", colors["target_node_outline"], "white", None))
+            target_node_info = ("Target - Node", "o", colors["target_node_outline"], "white", None)
+            legend_info.insert(0, target_node_info)
 
         legend_elements = [
             plt.Line2D(

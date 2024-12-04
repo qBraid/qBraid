@@ -455,6 +455,14 @@ def test_ionq_submit_fail():
                 device.run(circuit, shots=2)
 
 
+def test_ionq_device_str_representation():
+    """Test the string representation of an IonQDevice."""
+    profile = TargetProfile(device_id="simulator", simulator=True)
+    session = IonQSession("fake_api_key")
+    device = IonQDevice(profile, session)
+    assert str(device) == "IonQDevice('simulator')"
+
+
 @pytest.mark.parametrize("result", [{"probabilities": {"0": 0.5, "1": 0.5}}, {"shots": 100}])
 def test_get_counts_raises_value_error_for_missing_data(result):
     """Test that _get_counts raises a ValueError if shots or probabilities are missing."""
