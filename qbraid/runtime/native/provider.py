@@ -53,6 +53,7 @@ def _pyqir_to_json(program: pyqir.Module) -> dict[str, bytes]:
 def _qasm_to_json(
     program: Union[Qasm2StringType, Qasm3StringType]
 ) -> dict[str, Union[Qasm2StringType, Qasm3StringType]]:
+    # format the qasm program before dumping it
     return {"openQasm": pyqasm.dumps(pyqasm.loads(program))}
 
 

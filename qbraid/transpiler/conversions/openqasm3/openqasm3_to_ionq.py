@@ -130,9 +130,10 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
 
             if len(qubits) == 1 and isinstance(qubits[0], openqasm3.ast.Identifier):
                 reg_name = qubits[0].name
-                for qreg_name, qubit_id in program_qubits:
+                for qreg_name, reg_size in program_qubits:
                     if qreg_name == reg_name:
-                        qubit_values.append(qubit_id)
+                        qubit_values = list(range(reg_size))
+                        break
             else:
                 for qubit in qubits:
                     indices = qubit.indices

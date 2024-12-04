@@ -55,5 +55,4 @@ def qasm2_to_cirq(qasm: Qasm2StringType) -> cirq.Circuit:
             qasm_module.remove_barriers()
         return cirq_qasm_parser.QasmParser().parse(pyqasm.dumps(qasm_module)).circuit
     except cirq_qasm_import.QasmException as err:
-        print(err)
         raise QasmError from err

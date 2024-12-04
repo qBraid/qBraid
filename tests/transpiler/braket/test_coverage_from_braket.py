@@ -36,11 +36,7 @@ braket_gates = get_braket_gates(seed=0)
 graph = ConversionGraph(require_native=True)
 
 # TODO: Update Pyqasm with the definitions / fix errors of these gates
-GATES_TO_SKIP = {
-    # "GPi2",
-    "MS",
-    "PRx",
-}
+GATES_TO_SKIP = {"MS"}
 
 
 def convert_from_braket_to_x(target, gate_name):

@@ -19,7 +19,7 @@ try:
     from pytket.circuit import Circuit as TKCircuit
 
     from qbraid.interface import circuits_allclose, random_circuit
-    from qbraid.transpiler import ConversionGraph, ProgramConversionError, transpile
+    from qbraid.transpiler import ConversionGraph, transpile
 
     pytket_not_installed = False
 except ImportError:
@@ -54,8 +54,7 @@ def test_rzz_gate_from_pytket(qubits, theta):
     pytket_circuit = TKCircuit(2)
     pytket_circuit.ZZPhase(theta, *qubits)
     cirq_circuit = transpile(pytket_circuit, "cirq")
-    # TODO: fix the global phase of RZZ implementation in pyqasm
-    assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=False)
+    assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=True)
 
 
 def test_100_random_pytket():

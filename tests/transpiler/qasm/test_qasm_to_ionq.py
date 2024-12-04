@@ -37,7 +37,7 @@ def test_ionq_device_extract_gate_data():
     qasm = """
     OPENQASM 2.0;
     include "qelib1.inc";
-    qreg q[2];
+    qreg q[3];
     x q[0];
     not q[1];
     y q[0];
@@ -77,6 +77,7 @@ def test_ionq_device_extract_gate_data():
         {"gate": "h", "target": 0},
         {"gate": "h", "target": 0},
         {"gate": "h", "target": 1},
+        {"gate": "h", "target": 2},
         {"gate": "cnot", "control": 0, "target": 1},
         {"gate": "cnot", "control": 1, "target": 2},
         {"gate": "cnot", "control": 2, "target": 0},
@@ -95,33 +96,11 @@ def test_ionq_device_extract_gate_data():
         {"gate": "swap", "targets": [0, 1]},
     ]
     expected = {
-        "qubits": 2,
+        "qubits": 3,
         "circuit": gate_data,
         "gateset": GateSet.QIS.value,
         "format": InputFormat.CIRCUIT.value,
     }
-
-    actual = qasm2_to_ionq(qasm)
-
-    assert actual == expected
-
-
-@pytest.mark.skip(reason="Dependent on pyqasm issue #68")
-def test_ionq_device_extract_gate_data():
-    """Test extracting gate data from a OpenQASM 2 program."""
-    qasm = """
-    OPENQASM 2.0;
-    include "qelib1.inc";
-    qreg q[2];
-    x q[0];
-    not q[1];
-    """
-
-    gate_data = [
-        {"gate": "x", "target": 0},
-        {"gate": "x", "target": 1},
-    ]
-    expected = {"qubits": 2, "circuit": gate_data, "gateset": "qis"}
 
     actual = qasm2_to_ionq(qasm)
 

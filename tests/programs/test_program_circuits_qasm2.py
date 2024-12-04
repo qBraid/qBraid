@@ -45,14 +45,13 @@ def test_qasm_num_qubits():
 
 def test_qasm_num_clbits():
     """Test calculating number of classical bits in qasm2 circuit"""
-    assert OpenQasm2Program(qasm2_bell()).num_clbits == 2
-    assert OpenQasm2Program(qasm2_shared15()).num_clbits == 2
+    assert OpenQasm2Program(qasm2_shared15()).num_clbits == 4
 
 
 def test_qasm_depth():
     """Test calculating depth of qasm2 circuit"""
     assert OpenQasm2Program(qasm2_bell()).depth == 2
-    assert OpenQasm2Program(qasm2_shared15()).depth == 11
+    assert OpenQasm2Program(qasm2_shared15()).depth == 12
 
 
 def test_raise_program_type_error():

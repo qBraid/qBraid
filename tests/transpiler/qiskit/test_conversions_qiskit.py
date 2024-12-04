@@ -29,7 +29,6 @@ from qbraid.transpiler.conversions.qasm3 import qasm3_to_qiskit
 from qbraid.transpiler.conversions.qiskit import qiskit_to_qasm2, qiskit_to_qasm3
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.exceptions import ProgramConversionError
-from tests.transpiler.qasm.test_qasm2_to_qasm3 import _generate_valid_qasm_strings
 
 from ..cirq_utils import _equal
 
@@ -201,11 +200,7 @@ def test_rzz_gate_from_qiskit(qubits, theta):
     qiskit_circuit = QuantumCircuit(2)
     qiskit_circuit.rzz(theta, *qubits)
     cirq_circuit = transpile(qiskit_circuit, "cirq")
-    # Dependent on pyqasm gphase implementation
-    # See -
-    # https://github.com/qBraid/pyqasm/blob/cc88012f5b91d47ec52edfdf94cae340e50b1b0c/pyqasm/maps.py#L602
-    # If gphase is fixed, strict_gphase=True can be used
-    assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=False)
+    assert circuits_allclose(qiskit_circuit, cirq_circuit, strict_gphase=True)
 
 
 def test_iswap_gate_from_qiskit():
@@ -244,7 +239,7 @@ def test_qiskit_roundtrip_noncontig():
 def test_100_random_qiskit():
     """Test converting 100 random qiskit circuits to cirq."""
 
-    gates_to_skip = ["c3sqrtx"]
+    gates_to_skip = []
 
     def _circuit_contains_invalid_gate(qiskit_circuit):
         for gate in gates_to_skip:
@@ -253,9 +248,9 @@ def test_100_random_qiskit():
         return False
 
     def _generate_valid_qiskit_circuit():
-        qiskit_circuit = random_circuit(4, 1, max_operands=2)
+        qiskit_circuit = random_circuit(5, 1, max_operands=4)
         while _circuit_contains_invalid_gate(qiskit_circuit):
-            qiskit_circuit = random_circuit(4, 1, max_operands=2)
+            qiskit_circuit = random_circuit(5, 1, max_operands=4)
         return qiskit_circuit
 
     for _ in range(100):

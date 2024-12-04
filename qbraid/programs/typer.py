@@ -127,7 +127,10 @@ def get_qasm_type_alias(qasm: str) -> str:
         str: The QASM version alias ('qasm2' or 'qasm3').
 
     Raises:
-        QbraidQasmError: If the string does not represent a valid OpenQASM program.
+        `QbraidQasmError`: If the string does not represent a valid OpenQASM program.
+
+    Note:
+        `QbraidQasmError` is an alias for :exc:`QasmError`.
     """
     try:
         version = Qasm3Analyzer.extract_qasm_version(qasm)
