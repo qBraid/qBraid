@@ -15,14 +15,20 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added "new" classes to the relevant runtime module scopes ([#843](https://github.com/qBraid/qBraid/pull/843)):
+    - `qbraid.schemas`: `AhsExperimentMetadata` model, `USD` and `Credits` classes
+    - `qbraid.runtime`: `ValidationLevel` enum
+    - `qbraid.runtime.native`: Device-specific `ResultData` subclasses
 
 ### Improved / Modified
+- Made remote tests for `QbraidDevice("nec_vector_annealer")` more robust ([#843](https://github.com/qBraid/qBraid/pull/843))
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+- Resolved an issue where passing `bloqade.builder.assign.BatchAssign` to `QbraidDevice("quera_aquila")` caused the transpile step to incorrectly wrap its output list in another list, leading to errors in `QuantumDevice.validate` and `QuantumDevice.to_ir`. The native `QbraidDevice` class now adapts when the transpile input is a single object but the output is a list, properly iterating through the sub-batch for final submission. ([#843](https://github.com/qBraid/qBraid/pull/843))
 
 ### Dependencies
 
