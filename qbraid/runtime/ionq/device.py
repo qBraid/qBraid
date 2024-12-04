@@ -45,6 +45,10 @@ class IonQDevice(QuantumDevice):
         """Return the IonQ session."""
         return self._session
 
+    def __str__(self):
+        """String representation of the IonQDevice object."""
+        return f"{self.__class__.__name__}('{self.id}')"
+
     def status(self) -> qbraid.runtime.DeviceStatus:
         """Return the current status of the IonQ device."""
         device_data = self.session.get_device(self.id)

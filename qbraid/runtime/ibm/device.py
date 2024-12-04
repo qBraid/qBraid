@@ -47,8 +47,8 @@ class QiskitBackend(QuantumDevice):
         )
 
     def __str__(self):
-        """Official string representation of QuantumDevice object."""
-        return f"{self.__class__.__name__}('{self.id}')"
+        """String representation of the QiskitBackend object."""
+        return f"{self.__class__.__name__}('{self._backend.name}')"
 
     def status(self):
         """Return the status of this Device.

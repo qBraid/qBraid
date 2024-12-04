@@ -474,6 +474,11 @@ def test_azure_device_submit_batch_job(azure_device):
         azure_device.submit(["job1", "job2"], name="batch_job")
 
 
+def test_azure_device_str_representation(azure_device):
+    """Test the string representation of an AzureQuantumDevice."""
+    assert str(azure_device) == "AzureQuantumDevice('test.qpu')"
+
+
 def test_azure_job_init(mock_estimator_job, mock_job_id):
     """Test initializing an AzureQuantumJob."""
     assert mock_estimator_job.id == mock_job_id

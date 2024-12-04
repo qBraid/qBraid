@@ -20,6 +20,21 @@ Types of changes:
     - `qbraid.runtime`: `ValidationLevel` enum
     - `qbraid.runtime.native`: Device-specific `ResultData` subclasses
 
+- Added `plot_runtime_conversion_scheme` function to visualize the conversion graph and the target program types for a specific device. This enhancement clarifies which program types are available as input when submitting a quantum job to a particular device. See usage example below. ([#845](https://github.com/qBraid/qBraid/pull/845))
+
+```python
+from qbraid.runtime import QbraidProvider
+from qbraid.visualization import plot_runtime_conversion_scheme
+
+provider = QbraidProvider()
+
+device = provider.get_device("qbraid_qir_simulator")
+
+device.update_scheme(max_path_depth=1)
+
+plot_runtime_conversion_scheme(device, legend=True)
+```
+
 ### Improved / Modified
 - Made remote tests for `QbraidDevice("nec_vector_annealer")` more robust ([#843](https://github.com/qBraid/qBraid/pull/843))
 

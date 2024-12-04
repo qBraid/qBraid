@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import math
 import warnings
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Iterable, Optional, Union
 
 import rustworkx as rx
 from qbraid_core._import import LazyLoader
@@ -27,11 +27,37 @@ from qbraid.programs.registry import is_registered_alias_native
 if TYPE_CHECKING:
     import matplotlib.pyplot
 
+    import qbraid.runtime
     import qbraid.transpiler
 
 plt: matplotlib.pyplot = LazyLoader("plt", globals(), "matplotlib.pyplot")
 
 transpiler: qbraid.transpiler = LazyLoader("transpiler", globals(), "qbraid.transpiler")
+
+
+def _validate_colors(colors: Optional[dict[str, str]] = None) -> dict[str, str]:
+    """Validate and return the colors dictionary."""
+    default_colors = {
+        "target_node_outline": "red",
+        "qbraid_node": "lightblue",
+        "external_node": "lightgray",
+        "qbraid_edge": "gray",
+        "external_edge": "blue",
+        "extras_edge": "darkgrey",
+    }
+
+    if colors is None:
+        return default_colors
+
+    extra_keys = set(colors.keys()) - set(default_colors.keys())
+    if extra_keys:
+        raise ValueError(f"Unexpected keys in 'colors': {extra_keys}")
+
+    for key, value in default_colors.items():
+        if key not in colors:
+            colors[key] = value
+
+    return colors
 
 
 def plot_conversion_graph(  # pylint: disable=too-many-arguments
@@ -45,7 +71,8 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     save_path: Optional[str] = None,
     colors: Optional[dict[str, str]] = None,
     edge_labels: bool = False,
-    experiment_type: Optional[Union[ExperimentType, list[ExperimentType]]] = None,
+    experiment_type: Optional[Union[ExperimentType, Iterable[ExperimentType]]] = None,
+    target_nodes: Optional[Iterable[str]] = None,
     **kwargs,
 ) -> None:
     """
@@ -55,53 +82,29 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     Args:
         graph (ConversionGraph): The directed conversion graph to be plotted.
         title (str, optional): Title of the plot. Defaults to
-                               'qBraid Quantum Program Conversion Graph'.
+            'qBraid Quantum Program Conversion Graph'.
         legend (bool): If True, display a legend on the graph. Defaults to False.
         seed (int, optional): Seed for the node layout algorithm. Useful for consistent
-                              positioning. Defaults to None.
+            positioning. Defaults to None.
         node_size (int): Size of the nodes. Defaults to 1200.
         min_target_margin (int): Minimum target margin for edges. Defaults to 18.
         show (bool): If True, display the figure. Defaults to True.
         save_path (str, optional): Path to save the figure. If None, the figure is not saved.
-                                   Defaults to None.
-        colors (dict[str, str], optional): Dictionary for node and edge colors. Expected keys are
+            Defaults to None.
+        colors (dict[str, str], optional): Node and edge colors with keys 'target_node_outline',
             'qbraid_node', 'external_node', 'qbraid_edge', 'external_edge'. Defaults to None.
         edge_labels (bool): If True, display edge weights as labels. Defaults to False.
-        experiment_type (Union[ExperimentType, list[ExperimentType]], optional): Filter the graph
-            by experiment type. Defaults to None, meaning all experiment types are included.
+        experiment_type (Union[ExperimentType, Iterable[ExperimentType]], optional): Filter the
+            graph by experiment type. Defaults to None, meaning all experiment types are included.
+        target_nodes (Iterable[str], optional): Nodes to be outlined in the plot. Defaults to None.
 
     Returns:
         None
     """
-    if colors is None:
-        colors = {
-            "qbraid_node": "lightblue",
-            "external_node": "lightgray",
-            "qbraid_edge": "gray",
-            "external_edge": "blue",
-            "extras_edge": "red",
-        }
+    colors = _validate_colors(colors)
 
     if experiment_type:
-        node_experiment_types = graph.get_node_experiment_types()
-        exp_types = experiment_type if isinstance(experiment_type, list) else [experiment_type]
-        nodes = [n for n in graph.nodes() if node_experiment_types[n] in exp_types]
-
-        if not nodes:
-            exp_type_names = ", ".join([exp_type.name for exp_type in exp_types])
-            raise ValueError(
-                f"No program type nodes found with experiment type(s) '{exp_type_names}'. "
-                "Use ConversionGraph.get_node_experiment_types() to inspect all experiment "
-                "type mappings in this graph."
-            )
-
-        graph = transpiler.ConversionGraph(
-            conversions=graph.conversions(),
-            require_native=graph.require_native,
-            include_isolated=graph._include_isolated,
-            edge_bias=graph.edge_bias,
-            nodes=nodes,
-        )
+        graph = graph.subgraph(experiment_type)
 
     ncolors = [
         colors["qbraid_node"] if is_registered_alias_native(node) else colors["external_node"]
@@ -143,6 +146,14 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     if edge_labels:
         kwargs["edge_labels"] = lambda edge: round(edge["weight"], 2)
 
+    if target_nodes:
+        edgecolors = [
+            colors["target_node_outline"] if node in target_nodes else color
+            for node, color in zip(graph.nodes(), ncolors)
+        ]
+
+        kwargs["edgecolors"] = edgecolors
+
     mpl_draw(
         graph,
         pos,
@@ -161,12 +172,40 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
 
     if legend:
         legend_info = [
-            ("qBraid - Node", "o", colors["qbraid_node"], None),
-            ("External - Node", "o", colors["external_node"], None),
-            ("qBraid - Edge", None, colors["qbraid_edge"], "-"),
-            ("Extras - Edge", None, colors["extras_edge"], "-"),
-            ("External - Edge", None, colors["external_edge"], "-"),
+            (
+                ("Target - Node", "o", colors["target_node_outline"], "white", None)
+                if target_nodes
+                else None
+            ),
+            (
+                ("qBraid - Node", "o", None, colors["qbraid_node"], None)
+                if colors["qbraid_node"] in ncolors
+                else None
+            ),
+            (
+                ("External - Node", "o", None, colors["external_node"], None)
+                if colors["external_node"] in ncolors
+                else None
+            ),
+            (
+                ("qBraid - Edge", None, None, colors["qbraid_edge"], "-")
+                if colors["qbraid_edge"] in ecolors
+                else None
+            ),
+            (
+                ("Extras - Edge", None, None, colors["extras_edge"], "-")
+                if colors["extras_edge"] in ecolors
+                else None
+            ),
+            (
+                ("External - Edge", None, None, colors["external_edge"], "-")
+                if colors["external_edge"] in ecolors
+                else None
+            ),
         ]
+
+        legend_info = [entry for entry in legend_info if entry is not None]
+
         legend_elements = [
             plt.Line2D(
                 [0],
@@ -175,11 +214,12 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
                 color="w" if marker else color,
                 label=label,
                 markersize=10 if marker else None,
+                markeredgecolor=edgecolor if marker else None,
                 markerfacecolor=color if marker else None,
                 linestyle=linestyle,
                 linewidth=2 if linestyle else None,
             )
-            for label, marker, color, linestyle in legend_info
+            for label, marker, edgecolor, color, linestyle in legend_info
         ]
         plt.legend(handles=legend_elements, loc="best")
 
@@ -188,3 +228,38 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
 
     if save_path:
         plt.savefig(save_path)
+
+
+def plot_runtime_conversion_scheme(device: qbraid.runtime.QuantumDevice, **kwargs) -> None:
+    """
+    Plot the runtime conversion scheme for a given quantum device.
+
+    Args:
+        device (QuantumDevice): The quantum device for which to plot the conversion scheme.
+        **kwargs: Additional keyword arguments to pass to the plotting function.
+
+    Returns:
+        None
+    """
+    if device.profile.program_spec:
+        device.scheme.update_graph_for_target(device.profile.program_spec)
+
+    graph = device.scheme.conversion_graph
+    experiment_type = device.profile.experiment_type
+    target_spec = device.profile.program_spec
+
+    target_nodes = (
+        {spec.alias for spec in (target_spec if isinstance(target_spec, list) else [target_spec])}
+        if target_spec
+        else None
+    )
+
+    title = kwargs.pop("title", f"Runtime Conversion Scheme for {str(device)}")
+
+    plot_conversion_graph(
+        graph,
+        title=title,
+        experiment_type=experiment_type,
+        target_nodes=target_nodes,
+        **kwargs,
+    )
