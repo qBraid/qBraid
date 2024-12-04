@@ -172,15 +172,39 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
 
     if legend:
         legend_info = [
-            ("qBraid - Node", "o", None, colors["qbraid_node"], None),
-            ("External - Node", "o", None, colors["external_node"], None),
-            ("qBraid - Edge", None, None, colors["qbraid_edge"], "-"),
-            ("Extras - Edge", None, None, colors["extras_edge"], "-"),
-            ("External - Edge", None, None, colors["external_edge"], "-"),
+            (
+                ("Target - Node", "o", colors["target_node_outline"], "white", None)
+                if target_nodes
+                else None
+            ),
+            (
+                ("qBraid - Node", "o", None, colors["qbraid_node"], None)
+                if colors["qbraid_node"] in ncolors
+                else None
+            ),
+            (
+                ("External - Node", "o", None, colors["external_node"], None)
+                if colors["external_node"] in ncolors
+                else None
+            ),
+            (
+                ("qBraid - Edge", None, None, colors["qbraid_edge"], "-")
+                if colors["qbraid_edge"] in ecolors
+                else None
+            ),
+            (
+                ("Extras - Edge", None, None, colors["extras_edge"], "-")
+                if colors["extras_edge"] in ecolors
+                else None
+            ),
+            (
+                ("External - Edge", None, None, colors["external_edge"], "-")
+                if colors["external_edge"] in ecolors
+                else None
+            ),
         ]
-        if target_nodes:
-            target_node_info = ("Target - Node", "o", colors["target_node_outline"], "white", None)
-            legend_info.insert(0, target_node_info)
+
+        legend_info = [entry for entry in legend_info if entry is not None]
 
         legend_elements = [
             plt.Line2D(

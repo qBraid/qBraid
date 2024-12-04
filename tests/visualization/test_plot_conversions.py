@@ -108,6 +108,7 @@ def test_plot_runtime_conversion_scheme_qubo_node_target(mock_draw, mock_plt, mo
     assert isinstance(kwargs["handles"], list)
     assert len(kwargs["handles"]) == 6
 
+
 @patch("qbraid.visualization.plot_conversions.plt", autospec=True)
 def test_invoke_plot_method_from_conversion_graph(mock_plt):
     """Test that the graph is displayed when invoked via ConversionGraph.plot method."""
