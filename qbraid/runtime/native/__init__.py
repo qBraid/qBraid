@@ -28,6 +28,16 @@ Classes
     QbraidJob
     QirRunner
 
+ResultData Subclasses
+^^^^^^^^^^^^^^^^^^^^^^^
+
+.. autosummary::
+   :toctree: ../stubs/
+
+    QuEraQasmSimulatorResultData
+    QbraidQirSimulatorResultData
+    NECVectorAnnealerResultData
+
 """
 from qbraid_core import QbraidClient, QbraidSession, Session
 from qbraid_core.services.quantum.runner import QirRunner
@@ -35,6 +45,11 @@ from qbraid_core.services.quantum.runner import QirRunner
 from .device import QbraidDevice
 from .job import QbraidJob
 from .provider import QbraidProvider
+from .result import (
+    NECVectorAnnealerResultData,
+    QbraidQirSimulatorResultData,
+    QuEraQasmSimulatorResultData,
+)
 
 __all__ = [
     "Session",
@@ -44,4 +59,7 @@ __all__ = [
     "QbraidDevice",
     "QbraidJob",
     "QirRunner",
+    "QuEraQasmSimulatorResultData",
+    "QbraidQirSimulatorResultData",
+    "NECVectorAnnealerResultData",
 ]

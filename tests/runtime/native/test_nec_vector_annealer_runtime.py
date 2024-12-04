@@ -17,6 +17,7 @@ from qbraid_core import QbraidSession
 
 from qbraid import QbraidProvider
 from qbraid._logging import logger
+from qbraid.runtime.native.result import NECVectorAnnealerResultData
 from qbraid.runtime.schemas import QuboSolveParams
 
 
@@ -59,6 +60,17 @@ def test_submit_qubo_job_to_nec_vector_annealer():
 
     result = job.result()
 
-    server_auth_error = result.details["statusText"] == "Failed to authenticate with NEC server"
+    result_data = result.data
+    assert isinstance(result_data, NECVectorAnnealerResultData)
 
-    assert result.success or server_auth_error
+    if result.success:
+        assert result_data.num_solutions == len(result_data.solutions) == 1
+
+        solution = result_data.solutions[0]
+        assert isinstance(solution, dict)
+        assert {"spin", "energy"}.issubset(solution.keys())
+        assert solution["spin"] == {"s1": 0, "s2": 0, "s3": 1, "s4": 0}
+        assert solution["energy"] == 0
+
+    else:
+        assert result.details["statusText"] == "Failed to authenticate with NEC server"
