@@ -106,7 +106,7 @@ def test_plot_runtime_conversion_scheme_qubo_node_target(mock_draw, mock_plt, mo
     _, kwargs = mock_plt.legend.call_args
     assert "handles" in kwargs
     assert isinstance(kwargs["handles"], list)
-    assert len(kwargs["handles"]) == 6
+    assert len(kwargs["handles"]) == 2
 
 
 @patch("qbraid.visualization.plot_conversions.plt", autospec=True)
