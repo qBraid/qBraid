@@ -14,14 +14,22 @@ Unit tests for plotting conversion graphs
 
 """
 import warnings
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
 from qbraid.programs.experiment import ExperimentType
+from qbraid.programs.spec import ProgramSpec
+from qbraid.programs.typer import QuboCoefficientsDict
+from qbraid.runtime.native import QbraidDevice
+from qbraid.runtime.profile import TargetProfile
 from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.graph import ConversionGraph
-from qbraid.visualization.plot_conversions import _validate_colors, plot_conversion_graph
+from qbraid.visualization.plot_conversions import (
+    _validate_colors,
+    plot_conversion_graph,
+    plot_runtime_conversion_scheme,
+)
 
 
 @pytest.fixture
@@ -43,8 +51,7 @@ def mock_graph():
     return_value={"node1": (0, 0), "node2": (1, 1)},
     autospec=True,
 )
-@patch("qbraid.visualization.plot_conversions.rx.visualization.mpl_draw", autospec=True)
-def test_plot_conversion_graph_show(mock_draw, mock_layout, mock_plt, mock_graph):
+def test_plot_conversion_graph_show(mock_layout, mock_plt, mock_graph):
     """Test that the graph is displayed when show is True and not saved."""
     plot_conversion_graph(graph=mock_graph, show=True, edge_labels=True)
     mock_plt.show.assert_called_once()
@@ -53,8 +60,7 @@ def test_plot_conversion_graph_show(mock_draw, mock_layout, mock_plt, mock_graph
 
 @patch("qbraid.visualization.plot_conversions.plt", autospec=True)
 @patch("qbraid.visualization.plot_conversions.rx.spring_layout", autospec=True)
-@patch("qbraid.visualization.plot_conversions.rx.visualization.mpl_draw", autospec=True)
-def test_plot_conversion_graph_save(mock_draw, mock_layout, mock_plt, mock_graph):
+def test_plot_conversion_graph_save(mock_layout, mock_plt, mock_graph):
     """Test that the graph is saved to the correct path when specified."""
     save_path = "path/to/save/plot.png"
     plot_conversion_graph(graph=mock_graph, show=False, save_path=save_path)
@@ -62,22 +68,48 @@ def test_plot_conversion_graph_save(mock_draw, mock_layout, mock_plt, mock_graph
     mock_plt.show.assert_not_called()
 
 
+@pytest.fixture
+def mock_annealer_profile():
+    """Mock profile for testing."""
+    return TargetProfile(
+        device_id="mock_annealer",
+        simulator=True,
+        experiment_type=ExperimentType.ANNEALING,
+        num_qubits=42,
+        program_spec=ProgramSpec(QuboCoefficientsDict, alias="qubo"),
+        noise_models=None,
+    )
+
+
+@pytest.fixture
+def mock_annealer_device(mock_annealer_profile):
+    """Mock device for testing."""
+    return QbraidDevice(mock_annealer_profile, Mock())
+
+
 @patch("qbraid.visualization.plot_conversions.plt", autospec=True)
-@patch("qbraid.visualization.plot_conversions.rx.spring_layout", autospec=True)
-@patch("qbraid.visualization.plot_conversions.rx.visualization.mpl_draw", autospec=True)
-def test_plot_conversion_graph_with_custom_title_and_legend(
-    mock_draw, mock_layout, mock_plt, mock_graph
-):
-    """Test custom title and legend are set correctly."""
-    title = "Custom Graph Title"
-    plot_conversion_graph(graph=mock_graph, title=title, legend=True, show=False)
-    mock_plt.title.assert_called_once_with(title)
+@patch("qbraid.visualization.plot_conversions.mpl_draw", autospec=True)
+def test_plot_runtime_conversion_scheme_qubo_node_target(mock_draw, mock_plt, mock_annealer_device):
+    """Test plotting runtime conversion scheme for device with qubo target."""
+    plot_runtime_conversion_scheme(mock_annealer_device, legend=True, show=False)
+    mock_plt.title.assert_called_once_with(
+        "Runtime Conversion Scheme for QbraidDevice('mock_annealer')"
+    )
+    mock_draw.assert_called_once()
+    _, kwargs = mock_draw.call_args
+    assert "edgecolors" in kwargs
+    assert isinstance(kwargs["edgecolors"], list)
+    assert len(kwargs["edgecolors"]) == 1
+    assert kwargs["edgecolors"][0] == "red"
+
     mock_plt.legend.assert_called_once()
-
+    _, kwargs = mock_plt.legend.call_args
+    assert "handles" in kwargs
+    assert isinstance(kwargs["handles"], list)
+    assert len(kwargs["handles"]) == 6
 
 @patch("qbraid.visualization.plot_conversions.plt", autospec=True)
-@patch("qbraid.visualization.plot_conversions.rx.visualization.mpl_draw", autospec=True)
-def test_invoke_plot_method_from_conversion_graph(mock_draw, mock_plt):
+def test_invoke_plot_method_from_conversion_graph(mock_plt):
     """Test that the graph is displayed when invoked via ConversionGraph.plot method."""
     graph = ConversionGraph()
 
@@ -121,6 +153,16 @@ def test_plot_conversion_graph_valid_experiment_type(is_registered_alias_native)
 
     plot_conversion_graph(graph, experiment_type=ExperimentType.ANNEALING, show=False)
     is_registered_alias_native.assert_called_once_with("qubo")
+
+
+@patch("qbraid.visualization.plot_conversions.plt", autospec=True)
+@patch("qbraid.visualization.plot_conversions.rx.spring_layout", autospec=True)
+def test_plot_conversion_graph_with_custom_title_and_legend(mock_layout, mock_plt, mock_graph):
+    """Test custom title and legend are set correctly."""
+    title = "Custom Graph Title"
+    plot_conversion_graph(graph=mock_graph, title=title, legend=True, show=False)
+    mock_plt.title.assert_called_once_with(title)
+    mock_plt.legend.assert_called_once()
 
 
 def test_validate_colors_with_custom_input():
