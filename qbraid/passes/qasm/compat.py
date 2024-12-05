@@ -16,10 +16,9 @@ across various other quantum software frameworks.
 import math
 import re
 from functools import reduce
-from typing import Union
 
-from openqasm3 import dumps, parse
-from openqasm3.ast import Include, Program, QuantumGate, QuantumMeasurementStatement
+from openqasm3 import parse
+from openqasm3.ast import QuantumGate
 from openqasm3.parser import QASM3ParsingError
 
 from qbraid._logging import logger
@@ -106,6 +105,7 @@ def replace_gate_name(
         ("si", "sdg"),
         ("ti", "tdg"),
         ("v", "sx"),
+        ("id", "i"),
         ("vi", "sxdg"),
         ("p", "phaseshift"),
         ("cp", "cphaseshift"),
@@ -276,47 +276,22 @@ def declarations_to_qasm2(qasm: str) -> str:
     return qasm
 
 
-def remove_qasm_barriers(qasm_str: str) -> str:
-    """Returns a copy of the input QASM with all barriers removed.
+def rename_qasm_registers(qasm: str) -> str:
+    """Returns a copy of the input QASM with all registers renamed to 'q' and 'c'."""
 
-    Args:
-        qasm_str: QASM to remove barriers from.
-    """
-    quoted_re = r"(?:\"[^\"]*?\")"
-    statement_re = r"((?:[^;{}\"]*?" + quoted_re + r"?)*[;{}])?"
-    comment_re = r"(\n?//[^\n]*(?:\n|$))?"
-    statements_comments = re.findall(statement_re + comment_re, qasm_str)
+    def replace_top_q(m):
+        return f"qreg q[{m.group(2)}];"
 
-    lines = []
-    for statement, comment in statements_comments:
-        if re.match(r"^\s*barrier(?:(?:\s+)|(?:;))", statement) is None:
-            lines.append(statement + comment)
-    return "".join(lines)
+    qasm = re.sub(r"qreg\s+(\w+)\s*\[\s*(\d+)\s*\]\s*;", replace_top_q, qasm)
 
+    def replace_top_c(m):
+        return f"creg c[{m.group(2)}];"
 
-def remove_measurements(program: Union[Program, str]) -> str:
-    """Remove all measurement operations from the program."""
-    program = parse(program) if isinstance(program, str) else program
-    statements = [
-        statement
-        for statement in program.statements
-        if not isinstance(statement, QuantumMeasurementStatement)
-    ]
-    program_out = Program(statements=statements, version=program.version)
-    program_str = dumps(program_out)
-    if float(program.version) == 2.0:
-        program_str = declarations_to_qasm2(program_str)
-    return program_str
+    qasm = re.sub(r"creg\s+(\w+)\s*\[\s*(\d+)\s*\]\s*;", replace_top_c, qasm)
 
+    def replace_bottom_line(m):
+        return f"measure q[{m.group(2)}] -> c[{m.group(4)}];"
 
-def remove_include_statements(program: Union[Program, str]) -> str:
-    """Remove all include statements from the program."""
-    program = parse(program) if isinstance(program, str) else program
-    statements = [
-        statement for statement in program.statements if not isinstance(statement, Include)
-    ]
-    program_out = Program(statements=statements, version=program.version)
-    program_str = dumps(program_out)
-    if float(program.version) == 2.0:
-        program_str = declarations_to_qasm2(program_str)
-    return program_str
+    qasm = re.sub(r"measure\s+(\w+)\[(\d+)\]\s*->\s*(\w+)\[(\d+)\]\s*;", replace_bottom_line, qasm)
+
+    return qasm

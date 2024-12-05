@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pyqasm
 from qbraid_core._import import LazyLoader
 
 from qbraid.passes.qasm.compat import (
@@ -46,6 +47,7 @@ def transform_notation(qasm3: str) -> str:
         "sdg": "si",
         "tdg": "ti",
         "sx": "v",
+        "id": "i",
         "sxdg": "vi",
         "p": "phaseshift",
         "cp": "cphaseshift",
@@ -72,6 +74,10 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
         ProgramConversionError: If qasm to braket conversion fails
 
     """
+    module = pyqasm.loads(qasm)
+    module.unroll()
+    qasm = pyqasm.dumps(module)
+
     qasm = transform_notation(qasm)
 
     try:

@@ -40,6 +40,7 @@ Functions
 
 	load_program
 	get_program_type_alias
+    get_qasm_type_alias
 	register_program_type
 	unregister_program_type
 

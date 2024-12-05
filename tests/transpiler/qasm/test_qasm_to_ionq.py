@@ -37,7 +37,7 @@ def test_ionq_device_extract_gate_data():
     qasm = """
     OPENQASM 2.0;
     include "qelib1.inc";
-    qreg q[2];
+    qreg q[3];
     x q[0];
     not q[1];
     y q[0];
@@ -77,6 +77,7 @@ def test_ionq_device_extract_gate_data():
         {"gate": "h", "target": 0},
         {"gate": "h", "target": 0},
         {"gate": "h", "target": 1},
+        {"gate": "h", "target": 2},
         {"gate": "cnot", "control": 0, "target": 1},
         {"gate": "cnot", "control": 1, "target": 2},
         {"gate": "cnot", "control": 2, "target": 0},
@@ -95,7 +96,7 @@ def test_ionq_device_extract_gate_data():
         {"gate": "swap", "targets": [0, 1]},
     ]
     expected = {
-        "qubits": 2,
+        "qubits": 3,
         "circuit": gate_data,
         "gateset": GateSet.QIS.value,
         "format": InputFormat.CIRCUIT.value,
@@ -204,7 +205,7 @@ def ionq_native_gates_qasm() -> Qasm3StringType:
     return """
     OPENQASM 3.0;
     qubit[3] q;
-    ms(0,0) q[0], q[1];
+    ms(0,0,0) q[0], q[1];
     ms(-0.5,0.6,0.1) q[1], q[2];
     gpi(0) q[0];
     gpi2(0.2) q[1];
@@ -219,7 +220,7 @@ def ionq_native_gates_dict() -> IonQDictType:
         "gateset": GateSet.NATIVE.value,
         "qubits": 3,
         "circuit": [
-            {"gate": "ms", "targets": [0, 1], "phases": [0, 0]},
+            {"gate": "ms", "targets": [0, 1], "phases": [0, 0], "angle": 0.0},
             {"gate": "ms", "targets": [1, 2], "phases": [-0.5, 0.6], "angle": 0.1},
             {"gate": "gpi", "phase": 0, "target": 0},
             {"gate": "gpi2", "phase": 0.2, "target": 1},
@@ -254,10 +255,10 @@ def test_qasm3_to_ionq_deutch_jozsa_pyqasm_mocked(
     """Test Deutch-Jozsa conversion with mock pyqasm import and unroll."""
     mock_module = Mock()
     mock_module.unroll = Mock()
-    mock_module.unrolled_qasm = deutch_jozsa_qasm3_unrolled
-
     mock_pyqasm = Mock()
-    mock_pyqasm.load.return_value = mock_module
+    mock_pyqasm.dumps.return_value = deutch_jozsa_qasm3_unrolled
+
+    mock_pyqasm.loads.return_value = mock_module
 
     with patch.dict("sys.modules", {"pyqasm": mock_pyqasm}):
         qasm_program = deutsch_jozsa_qasm3
@@ -301,7 +302,7 @@ def test_qasm3_to_ionq_zz_native_gate():
             """
     OPENQASM 3.0;
     qubit[2] q;
-    ms(1.1,0) q[0], q[1];
+    ms(1.1,0,0) q[0], q[1];
     """,
             "Invalid phase value",
         ),
@@ -309,7 +310,7 @@ def test_qasm3_to_ionq_zz_native_gate():
             """
     OPENQASM 3.0;
     qubit[2] q;
-    ms(0,-1.5) q[0], q[1];
+    ms(0,-1.5,0) q[0], q[1];
     """,
             "Invalid phase value",
         ),
@@ -367,7 +368,7 @@ def test_qasm3_to_ionq_zz_native_gate():
     qubit[2] q;
     zz(abc) q[0], q[1];
     """,
-            "Invalid angle value",
+            "Undefined identifier abc in expression",
         ),
     ],
 )
@@ -378,6 +379,7 @@ def test_qasm3_to_ionq_invalid_params(qasm_code, error_message):
     assert error_message in str(excinfo.value)
 
 
+@pytest.mark.skip(reason="Validated in pyqasm")
 @pytest.mark.parametrize(
     "qasm_code, error_message",
     [
@@ -405,14 +407,6 @@ def test_qasm3_to_ionq_invalid_params(qasm_code, error_message):
     """,
             "Angle parameter is required",
         ),
-        (
-            """
-    OPENQASM 3.0;
-    qubit[1] q;
-    invalid_gate q[0];
-    """,
-            "Gate 'invalid_gate' not supported",
-        ),
     ],
 )
 def test_openqasm3_to_ionq_value_errors(qasm_code, error_message):
@@ -428,8 +422,8 @@ def test_qasm3_to_ionq_mixed_gate_types_raises_value_error():
     mixed_gate_qasm = """
     OPENQASM 3.0;
     qubit[2] q;
+    h q[0];
     h q[1];
-    h q[2];
     gpi(0) q[0], q[1];
     """
     with pytest.raises(ProgramConversionError) as excinfo:
@@ -450,6 +444,7 @@ def test_extract_params_index_error_caught():
     assert extract_params(statement) == []
 
 
+@pytest.mark.skip(reason="Validated in pyqasm through definition of ms gate")
 @pytest.mark.parametrize(
     "program_text",
     [
