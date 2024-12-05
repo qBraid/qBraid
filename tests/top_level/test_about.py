@@ -46,16 +46,17 @@ def test_about():
     core_dependencies = {
         "numpy": numpy.__version__,
         "openqasm3": openqasm3.__version__,
-        "pyqasm": pyqasm.__version__,
+        # TODO: Uncomment once stable release v0.1.0 is available
+        # "pyqasm": pyqasm.__version__,
         "pydantic": pydantic.__version__,
         "qbraid-core": qbraid_core.__version__,
         "rustworkx": rustworkx.__version__,
     }
 
-    dep_versions = "\n".join([f"{k}: {v}" for k, v in core_dependencies.items()])
     assert f"qbraid:\t{__version__}\n\n" in output
     assert "Core Dependencies" in output
-    assert dep_versions in output
+    for dep, version in core_dependencies.items():
+        assert f"{dep}: {version}" in output
     assert "Optional Dependencies" in output
     assert "Python:" in output
     assert "Platform:" in output
