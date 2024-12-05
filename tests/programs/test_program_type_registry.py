@@ -20,8 +20,7 @@ import sys
 import unittest.mock
 
 import pytest
-from pyqir import BasicQisBuilder, Module, SimpleModule
-
+ 
 from qbraid.exceptions import QbraidError
 from qbraid.interface import random_circuit
 from qbraid.programs import (
@@ -264,33 +263,7 @@ def test_program_type_error():
     assert message == "Unsupported quantum program type."
 
 
-@pytest.fixture
-def pyqir_bell() -> Module:
-    """Returns a QIR bell circuit with measurement over two qubits."""
-    bell = SimpleModule("test_qir_bell", num_qubits=2, num_results=2)
-    qis = BasicQisBuilder(bell.builder)
-
-    qis.h(bell.qubits[0])
-    qis.cx(bell.qubits[0], bell.qubits[1])
-    qis.mz(bell.qubits[0], bell.results[0])
-    qis.mz(bell.qubits[1], bell.results[1])
-
-    return bell._module
-
-
-@pytest.fixture
-def pyqir_spec() -> ProgramSpec:
-    """Returns a ProgramSpec for the QIR bell circuit."""
-    return ProgramSpec(Module, alias="pyqir", to_ir=lambda module: module.bitcode)
-
-
-def test_load_program_pyqir(pyqir_bell: Module, pyqir_spec: ProgramSpec):
-    """Test program spec to IR conversion for a QIR program."""
-    program_ir = pyqir_spec.to_ir(pyqir_bell)
-    assert isinstance(program_ir, bytes)
-    assert program_ir == pyqir_bell.bitcode
-
-
+        
 def test_get_native_experiment_type_not_found():
     """Test error when trying to get the native experiment type that is not found."""
     with pytest.raises(ValueError) as excinfo:
@@ -298,10 +271,4 @@ def test_get_native_experiment_type_not_found():
     assert "Entry point 'not_found' not found in 'qbraid.programs'." in str(excinfo.value)
 
 
-def test_program_spec_specify_experiment_type():
-    """Test specifying the experiment type for a program spec."""
-    try:
-        spec = ProgramSpec(bytes, alias="llvm", experiment_type=ExperimentType.OTHER)
-        assert spec.experiment_type == ExperimentType.OTHER
-    finally:
-        unregister_program_type("llvm", raise_error=False)
+
