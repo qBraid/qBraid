@@ -1,3 +1,12 @@
+# Copyright (C) 2024 qBraid
+#
+# This file is part of the qBraid-SDK
+#
+# The qBraid-SDK is free software released under the GNU General Public License v3
+# or later. You can redistribute and/or modify it under the terms of the GPL v3.
+# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#
+# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
 Unit tests for Azure Quantum runtime (remote) for QIR
@@ -5,6 +14,7 @@ Unit tests for Azure Quantum runtime (remote) for QIR
 """
 
 from __future__ import annotations
+
 import pytest
 from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 from qiskit import QuantumCircuit
@@ -13,8 +23,9 @@ from qbraid.runtime import DeviceStatus, JobStatus
 from qbraid.runtime.azure import AzureQuantumProvider
 from qbraid.transpiler.conversions.qiskit import qiskit_to_pyqir
 
-pytest.importorskip('pyqir')
+pytest.importorskip("pyqir")
 import pyqir
+
 
 @pytest.fixture
 def qir_bitcode(qiskit_circuit: QuantumCircuit) -> bytes:

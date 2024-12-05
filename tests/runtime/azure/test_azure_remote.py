@@ -31,6 +31,7 @@ pyquil = LazyLoader("pyquil", globals(), "pyquil")
 if TYPE_CHECKING:
     import pyquil as pyquil_
 
+
 @pytest.mark.remote
 def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
     """Test submitting an OpenQASM 2 string to run on the Quantinuum simulator."""
@@ -83,6 +84,7 @@ def test_submit_json_to_ionq(provider: AzureQuantumProvider):
     assert isinstance(result, Result)
     assert isinstance(result.data, GateModelResultData)
     assert result.data.get_counts() == {"000": 50, "111": 50}
+
 
 @pytest.fixture
 def pyquil_program() -> pyquil_.Program:

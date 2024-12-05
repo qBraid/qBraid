@@ -20,14 +20,13 @@ import sys
 import unittest.mock
 
 import pytest
- 
+
 from qbraid.exceptions import QbraidError
 from qbraid.interface import random_circuit
 from qbraid.programs import (
     QPROGRAM_ALIASES,
     QPROGRAM_REGISTRY,
     QPROGRAM_TYPES,
-    ExperimentType,
     ProgramSpec,
     derive_program_type_alias,
     get_program_type_alias,
@@ -263,12 +262,8 @@ def test_program_type_error():
     assert message == "Unsupported quantum program type."
 
 
-        
 def test_get_native_experiment_type_not_found():
     """Test error when trying to get the native experiment type that is not found."""
     with pytest.raises(ValueError) as excinfo:
         get_native_experiment_type("not_found")
     assert "Entry point 'not_found' not found in 'qbraid.programs'." in str(excinfo.value)
-
-
-

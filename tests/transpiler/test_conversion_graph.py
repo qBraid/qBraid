@@ -22,6 +22,7 @@ import rustworkx as rx
 
 try:
     import pyqir
+
     pyqir_installed = True
 except ImportError:
     pyqir_installed = False
@@ -140,6 +141,7 @@ def test_initialize_new_conversion():
     conversions = [Conversion("qiskit", "pyqir", qiskit_to_pyqir)]
     graph = ConversionGraph(conversions)
     assert graph.num_edges() == 1
+
 
 @pytest.mark.skipif(not pyqir_installed, reason="pyqir not installed")
 @pytest.mark.parametrize("bell_circuit", ["qiskit"], indirect=True)

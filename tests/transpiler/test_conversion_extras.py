@@ -20,6 +20,7 @@ import pytest
 
 try:
     import pyqir
+
     pyqir_installed = True
 except ImportError:
     pyqir_installed = False

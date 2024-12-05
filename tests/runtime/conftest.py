@@ -22,19 +22,19 @@ from typing import Optional
 import numpy as np
 import pytest
 
-from qbraid.programs import NATIVE_REGISTRY
-from qbraid.runtime import QbraidProvider
-
-from ._resources import DEVICE_DATA_AQUILA, DEVICE_DATA_QIR, DEVICE_DATA_QUERA_QASM, MockClient
-import numpy as np
-import pytest
-from qbraid.programs import ExperimentType
+from qbraid.programs import NATIVE_REGISTRY, ExperimentType
 from qbraid.runtime import TargetProfile
 from qbraid.runtime.native import QbraidDevice, QbraidProvider
 from qbraid.runtime.noise import NoiseModelSet
 from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme
 
-from ._resources import DEVICE_DATA_QIR, MockDevice
+from ._resources import (
+    DEVICE_DATA_AQUILA,
+    DEVICE_DATA_QIR,
+    DEVICE_DATA_QUERA_QASM,
+    MockClient,
+    MockDevice,
+)
 
 
 def _braket_circuit(meas=True):
@@ -213,10 +213,12 @@ def mock_qbraid_device(mock_profile, mock_scheme, mock_client):
     """Mock QbraidDevice for testing."""
     return QbraidDevice(profile=mock_profile, client=mock_client, scheme=mock_scheme)
 
+
 @pytest.fixture
 def mock_basic_device(mock_profile):
     """Generic mock device for testing."""
     return MockDevice(profile=mock_profile)
+
 
 def uniform_state_circuit(num_qubits: Optional[int] = None, measure: Optional[bool] = True):
     """

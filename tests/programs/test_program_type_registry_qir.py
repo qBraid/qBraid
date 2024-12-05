@@ -1,35 +1,28 @@
+# Copyright (C) 2024 qBraid
+#
+# This file is part of the qBraid-SDK
+#
+# The qBraid-SDK is free software released under the GNU General Public License v3
+# or later. You can redistribute and/or modify it under the terms of the GPL v3.
+# See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
+#
+# THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
 Unit test for quantum program registry for QIR
 
 """
-import random
-import string
-import sys
-import unittest.mock
 
 import pytest
- 
-from qbraid.exceptions import QbraidError
-from qbraid.interface import random_circuit
+
+pytest.importorskip("pyqir")
+from pyqir import BasicQisBuilder, Module, SimpleModule
+
 from qbraid.programs import (
-    QPROGRAM_ALIASES,
-    QPROGRAM_REGISTRY,
-    QPROGRAM_TYPES,
     ExperimentType,
     ProgramSpec,
-    derive_program_type_alias,
-    get_program_type_alias,
-    load_program,
-    register_program_type,
     unregister_program_type,
 )
-from qbraid.programs.exceptions import ProgramTypeError
-from qbraid.programs.registry import get_native_experiment_type, is_registered_alias_native
-from qbraid.programs.typer import IonQDict
-
-pyqir = pytest.importorskip('pyqir')
-from pyqir import BasicQisBuilder, Module, SimpleModule
 
 @pytest.fixture
 def pyqir_bell() -> Module:
@@ -44,16 +37,19 @@ def pyqir_bell() -> Module:
 
     return bell._module
 
+
 @pytest.fixture
 def pyqir_spec() -> ProgramSpec:
     """Returns a ProgramSpec for the QIR bell circuit."""
     return ProgramSpec(Module, alias="pyqir", to_ir=lambda module: module.bitcode)
+
 
 def test_load_program_pyqir(pyqir_bell: Module, pyqir_spec: ProgramSpec):
     """Test program spec to IR conversion for a QIR program."""
     program_ir = pyqir_spec.to_ir(pyqir_bell)
     assert isinstance(program_ir, bytes)
     assert program_ir == pyqir_bell.bitcode
+
 
 def test_program_spec_specify_experiment_type():
     """Test specifying the experiment type for a program spec."""

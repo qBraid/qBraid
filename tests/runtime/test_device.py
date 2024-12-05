@@ -26,8 +26,6 @@ import cirq
 import numpy as np
 import pytest
 from pandas import DataFrame
-
-
 from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
 from qbraid._caching import cache_disabled
@@ -48,7 +46,7 @@ from qbraid.runtime.native.result import (
     QbraidQirSimulatorResultData,
     QuEraQasmSimulatorResultData,
 )
-from qbraid.runtime.noise import NoiseModel, NoiseModelSet
+from qbraid.runtime.noise import NoiseModel
 from qbraid.runtime.options import RuntimeOptions
 from qbraid.runtime.schemas.experiment import QuboSolveParams
 from qbraid.runtime.schemas.job import RuntimeJobModel
@@ -87,6 +85,7 @@ def mock_nec_va_profile():
         program_spec=QbraidProvider._get_program_spec("qubo", "nec_vector_annealer"),
     )
 
+
 @pytest.fixture
 def mock_scheme():
     """Mock conversion scheme for testing."""
@@ -107,8 +106,6 @@ def mock_qbraid_device(mock_profile, mock_scheme, mock_client):
 def mock_quera_device(mock_quera_profile, mock_client):
     """Mock QuEra simulator device for testing."""
     return QbraidDevice(profile=mock_quera_profile, client=mock_client)
-
-
 
 
 @pytest.fixture
