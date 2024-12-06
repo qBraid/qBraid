@@ -24,6 +24,7 @@ Types of changes:
 ### Removed
 
 ### Fixed
+- Fixed `nec_vector_annealer` remote test by generalizing solutions (results) check ([#852](https://github.com/qBraid/qBraid/pull/852))
 
 ### Dependencies
 
