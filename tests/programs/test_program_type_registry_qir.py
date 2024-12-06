@@ -12,6 +12,7 @@
 Unit test for quantum program registry for QIR
 
 """
+from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
@@ -20,13 +21,13 @@ import pytest
 from qbraid.programs import ExperimentType, ProgramSpec, unregister_program_type
 
 if TYPE_CHECKING:
+    import pyqir
     from pyqir import Module
 
 pyqir = pytest.importorskip("pyqir")
 
 
 @pytest.fixture
-# pylint: disable-next=used-before-assignment
 def pyqir_bell() -> Module:
     """Returns a QIR bell circuit with measurement over two qubits."""
     bell = pyqir.SimpleModule("test_qir_bell", num_qubits=2, num_results=2)
@@ -46,7 +47,6 @@ def pyqir_spec() -> ProgramSpec:
     return ProgramSpec(pyqir.Module, alias="pyqir", to_ir=lambda module: module.bitcode)
 
 
-# pylint: disable-next=used-before-assignment
 def test_load_program_pyqir(pyqir_bell: Module, pyqir_spec: ProgramSpec):
     """Test program spec to IR conversion for a QIR program."""
     program_ir = pyqir_spec.to_ir(pyqir_bell)

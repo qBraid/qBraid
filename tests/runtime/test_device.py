@@ -159,6 +159,7 @@ def test_qbraid_device_str_representation(mock_qbraid_device):
     assert str(mock_qbraid_device) == "QbraidDevice('qbraid_qir_simulator')"
 
 
+@pytest.mark.skipif(importlib.util.find_spec("pyqir") is None, reason="pyqir is not installed")
 def test_qir_simulator_workflow(mock_provider, cirq_uniform):
     """Test qir simulator qbraid device job submission and result retrieval."""
     circuit = cirq_uniform(num_qubits=5)
@@ -272,6 +273,7 @@ def test_nec_vector_annealer_workflow(mock_provider):
     assert result.data._solutions == RESULTS_DATA_NEC["solutions"]
 
 
+@pytest.mark.skipif(importlib.util.find_spec("pyqir") is None, reason="pyqir is not installed")
 def test_run_forbidden_kwarg(mock_provider):
     """Test that invoking run method with forbidden kwarg raises value error."""
     circuit = Mock()

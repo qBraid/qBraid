@@ -15,6 +15,8 @@ Unit tests for Azure Quantum runtime (remote) for QIR
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 from qiskit import QuantumCircuit
@@ -23,8 +25,10 @@ from qbraid.runtime import DeviceStatus, JobStatus
 from qbraid.runtime.azure import AzureQuantumProvider
 from qbraid.transpiler.conversions.qiskit import qiskit_to_pyqir
 
-pytest.importorskip("pyqir")
-import pyqir
+if TYPE_CHECKING:
+    import pyqir
+
+pyqir = pytest.importorskip("pyqir")
 
 
 @pytest.fixture

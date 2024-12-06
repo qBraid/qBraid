@@ -13,6 +13,7 @@ Unit tests for QbraidDevice, QbraidJob, and QbraidGateModelResultBuilder
 classes using the qbraid_qir_simulator
 
 """
+from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
@@ -21,13 +22,13 @@ import pytest
 from ._resources import MockDevice
 
 if TYPE_CHECKING:
+    import pyqir
     from pyqir import Module
 
 pyqir = pytest.importorskip("pyqir")
 
 
 @pytest.fixture
-# pylint: disable-next=used-before-assignment
 def pyqir_module() -> Module:
     """Returns a one-qubit PyQIR module with Hadamard gate and measurement."""
     bell = pyqir.SimpleModule("test_qir_program", num_qubits=1, num_results=1)
@@ -39,12 +40,11 @@ def pyqir_module() -> Module:
     return bell._module
 
 
-def test_device_transform(pyqir_module, mock_qbraid_device):
+def test_device_transform(pyqir_module: Module, mock_qbraid_device):
     """Test transform method on OpenQASM 2 string."""
     assert mock_qbraid_device.to_ir(pyqir_module) == {"bitcode": pyqir_module.bitcode}
 
 
-# pylint: disable-next=used-before-assignment
 def test_transform_to_ir_from_spec(mock_basic_device: MockDevice, pyqir_module: Module):
     """Test transforming to run input to given IR from target profile program spec."""
     run_input_transformed = mock_basic_device.transform(pyqir_module)
