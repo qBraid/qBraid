@@ -17,6 +17,7 @@ Types of changes:
 ### Added
 
 ### Improved / Modified
+- Unit tests that require the `pyqir` dependency are now automatically skipped if pyqir is not installed. ([#846](https://github.com/qBraid/qBraid/pull/846))
 
 ### Deprecated
 

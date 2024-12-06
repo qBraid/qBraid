@@ -57,6 +57,10 @@ authors:
   - given-names: Pranet
     family-names: Sharma
     affiliation: Yale University
+  - given-names: Alvan
+    family-names: Arulandu
+    affiliation: Harvard University
+    orcid: https://orcid.org/0009-0000-0071-348X
   - given-names: Kanav
     family-names: Setia
     affiliation: qBraid Co.

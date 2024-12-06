@@ -17,16 +17,10 @@ Unit tests for Azure Quantum runtime (remote)
 from __future__ import annotations
 
 import os
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
-import pyqir
 import pytest
-from azure.identity import ClientSecretCredential
-from azure.quantum import Workspace
-from azure.quantum._constants import ConnectionConstants, EnvironmentVariables
-from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 from qbraid_core._import import LazyLoader
-from qiskit import QuantumCircuit
 
 from qbraid.runtime import DeviceStatus, GateModelResultData, JobStatus, Result
 from qbraid.runtime.azure import AzureQuantumProvider
@@ -36,49 +30,6 @@ pyquil = LazyLoader("pyquil", globals(), "pyquil")
 
 if TYPE_CHECKING:
     import pyquil as pyquil_
-
-
-@pytest.fixture
-def credential() -> Optional[ClientSecretCredential]:
-    """Fixture for Azure client secret credential."""
-    tenant_id = os.getenv(EnvironmentVariables.AZURE_TENANT_ID)
-    client_id = os.getenv(EnvironmentVariables.AZURE_CLIENT_ID)
-    client_secret = os.getenv(EnvironmentVariables.AZURE_CLIENT_SECRET)
-    if client_id and tenant_id and client_secret:
-        return ClientSecretCredential(
-            tenant_id=tenant_id, client_id=client_id, client_secret=client_secret
-        )
-    return None
-
-
-@pytest.fixture
-def resource_id() -> Optional[str]:
-    """Fixture for Azure Quantum resource ID."""
-    subscription_id = os.getenv(EnvironmentVariables.QUANTUM_SUBSCRIPTION_ID)
-    resource_group = os.getenv(EnvironmentVariables.QUANTUM_RESOURCE_GROUP, "AzureQuantum")
-    workspace_name = os.getenv(EnvironmentVariables.WORKSPACE_NAME)
-    if subscription_id and resource_group and workspace_name:
-        return ConnectionConstants.VALID_RESOURCE_ID(
-            subscription_id=subscription_id,
-            resource_group=resource_group,
-            workspace_name=workspace_name,
-        )
-    return None
-
-
-@pytest.fixture
-def workspace(
-    credential: Optional[ClientSecretCredential], resource_id: Optional[str]
-) -> Workspace:
-    """Fixture for Azure Quantum workspace."""
-    location = os.getenv(EnvironmentVariables.QUANTUM_LOCATION, "eastus")
-    return Workspace(resource_id=resource_id, location=location, credential=credential)
-
-
-@pytest.fixture
-def provider(workspace: Workspace) -> AzureQuantumProvider:
-    """Fixture for AzureQuantumProvider."""
-    return AzureQuantumProvider(workspace)
 
 
 @pytest.mark.remote
@@ -133,50 +84,6 @@ def test_submit_json_to_ionq(provider: AzureQuantumProvider):
     assert isinstance(result, Result)
     assert isinstance(result.data, GateModelResultData)
     assert result.data.get_counts() == {"000": 50, "111": 50}
-
-
-@pytest.fixture
-def qiskit_circuit() -> QuantumCircuit:
-    """Fixture for a Qiskit quantum circuit."""
-    circuit = QuantumCircuit(3, 3)
-    circuit.name = "main"
-    circuit.h(0)
-    circuit.cx(0, 1)
-    circuit.cx(1, 2)
-    circuit.measure([0, 1, 2], [0, 1, 2])
-
-    return circuit
-
-
-@pytest.fixture
-def qir_bitcode(qiskit_circuit: QuantumCircuit) -> bytes:
-    """Fixture for QIR bitcode from a Qiskit quantum circuit."""
-    module: pyqir.Module = qiskit_to_pyqir(qiskit_circuit)
-    return module.bitcode
-
-
-@pytest.mark.remote
-@pytest.mark.parametrize("direct", [(True), (False)])
-def test_submit_qir_to_microsoft(
-    provider: AzureQuantumProvider, qiskit_circuit: QuantumCircuit, qir_bitcode: bytes, direct: bool
-):
-    """Test submitting Qiskit circuit or QIR bitcode to run on the Microsoft resource estimator."""
-    device = provider.get_device("microsoft.estimator")
-    assert device.status() == DeviceStatus.ONLINE
-
-    input_params = {"entryPoint": qiskit_circuit.name, "arguments": [], "count": 100}
-
-    if direct:
-        job = device.submit(qir_bitcode, input_params=input_params)
-    else:
-        job = device.run(qiskit_circuit, input_params=input_params)
-
-    job.wait_for_final_state()
-
-    assert job.status() == JobStatus.COMPLETED
-
-    result = job.result()
-    assert isinstance(result, MicrosoftEstimatorResult)
 
 
 @pytest.fixture

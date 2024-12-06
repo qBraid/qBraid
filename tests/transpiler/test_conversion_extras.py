@@ -17,7 +17,13 @@ from typing import Callable
 
 import braket.circuits
 import pytest
-from pyqir import Module
+
+try:
+    import pyqir
+
+    pyqir_installed = True
+except ImportError:
+    pyqir_installed = False
 
 from qbraid.transpiler.conversions.qiskit import qiskit_to_braket, qiskit_to_pyqir
 from qbraid.transpiler.converter import transpile
@@ -51,6 +57,7 @@ def test_qiskit_to_braket_extra(bell_circuit):
 
 
 @pytest.mark.skipif(not has_extra(qiskit_to_pyqir), reason="Extra not installed")
+@pytest.mark.skipif(not pyqir_installed, reason="pyqir not installed")
 @pytest.mark.parametrize("bell_circuit", ["qiskit"], indirect=True)
 def test_qiskit_to_pyqir_extra(bell_circuit):
     """Test qiskit-qir transpiler conversion extra."""
@@ -58,4 +65,4 @@ def test_qiskit_to_pyqir_extra(bell_circuit):
     conversions = [Conversion("qiskit", "pyqir", qiskit_to_pyqir)]
     graph = ConversionGraph(conversions)
     program = transpile(qiskit_circuit, "pyqir", conversion_graph=graph, max_path_depth=1)
-    assert isinstance(program, Module)
+    assert isinstance(program, pyqir.Module)
