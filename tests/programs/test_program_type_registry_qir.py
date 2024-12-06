@@ -13,21 +13,24 @@ Unit test for quantum program registry for QIR
 
 """
 
-import pytest
-from pyqir import BasicQisBuilder, Module, SimpleModule
-from qbraid.programs import (
-    ExperimentType,
-    ProgramSpec,
-    unregister_program_type,
-)
+from typing import TYPE_CHECKING
 
-pytest.importorskip("pyqir")
+import pytest
+
+from qbraid.programs import ExperimentType, ProgramSpec, unregister_program_type
+
+if TYPE_CHECKING:
+    from pyqir import Module
+
+pyqir = pytest.importorskip("pyqir")
+
 
 @pytest.fixture
+# pylint: disable-next=used-before-assignment
 def pyqir_bell() -> Module:
     """Returns a QIR bell circuit with measurement over two qubits."""
-    bell = SimpleModule("test_qir_bell", num_qubits=2, num_results=2)
-    qis = BasicQisBuilder(bell.builder)
+    bell = pyqir.SimpleModule("test_qir_bell", num_qubits=2, num_results=2)
+    qis = pyqir.BasicQisBuilder(bell.builder)
 
     qis.h(bell.qubits[0])
     qis.cx(bell.qubits[0], bell.qubits[1])
@@ -40,9 +43,10 @@ def pyqir_bell() -> Module:
 @pytest.fixture
 def pyqir_spec() -> ProgramSpec:
     """Returns a ProgramSpec for the QIR bell circuit."""
-    return ProgramSpec(Module, alias="pyqir", to_ir=lambda module: module.bitcode)
+    return ProgramSpec(pyqir.Module, alias="pyqir", to_ir=lambda module: module.bitcode)
 
 
+# pylint: disable-next=used-before-assignment
 def test_load_program_pyqir(pyqir_bell: Module, pyqir_spec: ProgramSpec):
     """Test program spec to IR conversion for a QIR program."""
     program_ir = pyqir_spec.to_ir(pyqir_bell)

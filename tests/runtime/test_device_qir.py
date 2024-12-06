@@ -13,17 +13,25 @@ Unit tests for QbraidDevice, QbraidJob, and QbraidGateModelResultBuilder
 classes using the qbraid_qir_simulator
 
 """
+
+from typing import TYPE_CHECKING
+
 import pytest
-from pyqir import BasicQisBuilder, Module, SimpleModule
+
 from ._resources import MockDevice
 
-pytest.importorskip("pyqir")
+if TYPE_CHECKING:
+    from pyqir import Module
+
+pyqir = pytest.importorskip("pyqir")
+
 
 @pytest.fixture
+# pylint: disable-next=used-before-assignment
 def pyqir_module() -> Module:
     """Returns a one-qubit PyQIR module with Hadamard gate and measurement."""
-    bell = SimpleModule("test_qir_program", num_qubits=1, num_results=1)
-    qis = BasicQisBuilder(bell.builder)
+    bell = pyqir.SimpleModule("test_qir_program", num_qubits=1, num_results=1)
+    qis = pyqir.BasicQisBuilder(bell.builder)
 
     qis.h(bell.qubits[0])
     qis.mz(bell.qubits[0], bell.results[0])
@@ -36,6 +44,7 @@ def test_device_transform(pyqir_module, mock_qbraid_device):
     assert mock_qbraid_device.to_ir(pyqir_module) == {"bitcode": pyqir_module.bitcode}
 
 
+# pylint: disable-next=used-before-assignment
 def test_transform_to_ir_from_spec(mock_basic_device: MockDevice, pyqir_module: Module):
     """Test transforming to run input to given IR from target profile program spec."""
     run_input_transformed = mock_basic_device.transform(pyqir_module)
@@ -46,4 +55,4 @@ def test_transform_to_ir_from_spec(mock_basic_device: MockDevice, pyqir_module: 
     mock_basic_device._target_spec = None
     run_input_transformed = mock_basic_device.transform(pyqir_module)
     run_input_ir = mock_basic_device.to_ir(run_input_transformed)
-    assert isinstance(run_input_ir, Module)
+    assert isinstance(run_input_ir, pyqir.Module)
