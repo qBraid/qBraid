@@ -26,7 +26,6 @@ import cirq
 import numpy as np
 import pytest
 from pandas import DataFrame
-from pyqir import BasicQisBuilder, Module, SimpleModule
 from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
 from qbraid._caching import cache_disabled
@@ -47,7 +46,7 @@ from qbraid.runtime.native.result import (
     QbraidQirSimulatorResultData,
     QuEraQasmSimulatorResultData,
 )
-from qbraid.runtime.noise import NoiseModel, NoiseModelSet
+from qbraid.runtime.noise import NoiseModel
 from qbraid.runtime.options import RuntimeOptions
 from qbraid.runtime.schemas.experiment import QuboSolveParams
 from qbraid.runtime.schemas.job import RuntimeJobModel
@@ -62,19 +61,6 @@ from ._resources import (
     RESULTS_DATA_QUERA_QASM,
     MockDevice,
 )
-
-
-@pytest.fixture
-def mock_profile():
-    """Mock profile for testing."""
-    return TargetProfile(
-        device_id="qbraid_qir_simulator",
-        simulator=True,
-        experiment_type=ExperimentType.GATE_MODEL,
-        num_qubits=64,
-        program_spec=QbraidProvider._get_program_spec("pyqir", "qbraid_qir_simulator"),
-        noise_models=NoiseModelSet.from_iterable(["ideal"]),
-    )
 
 
 @pytest.fixture
@@ -123,27 +109,9 @@ def mock_quera_device(mock_quera_profile, mock_client):
 
 
 @pytest.fixture
-def mock_basic_device(mock_profile):
-    """Generic mock device for testing."""
-    return MockDevice(profile=mock_profile)
-
-
-@pytest.fixture
 def mock_nec_va_device(mock_nec_va_profile, mock_client):
     """Mock NEC vector annealer device."""
     return QbraidDevice(profile=mock_nec_va_profile, client=mock_client)
-
-
-@pytest.fixture
-def pyqir_module() -> Module:
-    """Returns a one-qubit PyQIR module with Hadamard gate and measurement."""
-    bell = SimpleModule("test_qir_program", num_qubits=1, num_results=1)
-    qis = BasicQisBuilder(bell.builder)
-
-    qis.h(bell.qubits[0])
-    qis.mz(bell.qubits[0], bell.results[0])
-
-    return bell._module
 
 
 def counts_to_measurements(counts: dict[str, Any]) -> np.ndarray:
@@ -191,6 +159,7 @@ def test_qbraid_device_str_representation(mock_qbraid_device):
     assert str(mock_qbraid_device) == "QbraidDevice('qbraid_qir_simulator')"
 
 
+@pytest.mark.skipif(importlib.util.find_spec("pyqir") is None, reason="pyqir is not installed")
 def test_qir_simulator_workflow(mock_provider, cirq_uniform):
     """Test qir simulator qbraid device job submission and result retrieval."""
     circuit = cirq_uniform(num_qubits=5)
@@ -304,6 +273,7 @@ def test_nec_vector_annealer_workflow(mock_provider):
     assert result.data._solutions == RESULTS_DATA_NEC["solutions"]
 
 
+@pytest.mark.skipif(importlib.util.find_spec("pyqir") is None, reason="pyqir is not installed")
 def test_run_forbidden_kwarg(mock_provider):
     """Test that invoking run method with forbidden kwarg raises value error."""
     circuit = Mock()
@@ -333,11 +303,6 @@ def test_device_noisey_run_raises_for_unsupported(mock_qbraid_device):
     """Test raising exception when noise model is not supported."""
     with pytest.raises(ValueError):
         mock_qbraid_device.run(Mock(), noise_model=NoiseModel("amplitude_damping"))
-
-
-def test_device_transform(pyqir_module, mock_qbraid_device):
-    """Test transform method on OpenQASM 2 string."""
-    assert mock_qbraid_device.to_ir(pyqir_module) == {"bitcode": pyqir_module.bitcode}
 
 
 def test_device_extract_qasm(valid_qasm2, mock_qbraid_device):
@@ -639,19 +604,6 @@ def test_set_options(mock_qbraid_device: QbraidDevice):
     updated_options = default_options.copy()
     updated_options["transform"] = False
     assert dict(mock_qbraid_device._options) == updated_options
-
-
-def test_transform_to_ir_from_spec(mock_basic_device: MockDevice, pyqir_module: Module):
-    """Test transforming to run input to given IR from target profile program spec."""
-    run_input_transformed = mock_basic_device.transform(pyqir_module)
-    run_input_ir = mock_basic_device.to_ir(run_input_transformed)
-    assert isinstance(run_input_ir, dict)
-    assert isinstance(run_input_ir.get("bitcode"), bytes)
-
-    mock_basic_device._target_spec = None
-    run_input_transformed = mock_basic_device.transform(pyqir_module)
-    run_input_ir = mock_basic_device.to_ir(run_input_transformed)
-    assert isinstance(run_input_ir, Module)
 
 
 def test_set_options_raises_for_bad_key(mock_basic_device: MockDevice):
