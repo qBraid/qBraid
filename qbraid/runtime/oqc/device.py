@@ -85,6 +85,10 @@ class OQCDevice(QuantumDevice):
         """Returns the client for the device."""
         return self._client
 
+    def __str__(self):
+        """String representation of the OQCDevice object."""
+        return f"{self.__class__.__name__}('{self.profile.device_name}')"
+
     def queue_depth(self) -> int:
         """Returns the number of tasks in the queue for the device."""
         try:

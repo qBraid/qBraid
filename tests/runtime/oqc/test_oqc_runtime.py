@@ -388,6 +388,11 @@ def oqc_job_failed(oqc_client, oqc_device):
     return OQCJob("failed_job_id", client=oqc_client, device=oqc_device)
 
 
+def test_oqc_device_str_representation(oqc_device):
+    """Test the string representation of an OQC device."""
+    assert str(oqc_device) == f"OQCDevice('Lucy Simulator')"
+
+
 def test_oqc_provider_get_devices(lucy_sim_data, toshiko_data):
     """Test getting all OQC devices."""
     with patch("qbraid.runtime.oqc.provider.OQCClient") as mock_client:

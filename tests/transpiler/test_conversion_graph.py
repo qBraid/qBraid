@@ -37,7 +37,7 @@ from qbraid.transpiler.conversions.qiskit import qiskit_to_pyqir
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.exceptions import ConversionPathNotFoundError
-from qbraid.transpiler.graph import ConversionGraph
+from qbraid.transpiler.graph import ConversionGraph, _get_path_from_bound_methods
 
 
 @pytest.fixture
@@ -199,20 +199,20 @@ def test_get_path_from_bound_method():
     )
     bound_method = edge_data["func"]
     bound_method_list = [bound_method]
-    path = ConversionGraph._get_path_from_bound_methods(bound_method_list)
+    path = _get_path_from_bound_methods(bound_method_list)
     assert path == "cirq -> qasm2"
 
 
 def test_raise_index_error_bound_methods_empty():
     """Test raising ValueError when bound_methods is empty."""
     with pytest.raises(IndexError):
-        ConversionGraph._get_path_from_bound_methods([])
+        _get_path_from_bound_methods([])
 
 
 def test_attr_error_bound_method_no_source_target():
     """Test raising AttributeError when bound_methods has no source or target."""
     with pytest.raises(AttributeError):
-        ConversionGraph._get_path_from_bound_methods([Mock()])
+        _get_path_from_bound_methods([Mock()])
 
 
 def test_shortest_path(mock_graph):
@@ -269,7 +269,7 @@ def test_raise_attribute_error_no_source():
 
     """
     with pytest.raises(AttributeError):
-        ConversionGraph._get_path_from_bound_methods([lambda x: x])
+        _get_path_from_bound_methods([lambda x: x])
 
 
 def test_has_path_does_not_exist():
@@ -302,7 +302,7 @@ def test_get_path_from_bound_methods_attribute_error():
         patch.object(type(func), "target", new_callable=PropertyMock, side_effect=AttributeError),
     ):
         with pytest.raises(AttributeError) as excinfo:
-            graph._get_path_from_bound_methods([data["func"]])
+            _get_path_from_bound_methods([data["func"]])
 
         assert "Bound method instance lacks 'source' or 'target' attributes." in str(excinfo.value)
 
@@ -396,3 +396,24 @@ def test_create_graph_node_options(nodes, include_isolated, expected_nodes):
     """Test creating a conversion graph invoking different node options."""
     graph = ConversionGraph(nodes=nodes, include_isolated=include_isolated)
     assert set(graph.nodes()) == set(expected_nodes)
+
+
+def test_subgraph_by_experiment_type():
+    """Test creating a subgraph by experiment type."""
+    annealing_nodes = ["qubo"]
+    gate_model_nodes = ["qasm2", "qasm3"]
+    nodes = gate_model_nodes + annealing_nodes
+    graph = ConversionGraph(nodes=nodes, include_isolated=True)
+
+    identical_subgraph = graph.subgraph([ExperimentType.GATE_MODEL, ExperimentType.ANNEALING])
+    assert set(identical_subgraph.nodes()) == set(nodes)
+
+    gate_model_subgraph = graph.subgraph(ExperimentType.GATE_MODEL)
+    assert set(gate_model_subgraph.nodes()) == set(gate_model_nodes)
+
+    annealing_subgraph = graph.subgraph(ExperimentType.ANNEALING)
+    assert set(annealing_subgraph.nodes()) == set(annealing_nodes)
+
+    with pytest.raises(ValueError) as excinfo:
+        graph.subgraph(ExperimentType.OTHER)
+    assert "No program type nodes found with experiment type(s)" in str(excinfo.value)

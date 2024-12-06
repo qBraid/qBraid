@@ -13,7 +13,7 @@ Module defining qBraid runtime schemas.
 
 .. currentmodule:: qbraid.runtime.schemas
 
-Classes
+Models
 --------
 
 .. autosummary::
@@ -24,6 +24,7 @@ Classes
     DevicePricing
     DeviceData
     ExperimentMetadata
+    AhsExperimentMetadata
     AnnealingExperimentMetadata
     GateModelExperimentMetadata
     QuEraQasmSimulationMetadata
@@ -32,8 +33,17 @@ Classes
     RuntimeJobModel
     QuboSolveParams
 
+Classes
+---------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+    Credits
+    USD
+
 """
-from .base import QbraidSchemaBase, QbraidSchemaHeader
+from .base import USD, Credits, QbraidSchemaBase, QbraidSchemaHeader
 from .device import DeviceData, DevicePricing
 from .experiment import (
     AhsExperimentMetadata,
@@ -51,13 +61,15 @@ __all__ = [
     "QbraidSchemaHeader",
     "DevicePricing",
     "DeviceData",
-    "ExperimentMetadata",
-    "AnnealingExperimentMetadata",
-    "GateModelExperimentMetadata",
-    "QuEraQasmSimulationMetadata",
-    "QbraidQirSimulationMetadata",
     "AhsExperimentMetadata",
-    "TimeStamps",
-    "RuntimeJobModel",
+    "AnnealingExperimentMetadata",
+    "ExperimentMetadata",
+    "GateModelExperimentMetadata",
+    "QbraidQirSimulationMetadata",
     "QuboSolveParams",
+    "QuEraQasmSimulationMetadata",
+    "RuntimeJobModel",
+    "TimeStamps",
+    "Credits",
+    "USD",
 ]

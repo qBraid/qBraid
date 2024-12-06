@@ -27,6 +27,38 @@ Types of changes:
 
 ### Dependencies
 
+## [0.8.9] - 2024-12-06
+
+### Added
+- Added "new" classes to the relevant runtime module scopes ([#843](https://github.com/qBraid/qBraid/pull/843)):
+    - `qbraid.schemas`: `AhsExperimentMetadata` model, `USD` and `Credits` classes
+    - `qbraid.runtime`: `ValidationLevel` enum
+    - `qbraid.runtime.native`: Device-specific `ResultData` subclasses
+
+- Added `plot_runtime_conversion_scheme` function to visualize the conversion graph and the target program types for a specific device. This enhancement clarifies which program types are available as input when submitting a quantum job to a particular device. See usage example below. ([#845](https://github.com/qBraid/qBraid/pull/845))
+
+```python
+from qbraid.runtime import QbraidProvider
+from qbraid.visualization import plot_runtime_conversion_scheme
+
+provider = QbraidProvider()
+
+device = provider.get_device("qbraid_qir_simulator")
+
+device.update_scheme(max_path_depth=1)
+
+plot_runtime_conversion_scheme(device, legend=True)
+```
+
+- Display seed in bottom left corner of conversion graph if `plot_conversion_graph` called with `legend=True` ([#849](https://github.com/qBraid/qBraid/pull/849))
+
+### Improved / Modified
+- Made remote tests for `QbraidDevice("nec_vector_annealer")` more robust ([#843](https://github.com/qBraid/qBraid/pull/843))
+- Updated doc string  & improved type hinting of `qbraid.load_program` ([#849](https://github.com/qBraid/qBraid/pull/849))
+
+### Fixed
+- Resolved an issue where passing `bloqade.builder.assign.BatchAssign` to `QbraidDevice("quera_aquila")` caused the transpile step to incorrectly wrap its output list in another list, leading to errors in `QuantumDevice.validate` and `QuantumDevice.to_ir`. The native `QbraidDevice` class now adapts when the transpile input is a single object but the output is a list, properly iterating through the sub-batch for final submission. ([#843](https://github.com/qBraid/qBraid/pull/843))
+
 ## [0.8.8] - 2024-11-25
 
 ### Added

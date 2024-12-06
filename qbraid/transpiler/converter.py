@@ -25,7 +25,7 @@ from qbraid.programs import QPROGRAM_ALIASES
 from qbraid.programs.alias_manager import _get_program_type_alias, get_program_type_alias
 
 from .exceptions import ConversionPathNotFoundError, NodeNotFoundError, ProgramConversionError
-from .graph import ConversionGraph
+from .graph import ConversionGraph, _get_path_from_bound_methods
 
 if TYPE_CHECKING:
     import qbraid.programs
@@ -109,7 +109,7 @@ def transpile(
     error_messages = []
 
     for path in paths:
-        path_details = ConversionGraph._get_path_from_bound_methods(path)
+        path_details = _get_path_from_bound_methods(path)
         temp_program = deepcopy(program)
         try:
             for convert_func in path:
