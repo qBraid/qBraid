@@ -23,6 +23,7 @@ Types of changes:
 ### Removed
 
 ### Fixed
+- `pyqir` tests are now skipped if the module is not installed.
 
 ### Dependencies
 

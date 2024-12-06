@@ -8,18 +8,16 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint: disable=redefined-outer-name,unused-argument,too-many-lines
-
 """
 Unit tests for QbraidDevice, QbraidJob, and QbraidGateModelResultBuilder
 classes using the qbraid_qir_simulator
 
 """
 import pytest
-pytest.importorskip("pyqir")
 from pyqir import BasicQisBuilder, Module, SimpleModule
 from ._resources import MockDevice
 
+pytest.importorskip("pyqir")
 
 @pytest.fixture
 def pyqir_module() -> Module:

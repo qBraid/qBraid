@@ -8,6 +8,10 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
+"""
+Shared fixtures for Azure provider and testing circuit.
+"""
+
 import os
 from typing import Optional
 

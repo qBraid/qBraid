@@ -14,15 +14,14 @@ Unit test for quantum program registry for QIR
 """
 
 import pytest
-
-pytest.importorskip("pyqir")
 from pyqir import BasicQisBuilder, Module, SimpleModule
-
 from qbraid.programs import (
     ExperimentType,
     ProgramSpec,
     unregister_program_type,
 )
+
+pytest.importorskip("pyqir")
 
 @pytest.fixture
 def pyqir_bell() -> Module:
