@@ -14,6 +14,7 @@ Module for plotting qBraid transpiler quantum program conversion graphs.
 from __future__ import annotations
 
 import math
+import random
 import warnings
 from typing import TYPE_CHECKING, Iterable, Optional, Union
 
@@ -140,8 +141,9 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             UserWarning,
         )
 
+    seed = seed or random.randint(1, 999)
     k = kwargs.pop("k", max(1 / math.sqrt(len(graph.nodes())), 3))
-    pos = rx.spring_layout(graph, seed=seed, k=k, **kwargs)  # good seeds: 123, 134
+    pos = rx.spring_layout(graph, seed=seed, k=k, **kwargs)
     kwargs = {}
     if edge_labels:
         kwargs["edge_labels"] = lambda edge: round(edge["weight"], 2)
@@ -222,6 +224,19 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             for label, marker, edgecolor, color, linestyle in legend_info
         ]
         plt.legend(handles=legend_elements, loc="best")
+
+        text = f"seed: {seed}"
+
+        plt.text(
+            x=0.01,
+            y=0.01,
+            s=text,
+            transform=plt.gca().transAxes,
+            fontsize=8,
+            color="gray",
+            ha="left",
+            va="bottom",
+        )
 
     if show:
         plt.show()
