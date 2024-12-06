@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 def find_str_type_alias(registry: dict[str, Type] = QPROGRAM_REGISTRY) -> Optional[str]:
     """Find additional keys with type 'str' in the registry."""
-    str_keys = [k for k, v in registry.items() if v == str and k not in ("qasm2", "qasm3")]
+    str_keys = [k for k, v in registry.items() if v is str and k not in ("qasm2", "qasm3")]
 
     if len(str_keys) == 0:
         return None

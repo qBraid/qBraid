@@ -113,9 +113,9 @@ def get_program_spec_lambdas(
         device_prefix = device_id.split("_")[0]
         # pylint: disable=unnecessary-lambda-assignment
         if device_prefix == "quera":
-            validate = lambda program: validate_qasm_no_measurements(program, device_id)
+            validate = lambda p: validate_qasm_no_measurements(p, device_id)  # noqa: E731
         elif device_prefix == "ionq":
-            validate = lambda program: validate_qasm_to_ionq(program, device_id)
+            validate = lambda p: validate_qasm_to_ionq(p, device_id)  # noqa: E731
         # pylint: enable=unnecessary-lambda-assignment
 
     return {"to_ir": to_ir, "validate": validate}
