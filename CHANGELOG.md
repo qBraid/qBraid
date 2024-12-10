@@ -17,12 +17,14 @@ Types of changes:
 ### Added
 - Added `p` to `z` gate name mapping to `openqasm3_to_ionq` conversion ([#854](https://github.com/qBraid/qBraid/pull/854))
 - Added `preflight` parameter to the `submit` method and to the `RuntimeJobModel` class ([#856](https://github.com/qBraid/qBraid/pull/856))
+- Added remote test for native IonQ runtime ([#856](https://github.com/qBraid/qBraid/pull/856))
 
 ### Improved / Modified
 - Unit tests that require the `pyqir` dependency are now automatically skipped if pyqir is not installed. ([#846](https://github.com/qBraid/qBraid/pull/846))
 - Renamed the function `replace_gate_name` to `replace_gate_names` and updated its implementation to accept a dictionary of gate name mappings instead of individual old and new gate names. (`qbraid/passes/qasm/compat.py`) ([#854](https://github.com/qBraid/qBraid/pull/854))
 - Updated the `IonQDevice.transform` method to replace gate names in the input using the newly defined `IONQ_GATE_MAP` before loading and transforming the program ([#855](https://github.com/qBraid/qBraid/pull/855))
 - Updated gate naming conventions in `IONQ_QIS_GATES` list for consistency with [IonQ supported gates API](https://docs.ionq.com/api-reference/v0.3/writing-quantum-programs#supported-gates) ([#856](https://github.com/qBraid/qBraid/pull/856))
+- Updated the `rebase` function to include `gate_mappings` and `case_sensitive` parameters for gate name replacement.([#856](https://github.com/qBraid/qBraid/pull/856))
 
 ### Deprecated
 
