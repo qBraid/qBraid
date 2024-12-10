@@ -58,9 +58,9 @@ IONQ_ONE_QUBIT_GATE_MAP = {
 IONQ_TWO_QUBIT_GATE_MAP = {
     "cnot": "cnot",
     "cx": "cnot",
-    "CX": "cnot",
     "swap": "swap",
     "zz": "zz",
+    "rzz": "zz",
     "ms": "ms",
 }
 
