@@ -36,6 +36,7 @@ IONQ_ONE_QUBIT_GATE_MAP = {
     "not": "not",
     "y": "y",
     "z": "z",
+    "p": "z",
     "h": "h",
     "s": "s",
     "si": "si",
