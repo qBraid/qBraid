@@ -15,7 +15,11 @@ Unit tests for OpenQASM 3.0 to CUDA-Q kernel transpilation.
 from __future__ import annotations
 
 import cudaq
+import numpy as np
+import pytest
 from openqasm3.parser import parse
+from qiskit.circuit.random import random_circuit, random_clifford_circuit
+from qiskit.qasm3 import dumps as qasm3_dumps
 from qiskit.qasm3 import loads as qasm3_loads
 
 from qbraid.interface import circuits_allclose
@@ -57,7 +61,7 @@ def test_openqasm3_to_cudaq():
 
 
 def test_openqasm3_to_cudaq_rotation_gates():
-    """Test converting an OpenQASM3 program to a CUDA-Q kernel."""
+    """OpenQASM3 -> CUDA-Q: Test a RX gate with a float literal argument."""
 
     qasm3_str_in = """
     OPENQASM 3.0;
@@ -70,6 +74,41 @@ def test_openqasm3_to_cudaq_rotation_gates():
 
     b = measure q;
     """
+    qasm3_in = parse(qasm3_str_in)
+
+    cudaq_out = openqasm3_to_cudaq(qasm3_in)
+
+    _check_output(qasm3_str_in, cudaq_out)
+
+
+def test_openqasm3_to_cudaq_two_qubit_gates():
+    """OpenQASM3 -> CUDA-Q: Test a SWAP gate."""
+
+    qasm3_str_in = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+
+    qubit[2] q;
+    bit[2] b;
+
+    swap q[0], q[1];
+
+    b = measure q;
+    """
+    qasm3_in = parse(qasm3_str_in)
+
+    cudaq_out = openqasm3_to_cudaq(qasm3_in)
+
+    _check_output(qasm3_str_in, cudaq_out)
+
+
+@pytest.mark.parametrize("num_qubits", [2, 3, 4, 5])
+def test_openqasm_to_cudaq_random_clifford_circuit(num_qubits):
+    """OpenQASM 3.0 -> CUDA-Q: test a random circuit"""
+
+    num_gates = np.random.randint(1, 11)
+    circ = random_clifford_circuit(num_qubits, num_gates, gates=["x", "y", "z", "h", "s", "swap"])
+    qasm3_str_in = qasm3_dumps(circ)
     qasm3_in = parse(qasm3_str_in)
 
     cudaq_out = openqasm3_to_cudaq(qasm3_in)

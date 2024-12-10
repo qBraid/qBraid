@@ -26,6 +26,14 @@ if TYPE_CHECKING:
     from cudaq import PyKernel, QuakeValue
 
 
+def identifier_lookup(cbit: Union[ast.IndexedIdentifier, ast.Identifier]) -> str:
+    """Unpacks the identifier name"""
+    if isinstance(cbit, ast.IndexedIdentifier):
+        return cbit.name.name
+
+    return cbit.name
+
+
 @weight(1)
 def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
     """Returns a CUDA-Q kernel representing the input OpenQASM program.
@@ -65,12 +73,6 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
             q = ctx[qubit.name]
         return q
 
-    def cbit_lookup(cbit: Union[ast.IndexedIdentifier, ast.Identifier]) -> str:
-        if isinstance(cbit, ast.IndexedIdentifier):
-            return cbit.name.name
-
-        return cbit.name
-
     for statement in program.statements:
         if isinstance(statement, ast.Include):
             if statement.filename == "stdgates.inc":
@@ -93,26 +95,39 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
         elif isinstance(statement, ast.QuantumMeasurementStatement):
             val = kernel.mz(qubit_lookup(statement.measure.qubit))
             if statement.target is not None:
-                ctx[cbit_lookup(statement.target)] = val
+                ctx[identifier_lookup(statement.target)] = val
         elif isinstance(statement, ast.QuantumGate):
-            print(statement, statement.arguments)
             name, qubits = statement.name.name, statement.qubits
 
-            if len(statement.modifiers) > 0:
-                raise ProgramConversionError(
-                    f"Quantum gate modifiers are not supported: {statement}"
-                )
+            op = getattr(kernel, name)
 
-            if name in ["x", "y", "z", "h", "s", "t"]:
-                getattr(kernel, name)(*[qubit_lookup(q) for q in qubits])
-            elif name in ["rx", "ry", "rz"]:
-                if len(statement.arguments) > 1:
+            if len(statement.modifiers) > 0:
+                raise ProgramConversionError(f"Gate modifiers are not supported: {statement}")
+
+            # TODO: handle binary operations and special constants: e.g. pi/4
+            args = []
+            for arg in statement.arguments:
+                if arg.value is None:
                     raise ProgramConversionError(
-                        f"Rotation gates have a single argument. {statement.arguments}"
+                        f"Non-literal gate arguments are unsupported. {statement.arguments}"
                     )
-                getattr(kernel, name)(
-                    statement.arguments[0].value, *[qubit_lookup(q) for q in qubits]
-                )
+                args.append(arg.value)
+
+            qubit_refs = [qubit_lookup(q) for q in qubits]
+            if name in ["x", "y", "z", "h", "s", "t"]:
+                op(*qubit_refs)
+            elif name in ["rx", "ry", "rz"]:
+                if len(args) != 1:
+                    raise ProgramConversionError(f"Rotation gates have a single argument. {args}")
+                op(*args, *qubit_refs)
+            elif name in ["swap"]:
+                op(*qubit_refs)
+            elif name in ["u3"]:
+                if len(statement.arguments) != 3:
+                    raise ProgramConversionError(f"U3 gate has 3 arguments. {statement.arguments}")
+                op(*args)
+            else:
+                raise ProgramConversionError(f"Unsupported gate: {statement}")
 
         else:
             raise ProgramConversionError(f"Unsupported statement: {statement}")
