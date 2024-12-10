@@ -23,8 +23,8 @@ Functions
    openqasm3_to_ionq
 
 """
+from .openqasm3_to_cudaq import openqasm3_to_cudaq
 from .openqasm3_to_ionq import openqasm3_to_ionq
 from .openqasm3_to_qasm3 import openqasm3_to_qasm3
-from .openqasm3_to_cudaq import openqasm3_to_cudaq
 
 __all__ = ["openqasm3_to_qasm3", "openqasm3_to_ionq", "openqasm3_to_cudaq"]
