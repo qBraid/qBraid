@@ -20,6 +20,7 @@ Types of changes:
 ### Improved / Modified
 - Unit tests that require the `pyqir` dependency are now automatically skipped if pyqir is not installed. ([#846](https://github.com/qBraid/qBraid/pull/846))
 - Renamed the function `replace_gate_name` to `replace_gate_names` and updated its implementation to accept a dictionary of gate name mappings instead of individual old and new gate names. (`qbraid/passes/qasm/compat.py`) ([#854](https://github.com/qBraid/qBraid/pull/854))
+- Updated the `IonQDevice.transform` method to replace gate names in the input using the newly defined `IONQ_GATE_MAP` before loading and transforming the program ([#855](https://github.com/qBraid/qBraid/pull/855))
 
 ### Deprecated
 
