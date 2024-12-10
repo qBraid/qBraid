@@ -21,7 +21,7 @@ from qbraid_core._import import LazyLoader
 from qbraid.passes.qasm.compat import (
     convert_qasm_pi_to_decimal,
     remove_stdgates_include,
-    replace_gate_name,
+    replace_gate_names,
 )
 from qbraid.programs.exceptions import QasmError
 from qbraid.transpiler.annotations import weight
@@ -52,8 +52,7 @@ def transform_notation(qasm3: str) -> str:
     }
 
     qasm3 = remove_stdgates_include(qasm3)
-    for old, new in replacements.items():
-        qasm3 = replace_gate_name(qasm3, old, new)
+    qasm3 = replace_gate_names(qasm3, replacements)
     qasm3 = convert_qasm_pi_to_decimal(qasm3)
     return qasm3
 

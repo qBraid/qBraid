@@ -82,52 +82,34 @@ def insert_gate_def(qasm3_str: str, gate_name: str, force_insert: bool = False) 
     return "\n".join(lines)
 
 
-def replace_gate_name(
-    qasm: str, old_gate_name: str, new_gate_name: str, force_replace: bool = False
-) -> str:
-    """
-    Replace occurrences of a specified gate name in a QASM program string with
-    a new gate name, while optionally enforcing the replacement even if the new
-    gate name isn't in the predefined gate map.
+def replace_gate_names(qasm: str, gate_name_map: dict[str, str]) -> str:
+    """Replace occurrences of specified gate names in a QASM program string.
 
     Args:
         qasm (str): The QASM program as a string.
-        old_gate_name (str): The original gate name to replace.
-        new_gate_name (str): The new gate name to use in replacement.
-        force_replace (bool): If True, force the replacement even if the
-            new gate name isn't in the gate map.
+        gate_name_map (dict[str, str]): A dictionary mapping old gate names (keys)
+            to new gate names (values).
 
     Returns:
         str: The modified QASM program with the gate names replaced.
     """
-    # Define pairs of interchangeable gates
-    gate_pairs = [
-        ("cnot", "cx"),
-        ("si", "sdg"),
-        ("ti", "tdg"),
-        ("v", "sx"),
-        ("vi", "sxdg"),
-        ("p", "phaseshift"),
-        ("cp", "cphaseshift"),
-    ]
+    program = parse(qasm)
 
-    # Create a mapping from each gate to its alternate form
-    gate_map = {old: new for pair in gate_pairs for old, new in (pair, pair[::-1])}
+    statements = []
 
-    parameterized_gates = {"p", "cp", "phaseshift", "cphaseshift"}
+    for statement in program.statements:
+        if isinstance(statement, QuantumGate) and statement.name.name in gate_name_map:
+            statement.name.name = gate_name_map[statement.name.name]
+        statements.append(statement)
 
-    suffix = "(" if old_gate_name in parameterized_gates else " "
+    program_out = Program(statements=statements, version=program.version)
+    version_major = program_out.version.split(".")[0]
+    qasm_out = dumps(program_out)
 
-    # Replace based on gate map and force_replace flag
-    if old_gate_name in gate_map and (gate_map[old_gate_name] == new_gate_name or force_replace):
-        new_gate_name_with_suffix = new_gate_name + suffix
-        old_gate_name_with_suffix = old_gate_name + suffix
-        return qasm.replace(old_gate_name_with_suffix, new_gate_name_with_suffix)
+    if int(version_major) == 2:
+        qasm_out = declarations_to_qasm2(qasm_out)
 
-    if force_replace:
-        return qasm.replace(old_gate_name, new_gate_name)
-
-    return qasm
+    return qasm_out
 
 
 def add_stdgates_include(qasm_str: str) -> str:
