@@ -46,8 +46,7 @@ def test_about():
     core_dependencies = {
         "numpy": numpy.__version__,
         "openqasm3": openqasm3.__version__,
-        # TODO: Uncomment once stable release v0.1.0 is available
-        # "pyqasm": pyqasm.__version__,
+        "pyqasm": pyqasm.__version__,
         "pydantic": pydantic.__version__,
         "qbraid-core": qbraid_core.__version__,
         "rustworkx": rustworkx.__version__,
