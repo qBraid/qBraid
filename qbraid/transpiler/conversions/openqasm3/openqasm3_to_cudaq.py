@@ -17,8 +17,8 @@ from __future__ import annotations
 from typing import Union
 
 import cudaq
-from openqasm3 import ast
 from cudaq import PyKernel, QuakeValue
+from openqasm3 import ast
 
 from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import ProgramConversionError

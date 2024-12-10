@@ -18,6 +18,7 @@ Types of changes:
 - Added `p` to `z` gate name mapping to `openqasm3_to_ionq` conversion ([#854](https://github.com/qBraid/qBraid/pull/854))
 - Added `preflight` parameter to the `submit` method and to the `RuntimeJobModel` class ([#856](https://github.com/qBraid/qBraid/pull/856))
 - Added remote test for native IonQ runtime ([#856](https://github.com/qBraid/qBraid/pull/856))
+- Added support for OpenQASM 3.0 to CUDA-Q kernel transpilation ([#857](https://github.com/qBraid/qBraid/pull/846))
 
 ### Improved / Modified
 - Unit tests that require the `pyqir` dependency are now automatically skipped if pyqir is not installed. ([#846](https://github.com/qBraid/qBraid/pull/846))

@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING
 import cudaq
 import pytest
 from openqasm3.parser import parse
-
 from qiskit.qasm3 import loads as qasm3_loads
 
 from qbraid.interface import circuits_allclose
