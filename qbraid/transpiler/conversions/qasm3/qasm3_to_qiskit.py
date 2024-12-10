@@ -18,7 +18,7 @@ from typing import TYPE_CHECKING
 
 from qbraid_core._import import LazyLoader
 
-from qbraid.passes.qasm.compat import add_stdgates_include, insert_gate_def, replace_gate_name
+from qbraid.passes.qasm.compat import add_stdgates_include, insert_gate_def, replace_gate_names
 from qbraid.transpiler.annotations import weight
 
 qiskit_qasm3 = LazyLoader("qiskit_qasm3", globals(), "qiskit.qasm3")
@@ -46,8 +46,7 @@ def transform_notation(qasm3: str) -> str:
         "cphaseshift": "cp",
     }
 
-    for old, new in replacements.items():
-        qasm3 = replace_gate_name(qasm3, old, new)
+    qasm3 = replace_gate_names(qasm3, replacements)
     qasm3 = add_stdgates_include(qasm3)
     qasm3 = insert_gate_def(qasm3, "iswap")
     qasm3 = insert_gate_def(qasm3, "sxdg")

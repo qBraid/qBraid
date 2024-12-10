@@ -25,7 +25,7 @@ Functions
     decompose_qasm3
     decompose_qasm2
     insert_gate_def
-    replace_gate_name
+    replace_gate_names
     add_stdgates_include
     remove_stdgates_include
     convert_qasm_pi_to_decimal
@@ -45,7 +45,7 @@ from .compat import (
     remove_include_statements,
     remove_measurements,
     remove_stdgates_include,
-    replace_gate_name,
+    replace_gate_names,
 )
 from .decompose import decompose_qasm2, decompose_qasm3, rebase
 from .format import remove_unused_gates
@@ -58,7 +58,7 @@ __all__ = [
     "decompose_qasm2",
     "decompose_qasm3",
     "insert_gate_def",
-    "replace_gate_name",
+    "replace_gate_names",
     "add_stdgates_include",
     "remove_stdgates_include",
     "convert_qasm_pi_to_decimal",

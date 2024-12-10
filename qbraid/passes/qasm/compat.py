@@ -19,7 +19,7 @@ from functools import reduce
 from typing import Union
 
 from openqasm3 import dumps, parse
-from openqasm3.ast import Include, Program, QuantumGate, QuantumMeasurementStatement
+from openqasm3.ast import Include, Program, QuantumGate, QuantumMeasurementStatement, Statement
 from openqasm3.parser import QASM3ParsingError
 
 from qbraid._logging import logger
@@ -82,52 +82,74 @@ def insert_gate_def(qasm3_str: str, gate_name: str, force_insert: bool = False) 
     return "\n".join(lines)
 
 
-def replace_gate_name(
-    qasm: str, old_gate_name: str, new_gate_name: str, force_replace: bool = False
+def _normalize_case_insensitive_map(gate_mappings: dict[str, str]) -> dict[str, str]:
+    """Normalize gate_mappings keys to lowercase and check for duplicates."""
+    lowercased_map = {}
+    for key, value in gate_mappings.items():
+        lower_key = key.lower()
+        if lower_key in lowercased_map:
+            raise ValueError(
+                f"Duplicate key detected after lowercasing: '{lower_key}'. Use case_sensitive=True."
+            )
+        lowercased_map[lower_key] = value
+    return lowercased_map
+
+
+def _replace_gate_in_statement(
+    statement: Statement, gate_mappings: dict[str, str], case_sensitive: bool
+) -> QuantumGate:
+    """Replace gate names in a single statement if applicable."""
+    if isinstance(statement, QuantumGate):
+        gate_name = statement.name.name
+        lookup_name = gate_name if case_sensitive else gate_name.lower()
+        if lookup_name in gate_mappings:
+            statement.name.name = gate_mappings[lookup_name]
+    return statement
+
+
+def _replace_gate_names(
+    program: Program, gate_mappings: dict[str, str], case_sensitive: bool
+) -> Program:
+    """Replace occurrences of specified gate names in a openqasm3.ast.Program."""
+    if not case_sensitive:
+        gate_mappings = _normalize_case_insensitive_map(gate_mappings)
+
+    statements = [
+        _replace_gate_in_statement(stmnt, gate_mappings, case_sensitive)
+        for stmnt in program.statements
+    ]
+
+    return Program(statements=statements, version=program.version)
+
+
+def replace_gate_names(
+    qasm: str, gate_mappings: dict[str, str], case_sensitive: bool = False
 ) -> str:
-    """
-    Replace occurrences of a specified gate name in a QASM program string with
-    a new gate name, while optionally enforcing the replacement even if the new
-    gate name isn't in the predefined gate map.
+    """Replace occurrences of specified gate names in a QASM program string.
 
     Args:
         qasm (str): The QASM program as a string.
-        old_gate_name (str): The original gate name to replace.
-        new_gate_name (str): The new gate name to use in replacement.
-        force_replace (bool): If True, force the replacement even if the
-            new gate name isn't in the gate map.
+        gate_mappings (dict[str, str]): A dictionary mapping old gate names (keys)
+            to new gate names (values).
+        case_sensitive (bool): Whether the gate name replacement should be case-sensitive.
+            Defaults to False.
 
     Returns:
         str: The modified QASM program with the gate names replaced.
+
+    Raises:
+        ValueError: If duplicate keys are found in the gate_mappings after lowercasing.
     """
-    # Define pairs of interchangeable gates
-    gate_pairs = [
-        ("cnot", "cx"),
-        ("si", "sdg"),
-        ("ti", "tdg"),
-        ("v", "sx"),
-        ("vi", "sxdg"),
-        ("p", "phaseshift"),
-        ("cp", "cphaseshift"),
-    ]
+    program = parse(qasm)
 
-    # Create a mapping from each gate to its alternate form
-    gate_map = {old: new for pair in gate_pairs for old, new in (pair, pair[::-1])}
+    program_out = _replace_gate_names(program, gate_mappings, case_sensitive)
+    version_major = program_out.version.split(".")[0]
+    qasm_out = dumps(program_out)
 
-    parameterized_gates = {"p", "cp", "phaseshift", "cphaseshift"}
+    if int(version_major) == 2:
+        qasm_out = declarations_to_qasm2(qasm_out)
 
-    suffix = "(" if old_gate_name in parameterized_gates else " "
-
-    # Replace based on gate map and force_replace flag
-    if old_gate_name in gate_map and (gate_map[old_gate_name] == new_gate_name or force_replace):
-        new_gate_name_with_suffix = new_gate_name + suffix
-        old_gate_name_with_suffix = old_gate_name + suffix
-        return qasm.replace(old_gate_name_with_suffix, new_gate_name_with_suffix)
-
-    if force_replace:
-        return qasm.replace(old_gate_name, new_gate_name)
-
-    return qasm
+    return qasm_out
 
 
 def add_stdgates_include(qasm_str: str) -> str:
