@@ -14,14 +14,16 @@ Module containing OpenQASM to CUDA-Q conversion function
 """
 from __future__ import annotations
 
-from typing import Union
+from typing import TYPE_CHECKING, Union
 
 import cudaq
-from cudaq import PyKernel, QuakeValue
 from openqasm3 import ast
 
 from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import ProgramConversionError
+
+if TYPE_CHECKING:
+    from cudaq import PyKernel, QuakeValue
 
 
 @weight(1)
@@ -93,9 +95,24 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
             if statement.target is not None:
                 ctx[cbit_lookup(statement.target)] = val
         elif isinstance(statement, ast.QuantumGate):
+            print(statement, statement.arguments)
             name, qubits = statement.name.name, statement.qubits
-            if name in ["x", "y", "z", "h", "s", "t", "rx", "ry", "rz"]:
+
+            if len(statement.modifiers) > 0:
+                raise ProgramConversionError(
+                    f"Quantum gate modifiers are not supported: {statement}"
+                )
+
+            if name in ["x", "y", "z", "h", "s", "t"]:
                 getattr(kernel, name)(*[qubit_lookup(q) for q in qubits])
+            elif name in ["rx", "ry", "rz"]:
+                if len(statement.arguments) > 1:
+                    raise ProgramConversionError(
+                        f"Rotation gates have a single argument. {statement.arguments}"
+                    )
+                getattr(kernel, name)(
+                    statement.arguments[0].value, *[qubit_lookup(q) for q in qubits]
+                )
 
         else:
             raise ProgramConversionError(f"Unsupported statement: {statement}")
