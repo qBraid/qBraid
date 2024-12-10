@@ -19,6 +19,7 @@ import pytest
 
 from qbraid.passes.qasm.compat import (
     _evaluate_expression,
+    _normalize_case_insensitive_map,
     add_stdgates_include,
     convert_qasm_pi_to_decimal,
     has_redundant_parentheses,
@@ -411,3 +412,17 @@ crz(pi / 4) q[0], q[1];
 def test_remove_include_statements(qasm_input: str, expected_output: str):
     """Test removing include statements from QASM string."""
     assert expected_output.strip() == remove_include_statements(qasm_input).strip()
+
+
+def test_normalize_case_insensitive_map():
+    """Test normalizing a case-insensitive map."""
+    test_map = {"a": 1, "B": 2, "c": 3}
+    expected_map = {"a": 1, "b": 2, "c": 3}
+    assert _normalize_case_insensitive_map(test_map) == expected_map
+
+
+def test_normalize_case_insensitive_map_raises_error():
+    """Test normalizing a case-insensitive map raises an error if keys are not unique."""
+    test_map = {"a": 1, "A": 2}
+    with pytest.raises(ValueError):
+        _normalize_case_insensitive_map(test_map)

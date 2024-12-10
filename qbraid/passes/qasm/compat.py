@@ -19,7 +19,7 @@ from functools import reduce
 from typing import Union
 
 from openqasm3 import dumps, parse
-from openqasm3.ast import Include, Program, QuantumGate, QuantumMeasurementStatement
+from openqasm3.ast import Include, Program, QuantumGate, QuantumMeasurementStatement, Statement
 from openqasm3.parser import QASM3ParsingError
 
 from qbraid._logging import logger
@@ -82,27 +82,67 @@ def insert_gate_def(qasm3_str: str, gate_name: str, force_insert: bool = False) 
     return "\n".join(lines)
 
 
-def replace_gate_names(qasm: str, gate_name_map: dict[str, str]) -> str:
+def _normalize_case_insensitive_map(gate_mappings: dict[str, str]) -> dict[str, str]:
+    """Normalize gate_mappings keys to lowercase and check for duplicates."""
+    lowercased_map = {}
+    for key, value in gate_mappings.items():
+        lower_key = key.lower()
+        if lower_key in lowercased_map:
+            raise ValueError(
+                f"Duplicate key detected after lowercasing: '{lower_key}'. Use case_sensitive=True."
+            )
+        lowercased_map[lower_key] = value
+    return lowercased_map
+
+
+def _replace_gate_in_statement(
+    statement: Statement, gate_mappings: dict[str, str], case_sensitive: bool
+) -> QuantumGate:
+    """Replace gate names in a single statement if applicable."""
+    if isinstance(statement, QuantumGate):
+        gate_name = statement.name.name
+        lookup_name = gate_name if case_sensitive else gate_name.lower()
+        if lookup_name in gate_mappings:
+            statement.name.name = gate_mappings[lookup_name]
+    return statement
+
+
+def _replace_gate_names(
+    program: Program, gate_mappings: dict[str, str], case_sensitive: bool
+) -> Program:
+    """Replace occurrences of specified gate names in a openqasm3.ast.Program."""
+    if not case_sensitive:
+        gate_mappings = _normalize_case_insensitive_map(gate_mappings)
+
+    statements = [
+        _replace_gate_in_statement(stmnt, gate_mappings, case_sensitive)
+        for stmnt in program.statements
+    ]
+
+    return Program(statements=statements, version=program.version)
+
+
+def replace_gate_names(
+    qasm: str, gate_mappings: dict[str, str], case_sensitive: bool = False
+) -> str:
     """Replace occurrences of specified gate names in a QASM program string.
 
     Args:
         qasm (str): The QASM program as a string.
-        gate_name_map (dict[str, str]): A dictionary mapping old gate names (keys)
+        gate_mappings (dict[str, str]): A dictionary mapping old gate names (keys)
             to new gate names (values).
+        case_sensitive (bool): Whether the gate name replacement should be case-sensitive.
+            Defaults to False.
 
     Returns:
         str: The modified QASM program with the gate names replaced.
+
+    Raises:
+        ValueError: If duplicate keys are found in the gate_mappings after lowercasing.
     """
     program = parse(qasm)
 
-    statements = []
-
-    for statement in program.statements:
-        if isinstance(statement, QuantumGate) and statement.name.name in gate_name_map:
-            statement.name.name = gate_name_map[statement.name.name]
-        statements.append(statement)
-
-    program_out = Program(statements=statements, version=program.version)
+    program_out = _replace_gate_names(program, gate_mappings, case_sensitive)
     version_major = program_out.version.split(".")[0]
     qasm_out = dumps(program_out)
 

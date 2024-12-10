@@ -17,7 +17,6 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any, Optional, Union
 
-from qbraid.passes.qasm.compat import replace_gate_names
 from qbraid.programs import load_program
 from qbraid.programs.typer import IonQDict, IonQDictType, QasmStringType
 from qbraid.runtime.device import QuantumDevice
@@ -84,9 +83,8 @@ class IonQDevice(QuantumDevice):
 
     def transform(self, run_input: QasmStringType) -> QasmStringType:
         """Transform the input to the IonQ device."""
-        run_input = replace_gate_names(run_input, IONQ_GATE_MAP)
         program = load_program(run_input)
-        program.transform(device=self)
+        program.transform(device=self, gate_mappings=IONQ_GATE_MAP)
         return program.program
 
     @staticmethod
