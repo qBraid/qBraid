@@ -15,6 +15,7 @@ Module defining OpenQasm2Program class.
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
 import numpy as np
 from openqasm3.ast import Program
@@ -26,6 +27,9 @@ from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.typer import Qasm2String, Qasm2StringType
 
 from ._model import GateModelProgram
+
+if TYPE_CHECKING:
+    import qbraid.runtime
 
 transpiler = LazyLoader("transpiler", globals(), "qbraid.transpiler")
 
@@ -83,7 +87,7 @@ class OpenQasm2Program(GateModelProgram):
         """Return the unitary of the QASM"""
         return transpiler.transpile(self.program, "cirq").unitary()
 
-    def transform(self, device) -> None:
+    def transform(self, device: qbraid.runtime.QuantumDevice, **kwargs) -> None:
         """Transform program to according to device target profile."""
         if device.id == "quera_qasm_simulator":
             self._program = remove_measurements(self.program)
@@ -91,5 +95,5 @@ class OpenQasm2Program(GateModelProgram):
         basis_gates = device.profile.get("basis_gates")
 
         if basis_gates is not None and len(basis_gates) > 0:
-            transformed_qasm = rebase(self.program, basis_gates)
+            transformed_qasm = rebase(self.program, basis_gates, **kwargs)
             self._program = normalize_qasm_gate_params(transformed_qasm)

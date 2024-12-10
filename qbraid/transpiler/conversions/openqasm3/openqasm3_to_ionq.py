@@ -127,7 +127,7 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
 
     for statement in program.statements:
         if isinstance(statement, openqasm3.ast.QuantumGate):
-            name = statement.name.name
+            name = statement.name.name.lower()
             qubits = statement.qubits
             qubit_values = []
 
