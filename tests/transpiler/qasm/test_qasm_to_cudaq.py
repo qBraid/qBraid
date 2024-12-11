@@ -14,10 +14,10 @@ Unit tests for OpenQASM 3.0 to CUDA-Q kernel transpilation.
 """
 from __future__ import annotations
 
-import cudaq
-import numpy as np
 import pytest
+import numpy as np
 from openqasm3.parser import parse
+
 from qiskit.circuit.random import random_circuit, random_clifford_circuit
 from qiskit.qasm3 import dumps as qasm3_dumps
 from qiskit.qasm3 import loads as qasm3_loads
@@ -26,12 +26,14 @@ from qbraid.interface import circuits_allclose
 from qbraid.transpiler.conversions.openqasm3 import openqasm3_to_cudaq
 from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import qasm2_to_qasm3
 
+cudaq = pytest.importorskip('cudaq')
 
-def _check_output(qasm3_str_in, cudaq_out):
+
+def _check_output(qasm3_str_in, cudaq_out, atol=1e-7):
     qasm2_str_out = cudaq.translate(cudaq_out, format="openqasm2")
     qasm3_str_out = qasm2_to_qasm3(qasm2_str_out)
     circ_in, circ_out = qasm3_loads(qasm3_str_in), qasm3_loads(qasm3_str_out)
-    assert circuits_allclose(circ_in, circ_out)
+    assert circuits_allclose(circ_in, circ_out, atol=atol)
 
 
 def test_openqasm3_to_cudaq():
@@ -102,6 +104,7 @@ def test_openqasm3_to_cudaq_two_qubit_gates():
     _check_output(qasm3_str_in, cudaq_out)
 
 
+@pytest.mark.skip(reason="both cudaq.translate and pyqasm don't support ctrl modifiers")
 def test_openqasm3_to_cudaq_ctrl_modifier():
     """OpenQASM3 -> CUDA-Q: Test a ctrl modifier on an x gate."""
 
@@ -119,10 +122,9 @@ def test_openqasm3_to_cudaq_ctrl_modifier():
 
     cudaq_out = openqasm3_to_cudaq(qasm3_in)
     
-    # TODO: cudaq.translate to qasm2 fails for ctrl modifiers on gates.
     _check_output(qasm3_str_in, cudaq_out)
 
-
+@pytest.mark.skip(reason="cudaq.translate bug for translating adj. modifiers")
 def test_openqasm3_to_cudaq_adj_gates():
     """OpenQASM3 -> CUDA-Q: Test adjoint modifier with sdg gate."""
 
@@ -141,9 +143,28 @@ def test_openqasm3_to_cudaq_adj_gates():
 
     cudaq_out = openqasm3_to_cudaq(qasm3_in)
     
-    # TODO: cudaq.translate bug on translating adjoint modifiers
     _check_output(qasm3_str_in, cudaq_out)
 
+
+def test_openqasm3_to_cudaq_arith():
+    """OpenQASM3 -> CUDA-Q: Test arithmetic expression evaluation """
+
+    qasm3_str_in = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+
+    qubit[1] q;
+    ry(3*pi/4) q[0];
+    """
+    
+    qasm3_in = parse(qasm3_str_in)
+
+    cudaq_out = openqasm3_to_cudaq(qasm3_in)
+    
+    _check_output(qasm3_str_in, cudaq_out, atol=1e-6) # TODO: fails for 1e-7 due to rounding
+
+
+# TODO: test for custom gates?
 
 @pytest.mark.parametrize("num_qubits", [2, 3, 4, 5])
 def test_openqasm_to_cudaq_random_clifford_circuit(num_qubits):
@@ -157,3 +178,4 @@ def test_openqasm_to_cudaq_random_clifford_circuit(num_qubits):
     cudaq_out = openqasm3_to_cudaq(qasm3_in)
 
     _check_output(qasm3_str_in, cudaq_out)
+

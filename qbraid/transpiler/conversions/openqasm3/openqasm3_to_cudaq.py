@@ -16,12 +16,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Union
 
-import cudaq
-from openqasm3 import ast
-import pyqasm
+from openqasm3 import ast, printer, parser
 
-from qbraid.transpiler.annotations import weight
+import pyqasm
+from pyqasm.modules.base import QasmModule
+
+from qbraid_core._import import LazyLoader
+from qbraid.transpiler.annotations import weight, requires_extras
 from qbraid.transpiler.exceptions import ProgramConversionError
+from qbraid.passes.qasm import normalize_qasm_gate_params
+
+cudaq = LazyLoader('cudaq', globals(), 'cudaq')
 
 if TYPE_CHECKING:
     from cudaq import PyKernel, QuakeValue
@@ -65,6 +70,7 @@ def identifier_lookup(cbit: Union[ast.IndexedIdentifier, ast.Identifier]) -> str
 
 
 @weight(1)
+@requires_extras("cudaq")
 def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
     """Returns a CUDA-Q kernel representing the input OpenQASM program.
 
@@ -75,9 +81,14 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
         kernel: CUDA-Q kernel equivalent to input OpenQASM string.
     """
     try:
-        pyqasm.load(program).validate()
+        module = pyqasm.load(program)
+        module.validate()
     except Exception as e:
         raise ProgramConversionError("PyQasm program is not well-formed") from e
+
+    module.unroll()
+    program = module.unrolled_ast    
+    program = parser.parse(normalize_qasm_gate_params(printer.dumps(program)))
         
     
     kernel = cudaq.make_kernel()
@@ -111,10 +122,9 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
 
     for statement in program.statements:
         if isinstance(statement, ast.Include):
-            if statement.filename == "stdgates.inc":
-                continue
-            raise ProgramConversionError(f"Includes are unsupported: {statement}")
-        if isinstance(statement, ast.QubitDeclaration):
+            if statement.filename not in {"stdgates.inc", "qelib1.inc"}:
+                raise ProgramConversionError(f"Includes are unsupported: {statement}")
+        elif isinstance(statement, ast.QubitDeclaration):
             ctx[statement.qubit.name] = kernel.qalloc(statement.size.value)
         elif isinstance(statement, ast.ClassicalDeclaration):
             if not isinstance(statement.type, ast.ClassicalType):
