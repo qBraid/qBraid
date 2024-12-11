@@ -16,24 +16,24 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Union
 
-from openqasm3 import ast, printer, parser
-
 import pyqasm
-from pyqasm.modules.base import QasmModule
-
+from openqasm3 import ast, parser, printer
 from qbraid_core._import import LazyLoader
-from qbraid.transpiler.annotations import weight, requires_extras
-from qbraid.transpiler.exceptions import ProgramConversionError
-from qbraid.passes.qasm import normalize_qasm_gate_params
 
-cudaq = LazyLoader('cudaq', globals(), 'cudaq')
+from qbraid.passes.qasm import normalize_qasm_gate_params
+from qbraid.transpiler.annotations import requires_extras, weight
+from qbraid.transpiler.exceptions import ProgramConversionError
+
+cudaq = LazyLoader("cudaq", globals(), "cudaq")
 
 if TYPE_CHECKING:
     from cudaq import PyKernel, QuakeValue
 
 
 def gate_kernel(name: str, *args) -> PyKernel:
-    if name in ["x", "y", "z", "h", "s", "t"]:
+    """Returns CUDA-Q kernel for pure standard gates (no modifiers - ctrl or adj)."""
+
+    if name in ["x", "y", "z", "h", "s", "t", "sdg", "tdg"]:
         size, argc = 1, 0
     elif name in ["rx", "ry", "rz"]:
         size, argc = 1, 1
@@ -87,9 +87,8 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
         raise ProgramConversionError("PyQasm program is not well-formed") from e
 
     module.unroll()
-    program = module.unrolled_ast    
+    program = module.unrolled_ast
     program = parser.parse(normalize_qasm_gate_params(printer.dumps(program)))
-        
     
     kernel = cudaq.make_kernel()
     ctx = {}
@@ -156,12 +155,11 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
 
             qubit_refs = [qubit_lookup(q) for q in qubits]
 
-
             if len(statement.modifiers) > 1:
                 raise ProgramConversionError(
                     f"Multiple gate modifiers are not supported: {statement}"
                 )
-            elif len(statement.modifiers) == 1:
+            if len(statement.modifiers) == 1:
                 mod = statement.modifiers[0]
                 if mod.modifier != ast.GateModifierName.ctrl:
                     raise ProgramConversionError(f"Non-ctrl modifiers are not support: {statement}")
@@ -169,9 +167,10 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
                 gate = gate_kernel(name, *args)
                 kernel.control(gate, qubit_refs[0], *qubit_refs[1:])
             else:
-                if name in ['sdg', 'tdg']:
-                    gate = gate_kernel(name[0], *args)
-                    kernel.adjoint(gate, *qubit_refs)
+                if name in ["cx", "CX"]:
+                    # TODO: pyqasm doesn't unroll CX -> ctrl @ x, so handle here.
+                    gate = gate_kernel(name[1].lower(), *args)
+                    kernel.control(gate, qubit_refs[0], *qubit_refs[1:])
                 else:
                     gate = gate_kernel(name, *args)
                     kernel.apply_call(gate, *qubit_refs)
