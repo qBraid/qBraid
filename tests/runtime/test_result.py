@@ -23,6 +23,7 @@ import pytest
 from qbraid.programs import ExperimentType
 from qbraid.runtime.native.result import NECVectorAnnealerResultData, QbraidQirSimulatorResultData
 from qbraid.runtime.postprocess import (
+    distribute_counts,
     format_counts,
     normalize_batch_bit_lengths,
     normalize_bit_lengths,
@@ -734,3 +735,72 @@ def test_ahs_result_data_from_dict_valid_data():
     assert len(result.measurements) == 1
     assert result.measurements[0].success is True
     assert result.get_counts() == {"00": 5, "01": 3}
+
+
+def test_distribute_counts_valid_input():
+    """Test distribute_counts with valid input."""
+    probs = {0: 0.86, 1: 0.14}
+    shots = 10
+    result = distribute_counts(probs, shots)
+    assert result == {0: 9, 1: 1}, "Counts do not match expected values."
+
+
+def test_distribute_counts_probabilities_not_sum_to_1():
+    """Test distribute_counts with probabilities that do not sum to 1."""
+    probs = {0: 0.9, 1: 0.2}
+    shots = 10
+    with pytest.raises(ValueError, match="Probabilities must sum to 1."):
+        distribute_counts(probs, shots)
+
+
+def test_distribute_counts_negative_probability():
+    """Test distribute_counts with negative probability."""
+    probs = {0: -0.1, 1: 1.1}
+    shots = 10
+    with pytest.raises(ValueError, match="Probabilities must be between 0 and 1."):
+        distribute_counts(probs, shots)
+
+
+def test_distribute_counts_negative_shots():
+    """Test distribute_counts with negative number of shots."""
+    probs = {0: 0.86, 1: 0.14}
+    shots = -10
+    with pytest.raises(ValueError, match="Number of shots must be non-negative."):
+        distribute_counts(probs, shots)
+
+
+def test_distribute_counts_zero_shots():
+    """Test distribute_counts with zero shots."""
+    probs = {0: 0.86, 1: 0.14}
+    shots = 0
+    result = distribute_counts(probs, shots)
+    assert result == {0: 0, 1: 0}, "Counts do not match expected values for zero shots."
+
+
+def test_distribute_counts_large_input():
+    """Test distribute_counts with large input."""
+    probs = {0: 0.5, 1: 0.5}
+    shots = 1000000
+    result = distribute_counts(probs, shots)
+    assert sum(result.values()) == shots, "Counts do not sum to the number of shots."
+    assert (
+        result[0] == 500000 and result[1] == 500000
+    ), "Counts do not distribute evenly for equal probabilities."
+
+
+def test_distribute_counts_edge_case_probabilities():
+    """Test distribute_counts with edge case probabilities."""
+    probs = {0: 0.999999, 1: 0.000001}
+    shots = 10
+    result = distribute_counts(probs, shots)
+    assert sum(result.values()) == shots, "Counts do not sum to the number of shots."
+    assert result[0] == 10 and result[1] == 0, "Counts do not match expected edge case behavior."
+
+
+def test_distribute_counts_diff_non_zero():
+    """Test distribute_counts with probabilities that are very close but not equal."""
+    probs = {0: 0.3333, 1: 0.3333, 2: 0.3334}
+    shots = 10
+    result = distribute_counts(probs, shots)
+    assert sum(result.values()) == shots, "Counts do not sum to the number of shots."
+    assert result[0] + result[1] + result[2] == shots, "Counts adjustment did not work as expected."
