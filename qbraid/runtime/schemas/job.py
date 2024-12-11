@@ -79,6 +79,7 @@ class RuntimeJobModel(QbraidSchemaBase):
         time_stamps (TimeStamps): Time-related information about the job.
         tags (dict[str, str]): Custom tags associated with the job.
         cost (Credits, optional): The cost of the job in qBraid credits.
+        preflight (bool): Flag indicating if the job was run in preflight mode.
     """
 
     model_config = ConfigDict(frozen=True, use_enum_values=False)
@@ -103,6 +104,7 @@ class RuntimeJobModel(QbraidSchemaBase):
     time_stamps: TimeStamps = Field(..., alias="timeStamps")
     tags: dict[str, Union[str, int, bool]] = Field(default_factory=dict)
     cost: Optional[Credits] = Field(None, ge=0, alias="cost")
+    preflight: bool = False
 
     @field_validator("status", mode="before")
     @classmethod

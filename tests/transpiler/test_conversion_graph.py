@@ -19,7 +19,13 @@ from unittest.mock import Mock, PropertyMock, patch
 
 import pytest
 import rustworkx as rx
-from pyqir import Module
+
+try:
+    import pyqir
+
+    pyqir_installed = True
+except ImportError:
+    pyqir_installed = False
 
 from qbraid.programs import ExperimentType, register_program_type
 from qbraid.programs.ahs import submodules as ahs_submodules
@@ -137,6 +143,7 @@ def test_initialize_new_conversion():
     assert graph.num_edges() == 1
 
 
+@pytest.mark.skipif(not pyqir_installed, reason="pyqir not installed")
 @pytest.mark.parametrize("bell_circuit", ["qiskit"], indirect=True)
 def test_overwrite_new_conversion(bell_circuit):
     """Test dynamically overwriting a new conversion in the conversion graph"""
@@ -148,7 +155,7 @@ def test_overwrite_new_conversion(bell_circuit):
     graph.add_conversion(edge, overwrite=True)
     assert graph.num_edges() == 1
     module = transpile(qiskit_circuit, "pyqir", conversion_graph=graph)
-    assert isinstance(module, Module)
+    assert isinstance(module, pyqir.Module)
 
 
 def test_remove_conversion():

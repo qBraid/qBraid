@@ -22,6 +22,7 @@ from qbraid.programs.typer import IonQDict
 
 from ._model import GateModelProgram
 
+# https://docs.ionq.com/api-reference/v0.3/writing-quantum-programs#supported-gates
 IONQ_QIS_GATES = [
     "x",
     "y",
@@ -30,13 +31,14 @@ IONQ_QIS_GATES = [
     "ry",
     "rz",
     "h",
-    "cx",
+    "not",
+    "cnot",
     "s",
-    "sdg",
+    "si",
     "t",
-    "tdg",
-    "sx",
-    "sxdg",
+    "ti",
+    "v",
+    "vi",
     "swap",
 ]
 
@@ -47,6 +49,7 @@ IONQ_NATIVE_GATES_FAMILY = {
     "forte": ["zz"] + IONQ_NATIVE_GATES_BASE,
 }
 
+# https://docs.ionq.com/api-reference/v0.3/native-gates-api#gates
 IONQ_NATIVE_GATES = list(set().union(*IONQ_NATIVE_GATES_FAMILY.values()))
 
 

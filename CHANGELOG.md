@@ -15,6 +15,29 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added `p` to `z` gate name mapping to `openqasm3_to_ionq` conversion ([#854](https://github.com/qBraid/qBraid/pull/854))
+- Added `preflight` parameter to the `submit` method and to the `RuntimeJobModel` class ([#856](https://github.com/qBraid/qBraid/pull/856))
+- Added remote test for native IonQ runtime ([#856](https://github.com/qBraid/qBraid/pull/856))
+
+### Improved / Modified
+- Unit tests that require the `pyqir` dependency are now automatically skipped if pyqir is not installed. ([#846](https://github.com/qBraid/qBraid/pull/846))
+- Renamed the function `replace_gate_name` to `replace_gate_names` and updated its implementation to accept a dictionary of gate name mappings instead of individual old and new gate names. (`qbraid/passes/qasm/compat.py`) ([#854](https://github.com/qBraid/qBraid/pull/854))
+- Updated the `IonQDevice.transform` method to replace gate names in the input using the newly defined `IONQ_GATE_MAP` before loading and transforming the program ([#855](https://github.com/qBraid/qBraid/pull/855))
+- Updated gate naming conventions in `IONQ_QIS_GATES` list for consistency with [IonQ supported gates API](https://docs.ionq.com/api-reference/v0.3/writing-quantum-programs#supported-gates) ([#856](https://github.com/qBraid/qBraid/pull/856))
+- Updated the `rebase` function to include `gate_mappings` and `case_sensitive` parameters for gate name replacement.([#856](https://github.com/qBraid/qBraid/pull/856))
+
+### Deprecated
+
+### Removed
+
+### Fixed
+- Fixed `nec_vector_annealer` remote test by generalizing solutions (results) check ([#852](https://github.com/qBraid/qBraid/pull/852))
+
+### Dependencies
+
+## [0.8.9] - 2024-12-06
+
+### Added
 - Added "new" classes to the relevant runtime module scopes ([#843](https://github.com/qBraid/qBraid/pull/843)):
     - `qbraid.schemas`: `AhsExperimentMetadata` model, `USD` and `Credits` classes
     - `qbraid.runtime`: `ValidationLevel` enum
@@ -35,17 +58,14 @@ device.update_scheme(max_path_depth=1)
 plot_runtime_conversion_scheme(device, legend=True)
 ```
 
+- Display seed in bottom left corner of conversion graph if `plot_conversion_graph` called with `legend=True` ([#849](https://github.com/qBraid/qBraid/pull/849))
+
 ### Improved / Modified
 - Made remote tests for `QbraidDevice("nec_vector_annealer")` more robust ([#843](https://github.com/qBraid/qBraid/pull/843))
-
-### Deprecated
-
-### Removed
+- Updated doc string  & improved type hinting of `qbraid.load_program` ([#849](https://github.com/qBraid/qBraid/pull/849))
 
 ### Fixed
 - Resolved an issue where passing `bloqade.builder.assign.BatchAssign` to `QbraidDevice("quera_aquila")` caused the transpile step to incorrectly wrap its output list in another list, leading to errors in `QuantumDevice.validate` and `QuantumDevice.to_ir`. The native `QbraidDevice` class now adapts when the transpile input is a single object but the output is a list, properly iterating through the sub-batch for final submission. ([#843](https://github.com/qBraid/qBraid/pull/843))
-
-### Dependencies
 
 ## [0.8.8] - 2024-11-25
 

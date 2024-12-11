@@ -16,7 +16,7 @@ utilizing entrypoints via ``importlib`` for Python >= 3.10 or
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Union
 
 import openqasm3
 
@@ -25,12 +25,17 @@ from qbraid.exceptions import QbraidError
 
 from .alias_manager import get_program_type_alias
 from .exceptions import ProgramLoaderError
+from .registry import QPROGRAM
 
 if TYPE_CHECKING:
-    import qbraid.programs
+    from qbraid.programs.ahs import AnalogHamiltonianProgram
+    from qbraid.programs.annealing import AnnealingProgram
+    from qbraid.programs.gate_model import GateModelProgram
 
 
-def load_program(program: Any) -> qbraid.programs.QuantumProgram:
+def load_program(
+    program: QPROGRAM,
+) -> Union[GateModelProgram, AnalogHamiltonianProgram, AnnealingProgram]:
     """Apply qbraid quantum program wrapper to a supported quantum program.
 
     This function is used to create a qBraid :class:`~qbraid.programs.QuantumProgram`
@@ -39,10 +44,10 @@ def load_program(program: Any) -> qbraid.programs.QuantumProgram:
     supported package.
 
     Args:
-        circuit (:data:`~qbraid.programs.QPROGRAM`): A supported quantum circuit / program object
+        program: A supported quantum circuit/program object.
 
     Returns:
-        :class:`~qbraid.programs.QuantumProgram`: A wrapped quantum circuit-like object
+        QuantumProgram: A wrapped quantum program object of the inferred subclass.
 
     Raises:
         :class:`~qbraid.ProgramLoaderError`: If the input circuit is not a supported quantum program
@@ -61,4 +66,6 @@ def load_program(program: Any) -> qbraid.programs.QuantumProgram:
     except Exception as err:
         raise ProgramLoaderError(f"Error loading quantum program of type {type(program)}") from err
 
-    return load_program_class(program)
+    program_instance = load_program_class(program)
+
+    return program_instance

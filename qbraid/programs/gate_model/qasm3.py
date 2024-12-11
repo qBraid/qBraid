@@ -14,6 +14,8 @@ Module defining OpenQasm3Program class.
 """
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import pyqasm
 
@@ -22,6 +24,9 @@ from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.typer import Qasm3String, Qasm3StringType
 
 from ._model import GateModelProgram
+
+if TYPE_CHECKING:
+    import qbraid.runtime
 
 
 def auto_reparse(func):
@@ -98,11 +103,10 @@ class OpenQasm3Program(GateModelProgram):
         self._module.reverse_qubit_order()
 
     @auto_reparse
-    def transform(self, device) -> None:
+    def transform(self, device: qbraid.runtime.QuantumDevice, **kwargs) -> None:
         """Transform program to according to device target profile."""
         basis_gates = device.profile.get("basis_gates")
 
         if basis_gates is not None and len(basis_gates) > 0:
-            # TODO: migrate to pyqasm
-            transformed_qasm = rebase(self.program, basis_gates)
+            transformed_qasm = rebase(self.program, basis_gates, **kwargs)
             self._program = normalize_qasm_gate_params(transformed_qasm)

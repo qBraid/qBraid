@@ -22,10 +22,19 @@ from typing import Optional
 import numpy as np
 import pytest
 
-from qbraid.programs import NATIVE_REGISTRY
-from qbraid.runtime import QbraidProvider
+from qbraid.programs import NATIVE_REGISTRY, ExperimentType
+from qbraid.runtime import TargetProfile
+from qbraid.runtime.native import QbraidDevice, QbraidProvider
+from qbraid.runtime.noise import NoiseModelSet
+from qbraid.transpiler import Conversion, ConversionGraph, ConversionScheme
 
-from ._resources import DEVICE_DATA_AQUILA, DEVICE_DATA_QIR, DEVICE_DATA_QUERA_QASM, MockClient
+from ._resources import (
+    DEVICE_DATA_AQUILA,
+    DEVICE_DATA_QIR,
+    DEVICE_DATA_QUERA_QASM,
+    MockClient,
+    MockDevice,
+)
 
 
 def _braket_circuit(meas=True):
@@ -174,6 +183,41 @@ def mock_client():
 def mock_provider(mock_client):
     """Mock provider for testing."""
     return QbraidProvider(client=mock_client)
+
+
+@pytest.fixture
+def mock_profile():
+    """Mock profile for testing."""
+    return TargetProfile(
+        device_id="qbraid_qir_simulator",
+        simulator=True,
+        experiment_type=ExperimentType.GATE_MODEL,
+        num_qubits=64,
+        program_spec=QbraidProvider._get_program_spec("pyqir", "qbraid_qir_simulator"),
+        noise_models=NoiseModelSet.from_iterable(["ideal"]),
+    )
+
+
+@pytest.fixture
+def mock_scheme():
+    """Mock conversion scheme for testing."""
+    conv1 = Conversion("alice", "bob", lambda x: x + 1)
+    conv2 = Conversion("bob", "charlie", lambda x: x - 1)
+    graph = ConversionGraph(conversions=[conv1, conv2])
+    scheme = ConversionScheme(conversion_graph=graph)
+    return scheme
+
+
+@pytest.fixture
+def mock_qbraid_device(mock_profile, mock_scheme, mock_client):
+    """Mock QbraidDevice for testing."""
+    return QbraidDevice(profile=mock_profile, client=mock_client, scheme=mock_scheme)
+
+
+@pytest.fixture
+def mock_basic_device(mock_profile):
+    """Generic mock device for testing."""
+    return MockDevice(profile=mock_profile)
 
 
 def uniform_state_circuit(num_qubits: Optional[int] = None, measure: Optional[bool] = True):

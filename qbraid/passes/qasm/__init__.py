@@ -21,7 +21,7 @@ Functions
 
     rebase
     insert_gate_def
-    replace_gate_name
+    replace_gate_names
     add_stdgates_include
     remove_stdgates_include
     convert_qasm_pi_to_decimal
@@ -34,14 +34,14 @@ from .compat import (
     insert_gate_def,
     normalize_qasm_gate_params,
     remove_stdgates_include,
-    replace_gate_name,
+    replace_gate_names,
 )
 from .decompose import rebase
 
 __all__ = [
     "rebase",
     "insert_gate_def",
-    "replace_gate_name",
+    "replace_gate_names",
     "add_stdgates_include",
     "remove_stdgates_include",
     "convert_qasm_pi_to_decimal",

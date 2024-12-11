@@ -57,13 +57,17 @@ authors:
   - given-names: Pranet
     family-names: Sharma
     affiliation: Yale University
+  - given-names: Alvan
+    family-names: Arulandu
+    affiliation: Harvard University
+    orcid: https://orcid.org/0009-0000-0071-348X
   - given-names: Kanav
     family-names: Setia
     affiliation: qBraid Co.
     orcid: https://orcid.org/0000-0003-2032-3993
 repository-code: 'https://github.com/qBraid/qBraid'
 url: 'https://sdk.qbraid.com/en/stable/'
-repository-artifact: 'https://github.com/qBraid/qBraid/releases/tag/v0.8.7'
+repository-artifact: 'https://github.com/qBraid/qBraid/releases/tag/v0.8.9'
 keywords:
   - python
   - quantum-computing
@@ -72,6 +76,6 @@ keywords:
   - qir
   - runtime
 license: GPL-3.0
-version: 0.8.7
+version: 0.8.9
 doi: 10.5281/zenodo.12627596
-date-released: '2024-11-21'
+date-released: '2024-12-06'

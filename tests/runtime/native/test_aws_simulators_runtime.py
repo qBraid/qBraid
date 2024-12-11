@@ -8,8 +8,6 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint: disable=redefined-outer-name
-
 """
 Unit tests for submissions to AWS SV1, DM1, TN1 via qBraid native runtime.
 

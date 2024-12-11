@@ -83,6 +83,7 @@ class QbraidDevice(QuantumDevice):
         self,
         run_input: dict[str, Union[bytes, str]],
         memory: bool = False,
+        preflight: bool = False,
         shots: Optional[int] = None,
         tags: Optional[dict[str, str]] = None,
         entrypoint: Optional[str] = None,
@@ -100,6 +101,8 @@ class QbraidDevice(QuantumDevice):
             run_input (dict[str, Union[bytes, str]]): Dictionary containing
                 QIR bytecode or OpenQASM string to be run on the device.
             memory (bool, optional): Whether to retain the individual shot results.
+                Only applicable for certain devices. Defaults to False.
+            preflight (bool, optional): Whether to run the job in preflight mode.
                 Only applicable for certain devices. Defaults to False.
             shots (int, optional): The number of times to repeat the execution of the
                 program. Default value varies by device.
@@ -138,6 +141,7 @@ class QbraidDevice(QuantumDevice):
             "timeout": timeout,
             "noiseModel": noise_model,
             "memory": memory,
+            "preflight": preflight,
             "backend": backend,
             "params": params_json,
             "errorMitigation": error_mitig_json,

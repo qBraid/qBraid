@@ -20,7 +20,7 @@ from openqasm3.parser import QASM3ParsingError, parse
 
 from qbraid.passes.exceptions import CompilationError, QasmDecompositionError
 
-from .compat import declarations_to_qasm2
+from .compat import declarations_to_qasm2, _replace_gate_names
 
 
 def _decompose_crx(gate: ast.QuantumGate) -> list[ast.Statement]:
@@ -216,7 +216,13 @@ def assert_gates_in_basis(program: ast.Program, gateset: set[str]) -> None:
                 )
 
 
-def rebase(qasm: str, gateset: Union[set[str], str], require_predicates: bool = True) -> str:
+def rebase(
+    qasm: str,
+    gateset: Union[set[str], str],
+    require_predicates: bool = True,
+    gate_mappings: Optional[dict[str, str]] = None,
+    case_sensitive: bool = False,
+) -> str:
     """
     Rebases an OpenQASM 3 program according to a given basis gate set.
 
@@ -225,6 +231,8 @@ def rebase(qasm: str, gateset: Union[set[str], str], require_predicates: bool = 
         gateset (set[str]): The target basis gates to decompose the program to.
         require_predicates (bool): If True, raises an error if the program fails to meet compilation
             predicates. If False, returns the original program on failure. Defaults to True.
+        gate_mappings (dict[str, str]): A dictionary mapping gate names to new gate names.
+        case_sensitive (bool): If True, the gate mappings are case-sensitive. Defaults to False.
 
     Returns:
         str: The decomposed OpenQASM 3 program.
@@ -258,6 +266,9 @@ def rebase(qasm: str, gateset: Union[set[str], str], require_predicates: bool = 
         converted_program = decompose(program, gateset)
     except Exception as err:  # pylint: disable=broad-exception-caught
         raise QasmDecompositionError from err
+
+    if gate_mappings is not None:
+        converted_program = _replace_gate_names(converted_program, gate_mappings, case_sensitive)
 
     # Check if the program meets the compilation predicates
     try:
