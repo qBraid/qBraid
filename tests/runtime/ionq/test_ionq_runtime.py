@@ -21,6 +21,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from qbraid.passes.qasm import normalize_qasm_gate_params, rebase
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
 from qbraid.programs.gate_model.ionq import IONQ_NATIVE_GATES_BASE, IONQ_QIS_GATES
 from qbraid.runtime import GateModelResultData, ResourceNotFoundError, Result, TargetProfile
@@ -250,7 +251,7 @@ def test_ionq_provider_device_unavailable():
 
 
 @pytest.fixture
-def qis_input():
+def qis_input_decomp():
     """Return a QIS gateset input."""
     return {
         "format": "ionq.circuit.v0",
@@ -263,6 +264,21 @@ def qis_input():
             {"gate": "cnot", "control": 0, "target": 1},
             {"gate": "ry", "target": 1, "rotation": -0.39269908169872414},
             {"gate": "cnot", "control": 0, "target": 1},
+        ],
+    }
+
+
+@pytest.fixture
+def qis_input():
+    """Return a QIS gateset input."""
+    return {
+        "format": "ionq.circuit.v0",
+        "gateset": "qis",
+        "qubits": 2,
+        "circuit": [
+            {"gate": "h", "target": 0},
+            {"gate": "h", "target": 1},
+            {"gate": "ry", "control": 0, "target": 1, "rotation": 0.7853981633974483},
         ],
     }
 
@@ -283,7 +299,7 @@ def native_input():
     }
 
 
-def test_ionq_device_transform_run_input(qis_input):
+def test_ionq_device_transform_run_input(qis_input, qis_input_decomp):
     """Test transforming OpenQASM 2 string to supported gates + json format."""
     qasm_input = """
     OPENQASM 2.0;
@@ -309,6 +325,11 @@ def test_ionq_device_transform_run_input(qis_input):
         qasm_compat = device.transform(qasm_input)
         program_json = device.to_ir(qasm_compat)
         assert program_json == qis_input
+
+        qasm_rebased = rebase(qasm_input, gateset={"h", "ry", "cx"}, gate_mappings={"cx": "cnot"})
+        qasm_decomp = normalize_qasm_gate_params(qasm_rebased)
+        program_json_decomp = device.to_ir(qasm_decomp)
+        assert program_json_decomp == qis_input_decomp
 
         dummy_provider = IonQProvider(api_key="fake_api_key")
         assert provider == dummy_provider

@@ -31,12 +31,11 @@ from qbraid.transpiler.exceptions import ProgramConversionError
 if TYPE_CHECKING:
     from qbraid.programs.typer import IonQDictType, QasmStringType
 
-IONQ_ONE_QUBIT_GATE_MAP = {
+ONE_QUBIT_NON_PARAM = {
     "x": "x",
     "not": "not",
     "y": "y",
     "z": "z",
-    "p": "z",
     "h": "h",
     "s": "s",
     "si": "si",
@@ -48,23 +47,46 @@ IONQ_ONE_QUBIT_GATE_MAP = {
     "tdg": "ti",
     "sx": "v",
     "sxdg": "vi",
+}
+
+ONE_QUBIT_PARAM_ROT = {
+    "p": "rz",
     "rx": "rx",
     "ry": "ry",
     "rz": "rz",
+}
+
+ONE_QUBIT_PARAM_PHASE = {
     "gpi": "gpi",
     "gpi2": "gpi2",
 }
 
-IONQ_TWO_QUBIT_GATE_MAP = {
+
+IONQ_ONE_QUBIT_GATE_MAP = {**ONE_QUBIT_NON_PARAM, **ONE_QUBIT_PARAM_ROT, **ONE_QUBIT_PARAM_PHASE}
+
+TWO_QUBIT_NON_PARAM = {
     "cnot": "cnot",
     "cx": "cnot",
     "swap": "swap",
+}
+
+TWO_QUBIT_PARAM_ANGLE = {
     "zz": "zz",
     "rzz": "zz",
+}
+
+TWO_QUBIT_PARAM_ANGLE_PHASE = {
     "ms": "ms",
 }
 
+IONQ_TWO_QUBIT_GATE_MAP = {
+    **TWO_QUBIT_NON_PARAM,
+    **TWO_QUBIT_PARAM_ANGLE,
+    **TWO_QUBIT_PARAM_ANGLE_PHASE,
+}
+
 IONQ_THREE_QUBIT_GATE_MAP = {
+    "ccnot": "cnot",
     "ccx": "cnot",
     "toffoli": "cnot",
 }
@@ -144,12 +166,12 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
 
             if name in IONQ_ONE_QUBIT_GATE_MAP:
                 ionq_name = IONQ_ONE_QUBIT_GATE_MAP[name]
-                if ionq_name in ["rx", "ry", "rz"]:
+                if ionq_name in ONE_QUBIT_PARAM_ROT:
                     try:
                         angle: str = extract_params(statement)[0]
                     except IndexError as err:
                         raise ValueError(
-                            f"Angle parameter is required for the '{ionq_name}' "
+                            f"Rotation parameter is required for the '{name}' "
                             "gate but was not provided."
                         ) from err
                     angle_decimal = float(convert_qasm_pi_to_decimal(angle))
@@ -161,12 +183,12 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
                                 "rotation": angle_decimal,
                             }
                         )
-                elif ionq_name in ["gpi", "gpi2"]:
+                elif ionq_name in ONE_QUBIT_PARAM_PHASE:
                     try:
                         phase: str = extract_params(statement)[0]
                     except IndexError as err:
                         raise ValueError(
-                            f"Phase parameter is required for the '{ionq_name}' "
+                            f"Phase parameter is required for the '{name}' "
                             "gate but was not provided."
                         ) from err
                     phase = _parse_phase(phase, ionq_name)
@@ -186,15 +208,18 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
             elif name in IONQ_TWO_QUBIT_GATE_MAP:
                 ionq_name = IONQ_TWO_QUBIT_GATE_MAP[name]
 
-                if ionq_name == "swap":
-                    gates.append({"gate": ionq_name, "targets": qubit_values})
+                if len(qubit_values) != 2:
+                    raise ValueError(
+                        f"Invalid number of qubits for the '{name}' gate. "
+                        f"Expected 2, got {len(qubit_values)}"
+                    )
 
-                elif ionq_name == "zz":
+                if ionq_name in TWO_QUBIT_PARAM_ANGLE:
                     try:
                         angle = extract_params(statement)[0]
                     except IndexError as err:
                         raise ValueError(
-                            f"Angle parameter is required for the '{ionq_name}' "
+                            f"Angle parameter is required for the '{name}' "
                             "gate but was not provided."
                         ) from err
                     angle = _parse_angle(angle, ionq_name)
@@ -206,11 +231,11 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
                         }
                     )
 
-                elif ionq_name == "ms":
+                elif ionq_name in TWO_QUBIT_PARAM_ANGLE_PHASE:
                     params = extract_params(statement)
                     if len(params) not in {2, 3}:
                         raise ValueError(
-                            f"Invalid number of parameters for the '{ionq_name}' gate. "
+                            f"Invalid number of parameters for the '{name}' gate. "
                             f"Expected 2 or 3, got {len(params)}"
                         )
 
@@ -228,7 +253,7 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
                     }
                     gates.append(gate_data)
 
-                else:
+                elif ionq_name.startswith("c"):
                     gates.append(
                         {
                             "gate": ionq_name,
@@ -236,11 +261,70 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
                             "target": qubit_values[1],
                         }
                     )
+                else:
+                    gates.append({"gate": ionq_name, "targets": qubit_values})
+
+            elif name.startswith("c") and name[1:] in IONQ_ONE_QUBIT_GATE_MAP:
+                ionq_name = IONQ_ONE_QUBIT_GATE_MAP[name[1:]]
+
+                if len(qubit_values) != 2:
+                    raise ValueError(
+                        f"Invalid number of qubits for the '{name}' gate. "
+                        f"Expected 2, got {len(qubit_values)}"
+                    )
+
+                if ionq_name in ONE_QUBIT_PARAM_ROT:
+                    try:
+                        angle: str = extract_params(statement)[0]
+                    except IndexError as err:
+                        raise ValueError(
+                            f"Rotation parameter is required for the '{name}' "
+                            "gate but was not provided."
+                        ) from err
+                    angle_decimal = float(convert_qasm_pi_to_decimal(angle))
+
+                    gates.append(
+                        {
+                            "gate": ionq_name,
+                            "control": qubit_values[0],
+                            "target": qubit_values[1],
+                            "rotation": angle_decimal,
+                        }
+                    )
+                elif ionq_name in ONE_QUBIT_PARAM_PHASE:
+                    try:
+                        phase: str = extract_params(statement)[0]
+                    except IndexError as err:
+                        raise ValueError(
+                            f"Phase parameter is required for the '{name}' "
+                            "gate but was not provided."
+                        ) from err
+                    phase = _parse_phase(phase, ionq_name)
+
+                    gates.append(
+                        {
+                            "gate": ionq_name,
+                            "control": qubit_values[0],
+                            "target": qubit_values[1],
+                            "phase": phase,
+                        }
+                    )
+                else:
+                    gates.append(
+                        {"gate": ionq_name, "control": qubit_values[0], "target": qubit_values[1]}
+                    )
 
             elif name in IONQ_THREE_QUBIT_GATE_MAP:
+                ionq_name = IONQ_THREE_QUBIT_GATE_MAP[name]
+
+                if len(qubit_values) != 3:
+                    raise ValueError(
+                        f"Invalid number of qubits for the '{name}' gate. "
+                        f"Expected 3, got {len(qubit_values)}"
+                    )
                 gates.append(
                     {
-                        "gate": IONQ_THREE_QUBIT_GATE_MAP[name],
+                        "gate": ionq_name,
                         "controls": qubit_values[:2],
                         "target": qubit_values[2],
                     }
