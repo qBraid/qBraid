@@ -62,6 +62,28 @@ def test_openqasm3_to_cudaq():
     _check_output(qasm3_str_in, cudaq_out)
 
 
+def test_openqasm3_to_cudaq_identifiers():
+    """OpenQASM3 -> CUDA-Q: Test gate operations and assignments with identifiers and indexing."""
+
+    qasm3_str_in = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+
+    qubit[3] q;
+    bit[3] b;
+
+    h q;
+    x q[1];
+
+    b = measure q;
+    """
+    qasm3_in = parse(qasm3_str_in)
+
+    cudaq_out = openqasm3_to_cudaq(qasm3_in)
+
+    _check_output(qasm3_str_in, cudaq_out)
+
+
 def test_openqasm3_to_cudaq_rotation_gates():
     """OpenQASM3 -> CUDA-Q: Test a RX gate with a float literal argument."""
 
@@ -164,11 +186,40 @@ def test_openqasm3_to_cudaq_arith():
     _check_output(qasm3_str_in, cudaq_out, atol=1e-6) # TODO: fails for 1e-7 due to rounding
 
 
-# TODO: test for custom gates?
+def test_openqasm3_to_cudaq_custom_gates():
+    """OpenQASM3 -> CUDA-Q: Test custom parameterized and non-parameterized gates. """
+
+    qasm3_str_in = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+
+    gate aca q {
+        h q;
+        x q;
+    }
+    
+    gate acap(t) q {
+        rx(t) q;
+        y q;
+        rz(5*t) q;
+    }
+
+    qubit[1] q;
+    aca q[0];
+    acap(pi/25) q[0];
+    """
+    
+    qasm3_in = parse(qasm3_str_in)
+
+    cudaq_out = openqasm3_to_cudaq(qasm3_in)
+    
+    _check_output(qasm3_str_in, cudaq_out, atol=1e-6)
+
+
 
 @pytest.mark.parametrize("num_qubits", [2, 3, 4, 5])
 def test_openqasm_to_cudaq_random_clifford_circuit(num_qubits):
-    """OpenQASM 3.0 -> CUDA-Q: test a random circuit"""
+    """OpenQASM 3.0 -> CUDA-Q: Test a random circuit"""
 
     num_gates = np.random.randint(1, 11)
     circ = random_clifford_circuit(num_qubits, num_gates, gates=["x", "y", "z", "h", "s", "swap"])
