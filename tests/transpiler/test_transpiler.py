@@ -25,9 +25,9 @@ from qiskit import QuantumCircuit as QiskitCircuit
 from qiskit import QuantumRegister as QiskitQuantumRegister
 from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 
-from qbraid.exceptions import QbraidError
 from qbraid.interface import assert_allclose_up_to_global_phase
-from qbraid.programs import QPROGRAM_ALIASES, ProgramTypeError, load_program
+from qbraid.programs import QPROGRAM_ALIASES, load_program
+from qbraid.programs.exceptions import ProgramLoaderError, ProgramTypeError
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.exceptions import NodeNotFoundError
 from qbraid.transpiler.graph import ConversionGraph
@@ -73,7 +73,7 @@ def test_to_cirq_bad_types(item):
     ["OPENQASM 2.0; bad operation", "OPENQASM 3.0; bad operation", "DECLARE ro BIT[1]", "circuit"],
 )
 def test_to_cirq_bad_openqasm_program(item):
-    """Test raising ProgramTypeError converting invalid OpenQASM program string"""
+    """Test raising QasmParsingError converting invalid OpenQASM program string"""
     with pytest.raises(ProgramTypeError):
         transpile(item, "cirq")
 
@@ -104,7 +104,7 @@ def test_from_cirq_bad_package(bell_circuit, item):
 @pytest.mark.parametrize("program", ["Not a circuit", None])
 def test_load_program_error(program):
     """Test raising circuit wrapper error"""
-    with pytest.raises(QbraidError):
+    with pytest.raises(ProgramLoaderError):
         load_program(program)
 
 

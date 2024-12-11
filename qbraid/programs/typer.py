@@ -16,9 +16,11 @@ that use Python's built-in types.
 from abc import ABCMeta, abstractmethod
 from typing import Any, Optional, Type, TypeVar
 
-from openqasm3.parser import QASM3ParsingError, parse
+from pyqasm.analyzer import Qasm3Analyzer
+from pyqasm.exceptions import QasmParsingError
 
-from .exceptions import QasmError, ValidationError
+from .exceptions import QasmError as QbraidQasmError
+from .exceptions import ValidationError as ProgramValidationError
 
 IonQDictType = TypeVar("IonQDictType", bound=dict)
 
@@ -55,15 +57,17 @@ class IonQDictInstanceMeta(QbraidMetaType):
     def _validate_field(single: Any, multiple: Any, field_name: str) -> None:
         """Helper method to validate single or multiple target/control fields."""
         if single is not None and multiple is not None:
-            raise ValidationError(
+            raise ProgramValidationError(
                 f"Both {field_name} and {field_name}s are set; only one should be provided."
             )
         if single is not None and not isinstance(single, int):
-            raise ValidationError(f"Invalid {field_name}: {single}. Must be an integer.")
+            raise ProgramValidationError(f"Invalid {field_name}: {single}. Must be an integer.")
         if multiple is not None and not (
             isinstance(multiple, list) and all(isinstance(item, int) for item in multiple)
         ):
-            raise ValidationError(f"Invalid {field_name}s: {multiple}. Must be a list of integers.")
+            raise ProgramValidationError(
+                f"Invalid {field_name}s: {multiple}. Must be a list of integers."
+            )
 
     def __instancecheck__(cls, instance: Any) -> bool:
         """Custom instance checks based on dict format."""
@@ -102,7 +106,7 @@ class IonQDictInstanceMeta(QbraidMetaType):
             try:
                 cls._validate_field(target, targets, "target")
                 cls._validate_field(control, controls, "control")
-            except ValidationError:
+            except ProgramValidationError:
                 return False
 
         return True
@@ -110,28 +114,6 @@ class IonQDictInstanceMeta(QbraidMetaType):
 
 class IonQDict(metaclass=IonQDictInstanceMeta):
     """Marker class for dict that are valid IonQ JSON formatted programs."""
-
-
-def extract_qasm_version(qasm: str) -> int:
-    """
-    Parses an OpenQASM program string to determine its version, either 2 or 3.
-
-    Args:
-        qasm (str): The OpenQASM program string.
-
-    Returns:
-        int: The OpenQASM version as an integer.
-
-    Raises:
-        QasmError: If the string does not represent a valid OpenQASM program.
-    """
-    qasm = qasm.replace("opaque", "// opaque")  # Temporarily mask out the opaque keyword
-    try:
-        parsed_program = parse(qasm)
-        version = int(float(parsed_program.version))
-        return version
-    except (QASM3ParsingError, ValueError, TypeError) as err:
-        raise QasmError("Could not determine the OpenQASM version.") from err
 
 
 def get_qasm_type_alias(qasm: str) -> str:
@@ -145,14 +127,17 @@ def get_qasm_type_alias(qasm: str) -> str:
         str: The QASM version alias ('qasm2' or 'qasm3').
 
     Raises:
-        QasmError: If the string does not represent a valid OpenQASM program.
+        `QbraidQasmError`: If the string does not represent a valid OpenQASM program.
+
+    Note:
+        `QbraidQasmError` is an alias for :exc:`QasmError`.
     """
     try:
-        version = extract_qasm_version(qasm)
+        version = Qasm3Analyzer.extract_qasm_version(qasm)
         type_alias = f"qasm{version}"
         return type_alias
-    except QasmError as err:
-        raise QasmError(
+    except QasmParsingError as err:  # catch the pyqasm exception
+        raise QbraidQasmError(
             "Could not determine the type alias: the OpenQASM program may be invalid."
         ) from err
 
@@ -188,8 +173,8 @@ class BaseQasmInstanceMeta(QbraidMetaType):
         if not isinstance(instance, str):
             return False
         try:
-            return extract_qasm_version(instance) == cls.version
-        except QasmError:
+            return Qasm3Analyzer.extract_qasm_version(instance) == cls.version
+        except QasmParsingError:
             return False
 
 
@@ -221,7 +206,7 @@ class QasmStringType(str):
     def __new__(cls, value):
         if not isinstance(value, str):
             raise TypeError("OpenQASM strings must be initialized with a string.")
-        if not extract_qasm_version(value) == cls.version:
+        if not Qasm3Analyzer.extract_qasm_version(value) == cls.version:
             raise ValueError(f"String does not conform to OpenQASM {cls.version} format.")
         return str.__new__(cls, value)
 

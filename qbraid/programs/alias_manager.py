@@ -16,7 +16,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Optional, Type
 
-from .exceptions import ProgramTypeError, QasmError
+from .exceptions import ProgramTypeError
+from .exceptions import QasmError as QbraidQasmError
 from .registry import QPROGRAM_REGISTRY, QPROGRAM_TYPES
 from .typer import IonQDict, get_qasm_type_alias
 
@@ -54,7 +55,7 @@ def _get_program_type_alias(program: qbraid.programs.QPROGRAM) -> str:
     if isinstance(program, str):
         try:
             return get_qasm_type_alias(program)
-        except QasmError as err:
+        except QbraidQasmError as err:
             package = find_str_type_alias()
             if package is not None:
                 return package

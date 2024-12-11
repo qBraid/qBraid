@@ -35,4 +35,4 @@ def pennylane_to_qasm2(tape: QuantumTape) -> Qasm2StringType:
         str: OpenQASM 2.0 representation of the tape
 
     """
-    return tape.to_openqasm()
+    return tape.to_openqasm(measure_all=False)

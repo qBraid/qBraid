@@ -63,7 +63,7 @@ def test_braket_to_qiskit_stdgates():
     circuit.rz(2, 3 * np.pi / 4)
     circuit.phaseshift(3, np.pi / 8)
     circuit.v(0)
-    # circuit.vi(1)
+    circuit.vi(1)
     circuit.iswap(2, 3)
     circuit.swap(0, 2)
     circuit.swap(1, 3)
