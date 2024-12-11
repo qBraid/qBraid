@@ -18,6 +18,7 @@ from typing import TYPE_CHECKING, Union
 
 import cudaq
 from openqasm3 import ast
+import pyqasm
 
 from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import ProgramConversionError
@@ -73,6 +74,12 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
     Returns:
         kernel: CUDA-Q kernel equivalent to input OpenQASM string.
     """
+    try:
+        pyqasm.load(program).validate()
+    except Exception as e:
+        raise ProgramConversionError("PyQasm program is not well-formed") from e
+        
+    
     kernel = cudaq.make_kernel()
     ctx = {}
 
@@ -156,7 +163,7 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
                     gate = gate_kernel(name[0], *args)
                     kernel.adjoint(gate, *qubit_refs)
                 else:
-                    gate = gate_kernel(name[0], *args)
+                    gate = gate_kernel(name, *args)
                     kernel.apply_call(gate, *qubit_refs)
 
         else:

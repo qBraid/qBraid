@@ -28,13 +28,9 @@ from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import qasm2_to_qasm3
 
 
 def _check_output(qasm3_str_in, cudaq_out):
-    print("CUDAQ", cudaq_out)
     qasm2_str_out = cudaq.translate(cudaq_out, format="openqasm2")
-    print("QASM2", qasm2_str_out)
     qasm3_str_out = qasm2_to_qasm3(qasm2_str_out)
     circ_in, circ_out = qasm3_loads(qasm3_str_in), qasm3_loads(qasm3_str_out)
-    print("CIN", circ_in)
-    print("COUT", circ_out)
     assert circuits_allclose(circ_in, circ_out)
 
 
