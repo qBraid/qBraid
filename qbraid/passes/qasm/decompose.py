@@ -20,7 +20,7 @@ from openqasm3.parser import QASM3ParsingError, parse
 
 from qbraid.passes.exceptions import CompilationError, QasmDecompositionError
 
-from .compat import declarations_to_qasm2, _replace_gate_names
+from .compat import _replace_gate_names, declarations_to_qasm2
 
 
 def _decompose_crx(gate: ast.QuantumGate) -> list[ast.Statement]:

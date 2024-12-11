@@ -22,11 +22,7 @@ from openqasm3.parser import parse
 from qbraid.programs.gate_model.ionq import GateSet, InputFormat
 from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
 from qbraid.programs.typer import IonQDictType, Qasm3StringType
-from qbraid.transpiler.conversions.openqasm3.openqasm3_to_ionq import (
-    _parse_gates,
-    extract_params,
-    openqasm3_to_ionq,
-)
+from qbraid.transpiler.conversions.openqasm3.openqasm3_to_ionq import _parse_gates, extract_params
 from qbraid.transpiler.conversions.qasm2.qasm2_to_ionq import qasm2_to_ionq
 from qbraid.transpiler.conversions.qasm3.qasm3_to_ionq import qasm3_to_ionq
 from qbraid.transpiler.exceptions import ProgramConversionError
@@ -379,44 +375,6 @@ def test_qasm3_to_ionq_invalid_params(qasm_code, error_message):
     assert error_message in str(excinfo.value)
 
 
-@pytest.mark.skip(reason="Validated in pyqasm")
-@pytest.mark.parametrize(
-    "qasm_code, error_message",
-    [
-        (
-            """
-    OPENQASM 3.0;
-    qubit[2] q;
-    gpi q[0];
-    """,
-            "Phase parameter is required",
-        ),
-        (
-            """
-    OPENQASM 3.0;
-    qubit[1] q;
-    rz q[0];
-    """,
-            "Angle parameter is required",
-        ),
-        (
-            """
-    OPENQASM 3.0;
-    qubit[2] q;
-    zz q[0], q[1];
-    """,
-            "Angle parameter is required",
-        ),
-    ],
-)
-def test_openqasm3_to_ionq_value_errors(qasm_code, error_message):
-    """Test that openqasm3_to_ionq raises an error when the circuit contains
-    a gate that is missing required parameters or is not supported."""
-    with pytest.raises(ValueError) as excinfo:
-        openqasm3_to_ionq(qasm_code)
-    assert error_message in str(excinfo.value)
-
-
 def test_qasm3_to_ionq_mixed_gate_types_raises_value_error():
     """Test that qasm3_to_ionq raises an error when the circuit contains mixed gate types."""
     mixed_gate_qasm = """
@@ -444,7 +402,7 @@ def test_extract_params_index_error_caught():
     assert extract_params(statement) == []
 
 
-@pytest.mark.skip(reason="Validated in pyqasm through definition of ms gate")
+@pytest.mark.skip(reason="To validate in pyqasm through definition of ms gate")
 @pytest.mark.parametrize(
     "program_text",
     [

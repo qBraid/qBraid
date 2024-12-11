@@ -18,7 +18,7 @@ import re
 from functools import reduce
 
 from openqasm3 import dumps, parse
-from openqasm3.ast import Include, Program, QuantumGate, QuantumMeasurementStatement, Statement
+from openqasm3.ast import Program, QuantumGate, Statement
 from openqasm3.parser import QASM3ParsingError
 
 from qbraid._logging import logger
@@ -238,17 +238,6 @@ def has_redundant_parentheses(qasm_str: str) -> bool:
         return True
 
     return False
-
-
-def remove_spaces_in_parentheses(expression: str) -> str:
-    """Removes all spaces inside parentheses in an expression."""
-    parenthesized_parts = re.findall(r"\(.*?\)", expression)
-
-    for part in parenthesized_parts:
-        cleaned_part = part.replace(" ", "")
-        expression = expression.replace(part, cleaned_part)
-
-    return expression
 
 
 def simplify_parentheses_in_qasm(qasm_str: str) -> str:

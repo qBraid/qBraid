@@ -13,7 +13,10 @@ Unit tests for qasm2 cirq_custom gates
 
 """
 
-from qbraid.transpiler.conversions.qasm2.cirq_custom import RZZGate, U2Gate, U3Gate
+from cirq import IdentityGate, TwoQubitDiagonalGate
+from numpy import pi
+
+from qbraid.transpiler.conversions.qasm2.cirq_custom import RZZGate, U2Gate, U3Gate, rzz
 
 
 def test_u2_gate():
@@ -38,4 +41,17 @@ class FakeArgs:
 def test_rzz_gate():
     """Test RZZGate"""
     gate = RZZGate(0)
+    assert gate._num_qubits_() == 2
     assert gate._circuit_diagram_info_(args=FakeArgs(1)).wire_symbols[0] == "RZZ(0.0)"
+
+
+def test_rzz_gate_method():
+    """Test rzz method"""
+    id_gate = rzz(0)
+    assert isinstance(id_gate, IdentityGate)
+
+    diagonal = rzz(2 * pi)
+    assert isinstance(diagonal, TwoQubitDiagonalGate)
+
+    random_rzz = rzz(0.5)
+    assert isinstance(random_rzz, RZZGate)

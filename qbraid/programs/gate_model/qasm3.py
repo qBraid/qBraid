@@ -31,11 +31,12 @@ if TYPE_CHECKING:
 
 def auto_reparse(func):
     """Decorator that ensures the quantum circuit's state
-    is reparsed from QASM after method execution."""
+    is validated and reparsed after method execution."""
 
     def wrapper(self, *args, **kwargs):
         result = func(self, *args, **kwargs)
         self._module.validate()
+        self._program = str(self._module)
         return result
 
     return wrapper
@@ -102,7 +103,6 @@ class OpenQasm3Program(GateModelProgram):
         """Reverse the order of the qubits in the circuit."""
         self._module.reverse_qubit_order()
 
-    @auto_reparse
     def transform(self, device: qbraid.runtime.QuantumDevice, **kwargs) -> None:
         """Transform program to according to device target profile."""
         basis_gates = device.profile.get("basis_gates")
@@ -110,3 +110,4 @@ class OpenQasm3Program(GateModelProgram):
         if basis_gates is not None and len(basis_gates) > 0:
             transformed_qasm = rebase(self.program, basis_gates, **kwargs)
             self._program = normalize_qasm_gate_params(transformed_qasm)
+            self._module.validate()

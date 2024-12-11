@@ -32,6 +32,11 @@ def test_qasm_qubits():
     assert OpenQasm3Program(qasm3_shared15()).qubits == {"q": 4}
 
 
+def test_qasm_clbits():
+    """Test getting QASM clbits"""
+    assert OpenQasm3Program("OPENQASM 3.0; bit[2] c;").clbits == {"c": 2}
+
+
 def test_qasm3_num_qubits():
     """Test calculating number of qubits in qasm3 circuit"""
     num_qubits = np.random.randint(2, 10)
@@ -141,6 +146,79 @@ measure q[1] -> c[1];
 """
     qprogram = OpenQasm3Program(qasm3_str)
     assert qprogram.num_clbits == 2
+
+
+def test_populate_idle_qubits_qasm3():
+    """Test conversion of qasm3 to contiguous qasm3"""
+    qasm_test = """OPENQASM 3.0;
+    gate custom q1, q2, q3{
+        x q1;
+        y q2;
+        z q3;
+    }
+    qubit[2] q1;
+    qubit[2] q2;
+    qubit[3] q3;
+    qubit[1] q4;
+    x q1[0];
+    y q2[0];
+    z q3;
+    """
+
+    qprogram = OpenQasm3Program(qasm_test)
+    qprogram.populate_idle_qubits()
+    actual_qasm = qprogram.program
+
+    id_ops = ["id q1[1];", "id q2[1];", "id q4[0];"]
+    for id_op in id_ops:
+        assert id_op in actual_qasm
+
+
+def test_remove_idle_qubits_qasm3():
+    """Test that remove_idle_qubits for qasm3 string"""
+    qasm3_str = """
+    OPENQASM 3;
+    include "stdgates.inc";
+    qubit[4] q;
+    h q[1];
+    cx q[1], q[3];
+    """
+    qprogram = OpenQasm3Program(qasm3_str)
+    qprogram.remove_idle_qubits()
+    assert qprogram.num_qubits == 2
+
+
+def test_reverse_qubit_order():
+    """Test the reverse qubit ordering function"""
+    qasm_str = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[2] q;
+    qubit[4] q2;
+    qubit[1] q3;
+    cx q[0], q[1];
+    cx q2[0], q2[1];
+    x q2[3];
+    cx q2[0], q2[2];
+    x q3[0];
+    """
+
+    program = OpenQasm3Program(qasm_str)
+    program.reverse_qubit_order()
+    reverse_qasm = program.program
+
+    expected_qasm = """OPENQASM 3.0;
+include "stdgates.inc";
+qubit[2] q;
+qubit[4] q2;
+qubit[1] q3;
+cx q[1], q[0];
+cx q2[3], q2[2];
+x q2[0];
+cx q2[3], q2[1];
+x q3[0];
+"""
+    assert reverse_qasm == expected_qasm
 
 
 def test_raise_program_type_error():

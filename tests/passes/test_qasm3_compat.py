@@ -20,14 +20,55 @@ import pytest
 from qbraid.passes.qasm.compat import (
     _evaluate_expression,
     _normalize_case_insensitive_map,
+    add_stdgates_include,
     convert_qasm_pi_to_decimal,
     has_redundant_parentheses,
     insert_gate_def,
     normalize_qasm_gate_params,
-    remove_include_statements,
+    remove_stdgates_include,
     replace_gate_names,
     simplify_parentheses_in_qasm,
 )
+
+
+@pytest.mark.parametrize(
+    "qasm3_without, qasm3_with",
+    [
+        (
+            """
+OPENQASM 3;
+qubit[1] q;
+h q[0];
+ry(pi/4) q[0];
+        """,
+            """
+OPENQASM 3;
+include "stdgates.inc";
+qubit[1] q;
+h q[0];
+ry(pi/4) q[0];
+        """,
+        ),
+    ],
+)
+def test_add_stdgates_include(qasm3_without, qasm3_with):
+    """Test adding stdgates include to OpenQASM 3.0 string"""
+
+    def _remove_empty_lines(input_string: str) -> str:
+        """Removes all empty lines from the provided string."""
+        return "\n".join(line for line in input_string.split("\n") if line.strip())
+
+    test_with = _remove_empty_lines(add_stdgates_include(qasm3_without))
+    expected_with = _remove_empty_lines(qasm3_with)
+
+    test_without = _remove_empty_lines(remove_stdgates_include(qasm3_with))
+    expected_without = _remove_empty_lines(qasm3_without)
+
+    test_redundant = add_stdgates_include(qasm3_with)
+
+    assert test_with == expected_with
+    assert test_without == expected_without
+    assert test_redundant == qasm3_with
 
 
 @pytest.mark.parametrize(
@@ -335,45 +376,6 @@ def test_convert_qasm_pi_to_decimal_qasm3_fns_gates_vars():
     result = measure q;
     """
     assert convert_qasm_pi_to_decimal(qasm) == expected
-
-
-@pytest.mark.parametrize(
-    "qasm_input, expected_output",
-    [
-        (
-            """
-OPENQASM 2.0;
-include "qelib1.inc";
-qreg q[2];
-gpi(0) q[0];
-gpi2(0) q[1];
-cry(pi) q[0], q[1];""",
-            """
-OPENQASM 2.0;
-qreg q[2];
-gpi(0) q[0];
-gpi2(0) q[1];
-cry(pi) q[0], q[1];
-            """,
-        ),
-        (
-            """
-OPENQASM 3.0;
-include "stdgates.inc";
-qubit[2] q;
-crz(pi / 4) q[0], q[1];
-            """,
-            """
-OPENQASM 3.0;
-qubit[2] q;
-crz(pi / 4) q[0], q[1];
-            """,
-        ),
-    ],
-)
-def test_remove_include_statements(qasm_input: str, expected_output: str):
-    """Test removing include statements from QASM string."""
-    assert expected_output.strip() == remove_include_statements(qasm_input).strip()
 
 
 def test_normalize_case_insensitive_map():

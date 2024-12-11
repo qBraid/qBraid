@@ -144,13 +144,8 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
             if name in IONQ_ONE_QUBIT_GATE_MAP:
                 ionq_name = IONQ_ONE_QUBIT_GATE_MAP[name]
                 if ionq_name in ["rx", "ry", "rz"]:
-                    try:
-                        angle: str = extract_params(statement)[0]
-                    except IndexError as err:
-                        raise ValueError(
-                            f"Angle parameter is required for the '{ionq_name}' "
-                            "gate but was not provided."
-                        ) from err
+                    angle: str = extract_params(statement)[0]
+
                     angle_decimal = float(convert_qasm_pi_to_decimal(angle))
                     for qubit in qubit_values:
                         gates.append(
@@ -161,13 +156,7 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
                             }
                         )
                 elif ionq_name in ["gpi", "gpi2"]:
-                    try:
-                        phase: str = extract_params(statement)[0]
-                    except IndexError as err:
-                        raise ValueError(
-                            f"Phase parameter is required for the '{ionq_name}' "
-                            "gate but was not provided."
-                        ) from err
+                    phase: str = extract_params(statement)[0]
                     phase = _parse_phase(phase, ionq_name)
 
                     for qubit in qubit_values:
@@ -189,13 +178,8 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
                     gates.append({"gate": ionq_name, "targets": qubit_values})
 
                 elif ionq_name == "zz":
-                    try:
-                        angle = extract_params(statement)[0]
-                    except IndexError as err:
-                        raise ValueError(
-                            f"Angle parameter is required for the '{ionq_name}' "
-                            "gate but was not provided."
-                        ) from err
+                    angle = extract_params(statement)[0]
+
                     angle = _parse_angle(angle, ionq_name)
                     gates.append(
                         {

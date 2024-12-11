@@ -21,6 +21,7 @@ from qiskit.qasm3 import loads as qasm3_loads
 from qbraid._logging import logger
 from qbraid.interface import circuits_allclose
 from qbraid.interface.random import random_circuit
+from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import qasm2_to_qasm3
 
 
 def _generate_valid_qasm_strings(seed=42, gates_to_skip=None, num_circuits=100):
@@ -65,3 +66,9 @@ def test_random_conversion_to_qasm3(qasm2_str):
 
     # ensure that the conversion is correct
     assert circuits_allclose(circuit_orig, circuit_test)
+
+
+def test_invalid_conversion():
+    """Test invalid conversion inputs"""
+    with pytest.raises(ValueError):
+        qasm2_to_qasm3(1)

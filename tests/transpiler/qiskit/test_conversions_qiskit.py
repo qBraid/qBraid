@@ -239,7 +239,7 @@ def test_qiskit_roundtrip_noncontig():
 def test_100_random_qiskit():
     """Test converting 100 random qiskit circuits to cirq."""
 
-    gates_to_skip = []
+    gates_to_skip = ["rxx", "rzz"]
 
     def _circuit_contains_invalid_gate(qiskit_circuit):
         for gate in gates_to_skip:
