@@ -26,6 +26,35 @@ if TYPE_CHECKING:
     from cudaq import PyKernel, QuakeValue
 
 
+def gate_kernel(name: str, *args) -> PyKernel:
+    if name in ["x", "y", "z", "h", "s", "t"]:
+        size, argc = 1, 0
+    elif name in ["rx", "ry", "rz"]:
+        size, argc = 1, 1
+    elif name in ["swap"]:
+        size, argc = 2, 0
+    elif name in ["u3"]:
+        size, argc = 3, 3
+    else:
+        raise ProgramConversionError(f"Unsupported gate: {name}")
+
+    kernel, *qrefs = cudaq.make_kernel(*[cudaq.qubit for _ in range(size)])
+
+    if len(args) != argc:
+        raise ProgramConversionError(
+            f"Gate {name} requires {argc} args but only {len(args)} were provided: {args}"
+        )
+
+    op = getattr(kernel, name)
+
+    if len(args) > 0:
+        op(*args, *qrefs)
+    else:
+        op(*qrefs)
+
+    return kernel
+
+
 def identifier_lookup(cbit: Union[ast.IndexedIdentifier, ast.Identifier]) -> str:
     """Unpacks the identifier name"""
     if isinstance(cbit, ast.IndexedIdentifier):
@@ -99,11 +128,6 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
         elif isinstance(statement, ast.QuantumGate):
             name, qubits = statement.name.name, statement.qubits
 
-            op = getattr(kernel, name)
-
-            if len(statement.modifiers) > 0:
-                raise ProgramConversionError(f"Gate modifiers are not supported: {statement}")
-
             # TODO: handle binary operations and special constants: e.g. pi/4
             args = []
             for arg in statement.arguments:
@@ -114,20 +138,21 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
                 args.append(arg.value)
 
             qubit_refs = [qubit_lookup(q) for q in qubits]
-            if name in ["x", "y", "z", "h", "s", "t"]:
-                op(*qubit_refs)
-            elif name in ["rx", "ry", "rz"]:
-                if len(args) != 1:
-                    raise ProgramConversionError(f"Rotation gates have a single argument. {args}")
-                op(*args, *qubit_refs)
-            elif name in ["swap"]:
-                op(*qubit_refs)
-            elif name in ["u3"]:
-                if len(statement.arguments) != 3:
-                    raise ProgramConversionError(f"U3 gate has 3 arguments. {statement.arguments}")
-                op(*args)
+
+            gate = gate_kernel(name, *args)
+
+            if len(statement.modifiers) > 1:
+                raise ProgramConversionError(
+                    f"Multiple gate modifiers are not supported: {statement}"
+                )
+            elif len(statement.modifiers) == 1:
+                mod = statement.modifiers[0]
+                if mod.modifier != ast.GateModifierName.ctrl:
+                    raise ProgramConversionError(f"Non-ctrl modifiers are not support: {statement}")
+
+                kernel.control(gate, qubit_refs[0], *qubit_refs[1:])
             else:
-                raise ProgramConversionError(f"Unsupported gate: {statement}")
+                kernel.apply_call(gate, *qubit_refs)
 
         else:
             raise ProgramConversionError(f"Unsupported statement: {statement}")

@@ -102,6 +102,27 @@ def test_openqasm3_to_cudaq_two_qubit_gates():
     _check_output(qasm3_str_in, cudaq_out)
 
 
+def test_openqasm3_to_cudaq_ctrl_modifier():
+    """OpenQASM3 -> CUDA-Q: Test a SWAP gate."""
+
+    qasm3_str_in = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+
+    qubit[2] q;
+    bit[2] b;
+    ctrl @ x q[0], q[1];
+
+    b = measure q;
+    """
+    qasm3_in = parse(qasm3_str_in)
+
+    cudaq_out = openqasm3_to_cudaq(qasm3_in)
+    
+    # TODO: cudaq.translate to qasm2 fails for ctrl modifiers on gates.
+    _check_output(qasm3_str_in, cudaq_out)
+
+
 @pytest.mark.parametrize("num_qubits", [2, 3, 4, 5])
 def test_openqasm_to_cudaq_random_clifford_circuit(num_qubits):
     """OpenQASM 3.0 -> CUDA-Q: test a random circuit"""
