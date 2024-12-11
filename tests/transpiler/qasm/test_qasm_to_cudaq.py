@@ -28,10 +28,14 @@ from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import qasm2_to_qasm3
 
 
 def _check_output(qasm3_str_in, cudaq_out):
+    print("CUDAQ", cudaq_out)
     qasm2_str_out = cudaq.translate(cudaq_out, format="openqasm2")
+    print("QASM2", qasm2_str_out)
     qasm3_str_out = qasm2_to_qasm3(qasm2_str_out)
-
-    assert circuits_allclose(qasm3_loads(qasm3_str_out), qasm3_loads(qasm3_str_in))
+    circ_in, circ_out = qasm3_loads(qasm3_str_in), qasm3_loads(qasm3_str_out)
+    print("CIN", circ_in)
+    print("COUT", circ_out)
+    assert circuits_allclose(circ_in, circ_out)
 
 
 def test_openqasm3_to_cudaq():
@@ -103,7 +107,7 @@ def test_openqasm3_to_cudaq_two_qubit_gates():
 
 
 def test_openqasm3_to_cudaq_ctrl_modifier():
-    """OpenQASM3 -> CUDA-Q: Test a SWAP gate."""
+    """OpenQASM3 -> CUDA-Q: Test a ctrl modifier on an x gate."""
 
     qasm3_str_in = """
     OPENQASM 3.0;
@@ -120,6 +124,28 @@ def test_openqasm3_to_cudaq_ctrl_modifier():
     cudaq_out = openqasm3_to_cudaq(qasm3_in)
     
     # TODO: cudaq.translate to qasm2 fails for ctrl modifiers on gates.
+    _check_output(qasm3_str_in, cudaq_out)
+
+
+def test_openqasm3_to_cudaq_adj_gates():
+    """OpenQASM3 -> CUDA-Q: Test adjoint modifier with sdg gate."""
+
+    qasm3_str_in = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+
+    qubit[1] q;
+    bit[1] b;
+    sdg q[0];
+    
+    b[0] = measure q[0];
+    """
+    
+    qasm3_in = parse(qasm3_str_in)
+
+    cudaq_out = openqasm3_to_cudaq(qasm3_in)
+    
+    # TODO: cudaq.translate bug on translating adjoint modifiers
     _check_output(qasm3_str_in, cudaq_out)
 
 

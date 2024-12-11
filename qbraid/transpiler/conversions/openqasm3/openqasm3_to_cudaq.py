@@ -99,7 +99,7 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
             q = ctx[qubit.name.name][ind.value]
         else:
             assert isinstance(qubit, ast.Identifier)
-            q = ctx[qubit.name]
+            q = ctx[qubit.name][0]
         return q
 
     for statement in program.statements:
@@ -139,7 +139,6 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
 
             qubit_refs = [qubit_lookup(q) for q in qubits]
 
-            gate = gate_kernel(name, *args)
 
             if len(statement.modifiers) > 1:
                 raise ProgramConversionError(
@@ -150,9 +149,15 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
                 if mod.modifier != ast.GateModifierName.ctrl:
                     raise ProgramConversionError(f"Non-ctrl modifiers are not support: {statement}")
 
+                gate = gate_kernel(name, *args)
                 kernel.control(gate, qubit_refs[0], *qubit_refs[1:])
             else:
-                kernel.apply_call(gate, *qubit_refs)
+                if name in ['sdg', 'tdg']:
+                    gate = gate_kernel(name[0], *args)
+                    kernel.adjoint(gate, *qubit_refs)
+                else:
+                    gate = gate_kernel(name[0], *args)
+                    kernel.apply_call(gate, *qubit_refs)
 
         else:
             raise ProgramConversionError(f"Unsupported statement: {statement}")
