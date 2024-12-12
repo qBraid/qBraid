@@ -14,7 +14,7 @@ Module containing OpenQASM to CUDA-Q conversion function
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Dict, Union
 
 import pyqasm
 from openqasm3 import ast, parser, printer
@@ -74,6 +74,7 @@ def identifier_lookup(cbit: Union[ast.IndexedIdentifier, ast.Identifier]) -> str
 
 @weight(1)
 @requires_extras("cudaq")
+# pylint: disable-next=too-many-statements
 def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
     """Returns a CUDA-Q kernel representing the input OpenQASM program.
 
@@ -93,8 +94,8 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
     program = module.unrolled_ast
     program = parser.parse(normalize_qasm_gate_params(printer.dumps(program)))
 
-    kernel = cudaq.make_kernel()
-    ctx = {}
+    kernel: PyKernel = cudaq.make_kernel()
+    ctx: Dict[str, Union[QuakeValue | None]] = {}
 
     def qubit_lookup(qubit: Union[ast.IndexedIdentifier, ast.Identifier]) -> QuakeValue:
         if isinstance(qubit, ast.IndexedIdentifier):
@@ -122,6 +123,7 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
             q = ctx[qubit.name][0]
         return q
 
+    # pylint: disable-next=too-many-nested-blocks
     for statement in program.statements:
         if isinstance(statement, ast.Include):
             if statement.filename not in {"stdgates.inc", "qelib1.inc"}:
