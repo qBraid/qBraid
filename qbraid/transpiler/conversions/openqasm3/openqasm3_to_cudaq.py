@@ -33,7 +33,7 @@ if TYPE_CHECKING:
 def gate_kernel(name: str, *args) -> PyKernel:
     """Returns CUDA-Q kernel for pure standard gates (no modifiers - ctrl or adj)."""
 
-    if name in ["x", "y", "z", "h", "s", "t", "sdg", "tdg"]:
+    if name in ["x", "y", "z", "h", "s", "t", "sdg", "tdg", "i", "id", "iden"]:
         size, argc = 1, 0
     elif name in ["rx", "ry", "rz"]:
         size, argc = 1, 1
@@ -50,6 +50,9 @@ def gate_kernel(name: str, *args) -> PyKernel:
         raise ProgramConversionError(
             f"Gate {name} requires {argc} args but only {len(args)} were provided: {args}"
         )
+
+    if name in ["i", "id", "iden"]:
+        return kernel
 
     op = getattr(kernel, name)
 
@@ -89,7 +92,7 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
     module.unroll()
     program = module.unrolled_ast
     program = parser.parse(normalize_qasm_gate_params(printer.dumps(program)))
-    
+
     kernel = cudaq.make_kernel()
     ctx = {}
 
@@ -167,7 +170,14 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
                 gate = gate_kernel(name, *args)
                 kernel.control(gate, qubit_refs[0], *qubit_refs[1:])
             else:
-                if (namel := name.lower())[0] == "c" and namel[1:] in ["x", "y", "z", "rx", "ry", "rz"]:
+                if (namel := name.lower())[0] == "c" and namel[1:] in [
+                    "x",
+                    "y",
+                    "z",
+                    "rx",
+                    "ry",
+                    "rz",
+                ]:
                     # TODO: pyqasm doesn't unroll C{X,Y,Z} -> ctrl @ x. the below also handles this.
                     gate = gate_kernel(namel[1:], *args)
                     kernel.control(gate, qubit_refs[0], *qubit_refs[1:])
