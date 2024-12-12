@@ -396,8 +396,8 @@ def test_qubo_solve_params_model():
         andzero=[["x[0]", "x[1]"]],
         orone=[["x[1]", "x[2]"]],
         supplement=[["y[0]", "y[1]"]],
-        maxone=[[1,["x[0]", "x[1]"]]],
-        minmaxone=[[1,2,["x[1]", "x[2]"]]],
+        maxone=[[1, ["x[0]", "x[1]"]]],
+        minmaxone=[[1, 2, ["x[1]", "x[2]"]]],
         init_spin={"x[0]": 1, "x[1]": 0},
         spin_list=["x[1]", "x[2]"],
     )
