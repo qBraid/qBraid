@@ -240,7 +240,7 @@ class QuboSolveParams(BaseModel):
         supplement (Optional[list[list[str]]]): VA supplement constraint.
         maxone (Optional[list[list[Union[int, list[str]]]]): VA maxone constraint.
         minmaxone (Optional[list[list[Union[int, list[str]]]]): VA minmaxone constraint.
-        init_spin (Optional[Union[dict[str, int], list[list[Union[str, int]]]]): 
+        init_spin (Optional[Union[dict[str, int], list[list[Union[str, int]]]]):
             VA initial spin parameter.
         spin_list (Optional[list[str]]): VA spin list parameter.
     """
