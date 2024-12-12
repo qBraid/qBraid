@@ -233,14 +233,15 @@ class QuboSolveParams(BaseModel):
             and 7200. Default is 1800.
         ve_num (Optional[int]): Number of VEs used in VA annealing. Must be between 1 and the
             number of VEs installed on each server.
-        onehot (Optional[list[list[str]]]): VA onehot constraint. 
+        onehot (Optional[list[list[str]]]): VA onehot constraint.
         fixed (Optional[Union[dict[str, int], list[list[Union[str, int]]]]): VA fixed constraint.
         andzero (Optional[list[list[str]]]): VA andzero constraint.
         orone (Optional[list[list[str]]]): VA orone constraint.
         supplement (Optional[list[list[str]]]): VA supplement constraint.
         maxone (Optional[list[list[Union[int, list[str]]]]): VA maxone constraint.
         minmaxone (Optional[list[list[Union[int, list[str]]]]): VA minmaxone constraint.
-        init_spin (Optional[Union[dict[str, int], list[list[Union[str, int]]]]): VA initial spin parameter.
+        init_spin (Optional[Union[dict[str, int], list[list[Union[str, int]]]]): 
+            VA initial spin parameter.
         spin_list (Optional[list[str]]): VA spin list parameter.
     """
 
@@ -262,7 +263,7 @@ class QuboSolveParams(BaseModel):
     orone: Optional[list[list[str]]] = None
     supplement: Optional[list[list[str]]] = None
     maxone: Optional[list[list[Union[int, list[str]]]]] = None
-    minmaxone: Optional[list[list[Union[int,list[str]]]]] = None
+    minmaxone: Optional[list[list[Union[int, list[str]]]]] = None
     init_spin: Optional[Union[dict[str, int], list[list[Union[str, int]]]]] = None
     spin_list: Optional[list[str]] = None
 
