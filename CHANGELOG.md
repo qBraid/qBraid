@@ -14,6 +14,10 @@ Types of changes:
 
 ## [Unreleased]
 
+### Fixed
+- Fixed type annotations for constraint parameters to support nested lists and mixed types, such as list[list[str]] and list[list[Union[str, int]]] in qbraid/runtime/schemas/experiment.py.([#859](https://github.com/qBraid/qBraid/pull/859)) [[1]](diffhunk://#diff-a7087c56dd9323acc4777f8bc0bfab64908f18a93e9e6e6fa8abdb663da8fbfaL236-R244) [[2]](diffhunk://#diff-a7087c56dd9323acc4777f8bc0bfab64908f18a93e9e6e6fa8abdb663da8fbfaL259-R266)
+- Updates to tests: Modified the test_qubo_solve_params_model function to reflect the updated types for the constraint parameters in tests/runtime/test_schemas.py.
+
 ### Added
 - Added `p` to `z` gate name mapping to `openqasm3_to_ionq` conversion ([#854](https://github.com/qBraid/qBraid/pull/854))
 - Added `preflight` parameter to the `submit` method and to the `RuntimeJobModel` class ([#856](https://github.com/qBraid/qBraid/pull/856))
