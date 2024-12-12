@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pytest
-from openqasm3.parser import parse
 from qiskit.circuit.random import random_clifford_circuit
 from qiskit.qasm3 import dumps as qasm3_dumps
 from qiskit.qasm3 import loads as qasm3_loads
@@ -81,10 +80,7 @@ def test_openqasm3_to_cudaq():
 
     b[0] = measure q[0];
     """
-    qasm3_in = parse(qasm3_str_in)
-
-    cudaq_out = openqasm3_to_cudaq(qasm3_in)
-
+    cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(qasm3_str_in, cudaq_out)
 
 
@@ -103,10 +99,7 @@ def test_openqasm3_to_cudaq_identifiers():
 
     b = measure q;
     """
-    qasm3_in = parse(qasm3_str_in)
-
-    cudaq_out = openqasm3_to_cudaq(qasm3_in)
-
+    cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(qasm3_str_in, cudaq_out)
 
 
@@ -124,10 +117,7 @@ def test_openqasm3_to_cudaq_rotation_gates():
 
     b = measure q;
     """
-    qasm3_in = parse(qasm3_str_in)
-
-    cudaq_out = openqasm3_to_cudaq(qasm3_in)
-
+    cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(qasm3_str_in, cudaq_out)
 
 
@@ -145,10 +135,7 @@ def test_openqasm3_to_cudaq_two_qubit_gates():
 
     b = measure q;
     """
-    qasm3_in = parse(qasm3_str_in)
-
-    cudaq_out = openqasm3_to_cudaq(qasm3_in)
-
+    cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(qasm3_str_in, cudaq_out)
 
 
@@ -166,10 +153,7 @@ def test_openqasm3_to_cudaq_ctrl_modifier():
 
     b = measure q;
     """
-    qasm3_in = parse(qasm3_str_in)
-
-    cudaq_out = openqasm3_to_cudaq(qasm3_in)
-
+    cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(qasm3_str_in, cudaq_out, method="state")
 
 
@@ -183,10 +167,7 @@ def test_openqasm3_to_cudaq_controlled_gates():
     qubit[2] q;
     cx q[0], q[1];
     """
-    qasm3_in = parse(qasm3_str_in)
-
-    cudaq_out = openqasm3_to_cudaq(qasm3_in)
-
+    cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(qasm3_str_in, cudaq_out, method="state")
 
 
@@ -201,11 +182,7 @@ def test_openqasm3_to_cudaq_adj_gates():
     tdg q;
     sdg q;
     """
-
-    qasm3_in = parse(qasm3_str_in)
-
-    cudaq_out = openqasm3_to_cudaq(qasm3_in)
-
+    cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(qasm3_str_in, cudaq_out)
 
 
@@ -219,11 +196,7 @@ def test_openqasm3_to_cudaq_inv_modifier():
     qubit[1] q;
     inv @ x q[0];
     """
-
-    qasm3_in = parse(qasm3_str_in)
-
-    cudaq_out = openqasm3_to_cudaq(qasm3_in)
-
+    cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(qasm3_str_in, cudaq_out)
 
 
@@ -237,11 +210,7 @@ def test_openqasm3_to_cudaq_pow_modifier():
     qubit[1] q;
     pow(4) @ x q[0];
     """
-
-    qasm3_in = parse(qasm3_str_in)
-
-    cudaq_out = openqasm3_to_cudaq(qasm3_in)
-
+    cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(qasm3_str_in, cudaq_out)
 
 
@@ -255,11 +224,7 @@ def test_openqasm3_to_cudaq_arith():
     qubit[1] q;
     ry(3*pi/4) q[0];
     """
-
-    qasm3_in = parse(qasm3_str_in)
-
-    cudaq_out = openqasm3_to_cudaq(qasm3_in)
-
+    cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(qasm3_str_in, cudaq_out, atol=1e-6)  # TODO: fails for 1e-7 due to rounding
 
 
@@ -285,11 +250,7 @@ def test_openqasm3_to_cudaq_custom_gates():
     aca q[0];
     acap(pi/25) q[0];
     """
-
-    qasm3_in = parse(qasm3_str_in)
-
-    cudaq_out = openqasm3_to_cudaq(qasm3_in)
-
+    cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(qasm3_str_in, cudaq_out, atol=1e-6)
 
 
@@ -322,8 +283,5 @@ def test_openqasm3_to_cudaq_random_clifford_circuit(num_qubits, _):
         num_qubits, num_gates, gates=list(all_gates - {"sx", "sxdg", "ecr", "dcx", "iswap"})
     )
     qasm3_str_in = qasm3_dumps(circ)
-    qasm3_in = parse(qasm3_str_in)
-
-    cudaq_out = openqasm3_to_cudaq(qasm3_in)
-
+    cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(qasm3_str_in, cudaq_out, method="state")

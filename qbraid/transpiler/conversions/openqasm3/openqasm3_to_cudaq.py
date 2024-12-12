@@ -17,10 +17,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Dict, Union
 
 import pyqasm
-from openqasm3 import ast, parser, printer
+from openqasm3 import ast
 from qbraid_core._import import LazyLoader
 
-from qbraid.passes.qasm import normalize_qasm_gate_params
 from qbraid.transpiler.annotations import requires_extras, weight
 from qbraid.transpiler.exceptions import ProgramConversionError
 
@@ -28,6 +27,8 @@ cudaq = LazyLoader("cudaq", globals(), "cudaq")
 
 if TYPE_CHECKING:
     from cudaq import PyKernel, QuakeValue
+
+    from qbraid.programs.typer import QasmStringType
 
 
 def gate_kernel(name: str, *args) -> PyKernel:
@@ -75,7 +76,7 @@ def identifier_lookup(cbit: Union[ast.IndexedIdentifier, ast.Identifier]) -> str
 @weight(1)
 @requires_extras("cudaq")
 # pylint: disable-next=too-many-statements
-def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
+def openqasm3_to_cudaq(program: Union[QasmStringType, ast.Program]) -> PyKernel:
     """Returns a CUDA-Q kernel representing the input OpenQASM program.
 
     Args:
@@ -92,7 +93,6 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
 
     module.unroll()
     program = module.unrolled_ast
-    program = parser.parse(normalize_qasm_gate_params(printer.dumps(program)))
 
     kernel: PyKernel = cudaq.make_kernel()
     ctx: Dict[str, Union[QuakeValue | None]] = {}
