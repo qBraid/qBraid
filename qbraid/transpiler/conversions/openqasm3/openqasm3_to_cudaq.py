@@ -147,7 +147,6 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
         elif isinstance(statement, ast.QuantumGate):
             name, qubits = statement.name.name, statement.qubits
 
-            # TODO: handle binary operations and special constants: e.g. pi/4
             args = []
             for arg in statement.arguments:
                 if arg.value is None:
@@ -160,12 +159,12 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
 
             if len(statement.modifiers) > 1:
                 raise ProgramConversionError(
-                    f"Multiple gate modifiers are not supported: {statement}"
+                    f"Multiple gate modifiers are unsupported: {statement}"
                 )
             if len(statement.modifiers) == 1:
                 mod = statement.modifiers[0]
                 if mod.modifier != ast.GateModifierName.ctrl:
-                    raise ProgramConversionError(f"Non-ctrl modifiers are not support: {statement}")
+                    raise ProgramConversionError(f"Non-ctrl modifiers are unsupported: {statement}")
 
                 gate = gate_kernel(name, *args)
                 kernel.control(gate, qubit_refs[0], *qubit_refs[1:])
