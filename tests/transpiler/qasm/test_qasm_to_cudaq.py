@@ -14,12 +14,16 @@ Unit tests for OpenQASM 3.0 to CUDA-Q kernel transpilation.
 """
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import pytest
 from openqasm3.parser import parse
+
 from qiskit.circuit.random import random_clifford_circuit
 from qiskit.qasm3 import dumps as qasm3_dumps
 from qiskit.qasm3 import loads as qasm3_loads
+from qiskit_aer import StatevectorSimulator
 
 from qbraid.interface import circuits_allclose
 from qbraid.transpiler.conversions.openqasm3 import openqasm3_to_cudaq
@@ -27,13 +31,36 @@ from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import qasm2_to_qasm3
 
 cudaq = pytest.importorskip("cudaq")
 
+if TYPE_CHECKING:
+    from cudaq import PyKernel
+    from qiskit import QuantumCircuit
 
-def _check_output(qasm3_str_in, cudaq_out, atol=1e-7):
-    qasm2_str_out = cudaq.translate(cudaq_out, format="openqasm2")
-    qasm3_str_out = qasm2_to_qasm3(qasm2_str_out)
-    circ_in, circ_out = qasm3_loads(qasm3_str_in), qasm3_loads(qasm3_str_out)
-    print(qasm3_str_out, circ_out)
-    assert circuits_allclose(circ_in, circ_out, atol=atol)
+
+def _check_output(qasm3_str_in: str, cudaq_out: PyKernel, atol=1e-7, method='circ'):
+    """Check output given the input OpenQASM 3.0 program and the CUDA-Q kernel.
+    Args
+        qasm3_str_in (str): OpenQASM 3.0 input program
+        cudaq_out (PyKernel): CUDA-Q kernel equivalent to input string
+        method (str):
+        - 'circ' to use CUDA-Q translate -> OpenQASM 2 -> Qiskit circuits -> all close.
+        - 'state' to compute statevectors -> all close. requires no measurement.
+    """
+    if method == 'circ':
+        qasm2_str_out = cudaq.translate(cudaq_out, format="openqasm2")
+        qasm3_str_out = qasm2_to_qasm3(qasm2_str_out)
+        circ_in, circ_out = qasm3_loads(qasm3_str_in), qasm3_loads(qasm3_str_out)
+    
+        assert circuits_allclose(circ_in, circ_out, atol=atol)
+    elif method == 'state':
+        circ_in: QuantumCircuit = qasm3_loads(qasm3_str_in)
+        state_out = np.array(cudaq.get_state(cudaq_out))
+
+        sim = StatevectorSimulator()
+        job = sim.run(circ_in, shots=1)
+        res = job.result().results[0]
+        state_in = res.data.statevector.data
+        
+        assert np.allclose(state_in, state_out)
 
 
 def test_openqasm3_to_cudaq():
@@ -126,7 +153,7 @@ def test_openqasm3_to_cudaq_two_qubit_gates():
     _check_output(qasm3_str_in, cudaq_out)
 
 
-@pytest.mark.skip(reason="both cudaq.translate and pyqasm don't support ctrl modifiers")
+@pytest.mark.skip(reason="pyqasm don't support ctrl modifiers")
 def test_openqasm3_to_cudaq_ctrl_modifier():
     """OpenQASM3 -> CUDA-Q: Test a ctrl modifier on an x gate."""
 
@@ -144,10 +171,9 @@ def test_openqasm3_to_cudaq_ctrl_modifier():
 
     cudaq_out = openqasm3_to_cudaq(qasm3_in)
 
-    _check_output(qasm3_str_in, cudaq_out)
+    _check_output(qasm3_str_in, cudaq_out, method='state')
 
 
-@pytest.mark.skip(reason="cudaq.translate don't support ctrl modifiers")
 def test_openqasm3_to_cudaq_controlled_gates():
     """OpenQASM3 -> CUDA-Q: Test a controlled x gate."""
 
@@ -162,7 +188,7 @@ def test_openqasm3_to_cudaq_controlled_gates():
 
     cudaq_out = openqasm3_to_cudaq(qasm3_in)
 
-    _check_output(qasm3_str_in, cudaq_out)
+    _check_output(qasm3_str_in, cudaq_out, method='state')
 
 
 def test_openqasm3_to_cudaq_adj_gates():
@@ -269,16 +295,19 @@ def test_openqasm3_to_cudaq_custom_gates():
 
 
 @pytest.mark.parametrize("num_qubits", [2, 3, 4, 5])
-def test_openqasm_to_cudaq_random_clifford_circuit(num_qubits):
+@pytest.mark.parametrize("_", range(10))
+def test_openqasm3_to_cudaq_random_clifford_circuit(num_qubits, _):
     """OpenQASM 3.0 -> CUDA-Q: Test a random circuit"""
 
     num_gates = np.random.randint(1, 11)
+    all = {"i", "x", "y", "z", "h", "s", "sdg", "sx", "sxdg", "cx", "cz", "cy", "swap", "iswap", "ecr", "dcx"}
+
     circ = random_clifford_circuit(
-        num_qubits, num_gates, gates=["x", "y", "z", "h", "s", "swap", "sdg"]
+        num_qubits, num_gates, gates=list(all - {"i", "sx", "sxdg", "ecr", "dcx", "iswap"})
     )
     qasm3_str_in = qasm3_dumps(circ)
     qasm3_in = parse(qasm3_str_in)
 
     cudaq_out = openqasm3_to_cudaq(qasm3_in)
 
-    _check_output(qasm3_str_in, cudaq_out)
+    _check_output(qasm3_str_in, cudaq_out, method="state")

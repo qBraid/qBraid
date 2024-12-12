@@ -167,9 +167,9 @@ def openqasm3_to_cudaq(program: ast.Program) -> PyKernel:
                 gate = gate_kernel(name, *args)
                 kernel.control(gate, qubit_refs[0], *qubit_refs[1:])
             else:
-                if name in ["cx", "CX"]:
-                    # TODO: pyqasm doesn't unroll CX -> ctrl @ x, so handle here.
-                    gate = gate_kernel(name[1].lower(), *args)
+                if (namel := name.lower())[0] == "c" and namel[1:] in ["x", "y", "z", "rx", "ry", "rz"]:
+                    # TODO: pyqasm doesn't unroll C{X,Y,Z} -> ctrl @ x. the below also handles this.
+                    gate = gate_kernel(namel[1:], *args)
                     kernel.control(gate, qubit_refs[0], *qubit_refs[1:])
                 else:
                     gate = gate_kernel(name, *args)
