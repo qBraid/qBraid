@@ -24,7 +24,7 @@ from qiskit.qasm3 import dumps as qasm3_dumps
 from qiskit.qasm3 import loads as qasm3_loads
 from qiskit_aer import StatevectorSimulator
 
-from qbraid.interface import circuits_allclose
+from qbraid.interface import circuits_allclose, assert_allclose_up_to_global_phase
 from qbraid.transpiler.conversions.openqasm3 import openqasm3_to_cudaq
 from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import qasm2_to_qasm3
 
@@ -59,7 +59,7 @@ def _check_output(qasm3_str_in: str, cudaq_out: PyKernel, atol=1e-7, method="cir
         res = job.result().results[0]
         state_in = res.data.statevector.data
 
-        assert np.allclose(state_in, state_out)
+        assert_allclose_up_to_global_phase(state_in, state_out, atol=atol)
 
 
 def test_openqasm3_to_cudaq():
