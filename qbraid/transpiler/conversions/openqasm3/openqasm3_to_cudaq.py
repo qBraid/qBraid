@@ -87,10 +87,10 @@ def openqasm3_to_cudaq(program: Union[QasmStringType, ast.Program]) -> PyKernel:
         kernel: CUDA-Q kernel equivalent to input OpenQASM string.
     """
     try:
-        module = pyqasm.load(program)
+        module = pyqasm.loads(program)
         module.validate()
     except Exception as e:
-        raise ProgramConversionError("PyQasm program is not well-formed") from e
+        raise ProgramConversionError("PyQasm program is not well-formed.") from e
 
     module.unroll()
     program = module.unrolled_ast
