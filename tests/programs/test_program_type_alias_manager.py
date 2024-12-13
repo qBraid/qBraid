@@ -23,7 +23,8 @@ from qbraid.programs.alias_manager import (
     get_program_type_alias,
     get_qasm_type_alias,
 )
-from qbraid.programs.exceptions import ProgramTypeError, QasmError
+from qbraid.programs.exceptions import ProgramTypeError
+from qbraid.programs.exceptions import QasmError as QbraidQasmError
 from qbraid.programs.registry import derive_program_type_alias
 
 from ..fixtures import packages_bell
@@ -96,7 +97,7 @@ def test_get_qasm_type_alias(qasm_str, expected_version):
 @pytest.mark.parametrize("qasm_str", QASM_ERROR_DATA)
 def test_get_qasm_type_alias_error(qasm_str):
     """Test getting QASM version"""
-    with pytest.raises(QasmError):
+    with pytest.raises(QbraidQasmError):
         get_qasm_type_alias(qasm_str)
 
 
@@ -153,7 +154,7 @@ def test_get_program_type_alias_with_string_returning_package(monkeypatch):
     )
     monkeypatch.setattr(
         "qbraid.programs.alias_manager.get_qasm_type_alias",
-        lambda x: (_ for _ in ()).throw(QasmError("error")),
+        lambda x: (_ for _ in ()).throw(QbraidQasmError("error")),
     )
 
     result = _get_program_type_alias("some qasm program string")

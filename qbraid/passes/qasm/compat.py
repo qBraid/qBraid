@@ -16,10 +16,9 @@ across various other quantum software frameworks.
 import math
 import re
 from functools import reduce
-from typing import Union
 
 from openqasm3 import dumps, parse
-from openqasm3.ast import Include, Program, QuantumGate, QuantumMeasurementStatement, Statement
+from openqasm3.ast import Program, QuantumGate, Statement
 from openqasm3.parser import QASM3ParsingError
 
 from qbraid._logging import logger
@@ -218,10 +217,7 @@ def convert_qasm_pi_to_decimal(qasm: str) -> str:
                 return expr  # pragma: no cover
 
         expr_with_pi_as_decimal = expr.replace("pi", str(math.pi))
-        try:
-            value = eval(expr_with_pi_as_decimal)  # pylint: disable=eval-used
-        except SyntaxError:
-            return expr
+        value = eval(expr_with_pi_as_decimal)  # pylint: disable=eval-used
         return str(value)
 
     return re.sub(pattern, replace_with_decimal, qasm)
@@ -239,17 +235,6 @@ def has_redundant_parentheses(qasm_str: str) -> bool:
         return True
 
     return False
-
-
-def remove_spaces_in_parentheses(expression: str) -> str:
-    """Removes all spaces inside parentheses in an expression."""
-    parenthesized_parts = re.findall(r"\(.*?\)", expression)
-
-    for part in parenthesized_parts:
-        cleaned_part = part.replace(" ", "")
-        expression = expression.replace(part, cleaned_part)
-
-    return expression
 
 
 def simplify_parentheses_in_qasm(qasm_str: str) -> str:
@@ -296,49 +281,3 @@ def declarations_to_qasm2(qasm: str) -> str:
         qasm = re.sub(pattern, replacement, qasm)
 
     return qasm
-
-
-def remove_qasm_barriers(qasm_str: str) -> str:
-    """Returns a copy of the input QASM with all barriers removed.
-
-    Args:
-        qasm_str: QASM to remove barriers from.
-    """
-    quoted_re = r"(?:\"[^\"]*?\")"
-    statement_re = r"((?:[^;{}\"]*?" + quoted_re + r"?)*[;{}])?"
-    comment_re = r"(\n?//[^\n]*(?:\n|$))?"
-    statements_comments = re.findall(statement_re + comment_re, qasm_str)
-
-    lines = []
-    for statement, comment in statements_comments:
-        if re.match(r"^\s*barrier(?:(?:\s+)|(?:;))", statement) is None:
-            lines.append(statement + comment)
-    return "".join(lines)
-
-
-def remove_measurements(program: Union[Program, str]) -> str:
-    """Remove all measurement operations from the program."""
-    program = parse(program) if isinstance(program, str) else program
-    statements = [
-        statement
-        for statement in program.statements
-        if not isinstance(statement, QuantumMeasurementStatement)
-    ]
-    program_out = Program(statements=statements, version=program.version)
-    program_str = dumps(program_out)
-    if float(program.version) == 2.0:
-        program_str = declarations_to_qasm2(program_str)
-    return program_str
-
-
-def remove_include_statements(program: Union[Program, str]) -> str:
-    """Remove all include statements from the program."""
-    program = parse(program) if isinstance(program, str) else program
-    statements = [
-        statement for statement in program.statements if not isinstance(statement, Include)
-    ]
-    program_out = Program(statements=statements, version=program.version)
-    program_str = dumps(program_out)
-    if float(program.version) == 2.0:
-        program_str = declarations_to_qasm2(program_str)
-    return program_str

@@ -17,10 +17,10 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional
 
 import cirq
+import pyqasm
 from cirq import ops, value
 
 from qbraid._version import __version__ as qbraid_version
-from qbraid.passes.qasm.format import format_qasm
 from qbraid.transpiler.annotations import weight
 
 if TYPE_CHECKING:
@@ -108,4 +108,5 @@ def cirq_to_qasm2(
     """
     circuit = map_zpow_and_unroll(circuit)
     qasm = str(_to_qasm_output(circuit, header, precision, qubit_order))
-    return format_qasm(qasm)
+    # format the qasm before returning
+    return pyqasm.dumps(pyqasm.loads(qasm))
