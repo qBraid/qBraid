@@ -14,10 +14,20 @@ Types of changes:
 
 ## [Unreleased]
 
+### Fixed
+- Fixed type annotations for constraint parameters to support nested lists and mixed types, such as list[list[str]] and list[list[Union[str, int]]] in qbraid/runtime/schemas/experiment.py.([#859](https://github.com/qBraid/qBraid/pull/859)) [[1]](diffhunk://#diff-a7087c56dd9323acc4777f8bc0bfab64908f18a93e9e6e6fa8abdb663da8fbfaL236-R244) [[2]](diffhunk://#diff-a7087c56dd9323acc4777f8bc0bfab64908f18a93e9e6e6fa8abdb663da8fbfaL259-R266)
+- Updates to tests: Modified the test_qubo_solve_params_model function to reflect the updated types for the constraint parameters in tests/runtime/test_schemas.py.
+
 ### Added
 - Added `p` to `z` gate name mapping to `openqasm3_to_ionq` conversion ([#854](https://github.com/qBraid/qBraid/pull/854))
 - Added `preflight` parameter to the `submit` method and to the `RuntimeJobModel` class ([#856](https://github.com/qBraid/qBraid/pull/856))
 - Added remote test for native IonQ runtime ([#856](https://github.com/qBraid/qBraid/pull/856))
+- Added `distribute_counts` function to adjust probabilistic counts ensuring the total equals the number of shots. ([#858](https://github.com/qBraid/qBraid/pull/858))
+- Added support for controlled gates in `openqasm3_to_ionq` conversion ([#858](https://github.com/qBraid/qBraid/pull/858)):
+
+```text
+cx, cy, cz, crx, cry, crz, ch, ccnot, cs, csi, ct, cti, cv, cvi
+```
 
 ### Improved / Modified
 - Unit tests that require the `pyqir` dependency are now automatically skipped if pyqir is not installed. ([#846](https://github.com/qBraid/qBraid/pull/846))
@@ -25,6 +35,9 @@ Types of changes:
 - Updated the `IonQDevice.transform` method to replace gate names in the input using the newly defined `IONQ_GATE_MAP` before loading and transforming the program ([#855](https://github.com/qBraid/qBraid/pull/855))
 - Updated gate naming conventions in `IONQ_QIS_GATES` list for consistency with [IonQ supported gates API](https://docs.ionq.com/api-reference/v0.3/writing-quantum-programs#supported-gates) ([#856](https://github.com/qBraid/qBraid/pull/856))
 - Updated the `rebase` function to include `gate_mappings` and `case_sensitive` parameters for gate name replacement.([#856](https://github.com/qBraid/qBraid/pull/856))
+- Updated the `rebase` function to handle gate mappings with predicates. ([#858](https://github.com/qBraid/qBraid/pull/858))
+- Refactored gate mappings and added validation for gate parameters and qubit counts in `openqasm3_to_ionq` conversion ([#858](https://github.com/qBraid/qBraid/pull/858))
+- Integrated `distribute_counts` function in `convert_to_counts` method in `IonQJob` ([#858](https://github.com/qBraid/qBraid/pull/858))
 
 ### Deprecated
 

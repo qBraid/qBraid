@@ -40,6 +40,20 @@ IONQ_QIS_GATES = [
     "v",
     "vi",
     "swap",
+    "cx",
+    "cy",
+    "cz",
+    "crx",
+    "cry",
+    "crz",
+    "ch",
+    "ccnot",
+    "cs",
+    "csi",
+    "ct",
+    "cti",
+    "cv",
+    "cvi",
 ]
 
 IONQ_NATIVE_GATES_BASE = ["gpi", "gpi2"]

@@ -269,6 +269,8 @@ def rebase(
 
     if gate_mappings is not None:
         converted_program = _replace_gate_names(converted_program, gate_mappings, case_sensitive)
+        if require_predicates:
+            gateset = {gate_mappings.get(gate, gate) for gate in gateset}
 
     # Check if the program meets the compilation predicates
     try:

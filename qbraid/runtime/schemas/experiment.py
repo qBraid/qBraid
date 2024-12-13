@@ -233,15 +233,16 @@ class QuboSolveParams(BaseModel):
             and 7200. Default is 1800.
         ve_num (Optional[int]): Number of VEs used in VA annealing. Must be between 1 and the
             number of VEs installed on each server.
-        onehot (Optional[list[str]]): VA onehot constraint parameter.
-        fixed (Optional[Union[dict[str, int], list[str]]]): VA fixed constraint parameter.
-        andzero (Optional[list[str]]): VA andzero constraint parameter.
-        orone (Optional[list[str]]): VA orone constraint parameter.
-        supplement (Optional[list[str]]): VA supplement constraint parameter.
-        maxone (Optional[list[str]]): VA maxone constraint parameter.
-        minmaxone (Optional[list[str]]): VA minmaxone constraint parameter.
-        init_spin (Optional[Union[dict[str, int], list[str]]]): VA init_spin parameter.
-        spin_list (Optional[list[str]]): VA spin_list parameter.
+        onehot (Optional[list[list[str]]]): VA onehot constraint.
+        fixed (Optional[Union[dict[str, int], list[list[Union[str, int]]]]): VA fixed constraint.
+        andzero (Optional[list[list[str]]]): VA andzero constraint.
+        orone (Optional[list[list[str]]]): VA orone constraint.
+        supplement (Optional[list[list[str]]]): VA supplement constraint.
+        maxone (Optional[list[list[Union[int, list[str]]]]): VA maxone constraint.
+        minmaxone (Optional[list[list[Union[int, list[str]]]]): VA minmaxone constraint.
+        init_spin (Optional[Union[dict[str, int], list[list[Union[str, int]]]]):
+            VA initial spin parameter.
+        spin_list (Optional[list[str]]): VA spin list parameter.
     """
 
     offset: float
@@ -256,14 +257,14 @@ class QuboSolveParams(BaseModel):
     vector_mode: Optional[str] = "accuracy"
     timeout: Optional[int] = 1800
     ve_num: Optional[int] = None
-    onehot: Optional[list[str]] = None
-    fixed: Optional[Union[dict[str, int], list[str]]] = None
-    andzero: Optional[list[str]] = None
-    orone: Optional[list[str]] = None
-    supplement: Optional[list[str]] = None
-    maxone: Optional[list[str]] = None
-    minmaxone: Optional[list[str]] = None
-    init_spin: Optional[Union[dict[str, int], list[str]]] = None
+    onehot: Optional[list[list[str]]] = None
+    fixed: Optional[Union[dict[str, int], list[list[Union[str, int]]]]] = None
+    andzero: Optional[list[list[str]]] = None
+    orone: Optional[list[list[str]]] = None
+    supplement: Optional[list[list[str]]] = None
+    maxone: Optional[list[list[Union[int, list[str]]]]] = None
+    minmaxone: Optional[list[list[Union[int, list[str]]]]] = None
+    init_spin: Optional[Union[dict[str, int], list[list[Union[str, int]]]]] = None
     spin_list: Optional[list[str]] = None
 
     @field_validator("offset")

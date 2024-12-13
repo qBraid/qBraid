@@ -575,7 +575,6 @@ def controlled_gates_native_qasm() -> Qasm3StringType:
     // identify the gate
     gate cgpi2(a) q1, q2 {
     }
-    
     qubit[2] q;
 
     cgpi2(0.2) q[0], q[1];
