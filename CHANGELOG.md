@@ -15,6 +15,25 @@ Types of changes:
 ## [Unreleased]
 
 ### Fixed
+
+### Added
+
+### Improved / Modified
+- Vastly reduced size of `qbraid.passes.qasm`, `qbraid.programs.gate_model.qasm2` and `qbraid.programs.gate_model.qasm3` modules as a result of `pyqasm` integration. ([#808](https://github.com/qBraid/qBraid/pull/808))
+
+### Deprecated
+
+### Removed
+- Dropped support for Python 3.9 ([#808](https://github.com/qBraid/qBraid/pull/808))
+
+### Fixed
+
+### Dependencies
+- Integrated `pyqasm` as project dependency. ([#808](https://github.com/qBraid/qBraid/pull/808))
+
+## [0.8.10] - 2024-12-13
+
+### Fixed
 - Fixed type annotations for constraint parameters to support nested lists and mixed types, such as list[list[str]] and list[list[Union[str, int]]] in qbraid/runtime/schemas/experiment.py.([#859](https://github.com/qBraid/qBraid/pull/859)) [[1]](diffhunk://#diff-a7087c56dd9323acc4777f8bc0bfab64908f18a93e9e6e6fa8abdb663da8fbfaL236-R244) [[2]](diffhunk://#diff-a7087c56dd9323acc4777f8bc0bfab64908f18a93e9e6e6fa8abdb663da8fbfaL259-R266)
 - Updates to tests: Modified the test_qubo_solve_params_model function to reflect the updated types for the constraint parameters in tests/runtime/test_schemas.py.
 
@@ -39,14 +58,8 @@ cx, cy, cz, crx, cry, crz, ch, ccnot, cs, csi, ct, cti, cv, cvi
 - Refactored gate mappings and added validation for gate parameters and qubit counts in `openqasm3_to_ionq` conversion ([#858](https://github.com/qBraid/qBraid/pull/858))
 - Integrated `distribute_counts` function in `convert_to_counts` method in `IonQJob` ([#858](https://github.com/qBraid/qBraid/pull/858))
 
-### Deprecated
-
-### Removed
-
 ### Fixed
 - Fixed `nec_vector_annealer` remote test by generalizing solutions (results) check ([#852](https://github.com/qBraid/qBraid/pull/852))
-
-### Dependencies
 
 ## [0.8.9] - 2024-12-06
 
