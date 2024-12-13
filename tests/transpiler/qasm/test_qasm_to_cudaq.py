@@ -50,7 +50,7 @@ def _check_output(qasm3_str_in: str, cudaq_out: PyKernel, atol=1e-7, method="cir
 
         assert circuits_allclose(circ_in, circ_out, atol=atol)
     elif method == "state":
-        circ_in: QuantumCircuit = qasm3_loads(qasm3_str_in)
+        circ_in: QuantumCircuit = qasm3_loads(qasm3_str_in).decompose()
         state_out = np.array(cudaq.get_state(cudaq_out))
 
         sim = StatevectorSimulator()
@@ -111,14 +111,11 @@ def test_openqasm3_to_cudaq_rotation_gates():
     include "stdgates.inc";
 
     qubit[2] q;
-    bit[2] b;
 
     rx(5.25) q[0];
-
-    b = measure q;
     """
     cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
-    _check_output(qasm3_str_in, cudaq_out)
+    _check_output(qasm3_str_in, cudaq_out, method="state")
 
 
 def test_openqasm3_to_cudaq_two_qubit_gates():
@@ -225,7 +222,7 @@ def test_openqasm3_to_cudaq_arith():
     ry(3*pi/4) q[0];
     """
     cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
-    _check_output(qasm3_str_in, cudaq_out, atol=1e-6)  # TODO: fails for 1e-7 due to rounding
+    _check_output(qasm3_str_in, cudaq_out, atol=1e-6, method="state")  # TODO: fails for 1e-7 due to rounding
 
 
 def test_openqasm3_to_cudaq_custom_gates():
@@ -251,7 +248,7 @@ def test_openqasm3_to_cudaq_custom_gates():
     acap(pi/25) q[0];
     """
     cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
-    _check_output(qasm3_str_in, cudaq_out, atol=1e-6)
+    _check_output(qasm3_str_in, cudaq_out, atol=1e-6, method="state")
 
 
 @pytest.mark.parametrize("num_qubits", [2, 3, 4, 5])

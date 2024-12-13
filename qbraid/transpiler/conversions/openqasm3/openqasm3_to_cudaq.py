@@ -31,7 +31,7 @@ if TYPE_CHECKING:
     from qbraid.programs.typer import QasmStringType
 
 
-def gate_kernel(name: str, *args) -> PyKernel:
+def gate_kernel(name: str, targs: tuple[type]) -> PyKernel:
     """Returns CUDA-Q kernel for pure standard gates (no modifiers - ctrl or adj)."""
 
     if name in ["x", "y", "z", "h", "s", "t", "sdg", "tdg", "i", "id", "iden"]:
@@ -45,11 +45,12 @@ def gate_kernel(name: str, *args) -> PyKernel:
     else:
         raise ProgramConversionError(f"Unsupported gate: {name}")
 
-    kernel, *qrefs = cudaq.make_kernel(*[cudaq.qubit for _ in range(size)])
-
-    if len(args) != argc:
+    kernel, *qparams = cudaq.make_kernel(*[cudaq.qubit for _ in range(size)], *targs)
+    qrefs, qargs = qparams[:size], qparams[size:]
+    
+    if len(targs) != argc:
         raise ProgramConversionError(
-            f"Gate {name} requires {argc} args but only {len(args)} were provided: {args}"
+            f"Gate {name} requires {argc} args but only {len(targs)} were provided"
         )
 
     if name in ["i", "id", "iden"]:
@@ -57,8 +58,8 @@ def gate_kernel(name: str, *args) -> PyKernel:
 
     op = getattr(kernel, name)
 
-    if len(args) > 0:
-        op(*args, *qrefs)
+    if len(targs) > 0:
+        op(*qargs, *qrefs)
     else:
         op(*qrefs)
 
@@ -156,6 +157,7 @@ def openqasm3_to_cudaq(program: Union[QasmStringType, ast.Program]) -> PyKernel:
                         f"Non-literal gate arguments are unsupported. {statement.arguments}"
                     )
                 args.append(arg.value)
+            targs = [type(a) for a in args]
 
             qubit_refs = [qubit_lookup(q) for q in qubits]
 
@@ -168,7 +170,7 @@ def openqasm3_to_cudaq(program: Union[QasmStringType, ast.Program]) -> PyKernel:
                 if mod.modifier != ast.GateModifierName.ctrl:
                     raise ProgramConversionError(f"Non-ctrl modifiers are unsupported: {statement}")
 
-                gate = gate_kernel(name, *args)
+                gate = gate_kernel(name, targs)
                 kernel.control(gate, qubit_refs[0], *qubit_refs[1:])
             else:
                 if (namel := name.lower())[0] == "c" and namel[1:] in [
@@ -179,12 +181,12 @@ def openqasm3_to_cudaq(program: Union[QasmStringType, ast.Program]) -> PyKernel:
                     "ry",
                     "rz",
                 ]:
-                    # TODO: pyqasm doesn't unroll C{X,Y,Z} -> ctrl @ x. the below also handles this.
-                    gate = gate_kernel(namel[1:], *args)
-                    kernel.control(gate, qubit_refs[0], *qubit_refs[1:])
+                    # pyqasm doesn't unroll C{X,Y,Z} -> ctrl @ x. the below also handles this.
+                    gate = gate_kernel(namel[1:], targs)
+                    kernel.control(gate, qubit_refs[0], *qubit_refs[1:], *args)
                 else:
-                    gate = gate_kernel(name, *args)
-                    kernel.apply_call(gate, *qubit_refs)
+                    gate = gate_kernel(name, targs)
+                    kernel.apply_call(gate, *qubit_refs, *args)
 
         else:
             raise ProgramConversionError(f"Unsupported statement: {statement}")
