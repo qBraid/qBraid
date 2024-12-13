@@ -17,6 +17,7 @@ from __future__ import annotations
 import datetime
 from typing import TYPE_CHECKING, Optional, Union
 
+import pyqasm
 from qcaas_client.client import QPUTask
 from qcaas_client.compiler_config import (
     CompilerConfig,
@@ -27,7 +28,6 @@ from qcaas_client.compiler_config import (
 )
 
 from qbraid._logging import logger
-from qbraid.passes.qasm.compat import remove_include_statements
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
@@ -148,7 +148,9 @@ class OQCDevice(QuantumDevice):
 
     def transform(self, run_input: str) -> str:
         """Transforms the input program before submitting it to the device."""
-        qasm_no_includes = remove_include_statements(run_input)
+        qasm_module = pyqasm.loads(run_input)
+        qasm_module.remove_includes()
+        qasm_no_includes = pyqasm.dumps(qasm_module)
         return qasm_no_includes
 
     @staticmethod

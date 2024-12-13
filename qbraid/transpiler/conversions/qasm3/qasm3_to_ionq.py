@@ -52,9 +52,9 @@ def qasm3_to_ionq(qasm: Qasm3StringType) -> IonQDictType:
         cache_err = None
         try:
             if not any(gate in qasm for gate in IONQ_NATIVE_GATES):
-                module = pyqasm.load(qasm)
+                module = pyqasm.loads(qasm)
                 module.unroll()
-                return openqasm3_to_ionq(module.unrolled_qasm)
+                return openqasm3_to_ionq(pyqasm.dumps(module))
         except (ImportError, ModuleNotFoundError) as import_err:
             cache_err = import_err
         except Exception as pyqasm_err:  # pragma: no cover

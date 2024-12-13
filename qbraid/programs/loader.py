@@ -24,16 +24,13 @@ from qbraid._entrypoints import load_entrypoint
 from qbraid.exceptions import QbraidError
 
 from .alias_manager import get_program_type_alias
+from .exceptions import ProgramLoaderError
 from .registry import QPROGRAM
 
 if TYPE_CHECKING:
     from qbraid.programs.ahs import AnalogHamiltonianProgram
     from qbraid.programs.annealing import AnnealingProgram
     from qbraid.programs.gate_model import GateModelProgram
-
-
-class ProgramLoaderError(QbraidError):
-    """Raised when an error occurs while loading a quantum program."""
 
 
 def load_program(
@@ -53,7 +50,8 @@ def load_program(
         QuantumProgram: A wrapped quantum program object of the inferred subclass.
 
     Raises:
-        ProgramLoaderError: If the input program is not supported.
+        :class:`~qbraid.ProgramLoaderError`: If the input circuit is not a supported quantum program
+
     """
     if isinstance(program, openqasm3.ast.Program):
         program = openqasm3.dumps(program)

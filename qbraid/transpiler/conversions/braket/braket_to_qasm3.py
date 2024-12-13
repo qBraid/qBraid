@@ -12,10 +12,11 @@
 Module for converting Braket circuits to OpenQASM 3.0
 
 """
+import pyqasm
 from braket.circuits import Circuit
 from braket.circuits.serialization import IRType
 
-from qbraid.passes.qasm import remove_measurements
+from qbraid.passes.qasm import replace_gate_names
 from qbraid.transpiler.annotations import weight
 
 
@@ -35,6 +36,13 @@ def braket_to_qasm3(circuit: Circuit) -> str:
     """
     has_measurements = any(str(instr.operator) == "Measure" for instr in circuit.instructions)
     qasm_program = circuit.to_ir(IRType.OPENQASM).source
+    qasm_module = pyqasm.loads(qasm_program)
+    qasm_module.unroll(external_gates=["cnot"])
+
     if not has_measurements:
-        qasm_program = remove_measurements(qasm_program)
-    return qasm_program
+        qasm_module.remove_measurements()
+
+    qasm_str = pyqasm.dumps(qasm_module)
+    qasm_str = replace_gate_names(qasm_str, {"cx": "cnot"})
+
+    return qasm_str

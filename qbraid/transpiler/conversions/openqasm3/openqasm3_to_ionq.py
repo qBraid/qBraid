@@ -19,7 +19,6 @@ from typing import TYPE_CHECKING, Any, Union
 
 import openqasm3.ast
 
-from qbraid.passes.qasm.analyze import has_measurements
 from qbraid.passes.qasm.compat import convert_qasm_pi_to_decimal
 from qbraid.programs import load_program
 from qbraid.programs.gate_model.ionq import IonQProgram
@@ -119,7 +118,6 @@ def _parse_float_in_range(
         f"Invalid {param_name} value '{value}' for the '{gate_name}' gate. "
         f"{param_name.capitalize()} must be a float between {min_val} and {max_val}."
     )
-
     try:
         value = float(value)
     except ValueError as err:
@@ -141,13 +139,12 @@ def _parse_angle(angle: str, gate_name: str) -> float:
 
 # pylint: disable-next=too-many-statements
 def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dict[str, Any]]:
-    program_qubits = program.qubits
-
-    program: openqasm3.ast.Program = program.parsed()
+    program_qubits = program.module._qubit_registers.items()
+    original_program: openqasm3.ast.Program = program.module.original_program
 
     gates: list[dict[str, Any]] = []
 
-    for statement in program.statements:
+    for statement in original_program.statements:
         if isinstance(statement, openqasm3.ast.QuantumGate):
             name = statement.name.name.lower()
             qubits = statement.qubits
@@ -155,9 +152,10 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
 
             if len(qubits) == 1 and isinstance(qubits[0], openqasm3.ast.Identifier):
                 reg_name = qubits[0].name
-                for qreg_name, qubit_id in program_qubits:
+                for qreg_name, reg_size in program_qubits:
                     if qreg_name == reg_name:
-                        qubit_values.append(qubit_id)
+                        qubit_values = list(range(reg_size))
+                        break
             else:
                 for qubit in qubits:
                     indices = qubit.indices
@@ -346,10 +344,10 @@ def openqasm3_to_ionq(qasm: Union[QasmStringType, openqasm3.ast.Program]) -> Ion
     Returns:
         dict: IonQ JSON format equivalent to input OpenQASM string.
     """
-    if has_measurements(qasm):
-        raise ValueError("Circuits with measurements are not supported by the IonQDictType")
-
     program: Union[OpenQasm2Program, OpenQasm3Program] = load_program(qasm)
+
+    if program._module.has_measurements():
+        raise ValueError("Circuits with measurements are not supported by the IonQDictType")
 
     gates = _parse_gates(program)
 
