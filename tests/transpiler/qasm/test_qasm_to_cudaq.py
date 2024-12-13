@@ -222,7 +222,9 @@ def test_openqasm3_to_cudaq_arith():
     ry(3*pi/4) q[0];
     """
     cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
-    _check_output(qasm3_str_in, cudaq_out, atol=1e-6, method="state")  # TODO: fails for 1e-7 due to rounding
+    _check_output(
+        qasm3_str_in, cudaq_out, atol=1e-6, method="state"
+    )  # TODO: fails for 1e-7 due to rounding
 
 
 def test_openqasm3_to_cudaq_custom_gates():
@@ -249,6 +251,24 @@ def test_openqasm3_to_cudaq_custom_gates():
     """
     cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(qasm3_str_in, cudaq_out, atol=1e-6, method="state")
+
+
+def test_openqasm3_to_cudaq_caching():
+    """OpenQASM3 -> CUDA-Q: Test gate operations and assignments with identifiers and indexing."""
+
+    qasm3_str_in = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+
+    qubit a;
+    qubit b;
+
+    x a;
+    x b;
+    """
+    cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
+    _check_output(qasm3_str_in, cudaq_out)
+    assert str(cudaq_out).count("quake.x") == 1
 
 
 @pytest.mark.parametrize("num_qubits", [2, 3, 4, 5])
