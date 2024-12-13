@@ -20,7 +20,7 @@ import numpy as np
 import pytest
 
 try:
-    from pytket.circuit import Circuit
+    from pytket.circuit import Circuit, OpType
     from pytket.unit_id import Qubit
 
     from qbraid.programs.exceptions import ProgramTypeError, TransformError
@@ -74,6 +74,19 @@ def test_remove_idle_qubits_pytket():
     qprogram.remove_idle_qubits()
     contig_circuit = qprogram.program
     assert contig_circuit.n_qubits == 2
+
+
+def test_remove_measurements():
+    """Test removing measurements from pytket circuit"""
+    circuit = Circuit(2, 1)
+    circuit.H(0)
+    circuit.CX(0, 1)
+    circuit.Measure(0, 0)
+    qprogram = PytketCircuit(circuit)
+    new_circuit = qprogram.remove_measurements(qprogram.program)
+
+    for command in new_circuit.get_commands():
+        assert command.op.type != OpType.Measure
 
 
 @pytest.mark.parametrize("flat", [True, False])

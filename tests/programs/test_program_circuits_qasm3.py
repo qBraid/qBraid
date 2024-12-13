@@ -27,14 +27,20 @@ from ..fixtures.qasm3.circuits import qasm3_bell, qasm3_shared15
 
 def test_qasm_qubits():
     """Test getting QASM qubits"""
+    program1 = OpenQasm3Program(qasm3_bell())
+    program1.validate()
+    assert program1.qubits == {"q": 2}
 
-    assert OpenQasm3Program(qasm3_bell()).qubits == {"q": 2}
-    assert OpenQasm3Program(qasm3_shared15()).qubits == {"q": 4}
+    program2 = OpenQasm3Program(qasm3_shared15())
+    program2.validate()
+    assert program2.qubits == {"q": 4}
 
 
 def test_qasm_clbits():
     """Test getting QASM clbits"""
-    assert OpenQasm3Program("OPENQASM 3.0; bit[2] c;").clbits == {"c": 2}
+    program1 = OpenQasm3Program("OPENQASM 3.0; bit[2] c;")
+    program1.validate()
+    assert program1.clbits == {"c": 2}
 
 
 def test_qasm3_num_qubits():

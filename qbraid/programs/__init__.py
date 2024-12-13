@@ -38,11 +38,11 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-	load_program
-	get_program_type_alias
+    load_program
+    get_program_type_alias
     get_qasm_type_alias
-	register_program_type
-	unregister_program_type
+    register_program_type
+    unregister_program_type
 
 Classes
 --------
@@ -50,8 +50,8 @@ Classes
 .. autosummary::
    :toctree: ../stubs/
 
-	ProgramSpec
-	QuantumProgram
+    ProgramSpec
+    QuantumProgram
 
 Exceptions
 -----------
@@ -59,11 +59,11 @@ Exceptions
 .. autosummary::
    :toctree: ../stubs/
 
-	PackageValueError
-	ProgramTypeError
-	ValidationError
-	QasmError
-	TransformError
+    PackageValueError
+    ProgramTypeError
+    ValidationError
+    QasmError
+    TransformError
     ProgramLoaderError
 
 """

@@ -41,7 +41,6 @@ class OpenQasm2Program(GateModelProgram):
             raise ProgramTypeError(message=f"Expected 'str' object, got '{type(program)}'.")
 
         self._module = pyqasm.loads(program)
-        self._module.validate()
 
     @property
     def qubits(self) -> dict[str, int]:
@@ -71,6 +70,10 @@ class OpenQasm2Program(GateModelProgram):
     def _unitary(self) -> np.ndarray:
         """Return the unitary of the QASM"""
         raise NotImplementedError
+
+    def validate(self) -> None:
+        """Validate the QASM."""
+        self._module.validate()
 
     def transform(self, device: qbraid.runtime.QuantumDevice, **kwargs) -> None:
         """Transform program to according to device target profile."""

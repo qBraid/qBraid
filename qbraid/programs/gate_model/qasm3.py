@@ -51,7 +51,6 @@ class OpenQasm3Program(GateModelProgram):
             raise ProgramTypeError(message=f"Expected 'str' object, got '{type(program)}'.")
         self._program: str = program
         self._module = pyqasm.loads(program)
-        self._module.validate()
 
     @property
     def module(self) -> pyqasm.Module:
@@ -87,6 +86,10 @@ class OpenQasm3Program(GateModelProgram):
         """Calculate unitary of circuit."""
         raise NotImplementedError
 
+    def validate(self) -> None:
+        """Validate the quantum circuit."""
+        self._module.validate()
+
     @auto_reparse
     def populate_idle_qubits(self) -> None:
         """Converts OpenQASM 3 string to contiguous qasm3 string with gate expansion."""
@@ -101,6 +104,7 @@ class OpenQasm3Program(GateModelProgram):
     @auto_reparse
     def reverse_qubit_order(self) -> None:
         """Reverse the order of the qubits in the circuit."""
+        self._module.validate()
         self._module.reverse_qubit_order()
 
     def transform(self, device: qbraid.runtime.QuantumDevice, **kwargs) -> None:

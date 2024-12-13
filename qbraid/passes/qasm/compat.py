@@ -217,10 +217,7 @@ def convert_qasm_pi_to_decimal(qasm: str) -> str:
                 return expr  # pragma: no cover
 
         expr_with_pi_as_decimal = expr.replace("pi", str(math.pi))
-        try:
-            value = eval(expr_with_pi_as_decimal)  # pylint: disable=eval-used
-        except SyntaxError:
-            return expr
+        value = eval(expr_with_pi_as_decimal)  # pylint: disable=eval-used
         return str(value)
 
     return re.sub(pattern, replace_with_decimal, qasm)

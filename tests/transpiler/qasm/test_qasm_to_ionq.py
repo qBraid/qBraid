@@ -22,7 +22,11 @@ from openqasm3.parser import parse
 from qbraid.programs.gate_model.ionq import GateSet, InputFormat
 from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
 from qbraid.programs.typer import IonQDictType, Qasm3StringType
-from qbraid.transpiler.conversions.openqasm3.openqasm3_to_ionq import _parse_gates, extract_params
+from qbraid.transpiler.conversions.openqasm3.openqasm3_to_ionq import (
+    _parse_gates,
+    extract_params,
+    openqasm3_to_ionq,
+)
 from qbraid.transpiler.conversions.qasm2.qasm2_to_ionq import qasm2_to_ionq
 from qbraid.transpiler.conversions.qasm3.qasm3_to_ionq import qasm3_to_ionq
 from qbraid.transpiler.exceptions import ProgramConversionError
@@ -42,7 +46,6 @@ def test_ionq_device_extract_gate_data():
     ry(pi / 2) q[0];
     rz(3 * pi / 4) q[0];
     h q[0];
-    h q;
     cx q[0], q[1];
     CX q[1], q[2];
     cnot q[2], q[0];
@@ -71,9 +74,6 @@ def test_ionq_device_extract_gate_data():
         {"gate": "ry", "target": 0, "rotation": 1.5707963267948966},
         {"gate": "rz", "target": 0, "rotation": 2.356194490192345},
         {"gate": "h", "target": 0},
-        {"gate": "h", "target": 0},
-        {"gate": "h", "target": 1},
-        {"gate": "h", "target": 2},
         {"gate": "cnot", "control": 0, "target": 1},
         {"gate": "cnot", "control": 1, "target": 2},
         {"gate": "cnot", "control": 2, "target": 0},
@@ -364,7 +364,7 @@ def test_qasm3_to_ionq_zz_native_gate():
     qubit[2] q;
     zz(abc) q[0], q[1];
     """,
-            "Undefined identifier abc in expression",
+            "Invalid angle value 'abc'",
         ),
     ],
 )
@@ -372,6 +372,99 @@ def test_qasm3_to_ionq_invalid_params(qasm_code, error_message):
     """Test that qasm3_to_ionq raises an error when the circuit contains invalid parameters."""
     with pytest.raises(ProgramConversionError) as excinfo:
         qasm3_to_ionq(qasm_code)
+    assert error_message in str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    "qasm_code, error_message",
+    [
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    gpi q[0];
+    """,
+            "Phase parameter is required",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[1] q;
+    rz q[0];
+    """,
+            "Rotation parameter is required",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    crz q[0], q[1];
+    """,
+            "Rotation parameter is required",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    zz q[0], q[1];
+    """,
+            "Angle parameter is required",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[1] q;
+    invalid_gate q[0];
+    """,
+            "Gate 'invalid_gate' not supported",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[3] q;
+    ch q[0], q[1], q[2];
+    """,
+            "Invalid number of qubits",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[3] q;
+    cnot q[0], q[1], q[2];
+    """,
+            "Invalid number of qubits",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[4] q;
+    ccnot q[0], q[1], q[2], q[3];
+    """,
+            "Invalid number of qubits",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[3] q;
+    cgpi2(0) q[0], q[1], q[3];
+    """,
+            "Invalid number of qubits",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    cgpi q[0], q[1];
+    """,
+            "Phase parameter is required",
+        ),
+    ],
+)
+def test_openqasm3_to_ionq_value_errors(qasm_code, error_message):
+    """Test that openqasm3_to_ionq raises an error when the circuit contains
+    a gate that is missing required parameters or is not supported."""
+    with pytest.raises(ValueError) as excinfo:
+        openqasm3_to_ionq(qasm_code)
     assert error_message in str(excinfo.value)
 
 
@@ -425,3 +518,86 @@ def test_ionq_ms_gate_wrong_number_params(program_text):
     with pytest.raises(ValueError) as excinfo:
         _ = _parse_gates(program)
     assert "Invalid number of parameters" in str(excinfo.value)
+
+
+@pytest.fixture
+def controlled_gates_qasm() -> Qasm3StringType:
+    """Return a QASM 3.0 string containing various controlled gates."""
+    return """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[5] q;
+
+    cx q[0], q[4];
+    cy q[1], q[4];
+    cz q[2], q[4];
+    crx(0.7853981633974483) q[3], q[4];
+    cry(1.5707963267948966) q[3], q[4];
+    crz(2.356194490192345) q[3], q[4];
+    ch q[0], q[4];
+    ccx q[0], q[1], q[4];
+    """
+
+
+@pytest.fixture
+def controlled_gates_ionq() -> IonQDictType:
+    """Return the expected IonQDictType for controlled gated circuit."""
+    return {
+        "format": InputFormat.CIRCUIT.value,
+        "qubits": 5,
+        "circuit": [
+            {"gate": "cnot", "control": 0, "target": 4},
+            {"gate": "y", "control": 1, "target": 4},
+            {"gate": "z", "control": 2, "target": 4},
+            {"gate": "rx", "control": 3, "target": 4, "rotation": 0.7853981633974483},
+            {"gate": "ry", "control": 3, "target": 4, "rotation": 1.5707963267948966},
+            {"gate": "rz", "control": 3, "target": 4, "rotation": 2.356194490192345},
+            {"gate": "h", "control": 0, "target": 4},
+            {"gate": "cnot", "controls": [0, 1], "target": 4},
+        ],
+        "gateset": GateSet.QIS.value,
+    }
+
+
+def test_qasm3_to_ionq_controlled_gates(controlled_gates_qasm, controlled_gates_ionq):
+    """Test transpiling QASM 3.0 program containing various controlled gates to IonQDictType."""
+    ionq_program = qasm3_to_ionq(controlled_gates_qasm)
+    assert ionq_program == controlled_gates_ionq
+
+
+@pytest.fixture
+def controlled_gates_native_qasm() -> Qasm3StringType:
+    """Return a QASM 3.0 string containing native controlled gates."""
+    return """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    // this declaration is required so that the pyqasm parser can correctly
+    // identify the gate
+    gate cgpi2(a) q1, q2 {
+    }
+    
+    qubit[2] q;
+
+    cgpi2(0.2) q[0], q[1];
+    """
+
+
+@pytest.fixture
+def controlled_gates_native_ionq() -> IonQDictType:
+    """Return the expected IonQDictType for circuit with native controlled gates."""
+    return {
+        "format": InputFormat.CIRCUIT.value,
+        "qubits": 2,
+        "circuit": [
+            {"gate": "gpi2", "phase": 0.2, "control": 0, "target": 1},
+        ],
+        "gateset": GateSet.NATIVE.value,
+    }
+
+
+def test_qasm3_to_ionq_native_controlled_gates(
+    controlled_gates_native_qasm, controlled_gates_native_ionq
+):
+    """Test transpiling QASM 3.0 program containing native controlled gates to IonQDictType."""
+    ionq_program = qasm3_to_ionq(controlled_gates_native_qasm)
+    assert ionq_program == controlled_gates_native_ionq

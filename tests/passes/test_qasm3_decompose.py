@@ -142,7 +142,7 @@ qubit[2] q;
 crx :-) q[0], q[1];
 """
     with pytest.raises(ValueError, match="Invalid OpenQASM program."):
-        rebase(bad_program, {"crx"})
+        rebase(bad_program, "any")
 
 
 @pytest.fixture

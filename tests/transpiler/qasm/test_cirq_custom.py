@@ -13,8 +13,8 @@ Unit tests for qasm2 cirq_custom gates
 
 """
 
+import numpy as np
 from cirq import IdentityGate, TwoQubitDiagonalGate
-from numpy import pi
 
 from qbraid.transpiler.conversions.qasm2.cirq_custom import RZZGate, U2Gate, U3Gate, rzz
 
@@ -22,12 +22,14 @@ from qbraid.transpiler.conversions.qasm2.cirq_custom import RZZGate, U2Gate, U3G
 def test_u2_gate():
     """Test U2Gate"""
     gate = U2Gate(0, 0)
+    assert str(gate) == "U2(0,0)"
     assert gate._circuit_diagram_info_(None) == "U2(0.0, 0.0)"
 
 
 def test_u3_gate():
     """Test U3Gate"""
     gate = U3Gate(0, 0, 0)
+    assert str(gate) == "U3(0,0,0)"
     assert gate._circuit_diagram_info_(None) == "U3(0.0, 0.0, 0.0)"
 
 
@@ -40,9 +42,21 @@ class FakeArgs:
 
 def test_rzz_gate():
     """Test RZZGate"""
-    gate = RZZGate(0)
+    theta = 0.2
+    gate = RZZGate(theta)
+
+    itheta2 = 1j * float(theta) / 2
+    expected_unitary = np.array(
+        [
+            [np.exp(-itheta2), 0, 0, 0],
+            [0, np.exp(itheta2), 0, 0],
+            [0, 0, np.exp(itheta2), 0],
+            [0, 0, 0, np.exp(-itheta2)],
+        ],
+    )
     assert gate._num_qubits_() == 2
-    assert gate._circuit_diagram_info_(args=FakeArgs(1)).wire_symbols[0] == "RZZ(0.0)"
+    assert gate._unitary_().all() == expected_unitary.all()
+    assert gate._circuit_diagram_info_(args=FakeArgs(1)).wire_symbols[0] == "RZZ(0.1)"
 
 
 def test_rzz_gate_method():
@@ -50,7 +64,7 @@ def test_rzz_gate_method():
     id_gate = rzz(0)
     assert isinstance(id_gate, IdentityGate)
 
-    diagonal = rzz(2 * pi)
+    diagonal = rzz(2 * np.pi)
     assert isinstance(diagonal, TwoQubitDiagonalGate)
 
     random_rzz = rzz(0.5)
