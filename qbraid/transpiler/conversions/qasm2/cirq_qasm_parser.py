@@ -341,7 +341,7 @@ class QasmParser:
         ),
         'rzz': QasmGateStatement(
             qasm_gate='rzz',
-            cirq_gate=(lambda params: rzz(params[0])),
+            cirq_gate=(lambda params: rzz(params[0] / np.pi)),
             num_params=1,
             num_args=2,
         ),

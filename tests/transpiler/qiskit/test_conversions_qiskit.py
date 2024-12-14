@@ -194,7 +194,7 @@ def test_crz_gate_from_qiskit(qubits):
 
 
 @pytest.mark.parametrize("qubits", ([0, 1], [1, 0]))
-@pytest.mark.parametrize("theta", (0, 2 * np.pi, np.pi / 2, np.pi / 4))
+@pytest.mark.parametrize("theta", (0, np.pi, 2 * np.pi, np.pi / 2, np.pi / 4))
 def test_rzz_gate_from_qiskit(qubits, theta):
     """Tests converting Rzz gate from Qiskit to Cirq."""
     qiskit_circuit = QuantumCircuit(2)
