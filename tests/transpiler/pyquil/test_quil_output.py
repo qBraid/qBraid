@@ -33,9 +33,13 @@ try:
         QuilOneQubitGate,
         QuilOutput,
         QuilTwoQubitGate,
+        _quil_u2_gate,
+        _quil_u3_gate,
+        _rzz_gate,
         _twoqubitdiagonal_gate,
         exponent_to_pi_string,
     )
+    from qbraid.transpiler.conversions.qasm2.cirq_custom import RZZGate, U2Gate, U3Gate
 
     pyquil_not_installed = False
 except ImportError:
@@ -553,3 +557,42 @@ def test_two_qubit_diagonal_gate_none():
     circuit.append(gate.on(q0, q1))
     instr = next(circuit.all_operations())
     assert _twoqubitdiagonal_gate(instr, formatter) is None
+
+
+def test_rzz_rads_0_to_identity():
+    """ "Test that RZZ gate with rads=0 maps to pyquil Identity gate."""
+    (q0, q1) = _make_qubits(2)
+    gate = RZZGate(rads=0)
+    formatter = QuilFormatter({q0: "0", q1: "1"}, {})
+    circuit = cirq.Circuit()
+    circuit.append(gate.on(q0, q1))
+    instr = next(circuit.all_operations())
+    assert _rzz_gate(instr, formatter) == "I 0\nI 1\n"
+
+
+@pytest.mark.parametrize(
+    "gate_class, params, expected_quil, quil_converter",
+    [
+        (
+            U2Gate,
+            (np.pi / 4, np.pi / 8),
+            "U(1.5707963267948966, 0.7853981633974483, 0.39269908169872414) 0",
+            _quil_u2_gate,
+        ),
+        (
+            U3Gate,
+            (np.pi / 2, np.pi / 4, np.pi / 8),
+            "U(1.5707963267948966, 0.7853981633974483, 0.39269908169872414) 0",
+            _quil_u3_gate,
+        ),
+    ],
+)
+def test_custom_u_gate_to_quil(gate_class, params, expected_quil, quil_converter):
+    """Test converting custom gates (U2, U3) to Quil."""
+    (q0,) = _make_qubits(1)
+    gate = gate_class(*params)
+    formatter = QuilFormatter({q0: "0"}, {})
+    circuit = cirq.Circuit()
+    circuit.append(gate.on(q0))
+    instr = next(circuit.all_operations())
+    assert quil_converter(instr, formatter).strip() == expected_quil

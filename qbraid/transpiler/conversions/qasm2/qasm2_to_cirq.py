@@ -32,6 +32,7 @@ if TYPE_CHECKING:
     import cirq
 
     from qbraid.programs.typer import Qasm2StringType
+    from qbraid.transpiler.conversions.qasm2.cirq_qasm_parser import QasmParser
 
 
 @weight(1)
@@ -46,13 +47,16 @@ def qasm2_to_cirq(qasm: Qasm2StringType) -> cirq.Circuit:
     """
     try:
         qasm_module = pyqasm.loads(qasm)
-        qasm_module.unroll()
+        qasm_module.unroll(external_gates=["rzz"])
         if qasm_module.has_barriers():
             logger.warning(
-                "Barriers found while converting program to Cirq. "
-                "Removing barriers as Cirq does not support them."
+                "Barriers are not supported in Cirq, "
+                "and will be removed during program conversion."
             )
             qasm_module.remove_barriers()
-        return cirq_qasm_parser.QasmParser().parse(pyqasm.dumps(qasm_module)).circuit
+        parser: QasmParser = cirq_qasm_parser.QasmParser()
+        qasm_compat = pyqasm.dumps(qasm_module)
+        qasm_parsed = parser.parse(qasm_compat)
+        return qasm_parsed.circuit
     except cirq_qasm_import.QasmException as err:
-        raise QasmError from err
+        raise QasmError(err) from err

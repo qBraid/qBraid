@@ -18,9 +18,13 @@ Types of changes:
 
 ### Added
 - Added support for OpenQASM 3.0 to CUDA-Q kernel transpilation ([#857](https://github.com/qBraid/qBraid/pull/857))
+- Added testing code coverage for custom `rzz`, `u3`, and `u2` for Cirq $\rightarrow$ PyQuil ([#862](https://github.com/qBraid/qBraid/pull/862))
 
 ### Improved / Modified
 - Vastly reduced size of `qbraid.passes.qasm`, `qbraid.programs.gate_model.qasm2` and `qbraid.programs.gate_model.qasm3` modules as a result of `pyqasm` integration. ([#808](https://github.com/qBraid/qBraid/pull/808))
+- Restricted PyPI publish jobs to specific actors for better security and maintainability. ([#862](https://github.com/qBraid/qBraid/pull/862))
+- Updated `MANIFEST.in` to refine file inclusion/exclusion and enhanced `pyproject.toml` by adjusting dependencies and aligning with `requirements.txt`. ([#862](https://github.com/qBraid/qBraid/pull/862))
+- Enhanced qbraid transpiler QASM2 to Cirq for external gate handling, and updated custom Cirq `RZZGate` to use radians convention to more closely match cirq API. ([#862](https://github.com/qBraid/qBraid/pull/862))
 
 ### Deprecated
 
@@ -28,6 +32,8 @@ Types of changes:
 - Dropped support for Python 3.9 ([#808](https://github.com/qBraid/qBraid/pull/808))
 
 ### Fixed
+- Removed Python 3.9 from daily test matrix ([#862](https://github.com/qBraid/qBraid/pull/862))
+- Fixed OQC test edge case datetime bug ([#862](https://github.com/qBraid/qBraid/pull/862))
 
 ### Dependencies
 - Integrated `pyqasm` as project dependency. ([#808](https://github.com/qBraid/qBraid/pull/808))

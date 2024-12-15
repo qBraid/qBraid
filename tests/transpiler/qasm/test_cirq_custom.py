@@ -42,10 +42,10 @@ class FakeArgs:
 
 def test_rzz_gate():
     """Test RZZGate"""
-    theta = 0.2
-    gate = RZZGate(theta)
+    rads = 0.2
+    gate = RZZGate(rads)
 
-    itheta2 = 1j * float(theta) / 2
+    itheta2 = 1j * rads * np.pi / 2
     expected_unitary = np.array(
         [
             [np.exp(-itheta2), 0, 0, 0],
@@ -56,7 +56,7 @@ def test_rzz_gate():
     )
     assert gate._num_qubits_() == 2
     assert gate._unitary_().all() == expected_unitary.all()
-    assert gate._circuit_diagram_info_(args=FakeArgs(1)).wire_symbols[0] == "RZZ(0.1)"
+    assert gate._circuit_diagram_info_(args=FakeArgs(1)).wire_symbols[0] == "RZZ(0.2)"
 
 
 def test_rzz_gate_method():
@@ -64,7 +64,7 @@ def test_rzz_gate_method():
     id_gate = rzz(0)
     assert isinstance(id_gate, IdentityGate)
 
-    diagonal = rzz(2 * np.pi)
+    diagonal = rzz(2)
     assert isinstance(diagonal, TwoQubitDiagonalGate)
 
     random_rzz = rzz(0.5)

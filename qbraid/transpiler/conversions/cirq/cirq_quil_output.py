@@ -20,6 +20,7 @@
 Module defining qBraid Cirq QuilOutput.
 
 """
+from __future__ import annotations
 
 import string
 from fractions import Fraction
@@ -64,7 +65,7 @@ class QuilFormatter(string.Formatter):
     """A unique formatter to correctly output values to QUIL."""
 
     def __init__(
-        self, qubit_id_map: dict["cirq.Qid", str], measurement_id_map: dict[str, str]
+        self, qubit_id_map: dict[cirq.Qid, str], measurement_id_map: dict[str, str]
     ) -> None:
         """Inits QuilFormatter.
 
@@ -364,11 +365,12 @@ def _zzpow_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
 
 def _rzz_gate(op: cirq.Operation, formatter: QuilFormatter) -> str:
     gate = cast(RZZGate, op.gate)
+    if gate._rads == 1:
+        return formatter.format("CZ {0} {1}\n", op.qubits[0], op.qubits[1])
+    if gate._rads == 0:
+        return formatter.format("I {0}\nI {1}\n", op.qubits[0], op.qubits[1])
     return formatter.format(
-        "CPHASE({0}) {1} {2}\n",
-        gate._half_turns * np.pi,
-        op.qubits[0],
-        op.qubits[1],
+        "RZZ({0}) {1} {2}\n", exponent_to_pi_string(gate._rads * np.pi), op.qubits[0], op.qubits[1]
     )
 
 
