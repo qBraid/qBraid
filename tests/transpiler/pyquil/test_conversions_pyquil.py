@@ -20,12 +20,13 @@ from cirq.contrib.qasm_import import circuit_from_qasm
 
 try:
     from pyquil import Program
-    from pyquil.gates import CNOT, CZ, RX, RZ, H, X, Y, Z
+    from pyquil.gates import CNOT, CZ, RX, RZ, RZZ, H, I, X, Y, Z
     from pyquil.noise import _decoherence_noise_model, _get_program_gates, apply_noise_model
 
     from qbraid.interface import circuits_allclose
     from qbraid.transpiler.conversions.cirq import cirq_to_pyquil
     from qbraid.transpiler.conversions.pyquil import pyquil_to_cirq
+    from qbraid.transpiler.conversions.qasm2 import qasm2_to_cirq
     from qbraid.transpiler.exceptions import ProgramConversionError
 
     pyquil_not_installed = False
@@ -133,3 +134,24 @@ def test_raise_error_from_pyquil_noisey():
         noise_model = _decoherence_noise_model(_get_program_gates(p))
         p = apply_noise_model(p, noise_model)
         pyquil_to_cirq(p)
+
+
+def test_cirq_to_quil_output_rzz():
+    """Test that a RZZ gate is correctly converted to Quil."""
+    qasm = """
+    OPENQASM 2.0;
+    include "qelib1.inc";
+    qreg q[2];
+    rzz(pi) q[0], q[1];
+    rzz(0) q[0], q[1];
+    rzz(pi/2) q[0], q[1];
+    """
+
+    p = Program()
+    p += CZ(0, 1)
+    p += I(0)
+    p += I(1)
+    p += RZZ(np.pi / 2, 0, 1)
+    cirq_circuit = qasm2_to_cirq(qasm)
+    p_test: Program = cirq_to_pyquil(cirq_circuit)
+    assert p_test.out().replace("pi/2", f"{np.pi/2}") == p.out()
