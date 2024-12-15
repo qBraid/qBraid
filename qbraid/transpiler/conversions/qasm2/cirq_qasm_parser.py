@@ -285,9 +285,9 @@ class QasmParser:
         'ccx': QasmGateStatement(qasm_gate='ccx', num_params=0, num_args=3, cirq_gate=ops.CCX),
         'c3x': QasmGateStatement(qasm_gate='c3x', num_params=0, num_args=4, cirq_gate=ops.ControlledGate(ops.CCX)),
         'c4x': QasmGateStatement(qasm_gate='c4x', num_params=0, num_args=5, cirq_gate=ops.ControlledGate(ops.ControlledGate(ops.CCX))),
-        'sdg': QasmGateStatement(qasm_gate='sdg', num_params=0, num_args=1, cirq_gate=ops.S**-1),
-        'csdg': QasmGateStatement(qasm_gate='csdg', num_params=0, num_args=2, cirq_gate=ops.ControlledGate(ops.S**-1)),
-        'tdg': QasmGateStatement(qasm_gate='tdg', num_params=0, num_args=1, cirq_gate=ops.T**-1),
+        'sdg': QasmGateStatement(qasm_gate='sdg', num_params=0, num_args=1, cirq_gate=ops.ZPowGate(exponent=-0.5)),
+        'csdg': QasmGateStatement(qasm_gate='csdg', num_params=0, num_args=2, cirq_gate=ops.ControlledGate(ops.ZPowGate(exponent=-0.5))),
+        'tdg': QasmGateStatement(qasm_gate='tdg', num_params=0, num_args=1, cirq_gate=ops.ZPowGate(exponent=-0.25)),
         'crz': QasmGateStatement(
             qasm_gate='crz',
             cirq_gate=(lambda params: ops.ControlledGate(ops.rz(params[0]))),

@@ -28,7 +28,7 @@ def is_package_installed(package_name: str) -> bool:
     return importlib.util.find_spec(package_name) is not None
 
 
-ALL_TARGETS = [("braket", 1.0), ("cirq", 1.0), ("pyquil", 1.0), ("pytket", 0.98)]
+ALL_TARGETS = [("braket", 1.0), ("cirq", 1.0), ("pyquil", 0.98), ("pytket", 1.0)]
 AVAILABLE_TARGETS = [(name, version) for name, version in ALL_TARGETS if is_package_installed(name)]
 
 qiskit_gates = get_qiskit_gates(seed=0, exclude=["GlobalPhaseGate"])
