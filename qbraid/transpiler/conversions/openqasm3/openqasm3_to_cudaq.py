@@ -34,7 +34,23 @@ if TYPE_CHECKING:
 def make_gate_kernel(name: str, targs: tuple[type]) -> PyKernel:
     """Returns CUDA-Q kernel for pure standard gates (no modifiers - ctrl or adj)."""
 
-    if name in ["x", "y", "z", "rx", "ry", "rz", "h", "s", "t", "sdg", "tdg", "u3", "i", "id", "iden"]:
+    if name in [
+        "x",
+        "y",
+        "z",
+        "rx",
+        "ry",
+        "rz",
+        "h",
+        "s",
+        "t",
+        "sdg",
+        "tdg",
+        "u3",
+        "i",
+        "id",
+        "iden",
+    ]:
         size = 1
     elif name in ["swap"]:
         size = 2
@@ -97,11 +113,11 @@ def openqasm3_to_cudaq(program: Union[QasmStringType, ast.Program]) -> PyKernel:
         assert len(qubit.indices) == 1
 
         inds = qubit.indices[0]
-        
+
         # pyqasm unrolls decl/meas. statements to single integer
         assert len(inds) == 1
         assert isinstance(ind := inds[0], ast.IntegerLiteral)
-        
+
         q = ctx[qubit.name.name][ind.value]
         return q
 
@@ -138,15 +154,15 @@ def openqasm3_to_cudaq(program: Union[QasmStringType, ast.Program]) -> PyKernel:
             targs = [type(a) for a in args]
 
             qubit_refs = [qubit_lookup(q) for q in qubits]
-            
-            # pyqasm unrolls multiple modifiers. 
+
+            # pyqasm unrolls multiple modifiers.
             # ctrl isn't supported so multi-ctrl is not an issue at the moment.
             assert len(statement.modifiers) < 1
-            
+
             if len(statement.modifiers) == 1:
                 mod = statement.modifiers[0]
                 # pyqasm unrolls pow/inv modifiers
-                assert mod.modifier == ast.GateModifierName.ctrl 
+                assert mod.modifier == ast.GateModifierName.ctrl
 
                 gate = get_gate(name, targs)
                 kernel.control(gate, qubit_refs[0], *qubit_refs[1:])

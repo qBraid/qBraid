@@ -315,14 +315,14 @@ def test_openqasm3_to_cudaq_caching():
             bit[2] b;
             h b;
             """,
-            "QASM program is not well-formed" 
+            "QASM program is not well-formed",
         ),
         (
             """
             OPENQASM 3.0;
             include "custom.inc";
             """,
-            "Custom includes are unsupported"
+            "Custom includes are unsupported",
         ),
         (
             """
@@ -330,8 +330,8 @@ def test_openqasm3_to_cudaq_caching():
             qubit q;
             sx q;
             """,
-            "Unsupported gate: sx"
-        )
+            "Unsupported gate: sx",
+        ),
     ],
 )
 def test_openqasm3_to_cuda_error(qasm_code, error_message):
@@ -339,7 +339,7 @@ def test_openqasm3_to_cuda_error(qasm_code, error_message):
     with pytest.raises(ProgramConversionError) as excinfo:
         openqasm3_to_cudaq(qasm_code)
     assert error_message in str(excinfo.value)
-    
+
 
 @pytest.mark.parametrize("num_qubits", [2, 3, 4, 5])
 @pytest.mark.parametrize("_", range(10))
