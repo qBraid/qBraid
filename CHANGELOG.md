@@ -17,6 +17,7 @@ Types of changes:
 ### Fixed
 
 ### Added
+- Added support for OpenQASM 3.0 to CUDA-Q kernel transpilation ([#857](https://github.com/qBraid/qBraid/pull/857))
 - Added testing code coverage for custom `rzz`, `u3`, and `u2` for Cirq $\rightarrow$ PyQuil ([#862](https://github.com/qBraid/qBraid/pull/862))
 
 ### Improved / Modified
