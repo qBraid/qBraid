@@ -25,7 +25,9 @@ from qiskit_aer import StatevectorSimulator
 
 from qbraid.interface import assert_allclose_up_to_global_phase, circuits_allclose
 from qbraid.transpiler.conversions.openqasm3 import openqasm3_to_cudaq
+from qbraid.transpiler.conversions.openqasm3.openqasm3_to_cudaq import make_gate_kernel
 from qbraid.transpiler.conversions.qasm2.qasm2_to_qasm3 import qasm2_to_qasm3
+from qbraid.transpiler.exceptions import ProgramConversionError
 
 cudaq = pytest.importorskip("cudaq")
 
@@ -92,6 +94,7 @@ def test_openqasm3_to_cudaq_identifiers():
     include "stdgates.inc";
 
     qubit[3] q;
+    qubit a;
     bit[3] b;
 
     h q;
@@ -134,6 +137,26 @@ def test_openqasm3_to_cudaq_two_qubit_gates():
     """
     cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(qasm3_str_in, cudaq_out)
+
+
+def test_openqasm3_to_cudaq_u3_gate():
+    """OpenQASM3 -> CUDA-Q: Test a U3 gate."""
+
+    qasm3_str_in = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+
+    qubit q;
+
+    u3(0.1, 0.2, 0.2) q;
+    """
+    cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
+    _check_output(qasm3_str_in, cudaq_out, method="state")
+
+    kernel = cudaq.make_kernel()
+    qreg = kernel.qalloc(1)
+    kernel.apply_call(make_gate_kernel("u3", (float, float, float)), qreg[0], 0.1, 0.2, 0.2)
+    _check_output(qasm3_str_in, kernel, method="state")
 
 
 @pytest.mark.skip(reason="pyqasm don't support ctrl modifiers")
@@ -270,6 +293,53 @@ def test_openqasm3_to_cudaq_caching():
     _check_output(qasm3_str_in, cudaq_out)
     assert str(cudaq_out).count("quake.x") == 1
 
+
+@pytest.mark.parametrize(
+    "qasm_code, error_message",
+    [
+        (
+            """
+            OPENQASM 3.0;
+            qubit[2] q;
+            bit[2] b;
+            if(b[0] == 1){
+                h q;
+            }
+            """,
+            "Unsupported statement",
+        ),
+        (
+            """
+            OPENQASM 3.0;
+            qubit[2] q;
+            bit[2] b;
+            h b;
+            """,
+            "QASM program is not well-formed" 
+        ),
+        (
+            """
+            OPENQASM 3.0;
+            include "custom.inc";
+            """,
+            "Custom includes are unsupported"
+        ),
+        (
+            """
+            OPENQASM 3.0;
+            qubit q;
+            sx q;
+            """,
+            "Unsupported gate: sx"
+        )
+    ],
+)
+def test_openqasm3_to_cuda_error(qasm_code, error_message):
+    """OpenQASM 3.0 -> CUDA-Q: Test errors."""
+    with pytest.raises(ProgramConversionError) as excinfo:
+        openqasm3_to_cudaq(qasm_code)
+    assert error_message in str(excinfo.value)
+    
 
 @pytest.mark.parametrize("num_qubits", [2, 3, 4, 5])
 @pytest.mark.parametrize("_", range(10))

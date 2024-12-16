@@ -34,24 +34,15 @@ if TYPE_CHECKING:
 def make_gate_kernel(name: str, targs: tuple[type]) -> PyKernel:
     """Returns CUDA-Q kernel for pure standard gates (no modifiers - ctrl or adj)."""
 
-    if name in ["x", "y", "z", "h", "s", "t", "sdg", "tdg", "i", "id", "iden"]:
-        size, argc = 1, 0
-    elif name in ["rx", "ry", "rz"]:
-        size, argc = 1, 1
+    if name in ["x", "y", "z", "rx", "ry", "rz", "h", "s", "t", "sdg", "tdg", "u3", "i", "id", "iden"]:
+        size = 1
     elif name in ["swap"]:
-        size, argc = 2, 0
-    elif name in ["u3"]:
-        size, argc = 3, 3
+        size = 2
     else:
         raise ProgramConversionError(f"Unsupported gate: {name}")
 
     kernel, *qparams = cudaq.make_kernel(*[cudaq.qubit for _ in range(size)], *targs)
     qrefs, qargs = qparams[:size], qparams[size:]
-
-    if len(targs) != argc:
-        raise ProgramConversionError(
-            f"Gate {name} requires {argc} args but only {len(targs)} were provided"
-        )
 
     if name in ["i", "id", "iden"]:
         return kernel
@@ -64,14 +55,6 @@ def make_gate_kernel(name: str, targs: tuple[type]) -> PyKernel:
         op(*qrefs)
 
     return kernel
-
-
-def identifier_lookup(cbit: Union[ast.IndexedIdentifier, ast.Identifier]) -> str:
-    """Unpacks the identifier name"""
-    if isinstance(cbit, ast.IndexedIdentifier):
-        return cbit.name.name
-
-    return cbit.name
 
 
 @weight(1)
@@ -90,7 +73,7 @@ def openqasm3_to_cudaq(program: Union[QasmStringType, ast.Program]) -> PyKernel:
         module = pyqasm.loads(program)
         module.validate()
     except Exception as e:
-        raise ProgramConversionError("PyQasm program is not well-formed.") from e
+        raise ProgramConversionError("QASM program is not well-formed.") from e
 
     module.unroll()
     program = module.unrolled_ast
@@ -107,42 +90,29 @@ def openqasm3_to_cudaq(program: Union[QasmStringType, ast.Program]) -> PyKernel:
         return gate_kernels[name]
 
     def qubit_lookup(qubit: Union[ast.IndexedIdentifier, ast.Identifier]) -> QuakeValue:
-        if isinstance(qubit, ast.IndexedIdentifier):
-            if len(qubit.indices) > 1:
-                raise ProgramConversionError(
-                    f"Multi-dimensional array indexing is unsupported: {qubit.indices}"
-                )
+        # pyqasm unrolls to indexed identifiers
+        assert isinstance(qubit, ast.IndexedIdentifier)
 
-            inds = qubit.indices[0]
-            if isinstance(inds, ast.DiscreteSet):
-                inds = inds.values
+        # pyqasm unroll doesn't support multi-dim arrays
+        assert len(qubit.indices) == 1
 
-            if len(inds) > 1:
-                raise ProgramConversionError(
-                    f"Discrete set or multi-integer indexing is unsupported: {inds}"
-                )
-
-            ind = inds[0]
-            if not isinstance(ind, ast.IntegerLiteral):
-                raise ProgramConversionError(f"Index must be a single integer literal: {ind}")
-
-            q = ctx[qubit.name.name][ind.value]
-        else:
-            assert isinstance(qubit, ast.Identifier)
-            q = ctx[qubit.name][0]
+        inds = qubit.indices[0]
+        
+        # pyqasm unrolls decl/meas. statements to single integer
+        assert len(inds) == 1
+        assert isinstance(ind := inds[0], ast.IntegerLiteral)
+        
+        q = ctx[qubit.name.name][ind.value]
         return q
 
     # pylint: disable-next=too-many-nested-blocks
     for statement in program.statements:
         if isinstance(statement, ast.Include):
             if statement.filename not in {"stdgates.inc", "qelib1.inc"}:
-                raise ProgramConversionError(f"Includes are unsupported: {statement}")
+                raise ProgramConversionError(f"Custom includes are unsupported: {statement}")
         elif isinstance(statement, ast.QubitDeclaration):
             ctx[statement.qubit.name] = kernel.qalloc(statement.size.value)
         elif isinstance(statement, ast.ClassicalDeclaration):
-            if not isinstance(statement.type, ast.ClassicalType):
-                raise ProgramConversionError(f"Unsupported statement: {statement}")
-
             if statement.init_expression and isinstance(
                 statement.init_expression, ast.QuantumMeasurement
             ):
@@ -154,29 +124,29 @@ def openqasm3_to_cudaq(program: Union[QasmStringType, ast.Program]) -> PyKernel:
         elif isinstance(statement, ast.QuantumMeasurementStatement):
             val = kernel.mz(qubit_lookup(statement.measure.qubit))
             if statement.target is not None:
-                ctx[identifier_lookup(statement.target)] = val
+                # pyqasm unrolls all identifiers to indexed identifiers
+                assert isinstance(statement.target, ast.IndexedIdentifier)
+                ctx[statement.target.name.name] = val
         elif isinstance(statement, ast.QuantumGate):
             name, qubits = statement.name.name, statement.qubits
 
             args = []
             for arg in statement.arguments:
-                if arg.value is None:
-                    raise ProgramConversionError(
-                        f"Non-literal gate arguments are unsupported. {statement.arguments}"
-                    )
+                # pyqasm unrolls imples gate arguments are literals
+                assert arg.value is not None
                 args.append(arg.value)
             targs = [type(a) for a in args]
 
             qubit_refs = [qubit_lookup(q) for q in qubits]
-
-            if len(statement.modifiers) > 1:
-                raise ProgramConversionError(
-                    f"Multiple gate modifiers are unsupported: {statement}"
-                )
+            
+            # pyqasm unrolls multiple modifiers. 
+            # ctrl isn't supported so multi-ctrl is not an issue at the moment.
+            assert len(statement.modifiers) < 1
+            
             if len(statement.modifiers) == 1:
                 mod = statement.modifiers[0]
-                if mod.modifier != ast.GateModifierName.ctrl:
-                    raise ProgramConversionError(f"Non-ctrl modifiers are unsupported: {statement}")
+                # pyqasm unrolls pow/inv modifiers
+                assert mod.modifier == ast.GateModifierName.ctrl 
 
                 gate = get_gate(name, targs)
                 kernel.control(gate, qubit_refs[0], *qubit_refs[1:])
