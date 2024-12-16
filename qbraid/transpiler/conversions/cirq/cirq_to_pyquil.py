@@ -32,11 +32,11 @@ pyquil = LazyLoader("pyquil", globals(), "pyquil")
 
 if TYPE_CHECKING:
     import cirq.circuits
-    import pyquil as pyquil_
+    from pyquil import Program
 
 
 @weight(0.74)
-def cirq_to_pyquil(circuit: cirq.circuits.Circuit) -> pyquil_.Program:
+def cirq_to_pyquil(circuit: cirq.circuits.Circuit) -> Program:
     """Returns a pyQuil Program equivalent to the input Cirq circuit.
 
     Args:

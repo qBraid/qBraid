@@ -231,7 +231,7 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
 
                 elif ionq_name in TWO_QUBIT_PARAM_ANGLE_PHASE:
                     params = extract_params(statement)
-                    if len(params) not in {2, 3}:
+                    if len(params) not in {2, 3}:  # pragma: no cover
                         raise ValueError(
                             f"Invalid number of parameters for the '{name}' gate. "
                             f"Expected 2 or 3, got {len(params)}"
