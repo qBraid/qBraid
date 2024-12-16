@@ -148,7 +148,7 @@ def openqasm3_to_cudaq(program: Union[QasmStringType, ast.Program]) -> PyKernel:
 
             args = []
             for arg in statement.arguments:
-                # pyqasm unrolls imples gate arguments are literals
+                # pyqasm unroll implies gate arguments are literals
                 assert arg.value is not None
                 args.append(arg.value)
             targs = [type(a) for a in args]
