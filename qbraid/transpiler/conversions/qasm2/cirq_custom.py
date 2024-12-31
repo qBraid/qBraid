@@ -20,8 +20,6 @@ import fractions
 import numpy as np
 from cirq import CircuitDiagramInfo, Gate, IdentityGate, TwoQubitDiagonalGate
 
-# pylint: disable=abstract-method
-
 
 class U2Gate(Gate):
     """A single qubit gate for rotations about the
@@ -114,8 +112,8 @@ class U3Gate(Gate):
 class RZZGate(Gate):
     """A two qubit gate for rotations about ZZ."""
 
-    def __init__(self, theta):
-        self._theta = float(theta)
+    def __init__(self, rads):
+        self._rads = rads
 
         super()
 
@@ -123,8 +121,8 @@ class RZZGate(Gate):
         return 2
 
     def _unitary_(self):
-        itheta2 = 1j * float(self._theta) / 2
-        return np.array(
+        itheta2 = 1j * self._rads * np.pi / 2
+        matrix = np.array(
             [
                 [np.exp(-itheta2), 0, 0, 0],
                 [0, np.exp(itheta2), 0, 0],
@@ -132,20 +130,23 @@ class RZZGate(Gate):
                 [0, 0, 0, np.exp(-itheta2)],
             ],
         )
+        return np.round(matrix, decimals=15)
 
     def _circuit_diagram_info_(self, args):
-        theta_radians = self._theta / np.pi
-        rounded_theta = np.array(theta_radians)
+        rounded_theta = np.array(self._rads)
         if args.precision is not None:
             rounded_theta = rounded_theta.round(args.precision)
         gate_str = f"RZZ({rounded_theta})"
         return CircuitDiagramInfo((gate_str, gate_str))
 
 
-def rzz(theta):
-    """Returns custom cirq RZZ gate given rotation angle"""
-    if theta == 0:
+def rzz(rads: float | int) -> Gate:
+    """Returns custom cirq RZZ gate given rotation angle in radians."""
+    if rads == 0:
         return IdentityGate(2)
-    if theta == 2 * np.pi:
+    if rads == 2:
         return TwoQubitDiagonalGate([np.pi] * 4)
-    return RZZGate(theta)
+
+    # gate with the matrix exp(-i Z⊗Z rads)
+    # return ZZPowGate(exponent=2 * rads / np.pi, global_shift=-0.5)
+    return RZZGate(rads)

@@ -16,9 +16,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pyqasm
 from qbraid_core._import import LazyLoader
 
-from qbraid.passes.qasm import unfold_qasm2
+from qbraid._logging import logger
 from qbraid.programs.exceptions import QasmError
 from qbraid.transpiler.annotations import weight
 
@@ -31,6 +32,7 @@ if TYPE_CHECKING:
     import cirq
 
     from qbraid.programs.typer import Qasm2StringType
+    from qbraid.transpiler.conversions.qasm2.cirq_qasm_parser import QasmParser
 
 
 @weight(1)
@@ -44,7 +46,17 @@ def qasm2_to_cirq(qasm: Qasm2StringType) -> cirq.Circuit:
         Cirq circuit representation equivalent to the input QASM string.
     """
     try:
-        qasm = unfold_qasm2(qasm)
-        return cirq_qasm_parser.QasmParser().parse(qasm).circuit
+        qasm_module = pyqasm.loads(qasm)
+        qasm_module.unroll(external_gates=["rzz"])
+        if qasm_module.has_barriers():
+            logger.warning(
+                "Barriers are not supported in Cirq, "
+                "and will be removed during program conversion."
+            )
+            qasm_module.remove_barriers()
+        parser: QasmParser = cirq_qasm_parser.QasmParser()
+        qasm_compat = pyqasm.dumps(qasm_module)
+        qasm_parsed = parser.parse(qasm_compat)
+        return qasm_parsed.circuit
     except cirq_qasm_import.QasmException as err:
-        raise QasmError from err
+        raise QasmError(err) from err

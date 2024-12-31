@@ -88,7 +88,7 @@ def about() -> None:
             version = importlib.metadata.distribution(pkg).version
             if pkg in core_packages:
                 core_dependencies[pkg] = version
-            if pkg in optional_packages:
+            elif pkg in optional_packages:
                 optional_dependencies[pkg] = version
         except importlib.metadata.PackageNotFoundError:
             continue

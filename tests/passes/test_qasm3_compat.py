@@ -13,22 +13,62 @@ Unit tests for QASM preprocessing functions
 
 """
 import re
+import textwrap
 
 import pytest
 
 from qbraid.passes.qasm.compat import (
     _evaluate_expression,
+    _normalize_case_insensitive_map,
     add_stdgates_include,
     convert_qasm_pi_to_decimal,
     has_redundant_parentheses,
     insert_gate_def,
     normalize_qasm_gate_params,
-    remove_include_statements,
     remove_stdgates_include,
-    replace_gate_name,
+    replace_gate_names,
     simplify_parentheses_in_qasm,
 )
-from qbraid.passes.qasm.format import _remove_empty_lines
+
+
+@pytest.mark.parametrize(
+    "qasm3_without, qasm3_with",
+    [
+        (
+            """
+OPENQASM 3;
+qubit[1] q;
+h q[0];
+ry(pi/4) q[0];
+        """,
+            """
+OPENQASM 3;
+include "stdgates.inc";
+qubit[1] q;
+h q[0];
+ry(pi/4) q[0];
+        """,
+        ),
+    ],
+)
+def test_add_stdgates_include(qasm3_without, qasm3_with):
+    """Test adding stdgates include to OpenQASM 3.0 string"""
+
+    def _remove_empty_lines(input_string: str) -> str:
+        """Removes all empty lines from the provided string."""
+        return "\n".join(line for line in input_string.split("\n") if line.strip())
+
+    test_with = _remove_empty_lines(add_stdgates_include(qasm3_without))
+    expected_with = _remove_empty_lines(qasm3_with)
+
+    test_without = _remove_empty_lines(remove_stdgates_include(qasm3_with))
+    expected_without = _remove_empty_lines(qasm3_without)
+
+    test_redundant = add_stdgates_include(qasm3_with)
+
+    assert test_with == expected_with
+    assert test_without == expected_without
+    assert test_redundant == qasm3_with
 
 
 @pytest.mark.parametrize(
@@ -62,42 +102,78 @@ def test_convert_pi_to_decimal(qasm3_str_pi, qasm3_str_decimal):
     assert qasm_out == qasm3_str_decimal
 
 
-def test_replace_gate_name_normal():
-    """Test replacing gate name in qasm string"""
-    qasm = "cnot q[0], q[1];"
-    assert replace_gate_name(qasm, "cnot", "cx") == "cx q[0], q[1];"
+@pytest.mark.parametrize(
+    "qasm_body, old_gate, new_gate, expected_body",
+    [
+        (
+            "cnot q[0], q[1];",
+            "cnot",
+            "cx",
+            "cx q[0], q[1];",
+        ),
+        (
+            "cnot q[0], q[1];",
+            "cnot",
+            "custom",
+            "custom q[0], q[1];",
+        ),
+        (
+            "cnot q[0], q[1];",
+            "notmatched",
+            "cx",
+            "cnot q[0], q[1];",
+        ),
+    ],
+)
+def test_replace_gate_name_qubit_2(qasm_body, old_gate, new_gate, expected_body):
+    """Test replacing gate names in QASM strings for two qubit gates."""
+    qasm = f"OPENQASM 3; qubit[2] q; {qasm_body}"
+    expected_output = f"OPENQASM 3;\nqubit[2] q;\n{expected_body}\n"
+    assert replace_gate_names(qasm, {old_gate: new_gate}) == expected_output
+
+    qasm2 = f"OPENQASM 2; qreg q[2]; {qasm_body}"
+    qasm2_expected_output = f"OPENQASM 2;\nqreg q[2];\n{expected_body}\n"
+    assert replace_gate_names(qasm2, {old_gate: new_gate}) == qasm2_expected_output
 
 
-def test_replace_gate_name_forced():
-    """Test forced replace of gate name in qasm string"""
-    qasm = "x q[0];"
-    assert replace_gate_name(qasm, "x", "pauli_x", force_replace=True) == "pauli_x q[0];"
+@pytest.mark.parametrize(
+    "qasm_body, old_gate, new_gate, expected_body",
+    [
+        (
+            "x q[0];",
+            "x",
+            "pauli_x",
+            "pauli_x q[0];",
+        ),
+        (
+            "p(3.14) q[0];",
+            "p",
+            "phaseshift",
+            "phaseshift(3.14) q[0];",
+        ),
+        (
+            "v q[0];",
+            "v",
+            "sx",
+            "sx q[0];",
+        ),
+        (
+            "ti q[0];",
+            "ti",
+            "tdg",
+            "tdg q[0];",
+        ),
+    ],
+)
+def test_replace_gate_name_qubit_1(qasm_body, old_gate, new_gate, expected_body):
+    """Test replacing gate names in QASM strings for one qubit gates."""
+    qasm3 = f"OPENQASM 3; qubit[1] q; {qasm_body}"
+    qasm3_expected_output = f"OPENQASM 3;\nqubit[1] q;\n{expected_body}\n"
+    assert replace_gate_names(qasm3, {old_gate: new_gate}) == qasm3_expected_output
 
-
-def test_replace_gate_name_with_parameters():
-    """Test replacing gate name with parameters in qasm string"""
-    qasm = "p(3.14) q[0];"
-    assert replace_gate_name(qasm, "p", "phaseshift") == "phaseshift(3.14) q[0];"
-
-
-def test_no_replacement_when_not_matched():
-    """Test not replacing gate name in qasm string when not matched"""
-    qasm = "cnot q[0], q[1];"
-    assert replace_gate_name(qasm, "cnot", "notvalid", force_replace=False) == "cnot q[0], q[1];"
-
-
-def test_force_replace_when_not_matched():
-    """Test force replacing gate name in qasm string when not matched"""
-    qasm = "cnot q[0], q[1];"
-    assert replace_gate_name(qasm, "cnot", "notvalid", force_replace=True) == "notvalid q[0], q[1];"
-
-
-def test_replace_non_parameterized_with_parameterized():
-    """Test replacing non-parameterized gates with parameterized gates in qasm string"""
-    qasm = "v q[0];"
-    assert replace_gate_name(qasm, "v", "sx") == "sx q[0];"
-    qasm = "ti q[0];"
-    assert replace_gate_name(qasm, "ti", "tdg") == "tdg q[0];"
+    qasm2 = f"OPENQASM 2; qreg q[1]; {qasm_body}"
+    qasm2_expected_output = f"OPENQASM 2;\nqreg q[1];\n{expected_body}\n"
+    assert replace_gate_names(qasm2, {old_gate: new_gate}) == qasm2_expected_output
 
 
 @pytest.mark.parametrize(
@@ -106,9 +182,7 @@ def test_replace_non_parameterized_with_parameterized():
         (
             """
         OPENQASM 3.0;
-
         qubit[2] q;
-
         cnot q[0], q[1];
         sx q[0];
         p(3.14) q[1];
@@ -116,9 +190,7 @@ def test_replace_non_parameterized_with_parameterized():
         """,
             """
         OPENQASM 3.0;
-
         qubit[2] q;
-
         cx q[0], q[1];
         v q[0];
         phaseshift(3.14) q[1];
@@ -129,46 +201,11 @@ def test_replace_non_parameterized_with_parameterized():
 )
 def test_parameterized_replacement(qasm3_in, qasm3_out):
     """Test replacing non-parameterized gates with parameterized gates in qasm3 string"""
-    qasm3 = replace_gate_name(qasm3_in, "cnot", "cx")
-    qasm3 = replace_gate_name(qasm3, "sx", "v")
-    qasm3 = replace_gate_name(qasm3, "p", "phaseshift")
-    qasm3 = replace_gate_name(qasm3, "cp", "cphaseshift")
+    replacements = {"cnot": "cx", "sx": "v", "p": "phaseshift", "cp": "cphaseshift"}
+    qasm3 = replace_gate_names(qasm3_in, replacements)
+    qasm3 = textwrap.dedent(qasm3).strip()
+    qasm3_out = textwrap.dedent(qasm3_out).strip()
     assert qasm3 == qasm3_out
-
-
-@pytest.mark.parametrize(
-    "qasm3_without, qasm3_with",
-    [
-        (
-            """
-OPENQASM 3;
-qubit[1] q;
-h q[0];
-ry(pi/4) q[0];
-        """,
-            """
-OPENQASM 3;
-include "stdgates.inc";
-qubit[1] q;
-h q[0];
-ry(pi/4) q[0];
-        """,
-        ),
-    ],
-)
-def test_add_stdgates_include(qasm3_without, qasm3_with):
-    """Test adding stdgates include to OpenQASM 3.0 string"""
-    test_with = _remove_empty_lines(add_stdgates_include(qasm3_without))
-    expected_with = _remove_empty_lines(qasm3_with)
-
-    test_without = _remove_empty_lines(remove_stdgates_include(qasm3_with))
-    expected_without = _remove_empty_lines(qasm3_without)
-
-    test_redundant = add_stdgates_include(qasm3_with)
-
-    assert test_with == expected_with
-    assert test_without == expected_without
-    assert test_redundant == qasm3_with
 
 
 def test_bad_insert_gate_def():
@@ -341,40 +378,15 @@ def test_convert_qasm_pi_to_decimal_qasm3_fns_gates_vars():
     assert convert_qasm_pi_to_decimal(qasm) == expected
 
 
-@pytest.mark.parametrize(
-    "qasm_input, expected_output",
-    [
-        (
-            """
-OPENQASM 2.0;
-include "qelib1.inc";
-qreg q[2];
-gpi(0) q[0];
-gpi2(0) q[1];
-cry(pi) q[0], q[1];""",
-            """
-OPENQASM 2.0;
-qreg q[2];
-gpi(0) q[0];
-gpi2(0) q[1];
-cry(pi) q[0], q[1];
-            """,
-        ),
-        (
-            """
-OPENQASM 3.0;
-include "stdgates.inc";
-qubit[2] q;
-crz(pi / 4) q[0], q[1];
-            """,
-            """
-OPENQASM 3.0;
-qubit[2] q;
-crz(pi / 4) q[0], q[1];
-            """,
-        ),
-    ],
-)
-def test_remove_include_statements(qasm_input: str, expected_output: str):
-    """Test removing include statements from QASM string."""
-    assert expected_output.strip() == remove_include_statements(qasm_input).strip()
+def test_normalize_case_insensitive_map():
+    """Test normalizing a case-insensitive map."""
+    test_map = {"a": 1, "B": 2, "c": 3}
+    expected_map = {"a": 1, "b": 2, "c": 3}
+    assert _normalize_case_insensitive_map(test_map) == expected_map
+
+
+def test_normalize_case_insensitive_map_raises_error():
+    """Test normalizing a case-insensitive map raises an error if keys are not unique."""
+    test_map = {"a": 1, "A": 2}
+    with pytest.raises(ValueError):
+        _normalize_case_insensitive_map(test_map)

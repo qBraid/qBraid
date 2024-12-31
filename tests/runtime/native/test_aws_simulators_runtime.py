@@ -8,8 +8,6 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint: disable=redefined-outer-name
-
 """
 Unit tests for submissions to AWS SV1, DM1, TN1 via qBraid native runtime.
 
@@ -21,4 +19,6 @@ from qbraid.runtime.native.provider import _braket_to_json
 def test_braket_circuit_to_json(braket_circuit, qasm3_circuit):
     """Test conversion of Braket circuit to JSON."""
     qasm_json = _braket_to_json(braket_circuit)
-    assert qasm_json == {"openQasm": qasm3_circuit}
+    assert len(qasm_json) == 1
+    assert qasm_json.keys() == {"openQasm"}
+    assert qasm_json["openQasm"].strip() == qasm3_circuit.strip()

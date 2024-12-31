@@ -226,3 +226,47 @@ def normalize_tuples(measurements: list[list[tuple[int, ...]]]) -> list[list[tup
         normalized_measurements.append(normalized_sublist)
 
     return normalized_measurements
+
+
+def distribute_counts(probs: dict[Any, float], shots: int) -> dict[Any, int]:
+    """
+    Adjusts probabilistic counts to ensure the total equals the number of shots.
+
+    Args:
+        probs (dict[Any, float]): A dictionary mapping states to their probabilities.
+        shots (int): The total number of shots to distribute among the states.
+
+    Returns:
+        dict[Any, int]: A dictionary mapping states to their adjusted counts such that
+            the sum of counts equals `shots`.
+
+    Raises:
+        ValueError: If probabilities do not sum to 1, are not in the range [0, 1],
+            or if shots is negative.
+
+    Example:
+        >>> probs = {0: 0.86, 1: 0.14}
+        >>> shots = 10
+        >>> distribute_counts(probs, shots)
+        {0: 9, 1: 1}
+    """
+    if not sum(probs.values()) == 1:
+        raise ValueError("Probabilities must sum to 1.")
+
+    if not all(0 <= prob <= 1 for prob in probs.values()):
+        raise ValueError("Probabilities must be between 0 and 1.")
+
+    if shots < 0:
+        raise ValueError("Number of shots must be non-negative.")
+
+    counts = {state: round(prob * shots) for state, prob in probs.items()}
+
+    diff = shots - sum(counts.values())
+
+    for state in sorted(counts.keys(), key=lambda k: -probs[k]):
+        if diff == 0:
+            break
+        counts[state] += 1 if diff > 0 else -1
+        diff -= 1 if diff > 0 else -1
+
+    return counts

@@ -16,12 +16,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+import pyqasm
 from qbraid_core._import import LazyLoader
 
 from qbraid.passes.qasm.compat import (
     convert_qasm_pi_to_decimal,
     remove_stdgates_include,
-    replace_gate_name,
+    replace_gate_names,
 )
 from qbraid.programs.exceptions import QasmError
 from qbraid.transpiler.annotations import weight
@@ -46,14 +47,14 @@ def transform_notation(qasm3: str) -> str:
         "sdg": "si",
         "tdg": "ti",
         "sx": "v",
+        "id": "i",
         "sxdg": "vi",
         "p": "phaseshift",
         "cp": "cphaseshift",
     }
 
     qasm3 = remove_stdgates_include(qasm3)
-    for old, new in replacements.items():
-        qasm3 = replace_gate_name(qasm3, old, new)
+    qasm3 = replace_gate_names(qasm3, replacements)
     qasm3 = convert_qasm_pi_to_decimal(qasm3)
     return qasm3
 
@@ -72,6 +73,10 @@ def qasm3_to_braket(qasm: Qasm3StringType) -> braket.circuits.Circuit:
         ProgramConversionError: If qasm to braket conversion fails
 
     """
+    module = pyqasm.loads(qasm)
+    module.unroll()
+    qasm = pyqasm.dumps(module)
+
     qasm = transform_notation(qasm)
 
     try:

@@ -16,10 +16,9 @@ across various other quantum software frameworks.
 import math
 import re
 from functools import reduce
-from typing import Union
 
 from openqasm3 import dumps, parse
-from openqasm3.ast import Include, Program, QuantumGate, QuantumMeasurementStatement
+from openqasm3.ast import Program, QuantumGate, Statement
 from openqasm3.parser import QASM3ParsingError
 
 from qbraid._logging import logger
@@ -82,52 +81,74 @@ def insert_gate_def(qasm3_str: str, gate_name: str, force_insert: bool = False) 
     return "\n".join(lines)
 
 
-def replace_gate_name(
-    qasm: str, old_gate_name: str, new_gate_name: str, force_replace: bool = False
+def _normalize_case_insensitive_map(gate_mappings: dict[str, str]) -> dict[str, str]:
+    """Normalize gate_mappings keys to lowercase and check for duplicates."""
+    lowercased_map = {}
+    for key, value in gate_mappings.items():
+        lower_key = key.lower()
+        if lower_key in lowercased_map:
+            raise ValueError(
+                f"Duplicate key detected after lowercasing: '{lower_key}'. Use case_sensitive=True."
+            )
+        lowercased_map[lower_key] = value
+    return lowercased_map
+
+
+def _replace_gate_in_statement(
+    statement: Statement, gate_mappings: dict[str, str], case_sensitive: bool
+) -> QuantumGate:
+    """Replace gate names in a single statement if applicable."""
+    if isinstance(statement, QuantumGate):
+        gate_name = statement.name.name
+        lookup_name = gate_name if case_sensitive else gate_name.lower()
+        if lookup_name in gate_mappings:
+            statement.name.name = gate_mappings[lookup_name]
+    return statement
+
+
+def _replace_gate_names(
+    program: Program, gate_mappings: dict[str, str], case_sensitive: bool
+) -> Program:
+    """Replace occurrences of specified gate names in a openqasm3.ast.Program."""
+    if not case_sensitive:
+        gate_mappings = _normalize_case_insensitive_map(gate_mappings)
+
+    statements = [
+        _replace_gate_in_statement(stmnt, gate_mappings, case_sensitive)
+        for stmnt in program.statements
+    ]
+
+    return Program(statements=statements, version=program.version)
+
+
+def replace_gate_names(
+    qasm: str, gate_mappings: dict[str, str], case_sensitive: bool = False
 ) -> str:
-    """
-    Replace occurrences of a specified gate name in a QASM program string with
-    a new gate name, while optionally enforcing the replacement even if the new
-    gate name isn't in the predefined gate map.
+    """Replace occurrences of specified gate names in a QASM program string.
 
     Args:
         qasm (str): The QASM program as a string.
-        old_gate_name (str): The original gate name to replace.
-        new_gate_name (str): The new gate name to use in replacement.
-        force_replace (bool): If True, force the replacement even if the
-            new gate name isn't in the gate map.
+        gate_mappings (dict[str, str]): A dictionary mapping old gate names (keys)
+            to new gate names (values).
+        case_sensitive (bool): Whether the gate name replacement should be case-sensitive.
+            Defaults to False.
 
     Returns:
         str: The modified QASM program with the gate names replaced.
+
+    Raises:
+        ValueError: If duplicate keys are found in the gate_mappings after lowercasing.
     """
-    # Define pairs of interchangeable gates
-    gate_pairs = [
-        ("cnot", "cx"),
-        ("si", "sdg"),
-        ("ti", "tdg"),
-        ("v", "sx"),
-        ("vi", "sxdg"),
-        ("p", "phaseshift"),
-        ("cp", "cphaseshift"),
-    ]
+    program = parse(qasm)
 
-    # Create a mapping from each gate to its alternate form
-    gate_map = {old: new for pair in gate_pairs for old, new in (pair, pair[::-1])}
+    program_out = _replace_gate_names(program, gate_mappings, case_sensitive)
+    version_major = program_out.version.split(".")[0]
+    qasm_out = dumps(program_out)
 
-    parameterized_gates = {"p", "cp", "phaseshift", "cphaseshift"}
+    if int(version_major) == 2:
+        qasm_out = declarations_to_qasm2(qasm_out)
 
-    suffix = "(" if old_gate_name in parameterized_gates else " "
-
-    # Replace based on gate map and force_replace flag
-    if old_gate_name in gate_map and (gate_map[old_gate_name] == new_gate_name or force_replace):
-        new_gate_name_with_suffix = new_gate_name + suffix
-        old_gate_name_with_suffix = old_gate_name + suffix
-        return qasm.replace(old_gate_name_with_suffix, new_gate_name_with_suffix)
-
-    if force_replace:
-        return qasm.replace(old_gate_name, new_gate_name)
-
-    return qasm
+    return qasm_out
 
 
 def add_stdgates_include(qasm_str: str) -> str:
@@ -196,10 +217,7 @@ def convert_qasm_pi_to_decimal(qasm: str) -> str:
                 return expr  # pragma: no cover
 
         expr_with_pi_as_decimal = expr.replace("pi", str(math.pi))
-        try:
-            value = eval(expr_with_pi_as_decimal)  # pylint: disable=eval-used
-        except SyntaxError:
-            return expr
+        value = eval(expr_with_pi_as_decimal)  # pylint: disable=eval-used
         return str(value)
 
     return re.sub(pattern, replace_with_decimal, qasm)
@@ -217,17 +235,6 @@ def has_redundant_parentheses(qasm_str: str) -> bool:
         return True
 
     return False
-
-
-def remove_spaces_in_parentheses(expression: str) -> str:
-    """Removes all spaces inside parentheses in an expression."""
-    parenthesized_parts = re.findall(r"\(.*?\)", expression)
-
-    for part in parenthesized_parts:
-        cleaned_part = part.replace(" ", "")
-        expression = expression.replace(part, cleaned_part)
-
-    return expression
 
 
 def simplify_parentheses_in_qasm(qasm_str: str) -> str:
@@ -274,49 +281,3 @@ def declarations_to_qasm2(qasm: str) -> str:
         qasm = re.sub(pattern, replacement, qasm)
 
     return qasm
-
-
-def remove_qasm_barriers(qasm_str: str) -> str:
-    """Returns a copy of the input QASM with all barriers removed.
-
-    Args:
-        qasm_str: QASM to remove barriers from.
-    """
-    quoted_re = r"(?:\"[^\"]*?\")"
-    statement_re = r"((?:[^;{}\"]*?" + quoted_re + r"?)*[;{}])?"
-    comment_re = r"(\n?//[^\n]*(?:\n|$))?"
-    statements_comments = re.findall(statement_re + comment_re, qasm_str)
-
-    lines = []
-    for statement, comment in statements_comments:
-        if re.match(r"^\s*barrier(?:(?:\s+)|(?:;))", statement) is None:
-            lines.append(statement + comment)
-    return "".join(lines)
-
-
-def remove_measurements(program: Union[Program, str]) -> str:
-    """Remove all measurement operations from the program."""
-    program = parse(program) if isinstance(program, str) else program
-    statements = [
-        statement
-        for statement in program.statements
-        if not isinstance(statement, QuantumMeasurementStatement)
-    ]
-    program_out = Program(statements=statements, version=program.version)
-    program_str = dumps(program_out)
-    if float(program.version) == 2.0:
-        program_str = declarations_to_qasm2(program_str)
-    return program_str
-
-
-def remove_include_statements(program: Union[Program, str]) -> str:
-    """Remove all include statements from the program."""
-    program = parse(program) if isinstance(program, str) else program
-    statements = [
-        statement for statement in program.statements if not isinstance(statement, Include)
-    ]
-    program_out = Program(statements=statements, version=program.version)
-    program_str = dumps(program_out)
-    if float(program.version) == 2.0:
-        program_str = declarations_to_qasm2(program_str)
-    return program_str

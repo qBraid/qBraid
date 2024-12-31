@@ -14,19 +14,58 @@ Types of changes:
 
 ## [Unreleased]
 
+### Fixed
+
 ### Added
+- Added testing code coverage for custom `rzz`, `u3`, and `u2` for Cirq $\rightarrow$ PyQuil ([#862](https://github.com/qBraid/qBraid/pull/862))
 
 ### Improved / Modified
-- Unit tests that require the `pyqir` dependency are now automatically skipped if pyqir is not installed. ([#846](https://github.com/qBraid/qBraid/pull/846))
+- Vastly reduced size of `qbraid.passes.qasm`, `qbraid.programs.gate_model.qasm2` and `qbraid.programs.gate_model.qasm3` modules as a result of `pyqasm` integration. ([#808](https://github.com/qBraid/qBraid/pull/808))
+- Restricted PyPI publish jobs to specific actors for better security and maintainability. ([#862](https://github.com/qBraid/qBraid/pull/862))
+- Updated `MANIFEST.in` to refine file inclusion/exclusion and enhanced `pyproject.toml` by adjusting dependencies and aligning with `requirements.txt`. ([#862](https://github.com/qBraid/qBraid/pull/862))
+- Enhanced qbraid transpiler QASM2 to Cirq for external gate handling, and updated custom Cirq `RZZGate` to use radians convention to more closely match cirq API. ([#862](https://github.com/qBraid/qBraid/pull/862))
 
 ### Deprecated
 
 ### Removed
+- Dropped support for Python 3.9 ([#808](https://github.com/qBraid/qBraid/pull/808))
+
+### Fixed
+- Removed Python 3.9 from daily test matrix ([#862](https://github.com/qBraid/qBraid/pull/862))
+- Fixed OQC test edge case datetime bug ([#862](https://github.com/qBraid/qBraid/pull/862))
+
+### Dependencies
+- Integrated `pyqasm` as project dependency. ([#808](https://github.com/qBraid/qBraid/pull/808))
+
+## [0.8.10] - 2024-12-13
+
+### Fixed
+- Fixed type annotations for constraint parameters to support nested lists and mixed types, such as list[list[str]] and list[list[Union[str, int]]] in qbraid/runtime/schemas/experiment.py.([#859](https://github.com/qBraid/qBraid/pull/859)) [[1]](diffhunk://#diff-a7087c56dd9323acc4777f8bc0bfab64908f18a93e9e6e6fa8abdb663da8fbfaL236-R244) [[2]](diffhunk://#diff-a7087c56dd9323acc4777f8bc0bfab64908f18a93e9e6e6fa8abdb663da8fbfaL259-R266)
+- Updates to tests: Modified the test_qubo_solve_params_model function to reflect the updated types for the constraint parameters in tests/runtime/test_schemas.py.
+
+### Added
+- Added `p` to `z` gate name mapping to `openqasm3_to_ionq` conversion ([#854](https://github.com/qBraid/qBraid/pull/854))
+- Added `preflight` parameter to the `submit` method and to the `RuntimeJobModel` class ([#856](https://github.com/qBraid/qBraid/pull/856))
+- Added remote test for native IonQ runtime ([#856](https://github.com/qBraid/qBraid/pull/856))
+- Added `distribute_counts` function to adjust probabilistic counts ensuring the total equals the number of shots. ([#858](https://github.com/qBraid/qBraid/pull/858))
+- Added support for controlled gates in `openqasm3_to_ionq` conversion ([#858](https://github.com/qBraid/qBraid/pull/858)):
+
+```text
+cx, cy, cz, crx, cry, crz, ch, ccnot, cs, csi, ct, cti, cv, cvi
+```
+
+### Improved / Modified
+- Unit tests that require the `pyqir` dependency are now automatically skipped if pyqir is not installed. ([#846](https://github.com/qBraid/qBraid/pull/846))
+- Renamed the function `replace_gate_name` to `replace_gate_names` and updated its implementation to accept a dictionary of gate name mappings instead of individual old and new gate names. (`qbraid/passes/qasm/compat.py`) ([#854](https://github.com/qBraid/qBraid/pull/854))
+- Updated the `IonQDevice.transform` method to replace gate names in the input using the newly defined `IONQ_GATE_MAP` before loading and transforming the program ([#855](https://github.com/qBraid/qBraid/pull/855))
+- Updated gate naming conventions in `IONQ_QIS_GATES` list for consistency with [IonQ supported gates API](https://docs.ionq.com/api-reference/v0.3/writing-quantum-programs#supported-gates) ([#856](https://github.com/qBraid/qBraid/pull/856))
+- Updated the `rebase` function to include `gate_mappings` and `case_sensitive` parameters for gate name replacement.([#856](https://github.com/qBraid/qBraid/pull/856))
+- Updated the `rebase` function to handle gate mappings with predicates. ([#858](https://github.com/qBraid/qBraid/pull/858))
+- Refactored gate mappings and added validation for gate parameters and qubit counts in `openqasm3_to_ionq` conversion ([#858](https://github.com/qBraid/qBraid/pull/858))
+- Integrated `distribute_counts` function in `convert_to_counts` method in `IonQJob` ([#858](https://github.com/qBraid/qBraid/pull/858))
 
 ### Fixed
 - Fixed `nec_vector_annealer` remote test by generalizing solutions (results) check ([#852](https://github.com/qBraid/qBraid/pull/852))
-
-### Dependencies
 
 ## [0.8.9] - 2024-12-06
 

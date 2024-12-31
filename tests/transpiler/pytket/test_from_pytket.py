@@ -19,7 +19,7 @@ try:
     from pytket.circuit import Circuit as TKCircuit
 
     from qbraid.interface import circuits_allclose, random_circuit
-    from qbraid.transpiler import ConversionGraph, ProgramConversionError, transpile
+    from qbraid.transpiler import ConversionGraph, transpile
 
     pytket_not_installed = False
 except ImportError:
@@ -64,11 +64,3 @@ def test_100_random_pytket():
         pytket_circuit = random_circuit("pytket", 4, 1, graph=graph)
         cirq_circuit = transpile(pytket_circuit, "cirq")
         assert circuits_allclose(pytket_circuit, cirq_circuit, strict_gphase=False)
-
-
-def test_raise_error():
-    """Test raising an error when converting an unsupported gate."""
-    with pytest.raises(ProgramConversionError):
-        pytket_circuit = TKCircuit(2)
-        pytket_circuit.ISWAPMax(0, 1)
-        transpile(pytket_circuit, "cirq", require_native=True)

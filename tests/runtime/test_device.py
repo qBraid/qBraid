@@ -893,7 +893,7 @@ def test_provider_get_basis_gates_ionq():
     basis_gates = QbraidProvider._get_basis_gates(device_data)
     native = {"gpi", "gpi2", "ms", "zz"}
     unique = set(basis_gates)
-    assert len(unique) == len(basis_gates) == 19
+    assert len(unique) == len(basis_gates) == 34
     assert native.issubset(unique)
 
 

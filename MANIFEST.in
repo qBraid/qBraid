@@ -1,6 +1,21 @@
-include *.txt *.md *.ini *.json
-recursive-include docs *.rst *.py *.png *.ico
+# Top-level metadata and configuration files
+include *.md
+include LICENSE
+include pyproject.toml
+
+# Package files
 recursive-include qbraid *.py *.qasm
 include qbraid/py.typed
-prune docs/build/
-exclude examples/*
+
+# Documentation
+graft docs
+prune docs/build
+prune docs/stubs
+
+# Development and testing
+include tox.ini
+include requirements-dev.txt
+recursive-include tests *.py *.qasm
+
+# Exclude bytecode files
+global-exclude *.py[cod]

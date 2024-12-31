@@ -138,10 +138,7 @@ class IonQProvider(QuantumProvider):
         )
 
     @cached_method
-    def get_device(
-        self,
-        device_id: str,
-    ) -> dict[str, Any]:
+    def get_device(self, device_id: str) -> IonQDevice:
         """Get a specific IonQ device."""
         data = self.session.get_device(device_id)
         profile = self._build_profile(data)

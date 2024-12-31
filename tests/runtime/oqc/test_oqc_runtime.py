@@ -158,7 +158,7 @@ TOSHIKO_EXEC_ESTIMATE = {
 def online_window() -> str:
     """Return a window start time for an online QPU."""
     now = datetime.datetime.now()
-    start_time = f"{now.year}-{now.month}-{now.day} {(now.hour - 1):02}:00:00"
+    start_time = f"{now.year}-{now.month}-{now.day} {(now.hour):02}:00:00"
     end_time = f"{now.year}-{now.month}-{now.day} {(now.hour):02}:59:59"
     return start_time, end_time
 
