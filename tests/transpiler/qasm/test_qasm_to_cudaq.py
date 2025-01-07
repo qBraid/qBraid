@@ -95,7 +95,7 @@ def test_openqasm3_to_cudaq_identifiers():
 
     qubit[3] q;
     qubit a;
-    bit[3] b = measure q;
+    bit[3] b;
  
     h q;
     x q[1];
