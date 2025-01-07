@@ -14,7 +14,7 @@ Module containing OpenQASM to CUDA-Q conversion function
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict, Union
+from typing import TYPE_CHECKING, Optional
 
 import pyqasm
 from openqasm3 import ast
@@ -76,7 +76,7 @@ def make_gate_kernel(name: str, targs: tuple[type]) -> PyKernel:
 @weight(1)
 @requires_extras("cudaq")
 # pylint: disable-next=too-many-statements
-def openqasm3_to_cudaq(program: Union[QasmStringType, ast.Program]) -> PyKernel:
+def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
     """Returns a CUDA-Q kernel representing the input OpenQASM program.
 
     Args:
@@ -95,8 +95,8 @@ def openqasm3_to_cudaq(program: Union[QasmStringType, ast.Program]) -> PyKernel:
     program = module.unrolled_ast
 
     kernel: PyKernel = cudaq.make_kernel()
-    ctx: Dict[str, Union[QuakeValue | None]] = {}
-    gate_kernels: Dict[str, PyKernel] = {}
+    ctx: dict[str, Optional[QuakeValue]] = {}
+    gate_kernels: dict[str, PyKernel] = {}
 
     def get_gate(name: str, targs: tuple[type]) -> PyKernel:
         if name in gate_kernels:
@@ -105,7 +105,7 @@ def openqasm3_to_cudaq(program: Union[QasmStringType, ast.Program]) -> PyKernel:
         gate_kernels[name] = make_gate_kernel(name, targs)
         return gate_kernels[name]
 
-    def qubit_lookup(qubit: Union[ast.IndexedIdentifier, ast.Identifier]) -> QuakeValue:
+    def qubit_lookup(qubit: ast.IndexedIdentifier | ast.Identifier) -> QuakeValue:
         # pyqasm unrolls to indexed identifiers
         assert isinstance(qubit, ast.IndexedIdentifier)
 
