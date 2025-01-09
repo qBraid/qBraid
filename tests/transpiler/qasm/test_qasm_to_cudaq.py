@@ -79,11 +79,9 @@ def test_openqasm3_to_cudaq():
     z q[0];
     t q[0];
     s q[0];
-
-    b[0] = measure q[0];
     """
     cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
-    _check_output(qasm3_str_in, cudaq_out)
+    _check_output(qasm3_str_in, cudaq_out, method="state")
 
 
 def test_openqasm3_to_cudaq_identifiers():
@@ -203,7 +201,7 @@ def test_openqasm3_to_cudaq_adj_gates():
     sdg q;
     """
     cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
-    _check_output(qasm3_str_in, cudaq_out)
+    _check_output(qasm3_str_in, cudaq_out, method="state")
 
 
 def test_openqasm3_to_cudaq_inv_modifier():
@@ -247,7 +245,7 @@ def test_openqasm3_to_cudaq_arith():
     cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
     _check_output(
         qasm3_str_in, cudaq_out, atol=1e-6, method="state"
-    )  # TODO: fails for 1e-7 due to rounding
+    ) 
 
 
 def test_openqasm3_to_cudaq_custom_gates():
