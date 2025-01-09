@@ -106,16 +106,15 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
         return gate_kernels[name]
 
     def qubit_lookup(qubit: ast.IndexedIdentifier | ast.Identifier) -> QuakeValue:
-        # pyqasm unrolls to indexed identifiers
-        assert isinstance(qubit, ast.IndexedIdentifier)
+        assert isinstance(
+            qubit, ast.IndexedIdentifier
+        ), f"all identifiers should've been indexed: {qubit}"
 
-        # pyqasm unroll doesn't support multi-dim arrays
-        assert len(qubit.indices) == 1
+        assert len(qubit.indices) == 1, f"multi-dim arrays are not supported: {qubit.indices}"
 
         inds = qubit.indices[0]
 
-        # pyqasm unrolls decl/meas. statements to single integer
-        assert len(inds) == 1
+        assert len(inds) == 1, f"indices should've been a single integer: {inds}"
         assert isinstance(ind := inds[0], ast.IntegerLiteral)
 
         q = ctx[qubit.name.name][ind.value]
@@ -140,16 +139,16 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
         elif isinstance(statement, ast.QuantumMeasurementStatement):
             val = kernel.mz(qubit_lookup(statement.measure.qubit))
             if statement.target is not None:
-                # pyqasm unrolls all identifiers to indexed identifiers
-                assert isinstance(statement.target, ast.IndexedIdentifier)
+                assert isinstance(
+                    statement.target, ast.IndexedIdentifier
+                ), f"identifiers should've been unrolled to indexed identifiers: {statement.target}"
                 ctx[statement.target.name.name] = val
         elif isinstance(statement, ast.QuantumGate):
             name, qubits = statement.name.name, statement.qubits
 
             args = []
             for arg in statement.arguments:
-                # pyqasm unroll implies gate arguments are literals
-                assert arg.value is not None
+                assert arg.value is not None, f"gate arguments should've been literals: {arg}"
                 args.append(arg.value)
             targs = [type(a) for a in args]
 
@@ -161,8 +160,9 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
 
             if len(statement.modifiers) == 1:
                 mod = statement.modifiers[0]
-                # pyqasm unrolls pow/inv modifiers
-                assert mod.modifier == ast.GateModifierName.ctrl
+                assert (
+                    mod.modifier == ast.GateModifierName.ctrl
+                ), f"non-ctrl modifiers should've be unrolled: {mod}"
 
                 gate = get_gate(name, targs)
                 kernel.control(gate, qubit_refs[0], *qubit_refs[1:])
