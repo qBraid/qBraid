@@ -156,7 +156,7 @@ def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
 
             # pyqasm unrolls multiple modifiers.
             # ctrl isn't supported so multi-ctrl is not an issue at the moment.
-            assert len(statement.modifiers) < 1
+            assert len(statement.modifiers) <= 1
 
             if len(statement.modifiers) == 1:
                 mod = statement.modifiers[0]
