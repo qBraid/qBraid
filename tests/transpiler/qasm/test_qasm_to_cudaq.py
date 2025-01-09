@@ -243,9 +243,7 @@ def test_openqasm3_to_cudaq_arith():
     ry(3*pi/4) q[0];
     """
     cudaq_out = openqasm3_to_cudaq(qasm3_str_in)
-    _check_output(
-        qasm3_str_in, cudaq_out, atol=1e-6, method="state"
-    ) 
+    _check_output(qasm3_str_in, cudaq_out, atol=1e-6, method="state")
 
 
 def test_openqasm3_to_cudaq_custom_gates():
