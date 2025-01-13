@@ -34,6 +34,7 @@ def random_circuit(
     num_qubits: Optional[int] = None,
     depth: Optional[int] = None,
     graph: Optional[ConversionGraph] = None,
+    max_attempts: int = 1,
     **kwargs,
 ) -> qbraid.programs.QPROGRAM:
     """Generate random circuit of arbitrary size and form.
@@ -45,6 +46,7 @@ def random_circuit(
         depth (int, optional): Layers of operations (i.e. critical path length)
             If not provided, set randomly in range [1,4].
         graph (ConversionGraph, optional): Conversion graph to use for transpilation
+        max_attempts (int, optional): Maximum number of attempts to generate a random circuit
         **kwargs: Additional keyword arguments to pass to the random circuit generator
 
     Raises:
@@ -67,6 +69,7 @@ def random_circuit(
         raise PackageValueError(f"Package '{package}' is not supported.")
 
     generator_funcs = {
+        "ionq": "qbraid.interface.random.ionq_random._ionq_random",
         "qasm3": "qbraid.interface.random.qasm3_random._qasm3_random",
         "qiskit": "qbraid.interface.random.qiskit_random._qiskit_random",
         "cirq": "qbraid.interface.random.cirq_random._cirq_random",
@@ -90,8 +93,16 @@ def random_circuit(
             module_name, func_name = func_path.rsplit(".", 1)
             module = __import__(module_name, fromlist=[func_name])
             rand_circuit_func = getattr(module, func_name)
-            rand_circuit = rand_circuit_func(num_qubits, depth, **kwargs)
-            return transpile(rand_circuit, package)
+
+            for attempt in range(max_attempts):
+                try:
+                    rand_circuit = rand_circuit_func(num_qubits, depth, **kwargs)
+                    return transpile(rand_circuit, package)
+                except Exception as attempt_err:  # pylint: disable=broad-exception-caught
+                    if attempt < max_attempts - 1:
+                        logger.info("Attempt %d failed: %s. Retrying...", attempt + 1, attempt_err)
+                        continue
+                    raise
         except Exception as err:  # pylint: disable=broad-exception-caught
             logger.info("Failed to generate circuit with %s: %s", src_pkg, err)
             continue

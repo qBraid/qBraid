@@ -97,7 +97,7 @@ def test_get_aquila_device(device_id, mock_provider):
 
 def test_ahs_program_to_ir(mock_device, braket_ahs, ahs_dict):
     """Test conversion of AHS program to IR."""
-    assert mock_device.to_ir(braket_ahs) == {"ahs": json.dumps(ahs_dict)}
+    assert mock_device.prepare(braket_ahs) == {"ahs": json.dumps(ahs_dict)}
 
 
 def test_submit_ahs_job_to_aquila(braket_ahs, mock_device, mock_job_id):

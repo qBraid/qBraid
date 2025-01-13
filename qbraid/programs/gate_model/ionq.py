@@ -131,3 +131,27 @@ class IonQProgram(GateModelProgram):
                 )
 
         return GateSet.NATIVE if first_gate_native else GateSet.QIS
+
+    def validate_for_gateset(self) -> None:
+        """Validate that the circuit only contains gates from the derived gate set.
+
+        Raises:
+            ValueError: If the circuit contains an invalid gate.
+        """
+        gate_set_map = {
+            GateSet.NATIVE: set(IONQ_NATIVE_GATES),
+            GateSet.QIS: set(IONQ_QIS_GATES),
+        }
+
+        circuit: list[dict[str, Any]] = self.program["circuit"]
+
+        gate_set_name = IonQProgram.determine_gateset(circuit)
+
+        gate_set = gate_set_map[gate_set_name]
+
+        for instr in circuit:
+            gate = instr.get("gate")
+            if gate not in gate_set:
+                raise ValueError(
+                    f"Invalid gate '{gate}'. Must be in the '{gate_set_name.value}' gate set."
+                )

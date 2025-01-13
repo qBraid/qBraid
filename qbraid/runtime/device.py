@@ -111,7 +111,9 @@ class QuantumDevice(ABC):
     @classmethod
     def _default_options(cls) -> RuntimeOptions:
         """Define default options for the QuantumDevice."""
-        options = RuntimeOptions(transpile=True, transform=True, validate=ValidationLevel.RAISE)
+        options = RuntimeOptions(
+            transpile=True, transform=True, validate=ValidationLevel.RAISE, prepare=True
+        )
 
         # pylint: disable=unnecessary-lambda
         options.set_validator("transpile", lambda x: isinstance(x, bool))
@@ -120,6 +122,7 @@ class QuantumDevice(ABC):
             "validate",
             lambda x: isinstance(x, ValidationLevel) or (isinstance(x, int) and 0 <= x <= 2),
         )
+        options.set_validator("prepare", lambda x: isinstance(x, bool))
 
         # pylint: enable=unnecessary-lambda
 
@@ -140,9 +143,13 @@ class QuantumDevice(ABC):
         Raises:
             AttributeError: If an invalid runtime option is passed.
         """
-        for field in fields:
+        for field, value in fields.items():
             if not hasattr(self._options, field):
                 raise AttributeError(f"Options field '{field}' is not valid for this device")
+            if field == "validate" and isinstance(
+                value, bool
+            ):  # TODO: Move this to the RuntimeOptions class
+                fields[field] = ValidationLevel.RAISE if value else ValidationLevel.NONE
         self._options.update_options(**fields)
 
     def queue_depth(self) -> int:
@@ -215,59 +222,21 @@ class QuantumDevice(ABC):
 
         return metadata
 
-    def validate(
-        self, run_input_batch: list[qbraid.programs.QPROGRAM], suppress_device_warning: bool = False
-    ) -> None:
-        """Verifies run input compatibility with target device.
+    def _get_target_spec(self, run_input: qbraid.programs.QPROGRAM) -> ProgramSpec:
+        run_input_alias = get_program_type_alias(run_input, safe=True)
+        target_specs = (
+            self._target_spec
+            if isinstance(self._target_spec, list)
+            else [self._target_spec] if self._target_spec else []
+        )
 
-        Raises:
-            ProgramValidationError: If the run input is incompatible with the target device.
-        """
-        level = ValidationLevel(self._options.get("validate", 0))
+        for target_spec in target_specs:
+            if target_spec.alias == run_input_alias:
+                return target_spec
 
-        if level == ValidationLevel.NONE:
-            return None
-
-        if not suppress_device_warning and self.status() != DeviceStatus.ONLINE:
-            warnings.warn(
-                "Device is not online. Submitting this job may result in an exception "
-                "or a long wait time.",
-                UserWarning,
-            )
-
-        for run_input in run_input_batch:
-            try:
-                program = load_program(run_input)
-            except ProgramLoaderError:
-                logger.info(
-                    "Skipping qubit count validation: program type '%s' not supported natively.",
-                    type(run_input).__name__,
-                )
-            else:
-                if self.num_qubits and program.num_qubits > self.num_qubits:
-                    message = (
-                        f"Number of qubits in the circuit ({program.num_qubits}) exceeds "
-                        f"the device's capacity ({self.num_qubits})."
-                    )
-                    if level == ValidationLevel.RAISE:
-                        raise ProgramValidationError(message)
-                    if level == ValidationLevel.WARN:
-                        warnings.warn(message, UserWarning)
-
-            if self._target_spec is None:
-                continue
-
-            target_spec = self._get_target_spec(run_input)
-
-            try:
-                target_spec.validate(run_input)
-            except ValueError as err:
-                if level == ValidationLevel.RAISE:
-                    raise ProgramValidationError from err
-                if level == ValidationLevel.WARN:
-                    warnings.warn(str(err), UserWarning)
-
-        return None
+        raise ProgramTypeError(
+            message=f"Could not find a target ProgramSpec matching the alias '{run_input_alias}'."
+        )
 
     def transpile(
         self, run_input: qbraid.programs.QPROGRAM, run_input_spec: qbraid.programs.ProgramSpec
@@ -336,22 +305,6 @@ class QuantumDevice(ABC):
             f"The following errors occurred:\n{error_messages}"
         )
 
-    def _get_target_spec(self, run_input: qbraid.programs.QPROGRAM) -> ProgramSpec:
-        run_input_alias = get_program_type_alias(run_input, safe=True)
-        target_specs = (
-            self._target_spec
-            if isinstance(self._target_spec, list)
-            else [self._target_spec] if self._target_spec else []
-        )
-
-        for target_spec in target_specs:
-            if target_spec.alias == run_input_alias:
-                return target_spec
-
-        raise ProgramTypeError(
-            message=f"Could not find a target ProgramSpec matching the alias '{run_input_alias}'."
-        )
-
     def transform(self, run_input: qbraid.programs.QPROGRAM) -> qbraid.programs.QPROGRAM:
         """
         Override this method with any runtime transformations to apply to the run
@@ -361,10 +314,64 @@ class QuantumDevice(ABC):
         """
         return run_input
 
-    def to_ir(self, run_input: qbraid.programs.QPROGRAM) -> qbraid.programs.QPROGRAM:
+    def validate(
+        self, run_input_batch: list[qbraid.programs.QPROGRAM], suppress_device_warning: bool = False
+    ) -> None:
+        """Verifies run input compatibility with target device.
+
+        Raises:
+            ProgramValidationError: If the run input is incompatible with the target device.
+        """
+        level = ValidationLevel(self._options.get("validate", 0))
+
+        if level == ValidationLevel.NONE:
+            return None
+
+        if not suppress_device_warning and self.status() != DeviceStatus.ONLINE:
+            warnings.warn(
+                "Device is not online. Submitting this job may result in an exception "
+                "or a long wait time.",
+                UserWarning,
+            )
+
+        for run_input in run_input_batch:
+            try:
+                program = load_program(run_input)
+            except ProgramLoaderError:
+                logger.info(
+                    "Skipping qubit count validation: program type '%s' not supported natively.",
+                    type(run_input).__name__,
+                )
+            else:
+                if self.num_qubits and program.num_qubits > self.num_qubits:
+                    message = (
+                        f"Number of qubits in the circuit ({program.num_qubits}) exceeds "
+                        f"the device's capacity ({self.num_qubits})."
+                    )
+                    if level == ValidationLevel.RAISE:
+                        raise ProgramValidationError(message)
+                    if level == ValidationLevel.WARN:
+                        warnings.warn(message, UserWarning)
+
+            if self._target_spec is None:
+                continue
+
+            target_spec = self._get_target_spec(run_input)
+
+            try:
+                target_spec.validate(run_input)
+            except ValueError as err:
+                if level == ValidationLevel.RAISE:
+                    raise ProgramValidationError from err
+                if level == ValidationLevel.WARN:
+                    warnings.warn(str(err), UserWarning)
+
+        return None
+
+    def prepare(self, run_input: qbraid.programs.QPROGRAM) -> Any:
         """Convert the quantum program to an intermediate representation (IR) compatible
         with the submission format required for the target device and its provider API."""
-        if self._target_spec is None:
+        if self._target_spec is None or not self._options.get("prepare"):
             return run_input
 
         target_spec = self._get_target_spec(run_input)
@@ -391,7 +398,7 @@ class QuantumDevice(ABC):
 
         self.validate(run_input)
 
-        run_input = [self.to_ir(p) for p in cast(list, run_input)]
+        run_input = [self.prepare(p) for p in cast(list, run_input)]
 
         run_input = run_input[0] if is_single_output else run_input
         return run_input

@@ -16,6 +16,7 @@ Unit tests for qbraid.programs.ionq.IonQProgram
 """
 import pytest
 
+from qbraid.interface.random import random_circuit
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.gate_model.ionq import GateSet, InputFormat, IonQProgram
 from qbraid.programs.typer import IonQDict
@@ -110,3 +111,27 @@ def test_input_format_enum():
     assert InputFormat.QASM.value == "qasm"
     assert InputFormat.OPENQASM.value == "openqasm"
     assert InputFormat.QUIPPER.value == "quipper"
+
+
+def test_validate_for_gateset(ionq_program: IonQProgram):
+    """Test that validate_for_gateset does not raise an error."""
+    ionq_program.validate_for_gateset()
+
+
+def test_validate_for_gateset_raises(ionq_dict: IonQDict):
+    """Test that validate_for_gateset raises an error when the circuit contains an invalid gate."""
+    ionq_dict_invalid = ionq_dict.copy()
+    ionq_dict_invalid["circuit"][0]["gate"] = "not_a_gate"
+
+    ionq_program = IonQProgram(ionq_dict_invalid)
+
+    with pytest.raises(ValueError) as excinfo:
+        ionq_program.validate_for_gateset()
+    assert "Invalid gate" in str(excinfo.value)
+
+
+def test_random_circuit_ionq():
+    """Test that random_circuit generates a valid IonQ program."""
+    rand_program = random_circuit("ionq", max_attempts=1, num_qubits=5, depth=10)
+    ionq_program = IonQProgram(rand_program)
+    ionq_program.validate_for_gateset()
