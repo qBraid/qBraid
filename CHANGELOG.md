@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 
 Types of changes:
 - `Added`: for new features.
-- `Improved`: for improvements to existing functionality.
+- `Improved / Modified`: for changes to existing functionality.
 - `Deprecated`: for soon-to-be removed features.
 - `Removed`: for now removed features.
 - `Fixed`: for any bug fixes.
@@ -17,7 +17,8 @@ Types of changes:
 ### Fixed
 
 ### Added
-- Added support for OpenQASM 3.0 to CUDA-Q kernel transpilation ([#857](https://github.com/qBraid/qBraid/pull/857)). Usage example -
+- Added support for OpenQASM 3.0 to CUDA-Q kernel transpilation ([#857](https://github.com/qBraid/qBraid/pull/857)). Usage example:
+
 ```python
 In [1]: from qbraid.transpiler.conversions.openqasm3 import openqasm3_to_cudaq
 In [2]: program = """
@@ -45,6 +46,19 @@ module attributes {quake.mangled_name_map = {__nvqpp__mlirgen____nvqppBuilderKer
 }
 ```
 
+### Improved / Modified
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Dependencies
+
+## [0.9.0] - 2024-12-19
+
+### Added
 - Added testing code coverage for custom `rzz`, `u3`, and `u2` for Cirq $\rightarrow$ PyQuil ([#862](https://github.com/qBraid/qBraid/pull/862))
 
 ### Improved / Modified
@@ -52,8 +66,6 @@ module attributes {quake.mangled_name_map = {__nvqpp__mlirgen____nvqppBuilderKer
 - Restricted PyPI publish jobs to specific actors for better security and maintainability. ([#862](https://github.com/qBraid/qBraid/pull/862))
 - Updated `MANIFEST.in` to refine file inclusion/exclusion and enhanced `pyproject.toml` by adjusting dependencies and aligning with `requirements.txt`. ([#862](https://github.com/qBraid/qBraid/pull/862))
 - Enhanced qbraid transpiler QASM2 to Cirq for external gate handling, and updated custom Cirq `RZZGate` to use radians convention to more closely match cirq API. ([#862](https://github.com/qBraid/qBraid/pull/862))
-
-### Deprecated
 
 ### Removed
 - Dropped support for Python 3.9 ([#808](https://github.com/qBraid/qBraid/pull/808))

@@ -92,9 +92,9 @@ def _ionq_random(
     Returns:
         IonQDict: Random IonQ program
     """
-    gates = create_gateset_ionq(max_operands)
-
-    qasm3_program = _qasm3_random_from_gates(gates, num_qubits, depth, max_operands, seed, measure)
+    qasm3_program = _qasm3_random_from_gates(
+        create_gateset_ionq, num_qubits, depth, max_operands, seed, measure
+    )
 
     ionq_dict = transpile(qasm3_program, "ionq")
 

@@ -172,7 +172,7 @@ def test_device_to_ir_calls_for_bloqade_run_input(bloqade_program, mock_device: 
     """Test that to_ir is called three times with AnalogHamiltonianSimulation."""
     mock_device.set_options(validate=0)
 
-    with patch.object(mock_device, "to_ir", wraps=mock_device.to_ir) as mock_to_ir:
+    with patch.object(mock_device, "prepare", wraps=mock_device.prepare) as mock_to_ir:
         _ = mock_device.run(bloqade_program, shots=10)
 
         assert mock_to_ir.call_count == 3

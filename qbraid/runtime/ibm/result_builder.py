@@ -14,10 +14,11 @@ Module defining QiskitGateModelResultBuilder Class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
 import numpy as np
 from qiskit.exceptions import QiskitError
+from qiskit.primitives.containers import PrimitiveResult
 
 from qbraid._logging import logger
 from qbraid.runtime.postprocess import normalize_tuples
@@ -30,7 +31,7 @@ if TYPE_CHECKING:
 class QiskitGateModelResultBuilder:
     """Qiskit ``Result`` wrapper class."""
 
-    def __init__(self, result: Union[RunnerResult, Result]):
+    def __init__(self, result: PrimitiveResult | RunnerResult | Result):
         self._result = result
 
     def _format_measurements(self, memory_list: list[str]) -> list[list[int]]:
@@ -41,7 +42,7 @@ class QiskitGateModelResultBuilder:
             formatted_meas.append(lst_shot)
         return formatted_meas
 
-    def measurements(self) -> Optional[Union[np.ndarray, list[np.ndarray]]]:
+    def measurements(self) -> Optional[np.ndarray | list[np.ndarray]]:
         """Return measurements a 2D numpy array"""
         num_circuits = len(self._result.results)
 
@@ -60,6 +61,11 @@ class QiskitGateModelResultBuilder:
 
         return np.array(qbraid_meas)
 
-    def get_counts(self) -> Union[dict[str, int], list[dict[str, int]]]:
+    def get_counts(self) -> dict[str, int] | list[dict[str, int]]:
         """Returns the histogram data of the run"""
+        if isinstance(self._result, PrimitiveResult):
+            counts = [pub_result.data.meas.get_counts() for pub_result in self._result]
+            if len(counts) == 1:
+                return counts[0]
+            return counts
         return self._result.get_counts()

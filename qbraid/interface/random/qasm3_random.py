@@ -12,56 +12,12 @@
 Module for generating random OpenQASM 3 programs
 
 """
-from typing import Optional
+from typing import Callable, Optional
 
 import numpy as np
 
 from qbraid._version import __version__
 from qbraid.exceptions import QbraidError
-
-
-def create_gateset_ionq(max_operands: int) -> np.ndarray:
-    """Gets QASM for IonQ gateset with max_operands."""
-    q1_gates: list[tuple[str, int, int]] = [
-        ("x", 1, 0),
-        ("y", 1, 0),
-        ("z", 1, 0),
-        ("h", 1, 0),
-        ("s", 1, 0),
-        ("t", 1, 0),
-        ("v", 1, 0),
-        ("si", 1, 0),
-        ("ti", 1, 0),
-        ("vi", 1, 0),
-        ("rx", 1, 1),
-        ("ry", 1, 1),
-        ("rz", 1, 1),
-    ]
-
-    q2_gates: list[tuple[str, int, int]] = [
-        ("cx", 2, 0),
-        ("cy", 2, 0),
-        ("cz", 2, 0),
-        ("ch", 2, 0),
-        ("crx", 2, 1),
-        ("cry", 2, 1),
-        ("crz", 2, 1),
-        ("swap", 2, 0),
-    ]
-
-    q3_gates: list[tuple[str, int, int]] = [("ccnot", 3, 0)]
-
-    gates = q1_gates.copy()
-
-    if max_operands >= 2:
-        gates.extend(q2_gates)
-    if max_operands >= 3:
-        gates.extend(q3_gates)
-
-    gates_array = np.array(
-        gates, dtype=[("gate", object), ("num_qubits", np.int64), ("num_params", np.int64)]
-    )
-    return gates_array
 
 
 def create_gateset_qasm(max_operands: int) -> np.ndarray:
@@ -117,7 +73,7 @@ def create_gateset_qasm(max_operands: int) -> np.ndarray:
 
 # pylint: disable-next=too-many-arguments
 def _qasm3_random_from_gates(
-    gates: np.ndarray,
+    create_gateset: Callable[[int], np.ndarray],
     num_qubits: Optional[int] = None,
     depth: Optional[int] = None,
     max_operands: Optional[int] = None,
@@ -127,6 +83,7 @@ def _qasm3_random_from_gates(
     """Generate random OpenQASM 3 program.
 
     Args:
+        create_gateset (Callable): Function to create gateset.
         num_qubits (int): Number of quantum wires.
         depth (int): Layers of operations (i.e., critical path length).
         max_operands (int): Maximum size of gate for each operation.
@@ -142,6 +99,7 @@ def _qasm3_random_from_gates(
     """
 
     def validate_and_assign(value: Optional[int], name: str) -> int:
+        """Validate and assign random circuit option."""
         if value is None:
             return np.random.randint(1, 4)
         if not isinstance(value, int) or value <= 0:
@@ -175,7 +133,7 @@ include "stdgates.inc";
             rand_circuit += f"bit[{num_qubits}] c;\n"
 
         qubits = np.arange(num_qubits)
-        gates = create_gateset_qasm(max_operands)
+        gates = create_gateset(max_operands)
 
         for _ in range(depth):
             gate_specs = rng.choice(gates, size=num_qubits)
@@ -185,7 +143,7 @@ include "stdgates.inc";
             gate_specs = gate_specs[:max_index]
             slack = num_qubits - cumulative_qubits[max_index - 1]
             if slack:
-                gates = create_gateset_qasm(1)
+                gates = create_gateset(1)
                 slack_gates = rng.choice(gates, size=slack)
                 gate_specs = np.hstack((gate_specs, slack_gates))
 
@@ -244,6 +202,6 @@ def _qasm3_random(
     Returns:
         str: OpenQASM 3 program.
     """
-    gates = create_gateset_qasm(max_operands)
-
-    return _qasm3_random_from_gates(gates, num_qubits, depth, max_operands, seed, measure)
+    return _qasm3_random_from_gates(
+        create_gateset_qasm, num_qubits, depth, max_operands, seed, measure
+    )

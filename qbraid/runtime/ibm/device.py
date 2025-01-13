@@ -14,9 +14,11 @@ Module defining QiskitBackend Class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
+from qiskit.transpiler import PassManager
 from qiskit_ibm_runtime import QiskitRuntimeService
+from qiskit_ibm_runtime import SamplerV2 as Sampler
 
 from qbraid.programs import load_program
 from qbraid.runtime.device import QuantumDevice
@@ -45,6 +47,8 @@ class QiskitBackend(QuantumDevice):
         self._backend = self._service.backend(
             self.id, instance=getattr(self.profile, "instance", None)
         )
+
+        self._options.set_validator("pass_manager", lambda x: isinstance(x, PassManager))
 
     def __str__(self):
         """String representation of the QiskitBackend object."""
@@ -80,11 +84,11 @@ class QiskitBackend(QuantumDevice):
 
     def submit(
         self,
-        run_input: Union[qiskit.QuantumCircuit, list[qiskit.QuantumCircuit]],
+        run_input: qiskit.QuantumCircuit | list[qiskit.QuantumCircuit],
         *args,
         **kwargs,
     ) -> qbraid.runtime.ibm.QiskitJob:
-        """Runs circuit(s) on qiskit backend via :meth:`~qiskit.execute`
+        """Runs circuit(s) on qiskit backend via :meth:`~Sampler.run`.
 
         Uses the :meth:`~qiskit.execute` method to create a :class:`~qiskit.providers.QuantumJob`
         object, applies a :class:`~qbraid.runtime.ibm.QiskitJob`, and return the result.
@@ -93,14 +97,15 @@ class QiskitBackend(QuantumDevice):
             run_input: A circuit object to run on the IBM device.
 
         Keyword Args:
-            shots (int): The number of times to run the task on the device. Default is 1024.
+            shots (int, optional): The number of times to run the task on the device. If None,
+                number of shots is determined by the sampler.
 
         Returns:
             qbraid.runtime.ibm.QiskitJob: The job like object for the run.
 
         """
         backend = self._backend
-        shots = kwargs.pop("shots", backend.options.get("shots"))
-        memory = kwargs.pop("memory", True)  # Needed to get measurements
-        job = backend.run(run_input, *args, shots=shots, memory=memory, **kwargs)
+        sampler = Sampler(mode=backend)
+        pubs = run_input if isinstance(run_input, list) else [run_input]
+        job = sampler.run(pubs, *args, **kwargs)
         return QiskitJob(job.job_id(), job=job, device=self)

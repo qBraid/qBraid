@@ -186,7 +186,7 @@ def program():
 def optimized_program():
     """Return a QASM3 program."""
     qasm3 = """
-    OPENQASM 3;
+    OPENQASM 3.0;
     qubit[2] q;
     bit[2] c;
     h q[0];

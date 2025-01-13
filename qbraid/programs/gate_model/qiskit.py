@@ -18,9 +18,11 @@ from collections import OrderedDict
 from typing import TYPE_CHECKING
 
 import qiskit
+from packaging import version
 from qiskit.circuit import Qubit
 from qiskit.converters import circuit_to_dag, dag_to_circuit
 from qiskit.quantum_info import Operator
+from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 
 from qbraid.programs.exceptions import ProgramTypeError
 
@@ -75,14 +77,27 @@ class QiskitCircuit(GateModelProgram):
         dag = circuit_to_dag(circuit)
 
         idle_wires = list(dag.idle_wires())
-        for w in idle_wires:
-            dag._remove_idle_wire(w)
-            try:
-                dag.qubits.remove(w)
-            except ValueError:
-                pass
+        if version.parse(qiskit.__version__) >= version.parse("1.3"):
+            idle_qubit_wires = []
+            idle_clbit_wires = []
 
-        dag.qregs = OrderedDict()
+            for wire in idle_wires:
+                if isinstance(wire, Qubit):
+                    idle_qubit_wires.append(wire)
+                else:
+                    idle_clbit_wires.append(wire)
+
+            dag.remove_qubits(*idle_qubit_wires)
+            dag.remove_clbits(*idle_clbit_wires)
+        else:
+            for w in idle_wires:
+                dag._remove_idle_wire(w)
+                try:
+                    dag.qubits.remove(w)
+                except ValueError:
+                    pass
+
+            dag.qregs = OrderedDict()
 
         self._program = dag_to_circuit(dag)
 
@@ -97,4 +112,8 @@ class QiskitCircuit(GateModelProgram):
         if getattr(device.profile, "local", False) is True:
             self.remove_idle_qubits()
 
-        self._program = qiskit.transpile(self.program, backend=device._backend)
+        pm = device._options.get(
+            "pass_manager", generate_preset_pass_manager(backend=device._backend)
+        )
+        isa_circuit = pm.run(self._program)
+        self._program = isa_circuit

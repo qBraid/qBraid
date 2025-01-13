@@ -50,7 +50,7 @@ class QiskitJob(QuantumJob):
     def __init__(
         self,
         job_id: str,
-        job: Optional[qiskit_ibm_runtime.RuntimeJob] = None,
+        job: Optional[qiskit_ibm_runtime.RuntimeJob | qiskit_ibm_runtime.RuntimeJobV2] = None,
         service: Optional[qiskit_ibm_runtime.QiskitRuntimeService] = None,
         **kwargs,
     ):
@@ -58,7 +58,9 @@ class QiskitJob(QuantumJob):
         super().__init__(job_id, **kwargs)
         self._job = job or self._get_job(service=service)
 
-    def _get_job(self, service: Optional[qiskit_ibm_runtime.QiskitRuntimeService] = None):
+    def _get_job(
+        self, service: Optional[qiskit_ibm_runtime.QiskitRuntimeService] = None
+    ) -> qiskit_ibm_runtime.RuntimeJob | qiskit_ibm_runtime.RuntimeJobV2:
         """Return the qiskit_ibm_runtime.RuntimeJob associated with instance id attribute.
 
         Attempts to retrieve a job using a specified or default service. Handles
