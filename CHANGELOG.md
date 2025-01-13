@@ -17,6 +17,34 @@ Types of changes:
 ### Fixed
 
 ### Added
+- Added support for OpenQASM 3.0 to CUDA-Q kernel transpilation ([#857](https://github.com/qBraid/qBraid/pull/857)). Usage example -
+```python
+In [1]: from qbraid.transpiler.conversions.openqasm3 import openqasm3_to_cudaq
+In [2]: program = """
+   ...: OPENQASM 3.0;
+   ...: include "stdgates.inc";
+   ...: qubit q;
+   ...: bit b;
+   ...: h q;
+   ...: b = measure q;
+   ...: """
+
+In [3]: print(openqasm3_to_cudaq(program))
+module attributes {quake.mangled_name_map = {__nvqpp__mlirgen____nvqppBuilderKernel_YA8BX8A573 = "__nvqpp__mlirgen____nvqppBuilderKernel_YA8BX8A573_PyKernelEntryPointRewrite"}} {
+  func.func @__nvqpp__mlirgen____nvqppBuilderKernel_YA8BX8A573() attributes {"cudaq-entrypoint"} {
+    %0 = quake.alloca !quake.veq<1>
+    %1 = quake.extract_ref %0[0] : (!quake.veq<1>) -> !quake.ref
+    call @__nvqpp__mlirgen____nvqppBuilderKernel_X4UUVQL2OR(%1) : (!quake.ref) -> ()
+    %measOut = quake.mz %1 name "" : (!quake.ref) -> !quake.measure
+    return
+  }
+  func.func @__nvqpp__mlirgen____nvqppBuilderKernel_X4UUVQL2OR(%arg0: !quake.ref) {
+    quake.h %arg0 : (!quake.ref) -> ()
+    return
+  }
+}
+```
+
 - Added testing code coverage for custom `rzz`, `u3`, and `u2` for Cirq $\rightarrow$ PyQuil ([#862](https://github.com/qBraid/qBraid/pull/862))
 
 ### Improved / Modified
