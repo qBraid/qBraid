@@ -23,10 +23,11 @@ import numpy as np
 import pytest
 from qiskit import QuantumCircuit
 from qiskit.exceptions import QiskitError
+from qiskit.primitives.primitive_job import PrimitiveJob
 from qiskit.providers import Job
 from qiskit.providers.fake_provider import GenericBackendV2
 from qiskit.providers.models.backendconfiguration import QasmBackendConfiguration
-from qiskit_ibm_runtime import QiskitRuntimeService, RuntimeJob
+from qiskit_ibm_runtime import QiskitRuntimeService, RuntimeJob, RuntimeJobV2
 from qiskit_ibm_runtime.exceptions import IBMNotAuthorizedError, RuntimeInvalidStateError
 from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 
@@ -246,16 +247,16 @@ def test_device_status(fake_service, operational, local, status_msg, expected_st
         assert device.status() == expected_status
 
 
-@pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
-def test_device_run(fake_device, circuit):
+@pytest.mark.parametrize("circuit_meas", range(FIXTURE_COUNT), indirect=True)
+def test_device_run(fake_device, circuit_meas):
     """Test run method from wrapped fake Qiskit backends"""
     with warnings.catch_warnings():
         warnings.simplefilter(action="ignore", category=RuntimeWarning)
-        qbraid_job = fake_device.run(circuit, shots=10)
+        qbraid_job = fake_device.run(circuit_meas, shots=10)
 
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
-    assert isinstance(vendor_job, Job)
+    assert isinstance(vendor_job, PrimitiveJob)
 
 
 def test_device_run_batch(fake_device, run_inputs):
@@ -266,7 +267,7 @@ def test_device_run_batch(fake_device, run_inputs):
 
     vendor_job = qbraid_job._job
     assert isinstance(qbraid_job, QiskitJob)
-    assert isinstance(vendor_job, Job)
+    assert isinstance(vendor_job, PrimitiveJob)
 
 
 @pytest.fixture

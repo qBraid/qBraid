@@ -23,6 +23,7 @@ from qiskit_ibm_runtime import SamplerV2 as Sampler
 from qbraid.programs import load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.options import RuntimeOptions
 
 from .job import QiskitJob
 
@@ -42,13 +43,14 @@ class QiskitBackend(QuantumDevice):
         service: Optional[qiskit_ibm_runtime.QiskitRuntimeService] = None,
     ):
         """Create a QiskitBackend."""
-        super().__init__(profile=profile)
+        options = RuntimeOptions(pass_manager=None)
+        options.set_validator("pass_manager", lambda x: x is None or isinstance(x, PassManager))
+
+        super().__init__(profile=profile, options=options)
         self._service = service or QiskitRuntimeService()
         self._backend = self._service.backend(
             self.id, instance=getattr(self.profile, "instance", None)
         )
-
-        self._options.set_validator("pass_manager", lambda x: isinstance(x, PassManager))
 
     def __str__(self):
         """String representation of the QiskitBackend object."""

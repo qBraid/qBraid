@@ -44,6 +44,12 @@ class QiskitGateModelResultBuilder:
 
     def measurements(self) -> Optional[np.ndarray | list[np.ndarray]]:
         """Return measurements a 2D numpy array"""
+        if isinstance(self._result, PrimitiveResult):
+            meas = [pub_result.data.meas.array for pub_result in self._result]
+            if len(meas) == 1:
+                return meas[0]
+            return meas
+
         num_circuits = len(self._result.results)
 
         try:

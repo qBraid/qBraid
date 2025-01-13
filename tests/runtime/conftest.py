@@ -127,6 +127,26 @@ def circuit(request, run_inputs):
 
 
 @pytest.fixture
+def run_inputs_meas():
+    """Returns list of test circuits for each available native provider."""
+    circuits = []
+    if "cirq" in NATIVE_REGISTRY:
+        circuits.append(_cirq_circuit(meas=True))
+    if "qiskit" in NATIVE_REGISTRY:
+        circuits.append(_qiskit_circuit(meas=True))
+    if "braket" in NATIVE_REGISTRY:
+        circuits.append(_braket_circuit(meas=True))
+    return circuits
+
+
+@pytest.fixture
+def circuit_meas(request, run_inputs_meas):
+    """Return a circuit for testing."""
+    index = request.param
+    return run_inputs_meas[index]
+
+
+@pytest.fixture
 def device_data_qir():
     """Return a dictionary of device data for the qBraid QIR simulator."""
     return DEVICE_DATA_QIR

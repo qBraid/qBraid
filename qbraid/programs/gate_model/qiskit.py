@@ -112,8 +112,7 @@ class QiskitCircuit(GateModelProgram):
         if getattr(device.profile, "local", False) is True:
             self.remove_idle_qubits()
 
-        pm = device._options.get(
-            "pass_manager", generate_preset_pass_manager(backend=device._backend)
-        )
+        pm_option = device._options.get("pass_manager")
+        pm = pm_option or generate_preset_pass_manager(backend=device._backend)
         isa_circuit = pm.run(self._program)
         self._program = isa_circuit
