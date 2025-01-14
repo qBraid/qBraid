@@ -220,7 +220,7 @@ def test_quera_simulator_workflow(mock_provider, cirq_uniform, valid_qasm2_no_me
     assert job.queue_position() is None
 
     device._target_spec = None
-    device.to_ir = lambda x: {"openQasm": x}
+    device.prepare = lambda x: {"openQasm": x}
     batch_job = device.run([valid_qasm2_no_meas], shots=shots)
     assert isinstance(batch_job, list)
     assert all(isinstance(job, QbraidJob) for job in batch_job)
