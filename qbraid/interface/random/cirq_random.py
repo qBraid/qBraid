@@ -19,7 +19,7 @@ from cirq.testing import random_circuit
 from qbraid.exceptions import QbraidError
 
 
-def _cirq_random(num_qubits: int, depth: int, **kwargs) -> Circuit:
+def cirq_random(num_qubits: int, depth: int, **kwargs) -> Circuit:
     """Generate random circuit of arbitrary size and form.
 
     Args:

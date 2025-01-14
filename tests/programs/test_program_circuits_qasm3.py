@@ -16,8 +16,8 @@ import numpy as np
 import pytest
 from qiskit.qasm3 import dumps, loads
 
-from qbraid.interface.random.qasm3_random import _qasm3_random
-from qbraid.interface.random.qiskit_random import _qiskit_random
+from qbraid.interface.random.qasm3_random import qasm3_random
+from qbraid.interface.random.qiskit_random import qiskit_random
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
 from qbraid.programs.registry import unregister_program_type
@@ -47,7 +47,7 @@ def test_qasm3_num_qubits():
     """Test calculating number of qubits in qasm3 circuit"""
     num_qubits = np.random.randint(2, 10)
     depth = np.random.randint(1, 4)
-    qiskit_circuit = _qiskit_random(num_qubits=num_qubits, depth=depth)
+    qiskit_circuit = qiskit_random(num_qubits=num_qubits, depth=depth)
     qasm3_str = dumps(qiskit_circuit)
     assert OpenQasm3Program(qasm3_str).num_qubits == num_qubits
 
@@ -85,7 +85,7 @@ def _check_output(output, expected):
 def test_qasm3_random(num_qubits, depth, max_operands, seed, measure):
     """Test random circuit generation using _qasm_random"""
 
-    circuit = _qasm3_random(
+    circuit = qasm3_random(
         num_qubits=num_qubits, depth=depth, max_operands=max_operands, seed=seed, measure=measure
     )
     assert OpenQasm3Program(circuit).num_qubits >= 1
@@ -95,7 +95,7 @@ def test_qasm3_random(num_qubits, depth, max_operands, seed, measure):
 
 def test_qasm3_random_with_known_seed():
     """Test generating random OpenQASM 3 circuit from known seed"""
-    circuit = _qasm3_random(num_qubits=3, depth=3, max_operands=3, seed=42, measure=True)
+    circuit = qasm3_random(num_qubits=3, depth=3, max_operands=3, seed=42, measure=True)
     assert OpenQasm3Program(circuit).num_qubits == 3
 
     out__expected = """

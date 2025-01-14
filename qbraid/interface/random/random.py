@@ -69,10 +69,10 @@ def random_circuit(
         raise PackageValueError(f"Package '{package}' is not supported.")
 
     generator_funcs = {
-        "ionq": "qbraid.interface.random.ionq_random._ionq_random",
-        "qasm3": "qbraid.interface.random.qasm3_random._qasm3_random",
-        "qiskit": "qbraid.interface.random.qiskit_random._qiskit_random",
-        "cirq": "qbraid.interface.random.cirq_random._cirq_random",
+        "ionq": "qbraid.interface.random.ionq_random.ionq_random",
+        "qasm3": "qbraid.interface.random.qasm3_random.qasm3_random",
+        "qiskit": "qbraid.interface.random.qiskit_random.qiskit_random",
+        "cirq": "qbraid.interface.random.cirq_random.cirq_random",
     }
     graph = graph or ConversionGraph()
     valid_generators = [gen for gen in list(generator_funcs.keys()) if graph.has_path(gen, package)]

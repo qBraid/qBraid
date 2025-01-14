@@ -21,7 +21,7 @@ from qbraid.programs.gate_model.ionq import IonQProgram
 from qbraid.programs.typer import IonQDict
 from qbraid.transpiler import transpile
 
-from .qasm3_random import _qasm3_random_from_gates
+from .qasm3_random import qasm3_random_from_gates
 
 
 def create_gateset_ionq(max_operands: int) -> np.ndarray:
@@ -68,12 +68,11 @@ def create_gateset_ionq(max_operands: int) -> np.ndarray:
     return gates_array
 
 
-def _ionq_random(
+def ionq_random(
     num_qubits: Optional[int] = None,
     depth: Optional[int] = None,
     max_operands: Optional[int] = None,
     seed: Optional[int] = None,
-    measure: bool = False,
 ) -> IonQDict:
     """Generate random OpenQASM 3 program.
 
@@ -92,8 +91,8 @@ def _ionq_random(
     Returns:
         IonQDict: Random IonQ program
     """
-    qasm3_program = _qasm3_random_from_gates(
-        create_gateset_ionq, num_qubits, depth, max_operands, seed, measure
+    qasm3_program = qasm3_random_from_gates(
+        create_gateset_ionq, num_qubits, depth, max_operands, seed, False
     )
 
     ionq_dict = transpile(qasm3_program, "ionq")

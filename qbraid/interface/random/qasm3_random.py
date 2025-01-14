@@ -72,7 +72,7 @@ def create_gateset_qasm(max_operands: int) -> np.ndarray:
 
 
 # pylint: disable-next=too-many-arguments
-def _qasm3_random_from_gates(
+def qasm3_random_from_gates(
     create_gateset: Callable[[int], np.ndarray],
     num_qubits: Optional[int] = None,
     depth: Optional[int] = None,
@@ -179,7 +179,7 @@ include "stdgates.inc";
         raise QbraidError("Failed to create random OpenQASM 3 program") from err
 
 
-def _qasm3_random(
+def qasm3_random(
     num_qubits: Optional[int] = None,
     depth: Optional[int] = None,
     max_operands: Optional[int] = None,
@@ -202,6 +202,6 @@ def _qasm3_random(
     Returns:
         str: OpenQASM 3 program.
     """
-    return _qasm3_random_from_gates(
+    return qasm3_random_from_gates(
         create_gateset_qasm, num_qubits, depth, max_operands, seed, measure
     )
