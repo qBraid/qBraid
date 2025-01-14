@@ -21,7 +21,6 @@ import pytest
 from qiskit.circuit.random import random_clifford_circuit
 from qiskit.qasm3 import dumps as qasm3_dumps
 from qiskit.qasm3 import loads as qasm3_loads
-from qiskit_aer import StatevectorSimulator
 
 from qbraid.interface import assert_allclose_up_to_global_phase, circuits_allclose
 from qbraid.transpiler.conversions.openqasm3 import openqasm3_to_cudaq
@@ -31,8 +30,10 @@ from qbraid.transpiler.exceptions import ProgramConversionError
 
 cudaq = pytest.importorskip("cudaq")
 
+qiskit_aer = pytest.importorskip("qiskit_aer")
+
 if TYPE_CHECKING:
-    from cudaq import PyKernel
+    from cudaq import PyKernel  # type: ignore
     from qiskit import QuantumCircuit
 
 
@@ -55,7 +56,7 @@ def _check_output(qasm3_str_in: str, cudaq_out: PyKernel, atol=1e-7, method="cir
         circ_in: QuantumCircuit = qasm3_loads(qasm3_str_in).decompose()
         state_out = np.array(cudaq.get_state(cudaq_out))
 
-        sim = StatevectorSimulator()
+        sim = qiskit_aer.StatevectorSimulator()
         job = sim.run(circ_in, shots=1)
         res = job.result().results[0]
         state_in = res.data.statevector.data
