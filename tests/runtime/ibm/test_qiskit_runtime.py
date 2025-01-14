@@ -28,7 +28,7 @@ from qiskit.primitives.primitive_job import PrimitiveJob
 from qiskit.providers.fake_provider import GenericBackendV2
 from qiskit.providers.models.backendconfiguration import QasmBackendConfiguration
 from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
-from qiskit_ibm_runtime import QiskitRuntimeService, RuntimeJob, RuntimeJobV2
+from qiskit_ibm_runtime import QiskitRuntimeService, RuntimeJob
 from qiskit_ibm_runtime.exceptions import IBMNotAuthorizedError, RuntimeInvalidStateError
 from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
 

@@ -16,7 +16,6 @@ from typing import Optional
 
 import numpy as np
 
-from qbraid._version import __version__
 from qbraid.programs.gate_model.ionq import IonQProgram
 from qbraid.programs.typer import IonQDict
 from qbraid.transpiler import transpile

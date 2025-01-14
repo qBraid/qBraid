@@ -390,7 +390,7 @@ def oqc_job_failed(oqc_client, oqc_device):
 
 def test_oqc_device_str_representation(oqc_device):
     """Test the string representation of an OQC device."""
-    assert str(oqc_device) == f"OQCDevice('Lucy Simulator')"
+    assert str(oqc_device) == "OQCDevice('Lucy Simulator')"
 
 
 def test_oqc_provider_get_devices(lucy_sim_data, toshiko_data):

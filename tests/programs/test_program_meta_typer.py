@@ -141,7 +141,7 @@ def test_qasm_instance_properties(qasm_instance_class, version):
     """Test that the QasmInstance class has the correct properties for different versions."""
     assert qasm_instance_class.version == version
     assert qasm_instance_class.__alias__ == f"qasm{version}"
-    assert qasm_instance_class.__bound__ == str
+    assert qasm_instance_class.__bound__ is str
 
 
 def test_ionq_dict_instance_meta_alias():
@@ -151,7 +151,7 @@ def test_ionq_dict_instance_meta_alias():
 
 def test_ionq_dict_instance_meta_bound():
     """Test that __bound__ property returns dict."""
-    assert IonQDict.__bound__ == dict  # pylint: disable=comparison-with-callable
+    assert IonQDict.__bound__ is dict  # pylint: disable=comparison-with-callable
 
 
 def test_ionq_isinstance_valid_instance():
@@ -291,4 +291,4 @@ def test_qubo_coefficients_dict_instance_meta_alias():
 
 def test_qubo_coefficients_dictt_instance_meta_bound():
     """Test that __bound__ property returns dict."""
-    assert QuboCoefficientsDict.__bound__ == dict  # pylint: disable=comparison-with-callable
+    assert QuboCoefficientsDict.__bound__ is dict  # pylint: disable=comparison-with-callable

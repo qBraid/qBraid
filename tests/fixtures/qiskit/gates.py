@@ -18,7 +18,7 @@ from typing import Optional
 
 import numpy as np
 from qiskit.circuit.library import standard_gates as sg
-from qiskit.circuit.library.standard_gates import *
+from qiskit.circuit.library.standard_gates import *  # noqa: F403
 
 qiskit_gates = {
     "H": sg.h.HGate,

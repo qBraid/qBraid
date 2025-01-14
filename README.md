@@ -64,7 +64,7 @@ cd qBraid
 pip install .
 ```
 
-> *Note:* The qBraid-SDK requires Python 3.10 or greater.
+> _Note:_ The qBraid-SDK requires Python 3.10 or greater.
 
 To use [qBraid Runtime](https://docs.qbraid.com/sdk/user-guide/runtime) locally, you must also install the necessary extras and configure your account credentials according to the device(s) that you are targeting. Follow the linked, provider-specific, instructions for the [QbraidProvider](https://docs.qbraid.com/sdk/user-guide/runtime_native), [BraketProvider](https://docs.qbraid.com/sdk/user-guide/runtime_braket), [QiskitRuntimeProvider](https://docs.qbraid.com/sdk/user-guide/runtime_ibm), [IonQProvider](https://docs.qbraid.com/sdk/user-guide/runtime_ionq), and [OQCProvider](https://docs.qbraid.com/sdk/user-guide/runtime_oqc), as applicable.
 
