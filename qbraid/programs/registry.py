@@ -111,9 +111,9 @@ def register_program_type(
     # Check if the type is already registered under any other alias
     existing_alias = next((k for k, v in QPROGRAM_REGISTRY.items() if v == program_type), None)
     if existing_alias and existing_alias != normalized_alias and overwrite is False:
-        if program_type == str:
+        if program_type is str:
             str_types = [
-                k for k, v in QPROGRAM_REGISTRY.items() if v == str and k not in ("qasm2", "qasm3")
+                k for k, v in QPROGRAM_REGISTRY.items() if v is str and k not in ("qasm2", "qasm3")
             ]
             if (
                 len(str_types) >= 1
