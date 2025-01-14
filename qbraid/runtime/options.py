@@ -87,8 +87,25 @@ class RuntimeOptions:
 
     def set_validator(self, option_name: str, validator: Callable[[Any], bool]):
         """Sets a validator for a specific field."""
-        if not hasattr(self, option_name) and option_name not in self._fields:
-            raise KeyError(f"Field '{option_name}' is not present in options.")
+        if hasattr(self, option_name) or option_name in self._fields:
+            value = self.get(option_name)
+            existing_validator = self._validators.get(option_name)
+            error_prefix = f"Existing value '{value}' for field '{option_name}'"
+            error_suffix = (
+                f"Please {'update the value or ' if not existing_validator else ''}"
+                "delete the field before setting the new validator."
+            )
+            try:
+                is_valid = validator(value)
+            except Exception as err:
+                raise ValueError(
+                    f"{error_prefix} raised an exception against "
+                    f"the new validator: {err}. {error_suffix}"
+                ) from err
+            if not is_valid:
+                raise ValueError(
+                    f"{error_prefix} is not valid for the new validator. {error_suffix}"
+                )
         self._validators[option_name] = validator
 
     def validate_option(self, option_name: str, value: Any):

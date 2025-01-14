@@ -14,9 +14,11 @@
 Unit tests for qbraid.programs.ionq.IonQProgram
 
 """
+import numpy as np
 import pytest
 
 from qbraid.interface.random import random_circuit
+from qbraid.interface.random.ionq_random import create_gateset_ionq
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.gate_model.ionq import GateSet, InputFormat, IonQProgram
 from qbraid.programs.typer import IonQDict
@@ -135,3 +137,57 @@ def test_random_circuit_ionq():
     rand_program = random_circuit("ionq", max_attempts=1, num_qubits=5, depth=10)
     ionq_program = IonQProgram(rand_program)
     ionq_program.validate_for_gateset()
+
+
+def test_create_gateset_ionq_max_operands_3_or_more():
+    """Test that create_gateset_ionq generates a valid gateset."""
+    result = create_gateset_ionq(3)
+
+    assert isinstance(result, np.ndarray)
+
+    assert result.dtype == [("gate", object), ("num_qubits", np.int64), ("num_params", np.int64)]
+
+    expected_gates = {
+        "x",
+        "y",
+        "z",
+        "h",
+        "s",
+        "t",
+        "v",
+        "si",
+        "ti",
+        "vi",
+        "rx",
+        "ry",
+        "rz",
+        "cx",
+        "cy",
+        "cz",
+        "ch",
+        "crx",
+        "cry",
+        "crz",
+        "swap",
+        "ccnot",
+    }
+    actual_gates = set(result["gate"])
+    assert actual_gates == expected_gates
+
+    assert len(result) == 22
+
+    assert "ccnot" in result["gate"]
+
+    assert result[result["gate"] == "x"]["num_qubits"][0] == 1
+    assert result[result["gate"] == "x"]["num_params"][0] == 0
+    assert result[result["gate"] == "rx"]["num_qubits"][0] == 1
+    assert result[result["gate"] == "rx"]["num_params"][0] == 1
+    assert result[result["gate"] == "cx"]["num_qubits"][0] == 2
+    assert result[result["gate"] == "cx"]["num_params"][0] == 0
+    assert result[result["gate"] == "crx"]["num_qubits"][0] == 2
+    assert result[result["gate"] == "crx"]["num_params"][0] == 1
+    assert result[result["gate"] == "ccnot"]["num_qubits"][0] == 3
+    assert result[result["gate"] == "ccnot"]["num_params"][0] == 0
+
+    result_4 = create_gateset_ionq(4)
+    assert np.array_equal(result, result_4)

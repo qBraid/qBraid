@@ -89,7 +89,7 @@ class QiskitCircuit(GateModelProgram):
 
             dag.remove_qubits(*idle_qubit_wires)
             dag.remove_clbits(*idle_clbit_wires)
-        else:
+        else:  # pragma: no cover
             for w in idle_wires:
                 dag._remove_idle_wire(w)
                 try:

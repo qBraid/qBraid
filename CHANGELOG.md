@@ -15,6 +15,7 @@ Types of changes:
 ## [Unreleased]
 
 ### Fixed
+- Fixed `random_circuit` function so that when specifying `ionq`, the resulting program only uses gates supported by IonQ. ([#871](https://github.com/qBraid/qBraid/pull/871))
 
 ### Added
 - Added support for OpenQASM 3.0 to CUDA-Q kernel transpilation ([#857](https://github.com/qBraid/qBraid/pull/857)). Usage example:
@@ -46,7 +47,14 @@ module attributes {quake.mangled_name_map = {__nvqpp__mlirgen____nvqppBuilderKer
 }
 ```
 
+- Introduced `max_attempts` parameter in `random_circuit` function ([#871](https://github.com/qBraid/qBraid/pull/871))
+- Added `prepare` as `RuntimeOption` field in `QuantumDevice` ([#871](https://github.com/qBraid/qBraid/pull/871))
+- Added `validate_for_gateset` method in `IonQProgram` ([#871](https://github.com/qBraid/qBraid/pull/871))
+
 ### Improved / Modified
+- Changed `QuantumDevice.to_ir` method to `QuantumDevice.prepare` ([#871](https://github.com/qBraid/qBraid/pull/871))
+- Updated `remove_idle_qubits` function for updated `qiskit` version ([#871](https://github.com/qBraid/qBraid/pull/871))
+- Incorporated `SamplerV1` and job / result primitives for qiskit migration ([#871](https://github.com/qBraid/qBraid/pull/871))
 
 ### Deprecated
 

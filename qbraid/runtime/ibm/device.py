@@ -90,10 +90,10 @@ class QiskitBackend(QuantumDevice):
         *args,
         **kwargs,
     ) -> qbraid.runtime.ibm.QiskitJob:
-        """Runs circuit(s) on qiskit backend via :meth:`~Sampler.run`.
+        """Runs circuit(s) on qiskit backend via :meth:`~SamplerV2.run`.
 
-        Uses the :meth:`~qiskit.execute` method to create a :class:`~qiskit.providers.QuantumJob`
-        object, applies a :class:`~qbraid.runtime.ibm.QiskitJob`, and return the result.
+        Uses the :meth:`SamplerV2.execute` method to create a
+        :class:`~qbraid.runtime.ibm.QiskitJob`, and return the result.
 
         Args:
             run_input: A circuit object to run on the IBM device.

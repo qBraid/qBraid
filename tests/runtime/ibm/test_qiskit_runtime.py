@@ -16,6 +16,7 @@ Unit tests for QiskitProvider class
 """
 import random
 import warnings
+from collections import OrderedDict
 from types import SimpleNamespace
 from unittest.mock import MagicMock, Mock, patch
 
@@ -24,9 +25,9 @@ import pytest
 from qiskit import QuantumCircuit
 from qiskit.exceptions import QiskitError
 from qiskit.primitives.primitive_job import PrimitiveJob
-from qiskit.providers import Job
 from qiskit.providers.fake_provider import GenericBackendV2
 from qiskit.providers.models.backendconfiguration import QasmBackendConfiguration
+from qiskit.transpiler.preset_passmanagers import generate_preset_pass_manager
 from qiskit_ibm_runtime import QiskitRuntimeService, RuntimeJob, RuntimeJobV2
 from qiskit_ibm_runtime.exceptions import IBMNotAuthorizedError, RuntimeInvalidStateError
 from qiskit_ibm_runtime.qiskit_runtime_service import QiskitBackendNotFoundError
@@ -492,3 +493,48 @@ def test_result_measurements_not_available(mock_runtime_result, caplog):
     assert (
         "Memory states (measurements) data not available for this job" in caplog.records[0].message
     )
+
+
+def test_transform_run_input(fake_device):
+    """Test that the transform method optimizes the circuit for the device."""
+    circuit = QuantumCircuit(4)
+
+    circuit.h(0)
+    circuit.cx(0, 1)
+    circuit.cx(1, 2)
+    circuit.cx(2, 3)
+    circuit.measure_all()
+
+    circuit_optimized_for_device = fake_device.transform(circuit)
+
+    pm = generate_preset_pass_manager()
+
+    fake_device.set_options(pass_manager=pm)
+
+    circuit_optimized_default = fake_device.transform(circuit)
+
+    default_ops = OrderedDict([("measure", 4), ("cx", 3), ("h", 1), ("barrier", 1)])
+    optimized_ops = OrderedDict([("measure", 4), ("cx", 3), ("rz", 2), ("sx", 1), ("barrier", 1)])
+
+    assert circuit.count_ops() == circuit_optimized_default.count_ops() == default_ops
+    assert circuit_optimized_for_device.count_ops() == optimized_ops
+
+
+def test_device_run_with_sampler(fake_device, qiskit_uniform):
+    """Test that the device can run a circuit with a sampler."""
+    shots = 10
+    num_qubits = 2
+
+    qbraid_job = fake_device.run(qiskit_uniform(num_qubits), shots=shots)
+    assert isinstance(qbraid_job, QiskitJob)
+
+    result = qbraid_job.result()
+    assert isinstance(result, Result)
+    assert isinstance(result.data, GateModelResultData)
+    assert isinstance(result.data.get_counts(), dict)
+    assert isinstance(result.data.measurements, np.ndarray)
+    assert result.data.measurements.shape == (shots, 1)
+
+    counts = result.data.get_counts()
+    assert sum(counts.values()) == shots
+    assert all(len(k) == num_qubits for k in counts.keys())

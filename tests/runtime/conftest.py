@@ -240,7 +240,7 @@ def mock_basic_device(mock_profile):
     return MockDevice(profile=mock_profile)
 
 
-def uniform_state_circuit(num_qubits: Optional[int] = None, measure: Optional[bool] = True):
+def _uniform_state_circuit_cirq(num_qubits: Optional[int] = None, measure: Optional[bool] = True):
     """
     Creates a Cirq circuit where all qubits are entangled to uniformly be in
     either |0⟩ or |1⟩ states upon measurement.
@@ -284,10 +284,53 @@ def uniform_state_circuit(num_qubits: Optional[int] = None, measure: Optional[bo
     return circuit
 
 
+def _uniform_state_circuit_qiskit(num_qubits: Optional[int] = None, measure: Optional[bool] = True):
+    """
+    Creates a Qiskit circuit where all qubits are entangled to uniformly be in
+    either |0⟩ or |1⟩ states upon measurement.
+
+    Args:
+        num_qubits (optional, int): The number of qubits in the circuit. If not provided,
+            a default random number between 10 and 20 is used.
+        measure (optional, bool): Whether to measure the qubits at the end of the circuit.
+
+    Returns:
+        QuantumCircuit: The resulting circuit where the measurement outcome of all qubits is
+            either all |0⟩s or all |1⟩s.
+
+    Raises:
+        ValueError: If the number of qubits provided is less than 1.
+    """
+    from qiskit import QuantumCircuit
+
+    if num_qubits is not None and num_qubits < 1:
+        raise ValueError("Number of qubits must be at least 1.")
+
+    num_qubits = num_qubits or random.randint(10, 20)
+
+    circuit = QuantumCircuit(num_qubits)
+
+    circuit.h(0)
+
+    for qubit in range(1, num_qubits):
+        circuit.cx(0, qubit)
+
+    if measure:
+        circuit.measure_all()
+
+    return circuit
+
+
 @pytest.fixture
 def cirq_uniform():
     """Cirq circuit used for testing."""
-    return uniform_state_circuit
+    return _uniform_state_circuit_cirq
+
+
+@pytest.fixture
+def qiskit_uniform():
+    """Qiskit circuit used for testing."""
+    return _uniform_state_circuit_qiskit
 
 
 @pytest.fixture

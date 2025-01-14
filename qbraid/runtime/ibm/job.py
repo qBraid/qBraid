@@ -111,7 +111,7 @@ class QiskitJob(QuantumJob):
 
         runner_result: qiskit.result.Result | PrimitiveResult = self._job.result()
         if isinstance(runner_result, PrimitiveResult):
-            backend = self._job.backend()
+            backend = self._job.backend() if hasattr(self._job, "backend") else None
             device_id = (
                 backend.name if backend else (self._device.id if self._device else "sampler")
             )

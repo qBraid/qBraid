@@ -37,7 +37,14 @@ from qbraid.programs import (
 )
 from qbraid.programs.exceptions import ProgramTypeError
 from qbraid.programs.typer import IonQDict, QuboCoefficientsDict
-from qbraid.runtime import DeviceStatus, JobStatus, ProgramValidationError, Result, TargetProfile
+from qbraid.runtime import (
+    DeviceStatus,
+    JobStatus,
+    ProgramValidationError,
+    Result,
+    TargetProfile,
+    ValidationLevel,
+)
 from qbraid.runtime.exceptions import QbraidRuntimeError, ResourceNotFoundError
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
 from qbraid.runtime.native.provider import get_program_spec_lambdas
@@ -604,6 +611,9 @@ def test_set_options(mock_qbraid_device: QbraidDevice):
     updated_options = default_options.copy()
     updated_options["transform"] = False
     assert dict(mock_qbraid_device._options) == updated_options
+
+    mock_qbraid_device.set_options(validate=False)
+    assert mock_qbraid_device._options["validate"] == ValidationLevel.NONE
 
 
 def test_set_options_raises_for_bad_key(mock_basic_device: MockDevice):
