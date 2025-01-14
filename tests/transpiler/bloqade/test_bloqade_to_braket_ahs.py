@@ -12,11 +12,24 @@
 Unit tests for converting Bloqade programs to Amazon Braket AHS
 
 """
+from __future__ import annotations
+
+import importlib.util
+from typing import TYPE_CHECKING
+
 import numpy as np
 import pytest
-from bloqade import var
-from bloqade.atom_arrangement import Square
-from bloqade.builder.assign import BatchAssign
+
+# Skip all tests if bloqade not installed
+bloqade_found = importlib.util.find_spec("bloqade") is not None
+if bloqade_found:
+    from bloqade import var
+    from bloqade.atom_arrangement import Square  # type: ignore
+
+if TYPE_CHECKING:
+    from bloqade.builder.assign import BatchAssign  # type: ignore
+
+pytestmark = pytest.mark.skipif(not bloqade_found, reason="bloqade not installed")
 
 from qbraid.programs.ahs.braket_ahs import BraketAHS
 from qbraid.transpiler.conversions.braket_ahs import bloqade_to_braket_ahs

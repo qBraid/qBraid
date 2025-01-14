@@ -9,24 +9,22 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 # pylint:disable=redefined-outer-name
-
 """
 Unit tests for Azure Quantum runtime (remote)
 
 """
 from __future__ import annotations
 
-import os
+import importlib.util
 from typing import TYPE_CHECKING
 
 import pytest
-from qbraid_core._import import LazyLoader
 
 from qbraid.runtime import DeviceStatus, GateModelResultData, JobStatus, Result
 from qbraid.runtime.azure import AzureQuantumProvider
-from qbraid.transpiler.conversions.qiskit import qiskit_to_pyqir
 
-pyquil = LazyLoader("pyquil", globals(), "pyquil")
+# Skip pyquil tests if not installed
+pyquil_found = importlib.util.find_spec("pyquil") is not None
 
 if TYPE_CHECKING:
     import pyquil as pyquil_
@@ -87,8 +85,11 @@ def test_submit_json_to_ionq(provider: AzureQuantumProvider):
 
 
 @pytest.fixture
+@pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
 def pyquil_program() -> pyquil_.Program:
     """Fixture for a PyQuil program."""
+    import pyquil
+
     p = pyquil.Program()
     ro = p.declare("ro", "BIT", 2)
     p += pyquil.gates.H(0)
@@ -100,12 +101,14 @@ def pyquil_program() -> pyquil_.Program:
 
 
 @pytest.fixture
+@pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
 def quil_string(pyquil_program: pyquil_.Program) -> str:
     """Fixture for a Quil string."""
     return pyquil_program.out()
 
 
 @pytest.mark.remote
+@pytest.mark.skipif(not pyquil_found, reason="pyquil not installed")
 @pytest.mark.parametrize("direct", [(True), (False)])
 def test_submit_quil_to_rigetti(
     provider: AzureQuantumProvider, pyquil_program: pyquil_.Program, quil_string: str, direct: bool

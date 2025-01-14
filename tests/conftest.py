@@ -17,6 +17,7 @@ without needing to import them (pytest will automatically discover them).
 """
 import importlib.util
 import os
+import sys
 
 import pytest
 
@@ -40,7 +41,14 @@ def _is_package_installed(package_name: str) -> bool:
 @pytest.fixture
 def available_targets():
     """Return a list of available quantum packages."""
-    packages = ["braket", "cirq", "pyquil", "pytket", "qiskit"]
+    packages = ["braket", "cirq", "pytket", "qiskit", "pyquil"]
+
+    # Add version-restricted packages only if Python version is compatible
+    if sys.version_info < (3, 12):
+        packages.extend(["pyqubo"])
+    if sys.version_info < (3, 13):
+        packages.extend(["bloqade"])
+
     return [pkg for pkg in packages if _is_package_installed(pkg)]
 
 
