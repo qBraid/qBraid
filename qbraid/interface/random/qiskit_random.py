@@ -19,7 +19,7 @@ from qiskit.circuit.random import random_circuit
 from qbraid.exceptions import QbraidError
 
 
-def _qiskit_random(num_qubits: int, depth: int, **kwargs) -> QuantumCircuit:
+def qiskit_random(num_qubits: int, depth: int, **kwargs) -> QuantumCircuit:
     """Generate random circuit qiskit circuit.
 
     Args:

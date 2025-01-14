@@ -14,13 +14,16 @@ Module defining QiskitBackend Class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Optional
 
+from qiskit.transpiler import PassManager
 from qiskit_ibm_runtime import QiskitRuntimeService
+from qiskit_ibm_runtime import SamplerV2 as Sampler
 
 from qbraid.programs import load_program
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.runtime.options import RuntimeOptions
 
 from .job import QiskitJob
 
@@ -40,7 +43,10 @@ class QiskitBackend(QuantumDevice):
         service: Optional[qiskit_ibm_runtime.QiskitRuntimeService] = None,
     ):
         """Create a QiskitBackend."""
-        super().__init__(profile=profile)
+        options = RuntimeOptions(pass_manager=None)
+        options.set_validator("pass_manager", lambda x: x is None or isinstance(x, PassManager))
+
+        super().__init__(profile=profile, options=options)
         self._service = service or QiskitRuntimeService()
         self._backend = self._service.backend(
             self.id, instance=getattr(self.profile, "instance", None)
@@ -80,27 +86,28 @@ class QiskitBackend(QuantumDevice):
 
     def submit(
         self,
-        run_input: Union[qiskit.QuantumCircuit, list[qiskit.QuantumCircuit]],
+        run_input: qiskit.QuantumCircuit | list[qiskit.QuantumCircuit],
         *args,
         **kwargs,
     ) -> qbraid.runtime.ibm.QiskitJob:
-        """Runs circuit(s) on qiskit backend via :meth:`~qiskit.execute`
+        """Runs circuit(s) on qiskit backend via :meth:`~SamplerV2.run`.
 
-        Uses the :meth:`~qiskit.execute` method to create a :class:`~qiskit.providers.QuantumJob`
-        object, applies a :class:`~qbraid.runtime.ibm.QiskitJob`, and return the result.
+        Uses the :meth:`SamplerV2.execute` method to create a
+        :class:`~qbraid.runtime.ibm.QiskitJob`, and return the result.
 
         Args:
             run_input: A circuit object to run on the IBM device.
 
         Keyword Args:
-            shots (int): The number of times to run the task on the device. Default is 1024.
+            shots (int, optional): The number of times to run the task on the device. If None,
+                number of shots is determined by the sampler.
 
         Returns:
             qbraid.runtime.ibm.QiskitJob: The job like object for the run.
 
         """
         backend = self._backend
-        shots = kwargs.pop("shots", backend.options.get("shots"))
-        memory = kwargs.pop("memory", True)  # Needed to get measurements
-        job = backend.run(run_input, *args, shots=shots, memory=memory, **kwargs)
+        sampler = Sampler(mode=backend)
+        pubs = run_input if isinstance(run_input, list) else [run_input]
+        job = sampler.run(pubs, *args, **kwargs)
         return QiskitJob(job.job_id(), job=job, device=self)

@@ -81,27 +81,27 @@ def _dynamic_importer(opt_modules: list[str]) -> dict[str, Type[Any]]:
 # pylint: disable=undefined-variable,inconsistent-return-statements
 def _get_class(module: str):
     if module == "bloqade.builder.assign":
-        return bloqade.builder.assign.BatchAssign  # type: ignore
+        return bloqade.builder.assign.BatchAssign  # type: ignore # noqa: F821
     if module == "cirq":
-        return cirq.Circuit  # type: ignore
+        return cirq.Circuit  # type: ignore # noqa: F821
     if module == "qiskit":
-        return qiskit.QuantumCircuit  # type: ignore
+        return qiskit.QuantumCircuit  # type: ignore # noqa: F821
     if module == "braket.ahs":
-        return braket.ahs.AnalogHamiltonianSimulation  # type: ignore
+        return braket.ahs.AnalogHamiltonianSimulation  # type: ignore # noqa: F821
     if module == "braket.circuits":
-        return braket.circuits.Circuit  # type: ignore
+        return braket.circuits.Circuit  # type: ignore # noqa: F821
     if module == "pennylane":
-        return pennylane.tape.QuantumTape  # type: ignore
+        return pennylane.tape.QuantumTape  # type: ignore # noqa: F821
     if module == "pyquil":
-        return pyquil.Program  # type: ignore
+        return pyquil.Program  # type: ignore # noqa: F821
     if module == "pytket":
-        return pytket._tket.circuit.Circuit  # type: ignore
+        return pytket._tket.circuit.Circuit  # type: ignore # noqa: F821
     if module == "openqasm3":
-        return openqasm3.ast.Program  # type: ignore
+        return openqasm3.ast.Program  # type: ignore # noqa: F821
     if module == "pyqir":
-        return pyqir.Module  # type: ignore
+        return pyqir.Module  # type: ignore # noqa: F821
     if module == "cpp_pyqubo":
-        return cpp_pyqubo.Model  # type: ignore
+        return cpp_pyqubo.Model  # type: ignore # noqa: F821
 
 
 # Supported quantum programs.

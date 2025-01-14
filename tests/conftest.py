@@ -17,19 +17,18 @@ without needing to import them (pytest will automatically discover them).
 """
 import importlib.util
 import os
+import sys
 
 import pytest
 
-from .fixtures import (
-    bell_circuit,
-    bell_unitary,
-    packages_bell,
-    packages_shared15,
-    shared15_circuit,
-    shared15_unitary,
-    two_bell_circuits,
-    two_shared15_circuits,
-)
+from .fixtures import bell_circuit as bell_circuit
+from .fixtures import bell_unitary as bell_unitary
+from .fixtures import packages_bell as packages_bell
+from .fixtures import packages_shared15 as packages_shared15
+from .fixtures import shared15_circuit as shared15_circuit
+from .fixtures import shared15_unitary as shared15_unitary
+from .fixtures import two_bell_circuits as two_bell_circuits
+from .fixtures import two_shared15_circuits as two_shared15_circuits
 
 
 def _is_package_installed(package_name: str) -> bool:
@@ -40,7 +39,14 @@ def _is_package_installed(package_name: str) -> bool:
 @pytest.fixture
 def available_targets():
     """Return a list of available quantum packages."""
-    packages = ["braket", "cirq", "pyquil", "pytket", "qiskit"]
+    packages = ["braket", "cirq", "pytket", "qiskit", "pyquil"]
+
+    # Add version-restricted packages only if Python version is compatible
+    if sys.version_info < (3, 12):
+        packages.extend(["pyqubo"])
+    if sys.version_info < (3, 13):
+        packages.extend(["bloqade"])
+
     return [pkg for pkg in packages if _is_package_installed(pkg)]
 
 

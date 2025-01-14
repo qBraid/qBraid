@@ -129,24 +129,6 @@ def test_options_delitem_non_existent_field():
         del options["non_existent_field"]
 
 
-def test_options_set_validator_for_non_existent_field():
-    """Test setting a validator for a non-existent field raises KeyError."""
-    options = RuntimeOptions(transpile=True)
-    with pytest.raises(KeyError):
-        options.set_validator("non_existent_field", lambda x: isinstance(x, int))
-
-
-def test_options_validator_applies_only_on_update():
-    """Test that validators apply on future updates, not retrospectively."""
-    options = RuntimeOptions(custom_field="invalid_value")
-    options.set_validator("custom_field", lambda x: isinstance(x, int))
-
-    assert options.custom_field == "invalid_value"
-
-    with pytest.raises(ValueError):
-        options.custom_field = "still_invalid"
-
-
 def test_options_remove_validator():
     """Test that removing a validator allows invalid values."""
     options = RuntimeOptions(transpile=True)
@@ -471,30 +453,18 @@ def test_merge_overlapping_options(
         assert options1.option_a == test_value
 
 
-def test_merge_invalid_option_value():
-    """Test merging when 'other' has an invalid option value according to its validator."""
-    options1 = RuntimeOptions(option_a=1)
-    options1.set_validator("option_a", lambda x: isinstance(x, int) and x > 0)
-
-    options2 = RuntimeOptions(option_b="invalid")
-    options2.set_validator("option_b", lambda x: x == "valid")
-
-    with pytest.raises(
-        ValueError, match="Value 'invalid' is not valid for field 'option_b' after merging."
-    ):
-        options1.merge(options2, override_validators=True)
-
-
 def test_merge_existing_option_invalidated_by_new_validator():
     """Test merging when existing option in 'self' is invalid under new validator from 'other'."""
     options1 = RuntimeOptions(option_a=1)
-    # No initial validator for option_a
+    options1.set_validator("option_a", lambda x: x == 1)
 
-    options2 = RuntimeOptions(option_a=None)
-    options2.set_validator("option_a", lambda x: isinstance(x, int) and x < 0)
+    options2 = RuntimeOptions()
+    options2.set_validator("option_a", lambda x: x == 2)
+
+    options2.merge(options1, override_validators=True)
 
     with pytest.raises(ValueError):
-        options1.merge(options2, override_validators=True)
+        options2.option_a = 2
 
 
 def test_merge_preserve_existing_validators():
@@ -559,9 +529,9 @@ def test_merge_with_no_validators():
 def test_merge_with_invalid_option_in_other():
     """Test merging when 'other' has an invalid option value according to its own validator."""
     options1 = RuntimeOptions(option_a=1)
+    options1.set_validator("option_b", lambda x: x == "valid")
 
     options2 = RuntimeOptions(option_b="invalid")
-    options2.set_validator("option_b", lambda x: x == "valid")
 
     with pytest.raises(
         ValueError, match="Value 'invalid' is not valid for field 'option_b' after merging."
@@ -603,3 +573,89 @@ def test_validate_option_handles_exception():
         "Validator for field 'v' raised an exception: "
         "'>' not supported between instances of 'str' and 'int'" == str(exc.value)
     )
+
+
+def test_options_set_validator_for_existing_field():
+    """Test setting a validator for an existing field."""
+    options = RuntimeOptions(test=True)
+    options.set_validator("test", lambda x: isinstance(x, bool))
+
+    assert options.test is True
+
+    with pytest.raises(ValueError):
+        options.set_validator("test", lambda x: not isinstance(x, bool))
+
+
+def test_options_set_validator_for_existing_field_with_invalid_value():
+    """Test setting a validator for an existing field with an invalid value."""
+    options = RuntimeOptions(custom_field="string")
+
+    with pytest.raises(
+        ValueError,
+        match="Existing value 'string' for field 'custom_field' is not valid for the new validator",
+    ):
+        options.set_validator("custom_field", lambda x: isinstance(x, int))
+
+
+def test_options_set_validator_for_non_existent_field():
+    """Test setting a validator for a non-existent field."""
+    options = RuntimeOptions()
+    options.set_validator("new_field", lambda x: isinstance(x, int))
+
+    assert "new_field" in options._validators
+
+
+def test_options_validator_applies_to_existing_field():
+    """Test that a validator applies to an existing field."""
+    options = RuntimeOptions(custom_field=42)
+    options.set_validator("custom_field", lambda x: isinstance(x, int) and x > 0)
+
+    assert options.custom_field == 42
+
+    with pytest.raises(ValueError):
+        options.custom_field = -1
+
+
+def test_options_validator_allows_valid_update_to_existing_field():
+    """Test that a validator allows a valid update to an existing field."""
+    options = RuntimeOptions(custom_field=42)
+    options.set_validator("custom_field", lambda x: isinstance(x, int) and x > 0)
+
+    options.custom_field = 100
+    assert options.custom_field == 100
+
+
+def test_options_set_validator_error_message_for_exception():
+    """Test that the error message for a validator exception is correct."""
+    options = RuntimeOptions(custom_field="string")
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Existing value 'string' for field 'custom_field' "
+            "raised an exception against the new validator"
+        ),
+    ):
+        options.set_validator("custom_field", lambda x: x > 0)
+
+
+def test_options_set_validator_error_message_for_invalid_value():
+    """Test that the error message for an invalid value is correct."""
+    options = RuntimeOptions(custom_field=-5)
+
+    with pytest.raises(
+        ValueError,
+        match="Existing value '-5' for field 'custom_field' is not valid for the new validator",
+    ):
+        options.set_validator("custom_field", lambda x: x > 0)
+
+
+def test_options_set_validator_error_message_with_existing_validator():
+    """Test that the error message for an existing validator is correct."""
+    options = RuntimeOptions(custom_field=5)
+    options.set_validator("custom_field", lambda x: x > 0)
+
+    with pytest.raises(
+        ValueError, match="Please delete the field before setting the new validator"
+    ):
+        options.set_validator("custom_field", lambda x: x < 0)

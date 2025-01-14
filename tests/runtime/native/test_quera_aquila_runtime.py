@@ -97,7 +97,7 @@ def test_get_aquila_device(device_id, mock_provider):
 
 def test_ahs_program_to_ir(mock_device, braket_ahs, ahs_dict):
     """Test conversion of AHS program to IR."""
-    assert mock_device.to_ir(braket_ahs) == {"ahs": json.dumps(ahs_dict)}
+    assert mock_device.prepare(braket_ahs) == {"ahs": json.dumps(ahs_dict)}
 
 
 def test_submit_ahs_job_to_aquila(braket_ahs, mock_device, mock_job_id):
@@ -172,7 +172,7 @@ def test_device_to_ir_calls_for_bloqade_run_input(bloqade_program, mock_device: 
     """Test that to_ir is called three times with AnalogHamiltonianSimulation."""
     mock_device.set_options(validate=0)
 
-    with patch.object(mock_device, "to_ir", wraps=mock_device.to_ir) as mock_to_ir:
+    with patch.object(mock_device, "prepare", wraps=mock_device.prepare) as mock_to_ir:
         _ = mock_device.run(bloqade_program, shots=10)
 
         assert mock_to_ir.call_count == 3

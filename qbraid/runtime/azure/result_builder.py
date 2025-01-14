@@ -237,10 +237,10 @@ class AzureGateModelResultBuilder:
         """
         az_result = self.job.get_results()
 
-        if not "DataFormat" in az_result:
+        if "DataFormat" not in az_result:
             raise ValueError("DataFormat missing from Job results")
 
-        if not "Results" in az_result:
+        if "Results" not in az_result:
             raise ValueError("Results missing from Job results")
 
         histograms = []
@@ -249,7 +249,7 @@ class AzureGateModelResultBuilder:
             counts = {}
             probabilities = {}
 
-            if not "TotalCount" in circuit_results:
+            if "TotalCount" not in circuit_results:
                 raise ValueError("TotalCount missing from Job results")
 
             total_count: int = circuit_results["TotalCount"]
@@ -257,15 +257,15 @@ class AzureGateModelResultBuilder:
             if total_count <= 0:
                 raise ValueError("TotalCount must be a positive non-zero integer")
 
-            if not "Histogram" in circuit_results:
+            if "Histogram" not in circuit_results:
                 raise ValueError("Histogram missing from Job results")
 
             histogram = circuit_results["Histogram"]
             for result in histogram:
-                if not "Display" in result:
+                if "Display" not in result:
                     raise ValueError("Dispaly missing from histogram result")
 
-                if not "Count" in result:
+                if "Count" not in result:
                     raise ValueError("Count missing from histogram result")
 
                 bitstring = self._qir_to_qbraid_bitstring(result["Display"])
@@ -283,7 +283,7 @@ class AzureGateModelResultBuilder:
         entry_points = input_params["items"]
         entry_point_names = []
         for entry_point in entry_points:
-            if not "entryPoint" in entry_point:
+            if "entryPoint" not in entry_point:
                 raise ValueError("Entry point input_param is missing an 'entryPoint' field")
             entry_point_names.append(entry_point["entryPoint"])
         return entry_point_names if len(entry_point_names) > 0 else ["main"]

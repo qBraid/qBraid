@@ -323,12 +323,12 @@ def test_ionq_device_transform_run_input(qis_input, qis_input_decomp):
         test_devices = provider.get_devices()
         device = test_devices[0]
         qasm_compat = device.transform(qasm_input)
-        program_json = device.to_ir(qasm_compat)
+        program_json = device.prepare(qasm_compat)
         assert program_json == qis_input
 
         qasm_rebased = rebase(qasm_input, gateset={"h", "ry", "cx"}, gate_mappings={"cx": "cnot"})
         qasm_decomp = normalize_qasm_gate_params(qasm_rebased)
-        program_json_decomp = device.to_ir(qasm_decomp)
+        program_json_decomp = device.prepare(qasm_decomp)
         assert program_json_decomp == qis_input_decomp
 
         dummy_provider = IonQProvider(api_key="fake_api_key")

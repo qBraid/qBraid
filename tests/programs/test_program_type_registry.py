@@ -59,7 +59,7 @@ def test_successful_registration():
     try:
         register_program_type(dict, "dict")
         assert "dict" in QPROGRAM_REGISTRY
-        assert QPROGRAM_REGISTRY["dict"] == dict
+        assert QPROGRAM_REGISTRY["dict"] is dict
     finally:
         unregister_program_type("dict")
 

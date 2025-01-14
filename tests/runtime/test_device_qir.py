@@ -42,17 +42,17 @@ def pyqir_module() -> Module:
 
 def test_device_transform(pyqir_module: Module, mock_qbraid_device):
     """Test transform method on OpenQASM 2 string."""
-    assert mock_qbraid_device.to_ir(pyqir_module) == {"bitcode": pyqir_module.bitcode}
+    assert mock_qbraid_device.prepare(pyqir_module) == {"bitcode": pyqir_module.bitcode}
 
 
 def test_transform_to_ir_from_spec(mock_basic_device: MockDevice, pyqir_module: Module):
     """Test transforming to run input to given IR from target profile program spec."""
     run_input_transformed = mock_basic_device.transform(pyqir_module)
-    run_input_ir = mock_basic_device.to_ir(run_input_transformed)
+    run_input_ir = mock_basic_device.prepare(run_input_transformed)
     assert isinstance(run_input_ir, dict)
     assert isinstance(run_input_ir.get("bitcode"), bytes)
 
     mock_basic_device._target_spec = None
     run_input_transformed = mock_basic_device.transform(pyqir_module)
-    run_input_ir = mock_basic_device.to_ir(run_input_transformed)
+    run_input_ir = mock_basic_device.prepare(run_input_transformed)
     assert isinstance(run_input_ir, pyqir.Module)

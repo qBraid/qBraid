@@ -26,7 +26,7 @@ from qbraid.runtime.azure import AzureQuantumProvider
 from qbraid.transpiler.conversions.qiskit import qiskit_to_pyqir
 
 if TYPE_CHECKING:
-    import pyqir
+    import pyqir as pyqir_
 
 pyqir = pytest.importorskip("pyqir")
 
@@ -34,10 +34,13 @@ pyqir = pytest.importorskip("pyqir")
 @pytest.fixture
 def qir_bitcode(qiskit_circuit: QuantumCircuit) -> bytes:
     """Fixture for QIR bitcode from a Qiskit quantum circuit."""
-    module: pyqir.Module = qiskit_to_pyqir(qiskit_circuit)
+    module: pyqir_.Module = qiskit_to_pyqir(qiskit_circuit)
     return module.bitcode
 
 
+@pytest.mark.skip(
+    reason="The Resource Estimator is now fully open source and available as part of the QDK."
+)
 @pytest.mark.remote
 @pytest.mark.parametrize("direct", [(True), (False)])
 def test_submit_qir_to_microsoft(

@@ -367,7 +367,7 @@ class QbraidDevice(QuantumDevice):
             for program in program_batch:
                 if native_target:
                     aux_payload = self._construct_aux_payload(program, program_spec)
-                run_input_json = self.to_ir(program)
+                run_input_json = self.prepare(program)
                 self._validate_run_input_payload(run_input_json, self._target_spec)
                 runtime_payload = {**aux_payload, **run_input_json}
                 job = self.submit(run_input=runtime_payload, shots=shots, tags=tags, **kwargs)

@@ -14,8 +14,10 @@ Module defining QiskitJob Class
 """
 from __future__ import annotations
 
+import os
 from typing import TYPE_CHECKING, Optional
 
+from qiskit.primitives.containers.primitive_result import PrimitiveResult
 from qiskit_ibm_runtime import QiskitRuntimeService
 from qiskit_ibm_runtime.exceptions import RuntimeInvalidStateError
 
@@ -29,6 +31,7 @@ from qbraid.runtime.result_data import GateModelResultData
 from .result_builder import QiskitGateModelResultBuilder
 
 if TYPE_CHECKING:
+    import qiskit.primitives
     import qiskit.result
     import qiskit_ibm_runtime
 
@@ -50,7 +53,11 @@ class QiskitJob(QuantumJob):
     def __init__(
         self,
         job_id: str,
-        job: Optional[qiskit_ibm_runtime.RuntimeJob] = None,
+        job: Optional[
+            qiskit_ibm_runtime.RuntimeJob
+            | qiskit_ibm_runtime.RuntimeJobV2
+            | qiskit.primitives.PrimitiveJob
+        ] = None,
         service: Optional[qiskit_ibm_runtime.QiskitRuntimeService] = None,
         **kwargs,
     ):
@@ -58,7 +65,9 @@ class QiskitJob(QuantumJob):
         super().__init__(job_id, **kwargs)
         self._job = job or self._get_job(service=service)
 
-    def _get_job(self, service: Optional[qiskit_ibm_runtime.QiskitRuntimeService] = None):
+    def _get_job(
+        self, service: Optional[qiskit_ibm_runtime.QiskitRuntimeService] = None
+    ) -> qiskit_ibm_runtime.RuntimeJob | qiskit_ibm_runtime.RuntimeJobV2:
         """Return the qiskit_ibm_runtime.RuntimeJob associated with instance id attribute.
 
         Attempts to retrieve a job using a specified or default service. Handles
@@ -72,7 +81,9 @@ class QiskitJob(QuantumJob):
                 service = self._device._service
             else:
                 try:
-                    service = QiskitRuntimeService()
+                    token = os.getenv("QISKIT_IBM_TOKEN")
+                    channel = os.getenv("QISKIT_IBM_CHANNEL", "ibm_quantum")
+                    service = QiskitRuntimeService(channel=channel, token=token)
                 except Exception as err:
                     raise QbraidRuntimeError("Failed to initialize the quantum service.") from err
 
@@ -83,7 +94,8 @@ class QiskitJob(QuantumJob):
 
     def status(self):
         """Returns status from Qiskit Job object."""
-        job_status = self._job.status().name
+        job_status = self._job.status()
+        job_status = job_status if isinstance(job_status, str) else job_status.name
         status = IBM_JOB_STATUS_MAP.get(job_status, JobStatus.UNKNOWN)
         self._cache_metadata["status"] = status
         return status
@@ -97,10 +109,20 @@ class QiskitJob(QuantumJob):
         if not self.is_terminal_state():
             logger.info("Result will be available when job has reached final state.")
 
-        runner_result: qiskit.result.Result = self._job.result()
-        runner_data = runner_result.to_dict()
-        job_id = runner_data.pop("job_id", self._job.job_id())
-        success = runner_data.pop("success", runner_result.success)
+        runner_result: qiskit.result.Result | PrimitiveResult = self._job.result()
+        if isinstance(runner_result, PrimitiveResult):
+            backend = self._job.backend() if hasattr(self._job, "backend") else None
+            device_id = (
+                backend.name if backend else (self._device.id if self._device else "sampler")
+            )
+            job_id = self._job.job_id()
+            success = self.status() == JobStatus.COMPLETED
+            runner_data = runner_result.metadata
+        else:
+            runner_data = runner_result.to_dict()
+            job_id = runner_data.pop("job_id", self._job.job_id())
+            success = runner_data.pop("success", runner_result.success)
+            device_id = runner_result.backend_name
 
         builder = QiskitGateModelResultBuilder(runner_result)
         measurement_counts = builder.get_counts()
@@ -108,7 +130,7 @@ class QiskitJob(QuantumJob):
         data = GateModelResultData(measurement_counts=measurement_counts, measurements=measurements)
 
         return Result(
-            device_id=runner_result.backend_name,
+            device_id=device_id,
             job_id=job_id,
             success=success,
             data=data,
