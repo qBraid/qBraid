@@ -17,7 +17,27 @@ Types of changes:
 
 ### Fixed
 
+### Added
+
+### Improved / Modified
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Dependencies
+
+## [0.9.1] - 2025-01-14
+
+### Fixed
+
 - Fixed `random_circuit` function so that when specifying `ionq`, the resulting program only uses gates supported by IonQ. ([#871](https://github.com/qBraid/qBraid/pull/871))
+- Qiskit migration fixes ([#876](https://github.com/qBraid/qBraid/pull/876)):
+  - fix num args passed to `SamplerV2.run`
+  - raise `NotImplementedError` for `QiskitJob.queue position()` if not available
+  - Account for `DataBin` pub result data type `c` attribute instead of `meas`
 
 ### Added
 
@@ -58,15 +78,7 @@ module attributes {quake.mangled_name_map = {__nvqpp__mlirgen____nvqppBuilderKer
 
 - Changed `QuantumDevice.to_ir` method to `QuantumDevice.prepare` ([#871](https://github.com/qBraid/qBraid/pull/871))
 - Updated `remove_idle_qubits` function for updated `qiskit` version ([#871](https://github.com/qBraid/qBraid/pull/871))
-- Incorporated `SamplerV1` and job / result primitives for qiskit migration ([#871](https://github.com/qBraid/qBraid/pull/871))
-
-### Deprecated
-
-### Removed
-
-### Fixed
-
-### Dependencies
+- Incorporated `SamplerV2` and job / result primitives for qiskit migration ([#871](https://github.com/qBraid/qBraid/pull/871))
 
 ## [0.9.0] - 2024-12-19
 
