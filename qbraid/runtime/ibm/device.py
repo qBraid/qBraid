@@ -84,11 +84,11 @@ class QiskitBackend(QuantumDevice):
         program.transform(self)
         return program.program
 
+    # pylint: disable-next=arguments-differ
     def submit(
         self,
         run_input: qiskit.QuantumCircuit | list[qiskit.QuantumCircuit],
-        *args,
-        **kwargs,
+        shots: int | None = None,
     ) -> qbraid.runtime.ibm.QiskitJob:
         """Runs circuit(s) on qiskit backend via :meth:`~SamplerV2.run`.
 
@@ -97,6 +97,8 @@ class QiskitBackend(QuantumDevice):
 
         Args:
             run_input: A circuit object to run on the IBM device.
+            shots (int, optional): The number of times to run the task on the device. If None,
+                number of shots is determined by the sampler.
 
         Keyword Args:
             shots (int, optional): The number of times to run the task on the device. If None,
@@ -109,5 +111,5 @@ class QiskitBackend(QuantumDevice):
         backend = self._backend
         sampler = Sampler(mode=backend)
         pubs = run_input if isinstance(run_input, list) else [run_input]
-        job = sampler.run(pubs, *args, **kwargs)
+        job = sampler.run(pubs, shots=shots)
         return QiskitJob(job.job_id(), job=job, device=self)

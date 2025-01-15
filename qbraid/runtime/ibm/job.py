@@ -18,7 +18,7 @@ import os
 from typing import TYPE_CHECKING, Optional
 
 from qiskit.primitives.containers.primitive_result import PrimitiveResult
-from qiskit_ibm_runtime import QiskitRuntimeService
+from qiskit_ibm_runtime import QiskitRuntimeService, RuntimeJobV2
 from qiskit_ibm_runtime.exceptions import RuntimeInvalidStateError
 
 from qbraid._logging import logger
@@ -102,6 +102,8 @@ class QiskitJob(QuantumJob):
 
     def queue_position(self) -> Optional[int]:
         """Returns the position of the job in the server queue."""
+        if isinstance(self._job, RuntimeJobV2):
+            raise NotImplementedError("Queue position is not supported for RuntimeJobV2.")
         return self._job.queue_position(refresh=True)
 
     def result(self):
