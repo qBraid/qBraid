@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING, Optional
 import numpy as np
 from qiskit.exceptions import QiskitError
 from qiskit.primitives.containers import PrimitiveResult
+from qiskit.primitives.containers.data_bin import DataBin
 
 from qbraid._logging import logger
 from qbraid.runtime.postprocess import normalize_tuples
@@ -45,7 +46,8 @@ class QiskitGateModelResultBuilder:
     def measurements(self) -> Optional[np.ndarray | list[np.ndarray]]:
         """Return measurements a 2D numpy array"""
         if isinstance(self._result, PrimitiveResult):
-            meas = [pub_result.data.meas.array for pub_result in self._result]
+            attr = "c" if isinstance(self._result[0].data, DataBin) else "meas"
+            meas = [getattr(pub_result.data, attr).array for pub_result in self._result]
             return meas[0] if len(meas) == 1 else meas
 
         num_circuits = len(self._result.results)
@@ -68,6 +70,7 @@ class QiskitGateModelResultBuilder:
     def get_counts(self) -> dict[str, int] | list[dict[str, int]]:
         """Returns the histogram data of the run"""
         if isinstance(self._result, PrimitiveResult):
-            counts = [pub_result.data.meas.get_counts() for pub_result in self._result]
+            attr = "c" if isinstance(self._result[0].data, DataBin) else "meas"
+            counts = [getattr(pub_result.data, attr).get_counts() for pub_result in self._result]
             return counts[0] if len(counts) == 1 else counts
         return self._result.get_counts()
