@@ -84,6 +84,7 @@ class QiskitBackend(QuantumDevice):
         program.transform(self)
         return program.program
 
+    # pylint: disable-next=arguments-differ
     def submit(
         self,
         run_input: qiskit.QuantumCircuit | list[qiskit.QuantumCircuit],
