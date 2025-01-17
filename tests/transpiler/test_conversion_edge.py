@@ -28,8 +28,7 @@ from qbraid.transpiler.edge import Conversion
 from qbraid.transpiler.graph import ConversionGraph
 
 
-@requires_extras("alice")
-@requires_extras("bob")
+@requires_extras("alice", "bob")
 def dummy_func():
     """Dummy function for testing requires_extras decorator."""
 
@@ -39,7 +38,7 @@ def test_requires_extras_appends_dependency():
     Test that the requires_extras decorator correctly appends a dependency
     to the function's attribute list.
     """
-    assert getattr(dummy_func, "requires_extras") == ["bob", "alice"]
+    assert getattr(dummy_func, "requires_extras") == ["alice", "bob"]
 
 
 def test_raise_for_unsupported_program_input():

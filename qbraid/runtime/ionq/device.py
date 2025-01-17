@@ -17,13 +17,19 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any, Optional, Union
 
+import pyqasm
+
+from qbraid._logging import logger
 from qbraid.programs import load_program
+from qbraid.passes import CompilationError
+from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
+from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
 from qbraid.programs.typer import IonQDict, IonQDictType, QasmStringType
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 from qbraid.transpiler.conversions.openqasm3.openqasm3_to_ionq import (
     IONQ_ONE_QUBIT_GATE_MAP,
-    IONQ_THREE_QUBIT_GATE_MAP,
+    IONQ_THREE_QUBIT_GATE_ALIASES,
     IONQ_TWO_QUBIT_GATE_MAP,
 )
 
@@ -34,7 +40,7 @@ if TYPE_CHECKING:
     import qbraid.runtime.ionq.provider
 
 
-IONQ_GATE_MAP = IONQ_ONE_QUBIT_GATE_MAP | IONQ_TWO_QUBIT_GATE_MAP | IONQ_THREE_QUBIT_GATE_MAP
+IONQ_GATE_MAP = IONQ_ONE_QUBIT_GATE_MAP | IONQ_TWO_QUBIT_GATE_MAP | IONQ_THREE_QUBIT_GATE_ALIASES
 
 
 class IonQDevice(QuantumDevice):
@@ -83,8 +89,17 @@ class IonQDevice(QuantumDevice):
 
     def transform(self, run_input: QasmStringType) -> QasmStringType:
         """Transform the input to the IonQ device."""
-        program = load_program(run_input)
-        program.transform(device=self, gate_mappings=IONQ_GATE_MAP)
+        program: OpenQasm2Program | OpenQasm3Program = load_program(run_input)
+
+        try:
+            program.transform(device=self, gate_mappings=IONQ_GATE_MAP)
+        except CompilationError as err:
+            logger.debug("Failed to transform OpenQASM program for IonQ: %s", err)
+            logger.debug("Retrying using pyqasm.unroll()...")
+            program._module.unroll()
+            program._program = pyqasm.dumps(program._module)
+            program.transform(device=self, gate_mappings=IONQ_GATE_MAP)
+            raise err
         return program.program
 
     @staticmethod

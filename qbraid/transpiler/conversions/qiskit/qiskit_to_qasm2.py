@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from qbraid.programs.typer import Qasm2StringType
 
 
-@weight(1)
+@weight(0.999)
 def qiskit_to_qasm2(circuit: qiskit_.QuantumCircuit) -> Qasm2StringType:
     """Returns OpenQASM 2 string equivalent to the input Qiskit circuit.
 

@@ -90,6 +90,12 @@ IONQ_THREE_QUBIT_GATE_MAP = {
     "toffoli": "cnot",
 }
 
+IONQ_THREE_QUBIT_GATE_ALIASES = {
+    "ccnot": "ccnot",
+    "ccx": "ccnot",
+    "toffoli": "ccnot",
+}
+
 
 def extract_params(statement: openqasm3.ast.QuantumGate) -> list[str]:
     """Extracts the parameter(s) from a QuantumGate statement.
@@ -147,6 +153,10 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
     for statement in original_program.statements:
         if isinstance(statement, openqasm3.ast.QuantumGate):
             name = statement.name.name.lower()
+
+            if name == "id":
+                continue
+
             qubits = statement.qubits
             qubit_values = []
 

@@ -54,6 +54,7 @@ IONQ_QIS_GATES = [
     "cti",
     "cv",
     "cvi",
+    "id",
 ]
 
 IONQ_NATIVE_GATES_BASE = ["gpi", "gpi2"]

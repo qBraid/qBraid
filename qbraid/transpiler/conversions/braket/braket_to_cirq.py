@@ -72,7 +72,7 @@ def braket_gate_to_matrix(gate: braket_gates.Unitary) -> np.ndarray:
     return bk_circuit.to_unitary()
 
 
-@weight(1)
+@weight(0.99)
 def braket_to_cirq(circuit: BKCircuit) -> cirq_circuits.Circuit:
     """Returns a Cirq circuit equivalent to the input Braket circuit.
 

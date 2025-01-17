@@ -335,6 +335,31 @@ def test_ionq_device_transform_run_input(qis_input, qis_input_decomp):
         assert provider == dummy_provider
 
 
+# def test_ionq_device_transform_retry():
+#     """Test transforming OpenQASM 2 string to supported gates + json format."""
+#     qasm_input = """
+#     OPENQASM 2.0;
+#     include "qelib1.inc";
+#     qreg q[1];
+#     u2(2.25,0.76) q[0];
+#     """
+
+#     with (
+#         patch("qbraid.runtime.ionq.provider.Session") as mock_session,
+#         patch(
+#             "qbraid.runtime.ionq.provider.IonQProvider._get_characterization"
+#         ) as mock_get_characterization,
+#     ):
+
+#         mock_get_characterization.side_effect = mock_characterization
+#         mock_session.return_value.get.return_value.json.return_value = DEVICE_DATA
+
+#         provider = IonQProvider(api_key="fake_api_key")
+#         test_devices = provider.get_devices()
+#         device = test_devices[0]
+#         qasm_compat = device.transform(qasm_input)
+
+
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
 @patch("qbraid_core.sessions.Session.get")
 @patch("qbraid_core.sessions.Session.post")

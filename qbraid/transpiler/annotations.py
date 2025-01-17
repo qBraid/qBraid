@@ -13,33 +13,37 @@ Module defining function annotations (e.g. decorators) used in the transpiler.
 
 """
 
-from typing import Callable
+from functools import wraps
+from typing import Any, Callable, TypeVar, cast
+
+F = TypeVar("F", bound=Callable[..., Any])
 
 
-def requires_extras(dependency: str) -> Callable[[Callable], Callable]:
+def requires_extras(*packages: str) -> Callable[[F], F]:
     """
     Decorator factory to mark conversion functions that require additional dependencies
-    beyond their "{source}_to_{target}" naming convention. It adds a specified dependency
-    as an attribute to the function.
+    beyond their "{source}_to_{target}" naming convention. It adds specified dependencies
+    as attributes to the function.
 
     Args:
-        dependency (str): The name of the required additional dependency.
+        *packages: The names of the required additional dependencies.
 
     Returns:
-        Callable: A decorator that marks a function with the required dependency.
+        Callable: A decorator that marks a function with the required dependencies.
     """
 
-    def decorator(func: Callable) -> Callable:
-        if hasattr(func, "requires_extras"):
-            func.requires_extras.append(dependency)
-        else:
-            func.requires_extras = [dependency]
-        return func
+    def decorator(func: F) -> F:
+        @wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            return func(*args, **kwargs)
+
+        setattr(wrapper, "requires_extras", list(packages))
+        return cast(F, wrapper)
 
     return decorator
 
 
-def weight(value: float) -> Callable[[Callable], Callable]:
+def weight(value: float) -> Callable[[F], F]:
     """
     Decorator factory to mark conversion functions with a weight attribute.
     This weight attribute is used to prioritize conversion paths in a conversion graph.
@@ -53,8 +57,12 @@ def weight(value: float) -> Callable[[Callable], Callable]:
     if not 0 <= value <= 1:
         raise ValueError("Weight value must be between 0 and 1.")
 
-    def decorator(func: Callable) -> Callable:
-        func.weight = value
-        return func
+    def decorator(func: F) -> F:
+        @wraps(func)
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            return func(*args, **kwargs)
+
+        setattr(wrapper, "weight", value)
+        return cast(F, wrapper)
 
     return decorator
