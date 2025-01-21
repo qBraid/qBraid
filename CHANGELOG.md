@@ -18,14 +18,18 @@ Types of changes:
 ### Fixed
 
 ### Added
+- Added step to remove qasm barriers before submitting to qBraid QIR device ([#880](https://github.com/qBraid/qBraid/pull/880))
+- Added `id` gate to list of supported IonQ gates (but is still skipped in `IonQDict` conversion step) ([#880](https://github.com/qBraid/qBraid/pull/880))
 
 ### Improved / Modified
+- Improved `IonQDevice.transform` method with try/except logic using `pyqasm.unroll` ([#880](https://github.com/qBraid/qBraid/pull/880))
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+- Fixed type checking in transpiler `weight` and `requires_extras` annotations / decorators ([#880](https://github.com/qBraid/qBraid/pull/880))
 
 ### Dependencies
 
