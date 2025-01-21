@@ -109,6 +109,11 @@ class OpenQasm3Program(GateModelProgram):
 
     def transform(self, device: qbraid.runtime.QuantumDevice, **kwargs) -> None:
         """Transform program to according to device target profile."""
+        if device.id == "qbraid_qir_simulator":
+            self._module.unroll()
+            self._module.remove_barriers()
+            self._program = pyqasm.dumps(self._module)
+
         basis_gates = device.profile.get("basis_gates")
 
         if basis_gates is not None and len(basis_gates) > 0:
