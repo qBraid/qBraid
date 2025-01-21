@@ -15,9 +15,10 @@ Unit tests for IonQProvider class
 
 """
 import uuid
+import textwrap
 from itertools import combinations
 from typing import Any, Optional
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, call, ANY
 
 import pytest
 
@@ -129,6 +130,10 @@ CHARACTERIZATION_DATA = {
     "id": "f518d0c9-34c6-4854-890e-a0e4f339bd64",
     "backend": "qpu.harmony",
 }
+
+def assert_qasm_equal(qasm1, qasm2):
+    """Assert that two QASM strings are equal."""
+    assert textwrap.dedent(qasm1).strip() == textwrap.dedent(qasm2).strip()
 
 
 def mock_characterization(device_data: dict[str, Any]) -> Optional[dict[str, Any]]:
@@ -335,29 +340,78 @@ def test_ionq_device_transform_run_input(qis_input, qis_input_decomp):
         assert provider == dummy_provider
 
 
-# def test_ionq_device_transform_retry():
-#     """Test transforming OpenQASM 2 string to supported gates + json format."""
-#     qasm_input = """
-#     OPENQASM 2.0;
-#     include "qelib1.inc";
-#     qreg q[1];
-#     u2(2.25,0.76) q[0];
-#     """
+def test_ionq_device_transform_retry():
+    """Test transforming OpenQASM 3 string through try and except block."""
+    qasm_input = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    gate rccx _gate_q_0, _gate_q_1, _gate_q_2 {
+    u2(0, pi) _gate_q_2;
+    u1(pi/4) _gate_q_2;
+    cx _gate_q_1, _gate_q_2;
+    u1(-pi/4) _gate_q_2;
+    cx _gate_q_0, _gate_q_2;
+    u1(pi/4) _gate_q_2;
+    cx _gate_q_1, _gate_q_2;
+    u1(-pi/4) _gate_q_2;
+    u2(0, pi) _gate_q_2;
+    }
+    qubit[3] q;
+    rccx q[0], q[1], q[2];
+    """
 
-#     with (
-#         patch("qbraid.runtime.ionq.provider.Session") as mock_session,
-#         patch(
-#             "qbraid.runtime.ionq.provider.IonQProvider._get_characterization"
-#         ) as mock_get_characterization,
-#     ):
+    qasm_out = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[3] q;
+    rz(3.141592653589793) q[2];
+    rx(1.5707963267948966) q[2];
+    rz(4.71238898038469) q[2];
+    rx(1.5707963267948966) q[2];
+    rz(3.141592653589793) q[2];
+    h q[2];
+    rx(0.7853981633974483) q[2];
+    h q[2];
+    cnot q[1], q[2];
+    h q[2];
+    rx(-0.7853981633974483) q[2];
+    h q[2];
+    cnot q[0], q[2];
+    h q[2];
+    rx(0.7853981633974483) q[2];
+    h q[2];
+    cnot q[1], q[2];
+    h q[2];
+    rx(-0.7853981633974483) q[2];
+    h q[2];
+    rz(3.141592653589793) q[2];
+    rx(1.5707963267948966) q[2];
+    rz(4.71238898038469) q[2];
+    rx(1.5707963267948966) q[2];
+    rz(3.141592653589793) q[2];
+    """
 
-#         mock_get_characterization.side_effect = mock_characterization
-#         mock_session.return_value.get.return_value.json.return_value = DEVICE_DATA
+    with (
+        patch("qbraid.runtime.ionq.provider.Session") as mock_session,
+        patch(
+            "qbraid.runtime.ionq.provider.IonQProvider._get_characterization"
+        ) as mock_get_characterization,
+        patch("qbraid.runtime.ionq.device.logger") as mock_logger,
+    ):
+        mock_get_characterization.side_effect = mock_characterization
+        mock_session.return_value.get.return_value.json.return_value = DEVICE_DATA
 
-#         provider = IonQProvider(api_key="fake_api_key")
-#         test_devices = provider.get_devices()
-#         device = test_devices[0]
-#         qasm_compat = device.transform(qasm_input)
+        provider = IonQProvider(api_key="fake_api_key")
+        test_devices = provider.get_devices()
+        device = test_devices[0]
+        qasm_compat = device.transform(qasm_input)
+        assert_qasm_equal(qasm_compat, qasm_out)
+
+        mock_logger.debug.assert_has_calls([
+            call("Failed to transform OpenQASM program for IonQ: %s", ANY),
+            call("Retrying using pyqasm.unroll()...")
+        ])
+        assert mock_logger.debug.call_count == 2
 
 
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
