@@ -14,11 +14,11 @@
 Unit tests for IonQProvider class
 
 """
-import uuid
 import textwrap
+import uuid
 from itertools import combinations
 from typing import Any, Optional
-from unittest.mock import Mock, patch, call, ANY
+from unittest.mock import ANY, Mock, call, patch
 
 import pytest
 
@@ -130,6 +130,7 @@ CHARACTERIZATION_DATA = {
     "id": "f518d0c9-34c6-4854-890e-a0e4f339bd64",
     "backend": "qpu.harmony",
 }
+
 
 def assert_qasm_equal(qasm1, qasm2):
     """Assert that two QASM strings are equal."""
@@ -407,10 +408,12 @@ def test_ionq_device_transform_retry():
         qasm_compat = device.transform(qasm_input)
         assert_qasm_equal(qasm_compat, qasm_out)
 
-        mock_logger.debug.assert_has_calls([
-            call("Failed to transform OpenQASM program for IonQ: %s", ANY),
-            call("Retrying using pyqasm.unroll()...")
-        ])
+        mock_logger.debug.assert_has_calls(
+            [
+                call("Failed to transform OpenQASM program for IonQ: %s", ANY),
+                call("Retrying using pyqasm.unroll()..."),
+            ]
+        )
         assert mock_logger.debug.call_count == 2
 
 

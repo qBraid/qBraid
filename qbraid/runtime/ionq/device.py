@@ -20,8 +20,8 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 import pyqasm
 
 from qbraid._logging import logger
-from qbraid.programs import load_program
 from qbraid.passes import CompilationError
+from qbraid.programs import load_program
 from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
 from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
 from qbraid.programs.typer import IonQDict, IonQDictType, QasmStringType
