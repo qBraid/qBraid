@@ -420,8 +420,10 @@ def test_ionq_device_transform_retry():
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
 @patch("qbraid_core.sessions.Session.get")
 @patch("qbraid_core.sessions.Session.post")
-def test_ionq_device_run_submit_job(mock_post, mock_get, circuit):
+def test_ionq_device_run_submit_job(mock_post, mock_get, circuit, monkeypatch):
     """Test running a fake job."""
+    monkeypatch.setattr("qbraid.runtime.ionq.device.importlib.util.find_spec", lambda _: None)
+
     mock_get_response = Mock()
     mock_get_response.json.side_effect = [
         DEVICE_DATA,  # provider.get_device("simulator")
@@ -471,7 +473,8 @@ def test_ionq_device_run_submit_job(mock_post, mock_get, circuit):
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
 @patch("qbraid_core.sessions.Session.get")
 @patch("qbraid_core.sessions.Session.post")
-def test_ionq_failed_job(mock_post, mock_get, circuit):
+@patch("importlib.util.find_spec", return_value=None)
+def test_ionq_failed_job(mock_find_spec, mock_post, mock_get, circuit):
     """Test running a fake job."""
     GET_JOB_RESPONSE["status"] = "failed"
     mock_get_response = Mock()

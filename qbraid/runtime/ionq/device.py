@@ -14,14 +14,16 @@ Module defining IonQ device class
 """
 from __future__ import annotations
 
+import importlib.util
 import json
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import pyqasm
+from qbraid_core._import import LazyLoader
 
 from qbraid._logging import logger
 from qbraid.passes import CompilationError
-from qbraid.programs import load_program
+from qbraid.programs import QPROGRAM_REGISTRY, load_program
 from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
 from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
 from qbraid.programs.typer import IonQDict, IonQDictType, QasmStringType
@@ -39,6 +41,9 @@ if TYPE_CHECKING:
     import qbraid.runtime
     import qbraid.runtime.ionq.provider
 
+
+qiskit = LazyLoader("qiskit", globals(), "qiskit")
+qiskit_ionq = LazyLoader("qiskit_ionq", globals(), "qiskit_ionq")
 
 IONQ_GATE_MAP = IONQ_ONE_QUBIT_GATE_MAP | IONQ_TWO_QUBIT_GATE_MAP | IONQ_THREE_QUBIT_GATE_ALIASES
 
@@ -168,3 +173,52 @@ class IonQDevice(QuantumDevice):
         if not job_id:
             raise ValueError("Job ID not found in the response")
         return IonQJob(job_id=job_id, session=self.session, device=self, shots=shots)
+
+    def run(
+        self,
+        run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
+        *args,
+        gateset: Literal["qis", "native"] = "qis",
+        ionq_compiler_synthesis: bool = False,
+        **kwargs,
+    ) -> Union[qbraid.runtime.QuantumJob, list[qbraid.runtime.QuantumJob]]:
+        """
+        Run a quantum job or a list of quantum jobs on this quantum device.
+
+        Args:
+            run_input: A single quantum program or a list of quantum programs to run on the device.
+
+        Returns:
+            A QuantumJob object or a list of QuantumJob objects corresponding to the input.
+        """
+        is_single_input = not isinstance(run_input, list)
+        run_input = [run_input] if is_single_input else run_input
+
+        if (
+            "qiskit" in QPROGRAM_REGISTRY
+            and all(isinstance(program, QPROGRAM_REGISTRY["qiskit"]) for program in run_input)
+            and importlib.util.find_spec("qiskit_ionq") is not None
+        ):
+            provider = qiskit_ionq.IonQProvider(token=self.session.api_key)
+            backend = provider.get_backend(self.id, gateset=gateset)
+
+            run_input_compat = []
+            for program in run_input:
+                transpiled_circuit = qiskit.transpile(program, backend=backend)
+                ionq_circuit, _, _ = qiskit_ionq.helpers.qiskit_circ_to_ionq_circ(
+                    transpiled_circuit,
+                    gateset=gateset,
+                    ionq_compiler_synthesis=ionq_compiler_synthesis,
+                )
+                ionq_dict = {
+                    "format": "ionq.circuit.v0",
+                    "gateset": gateset,
+                    "qubits": transpiled_circuit.num_qubits,
+                    "circuit": ionq_circuit,
+                }
+                run_input_compat.append(ionq_dict)
+        else:
+            run_input_compat = [self.apply_runtime_profile(program) for program in run_input]
+
+        run_input_compat = run_input_compat[0] if is_single_input else run_input_compat
+        return self.submit(run_input_compat, *args, **kwargs)
