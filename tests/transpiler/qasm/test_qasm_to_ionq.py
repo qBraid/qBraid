@@ -54,6 +54,7 @@ def test_ionq_device_extract_gate_data():
     s q[0];
     sdg q[0];
     si q[0];
+    id q[0];
     t q[0];
     tdg q[0];
     ti q[1];

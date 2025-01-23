@@ -14,16 +14,20 @@
 Unit tests for IonQProvider class
 
 """
+import importlib.util
+import textwrap
 import uuid
 from itertools import combinations
 from typing import Any, Optional
-from unittest.mock import Mock, patch
+from unittest.mock import ANY, Mock, call, patch
 
 import pytest
+from qiskit import QuantumCircuit
 
 from qbraid.passes.qasm import normalize_qasm_gate_params, rebase
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
-from qbraid.programs.gate_model.ionq import IONQ_NATIVE_GATES_BASE, IONQ_QIS_GATES
+from qbraid.programs.gate_model.ionq import IONQ_NATIVE_GATES_BASE, IONQ_QIS_GATES, GateSet
+from qbraid.programs.typer import IonQDict
 from qbraid.runtime import GateModelResultData, ResourceNotFoundError, Result, TargetProfile
 from qbraid.runtime.enums import DeviceStatus, JobStatus
 from qbraid.runtime.ionq import IonQDevice, IonQJob, IonQProvider, IonQSession
@@ -129,6 +133,11 @@ CHARACTERIZATION_DATA = {
     "id": "f518d0c9-34c6-4854-890e-a0e4f339bd64",
     "backend": "qpu.harmony",
 }
+
+
+def assert_qasm_equal(qasm1, qasm2):
+    """Assert that two QASM strings are equal."""
+    assert textwrap.dedent(qasm1).strip() == textwrap.dedent(qasm2).strip()
 
 
 def mock_characterization(device_data: dict[str, Any]) -> Optional[dict[str, Any]]:
@@ -335,11 +344,89 @@ def test_ionq_device_transform_run_input(qis_input, qis_input_decomp):
         assert provider == dummy_provider
 
 
+def test_ionq_device_transform_retry():
+    """Test transforming OpenQASM 3 string through try and except block."""
+    qasm_input = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    gate rccx _gate_q_0, _gate_q_1, _gate_q_2 {
+    u2(0, pi) _gate_q_2;
+    u1(pi/4) _gate_q_2;
+    cx _gate_q_1, _gate_q_2;
+    u1(-pi/4) _gate_q_2;
+    cx _gate_q_0, _gate_q_2;
+    u1(pi/4) _gate_q_2;
+    cx _gate_q_1, _gate_q_2;
+    u1(-pi/4) _gate_q_2;
+    u2(0, pi) _gate_q_2;
+    }
+    qubit[3] q;
+    rccx q[0], q[1], q[2];
+    """
+
+    qasm_out = """
+    OPENQASM 3.0;
+    include "stdgates.inc";
+    qubit[3] q;
+    rz(3.141592653589793) q[2];
+    rx(1.5707963267948966) q[2];
+    rz(4.71238898038469) q[2];
+    rx(1.5707963267948966) q[2];
+    rz(3.141592653589793) q[2];
+    h q[2];
+    rx(0.7853981633974483) q[2];
+    h q[2];
+    cnot q[1], q[2];
+    h q[2];
+    rx(-0.7853981633974483) q[2];
+    h q[2];
+    cnot q[0], q[2];
+    h q[2];
+    rx(0.7853981633974483) q[2];
+    h q[2];
+    cnot q[1], q[2];
+    h q[2];
+    rx(-0.7853981633974483) q[2];
+    h q[2];
+    rz(3.141592653589793) q[2];
+    rx(1.5707963267948966) q[2];
+    rz(4.71238898038469) q[2];
+    rx(1.5707963267948966) q[2];
+    rz(3.141592653589793) q[2];
+    """
+
+    with (
+        patch("qbraid.runtime.ionq.provider.Session") as mock_session,
+        patch(
+            "qbraid.runtime.ionq.provider.IonQProvider._get_characterization"
+        ) as mock_get_characterization,
+        patch("qbraid.runtime.ionq.device.logger") as mock_logger,
+    ):
+        mock_get_characterization.side_effect = mock_characterization
+        mock_session.return_value.get.return_value.json.return_value = DEVICE_DATA
+
+        provider = IonQProvider(api_key="fake_api_key")
+        test_devices = provider.get_devices()
+        device = test_devices[0]
+        qasm_compat = device.transform(qasm_input)
+        assert_qasm_equal(qasm_compat, qasm_out)
+
+        mock_logger.debug.assert_has_calls(
+            [
+                call("Failed to transform OpenQASM program for IonQ: %s", ANY),
+                call("Retrying using pyqasm.unroll()..."),
+            ]
+        )
+        assert mock_logger.debug.call_count == 2
+
+
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
 @patch("qbraid_core.sessions.Session.get")
 @patch("qbraid_core.sessions.Session.post")
-def test_ionq_device_run_submit_job(mock_post, mock_get, circuit):
+def test_ionq_device_run_submit_job(mock_post, mock_get, circuit, monkeypatch):
     """Test running a fake job."""
+    monkeypatch.setattr("qbraid.runtime.ionq.device.importlib.util.find_spec", lambda _: None)
+
     mock_get_response = Mock()
     mock_get_response.json.side_effect = [
         DEVICE_DATA,  # provider.get_device("simulator")
@@ -389,7 +476,8 @@ def test_ionq_device_run_submit_job(mock_post, mock_get, circuit):
 @pytest.mark.parametrize("circuit", range(FIXTURE_COUNT), indirect=True)
 @patch("qbraid_core.sessions.Session.get")
 @patch("qbraid_core.sessions.Session.post")
-def test_ionq_failed_job(mock_post, mock_get, circuit):
+@patch("importlib.util.find_spec", return_value=None)
+def test_ionq_failed_job(mock_find_spec, mock_post, mock_get, circuit):
     """Test running a fake job."""
     GET_JOB_RESPONSE["status"] = "failed"
     mock_get_response = Mock()
@@ -662,3 +750,125 @@ def test_ionq_get_counts_multicircuit_job(multicircuit_job_data):
         {"00": 650, "11": 350},
         {"00": 500, "11": 500},
     ]
+
+
+@pytest.fixture
+def qiskit_circuit():
+    """Return a Qiskit circuit with U gate."""
+    qc = QuantumCircuit(1)
+    qc.u(0.1, 0.2, 0.3, 0)
+    return qc
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("qiskit_ionq") is None, reason="qiskit-ionq not installed."
+)
+@pytest.mark.parametrize("gateset", ["native", "qis"])
+def test_qiskit_ionq_conversion_type(qiskit_circuit, gateset):
+    """Test that the output of the qiskit_ionq conversion is an IonQDict."""
+    device = IonQDevice(
+        TargetProfile(device_id="simulator", simulator=True),
+        IonQSession("fake_api_key"),
+    )
+    with patch("qbraid_core.sessions.Session.get") as mock_get:
+        mock_get.return_value.json.return_value = DEVICE_DATA
+    output = device._apply_qiskit_ionq_conversion([qiskit_circuit], gateset=gateset)[0]
+    assert isinstance(output, IonQDict)
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("qiskit_ionq") is None, reason="qiskit-ionq not installed."
+)
+@pytest.mark.parametrize(
+    "gateset,expected",
+    [
+        (
+            "native",
+            {
+                "format": "ionq.circuit.v0",
+                "gateset": "native",
+                "qubits": 1,
+                "circuit": [
+                    {"gate": "gpi2", "target": 0, "phase": 0.4522535170724314},
+                    {"gate": "gpi", "target": 0, "phase": -3.469446951953614e-18},
+                    {"gate": "gpi2", "target": 0, "phase": 0.5318309886183791},
+                ],
+            },
+        ),
+        (
+            "qis",
+            {
+                "format": "ionq.circuit.v0",
+                "gateset": "qis",
+                "qubits": 1,
+                "circuit": [
+                    {"gate": "rz", "targets": [0], "rotation": 0.2999999999999994},
+                    {"gate": "ry", "targets": [0], "rotation": 0.10000000000000005},
+                    {"gate": "rz", "targets": [0], "rotation": 0.19999999999999973},
+                ],
+            },
+        ),
+    ],
+)
+def test_qiskit_ionq_conversion_output(qiskit_circuit, gateset, expected):
+    """Test the output of the qiskit_ionq conversion is the expected IonQDict."""
+    device = IonQDevice(
+        TargetProfile(device_id="simulator", simulator=True),
+        IonQSession("fake_api_key"),
+    )
+    with patch("qbraid_core.sessions.Session.get") as mock_get:
+        mock_get.return_value.json.return_value = DEVICE_DATA
+    output = device._apply_qiskit_ionq_conversion([qiskit_circuit], gateset=gateset)[0]
+    assert output == expected
+
+
+def test_ionq_device_run_warnings(monkeypatch):
+    """Test that appropriate warnings are raised when using "
+    qiskit-specific parameters with non-qiskit input."""
+    monkeypatch.setattr("qbraid.runtime.ionq.device.importlib.util.find_spec", lambda _: None)
+
+    device = IonQDevice(
+        TargetProfile(device_id="simulator", simulator=True),
+        IonQSession("fake_api_key"),
+    )
+
+    device.submit = Mock()
+
+    dummy_circuit = "OPENQASM 2.0; qreg q[1]; h q[0];"
+
+    with pytest.warns(UserWarning, match="GateSet argument is only applicable when qiskit-ionq"):
+        device.run(dummy_circuit, shots=1000, gateset=GateSet.QIS)
+
+    with pytest.warns(UserWarning, match="IonQ compiler synthesis option is only applicable when"):
+        device.run(dummy_circuit, shots=1000, ionq_compiler_synthesis=True)
+
+    with pytest.warns() as record:
+        device.run(dummy_circuit, shots=1000, gateset=GateSet.QIS, ionq_compiler_synthesis=True)
+
+    assert len(record) == 2
+    assert "GateSet argument is only applicable" in str(record[0].message)
+    assert "IonQ compiler synthesis option is only applicable" in str(record[1].message)
+
+    device.submit.assert_called()
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("qiskit_ionq") is None, reason="qiskit-ionq not installed."
+)
+def test_ionq_device_run_batch_with_qiskit_ionq(qiskit_circuit):
+    """Test calling IonQDevice.run with batch of qiskit circuits
+    and qiskit-ionq installed."""
+    device = IonQDevice(
+        TargetProfile(device_id="simulator", simulator=True),
+        IonQSession("fake_api_key"),
+    )
+    with patch("qbraid_core.sessions.Session.get") as mock_get:
+        mock_get.return_value.json.return_value = DEVICE_DATA
+
+    device.submit = Mock(return_value=[Mock(), Mock()])
+
+    qiskit_batch = [qiskit_circuit, qiskit_circuit]
+
+    device.run(qiskit_batch, shots=1000, gateset=GateSet.QIS)
+
+    device.submit.assert_called_once()

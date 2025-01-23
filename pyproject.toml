@@ -74,6 +74,14 @@ pytket = "qbraid.programs.gate_model.pytket:PytketCircuit"
 qasm2 = "qbraid.programs.gate_model.qasm2:OpenQasm2Program"
 qasm3 = "qbraid.programs.gate_model.qasm3:OpenQasm3Program"
 
+[project.entry-points."qbraid.jobs"]
+aws = "qbraid.runtime.aws.job:BraketQuantumTask"
+azure = "qbraid.runtime.azure.job:AzureQuantumJob"
+ibm = "qbraid.runtime.ibm.job:QiskitJob"
+ionq = "qbraid.runtime.ionq.job:IonQJob"
+qbraid = "qbraid.runtime.native.job:QbraidJob"
+oqc = "qbraid.runtime.oqc.job:OQCJob"
+
 [tool.setuptools.dynamic]
 version = {attr = "qbraid._version.__version__"}
 dependencies = {file = ["requirements.txt"]}
