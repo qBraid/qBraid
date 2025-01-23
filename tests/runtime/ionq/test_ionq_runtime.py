@@ -14,6 +14,7 @@
 Unit tests for IonQProvider class
 
 """
+import importlib.util
 import textwrap
 import uuid
 from itertools import combinations
@@ -759,6 +760,9 @@ def qiskit_circuit():
     return qc
 
 
+@pytest.mark.skipif(
+    importlib.util.find_spec("qiskit_ionq") is None, reason="qiskit-ionq not installed."
+)
 @pytest.mark.parametrize("gateset", ["native", "qis"])
 def test_qiskit_ionq_conversion_type(qiskit_circuit, gateset):
     """Test that the output of the qiskit_ionq conversion is an IonQDict."""
@@ -772,6 +776,9 @@ def test_qiskit_ionq_conversion_type(qiskit_circuit, gateset):
     assert isinstance(output, IonQDict)
 
 
+@pytest.mark.skipif(
+    importlib.util.find_spec("qiskit_ionq") is None, reason="qiskit-ionq not installed."
+)
 @pytest.mark.parametrize(
     "gateset,expected",
     [

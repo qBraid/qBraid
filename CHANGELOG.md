@@ -18,20 +18,46 @@ Types of changes:
 ### Fixed
 
 ### Added
-- Added step to remove qasm barriers before submitting to qBraid QIR device ([#880](https://github.com/qBraid/qBraid/pull/880))
-- Added `id` gate to list of supported IonQ gates (but is still skipped in `IonQDict` conversion step) ([#880](https://github.com/qBraid/qBraid/pull/880))
 
 ### Improved / Modified
-- Improved `IonQDevice.transform` method with try/except logic using `pyqasm.unroll` ([#880](https://github.com/qBraid/qBraid/pull/880))
 
 ### Deprecated
 
 ### Removed
 
 ### Fixed
-- Fixed type checking in transpiler `weight` and `requires_extras` annotations / decorators ([#880](https://github.com/qBraid/qBraid/pull/880))
 
 ### Dependencies
+
+## [0.9.2] - 2025-01-23
+
+### Added
+- Added `id` gate to list of supported IonQ gates (but is still skipped in `IonQDict` conversion step) ([#880](https://github.com/qBraid/qBraid/pull/880))
+- Added `qiskit-ionq` integration into `IonQDevice.run` method so that if user has `qiskit-ionq` installed, we just go directly through their native `qiskit.QuantumCircuit` $\rightarrow$ `IonQDict` conversion rather than using our own. ([#880](https://github.com/qBraid/qBraid/pull/880))
+
+```python
+from qiskit import QuantumCircuit
+
+from qbraid.runtime import IonQProvider
+from qbraid.programs.gate_model.ionq import GateSet
+
+
+circuit = QuantumCircuit(1)
+circuit.u(0.1, 0.2, 0.3, 0)
+
+provider = IonQProvider()
+device = provider.get_device("simulator")
+
+job = device.run(circuit, shots=100, gateset=GateSet.NATIVE, ionq_compiler_synthesis=False)
+```
+
+If `qiskit-ionq` not installed, the above code will fail. But with `qiskit-ionq` installed, it will work.
+
+### Improved / Modified
+- Improved `IonQDevice.transform` method with try/except logic using `pyqasm.unroll` ([#880](https://github.com/qBraid/qBraid/pull/880))
+
+### Fixed
+- Fixed type checking in transpiler `weight` and `requires_extras` annotations / decorators ([#880](https://github.com/qBraid/qBraid/pull/880))
 
 ## [0.9.1] - 2025-01-14
 

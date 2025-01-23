@@ -16,6 +16,8 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import warnings
+from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import pyqasm
@@ -51,6 +53,17 @@ IONQ_GATE_MAP = IONQ_ONE_QUBIT_GATE_MAP | IONQ_TWO_QUBIT_GATE_MAP | IONQ_THREE_Q
 
 DEFAULT_FORMAT = InputFormat.CIRCUIT.value
 DEFAULT_GATESET = GateSet.QIS.value
+
+
+@contextmanager
+def suppress_qiskit_warnings():
+    """Suppress Qiskit warnings."""
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore", category=UserWarning, module="qiskit.*")
+        warnings.filterwarnings("ignore", category=RuntimeWarning, module="qiskit.*")
+        warnings.filterwarnings("ignore", category=UserWarning, module="qiskit_ibm_runtime.*")
+        warnings.filterwarnings("ignore", category=RuntimeWarning, module="qiskit_ibm_runtime.*")
+        yield
 
 
 class IonQDevice(QuantumDevice):
@@ -182,43 +195,50 @@ class IonQDevice(QuantumDevice):
         gateset: Literal["qis", "native"] = "qis",
         ionq_compiler_synthesis: bool = False,
     ) -> list[IonQDictType]:
-        provider = qiskit_ionq.IonQProvider(token=self.session.api_key)
-        backend = provider.get_backend(self.id, gateset=gateset)
+        with suppress_qiskit_warnings():
+            provider = qiskit_ionq.IonQProvider(token=self.session.api_key)
+            backend = provider.get_backend(self.id, gateset=gateset)
 
-        run_input_compat = []
-        for program in run_input:
-            transpiled_circuit = qiskit.transpile(program, backend=backend)
-            ionq_circuit, _, _ = qiskit_ionq.helpers.qiskit_circ_to_ionq_circ(
-                transpiled_circuit,
-                gateset=gateset,
-                ionq_compiler_synthesis=ionq_compiler_synthesis,
-            )
-            ionq_dict = {
-                "format": DEFAULT_FORMAT,
-                "gateset": gateset,
-                "qubits": transpiled_circuit.num_qubits,
-                "circuit": ionq_circuit,
-            }
-            run_input_compat.append(ionq_dict)
+            run_input_compat = []
+            for program in run_input:
+                transpiled_circuit = qiskit.transpile(program, backend=backend)
+                ionq_circuit, _, _ = qiskit_ionq.helpers.qiskit_circ_to_ionq_circ(
+                    transpiled_circuit,
+                    gateset=gateset,
+                    ionq_compiler_synthesis=ionq_compiler_synthesis,
+                )
+                ionq_dict = {
+                    "format": DEFAULT_FORMAT,
+                    "gateset": gateset,
+                    "qubits": transpiled_circuit.num_qubits,
+                    "circuit": ionq_circuit,
+                }
+                run_input_compat.append(ionq_dict)
 
-        return run_input_compat
+            return run_input_compat
 
     def run(
         self,
         run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
         *args,
-        gateset: Literal["qis", "native"] = "qis",
-        ionq_compiler_synthesis: bool = False,
+        gateset: Optional[GateSet] = None,
+        ionq_compiler_synthesis: Optional[bool] = None,
         **kwargs,
-    ) -> Union[qbraid.runtime.QuantumJob, list[qbraid.runtime.QuantumJob]]:
+    ) -> Union[qbraid.runtime.IonQJob, list[qbraid.runtime.IonQJob]]:
         """
-        Run a quantum job or a list of quantum jobs on this quantum device.
+        Run a quantum job or a list of quantum jobs on this IonQ device.
 
         Args:
             run_input: A single quantum program or a list of quantum programs to run on the device.
+            gateset (GateSet, optional): The gate set to use for the qiskit-ionq transpile step.
+                Only applicable if qiskit-ionq is installed and all run_inputs are of type
+                qiskit.QuantumCircuit. Defaults to GateSet.QIS.
+            ionq_compiler_synthesis (bool, optional): Whether to opt-in to IonQ compiler's
+                intelligent trotterization. Only applicable if qiskit-ionq is installed and all
+                run_inputs are of type qiskit.QuantumCircuit. Defaults to False.
 
         Returns:
-            A QuantumJob object or a list of QuantumJob objects corresponding to the input.
+            An IonQJob object or a list of IonQJob objects corresponding to the input.
         """
         is_single_input = not isinstance(run_input, list)
         run_input = [run_input] if is_single_input else run_input
@@ -228,10 +248,28 @@ class IonQDevice(QuantumDevice):
             and all(isinstance(program, QPROGRAM_REGISTRY["qiskit"]) for program in run_input)
             and importlib.util.find_spec("qiskit_ionq") is not None
         ):
+            gateset = gateset or GateSet.QIS
+            ionq_compiler_synthesis = ionq_compiler_synthesis or False
             run_input_compat = self._apply_qiskit_ionq_conversion(
-                run_input, gateset=gateset, ionq_compiler_synthesis=ionq_compiler_synthesis
+                run_input, gateset=gateset.value, ionq_compiler_synthesis=ionq_compiler_synthesis
             )
         else:
+            if gateset is not None:
+                warnings.warn(
+                    UserWarning(
+                        "GateSet argument is only applicable when qiskit-ionq "
+                        "is installed, and when all run_inputs are of type "
+                        "qiskit.QuantumCircuit. Ignoring..."
+                    )
+                )
+            if ionq_compiler_synthesis is not None:
+                warnings.warn(
+                    UserWarning(
+                        "IonQ compiler synthesis option is only applicable when "
+                        "qiskit-ionq is installed, and when all run_inputs are of "
+                        "type qiskit.QuantumCircuit. Ignoring..."
+                    )
+                )
             run_input_compat = [self.apply_runtime_profile(program) for program in run_input]
 
         run_input_compat = run_input_compat[0] if is_single_input else run_input_compat
