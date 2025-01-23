@@ -26,7 +26,7 @@ from qiskit import QuantumCircuit
 
 from qbraid.passes.qasm import normalize_qasm_gate_params, rebase
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
-from qbraid.programs.gate_model.ionq import IONQ_NATIVE_GATES_BASE, IONQ_QIS_GATES
+from qbraid.programs.gate_model.ionq import IONQ_NATIVE_GATES_BASE, IONQ_QIS_GATES, GateSet
 from qbraid.programs.typer import IonQDict
 from qbraid.runtime import GateModelResultData, ResourceNotFoundError, Result, TargetProfile
 from qbraid.runtime.enums import DeviceStatus, JobStatus
@@ -820,3 +820,33 @@ def test_qiskit_ionq_conversion_output(qiskit_circuit, gateset, expected):
         mock_get.return_value.json.return_value = DEVICE_DATA
     output = device._apply_qiskit_ionq_conversion([qiskit_circuit], gateset=gateset)[0]
     assert output == expected
+
+
+def test_ionq_device_run_warnings(monkeypatch):
+    """Test that appropriate warnings are raised when using "
+    qiskit-specific parameters with non-qiskit input."""
+    monkeypatch.setattr("qbraid.runtime.ionq.device.importlib.util.find_spec", lambda _: None)
+
+    device = IonQDevice(
+        TargetProfile(device_id="simulator", simulator=True),
+        IonQSession("fake_api_key"),
+    )
+
+    device.submit = Mock()
+
+    dummy_circuit = "OPENQASM 2.0; qreg q[1]; h q[0];"
+
+    with pytest.warns(UserWarning, match="GateSet argument is only applicable when qiskit-ionq"):
+        device.run(dummy_circuit, shots=1000, gateset=GateSet.QIS)
+
+    with pytest.warns(UserWarning, match="IonQ compiler synthesis option is only applicable when"):
+        device.run(dummy_circuit, shots=1000, ionq_compiler_synthesis=True)
+
+    with pytest.warns() as record:
+        device.run(dummy_circuit, shots=1000, gateset=GateSet.QIS, ionq_compiler_synthesis=True)
+
+    assert len(record) == 2
+    assert "GateSet argument is only applicable" in str(record[0].message)
+    assert "IonQ compiler synthesis option is only applicable" in str(record[1].message)
+
+    device.submit.assert_called()
