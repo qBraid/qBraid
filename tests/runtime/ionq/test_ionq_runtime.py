@@ -850,3 +850,25 @@ def test_ionq_device_run_warnings(monkeypatch):
     assert "IonQ compiler synthesis option is only applicable" in str(record[1].message)
 
     device.submit.assert_called()
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("qiskit_ionq") is None, reason="qiskit-ionq not installed."
+)
+def test_ionq_device_run_batch_with_qiskit_ionq(qiskit_circuit):
+    """Test calling IonQDevice.run with batch of qiskit circuits
+    and qiskit-ionq installed."""
+    device = IonQDevice(
+        TargetProfile(device_id="simulator", simulator=True),
+        IonQSession("fake_api_key"),
+    )
+    with patch("qbraid_core.sessions.Session.get") as mock_get:
+        mock_get.return_value.json.return_value = DEVICE_DATA
+
+    device.submit = Mock(return_value=[Mock(), Mock()])
+
+    qiskit_batch = [qiskit_circuit, qiskit_circuit]
+
+    device.run(qiskit_batch, shots=1000, gateset=GateSet.QIS)
+
+    device.submit.assert_called_once()
