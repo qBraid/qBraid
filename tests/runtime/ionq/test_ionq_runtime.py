@@ -21,10 +21,12 @@ from typing import Any, Optional
 from unittest.mock import ANY, Mock, call, patch
 
 import pytest
+from qiskit import QuantumCircuit
 
 from qbraid.passes.qasm import normalize_qasm_gate_params, rebase
 from qbraid.programs import NATIVE_REGISTRY, ProgramSpec
 from qbraid.programs.gate_model.ionq import IONQ_NATIVE_GATES_BASE, IONQ_QIS_GATES
+from qbraid.programs.typer import IonQDict
 from qbraid.runtime import GateModelResultData, ResourceNotFoundError, Result, TargetProfile
 from qbraid.runtime.enums import DeviceStatus, JobStatus
 from qbraid.runtime.ionq import IonQDevice, IonQJob, IonQProvider, IonQSession
@@ -747,3 +749,67 @@ def test_ionq_get_counts_multicircuit_job(multicircuit_job_data):
         {"00": 650, "11": 350},
         {"00": 500, "11": 500},
     ]
+
+
+@pytest.fixture
+def qiskit_circuit():
+    """Return a Qiskit circuit with U gate."""
+    qc = QuantumCircuit(1)
+    qc.u(0.1, 0.2, 0.3, 0)
+    return qc
+
+
+@pytest.mark.parametrize("gateset", ["native", "qis"])
+def test_qiskit_ionq_conversion_type(qiskit_circuit, gateset):
+    """Test that the output of the qiskit_ionq conversion is an IonQDict."""
+    device = IonQDevice(
+        TargetProfile(device_id="simulator", simulator=True),
+        IonQSession("fake_api_key"),
+    )
+    with patch("qbraid_core.sessions.Session.get") as mock_get:
+        mock_get.return_value.json.return_value = DEVICE_DATA
+    output = device._apply_qiskit_ionq_conversion([qiskit_circuit], gateset=gateset)[0]
+    assert isinstance(output, IonQDict)
+
+
+@pytest.mark.parametrize(
+    "gateset,expected",
+    [
+        (
+            "native",
+            {
+                "format": "ionq.circuit.v0",
+                "gateset": "native",
+                "qubits": 1,
+                "circuit": [
+                    {"gate": "gpi2", "target": 0, "phase": 0.4522535170724314},
+                    {"gate": "gpi", "target": 0, "phase": -3.469446951953614e-18},
+                    {"gate": "gpi2", "target": 0, "phase": 0.5318309886183791},
+                ],
+            },
+        ),
+        (
+            "qis",
+            {
+                "format": "ionq.circuit.v0",
+                "gateset": "qis",
+                "qubits": 1,
+                "circuit": [
+                    {"gate": "rz", "targets": [0], "rotation": 0.2999999999999994},
+                    {"gate": "ry", "targets": [0], "rotation": 0.10000000000000005},
+                    {"gate": "rz", "targets": [0], "rotation": 0.19999999999999973},
+                ],
+            },
+        ),
+    ],
+)
+def test_qiskit_ionq_conversion_output(qiskit_circuit, gateset, expected):
+    """Test the output of the qiskit_ionq conversion is the expected IonQDict."""
+    device = IonQDevice(
+        TargetProfile(device_id="simulator", simulator=True),
+        IonQSession("fake_api_key"),
+    )
+    with patch("qbraid_core.sessions.Session.get") as mock_get:
+        mock_get.return_value.json.return_value = DEVICE_DATA
+    output = device._apply_qiskit_ionq_conversion([qiskit_circuit], gateset=gateset)[0]
+    assert output == expected
