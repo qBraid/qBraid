@@ -81,7 +81,7 @@ def qiskit_to_ionq(circuit: qiskit.circuit.QuantumCircuit, **kwargs) -> qbraid.p
     # pylint: disable-next=import-outside-toplevel
     from qbraid.programs.gate_model.ionq import GateSet, InputFormat
 
-    instrs, _ = qiskit_ionq.helpers.qiskit_circ_to_ionq_circ(circuit, **kwargs)
+    instrs, _, _ = qiskit_ionq.helpers.qiskit_circ_to_ionq_circ(circuit, **kwargs)
     return {
         "format": InputFormat.CIRCUIT,
         "gateset": kwargs.get("gateset", GateSet.QIS.value),
