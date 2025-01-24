@@ -83,7 +83,7 @@ def qiskit_to_ionq(circuit: qiskit.circuit.QuantumCircuit, **kwargs) -> qbraid.p
 
     instrs, _, _ = qiskit_ionq.helpers.qiskit_circ_to_ionq_circ(circuit, **kwargs)
     return {
-        "format": InputFormat.CIRCUIT,
+        "format": InputFormat.CIRCUIT.value,
         "gateset": kwargs.get("gateset", GateSet.QIS.value),
         "qubits": circuit.num_qubits,
         "circuit": instrs,
