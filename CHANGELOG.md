@@ -15,9 +15,9 @@ Types of changes:
 
 ## [Unreleased]
 
-### Fixed
-
 ### Added
+- Added `cudaq` to `QPROGRAM_REGISTRY` dynamic import list ([#882](https://github.com/qBraid/qBraid/pull/882))
+- Added `qiskit_ionq` conversion to transpiler and refactored `IonQDevice._apply_qiskit_ionq_conversion` accordingly ([#882](https://github.com/qBraid/qBraid/pull/882))
 
 ### Improved / Modified
 
@@ -26,6 +26,7 @@ Types of changes:
 ### Removed
 
 ### Fixed
+- Updated plot conversion graph test to account for rustworkx v0.16.0 release ([#880](https://github.com/qBraid/qBraid/pull/882))
 
 ### Dependencies
 
@@ -60,14 +61,6 @@ If `qiskit-ionq` not installed, the above code will fail. But with `qiskit-ionq`
 - Fixed type checking in transpiler `weight` and `requires_extras` annotations / decorators ([#880](https://github.com/qBraid/qBraid/pull/880))
 
 ## [0.9.1] - 2025-01-14
-
-### Fixed
-
-- Fixed `random_circuit` function so that when specifying `ionq`, the resulting program only uses gates supported by IonQ. ([#871](https://github.com/qBraid/qBraid/pull/871))
-- Qiskit migration fixes ([#876](https://github.com/qBraid/qBraid/pull/876)):
-  - fix num args passed to `SamplerV2.run`
-  - raise `NotImplementedError` for `QiskitJob.queue position()` if not available
-  - Account for `DataBin` pub result data type `c` attribute instead of `meas`
 
 ### Added
 
@@ -109,6 +102,14 @@ module attributes {quake.mangled_name_map = {__nvqpp__mlirgen____nvqppBuilderKer
 - Changed `QuantumDevice.to_ir` method to `QuantumDevice.prepare` ([#871](https://github.com/qBraid/qBraid/pull/871))
 - Updated `remove_idle_qubits` function for updated `qiskit` version ([#871](https://github.com/qBraid/qBraid/pull/871))
 - Incorporated `SamplerV2` and job / result primitives for qiskit migration ([#871](https://github.com/qBraid/qBraid/pull/871))
+
+### Fixed
+
+- Fixed `random_circuit` function so that when specifying `ionq`, the resulting program only uses gates supported by IonQ. ([#871](https://github.com/qBraid/qBraid/pull/871))
+- Qiskit migration fixes ([#876](https://github.com/qBraid/qBraid/pull/876)):
+  - fix num args passed to `SamplerV2.run`
+  - raise `NotImplementedError` for `QiskitJob.queue position()` if not available
+  - Account for `DataBin` pub result data type `c` attribute instead of `meas`
 
 ## [0.9.0] - 2024-12-19
 

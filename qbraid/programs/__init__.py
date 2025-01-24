@@ -28,6 +28,7 @@ Data Types
 
     QbraidMetaType
     IonQDict
+    QuboCoefficientsDict
     Qasm2String
     Qasm3String
     ExperimentType
@@ -100,6 +101,7 @@ from .typer import (
     Qasm3String,
     Qasm3StringType,
     QbraidMetaType,
+    QuboCoefficientsDict,
 )
 
 __all__ = [
@@ -125,6 +127,7 @@ __all__ = [
     "ValidationError",
     "QbraidMetaType",
     "IonQDict",
+    "QuboCoefficientsDict",
     "Qasm2String",
     "Qasm3String",
     "Qasm2StringType",

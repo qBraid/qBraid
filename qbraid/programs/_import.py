@@ -78,7 +78,7 @@ def _dynamic_importer(opt_modules: list[str]) -> dict[str, Type[Any]]:
     return imported
 
 
-# pylint: disable=undefined-variable,inconsistent-return-statements
+# pylint: disable=undefined-variable
 def _get_class(module: str):
     if module == "bloqade.builder.assign":
         return bloqade.builder.assign.BatchAssign  # type: ignore # noqa: F821
@@ -102,7 +102,12 @@ def _get_class(module: str):
         return pyqir.Module  # type: ignore # noqa: F821
     if module == "cpp_pyqubo":
         return cpp_pyqubo.Model  # type: ignore # noqa: F821
+    if module == "cudaq":
+        return cudaq.PyKernel  # type: ignore # noqa: F821
+    raise ValueError(f"Unsupported module {module}")
 
+
+# pylint: enable=undefined-variable
 
 # Supported quantum programs.
 dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
@@ -119,7 +124,7 @@ dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
         "cpp_pyqubo",
     ]
 )
-dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(["bloqade.builder.assign"])
+dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(["bloqade.builder.assign", "cudaq"])
 static_type_registry: dict[str, Type[Any]] = {
     metatype.__alias__: metatype.__bound__ for metatype in BOUND_QBRAID_META_TYPES
 }
