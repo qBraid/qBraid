@@ -17,7 +17,6 @@ from __future__ import annotations
 import importlib.util
 import json
 import warnings
-from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Literal, Optional, Union
 
 import pyqasm
@@ -53,17 +52,6 @@ IONQ_GATE_MAP = IONQ_ONE_QUBIT_GATE_MAP | IONQ_TWO_QUBIT_GATE_MAP | IONQ_THREE_Q
 
 DEFAULT_FORMAT = InputFormat.CIRCUIT.value
 DEFAULT_GATESET = GateSet.QIS.value
-
-
-@contextmanager
-def suppress_qiskit_warnings():
-    """Suppress Qiskit warnings."""
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore", category=UserWarning, module="qiskit.*")
-        warnings.filterwarnings("ignore", category=RuntimeWarning, module="qiskit.*")
-        warnings.filterwarnings("ignore", category=UserWarning, module="qiskit_ibm_runtime.*")
-        warnings.filterwarnings("ignore", category=RuntimeWarning, module="qiskit_ibm_runtime.*")
-        yield
 
 
 class IonQDevice(QuantumDevice):
@@ -195,27 +183,21 @@ class IonQDevice(QuantumDevice):
         gateset: Literal["qis", "native"] = "qis",
         ionq_compiler_synthesis: bool = False,
     ) -> list[IonQDictType]:
-        with suppress_qiskit_warnings():
-            provider = qiskit_ionq.IonQProvider(token=self.session.api_key)
-            backend = provider.get_backend(self.id, gateset=gateset)
+        # pylint: disable-next=import-outside-toplevel
+        from qbraid.transpiler.conversions.qiskit import qiskit_to_ionq
 
-            run_input_compat = []
-            for program in run_input:
-                transpiled_circuit = qiskit.transpile(program, backend=backend)
-                ionq_circuit, _, _ = qiskit_ionq.helpers.qiskit_circ_to_ionq_circ(
-                    transpiled_circuit,
-                    gateset=gateset,
-                    ionq_compiler_synthesis=ionq_compiler_synthesis,
-                )
-                ionq_dict = {
-                    "format": DEFAULT_FORMAT,
-                    "gateset": gateset,
-                    "qubits": transpiled_circuit.num_qubits,
-                    "circuit": ionq_circuit,
-                }
-                run_input_compat.append(ionq_dict)
+        provider = qiskit_ionq.IonQProvider(token=self.session.api_key)
+        backend = provider.get_backend(self.id, gateset=gateset)
 
-            return run_input_compat
+        run_input_compat = []
+        for program in run_input:
+            transpiled_circuit = qiskit.transpile(program, backend=backend)
+            ionq_dict = qiskit_to_ionq(
+                transpiled_circuit, gateset=gateset, ionq_compiler_synthesis=ionq_compiler_synthesis
+            )
+            run_input_compat.append(ionq_dict)
+
+        return run_input_compat
 
     def run(
         self,

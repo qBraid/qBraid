@@ -24,7 +24,7 @@ oqc-qcaas-client>=3.11.0; python_version < "3.13"
 azure-quantum>=2.0,<2.3
 azure-storage-blob>=12.20,<13.0
 azure-identity>=1.17,<2.0
-pyqubo>=1.4.0; python_version < "3.12"
+pyqubo>=1.4.0
 
 # visualization
 ipython

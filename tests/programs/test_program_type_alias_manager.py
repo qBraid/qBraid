@@ -16,7 +16,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from qbraid.programs._import import _assign_default_type_alias
+from qbraid.programs._import import _assign_default_type_alias, _get_class
 from qbraid.programs.alias_manager import (
     _get_program_type_alias,
     find_str_type_alias,
@@ -299,3 +299,10 @@ def test_get_ionq_program_type_alias():
         ],
     }
     assert _get_program_type_alias(circuit) == "ionq"
+
+
+def test_get_class_none_for_unsupported_program():
+    """Test that None is returned for unsupported program type module."""
+    with pytest.raises(ValueError) as excinfo:
+        _get_class("not a module")
+    assert "Unsupported module 'not a module'" == str(excinfo.value)

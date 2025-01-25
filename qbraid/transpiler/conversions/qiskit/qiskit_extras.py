@@ -23,11 +23,14 @@ from qbraid.transpiler.annotations import requires_extras
 
 qiskit_braket_provider = LazyLoader("qiskit_braket_provider", globals(), "qiskit_braket_provider")
 qiskit_qir = LazyLoader("qiskit_qir", globals(), "qiskit_qir")
+qiskit_ionq = LazyLoader("qiskit_ionq", globals(), "qiskit_ionq")
 
 if TYPE_CHECKING:
     import braket.circuits
     import pyqir
     import qiskit.circuit
+
+    import qbraid.programs
 
 
 @requires_extras("qiskit_braket_provider")
@@ -63,3 +66,25 @@ def qiskit_to_pyqir(circuit: qiskit.circuit.QuantumCircuit) -> pyqir.Module:
     # tuple of module and list of entry points
     module, _ = qiskit_qir.to_qir_module(circuit, record_output=False)
     return module
+
+
+@requires_extras("qiskit_ionq")
+def qiskit_to_ionq(circuit: qiskit.circuit.QuantumCircuit, **kwargs) -> qbraid.programs.IonQDict:
+    """Return a IonQDict from a Qiskit quantum circuit.
+
+    Args:
+        circuit (QuantumCircuit): Qiskit quantum circuit
+
+    Returns:
+        dict: IonQDict representing the circuit
+    """
+    # pylint: disable-next=import-outside-toplevel
+    from qbraid.programs.gate_model.ionq import GateSet, InputFormat
+
+    instrs, _, _ = qiskit_ionq.helpers.qiskit_circ_to_ionq_circ(circuit, **kwargs)
+    return {
+        "format": InputFormat.CIRCUIT.value,
+        "gateset": kwargs.get("gateset", GateSet.QIS.value),
+        "qubits": circuit.num_qubits,
+        "circuit": instrs,
+    }

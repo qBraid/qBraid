@@ -38,9 +38,6 @@ class QbraidMetaType(ABCMeta):
     def __bound__(cls) -> Type[Any]:
         """The built-in type the class is wrapping."""
 
-    def __repr__(cls) -> str:
-        return "~" + cls.__name__
-
 
 class IonQDictInstanceMeta(QbraidMetaType):
     """Metaclass for IonQ JSON type checking based on dict content."""

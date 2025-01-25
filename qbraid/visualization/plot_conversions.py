@@ -136,9 +136,9 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     if len(set(ecolors)) > 1 and rustworkx_version in ["0.15.0", "0.15.1"]:
         warnings.warn(
             "Detected multiple edge colors, which may not display correctly "
-            "due to a known bug in rustworkx versions 0.15.0 and 0.15.1 "
+            "due to a known bug in rustworkx>=0.15.0,<0.16.0 "
             "(see: https://github.com/Qiskit/rustworkx/issues/1308). "
-            "To avoid this issue, please upgrade to rustworkx>0.15.1.",
+            "To avoid this issue, please upgrade to rustworkx>=0.16.0.",
             UserWarning,
         )
 

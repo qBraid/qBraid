@@ -112,11 +112,12 @@ def test_plot_runtime_conversion_scheme_qubo_node_target(mock_draw, mock_plt, mo
 @patch("qbraid.visualization.plot_conversions.plt", autospec=True)
 def test_invoke_plot_method_from_conversion_graph(mock_plt):
     """Test that the graph is displayed when invoked via ConversionGraph.plot method."""
-    graph = ConversionGraph()
+    with patch("rustworkx.__version__", "0.15.1"):
+        graph = ConversionGraph()
 
-    with pytest.warns(UserWarning, match=r"Detected multiple edge colors*"):
-        graph.plot(show=True)
-        mock_plt.show.assert_called_once()
+        with pytest.warns(UserWarning, match=r"Detected multiple edge colors*"):
+            graph.plot(show=True)
+            mock_plt.show.assert_called_once()
 
 
 def test_plot_conversion_graph_warning():
