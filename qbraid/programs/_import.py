@@ -104,7 +104,7 @@ def _get_class(module: str):
         return cpp_pyqubo.Model  # type: ignore # noqa: F821
     if module == "cudaq":
         return cudaq.PyKernel  # type: ignore # noqa: F821
-    raise ValueError(f"Unsupported module {module}")
+    raise ValueError(f"Unsupported module '{module}'")
 
 
 # pylint: enable=undefined-variable
