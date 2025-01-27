@@ -14,6 +14,7 @@
 Unit tests for qbraid.programs.ionq.IonQProgram
 
 """
+import json
 import numpy as np
 import pytest
 
@@ -47,6 +48,11 @@ def test_ionq_program_bits(ionq_program: IonQProgram):
     """Test the qubits and clbits properties."""
     assert ionq_program.num_qubits == 3
     assert ionq_program.num_clbits == 0
+
+
+def test_ionq_program_serialize(ionq_program: IonQProgram, ionq_dict: IonQDict):
+    """Test the qubits and clbits properties."""
+    assert ionq_program.serialize() == {"ionqCircuit": json.dumps(ionq_dict)}
 
 
 def test_ionq_program_type_error():

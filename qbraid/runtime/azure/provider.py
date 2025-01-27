@@ -57,8 +57,8 @@ class AzureQuantumProvider(QuantumProvider):
             credential (ClientSecretCredential, optional): Optional credential to be used
                 if the workspace lacks one.
         """
-        if not workspace:
-            workspace = Workspace()
+        workspace = workspace or Workspace()
+
         if not workspace.credential:
             if credential:
                 workspace.credential = credential
