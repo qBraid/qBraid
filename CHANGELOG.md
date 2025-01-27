@@ -18,8 +18,11 @@ Types of changes:
 ### Added
 - Added `cudaq` to `QPROGRAM_REGISTRY` dynamic import list ([#882](https://github.com/qBraid/qBraid/pull/882))
 - Added `qiskit_ionq` conversion to transpiler and refactored `IonQDevice._apply_qiskit_ionq_conversion` accordingly ([#882](https://github.com/qBraid/qBraid/pull/882))
+- Added `qbraid.runtime.load_job` function that uses entrypoints to load provider job class and create instance with job id ([#883](https://github.com/qBraid/qBraid/pull/883))
+- Added `QuantumProgram.serialize` method to streamline creation of `ProgramSpec` classes in `QbraidProvider` ([#883](https://github.com/qBraid/qBraid/pull/883))
 
 ### Improved / Modified
+- Switched all `QbraidJob` sub-classes to only require `job_id` as positional argument, and any other args that used to be required for auth can now be loaded with credentials from environment variables ([#883](https://github.com/qBraid/qBraid/pull/883))
 
 ### Deprecated
 
