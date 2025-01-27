@@ -747,7 +747,7 @@ def test_distribute_counts_valid_input():
 
 def test_distribute_counts_probabilities_close_to_1():
     """Test distribute_counts with valid input (sum of probabilities close to 1)."""
-    probs = {0: 0.888888888, 1:  0.111111111}
+    probs = {0: 0.888888888, 1: 0.111111111}
     shots = 10
     result = distribute_counts(probs, shots)
     assert result == {0: 9, 1: 1}, "Counts do not match expected values."

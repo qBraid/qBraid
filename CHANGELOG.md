@@ -23,6 +23,7 @@ Types of changes:
 
 ### Improved / Modified
 - Switched all `QbraidJob` sub-classes to only require `job_id` as positional argument, and any other args that used to be required for auth can now be loaded with credentials from environment variables ([#883](https://github.com/qBraid/qBraid/pull/883))
+- Allow some minimum tolerance when checking for the sum of result probabilities from job to be equal to 1 ([#889](https://github.com/qBraid/qBraid/pull/889))
 
 ### Deprecated
 
