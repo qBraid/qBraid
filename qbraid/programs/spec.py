@@ -31,12 +31,12 @@ class ProgramSpec:
         program_type: Type[Any],
         alias: Optional[str] = None,
         overwrite: bool = False,
-        to_ir: Optional[Callable[[Any], Any]] = None,
+        serialize: Optional[Callable[[Any], Any]] = None,
         validate: Optional[Callable[[Any], None]] = None,
         experiment_type: Optional[ExperimentType] = None,
     ):
         self._program_type = program_type
-        self._to_ir = to_ir or (lambda program: program)
+        self._serialize = serialize or (lambda program: program)
         self._validate = validate or (lambda program: None)
 
         register_program_type(program_type, alias=alias, overwrite=overwrite)
@@ -75,17 +75,18 @@ class ProgramSpec:
         else:
             self._experiment_type = None
 
-    def to_ir(self, program: Any) -> Any:
+    def serialize(self, program: Any) -> Any:
         """
-        Convert the given program to an intermediate representation (IR) using the to_ir lambda.
+        Convert the given program to a format suitable for submission the
+        qBraid API using the serialize lambda.
 
         Args:
             program (Any): The program to convert.
 
         Returns:
-            Any: The program converted to an IR, or the program itself if to_ir is None.
+            Any: The serialized program, or the program itself if serialize is None.
         """
-        return self._to_ir(program)
+        return self._serialize(program)
 
     def validate(self, program: Any) -> None:
         """

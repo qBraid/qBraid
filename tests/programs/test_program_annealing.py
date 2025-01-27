@@ -30,7 +30,7 @@ try:
     )
     from qbraid.programs.annealing.cpp_pyqubo import PyQuboModel
     from qbraid.programs.annealing.qubo import QuboProgram
-    from qbraid.runtime.native.provider import _qubo_to_json
+    from qbraid.runtime.native.provider import _serliaze_qubo
 
     pyqubo_not_installed = False
 except ImportError:
@@ -256,9 +256,9 @@ def test_annealing_program_eq_different_type(mock_annealing_program):
     assert annealing_program != "Not an AnnealingProgram instance"
 
 
-def test_runtime_qubo_to_json(pyqubo_model):
+def test_runtime_serliaze_qubo(pyqubo_model):
     """Test that the _pyqubo_to_json function returns the expected JSON string."""
-    pyqubo_json = _qubo_to_json(pyqubo_model)
+    pyqubo_json = _serliaze_qubo(pyqubo_model)
     pyqubo_dict = {"problem": json.loads(pyqubo_json["problem"])}
 
     expected_dict = {

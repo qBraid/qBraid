@@ -14,11 +14,11 @@ Module defining QiskitJob Class
 """
 from __future__ import annotations
 
-import os
 from typing import TYPE_CHECKING, Optional
 
+from qbraid_core._import import LazyLoader
 from qiskit.primitives.containers.primitive_result import PrimitiveResult
-from qiskit_ibm_runtime import QiskitRuntimeService, RuntimeJobV2
+from qiskit_ibm_runtime import RuntimeJobV2
 from qiskit_ibm_runtime.exceptions import RuntimeInvalidStateError
 
 from qbraid._logging import logger
@@ -35,6 +35,9 @@ if TYPE_CHECKING:
     import qiskit.result
     import qiskit_ibm_runtime
 
+    import qbraid.runtime.ibm
+
+qbraid_rt_ibm: qbraid.runtime.ibm = LazyLoader("qbraid_rt_ibm", globals(), "qbraid.runtime.ibm")
 
 IBM_JOB_STATUS_MAP = {
     "INITIALIZING": JobStatus.INITIALIZING,
@@ -81,9 +84,7 @@ class QiskitJob(QuantumJob):
                 service = self._device._service
             else:
                 try:
-                    token = os.getenv("QISKIT_IBM_TOKEN")
-                    channel = os.getenv("QISKIT_IBM_CHANNEL", "ibm_quantum")
-                    service = QiskitRuntimeService(channel=channel, token=token)
+                    service = qbraid_rt_ibm.QiskitRuntimeProvider().runtime_service
                 except Exception as err:
                     raise QbraidRuntimeError("Failed to initialize the quantum service.") from err
 

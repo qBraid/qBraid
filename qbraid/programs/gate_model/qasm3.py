@@ -115,3 +115,7 @@ class OpenQasm3Program(GateModelProgram):
             transformed_qasm = rebase(self.program, basis_gates, **kwargs)
             self._program = normalize_qasm_gate_params(transformed_qasm)
             self._module.validate()
+
+    def serialize(self) -> dict[str, str]:
+        """Return the program in a format suitable for submission to the qBraid API."""
+        return {"openQasm": pyqasm.dumps(self.module)}

@@ -375,7 +375,7 @@ class QuantumDevice(ABC):
             return run_input
 
         target_spec = self._get_target_spec(run_input)
-        return target_spec.to_ir(run_input)
+        return target_spec.serialize(run_input)
 
     def apply_runtime_profile(
         self, run_input: qbraid.programs.QPROGRAM

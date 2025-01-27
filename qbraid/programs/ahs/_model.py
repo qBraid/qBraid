@@ -55,6 +55,10 @@ class AnalogHamiltonianProgram(QuantumProgram, ABC):
     def to_dict(self) -> dict:
         """Return the dictionary representation of the program."""
 
+    def serialize(self) -> dict[str, str]:
+        """Return the program in a format suitable for submission to the qBraid API."""
+        return {"ahs": json.dumps(self, cls=AHSEncoder)}
+
     def __eq__(self, other: Any) -> bool:
         """Check if two programs are equal."""
         if not isinstance(other, self.__class__):

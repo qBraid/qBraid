@@ -44,12 +44,12 @@ def pyqir_bell() -> Module:
 @pytest.fixture
 def pyqir_spec() -> ProgramSpec:
     """Returns a ProgramSpec for the QIR bell circuit."""
-    return ProgramSpec(pyqir.Module, alias="pyqir", to_ir=lambda module: module.bitcode)
+    return ProgramSpec(pyqir.Module, alias="pyqir", serialize=lambda module: module.bitcode)
 
 
 def test_load_program_pyqir(pyqir_bell: Module, pyqir_spec: ProgramSpec):
     """Test program spec to IR conversion for a QIR program."""
-    program_ir = pyqir_spec.to_ir(pyqir_bell)
+    program_ir = pyqir_spec.serialize(pyqir_bell)
     assert isinstance(program_ir, bytes)
     assert program_ir == pyqir_bell.bitcode
 

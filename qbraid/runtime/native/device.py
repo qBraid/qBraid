@@ -310,6 +310,7 @@ class QbraidDevice(QuantumDevice):
         """
         dynamic_params = {
             "openQasm": None,
+            "ionqCircuit": None,
             "bitcode": None,
             "problem": None,
             "numVariables": None,
