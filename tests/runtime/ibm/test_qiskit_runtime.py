@@ -308,7 +308,7 @@ def test_job_initialize_service_from_device(mock_service):
 
 def test_job_service_initialization():
     """Test job retrieval when initializing a new service."""
-    with patch("qbraid.runtime.ibm.job.QiskitRuntimeService") as mock_service_class:
+    with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_service_class:
         mock_service = MagicMock(spec=QiskitRuntimeService)
         mock_service.job.return_value = MagicMock(spec=RuntimeJob)
         mock_service_class.return_value = mock_service
@@ -320,7 +320,9 @@ def test_job_service_initialization():
 
 def test_job_service_initialization_failure():
     """Test handling of service initialization failure."""
-    with patch("qbraid.runtime.ibm.job.QiskitRuntimeService", side_effect=IBMNotAuthorizedError):
+    with patch(
+        "qbraid.runtime.ibm.provider.QiskitRuntimeService", side_effect=IBMNotAuthorizedError
+    ):
         job_id = "test_job_id"
         with pytest.raises(QbraidRuntimeError) as excinfo:
             QiskitJob(job_id)

@@ -79,7 +79,7 @@ aws = "qbraid.runtime.aws.job:BraketQuantumTask"
 azure = "qbraid.runtime.azure.job:AzureQuantumJob"
 ibm = "qbraid.runtime.ibm.job:QiskitJob"
 ionq = "qbraid.runtime.ionq.job:IonQJob"
-qbraid = "qbraid.runtime.native.job:QbraidJob"
+native = "qbraid.runtime.native.job:QbraidJob"
 oqc = "qbraid.runtime.oqc.job:OQCJob"
 
 [tool.setuptools.dynamic]

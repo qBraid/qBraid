@@ -128,8 +128,8 @@ class IonQProvider(QuantumProvider):
             experiment_type=ExperimentType.GATE_MODEL,
             num_qubits=data.get("qubits"),
             program_spec=[
-                ProgramSpec(str, alias="qasm2", to_ir=qasm2_to_ionq),
-                ProgramSpec(str, alias="qasm3", to_ir=qasm3_to_ionq),
+                ProgramSpec(str, alias="qasm2", serialize=qasm2_to_ionq),
+                ProgramSpec(str, alias="qasm3", serialize=qasm3_to_ionq),
             ],
             provider_name="IonQ",
             basis_gates=basis_gates,

@@ -42,16 +42,23 @@ class AzureQuantumProvider(QuantumProvider):
         workspace (Workspace): The configured Azure Quantum workspace.
     """
 
-    def __init__(self, workspace: Workspace, credential: Optional[ClientSecretCredential] = None):
+    def __init__(
+        self,
+        workspace: Optional[Workspace] = None,
+        credential: Optional[ClientSecretCredential] = None,
+    ):
         """
         Initializes an AzureQuantumProvider instance with a specified Workspace. It sets the
         credential for the workspace if it is not already set and a credential is provided.
 
         Args:
-            workspace (Workspace): An initialized Azure Quantum Workspace object.
-            credential (Optional[ClientSecretCredential]): Optional credential to be used
+            workspace (Workspace, optional): An Azure Quantum Workspace object. If not provided,
+                will be initialized with the provided credential or from environment variables.
+            credential (ClientSecretCredential, optional): Optional credential to be used
                 if the workspace lacks one.
         """
+        workspace = workspace or Workspace()
+
         if not workspace.credential:
             if credential:
                 workspace.credential = credential
@@ -88,15 +95,17 @@ class AzureQuantumProvider(QuantumProvider):
 
         if input_data_format == InputDataFormat.MICROSOFT.value:
             program_spec = ProgramSpec(
-                pyqir.Module, alias="pyqir", to_ir=lambda module: module.bitcode
+                pyqir.Module, alias="pyqir", serialize=lambda module: module.bitcode
             )
         elif input_data_format == InputDataFormat.IONQ.value:
-            program_spec = ProgramSpec(IonQDict, alias="ionq", to_ir=lambda ionq_dict: ionq_dict)
+            program_spec = ProgramSpec(
+                IonQDict, alias="ionq", serialize=lambda ionq_dict: ionq_dict
+            )
         elif input_data_format == InputDataFormat.QUANTINUUM.value:
-            program_spec = ProgramSpec(str, alias="qasm2", to_ir=lambda qasm: qasm)
+            program_spec = ProgramSpec(str, alias="qasm2", serialize=lambda qasm: qasm)
         elif input_data_format == InputDataFormat.RIGETTI.value:
             program_spec = ProgramSpec(
-                pyquil.Program, alias="pyquil", to_ir=lambda program: program.out()
+                pyquil.Program, alias="pyquil", serialize=lambda program: program.out()
             )
         else:
             program_spec = None

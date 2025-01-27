@@ -57,7 +57,7 @@ class BraketCircuit(GateModelProgram):
         """Return the circuit depth (i.e., length of critical path)."""
         return self.program.depth
 
-    def _unitary(self) -> "np.ndarray":
+    def _unitary(self) -> np.ndarray:
         """Calculate unitary of circuit."""
         return self.program.to_unitary()
 
@@ -129,3 +129,16 @@ class BraketCircuit(GateModelProgram):
         """Transform program to according to device target profile."""
         if device.simulator:
             self.remove_idle_qubits()
+
+    def serialize(self) -> dict[str, str]:
+        """Return the program in a format suitable for submission to the qBraid API."""
+        # pylint: disable=import-outside-toplevel
+        from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
+        from qbraid.transpiler.conversions.braket import braket_to_qasm3
+
+        # pylint: enable=import-outside-toplevel
+
+        qasm = braket_to_qasm3(self.program)
+        program = OpenQasm3Program(qasm)
+
+        return program.serialize()

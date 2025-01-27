@@ -14,9 +14,10 @@ Module defining AzureQuantumJob class
 """
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from azure.quantum.target.microsoft import MicrosoftEstimatorResult
+from azure.quantum.workspace import Workspace
 
 from qbraid._logging import logger
 from qbraid.runtime.azure.result_builder import AzureGateModelResultBuilder
@@ -35,9 +36,9 @@ if TYPE_CHECKING:
 class AzureQuantumJob(QuantumJob):
     """Azure job class."""
 
-    def __init__(self, job_id: str, workspace: azure.quantum.Workspace, **kwargs):
+    def __init__(self, job_id: str, workspace: Optional[Workspace] = None, **kwargs):
         super().__init__(job_id=job_id, **kwargs)
-        self._workspace = workspace
+        self._workspace = workspace or Workspace()
         self._job = self.workspace.get_job(self.id)
 
     @property

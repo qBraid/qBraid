@@ -14,6 +14,7 @@ Module defining IonQProgram Class
 """
 from __future__ import annotations
 
+import json
 from enum import Enum
 from typing import Any
 
@@ -156,3 +157,7 @@ class IonQProgram(GateModelProgram):
                 raise ValueError(
                     f"Invalid gate '{gate}'. Must be in the '{gate_set_name.value}' gate set."
                 )
+
+    def serialize(self) -> dict[str, str]:
+        """Return the program in a format suitable for submission to the qBraid API."""
+        return {"ionqCircuit": json.dumps(self.program)}

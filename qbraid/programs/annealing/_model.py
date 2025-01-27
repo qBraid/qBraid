@@ -112,6 +112,10 @@ class AnnealingProgram(QuantumProgram, ABC):
         """Serialize the annealing problem to a JSON string."""
         return json.dumps(self, cls=ProblemEncoder)
 
+    def serialize(self) -> dict[str, str]:
+        """Return the program in a format suitable for submission to the qBraid API."""
+        return {"problem": self.to_json()}
+
     def __eq__(self, other) -> bool:
         if not isinstance(other, self.__class__):
             return False

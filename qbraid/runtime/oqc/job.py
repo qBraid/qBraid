@@ -17,6 +17,8 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Any, Optional, Union
 
+from qbraid_core._import import LazyLoader
+
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.job import QuantumJob
@@ -25,6 +27,10 @@ from qbraid.runtime.result_data import GateModelResultData
 
 if TYPE_CHECKING:
     from qcaas_client.client import OQCClient
+
+    import qbraid.runtime.oqc
+
+qbraid_rt_oqc: qbraid.runtime.oqc = LazyLoader("qbraid_rt_oqc", globals(), "qbraid.runtime.oqc")
 
 RESULTS_FORMAT = {
     2: "raw",
@@ -61,9 +67,9 @@ OPTIMIZATIONS = {
 class OQCJob(QuantumJob):
     """Oxford Quantum Circuit job class."""
 
-    def __init__(self, job_id: str, client: OQCClient, **kwargs):
+    def __init__(self, job_id: str, client: Optional[OQCClient] = None, **kwargs):
         super().__init__(job_id=job_id, **kwargs)
-        self._client = client
+        self._client = client or qbraid_rt_oqc.OQCProvider().client
         self._qpu_id: Optional[str] = None
         self._terminal_status: Optional[JobStatus] = None
 

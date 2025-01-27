@@ -135,3 +135,7 @@ class GateModelProgram(QuantumProgram, ABC):
     def transform(self, device: qbraid.runtime.QuantumDevice) -> None:
         """Transform program to according to device target profile."""
         return None
+
+    def serialize(self) -> dict[str, str]:
+        """Return the program in a format suitable for submission to the qBraid API."""
+        raise NotImplementedError

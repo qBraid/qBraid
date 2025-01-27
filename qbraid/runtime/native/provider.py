@@ -14,9 +14,8 @@ Module defining QbraidProvider class.
 """
 from __future__ import annotations
 
-import json
 import warnings
-from typing import TYPE_CHECKING, Any, Callable, Optional, Union
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 import pyqasm
 from qbraid_core.exceptions import AuthError
@@ -24,8 +23,7 @@ from qbraid_core.services.quantum import QuantumClient, QuantumServiceRequestErr
 
 from qbraid._caching import cached_method
 from qbraid.programs import QPROGRAM_REGISTRY, ExperimentType, ProgramSpec, load_program
-from qbraid.programs.ahs import AHSEncoder
-from qbraid.programs.typer import Qasm2StringType, Qasm3StringType, QuboCoefficientsDict
+from qbraid.programs.typer import Qasm2StringType, Qasm3StringType
 from qbraid.runtime._display import display_jobs_from_data
 from qbraid.runtime.exceptions import ResourceNotFoundError
 from qbraid.runtime.ionq.provider import IonQProvider
@@ -39,41 +37,19 @@ from .device import QbraidDevice
 
 if TYPE_CHECKING:
     import pyqir
-    import pyqubo
-
-    from qbraid.programs.ahs.braket_ahs import BraketAHS
-    from qbraid.programs.annealing.cpp_pyqubo import PyQuboModel
-    from qbraid.programs.annealing.qubo import QuboProgram
 
 
-def _pyqir_to_json(program: pyqir.Module) -> dict[str, bytes]:
+def _serialize_program(program) -> dict[str, str]:
+    qbraid_program = load_program(program)
+    return qbraid_program.serialize()
+
+
+def _serialize_pyqir(program: pyqir.Module) -> dict[str, bytes]:
     return {"bitcode": program.bitcode}
 
 
-def _qasm_to_json(
-    program: Union[Qasm2StringType, Qasm3StringType]
-) -> dict[str, Union[Qasm2StringType, Qasm3StringType]]:
-    # format the qasm program before dumping it
-    return {"openQasm": pyqasm.dumps(pyqasm.loads(program))}
-
-
-def _braket_to_json(program) -> dict[str, Any]:
-    qasm = transpile(program, "qasm3", max_path_depth=1)
-    return _qasm_to_json(qasm)
-
-
-def _braket_ahs_to_json(program) -> dict[str, Any]:
-    ahs_program: BraketAHS = load_program(program)
-    return {"ahs": json.dumps(ahs_program, cls=AHSEncoder)}
-
-
-def _qubo_to_json(program: Union[pyqubo.Model, QuboCoefficientsDict]) -> dict[str, dict[str, Any]]:
-    program: Union[PyQuboModel, QuboProgram] = load_program(program)
-    return {"problem": program.to_json()}
-
-
 def validate_qasm_no_measurements(
-    program: Union[Qasm2StringType, Qasm3StringType], device_id: str
+    program: Qasm2StringType | Qasm3StringType, device_id: str
 ) -> None:
     """Raises a ValueError if the given OpenQASM program contains measurement gates."""
     qasm_module = pyqasm.loads(program)
@@ -84,7 +60,7 @@ def validate_qasm_no_measurements(
         )
 
 
-def validate_qasm_to_ionq(program: Union[Qasm2StringType, Qasm3StringType], device_id: str) -> None:
+def validate_qasm_to_ionq(program: Qasm2StringType | Qasm3StringType, device_id: str) -> None:
     """Raises a ValueError if the given OpenQASM program is not compatible with IonQ JSON format."""
     try:
         transpile(program, "ionq", max_path_depth=1)
@@ -99,28 +75,24 @@ def get_program_spec_lambdas(
     program_type_alias: str, device_id: str
 ) -> dict[str, Optional[Callable[[Any], None]]]:
     """Returns conversion and validation functions for the given program type and device."""
-    lambdas = {
-        "pyqir": (_pyqir_to_json, None),
-        "qasm2": (_qasm_to_json, None),
-        "qasm3": (_qasm_to_json, None),
-        "cpp_pyqubo": (_qubo_to_json, None),
-        "qubo": (_qubo_to_json, None),
-        "braket": (_braket_to_json, None),
-        "braket_ahs": (_braket_ahs_to_json, None),
-    }
+    if program_type_alias == "pyqir":
+        return {"serialize": _serialize_pyqir, "validate": None}
 
-    to_ir, validate = lambdas.get(program_type_alias, (None, None))
-
-    if program_type_alias in ["qasm2", "qasm3"]:
+    if program_type_alias in {"qasm2", "qasm3"}:
         device_prefix = device_id.split("_")[0]
+
         # pylint: disable=unnecessary-lambda-assignment
-        if device_prefix == "quera":
-            validate = lambda p: validate_qasm_no_measurements(p, device_id)  # noqa: E731
-        elif device_prefix == "ionq":
-            validate = lambda p: validate_qasm_to_ionq(p, device_id)  # noqa: E731
+        validations = {
+            "quera": lambda p: validate_qasm_no_measurements(p, device_id),
+            "ionq": lambda p: validate_qasm_to_ionq(p, device_id),
+        }
         # pylint: enable=unnecessary-lambda-assignment
 
-    return {"to_ir": to_ir, "validate": validate}
+        validate = validations.get(device_prefix)
+    else:
+        validate = None
+
+    return {"serialize": _serialize_program, "validate": validate}
 
 
 class QbraidProvider(QuantumProvider):

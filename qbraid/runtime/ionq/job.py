@@ -18,6 +18,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional, Union
 
+from qbraid_core._import import LazyLoader
+
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import QbraidRuntimeError
 from qbraid.runtime.job import QuantumJob
@@ -26,7 +28,9 @@ from qbraid.runtime.result import Result
 from qbraid.runtime.result_data import GateModelResultData, MeasCount, MeasProb
 
 if TYPE_CHECKING:
-    import qbraid.runtime.ionq.provider
+    import qbraid.runtime.ionq
+
+qbraid_rt_ionq: qbraid.runtime.ionq = LazyLoader("qbraid_rt_ionq", globals(), "qbraid.runtime.ionq")
 
 
 class IonQJobError(QbraidRuntimeError):
@@ -36,12 +40,14 @@ class IonQJobError(QbraidRuntimeError):
 class IonQJob(QuantumJob):
     """IonQ job class."""
 
-    def __init__(self, job_id: str, session: qbraid.runtime.ionq.provider.IonQSession, **kwargs):
+    def __init__(
+        self, job_id: str, session: Optional[qbraid.runtime.ionq.IonQSession] = None, **kwargs
+    ):
         super().__init__(job_id=job_id, **kwargs)
-        self._session = session
+        self._session = session or qbraid_rt_ionq.IonQSession()
 
     @property
-    def session(self) -> qbraid.runtime.ionq.provider.IonQSession:
+    def session(self) -> qbraid.runtime.ionq.IonQSession:
         """Return the IonQ session."""
         return self._session
 

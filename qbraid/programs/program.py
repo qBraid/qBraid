@@ -81,3 +81,7 @@ class QuantumProgram(ABC):
     @abstractmethod
     def transform(self, device: qbraid.runtime.QuantumDevice) -> None:
         """Transform program to according to device target profile."""
+
+    @abstractmethod
+    def serialize(self) -> dict[str, str]:
+        """Return the program in a format suitable for submission to the qBraid API."""

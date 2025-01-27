@@ -23,6 +23,7 @@ from .exceptions import QasmError as QbraidQasmError
 from .exceptions import ValidationError as ProgramValidationError
 
 IonQDictType = TypeVar("IonQDictType", bound=dict)
+QuboCoefficientsDictType = TypeVar("QuboCoefficientsDictType", bound=dict)
 
 
 class QbraidMetaType(ABCMeta):
