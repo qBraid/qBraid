@@ -320,7 +320,9 @@ def test_job_service_initialization():
 
 def test_job_service_initialization_failure():
     """Test handling of service initialization failure."""
-    with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService", side_effect=IBMNotAuthorizedError):
+    with patch(
+        "qbraid.runtime.ibm.provider.QiskitRuntimeService", side_effect=IBMNotAuthorizedError
+    ):
         job_id = "test_job_id"
         with pytest.raises(QbraidRuntimeError) as excinfo:
             QiskitJob(job_id)
