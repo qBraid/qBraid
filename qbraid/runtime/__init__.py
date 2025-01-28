@@ -35,6 +35,7 @@ Functions
    :toctree: ../stubs/
 
     load_job
+    get_providers
     display_jobs_from_data
 
 Classes
@@ -83,7 +84,7 @@ from .exceptions import (
     ResourceNotFoundError,
 )
 from .job import QuantumJob
-from .loader import JobLoaderError, load_job
+from .loader import JobLoaderError, get_providers, load_job
 from .noise import NoiseModel, NoiseModelSet
 from .options import RuntimeOptions
 from .profile import TargetProfile
@@ -97,12 +98,15 @@ from .result_data import (
     ResultData,
 )
 
+PROVIDERS = get_providers()
+
 __all__ = [
     "QuantumDevice",
     "DeviceStatus",
     "JobStatus",
     "display_jobs_from_data",
     "load_job",
+    "get_providers",
     "JobStateError",
     "ProgramValidationError",
     "QbraidRuntimeError",
@@ -122,6 +126,7 @@ __all__ = [
     "AhsShotResult",
     "AnnealingResultData",
     "ValidationLevel",
+    "PROVIDERS",
 ]
 
 _lazy = {

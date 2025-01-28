@@ -16,6 +16,13 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Add `qbraid.runtime.get_providers()` and corresponding `qbraid.runtime.PROVIDERS` which is a list of the provider aliases that can be passed to the `qbraid.runtime.load_job()`function. ([#887](https://github.com/qBraid/qBraid/pull/887))
+
+```python
+>>> from qbraid.runtime import PROVIDERS
+>>> print(PROVIDERS)
+['aws', 'azure', 'ibm', 'ionq', 'oqc', 'qbraid']
+```
 
 ### Improved / Modified
 
@@ -33,6 +40,15 @@ Types of changes:
 - Added `cudaq` to `QPROGRAM_REGISTRY` dynamic import list ([#882](https://github.com/qBraid/qBraid/pull/882))
 - Added `qiskit_ionq` conversion to transpiler and refactored `IonQDevice._apply_qiskit_ionq_conversion` accordingly ([#882](https://github.com/qBraid/qBraid/pull/882))
 - Added `qbraid.runtime.load_job` function that uses entrypoints to load provider job class and create instance with job id ([#883](https://github.com/qBraid/qBraid/pull/883))
+
+```python
+from qbraid.runtime import load_job
+
+qbraid_native_job = load_job("<job_id>", "qbraid") # qbraid.runtime.QbraidJob
+qbraid_braket_task = load_job("<task_arn>", "aws") # qbraid.runtime.BraketQuantumTask
+...
+```
+
 - Added `QuantumProgram.serialize` method to streamline creation of `ProgramSpec` classes in `QbraidProvider` ([#883](https://github.com/qBraid/qBraid/pull/883))
 
 ### Improved / Modified

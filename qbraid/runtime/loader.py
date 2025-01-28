@@ -17,7 +17,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Literal, overload
 
-from qbraid._entrypoints import load_entrypoint
+from qbraid._entrypoints import get_entrypoints, load_entrypoint
 from qbraid.exceptions import QbraidError
 
 if TYPE_CHECKING:
@@ -75,9 +75,9 @@ def load_job(job_id: str, provider: str = "qbraid", **kwargs) -> QuantumJob:
     Raises:
         JobLoaderError: If the job cannot be loaded.
     """
-    provider_aliases = {"qbraid": "native", "qiskit": "ibm", "braket": "aws"}
+    provider_aliases = {"native": "qbraid", "qiskit": "ibm", "braket": "aws"}
 
-    provider_module = provider_aliases.get(provider, provider).lower()
+    provider_module = provider_aliases.get(provider.lower(), provider).lower()
 
     try:
         job_class = load_entrypoint("jobs", provider_module)
@@ -89,3 +89,13 @@ def load_job(job_id: str, provider: str = "qbraid", **kwargs) -> QuantumJob:
     job_instance = job_class(job_id, **kwargs)
 
     return job_instance
+
+
+def get_providers() -> list[str]:
+    """Return a list of supported quantum job providers.
+
+    Returns:
+        list[str]: A list of supported quantum job providers.
+    """
+    entry_points = get_entrypoints("jobs")
+    return sorted(entry_points.keys())
