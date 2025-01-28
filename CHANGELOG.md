@@ -16,6 +16,20 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+
+### Improved / Modified
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Dependencies
+
+## [0.9.3] - 2025-01-27
+
+### Added
 - Added `cudaq` to `QPROGRAM_REGISTRY` dynamic import list ([#882](https://github.com/qBraid/qBraid/pull/882))
 - Added `qiskit_ionq` conversion to transpiler and refactored `IonQDevice._apply_qiskit_ionq_conversion` accordingly ([#882](https://github.com/qBraid/qBraid/pull/882))
 - Added `qbraid.runtime.load_job` function that uses entrypoints to load provider job class and create instance with job id ([#883](https://github.com/qBraid/qBraid/pull/883))
@@ -25,14 +39,8 @@ Types of changes:
 - Switched all `QbraidJob` sub-classes to only require `job_id` as positional argument, and any other args that used to be required for auth can now be loaded with credentials from environment variables ([#883](https://github.com/qBraid/qBraid/pull/883))
 - Allow some minimum tolerance when checking for the sum of result probabilities from job to be equal to 1 ([#889](https://github.com/qBraid/qBraid/pull/889))
 
-### Deprecated
-
-### Removed
-
 ### Fixed
 - Updated plot conversion graph test to account for rustworkx v0.16.0 release ([#880](https://github.com/qBraid/qBraid/pull/882))
-
-### Dependencies
 
 ## [0.9.2] - 2025-01-23
 
