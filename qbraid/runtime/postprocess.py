@@ -14,6 +14,7 @@ Module for post-processing of raw results data.
 """
 from __future__ import annotations
 
+from math import isclose
 from typing import Any, Union
 
 
@@ -250,7 +251,7 @@ def distribute_counts(probs: dict[Any, float], shots: int) -> dict[Any, int]:
         >>> distribute_counts(probs, shots)
         {0: 9, 1: 1}
     """
-    if not sum(probs.values()) == 1:
+    if not isclose(sum(probs.values()), 1.0):
         raise ValueError("Probabilities must sum to 1.")
 
     if not all(0 <= prob <= 1 for prob in probs.values()):
