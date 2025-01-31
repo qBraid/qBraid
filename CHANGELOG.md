@@ -18,6 +18,7 @@ Types of changes:
 ### Added
 
 ### Improved / Modified
+-  Updated conversion graph and `QPROGRAM` registry on README.md ([#891](https://github.com/qBraid/qBraid/pull/891))
 
 ### Deprecated
 
