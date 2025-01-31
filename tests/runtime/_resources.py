@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining mock data and classes for testing the runtime module. 
+Module defining mock data and classes for testing the runtime module.
 
 """
 from typing import Any, Optional

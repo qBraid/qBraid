@@ -18,7 +18,7 @@ Exceptions
 
 .. autosummary::
    :toctree: ../stubs/
-   
+
    CompilationError
    QasmDecompositionError
 

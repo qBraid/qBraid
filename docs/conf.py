@@ -59,6 +59,8 @@ autodoc_mock_imports = [
     "qiskit_ibm_runtime",
     "scc",
     "stim",
+    "qibo",
+    "cudaq"
 ]
 napoleon_numpy_docstring = False
 todo_include_todos = True
