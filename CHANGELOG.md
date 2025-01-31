@@ -16,9 +16,10 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added `qibo` to dynamic `QPROGRAM_REGISTRY` imports ([#891](https://github.com/qBraid/qBraid/pull/891))
 
 ### Improved / Modified
--  Updated conversion graph and `QPROGRAM` registry on README.md ([#891](https://github.com/qBraid/qBraid/pull/891))
+-  Updated conversion graph and `QPROGRAM_REGISTRY` on README.md ([#891](https://github.com/qBraid/qBraid/pull/891))
 
 ### Deprecated
 

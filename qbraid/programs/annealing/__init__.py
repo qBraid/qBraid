@@ -19,7 +19,7 @@ Classes
 
 .. autosummary::
    :toctree: ../stubs/
-    
+
     ProblemType
     Problem
     AnnealingProgram

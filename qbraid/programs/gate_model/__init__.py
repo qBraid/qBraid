@@ -19,7 +19,7 @@ Classes
 
 .. autosummary::
    :toctree: ../stubs/
-    
+
    GateModelProgram
 
 Submodules
