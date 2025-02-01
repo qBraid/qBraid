@@ -71,6 +71,15 @@ def _get_path_from_bound_methods(bound_methods: list[Callable[..., Any]]) -> str
     return " -> ".join(path)
 
 
+def parse_conversion_path(conv_repr: str) -> list[tuple[str, str]]:
+    """Parse a conversion path string into a list of conversion tuples."""
+    components = conv_repr.split(" -> ")
+    conversions = []
+    for i in range(len(components) - 1):
+        conversions.append((components[i], components[i + 1]))
+    return conversions
+
+
 # pylint: disable-next=too-many-public-methods
 class ConversionGraph(rx.PyDiGraph):
     """

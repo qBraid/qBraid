@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Any, Optional, Union
 
 from qbraid.programs.spec import ProgramSpec
 
-from .graph import ConversionGraph
+from .graph import ConversionGraph, parse_conversion_path
 
 if TYPE_CHECKING:
     import rustworkx as rx
@@ -139,6 +139,52 @@ class ConversionScheme:
 
         return {graph_nodes[i] for i in reachable_nodes}
 
+    @staticmethod
+    def prune_graph_to_target_paths(
+        graph: ConversionGraph, target_nodes: list[str], n_steps: int
+    ) -> ConversionGraph:
+        """
+        Prune edges that do not contribute to paths within n steps of any of the target nodes.
+
+        Args:
+            graph (ConversionGraph): The graph to prune
+            target_nodes (List[str]): The list of node indices to center the pruning around
+            n_steps (int): Number of steps to consider from each target node
+
+        Returns:
+            ConversionGraph: The pruned graph
+        """
+        all_nodes: set[str] = set(graph.nodes())
+        target_set: set[str] = set(target_nodes)
+        sources: set[str] = all_nodes - target_set
+        all_used_paths: set[tuple[str, str]] = set()
+
+        # Collect all paths within n_steps for each target node
+        for target_node in target_nodes:
+            for source in sources:
+                for path_str in graph.all_paths(source, target_node):
+                    path_tuple_lst = parse_conversion_path(path_str)
+                    if len(path_tuple_lst) <= n_steps:
+                        all_used_paths.update(path_tuple_lst)
+
+        # Create a mapping from node IDs to aliases
+        node_id_to_alias = {value: key for key, value in graph._node_alias_id_map.items()}
+
+        # Prune edges not in used paths
+        for edge in graph.edge_list():
+            src_node_id, target_node_id = edge
+            src_node_alias = node_id_to_alias[src_node_id]
+            target_node_alias = node_id_to_alias[target_node_id]
+
+            if (src_node_alias, target_node_alias) not in all_used_paths:
+                graph.remove_conversion(src_node_alias, target_node_alias)
+
+        return graph
+
+    def reset_graph(self, include_isolated: bool = True) -> None:
+        """Reset the conversion graph to the default qBraid graph."""
+        self.update_values(conversion_graph=ConversionGraph(include_isolated=include_isolated))
+
     def update_graph_for_target(self, target_spec: Union[ProgramSpec, list[ProgramSpec]]) -> None:
         """Update the conversion graph to include only nodes with paths to the target node(s), and
         remove all conversions that do not end in the target node(s)."""
@@ -164,4 +210,8 @@ class ConversionScheme:
             nodes=nodes,
         )
 
-        self.update_values(conversion_graph=updated_graph)
+        pruned_graph = self.prune_graph_to_target_paths(
+            updated_graph, target_nodes, self.max_path_depth
+        )
+
+        self.update_values(conversion_graph=pruned_graph)
