@@ -71,6 +71,15 @@ def _get_path_from_bound_methods(bound_methods: list[Callable[..., Any]]) -> str
     return " -> ".join(path)
 
 
+def parse_conversion_path(conv_repr: str) -> list[tuple[str, str]]:
+    """Parse a conversion path string into a list of conversion tuples."""
+    components = conv_repr.split(" -> ")
+    conversions = []
+    for i in range(len(components) - 1):
+        conversions.append((components[i], components[i + 1]))
+    return conversions
+
+
 # pylint: disable-next=too-many-public-methods
 class ConversionGraph(rx.PyDiGraph):
     """
@@ -303,7 +312,7 @@ class ConversionGraph(rx.PyDiGraph):
             list of list of Callable: The top shortest conversion paths.
 
         Raises:
-            ValueError: If no path is found between source and target.
+            ConversionPathNotFoundError: If no path is found between source and target.
         """
         all_paths = rx.all_simple_paths(
             self, self._node_alias_id_map[source], self._node_alias_id_map[target]
