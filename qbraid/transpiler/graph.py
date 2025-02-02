@@ -312,7 +312,7 @@ class ConversionGraph(rx.PyDiGraph):
             list of list of Callable: The top shortest conversion paths.
 
         Raises:
-            ValueError: If no path is found between source and target.
+            ConversionPathNotFoundError: If no path is found between source and target.
         """
         all_paths = rx.all_simple_paths(
             self, self._node_alias_id_map[source], self._node_alias_id_map[target]

@@ -141,7 +141,7 @@ class ConversionScheme:
 
     @staticmethod
     def prune_graph_to_target_paths(
-        graph: ConversionGraph, target_nodes: list[str], n_steps: int
+        graph: ConversionGraph, target_nodes: list[str], n_steps: Optional[int]
     ) -> ConversionGraph:
         """
         Prune edges that do not contribute to paths within n steps of any of the target nodes.
@@ -154,6 +154,8 @@ class ConversionScheme:
         Returns:
             ConversionGraph: The pruned graph
         """
+        graph = graph.copy()
+
         all_nodes: set[str] = set(graph.nodes())
         target_set: set[str] = set(target_nodes)
         sources: set[str] = all_nodes - target_set
@@ -162,10 +164,11 @@ class ConversionScheme:
         # Collect all paths within n_steps for each target node
         for target_node in target_nodes:
             for source in sources:
-                for path_str in graph.all_paths(source, target_node):
-                    path_tuple_lst = parse_conversion_path(path_str)
-                    if len(path_tuple_lst) <= n_steps:
-                        all_used_paths.update(path_tuple_lst)
+                if graph.has_path(source, target_node):
+                    for path_str in graph.all_paths(source, target_node):
+                        path_tuple_lst = parse_conversion_path(path_str)
+                        if n_steps is None or len(path_tuple_lst) <= n_steps:
+                            all_used_paths.update(path_tuple_lst)
 
         # Create a mapping from node IDs to aliases
         node_id_to_alias = {value: key for key, value in graph._node_alias_id_map.items()}

@@ -157,6 +157,8 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
 
         kwargs["edgecolors"] = edgecolors
 
+    plt.ioff()  # Disable interactive mode
+
     mpl_draw(
         graph,
         pos,
@@ -243,7 +245,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         plt.savefig(save_path, bbox_inches="tight", dpi=300)
 
     if show:
-        plt.show()
+        plt.show(block=True)  # Explicit blocking show
 
 
 def plot_runtime_conversion_scheme(device: qbraid.runtime.QuantumDevice, **kwargs) -> None:
