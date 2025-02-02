@@ -17,9 +17,11 @@ Types of changes:
 
 ### Added
 - Added `qibo` to dynamic `QPROGRAM_REGISTRY` imports ([#891](https://github.com/qBraid/qBraid/pull/891))
+- Fixed `plt.show` / `plt.save_fig` bug in `plot conversion_graph` ([#893](https://github.com/qBraid/qBraid/pull/893))
 
 ### Improved / Modified
 -  Updated conversion graph and `QPROGRAM_REGISTRY` on README.md ([#891](https://github.com/qBraid/qBraid/pull/891))
+- Improved `plot_runtime_conversion_scheme` by removing edges not within `ConversionScheme.max_path_depth` ([#893](https://github.com/qBraid/qBraid/pull/893))
 
 ### Deprecated
 
