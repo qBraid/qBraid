@@ -86,6 +86,24 @@ DEVICE_DATA = [
         "noise_models": ["aria-1", "harmony", "ideal"],
         "degraded": False,
     },
+    {
+        "backend": "qpu.forte-enterprise-1",
+        "status": "unavailable",
+        "qubits": 36,
+        "average_queue_time": 2333081000,
+        "last_updated": 1738692095,
+        "has_access": False,
+        "degraded": False,
+    },
+    {
+        "backend": "qpu.forte-enterprise-2",
+        "status": "unavailable",
+        "qubits": 36,
+        "average_queue_time": 0,
+        "last_updated": 1738692095,
+        "has_access": False,
+        "degraded": False,
+    },
 ]
 
 POST_JOB_RESPONSE = {
@@ -232,6 +250,8 @@ def test_ionq_provider_device_unavailable():
             elif device_id == "simulator":
                 res["status"] = "available"
             elif device_id == "qpu.forte-1":
+                res["status"] = "unavailable"
+            elif device_id.startswith("qpu.forte-enterprise"):
                 res["status"] = "unavailable"
             elif device_id == "fake_device":
                 res["status"] = "fake_status"
