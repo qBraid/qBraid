@@ -18,6 +18,7 @@ Types of changes:
 ### Added
 - Added `qibo` to dynamic `QPROGRAM_REGISTRY` imports ([#891](https://github.com/qBraid/qBraid/pull/891))
 - Fixed `plt.show` / `plt.save_fig` bug in `plot conversion_graph` ([#893](https://github.com/qBraid/qBraid/pull/893))
+- Added [IonQ Forte Enterpres](https://ionq.com/quantum-systems/forte-enterprise) devices to `IonQProvider` runtime tests ([#894](https://github.com/qBraid/qBraid/pull/894))
 
 ### Improved / Modified
 -  Updated conversion graph and `QPROGRAM_REGISTRY` on README.md ([#891](https://github.com/qBraid/qBraid/pull/891))
