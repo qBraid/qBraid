@@ -1,4 +1,4 @@
-# Copyright (C) 2024 qBraid
+# Copyright (C) 2025 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -9,9 +9,9 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-OpenQASM 3 conversions
+CUDA-Q conversions
 
-.. currentmodule:: qbraid.transpiler.conversions.openqasm3
+.. currentmodule:: qbraid.transpiler.conversions.cudaq
 
 Functions
 ----------
@@ -19,13 +19,11 @@ Functions
 .. autosummary::
    :toctree: ../stubs/
 
-   openqasm3_to_qasm3
-   openqasm3_to_ionq
-   openqasm3_to_cudaq
+   cudaq_to_qasm2
+   cudaq_to_pyqir
 
 """
-from .openqasm3_to_cudaq import openqasm3_to_cudaq
-from .openqasm3_to_ionq import openqasm3_to_ionq
-from .openqasm3_to_qasm3 import openqasm3_to_qasm3
+from .cudaq_extras import cudaq_to_pyqir
+from .cudaq_to_qasm2 import cudaq_to_qasm2
 
-__all__ = ["openqasm3_to_qasm3", "openqasm3_to_ionq", "openqasm3_to_cudaq"]
+__all__ = ["cudaq_to_qasm2", "cudaq_to_pyqir"]

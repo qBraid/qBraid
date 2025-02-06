@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module containing OpenQASM to CUDA-Q conversion function
+Module defining OpenQASM 3 to CUDA-Q conversion function.
 
 """
 from __future__ import annotations

@@ -124,11 +124,10 @@ dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
         "openqasm3",
         "pyqir",
         "cpp_pyqubo",
+        "cudaq",
     ]
 )
-dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(
-    ["bloqade.builder.assign", "cudaq", "qibo"]
-)
+dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(["bloqade.builder.assign", "qibo"])
 static_type_registry: dict[str, Type[Any]] = {
     metatype.__alias__: metatype.__bound__ for metatype in BOUND_QBRAID_META_TYPES
 }
