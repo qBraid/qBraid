@@ -267,7 +267,7 @@ def get_qasm_type_alias(qasm: str) -> str:
     if isinstance(qasm, Qasm2String):
         return cast(str, Qasm2String.__alias__)
     if isinstance(qasm, Qasm3String):
-        return cast(Qasm3String.__alias__, str)
+        return cast(str, Qasm3String.__alias__)
     if isinstance(qasm, Qasm2KirinString):
         return cast(str, Qasm2KirinString.__alias__)
     raise QasmError("Could not determine the type alias: the OpenQASM program may be invalid.")

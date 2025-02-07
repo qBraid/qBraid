@@ -23,6 +23,7 @@ from qbraid.programs.typer import (
     IonQDict,
     IonQDictInstanceMeta,
     ProgramValidationError,
+    Qasm2KirinString,
     Qasm2String,
     Qasm2StringType,
     Qasm3String,
@@ -43,6 +44,18 @@ OPENQASM 3.0;
 include "stdgates.inc";
 qubit[1] q;
 z q[0];
+"""
+
+valid_qasm2_kirin_string = """
+KIRIN {cf,func,py.ilist,qasm2.core,qasm2.expr,qasm2.glob,qasm2.indexing,qasm2.inline,qasm2.noise,qasm2.parallel,qasm2.uop};
+include "qelib1.inc";
+qreg qreg[4];
+CX qreg[0], qreg[1];
+reset qreg[0];
+parallel.CZ {
+  qreg[0], qreg[2];
+  qreg[1], qreg[3];
+}
 """
 
 invalid_qasm_string = "Some random string"
@@ -80,6 +93,7 @@ def test_qasm_string_invalid(cls, string, error):
     [
         (Qasm2String, valid_qasm2_string),
         (Qasm3String, valid_qasm3_string),
+        (Qasm2KirinString, valid_qasm2_kirin_string),
     ],
 )
 def test_isinstance_checks_valid(meta, string):
