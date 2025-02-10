@@ -14,7 +14,7 @@ that use Python's built-in types.
 
 """
 from abc import ABCMeta, abstractmethod
-from typing import Any, Optional, Type, TypeVar, cast
+from typing import Any, Optional, Type, TypeVar
 
 from pyqasm.analyzer import Qasm3Analyzer
 from pyqasm.exceptions import QasmParsingError
@@ -265,11 +265,11 @@ def get_qasm_type_alias(qasm: str) -> str:
         QasmError: If the string does not represent a valid OpenQASM program.
     """
     if isinstance(qasm, Qasm2String):
-        return cast(str, Qasm2String.__alias__)
+        return Qasm2String.__alias__
     if isinstance(qasm, Qasm3String):
-        return cast(str, Qasm3String.__alias__)
+        return Qasm3String.__alias__
     if isinstance(qasm, Qasm2KirinString):
-        return cast(str, Qasm2KirinString.__alias__)
+        return Qasm2KirinString.__alias__
     raise QasmError("Could not determine the type alias: the OpenQASM program may be invalid.")
 
 

@@ -30,6 +30,7 @@ from qbraid.programs.typer import (
     Qasm3StringType,
     QasmStringType,
     QuboCoefficientsDict,
+    get_qasm_type_alias,
 )
 
 valid_qasm2_string = """
@@ -99,6 +100,12 @@ def test_qasm_string_invalid(cls, string, error):
 def test_isinstance_checks_valid(meta, string):
     """Test that the isinstance function correctly identifies valid OpenQASM strings."""
     assert isinstance(string, meta)
+
+
+def test_get_qasm_type_alias_kirin():
+    """Test that get_qasm_type_alias returns the correct alias for KIRIN strings."""
+    alias = get_qasm_type_alias(valid_qasm2_kirin_string)
+    assert alias == "qasm2_kirin"  # pylint: disable=comparison-with-callable
 
 
 @pytest.mark.parametrize(
