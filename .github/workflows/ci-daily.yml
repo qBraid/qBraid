@@ -49,4 +49,12 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
         QISKIT_IBM_TOKEN: ${{ secrets.QISKIT_IBM_TOKEN }}
         QBRAID_API_KEY: ${{ secrets.QBRAID_API_KEY }}
-        QBRAID_RUN_REMOTE_TESTS: False
+        AZURE_TENANT_ID: ${{ secrets.QBRAID_API_KEY }}
+        AZURE_CLIENT_ID: ${{ secrets.QBRAID_API_KEY }}
+        AZURE_CLIENT_SECRET: ${{ secrets.QBRAID_API_KEY }}
+        AZURE_QUANTUM_SUBSCRIPTION_ID: ${{ secrets.QBRAID_API_KEY }}
+        AZURE_QUANTUM_WORKSPACE_RG: ${{ secrets.QBRAID_API_KEY }}
+        AZURE_QUANTUM_WORKSPACE_NAME: ${{ secrets.QBRAID_API_KEY }}
+        OQC_AUTH_TOKEN: ${{ secrets.QBRAID_API_KEY }}
+        IONQ_API_KEY: ${{ secrets.QBRAID_API_KEY }}
+        QBRAID_RUN_REMOTE_TESTS: True

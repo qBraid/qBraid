@@ -73,6 +73,7 @@ qiskit = "qbraid.programs.gate_model.qiskit:QiskitCircuit"
 pytket = "qbraid.programs.gate_model.pytket:PytketCircuit"
 qasm2 = "qbraid.programs.gate_model.qasm2:OpenQasm2Program"
 qasm3 = "qbraid.programs.gate_model.qasm3:OpenQasm3Program"
+cudaq = "qbraid.programs.gate_model.cudaq:CudaQKernel"
 
 [project.entry-points."qbraid.jobs"]
 aws = "qbraid.runtime.aws.job:BraketQuantumTask"

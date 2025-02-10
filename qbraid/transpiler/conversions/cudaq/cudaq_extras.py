@@ -9,7 +9,7 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module defining CUDA-Q conveersion extras.
+Module defining CUDA-Q conversion extras.
 
 """
 from __future__ import annotations
