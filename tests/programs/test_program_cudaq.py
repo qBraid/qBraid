@@ -57,3 +57,4 @@ def test_cudaq_program_num_qubits():
 
     assert isinstance(program, CudaQKernel)
     assert program.num_qubits == 2
+    assert program.num_clbits == 0
