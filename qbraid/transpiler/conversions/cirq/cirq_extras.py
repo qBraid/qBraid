@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     import stim  # type: ignore
 
 
-@requires_extras("stimcirq")
+@requires_extras("stim", "stimcirq")
 def cirq_to_stim(circuit: cirq.Circuit) -> stim.Circuit:
     """Returns an stim circuit equivalent to the input cirq circuit.
 
@@ -40,6 +40,19 @@ def cirq_to_stim(circuit: cirq.Circuit) -> stim.Circuit:
         stim.Circuit: stim circuit equivalent to input cirq circuit.
     """
     return stimcirq.cirq_circuit_to_stim_circuit(circuit)
+
+
+@requires_extras("stim", "stimcirq")
+def stim_to_cirq(circuit: stim.Circuit) -> cirq.Circuit:
+    """Returns a Cirq circuit equivalent to the input Stim circuit.
+
+    Args:
+        circuit (stim.Circuit): Stim circuit to convert to Cirq circuit.
+
+    Returns:
+        cirq.Circuit: Cirq circuit equivalent to input Stim circuit.
+    """
+    return stimcirq.stim_circuit_to_cirq_circuit(circuit)
 
 
 @requires_extras("qbraid_qir")

@@ -51,3 +51,16 @@ def qasm2_to_qibo(qasm: Qasm2StringType) -> qibo_.Circuit:
     qasm = "\n".join(clean_lines)
 
     return qibo.Circuit.from_qasm(qasm)
+
+
+@requires_extras("qibo")
+def qibo_to_qasm2(circuit: qibo_.Circuit) -> Qasm2StringType:
+    """Returns an OpenQASM 2 string equivalent to the input qibo.Circuit.
+
+    Args:
+        circuit: qibo.Circuit object to convert to OpenQASM 2 string.
+
+    Returns:
+        OpenQASM 2 string equivalent to the input qibo.Circuit.
+    """
+    return circuit.to_qasm()

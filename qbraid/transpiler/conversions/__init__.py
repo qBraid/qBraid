@@ -39,6 +39,7 @@ Submodules
    pyquil
    pytket
    qiskit
+   cudaq
 
 """
 import importlib
