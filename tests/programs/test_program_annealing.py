@@ -37,7 +37,7 @@ except ImportError:
     pyqubo_not_installed = True
 
 
-pytest.mark.skipif(pyqubo_not_installed, reason="pyqubo not installed")
+pytestmark = pytest.mark.skipif(pyqubo_not_installed, reason="pyqubo not installed")
 
 
 @pytest.fixture

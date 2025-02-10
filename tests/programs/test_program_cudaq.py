@@ -25,7 +25,7 @@ try:
 except ImportError:
     cudaq_not_installed = True
 
-pytest.mark.skipif(cudaq_not_installed, reason="cudaq not installed")
+pytestmark = pytest.mark.skipif(cudaq_not_installed, reason="cudaq not installed")
 
 
 def test_invalid_program_initialization():
