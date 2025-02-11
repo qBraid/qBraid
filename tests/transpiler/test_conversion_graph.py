@@ -55,7 +55,7 @@ def basic_conversion_graph() -> ConversionGraph:
     conv1 = Conversion("a", "b", lambda x: x)
     conv2 = Conversion("b", "c", lambda x: x)
     conv3 = Conversion("a", "d", lambda x: x)
-    graph = ConversionGraph(conversions=[conv1, conv2, conv3])
+    graph = ConversionGraph(conversions=[conv1, conv2, conv3], include_isolated=False)
     return graph
 
 
@@ -68,7 +68,7 @@ def mock_graph(mock_conversions) -> ConversionGraph:
 @pytest.fixture
 def native_conversion_graph():
     """Returns a ConversionGraph with only native conversions."""
-    return ConversionGraph(require_native=True)
+    return ConversionGraph(require_native=True, include_isolated=False)
 
 
 def bound_method_str(source, target):
@@ -175,7 +175,7 @@ def test_remove_conversion():
 
 def test_copy_conversion_graph():
     """Test copying a ConversionGraph."""
-    graph = ConversionGraph()
+    graph = ConversionGraph(include_isolated=False)
     graph.add_conversion(Conversion("a", "z", lambda x: x))
 
     conversions_init = graph.conversions()
@@ -355,7 +355,9 @@ def test_register_annealing_conversion_and_check_experiment_type():
     """Test that the experiment type is correctly set for a new annealing conversion."""
     conversion_other = Conversion("a", "b", lambda x: x)
     conversion_annealing = Conversion("qubo", "mock_type", lambda x: x)
-    graph = ConversionGraph(conversions=[conversion_annealing, conversion_other])
+    graph = ConversionGraph(
+        conversions=[conversion_annealing, conversion_other], include_isolated=False
+    )
     node_to_exp_type = graph.get_node_experiment_types()
     assert node_to_exp_type == {
         "a": ExperimentType.OTHER,
@@ -377,7 +379,7 @@ def test_get_node_experiment_type_raises_for_conflicting_experiment_types():
 
 def test_include_isolated_nodes():
     """Test including isolated nodes in the conversion graph."""
-    graph = ConversionGraph()
+    graph = ConversionGraph(include_isolated=False)
     graph2 = ConversionGraph(include_isolated=True)
 
     assert "qubo" not in graph.nodes()
