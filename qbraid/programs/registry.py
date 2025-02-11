@@ -189,6 +189,8 @@ def get_native_experiment_type(native_alias: str) -> ExperimentType:
         "openqasm3": ExperimentType.GATE_MODEL,
         "qasm2_kirin": ExperimentType.GATE_MODEL,
         "pyqir": ExperimentType.GATE_MODEL,
+        "stim": ExperimentType.GATE_MODEL,
+        "qibo": ExperimentType.GATE_MODEL,
         "bloqade": ExperimentType.AHS,
     }
 

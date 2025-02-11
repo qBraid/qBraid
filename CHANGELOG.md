@@ -19,6 +19,9 @@ Types of changes:
 - Added `qibo` to dynamic `QPROGRAM_REGISTRY` imports ([#891](https://github.com/qBraid/qBraid/pull/891))
 - Fixed `plt.show` / `plt.save_fig` bug in `plot conversion_graph` ([#893](https://github.com/qBraid/qBraid/pull/893))
 - Added [IonQ Forte Enterpres](https://ionq.com/quantum-systems/forte-enterprise) devices to `IonQProvider` runtime tests ([#894](https://github.com/qBraid/qBraid/pull/894))
+- Added `CudaQKernel` class to support `cudaq.PyKernel` as "native" program type ([#895](https://github.com/qBraid/qBraid/pull/895))
+- Added `qibo_to_qasm2` conversion to transpiler ([#895](https://github.com/qBraid/qBraid/pull/895))
+- Added `stim` to dynamic `QPROGRAM_REGISTRY` imports and `stim_to_cirq` conversion to transpiler ([#895](https://github.com/qBraid/qBraid/pull/895))
 - Added `Qasm2KirinString` metatype to support qasm2 strings adapted for QuEra kirin qasm parser through qBraid native runtime. ([#896](https://github.com/qBraid/qBraid/pull/896))
 
 ### Improved / Modified

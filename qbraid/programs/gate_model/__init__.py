@@ -37,6 +37,7 @@ Submodules
    qasm3
    qiskit
    ionq
+   cudaq
 
 """
 import importlib

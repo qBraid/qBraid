@@ -110,7 +110,17 @@ def transpile(
 
     for path in paths:
         path_details = _get_path_from_bound_methods(path)
-        temp_program = deepcopy(program)
+        try:
+            temp_program = deepcopy(program)
+        except RecursionError as err:
+            logger.warning(
+                "Deepcopy failed due to a %s, likely caused by the internal structure of "
+                "the %s object. Continuing execution, but any subsequent errors during "
+                "transpilation may be unclear or misleading due to potential side effects.",
+                type(err).__name__,
+                type(program),
+            )
+            temp_program = program
         try:
             for convert_func in path:
                 try:
