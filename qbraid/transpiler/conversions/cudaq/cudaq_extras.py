@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING
 import cudaq
 from qbraid_core._import import LazyLoader
 
-from qbraid.transpiler.annotations import requires_extras
+from qbraid.transpiler.annotations import requires_extras, weight
 
 if TYPE_CHECKING:
     from cudaq import PyKernel
@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 pyqir = LazyLoader("pyqir", globals(), "pyqir")
 
 
+@weight(1)
 @requires_extras("pyqir")
 def cudaq_to_pyqir(kernel: PyKernel) -> Module:
     """Converts a CUDA-Q kernel to PyQIR."""

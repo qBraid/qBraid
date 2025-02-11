@@ -18,12 +18,15 @@ from typing import TYPE_CHECKING
 
 import cudaq
 
+from qbraid.transpiler.annotations import weight
+
 if TYPE_CHECKING:
     from cudaq import PyKernel
 
     from qbraid.programs.typer import Qasm2StringType
 
 
+@weight(1)
 def cudaq_to_qasm2(kernel: PyKernel) -> Qasm2StringType:
     """Converts a CUDA-Q kernel to QASM2."""
     return cudaq.translate(kernel, format="openqasm2")
