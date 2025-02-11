@@ -20,7 +20,7 @@ import pyqasm
 from openqasm3 import ast
 from qbraid_core._import import LazyLoader
 
-from qbraid.transpiler.annotations import requires_extras, weight
+from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import ProgramConversionError
 
 cudaq = LazyLoader("cudaq", globals(), "cudaq")
@@ -73,9 +73,7 @@ def make_gate_kernel(name: str, targs: tuple[type]) -> PyKernel:
     return kernel
 
 
-@weight(1)
-@requires_extras("cudaq")
-# pylint: disable-next=too-many-statements
+@weight(1)  # pylint: disable-next=too-many-statements
 def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
     """Returns a CUDA-Q kernel representing the input OpenQASM program.
 
