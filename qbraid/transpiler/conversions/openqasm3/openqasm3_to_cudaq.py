@@ -73,7 +73,7 @@ def make_gate_kernel(name: str, targs: tuple[type]) -> PyKernel:
     return kernel
 
 
-@weight(1)  # pylint: disable-next=too-many-statements
+@weight(0.95)  # pylint: disable-next=too-many-statements
 def openqasm3_to_cudaq(program: QasmStringType | ast.Program) -> PyKernel:
     """Returns a CUDA-Q kernel representing the input OpenQASM program.
 
