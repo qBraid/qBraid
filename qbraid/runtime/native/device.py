@@ -284,6 +284,13 @@ class QbraidDevice(QuantumDevice):
 
             raise QbraidRuntimeError(error_message)
 
+    @staticmethod
+    def _all_target_specs_native(program_spec: ProgramSpec | list[ProgramSpec] | None) -> bool:
+        """Returns True if all of the given ProgramSpec's are natively supported by qBraid."""
+        entrypoints = get_entrypoints("programs")
+        specs = [program_spec] if isinstance(program_spec, ProgramSpec) else program_spec or []
+        return all(spec.native and spec.alias in entrypoints for spec in specs)
+
     def run(
         self,
         run_input: Union[qbraid.programs.QPROGRAM, list[qbraid.programs.QPROGRAM]],
@@ -345,11 +352,7 @@ class QbraidDevice(QuantumDevice):
 
         jobs: list[qbraid.runtime.QbraidJob] = []
 
-        native_target = (
-            self._target_spec is not None
-            and self._target_spec.native
-            and self._target_spec.alias in get_entrypoints("programs")
-        )
+        native_target = self._all_target_specs_native(self._target_spec)
         transpile_option = self._target_spec is not None and self._options.get("transpile") is True
 
         for i, program in enumerate(run_input_list):

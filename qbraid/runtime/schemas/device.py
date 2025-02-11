@@ -54,7 +54,8 @@ class DeviceData(BaseModel):
         queue_depth (int, optional): The depth of the job queue, or None if not applicable.
         device_type (str): The type of device (e.g., Simulator, QPU).
         num_qubits (int): The number of qubits supported by the device.
-        run_package (str): The software package used to interact with the device (e.g. qasm2).
+        run_input_types (list[str]): The software packages / program type alises that can be
+            used to specify quantum programs in jobs submitted to the device (e.g. ['qasm2']).
         device_id (str): The qBraid-specific device identifier.
         noise_models (list[str], optional): A list of supported noise models. Defaults to None.
         pricing (DevicePricing): The pricing structure for using the device, in qBraid credits.
@@ -73,7 +74,7 @@ class DeviceData(BaseModel):
 
     device_type: str = Field(alias="type")
     num_qubits: Optional[int] = Field(alias="numberQubits")
-    run_package: str = Field(alias="runPackage")
+    run_input_types: list[str] = Field(alias="runInputTypes")
     device_id: str = Field(alias="qbraid_id")
 
     noise_models: Optional[list[str]] = Field(None, alias="noiseModels")

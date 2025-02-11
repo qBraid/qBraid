@@ -22,10 +22,12 @@ Types of changes:
 - Added `CudaQKernel` class to support `cudaq.PyKernel` as "native" program type ([#895](https://github.com/qBraid/qBraid/pull/895))
 - Added `qibo_to_qasm2` conversion to transpiler ([#895](https://github.com/qBraid/qBraid/pull/895))
 - Added `stim` to dynamic `QPROGRAM_REGISTRY` imports and `stim_to_cirq` conversion to transpiler ([#895](https://github.com/qBraid/qBraid/pull/895))
+- Added `Qasm2KirinString` metatype to support qasm2 strings adapted for QuEra kirin qasm parser through qBraid native runtime. ([#896](https://github.com/qBraid/qBraid/pull/896))
 
 ### Improved / Modified
 -  Updated conversion graph and `QPROGRAM_REGISTRY` on README.md ([#891](https://github.com/qBraid/qBraid/pull/891))
 - Improved `plot_runtime_conversion_scheme` by removing edges not within `ConversionScheme.max_path_depth` ([#893](https://github.com/qBraid/qBraid/pull/893))
+- Updated native runtime `QbraidProvider` and `QbraidDevice` to support list of `ProgramSpec` loaded from API "runInputTypes" of type `list[str]` instead of single "runPackage" of type `str`. ([#896](https://github.com/qBraid/qBraid/pull/896))
 
 ### Deprecated
 
