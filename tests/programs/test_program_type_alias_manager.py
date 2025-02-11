@@ -89,9 +89,10 @@ measure q -> c;
 
 
 @pytest.mark.parametrize("qasm_str, expected_version", QASM_BELL_DATA)
-def test_get_qasm_type_alias(qasm_str, expected_version):
+def test_get_qasm_type_alias(qasm_str: str, expected_version: str):
     """Test getting QASM version"""
-    assert get_qasm_type_alias(qasm_str) == expected_version
+    alias = get_qasm_type_alias(qasm_str)
+    assert str(alias) == str(expected_version)
 
 
 @pytest.mark.parametrize("qasm_str", QASM_ERROR_DATA)
