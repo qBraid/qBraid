@@ -18,7 +18,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qbraid.programs import load_program, NATIVE_REGISTRY
+from qbraid.programs import NATIVE_REGISTRY, load_program
 from qbraid.transpiler.conversions import conversion_functions
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.graph import ConversionGraph
