@@ -18,7 +18,7 @@ import cirq
 import numpy as np
 import pytest
 
-from qbraid.programs import load_program
+from qbraid.programs import load_program, NATIVE_REGISTRY
 from qbraid.transpiler.conversions import conversion_functions
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.graph import ConversionGraph
@@ -31,12 +31,12 @@ def find_cirq_targets(skip: Optional[list[str]] = None):
     for function in conversion_functions:
         if function.startswith("cirq_to_"):
             _, target_library = function.split("_to_")
-            if target_library not in skip:
+            if target_library not in skip and target_library in NATIVE_REGISTRY:
                 cirq_targets.append(target_library)
     return cirq_targets
 
 
-TARGETS = find_cirq_targets(skip=["pyqir"])
+TARGETS = find_cirq_targets()
 
 
 @pytest.mark.parametrize("frontend", TARGETS)

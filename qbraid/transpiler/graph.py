@@ -95,7 +95,7 @@ class ConversionGraph(rx.PyDiGraph):
         self,
         conversions: Optional[list[Conversion]] = None,
         require_native: bool = False,
-        include_isolated: bool = False,
+        include_isolated: bool = True,
         edge_bias: Optional[float] = None,
         nodes: Optional[Union[list[str], set[str]]] = None,
     ):
@@ -108,7 +108,7 @@ class ConversionGraph(rx.PyDiGraph):
             require_native (bool): If True, only include "native" conversion functions.
                 Defaults to False.
             include_isolated (bool): If True, includes all registered program type aliases, even
-                those that are not connected to any other nodes in the graph. Defaults to False.
+                those that are not connected to any other nodes in the graph. Defaults to True.
             edge_bias (float, optional): Factor used to fine-tune the edge weight calculations
                 and modify the decision thresholds for pathfinding. Defaults to 0.25 to prioritize
                 shorter paths. For example, a bias of 0.25 slightly favors a single conversion at
