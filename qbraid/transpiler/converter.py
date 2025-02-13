@@ -14,6 +14,7 @@ Module for transpiling quantum programs between different quantum programming la
 """
 from __future__ import annotations
 
+import functools
 import warnings
 from copy import deepcopy
 from typing import TYPE_CHECKING, Optional
@@ -161,3 +162,11 @@ def transpile(
             else "."
         )
     )
+
+
+@functools.wraps(transpile)
+def translate(*args, **kwargs):
+    return transpile(*args, **kwargs)
+
+
+translate.__doc__ = f"An alias for ``transpile``. {transpile.__doc__}"
