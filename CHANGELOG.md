@@ -23,6 +23,13 @@ Types of changes:
 - Added `qibo_to_qasm2` conversion to transpiler ([#895](https://github.com/qBraid/qBraid/pull/895))
 - Added `stim` to dynamic `QPROGRAM_REGISTRY` imports and `stim_to_cirq` conversion to transpiler ([#895](https://github.com/qBraid/qBraid/pull/895))
 - Added `Qasm2KirinString` metatype to support qasm2 strings adapted for QuEra kirin qasm parser through qBraid native runtime. ([#896](https://github.com/qBraid/qBraid/pull/896))
+- Added `translate` functions as alias for `transpile`, but also that can chain multiple conversions together ([#899](https://github.com/qBraid/qBraid/pull/899)). For example:
+
+```python
+from qbraid import translate
+
+circuit_out = translate(circuit_in, "qasm3", "braket", "cirq")
+```
 
 ### Improved / Modified
 -  Updated conversion graph and `QPROGRAM_REGISTRY` on README.md ([#891](https://github.com/qBraid/qBraid/pull/891))
@@ -34,6 +41,8 @@ Types of changes:
 ### Removed
 
 ### Fixed
+- Handling of empty counts dict in `format_counts` pre-processing function ([#899](https://github.com/qBraid/qBraid/pull/899))
+- Skipping NEC remote tests if device is not online ([#899](https://github.com/qBraid/qBraid/pull/899))
 
 ### Dependencies
 
