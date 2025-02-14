@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import warnings
 from copy import deepcopy
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING, Any, Callable, Optional
 
 from qbraid_core._import import LazyLoader
 
@@ -163,17 +163,18 @@ def transpile(
     )
 
 
-def chain_calls(func, initial_value, *args, **kwargs):
+def chain_calls(func: Callable[[Any, Any], Any], initial_value, *args, **kwargs) -> Any:
     """
     Apply a function iteratively over a sequence of arguments.
 
     Args:
-        func (callable): The function to apply.
-        initial_value: The initial input to the first call.
-        *args: The sequence of arguments for subsequent calls.
+        func (Callable[[Any, Any], Any]): The function to apply.
+        initial_value (Any): The initial input to the first call.
+        *args (Any): The sequence of arguments for subsequent calls.
+        **kwargs (Any): Additional keyword arguments for the function.
 
     Returns:
-        The result of the final call.
+        Any: The result of the final call.
     """
     result = initial_value
     for arg in args:
