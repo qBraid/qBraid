@@ -92,12 +92,7 @@ _lazy = {
         "Session",
         "TargetProfile",
     ],
-    "transpiler": [
-        "Conversion",
-        "ConversionGraph",
-        "ConversionScheme",
-        "transpile",
-    ],
+    "transpiler": ["Conversion", "ConversionGraph", "ConversionScheme", "transpile", "translate"],
     "visualization": [],
 }
 
@@ -141,6 +136,7 @@ if TYPE_CHECKING:
     from .transpiler import Conversion as Conversion
     from .transpiler import ConversionGraph as ConversionGraph
     from .transpiler import ConversionScheme as ConversionScheme
+    from .transpiler import translate as translate
     from .transpiler import transpile as transpile
 
 

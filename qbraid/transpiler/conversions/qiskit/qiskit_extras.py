@@ -64,7 +64,7 @@ def qiskit_to_pyqir(circuit: qiskit.circuit.QuantumCircuit) -> pyqir.Module:
         Module: PyQIR module
     """
     # tuple of module and list of entry points
-    module, _ = qiskit_qir.to_qir_module(circuit, record_output=False)
+    module, _ = qiskit_qir.to_qir_module(circuit)
     return module
 
 

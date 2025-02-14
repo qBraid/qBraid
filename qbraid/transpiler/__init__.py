@@ -31,6 +31,7 @@ Functions
    :toctree: ../stubs/
 
    transpile
+   translate
    requires_extras
 
 Exceptions
@@ -45,7 +46,7 @@ Exceptions
 
 """
 from .annotations import requires_extras
-from .converter import transpile
+from .converter import translate, transpile
 from .edge import Conversion
 from .exceptions import ConversionPathNotFoundError, NodeNotFoundError, ProgramConversionError
 from .graph import ConversionGraph
@@ -54,6 +55,7 @@ from .scheme import ConversionScheme
 __all__ = [
     "requires_extras",
     "transpile",
+    "translate",
     "Conversion",
     "ConversionGraph",
     "ConversionScheme",

@@ -111,6 +111,9 @@ def format_counts(
         >>> format_counts(counts, decimal=True)
         {0: 46, 1: 0, 2: 79, 3: 13}
     """
+    if not counts:
+        return counts
+
     input_is_dec = False
     input_is_bin = False
 
