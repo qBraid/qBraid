@@ -14,15 +14,6 @@ quantum software program types.
 
 .. currentmodule:: qbraid.transpiler.conversions
 
-Functions
-----------
-
-.. autosummary::
-   :toctree: ../stubs/
-
-   update_registered_conversions
-
-
 Submodules
 -----------
 
@@ -57,7 +48,7 @@ valid_combinations_cache = set()
 conversion_functions = []
 
 
-def update_registered_conversions() -> None:
+def _update_registered_conversions() -> None:
     """
     Dynamically update the list of conversion functions based on current
     NATIVE_REGISTRY and QPROGRAM_REGISTRY. Adds valid conversion functions
@@ -108,4 +99,4 @@ def update_registered_conversions() -> None:
             pass
 
 
-update_registered_conversions()
+_update_registered_conversions()
