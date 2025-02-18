@@ -35,6 +35,7 @@ circuit_out = translate(circuit_in, "qasm3", "braket", "cirq")
 -  Updated conversion graph and `QPROGRAM_REGISTRY` on README.md ([#891](https://github.com/qBraid/qBraid/pull/891))
 - Improved `plot_runtime_conversion_scheme` by removing edges not within `ConversionScheme.max_path_depth` ([#893](https://github.com/qBraid/qBraid/pull/893))
 - Updated native runtime `QbraidProvider` and `QbraidDevice` to support list of `ProgramSpec` loaded from API "runInputTypes" of type `list[str]` instead of single "runPackage" of type `str`. ([#896](https://github.com/qBraid/qBraid/pull/896))
+- Updated `qasm3_to_ionq`: no longer need to check if `pyqasm` is installed as it is now a core project dependency ([#905](https://github.com/qBraid/qBraid/pull/905))
 
 ### Deprecated
 
