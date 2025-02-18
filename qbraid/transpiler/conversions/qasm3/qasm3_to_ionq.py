@@ -16,15 +16,13 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from qbraid_core._import import LazyLoader
+import pyqasm
 
 from qbraid._logging import logger
 from qbraid.programs.gate_model.ionq import IONQ_NATIVE_GATES
 from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.conversions.openqasm3.openqasm3_to_ionq import openqasm3_to_ionq
 from qbraid.transpiler.exceptions import ProgramConversionError
-
-pyqasm = LazyLoader("pyqasm", globals(), "pyqasm")
 
 if TYPE_CHECKING:
     from qbraid.programs.typer import IonQDictType, Qasm3StringType
@@ -55,18 +53,17 @@ def qasm3_to_ionq(qasm: Qasm3StringType) -> IonQDictType:
                 module = pyqasm.loads(qasm)
                 module.unroll()
                 return openqasm3_to_ionq(pyqasm.dumps(module))
-        except (ImportError, ModuleNotFoundError) as import_err:
-            cache_err = import_err
         except Exception as pyqasm_err:  # pragma: no cover
             logger.debug("Conversion with pyqasm assistance failed: %s", pyqasm_err)
-        if (
-            cache_err
-            and "Cannot mix native and QIS gates in the same circuit" not in err_msg
-            and "Circuits with measurements are not supported by the IonQDictType" not in err_msg
+            cache_err = pyqasm_err
+        if cache_err and all(
+            msg not in err_msg
+            for msg in [
+                "Cannot mix native and QIS gates in the same circuit",
+                "Circuits with measurements are not supported by the IonQDictType",
+            ]
         ):
             err_msg += "." if err_msg and not err_msg.endswith(".") else ""
-            err_msg += "" if not err_msg else " "
-            err_msg += "Please install the 'ionq' extra to enable program unrolling with pyqasm."
         else:
             cache_err = err
         raise ProgramConversionError(err_msg) from cache_err
