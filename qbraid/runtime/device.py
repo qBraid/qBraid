@@ -259,6 +259,7 @@ class QuantumDevice(ABC):
         target_specs = (
             self._target_spec if isinstance(self._target_spec, list) else [self._target_spec]
         )
+
         alias_to_spec = {target_spec.alias: target_spec for target_spec in target_specs}
         ordered_targets = graph.get_sorted_closest_targets(
             run_input_spec.alias, list(alias_to_spec.keys())
@@ -274,6 +275,12 @@ class QuantumDevice(ABC):
 
             if run_input_spec.alias == target_alias:
                 return run_input
+
+            logger.debug(
+                "Transpiling '%s' program to device target program type '%s'",
+                run_input_spec.alias,
+                target_alias,
+            )
 
             try:
                 transpiled_run_input = transpile(
@@ -324,6 +331,8 @@ class QuantumDevice(ABC):
         """
         level = ValidationLevel(self._options.get("validate", 0))
 
+        logger.debug("Validating run input for device at %s", level)
+
         if level == ValidationLevel.NONE:
             return None
 
@@ -362,7 +371,7 @@ class QuantumDevice(ABC):
                 target_spec.validate(run_input)
             except ValueError as err:
                 if level == ValidationLevel.RAISE:
-                    raise ProgramValidationError from err
+                    raise ProgramValidationError(err) from err
                 if level == ValidationLevel.WARN:
                     warnings.warn(str(err), UserWarning)
 
@@ -373,6 +382,8 @@ class QuantumDevice(ABC):
         with the submission format required for the target device and its provider API."""
         if self._target_spec is None or not self._options.get("prepare"):
             return run_input
+
+        logger.debug("Preparing (i.e. serializing) run input")
 
         target_spec = self._get_target_spec(run_input)
         return target_spec.serialize(run_input)
@@ -394,6 +405,7 @@ class QuantumDevice(ABC):
         run_input = [run_input] if is_single_output else run_input
 
         if self._options.get("transform") is True:
+            logger.debug("Applying device-specific transformations (no-op in base class)")
             run_input = [self.transform(p) for p in cast(list, run_input)]
 
         self.validate(run_input)
@@ -431,4 +443,9 @@ class QuantumDevice(ABC):
         run_input = [run_input] if is_single_input else run_input
         run_input_compat = [self.apply_runtime_profile(program) for program in run_input]
         run_input_compat = run_input_compat[0] if is_single_input else run_input_compat
+        logger.debug(
+            "Submitting quantum program %s to device '%s'",
+            "batch" if not is_single_input else "",
+            self.id,
+        )
         return self.submit(run_input_compat, *args, **kwargs)
