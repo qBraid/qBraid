@@ -66,7 +66,7 @@ __bits__[1] = measure __qubits__[1];
 
 QASM_ERROR_DATA = [
     """
-OPENQASM 2.0;
+OPENQASM xyz;
 include "qelib1.inc";
 qreg q[2];
 creg c[2];
@@ -77,7 +77,7 @@ measure q[1] -> c[1];
 
         """,
     """
-OPENQASM 3.0;
+OPENQASM #@!$;
 include "stdgates.inc";
 bit c[2];
 qubit q[2];
@@ -126,7 +126,7 @@ def test_raise_error_unuspported_source_program():
 
 @pytest.mark.parametrize(
     "item",
-    ["OPENQASM 2.0; bad operation", "OPENQASM 3.0; bad operation", "DECLARE ro BIT[1]", "circuit"],
+    ["OPENQASM 1.0; bad operation", "OPENQASM -3.1; bad operation", "DECLARE ro BIT[1]", "circuit"],
 )
 def test_bad_source_openqasm_program(item):
     """Test raising ProgramTypeError converting invalid OpenQASM program string"""

@@ -178,7 +178,7 @@ class BaseQasmInstanceMeta(QbraidMetaType):
         if not isinstance(instance, str):
             return False
         try:
-            return Qasm3Analyzer.extract_qasm_version(instance) == cls.version
+            return int(Qasm3Analyzer.extract_qasm_version(instance)) == cls.version
         except QasmParsingError:
             return False
 
@@ -234,7 +234,7 @@ class QasmStringType(str):
     def __new__(cls, value):
         if not isinstance(value, str):
             raise TypeError("OpenQASM strings must be initialized with a string.")
-        if not Qasm3Analyzer.extract_qasm_version(value) == cls.version:
+        if not int(Qasm3Analyzer.extract_qasm_version(value)) == cls.version:
             raise ValueError(f"String does not conform to OpenQASM {cls.version} format.")
         return str.__new__(cls, value)
 
@@ -259,7 +259,7 @@ def get_qasm_type_alias(qasm: str) -> str:
         qasm (str): The OpenQASM program string.
 
     Returns:
-        str: The QASM version alias ('qasm2' or 'qasm3').
+        str: The QASM version alias ('qasm2', 'qasm3', or 'qasm2_kirin').
 
     Raises:
         QasmError: If the string does not represent a valid OpenQASM program.
