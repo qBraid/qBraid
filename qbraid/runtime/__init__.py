@@ -35,6 +35,7 @@ Functions
    :toctree: ../stubs/
 
     load_job
+    load_provider
     display_jobs_from_data
 
 Classes
@@ -67,6 +68,7 @@ Exceptions
     ResourceNotFoundError
     DeviceProgramTypeMismatchError
     JobLoaderError
+    ProviderLoaderError
 
 """
 import importlib
@@ -83,7 +85,7 @@ from .exceptions import (
     ResourceNotFoundError,
 )
 from .job import QuantumJob
-from .loader import JobLoaderError, load_job
+from .loader import JobLoaderError, ProviderLoaderError, load_job, load_provider
 from .noise import NoiseModel, NoiseModelSet
 from .options import RuntimeOptions
 from .profile import TargetProfile
@@ -103,12 +105,14 @@ __all__ = [
     "JobStatus",
     "display_jobs_from_data",
     "load_job",
+    "load_provider",
     "JobStateError",
     "ProgramValidationError",
     "QbraidRuntimeError",
     "ResourceNotFoundError",
     "DeviceProgramTypeMismatchError",
     "JobLoaderError",
+    "ProviderLoaderError",
     "TargetProfile",
     "QuantumJob",
     "QuantumProvider",
