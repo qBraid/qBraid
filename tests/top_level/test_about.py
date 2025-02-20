@@ -61,8 +61,8 @@ def test_about():
 
     assert f"qbraid:\t{__version__}\n\n" in output
     assert "Core Dependencies" in output
-    for dep, version in core_dependencies.items():
-        assert f"{dep}: {version}" in output
+    for dep, v in core_dependencies.items():
+        assert f"{dep}: {v}" in output
     assert "Optional Dependencies" in output
     assert "Python:" in output
     assert "Platform:" in output
