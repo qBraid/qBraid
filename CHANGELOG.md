@@ -16,6 +16,20 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+
+### Improved / Modified
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Dependencies
+
+## [0.9.4] - 2025-02-20
+
+### Added
 - Added `qibo` to dynamic `QPROGRAM_REGISTRY` imports ([#891](https://github.com/qBraid/qBraid/pull/891))
 - Fixed `plt.show` / `plt.save_fig` bug in `plot conversion_graph` ([#893](https://github.com/qBraid/qBraid/pull/893))
 - Added [IonQ Forte Enterpres](https://ionq.com/quantum-systems/forte-enterprise) devices to `IonQProvider` runtime tests ([#894](https://github.com/qBraid/qBraid/pull/894))
@@ -31,21 +45,28 @@ from qbraid import translate
 circuit_out = translate(circuit_in, "qasm3", "braket", "cirq")
 ```
 
+- Added logger `DEBUG` statements to QuantumDevice that track with the steps in job submission runtime ([#906](https://github.com/qBraid/qBraid/pull/906))
+- Expanded list of natively supported hardware vendors to include Rigetti, OQC, and IQM ([#906](https://github.com/qBraid/qBraid/pull/906))
+- Added `qbraid.runtime.load_provider` function to allow instantiating provider via a single interface using entrypoints based on provider name  ([#906](https://github.com/qBraid/qBraid/pull/906))
+
+```python
+from qbraid.runtime import load_provider, QbraidProvider
+
+provider = load_provider("qbraid")
+assert isintance(provider, QbraidProvider)
+
+# follows suit for 'aws', 'ibm', 'oqc', 'azure', 'ionq', etc.
+```
+
 ### Improved / Modified
 -  Updated conversion graph and `QPROGRAM_REGISTRY` on README.md ([#891](https://github.com/qBraid/qBraid/pull/891))
 - Improved `plot_runtime_conversion_scheme` by removing edges not within `ConversionScheme.max_path_depth` ([#893](https://github.com/qBraid/qBraid/pull/893))
 - Updated native runtime `QbraidProvider` and `QbraidDevice` to support list of `ProgramSpec` loaded from API "runInputTypes" of type `list[str]` instead of single "runPackage" of type `str`. ([#896](https://github.com/qBraid/qBraid/pull/896))
 - Updated `qasm3_to_ionq`: no longer need to check if `pyqasm` is installed as it is now a core project dependency ([#905](https://github.com/qBraid/qBraid/pull/905))
 
-### Deprecated
-
-### Removed
-
 ### Fixed
 - Handling of empty counts dict in `format_counts` pre-processing function ([#899](https://github.com/qBraid/qBraid/pull/899))
 - Skipping NEC remote tests if device is not online ([#899](https://github.com/qBraid/qBraid/pull/899))
-
-### Dependencies
 
 ## [0.9.3] - 2025-01-27
 

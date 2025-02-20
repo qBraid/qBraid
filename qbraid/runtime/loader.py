@@ -21,17 +21,21 @@ from qbraid._entrypoints import load_entrypoint
 from qbraid.exceptions import QbraidError
 
 if TYPE_CHECKING:
-    from qbraid.runtime import QuantumJob
-    from qbraid.runtime.aws import BraketQuantumTask
-    from qbraid.runtime.azure import AzureQuantumJob
-    from qbraid.runtime.ibm import QiskitJob
-    from qbraid.runtime.ionq import IonQJob
-    from qbraid.runtime.native import QbraidJob
-    from qbraid.runtime.oqc import OQCJob
+    from qbraid.runtime import QuantumJob, QuantumProvider
+    from qbraid.runtime.aws import BraketProvider, BraketQuantumTask
+    from qbraid.runtime.azure import AzureQuantumJob, AzureQuantumProvider
+    from qbraid.runtime.ibm import QiskitJob, QiskitRuntimeProvider
+    from qbraid.runtime.ionq import IonQJob, IonQProvider
+    from qbraid.runtime.native import QbraidJob, QbraidProvider
+    from qbraid.runtime.oqc import OQCJob, OQCProvider
 
 
 class JobLoaderError(QbraidError):
     """Raised when an error occurs while loading a quantum job."""
+
+
+class ProviderLoaderError(QbraidError):
+    """Raised when an error occurs while loading a quantum provider."""
 
 
 @overload
@@ -89,3 +93,60 @@ def load_job(job_id: str, provider: str = "qbraid", **kwargs) -> QuantumJob:
     job_instance = job_class(job_id, **kwargs)
 
     return job_instance
+
+
+@overload
+def load_provider(provider_name: Literal["native", "qbraid"], **kwargs) -> QbraidProvider: ...
+
+
+@overload
+def load_provider(provider_name: Literal["aws", "braket"], **kwargs) -> BraketProvider: ...
+
+
+@overload
+def load_provider(provider_name: Literal["ibm", "qiskit"], **kwargs) -> QiskitRuntimeProvider: ...
+
+
+@overload
+def load_provider(provider_name: Literal["azure"], **kwargs) -> AzureQuantumProvider: ...
+
+
+@overload
+def load_provider(provider_name: Literal["ionq"], **kwargs) -> IonQProvider: ...
+
+
+@overload
+def load_provider(provider_name: Literal["oqc"], **kwargs) -> OQCProvider: ...
+
+
+@overload
+def load_provider(provider_name: str, **kwargs) -> QuantumProvider: ...
+
+
+def load_provider(provider_name: str = "qbraid", **kwargs) -> QuantumProvider:
+    """Load a quantum provider object from a supported qBraid runtime module.
+
+    Args:
+        provider_name: The name of the provider module within in the
+            ``qbraid.runtime`` package. Defaults to "qbraid".
+
+    Returns:
+        QuantumProvider: A quantum provider object of the inferred subclass.
+
+    Raises:
+        ProviderLoaderError: If the provider subclass cannot be loaded.
+    """
+    provider_aliases = {"qbraid": "native", "qiskit": "ibm", "braket": "aws"}
+
+    provider_module = provider_aliases.get(provider_name, provider_name).lower()
+
+    try:
+        provider_class = load_entrypoint("providers", provider_module)
+    except Exception as err:
+        raise ProviderLoaderError(
+            f"Error loading QuantumProvider sub-class for provider '{provider_name}'."
+        ) from err
+
+    provider_instance = provider_class(**kwargs)
+
+    return provider_instance

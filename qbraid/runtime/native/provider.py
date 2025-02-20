@@ -205,7 +205,10 @@ class QbraidProvider(QuantumProvider):
             device
             for device in devices
             if device["vendor"] == "qBraid"
-            or (device["vendor"] == "AWS" and device["provider"] in {"AWS", "QuEra"})
+            or (
+                device["vendor"] == "AWS"
+                and device["provider"] in {"AWS", "QuEra", "OQC", "IQM", "Rigetti"}
+            )
         ]
 
         if not filtered_devices:
