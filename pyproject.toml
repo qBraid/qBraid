@@ -59,7 +59,7 @@ quera = ["flair-visual[vis]>=0.5.3"]
 visualization = ["ipython", "matplotlib", "pylatexenc", "ipympl"]
 test = ["pytest", "pytest-cov", "sympy", "packaging"]
 lint = ["black", "isort", "pylint", "qbraid-cli>=0.9.9,<0.10.0"]
-docs = ["sphinx>=7.2,<8.2", "sphinx-autodoc-typehints>=1.24,<3.1", "sphinx-rtd-theme>=1.3,<3.1", "docutils<0.22", "sphinx-copybutton"]
+docs = ["sphinx>=7.2,<8.3", "sphinx-autodoc-typehints>=1.24,<3.1", "sphinx-rtd-theme>=1.3,<3.1", "docutils<0.22", "sphinx-copybutton"]
 
 [project.entry-points."qbraid.programs"]
 qubo = "qbraid.programs.annealing.qubo:QuboProgram"
