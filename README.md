@@ -97,10 +97,17 @@ Below, `QPROGRAM_REGISTRY` maps shorthand identifiers for supported quantum prog
  'pyquil': pyquil.quil.Program,
  'pytket': pytket._tket.circuit.Circuit,
  'braket': braket.circuits.circuit.Circuit,
+ 'braket_ahs': braket.ahs.analog_hamiltonian_simulation.AnalogHamiltonianSimulation,
  'openqasm3': openqasm3.ast.Program,
  'pyqir': pyqir.Module,
+ 'cpp_pyqubo': cpp_pyqubo.Model,
  'qasm2': str,
- 'qasm3': str}
+ 'qasm3': str,
+ 'ionq': qbraid.programs.typer.IonQDict,
+ 'qubo': qbraid.programs.typer.QuboCoefficientsDict,
+ 'bloqade': bloqade.builder.assign.BatchAssign,
+ 'cudaq': cudaq.kernel.kernel_builder.PyKernel,
+ 'qibo': qibo.models.circuit.Circuit}
 ```
 
 Pass any registered quantum program along with a target package from
@@ -126,15 +133,15 @@ Behind the scenes, the qBraid-SDK uses [rustworkx](https://www.rustworkx.org/) t
 directional graph that maps all possible conversions between supported program types:
 
 ```python
-from qbraid import ConversionGraph
+from qbraid import ConversionGraph, ExperimentType
 
 # Loads native conversions from QPROGRAM_REGISTRY
 graph = ConversionGraph()
 
-graph.plot(legend=True)
+graph.plot(experiment_type=ExperimentType.GATE_MODEL,legend=True)
 ```
 
-<img src="https://qbraid-static.s3.amazonaws.com/conversion_graph_extras_legend.png" style="width: 65%;">
+<img src="https://qbraid-static.s3.us-east-1.amazonaws.com/conversion-graph-0.9.3.png" style="width: 65%;">
 
 You can use the native conversions supported by qBraid, or define your own. For [example](https://docs.qbraid.com/sdk/user-guide/transpiler#conversion-graph):
 

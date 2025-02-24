@@ -13,6 +13,7 @@ Unit tests for qasm2/qasm3 to IonQDictType transpilation
 
 """
 import importlib.util
+import sys
 from unittest.mock import Mock, patch
 
 import openqasm3.ast
@@ -225,15 +226,16 @@ def ionq_native_gates_dict() -> IonQDictType:
     }
 
 
+@pytest.mark.skipif(sys.version_info < (3, 11), reason="Requires Python 3.10 or higher")
 def test_qasm3_to_ionq_no_pyqasm(deutsch_jozsa_qasm3):
     """Test transpiling the Deutsch-Jozsa algorithm from QASM 3.0 to IonQDictType."""
-    with patch.dict("sys.modules", {"pyqasm": None}):
+    with patch(
+        "qbraid.transpiler.conversions.qasm3.qasm3_to_ionq.pyqasm.dumps",
+        side_effect=Exception("Mocked exception"),
+    ):
         with pytest.raises(ProgramConversionError) as excinfo:
             qasm3_to_ionq(deutsch_jozsa_qasm3)
-        assert (
-            "Failed to parse gate data from OpenQASM string. "
-            "Please install the 'ionq' extra to enable program unrolling with pyqasm."
-        ) in str(excinfo.value)
+        assert "Failed to parse gate data from OpenQASM string." in str(excinfo.value)
 
 
 def test_qasm3_to_ionq_deutch_jozsa(

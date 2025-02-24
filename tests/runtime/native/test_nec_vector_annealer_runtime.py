@@ -17,6 +17,7 @@ from qbraid_core import QbraidSession
 
 from qbraid import QbraidProvider
 from qbraid._logging import logger
+from qbraid.runtime import DeviceStatus
 from qbraid.runtime.native.result import NECVectorAnnealerResultData
 from qbraid.runtime.schemas import QuboSolveParams
 
@@ -53,6 +54,9 @@ def test_submit_qubo_job_to_nec_vector_annealer():
     provider = QbraidProvider()
 
     device = provider.get_device("nec_vector_annealer")
+
+    if device.status() != DeviceStatus.ONLINE:
+        pytest.skip("NEC Vector Annealer is not online")
 
     job = device.run(qubo, params=params)
 

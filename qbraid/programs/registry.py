@@ -89,7 +89,7 @@ def register_program_type(
         ValueError: If the alias is already registered with a different type,
                     if the program type is already registered under a different alias,
                     or if trying to register more than one additional 'str' type beyond
-                    'qasm2' and 'qasm3'.
+                    'qasm2', 'qasm3', and 'qasm2_kirin'.
     """
     if not alias:
         alias = derive_program_type_alias(program_type)
@@ -113,15 +113,18 @@ def register_program_type(
     if existing_alias and existing_alias != normalized_alias and overwrite is False:
         if program_type is str:
             str_types = [
-                k for k, v in QPROGRAM_REGISTRY.items() if v is str and k not in ("qasm2", "qasm3")
+                k
+                for k, v in QPROGRAM_REGISTRY.items()
+                if v is str and k not in ("qasm2", "qasm3", "qasm2_kirin")
             ]
             if (
                 len(str_types) >= 1
                 and normalized_alias not in str_types
-                and normalized_alias not in ("qasm2", "qasm3")
+                and normalized_alias not in ("qasm2", "qasm3", "qasm2_kirin")
             ):
                 raise ValueError(
-                    "Cannot register more than one additional 'str' type beyond 'qasm2', 'qasm3'."
+                    "Cannot register more than one additional 'str' type beyond "
+                    "'qasm2', 'qasm3', and 'qasm2_kirin'."
                 )
         else:
             raise ValueError(
@@ -184,7 +187,10 @@ def get_native_experiment_type(native_alias: str) -> ExperimentType:
 
     native_no_ep = {
         "openqasm3": ExperimentType.GATE_MODEL,
+        "qasm2_kirin": ExperimentType.GATE_MODEL,
         "pyqir": ExperimentType.GATE_MODEL,
+        "stim": ExperimentType.GATE_MODEL,
+        "qibo": ExperimentType.GATE_MODEL,
         "bloqade": ExperimentType.AHS,
     }
 

@@ -36,6 +36,7 @@ Functions
 
     load_job
     get_providers
+    load_provider
     display_jobs_from_data
 
 Classes
@@ -68,6 +69,7 @@ Exceptions
     ResourceNotFoundError
     DeviceProgramTypeMismatchError
     JobLoaderError
+    ProviderLoaderError
 
 """
 import importlib
@@ -84,7 +86,7 @@ from .exceptions import (
     ResourceNotFoundError,
 )
 from .job import QuantumJob
-from .loader import JobLoaderError, get_providers, load_job
+from .loader import JobLoaderError, ProviderLoaderError, get_providers, load_job, load_provider
 from .noise import NoiseModel, NoiseModelSet
 from .options import RuntimeOptions
 from .profile import TargetProfile
@@ -107,12 +109,14 @@ __all__ = [
     "display_jobs_from_data",
     "load_job",
     "get_providers",
+    "load_provider",
     "JobStateError",
     "ProgramValidationError",
     "QbraidRuntimeError",
     "ResourceNotFoundError",
     "DeviceProgramTypeMismatchError",
     "JobLoaderError",
+    "ProviderLoaderError",
     "TargetProfile",
     "QuantumJob",
     "QuantumProvider",

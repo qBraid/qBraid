@@ -19,7 +19,7 @@ Classes
 
 .. autosummary::
    :toctree: ../stubs/
-    
+
    GateModelProgram
 
 Submodules
@@ -37,6 +37,7 @@ Submodules
    qasm3
    qiskit
    ionq
+   cudaq
 
 """
 import importlib

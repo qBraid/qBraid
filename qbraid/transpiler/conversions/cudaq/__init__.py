@@ -1,4 +1,4 @@
-# Copyright (C) 2024 qBraid
+# Copyright (C) 2025 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -9,10 +9,21 @@
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
 """
-Module containing version information
+CUDA-Q conversions
 
-Version number (major.minor.patch[-label])
+.. currentmodule:: qbraid.transpiler.conversions.cudaq
+
+Functions
+----------
+
+.. autosummary::
+   :toctree: ../stubs/
+
+   cudaq_to_qasm2
+   cudaq_to_pyqir
 
 """
+from .cudaq_extras import cudaq_to_pyqir
+from .cudaq_to_qasm2 import cudaq_to_qasm2
 
-__version__ = "0.9.4"
+__all__ = ["cudaq_to_qasm2", "cudaq_to_pyqir"]

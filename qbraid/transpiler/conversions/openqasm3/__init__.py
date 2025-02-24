@@ -24,7 +24,7 @@ Functions
    openqasm3_to_cudaq
 
 """
-from .openqasm3_extras import openqasm3_to_cudaq
+from .openqasm3_to_cudaq import openqasm3_to_cudaq
 from .openqasm3_to_ionq import openqasm3_to_ionq
 from .openqasm3_to_qasm3 import openqasm3_to_qasm3
 

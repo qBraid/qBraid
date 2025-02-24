@@ -64,7 +64,7 @@ def test_plot_conversion_graph_save(mock_layout, mock_plt, mock_graph):
     """Test that the graph is saved to the correct path when specified."""
     save_path = "path/to/save/plot.png"
     plot_conversion_graph(graph=mock_graph, show=False, save_path=save_path)
-    mock_plt.savefig.assert_called_once_with(save_path)
+    mock_plt.savefig.assert_called_once_with(save_path, bbox_inches="tight", dpi=300)
     mock_plt.show.assert_not_called()
 
 

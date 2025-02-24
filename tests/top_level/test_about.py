@@ -14,7 +14,7 @@ Unit tests for the about module.
 """
 
 import sys
-from importlib.metadata import PackageNotFoundError, distribution
+from importlib.metadata import PackageNotFoundError, distribution, version
 from io import StringIO
 from unittest.mock import patch
 
@@ -28,9 +28,15 @@ import rustworkx
 from qbraid import _about
 from qbraid._version import __version__
 
+PYQASM_VERSION = version("pyqasm")
+PYQASM_VERSION_BUG = PYQASM_VERSION in {"0.2.0", "0.2.1"}
+
+TYPING_EXTS_VERSION = version("typing-extensions")
+
 
 def test_about():
     """Test the about function."""
+
     # Redirect stdout to capture the output of the about function
     captured_output = StringIO()
     sys.stdout = captured_output
@@ -46,16 +52,17 @@ def test_about():
     core_dependencies = {
         "numpy": numpy.__version__,
         "openqasm3": openqasm3.__version__,
-        "pyqasm": pyqasm.__version__,
+        "pyqasm": pyqasm.__version__ if not PYQASM_VERSION_BUG else PYQASM_VERSION,
         "pydantic": pydantic.__version__,
         "qbraid-core": qbraid_core.__version__,
         "rustworkx": rustworkx.__version__,
+        "typing-extensions": TYPING_EXTS_VERSION,
     }
 
     assert f"qbraid:\t{__version__}\n\n" in output
     assert "Core Dependencies" in output
-    for dep, version in core_dependencies.items():
-        assert f"{dep}: {version}" in output
+    for dep, v in core_dependencies.items():
+        assert f"{dep}: {v}" in output
     assert "Optional Dependencies" in output
     assert "Python:" in output
     assert "Platform:" in output

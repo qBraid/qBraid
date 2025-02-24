@@ -125,7 +125,7 @@ class OQCJob(QuantumJob):
 
     @staticmethod
     def _get_counts(
-        result: dict[str, dict[str, int]]
+        result: dict[str, dict[str, int]],
     ) -> Union[dict[str, int], list[dict[str, int]]]:
         """Extracts the measurement counts from the result of a quantum task.
 

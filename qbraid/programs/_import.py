@@ -104,6 +104,10 @@ def _get_class(module: str):
         return cpp_pyqubo.Model  # type: ignore # noqa: F821
     if module == "cudaq":
         return cudaq.PyKernel  # type: ignore # noqa: F821
+    if module == "qibo":  # pragma: no cover
+        return qibo.Circuit  # type: ignore # noqa: F821
+    if module == "stim":  # pragma: no cover
+        return stim.Circuit  # type: ignore # noqa: F821
     raise ValueError(f"Unsupported module '{module}'")
 
 
@@ -120,11 +124,13 @@ dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
         "braket.circuits",
         "braket.ahs",
         "openqasm3",
-        "pyqir",
         "cpp_pyqubo",
+        "cudaq",
     ]
 )
-dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(["bloqade.builder.assign", "cudaq"])
+dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(
+    ["bloqade.builder.assign", "qibo", "stim", "pyqir"]
+)
 static_type_registry: dict[str, Type[Any]] = {
     metatype.__alias__: metatype.__bound__ for metatype in BOUND_QBRAID_META_TYPES
 }

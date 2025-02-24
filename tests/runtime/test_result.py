@@ -204,6 +204,13 @@ def test_format_counts(counts_raw, expected_out, include_zero_values):
     assert list(counts_out.items()) == list(expected_out.items())  # check ordering of keys
 
 
+def test_format_counts_empty_input():
+    """Test formatting of empty input."""
+    counts = {}
+    expected = {}
+    assert format_counts(counts) == expected
+
+
 def test_normalize_different_key_lengths():
     """Test normalization of measurement counts with different key lengths."""
     measurements = [{"0": 10, "1": 15}, {"00": 5, "01": 8, "10": 12}]

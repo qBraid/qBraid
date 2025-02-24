@@ -111,6 +111,9 @@ def format_counts(
         >>> format_counts(counts, decimal=True)
         {0: 46, 1: 0, 2: 79, 3: 13}
     """
+    if not counts:
+        return counts
+
     input_is_dec = False
     input_is_bin = False
 
@@ -193,7 +196,7 @@ def _counts_to_probabilities(counts: dict[str, int]) -> dict[str, float]:
 
 
 def counts_to_probabilities(
-    counts: Union[dict[Any, int], list[dict[Any, int]]]
+    counts: Union[dict[Any, int], list[dict[Any, int]]],
 ) -> Union[dict[Any, float], list[dict[Any, float]]]:
     """Calculate and return the probabilities of each measurement result."""
     if isinstance(counts, dict):

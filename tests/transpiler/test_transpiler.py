@@ -70,7 +70,7 @@ def test_to_cirq_bad_types(item):
 
 @pytest.mark.parametrize(
     "item",
-    ["OPENQASM 2.0; bad operation", "OPENQASM 3.0; bad operation", "DECLARE ro BIT[1]", "circuit"],
+    ["OPENQASM 1.0; bad operation", "OPENQASM -3.0; bad operation", "DECLARE ro BIT[1]", "circuit"],
 )
 def test_to_cirq_bad_openqasm_program(item):
     """Test raising QasmParsingError converting invalid OpenQASM program string"""

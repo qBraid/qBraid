@@ -148,6 +148,15 @@ class QbraidProvider(QuantumProvider):
         return ProgramSpec(program_type, alias=run_package, **lambdas) if program_type else None
 
     @staticmethod
+    def _get_program_specs(run_input_types: list[str], device_id: str) -> list[ProgramSpec]:
+        """Return a list of program specs for the given run input types and device."""
+        return [
+            spec
+            for rp in run_input_types
+            if (spec := QbraidProvider._get_program_spec(rp, device_id)) is not None
+        ]
+
+    @staticmethod
     def _get_basis_gates(device_data: dict[str, Any]) -> Optional[list[str]]:
         """Return the basis gates for the qBraid device."""
         provider = device_data["provider"]
@@ -160,12 +169,8 @@ class QbraidProvider(QuantumProvider):
         """Builds a runtime profile from qBraid device data."""
         model = DeviceData(**device_data)
         simulator = str(model.device_type).upper() == "SIMULATOR"
-        run_package = (
-            "braket_ahs"
-            if model.run_package == "braket" and model.paradigm.lower() == "ahs"
-            else model.run_package
-        )
-        program_spec = self._get_program_spec(run_package, model.device_id)
+        specs = self._get_program_specs(model.run_input_types, model.device_id)
+        program_spec = specs[0] if len(specs) == 1 else specs or None
         noise_models = (
             NoiseModelSet.from_iterable(model.noise_models) if model.noise_models else None
         )
@@ -200,7 +205,10 @@ class QbraidProvider(QuantumProvider):
             device
             for device in devices
             if device["vendor"] == "qBraid"
-            or (device["vendor"] == "AWS" and device["provider"] in {"AWS", "QuEra"})
+            or (
+                device["vendor"] == "AWS"
+                and device["provider"] in {"AWS", "QuEra", "OQC", "IQM", "Rigetti"}
+            )
         ]
 
         if not filtered_devices:
