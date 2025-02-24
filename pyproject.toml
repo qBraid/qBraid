@@ -58,7 +58,7 @@ qiskit = ["qiskit>=1.0,<1.4", "qiskit-ibm-runtime>=0.25.0,<0.37", "qiskit-qasm3-
 quera = ["flair-visual[vis]>=0.5.3"]
 visualization = ["ipython", "matplotlib", "pylatexenc", "ipympl"]
 test = ["pytest", "pytest-cov", "sympy", "packaging"]
-lint = ["black", "isort", "pylint", "qbraid-cli>=0.8.7"]
+lint = ["black", "isort", "pylint", "qbraid-cli>=0.9.9,<0.10.0"]
 docs = ["sphinx>=7.2,<8.2", "sphinx-autodoc-typehints>=1.24,<3.1", "sphinx-rtd-theme>=1.3,<3.1", "docutils<0.22", "sphinx-copybutton"]
 
 [project.entry-points."qbraid.programs"]
@@ -81,7 +81,7 @@ aws = "qbraid.runtime.aws.provider:BraketProvider"
 azure = "qbraid.runtime.azure.provider:AzureQuantumProvider"
 ibm = "qbraid.runtime.ibm.provider:QiskitRuntimeProvider"
 ionq = "qbraid.runtime.ionq.provider:IonQProvider"
-native = "qbraid.runtime.native.provider:QbraidProvider"
+qbraid = "qbraid.runtime.native.provider:QbraidProvider"
 oqc = "qbraid.runtime.oqc.provider:OQCProvider"
 
 [project.entry-points."qbraid.jobs"]
@@ -89,7 +89,7 @@ aws = "qbraid.runtime.aws.job:BraketQuantumTask"
 azure = "qbraid.runtime.azure.job:AzureQuantumJob"
 ibm = "qbraid.runtime.ibm.job:QiskitJob"
 ionq = "qbraid.runtime.ionq.job:IonQJob"
-native = "qbraid.runtime.native.job:QbraidJob"
+qbraid = "qbraid.runtime.native.job:QbraidJob"
 oqc = "qbraid.runtime.oqc.job:OQCJob"
 
 [tool.setuptools.dynamic]

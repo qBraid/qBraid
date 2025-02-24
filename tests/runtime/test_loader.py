@@ -16,9 +16,11 @@ Unit tests for loading jobs using entrypoints
 import pytest
 
 from qbraid.runtime import (
+    PROVIDERS,
     JobLoaderError,
     ProviderLoaderError,
     QbraidProvider,
+    get_providers,
     load_job,
     load_provider,
 )
@@ -47,6 +49,12 @@ def test_load_job_error(job_id):
         match=f"Error loading QuantumJob sub-class for provider '{provider}'.",
     ):
         load_job(job_id, provider)
+
+
+def test_get_providers():
+    """Test getting all available providers."""
+    providers = get_providers()
+    assert providers == PROVIDERS == ["aws", "azure", "ibm", "ionq", "oqc", "qbraid"]
 
 
 def test_load_provider(mock_client):
