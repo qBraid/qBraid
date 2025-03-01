@@ -1,0 +1,11 @@
+# quera dependencies
+bloqade-analog>=0.16.1,<0.17.0; python_version < "3.13"
+flair-visual>=0.5.3; python_version < "3.13"
+pandas
+
+# testing dependencies
+amazon-braket-sdk>=1.83.0,<1.91.0
+# cirq-core>=1.3,<1.5
+
+pytest
+pytest-cov

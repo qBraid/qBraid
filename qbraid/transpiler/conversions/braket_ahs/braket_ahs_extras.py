@@ -21,12 +21,12 @@ from braket.ahs import AnalogHamiltonianSimulation
 from qbraid.transpiler.annotations import requires_extras
 
 if TYPE_CHECKING:
-    import bloqade.builder.assign
+    import bloqade.analog.builder.assign
 
 
 @requires_extras("bloqade")
 def bloqade_to_braket_ahs(
-    program: bloqade.builder.assign.BatchAssign,
+    program: bloqade.analog.builder.assign.BatchAssign,
 ) -> list[AnalogHamiltonianSimulation]:
     """Converts a Bloqade program batch to a list of Amazon Braket AHS.
 
@@ -37,7 +37,7 @@ def bloqade_to_braket_ahs(
         list[AnalogHamiltonianSimulation]: A list of Amazon Braket AHS programs
     """
     # pylint: disable=import-outside-toplevel
-    from bloqade.compiler.passes.hardware import (
+    from bloqade.analog.compiler.passes.hardware import (
         analyze_channels,
         assign_circuit,
         canonicalize_circuit,
