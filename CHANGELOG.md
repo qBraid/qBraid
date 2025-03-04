@@ -24,7 +24,11 @@ Types of changes:
 ['aws', 'azure', 'ibm', 'ionq', 'oqc', 'qbraid']
 ```
 
+- Added bin script + logic in version bump workflow to automatically update `CITATION.ff` ([#915](https://github.com/qBraid/qBraid/pull/915))
+
 ### Improved / Modified
+- Disabled validation step in remote (native) IonQ runtime test when constructing `IonQDict` via `qiskit-ionq` ([#915](https://github.com/qBraid/qBraid/pull/915))
+- Enabled loading `azure.quantum.Workspace` from `AZURE_QUANTUM_CONNECTION_STRING` environment variable in `AzureQuantumProvider` class ([#915](https://github.com/qBraid/qBraid/pull/915))
 
 ### Deprecated
 
@@ -33,6 +37,7 @@ Types of changes:
 ### Fixed
 
 ### Dependencies
+- Updated qBraid-CLI dependency to >= 0.10.0 ([#915](https://github.com/qBraid/qBraid/pull/915))
 
 ## [0.9.4] - 2025-02-20
 

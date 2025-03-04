@@ -1,83 +1,80 @@
 cff-version: 1.2.0
-title: >-
-  qBraid-SDK: Platform-agnostic quantum runtime framework.
-message: >-
-  If you use this software, please cite it using the
-  metadata from this file.
+title: 'qBraid-SDK: Platform-agnostic quantum runtime framework.'
+message: If you use this software, please cite it using the metadata from this file.
 type: software
 authors:
-  - given-names: Ryan James
-    family-names: Hill
-    affiliation: qBraid Co.
-    orcid: https://orcid.org/0009-0006-9222-0810
-  - given-names: Rohan
-    family-names: Jain
-    affiliation: Carnegie Mellon University
-  - given-names: Harshit
-    family-names: Gupta
-    affiliation: qBraid Co.
-  - given-names: Tan
-    family-names: Jun Liang
-  - given-names: Mohamed Messaoud
-    family-names: Louamri
-  - given-names: Ricky
-    family-names: Young
-    affiliation: qBraid Co.
-  - given-names: Erik
-    family-names: Weis
-  - given-names: Kazuki
-    family-names: Tsuoka
-    affiliation: University of Tokyo
-  - given-names: Graeme
-    family-names: Jacobson
-  - given-names: Caleb
-    family-names: McIrvin
-  - given-names: Phillip
-    family-names: Weinberg
-    affiliation: QuEra Computing
-  - given-names: Swaraj
-    family-names: Purohit
-  - given-names: Jason
-    family-names: Necaise
-  - given-names: Enrique Anguiano
-    family-names: Vara
-  - given-names: Pronil
-    family-names: Chakraborty
-  - given-names: Jiaju
-    family-names: Liu
-  - given-names: Andrea Wei
-    family-names: Coladangelo
-    affiliation: University of Washington
-  - given-names: Pranav
-    family-names: Kakhandiki
-    affiliation: Cornell University
-  - given-names: Henry
-    family-names: Makhanov
-    affiliation: University of Texas at Austin
-  - given-names: Pranet
-    family-names: Sharma
-    affiliation: Yale University
-  - given-names: Alvan
-    family-names: Arulandu
-    affiliation: Harvard University
-    orcid: https://orcid.org/0009-0000-0071-348X
-  - given-names: Alessandro
-    family-names: Cosentino
-    affiliation: Unitary Fund
-  - given-names: Kanav
-    family-names: Setia
-    affiliation: qBraid Co.
-    orcid: https://orcid.org/0000-0003-2032-3993
-repository-code: 'https://github.com/qBraid/qBraid'
-url: 'https://sdk.qbraid.com/en/stable/'
-repository-artifact: 'https://github.com/qBraid/qBraid/releases/tag/v0.9.3'
+- given-names: Ryan James
+  family-names: Hill
+  affiliation: qBraid Co.
+  orcid: https://orcid.org/0009-0006-9222-0810
+- given-names: Rohan
+  family-names: Jain
+  affiliation: Carnegie Mellon University
+- given-names: Harshit
+  family-names: Gupta
+  affiliation: qBraid Co.
+- given-names: Tan
+  family-names: Jun Liang
+- given-names: Mohamed Messaoud
+  family-names: Louamri
+- given-names: Ricky
+  family-names: Young
+  affiliation: qBraid Co.
+- given-names: Erik
+  family-names: Weis
+- given-names: Kazuki
+  family-names: Tsuoka
+  affiliation: University of Tokyo
+- given-names: Graeme
+  family-names: Jacobson
+- given-names: Caleb
+  family-names: McIrvin
+- given-names: Phillip
+  family-names: Weinberg
+  affiliation: QuEra Computing
+- given-names: Swaraj
+  family-names: Purohit
+- given-names: Jason
+  family-names: Necaise
+- given-names: Enrique Anguiano
+  family-names: Vara
+- given-names: Pronil
+  family-names: Chakraborty
+- given-names: Jiaju
+  family-names: Liu
+- given-names: Andrea Wei
+  family-names: Coladangelo
+  affiliation: University of Washington
+- given-names: Pranav
+  family-names: Kakhandiki
+  affiliation: Cornell University
+- given-names: Henry
+  family-names: Makhanov
+  affiliation: University of Texas at Austin
+- given-names: Pranet
+  family-names: Sharma
+  affiliation: Yale University
+- given-names: Alvan
+  family-names: Arulandu
+  affiliation: Harvard University
+  orcid: https://orcid.org/0009-0000-0071-348X
+- given-names: Alessandro
+  family-names: Cosentino
+  affiliation: Unitary Fund
+- given-names: Kanav
+  family-names: Setia
+  affiliation: qBraid Co.
+  orcid: https://orcid.org/0000-0003-2032-3993
+repository-code: https://github.com/qBraid/qBraid
+url: https://sdk.qbraid.com/en/stable/
+repository-artifact: https://github.com/qBraid/qBraid/releases/tag/v0.9.3
 keywords:
-  - python
-  - quantum-computing
-  - transpiler
-  - openqasm
-  - qir
-  - runtime
+- python
+- quantum-computing
+- transpiler
+- openqasm
+- qir
+- runtime
 license: GPL-3.0
 version: 0.9.3
 doi: 10.5281/zenodo.12627596

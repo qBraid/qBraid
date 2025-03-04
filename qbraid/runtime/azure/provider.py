@@ -12,6 +12,7 @@
 Module defining Azure Provider class for retrieving all Azure backends.
 
 """
+import os
 import warnings
 from typing import Optional
 
@@ -57,7 +58,11 @@ class AzureQuantumProvider(QuantumProvider):
             credential (ClientSecretCredential, optional): Optional credential to be used
                 if the workspace lacks one.
         """
-        workspace = workspace or Workspace()
+        if not workspace:
+            connection_str = os.getenv("AZURE_QUANTUM_CONNECTION_STRING")
+            workspace = (
+                Workspace.from_connection_string(connection_str) if connection_str else Workspace()
+            )
 
         if not workspace.credential:
             if credential:
