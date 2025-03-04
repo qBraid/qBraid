@@ -46,7 +46,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install "qbraid-core>=0.1.17"
+          python -m pip install "qbraid-core>=0.1.17" pyyaml
 
       - name: Setup Git config
         run: |
@@ -58,8 +58,10 @@ jobs:
         run: |
           BUMP_TYPE=${{ github.event.inputs.bump_type }}
           VERSION=$(python3 bin/bump_version.py $BUMP_TYPE)
+          python3 bin/update_citation.py $VERSION
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          git commit -am "Bump $BUMP_TYPE version to $VERSION"
+          git add pyproject.toml CITATION.cff
+          git commit -m "Bump $BUMP_TYPE version to $VERSION"
           git push origin qbraid-bot/${{ github.run_id }}
 
       - name: Create Pull Request
