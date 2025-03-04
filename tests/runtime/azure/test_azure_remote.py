@@ -115,7 +115,10 @@ def test_submit_quil_to_rigetti(
 ):
     """Test submitting a pyQuil program or Quil string to run on the Rigetti simulator."""
     device = provider.get_device("rigetti.sim.qvm")
-    assert device.status() == DeviceStatus.ONLINE
+    status = device.status()
+
+    if status != DeviceStatus.ONLINE:
+        pytest.skip(f"{device.id} is {status.value}")
 
     shots = 100
     input_params = {}
