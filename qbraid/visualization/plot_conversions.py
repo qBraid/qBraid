@@ -144,7 +144,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
 
     seed = seed or random.randint(1, 999)
     k = kwargs.pop("k", max(1 / math.sqrt(len(graph.nodes())), 3))
-    pos = rx.spring_layout(graph, seed=seed, k=k, **kwargs)
+    pos = rx.spring_layout(graph, seed=seed, k=2, **kwargs)
     kwargs = {}
     if edge_labels:
         kwargs["edge_labels"] = lambda edge: round(edge["weight"], 2)
