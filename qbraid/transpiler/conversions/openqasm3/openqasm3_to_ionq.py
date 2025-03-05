@@ -230,14 +230,27 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
                             f"Angle parameter is required for the '{name}' "
                             "gate but was not provided."
                         ) from err
-                    angle = _parse_angle(angle, ionq_name)
-                    gates.append(
-                        {
-                            "gate": ionq_name,
-                            "angle": angle,
-                            "targets": qubit_values,
-                        }
-                    )
+                    try:
+                        angle = _parse_angle(angle, ionq_name)
+                    except ValueError as err:
+                        if ionq_name == "zz":
+                            gates.append(
+                                {
+                                    "gate": ionq_name,
+                                    "rotation": float(angle),
+                                    "targets": qubit_values,
+                                }
+                            )
+                        else:
+                            raise err
+                    else:
+                        gates.append(
+                            {
+                                "gate": ionq_name,
+                                "angle": angle,
+                                "targets": qubit_values,
+                            }
+                        )
 
                 elif ionq_name in TWO_QUBIT_PARAM_ANGLE_PHASE:
                     params = extract_params(statement)
