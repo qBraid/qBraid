@@ -7,7 +7,6 @@
 # See the LICENSE file in the project root or <https://www.gnu.org/licenses/gpl-3.0.html>.
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
-
 """
 Module for plotting qBraid transpiler quantum program conversion graphs.
 
@@ -17,8 +16,7 @@ from __future__ import annotations
 import math
 import random
 import warnings
-from pathlib import Path
-from typing import TYPE_CHECKING, Iterable, Optional
+from typing import TYPE_CHECKING, Iterable, Optional, Union
 
 import rustworkx as rx
 from qbraid_core._import import LazyLoader
@@ -71,10 +69,10 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     node_size: int = 1200,
     min_target_margin: int = 18,
     show: bool = True,
-    save_path: Optional[str | Path] = None,
+    save_path: Optional[str] = None,
     colors: Optional[dict[str, str]] = None,
     edge_labels: bool = False,
-    experiment_type: Optional[ExperimentType | Iterable[ExperimentType]] = None,
+    experiment_type: Optional[Union[ExperimentType, Iterable[ExperimentType]]] = None,
     target_nodes: Optional[Iterable[str]] = None,
     **kwargs,
 ) -> None:
@@ -84,21 +82,22 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
 
     Args:
         graph (ConversionGraph): The directed conversion graph to be plotted.
-        title (str | None): Title of the plot. Defaults to
+        title (str, optional): Title of the plot. Defaults to
             'qBraid Quantum Program Conversion Graph'.
         legend (bool): If True, display a legend on the graph. Defaults to False.
-        seed (int | None): Seed for the node layout algorithm. Useful for consistent
+        seed (int, optional): Seed for the node layout algorithm. Useful for consistent
             positioning. Defaults to None.
         node_size (int): Size of the nodes. Defaults to 1200.
         min_target_margin (int): Minimum target margin for edges. Defaults to 18.
         show (bool): If True, display the figure. Defaults to True.
-        save_path (str | Path | None): Path to save the figure. If None, figure is not saved.
-        colors (dict[str, str] | None): Node and edge colors with keys 'target_node_outline',
+        save_path (str, optional): Path to save the figure. If None, the figure is not saved.
+            Defaults to None.
+        colors (dict[str, str], optional): Node and edge colors with keys 'target_node_outline',
             'qbraid_node', 'external_node', 'qbraid_edge', 'external_edge'. Defaults to None.
         edge_labels (bool): If True, display edge weights as labels. Defaults to False.
-        experiment_type (ExperimentType | Iterable[ExperimentType] | None): Filter the
+        experiment_type (Union[ExperimentType, Iterable[ExperimentType]], optional): Filter the
             graph by experiment type. Defaults to None, meaning all experiment types are included.
-        target_nodes (Iterable[str] | None): Nodes to be outlined in the plot. Defaults to None.
+        target_nodes (Iterable[str], optional): Nodes to be outlined in the plot. Defaults to None.
 
     Returns:
         None
@@ -136,15 +135,15 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
     if len(set(ecolors)) > 1 and rustworkx_version in ["0.15.0", "0.15.1"]:
         warnings.warn(
             "Detected multiple edge colors, which may not display correctly "
-            "due to a known bug in rustworkx>=0.15.0,<0.16.0 "
+            "due to a known bug in rustworkx versions 0.15.0 and 0.15.1 "
             "(see: https://github.com/Qiskit/rustworkx/issues/1308). "
-            "To avoid this issue, please upgrade to rustworkx>=0.16.0.",
+            "To avoid this issue, please upgrade to rustworkx>0.15.1.",
             UserWarning,
         )
 
     seed = seed or random.randint(1, 999)
     k = kwargs.pop("k", max(1 / math.sqrt(len(graph.nodes())), 3))
-    pos = rx.spring_layout(graph, seed=seed, k=2, **kwargs)
+    pos = rx.spring_layout(graph, seed=seed, k=k, **kwargs)
     kwargs = {}
     if edge_labels:
         kwargs["edge_labels"] = lambda edge: round(edge["weight"], 2)
@@ -154,10 +153,7 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             colors["target_node_outline"] if node in target_nodes else color
             for node, color in zip(graph.nodes(), ncolors)
         ]
-
         kwargs["edgecolors"] = edgecolors
-
-    plt.ioff()  # Disable interactive mode
 
     mpl_draw(
         graph,
@@ -170,6 +166,10 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
         min_target_margin=min_target_margin,
         **kwargs,
     )
+
+    # Add a bit of margin around the plot so nodes and labels don't get clipped.
+    plt.margins(0.2)       # <-- Added line
+    plt.tight_layout()     # <-- Added line
 
     if title:
         plt.title(title)
@@ -241,11 +241,12 @@ def plot_conversion_graph(  # pylint: disable=too-many-arguments
             va="bottom",
         )
 
+    # Save figure (if requested) before showing to avoid empty file issues
     if save_path:
-        plt.savefig(save_path, bbox_inches="tight", dpi=300)
+        plt.savefig(save_path)
 
     if show:
-        plt.show(block=True)  # Explicit blocking show
+        plt.show()
 
 
 def plot_runtime_conversion_scheme(device: qbraid.runtime.QuantumDevice, **kwargs) -> None:
@@ -260,7 +261,6 @@ def plot_runtime_conversion_scheme(device: qbraid.runtime.QuantumDevice, **kwarg
         None
     """
     if device.profile.program_spec:
-        device.scheme.reset_graph()
         device.scheme.update_graph_for_target(device.profile.program_spec)
 
     graph = device.scheme.conversion_graph
