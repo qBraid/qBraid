@@ -25,7 +25,6 @@ from qbraid.programs import load_program
 from qbraid.programs.gate_model.ionq import IONQ_NATIVE_GATES, IonQProgram
 from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
 from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
-from qbraid.runtime.enums import ValidationLevel
 from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import ProgramConversionError
 
@@ -235,7 +234,6 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
                     )
 
                 if ionq_name in TWO_QUBIT_PARAM_ANGLE:
-                    # TODO:
                     try:
                         angle = extract_params(statement)[0]
                     except IndexError as err:
