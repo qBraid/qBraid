@@ -108,7 +108,7 @@ class IonQProvider(QuantumProvider):
                 IONQ_NATIVE_GATES_BASE,
             )
 
-        basis_gates = IONQ_QIS_GATES.copy() + native_gates
+        basis_gates = list(set(IONQ_QIS_GATES.copy() + native_gates))
 
         return basis_gates
 

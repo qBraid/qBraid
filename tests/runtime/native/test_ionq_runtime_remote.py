@@ -18,7 +18,6 @@ import warnings
 import pytest
 
 from qbraid import GateModelResultData, QbraidProvider
-from qbraid.runtime import ValidationLevel
 
 
 @pytest.mark.remote
@@ -46,7 +45,6 @@ def test_qiskit_ionq_workflow():
 
         provider = QbraidProvider()
         device = provider.get_device("ionq_simulator")
-        device.set_options(validate=ValidationLevel.WARN)
 
         shots = 10
         job = device.run(qiskit_circuit_transpiled, shots=shots)

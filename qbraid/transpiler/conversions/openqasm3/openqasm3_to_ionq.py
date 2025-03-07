@@ -21,7 +21,7 @@ import openqasm3.ast
 
 from qbraid.passes.qasm.compat import convert_qasm_pi_to_decimal
 from qbraid.programs import load_program
-from qbraid.programs.gate_model.ionq import IonQProgram
+from qbraid.programs.gate_model.ionq import IONQ_NATIVE_GATES, IonQProgram
 from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
 from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
 from qbraid.transpiler.annotations import weight
@@ -150,12 +150,21 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
 
     gates: list[dict[str, Any]] = []
 
+    contains_native = False
+    non_zz_native_gates = set(IONQ_NATIVE_GATES) - {"zz"}
+
     for statement in original_program.statements:
         if isinstance(statement, openqasm3.ast.QuantumGate):
             name = statement.name.name.lower()
 
             if name == "id":
                 continue
+
+            contains_native = (
+                contains_native
+                or name in non_zz_native_gates
+                or (name.startswith("c") and name[1:] in non_zz_native_gates)
+            )
 
             qubits = statement.qubits
             qubit_values = []
@@ -223,6 +232,7 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
                     )
 
                 if ionq_name in TWO_QUBIT_PARAM_ANGLE:
+                    # TODO:
                     try:
                         angle = extract_params(statement)[0]
                     except IndexError as err:
@@ -230,24 +240,44 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
                             f"Angle parameter is required for the '{name}' "
                             "gate but was not provided."
                         ) from err
-                    try:
-                        angle = _parse_angle(angle, ionq_name)
-                    except ValueError as err:
-                        if ionq_name == "zz":
-                            gates.append(
-                                {
-                                    "gate": ionq_name,
-                                    "rotation": float(angle),
-                                    "targets": qubit_values,
-                                }
-                            )
-                        else:
-                            raise err
-                    else:
+
+                    # Treat zz as 'qis' gate if all other gates are 'qis' gates
+                    if name == "rzz" or (
+                        ionq_name == "zz" and len(gates) > 0 and contains_native is False
+                    ):
+                        angle = float(convert_qasm_pi_to_decimal(angle))
                         gates.append(
                             {
                                 "gate": ionq_name,
-                                "angle": angle,
+                                "rotation": angle,
+                                "targets": qubit_values,
+                            }
+                        )
+
+                    else:
+                        key = "angle"
+
+                        try:
+                            angle = _parse_angle(angle, ionq_name)
+                        except ValueError as err:
+                            #  Treat zz with angle not in [0, 0.25] as 'qis'
+                            if ionq_name == "zz" and contains_native is False:
+                                key = "rotation"
+
+                                try:
+                                    angle = float(convert_qasm_pi_to_decimal(angle))
+                                except ValueError:
+                                    raise err
+                            else:
+                                raise err
+                        else:
+                            if ionq_name == "zz":
+                                contains_native = True
+
+                        gates.append(
+                            {
+                                "gate": ionq_name,
+                                key: angle,
                                 "targets": qubit_values,
                             }
                         )
@@ -358,18 +388,22 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
 
 
 @weight(1)
-def openqasm3_to_ionq(qasm: Union[QasmStringType, openqasm3.ast.Program]) -> IonQDictType:
+def openqasm3_to_ionq(
+    qasm: Union[QasmStringType, openqasm3.ast.Program], raise_for_meas: bool = True
+) -> IonQDictType:
     """Returns an IonQ JSON format representation the input OpenQASM program.
 
     Args:
         qasm (str or openqasm3.ast.Program): OpenQASM program to convert to IonQDict type.
+        raise_for_meas (bool): Whether to raise an error if the program contains measurement gates.
+            Defaults to True.
 
     Returns:
         dict: IonQ JSON format equivalent to input OpenQASM string.
     """
     program: Union[OpenQasm2Program, OpenQasm3Program] = load_program(qasm)
 
-    if program._module.has_measurements():
+    if raise_for_meas and program._module.has_measurements():
         raise ValueError("Circuits with measurements are not supported by the IonQDictType")
 
     gates = _parse_gates(program)

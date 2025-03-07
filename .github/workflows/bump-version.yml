@@ -60,7 +60,7 @@ jobs:
           VERSION=$(python3 bin/bump_version.py $BUMP_TYPE)
           python3 bin/update_citation.py $VERSION
           echo "version=$VERSION" >> $GITHUB_OUTPUT
-          git add pyproject.toml CITATION.cff
+          git add qbraid/_version.py CITATION.cff
           git commit -m "Bump $BUMP_TYPE version to $VERSION"
           git push origin qbraid-bot/${{ github.run_id }}
 
