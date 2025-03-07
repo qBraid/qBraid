@@ -117,6 +117,7 @@ filterwarnings = [
     "ignore::urllib3.exceptions.InsecureRequestWarning",
     "ignore::RuntimeWarning:numpy.linalg.linalg",
     "ignore::pytest.PytestCollectionWarning",
+    "ignore:No gate definition.*:RuntimeWarning:qiskit.providers.backend_compat"
 ]
 
 [tool.coverage.run]

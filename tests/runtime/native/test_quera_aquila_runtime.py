@@ -100,6 +100,7 @@ def test_prepare_ahs_program(mock_device, braket_ahs, ahs_dict):
     assert mock_device.prepare(braket_ahs) == {"ahs": json.dumps(ahs_dict)}
 
 
+@pytest.mark.filterwarnings("ignore:Device is not online*:UserWarning")
 def test_submit_ahs_job_to_aquila(braket_ahs, mock_device, mock_job_id):
     """Test submitting AHS job to QuEra Aquila device."""
     job = mock_device.run(braket_ahs)

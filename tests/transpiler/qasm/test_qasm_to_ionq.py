@@ -106,7 +106,7 @@ def test_ionq_device_extract_gate_data():
 
 
 def test_qasm2_to_ionq_measurements_raises():
-    """Test that qasm2_to_ionq raises an error when the circuit contains measurements."""
+    """Test that qasm2_to_ionq emits warning when the circuit contains measurements."""
     qasm = """
     OPENQASM 2.0;
     include "qelib1.inc";
@@ -115,9 +115,14 @@ def test_qasm2_to_ionq_measurements_raises():
     x q[0];
     measure q[0] -> c[0];
     """
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.warns(
+        UserWarning,
+        match=(
+            "Circuit contains measurement gates, which will be ignored "
+            "during conversion to the IonQDictType"
+        ),
+    ):
         qasm2_to_ionq(qasm)
-    assert "Circuits with measurements are not supported by the IonQDictType" in str(excinfo.value)
 
 
 @pytest.fixture

@@ -15,6 +15,7 @@ Module containing OpenQASM to IonQ JSON conversion function
 from __future__ import annotations
 
 import re
+import warnings
 from typing import TYPE_CHECKING, Any, Union
 
 import openqasm3.ast
@@ -24,6 +25,7 @@ from qbraid.programs import load_program
 from qbraid.programs.gate_model.ionq import IONQ_NATIVE_GATES, IonQProgram
 from qbraid.programs.gate_model.qasm2 import OpenQasm2Program
 from qbraid.programs.gate_model.qasm3 import OpenQasm3Program
+from qbraid.runtime.enums import ValidationLevel
 from qbraid.transpiler.annotations import weight
 from qbraid.transpiler.exceptions import ProgramConversionError
 
@@ -153,6 +155,7 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
     contains_native = False
     non_zz_native_gates = set(IONQ_NATIVE_GATES) - {"zz"}
 
+    # pylint: disable-next=too-many-nested-blocks
     for statement in original_program.statements:
         if isinstance(statement, openqasm3.ast.QuantumGate):
             name = statement.name.name.lower()
@@ -266,7 +269,7 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
 
                                 try:
                                     angle = float(convert_qasm_pi_to_decimal(angle))
-                                except ValueError:
+                                except ValueError:  # pylint: disable=raise-missing-from
                                     raise err
                             else:
                                 raise err
@@ -388,23 +391,26 @@ def _parse_gates(program: Union[OpenQasm2Program, OpenQasm3Program]) -> list[dic
 
 
 @weight(1)
-def openqasm3_to_ionq(
-    qasm: Union[QasmStringType, openqasm3.ast.Program], raise_for_meas: bool = True
-) -> IonQDictType:
+def openqasm3_to_ionq(qasm: Union[QasmStringType, openqasm3.ast.Program]) -> IonQDictType:
     """Returns an IonQ JSON format representation the input OpenQASM program.
 
     Args:
         qasm (str or openqasm3.ast.Program): OpenQASM program to convert to IonQDict type.
-        raise_for_meas (bool): Whether to raise an error if the program contains measurement gates.
-            Defaults to True.
 
     Returns:
         dict: IonQ JSON format equivalent to input OpenQASM string.
+
+    Raises:
+        ProgramConversionError: For failure to parse gate data from OpenQASM string.
     """
     program: Union[OpenQasm2Program, OpenQasm3Program] = load_program(qasm)
 
-    if raise_for_meas and program._module.has_measurements():
-        raise ValueError("Circuits with measurements are not supported by the IonQDictType")
+    if program._module.has_measurements():
+        warnings.warn(
+            "Circuit contains measurement gates, which will be ignored "
+            "during conversion to the IonQDictType",
+            UserWarning,
+        )
 
     gates = _parse_gates(program)
 

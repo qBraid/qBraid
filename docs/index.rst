@@ -33,12 +33,17 @@ The qBraid-SDK, and all of its dependencies, can also be installed using `pip <h
    pip install qbraid
 
 
+.. note::
+
+   The qBraid-SDK requires Python 3.10 or later.
+
+
 Resources
 ----------
 
 - `User Guide <https://docs.qbraid.com/sdk/user-guide>`_
 - `Example Notebooks <https://github.com/qBraid/qbraid-lab-demo>`_
-- `API Reference <https://sdk.qbraid.com/en/latest/api/qbraid.html>`_
+- `API Reference <https://qbraid.github.io/qBraid/api/qbraid.html>`_
 - `Source Code <https://github.com/qBraid/qBraid>`_
 
 
@@ -59,19 +64,19 @@ Resources
    :caption: QIR API Reference
    :hidden:
 
-   qbraid_qir <https://sdk.qbraid.com/projects/qir/en/stable/api/qbraid_qir.html>
-   qbraid_qir.cirq <https://sdk.qbraid.com/projects/qir/en/stable/api/qbraid_qir.cirq.html>
-   qbraid_qir.qasm3 <https://sdk.qbraid.com/projects/qir/en/stable/api/qbraid_qir.qasm3.html>
+   qbraid_qir <https://qbraid.github.io/qbraid-qir/api/qbraid_qir.html>
+   qbraid_qir.cirq <https://qbraid.github.io/qbraid-qir/api/qbraid_qir.cirq.html>
+   qbraid_qir.qasm3 <https://qbraid.github.io/qbraid-qir/api/qbraid_qir.qasm3.html>
 
 .. toctree::
    :caption: CORE API Reference
    :hidden:
 
-   qbraid_core <https://sdk.qbraid.com/projects/core/en/stable/api/qbraid_core.html>
-   qbraid_core.services <https://sdk.qbraid.com/projects/core/en/stable/api/qbraid_core.services.html>
+   qbraid_core <https://qbraid.github.io/qbraid-core/api/qbraid_core.html>
+   qbraid_core.services <https://qbraid.github.io/qbraid-core/api/qbraid_core.services.html>
 
 .. toctree::
    :caption: PYQASM API Reference
    :hidden:
 
-   pyqasm <https://sdk.qbraid.com/projects/pyqasm/en/stable/api/pyqasm.html>
+   pyqasm <https://qbraid.github.io/pyqasm/api/pyqasm.html>
