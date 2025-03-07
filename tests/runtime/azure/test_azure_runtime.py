@@ -15,6 +15,7 @@ Unit tests for the Azure Quantum runtime module.
 
 """
 import json
+import os
 from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
@@ -272,14 +273,22 @@ def test_azure_provider_init_with_credential():
 
 def test_init_without_credential():
     """Test initializing an AzureQuantumProvider without a credential."""
-    workspace = Workspace(
-        subscription_id="something",
-        resource_group="something",
-        name="something",
-        location="something",
-    )
-    with pytest.warns(Warning):
-        AzureQuantumProvider(workspace)
+    original_connection_string = os.environ.pop("AZURE_QUANTUM_CONNECTION_STRING", None)
+
+    try:
+        assert "AZURE_QUANTUM_CONNECTION_STRING" not in os.environ
+
+        workspace = Workspace(
+            subscription_id="something",
+            resource_group="something",
+            name="something",
+            location="something",
+        )
+        with pytest.warns(Warning):
+            AzureQuantumProvider(workspace)
+    finally:
+        if original_connection_string is not None:
+            os.environ["AZURE_QUANTUM_CONNECTION_STRING"] = original_connection_string
 
 
 def test_azure_provider_workspace_property(azure_provider, mock_workspace):

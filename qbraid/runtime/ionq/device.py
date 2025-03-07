@@ -110,6 +110,7 @@ class IonQDevice(QuantumDevice):
             program._module.unroll()
             program._program = pyqasm.dumps(program._module)
             program.transform(device=self, gate_mappings=IONQ_GATE_MAP)
+
         return program.program
 
     @staticmethod

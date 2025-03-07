@@ -28,6 +28,7 @@ from qiskit.circuit.quantumregister import Qubit as QiskitQubit
 from qbraid.interface import assert_allclose_up_to_global_phase
 from qbraid.programs import QPROGRAM_ALIASES, load_program
 from qbraid.programs.exceptions import ProgramLoaderError, ProgramTypeError
+from qbraid.programs.registry import is_registered_alias_native
 from qbraid.transpiler.converter import transpile
 from qbraid.transpiler.exceptions import NodeNotFoundError
 from qbraid.transpiler.graph import ConversionGraph
@@ -87,8 +88,10 @@ def test_cirq_round_trip(bell_circuit, to_type, conversion_graph: ConversionGrap
     ):
         pytest.skip(f"cirq to {to_type} round-trip not yet supported")
     circuit_in, _ = bell_circuit
-    circuit_mid = transpile(circuit_in, to_type, require_native=True)
-    circuit_out = transpile(circuit_mid, "cirq", require_native=True)
+
+    require_native = is_registered_alias_native(to_type)
+    circuit_mid = transpile(circuit_in, to_type, require_native=require_native)
+    circuit_out = transpile(circuit_mid, "cirq", require_native=require_native)
     assert _equal(circuit_in, circuit_out), f"Failed round-trip from cirq to {to_type}"
 
 
