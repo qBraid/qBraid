@@ -14,6 +14,7 @@ Module containing models for schema-conformant Results.
 """
 from __future__ import annotations
 
+import copy
 import datetime
 from enum import Enum
 from typing import Any, Generic
@@ -83,12 +84,14 @@ class Result(Generic[ResultDataType]):
         if isinstance(value, dict):
             if depth >= max_depth:
                 return "{...}"
-            if "openQasm" in value and value["openQasm"] is not None:
-                value["openQasm"] = "..."
+            
+            data = copy.deepcopy(value)
+            if "openQasm" in data and data["openQasm"] is not None:
+                data["openQasm"] = "..."
             return (
                 "{"
                 + ", ".join(
-                    f"{k}: {self._format_value(v, depth + 1, max_depth)}" for k, v in value.items()
+                    f"{k}: {self._format_value(v, depth + 1, max_depth)}" for k, v in data.items()
                 )
                 + "}"
             )
