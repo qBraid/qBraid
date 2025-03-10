@@ -19,7 +19,7 @@ import qbraid
 # -- Project information -----------------------------------------------------
 
 project = "qBraid"
-copyright = "2024, qBraid Development Team"
+copyright = "2025, qBraid Development Team"
 author = "qBraid Development Team"
 
 # The full version, including alpha/beta/rc tags
@@ -60,7 +60,10 @@ autodoc_mock_imports = [
     "scc",
     "stim",
     "qibo",
-    "cudaq"
+    "cudaq",
+    "flair_visual",
+    "bloqade",
+    "pandas"
 ]
 napoleon_numpy_docstring = False
 todo_include_todos = True
