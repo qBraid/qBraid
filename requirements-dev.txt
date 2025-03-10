@@ -32,7 +32,7 @@ pyqubo>=1.4.0
 
 # visualization
 ipython
-matplotlib>=3.3,<3.8
+matplotlib>=3.3,<3.11
 
 # testing dependencies
 sympy
