@@ -6,7 +6,11 @@ pyquil>=4.4; python_version < "3.13"
 qcs-sdk-python>=0.21.12,<0.21.13; python_version < "3.13"
 pytket>=1.31
 qiskit>=1.0,<1.5
-cudaq>=0.9.0; python_version < "3.13"
+
+# quera dependencies
+bloqade-analog>=0.16.2,<0.17.0; python_version < "3.13"
+flair-visual>=0.5.3; python_version < "3.13"
+pandas
 
 # transpiler extras
 ply>=3.6
@@ -30,8 +34,8 @@ pyqubo>=1.4.0
 ipython
 matplotlib>=3.3,<3.8
 
-# testing
+# testing dependencies
 sympy
+packaging>=20.0
 pytest
 pytest-cov
-packaging>=20.0
