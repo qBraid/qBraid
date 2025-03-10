@@ -119,8 +119,8 @@ def bloqade_program():
     """Create a Bloqade program batch."""
     try:
         # pylint: disable=import-outside-toplevel
-        from bloqade.analog import var  # type: ignore
-        from bloqade.analog.atom_arrangement import Square  # type: ignore
+        from bloqade import var  # type: ignore
+        from bloqade.atom_arrangement import Square  # type: ignore
 
         # pylint: enable=import-outside-toplevel
 

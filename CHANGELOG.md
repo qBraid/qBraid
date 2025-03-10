@@ -34,7 +34,6 @@ Types of changes:
 - Added support for interpreting `zz` as a QIS gate in `openqasm3_to_ionq` and refactored `determine_gateset` accordingly ([#917](https://github.com/qBraid/qBraid/pull/917))
 - Modified `openqasm3_to_ionq` to emit warning instead of raise error when circuits contains measurements. ([#917](https://github.com/qBraid/qBraid/pull/917))
 - Set 20 minute timeout for daily github actions workflow ([#919](https://github.com/qBraid/qBraid/pull/919))
-- Updated `tox` configuration to separate out `cudaq` unit tests ([#920](https://github.com/qBraid/qBraid/pull/920))
 
 ### Deprecated
 
@@ -47,7 +46,6 @@ Types of changes:
 
 ### Dependencies
 - Updated qBraid-CLI dependency to >= 0.10.0 ([#915](https://github.com/qBraid/qBraid/pull/915))
-- Migrated from `bloqade` to `bloqade-analog` ([#920](https://github.com/qBraid/qBraid/pull/920))
 
 ## [0.9.4] - 2025-02-20
 

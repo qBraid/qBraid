@@ -105,7 +105,7 @@ Below, `QPROGRAM_REGISTRY` maps shorthand identifiers for supported quantum prog
  'qasm3': str,
  'ionq': qbraid.programs.typer.IonQDict,
  'qubo': qbraid.programs.typer.QuboCoefficientsDict,
- 'bloqade': bloqade.analog.builder.assign.BatchAssign,
+ 'bloqade': bloqade.builder.assign.BatchAssign,
  'cudaq': cudaq.kernel.kernel_builder.PyKernel,
  'qibo': qibo.models.circuit.Circuit}
 ```

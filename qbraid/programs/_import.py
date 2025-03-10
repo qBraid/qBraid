@@ -80,8 +80,8 @@ def _dynamic_importer(opt_modules: list[str]) -> dict[str, Type[Any]]:
 
 # pylint: disable=undefined-variable
 def _get_class(module: str):
-    if module == "bloqade.analog.builder.assign":
-        return bloqade.analog.builder.assign.BatchAssign  # type: ignore # noqa: F821
+    if module == "bloqade.builder.assign":
+        return bloqade.builder.assign.BatchAssign  # type: ignore # noqa: F821
     if module == "cirq":
         return cirq.Circuit  # type: ignore # noqa: F821
     if module == "qiskit":
@@ -129,7 +129,7 @@ dynamic_type_registry: dict[str, Type[Any]] = _dynamic_importer(
     ]
 )
 dynamic_non_native: dict[str, Type[Any]] = _dynamic_importer(
-    ["bloqade.analog.builder.assign", "qibo", "stim", "pyqir"]
+    ["bloqade.builder.assign", "qibo", "stim", "pyqir"]
 )
 static_type_registry: dict[str, Type[Any]] = {
     metatype.__alias__: metatype.__bound__ for metatype in BOUND_QBRAID_META_TYPES
