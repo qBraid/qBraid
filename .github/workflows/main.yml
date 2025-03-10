@@ -44,7 +44,7 @@ jobs:
         python3 -m pip install tox
     - name: Tests
       run: |
-        tox -e unit-tests
+        tox -e unit-tests,cudaq-tests
       env:
         AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
         AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}

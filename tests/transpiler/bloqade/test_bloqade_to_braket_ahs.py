@@ -23,11 +23,11 @@ import pytest
 # Skip all tests if bloqade not installed
 bloqade_found = importlib.util.find_spec("bloqade") is not None
 if bloqade_found:
-    from bloqade import var
-    from bloqade.atom_arrangement import Square  # type: ignore
+    from bloqade.analog import var  # type: ignore
+    from bloqade.analog.atom_arrangement import Square  # type: ignore
 
 if TYPE_CHECKING:
-    from bloqade.builder.assign import BatchAssign  # type: ignore
+    from bloqade.analog.builder.assign import BatchAssign  # type: ignore
 
 pytestmark = pytest.mark.skipif(not bloqade_found, reason="bloqade not installed")
 
