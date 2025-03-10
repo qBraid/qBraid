@@ -44,7 +44,7 @@ jobs:
         python3 -m pip install tox
     - name: Tests
       run: |
-        tox -e unit-tests
+        tox -e unit-tests,cudaq-tests
       env:
         QBRAID_RUN_REMOTE_TESTS: False
     - name: Upload coverage to Codecov
