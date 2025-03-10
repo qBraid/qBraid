@@ -8,11 +8,11 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint: disable=redefined-outer-name,unused-argument
+# pylint: disable=redefined-outer-name,unused-argument,too-many-lines
 
 """
 Unit tests for QbraidDevice, QbraidJob, and QbraidGateModelResultBuilder
-classes using the qbraid_qir_simulator and nec_vector_annealer devices.
+classes using the qbraid_qir_simulator
 
 """
 import importlib.util
@@ -20,11 +20,12 @@ import json
 import logging
 import time
 from typing import Any
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, PropertyMock, patch
 
 import cirq
 import numpy as np
 import pytest
+from pandas import DataFrame
 from qbraid_core.services.quantum.exceptions import QuantumServiceRequestError
 
 from qbraid._caching import cache_disabled
@@ -39,6 +40,7 @@ from qbraid.programs.typer import IonQDict, QuboCoefficientsDict
 from qbraid.runtime import (
     DeviceStatus,
     JobStatus,
+    ProgramValidationError,
     Result,
     TargetProfile,
     ValidationLevel,
@@ -49,6 +51,7 @@ from qbraid.runtime.native.provider import get_program_spec_lambdas
 from qbraid.runtime.native.result import (
     NECVectorAnnealerResultData,
     QbraidQirSimulatorResultData,
+    QuEraQasmSimulatorResultData,
 )
 from qbraid.runtime.noise import NoiseModel
 from qbraid.runtime.options import RuntimeOptions
@@ -60,9 +63,23 @@ from ._resources import (
     DEVICE_DATA_QIR,
     JOB_DATA_NEC,
     JOB_DATA_QIR,
+    JOB_DATA_QUERA_QASM,
     RESULTS_DATA_NEC,
+    RESULTS_DATA_QUERA_QASM,
     MockDevice,
 )
+
+
+@pytest.fixture
+def mock_quera_profile():
+    """Mock profile for testing."""
+    return TargetProfile(
+        device_id="quera_qasm_simulator",
+        simulator=True,
+        experiment_type=ExperimentType.GATE_MODEL,
+        num_qubits=30,
+        program_spec=QbraidProvider._get_program_spec("qasm2", "quera_qasm_simulator"),
+    )
 
 
 @pytest.fixture
@@ -90,6 +107,12 @@ def mock_scheme():
 def mock_qbraid_device(mock_profile, mock_scheme, mock_client):
     """Mock QbraidDevice for testing."""
     return QbraidDevice(profile=mock_profile, client=mock_client, scheme=mock_scheme)
+
+
+@pytest.fixture
+def mock_quera_device(mock_quera_profile, mock_client):
+    """Mock QuEra simulator device for testing."""
+    return QbraidDevice(profile=mock_quera_profile, client=mock_client)
 
 
 @pytest.fixture
@@ -184,6 +207,57 @@ def test_qir_simulator_workflow(mock_provider, cirq_uniform):
 
     with pytest.warns(DeprecationWarning, match=r"Call to deprecated function measurements*"):
         assert is_uniform_comput_basis(result.measurements())
+
+
+@pytest.mark.skipif(
+    importlib.util.find_spec("flair_visual") is None, reason="flair-visual is not installed"
+)
+def test_quera_simulator_workflow(mock_provider, cirq_uniform, valid_qasm2_no_meas):
+    """Test queara simulator job submission and result retrieval."""
+    circuit = cirq_uniform(num_qubits=5, measure=False)
+    num_qubits = len(circuit.all_qubits())
+
+    provider = mock_provider
+    device = provider.get_device("quera_qasm_simulator")
+
+    shots = 10
+    job = device.run(circuit, shots=shots, backend="cirq-gpu")
+    assert isinstance(job, QbraidJob)
+    assert job.is_terminal_state()
+    assert job.queue_position() is None
+
+    device._target_spec = None
+    device.prepare = lambda x: {"openQasm": x}
+    batch_job = device.run([valid_qasm2_no_meas], shots=shots)
+    assert isinstance(batch_job, list)
+    assert all(isinstance(job, QbraidJob) for job in batch_job)
+
+    result = job.result()
+    assert isinstance(result, Result)
+    assert isinstance(result.data, QuEraQasmSimulatorResultData)
+    assert repr(result.data).startswith("QuEraQasmSimulatorResultData")
+    assert result.success
+    assert result.job_id == JOB_DATA_QUERA_QASM["qbraidJobId"]
+    assert result.device_id == JOB_DATA_QUERA_QASM["qbraidDeviceId"]
+    assert result.data.backend == "cirq-gpu"
+
+    counts = result.data.get_counts()
+    probabilities = result.data.get_probabilities()
+    assert len(counts) == len(probabilities) == 2
+    assert sum(probabilities.values()) == 1.0
+    assert result.data.measurements is None
+    assert (
+        result.data.flair_visual_version
+        == RESULTS_DATA_QUERA_QASM["quera_simulation_result"]["flair_visual_version"]
+    )
+    assert result.data.backend == RESULTS_DATA_QUERA_QASM["backend"]
+
+    logs = result.data.get_logs()
+    assert isinstance(logs, DataFrame)
+
+    assert result.details["shots"] == shots
+    assert result.details["metadata"]["circuitNumQubits"] == num_qubits
+    assert isinstance(result.details["timeStamps"]["executionDuration"], int)
 
 
 def test_nec_vector_annealer_workflow(mock_provider):
@@ -587,6 +661,12 @@ def test_estimate_cost_resource_not_found_error(mock_qbraid_device):
         mock_qbraid_device.estimate_cost(shots=100, execution_time=10.0)
 
 
+def test_validate_quera_device_qasm_validator(mock_quera_device, valid_qasm2):
+    """Test that validate method raises ValueError for QASM programs with measurements."""
+    with pytest.raises(ProgramValidationError):
+        mock_quera_device.validate([valid_qasm2])
+
+
 @pytest.mark.parametrize(
     "status, status_text",
     [("FAILED", "Custom status text"), (JobStatus.FAILED, "Different custom status text")],
@@ -601,6 +681,15 @@ def test_runtime_job_model_from_dict_custom_status(status, status_text):
 
     assert model.status == JobStatus.FAILED
     assert model.status_text == status_text
+
+
+def test_construct_aux_payload_no_spec(mock_quera_device, valid_qasm2_no_meas):
+    """Test constructing auxiliary payload without a predefined program spec."""
+    aux_payload = mock_quera_device._construct_aux_payload(valid_qasm2_no_meas)
+    assert len(aux_payload) == 3
+    assert aux_payload["openQasm"] == valid_qasm2_no_meas
+    assert aux_payload["circuitNumQubits"] == 2
+    assert aux_payload["circuitDepth"] == 3
 
 
 @pytest.mark.skipif(importlib.util.find_spec("pyqubo") is None, reason="pyqubo is not installed")
@@ -675,6 +764,35 @@ def test_device_validate_non_native_type_logs(mock_qbraid_device, caplog):
     )
 
 
+def test_device_validate_emit_warning_for_num_qubits(mock_provider, valid_qasm2_no_meas):
+    """Test emitting warning when number of qubits in the circuit exceeds the device capacity."""
+    quera_device = mock_provider.get_device("quera_qasm_simulator")
+    quera_device._target_spec = None
+    quera_device.set_options(validate=1)
+
+    with patch.object(
+        type(quera_device), "num_qubits", new_callable=PropertyMock
+    ) as mock_num_qubits:
+        mock_num_qubits.return_value = 1
+
+        with pytest.warns(
+            UserWarning, match=r"Number of qubits in the circuit \(2\) exceeds.*capacity \(1\)"
+        ):
+            quera_device.validate([valid_qasm2_no_meas])
+
+
+def test_device_validate_emit_warning_for_target_spec_validator(mock_provider, valid_qasm2):
+    """Test emitting warning when target spec validator raises an exception."""
+    quera_device = mock_provider.get_device("quera_qasm_simulator")
+    quera_device.set_options(validate=1)
+
+    msg = (
+        r"OpenQASM programs submitted to the quera_qasm_simulator cannot contain measurement gates"
+    )
+    with pytest.warns(UserWarning, match=msg):
+        quera_device.validate([valid_qasm2])
+
+
 def test_device_validate_level_none(mock_qbraid_device):
     """Test that validate returns immediately if validate level set to 0."""
     mock_qbraid_device.set_options(validate=0)
@@ -683,6 +801,15 @@ def test_device_validate_level_none(mock_qbraid_device):
         result = mock_qbraid_device.validate(["abc123"])
         assert result is None
         mock_status.assert_not_called()
+
+
+def test_resolve_noise_model_raises_for_unsupported(mock_quera_device):
+    """Test raising exception when no noise models are supported by device."""
+    assert mock_quera_device.profile.noise_models is None
+
+    with pytest.raises(ValueError) as excinfo:
+        mock_quera_device._resolve_noise_model("ideal")
+    assert "Noise models are not supported by this device." in str(excinfo)
 
 
 def test_resolve_noise_model_raises_for_bad_input_type(mock_qbraid_device):

@@ -59,7 +59,7 @@ class GateModelProgram(QuantumProgram, ABC):
         return self._unitary()
 
     def unitary_rev_qubits(self) -> np.ndarray:
-        """Performs Kronecker (tensor) product factor permutation of given matrix.
+        """Peforms Kronecker (tensor) product factor permutation of given matrix.
         Returns a matrix equivalent to that computed from a quantum circuit if its
         qubit indicies were reversed.
 
