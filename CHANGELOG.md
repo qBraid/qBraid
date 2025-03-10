@@ -33,6 +33,7 @@ Types of changes:
 - Adjusted docs side navigation search styling for better alignment. ([#917](https://github.com/qBraid/qBraid/pull/917))
 - Added support for interpreting `zz` as a QIS gate in `openqasm3_to_ionq` and refactored `determine_gateset` accordingly ([#917](https://github.com/qBraid/qBraid/pull/917))
 - Modified `openqasm3_to_ionq` to emit warning instead of raise error when circuits contains measurements. ([#917](https://github.com/qBraid/qBraid/pull/917))
+- Set 20 minute timeout for daily github actions workflow ([#919](https://github.com/qBraid/qBraid/pull/919))
 
 ### Deprecated
 
@@ -41,6 +42,7 @@ Types of changes:
 ### Fixed
 - Updated `bump-version.yml` to track `qbraid/_version.py` instead of `pyproject.toml`. ([#917](https://github.com/qBraid/qBraid/pull/917))
 - Fixed bug where `BraketQuantumTask._task.arn` undefined if instaniated without `AwsQuantumTask` object ([#917](https://github.com/qBraid/qBraid/pull/917))
+- Fixed bug where doing `repr(result)` would cause `result.details['opeQasm']` to be set to `...` ([#919](https://github.com/qBraid/qBraid/pull/919))
 
 ### Dependencies
 - Updated qBraid-CLI dependency to >= 0.10.0 ([#915](https://github.com/qBraid/qBraid/pull/915))
