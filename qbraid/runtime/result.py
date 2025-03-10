@@ -84,7 +84,7 @@ class Result(Generic[ResultDataType]):
         if isinstance(value, dict):
             if depth >= max_depth:
                 return "{...}"
-            
+
             data = copy.deepcopy(value)
             if "openQasm" in data and data["openQasm"] is not None:
                 data["openQasm"] = "..."
