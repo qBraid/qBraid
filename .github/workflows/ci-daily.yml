@@ -58,3 +58,4 @@ jobs:
         OQC_AUTH_TOKEN: ${{ secrets.OQC_AUTH_TOKEN }}
         IONQ_API_KEY: ${{ secrets.IONQ_API_KEY }}
         QBRAID_RUN_REMOTE_TESTS: True
+      timeout-minutes: 20
