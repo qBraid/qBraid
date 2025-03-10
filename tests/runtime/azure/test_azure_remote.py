@@ -16,12 +16,20 @@ Unit tests for Azure Quantum runtime (remote)
 from __future__ import annotations
 
 import importlib.util
+import os
 from typing import TYPE_CHECKING
+from unittest.mock import MagicMock, patch
 
 import pytest
+from azure.quantum import Workspace
 
-from qbraid.runtime import DeviceStatus, GateModelResultData, JobStatus, Result
-from qbraid.runtime.azure import AzureQuantumProvider
+from qbraid.runtime import (
+    AzureQuantumProvider,
+    DeviceStatus,
+    GateModelResultData,
+    JobStatus,
+    Result,
+)
 
 # Skip pyquil tests if not installed
 pyquil_found = importlib.util.find_spec("pyquil") is not None
@@ -115,7 +123,10 @@ def test_submit_quil_to_rigetti(
 ):
     """Test submitting a pyQuil program or Quil string to run on the Rigetti simulator."""
     device = provider.get_device("rigetti.sim.qvm")
-    assert device.status() == DeviceStatus.ONLINE
+    status = device.status()
+
+    if status != DeviceStatus.ONLINE:
+        pytest.skip(f"{device.id} is {status.value}")
 
     shots = 100
     input_params = {}
@@ -132,3 +143,31 @@ def test_submit_quil_to_rigetti(
     assert isinstance(result, Result)
     assert isinstance(result.data, GateModelResultData)
     assert result.data.get_counts() == {"00": 60, "11": 40}
+
+
+@pytest.mark.remote
+@pytest.mark.skipif(
+    not os.getenv("AZURE_QUANTUM_CONNECTION_STRING"), reason="No connection string set"
+)
+def test_provider_from_env_variables():
+    """Test creating a provider from environment variables."""
+    provider = AzureQuantumProvider()
+    assert isinstance(provider.workspace, Workspace)
+
+
+def test_workspace_from_connection_string():
+    """Test creating a workspace from a connection string."""
+    mock_connection_string = "mock_connection_string"
+
+    with (
+        patch.dict(os.environ, {"AZURE_QUANTUM_CONNECTION_STRING": mock_connection_string}),
+        patch("azure.quantum.Workspace.from_connection_string") as mock_from_connection_string,
+    ):
+
+        mock_workspace = MagicMock(spec=Workspace)
+        mock_from_connection_string.return_value = mock_workspace
+
+        provider = AzureQuantumProvider()
+
+        mock_from_connection_string.assert_called_once_with(mock_connection_string)
+        assert provider.workspace == mock_workspace

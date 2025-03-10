@@ -106,7 +106,7 @@ def test_ionq_device_extract_gate_data():
 
 
 def test_qasm2_to_ionq_measurements_raises():
-    """Test that qasm2_to_ionq raises an error when the circuit contains measurements."""
+    """Test that qasm2_to_ionq emits warning when the circuit contains measurements."""
     qasm = """
     OPENQASM 2.0;
     include "qelib1.inc";
@@ -115,9 +115,14 @@ def test_qasm2_to_ionq_measurements_raises():
     x q[0];
     measure q[0] -> c[0];
     """
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.warns(
+        UserWarning,
+        match=(
+            "Circuit contains measurement gates, which will be ignored "
+            "during conversion to the IonQDictType"
+        ),
+    ):
         qasm2_to_ionq(qasm)
-    assert "Circuits with measurements are not supported by the IonQDictType" in str(excinfo.value)
 
 
 @pytest.fixture
@@ -349,25 +354,36 @@ def test_qasm3_to_ionq_zz_native_gate():
             """
     OPENQASM 3.0;
     qubit[2] q;
-    zz(0.45) q[0], q[1];
-    """,
-            "Invalid angle value",
-        ),
-        (
-            """
-    OPENQASM 3.0;
-    qubit[2] q;
-    zz(-0.9) q[0], q[1];
-    """,
-            "Invalid angle value",
-        ),
-        (
-            """
-    OPENQASM 3.0;
-    qubit[2] q;
     zz(abc) q[0], q[1];
     """,
             "Invalid angle value 'abc'",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    gpi(0) q[1];
+    zz(2*pi) q[0], q[1];
+    """,
+            "Invalid angle value '2 * pi'",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    cgpi2(0) q[0], q[1];
+    zz(2*pi) q[0], q[1];
+    """,
+            "Invalid angle value '2 * pi'",
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    zz(0.15) q[0], q[1];
+    zz(3.0) q[0], q[1];
+    """,
+            "Invalid angle value '3.0'",
         ),
     ],
 )
@@ -376,6 +392,72 @@ def test_qasm3_to_ionq_invalid_params(qasm_code, error_message):
     with pytest.raises(ProgramConversionError) as excinfo:
         qasm3_to_ionq(qasm_code)
     assert error_message in str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    "qasm_code, ionq_dict",
+    [
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    zz(0.45) q[0], q[1];
+    """,
+            {
+                "qubits": 2,
+                "circuit": [{"gate": "zz", "rotation": 0.45, "targets": [0, 1]}],
+                "gateset": "qis",
+                "format": "ionq.circuit.v0",
+            },
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    zz(-0.9) q[0], q[1];
+    """,
+            {
+                "qubits": 2,
+                "circuit": [{"gate": "zz", "rotation": -0.9, "targets": [0, 1]}],
+                "gateset": "qis",
+                "format": "ionq.circuit.v0",
+            },
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    zz(0.1) q[0], q[1];
+    """,
+            {
+                "qubits": 2,
+                "circuit": [{"gate": "zz", "angle": 0.1, "targets": [0, 1]}],
+                "gateset": "native",
+                "format": "ionq.circuit.v0",
+            },
+        ),
+        (
+            """
+    OPENQASM 3.0;
+    qubit[2] q;
+    h q[0];
+    zz(pi/16) q[0], q[1];
+    """,
+            {
+                "qubits": 2,
+                "circuit": [
+                    {"gate": "h", "target": 0},
+                    {"gate": "zz", "rotation": 0.19634954084936207, "targets": [0, 1]},
+                ],
+                "gateset": "qis",
+                "format": "ionq.circuit.v0",
+            },
+        ),
+    ],
+)
+def test_qasm3_to_ionq_zz_context(qasm_code, ionq_dict):
+    """Test that qasm3_to_ionq correctly labels the gate parameter based on the value."""
+    assert qasm3_to_ionq(qasm_code) == ionq_dict
 
 
 @pytest.mark.parametrize(

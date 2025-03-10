@@ -47,8 +47,10 @@
 .wy-side-nav-search > a {
     color: var(--font-color0);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
+    padding-top: 8px;
+    margin-left: -14px;
 }
 
 .wy-side-nav-search > a::before {
@@ -58,6 +60,9 @@
     background-repeat: no-repeat;
     width: 28px;
     height: 28px;
+    margin-right: 4px;
+    position: relative;
+    top: 6px;
 }
 
 .wy-side-nav-search > div.version,

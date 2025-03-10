@@ -56,6 +56,7 @@ IONQ_QIS_GATES = [
     "cv",
     "cvi",
     "id",
+    "zz",
 ]
 
 IONQ_NATIVE_GATES_BASE = ["gpi", "gpi2"]
@@ -121,15 +122,21 @@ class IonQProgram(GateModelProgram):
             raise ValueError("Circuit is empty. Must contain at least one gate.")
 
         native_gate_set = set(IONQ_NATIVE_GATES)
-        first_gate_native = circuit[0].get("gate") in native_gate_set
+
+        def is_native_gate(gate_info: dict) -> bool:
+            """Helper function to determine if a gate is native."""
+            gate = gate_info.get("gate")
+            if gate == "zz":
+                return gate_info.get("angle") is not None
+            return gate in native_gate_set
+
+        first_gate_native = is_native_gate(circuit[0])
 
         for instr in circuit:
-            gate = instr.get("gate")
-            is_native = gate in native_gate_set
-
-            if is_native != first_gate_native:
+            if is_native_gate(instr) != first_gate_native:
                 raise ValueError(
-                    f"Invalid gate '{gate}'. Cannot mix native and QIS gates in the same circuit."
+                    f"Invalid gate '{instr.get('gate')}'. "
+                    "Cannot mix native and QIS gates in the same circuit."
                 )
 
         return GateSet.NATIVE if first_gate_native else GateSet.QIS

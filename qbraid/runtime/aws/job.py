@@ -123,7 +123,7 @@ class BraketQuantumTask(QuantumJob):
         try:
             task.cancel()
         except RuntimeError:
-            task._aws_session.cancel_quantum_task(task.arn)
+            task._aws_session.cancel_quantum_task(self.id)
 
     @staticmethod
     def _get_cost(task_arn: str, aws_session: Optional[AwsSession] = None) -> Decimal:
@@ -132,5 +132,5 @@ class BraketQuantumTask(QuantumJob):
 
     def get_cost(self) -> float:
         """Return the cost of the job."""
-        decimal_cost = self._get_cost(self._task.arn)
+        decimal_cost = self._get_cost(self.id)
         return float(decimal_cost)
