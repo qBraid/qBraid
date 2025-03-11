@@ -40,6 +40,8 @@ from qbraid.runtime.ibm.result_builder import QiskitGateModelResultBuilder
 
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
+FAKE_BASIS_GATES = ["u1", "u2", "u3", "cx"]
+
 
 class FakeDevice(GenericBackendV2):
     """A test Qiskit device."""
@@ -78,7 +80,7 @@ class FakeDevice(GenericBackendV2):
             backend_name="fake_backend",
             backend_version="1.0",
             n_qubits=self._num_qubits,
-            basis_gates=["u1", "u2", "u3", "cx"],
+            basis_gates=FAKE_BASIS_GATES,
             gates=[],
             local=self._local,
             simulator=self._simulator,
@@ -194,6 +196,7 @@ def test_provider_build_runtime_profile(local, simulator, num_qubits):
         assert profile["local"] == local
         assert profile["num_qubits"] == num_qubits
         assert profile["max_shots"] == 8192
+        assert profile.basis_gates == set(FAKE_BASIS_GATES)
 
         qiskit_backend = QiskitBackend(profile, mock_runtime_service())
         assert isinstance(qiskit_backend, QiskitBackend)
