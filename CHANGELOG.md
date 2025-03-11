@@ -35,6 +35,7 @@ Types of changes:
 - Added support for interpreting `zz` as a QIS gate in `openqasm3_to_ionq` and refactored `determine_gateset` accordingly ([#917](https://github.com/qBraid/qBraid/pull/917))
 - Modified `openqasm3_to_ionq` to emit warning instead of raise error when circuits contains measurements. ([#917](https://github.com/qBraid/qBraid/pull/917))
 - Set 20 minute timeout for daily github actions workflow ([#919](https://github.com/qBraid/qBraid/pull/919))
+- Temporarily skip remote OQC tests because the QCaaS servers will be offline until March 17, 2025. ([#931](https://github.com/qBraid/qBraid/pull/931))
 
 ### Deprecated
 

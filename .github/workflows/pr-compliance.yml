@@ -19,7 +19,7 @@ jobs:
   remind:
     name: Changelog
     runs-on: ubuntu-latest
-    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'github-actions[bot]' && github.event.pull_request.draft == false }}
+    if: ${{ github.actor != 'dependabot' && github.actor != 'dependabot[bot]' && github.actor != 'github-actions' && github.actor != 'github-actions[bot]' && github.event.pull_request.draft == false }}
     steps:
     - uses: actions/checkout@v4
     - name: Changelog Reminder
