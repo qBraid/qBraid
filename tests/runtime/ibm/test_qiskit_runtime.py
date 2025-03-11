@@ -41,6 +41,8 @@ from qbraid.runtime.ibm.result_builder import QiskitGateModelResultBuilder
 FIXTURE_COUNT = sum(key in NATIVE_REGISTRY for key in ["qiskit", "braket", "cirq"])
 
 FAKE_BASIS_GATES = ["u1", "u2", "u3", "cx"]
+
+
 class FakeDevice(GenericBackendV2):
     """A test Qiskit device."""
 

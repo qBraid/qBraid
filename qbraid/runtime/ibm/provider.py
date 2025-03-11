@@ -22,7 +22,7 @@ from qiskit_ibm_runtime import QiskitRuntimeService
 from qiskit_ibm_runtime.accounts import ChannelType
 
 from qbraid._caching import cached_method
-from qbraid.programs import ProgramSpec, ExperimentType
+from qbraid.programs import ExperimentType, ProgramSpec
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
