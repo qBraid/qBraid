@@ -22,7 +22,7 @@ from qiskit_ibm_runtime import QiskitRuntimeService
 from qiskit_ibm_runtime.accounts import ChannelType
 
 from qbraid._caching import cached_method
-from qbraid.programs import ProgramSpec
+from qbraid.programs import ProgramSpec, ExperimentType
 from qbraid.runtime.profile import TargetProfile
 from qbraid.runtime.provider import QuantumProvider
 
@@ -97,6 +97,8 @@ class QiskitRuntimeProvider(QuantumProvider):
             instance=backend._instance,
             max_shots=config.max_shots,
             provider_name="IBM",
+            experiment_type=ExperimentType.GATE_MODEL,
+            basis_gates=config.basis_gates,
         )
 
     @cached_method
