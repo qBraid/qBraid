@@ -163,16 +163,20 @@ def test_provider_save_config(fake_service):
     """Test saving the IBM account configuration to disk."""
     with patch("qbraid.runtime.ibm.provider.QiskitRuntimeService") as mock_runtime_service:
         mock_runtime_service.return_value = fake_service
-        provider = QiskitRuntimeProvider(token="fake_token", channel="fake_channel")
+        provider = QiskitRuntimeProvider(
+            token="fake_token", instance="ibm-q/open/main", channel="fake_channel"
+        )
 
-        provider.save_config(token="fake_token", channel="fake_channel", overwrite=False)
+        provider.save_config(
+            token="fake_token", instance="ibm-q/open/main", channel="fake_channel", overwrite=False
+        )
         mock_runtime_service.save_account.assert_called_once_with(
-            token="fake_token", channel="fake_channel", overwrite=False
+            token="fake_token", instance="ibm-q/open/main", channel="fake_channel", overwrite=False
         )
 
         provider.save_config()
         mock_runtime_service.save_account.assert_called_with(
-            token="fake_token", channel="fake_channel", overwrite=True
+            token="fake_token", instance="ibm-q/open/main", channel="fake_channel", overwrite=True
         )
 
 

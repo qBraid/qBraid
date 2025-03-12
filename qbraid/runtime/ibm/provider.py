@@ -56,10 +56,10 @@ class QiskitRuntimeProvider(QuantumProvider):
         Args:
             token (str, optional): IBM Cloud API key or IBM Quantum API token.
             instance (str, optional): The service instance to use.
-                For ``ibm_cloud`` runtime, this is the Cloud Resource Name (CRN) or the service name.
-                For ``ibm_quantum`` runtime, this is the hub/group/project in that format.
-            channel (ChannelType, optional): ``ibm_cloud``, ``ibm_quantum`` or ``local``. If ``local`` is selected,
-                If ``local``, uses local testing mode and primitive queries will run on a local simulator.
+                For ``ibm_cloud``, this is the Cloud Resource Name (CRN) or the service name.
+                For ``ibm_quantum``, this is the hub/group/project in that format.
+            channel (ChannelType, optional): ``ibm_cloud``, ``ibm_quantum`` or ``local``.
+                If ``local``, uses testing mode and primitive queries will run on local simulator.
         """
         self.token = token or os.getenv("QISKIT_IBM_TOKEN")
         self.instance = instance or os.getenv("QISKIT_IBM_INSTANCE")

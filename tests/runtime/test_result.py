@@ -761,7 +761,8 @@ def test_distribute_counts_probabilities_close_to_1():
 
 
 def test_distribute_counts_probabilities_close_to_1_rel_tol():
-    """Test distribute_counts with valid input (sum of probabilities close to 1) given rel_tol=1e-7."""
+    """Test distribute_counts with valid input (sum of probabilities close to 1)
+    given rel_tol=1e-7."""
     probs = {
         "0": 0.9869999885559082,
         "1": 0.004000000189989805,
