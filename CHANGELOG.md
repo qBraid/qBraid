@@ -36,6 +36,7 @@ Types of changes:
 - Modified `openqasm3_to_ionq` to emit warning instead of raise error when circuits contains measurements. ([#917](https://github.com/qBraid/qBraid/pull/917))
 - Set 20 minute timeout for daily github actions workflow ([#919](https://github.com/qBraid/qBraid/pull/919))
 - Temporarily skip remote OQC tests because the QCaaS servers will be offline until March 17, 2025. ([#931](https://github.com/qBraid/qBraid/pull/931))
+- Updated `QiskitRuntimeProvider` class with better docstring annotations for specifying either `ibm_quantum` or `ibm_cloud` channel ([#933](https://github.com/qBraid/qBraid/pull/933))
 
 ### Deprecated
 
@@ -45,6 +46,7 @@ Types of changes:
 - Updated `bump-version.yml` to track `qbraid/_version.py` instead of `pyproject.toml`. ([#917](https://github.com/qBraid/qBraid/pull/917))
 - Fixed bug where `BraketQuantumTask._task.arn` undefined if instaniated without `AwsQuantumTask` object ([#917](https://github.com/qBraid/qBraid/pull/917))
 - Fixed bug where doing `repr(result)` would cause `result.details['opeQasm']` to be set to `...` ([#919](https://github.com/qBraid/qBraid/pull/919))
+- Loosened relative tolerance for `distribute_counts` function in requiring probs to sum to 1 from default 1e-9 to 1e-7 ([#933](https://github.com/qBraid/qBraid/pull/933))
 
 ### Dependencies
 - Updated qBraid-CLI dependency to >= 0.10.0 ([#915](https://github.com/qBraid/qBraid/pull/915))
