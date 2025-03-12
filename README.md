@@ -7,8 +7,8 @@
   <a href="https://codecov.io/gh/qBraid/qBraid">
     <img src="https://codecov.io/gh/qBraid/qBraid/branch/main/graph/badge.svg?token=1UTM0XZB7A" alt="codecov"/>
   </a>
-  <a href="https://sdk.qbraid.com/en/latest/">
-    <img src="https://readthedocs.com/projects/qbraid-qbraid/badge/?version=latest" alt="Documentation Status"/>
+  <a href='https://sdk.qbraid.com/qBraid/'>
+    <img src='https://img.shields.io/github/actions/workflow/status/qBraid/qBraid/gh-pages.yml?label=docs' alt='GitHub Pages'/>
   </a>
   <a href="https://pypi.org/project/qbraid/">
     <img src="https://img.shields.io/pypi/v/qbraid.svg?color=blue" alt="PyPI version"/>
