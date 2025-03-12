@@ -45,25 +45,25 @@ class QiskitRuntimeProvider(QuantumProvider):
 
     def __init__(
         self,
-        channel: Optional[ChannelType] = None,
         token: Optional[str] = None,
         instance: Optional[str] = None,
+        channel: Optional[ChannelType] = None,
         **kwargs,
     ):
         """
         Initializes the QiskitRuntimeProvider object with IBM Quantum credentials.
 
         Args:
-            channel (ChannelType, optional): ``ibm_cloud``, ``ibm_quantum`` or ``local``. If ``local`` is selected,
-                If ``local``, uses local testing mode and primitive queries will run on a local simulator.
             token (str, optional): IBM Cloud API key or IBM Quantum API token.
             instance (str, optional): The service instance to use.
                 For ``ibm_cloud`` runtime, this is the Cloud Resource Name (CRN) or the service name.
                 For ``ibm_quantum`` runtime, this is the hub/group/project in that format.
+            channel (ChannelType, optional): ``ibm_cloud``, ``ibm_quantum`` or ``local``. If ``local`` is selected,
+                If ``local``, uses local testing mode and primitive queries will run on a local simulator.
         """
         self.token = token or os.getenv("QISKIT_IBM_TOKEN")
-        self.channel = channel or os.getenv("QISKIT_IBM_CHANNEL")
         self.instance = instance or os.getenv("QISKIT_IBM_INSTANCE")
+        self.channel = channel or os.getenv("QISKIT_IBM_CHANNEL", "ibm_quantum")
         self._runtime_service = QiskitRuntimeService(
             channel=self.channel, token=self.token, instance=self.instance, **kwargs
         )
@@ -75,9 +75,9 @@ class QiskitRuntimeProvider(QuantumProvider):
 
     def save_config(
         self,
-        channel: Optional[ChannelType] = None,
         token: Optional[str] = None,
         instance: Optional[str] = None,
+        channel: Optional[ChannelType] = None,
         overwrite: bool = True,
         **kwargs,
     ) -> None:
