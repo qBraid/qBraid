@@ -40,23 +40,32 @@ class QiskitRuntimeProvider(QuantumProvider):
     authentications with the IBM Quantum services.
 
     Attributes:
-        token (str): IBM Cloud API key or IBM Quantum API token.
         runtime_service (qiskit_ibm_runtime.QiskitRuntimeService): IBM Quantum runtime service.
     """
 
     def __init__(
-        self, token: Optional[str] = None, channel: Optional[ChannelType] = None, **kwargs
+        self,
+        channel: Optional[ChannelType] = None,
+        token: Optional[str] = None,
+        instance: Optional[str] = None,
+        **kwargs,
     ):
         """
-        Initializes the QbraidProvider object with optional AWS and IBM Quantum credentials.
+        Initializes the QiskitRuntimeProvider object with IBM Quantum credentials.
 
         Args:
-            token (str, optional): IBM Quantum token. Defaults to None.
+            channel (ChannelType, optional): ``ibm_cloud``, ``ibm_quantum`` or ``local``. If ``local`` is selected,
+                If ``local``, uses local testing mode and primitive queries will run on a local simulator.
+            token (str, optional): IBM Cloud API key or IBM Quantum API token.
+            instance (str, optional): The service instance to use.
+                For ``ibm_cloud`` runtime, this is the Cloud Resource Name (CRN) or the service name.
+                For ``ibm_quantum`` runtime, this is the hub/group/project in that format.
         """
         self.token = token or os.getenv("QISKIT_IBM_TOKEN")
-        self.channel = channel or os.getenv("QISKIT_IBM_CHANNEL", "ibm_quantum")
+        self.channel = channel or os.getenv("QISKIT_IBM_CHANNEL")
+        self.instance = instance or os.getenv("QISKIT_IBM_INSTANCE")
         self._runtime_service = QiskitRuntimeService(
-            token=self.token, channel=self.channel, **kwargs
+            channel=self.channel, token=self.token, instance=self.instance, **kwargs
         )
 
     @property
@@ -66,16 +75,18 @@ class QiskitRuntimeProvider(QuantumProvider):
 
     def save_config(
         self,
+        channel: Optional[ChannelType] = None,
         token: Optional[str] = None,
-        channel: Optional[str] = None,
+        instance: Optional[str] = None,
         overwrite: bool = True,
         **kwargs,
     ) -> None:
         """Saves IBM runtime service account to disk for future use."""
         token = token or self.token
+        instance = instance or self.instance
         channel = channel or self.channel
         QiskitRuntimeService.save_account(
-            token=token, channel=channel, overwrite=overwrite, **kwargs
+            token=token, instance=instance, channel=channel, overwrite=overwrite, **kwargs
         )
 
     def _build_runtime_profile(

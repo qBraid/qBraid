@@ -760,6 +760,24 @@ def test_distribute_counts_probabilities_close_to_1():
     assert result == {0: 9, 1: 1}, "Counts do not match expected values."
 
 
+def test_distribute_counts_probabilities_close_to_1_rel_tol():
+    """Test distribute_counts with valid input (sum of probabilities close to 1) given rel_tol=1e-7."""
+    probs = {
+        "0": 0.9869999885559082,
+        "1": 0.004000000189989805,
+        "2": 0.004999999888241291,
+        "3": 0.004000000189989805,
+    }
+    shots = 100000
+    result = distribute_counts(probs, shots)
+    assert result == {
+        "0": 98700,
+        "1": 400,
+        "2": 500,
+        "3": 400,
+    }, "Counts do not match expected values."
+
+
 def test_distribute_counts_probabilities_not_sum_to_1():
     """Test distribute_counts with probabilities that do not sum to 1."""
     probs = {0: 0.9, 1: 0.2}
