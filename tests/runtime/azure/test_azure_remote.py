@@ -42,7 +42,10 @@ if TYPE_CHECKING:
 def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
     """Test submitting an OpenQASM 2 string to run on the Quantinuum simulator."""
     device = provider.get_device("quantinuum.sim.h1-1sc")
-    assert device.status() == DeviceStatus.ONLINE
+    status = device.status()
+
+    if status != DeviceStatus.ONLINE:
+        pytest.skip(f"{device.id} is {status.value}")
 
     circuit = """
     OPENQASM 2.0;
@@ -71,7 +74,10 @@ def test_submit_qasm2_to_quantinuum(provider: AzureQuantumProvider):
 def test_submit_json_to_ionq(provider: AzureQuantumProvider):
     """Test submitting a circuit JSON to run on the IonQ simulator."""
     device = provider.get_device("ionq.simulator")
-    assert device.status() == DeviceStatus.ONLINE
+    status = device.status()
+
+    if status != DeviceStatus.ONLINE:
+        pytest.skip(f"{device.id} is {status.value}")
 
     circuit = {
         "qubits": 3,
