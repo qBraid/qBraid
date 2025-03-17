@@ -26,6 +26,7 @@ Types of changes:
 
 - Added bin script + logic in version bump workflow to automatically update `CITATION.ff` ([#915](https://github.com/qBraid/qBraid/pull/915))
 - Added a workflow for deploying to GitHub Pages on release publication or manual dispatch. ([#917](https://github.com/qBraid/qBraid/pull/917))
+- Added `pytest.skip` statements to Azure remote tests to skip them when the relevant device is not online. ([#934](https://github.com/qBraid/qBraid/pull/934))
 
 ### Improved / Modified
 - Disabled validation step in remote (native) IonQ runtime test when constructing `IonQDict` via `qiskit-ionq` ([#915](https://github.com/qBraid/qBraid/pull/915))
