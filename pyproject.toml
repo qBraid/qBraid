@@ -81,6 +81,7 @@ ibm = "qbraid.runtime.ibm.provider:QiskitRuntimeProvider"
 ionq = "qbraid.runtime.ionq.provider:IonQProvider"
 qbraid = "qbraid.runtime.native.provider:QbraidProvider"
 oqc = "qbraid.runtime.oqc.provider:OQCProvider"
+qudora = "qbraid.runtime.qudora.provider:QUDORAProvider"
 
 [project.entry-points."qbraid.jobs"]
 aws = "qbraid.runtime.aws.job:BraketQuantumTask"

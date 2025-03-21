@@ -17,5 +17,6 @@ Submodules
    azure
    ionq
    oqc
+   qudora
    native
    schemas

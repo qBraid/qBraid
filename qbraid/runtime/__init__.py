@@ -156,6 +156,11 @@ _lazy = {
         "QiskitBackend",
         "QiskitJob",
     ],
+    "qudora": [
+        "QUDORASession",
+        "QUDORAProvider",
+        "QUDORABackend",
+    ],
     "native": [
         "Session",
         "QbraidSession",
@@ -192,6 +197,9 @@ if TYPE_CHECKING:
     from .oqc import OQCDevice as OQCDevice
     from .oqc import OQCJob as OQCJob
     from .oqc import OQCProvider as OQCProvider
+    from .qudora import QUDORABackend as QUDORABackend
+    from .qudora import QUDORAProvider as QUDORAProvider
+    from .qudora import QUDORASession as QUDORASession
 
 
 def __getattr__(name):
