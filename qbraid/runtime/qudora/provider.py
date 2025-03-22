@@ -78,7 +78,7 @@ class QUDORASession(Session):
 
     def create_job(self, data: dict[str, Any]) -> int:
         """Posts a job to the QUDORA API and returns the job ID."""
-        return self.post("/jobs/", data=data, timeout=self.timeout).json()
+        return self.post("/jobs/", json=data, timeout=self.timeout).json()
 
     def get_job(self, job_id: str, include_data: bool = True) -> dict[str, Any]:
         """Queries for a specific job from the QUDORA API.

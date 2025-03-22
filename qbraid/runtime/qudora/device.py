@@ -39,6 +39,7 @@ class QUDORABackend(QuantumDevice):
         self._session = session
         if "shots" not in self._options:
             self._options.update_options(shots=100)
+            self._options.set_validator("shots", lambda x: 0 < x <= self.profile.max_shots)
 
     @property
     def session(self) -> qbraid.runtime.qudora.QUDORASession:
@@ -100,10 +101,11 @@ class QUDORABackend(QuantumDevice):
         if not isinstance(run_input, list):
             run_input = [run_input]
 
-        if len(run_input) > self.profile["max_circuits"]:
+        max_circuits = self.profile["max_programs_per_job"]
+        if len(run_input) > max_circuits:
             raise RuntimeError(
                 f"Provided {len(run_input)} circuits to QUDORABackend.run(). "
-                f"Backend only supports {self.profile['max_circuits']} circuits per job."
+                f"Backend only supports {max_circuits} circuits per job."
             )
 
         shots = kwargs.get("shots", self._options.get("shots", 100))
