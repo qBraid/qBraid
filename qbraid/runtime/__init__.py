@@ -160,6 +160,7 @@ _lazy = {
         "QUDORASession",
         "QUDORAProvider",
         "QUDORABackend",
+        "QUDORAJob",
     ],
     "native": [
         "Session",
@@ -198,6 +199,7 @@ if TYPE_CHECKING:
     from .oqc import OQCJob as OQCJob
     from .oqc import OQCProvider as OQCProvider
     from .qudora import QUDORABackend as QUDORABackend
+    from .qudora import QUDORAJob as QUDORAJob
     from .qudora import QUDORAProvider as QUDORAProvider
     from .qudora import QUDORASession as QUDORASession
 

@@ -30,14 +30,14 @@ class QuantumJob(ABC):
     """Abstract interface for job-like classes."""
 
     def __init__(
-        self, job_id: str, device: Optional[qbraid.runtime.QuantumDevice] = None, **kwargs
+        self, job_id: str | int, device: Optional[qbraid.runtime.QuantumDevice] = None, **kwargs
     ):
         self._job_id = job_id
         self._device = device
         self._cache_metadata = {"job_id": job_id, **kwargs}
 
     @property
-    def id(self) -> str:  # pylint: disable=invalid-name
+    def id(self) -> str | int:  # pylint: disable=invalid-name
         """Return a unique id identifying the job."""
         return self._job_id
 

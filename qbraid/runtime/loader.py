@@ -28,6 +28,7 @@ if TYPE_CHECKING:
     from qbraid.runtime.ionq import IonQJob, IonQProvider
     from qbraid.runtime.native import QbraidJob, QbraidProvider
     from qbraid.runtime.oqc import OQCJob, OQCProvider
+    from qbraid.runtime.qudora import QUDORAJob, QUDORAProvider
 
 
 class JobLoaderError(QbraidError):
@@ -63,10 +64,14 @@ def load_job(job_id: str, provider: Literal["oqc"], **kwargs) -> OQCJob: ...
 
 
 @overload
-def load_job(job_id: str, provider: str, **kwargs) -> QuantumJob: ...
+def load_job(job_id: int, provider: Literal["qudora"], **kwargs) -> QUDORAJob: ...
 
 
-def load_job(job_id: str, provider: str = "qbraid", **kwargs) -> QuantumJob:
+@overload
+def load_job(job_id: str | int, provider: str, **kwargs) -> QuantumJob: ...
+
+
+def load_job(job_id: str | int, provider: str = "qbraid", **kwargs) -> QuantumJob:
     """Load a quantum job object from a supported provider.
 
     Args:
@@ -127,6 +132,10 @@ def load_provider(provider_name: Literal["ionq"], **kwargs) -> IonQProvider: ...
 
 @overload
 def load_provider(provider_name: Literal["oqc"], **kwargs) -> OQCProvider: ...
+
+
+@overload
+def load_provider(provider_name: Literal["qudora"], **kwargs) -> QUDORAProvider: ...
 
 
 @overload

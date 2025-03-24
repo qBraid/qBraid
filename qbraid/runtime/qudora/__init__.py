@@ -22,10 +22,12 @@ Classes
     QUDORASession
     QUDORAProvider
     QUDORABackend
+    QUDORAJob
 
 """
 
 from .device import QUDORABackend
+from .job import QUDORAJob
 from .provider import QUDORAProvider, QUDORASession
 
-__all__ = ["QUDORASession", "QUDORAProvider", "QUDORABackend"]
+__all__ = ["QUDORASession", "QUDORAProvider", "QUDORABackend", "QUDORAJob"]

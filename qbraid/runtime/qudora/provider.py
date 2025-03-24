@@ -100,7 +100,7 @@ class QUDORASession(Session):
                 "include_user_error": include_data,
             },
             timeout=self.timeout,
-        ).json()
+        ).json()[0]
 
     def cancel_job(self, job_id: str) -> dict[str, Any]:
         """Tries to cancel a specific QUDORA job."""

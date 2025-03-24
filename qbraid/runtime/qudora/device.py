@@ -21,6 +21,8 @@ from qbraid.programs.typer import QasmStringType, get_qasm_type_alias
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
 
+from .job import QUDORAJob
+
 if TYPE_CHECKING:
     import qbraid.runtime
     import qbraid.runtime.qudora
@@ -45,6 +47,10 @@ class QUDORABackend(QuantumDevice):
     def session(self) -> qbraid.runtime.qudora.QUDORASession:
         """Returns the session for the device."""
         return self._session
+
+    def __str__(self):
+        """String representation of the QUDORADevice object."""
+        return f"{self.__class__.__name__}('{self.id}')"
 
     def status(self):
         """Returns the status of the device."""
@@ -84,7 +90,7 @@ class QUDORABackend(QuantumDevice):
         job_name: Optional[str] = None,
         backend_settings: Optional[dict] = None,
         **kwargs,
-    ):
+    ) -> QUDORAJob:
         """Submits a given circuit to the QUDORA Cloud.
 
         Args:
@@ -133,8 +139,4 @@ class QUDORABackend(QuantumDevice):
 
         job_id = self.session.create_job(json_data)
 
-        return job_id
-
-    def __str__(self):
-        """String representation of the QUDORADevice object."""
-        return f"{self.__class__.__name__}('{self.id}')"
+        return QUDORAJob(job_id=job_id, device=self, session=self.session)

@@ -31,7 +31,7 @@ class Result(Generic[ResultDataType]):
 
     Args:
         device_id (str): The ID of the device that executed the job.
-        job_id (str): The ID of the job.
+        job_id (str | int): The ID of the job.
         success (bool): Whether the job was successful.
         data (ResultData): The result of the job.
         **details: Additional metadata about the job results
@@ -41,7 +41,7 @@ class Result(Generic[ResultDataType]):
     def __init__(  # pylint: disable=too-many-arguments
         self,
         device_id: str,
-        job_id: str,
+        job_id: str | int,
         success: bool,
         data: ResultDataType,
         **kwargs,
