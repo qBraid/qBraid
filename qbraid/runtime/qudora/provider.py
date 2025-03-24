@@ -14,9 +14,10 @@ Module defining QUDORA session and provider classes
 """
 
 import os
+import time
 from typing import Any, Optional
 
-from qbraid_core.sessions import Session
+from qbraid_core.sessions import RequestsApiError, Session
 
 from qbraid._caching import cached_method
 from qbraid._version import __version__ as qbraid_version
@@ -80,16 +81,7 @@ class QUDORASession(Session):
         """Posts a job to the QUDORA API and returns the job ID."""
         return self.post("/jobs/", json=data, timeout=self.timeout).json()
 
-    def get_job(self, job_id: str, include_data: bool = True) -> dict[str, Any]:
-        """Queries for a specific job from the QUDORA API.
-
-        Args:
-            include_data (bool, optional): Should job data (input,results,errors) be included.
-                Defaults to True.
-
-        Returns:
-            dict[str, Any]: Data of the job.
-        """
+    def _get_job(self, job_id: str, include_data: bool) -> dict[str, Any]:
         return self.get(
             "/jobs/",
             params={
@@ -101,6 +93,22 @@ class QUDORASession(Session):
             },
             timeout=self.timeout,
         ).json()[0]
+
+    def get_job(self, job_id: str, include_data: bool = True) -> dict[str, Any]:
+        """Queries for a specific job from the QUDORA API.
+
+        Args:
+            include_data (bool, optional): Should job data (input,results,errors) be included.
+                Defaults to True.
+
+        Returns:
+            dict[str, Any]: Data of the job.
+        """
+        try:
+            return self._get_job(job_id, include_data)
+        except RequestsApiError:
+            time.sleep(1)
+            return self._get_job(job_id, include_data)
 
     def cancel_job(self, job_id: str) -> dict[str, Any]:
         """Tries to cancel a specific QUDORA job."""

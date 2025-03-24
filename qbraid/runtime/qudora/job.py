@@ -79,7 +79,14 @@ class QUDORAJob(QuantumJob):
             return self._cache_metadata
 
         job_metadata = self.session.get_job(self.id)
+        cached_backend_settings = self._cache_metadata.get("backend_settings")
         self._cache_metadata.update(job_metadata)
+        if (
+            cached_backend_settings is not None
+            and self._cache_metadata.get("backend_settings") is None
+        ):
+            self._cache_metadata.update({"backend_settings": cached_backend_settings})
+
         self._cache_metadata["status"] = self._map_status(self._cache_metadata["status"])
         return self._cache_metadata
 

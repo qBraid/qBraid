@@ -167,4 +167,6 @@ class QUDORABackend(QuantumDevice):
 
         job_id = self.session.create_job(json_data)
 
-        return QUDORAJob(job_id=job_id, device=self, session=self.session)
+        return QUDORAJob(
+            job_id=job_id, device=self, session=self.session, backend_settings=backend_settings
+        )
