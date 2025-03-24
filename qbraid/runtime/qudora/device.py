@@ -17,9 +17,15 @@ from __future__ import annotations
 import json
 from typing import TYPE_CHECKING, Optional
 
-from qbraid.programs.typer import QasmStringType, get_qasm_type_alias
+from qbraid.programs.typer import (
+    Qasm2StringType,
+    Qasm3StringType,
+    QasmStringType,
+    get_qasm_type_alias,
+)
 from qbraid.runtime.device import QuantumDevice
 from qbraid.runtime.enums import DeviceStatus
+from qbraid.transpiler.conversions.qasm2 import qasm2_to_qasm3
 
 from .job import QUDORAJob
 
@@ -83,6 +89,36 @@ class QUDORABackend(QuantumDevice):
                 f"{json.dumps(example_settings, indent=1)}"
             )
 
+    @staticmethod
+    def _process_qasm_input(
+        programs: list[QasmStringType],
+    ) -> tuple[str, list[Qasm2StringType | Qasm3StringType]]:
+        program_types = [(program, get_qasm_type_alias(program)) for program in programs]
+
+        types_set = set(type for _, type in program_types)
+
+        if len(types_set) > 1:
+            if types_set == {"qasm2", "qasm3"}:
+                input_data = [
+                    (qasm2_to_qasm3(program) if type == "qasm2" else program)
+                    for program, type in program_types
+                ]
+                program_type = "qasm3"
+            else:
+                raise ValueError("All input programs must be of the same type.")
+        else:
+            program_type = types_set.pop()
+            if program_type not in {"qasm2", "qasm3"}:
+                raise ValueError("Program type not recognized. Must be 'qasm2' or 'qasm3'.")
+
+            input_data = [program for program, _ in program_types]
+
+        language_map = {"qasm2": "OpenQASM2", "qasm3": "OpenQASM3"}
+
+        language = language_map[program_type]
+
+        return language, input_data
+
     # pylint: disable-next=arguments-differ
     def submit(
         self,
@@ -118,22 +154,14 @@ class QUDORABackend(QuantumDevice):
         if isinstance(shots, int):
             shots = [shots] * len(run_input)
 
-        program_types = {get_qasm_type_alias(program) for program in run_input}
-        if len(program_types) > 1:
-            raise ValueError("All programs must be of the same type, either 'qasm2' or 'qasm3'.")
-
-        program_type = program_types.pop()
-        language_map = {"qasm2": "OpenQASM2", "qasm3": "OpenQASM3"}
-        language = language_map.get(program_type)
-        if language is None:
-            raise ValueError("Program type not recognized. Must be 'qasm2' or 'qasm3'.")
+        language, input_data = self._process_qasm_input(run_input)
 
         json_data = {
             "name": job_name or "Job from qBraid Runtime",
             "language": language,
             "shots": shots,
             "target": self.profile["username"],
-            "input_data": run_input,
+            "input_data": input_data,
             "backend_settings": backend_settings,
         }
 
