@@ -95,7 +95,7 @@ class QbraidJob(QuantumJob):
         try:
             logger.info("Waiting for job to cancel...")
             self.wait_for_final_state(timeout=3, poll_interval=1)
-        except JobStateError:
+        except TimeoutError:
             pass
 
         status = self.status()
