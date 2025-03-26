@@ -56,7 +56,7 @@ pytket = ["pytket>=1.31"]
 qir = ["qbraid-qir>=0.2.0,<=0.3.1", "qbraid-core[runner]>=0.1.29", "qiskit-qir>=0.5.0"]
 qiskit = ["qiskit>=1.0,<1.5", "qiskit-ibm-runtime>=0.25.0,<0.38", "qiskit-qasm3-import>=0.5.1", "packaging>=20.0"]
 quera = ["flair-visual[vis]>=0.5.3", "pandas"]
-visualization = ["ipython", "matplotlib", "pylatexenc", "ipympl"]
+visualization = ["ipython", "matplotlib", "pylatexenc", "ipympl", "pyqasm[visualization]"]
 docs = ["sphinx>=7.2,<8.3", "sphinx-autodoc-typehints>=1.24,<3.2", "sphinx-rtd-theme>=1.3,<3.1", "docutils<0.22", "sphinx-copybutton"]
 
 [project.entry-points."qbraid.programs"]

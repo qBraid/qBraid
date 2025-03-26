@@ -14,16 +14,15 @@ Unit tests for logging configuration.
 """
 
 import logging
-import os
 from unittest.mock import patch
 
 import pytest
 
-from qbraid._logging import DEFAULT_LOG_LEVEL, get_log_level_from_env
+from qbraid._logging import DEFAULT_LOG_LEVEL, parse_log_level
 
 
 @pytest.mark.parametrize(
-    "log_level_env, expected_log_level",
+    "log_level_input, expected_log_level",
     [
         ("DEBUG", logging.DEBUG),
         ("INFO", logging.INFO),
@@ -35,59 +34,48 @@ from qbraid._logging import DEFAULT_LOG_LEVEL, get_log_level_from_env
         ("20", logging.INFO),
     ],
 )
-@patch.dict(os.environ, {}, clear=True)
-def test_get_log_level_valid_cases(log_level_env, expected_log_level):
+def test_get_log_level_valid_cases(log_level_input, expected_log_level):
     """Test that valid string or numeric log levels are correctly parsed from the environment."""
-    with patch.dict(os.environ, {"LOG_LEVEL": log_level_env}):
-        assert get_log_level_from_env() == expected_log_level
+    assert parse_log_level(log_level_input) == expected_log_level
 
 
 @pytest.mark.parametrize(
-    "log_level_env, invalid_log_level",
+    "log_level_input, invalid_log_level",
     [
         ("INVALID", "INVALID"),
         ("-1", "-1"),
     ],
 )
-@patch.dict(os.environ, {}, clear=True)
 @patch("logging.warning")
-def test_get_log_level_invalid_cases(mock_warning, log_level_env, invalid_log_level):
+def test_get_log_level_invalid_cases(mock_warning, log_level_input, invalid_log_level):
     """Test that invalid log levels fall back to DEFAULT_LOG_LEVEL and raise a warning."""
-    with patch.dict(os.environ, {"LOG_LEVEL": log_level_env}):
-        assert get_log_level_from_env() == DEFAULT_LOG_LEVEL
-        mock_warning.assert_called_once_with(
-            "Invalid log level (str) in LOG_LEVEL: %s. Falling back to WARNING.", invalid_log_level
-        )
+    assert parse_log_level(log_level_input) == DEFAULT_LOG_LEVEL
+    mock_warning.assert_called_once_with(
+        "Invalid log level (str) in LOG_LEVEL: %s. Falling back to WARNING.", invalid_log_level
+    )
 
 
-@patch.dict(os.environ, {}, clear=True)
 @patch("logging.warning")
 def test_get_log_level_empty_env(mock_warning):
     """Test that when LOG_LEVEL is not set, the function defaults to DEFAULT_LOG_LEVEL."""
-    assert get_log_level_from_env() == DEFAULT_LOG_LEVEL
+    assert parse_log_level(None) == DEFAULT_LOG_LEVEL
     mock_warning.assert_not_called(), "No warning should be called when the env var is empty"
 
 
-@patch.dict(os.environ, {}, clear=True)
 @patch("logging.warning")
 def test_get_log_level_invalid_int_warning(mock_warning):
     """Test that an invalid integer log level falls back to DEFAULT_LOG_LEVEL and logs a warning."""
-    with patch.dict(os.environ, {"LOG_LEVEL": "999"}):
-        assert get_log_level_from_env() == DEFAULT_LOG_LEVEL
-        mock_warning.assert_called_once_with(
-            "Invalid log level (int) in LOG_LEVEL: %s. Falling back to WARNING.", 999
-        )
+    assert parse_log_level("999") == DEFAULT_LOG_LEVEL
+    mock_warning.assert_called_once_with(
+        "Invalid log level (int) in LOG_LEVEL: %s. Falling back to WARNING.", 999
+    )
 
 
-@patch.dict(os.environ, {}, clear=True)
 def test_get_log_level_valid_int():
     """Test that valid integer log levels are correctly parsed from the environment."""
-    with patch.dict(os.environ, {"LOG_LEVEL": "20"}):  # 20 corresponds to INFO
-        assert get_log_level_from_env() == logging.INFO
+    assert parse_log_level("20") == logging.INFO
 
 
-@patch.dict(os.environ, {}, clear=True)
 def test_get_log_level_case_insensitive():
     """Test that log levels are case insensitive."""
-    with patch.dict(os.environ, {"LOG_LEVEL": "debug"}):
-        assert get_log_level_from_env() == logging.DEBUG
+    assert parse_log_level("debug") == logging.DEBUG

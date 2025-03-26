@@ -21,22 +21,27 @@ Usage:
     from qbraid._logging import logger
 
 Environment Variables:
-    LOG_LEVEL: The desired log level (default: INFO).
+    LOG_LEVEL: The desired log level (default: WARNING).
 """
 
 import logging
 import os
+from typing import Literal
 
 VALID_LOG_LEVELS = {logging.DEBUG, logging.INFO, logging.WARNING, logging.ERROR, logging.CRITICAL}
 DEFAULT_LOG_LEVEL = logging.WARNING
 
+LOG_LEVEL_ENV = os.getenv("LOG_LEVEL", "")
 
-def get_log_level_from_env():
-    """Get the log level from the LOG_LEVEL environment variable, or default to WARNING."""
-    log_level_env = os.getenv("LOG_LEVEL", "")
 
-    if log_level_env.isdigit():
-        log_level = int(log_level_env)
+def parse_log_level(input_level: str | int | None) -> Literal[10, 20, 30, 40, 50]:
+    """Parse the log level from a string or integer and return the corresponding
+    integer value. Returns `logging.WARNING` (30) if input is invalid."""
+    if input_level is None:
+        return DEFAULT_LOG_LEVEL
+
+    if input_level.isdigit():
+        log_level = int(input_level)
         if log_level in VALID_LOG_LEVELS:
             return log_level
 
@@ -45,23 +50,24 @@ def get_log_level_from_env():
         )
         return DEFAULT_LOG_LEVEL
 
-    log_level_str = log_level_env.upper()
+    log_level_str = input_level.upper()
     log_level = getattr(logging, log_level_str, None)
 
     if log_level in VALID_LOG_LEVELS:
         return log_level
 
-    if log_level_env:
+    if input_level:
         logging.warning(
-            "Invalid log level (str) in LOG_LEVEL: %s. Falling back to WARNING.", log_level_env
+            "Invalid log level (str) in LOG_LEVEL: %s. Falling back to WARNING.", input_level
         )
 
     return DEFAULT_LOG_LEVEL
 
 
-logging.basicConfig(format="%(levelname)s - %(message)s", level=get_log_level_from_env())
+if LOG_LEVEL_ENV:
+    logging.basicConfig(format="%(levelname)s - %(message)s", level=parse_log_level(LOG_LEVEL_ENV))
 
 logger = logging.getLogger(__name__)
 
 
-__all__ = ["logger", "DEFAULT_LOG_LEVEL", "VALID_LOG_LEVELS"]
+__all__ = ["logger", "LOG_LEVEL_ENV", "DEFAULT_LOG_LEVEL", "VALID_LOG_LEVELS"]

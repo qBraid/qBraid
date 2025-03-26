@@ -19,7 +19,7 @@ from time import sleep, time
 from typing import TYPE_CHECKING, Any, Optional
 
 from .enums import JobStatus
-from .exceptions import JobStateError, ResourceNotFoundError
+from .exceptions import ResourceNotFoundError
 
 if TYPE_CHECKING:
     import qbraid.runtime
@@ -30,14 +30,14 @@ class QuantumJob(ABC):
     """Abstract interface for job-like classes."""
 
     def __init__(
-        self, job_id: str, device: Optional[qbraid.runtime.QuantumDevice] = None, **kwargs
+        self, job_id: str | int, device: Optional[qbraid.runtime.QuantumDevice] = None, **kwargs
     ):
         self._job_id = job_id
         self._device = device
         self._cache_metadata = {"job_id": job_id, **kwargs}
 
     @property
-    def id(self) -> str:  # pylint: disable=invalid-name
+    def id(self) -> str | int:  # pylint: disable=invalid-name
         """Return a unique id identifying the job."""
         return self._job_id
 
@@ -82,7 +82,7 @@ class QuantumJob(ABC):
         while not self.is_terminal_state():
             elapsed_time = time() - start_time
             if timeout is not None and elapsed_time >= timeout:
-                raise JobStateError(f"Timeout while waiting for job {self.id}.")
+                raise TimeoutError(f"Timeout while waiting for job {self.id}.")
             sleep(poll_interval)
 
     @abstractmethod

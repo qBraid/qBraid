@@ -206,7 +206,7 @@ def test_wait_for_final_state_success(quantum_job):
 def test_wait_for_final_state_timeout(quantum_job):
     """Mocking the status to never change to a final state"""
     with patch.object(quantum_job, "is_terminal_state", return_value=False):
-        with pytest.raises(JobStateError):
+        with pytest.raises(TimeoutError):
             quantum_job.wait_for_final_state(timeout=0.2, poll_interval=0.1)
 
 
