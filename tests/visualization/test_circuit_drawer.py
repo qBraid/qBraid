@@ -20,7 +20,6 @@ import pytest
 
 from qbraid.programs import ProgramTypeError, load_program
 from qbraid.visualization.draw_circuit import circuit_drawer
-from qbraid.visualization.exceptions import VisualizationError
 
 
 def is_package_installed(package_name: str) -> bool:
@@ -76,7 +75,7 @@ def test_braket_bell_draw(capfd, bell_circuit):
 def test_braket_raises(bell_circuit):
     """Test that drawing braket circuit with non-supported output raises error"""
     braket_bell, _ = bell_circuit
-    with pytest.raises(VisualizationError):
+    with pytest.raises(ValueError):
         circuit_drawer(braket_bell, output="bad_input")
 
 
@@ -105,7 +104,7 @@ def test_cirq_bell_svg_draw(bell_circuit):
 def test_cirq_raises(bell_circuit):
     """Test that drawing Cirq circuit with non-supported output raises error"""
     cirq_bell, _ = bell_circuit
-    with pytest.raises(VisualizationError):
+    with pytest.raises(ValueError):
         circuit_drawer(cirq_bell, output="bad_input")
 
 
@@ -125,7 +124,7 @@ def test_pyquil_bell_draw(capfd, bell_circuit):
 def test_pyquil_raises(bell_circuit):
     """Test that drawing pyQuil program with non-supported output raises error"""
     pyquil_bell, _ = bell_circuit
-    with pytest.raises(VisualizationError):
+    with pytest.raises(ValueError):
         circuit_drawer(pyquil_bell, output="bad_input")
 
 
@@ -143,5 +142,5 @@ def test_pytket_draw(bell_circuit):
 def test_pytket_raises(bell_circuit):
     """Test that drawing pytket circuit with non-supported output raises error"""
     pytket_bell, _ = bell_circuit
-    with pytest.raises(VisualizationError):
+    with pytest.raises(ValueError):
         circuit_drawer(pytket_bell, output="bad_input")

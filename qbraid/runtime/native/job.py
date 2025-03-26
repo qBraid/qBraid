@@ -95,7 +95,7 @@ class QbraidJob(QuantumJob):
         try:
             logger.info("Waiting for job to cancel...")
             self.wait_for_final_state(timeout=3, poll_interval=1)
-        except JobStateError:
+        except TimeoutError:
             pass
 
         status = self.status()
@@ -132,9 +132,9 @@ class QbraidJob(QuantumJob):
 
         return result_data_cls
 
-    def result(self) -> Result[ResultDataType]:
+    def result(self, timeout: Optional[int] = None) -> Result[ResultDataType]:
         """Return the results of the job."""
-        self.wait_for_final_state()
+        self.wait_for_final_state(timeout=timeout)
         job_data = self.client.get_job(self.id)
         success = job_data.get("status") == JobStatus.COMPLETED.name
         job_result = (

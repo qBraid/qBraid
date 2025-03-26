@@ -38,10 +38,14 @@ Types of changes:
 - Set 20 minute timeout for daily github actions workflow ([#919](https://github.com/qBraid/qBraid/pull/919))
 - Temporarily skip remote OQC tests because the QCaaS servers will be offline until March 17, 2025. ([#931](https://github.com/qBraid/qBraid/pull/931))
 - Updated `QiskitRuntimeProvider` class with better docstring annotations for specifying either `ibm_quantum` or `ibm_cloud` channel ([#933](https://github.com/qBraid/qBraid/pull/933))
+- `QuantumJob.wait_for_final_state` now raises `TimeoutError` on timeout instead of `JobStateError` ([#943](https://github.com/qBraid/qBraid/pull/943))
+- Updated job ID type annotations to support both `str` and `int` (for compatibility with QUDORA) ([#943](https://github.com/qBraid/qBraid/pull/943))
+- Updated `qbraid._logging` so that `logging.basicConfig` is only set if `LOG_LEVEL` environment variable is defined. ([#943](https://github.com/qBraid/qBraid/pull/943))
 
 ### Deprecated
 
 ### Removed
+- Removed `qasm3_drawer` function  in favor of `pyqasm.draw` ([#943](https://github.com/qBraid/qBraid/pull/943))
 
 ### Fixed
 - Updated `bump-version.yml` to track `qbraid/_version.py` instead of `pyproject.toml`. ([#917](https://github.com/qBraid/qBraid/pull/917))
@@ -52,6 +56,7 @@ Types of changes:
 ### Dependencies
 - Updated qBraid-CLI dependency to >= 0.10.0 ([#915](https://github.com/qBraid/qBraid/pull/915))
 - Migrated from `bloqade` to `bloqade-analog` ([#920](https://github.com/qBraid/qBraid/pull/920))
+- Added `pyqasm[visualization]` to optional dependencies ([#943](https://github.com/qBraid/qBraid/pull/943))
 
 ## [0.9.4] - 2025-02-20
 
