@@ -64,7 +64,7 @@ def parse_log_level(input_level: str | int | None) -> Literal[10, 20, 30, 40, 50
     return DEFAULT_LOG_LEVEL
 
 
-if LOG_LEVEL_ENV:
+if LOG_LEVEL_ENV:  # pragma: no cover
     logging.basicConfig(format="%(levelname)s - %(message)s", level=parse_log_level(LOG_LEVEL_ENV))
 
 logger = logging.getLogger(__name__)
