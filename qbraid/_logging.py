@@ -40,7 +40,7 @@ def parse_log_level(input_level: str | int | None) -> Literal[10, 20, 30, 40, 50
     if input_level is None:
         return DEFAULT_LOG_LEVEL
 
-    if input_level.isdigit():
+    if isinstance(input_level, int) or (isinstance(input_level, str) and input_level.isdigit()):
         log_level = int(input_level)
         if log_level in VALID_LOG_LEVELS:
             return log_level
