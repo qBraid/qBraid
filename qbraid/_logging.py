@@ -70,4 +70,4 @@ if LOG_LEVEL_ENV:
 logger = logging.getLogger(__name__)
 
 
-__all__ = ["logger", "LOG_LEVEL_ENV", "DEFAULT_LOG_LEVEL", "VALID_LOG_LEVELS"]
+__all__ = ["logger", "DEFAULT_LOG_LEVEL", "VALID_LOG_LEVELS"]
