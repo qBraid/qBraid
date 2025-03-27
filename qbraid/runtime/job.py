@@ -14,6 +14,7 @@ Module defining abstract QuantumJob Class
 """
 from __future__ import annotations
 
+import asyncio
 from abc import ABC, abstractmethod
 from time import sleep, time
 from typing import TYPE_CHECKING, Any, Optional
@@ -84,6 +85,61 @@ class QuantumJob(ABC):
             if timeout is not None and elapsed_time >= timeout:
                 raise TimeoutError(f"Timeout while waiting for job {self.id}.")
             sleep(poll_interval)
+
+    async def _wait_for_final_state(
+            self, timeout: Optional[int] = None, poll_interval: int = 5
+    ) -> None:
+        """Asynchronously wait for the job to reach a terminal state (e.g., COMPLETED, FAILED).
+
+        This non-blocking method uses asyncio to periodically poll the job's status,
+        allowing other coroutines to run while waiting. It is especially useful in
+        asynchronous applications where blocking the event loop is undesirable.
+
+        Args:
+            timeout: Seconds to wait for the job. If ``None``, wait indefinitely.
+            poll_interval: Seconds between queries. Defaults to 5 seconds.
+
+        Raises:
+            JobStateError: If the job does not reach a final state before the specified timeout.
+
+        """
+        start_time = time()
+        while not self.is_terminal_state():
+            elapsed_time = time() - start_time
+            if timeout is not None and elapsed_time >= timeout:
+                raise TimeoutError(f"Timeout while waiting for job {self.id}.")
+            await asyncio.sleep(poll_interval)
+
+    async def async_result(
+            self, timeout: Optional[int] = None, poll_interval: int = 5
+    ) -> qbraid.runtime.Result[ResultDataType]:
+        """
+        Asynchronously wait for the job to reach a final state and return the result.
+
+        This method provides a non-blocking way to poll the job status using asyncio.
+        It allows developers to `await` the job without blocking the event loop,
+        making it suitable for integration in async applications and pipelines.
+
+        Parameters
+        ----------
+        timeout : int, optional
+            Maximum number of seconds to wait for the job. If ``None``, waits indefinitely.
+
+        poll_interval : int, default=5
+            Number of seconds between status checks while waiting.
+
+        Raises
+        ------
+        JobStateError
+            If the job does not reach a final (terminal) state before the timeout expires.
+
+        Returns
+        -------
+        Result[ResultDataType]
+            The result object associated with the job, if successfully completed.
+        """
+        await self._wait_for_final_state(timeout, poll_interval)
+        return self.result()
 
     @abstractmethod
     def result(self) -> qbraid.runtime.Result[ResultDataType]:
