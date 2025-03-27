@@ -16,6 +16,8 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added asynchronous method `QuantumJob._wait_for_final_state()` for non-blocking polling.
+- Added `QbraidJob.async_result()` to support async result retrieval using `await`.
 - Added `qbraid.runtime.get_providers()` and corresponding `qbraid.runtime.PROVIDERS` which is a list of the provider aliases that can be passed to the `qbraid.runtime.load_job()`function. ([#887](https://github.com/qBraid/qBraid/pull/887))
 
 ```python
