@@ -23,10 +23,12 @@ Types of changes:
 ### Deprecated
 
 ### Removed
+- Removed the `strict=False` parameter from the `pydantic_core.core_schema.union_schema()` calls in the `__get_pydantic_core_schema__` method(s) in `qbraid.runtime.schemas.base`. `stric` parameter no longer included in the `pydantic-core` API for that method as of release [v0.2.30](https://github.com/pydantic/pydantic-core/releases/tag/v2.30.0), PR [#1638](https://github.com/pydantic/pydantic-core/pull/1638). ([#946](https://github.com/qBraid/qBraid/pull/946))
 
 ### Fixed
 
 ### Dependencies
+- Added `pydantic-core` to project requirements ([#946](https://github.com/qBraid/qBraid/pull/946))
 
 ## [0.9.5] - 2025-03-26
 
