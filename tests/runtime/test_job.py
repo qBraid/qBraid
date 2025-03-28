@@ -197,6 +197,40 @@ def quantum_job():
     return job
 
 
+@pytest.mark.asyncio
+async def test_async_wait_for_final_state_success(quantum_job):
+    """Ensures the async method completes when the job reaches a terminal state."""
+    with patch.object(quantum_job, "is_terminal_state", side_effect=[False, False, True]):
+        await quantum_job._wait_for_final_state(timeout=1, poll_interval=0.1)
+
+
+@pytest.mark.asyncio
+async def test_async_wait_for_final_state_timeout(quantum_job):
+    """Ensures the async method raises TimeoutError if the job never completes."""
+    with patch.object(quantum_job, "is_terminal_state", return_value=False):
+        with pytest.raises(TimeoutError):
+            await quantum_job._wait_for_final_state(timeout=0.2, poll_interval=0.1)
+
+
+@pytest.mark.asyncio
+async def test_async_result_success(quantum_job):
+    """Test that async_result returns the job result after reaching terminal state."""
+    mock_result = "expected_result"
+
+    with patch.object(quantum_job, "is_terminal_state", side_effect=[False, True]):
+        with patch.object(quantum_job, "result", return_value=mock_result):
+            result = await quantum_job.async_result(timeout=1, poll_interval=0.1)
+            assert result == mock_result
+
+
+@pytest.mark.asyncio
+async def test_async_result_timeout(quantum_job):
+    """Test that async_result raises TimeoutError if job never reaches terminal state."""
+    with patch.object(quantum_job, "is_terminal_state", return_value=False):
+        with pytest.raises(TimeoutError):
+            await quantum_job.async_result(timeout=0.2, poll_interval=0.1)
+
+
 def test_wait_for_final_state_success(quantum_job):
     """Mocking the status to change to a final state after some time"""
     with patch.object(quantum_job, "is_terminal_state", side_effect=[False, False, True]):
