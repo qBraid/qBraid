@@ -16,8 +16,23 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
-- Added asynchronous method `QuantumJob._wait_for_final_state()` for non-blocking polling.
-- Added `QbraidJob.async_result()` to support async result retrieval using `await`.
+- Added `QbraidJob.async_result()` to support async result retrieval using `await`. ([#945](https://github.com/qBraid/qBraid/pull/945))
+
+### Improved / Modified
+
+### Deprecated
+
+### Removed
+- Removed the `strict=False` parameter from the `pydantic_core.core_schema.union_schema()` calls in the `__get_pydantic_core_schema__` method(s) in `qbraid.runtime.schemas.base`. `stric` parameter no longer included in the `pydantic-core` API for that method as of release [v0.2.30](https://github.com/pydantic/pydantic-core/releases/tag/v2.30.0), PR [#1638](https://github.com/pydantic/pydantic-core/pull/1638). ([#946](https://github.com/qBraid/qBraid/pull/946))
+
+### Fixed
+
+### Dependencies
+- Added `pydantic-core` to project requirements ([#946](https://github.com/qBraid/qBraid/pull/946))
+
+## [0.9.5] - 2025-03-26
+
+### Added
 - Added `qbraid.runtime.get_providers()` and corresponding `qbraid.runtime.PROVIDERS` which is a list of the provider aliases that can be passed to the `qbraid.runtime.load_job()`function. ([#887](https://github.com/qBraid/qBraid/pull/887))
 
 ```python
@@ -43,8 +58,6 @@ Types of changes:
 - `QuantumJob.wait_for_final_state` now raises `TimeoutError` on timeout instead of `JobStateError` ([#943](https://github.com/qBraid/qBraid/pull/943))
 - Updated job ID type annotations to support both `str` and `int` (for compatibility with QUDORA) ([#943](https://github.com/qBraid/qBraid/pull/943))
 - Updated `qbraid._logging` so that `logging.basicConfig` is only set if `LOG_LEVEL` environment variable is defined. ([#943](https://github.com/qBraid/qBraid/pull/943))
-
-### Deprecated
 
 ### Removed
 - Removed `qasm3_drawer` function  in favor of `pyqasm.draw` ([#943](https://github.com/qBraid/qBraid/pull/943))
