@@ -87,7 +87,7 @@ class QuantumJob(ABC):
             sleep(poll_interval)
 
     async def _wait_for_final_state(
-            self, timeout: Optional[int] = None, poll_interval: int = 5
+        self, timeout: Optional[int] = None, poll_interval: int = 5
     ) -> None:
         """Asynchronously wait for the job to reach a terminal state (e.g., COMPLETED, FAILED).
 
@@ -111,7 +111,7 @@ class QuantumJob(ABC):
             await asyncio.sleep(poll_interval)
 
     async def async_result(
-            self, timeout: Optional[int] = None, poll_interval: int = 5
+        self, timeout: Optional[int] = None, poll_interval: int = 5
     ) -> qbraid.runtime.Result[ResultDataType]:
         """Asynchronously wait for the job to reach a final state and return the result.
 
