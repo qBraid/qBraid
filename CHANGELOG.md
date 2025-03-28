@@ -16,8 +16,21 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
-- Added asynchronous method `QuantumJob._wait_for_final_state()` for non-blocking polling.
-- Added `QbraidJob.async_result()` to support async result retrieval using `await`.
+- Added `QbraidJob.async_result()` to support async result retrieval using `await`. ([#945](https://github.com/qBraid/qBraid/pull/945))
+
+### Improved / Modified
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Dependencies
+
+## [0.9.5] - 2025-03-26
+
+### Added
 - Added `qbraid.runtime.get_providers()` and corresponding `qbraid.runtime.PROVIDERS` which is a list of the provider aliases that can be passed to the `qbraid.runtime.load_job()`function. ([#887](https://github.com/qBraid/qBraid/pull/887))
 
 ```python
@@ -43,8 +56,6 @@ Types of changes:
 - `QuantumJob.wait_for_final_state` now raises `TimeoutError` on timeout instead of `JobStateError` ([#943](https://github.com/qBraid/qBraid/pull/943))
 - Updated job ID type annotations to support both `str` and `int` (for compatibility with QUDORA) ([#943](https://github.com/qBraid/qBraid/pull/943))
 - Updated `qbraid._logging` so that `logging.basicConfig` is only set if `LOG_LEVEL` environment variable is defined. ([#943](https://github.com/qBraid/qBraid/pull/943))
-
-### Deprecated
 
 ### Removed
 - Removed `qasm3_drawer` function  in favor of `pyqasm.draw` ([#943](https://github.com/qBraid/qBraid/pull/943))
