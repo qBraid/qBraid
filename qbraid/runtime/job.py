@@ -96,12 +96,11 @@ class QuantumJob(ABC):
         asynchronous applications where blocking the event loop is undesirable.
 
         Args:
-            timeout: Seconds to wait for the job. If ``None``, wait indefinitely.
-            poll_interval: Seconds between queries. Defaults to 5 seconds.
+            timeout (Optional[int]): Maximum number of seconds to wait for the job. If None, waits indefinitely.
+            poll_interval (int): Seconds between queries. Defaults to 5.
 
         Raises:
-            JobStateError: If the job does not reach a final state before the specified timeout.
-
+            TimeoutError: If the job does not reach a terminal state before the specified timeout.
         """
         start_time = time()
         while not self.is_terminal_state():
@@ -113,30 +112,21 @@ class QuantumJob(ABC):
     async def async_result(
             self, timeout: Optional[int] = None, poll_interval: int = 5
     ) -> qbraid.runtime.Result[ResultDataType]:
-        """
-        Asynchronously wait for the job to reach a final state and return the result.
+        """Asynchronously wait for the job to reach a final state and return the result.
 
         This method provides a non-blocking way to poll the job status using asyncio.
         It allows developers to `await` the job without blocking the event loop,
         making it suitable for integration in async applications and pipelines.
 
-        Parameters
-        ----------
-        timeout : int, optional
-            Maximum number of seconds to wait for the job. If ``None``, waits indefinitely.
+        Args:
+            timeout (Optional[int]): Maximum number of seconds to wait for the job. If None, waits indefinitely.
+            poll_interval (int): Seconds between status checks. Defaults to 5.
 
-        poll_interval : int, default=5
-            Number of seconds between status checks while waiting.
+        Returns:
+            Result[ResultDataType]: The result object associated with the job, if successfully completed.
 
-        Raises
-        ------
-        JobStateError
-            If the job does not reach a final (terminal) state before the timeout expires.
-
-        Returns
-        -------
-        Result[ResultDataType]
-            The result object associated with the job, if successfully completed.
+        Raises:
+            TimeoutError: If the job does not reach a terminal state before the timeout expires.
         """
         await self._wait_for_final_state(timeout, poll_interval)
         return self.result()
