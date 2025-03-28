@@ -96,7 +96,8 @@ class QuantumJob(ABC):
         asynchronous applications where blocking the event loop is undesirable.
 
         Args:
-            timeout (Optional[int]): Maximum number of seconds to wait for the job. If None, waits indefinitely.
+            timeout (Optional[int]): Maximum number of seconds to wait for the job.
+                If None, waits indefinitely.
             poll_interval (int): Seconds between queries. Defaults to 5.
 
         Raises:
@@ -119,11 +120,13 @@ class QuantumJob(ABC):
         making it suitable for integration in async applications and pipelines.
 
         Args:
-            timeout (Optional[int]): Maximum number of seconds to wait for the job. If None, waits indefinitely.
+            timeout (Optional[int]): Maximum number of seconds to wait for the job.
+                If None, waits indefinitely.
             poll_interval (int): Seconds between status checks. Defaults to 5.
 
         Returns:
-            Result[ResultDataType]: The result object associated with the job, if successfully completed.
+            Result[ResultDataType]: The result object associated with the job,
+            if successfully completed.
 
         Raises:
             TimeoutError: If the job does not reach a terminal state before the timeout expires.
