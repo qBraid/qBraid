@@ -1,4 +1,4 @@
-# Copyright (C) 2024 qBraid
+# Copyright (C) 2025 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -208,6 +208,9 @@ class QbraidProvider(QuantumProvider):
             or (
                 device["vendor"] == "AWS"
                 and device["provider"] in {"AWS", "QuEra", "OQC", "IQM", "Rigetti"}
+            ) or (
+                device["vendor"] == "Azure" 
+                and device["provider"] in {"Azure", "IonQ", "Quantinuum", "Rigetti"}
             )
         ]
 

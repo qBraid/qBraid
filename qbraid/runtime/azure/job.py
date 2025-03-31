@@ -1,4 +1,4 @@
-# Copyright (C) 2024 qBraid
+# Copyright (C) 2025 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -46,7 +46,7 @@ class AzureQuantumJob(QuantumJob):
         """Return the Azure Quantum Workspace."""
         return self._workspace
 
-    def _details(self) -> dict[str, Any]:
+    def details(self) -> dict[str, Any]:
         """Return the details of the Azure job and
         update the metadata cache."""
         self._job.refresh()
@@ -60,7 +60,7 @@ class AzureQuantumJob(QuantumJob):
         Returns:
             JobStatus: The current status of the job.
         """
-        details: dict = self._details()
+        details: dict = self.details()
         status: str = details.get("status")
 
         status_map = {
@@ -96,7 +96,7 @@ class AzureQuantumJob(QuantumJob):
         result_data = data["data"]
         return MicrosoftEstimatorResult(result_data)
 
-    def result(self) -> Union[Result, MicrosoftEstimatorResult]:
+    def result(self, wait_until_completed=False) -> Union[Result, MicrosoftEstimatorResult]:
         """Return the result of the Azure job.
 
         Returns:
@@ -106,7 +106,8 @@ class AzureQuantumJob(QuantumJob):
             logger.info("Result will be available when job has reached final state.")
 
         job: azure.quantum.Job = self._job
-        job.wait_until_completed()
+        if wait_until_completed:
+            job.wait_until_completed()
 
         success = job.details.status == "Succeeded"
         details = job.details.as_dict()
