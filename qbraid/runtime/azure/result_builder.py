@@ -1,5 +1,5 @@
-# Copyright (C) 2024 qBraid
-# Copyright (C) 2024 Microsoft Corporation
+# Copyright (C) 2025 qBraid
+# Copyright (C) 2025 Microsoft Corporation
 #
 # This file is part of the qBraid-SDK.
 #
