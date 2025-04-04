@@ -1,3 +1,12 @@
+"""
+Defines the BatchQuantumJob class used for grouping and managing multiple
+Braket quantum tasks submitted as a batch.
+
+This abstraction allows users to interact with multiple quantum jobs as a
+single job-like object, providing consistent access to results, metadata,
+status checking, and job cancellation across different quantum providers.
+"""
+
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.job import QuantumJob
 

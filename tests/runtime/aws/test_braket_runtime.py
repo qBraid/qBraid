@@ -23,7 +23,7 @@ from unittest.mock import MagicMock, Mock, patch
 import botocore
 import numpy as np
 import pytest
-from botocore.exceptions import NoCredentialsError
+
 from braket.aws.aws_session import AwsSession
 from braket.aws.queue_information import QueueDepthInfo, QueueType
 from braket.circuits import Circuit
@@ -328,21 +328,45 @@ def test_device_run_circuit_too_many_qubits(mock_aws_device, sv1_profile):
 
 
 class MockQuantumTask:
+    """
+    Mock class simulating an AWS Braket QuantumTask object.
+
+    Attributes:
+        id (str): The mock task ID.
+        state (callable): Returns the state of the mock task, always "COMPLETED".
+        result (callable): Returns a mocked result object.
+        metadata (callable): Returns a mock metadata dictionary with expected fields.
+    """
     def __init__(self, task_id):
         self.id = task_id
         self.state = lambda: "COMPLETED"
-        self.result = lambda: MagicMock()
-        self.metadata = lambda: {"status": "COMPLETED", "deviceArn": "mockArn", "quantumTaskArn": task_id}
+        self.result = MagicMock()
+        self.metadata = lambda: {
+            "status": "COMPLETED",
+            "deviceArn": "mockArn",
+            "quantumTaskArn": task_id
+        }
 
 
 class MockQuantumTaskBatch:
+    """
+    Mock class simulating a batch of AWS Braket QuantumTasks.
+
+    Attributes:
+        tasks (list): A list of `MockQuantumTask` objects to simulate a task batch.
+    """
     def __init__(self):
         self.tasks = [MockQuantumTask("task1"), MockQuantumTask("task2")]
 
 
 @patch("qbraid.runtime.aws.device.AwsDevice")
 def test_batch_run(mock_aws_device_class, sv1_profile):
+    """
+    Unit test for `BraketDevice.run()` when submitting a batch of circuits.
 
+    This test mocks the `AwsDevice.run_batch()` method to simulate a successful
+    batch submission and checks that a `BatchQuantumJob` is returned instead of a list.
+    """
     mock_device = MagicMock()
     mock_device.status = "ONLINE"
     mock_device.run_batch.return_value = MockQuantumTaskBatch()
@@ -657,7 +681,12 @@ def test_braket_job_cancel():
 
 @patch("qbraid.runtime.aws.provider.boto3.client")
 def test_get_tasks_by_tag_value_error(mock_boto_client):
+    """
+    Unit test for `BraketProvider.get_tasks_by_tag()` when an AWS ClientError is raised.
 
+    This test simulates an AccessDeniedException from AWS ResourceGroupsTaggingAPI
+    and verifies that the exception is correctly raised and handled.
+    """
     mock_client = MagicMock()
     mock_client.get_resources.side_effect = botocore.exceptions.ClientError(
         error_response={
@@ -669,8 +698,6 @@ def test_get_tasks_by_tag_value_error(mock_boto_client):
         operation_name="GetResources"
     )
     mock_boto_client.return_value = mock_client
-
-    from qbraid.runtime.aws.provider import BraketProvider
 
     provider = BraketProvider()
 
