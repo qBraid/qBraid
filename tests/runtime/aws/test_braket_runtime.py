@@ -23,7 +23,6 @@ from unittest.mock import MagicMock, Mock, patch
 import botocore
 import numpy as np
 import pytest
-
 from braket.aws.aws_session import AwsSession
 from braket.aws.queue_information import QueueDepthInfo, QueueType
 from braket.circuits import Circuit

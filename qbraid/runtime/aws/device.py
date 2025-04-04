@@ -27,8 +27,8 @@ from qbraid.runtime.exceptions import DeviceProgramTypeMismatchError
 from qbraid.transpiler import transpile
 
 from .availability import next_available_time
-from .job import BraketQuantumTask
 from .batch_job import BatchQuantumJob
+from .job import BraketQuantumTask
 
 if TYPE_CHECKING:
     import braket.aws
