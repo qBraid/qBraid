@@ -20,6 +20,7 @@ import json
 import warnings
 from unittest.mock import MagicMock, Mock, patch
 
+import botocore
 import numpy as np
 import pytest
 from botocore.exceptions import NoCredentialsError
@@ -39,6 +40,7 @@ from qbraid.runtime import (
     TargetProfile,
 )
 from qbraid.runtime.aws.availability import _calculate_future_time
+from qbraid.runtime.aws.batch_job import BatchQuantumJob
 from qbraid.runtime.aws.device import BraketDevice
 from qbraid.runtime.aws.job import AmazonBraketVersionError, BraketQuantumTask
 from qbraid.runtime.aws.provider import BraketProvider
@@ -325,16 +327,33 @@ def test_device_run_circuit_too_many_qubits(mock_aws_device, sv1_profile):
             device.run(run_input)
 
 
+class MockQuantumTask:
+    def __init__(self, task_id):
+        self.id = task_id
+        self.state = lambda: "COMPLETED"
+        self.result = lambda: MagicMock()
+        self.metadata = lambda: {"status": "COMPLETED", "deviceArn": "mockArn", "quantumTaskArn": task_id}
+
+
+class MockQuantumTaskBatch:
+    def __init__(self):
+        self.tasks = [MockQuantumTask("task1"), MockQuantumTask("task2")]
+
+
 @patch("qbraid.runtime.aws.device.AwsDevice")
-def test_batch_run(mock_aws_device, sv1_profile):
-    """Test batch run method of BraketDevice."""
-    mock_aws_device.return_value = MagicMock()
-    mock_aws_device.return_value.__iter__.return_value = [MockTask("task1"), MockTask("task2")]
-    mock_aws_device.return_value.status = "ONLINE"
+def test_batch_run(mock_aws_device_class, sv1_profile):
+
+    mock_device = MagicMock()
+    mock_device.status = "ONLINE"
+    mock_device.run_batch.return_value = MockQuantumTaskBatch()
+
+    mock_aws_device_class.return_value = mock_device
+
     device = BraketDevice(sv1_profile)
     circuits = [Circuit().h(0).cnot(0, 1), Circuit().h(0).cnot(0, 1)]
     tasks = device.run(circuits, shots=10)
-    assert isinstance(tasks, list)
+
+    assert isinstance(tasks, BatchQuantumJob)
 
 
 @pytest.mark.parametrize(
@@ -636,19 +655,29 @@ def test_braket_job_cancel():
     assert braket_task.cancel() is None
 
 
-def test_get_tasks_by_tag_value_error():
-    """Test getting tagged quantum tasks with invalid values."""
-    with patch("qbraid.runtime.aws.provider.quantum_lib_proxy_state") as mock_proxy_state:
-        mock_proxy_state.side_effect = ValueError
+@patch("qbraid.runtime.aws.provider.boto3.client")
+def test_get_tasks_by_tag_value_error(mock_boto_client):
 
-        provider = BraketProvider()
+    mock_client = MagicMock()
+    mock_client.get_resources.side_effect = botocore.exceptions.ClientError(
+        error_response={
+            "Error": {
+                "Code": "AccessDeniedException",
+                "Message": "User is not authorized to perform: tag:GetResources",
+            }
+        },
+        operation_name="GetResources"
+    )
+    mock_boto_client.return_value = mock_client
 
-        try:
-            result = provider.get_tasks_by_tag("key", ["value1", "value2"])
-        except NoCredentialsError:
-            pytest.skip("NoCredentialsError raised")
+    from qbraid.runtime.aws.provider import BraketProvider
 
-        assert isinstance(result, list)
+    provider = BraketProvider()
+
+    with pytest.raises(botocore.exceptions.ClientError) as excinfo:
+        provider.get_tasks_by_tag("key", ["value1", "value2"])
+
+    assert "AccessDeniedException" in str(excinfo.value)
 
 
 def test_get_tasks_by_tag_qbraid_error():
