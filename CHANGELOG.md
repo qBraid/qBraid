@@ -16,6 +16,24 @@ Types of changes:
 ## [Unreleased]
 
 ### Added
+- Added `QbraidJob.async_result()` to support async result retrieval using `await`. ([#945](https://github.com/qBraid/qBraid/pull/945))
+
+### Improved / Modified
+
+### Deprecated
+
+### Removed
+- Removed the `strict=False` parameter from the `pydantic_core.core_schema.union_schema()` calls in the `__get_pydantic_core_schema__` method(s) in `qbraid.runtime.schemas.base`. `stric` parameter no longer included in the `pydantic-core` API for that method as of release [v0.2.30](https://github.com/pydantic/pydantic-core/releases/tag/v2.30.0), PR [#1638](https://github.com/pydantic/pydantic-core/pull/1638). ([#946](https://github.com/qBraid/qBraid/pull/946))
+
+### Fixed
+- Fixed Amazon Braket remote test by changing catch `JobStateError` to `TimeoutError` ([#948](https://github.com/qBraid/qBraid/pull/948))
+
+### Dependencies
+- Added `pydantic-core` to project requirements ([#946](https://github.com/qBraid/qBraid/pull/946))
+
+## [0.9.5] - 2025-03-26
+
+### Added
 - Added `qbraid.runtime.get_providers()` and corresponding `qbraid.runtime.PROVIDERS` which is a list of the provider aliases that can be passed to the `qbraid.runtime.load_job()`function. ([#887](https://github.com/qBraid/qBraid/pull/887))
 
 ```python
@@ -38,10 +56,12 @@ Types of changes:
 - Set 20 minute timeout for daily github actions workflow ([#919](https://github.com/qBraid/qBraid/pull/919))
 - Temporarily skip remote OQC tests because the QCaaS servers will be offline until March 17, 2025. ([#931](https://github.com/qBraid/qBraid/pull/931))
 - Updated `QiskitRuntimeProvider` class with better docstring annotations for specifying either `ibm_quantum` or `ibm_cloud` channel ([#933](https://github.com/qBraid/qBraid/pull/933))
-
-### Deprecated
+- `QuantumJob.wait_for_final_state` now raises `TimeoutError` on timeout instead of `JobStateError` ([#943](https://github.com/qBraid/qBraid/pull/943))
+- Updated job ID type annotations to support both `str` and `int` (for compatibility with QUDORA) ([#943](https://github.com/qBraid/qBraid/pull/943))
+- Updated `qbraid._logging` so that `logging.basicConfig` is only set if `LOG_LEVEL` environment variable is defined. ([#943](https://github.com/qBraid/qBraid/pull/943))
 
 ### Removed
+- Removed `qasm3_drawer` function  in favor of `pyqasm.draw` ([#943](https://github.com/qBraid/qBraid/pull/943))
 
 ### Fixed
 - Updated `bump-version.yml` to track `qbraid/_version.py` instead of `pyproject.toml`. ([#917](https://github.com/qBraid/qBraid/pull/917))
@@ -52,6 +72,7 @@ Types of changes:
 ### Dependencies
 - Updated qBraid-CLI dependency to >= 0.10.0 ([#915](https://github.com/qBraid/qBraid/pull/915))
 - Migrated from `bloqade` to `bloqade-analog` ([#920](https://github.com/qBraid/qBraid/pull/920))
+- Added `pyqasm[visualization]` to optional dependencies ([#943](https://github.com/qBraid/qBraid/pull/943))
 
 ## [0.9.4] - 2025-02-20
 

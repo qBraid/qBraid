@@ -612,7 +612,6 @@ def test_cancel_job(oqc_device, program):
     assert job.cancel() is None
 
 
-@pytest.mark.skip(reason="QCaaS servers offline until March 17, 2025")
 @pytest.mark.remote
 def test_oqc_runtime_remote_execution(program, optimized_program):
     """Test OQC runtime with remote execution."""

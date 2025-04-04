@@ -85,7 +85,6 @@ class BraketQuantumTask(QuantumJob):
 
     def result(self) -> Result:
         """Return the results of the job."""
-
         if not self.is_terminal_state():
             logger.info("Result will be available when the job has reached a final state.")
 

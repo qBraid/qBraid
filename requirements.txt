@@ -3,5 +3,6 @@ numpy>=1.17
 openqasm3[parser]>=0.4.0
 qbraid-core>=0.1.25
 pydantic>2.0.0
+pydantic-core
 typing-extensions>=4.0.0
-pyqasm>=0.1.0,<0.3.0
+pyqasm>=0.3.0,<0.4.0
