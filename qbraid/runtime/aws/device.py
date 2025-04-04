@@ -28,6 +28,7 @@ from qbraid.transpiler import transpile
 
 from .availability import next_available_time
 from .job import BraketQuantumTask
+from .batch_job import BatchQuantumJob
 
 if TYPE_CHECKING:
     import braket.aws
@@ -144,7 +145,7 @@ class BraketDevice(QuantumDevice):
         ],
         *args,
         **kwargs,
-    ) -> Union[BraketQuantumTask, list[BraketQuantumTask]]:
+    ) -> Union[BraketQuantumTask, BatchQuantumJob]:
         """Run a quantum task specification on this quantum device. Task must represent a
         quantum circuit, annealing problems not supported.
 
@@ -167,4 +168,4 @@ class BraketDevice(QuantumDevice):
         ]
         if is_single_input:
             return tasks[0]
-        return tasks
+        return BatchQuantumJob(tasks)
