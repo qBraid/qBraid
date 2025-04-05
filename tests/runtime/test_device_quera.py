@@ -21,20 +21,11 @@ import pytest
 from pandas import DataFrame
 
 from qbraid.programs import ExperimentType
-from qbraid.runtime import (
-    ProgramValidationError,
-    Result,
-    TargetProfile,
-)
+from qbraid.runtime import ProgramValidationError, Result, TargetProfile
 from qbraid.runtime.native import QbraidDevice, QbraidJob, QbraidProvider
-from qbraid.runtime.native.result import (
-    QuEraQasmSimulatorResultData,
-)
+from qbraid.runtime.native.result import QuEraQasmSimulatorResultData
 
-from ._resources import (
-    JOB_DATA_QUERA_QASM,
-    RESULTS_DATA_QUERA_QASM,
-)
+from ._resources import JOB_DATA_QUERA_QASM, RESULTS_DATA_QUERA_QASM
 
 
 @pytest.fixture
