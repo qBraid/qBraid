@@ -29,7 +29,7 @@ from braket.circuits import Circuit
 from braket.device_schema import ExecutionDay
 from braket.devices import Devices, LocalSimulator
 
-from qbraid import QuantumJob, JobStatus
+from qbraid import JobStatus, QuantumJob
 from qbraid.exceptions import QbraidError
 from qbraid.interface import circuits_allclose
 from qbraid.programs import ExperimentType, ProgramSpec, load_program
