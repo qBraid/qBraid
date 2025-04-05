@@ -29,6 +29,7 @@ from braket.circuits import Circuit
 from braket.device_schema import ExecutionDay
 from braket.devices import Devices, LocalSimulator
 
+from qbraid import QuantumJob, JobStatus
 from qbraid.exceptions import QbraidError
 from qbraid.interface import circuits_allclose
 from qbraid.programs import ExperimentType, ProgramSpec, load_program
@@ -165,6 +166,48 @@ class MockTask:
     def metadata(self):
         """Mock metadata method."""
         return {"status": self.state(), "quantumTaskArn": self.id, "deviceArn": SV1_ARN}
+
+
+class MockQuantumTask:
+    """
+    Mock class simulating an AWS Braket QuantumTask object.
+
+    Attributes:
+        id (str): The mock task ID.
+        state (callable): Returns the state of the mock task, always "COMPLETED".
+        result (callable): Returns a mocked result object.
+        metadata (callable): Returns a mock metadata dictionary with expected fields.
+    """
+    def __init__(self, task_id):
+        self.id = task_id
+        self.state = lambda: "COMPLETED"
+        self.result = MagicMock()
+        self.metadata = lambda: {
+            "status": "COMPLETED",
+            "deviceArn": "mockArn",
+            "quantumTaskArn": task_id
+        }
+
+
+def create_mock_quantum_jobs(job_status, job_result='result'):
+    """Helper to create a mock QuantumJob with the specified status and result."""
+    mock_quantum_job = MagicMock(spec=QuantumJob)
+    mock_quantum_job.status.return_value = job_status
+    mock_quantum_job.result.return_value = job_result
+    mock_quantum_job.cancel = MagicMock()
+    mock_quantum_job.device = MagicMock()
+    return mock_quantum_job
+
+
+class MockQuantumTaskBatch:
+    """
+    Mock class simulating a batch of AWS Braket QuantumTasks.
+
+    Attributes:
+        tasks (list): A list of `MockQuantumTask` objects to simulate a task batch.
+    """
+    def __init__(self):
+        self.tasks = [MockQuantumTask("task1"), MockQuantumTask("task2")]
 
 
 @pytest.fixture
@@ -326,38 +369,6 @@ def test_device_run_circuit_too_many_qubits(mock_aws_device, sv1_profile):
             device.run(run_input)
 
 
-class MockQuantumTask:
-    """
-    Mock class simulating an AWS Braket QuantumTask object.
-
-    Attributes:
-        id (str): The mock task ID.
-        state (callable): Returns the state of the mock task, always "COMPLETED".
-        result (callable): Returns a mocked result object.
-        metadata (callable): Returns a mock metadata dictionary with expected fields.
-    """
-    def __init__(self, task_id):
-        self.id = task_id
-        self.state = lambda: "COMPLETED"
-        self.result = MagicMock()
-        self.metadata = lambda: {
-            "status": "COMPLETED",
-            "deviceArn": "mockArn",
-            "quantumTaskArn": task_id
-        }
-
-
-class MockQuantumTaskBatch:
-    """
-    Mock class simulating a batch of AWS Braket QuantumTasks.
-
-    Attributes:
-        tasks (list): A list of `MockQuantumTask` objects to simulate a task batch.
-    """
-    def __init__(self):
-        self.tasks = [MockQuantumTask("task1"), MockQuantumTask("task2")]
-
-
 @patch("qbraid.runtime.aws.device.AwsDevice")
 def test_batch_run(mock_aws_device_class, sv1_profile):
     """
@@ -377,6 +388,57 @@ def test_batch_run(mock_aws_device_class, sv1_profile):
     tasks = device.run(circuits, shots=10)
 
     assert isinstance(tasks, BatchQuantumJob)
+
+
+@pytest.mark.parametrize(
+    'jobs_list, expected_status',
+    [
+        (
+            [create_mock_quantum_jobs(JobStatus.COMPLETED),
+             create_mock_quantum_jobs(JobStatus.COMPLETED)],
+            JobStatus.COMPLETED
+         ),
+        (
+            [create_mock_quantum_jobs(JobStatus.COMPLETED),
+             create_mock_quantum_jobs(JobStatus.FAILED)],
+            JobStatus.FAILED
+         ),
+        (
+            [create_mock_quantum_jobs(JobStatus.COMPLETED),
+             create_mock_quantum_jobs(JobStatus.QUEUED)],
+            JobStatus.RUNNING
+         ),
+
+    ],
+    ids=['batch_completed', 'batch_failed', 'batch_running']
+)
+def test_batch_quantum_job_status(jobs_list, expected_status):
+    """Test that BatchQuantumJob status."""
+    batch_job = BatchQuantumJob(jobs_list)
+    assert batch_job.status() == expected_status
+
+
+def test_batch_quantum_job_result():
+    """Test that BatchQuantumJob.result() aggregates results from all jobs."""
+
+    batch_job = BatchQuantumJob([
+        create_mock_quantum_jobs(JobStatus.COMPLETED, job_result='res1'),
+        create_mock_quantum_jobs(JobStatus.COMPLETED, job_result='res2')
+    ])
+    expected_result = ['res1', 'res2']
+    assert batch_job.result() == expected_result
+
+
+def test_batch_quantum_job_cancel():
+    """Test that BatchQuantumJob.cancel() cancels all underlying jobs."""
+    jobs = [
+        create_mock_quantum_jobs(JobStatus.COMPLETED, job_result='res1'),
+        create_mock_quantum_jobs(JobStatus.COMPLETED, job_result='res2')
+    ]
+    batch_job = BatchQuantumJob(jobs)
+    batch_job.cancel()
+    for job in jobs:
+        job.cancel.assert_called_once()
 
 
 @pytest.mark.parametrize(
