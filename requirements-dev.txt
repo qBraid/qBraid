@@ -22,9 +22,9 @@ qiskit-ionq>=0.5.12
 # optional runtime dependencies
 qiskit-ibm-runtime>=0.25.0,<0.38
 oqc-qcaas-client>=3.11.0; python_version < "3.13"
-azure-quantum>=2.0,<2.3
+azure-quantum>=3.1.0,<3.5.0
 azure-storage-blob>=12.20,<13.0
-azure-identity>=1.17,<2.0
+azure-identity>=1.21.0,<2.0
 pyqubo>=1.4.0
 
 # visualization

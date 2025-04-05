@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional, Union
 
-from azure.quantum.target.microsoft import MicrosoftEstimatorResult
+
 from azure.quantum.workspace import Workspace
 
 from qbraid._logging import logger
@@ -76,34 +76,15 @@ class AzureQuantumJob(QuantumJob):
         }
         return status_map.get(status, JobStatus.UNKNOWN)
 
-    @staticmethod
-    def _make_estimator_result(data: dict[str, Any]) -> MicrosoftEstimatorResult:
-        """Create a MicrosoftEstimatorResult from the given data.
-
-        Args:
-            data (dict): The data to create the result from.
-
-        Returns:
-            MicrosoftEstimatorResult: The result created from the data.
-
-        Raises:
-            RuntimeError: If the job execution failed.
-        """
-        if not data["success"]:
-            error_data = data["error_data"]
-            raise RuntimeError(
-                f"Cannot retrieve results as job execution failed "
-                f"({error_data['code']}: {error_data['message']})"
-            )
-
-        result_data = data["data"]
-        return MicrosoftEstimatorResult(result_data)
-
-    def result(self, wait_until_completed=False) -> Union[Result, MicrosoftEstimatorResult]:
+    def result(self, wait_until_completed=False) -> Union[Result]:
         """Return the result of the Azure job.
 
+        Args:
+            wait_until_completed (bool, optional): If True, waits until the job is completed 
+                before retrieving the result. Defaults to False.
+
         Returns:
-            Union[Result, MicrosoftEstimatorResult]: The result of the job.
+            Union[Result]: The result of the job.
         """
         if not self.is_terminal_state():
             logger.info("Result will be available when job has reached final state.")
@@ -115,26 +96,6 @@ class AzureQuantumJob(QuantumJob):
         success = job.details.status == "Succeeded"
         details = job.details.as_dict()
 
-        if job.details.output_data_format == OutputDataFormat.RESOURCE_ESTIMATOR.value:
-            return self._make_estimator_result(
-                {
-                    "job_id": job.id,
-                    "target": job.details.target,
-                    "job_name": job.details.name,
-                    "success": success,
-                    "data": job.get_results(),
-                    "error_data": (
-                        None if job.details.error_data is None else job.details.error_data.as_dict()
-                    ),
-                }
-            )
-
-        if job.details.output_data_format == OutputDataFormat.PASQAL.value:
-            builder = AzureAHSModelResultBuilder(job)
-            data = AhsResultData(measurement_counts=builder.get_counts())
-            return Result(
-                device_id=job.details.target, job_id=job.id, success=success, data=data, **details
-            )
         builder = AzureGateModelResultBuilder(job)
         data = GateModelResultData(measurement_counts=builder.get_counts())
         return Result(

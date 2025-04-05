@@ -18,7 +18,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pytest
-from azure.quantum.target.microsoft import MicrosoftEstimatorResult
+from azure.quantum.target.rigetti import Result
 from qiskit import QuantumCircuit
 
 from qbraid.runtime import DeviceStatus, JobStatus
@@ -38,16 +38,13 @@ def qir_bitcode(qiskit_circuit: QuantumCircuit) -> bytes:
     return module.bitcode
 
 
-@pytest.mark.skip(
-    reason="The Resource Estimator is now fully open source and available as part of the QDK."
-)
 @pytest.mark.remote
 @pytest.mark.parametrize("direct", [(True), (False)])
-def test_submit_qir_to_microsoft(
+def test_submit_qir_to_azure_rigetti(
     provider: AzureQuantumProvider, qiskit_circuit: QuantumCircuit, qir_bitcode: bytes, direct: bool
 ):
-    """Test submitting Qiskit circuit or QIR bitcode to run on the Microsoft resource estimator."""
-    device = provider.get_device("microsoft.estimator")
+    """Test submitting Qiskit circuit or QIR bitcode to run on the Rigetti QVM simulator."""
+    device = provider.get_device("rigetti.sim.qvm")
     assert device.status() == DeviceStatus.ONLINE
 
     input_params = {"entryPoint": qiskit_circuit.name, "arguments": [], "count": 100}
@@ -62,4 +59,4 @@ def test_submit_qir_to_microsoft(
     assert job.status() == JobStatus.COMPLETED
 
     result = job.result()
-    assert isinstance(result, MicrosoftEstimatorResult)
+    assert isinstance(result, Result)

@@ -121,6 +121,8 @@ class QbraidDevice(QuantumDevice):
             params (dict, optional): Additional parameters to include in the job payload.
             error_mitigation (dict, optional): Dictionary containing error mitigation
                 parameters. Only applicable for certain devices. Defaults to None.
+            desired_target_ir (str, optional): The desired intermediate representation (IR)
+                format for the target device. Defaults to None.
 
         Returns:
             QbraidJob: The job objects representing the submitted job.
