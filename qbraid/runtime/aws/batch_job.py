@@ -21,6 +21,7 @@ class BatchQuantumJob(QuantumJob):
     Attributes:
         jobs (list[QuantumJob]): The individual quantum jobs in the batch.
     """
+
     def __init__(self, jobs: list[QuantumJob]):
         super().__init__(job_id="batch", device=jobs[0].device)
         self._jobs = jobs

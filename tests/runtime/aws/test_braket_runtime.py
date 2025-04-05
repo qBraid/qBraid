@@ -178,6 +178,7 @@ class MockQuantumTask:
         result (callable): Returns a mocked result object.
         metadata (callable): Returns a mock metadata dictionary with expected fields.
     """
+
     def __init__(self, task_id):
         self.id = task_id
         self.state = lambda: "COMPLETED"
@@ -185,11 +186,11 @@ class MockQuantumTask:
         self.metadata = lambda: {
             "status": "COMPLETED",
             "deviceArn": "mockArn",
-            "quantumTaskArn": task_id
+            "quantumTaskArn": task_id,
         }
 
 
-def create_mock_quantum_jobs(job_status, job_result='result'):
+def create_mock_quantum_jobs(job_status, job_result="result"):
     """Helper to create a mock QuantumJob with the specified status and result."""
     mock_quantum_job = MagicMock(spec=QuantumJob)
     mock_quantum_job.status.return_value = job_status
@@ -206,6 +207,7 @@ class MockQuantumTaskBatch:
     Attributes:
         tasks (list): A list of `MockQuantumTask` objects to simulate a task batch.
     """
+
     def __init__(self):
         self.tasks = [MockQuantumTask("task1"), MockQuantumTask("task2")]
 
@@ -391,26 +393,31 @@ def test_batch_run(mock_aws_device_class, sv1_profile):
 
 
 @pytest.mark.parametrize(
-    'jobs_list, expected_status',
+    "jobs_list, expected_status",
     [
         (
-            [create_mock_quantum_jobs(JobStatus.COMPLETED),
-             create_mock_quantum_jobs(JobStatus.COMPLETED)],
-            JobStatus.COMPLETED
-         ),
+            [
+                create_mock_quantum_jobs(JobStatus.COMPLETED),
+                create_mock_quantum_jobs(JobStatus.COMPLETED),
+            ],
+            JobStatus.COMPLETED,
+        ),
         (
-            [create_mock_quantum_jobs(JobStatus.COMPLETED),
-             create_mock_quantum_jobs(JobStatus.FAILED)],
-            JobStatus.FAILED
-         ),
+            [
+                create_mock_quantum_jobs(JobStatus.COMPLETED),
+                create_mock_quantum_jobs(JobStatus.FAILED),
+            ],
+            JobStatus.FAILED,
+        ),
         (
-            [create_mock_quantum_jobs(JobStatus.COMPLETED),
-             create_mock_quantum_jobs(JobStatus.QUEUED)],
-            JobStatus.RUNNING
-         ),
-
+            [
+                create_mock_quantum_jobs(JobStatus.COMPLETED),
+                create_mock_quantum_jobs(JobStatus.QUEUED),
+            ],
+            JobStatus.RUNNING,
+        ),
     ],
-    ids=['batch_completed', 'batch_failed', 'batch_running']
+    ids=["batch_completed", "batch_failed", "batch_running"],
 )
 def test_batch_quantum_job_status(jobs_list, expected_status):
     """Test that BatchQuantumJob status."""
@@ -421,19 +428,21 @@ def test_batch_quantum_job_status(jobs_list, expected_status):
 def test_batch_quantum_job_result():
     """Test that BatchQuantumJob.result() aggregates results from all jobs."""
 
-    batch_job = BatchQuantumJob([
-        create_mock_quantum_jobs(JobStatus.COMPLETED, job_result='res1'),
-        create_mock_quantum_jobs(JobStatus.COMPLETED, job_result='res2')
-    ])
-    expected_result = ['res1', 'res2']
+    batch_job = BatchQuantumJob(
+        [
+            create_mock_quantum_jobs(JobStatus.COMPLETED, job_result="res1"),
+            create_mock_quantum_jobs(JobStatus.COMPLETED, job_result="res2"),
+        ]
+    )
+    expected_result = ["res1", "res2"]
     assert batch_job.result() == expected_result
 
 
 def test_batch_quantum_job_cancel():
     """Test that BatchQuantumJob.cancel() cancels all underlying jobs."""
     jobs = [
-        create_mock_quantum_jobs(JobStatus.COMPLETED, job_result='res1'),
-        create_mock_quantum_jobs(JobStatus.COMPLETED, job_result='res2')
+        create_mock_quantum_jobs(JobStatus.COMPLETED, job_result="res1"),
+        create_mock_quantum_jobs(JobStatus.COMPLETED, job_result="res2"),
     ]
     batch_job = BatchQuantumJob(jobs)
     batch_job.cancel()
