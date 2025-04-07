@@ -20,12 +20,15 @@ from azure.quantum.target.microsoft import MicrosoftEstimatorResult
 from azure.quantum.workspace import Workspace
 
 from qbraid._logging import logger
-from qbraid.runtime.azure.result_builder import AzureGateModelResultBuilder
+from qbraid.runtime.azure.result_builder import (
+    AzureAHSModelResultBuilder,
+    AzureGateModelResultBuilder,
+)
 from qbraid.runtime.enums import JobStatus
 from qbraid.runtime.exceptions import JobStateError
 from qbraid.runtime.job import QuantumJob
 from qbraid.runtime.result import Result
-from qbraid.runtime.result_data import GateModelResultData
+from qbraid.runtime.result_data import AhsResultData, GateModelResultData
 
 from .io_format import OutputDataFormat
 
@@ -126,6 +129,12 @@ class AzureQuantumJob(QuantumJob):
                 }
             )
 
+        if job.details.output_data_format == OutputDataFormat.PASQAL.value:
+            builder = AzureAHSModelResultBuilder(job)
+            data = AhsResultData(measurement_counts=builder.get_counts())
+            return Result(
+                device_id=job.details.target, job_id=job.id, success=success, data=data, **details
+            )
         builder = AzureGateModelResultBuilder(job)
         data = GateModelResultData(measurement_counts=builder.get_counts())
         return Result(

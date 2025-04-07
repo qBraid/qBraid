@@ -108,6 +108,8 @@ def _get_class(module: str):
         return qibo.Circuit  # type: ignore # noqa: F821
     if module == "stim":  # pragma: no cover
         return stim.Circuit  # type: ignore # noqa: F821
+    if module == "pulser":
+        return pulser.sequence.sequence.Sequence  # type: ignore # noqa: F821
     raise ValueError(f"Unsupported module '{module}'")
 
 
