@@ -208,8 +208,9 @@ class QbraidProvider(QuantumProvider):
             or (
                 device["vendor"] == "AWS"
                 and device["provider"] in {"AWS", "QuEra", "OQC", "IQM", "Rigetti"}
-            ) or (
-                device["vendor"] == "Azure" 
+            )
+            or (
+                device["vendor"] == "Azure"
                 and device["provider"] in {"Azure", "IonQ", "Quantinuum", "Rigetti"}
             )
         ]
