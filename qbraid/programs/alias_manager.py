@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Optional, Type
 from .exceptions import ProgramTypeError
 from .exceptions import QasmError as QbraidQasmError
 from .registry import QPROGRAM_REGISTRY, QPROGRAM_TYPES
-from .typer import IonQDict, get_qasm_type_alias
+from .typer import IonQDict, get_qasm_type_alias, PulserDict
 
 if TYPE_CHECKING:
     import qbraid.programs
@@ -70,6 +70,8 @@ def _get_program_type_alias(program: qbraid.programs.QPROGRAM) -> str:
 
     if isinstance(program, IonQDict):
         return IonQDict.__alias__
+    if isinstance(program, PulserDict):
+        return PulserDict.__alias__
 
     matched = []
     for alias, program_type in QPROGRAM_REGISTRY.items():
