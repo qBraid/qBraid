@@ -96,6 +96,13 @@ class AzureQuantumJob(QuantumJob):
         success = job.details.status == "Succeeded"
         details = job.details.as_dict()
 
+        if job.details.output_data_format == OutputDataFormat.PASQAL.value:
+            builder = AzureAHSModelResultBuilder(job)
+            data = AhsResultData(measurement_counts=builder.get_counts())
+            return Result(
+                device_id=job.details.target, job_id=job.id, success=success, data=data, **details
+            )
+
         builder = AzureGateModelResultBuilder(job)
         data = GateModelResultData(measurement_counts=builder.get_counts())
         return Result(
