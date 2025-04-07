@@ -1,4 +1,4 @@
-# Copyright (C) 2024 qBraid
+# Copyright (C) 2025 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -34,3 +34,4 @@ class OutputDataFormat(Enum):
     QUANTINUUM = "honeywell.quantum-results.v1"
     RESOURCE_ESTIMATOR = "microsoft.resource-estimates.v1"
     RIGETTI = "rigetti.quil-results.v1"
+    PASQAL = "pasqal.pulser-results.v1"

@@ -1,4 +1,4 @@
-# Copyright (C) 2024 qBraid
+# Copyright (C) 2025 qBraid
 #
 # This file is part of the qBraid-SDK
 #
@@ -93,6 +93,7 @@ class QbraidDevice(QuantumDevice):
         backend: Optional[str] = None,
         params: Optional[dict[str, Any]] = None,
         error_mitigation: Optional[dict[str, Any]] = None,
+        desired_target_ir: Optional[str] = None,
     ) -> qbraid.runtime.QbraidJob:
         """
         Creates a qBraid Quantum Job.
@@ -145,6 +146,7 @@ class QbraidDevice(QuantumDevice):
             "backend": backend,
             "params": params_json,
             "errorMitigation": error_mitig_json,
+            "desiredTargetIR": desired_target_ir,
             **run_input,
         }
 
@@ -351,7 +353,6 @@ class QbraidDevice(QuantumDevice):
             kwargs["params"] = self._resolve_qubo_params(params)
 
         jobs: list[qbraid.runtime.QbraidJob] = []
-
         native_target = self._all_target_specs_native(self._target_spec)
         transpile_option = self._target_spec is not None and self._options.get("transpile") is True
 
@@ -364,7 +365,9 @@ class QbraidDevice(QuantumDevice):
             if not native_target:
                 aux_payload = self._construct_aux_payload(program, program_spec)
             if transpile_option:
-                program = self.transpile(program, program_spec)
+                program = self.transpile(
+                    program, program_spec, desired_target_ir=kwargs.get("desired_target_ir", None)
+                )
             is_batched_output = is_single_input and isinstance(program, list)
             program_batch = program if is_batched_output else [program]
             self.validate(program_batch, suppress_device_warning=i != 0)
@@ -376,7 +379,6 @@ class QbraidDevice(QuantumDevice):
                 runtime_payload = {**aux_payload, **run_input_json}
                 job = self.submit(run_input=runtime_payload, shots=shots, tags=tags, **kwargs)
                 jobs.append(job)
-
         return jobs[0] if is_single_input else jobs
 
     def estimate_cost(
