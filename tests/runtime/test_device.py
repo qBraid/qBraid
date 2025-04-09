@@ -781,14 +781,14 @@ def test_provider_get_basis_gates_ionq():
 
 
 @pytest.mark.parametrize(
-    "program_spec, target_ir_expected",
+    "program_spec, target_program_type_expected",
     [
         (None, None),
         (ProgramSpec(str, "qasm2"), "qasm2"),
         ([ProgramSpec(str, "qasm2"), ProgramSpec(str, "qasm3")], ["qasm2", "qasm3"]),
     ],
 )
-def test_device_metadata_for_different_program_specs(program_spec, target_ir_expected):
+def test_device_metadata_for_different_program_specs(program_spec, target_program_type_expected):
     """Test getting device metadata for different program specs types: none, single and multiple."""
     profile = TargetProfile(
         device_id="fake_device",
@@ -802,11 +802,11 @@ def test_device_metadata_for_different_program_specs(program_spec, target_ir_exp
 
     metadata = device.metadata()
 
-    target_ir = metadata["runtime_config"]["target_ir"]
+    target_program_type = metadata["runtime_config"]["target_program_type"]
     assert (
-        target_ir is None
-        if target_ir_expected is None
-        else set(target_ir) == set(target_ir_expected)
+        target_program_type is None
+        if target_program_type_expected is None
+        else set(target_program_type) == set(target_program_type_expected)
     )
 
     with pytest.raises(ProgramTypeError) as excinfo:
@@ -941,3 +941,75 @@ def test_device_call_resolve_params_from_run_method(
         mock_nec_va_device.run(qubo_coefficients, params=mock_qubo_solve_params)
         mock_resolve_qubo_params.assert_called_once_with(mock_qubo_solve_params)
         mock_submit.assert_called_once()
+
+
+@pytest.fixture
+def mock_qasm_profile():
+    """Mock profile for testing."""
+    return TargetProfile(
+        device_id="mock_device",
+        simulator=True,
+        experiment_type=ExperimentType.GATE_MODEL,
+        program_spec=[ProgramSpec(str, "qasm2"), ProgramSpec(str, "qasm3")],
+    )
+
+
+@pytest.fixture
+def mock_qasm_device(mock_qasm_profile, mock_scheme, mock_client):
+    """Mock QbraidDevice for testing."""
+    return QbraidDevice(profile=mock_qasm_profile, client=mock_client, scheme=mock_scheme)
+
+
+def test_set_target_program_type(mock_qbraid_device: QbraidDevice):
+    """Test setting target spec."""
+    target_spec = mock_qbraid_device._target_spec
+    assert isinstance(target_spec, ProgramSpec)
+    mock_qbraid_device.set_target_program_type(None)
+    assert mock_qbraid_device._target_spec is None
+    mock_qbraid_device.set_target_program_type(target_spec.alias)
+    assert mock_qbraid_device._target_spec == target_spec
+
+
+def test_set_target_program_type_multi_program_spec(mock_qasm_device: QbraidDevice):
+    """Test setting target spec with multiple program specs."""
+    target_spec = mock_qasm_device._target_spec
+    assert isinstance(target_spec, list)
+    assert all(isinstance(spec, ProgramSpec) for spec in target_spec)
+    mock_qasm_device.set_target_program_type("qasm2")
+    assert mock_qasm_device._target_spec.alias == "qasm2"
+    mock_qasm_device.set_target_program_type("qasm3")
+    assert mock_qasm_device._target_spec.alias == "qasm3"
+    mock_qasm_device.set_target_program_type(["qasm2", "qasm3"])
+    assert isinstance(mock_qasm_device._target_spec, list)
+    assert all(isinstance(spec, ProgramSpec) for spec in mock_qasm_device._target_spec)
+    assert len(mock_qasm_device._target_spec) == 2
+
+
+def test_set_target_program_type_raises_for_multiple(mock_qasm_device: QbraidDevice):
+    """Test setting target spec with multiple program specs."""
+    with pytest.raises(ValueError):
+        mock_qasm_device.set_target_program_type("qasm4")
+
+
+def test_set_target_program_type_raises_for_single(mock_qbraid_device: QbraidDevice):
+    """Test setting target spec with multiple program specs."""
+    with pytest.raises(ValueError):
+        mock_qbraid_device.set_target_program_type("qasm4")
+
+
+@pytest.fixture
+def mock_profile_program_spec_none():
+    """Mock profile for testing with program_spec set to none"""
+    return TargetProfile(
+        device_id="mock_device",
+        simulator=True,
+        experiment_type=ExperimentType.GATE_MODEL,
+        program_spec=None,
+    )
+
+
+# @pytest.fixture
+# def mock_device_program_spec_none(mock_profile_program_spec_none):
+#     return QbraidDevice(profile=mock_profile_program_spec_none, client)
+# def test_set_target_program_type_raises_for_none(mock_qasm_device: QbraidDevice):
+#     return QbraidDevice(profile=mock_qasm_profile, client=mock_client, scheme=mock_scheme)
