@@ -34,7 +34,7 @@ from qbraid.runtime import (
 
 # Skip pyquil tests if not installed
 pyquil_found = importlib.util.find_spec("pyquil") is not None
-pulser_found = importlib.util.find_spec("pulser-core") is not None
+pulser_found = importlib.util.find_spec("pulser") is not None
 
 if TYPE_CHECKING:
     import pyquil as pyquil_

@@ -93,7 +93,6 @@ class QbraidDevice(QuantumDevice):
         backend: Optional[str] = None,
         params: Optional[dict[str, Any]] = None,
         error_mitigation: Optional[dict[str, Any]] = None,
-        desired_target_ir: Optional[str] = None,
     ) -> qbraid.runtime.QbraidJob:
         """
         Creates a qBraid Quantum Job.
@@ -146,7 +145,6 @@ class QbraidDevice(QuantumDevice):
             "backend": backend,
             "params": params_json,
             "errorMitigation": error_mitig_json,
-            "desiredTargetIR": desired_target_ir,
             **run_input,
         }
 
@@ -366,7 +364,7 @@ class QbraidDevice(QuantumDevice):
                 aux_payload = self._construct_aux_payload(program, program_spec)
             if transpile_option:
                 program = self.transpile(
-                    program, program_spec, desired_target_ir=kwargs.get("desired_target_ir", None)
+                    program, program_spec
                 )
             is_batched_output = is_single_input and isinstance(program, list)
             program_batch = program if is_batched_output else [program]

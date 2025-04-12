@@ -242,7 +242,6 @@ class QuantumDevice(ABC):
         self,
         run_input: qbraid.programs.QPROGRAM,
         run_input_spec: qbraid.programs.ProgramSpec,
-        desired_target_ir: Optional[str] = None,
     ) -> qbraid.programs.QPROGRAM:
         """Convert circuit to package compatible with target device and pass through any
         provider transpile methods to match topology of device and/or optimize as applicable.
@@ -262,9 +261,6 @@ class QuantumDevice(ABC):
         target_specs = (
             self._target_spec if isinstance(self._target_spec, list) else [self._target_spec]
         )
-
-        if desired_target_ir:
-            target_specs = [spec for spec in target_specs if spec.alias == desired_target_ir]
 
         alias_to_spec = {target_spec.alias: target_spec for target_spec in target_specs}
         ordered_targets = graph.get_sorted_closest_targets(
