@@ -7,6 +7,8 @@ pyquil>=4.4; python_version < "3.13"
 qcs-sdk-python>=0.21.12,<0.21.13; python_version < "3.13"
 pytket>=1.31
 qiskit>=1.0,<1.5
+pulser-core>=1.4.0
+pulser-simulation>=1.4.0
 
 # transpiler extras
 ply>=3.6
