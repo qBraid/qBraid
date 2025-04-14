@@ -23,7 +23,6 @@ from braket.tracking.tracker import Tracker
 
 from qbraid.runtime.aws.provider import BraketProvider
 from qbraid.runtime.aws.tracker import get_quantum_task_cost
-from qbraid.runtime.exceptions import JobStateError
 
 
 @pytest.fixture
@@ -91,7 +90,7 @@ def test_get_quantum_task_cost_cancelled(braket_most_busy, braket_no_meas):
     try:
         qbraid_job.wait_for_final_state(timeout=30)
         final_state_reached = True
-    except JobStateError:
+    except TimeoutError:
         final_state_reached = False
 
     # Based on whether final state was reached or not, proceed to verify expected outcomes

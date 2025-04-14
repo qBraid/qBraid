@@ -128,6 +128,7 @@ When coding:
 
 - Use annotations like `pylint: disable`, `fmt: off`, `type: ignore`, or `pragma: no cover` only as a last resort.
 - Ensure all functions and classes include Python type hints to support `py.typed` and improve type-checking accuracy.
+- Public APIs should follow the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html)
 
 ## Pull Requests
 

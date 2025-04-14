@@ -97,7 +97,6 @@ class Credits(qbraid_core.decimal.Credits):
                 core_schema.float_schema(),
                 handler(Decimal),
             ],
-            strict=False,
             custom_error_type="credits_type",
             custom_error_message="Input should be a number (int, float, or Decimal)",
         )
@@ -141,7 +140,6 @@ class USD(qbraid_core.decimal.USD):
                 core_schema.float_schema(),
                 handler(Decimal),
             ],
-            strict=False,
             custom_error_type="usd_type",
             custom_error_message="Input should be a number (int, float, or Decimal)",
         )

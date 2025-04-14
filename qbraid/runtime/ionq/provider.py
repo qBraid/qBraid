@@ -78,7 +78,7 @@ class IonQSession(Session):
         """Get a specific IonQ job."""
         return self.get(f"/jobs/{job_id}").json()
 
-    def cancel_job(self, job_id: str):
+    def cancel_job(self, job_id: str) -> dict[str, Any]:
         """Cancel a specific IonQ job."""
         return self.put(f"/jobs/{job_id}/status/cancel").json()
 

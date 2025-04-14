@@ -17,8 +17,10 @@ import os
 from typing import TYPE_CHECKING
 
 import pytest
+from qbraid_core.exceptions import RequestsApiError
 
-from qbraid.runtime import GateModelResultData, IonQDevice, IonQProvider, Result
+from qbraid._logging import logger
+from qbraid.runtime import GateModelResultData, IonQDevice, IonQProvider, JobStateError, Result
 
 if TYPE_CHECKING:
     import cirq as cirq_module
@@ -55,7 +57,17 @@ def test_ionq_multicircuit_job():
 
     job = device.run([qiskit_ghz, cirq_bell], name="qBraid Integration Test", shots=1000)
 
-    job.wait_for_final_state()
+    try:
+        job.wait_for_final_state(timeout=60)
+    except TimeoutError as err:
+        logger.error(err)
+
+        try:
+            job.cancel()
+        except (RequestsApiError, JobStateError) as err:
+            logger.error(err)
+
+        pytest.skip(reason="Job did not complete within the timeout")
 
     result = job.result()
 

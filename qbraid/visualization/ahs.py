@@ -16,8 +16,6 @@ Plot atomic register of AHS program.
 """
 from typing import Optional
 
-import matplotlib.pyplot as plt
-
 
 def plot_atomic_register(
     sites: list[tuple[float, float]],
@@ -41,6 +39,9 @@ def plot_atomic_register(
         show (bool): If True, display the figure. Defaults to True.
 
     """
+    # pylint: disable-next=import-outside-toplevel
+    import matplotlib.pyplot as plt
+
     if not len(sites) == len(filling):
         raise ValueError("sites and filling must be of equal length.")
 
