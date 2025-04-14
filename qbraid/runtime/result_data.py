@@ -353,6 +353,7 @@ class AhsResultData(ResultData):
         measurements_info = self._format_array(self._measurements)
         return f"{self.__class__.__name__}(measurement_counts={self._measurement_counts}, measurements={measurements_info})"  # pylint: disable=line-too-long
 
+
 class AnnealingResultData(ResultData):
     """Class for storing and accessing the results of an annealing job."""
 
