@@ -343,14 +343,14 @@ class AhsResultData(ResultData):
             return False
 
         return all(s1 == s2 for s1, s2 in zip(self._measurements, other._measurements))
+    
+    @staticmethod
+    def _format_array(arr: np.ndarray) -> str:
+        return f"array(shape={arr.shape}, dtype={arr.dtype})"
 
     def __repr__(self) -> str:
         """Return a string representation of the AhsResultData instance."""
-        measurements_info = (
-            "[" + ", ".join(repr(shot) for shot in self._measurements) + "]"
-            if self._measurements is not None
-            else "None"
-        )
+        measurements_info = self._format_array(self._measurements)
         return f"{self.__class__.__name__}(measurement_counts={self._measurement_counts}, measurements={measurements_info})"  # pylint: disable=line-too-long
 
 

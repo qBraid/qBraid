@@ -28,6 +28,7 @@ from azure.quantum.target.target import Target
 
 from qbraid.programs import QPROGRAM_REGISTRY, ExperimentType, ProgramSpec
 from qbraid.runtime import (
+    AhsResultData,
     DeviceStatus,
     GateModelResultData,
     JobStateError,
@@ -515,6 +516,32 @@ def test_azure_device_status(azure_device, mock_target):
     assert azure_device.status() == DeviceStatus.UNAVAILABLE
 
 
+def test_azure_device_is_available(mock_workspace, mock_target):
+    """Test the is_available method of AzureQuantumDevice."""
+    # Mock the target's availability
+    mock_target._current_availability = "Available"
+    mock_workspace.get_targets.return_value = mock_target
+
+    # Create the AzureQuantumDevice instance
+    profile = TargetProfile(
+        device_id="test.qpu",
+        simulator=False,
+        provider_name="test_provider",
+        capability="test_capability",
+        input_data_format="test_input",
+        output_data_format="test_output",
+        experiment_type=ExperimentType.GATE_MODEL,
+    )
+    device = AzureQuantumDevice(profile, mock_workspace)
+
+    # Test when the device is online
+    assert device.is_available() is True
+
+    # Test when the device is offline
+    mock_target._current_availability = "Unavailable"
+    assert device.is_available() is False
+
+
 def test_azure_device_submit(azure_device, mock_target):
     """Test submitting a job to an AzureQuantumDevice."""
     mock_job = Mock()
@@ -766,6 +793,55 @@ def mock_builder_ionq_results(mock_job_id) -> dict[str, Any]:
     return data
 
 
+def test_azure_job_result_pasqal(mock_azure_pasqal_job, mock_pasqal_result_data):
+    """Test getting the result of an AzureQuantumJob with PASQAL output data format."""
+    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+
+    # Mock the PASQAL job
+    mock_azure_pasqal_job.details.output_data_format = OutputDataFormat.PASQAL.value
+    mock_azure_pasqal_job.details.target = "pasqal.sim.emu-tn"
+    mock_azure_pasqal_job.get_results.return_value = mock_pasqal_result_data
+
+    # Create the AzureQuantumJob instance
+    job = AzureQuantumJob(
+        job_id=mock_azure_pasqal_job.id, workspace=mock_azure_pasqal_job.workspace
+    )
+    job._job = mock_azure_pasqal_job
+
+    # Call the result method
+    result = job.result()
+
+    # Assertions
+    assert isinstance(result, Result)
+    assert result.device_id == "pasqal.sim.emu-tn"
+    assert result.job_id == mock_azure_pasqal_job.id
+    assert result.success is True
+    assert isinstance(result.data, AhsResultData)
+    assert result.data.measurement_counts == mock_pasqal_result_data
+
+
+def test_azure_job_wait_until_completed(mock_azure_pasqal_job):
+    """Test the wait_until_completed method of AzureQuantumJob."""
+    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    # Mock the job's wait_until_completed method
+    mock_azure_pasqal_job.wait_until_completed = MagicMock()
+    mock_azure_pasqal_job.details.status = "Succeeded"
+
+    # Create the AzureQuantumJob instance
+    job = AzureQuantumJob(
+        job_id=mock_azure_pasqal_job.id, workspace=mock_azure_pasqal_job.workspace
+    )
+    job._job = mock_azure_pasqal_job
+
+    # Call the result method with wait_until_completed=True
+    result = job.result(wait_until_completed=True)
+
+    # Assertions
+    mock_azure_pasqal_job.wait_until_completed.assert_called_once()
+    assert result.success is True
+    assert job.status() == JobStatus.COMPLETED
+
+
 def test_azure_quantum_result_counts(
     azure_result_builder: AzureGateModelResultBuilder, mock_builder_ionq_results: dict[str, Any]
 ):
@@ -877,6 +953,113 @@ def test_format_pasqal_results(azure_ahs_result_builder, mock_azure_pasqal_job):
     assert "probabilities" in result["data"]
     assert result["data"]["counts"] == {"001010": 50, "001011": 50}
     assert result["data"]["probabilities"] == {"001010": 0.5, "001011": 0.5}
+
+
+def test_ahs_builder_shots_count(azure_ahs_result_builder, mock_azure_ahs_job):
+    """Test the _shots_count method of AzureAHSModelResultBuilder."""
+    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    mock_azure_ahs_job.details.input_params = {"count": 1000}
+    assert azure_ahs_result_builder._shots_count() == 1000
+
+    mock_azure_ahs_job.details.input_params = {"shots": 500}
+    assert azure_ahs_result_builder._shots_count() == 500
+
+    mock_azure_ahs_job.details.input_params = {}
+    assert azure_ahs_result_builder._shots_count() is None
+
+
+def test_ahs_builder_format_analog_results(azure_ahs_result_builder, mock_azure_ahs_job):
+    """Test the _format_analog_results method of AzureAHSModelResultBuilder."""
+    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    mock_azure_ahs_job.get_results.return_value = {"001010": 50, "001011": 50}
+
+    result = azure_ahs_result_builder._format_analog_results()
+
+    assert result["counts"] == {"001010": 50, "001011": 50}
+    assert result["probabilities"] == {"001010": 0.5, "001011": 0.5}
+
+
+def test_ahs_builder_format_results_success(azure_ahs_result_builder, mock_azure_ahs_job):
+    """Test the _format_results method when the job succeeds."""
+    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    mock_azure_ahs_job.details.status = "Succeeded"
+    mock_azure_ahs_job.get_results.return_value = {"001010": 50, "001011": 50}
+    mock_azure_ahs_job.details.metadata = '{"key": "value"}'
+
+    result = azure_ahs_result_builder._format_results()
+
+    assert result["success"] is True
+    assert result["data"]["counts"] == {"001010": 50, "001011": 50}
+    assert result["data"]["probabilities"] == {"001010": 0.5, "001011": 0.5}
+    assert result["header"]["metadata"] == {"key": "value"}
+    assert result["shots"] == 1000
+
+
+def test_ahs_builder_format_results_failure(azure_ahs_result_builder, mock_azure_ahs_job):
+    """Test the _format_results method when the job fails."""
+    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    mock_azure_ahs_job.details.status = "Failed"
+    mock_azure_ahs_job.details.metadata = '{"key": "value"}'
+
+    result = azure_ahs_result_builder._format_results()
+
+    assert result["success"] is False
+    assert result["data"] == {}
+    assert result["header"]["metadata"] == {"key": "value"}
+    assert result["shots"] == 1000
+
+
+def test_ahs_builder_get_counts_single_result(azure_ahs_result_builder, mock_azure_ahs_job):
+    """Test the get_counts method with a single result."""
+    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    mock_azure_ahs_job.get_results.return_value = {"001010": 50, "001011": 50}
+
+    counts = azure_ahs_result_builder.get_counts()
+
+    assert counts == [{"001010": 50, "001011": 50}]
+
+
+def test_ahs_builder_get_counts_multiple_results(azure_ahs_result_builder, mock_azure_ahs_job):
+    """Test the get_counts method with multiple results."""
+    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    mock_azure_ahs_job.get_results.return_value = [
+        {"001010": 50, "001011": 50},
+        {"001100": 30, "001101": 70},
+    ]
+
+    counts = azure_ahs_result_builder.get_counts()
+
+    assert counts == [
+        {"001010": 50, "001011": 50},
+        {"001100": 30, "001101": 70},
+    ]
+
+
+def test_ahs_builder_get_results_success(azure_ahs_result_builder, mock_azure_ahs_job):
+    """Test the get_results method when the job succeeds."""
+    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    mock_azure_ahs_job.details.status = "Succeeded"
+    mock_azure_ahs_job.get_results.return_value = {"001010": 50, "001011": 50}
+
+    results = azure_ahs_result_builder.get_results()
+
+    assert len(results) == 1
+    assert results[0]["success"] is True
+    assert results[0]["data"]["counts"] == {"001010": 50, "001011": 50}
+    assert results[0]["data"]["probabilities"] == {"001010": 0.5, "001011": 0.5}
+
+
+def test_ahs_builder_get_results_failure(azure_ahs_result_builder, mock_azure_ahs_job):
+    """Test the get_results method when the job fails."""
+    pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
+    mock_azure_ahs_job.details.status = "Failed"
+
+    results = azure_ahs_result_builder.get_results()
+
+    assert len(results) == 1
+    assert results[0]["success"] is False
+    assert results[0]["data"] == {}
+    assert results[0]["shots"] == 1000
 
 
 @patch("qbraid.runtime.azure.result_builder.AzureGateModelResultBuilder._qir_to_qbraid_bitstring")
