@@ -27,6 +27,7 @@ Types of changes:
 
 ### Fixed
 - Fixed Amazon Braket remote test by changing catch `JobStateError` to `TimeoutError` ([#948](https://github.com/qBraid/qBraid/pull/948))
+- Fixed upper bound of html length check in pyquil circuit drawer test ([#950](https://github.com/qBraid/qBraid/pull/950))
 
 ### Dependencies
 - Added `pydantic-core` to project requirements ([#946](https://github.com/qBraid/qBraid/pull/946))
