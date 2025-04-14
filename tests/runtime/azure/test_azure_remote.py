@@ -37,8 +37,8 @@ pyquil_found = importlib.util.find_spec("pyquil") is not None
 pulser_found = importlib.util.find_spec("pulser") is not None
 
 if TYPE_CHECKING:
-    import pyquil as pyquil_
     import pulser as pulser_
+    import pyquil as pyquil_
 
 
 @pytest.mark.remote
@@ -122,11 +122,10 @@ def pyquil_program() -> pyquil_.Program:
 def pulser_sequence() -> pulser_.Sequence:
     """Fixture for a Pulser sequence."""
     import json
-    import numpy as np
 
+    import numpy as np
     import pulser
-    from pulser.register.register_layout import RegisterLayout
-    from pulser.waveforms import RampWaveform, BlackmanWaveform
+    from pulser.waveforms import BlackmanWaveform, RampWaveform
 
     input_data = {}
 
@@ -188,9 +187,9 @@ def test_submit_quil_to_rigetti(
     assert isinstance(result.data, GateModelResultData)
     assert result.data.get_counts() == {"00": 60, "11": 40}
 
+
 @pytest.mark.remote
 @pytest.mark.skipif(not pulser_found, reason="pulser not installed")
-@pytest.mark.parametrize("direct", [(True), (False)])
 def test_submit_sequence_to_pasqal(
     provider: AzureQuantumProvider, pulser_sequence: pulser_.Sequence, sequence_builder: str
 ):
@@ -202,6 +201,7 @@ def test_submit_sequence_to_pasqal(
         pytest.skip(f"{device.id} is {status.value}")
 
     shots = 100
+    input_params = {}
 
     job = device.submit(sequence_builder, shots=shots, input_params=input_params)
 

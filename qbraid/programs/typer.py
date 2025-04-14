@@ -272,5 +272,6 @@ def get_qasm_type_alias(qasm: str) -> str:
         return Qasm2KirinString.__alias__
     raise QasmError("Could not determine the type alias: the OpenQASM program may be invalid.")
 
+
 QBRAID_META_TYPES = {IonQDict, QuboCoefficientsDict}
 BOUND_QBRAID_META_TYPES = {Qasm2String, Qasm3String, Qasm2KirinString}

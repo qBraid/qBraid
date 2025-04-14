@@ -36,8 +36,8 @@ from qbraid.transpiler import transpile
 from .device import QbraidDevice
 
 if TYPE_CHECKING:
-    import pyqir
     import pulser
+    import pyqir
 
 
 def _serialize_program(program) -> dict[str, str]:
@@ -47,6 +47,7 @@ def _serialize_program(program) -> dict[str, str]:
 
 def _serialize_pyqir(program: pyqir.Module) -> dict[str, bytes]:
     return {"bitcode": program.bitcode}
+
 
 def _serialize_sequence(sequence: pulser.Sequence) -> dict[str, str]:
     """Serialize a pulser sequence to a dictionary."""

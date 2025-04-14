@@ -38,7 +38,10 @@ from qbraid.runtime import (
 )
 from qbraid.runtime.azure import AzureQuantumDevice, AzureQuantumJob, AzureQuantumProvider
 from qbraid.runtime.azure.io_format import InputDataFormat, OutputDataFormat
-from qbraid.runtime.azure.result_builder import AzureGateModelResultBuilder, AzureAHSModelResultBuilder
+from qbraid.runtime.azure.result_builder import (
+    AzureAHSModelResultBuilder,
+    AzureGateModelResultBuilder,
+)
 from qbraid.runtime.postprocess import normalize_counts
 
 pytestmark = pytest.mark.filterwarnings("ignore:Unrecognized input data format:UserWarning")
@@ -151,6 +154,12 @@ def mock_pasqal_job_data(mock_job_id) -> dict[str, str]:
 
 
 @pytest.fixture
+def mock_pasqal_result_data(mock_job_id) -> dict[str, str]:
+    """Return dictionary data for a Rigetti job with Microsoft result format V1."""
+    return {"001010": 50, "001011": 50}
+
+
+@pytest.fixture
 def estimator_result_data(mock_estimator_job_data: dict[str, str]) -> dict[str, Any]:
     """Return a dictionary with the data for a MicrosoftEstimatorResult."""
     return {
@@ -255,14 +264,15 @@ def mock_azure_job(
         **mock_estimator_job_data, status="Succeeded", result_data=estimator_result_data
     )
 
+
+@pytest.fixture
 def mock_azure_ahs_job(
-    mock_pasqal_job_data: dict[str, str], estimator_result_data: dict[str, Any]
+    mock_pasqal_job_data: dict[str, str], mock_pasqal_result_data: dict[str, Any]
 ) -> Mock:
     """Return a mock azure.quantum.Job instance."""
     return create_mock_azure_job(
-        **mock_pasqal_job_data, status="Succeeded", result_data=estimator_result_data
+        **mock_pasqal_job_data, status="Succeeded", result_data=mock_pasqal_result_data
     )
-
 
 
 @pytest.fixture
@@ -273,21 +283,18 @@ def mock_azure_ionq_job(mock_ionq_job_data: dict[str, str]) -> Mock:
     )
 
 
-
 @pytest.fixture
 def mock_azure_pasqal_job(mock_pasqal_job_data: dict[str, str]) -> Mock:
     """Return a mock azure.quantum.Job instance."""
     return create_mock_azure_job(
-        **mock_pasqal_job_data, status="Succeeded", result_data={"001010":50,"001011" :50}
+        **mock_pasqal_job_data, status="Succeeded", result_data={"001010": 50, "001011": 50}
     )
 
 
 @pytest.fixture
 def mock_azure_failed_pasqal_job(mock_pasqal_job_data: dict[str, str]) -> Mock:
     """Return a mock azure.quantum.Job instance."""
-    return create_mock_azure_job(
-        **mock_pasqal_job_data, status="Failed", result_data=None
-    )
+    return create_mock_azure_job(**mock_pasqal_job_data, status="Failed", result_data=None)
 
 
 @pytest.fixture
@@ -295,11 +302,11 @@ def azure_result_builder(mock_azure_job):
     """Return an AzureGateModelResultBuilder instance with a mock AzureQuantumJob."""
     return AzureGateModelResultBuilder(mock_azure_job)
 
+
 @pytest.fixture
 def azure_ahs_result_builder(mock_azure_ahs_job):
     """Return an AzureGateModelResultBuilder instance with a mock AzureQuantumJob."""
     return AzureAHSModelResultBuilder(mock_azure_ahs_job)
-
 
 
 def test_azure_provider_init_with_credential():
@@ -860,11 +867,10 @@ def test_format_pasqal_results(azure_ahs_result_builder, mock_azure_pasqal_job):
 
     result = azure_ahs_result_builder._format_results()
 
-    assert "counts" in result
-    assert "probabilities" in result
-    assert result["counts"] == {"001010": 50, "001011": 50}
-    assert result["probabilities"] == {"001010": 0.5, "001011": 0.5}
-
+    assert "counts" in result["data"]
+    assert "probabilities" in result["data"]
+    assert result["data"]["counts"] == {"001010": 50, "001011": 50}
+    assert result["data"]["probabilities"] == {"001010": 0.5, "001011": 0.5}
 
 
 @patch("qbraid.runtime.azure.result_builder.AzureGateModelResultBuilder._qir_to_qbraid_bitstring")
@@ -907,6 +913,7 @@ def test_format_ionq_results_raises_for_no_histogram_data():
         builder._format_ionq_results()
     assert "Histogram missing from IonQ Job results" in str(excinfo.value)
 
+
 def test_format_unknown_results(azure_result_builder, mock_azure_job):
     """Test formatting unknown results."""
     mock_azure_job.get_results.return_value = {"mock_key": "mock_value"}
@@ -914,6 +921,7 @@ def test_format_unknown_results(azure_result_builder, mock_azure_job):
     result = azure_result_builder._format_unknown_results()
 
     assert result == {"mock_key": "mock_value"}
+
 
 @pytest.mark.parametrize(
     "input_params, expected_result",
@@ -1201,41 +1209,25 @@ def test_builder_format_unknown_results(azure_result_builder: AzureGateModelResu
         "shots": 1000,
     }
 
+
 def test_ahs_builder_format_unknown_results(azure_ahs_result_builder: AzureAHSModelResultBuilder):
     """Test using the result builder to format results of an unrecognized AHS model format.
 
     Args:
-        azure_ahs_result_builder (AzureAHSModelResultBuilder): _description_
-
-    Returns:
-        _type_: _description_
+        azure_ahs_result_builder (AzureAHSModelResultBuilder): The Azure AHS model result builder.
     """
 
     results = azure_ahs_result_builder._format_results()
     assert results == {
         "data": {
-            "success": True,
-            "error_data": None,
-            "data": {
-                "status": "success",
-                "jobParams": {},
-                "physicalCounts": {},
-                "physicalCountsFormatted": {},
-                "logicalQubit": {},
-                "tfactory": {},
-                "errorBudget": {},
-                "logicalCounts": {},
-                "reportData": {"groups": [], "assumptions": []},
-            },
-            "job_id": "123-456-798",
-            "job_name": "azure-quantum-job",
-            "target": "microsoft.estimator",
-            "output_data_format": "microsoft.resource-estimates.v1",
+            "counts": {"001010": 50, "001011": 50},
+            "probabilities": {"001010": 0.5, "001011": 0.5},
         },
         "success": True,
         "header": {},
         "shots": 1000,
     }
+
 
 @pytest.fixture
 def mock_workspace_hashing():

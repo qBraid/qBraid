@@ -73,8 +73,7 @@ class AzureQuantumDevice(QuantumDevice):
         current_status = self.status()
         if current_status == DeviceStatus.ONLINE:
             return True
-        else:
-            return False
+        return False
 
     def submit(self, run_input: qbraid.programs.QPROGRAM, *args, **kwargs) -> AzureQuantumJob:
         """Submit a job to the Azure device.

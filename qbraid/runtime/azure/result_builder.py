@@ -402,9 +402,7 @@ class AzureAHSModelResultBuilder:
             return [results]
         return results
 
-    def get_results(
-        self, timeout: Optional[int] = None, sampler_seed: Optional[int] = None
-    ) -> list[dict[str, Any]]:
+    def get_results(self, timeout: Optional[int] = None) -> list[dict[str, Any]]:
         """Return the results of the job."""
         self.job.wait_until_completed(timeout_secs=timeout)
 

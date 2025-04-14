@@ -363,9 +363,7 @@ class QbraidDevice(QuantumDevice):
             if not native_target:
                 aux_payload = self._construct_aux_payload(program, program_spec)
             if transpile_option:
-                program = self.transpile(
-                    program, program_spec
-                )
+                program = self.transpile(program, program_spec)
             is_batched_output = is_single_input and isinstance(program, list)
             program_batch = program if is_batched_output else [program]
             self.validate(program_batch, suppress_device_warning=i != 0)

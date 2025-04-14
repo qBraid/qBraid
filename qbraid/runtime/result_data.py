@@ -351,7 +351,7 @@ class AhsResultData(ResultData):
             if self._measurements is not None
             else "None"
         )
-        return f"{self.__class__.__name__}(measurement_counts={self._measurement_counts}, measurements={measurements_info})"
+        return f"{self.__class__.__name__}(measurement_counts={self._measurement_counts}, measurements={measurements_info})"  # pylint: disable=line-too-long
 
 
 class AnnealingResultData(ResultData):
