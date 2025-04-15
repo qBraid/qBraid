@@ -8,11 +8,10 @@
 #
 # THERE IS NO WARRANTY for the qBraid-SDK, as per Section 15 of the GPL v3.
 
-# pylint: disable=redefined-outer-name,unused-argument
+# pylint: disable=redefined-outer-name,unused-argument,too-many-lines
 
 """
-Unit tests for QbraidDevice, QbraidJob, and QbraidGateModelResultBuilder
-classes using the qbraid_qir_simulator and nec_vector_annealer devices.
+Unit tests for QbraidDevice and QbraidProvider classes.
 
 """
 import importlib.util
@@ -991,10 +990,28 @@ def test_set_target_program_type_raises_for_multiple(mock_qasm_device: QbraidDev
         mock_qasm_device.set_target_program_type("qasm4")
 
 
-def test_set_target_program_type_raises_for_single(mock_qbraid_device: QbraidDevice):
-    """Test setting target spec with multiple program specs."""
+def test_set_target_program_type_raises_for_single_invalid(mock_qbraid_device: QbraidDevice):
+    """Test setting target spec raises ValueError for invalid alias."""
     with pytest.raises(ValueError):
         mock_qbraid_device.set_target_program_type("qasm4")
+
+
+def test_set_target_program_type_raises_for_list_invalid(mock_qasm_device: QbraidDevice):
+    """Test setting target spec raises if any alias in list is not in original spec."""
+    with pytest.raises(ValueError):
+        mock_qasm_device.set_target_program_type(["qasm2", "qasm4"])
+
+
+def test_set_target_program_type_raises_for_list_if_spec_single(mock_qbraid_device: QbraidDevice):
+    """Test setting target spec raises if list is given but spec expects single alias."""
+    with pytest.raises(ValueError):
+        mock_qbraid_device.set_target_program_type(["qasm2", "qasm4"])
+
+
+def test_set_target_program_type_raises_for_duplicate(mock_qbraid_device: QbraidDevice):
+    """Test setting target spec raises ValueError for duplicate alias input."""
+    with pytest.raises(ValueError):
+        mock_qbraid_device.set_target_program_type(["qasm3", "qasm3"])
 
 
 @pytest.fixture
@@ -1008,8 +1025,13 @@ def mock_profile_program_spec_none():
     )
 
 
-# @pytest.fixture
-# def mock_device_program_spec_none(mock_profile_program_spec_none):
-#     return QbraidDevice(profile=mock_profile_program_spec_none, client)
-# def test_set_target_program_type_raises_for_none(mock_qasm_device: QbraidDevice):
-#     return QbraidDevice(profile=mock_qasm_profile, client=mock_client, scheme=mock_scheme)
+@pytest.fixture
+def mock_device_program_spec_none(mock_profile_program_spec_none, mock_client):
+    """Mock QbraidDevice for testing with target profile program_spec set to None."""
+    return QbraidDevice(profile=mock_profile_program_spec_none, client=mock_client)
+
+
+def test_set_target_spec_raises_if_none(mock_device_program_spec_none: QbraidDevice):
+    """Test setting target spec raises ValueError if program_spec is None."""
+    with pytest.raises(ValueError):
+        mock_device_program_spec_none.set_target_program_type("qasm2")

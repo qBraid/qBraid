@@ -271,7 +271,8 @@ class QuantumDevice(ABC):
             alias = aliases[0]
             if alias != self.profile.program_spec.alias:
                 raise ValueError(
-                    f"Invalid alias: '{alias}'. Available aliases: '{self.profile.program_spec.alias}'"
+                    f"Invalid alias: '{alias}'. "
+                    f"Available aliases: '{self.profile.program_spec.alias}'"
                 )
             self._target_spec = [self.profile.program_spec] if as_lst else self.profile.program_spec
 
