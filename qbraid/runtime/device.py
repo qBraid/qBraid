@@ -203,7 +203,7 @@ class QuantumDevice(ABC):
             for key, value in dict(self._options).items()
         }
 
-        program_spec = self.profile.program_spec
+        program_spec = self._target_spec
 
         if not program_spec:
             target_program_type = None

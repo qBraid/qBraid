@@ -17,6 +17,29 @@ Types of changes:
 
 ### Added
 - Added `QbraidJob.async_result()` to support async result retrieval using `await`. ([#945](https://github.com/qBraid/qBraid/pull/945))
+- Added `QbraidDevice.set_target_program_type`, allowing you to set a specific `ProgramSpec` (from `TargetProfile`) alias as the default ([#952](https://github.com/qBraid/qBraid/pull/952)). For example, if a device supports both "qasm2" and "qasm3", you can now restrict transpilation to one format:
+
+```python
+from qbraid.runtime import IonQProvider
+
+provider = IonQProvider()
+
+device = provider.get_device("simulator")
+
+device.metadata()["runtime_config"]["target_program_type"] # ['qasm2', 'qasm3']
+
+device.set_target_program_type("qasm2")
+
+device.metadata()["runtime_config"]["target_program_type"] # 'qasm2'
+```
+
+However the original `TargetProfile.program_spec` value remains frozen:
+
+```python
+device.profile.program_spec
+# [<ProgramSpec('builtins.str', 'qasm2')>,
+#  <ProgramSpec('builtins.str', 'qasm3')>]
+```
 
 ### Improved / Modified
 
