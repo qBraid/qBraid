@@ -36,7 +36,7 @@ from qbraid.runtime.postprocess import counts_to_probabilities, normalize_counts
 from .io_format import OutputDataFormat
 
 
-class AzureGateModelResultBuilder:
+class AzureResultBuilder:
     """Class to format Azure Quantum job results."""
 
     def __init__(self, azure_job: Job):
@@ -86,6 +86,8 @@ class AzureGateModelResultBuilder:
                 job_result["data"] = self._format_quantinuum_results()
             elif self.job.details.output_data_format == OutputDataFormat.RIGETTI.value:
                 job_result["data"] = self._format_rigetti_results()
+            elif self.job.details.output_data_format == OutputDataFormat.PASQAL.value:
+                job_result["data"] = self._format_analog_results()
             else:
                 job_result["data"] = self._format_unknown_results()
 
@@ -150,10 +152,7 @@ class AzureGateModelResultBuilder:
             # associated with a classical register. Azure and qBraid order the
             # registers in opposite directions, so reverse here to match.
             return " ".join(
-                [
-                    AzureGateModelResultBuilder._qir_to_qbraid_bitstring(term)
-                    for term in reversed(obj)
-                ]
+                [AzureResultBuilder._qir_to_qbraid_bitstring(term) for term in reversed(obj)]
             )
         if isinstance(obj, list):
             # a list is for an individual classical register
@@ -224,6 +223,17 @@ class AzureGateModelResultBuilder:
         total_counts = sum(counts.values())
         probabilities = {outcome: count / total_counts for outcome, count in counts.items()}
         return {"counts": counts, "probabilities": probabilities}
+
+    def _format_analog_results(self) -> dict[str, Any]:
+        """
+        Translate Microsoft's AHS job results histogram into a format that
+        can be consumed by qBraid runtime.
+
+        """
+        histogram = self.job.get_results()
+        counts = normalize_counts(histogram)
+        probabilities = counts_to_probabilities(counts)
+        return {"counts": histogram, "probabilities": probabilities}
 
     def _format_unknown_results(self):
         """Format Job results data when the job output is in an unknown format."""
@@ -346,66 +356,3 @@ class AzureGateModelResultBuilder:
             return results[0]["data"]["counts"] if results[0]["success"] else {}
 
         return [result["data"]["counts"] if result["success"] else {} for result in results]
-
-
-class AzureAHSModelResultBuilder:
-    """Class to format Azure Quantum Analog Model job results for Pasqal."""
-
-    def __init__(self, azure_job: Job):
-        self._azure_job = azure_job
-
-    @property
-    def job(self) -> Job:
-        """Return the Azure Quantum job."""
-        return self._azure_job
-
-    def _shots_count(self) -> Optional[int]:
-        """Return the number of shots used in the job."""
-        # Some providers use 'count', some other 'shots', give preference to 'count':
-        input_params = self.job.details.input_params
-        return input_params.get("count", input_params.get("shots"))
-
-    def _format_analog_results(self) -> dict[str, Any]:
-        """
-        Translate Microsoft's AHS job results histogram into a format that
-        can be consumed by qBraid runtime.
-
-        """
-        histogram = self.job.get_results()
-        counts = normalize_counts(histogram)
-        probabilities = counts_to_probabilities(counts)
-        return {"counts": histogram, "probabilities": probabilities}
-
-    def _format_results(self) -> dict[str, Any]:
-        """Format the results of the job."""
-        success = self.job.details.status == "Succeeded"
-        job_result = {
-            "data": {},
-            "success": success,
-            "header": {},
-        }
-
-        if success:
-            job_result["data"] = self._format_analog_results()
-
-        job_result["header"] = self.job.details.metadata or {}
-        if "metadata" in job_result["header"]:
-            job_result["header"]["metadata"] = json.loads(job_result["header"]["metadata"])
-
-        job_result["shots"] = self._shots_count()
-        return job_result
-
-    def get_counts(self) -> Union[dict[str, int], list[dict[str, int]]]:
-        """Return the raw counts from the result data."""
-        results = self.job.get_results()
-        if len(results) == 1:
-            return [results]
-        return results
-
-    def get_results(self, timeout: Optional[int] = None) -> list[dict[str, Any]]:
-        """Return the results of the job."""
-        self.job.wait_until_completed(timeout_secs=timeout)
-
-        results = self._format_results()
-        results = results if isinstance(results, list) else [results]
-        return results

@@ -40,8 +40,7 @@ from qbraid.runtime import (
 from qbraid.runtime.azure import AzureQuantumDevice, AzureQuantumJob, AzureQuantumProvider
 from qbraid.runtime.azure.io_format import InputDataFormat, OutputDataFormat
 from qbraid.runtime.azure.result_builder import (
-    AzureAHSModelResultBuilder,
-    AzureGateModelResultBuilder,
+    AzureResultBuilder,
 )
 from qbraid.runtime.postprocess import normalize_counts
 
@@ -304,15 +303,15 @@ def mock_azure_failed_pasqal_job(mock_pasqal_job_data: dict[str, str]) -> Mock:
 
 @pytest.fixture
 def azure_result_builder(mock_azure_job):
-    """Return an AzureGateModelResultBuilder instance with a mock AzureQuantumJob."""
-    return AzureGateModelResultBuilder(mock_azure_job)
+    """Return an AzureResultBuilder instance with a mock AzureQuantumJob."""
+    return AzureResultBuilder(mock_azure_job)
 
 
 @pytest.fixture
 def azure_ahs_result_builder(mock_azure_ahs_job):
-    """Return an AzureGateModelResultBuilder instance with a mock AzureQuantumJob."""
+    """Return an AzureResultBuilder instance with a mock AzureQuantumJob."""
     pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
-    return AzureAHSModelResultBuilder(mock_azure_ahs_job)
+    return AzureResultBuilder(mock_azure_ahs_job)
 
 
 def test_azure_provider_init_with_credential():
@@ -619,10 +618,10 @@ def test_azure_job_cancel_terminal_state_raises():
 
 
 @pytest.fixture
-def mock_result_builder(mock_job_id) -> AzureGateModelResultBuilder:
+def mock_result_builder(mock_job_id) -> AzureResultBuilder:
     """Create a mock Azure result builder."""
     job = Mock(id=mock_job_id)
-    return AzureGateModelResultBuilder(job)
+    return AzureResultBuilder(job)
 
 
 class DowloadDataMock:
@@ -664,7 +663,7 @@ def test_job_for_microsoft_quantum_results_v1_success(mock_msft_v1_job_data):
     results_as_json_str = '{"Histogram": ["[0]", 0.50, "[1]", 0.50]}'
     job = mock_job(**mock_msft_v1_job_data, results_as_json_str=results_as_json_str)
 
-    builder = AzureGateModelResultBuilder(job)
+    builder = AzureResultBuilder(job)
     assert isinstance(builder.job, Job)
     assert builder.job == job
     assert builder.from_simulator is True
@@ -714,9 +713,7 @@ def test_make_estimator_result_successful(estimator_result_data):
     "probabilities",
     [{"00": 0.5, "11": 0.5}, {"00": 0.4999, "11": 0.5001}, {"00": 0.4000, "11": 0.6001}],
 )
-def test_draw_random_sample_probabilities(
-    mock_result_builder: AzureGateModelResultBuilder, probabilities
-):
+def test_draw_random_sample_probabilities(mock_result_builder: AzureResultBuilder, probabilities):
     """Test that the random sample handles both normalized and unnormalized probabilities."""
     shots = 1000
     sample = mock_result_builder._draw_random_sample(probabilities, shots)
@@ -726,7 +723,7 @@ def test_draw_random_sample_probabilities(
 
 @pytest.mark.parametrize("seed, should_match", [(42, True), (None, False)])
 def test_draw_random_sample_consistency(
-    mock_result_builder: AzureGateModelResultBuilder, seed, should_match
+    mock_result_builder: AzureResultBuilder, seed, should_match
 ):
     """Test drawing random samples with and without a specific seed."""
     shots = 10
@@ -743,7 +740,7 @@ def test_draw_random_sample_consistency(
 
 
 def test_draw_random_sample_with_invalid_probabilities(
-    mock_result_builder: AzureGateModelResultBuilder,
+    mock_result_builder: AzureResultBuilder,
 ):
     """Test the method raises an error when probabilities don't sum close to one."""
     probabilities = {"00": 0.3, "11": 0.4}
@@ -766,7 +763,7 @@ def test_draw_random_sample_with_invalid_probabilities(
 )
 def test_qir_to_qbraid_bitstring(input_data, expected_output):
     """Test various inputs for _qir_to_qbraid_bitstring method."""
-    assert AzureGateModelResultBuilder._qir_to_qbraid_bitstring(input_data) == expected_output
+    assert AzureResultBuilder._qir_to_qbraid_bitstring(input_data) == expected_output
 
 
 @pytest.fixture
@@ -843,11 +840,11 @@ def test_azure_job_wait_until_completed(mock_azure_pasqal_job):
 
 
 def test_azure_quantum_result_counts(
-    azure_result_builder: AzureGateModelResultBuilder, mock_builder_ionq_results: dict[str, Any]
+    azure_result_builder: AzureResultBuilder, mock_builder_ionq_results: dict[str, Any]
 ):
     """Test Azure Quantum Job builder get counts methods."""
     with patch.object(
-        AzureGateModelResultBuilder,
+        AzureResultBuilder,
         "get_results",
         return_value=mock_builder_ionq_results["results"],
     ):
@@ -857,24 +854,24 @@ def test_azure_quantum_result_counts(
 
 
 def test_job_property(azure_result_builder, mock_azure_job):
-    """Test the job property of an AzureGateModelResultBuilder."""
+    """Test the job property of an AzureResultBuilder."""
     assert azure_result_builder.job == mock_azure_job
 
 
 def test_from_simulator_true(azure_result_builder, mock_azure_job):
-    """Test the from_simulator property of an AzureGateModelResultBuilder."""
+    """Test the from_simulator property of an AzureResultBuilder."""
     mock_azure_job.details.target = "mock.simulator"
     assert azure_result_builder.from_simulator is True
 
 
 def test_from_simulator_false(azure_result_builder, mock_azure_job):
-    """Test the from_simulator property of an AzureGateModelResultBuilder."""
+    """Test the from_simulator property of an AzureResultBuilder."""
     mock_azure_job.details.target = "mock.qpu"
     assert azure_result_builder.from_simulator is False
 
 
 def test_shots_count(azure_result_builder):
-    """Test the shots count method of an AzureGateModelResultBuilder."""
+    """Test the shots count method of an AzureResultBuilder."""
     assert azure_result_builder._shots_count() == 1000
 
 
@@ -897,7 +894,7 @@ def test_make_estimator_result_failure():
 def mock_qir_to_qbraid_bitstring():
     """Return a mock for the qir_to_qbraid_bitstring method."""
     with patch(
-        "qbraid.runtime.azure.result_builder.AzureGateModelResultBuilder._qir_to_qbraid_bitstring"
+        "qbraid.runtime.azure.result_builder.AzureResultBuilder._qir_to_qbraid_bitstring"
     ) as mock:
         yield mock
 
@@ -956,7 +953,7 @@ def test_format_pasqal_results(azure_ahs_result_builder, mock_azure_pasqal_job):
 
 
 def test_ahs_builder_shots_count(azure_ahs_result_builder, mock_azure_ahs_job):
-    """Test the _shots_count method of AzureAHSModelResultBuilder."""
+    """Test the _shots_count method of AzureResultBuilder."""
     pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
     mock_azure_ahs_job.details.input_params = {"count": 1000}
     assert azure_ahs_result_builder._shots_count() == 1000
@@ -969,7 +966,7 @@ def test_ahs_builder_shots_count(azure_ahs_result_builder, mock_azure_ahs_job):
 
 
 def test_ahs_builder_format_analog_results(azure_ahs_result_builder, mock_azure_ahs_job):
-    """Test the _format_analog_results method of AzureAHSModelResultBuilder."""
+    """Test the _format_analog_results method of AzureResultBuilder."""
     pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
     mock_azure_ahs_job.get_results.return_value = {"001010": 50, "001011": 50}
 
@@ -1062,7 +1059,7 @@ def test_ahs_builder_get_results_failure(azure_ahs_result_builder, mock_azure_ah
     assert results[0]["shots"] == 1000
 
 
-@patch("qbraid.runtime.azure.result_builder.AzureGateModelResultBuilder._qir_to_qbraid_bitstring")
+@patch("qbraid.runtime.azure.result_builder.AzureResultBuilder._qir_to_qbraid_bitstring")
 def test_format_quantinuum_results(
     mock_qir_to_qbraid_bitstring, azure_result_builder, mock_azure_job
 ):
@@ -1084,7 +1081,7 @@ def test_format_ionq_results():
     mock_job.details.input_params = {"count": 100}
     mock_job.get_results.return_value = {"histogram": {"0": 0.5, "7": 0.5}}
 
-    builder = AzureGateModelResultBuilder(azure_job=mock_job)
+    builder = AzureResultBuilder(azure_job=mock_job)
     expected_result = {
         "counts": {"000": 50, "111": 50},
         "probabilities": {"000": 0.5, "111": 0.5},
@@ -1097,7 +1094,7 @@ def test_format_ionq_results_raises_for_no_histogram_data():
     mock_job = Mock(spec=Job)
     mock_job.details.input_params = {"count": 100}
     mock_job.get_results.return_value = {}
-    builder = AzureGateModelResultBuilder(azure_job=mock_job)
+    builder = AzureResultBuilder(azure_job=mock_job)
     with pytest.raises(ValueError) as excinfo:
         builder._format_ionq_results()
     assert "Histogram missing from IonQ Job results" in str(excinfo.value)
@@ -1129,7 +1126,7 @@ def test_get_entry_point_names(input_params, expected_result):
     """Test getting entry point names from input params."""
     mock_job = Mock(spec=Job)
     mock_job.details.input_params = input_params
-    builder = AzureGateModelResultBuilder(azure_job=mock_job)
+    builder = AzureResultBuilder(azure_job=mock_job)
     result = builder._get_entry_point_names()
     assert result == expected_result
 
@@ -1138,7 +1135,7 @@ def test_get_entry_point_names_with_missing_entry_point():
     """Test getting entry point names from input params with missing 'entryPoint' field."""
     mock_job = Mock(spec=Job)
     mock_job.details.input_params = {"items": [{"noEntryPointField": "data"}]}
-    builder = AzureGateModelResultBuilder(azure_job=mock_job)
+    builder = AzureResultBuilder(azure_job=mock_job)
     with pytest.raises(
         ValueError, match="Entry point input_param is missing an 'entryPoint' field"
     ):
@@ -1149,7 +1146,7 @@ def test_get_entry_point_names_with_no_items_key():
     """Test getting entry point names from input params with missing 'items' key."""
     mock_job = Mock(spec=Job)
     mock_job.details.input_params = {}
-    builder = AzureGateModelResultBuilder(azure_job=mock_job)
+    builder = AzureResultBuilder(azure_job=mock_job)
     with pytest.raises(KeyError):
         builder._get_entry_point_names()
 
@@ -1207,7 +1204,7 @@ def test_translate_microsoft_v2_result_raises_value_error(results, err_msg):
     when job result does not contain the required field."""
     mock_job = Mock(spec=Job)
     mock_job.get_results.return_value = results
-    builder = AzureGateModelResultBuilder(azure_job=mock_job)
+    builder = AzureResultBuilder(azure_job=mock_job)
     with pytest.raises(ValueError) as excinfo:
         builder._translate_microsoft_v2_results()
         assert err_msg in str(excinfo.value)
@@ -1258,7 +1255,7 @@ def test_format_microsoft_v2_results_no_success():
     mock_job = Mock(spec=Job)
     mock_job.details.status = "Failed"
     mock_job.details.output_data_format = OutputDataFormat.MICROSOFT_V2.value
-    builder = AzureGateModelResultBuilder(azure_job=mock_job)
+    builder = AzureResultBuilder(azure_job=mock_job)
     assert builder._format_microsoft_v2_results() == [
         {"data": {}, "success": False, "header": {}, "shots": 0}
     ]
@@ -1275,7 +1272,7 @@ def test_result_builder_failed_job(mock_job_id):
     mock_job.details.target = "rigetti.sim.qvm"
     mock_job.details.name = "azure-quantum-job"
     mock_job.details.id = mock_job_id
-    builder = AzureGateModelResultBuilder(azure_job=mock_job)
+    builder = AzureResultBuilder(azure_job=mock_job)
     results = builder.get_results()
     assert isinstance(results, list)
     assert all(isinstance(result, dict) for result in results)
@@ -1370,7 +1367,7 @@ def test_builder_get_counts_multiple_results_all_failure(mock_result_builder):
     assert counts == [{}, {}]
 
 
-def test_builder_format_unknown_results(azure_result_builder: AzureGateModelResultBuilder):
+def test_builder_format_unknown_results(azure_result_builder: AzureResultBuilder):
     """Test using the result builder to format results of an unrecognized gate model format."""
     results = azure_result_builder._format_results()
     assert results == {
@@ -1399,11 +1396,11 @@ def test_builder_format_unknown_results(azure_result_builder: AzureGateModelResu
     }
 
 
-def test_ahs_builder_format_unknown_results(azure_ahs_result_builder: AzureAHSModelResultBuilder):
+def test_ahs_builder_format_unknown_results(azure_ahs_result_builder: AzureResultBuilder):
     """Test using the result builder to format results of an unrecognized AHS model format.
 
     Args:
-        azure_ahs_result_builder (AzureAHSModelResultBuilder): The Azure AHS model result builder.
+        azure_ahs_result_builder (AzureResultBuilder): The Azure AHS model result builder.
     """
     pytest.importorskip("pasqal-core", reason="Pasqal package is not installed.")
     results = azure_ahs_result_builder._format_results()
